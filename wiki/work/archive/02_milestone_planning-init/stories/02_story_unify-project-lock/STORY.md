@@ -51,7 +51,7 @@ silently shadowing another's.
 
 Depends on story 00 (planning provenance, built) and milestone 01 (`work init/update`, accepted). The
 shared mechanic both tasks need: the asset-lock writer (`createLockManifest` / the `mergeFrameworkInstallAttempts`
-helper in [src/lock.mjs](../../../../../../src/lock.mjs)) today reconstructs the lock from a FIXED field set,
+helper in [src/lock.mjs](../../../../../../packages/core/src/lock.mjs)) today reconstructs the lock from a FIXED field set,
 so it would DROP any `planning`/`work` section — the build must make every writer preserve foreign
 sections (a read-merge-write per section, not a wholesale rebuild). `aof assets clean` and the
 re-run/drift guards must also be taught the section model. The architect records the superseding ADR(s)

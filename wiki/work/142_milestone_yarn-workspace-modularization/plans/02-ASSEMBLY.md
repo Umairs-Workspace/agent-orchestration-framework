@@ -7,7 +7,7 @@ resolving integration credentials remain runtime operations.
 
 ## Entry points and ownership
 
-[`createApplication({ env })`](../../../../src/application/assemble.mjs) constructs a fresh application.
+[`createApplication({ env })`](../../../../packages/core/src/application/assemble.mjs) constructs a fresh application.
 The default is `process.env`; an explicit environment supplies that application's workspace and
 global-home policy. It returns command invocation/lookup, CLI presentation, and named execution,
 effects, work, mesh and server APIs, plus `close()`.
@@ -55,7 +55,7 @@ spawns a CLI process to perform a domain operation.
 
 ## Lifetime and lightweight entry points
 
-[`lifetime.mjs`](../../../../src/application/lifetime.mjs) owns opened journal/projection handles,
+[`lifetime.mjs`](../../../../packages/core/src/application/lifetime.mjs) owns opened journal/projection handles,
 started launchers, and setup/board/fleet HTTP servers. Manual close/stop disowns a resource and keeps
 the existing synchronous or asynchronous contract. Application close revokes runtime callbacks,
 closes owned resources in reverse order, attempts all closes even if one fails, reports an aggregate

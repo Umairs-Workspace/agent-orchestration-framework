@@ -36,7 +36,7 @@ so that the skill gains a deterministic *health* floor without `aof work validat
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (ADR-002 validate is the gate, doctor is
 advisory). This story **owns** the edit to the shipped lint skill
-[src/bundle/commands/validate.md](../../../../../../src/bundle/commands/validate.md) — adding the
+[src/bundle/commands/validate.md](../../../../../../packages/core/assets/commands/validate.md) — adding the
 `aof work doctor` step after the existing `aof work validate` step and the lane-grouped reporting prose.
 It touches no `src/*.mjs` and no test/arch fitness function; it changes only the bundled skill doc (and so
 its rendered `.claude/commands/aof/validate.md` flows from `aof work update`, not a hand-edit).

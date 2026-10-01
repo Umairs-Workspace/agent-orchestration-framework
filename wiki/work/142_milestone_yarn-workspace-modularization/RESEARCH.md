@@ -31,10 +31,10 @@ inventory source for this migration.
 
 ## The CLI registry is an existing extension seam
 
-[command-core.mjs](../../../src/command-core.mjs) assembles commands across the product. Its documented
+[command-core.mjs](../../../packages/core/src/application/bindings/command-core.mjs) assembles commands across the product. Its documented
 command shape includes an ID, input schema, operation, and CLI adapters. The existing
-[spine face](../../../src/spine/face.mjs) supplies a common invocation path. The CLI already delays
-registry loading on the session-presence path; [cli.mjs](../../../src/cli.mjs) records the startup
+[spine face](../../../packages/core/src/application/bindings/spine/face.mjs) supplies a common invocation path. The CLI already delays
+registry loading on the session-presence path; [cli.mjs](../../../packages/core/src/cli.mjs) records the startup
 reason for that separation.
 
 **Constraint:** package contributions should evolve this shared invocation model. New package
@@ -51,10 +51,10 @@ that the present source tree already implements the proposed package boundaries.
 |---|---|---|
 | [loop/cycle.mjs](../../../src/loop/cycle.mjs) | Imports item resolution, rubric handling and node identity helpers from `commands/`. | Move reusable operations below command presentation or supply explicit collaborators. |
 | [mesh/declarations.mjs](../../../src/mesh/declarations.mjs) | Imports retry-ceiling resolution from `commands/run-retry.mjs`. | Mesh supervision must not depend on the CLI implementation layer. |
-| [effects/table.mjs](../../../src/effects/table.mjs) | Imports work mutations, projections, assignments, run storage and Notion sync. | Separate generic durable dispatch from domain reactions and application registration. |
-| [memory/graphify-backend.mjs](../../../src/memory/graphify-backend.mjs) | Imports `invoke` and workspace loading from the central command registry. | Extract a graph service API or inject a narrow invocation interface. |
+| [effects/table.mjs](../../../packages/core/src/application/bindings/effects/table.mjs) | Imports work mutations, projections, assignments, run storage and Notion sync. | Separate generic durable dispatch from domain reactions and application registration. |
+| [memory/graphify-backend.mjs](../../../packages/knowledge/src/memory/graphify-backend.mjs) | Imports `invoke` and workspace loading from the central command registry. | Extract a graph service API or inject a narrow invocation interface. |
 | [work/read.mjs](../../../src/work/read.mjs) | Combines local work queries, global cache access and mesh worktree classification. | Keep local work mechanics independent of mesh-specific projection/admission policy. |
-| [agent-session-driver.mjs](../../../src/agent-session-driver.mjs) | Combines provider/terminal execution with observation and phase-brief helpers. | Separate session mechanics from work-specific input assembly and policy. |
+| [agent-session-driver.mjs](../../../packages/core/src/application/bindings/agent-session-driver.mjs) | Combines provider/terminal execution with observation and phase-brief helpers. | Separate session mechanics from work-specific input assembly and policy. |
 | [ui/src/board/action.mjs](../../../apps/ui/src/board/action.mjs) | Imports formatting helpers through `../../../src/notify/form.mjs`. | Browser-safe shared helpers need a public export instead of a sibling-source escape. |
 
 These inspected imports establish boundary leaks, not an exhaustive cycle census. Refinement needs
@@ -65,24 +65,24 @@ and declared runtime collaborators before finalizing extraction batches.
 
 - [work/loop.mjs](../../../src/work/loop.mjs) is a pure decision engine with no imports. Preserve
   that property while separating the orchestration shell from CLI adapters.
-- [terminal/screen.mjs](../../../src/terminal/screen.mjs) and
-  [terminal/session-screen.mjs](../../../src/terminal/session-screen.mjs) provide existing terminal
+- [terminal/screen.mjs](../../../packages/execution/src/terminal/screen.mjs) and
+  [terminal/session-screen.mjs](../../../packages/execution/src/terminal/session-screen.mjs) provide existing terminal
   seams. They are candidates for an execution package, not reasons to rewrite terminal behavior.
-- [work/bundle.mjs](../../../src/work/bundle.mjs),
-  [bundle-runtime.mjs](../../../src/work/bundle-runtime.mjs), and
-  [bundle-synthesis.mjs](../../../src/work/bundle-synthesis.mjs) separate aspects of asset loading,
+- [work/bundle.mjs](../../../packages/core/src/work/bundle.mjs),
+  [bundle-runtime.mjs](../../../packages/core/src/work/bundle-runtime.mjs), and
+  [bundle-synthesis.mjs](../../../packages/core/src/work/bundle-synthesis.mjs) separate aspects of asset loading,
   capability selection, and rendering. Their current `work/` location does not decide future ownership.
 - Shared command invocation and durable effect journaling already exist. Migration can preserve
   those behavioral contracts while relocating ownership.
 
 ## Three different graph models
 
-1. Work-item dependencies/readiness live in work mechanics such as [work.mjs](../../../src/work.mjs).
+1. Work-item dependencies/readiness live in work mechanics such as [work.mjs](../../../packages/core/src/application/bindings/work.mjs).
 2. Declared feedback-loop metadata and graph rendering live in
-   [work/loops.mjs](../../../src/work/loops.mjs),
+   [work/loops.mjs](../../../packages/core/src/application/bindings/work/loops.mjs),
    [work/loops-checks.mjs](../../../src/work/loops-checks.mjs), and
-   [commands/loops-graph.mjs](../../../src/commands/loops-graph.mjs).
-3. The code/knowledge graph is exposed through [graphify.mjs](../../../src/graphify.mjs),
+   [commands/loops-graph.mjs](../../../packages/work-graph/src/commands/loops-graph.mjs).
+3. The code/knowledge graph is exposed through [graphify.mjs](../../../packages/knowledge/src/graphify.mjs),
    normalization/impact modules, and a graph-backed memory implementation.
 
 **Constraint:** a shared word does not imply shared ownership. Work-graph naming must distinguish
@@ -90,7 +90,7 @@ declaration/documentation tools from execution policy and Graphify's code graph.
 
 ## Assets and distribution depend on current layout
 
-- [asset-base.mjs](../../../src/asset-base.mjs) resolves development paths assuming its module is
+- [asset-base.mjs](../../../packages/core/src/asset-base.mjs) resolves development paths assuming its module is
   directly in `src/`, and resolves packaged bundle/UI/version assets relative to the executable.
 - [sea-asset-manifest.mjs](../../../scripts/sea-asset-manifest.mjs) enumerates `src/bundle/` and
   `ui/dist/`. [build-sea.mjs](../../../scripts/build-sea.mjs) copies those assets and externalizes

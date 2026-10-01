@@ -39,7 +39,7 @@ so that enabling graph-grounded memory is a clear, **opt-in**, **never-silently-
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-003** the `claude-cli` default +
 surfacing + the `graph-build.mjs` classification; **ADR-004** the binary-absent degrade). This story
-**owns**: teaching [src/commands/graph-build.mjs](../../../../../../src/commands/graph-build.mjs) the
+**owns**: teaching [src/commands/graph-build.mjs](../../../../../../packages/knowledge/src/commands/graph-build.mjs) the
 `claude-cli` value (`isNetworkBackend("claude-cli") === true`, `classifyEgress("claude-cli") ===
 "docs-media"` — the hop ran; billed-to-plan ≠ on-box; `ollama` stays the only data-resident option, still
 `egress:"docs-media"`); the `claude-cli` extraction default, **surfaced** in the `BuildResult` and in

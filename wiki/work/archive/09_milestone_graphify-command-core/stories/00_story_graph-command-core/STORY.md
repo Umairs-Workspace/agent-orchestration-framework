@@ -39,8 +39,8 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-001** the
 **ADR-002** the driver seam, **ADR-003** the `graph.json` normalization). This story **owns**:
 `src/graphify.mjs` (the driver + normalizer — `resolveGraphifyBinary`/`runGraphifyBuild`/`runGraphifyQuery`/
 `runGraphifyTriage`/`readGraph`), `src/commands/graph-build.mjs` / `graph-query.mjs` / `graph-triage.mjs`
-(the three command bodies, added to the `COMMANDS` array in [command-core.mjs](../../../../../../src/command-core.mjs)),
-the new top-level `aof graph <verb>` dispatch in [cli.mjs](../../../../../../src/cli.mjs), and a committed
+(the three command bodies, added to the `COMMANDS` array in [command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs)),
+the new top-level `aof graph <verb>` dispatch in [cli.mjs](../../../../../../packages/core/src/cli.mjs), and a committed
 `graph.json` fixture for the normalizer contract test. It **calls** the existing 08 registry mechanics
 (`getCommand`/`listCommands`/`invoke`, `ctx = { workspace }`) — it does **not** rewrite them. It does
 **not** touch `config-inspect.mjs` doctor wiring (story 01), the rendered faces (story 02), or `test/arch/*`

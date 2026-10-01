@@ -638,7 +638,7 @@ env inheritance because "**this is an operator shell, not a sandboxed agent**". 
 default (not a claude/codex CLI)". `03_failure-and-cleanup.feature` then modelled
 `resolveProvider("node-pty")` throwing — wrong twice over: `node-pty` is the PTY mechanism, not a
 member of `PROVIDER_IDS` (`["claude","codex","gemini"]`), and `resolveProvider` returns **null** for
-an unknown id, it never throws ([terminal-providers.mjs:90-94](../../../../src/terminal-providers.mjs#L90-L94)).
+an unknown id, it never throws ([terminal-providers.mjs:90-94](../../../../packages/core/src/application/bindings/terminal-providers.mjs#L90-L94)).
 
 SPEC's objective states the missing verb as opening "a bare shell", and the out-of-scope list
 excludes "an agent-facing session API". The operator ruled for the shell reading.
@@ -723,18 +723,18 @@ amendment were both written to correct):
 `session-worktree-failed` ([:290](../../../../src/mesh-session-spawn-handler.mjs#L290)) and
 `session-spawn-failed` ([:311](../../../../src/mesh-session-spawn-handler.mjs#L311), [:315](../../../../src/mesh-session-spawn-handler.mjs#L315), [:340](../../../../src/mesh-session-spawn-handler.mjs#L340)) —
 and every one of them is carried by exactly one thing: `sendSessionSpawnAck`
-([worker-stream-client.mjs:847-854](../../../../src/worker-stream-client.mjs#L847)) building
+([worker-stream-client.mjs:847-854](../../../../packages/mesh/src/worker-stream-client.mjs#L847)) building
 `buildSessionSpawnAckFrame` ([mesh-session-spawn-directive.mjs:22-26](../../../../src/mesh-session-spawn-directive.mjs#L22)).
 The fleet face answered `200 { ok:true, sessionId }` several hundred milliseconds earlier.
 
 **2. Nothing reads that ack — and the control actively MIS-reports it.** The ack rides `sendFrame` up
 the fabric stream. In `control-stream-server.mjs`'s message handler it matches no branch
-(`heartbeat` [:1206](../../../../src/control-stream-server.mjs#L1206), `terminal-frame`
-[:1221](../../../../src/control-stream-server.mjs#L1221), `assignment-status`
-[:1234](../../../../src/control-stream-server.mjs#L1234)) and falls into `applyStreamFrame`, whose kind
+(`heartbeat` [:1206](../../../../packages/mesh/src/control-stream-server.mjs#L1206), `terminal-frame`
+[:1221](../../../../packages/mesh/src/control-stream-server.mjs#L1221), `assignment-status`
+[:1234](../../../../packages/mesh/src/control-stream-server.mjs#L1234)) and falls into `applyStreamFrame`, whose kind
 table ends `return { published:false, skipped:true, code:"unknown-frame-kind" }`
-([:812-824](../../../../src/control-stream-server.mjs#L812)). That `skipped:true` is then routed to
-`onFrameSkipped` ([:1255-1263](../../../../src/control-stream-server.mjs#L1255)) → the launcher's warning
+([:812-824](../../../../packages/mesh/src/control-stream-server.mjs#L812)). That `skipped:true` is then routed to
+`onFrameSkipped` ([:1255-1263](../../../../packages/mesh/src/control-stream-server.mjs#L1255)) → the launcher's warning
 emitter ([mesh-launcher.mjs:966-977](../../../../src/mesh-launcher.mjs#L966)), which writes to the
 daemon's durable log:
 
@@ -751,8 +751,8 @@ transport and a test, and **no reader anywhere in `src/`**.
 answers `session-target-not-connected` (503) from the fleet PROJECTION's presence freshness
 ([mesh-ui-serve.mjs:751](../../../../src/mesh-ui-serve.mjs#L751)), and that freshness is a **60-second
 ramp**: `queryGlobalRegistry`'s default `stalenessSeconds` is 60
-([global-node-registry.mjs:153](../../../../src/global-node-registry.mjs#L153)) and `freshnessFor` labels
-anything inside it `live` ([:303-309](../../../../src/global-node-registry.mjs#L303)) — and the session
+([global-node-registry.mjs:153](../../../../packages/mesh/src/global-node-registry.mjs#L153)) and `freshnessFor` labels
+anything inside it `live` ([:303-309](../../../../packages/mesh/src/global-node-registry.mjs#L303)) — and the session
 route calls `queryGlobalMeshStatus({ ...globalStoreOptions })` with no override
 ([mesh-ui-serve.mjs:709](../../../../src/mesh-ui-serve.mjs#L709)), so the default applies. A node whose
 admitted stream died 40 seconds ago is therefore `live` to the route, gets a 200, and its envelope
@@ -762,10 +762,10 @@ listening**. ADR-006 decision 7's pre-dispatch check is a best-effort proxy with
 window; the authoritative not-connected fact exists only post-200, in the other process.
 
 **4. The UP direction is already solved — for bytes, in production.** A worker's PTY chunk travels:
-`client.sendTerminalFrame` ([worker-stream-client.mjs:614-625](../../../../src/worker-stream-client.mjs#L614))
+`client.sendTerminalFrame` ([worker-stream-client.mjs:614-625](../../../../packages/mesh/src/worker-stream-client.mjs#L614))
 → fabric → `control-stream-server.mjs` branches `TERMINAL_FRAME_KIND` **before** `applyStreamFrame` and
 hands it to the injected `onTerminalFrame` sink, default no-op
-([:1069-1080](../../../../src/control-stream-server.mjs#L1069) declares it, [:1221-1228](../../../../src/control-stream-server.mjs#L1221)
+([:1069-1080](../../../../packages/mesh/src/control-stream-server.mjs#L1069) declares it, [:1221-1228](../../../../packages/mesh/src/control-stream-server.mjs#L1221)
 branches it) → [mesh-launcher.mjs:960](../../../../src/mesh-launcher.mjs#L960) pushes it into the loopback
 broker **with the connection-bound nodeId re-stamped over the worker's self-declared one** (finding
 F17) → [mesh-relay.mjs:594-604](../../../../src/mesh-relay.mjs#L594) fans it to every client except the
@@ -851,13 +851,13 @@ additive seams, each byte-identical in shape to a production predecessor:
   `onSessionSpawnAck = () => {}` option beside `onTerminalFrame`, and a
   `if (frame?.kind === SESSION_SPAWN_ACK_KIND) { try { onSessionSpawnAck(frame, { nodeId }); } catch
   (error) { reportDegrade(...); } return; }` branch placed **before** the `applyStreamFrame` call,
-  immediately after the `TERMINAL_FRAME_KIND` branch at [:1221-1228](../../../../src/control-stream-server.mjs#L1221).
+  immediately after the `TERMINAL_FRAME_KIND` branch at [:1221-1228](../../../../packages/mesh/src/control-stream-server.mjs#L1221).
   ~8 lines. Every existing caller is byte-identical (the default is a no-op), which is exactly the
   argument ADR-014's amendment made for `onTerminalFrame` against this same 39-dependent module. There
   is no alternative: the frame arrives on a socket only this module holds, and the relay broker binds
   loopback ([mesh-relay.mjs](../../../../src/mesh-relay.mjs)), so a worker cannot reach it off-host.
 - **The ack is NEVER a store apply.** It is not added to `applyStreamFrame`'s kind table
-  ([:812-824](../../../../src/control-stream-server.mjs#L812)). ADR-002 decision 6's no-persist clause and
+  ([:812-824](../../../../packages/mesh/src/control-stream-server.mjs#L812)). ADR-002 decision 6's no-persist clause and
   ADR-004 decision 5's "only the worker writes a session record" both stand; a failed spawn registers
   no session, so there is no record to hang an outcome on.
 - **`mesh-launcher.mjs` wires the sink as a LITERAL key at the production `startServer({...})` call**,
@@ -1101,8 +1101,8 @@ throwing or claiming.
 |---|---|---|---|
 | 1 | `assembleSessionRecord` ([mesh-session.mjs:142-152](../../../../src/mesh-session.mjs#L142)) | the m48/ADR-002 frozen SEVEN | **append an eighth**, the same re-freeze-by-insertion m48 itself performed on m38's six |
 | 2 | `readLiveSessions`'s projection ([mesh-presence.mjs:136-143](../../../../src/mesh-presence.mjs#L136)) | the m48/ADR-005 frozen ordered SIX | **append a seventh at the tail** — the shape that ADR already declares ("an INSERTION at the head and an APPEND at the tail, NEVER a reorder") |
-| 3 | `safeSessionArray` ([control-stream-server.mjs:272-276](../../../../src/control-stream-server.mjs#L272)) | passes each entry object **VERBATIM** | **NO CHANGE — and that is a decision.** It filters non-objects only; teaching it a key whitelist would end the verbatim property the m38 fabric bug was fixed by |
-| 4 | `buildSessionIndex`'s entry ([global-mesh-query.mjs:317-335](../../../../src/global-mesh-query.mjs#L317)) | the unconditional EIGHT-key entry | **append a ninth**, unconditional and strict-read, exactly as `workspaceHasRun` is |
+| 3 | `safeSessionArray` ([control-stream-server.mjs:272-276](../../../../packages/mesh/src/control-stream-server.mjs#L272)) | passes each entry object **VERBATIM** | **NO CHANGE — and that is a decision.** It filters non-objects only; teaching it a key whitelist would end the verbatim property the m38 fabric bug was fixed by |
+| 4 | `buildSessionIndex`'s entry ([global-mesh-query.mjs:317-335](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L317)) | the unconditional EIGHT-key entry | **append a ninth**, unconditional and strict-read, exactly as `workspaceHasRun` is |
 
 A projection that silently drops the key is the whole failure mode here — the browser would keep
 answering confidently from a field that never arrives — which is why hop 3's non-change is written down
@@ -1312,7 +1312,7 @@ accidental, exactly as `HOME_POLL_MS` already is ([page-state.mjs:346-357](../..
   authority question ("who may write another node's outcome?").
 - **Read the ack out of `onFrameSkipped`.** Rejected — it is a diagnostic channel that receives
   `{ code, nodeId, workspaceId, kind }` and **not the frame**, so `sessionId`, `ok` and `code` are all
-  already gone by the time it fires ([control-stream-server.mjs:1258-1263](../../../../src/control-stream-server.mjs#L1258)).
+  already gone by the time it fires ([control-stream-server.mjs:1258-1263](../../../../packages/mesh/src/control-stream-server.mjs#L1258)).
   Reaching an outcome through a "this frame was refused" hook would also enshrine the refusal as
   correct behaviour.
 - **Put the registry in `mesh-terminal-mirror.mjs`** (same species: fleet-face-side, in-memory,

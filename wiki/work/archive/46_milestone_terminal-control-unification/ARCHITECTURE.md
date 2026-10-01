@@ -201,7 +201,7 @@ arrive (`directiveTargets` is populated only inside `wss.on("connection")` by ad
 connections, and `meshRole` makes control/worker exclusive, so a control node holds no stream
 connection to itself; measured `{ sent: false, code: "assignment-target-not-connected" }`), and output
 is never produced (a board PTY's `term.onData` goes straight to its own WebSocket,
-[terminal-ws.mjs:290-296](../../../../src/terminal-ws.mjs#L290-L296)). Building it would need a
+[terminal-ws.mjs:290-296](../../../../packages/server/src/terminal-ws.mjs#L290-L296)). Building it would need a
 self-dialling stream client, a self-admission credential path through the boundary whose whole design
 is *admission is the trust boundary*, and a second producer — to replace a socket that already works.
 
@@ -368,16 +368,16 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
 >
 > **(1) The served route's HOME is `src/setup-ui.mjs`, not `src/board-ui.mjs` — steps 4 and 5 of the
 > decision list are superseded.** It shipped as **`GET /api/fleet-origin`** on `serveSetupUi`'s own
-> router ([setup-ui.mjs](../../../../src/setup-ui.mjs), the route at `:152` and the fact normalised once at
+> router ([setup-ui.mjs](../../../../packages/server/src/setup-ui.mjs), the route at `:152` and the fact normalised once at
 > construction, `FLEET_ORIGIN_SOURCES` `:43` → `fleetOriginFactOf` `:61` → `:92`; line numbers as measured
 > at this amendment, the route name is the stable citation), **beside its true siblings-in-kind
 > `/api/config` and `/api/capabilities`**, which live on that same router. The origin is NOT threaded
 > through `handleWorkApi`: `serveSetupUi` holds the fact and answers the route itself.
 >
 > **The reason, and it is this ADR's own argument one hop further along.**
-> [board-ui.mjs](../../../../src/board-ui.mjs) declares itself in its header a **THIN FACE** over the command
+> [board-ui.mjs](../../../../packages/server/src/board-ui.mjs) declares itself in its header a **THIN FACE** over the command
 > core carrying *"ZERO operation logic of its own"*, and its prefix guard returns `false` for anything
-> outside `/api/work` ([:42](../../../../src/board-ui.mjs#L42)) — so a route there would have to widen the
+> outside `/api/work` ([:42](../../../../packages/server/src/board-ui.mjs#L42)) — so a route there would have to widen the
 > guard that defines the face. The fleet origin is not a command-core operation and **has no workspace**,
 > while every route in that file is a `HTTP → invoke(id, input, { workspace })` adapter. Graph-measured at
 > this amendment (`aof graph build .`, no `--backend`; **8,973 nodes / 21,370 edges, `builtAt`
@@ -396,7 +396,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
 > kickoff rather than by whoever typed first. This records the choice.)
 >
 > **(2) The `source` enum has THREE values — `"launcher" | "default" | "none"`** (PO ruling
-> **F-46.02-1**), frozen at [setup-ui.mjs:43](../../../../src/setup-ui.mjs#L43). `"none"` is carried with an
+> **F-46.02-1**), frozen at [setup-ui.mjs:43](../../../../packages/server/src/setup-ui.mjs#L43). `"none"` is carried with an
 > **explicit `fleetOrigin: null`**, and it names the case the two-value enum could not: a board nobody
 > handed an origin to and whose command layer was never in the picture — which two production callers and
 > at least six existing suites already produce. `null` is explicit rather than `undefined` because
@@ -432,13 +432,13 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
      `serveBoard({ projectDir, port: 0, repoRoot, recordSessions: false })`
      ([:781-786](../../../../src/mesh-ui-serve.mjs#L781-L786)) and memoises it per workspace, so the
      origin rides that call as one additive option;
-  3. `serveBoard` ([board-serve.mjs:48](../../../../src/board-serve.mjs#L48),
-     [:63](../../../../src/board-serve.mjs#L63)) passes it to `serveSetupUi`;
+  3. `serveBoard` ([board-serve.mjs:48](../../../../packages/server/src/board-serve.mjs#L48),
+     [:63](../../../../packages/server/src/board-serve.mjs#L63)) passes it to `serveSetupUi`;
   4. `serveSetupUi` passes it to `handleWorkApi`
-     ([setup-ui.mjs:133](../../../../src/setup-ui.mjs#L133)), whose signature already takes an options
-     object ([board-ui.mjs:33](../../../../src/board-ui.mjs#L33));
+     ([setup-ui.mjs:133](../../../../packages/server/src/setup-ui.mjs#L133)), whose signature already takes an options
+     object ([board-ui.mjs:33](../../../../packages/server/src/board-ui.mjs#L33));
   5. the browser reads it from a named board route beside the others
-     ([board-ui.mjs:52](../../../../src/board-ui.mjs#L52) and siblings).
+     ([board-ui.mjs:52](../../../../packages/server/src/board-ui.mjs#L52) and siblings).
   **The payload names its own provenance** — `{ fleetOrigin, source: "launcher" | "default" }` — because
   the failure mode of a wrong origin is a pane that never streams and never says why, and "a refusal
   must name its own cause" is this codebase's rule for exactly that.
@@ -464,7 +464,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
   `index.html`). Rejected twice over: the SAME `ui/dist` bundle is served from three origins, and
   m45/ADR-002 has just retired `VITE_AOF_UI_MODE` for being a second, baked input to a decision that
   must have one. The static handler
-  ([setup-ui.mjs:152-177](../../../../src/setup-ui.mjs#L152-L177)) also serves `index.html` as the SPA
+  ([setup-ui.mjs:152-177](../../../../packages/server/src/setup-ui.mjs#L152-L177)) also serves `index.html` as the SPA
   fallback; templating it would put string surgery in the security-ordered path m45/ADR-004 just
   finished making boring.
 - **Move `DEFAULT_MESH_UI_PORT` into a new `src/ports.mjs` leaf.** Genuinely attractive — the port map
@@ -710,7 +710,7 @@ narrating comment in `scripts/test.mjs`; and the graph shows every OTHER export 
 streams through `onOutputChunk: (chunk, sessionId) => client.sendTerminalFrame(sessionId,
 String(chunk))` ([mesh-launcher.mjs:1152](../../../../src/mesh-launcher.mjs#L1152),
 [:1291](../../../../src/mesh-launcher.mjs#L1291)) into
-[worker-stream-client.mjs:601-612](../../../../src/worker-stream-client.mjs#L601-L612).
+[worker-stream-client.mjs:601-612](../../../../packages/mesh/src/worker-stream-client.mjs#L601-L612).
 
 Yet [acd-fleet-terminal-input-constrained's detector #4](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L244-L247)
 asserts `wireTerminalBridge` *"does not build its signal from `String(chunk)`"* — a positive assertion
@@ -771,15 +771,15 @@ know this function is dead. Nobody deleted it, and one gate is still aimed at it
 **Date:** 2026-08-08
 
 **Context, measured by spike 44 and re-read at source here.**
-[terminal-ws.mjs](../../../../src/terminal-ws.mjs) accepts the upgrade at
-[:115-131](../../../../src/terminal-ws.mjs#L115-L131) and emits `connection` at
-[:133-140](../../../../src/terminal-ws.mjs#L133-L140), but registers `ws.on("message")` only at
-[:306](../../../../src/terminal-ws.mjs#L306), inside `wireSession`
-([:276](../../../../src/terminal-ws.mjs#L276)), which is called at
-[:270](../../../../src/terminal-ws.mjs#L270) — **after** `loadWorkspace`
-([:181](../../../../src/terminal-ws.mjs#L181)), `await trustCwd`
-([:194](../../../../src/terminal-ws.mjs#L194)) and `await spawn`
-([:237](../../../../src/terminal-ws.mjs#L237)). Frames arriving in that window are dropped on the floor:
+[terminal-ws.mjs](../../../../packages/server/src/terminal-ws.mjs) accepts the upgrade at
+[:115-131](../../../../packages/server/src/terminal-ws.mjs#L115-L131) and emits `connection` at
+[:133-140](../../../../packages/server/src/terminal-ws.mjs#L133-L140), but registers `ws.on("message")` only at
+[:306](../../../../packages/server/src/terminal-ws.mjs#L306), inside `wireSession`
+([:276](../../../../packages/server/src/terminal-ws.mjs#L276)), which is called at
+[:270](../../../../packages/server/src/terminal-ws.mjs#L270) — **after** `loadWorkspace`
+([:181](../../../../packages/server/src/terminal-ws.mjs#L181)), `await trustCwd`
+([:194](../../../../packages/server/src/terminal-ws.mjs#L194)) and `await spawn`
+([:237](../../../../packages/server/src/terminal-ws.mjs#L237)). Frames arriving in that window are dropped on the floor:
 no buffer, no error, no log.
 
 The client hits it on every single session:
@@ -807,9 +807,9 @@ or a 700 ms fallback ([:186-198](../../../../ui/src/board/TerminalDock.tsx#L186-
   named constant in the same spirit as the input lane's `MAX_TERMINAL_INPUT_BYTES`
   ([mesh-ui-serve.mjs:173](../../../../src/mesh-ui-serve.mjs#L173)); over the ceiling the OLDEST
   frames are dropped, not the newest, because the newest resize is the true one.
-- **The error paths are unchanged.** An unknown provider ([:153-157](../../../../src/terminal-ws.mjs#L153-L157)),
-  a missing binary ([:206-214](../../../../src/terminal-ws.mjs#L206-L214)) or a failed spawn
-  ([:244-253](../../../../src/terminal-ws.mjs#L244-L253)) still send the error control-frame and close; the
+- **The error paths are unchanged.** An unknown provider ([:153-157](../../../../packages/server/src/terminal-ws.mjs#L153-L157)),
+  a missing binary ([:206-214](../../../../packages/server/src/terminal-ws.mjs#L206-L214)) or a failed spawn
+  ([:244-253](../../../../packages/server/src/terminal-ws.mjs#L244-L253)) still send the error control-frame and close; the
   queue dies with the socket. m03/ADR-003's honest degrade is untouched.
 - **The client keeps `onopen → sendResize()` exactly as written.** The point of a server-side fix is
   that the obvious client code becomes correct. The `ResizeObserver` stays because it is needed anyway —
@@ -1035,9 +1035,9 @@ Six findings, each routed.
    and that the remaining work is the ramp/vocabulary layer.
 
 4. **The product's port map has FOUR homes and one live inconsistency.** Measured:
-   [setup-ui.mjs:26](../../../../src/setup-ui.mjs#L26) defaults `4177`;
-   [board-serve.mjs:48](../../../../src/board-serve.mjs#L48) `serveBoard` defaults **`4178`** while
-   [boardUiProbe:33](../../../../src/board-serve.mjs#L33) and `src/commands/work-ui.mjs:25` both say
+   [setup-ui.mjs:26](../../../../packages/server/src/setup-ui.mjs#L26) defaults `4177`;
+   [board-serve.mjs:48](../../../../packages/server/src/board-serve.mjs#L48) `serveBoard` defaults **`4178`** while
+   [boardUiProbe:33](../../../../packages/server/src/board-serve.mjs#L33) and `src/commands/work-ui.mjs:25` both say
    **`4180`**; `src/commands/assets-ui.mjs:22` says `4177` with an api port of `4178`;
    [mesh-ui-serve.mjs:116](../../../../src/mesh-ui-serve.mjs#L116) says `4181` and its comment
    ([:113-115](../../../../src/mesh-ui-serve.mjs#L113-L115)) narrates the whole map from one of its four

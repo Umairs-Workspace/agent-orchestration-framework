@@ -172,7 +172,7 @@ Everything in the right column bounds what this surface may do. Facts marked **(
 
 | Fact | Where it lives | Consequence for this design |
 |---|---|---|
-| **The grid is very often EMPTY, and that is ORDINARY.** All three live nodes report `sessions: []` while two of them report non-empty `activeRuns` **(R)** | RESEARCH §Q1; the bundle ships session hooks for **`runtimes: ["codex"]` only** ([bundle.json:12-14](../../../../src/bundle/bundle.json#L12); Claude's only hook member is `claude-artifact-sync`, [:15-16](../../../../src/bundle/bundle.json#L15)) | **§DG-49-1.** The empty state is the state an operator most likely sees FIRST. It gets two variants and it names the producer-side reason. |
+| **The grid is very often EMPTY, and that is ORDINARY.** All three live nodes report `sessions: []` while two of them report non-empty `activeRuns` **(R)** | RESEARCH §Q1; the bundle ships session hooks for **`runtimes: ["codex"]` only** ([bundle.json:12-14](../../../../packages/core/assets/bundle.json#L12); Claude's only hook member is `claude-artifact-sync`, [:15-16](../../../../packages/core/assets/bundle.json#L15)) | **§DG-49-1.** The empty state is the state an operator most likely sees FIRST. It gets two variants and it names the producer-side reason. |
 | **A pane can be addressable and never receive a byte.** Only a worker's assignment execution feeds the relay — two call sites **(R)** | RESEARCH §Q1 (`src/mesh-launcher.mjs:1151`, `:1290`) | **§DG-49-2.** A free session (`workItem: null`) is honestly stuck at `waiting` forever. `waiting for output` forever is a lie. |
 | **Agent state has ONE real producer and it is assignment-scoped**, and the wire drops it at exactly one hop **(R)** | `needs-input` at `src/mesh-worker-execution.mjs:90,1124,1186,1201`, carried on the assignment `code` column (`src/assignment-record.mjs:114-116`), **not copied by `projectAssignment`** (`src/global-mesh-query.mjs:132-148`) | **§DG-49-3.** One mark, one word, present only when asserted. A free session has no signal at all and gets no mark. |
 | **Client-side content-sniffing to infer state is fitness-gated** **(R)** | RESEARCH §Q2; `source-table.mjs:126-137`; `test/arch/acd-fleet-terminal-input-constrained.test.mjs:214-218` | Agent state may only come from a producer-side fact on the wire. **Never from the bytes.** |
@@ -202,7 +202,7 @@ gap. **Everything else it renders is on the payload today.**
 **Measured (R):** every node on the real three-node fleet reports `sessions: []` right now, while two
 of them report a non-empty `activeRuns`. The cause is producer-side and structural: a presence session
 record exists only where the workspace wires the assistant's session hooks, and the shipped bundle
-wires them for **Codex only** ([bundle.json:12-14](../../../../src/bundle/bundle.json#L12)).
+wires them for **Codex only** ([bundle.json:12-14](../../../../packages/core/assets/bundle.json#L12)).
 
 **So an operator opening `/` for the first time will very likely see nothing while agents are
 demonstrably working.** A single `No live sessions.` would be true of the array and false about the

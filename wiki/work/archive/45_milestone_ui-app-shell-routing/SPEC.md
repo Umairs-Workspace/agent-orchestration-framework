@@ -39,10 +39,10 @@ Origin: [PRD — Web UI Restructure](../../../planning/PRD-web-ui-restructure.md
 404 a client-side path on refresh. The fleet server does not — it already falls back to `index.html`
 ([mesh-ui-serve.mjs:528-533](../../../../src/mesh-ui-serve.mjs#L528-L533)), so `/fleet` deep-linked on
 `:4181` renders today. The gap is `safeStaticPath` in
-[setup-ui.mjs:269](../../../../src/setup-ui.mjs#L269), reached via
-[:130](../../../../src/setup-ui.mjs#L130) — a literal file lookup with no fallback — and that one handler
+[setup-ui.mjs:269](../../../../packages/server/src/setup-ui.mjs#L269), reached via
+[:130](../../../../packages/server/src/setup-ui.mjs#L130) — a literal file lookup with no fallback — and that one handler
 backs **both** the board and the config editor, because `board-serve.mjs` delegates to `serveSetupUi`
-([board-serve.mjs:20](../../../../src/board-serve.mjs#L20)). So this is one server-side fix, not two.
+([board-serve.mjs:20](../../../../packages/server/src/board-serve.mjs#L20)). So this is one server-side fix, not two.
 
 ## Scope
 

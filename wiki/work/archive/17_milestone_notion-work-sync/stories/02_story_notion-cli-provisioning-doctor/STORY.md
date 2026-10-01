@@ -78,10 +78,10 @@ edited; surfaced by `aof project doctor`'s existing `managed-tool`/`tool-platfor
 auth-reachability advisory). The `data_source_id` (`§A7`), `statusMap` (`§A4`), and relation property (`§A3`)
 shapes come from RESEARCH.
 
-This story **owns**: the `NOTION_DESCRIPTOR` in [tool-store.mjs](../../../../../../src/tool-store.mjs)'s
+This story **owns**: the `NOTION_DESCRIPTOR` in [tool-store.mjs](../../../../../../packages/core/src/tool-store.mjs)'s
 `TOOL_DESCRIPTORS`; the `work.integrations.notion` block in
 [aof.schema.json](../../../../../../schemas/aof.schema.json) (`$defs.work`) + its `validateConfig` acceptance in
-[config-inspect.mjs](../../../../../../src/config-inspect.mjs); the env-var-reference auth read + `NOTION_KEYRING=0`
+[config-inspect.mjs](../../../../../../packages/core/src/application/bindings/config-inspect.mjs); the env-var-reference auth read + `NOTION_KEYRING=0`
 pass-through; the auth-reachability advisory check on `doctorConfig.checks[]`. It **reuses** the m12 registry,
 the `managed-tool`/`provider-prereq`/`tool-platform` checks, and the npx provisioning lane unchanged.
 

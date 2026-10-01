@@ -56,8 +56,8 @@ story **owns**: `src/mesh-presence.mjs` (the presence-record assembly, the node-
 (`mesh:heartbeat` — the **git-only** publish via story-00's reserved `presenceRecordPath`) + the extension of
 `mesh:status` (which lives in [commands/mesh-identity.mjs](../../../../../../src/commands/mesh-identity.mjs)) to
 render presence + the stale flag, their registration in
-[command-core.mjs](../../../../../../src/command-core.mjs) (one import + one `COMMANDS` entry), the `aof mesh
-heartbeat` dispatch branch + `argsFor` case in [cli.mjs](../../../../../../src/cli.mjs)'s `meshCommand`, the two
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs) (one import + one `COMMANDS` entry), the `aof mesh
+heartbeat` dispatch branch + `argsFor` case in [cli.mjs](../../../../../../packages/core/src/cli.mjs)'s `meshCommand`, the two
 arch-tests above + their registration in [scripts/test.mjs](../../../../../../scripts/test.mjs), **and the two
 carry-forward structural deliverables**: the `.gitattributes` `.mesh/**` EOL pin (F1/R5) and the self-host
 `.gitignore wiki/work/.mesh/` (R4 — the aof self-host repo is not itself a mesh node, so a live `mesh:*` run
@@ -89,7 +89,7 @@ heartbeatAt, activeRuns, aofVersion}`; `activeRuns` = `readRuns(item)` across th
 — mapped to run ids, **no** re-implemented scan, **no** run-record mutation), persisted git-only via the
 m22-reserved `presenceRecordPath` ([mesh-store.mjs:73](../../../../../../src/mesh-store.mjs#L73)) through the
 atomic `writeText` seam. The node-staleness predicate reuses 20's `isStale` shape verbatim (strict `>`, UTC-Z
-`Date.parse` on `heartbeatAt`, [run-store.mjs:382–386](../../../../../../src/run-store.mjs#L382)). `mesh:status`
+`Date.parse` on `heartbeatAt`, [run-store.mjs:382–386](../../../../../../packages/core/src/application/bindings/run-store.mjs#L382)). `mesh:status`
 extends the existing render in [commands/mesh-identity.mjs:138–169](../../../../../../src/commands/mesh-identity.mjs#L138).
 The two carry-forwards (the `.gitattributes` `.mesh/** text eol=lf` pin + the self-host `.gitignore
 wiki/work/.mesh/`) are one-line additive deliverables on files that already exist. The `aof mesh heartbeat`
@@ -130,16 +130,16 @@ turns the gate RED (the m22 lesson). **The two QA flags are resolved (both LOCKE
   null, 2))` mirroring `publishNodeRecord` ([mesh-store.mjs:102–105](../../../../../../src/mesh-store.mjs#L102))
   — pretty JSON, opaque/as-is, so read-back is byte-equivalent.
 - **`activeRuns` is a READ of the run records, never a re-scan or a mutation (ADR-002, the `23 → 20 → 19` seam).**
-  `activeRuns` = the in-flight run ids across the work items: `readRuns(item)` ([run-store.mjs:240](../../../../../../src/run-store.mjs#L240))
+  `activeRuns` = the in-flight run ids across the work items: `readRuns(item)` ([run-store.mjs:240](../../../../../../packages/core/src/application/bindings/run-store.mjs#L240))
   per item, `filter(run => run.state === "running")` (the **sole** in-flight state — `queued` is pre-running,
   `done`/`failed`/`cancelled` are terminal, confirmed in the closed transition table), `.map(run => run.runId)`.
   Do **NOT** re-implement a run scan and do **NOT** call `heartbeat`/`persist`/`applyTransition` (the task-00
   "byte-identical run record after the heartbeat" scenario fails the moment presence writes the run dimension).
-  The item-list-as-input shape is the same one `reclaimStaleRuns` takes ([run-store.mjs:399](../../../../../../src/run-store.mjs#L399))
+  The item-list-as-input shape is the same one `reclaimStaleRuns` takes ([run-store.mjs:399](../../../../../../packages/core/src/application/bindings/run-store.mjs#L399))
   — pass the items, never assume a single directory.
 - **Node-staleness reuses 20's `isStale` shape — never a parallel heartbeat (the genuine `23 → 20` seam).**
   The predicate is `now − Date.parse(heartbeatAt) > threshold` (strict `>`, UTC-Z) — the **exact** shape at
-  [run-store.mjs:382–386](../../../../../../src/run-store.mjs#L382) applied to the presence record's `heartbeatAt`.
+  [run-store.mjs:382–386](../../../../../../packages/core/src/application/bindings/run-store.mjs#L382) applied to the presence record's `heartbeatAt`.
   `isStale` there is module-private (not exported); export it from `run-store.mjs` (additive) and import it into
   `mesh-presence.mjs`, OR mirror the three-line shape verbatim with a citing comment — prefer the export so the
   two layers provably share one definition. The AT-threshold row (age 60 == threshold 60 ⇒ **live**, because
@@ -153,8 +153,8 @@ turns the gate RED (the m22 lesson). **The two QA flags are resolved (both LOCKE
   the `{ id:"mesh:heartbeat", input, run, cli }` shape, `run` assembles + persists the record and returns it,
   `cli` carries `argv`/`render`/`json`. This story ships it **git-only** (no relay import — story 02 adds the
   best-effort relay push on top; story 01 is parallel). Register it in
-  [command-core.mjs](../../../../../../src/command-core.mjs) (one import + one `COMMANDS` entry) and add the
-  `subcommand === "heartbeat"` dispatch branch in `meshCommand` ([cli.mjs:467](../../../../../../src/cli.mjs#L467),
+  [command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs) (one import + one `COMMANDS` entry) and add the
+  `subcommand === "heartbeat"` dispatch branch in `meshCommand` ([cli.mjs:467](../../../../../../packages/core/src/cli.mjs#L467),
   reusing the shared `meshVerbCli` face, `positionalAllowed: false`) — additive, the same idiom as the
   `identity`/`status`/`sync` branches.
 - **The `argsFor` case is load-bearing — add it in the SAME change.** Add `case "heartbeat": return ["mesh",

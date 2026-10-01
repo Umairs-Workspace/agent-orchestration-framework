@@ -31,7 +31,7 @@ so that every operation the board exposes is also runnable from the CLI (the com
 ## Notes
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-003**). This story **owns** the
-`workCommand` dispatch in [cli.mjs](../../../../../../src/cli.mjs) (~line 189): three NEW subcommands
+`workCommand` dispatch in [cli.mjs](../../../../../../packages/core/src/cli.mjs) (~line 189): three NEW subcommands
 `work doc` / `work tasks` / `work feedback` (each `argv → command → result`), and the **rewire** of
 `work list` / `work validate` / `work next` to invoke the registry — their existing `--json` and human
 renders become the command's **CLI face adapter** (cwd-relative paths, `validate`'s bare-array `--json`,

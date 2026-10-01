@@ -44,9 +44,9 @@ shape — no new parser/shape; extend `scanImportStore` by one existing parser),
 information — no fabricated section).
 
 This story **owns** the conditional digest emission in
-[src/import/materialize.mjs](../../../../../../src/import/materialize.mjs) (`renderDigest` + the zero-record
+[src/import/materialize.mjs](../../../../../../packages/knowledge/src/import/materialize.mjs) (`renderDigest` + the zero-record
 predicate `emitsDigest`) and the one-line digest read in `scanImportStore`
-([src/memory/local-indexing.mjs](../../../../../../src/memory/local-indexing.mjs)). It **calls** the existing
+([src/memory/local-indexing.mjs](../../../../../../packages/knowledge/src/memory/local-indexing.mjs)). It **calls** the existing
 `parseAof` unchanged; it touches no parser internals, no record shape, no index path, no graphify code.
 
 **Independent because** it is a localised additive change (the `05/ADR-007` model) behind story 00's frozen

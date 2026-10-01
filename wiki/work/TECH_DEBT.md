@@ -870,9 +870,9 @@ Five servers, four homes for the numbers, and they do not agree:
 
 | home | says |
 |---|---|
-| [src/setup-ui.mjs:26](../../src/setup-ui.mjs#L26) | `4177` |
-| [src/board-serve.mjs:60](../../src/board-serve.mjs#L60) — `serveBoard` | **`4178`** |
-| [src/board-serve.mjs:33](../../src/board-serve.mjs#L33) — `boardUiProbe`, and `src/commands/work-ui.mjs:25` | **`4180`** |
+| [src/setup-ui.mjs:26](../../packages/server/src/setup-ui.mjs#L26) | `4177` |
+| [src/board-serve.mjs:60](../../packages/server/src/board-serve.mjs#L60) — `serveBoard` | **`4178`** |
+| [src/board-serve.mjs:33](../../packages/server/src/board-serve.mjs#L33) — `boardUiProbe`, and `src/commands/work-ui.mjs:25` | **`4180`** |
 | `src/commands/assets-ui.mjs:22` | `4177`, api port `4178` |
 | [src/mesh-ui-serve.mjs:154](../../src/mesh-ui-serve.mjs#L154) | `4181`, with a comment at [:113-115](../../src/mesh-ui-serve.mjs#L113) narrating the whole map from one of its four homes |
 
@@ -1989,7 +1989,7 @@ claim that admission alone carries revocation. It is a pre-existing, mesh-wide g
 introduced nor worsened it — so it is recorded rather than charged to that story.)*
 
 **What's wrong, read at source.**
-[control-stream-server.mjs:959-963](../../src/control-stream-server.mjs#L959) is the composed dispatch
+[control-stream-server.mjs:959-963](../../packages/mesh/src/control-stream-server.mjs#L959) is the composed dispatch
 entry point, and its T2 half is:
 
 ```js
@@ -2001,7 +2001,7 @@ if (directive?.issuer != null && isRevokedLocal(getMeshRegistry(), directive.iss
 `grep -rn issuer src/` finds the field in `assignment-record.mjs`, `global-work-store.mjs`,
 `global-mesh-query.mjs`, `mesh-assignment.mjs` and `mesh-ui-serve.mjs` — **the record and the verb**.
 It appears in **no frame builder**: not `buildDirectiveFrame`
-([control-stream-server.mjs:874](../../src/control-stream-server.mjs#L874), the assignment down-frame),
+([control-stream-server.mjs:874](../../packages/mesh/src/control-stream-server.mjs#L874), the assignment down-frame),
 not the terminal-input/resume frames the router mints
 ([mesh-terminal-input.mjs:85,155](../../src/mesh-terminal-input.mjs#L85)), not
 `buildSessionSpawnFrame`. So `directive.issuer` is `undefined` on **every** directive this control
@@ -2009,12 +2009,12 @@ dispatches, the guard short-circuits, and the branch has never executed in produ
 
 **How it bites.** The comment three lines above it states the control it does not perform — *"a
 directive whose `issuer` is revoked never routes, even over an admitted stream"* — and
-[:1051-1055](../../src/control-stream-server.mjs#L1051) repeats it as the reason `getMeshRegistry` is
+[:1051-1055](../../packages/mesh/src/control-stream-server.mjs#L1051) repeats it as the reason `getMeshRegistry` is
 read per-decision. Revocation is therefore enforced **only at admission**
-([:1145-1163](../../src/control-stream-server.mjs#L1145), where the enrollment credential is verified
+([:1145-1163](../../packages/mesh/src/control-stream-server.mjs#L1145), where the enrollment credential is verified
 against the roster). Nothing closes an already-open socket when a node is revoked, and
 `directiveTargets` is cleared only on that socket's own close
-([:1273-1278](../../src/control-stream-server.mjs#L1273)) — so **a peer revoked after it connected keeps
+([:1273-1278](../../packages/mesh/src/control-stream-server.mjs#L1273)) — so **a peer revoked after it connected keeps
 receiving every directive until it disconnects for some unrelated reason**. The dormant guard is what
 makes that invisible: three separate texts (the code comment, the per-decision-read rationale, and
 50/ADR-006 decision 4's *"a revoked or unadmitted control↔worker pair has no target entry"*) assert a
@@ -2105,7 +2105,7 @@ stranded entries the launcher would report failed/daemon-restarted: ["session-50
 ```
 
 **How it bites.** Bounded today — `updateAssignmentState` returns `null` for an unknown id
-([assignment-record.mjs:174-175](../../src/assignment-record.mjs#L174)), so no phantom row is written,
+([assignment-record.mjs:174-175](../../packages/mesh/src/assignment-record.mjs#L174)), so no phantom row is written,
 and the refused step is acked and settled rather than retried forever. What survives is per-restart,
 per-directory, forever: a false `startup-reclaim` warning naming an assignment that never existed, a
 durable journal step for it, and a full `listItems` + `readRuns` sweep of the checkout looking for its
@@ -3377,9 +3377,9 @@ module-private** — none exports its resolver:
 
 | module | notes |
 | --- | --- |
-| [`src/terminal-providers.mjs:33`](../../src/terminal-providers.mjs#L33) | the **only** one that handles `PATHEXT` correctly |
-| [`src/tool-store.mjs:143`](../../src/tool-store.mjs#L143) | |
-| [`src/config-inspect.mjs:567`](../../src/config-inspect.mjs#L567) | |
+| [`src/terminal-providers.mjs:33`](../../packages/core/src/application/bindings/terminal-providers.mjs#L33) | the **only** one that handles `PATHEXT` correctly |
+| [`src/tool-store.mjs:143`](../../packages/core/src/tool-store.mjs#L143) | |
+| [`src/config-inspect.mjs:567`](../../packages/core/src/application/bindings/config-inspect.mjs#L567) | |
 
 Milestone 72/ADR-001 §5b adds a fourth in `src/work-toolchain.mjs`, knowingly. It has to: the seam it
 guards (`runBounded`) refuses a shell string but passes a bare name through to the OS

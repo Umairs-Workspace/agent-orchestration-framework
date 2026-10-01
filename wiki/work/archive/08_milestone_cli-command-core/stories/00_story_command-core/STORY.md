@@ -40,8 +40,8 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md). This story **ow
 `{ id, input, run, cli } → result` contract, **ADR-002**) — and `src/commands/{list,doc,tasks,validate,next,feedback}.mjs`
 (the six command bodies). It moves the bespoke `handleDoc` / `handleTasks` / `handleFeedback` /
 `appendFeedbackBullet` logic and the `resolveItem` / `resolveItemExact` resolvers **out of
-[board-ui.mjs](../../../../../../src/board-ui.mjs)** and into the commands. It *calls* the existing
-[work.mjs](../../../../../../src/work.mjs) exports (`listStream` / `validateWork` / `nextWork` / `findWork`) —
+[board-ui.mjs](../../../../../../packages/server/src/board-ui.mjs)** and into the commands. It *calls* the existing
+[work.mjs](../../../../../../packages/core/src/application/bindings/work.mjs) exports (`listStream` / `validateWork` / `nextWork` / `findWork`) —
 it does **not** rewrite them. It does **not** touch `cli.mjs` dispatch or `board-ui.mjs` routes (those are
 stories 01 / 02).
 

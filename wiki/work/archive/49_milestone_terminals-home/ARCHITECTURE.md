@@ -131,7 +131,7 @@ doc: architecture
 >    (`startSession`/`pingSession` have exactly one production caller,
 >    [commands/mesh-session.mjs:318,323](../../../../src/commands/mesh-session.mjs#L318); the bundle
 >    wires session hooks for `runtimes: ["codex"]` only,
->    [bundle.json:12-16](../../../../src/bundle/bundle.json#L12)) — but its CONSEQUENCE for the grid's
+>    [bundle.json:12-16](../../../../packages/core/assets/bundle.json#L12)) — but its CONSEQUENCE for the grid's
 >    row set is sharper than RESEARCH states, and ADR-002 is where it lands: **an assignment with a
 >    captured `sessionId` and no presence record renders a live terminal on its milestone CARD and no
 >    row in the terminals home.** That inconsistency is the reason ADR-005 exists.
@@ -570,7 +570,7 @@ board origin — so it can only ever resolve against the frozen table's `mirror`
   there is exactly one per surface and why `acd-terminal-control-boundary`'s call-site floor rises
   from 2 to 3.
 - **THE GRID ENUMERATES FROM `status.sessions[]` AND FROM NOTHING ELSE.** m48/ADR-003 and ADR-007
-  made `buildSessionIndex` ([global-mesh-query.mjs:197](../../../../src/global-mesh-query.mjs#L197)) the
+  made `buildSessionIndex` ([global-mesh-query.mjs:197](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L197)) the
   one authority over "what live sessions exist across the mesh", a pure projection that performs no
   I/O, reads no clock and stores nothing. **An assignment is not a session.** No module under
   `ui/src/home/` may read `status.items[]` or an `assignment` row to produce a ROW; it may join them
@@ -596,7 +596,7 @@ board origin — so it can only ever resolve against the frozen table's `mirror`
   m47/ADR-011). **The reversal condition, named:** the first pane opened from a `ref` rather than
   from an index row is the change that earns the field.
 - **A ROW THAT CANNOT BE ADDRESSED IS NOT A PANE.** `MeshSession.sessionId` is a non-empty string by
-  the index's own construction ([global-mesh-query.mjs:280](../../../../src/global-mesh-query.mjs#L280)
+  the index's own construction ([global-mesh-query.mjs:280](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L280)
   skips anonymous sessions), so a half-tuple should be unreachable — and the mount module still
   returns the `noPanel` shape for one, exactly as `fleetTerminalMount` does
   ([:130-146](../../../../apps/ui/src/fleet/terminal-mount.mjs#L130)). "No stream" is a first-class honest
@@ -660,7 +660,7 @@ them is:
 | the fact SPEC names | is it a transport state? | what it actually is |
 |---|---|---|
 | **no live sessions at all** | no — there is no pane | a GRID-level empty state |
-| **a node unreachable** | no — the pane never exists | `buildSessionIndex` gates on `node.freshness !== "live"` ([global-mesh-query.mjs:261](../../../../src/global-mesh-query.mjs#L261)), so a stale node contributes ZERO sessions. **SPEC lists this as a degraded pane state; measured, it cannot be one** — the row simply leaves the index |
+| **a node unreachable** | no — the pane never exists | `buildSessionIndex` gates on `node.freshness !== "live"` ([global-mesh-query.mjs:261](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L261)), so a stale node contributes ZERO sessions. **SPEC lists this as a degraded pane state; measured, it cannot be one** — the row simply leaves the index |
 | **a session that ended mid-view** | **YES — already produced** | the ramp's `ended`. The worker's end-of-stream closes the browser socket ([mesh-ui-serve.mjs:726-733](../../../../src/mesh-ui-serve.mjs#L726)) and, since F-38.06g, a late subscriber replaying an ended tail gets the end too ([mesh-terminal-mirror.mjs:202-208](../../../../src/mesh-terminal-mirror.mjs#L202)). **No new word.** |
 | **origin unresolvable** | **YES — already exists** | the ramp's `unavailable` with three frozen causes. Unreachable in m49 (ADR-002) |
 | **addressable but never fed** | **NO** | transport-wise it is EXACTLY `waiting`: the socket is open and nothing has been said. What is new is a statement about whether a PRODUCER exists |
@@ -771,7 +771,7 @@ call site anywhere in `src/` will ever feed this tuple**.
   and the reason is structural rather than a preference.**) A stale node's presence file is frozen on
   disk **with its `activeRuns` inside it**, so a non-live node reports runs forever; that is the exact
   hazard `buildSessionIndex` gates on when it drops every session from a node whose `freshness !==
-  "live"` ([global-mesh-query.mjs:261](../../../../src/global-mesh-query.mjs#L261)), and m48's own
+  "live"` ([global-mesh-query.mjs:261](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L261)), and m48's own
   Assumption states it — *"the index's freshness gate is node-level"*. **If the empty state counted a
   stale node, its claim would derive from a DIFFERENT liveness rule than the row set it is explaining**
   — two authorities over liveness on one screen, which is m48/ADR-003 one layer up, and the pane it
@@ -846,10 +846,10 @@ stays `running`**, as `sendAssignmentStatus(assignmentId, "running", { code: "ne
 [:2702](../../../../src/mesh-worker-execution.mjs#L2702),
 [:3158](../../../../src/mesh-worker-execution.mjs#L3158)). It is persisted on the assignment record's
 `code` column and rides the SHARED row mapper
-([assignment-record.mjs:114-116](../../../../src/assignment-record.mjs#L114)), which every reader uses.
+([assignment-record.mjs:114-116](../../../../packages/mesh/src/assignment-record.mjs#L114)), which every reader uses.
 
 **And the fleet's wire projection drops it at exactly one hop.** `projectAssignment`
-([global-mesh-query.mjs:132-148](../../../../src/global-mesh-query.mjs#L132)) copies eight fields plus an
+([global-mesh-query.mjs:132-148](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L132)) copies eight fields plus an
 optional `sessionId`; `code` is not among them. `grep -rn "needs-input" ui/src` returns nothing, and
 `WorkAssignment` ([api.ts:117-126](../../../../apps/ui/src/fleet/api.ts#L117)) has no `code`. The fact is
 produced, captured, persisted and mapped — and has never reached a browser.
@@ -863,7 +863,7 @@ it" — it is "there is nothing to derive it from".
 - **(a) THE HOP: `code` joins `projectAssignment`'s copied set and `WorkAssignment`'s type.** One
   field, one function, one type — additive, "absent, not false" (an assignment with no code omits the
   key entirely, the same house rule `sessionId` already follows at
-  [:145-147](../../../../src/global-mesh-query.mjs#L145)). Nothing else moves: no new column, no new
+  [:145-147](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L145)). Nothing else moves: no new column, no new
   producer, no second vocabulary, and **no change to `src/assignment-record.mjs`** — the graph reports
   it at **38 dependents**, a genuine god-node, and the mapper already carries the field.
 - **(b) `needs-input` IS THE WHOLE AGENT-STATE VOCABULARY OF THIS MILESTONE, and it composes as a
@@ -925,9 +925,9 @@ boundary is correct and it has a cost, and the cost is measurable at source.
 ([commands/mesh-session.mjs:318,323](../../../../src/commands/mesh-session.mjs#L318)), which fires only
 from a `SessionStart`/`UserPromptSubmit`/`SessionEnd` hook in the **cwd's own** hook config. The
 distributed bundle ships that triple for `runtimes: ["codex"]` only
-([bundle.json:12-14](../../../../src/bundle/bundle.json#L12)); the sole `runtimes: ["claude"]` hook
+([bundle.json:12-14](../../../../packages/core/assets/bundle.json#L12)); the sole `runtimes: ["claude"]` hook
 member is `claude-artifact-sync`, which is `PostToolUse` and unrelated
-([:15-16](../../../../src/bundle/bundle.json#L15)). This repo gets Claude session records because its
+([:15-16](../../../../packages/core/assets/bundle.json#L15)). This repo gets Claude session records because its
 own `.claude/settings.json` was hand-authored on the first mesh commit — a **dogfooding artefact**,
 not something `aof work init`/`update` gives anyone.
 
@@ -1125,7 +1125,7 @@ The three constraints that ARE binding:
 > **(3) THE GRID'S DISPLAY ORDER IS `(nodeId, repo, sessionId)` — `DESIGN §focus model` rule 7 WINS,
 > and this ADR's "the index's own deterministic order" is superseded AS A DISPLAY ORDER.** The two
 > documents disagreed in writing: the index sorts `(nodeId, sessionId)`
-> ([global-mesh-query.mjs:331-335](../../../../src/global-mesh-query.mjs#L331)) and DESIGN wants `repo`
+> ([global-mesh-query.mjs:331-335](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L331)) and DESIGN wants `repo`
 > between them. **DESIGN wins, on m46/ADR-005's own precedent** — *"the state words are what the
 > operator reads, DESIGN owns that surface"* — and grid order is read by the operator on every glance:
 > scanning a machine's panes by project is the whole reason a fleet grid groups rather than lists.
@@ -1465,9 +1465,9 @@ and the fallback would be a branch no test could reach.
 sessionId, bytes)` → `terminalInputPush` → `createTerminalInputRouter` →
 `dispatchDirective({ to: nodeId })`, which resolves against `directiveTargets` — populated
 **exclusively** by admitted *worker* stream connections
-([control-stream-server.mjs:1177](../../../../src/control-stream-server.mjs#L1177), inside
-`wss.on("connection")` at [:1170](../../../../src/control-stream-server.mjs#L1170), with the
-exclusivity stated at [:944](../../../../src/control-stream-server.mjs#L944)). *(Spike 44 cites `:957`
+([control-stream-server.mjs:1177](../../../../packages/mesh/src/control-stream-server.mjs#L1177), inside
+`wss.on("connection")` at [:1170](../../../../packages/mesh/src/control-stream-server.mjs#L1170), with the
+exclusivity stated at [:944](../../../../packages/mesh/src/control-stream-server.mjs#L944)). *(Spike 44 cites `:957`
 for this; the line has drifted since 2026-08-06 — the fact is unchanged and the pointer is not.)*
 Two outcomes, both silent: on a worker node the directive arrives and the handler's `liveSessionInputs.get(sessionId)`
 returns `undefined` and **drops**

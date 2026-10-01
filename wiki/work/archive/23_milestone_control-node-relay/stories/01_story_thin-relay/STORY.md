@@ -54,8 +54,8 @@ milestone 24). This story **owns**: `src/mesh-relay.mjs` (`serveRelay` — the o
 payload-agnostic envelope), the `relay`-mode face (a thin launcher + the `aof mesh relay` / serve verb), the
 control-node nomination config (`config.mesh.relay.*`), and the two arch-tests above + their registration in
 [scripts/test.mjs](../../../../../../scripts/test.mjs). It imports the `ws@8`/`http` serving stack — the
-[board-serve.mjs](../../../../../../src/board-serve.mjs) (`serveBoard`) / single `http.createServer` in
-[setup-ui.mjs](../../../../../../src/setup-ui.mjs) / [terminal-ws.mjs](../../../../../../src/terminal-ws.mjs)
+[board-serve.mjs](../../../../../../packages/server/src/board-serve.mjs) (`serveBoard`) / single `http.createServer` in
+[setup-ui.mjs](../../../../../../packages/server/src/setup-ui.mjs) / [terminal-ws.mjs](../../../../../../packages/server/src/terminal-ws.mjs)
 (`WebSocketServer` via noServer + `server.on('upgrade')`, the frozen `{type:'error'}` control-frame envelope,
 03/ADR-001 + 03/ADR-003) precedent — and references **zero** record-doc filename and **zero** presence schema.
 
@@ -79,10 +79,10 @@ case — m23 authors no new registry-derived gate.
 
 **Feasibility (developer amigo seat — confirmed at Contract): FEASIBLE.** `src/mesh-relay.mjs`
 `serveRelay({ port }) → { server, url, stop }` is a direct re-application of the
-[terminal-ws.mjs](../../../../../../src/terminal-ws.mjs) / [board-serve.mjs](../../../../../../src/board-serve.mjs)
+[terminal-ws.mjs](../../../../../../packages/server/src/terminal-ws.mjs) / [board-serve.mjs](../../../../../../packages/server/src/board-serve.mjs)
 precedent: one `http.createServer`, a `ws@8` `WebSocketServer` via noServer + `server.on('upgrade')` on a
 single relay pathname, broadcast-to-others over the connected-clients set, and the `server.listen(0,
-"127.0.0.1", …)` → `server.address().port` readback [setup-ui.mjs](../../../../../../src/setup-ui.mjs) already
+"127.0.0.1", …)` → `server.address().port` readback [setup-ui.mjs](../../../../../../packages/server/src/setup-ui.mjs) already
 does (lines 150–156) — so the "url carries the actual assigned port, not the requested 0" scenario is the
 existing serve idiom. The frozen `{ kind, nodeId, signal }` envelope + the `{type:'error'}` never-crash
 control-frame is the **literal** `03/ADR-003` discipline already shipped in `terminal-ws.mjs` (`sendControl` +

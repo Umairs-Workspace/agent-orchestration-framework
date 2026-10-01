@@ -51,7 +51,7 @@ so that the planning→delivery seam is proven to carry a real PRD into mileston
 Independent of story 00: exercised entirely against a checked-in PRD fixture following the
 `create-prd` skill's filename convention — it never imports or runs `aof planning init`. Binds only to
 the `PRD-*.md` convention (milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) ADR-005), which the
-already-authored [shatter command](../../../../../../src/bundle/commands/shatter.md) honours. The seam's
+already-authored [shatter command](../../../../../../packages/core/assets/commands/shatter.md) honours. The seam's
 single soft spot ([RESEARCH.md](../../RESEARCH.md) §7): the filename is an agent-honoured convention,
 not a tool-enforced path — so discovery must degrade to "pass the path", never a silent miss.
 

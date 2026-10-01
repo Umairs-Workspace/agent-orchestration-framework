@@ -48,7 +48,7 @@ the run model + the frozen per-run JSON schema (**ADR-003**), the `runs/` path s
 `runRecordPath(item, runId)` (**ADR-002**), and the state-machine transition table as a pure
 from→to validator (**ADR-001**) — plus the three arch-tests above + their registration in
 [scripts/test.mjs](../../../../../../scripts/test.mjs). It *reads* the existing
-[work.mjs](../../../../../../src/work.mjs) item model (`listItems`/`recordDoc` resolve the `item.dir` the
+[work.mjs](../../../../../../packages/core/src/application/bindings/work.mjs) item model (`listItems`/`recordDoc` resolve the `item.dir` the
 `runs/` dir sits in) — it does **not** rewrite it, and it does **not** touch `command-core.mjs`,
 `cli.mjs`, or `board-ui.mjs` (those are story 01 / milestone 21).
 

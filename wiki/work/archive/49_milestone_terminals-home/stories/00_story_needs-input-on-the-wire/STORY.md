@@ -31,7 +31,7 @@ reports it live as `sendAssignmentStatus(assignmentId, "running", { code: "needs
 assignment legitimately stays `running`. It rides the **shared** row mapper in
 `src/assignment-record.mjs`, which every reader already uses.
 
-Then `projectAssignment` ([global-mesh-query.mjs:132-148](../../../../../../src/global-mesh-query.mjs#L132))
+Then `projectAssignment` ([global-mesh-query.mjs:132-148](../../../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L132))
 copies eight fields onto the wire and `code` is not one of them. So a fact the system knows has never
 once reached **the fleet's** browser.
 

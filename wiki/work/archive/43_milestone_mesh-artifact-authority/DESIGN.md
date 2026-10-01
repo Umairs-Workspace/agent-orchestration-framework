@@ -43,7 +43,7 @@ fleet. It adds exactly **one new vocabulary** — the freshness ramp below — a
 - **Never assert what is not known.** A missing `syncedAt` yields "unknown", not "stale"; an in-flight
   Resync does not clear the badge; the badge clears only when a genuinely fresher copy lands. The board
   earned this rule the hard way — it once rendered `not-started` over a live remote run
-  ([board-mesh-execution.mjs:1-24](../../../../src/board-mesh-execution.mjs#L1)) and "No runs yet" over a
+  ([board-mesh-execution.mjs:1-24](../../../../packages/core/src/application/bindings/board-mesh-execution.mjs#L1)) and "No runs yet" over a
   worker's real run history ([DetailPanel.tsx:771-777](../../../../apps/ui/src/board/DetailPanel.tsx#L771)).
 - **One Resync door per item.** The affordance is a repair of *the view*, not a work-stream verb, and
   it exists only while there is something to repair.
@@ -92,10 +92,10 @@ story must close:
 | Fact | Where it lives today | Consequence for this design |
 |---|---|---|
 | The board's per-item wire shape is seven contract fields + `execution?` + `fromWorker?` + `reportedBy?` | [api.ts:6-43](../../../../apps/ui/src/board/api.ts#L6) | **There is no `syncedAt` on the wire at all.** |
-| `work_items` has no provenance columns — `workspace_id, ref, type, slug, status, title, parent, source_path` | [global-work-store.mjs:173-183](../../../../src/global-work-store.mjs#L173) | The *row* cannot say who reported it or when. |
-| `work_item_docs` / `work_item_runs` **do** carry `node_id` + `updated_at` | [:267-284](../../../../src/global-work-store.mjs#L267) | Per-**artifact** provenance already exists and is renderable today. |
+| `work_items` has no provenance columns — `workspace_id, ref, type, slug, status, title, parent, source_path` | [global-work-store.mjs:173-183](../../../../packages/core/src/application/bindings/global-work-store.mjs#L173) | The *row* cannot say who reported it or when. |
+| `work_item_docs` / `work_item_runs` **do** carry `node_id` + `updated_at` | [:267-284](../../../../packages/core/src/application/bindings/global-work-store.mjs#L267) | Per-**artifact** provenance already exists and is renderable today. |
 | `reportedBy` is set only on worker-**inserted child rows**, never on merged rows | [board-worker-stream.mjs:140](../../../../src/board-worker-stream.mjs#L140) vs [:159-161](../../../../src/board-worker-stream.mjs#L159) | Attribution is currently accidental and partial. |
-| `/api/work/list` is a straight pass-through of `work:list` | [board-ui.mjs:44-56](../../../../src/board-ui.mjs#L44), [list.mjs:49](../../../../src/commands/list.mjs#L49) | The envelope is the one place to add freshness. |
+| `/api/work/list` is a straight pass-through of `work:list` | [board-ui.mjs:44-56](../../../../packages/server/src/board-ui.mjs#L44), [list.mjs:49](../../../../packages/work/src/commands/list.mjs#L49) | The envelope is the one place to add freshness. |
 | The staleness predicate already exists mesh-wide: `now − t > threshold`, strict `>` | [mesh-presence.mjs:398-408](../../../../src/mesh-presence.mjs#L398) (imports `isStale` from `run-store.mjs`), default at [:412-419](../../../../src/mesh-presence.mjs#L412) | Reuse it. Two staleness predicates that can disagree about the same instant is a defect, not a variant. |
 
 **Design's data ask (for `43_story_staleness-and-resync` / ARCHITECTURE, stated once here):** every row
@@ -349,7 +349,7 @@ box / `slug · primary action` ([DetailPanel.tsx:150-238](../../../../apps/ui/sr
 - **Where the box does NOT render:** a workspace that is not mesh-enabled shows no provenance region at
   all. Per-workspace presence of the region; per-item always-on content within it. This preserves the
   board's plain local default, the same discipline the execution overlay already keeps
-  ([api.ts:17-22](../../../../apps/ui/src/board/api.ts#L17), [board-mesh-execution.mjs:17-24](../../../../src/board-mesh-execution.mjs#L17)).
+  ([api.ts:17-22](../../../../apps/ui/src/board/api.ts#L17), [board-mesh-execution.mjs:17-24](../../../../packages/core/src/application/bindings/board-mesh-execution.mjs#L17)).
 - **`(this node)`** marks a row the control node itself published — under this milestone the control is
   simply one more writer into the cache (STATE: "the cache has one read surface and many writers"). It
   is the plain clause `(this node)` here, matching the box's mono type; the fleet keeps its existing
@@ -450,7 +450,7 @@ numbers; it may not leave them unbounded, and the UI must render the timeout as 
 
 **The doc-body region (per-artifact provenance).** A doc can be older than the row that names it —
 `work_item_docs` carries its own `node_id` + `updated_at`
-([global-work-store.mjs:267-275](../../../../src/global-work-store.mjs#L267)). So the doc body region gains
+([global-work-store.mjs:267-275](../../../../packages/core/src/application/bindings/global-work-store.mjs#L267)). So the doc body region gains
 a **single quiet provenance line at its top**, above the rendered markdown (before the reader reads it,
 not after), in the label form: `stale · synced 2h ago · from <node>`. No second badge, no second Resync
 — the header's one door serves the item and its artifacts.

@@ -60,7 +60,7 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-003** one
 no bespoke store, no direct index-JSON write, graphify reached only by the backend via the 09 commands;
 **ADR-001** the records come from the EXISTING parsers over the materialized `.md`; **ADR-005** the
 derived-index invariant). This story **owns** extending `buildRecords`' scan
-([src/memory/local-indexing.mjs](../../../../../../src/memory/local-indexing.mjs)) to the story-00
+([src/memory/local-indexing.mjs](../../../../../../packages/knowledge/src/memory/local-indexing.mjs)) to the story-00
 import-store layout, running the existing parsers into the existing `.aof/aof.memory.*.index.json` store,
 and the import command's `reindex` trigger (invoking the backend's `reindex`, never hand-writing the
 index). It **calls** the existing parsers + the existing backend `reindex` unchanged; it touches no parser

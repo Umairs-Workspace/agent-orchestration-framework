@@ -56,6 +56,6 @@ so that a PRD can be produced upstream reproducibly and traced to *how it was ma
 Independent of story 01 (which runs against a PRD *fixture*, not this command's output). Inherits the
 milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) ADR-001–004, 006 and [RESEARCH.md](../../RESEARCH.md).
 The install mechanics mirror the existing GSD framework-installer pattern in
-[src/cli.mjs](../../../../../../src/cli.mjs) (plan → `--dry-run` → per-item network boundary → argv spawn).
+[src/cli.mjs](../../../../../../packages/core/src/cli.mjs) (plan → `--dry-run` → per-item network boundary → argv spawn).
 The structural invariants (command verbs/tokens, 40-hex sha, lock isolation, no-codex-install) are
 fitness functions in ARCHITECTURE.md, not scenarios here.

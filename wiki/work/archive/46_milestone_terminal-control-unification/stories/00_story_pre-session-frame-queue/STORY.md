@@ -28,7 +28,7 @@ having to nudge the window to make it right.
 
 Today it self-heals by accident. `TerminalDock` sends its fit on `socket.onopen`
 ([TerminalDock.tsx:214-215](../../../../../../ui/src/board/TerminalDock.tsx#L214-L215)), and
-[terminal-ws.mjs](../../../../../../src/terminal-ws.mjs) does not register `ws.on("message")` until
+[terminal-ws.mjs](../../../../../../packages/server/src/terminal-ws.mjs) does not register `ws.on("message")` until
 **after** `loadWorkspace` + `trustCwd` + `await spawn(...)` — so that frame lands on the floor with no
 buffer and no error. A later `ResizeObserver` tick sends another one and nobody notices. A pane that
 never resizes again keeps the wrong geometry, and milestone 49's grid opens N panes at once and hits it
@@ -66,10 +66,10 @@ originating evidence is spike 44's `## Investigation`, not a UAT finding, so the
 to carry.
 
 **PO scope ruling, 2026-08-08 (QA F-46-QA-1) — the orphaned PTY is IN scope, because it is the same
-bug.** QA found that `handleConnection` runs on to `await spawn` ([terminal-ws.mjs:237](../../../../../../src/terminal-ws.mjs#L237))
+bug.** QA found that `handleConnection` runs on to `await spawn` ([terminal-ws.mjs:237](../../../../../../packages/server/src/terminal-ws.mjs#L237))
 even after the client has closed, and `wireSession` registers `ws.on("close")` only at
-[:324](../../../../../../src/terminal-ws.mjs#L324) — so a `close` that already fired reaches no listener
-and `term.kill()` ([:332](../../../../../../src/terminal-ws.mjs#L332)) is never called. **A PTY outlives
+[:324](../../../../../../packages/server/src/terminal-ws.mjs#L324) — so a `close` that already fired reaches no listener
+and `term.kill()` ([:332](../../../../../../packages/server/src/terminal-ws.mjs#L332)) is never called. **A PTY outlives
 its socket.**
 
 That is not a second defect that happens to be nearby: it is *the identical root cause* — a listener
@@ -81,14 +81,14 @@ this ruling is ever revisited, rather than a `Then` quietly vanishing.
 
 **Two build constraints QA wrote into the contract, both worth reading before coding** — the overflow's
 degrade code must **not** reuse the module's generic `"terminal-ws"` code, because
-[degrade.mjs](../../../../../../src/degrade.mjs) throttles per code for 5s and an unrelated failure in the
+[degrade.mjs](../../../../../../packages/foundation/src/degrade.mjs) throttles per code for 5s and an unrelated failure in the
 same window would silence the overflow entirely (the exact silence ADR-008 forbids); and a
 frame-**count** ceiling alone does not bound memory, since the `WebSocketServer`
-([:113](../../../../../../src/terminal-ws.mjs#L113)) sets no `maxPayload`.
+([:113](../../../../../../packages/server/src/terminal-ws.mjs#L113)) sets no `maxPayload`.
 
 **Backlog candidate, pinned not fixed:** an unknown JSON control type (`{"type":"paste"}`) parses as an
 object, fails the `resize` test, and is typed into the agent's prompt as literal text
-([:308-321](../../../../../../src/terminal-ws.mjs#L308-L321)). Task 00 pins today's behaviour so the drain
+([:308-321](../../../../../../packages/server/src/terminal-ws.mjs#L308-L321)). Task 00 pins today's behaviour so the drain
 cannot silently change it; a story chartered to buffer frames is not the place to redesign the envelope.
 
 **No `@uat` lane, deliberately.** The operator outcome is *already true* at the board today — roughly

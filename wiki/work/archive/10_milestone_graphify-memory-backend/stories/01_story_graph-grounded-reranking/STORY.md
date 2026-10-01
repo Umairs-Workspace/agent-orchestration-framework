@@ -43,7 +43,7 @@ replaces, the 05 records; the join is file-level by `source_file`, never graph-`
 **owns**: the pure re-ranker `recall` consumes — a function of `(records, normalizedGraph, query, scope)`
 that joins `normalizeGraph`'s `{nodes, edges, hyperedges}` (`09/ADR-003`) to the candidate 05 records by
 **`source_file`** and layers a graph-relatedness boost onto the 05 base `rankRecords`
-([src/memory/local-retrieval.mjs](../../../../../../src/memory/local-retrieval.mjs), `05/ADR-006`), returning
+([src/memory/local-retrieval.mjs](../../../../../../packages/knowledge/src/memory/local-retrieval.mjs), `05/ADR-006`), returning
 the frozen `RecallResult`. It adds **no field** to `MemoryRecord` and changes no field's meaning.
 
 **Independent because** it is a **pure function** of its inputs — fixture-testable against a committed

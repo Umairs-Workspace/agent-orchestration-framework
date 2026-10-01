@@ -22,7 +22,7 @@ aofVersion: 0.1.0
 ## Objective
 
 The work stream models everything as `milestone | story | task | uat` (the closed vocabulary in
-[`src/work.mjs`](../../../../src/work.mjs) — `ITEM_RE`). Two common kinds of real work have nowhere honest
+[`src/work.mjs`](../../../../packages/core/src/application/bindings/work.mjs) — `ITEM_RE`). Two common kinds of real work have nowhere honest
 to live. **Investigative** work — answer an unknown, reduce a risk, before committing to a build. And
 **housekeeping** work — docs, file moves, yaml/config edits: real, but non-functional. Today both get
 mis-filed as stories/tasks and dragged through a Three-Amigos refine + behavioural-verify ceremony that

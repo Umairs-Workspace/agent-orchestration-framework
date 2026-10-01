@@ -108,8 +108,8 @@ whitespace is **absence, not a bad value**, and falls back. Ratified as QA read 
 
 **THE CONFIG CARRIER DOES NOT EXIST AND IS UNCOSTED WORK — decide it at kickoff, before coding**
 (developer feasibility finding F6). This is the grind hiding inside "an explicit configuration overrides
-the default". Measured: `src/commands/work-ui.mjs` declares `workspace: false` ([:88](../../../../../../src/commands/work-ui.mjs#L88))
-and `resolveBoardLaunchConfig` ([:23-28](../../../../../../src/commands/work-ui.mjs#L23-L28)) reads only
+the default". Measured: `src/commands/work-ui.mjs` declares `workspace: false` ([:88](../../../../../../packages/server/src/commands/work-ui.mjs#L88))
+and `resolveBoardLaunchConfig` ([:23-28](../../../../../../packages/server/src/commands/work-ui.mjs#L23-L28)) reads only
 `--port` and `--target`. **There is no config-reading path in `work:ui` at all today** — yet task 01
 requires an explicit fleet-origin configuration across eight rows *and* a named refusal with a non-zero
 exit across six malformed values. A flag, a config key, or both? If it is a config key, the command must
@@ -120,8 +120,8 @@ mid-build is how a 1.5-day story becomes a 3-day one.
 **Pick ONE home for the served fact at kickoff** (developer finding F7). ADR-004 threads the origin
 `serveBoard → serveSetupUi → handleWorkApi` and describes "a named board route beside the others" in
 `board-ui.mjs` — but `handleWorkApi` returns `false` for anything outside `/api/work`
-([board-ui.mjs:42](../../../../../../src/board-ui.mjs#L42)), while task 00 pins the route's non-GET
-behaviour against `/api/capabilities`, which lives in [setup-ui.mjs:62](../../../../../../src/setup-ui.mjs#L62).
+([board-ui.mjs:42](../../../../../../packages/server/src/board-ui.mjs#L42)), while task 00 pins the route's non-GET
+behaviour against `/api/capabilities`, which lives in [setup-ui.mjs:62](../../../../../../packages/server/src/setup-ui.mjs#L62).
 **Both work** — an unmatched method falls through to setup-ui's `/api/` 404 either way — but the ADR and
 the feature currently point at different files, and two homes is how this milestone's own subject matter
 came to exist.
@@ -140,5 +140,5 @@ listening there", because on this machine something is.
 
 **Related debt, filed not fixed:** [TECH_DEBT 25](../../../../TECH_DEBT.md) — the port map has four homes
 and `serveBoard` defaults to `4178`, another server's port
-([board-serve.mjs:48](../../../../../../src/board-serve.mjs#L48)), masked only because every caller passes
+([board-serve.mjs:48](../../../../../../packages/server/src/board-serve.mjs#L48)), masked only because every caller passes
 one. ADR-004 deliberately does **not** add a fifth home; this story must not either.

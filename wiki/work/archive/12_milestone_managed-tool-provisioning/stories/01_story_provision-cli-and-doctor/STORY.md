@@ -32,9 +32,9 @@ so that aof's dependency stack is provisioned and diagnosed through one honest s
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-003** the lifecycle surface;
 **ADR-002/001** the registry + resolver it drives). This story **owns**: a new
 `src/commands/project-provision.mjs` (the `project:provision` command, added to `COMMANDS` in
-[command-core.mjs](../../../../../../src/command-core.mjs)), the `aof project provision` dispatch in
-`projectCommand` ([cli.mjs](../../../../../../src/cli.mjs)), and the three new checks in `doctorConfig`
-([config-inspect.mjs](../../../../../../src/config-inspect.mjs)) — **superseding the 09 `graphify-binary`
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs)), the `aof project provision` dispatch in
+`projectCommand` ([cli.mjs](../../../../../../packages/core/src/cli.mjs)), and the three new checks in `doctorConfig`
+([config-inspect.mjs](../../../../../../packages/core/src/application/bindings/config-inspect.mjs)) — **superseding the 09 `graphify-binary`
 check in place** with the store-aware `managed-tool` check. It does **not** build the store/registry
 (story 00 — it consumes them) or re-point any tool driver (02/03). The `aof project doctor` CLI face is
 unchanged — it already renders `checks[]` + `--json`.

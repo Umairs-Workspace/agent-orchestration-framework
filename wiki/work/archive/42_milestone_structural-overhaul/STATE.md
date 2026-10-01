@@ -416,7 +416,7 @@ doc: state
     this same key was destroyed at two different seams, eight days apart, by two separate blockers.
   - **Also inherited (non-blocking, same class):** m38's **F24** — a node descriptor's `workspaces[]` is the
     *publisher's* single workspace stamped onto every node in the roster
-    ([global-node-registry.mjs](../../../../src/global-node-registry.mjs#L74-L104)), so both live node cards
+    ([global-node-registry.mjs](../../../../packages/mesh/src/global-node-registry.mjs#L74-L104)), so both live node cards
     advertise `C:\WINDOWS\system32` (the macOS worker included) while the SQLite membership table correctly
     holds four per node — and after `ac361f8`'s cwd-phantom gate an install-dir-launched daemon can no longer
     refresh its node record to correct it. This is debt item 4's (workspace identity) live bite.

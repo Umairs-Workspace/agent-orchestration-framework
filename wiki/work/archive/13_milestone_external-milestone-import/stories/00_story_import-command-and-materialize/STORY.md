@@ -42,12 +42,12 @@ so that there is one safe seam that turns "a milestone in another repo" into re-
 
 **Three-Amigos pass (`2026-06-22`, `aof:refine 13 --autonomous`):** PO headline Scenarios + aof-qa Examples
 tables/tagging + aof-developer feasibility. **Developer verdict: BUILDABLE** — the `import` top-level
-command slot is free in [src/cli.mjs](../../../../../../src/cli.mjs), the frozen `{id,input,run,cli}` +
+command slot is free in [src/cli.mjs](../../../../../../packages/core/src/cli.mjs), the frozen `{id,input,run,cli}` +
 `invoke`/`getCommand` are exactly as ADR-002 claims, the `--json` adapter split is proven verbatim by
 `graphVerbCommand`, and every `@executable` row is offline-feasible. **Build-time decisions to carry into
 `aof:continue 13/00` (none re-opens a frozen contract):**
 - **Injection-seam name** — add `resolveInjectedSource({ repo, resolveSource, AOF_IMPORT_* })` mirroring
-  `resolveInjectedSha` ([src/planning-init.mjs](../../../../../../src/planning-init.mjs)); a LOCAL `<repo>`
+  `resolveInjectedSha` ([src/planning-init.mjs](../../../../../../packages/core/src/planning-init.mjs)); a LOCAL `<repo>`
   reads in place (no network → the `@executable` lane), a remote uses the read-only `git ls-remote`/fetch
   argv-spawn; `--dry-run` never reaches the live leg.
 - **Missing-`<selector>` default** (decided at the QA pass, recorded in `tasks/00`): a missing selector is
@@ -65,12 +65,12 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-001** the
 registered `import:milestone` command + the read-only `git`-argv-spawn idiom + `--dry-run`; **ADR-004**
 the `.aof/` import store outside `workDir`, git-ignored via `src/aof-gitignore.mjs`, non-`NN_type_slug`;
 **ADR-005** the materialized `.md` is the re-derivable source). This story **owns**: the
-`import:milestone` Command registration in [src/command-core.mjs](../../../../../../src/command-core.mjs)
+`import:milestone` Command registration in [src/command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs)
 (frozen `{id,input,run,cli}`) + the `aof import …` CLI dispatch in
-[src/cli.mjs](../../../../../../src/cli.mjs); the read-only source-access seam (reusing the
-[src/planning-init.mjs](../../../../../../src/planning-init.mjs) read-only `git`-argv-spawn + offline
+[src/cli.mjs](../../../../../../packages/core/src/cli.mjs); the read-only source-access seam (reusing the
+[src/planning-init.mjs](../../../../../../packages/core/src/planning-init.mjs) read-only `git`-argv-spawn + offline
 injection idiom); `--dry-run`; the materialize writer (the artifact-pair shape + the `.aof/` import-store
-layout) + its git-ignore via [src/aof-gitignore.mjs](../../../../../../src/aof-gitignore.mjs). It **calls**
+layout) + its git-ignore via [src/aof-gitignore.mjs](../../../../../../packages/core/src/aof-gitignore.mjs). It **calls**
 the recovery transform (story 01) behind a **stubbed/fixed materialize input** and triggers indexing
 (story 02) — it does not implement either.
 

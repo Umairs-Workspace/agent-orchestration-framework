@@ -25,7 +25,7 @@ aofVersion: 0.1.0
 There is no "start a terminal" verb anywhere in the fleet. `/api/mesh/assign` dispatches a *work item*
 plus a lifecycle phase (`refine | continue | verify | autonomous`,
 [mesh-assignment-directive.mjs:28](../../../../src/mesh-assignment-directive.mjs#L28)) to a node; it cannot
-open a bare shell. [terminal-ws.mjs](../../../../src/terminal-ws.mjs) spawns PTYs, but only on a board
+open a bare shell. [terminal-ws.mjs](../../../../packages/server/src/terminal-ws.mjs) spawns PTYs, but only on a board
 server, only inside that server's `projectDir`, and only for a resolved item `ref`.
 
 So the fleet UI is a monitor with exactly one verb. This milestone gives it the second: **new session,

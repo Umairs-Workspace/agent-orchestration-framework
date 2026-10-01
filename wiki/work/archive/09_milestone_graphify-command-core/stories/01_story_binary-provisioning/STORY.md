@@ -33,8 +33,8 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-004** the
 decision, Option B; **ADR-002** the `resolveGraphifyBinary` seam it implements against). This story
 **owns**: the `resolveGraphifyBinary()` implementation wired against story 00's driver seam, and the new
 **`graphify-binary`** check added to `doctorConfig`'s `checks[]` in
-[config-inspect.mjs](../../../../../../src/config-inspect.mjs) (surfaced by `aof project doctor`). It does
-**not** touch [frameworks.mjs](../../../../../../src/frameworks.mjs) — the npx installer is provably unchanged
+[config-inspect.mjs](../../../../../../packages/core/src/application/bindings/config-inspect.mjs) (surfaced by `aof project doctor`). It does
+**not** touch [frameworks.mjs](../../../../../../packages/core/src/frameworks.mjs) — the npx installer is provably unchanged
 (ADR-004 invariant, enforced by story 03's `acd-graphify-no-npx-install`). It does **not** author the
 `graph:*` commands (story 00) or the rendered faces (story 02).
 

@@ -48,7 +48,7 @@ arrives as a blank screen and a console error a hundred lines from its cause.
 **Order.** Parallel-eligible from day one alongside `45/01`. It touches no `ui/` file at all, and it
 ships value on its own: `/board` stops 404ing on refresh before any router exists.
 
-**One handler, two origins.** [board-serve.mjs:20](../../../../../../src/board-serve.mjs#L20) delegates
+**One handler, two origins.** [board-serve.mjs:20](../../../../../../packages/server/src/board-serve.mjs#L20) delegates
 to `serveSetupUi`, so the single fix in `src/setup-ui.mjs` reaches the board **and** the config
 editor. Graph-cited coupling (built 2026-08-06, 15,644 nodes / 21,352 edges):
 `board-serve.mjs ← commands/work-ui.mjs` and `mesh-ui-serve.mjs ← commands/mesh-ui.mjs` — one
@@ -62,7 +62,7 @@ unconditional fallback is a test to update **with a stated reason**, never one t
 
 **The security finding that rides with it.** `safeStaticPath` — the directory-traversal guard in
 front of both static roots — is defined **twice, byte-identically**
-([setup-ui.mjs:269-280](../../../../../../src/setup-ui.mjs#L269-L280) and
+([setup-ui.mjs:269-280](../../../../../../packages/server/src/setup-ui.mjs#L269-L280) and
 [mesh-ui-serve.mjs:873-884](../../../../../../src/mesh-ui-serve.mjs#L873-L884); `diff` exits 0).
 Hardening one copy leaves the other origin unprotected and nothing would say so. It folds into
 `src/static-serve.mjs` beside the fallback predicate — a deletion plus an import at each of the two
