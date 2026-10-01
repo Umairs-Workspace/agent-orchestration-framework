@@ -71,7 +71,7 @@ In scope:
   [fleet/terminal-view/view-state.mjs](../../../../ui/src/fleet/terminal-view/view-state.mjs)) are
   reconciled into one set — the house has no React test harness and this pattern is not optional.
 - **Both call sites re-homed, and the duplicate deleted.** The board dock and the fleet card peek
-  ([Fleet.tsx:759](../../../../ui/src/fleet/Fleet.tsx#L759)) both render the one control;
+  ([Fleet.tsx:759](../../../../apps/ui/src/fleet/Fleet.tsx#L759)) both render the one control;
   `ui/src/fleet/terminal-view/` is removed.
 - **`FLEET_PORT` retired or made configuration** per spike 44. The control does not hard-code an origin.
 - **The existing fitness locks stay green.**

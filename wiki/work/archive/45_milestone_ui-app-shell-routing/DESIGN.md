@@ -33,9 +33,9 @@ they are the whole design:
    46, 47 and 49 all queue behind it.
 
 The surface introduces **no new design system and no new token**. It is built from the fixed theme ramp
-at [ui/src/index.css:3-25](../../../../ui/src/index.css#L3) (`primary` teal `hsl(174 72% 27%)`, `accent`
+at [ui/src/index.css:3-25](../../../../apps/ui/src/index.css#L3) (`primary` teal `hsl(174 72% 27%)`, `accent`
 crimson, `destructive` red, `card`/`muted`/`secondary`/`border` greys, `--radius: 0.5rem`, Inter plus the
-`.mono` utility at [:68-72](../../../../ui/src/index.css#L68)) and from primitives that already exist in the
+`.mono` utility at [:68-72](../../../../apps/ui/src/index.css#L68)) and from primitives that already exist in the
 built board and fleet. It adds **zero new vocabularies**; every mark below is an existing one reused at a
 new scale.
 
@@ -100,12 +100,12 @@ Three widths, plus one height constraint that is as binding as any of them.
 - **1280** — the primary judgement width (desktop workbench; the board's fixed ~382px detail column
   assumes it, `03/DESIGN.md` §2).
 - **768** — the desktop-app proxy. The Rust app's own window is **760×520**
-  ([app/desktop/ui/styles.css:50](../../../../app/desktop/ui/styles.css#L50)) and it opens this UI at
+  ([app/desktop/ui/styles.css:50](../../../../apps/desktop/ui/styles.css#L50)) and it opens this UI at
   `http://127.0.0.1:4181/?mode=fleet&scope=global`
-  ([supervisor.rs:44](../../../../app/desktop/crates/app/src/supervisor.rs#L44)). **The shell must not assume
+  ([supervisor.rs:44](../../../../apps/desktop/crates/app/src/supervisor.rs#L44)). **The shell must not assume
   a wide viewport.**
 - **390** — mobile. The fleet's existing width findings (DESIGN GAP D1,
-  [index.css:30-36](../../../../ui/src/index.css#L30)) were measured at 360–414px and the shell's bar must
+  [index.css:30-36](../../../../apps/ui/src/index.css#L30)) were measured at 360–414px and the shell's bar must
   survive that squeeze without the page root growing a horizontal scrollbar.
 - **520 tall (binding).** At the desktop window's height, **the shell's steady-state chrome must never
   exceed 88px** — 48px top bar plus at most one 40px surface bar — leaving ≥432px for content. **A third
@@ -143,7 +143,7 @@ surface-contributed alert row, and it was designed from the start to push rather
 
 **Why the dip is the right thing to accept, rather than the thing to engineer away.** The rail's only
 occupant today is the board's `serverGone` strip
-([Board.tsx:410-421](../../../../ui/src/board/Board.tsx#L410)), whose own text says *"Buttons on this tab do
+([Board.tsx:410-421](../../../../apps/ui/src/board/Board.tsx#L410)), whose own text says *"Buttons on this tab do
 nothing."* The surface underneath is already inert. The budget exists so an operator can still **see and
 act on** ≥432px of their work; while the rail is up there is no work to act on, so defending that number
 would be optimising the wrong thing — and every alternative pays for it by degrading a true signal
@@ -184,7 +184,7 @@ does not run the browser):
 
 - Fleet origin, fixed port: `http://127.0.0.1:4181/` (the landing) and `/fleet` (and `/fleet?scope=local`).
 - Board origin: an **ephemeral** per-workspace port that changes on every daemon restart
-  ([Board.tsx:47-51](../../../../ui/src/board/Board.tsx#L47)) — the base URL must be supplied at capture
+  ([Board.tsx:47-51](../../../../apps/ui/src/board/Board.tsx#L47)) — the base URL must be supplied at capture
   time and never hard-coded.
 - Config-editor origin: the `setup-ui` server's path for `<App>`.
 - The unmatched path (any origin), e.g. `/nope`.
@@ -200,22 +200,22 @@ what the shell may do.
 
 | Fact | Where it lives today | Consequence for this design |
 |---|---|---|
-| Four entry points selected by `?mode=` at the render root: `fleet`→`<Fleet>`, `board`→`<Board>`, `assets`→`<App>`, no-mode→`<App>` | [main.tsx:1261-1267](../../../../ui/src/main.tsx#L1261) | There is **no shell, no router, no nav** to extend. All of it is new. |
-| **No router library is installed** | [ui/package.json:11-32](../../../../ui/package.json#L11) | The route table is the architect's; this document fixes the *regions*, not the paths. |
-| `?scope=global\|local` is a live deep-link contract with a visible control | [fleet/scope.mjs:24-54](../../../../ui/src/fleet/scope.mjs#L24), rendered at [Fleet.tsx:323-343](../../../../ui/src/fleet/Fleet.tsx#L323); consumed by the desktop entry URL ([supervisor.rs:44](../../../../app/desktop/crates/app/src/supervisor.rs#L44)) | It stays a **query param on `/fleet`**, never a path segment — see §The scope-control ruling. |
-| The config editor carries **its own** `project \| global` two-way toggle, in the identical active treatment (`bg-primary text-primary-foreground`) | [main.tsx:245-256](../../../../ui/src/main.tsx#L245) | A shell-level `Global \| Local` toggle would sit ~300px from a differently-meaning `project \| global` toggle. Decisive. |
-| The config editor's sidebar carries **its own identity block** — a 40px filled `✦` tile, an `AOF` wordmark and the config name | [main.tsx:241](../../../../ui/src/main.tsx#L241) | Under the shell this repeats the bar's mark, wordmark and chip on `/config` — **design gap DG-45-3**, recorded and carried, not closed here. |
-| The fleet top bar is `sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b border-border bg-card px-4` | [Fleet.tsx:281](../../../../ui/src/fleet/Fleet.tsx#L281) | This **is** the shell's top bar. It is not redesigned; it is promoted. |
-| The board top bar is the same 48px bar **without** `sticky` | [Board.tsx:423](../../../../ui/src/board/Board.tsx#L423) | Same bar, different scroll model — see the two content modes. |
-| **Two different brand marks**: fleet paints a filled 24px tile (`grid h-6 w-6 rounded-md bg-primary text-primary-foreground ✦`), the board paints a bare `text-lg text-primary ✦` | [Fleet.tsx:283-285](../../../../ui/src/fleet/Fleet.tsx#L283) vs [Board.tsx:425-427](../../../../ui/src/board/Board.tsx#L425) | **Design gap DG-45-1** — one product, one mark **in the bar**. Resolved below. |
-| **Two scroll models**: fleet is `min-h-screen flex-col` (page scrolls); board is `h-screen overflow-hidden` with descendants owning scroll | [Fleet.tsx:208](../../../../ui/src/fleet/Fleet.tsx#L208) vs [Board.tsx:409](../../../../ui/src/board/Board.tsx#L409), [:463](../../../../ui/src/board/Board.tsx#L463) | The shell must offer **both**, named and declared per route. This is the m46 contract. |
-| `z-50` is currently shared by three unrelated things: the board dispatch toast, the milestone-switcher listbox, and the fleet fullscreen terminal overlay | [Board.tsx:528](../../../../ui/src/board/Board.tsx#L528), [BoardLanes.tsx:373](../../../../ui/src/board/BoardLanes.tsx#L373), [FleetTerminalView.tsx:412](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L412) | **Design gap DG-45-2** — once a surface can go fullscreen inside a shell, a toast on the same rung paints unpredictably. The shell owns the ladder. |
+| Four entry points selected by `?mode=` at the render root: `fleet`→`<Fleet>`, `board`→`<Board>`, `assets`→`<App>`, no-mode→`<App>` | [main.tsx:1261-1267](../../../../apps/ui/src/main.tsx#L1261) | There is **no shell, no router, no nav** to extend. All of it is new. |
+| **No router library is installed** | [ui/package.json:11-32](../../../../apps/ui/package.json#L11) | The route table is the architect's; this document fixes the *regions*, not the paths. |
+| `?scope=global\|local` is a live deep-link contract with a visible control | [fleet/scope.mjs:24-54](../../../../apps/ui/src/fleet/scope.mjs#L24), rendered at [Fleet.tsx:323-343](../../../../apps/ui/src/fleet/Fleet.tsx#L323); consumed by the desktop entry URL ([supervisor.rs:44](../../../../apps/desktop/crates/app/src/supervisor.rs#L44)) | It stays a **query param on `/fleet`**, never a path segment — see §The scope-control ruling. |
+| The config editor carries **its own** `project \| global` two-way toggle, in the identical active treatment (`bg-primary text-primary-foreground`) | [main.tsx:245-256](../../../../apps/ui/src/main.tsx#L245) | A shell-level `Global \| Local` toggle would sit ~300px from a differently-meaning `project \| global` toggle. Decisive. |
+| The config editor's sidebar carries **its own identity block** — a 40px filled `✦` tile, an `AOF` wordmark and the config name | [main.tsx:241](../../../../apps/ui/src/main.tsx#L241) | Under the shell this repeats the bar's mark, wordmark and chip on `/config` — **design gap DG-45-3**, recorded and carried, not closed here. |
+| The fleet top bar is `sticky top-0 z-10 flex h-12 shrink-0 items-center gap-3 border-b border-border bg-card px-4` | [Fleet.tsx:281](../../../../apps/ui/src/fleet/Fleet.tsx#L281) | This **is** the shell's top bar. It is not redesigned; it is promoted. |
+| The board top bar is the same 48px bar **without** `sticky` | [Board.tsx:423](../../../../apps/ui/src/board/Board.tsx#L423) | Same bar, different scroll model — see the two content modes. |
+| **Two different brand marks**: fleet paints a filled 24px tile (`grid h-6 w-6 rounded-md bg-primary text-primary-foreground ✦`), the board paints a bare `text-lg text-primary ✦` | [Fleet.tsx:283-285](../../../../apps/ui/src/fleet/Fleet.tsx#L283) vs [Board.tsx:425-427](../../../../apps/ui/src/board/Board.tsx#L425) | **Design gap DG-45-1** — one product, one mark **in the bar**. Resolved below. |
+| **Two scroll models**: fleet is `min-h-screen flex-col` (page scrolls); board is `h-screen overflow-hidden` with descendants owning scroll | [Fleet.tsx:208](../../../../apps/ui/src/fleet/Fleet.tsx#L208) vs [Board.tsx:409](../../../../apps/ui/src/board/Board.tsx#L409), [:463](../../../../apps/ui/src/board/Board.tsx#L463) | The shell must offer **both**, named and declared per route. This is the m46 contract. |
+| `z-50` is currently shared by three unrelated things: the board dispatch toast, the milestone-switcher listbox, and the fleet fullscreen terminal overlay | [Board.tsx:528](../../../../apps/ui/src/board/Board.tsx#L528), [BoardLanes.tsx:373](../../../../apps/ui/src/board/BoardLanes.tsx#L373), [FleetTerminalView.tsx:412](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L412) | **Design gap DG-45-2** — once a surface can go fullscreen inside a shell, a toast on the same rung paints unpredictably. The shell owns the ladder. |
 | A fullscreen escape **already exists**: `createPortal` → `fixed inset-0 z-50 flex flex-col`, `role="dialog" aria-modal="true"`, exit control at `ml-auto` | [FleetTerminalView.tsx:402-424](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L402) | m46 inherits this idiom rather than inventing one. The shell formalises it as a named slot. |
-| The board's `serverGone` strip is full-bleed and sits **above** the top bar | [Board.tsx:410-421](../../../../ui/src/board/Board.tsx#L410) | The shell needs a notice rail above the bar, or the strip ends up sandwiched — and that rail is what the chrome-budget clause above governs. |
-| The board hard-codes `http://127.0.0.1:4181/?mode=fleet` in that strip and in two DetailPanel links | [Board.tsx:416](../../../../ui/src/board/Board.tsx#L416), [DetailPanel.tsx:212](../../../../ui/src/board/DetailPanel.tsx#L212), [:798](../../../../ui/src/board/DetailPanel.tsx#L798) | Cross-**origin** links are real here. The nav is not four in-app links. |
-| `useGroupName()` = `?group=` else the literal `"fleet"` | [Fleet.tsx:1519-1527](../../../../ui/src/fleet/Fleet.tsx#L1519) | The identity chip has a documented neutral default already. Keep it; never render a blank chip. |
-| The page root is clamped `overflow-x: hidden` as a deliberate backstop (DESIGN GAP D1) | [index.css:27-36](../../../../ui/src/index.css#L27) | The shell **must not remove it**. Scoped regions still scroll internally. |
-| `StaleBadge.tsx` / `freshness.mjs` are shared by **both** `Board.tsx` and `Fleet.tsx` | [ui/src/board/StaleBadge.tsx](../../../../ui/src/board/StaleBadge.tsx), [freshness.mjs](../../../../ui/src/board/freshness.mjs) | Shared visual language across surfaces already exists and works. The shell reuses the ramp; it does not fork one. |
+| The board's `serverGone` strip is full-bleed and sits **above** the top bar | [Board.tsx:410-421](../../../../apps/ui/src/board/Board.tsx#L410) | The shell needs a notice rail above the bar, or the strip ends up sandwiched — and that rail is what the chrome-budget clause above governs. |
+| The board hard-codes `http://127.0.0.1:4181/?mode=fleet` in that strip and in two DetailPanel links | [Board.tsx:416](../../../../apps/ui/src/board/Board.tsx#L416), [DetailPanel.tsx:212](../../../../apps/ui/src/board/DetailPanel.tsx#L212), [:798](../../../../apps/ui/src/board/DetailPanel.tsx#L798) | Cross-**origin** links are real here. The nav is not four in-app links. |
+| `useGroupName()` = `?group=` else the literal `"fleet"` | [Fleet.tsx:1519-1527](../../../../apps/ui/src/fleet/Fleet.tsx#L1519) | The identity chip has a documented neutral default already. Keep it; never render a blank chip. |
+| The page root is clamped `overflow-x: hidden` as a deliberate backstop (DESIGN GAP D1) | [index.css:27-36](../../../../apps/ui/src/index.css#L27) | The shell **must not remove it**. Scoped regions still scroll internally. |
+| `StaleBadge.tsx` / `freshness.mjs` are shared by **both** `Board.tsx` and `Fleet.tsx` | [ui/src/board/StaleBadge.tsx](../../../../apps/ui/src/board/StaleBadge.tsx), [freshness.mjs](../../../../apps/ui/src/board/freshness.mjs) | Shared visual language across surfaces already exists and works. The shell reuses the ramp; it does not fork one. |
 | The a11y lane is **opt-in and currently off** (`work.tags.domains` carries no `a11y`), but the a11y contract is test-enforced anyway | [test/arch/acd-a11y-config-schema.test.mjs:1-8](../../../../test/arch/acd-a11y-config-schema.test.mjs#L1), [test/board-staleness-a11y.test.mjs:10-26](../../../../test/board-staleness-a11y.test.mjs#L10) | §Accessibility below binds the design-conformance review and a `@uat` visual review regardless. |
 
 **This design asks for no new data.** Everything the shell renders — the route table, the active route,
@@ -236,7 +236,7 @@ Each resolves as a rule in this document plus a `@uat` visual-review scenario, n
 The fleet and the board paint different `✦` marks in the same bar position (table above). The shell paints
 **one**: the **fleet's filled 24px tile** —
 `grid h-6 w-6 shrink-0 place-items-center rounded-md bg-primary text-sm font-bold text-primary-foreground`
-with `✦` and `aria-hidden="true"` ([Fleet.tsx:283-285](../../../../ui/src/fleet/Fleet.tsx#L283)).
+with `✦` and `aria-hidden="true"` ([Fleet.tsx:283-285](../../../../apps/ui/src/fleet/Fleet.tsx#L283)).
 
 Why that one: it is a **fixed 24px box**, so it survives the 390 squeeze without a type-size decision; it
 is the mark the committed m36 desktop mocks and the m25 fleet surface both already read as "aof"; and a
@@ -264,10 +264,10 @@ others:**
 | Rung | `z` | What sits here |
 |---|---|---|
 | content | auto | the mounted surface |
-| **sticky chrome** | `z-10` | notice rail, top bar, surface bar, and in-surface sticky headers ([BoardLanes.tsx:181](../../../../ui/src/board/BoardLanes.tsx#L181)) |
-| **popover** | `z-20` | legends ([Fleet.tsx:360](../../../../ui/src/fleet/Fleet.tsx#L360)), the nav disclosure, the milestone switcher |
+| **sticky chrome** | `z-10` | notice rail, top bar, surface bar, and in-surface sticky headers ([BoardLanes.tsx:181](../../../../apps/ui/src/board/BoardLanes.tsx#L181)) |
+| **popover** | `z-20` | legends ([Fleet.tsx:360](../../../../apps/ui/src/fleet/Fleet.tsx#L360)), the nav disclosure, the milestone switcher |
 | **dock** | `z-30` | the unified terminal control in its docked (non-fullscreen) position — **taken by name at m46/05**; **out of flow, in the R5 overlay layer**, and it **costs the content region its height** through the published `--aof-shell-dock-inset` *(amended 2026-08-08; see below)* |
-| **toast** | `z-40` | dispatch notices ([Board.tsx:528](../../../../ui/src/board/Board.tsx#L528)), the config editor's message ([main.tsx:318](../../../../ui/src/main.tsx#L318)) |
+| **toast** | `z-40` | dispatch notices ([Board.tsx:528](../../../../apps/ui/src/board/Board.tsx#L528)), the config editor's message ([main.tsx:318](../../../../apps/ui/src/main.tsx#L318)) |
 | **fullscreen** | `z-50` | the `shell:fullscreen` occupant — **the top rung, alone** |
 
 An element that needs a rung not on this list is a GAP whose fix is to add the rung *here* first.
@@ -403,14 +403,14 @@ then `⟳ sync`. On the config editor and on `/` it is **empty**.
 **Four reasons, each measured:**
 
 1. **`?scope=` is a fleet contract end to end.** Server-side (`mesh-ui-serve` serves both scopes),
-   client-side ([scope.mjs](../../../../ui/src/fleet/scope.mjs)), and in the desktop app's entry URL
-   ([supervisor.rs:44](../../../../app/desktop/crates/app/src/supervisor.rs#L44)). Nothing on the board or the
+   client-side ([scope.mjs](../../../../apps/ui/src/fleet/scope.mjs)), and in the desktop app's entry URL
+   ([supervisor.rs:44](../../../../apps/desktop/crates/app/src/supervisor.rs#L44)). Nothing on the board or the
    config editor reads it. A shell-owned control is therefore inert on **three of four** routes: either
    rendered-and-meaningless (a lie), or conditionally hidden (chrome that moves as you navigate — the exact
    thing binding rail 2 forbids).
 2. **"Scope" is already taken on the config editor, meaning something else.** `<App>`'s sidebar carries a
    `project | global` two-way toggle in the *identical* active treatment
-   ([main.tsx:245-256](../../../../ui/src/main.tsx#L245)). A shell bar showing `Global | Local` directly above
+   ([main.tsx:245-256](../../../../apps/ui/src/main.tsx#L245)). A shell bar showing `Global | Local` directly above
    a sidebar showing `project | global` puts two identically-styled toggles, both called scope, both
    containing the word "global", within ~300px of each other. That is an operator misreading waiting to
    happen, not a nit.
@@ -468,9 +468,9 @@ A CSS custom property the shell sets to the **measured** height of everything ab
 | **`content:page`** | `min-h-dvh flex flex-col` | `flex-1` | the **page** (`html`/`body`) | `/` landing, `/fleet`, config editor |
 | **`content:fixed`** | `h-dvh overflow-hidden flex flex-col` | `min-h-0 flex-1 overflow-hidden` | **descendants only** — never the region itself | the board, and (m49) the terminals grid |
 
-`content:page` is what the fleet does today ([Fleet.tsx:208](../../../../ui/src/fleet/Fleet.tsx#L208));
-`content:fixed` is what the board does today ([Board.tsx:409](../../../../ui/src/board/Board.tsx#L409),
-[:463](../../../../ui/src/board/Board.tsx#L463)). Neither is redesigned — both are named so the shell can host
+`content:page` is what the fleet does today ([Fleet.tsx:208](../../../../apps/ui/src/fleet/Fleet.tsx#L208));
+`content:fixed` is what the board does today ([Board.tsx:409](../../../../apps/ui/src/board/Board.tsx#L409),
+[:463](../../../../apps/ui/src/board/Board.tsx#L463)). Neither is redesigned — both are named so the shell can host
 both without either surface changing.
 
 **Binding: a surface that hosts a terminal must be `content:fixed`.** A fitted xterm inside a page-scrolling
@@ -478,7 +478,7 @@ column has no stable height to fit to. This is the constraint behind m46's fit-v
 
 **Scroll ownership is declared, never emergent.** Exactly one element owns scroll per axis per region, and
 the checklist below names it. The page root keeps `overflow-x: hidden`
-([index.css:27-36](../../../../ui/src/index.css#L27)) — the shell must not remove D1's backstop.
+([index.css:27-36](../../../../apps/ui/src/index.css#L27)) — the shell must not remove D1's backstop.
 
 ### 3 — `shell:fullscreen` — how a surface escapes
 
@@ -510,7 +510,7 @@ The nav is a horizontal row of **real `<a href>` links** inside `<nav aria-label
 the top bar after the identity chip, left of the surface slot.
 
 The active marking reuses the **doc-tab idiom already in the product**
-([DetailPanel.tsx:325-327](../../../../ui/src/board/DetailPanel.tsx#L325)):
+([DetailPanel.tsx:325-327](../../../../apps/ui/src/board/DetailPanel.tsx#L325)):
 
 | State | Treatment |
 |---|---|
@@ -540,8 +540,8 @@ true, so this one is bounded rather than argued away:
 
 **Why this and not the segmented pill.** The product already speaks both vocabularies and they mean
 different things. A `bg-primary text-primary-foreground` segment means **"pick one filter value"** — that
-is the fleet's scope control ([Fleet.tsx:332-336](../../../../ui/src/fleet/Fleet.tsx#L332)) and the config
-editor's project/global toggle ([main.tsx:251](../../../../ui/src/main.tsx#L251)). An underline tab means
+is the fleet's scope control ([Fleet.tsx:332-336](../../../../apps/ui/src/fleet/Fleet.tsx#L332)) and the config
+editor's project/global toggle ([main.tsx:251](../../../../apps/ui/src/main.tsx#L251)). An underline tab means
 **"which of these sibling views am I looking at"** — exactly the nav's question, one level up. Reusing the
 tab keeps the two vocabularies distinct; reusing the pill would put three teal-filled blocks in one 48px
 bar (brand mark, active nav item, active scope segment) and make "you are here" compete with "you are
@@ -574,13 +574,13 @@ the origin you are on**.
   Port topology is not the operator's problem.
 - **An item whose destination cannot be resolved from this origin must not render as a live link.** It
   takes the established honest-locality form the fleet already ships for peer boards
-  ([Fleet.tsx:1381-1419](../../../../ui/src/fleet/Fleet.tsx#L1381)): visibly present, marked unavailable,
+  ([Fleet.tsx:1381-1419](../../../../apps/ui/src/fleet/Fleet.tsx#L1381)): visibly present, marked unavailable,
   carrying in `title` what to run to get it (`aof work ui`) — **never a dead `href` that dead-ends here.**
 - **It keeps its slot.** The nav must not reflow when a board appears or disappears.
 - **The unavailable signal is not colour.** It is the **dashed** bottom rule — already this product's
   "not-yet / absent / degraded" primitive (the `not-started` ring at
-  [status.tsx:121](../../../../ui/src/board/status.tsx#L121), the no-presence dot at
-  [Fleet.tsx:1096](../../../../ui/src/fleet/Fleet.tsx#L1096), every dashed placeholder) — plus
+  [status.tsx:121](../../../../apps/ui/src/board/status.tsx#L121), the no-presence dot at
+  [Fleet.tsx:1096](../../../../apps/ui/src/fleet/Fleet.tsx#L1096), every dashed placeholder) — plus
   `aria-disabled="true"` plus the `title`.
 
 > **DEFERRED — this rule has NO PRODUCER in milestone 45 (DG-45-5, recorded 2026-08-08 at the
@@ -621,7 +621,7 @@ opposite case, and stating the distinction is the point.)*
 | **390** | mark · `aof` · chip · divider · **nav disclosure** (`<active label> ▾`) | **present** — holds the surface slot, wrapping within itself | **88px** |
 
 The 390 disclosure is the **existing milestone-switcher trigger shape**
-([BoardLanes.tsx:361-367](../../../../ui/src/board/BoardLanes.tsx#L361)):
+([BoardLanes.tsx:361-367](../../../../apps/ui/src/board/BoardLanes.tsx#L361)):
 `flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 text-sm font-medium`
 with a muted `▾`, `aria-haspopup="menu"`, `aria-expanded`. Its label is the **active surface's name**, so
 "you are here" survives the collapse.
@@ -675,7 +675,7 @@ The shell is five regions. Four of them are chrome and one is the hole the surfa
 
 **Notes on three regions that carry a real decision:**
 
-**R1, the notice rail.** The board's `serverGone` strip ([Board.tsx:410-421](../../../../ui/src/board/Board.tsx#L410))
+**R1, the notice rail.** The board's `serverGone` strip ([Board.tsx:410-421](../../../../apps/ui/src/board/Board.tsx#L410))
 is full-bleed and must sit **above** the chrome and push it down — the shell is the only thing that can
 guarantee that. The strip renders unchanged
 (`border-b border-destructive/40 bg-destructive/10 px-4 py-2 text-xs text-destructive`, `⚠` glyph +
@@ -687,11 +687,11 @@ numbers the render must check.
 
 **R2's identity chip.** The chip is the **origin identity chip**, not strictly a group chip: it names what
 the served origin can name — the group on the fleet origin (`?group=`, else the documented neutral `fleet`,
-[Fleet.tsx:1519-1527](../../../../ui/src/fleet/Fleet.tsx#L1519)); the workspace on a board origin; the config
-name (`payload.name`, already rendered at [main.tsx:241](../../../../ui/src/main.tsx#L241)) on the
+[Fleet.tsx:1519-1527](../../../../apps/ui/src/fleet/Fleet.tsx#L1519)); the workspace on a board origin; the config
+name (`payload.name`, already rendered at [main.tsx:241](../../../../apps/ui/src/main.tsx#L241)) on the
 config-editor origin. It renders in the existing chip form
 (`mono rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground`,
-[Fleet.tsx:289](../../../../ui/src/fleet/Fleet.tsx#L289)), truncating, with the full value in `title`.
+[Fleet.tsx:289](../../../../apps/ui/src/fleet/Fleet.tsx#L289)), truncating, with the full value in `title`.
 
 **The rule is an INVARIANT, not a utility class** (amended 2026-08-08, designer GAP-4):
 
@@ -709,7 +709,7 @@ jump at the loading→loaded threshold for any identity over ~4 characters, whic
 "same-sized pulse block" promise and m43 documented-default-3 forbid.
 
 Fixed by reserving the CONTENT box — `min-w-[calc(7ch+1.125rem)]` — held in **one** constant
-(`IDENTITY_CHIP_WIDTH_CLASS`, [shell-layout.mjs](../../../../ui/src/app/shell-layout.mjs)) that both the chip
+(`IDENTITY_CHIP_WIDTH_CLASS`, [shell-layout.mjs](../../../../apps/ui/src/app/shell-layout.mjs)) that both the chip
 and the placeholder consume, so "same-sized" is true by construction rather than by two hand-typed strings
 agreeing. Re-measured after the fix: **64.172px on every origin, nav's first item at 173.375px on every
 origin** — the cross-origin shift is gone. A lane in
@@ -722,8 +722,8 @@ then pushes the nav sideways; and it is a **label, not a control** — making it
 different milestone. The `ch` unit is honest here precisely because the chip is `mono`.
 
 **R2's wordmark.** The bar renders **`aof` alone**. Today the fleet appends `Mesh`
-([Fleet.tsx:287](../../../../ui/src/fleet/Fleet.tsx#L287)) and the board appends `Work Board`
-([Board.tsx:429](../../../../ui/src/board/Board.tsx#L429)) — a route-varying second word. Under the shell the
+([Fleet.tsx:287](../../../../apps/ui/src/fleet/Fleet.tsx#L287)) and the board appends `Work Board`
+([Board.tsx:429](../../../../apps/ui/src/board/Board.tsx#L429)) — a route-varying second word. Under the shell the
 **nav** names the route, so a second word would say it twice and would violate binding rail 2 by changing
 as you navigate. Both words are retired from the bar. *(This is the third and last knowing visible change
 to an existing surface — see below — and it is the one most likely to be overruled by the operator's mock,
@@ -787,7 +787,7 @@ load / normal:**
 - **empty ≡ NO ROUTE MATCHED.** R1–R3 render **exactly as on any other route**. R4 renders a **centred
   dashed placeholder** in the established empty language
   (`rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground`,
-  [Board.tsx:458](../../../../ui/src/board/Board.tsx#L458)) naming the path that did not match and pointing at
+  [Board.tsx:458](../../../../apps/ui/src/board/Board.tsx#L458)) naming the path that did not match and pointing at
   the nav. Five binding clauses: **the URL is not rewritten** (binding rail 3); it is **not** `accent` or
   `destructive` (nothing failed — the path simply is not a surface); **no nav item is marked active**
   (`aria-current` absent everywhere), because none is, and marking one would lie about where you are;
@@ -806,32 +806,32 @@ load / normal:**
   sub-cases, and they must look different:
   - *the surface's code is not yet loaded* (split chunk in flight) → R4 shows the shell's own neutral mount
     placeholder: a single `animate-pulse` block in the `RegionPlaceholder` shape
-    ([Fleet.tsx:1443-1450](../../../../ui/src/fleet/Fleet.tsx#L1443)), `aria-busy="true"`,
+    ([Fleet.tsx:1443-1450](../../../../apps/ui/src/fleet/Fleet.tsx#L1443)), `aria-busy="true"`,
     `aria-label="Loading <surface>"`;
   - *the surface is mounted and fetching its own data* → the shell shows **nothing**; the surface's own
     loading state owns R4 (the fleet's four `RegionPlaceholder`s; the board's
-    `Loading work stream...` at [Board.tsx:445](../../../../ui/src/board/Board.tsx#L445); the config editor's
-    `Loading AOF...` at [main.tsx:223-225](../../../../ui/src/main.tsx#L223)).
+    `Loading work stream...` at [Board.tsx:445](../../../../apps/ui/src/board/Board.tsx#L445); the config editor's
+    `Loading AOF...` at [main.tsx:223-225](../../../../apps/ui/src/main.tsx#L223)).
   - **Exactly one loading treatment on screen at a time.** The shell's is the outer one and yields the
     instant the surface mounts.
 - **error ≡ A SURFACE THAT FAILED TO LOAD.** R1–R3 intact and **fully usable** — a failed surface must
   never trap the operator on it. R4 renders the page-error language the fleet already ships
-  ([Fleet.tsx:1460-1481](../../../../ui/src/fleet/Fleet.tsx#L1460)): the `accent` pill with its `!` mark, plus
+  ([Fleet.tsx:1460-1481](../../../../apps/ui/src/fleet/Fleet.tsx#L1460)): the `accent` pill with its `!` mark, plus
   a `⟳ Retry`. It must be **distinguishable from a surface's own data error** — the shell's copy names the
   *surface* ("Could not load the Fleet view"), and Retry re-attempts the **mount**, not a fetch. **Never
   `destructive`**: a chunk that did not arrive is a retryable transport condition, not data loss (the m25
   stale rationale, inherited).
 - **populated ≡ NORMAL.** R4 holds the mounted surface, rendering exactly as it does today. The shell adds
   no wrapper padding, no max-width and no background of its own inside R4 — every surface already sets its
-  own (`px-4 py-7 sm:px-8`, `max-w-[1240px]`, [Fleet.tsx:421](../../../../ui/src/fleet/Fleet.tsx#L421)).
+  own (`px-4 py-7 sm:px-8`, `max-w-[1240px]`, [Fleet.tsx:421](../../../../apps/ui/src/fleet/Fleet.tsx#L421)).
 
 **Design ramp each region uses** — every token named from
-[ui/src/index.css:3-25](../../../../ui/src/index.css#L3); **no new token, no hex, no new palette**:
+[ui/src/index.css:3-25](../../../../apps/ui/src/index.css#L3); **no new token, no hex, no new palette**:
 
 | Region | Ramp |
 |---|---|
 | **R1 notice rail** | `destructive` at low alpha: `border-destructive/40 bg-destructive/10 text-destructive`, `text-xs`. The **only** `destructive` in the shell. |
-| **R2 top bar surface** | `bg-card` (white) on the page's `bg-background` (`hsl(210 18% 96%)`), `border-b border-border` (`hsl(214 16% 78%)`), `px-4 gap-3` — verbatim [Fleet.tsx:281](../../../../ui/src/fleet/Fleet.tsx#L281). |
+| **R2 top bar surface** | `bg-card` (white) on the page's `bg-background` (`hsl(210 18% 96%)`), `border-b border-border` (`hsl(214 16% 78%)`), `px-4 gap-3` — verbatim [Fleet.tsx:281](../../../../apps/ui/src/fleet/Fleet.tsx#L281). |
 | **R2 brand mark** | `bg-primary text-primary-foreground`, `rounded-md` (`--radius`), `h-6 w-6`, `text-sm font-bold`. |
 | **R2 wordmark** | `text-sm font-bold tracking-tight text-foreground`. |
 | **R2 identity chip** | `mono text-xs text-muted-foreground` on `bg-muted` with `border-border`, `rounded-md px-2 py-0.5`. |
@@ -840,8 +840,8 @@ load / normal:**
 | **R3 surface bar** | Same `bg-card` + `border-b border-border` as R2, one step shorter (40px), `px-4`. Visually a continuation of the bar, not a new band: **no** second background colour, **no** `bg-sidebar`. This holds when the bar is empty too — an empty R3 is the same band, not a tinted or hidden one. |
 | **R4 content region** | Nothing of its own — `bg-background text-foreground` inherited from the root. Its three shell states use: dashed `border-border` + `text-muted-foreground` (not-found), `animate-pulse bg-muted` (mounting), `accent` pill + `primary` outline Retry (failed). |
 | **R5 overlay** | The occupant's own ramp — the terminal surfaces stay dark (`#0b0f14` / `#0f1629`, [TerminalDock.tsx:287](../../../../ui/src/board/TerminalDock.tsx#L287)); toasts keep `border-border bg-background shadow-lg`. |
-| **Type** | Inter throughout; `.mono` ([index.css:68-72](../../../../ui/src/index.css#L68)) for the identity chip and any id. Bar type is `text-sm`; chip and slot controls `text-xs`. Hierarchy: **wordmark > nav > chip > slot**. |
-| **Motion** | **None.** The shell animates nothing — no route transition, no bar slide, no fade. Route changes are instant. The only motion is the existing `animate-pulse` on load placeholders, which already honours `prefers-reduced-motion` scoping conventions at [index.css:101-105](../../../../ui/src/index.css#L101). |
+| **Type** | Inter throughout; `.mono` ([index.css:68-72](../../../../apps/ui/src/index.css#L68)) for the identity chip and any id. Bar type is `text-sm`; chip and slot controls `text-xs`. Hierarchy: **wordmark > nav > chip > slot**. |
+| **Motion** | **None.** The shell animates nothing — no route transition, no bar slide, no fade. Route changes are instant. The only motion is the existing `animate-pulse` on load placeholders, which already honours `prefers-reduced-motion` scoping conventions at [index.css:101-105](../../../../apps/ui/src/index.css#L101). |
 
 ---
 
@@ -858,8 +858,8 @@ milestone exists to stop. It must not look like an error (nothing failed), must 
 state (nothing is coming), and must not pretend to be a product surface.
 
 **Form: one centred dashed placeholder card** in the house empty-state language — the same primitive as the
-empty fleet ([Fleet.tsx:1483-1500](../../../../ui/src/fleet/Fleet.tsx#L1483)) and the empty board
-([Board.tsx:458-460](../../../../ui/src/board/Board.tsx#L458)). Contents, top to bottom: the `✦` mark at
+empty fleet ([Fleet.tsx:1483-1500](../../../../apps/ui/src/fleet/Fleet.tsx#L1483)) and the empty board
+([Board.tsx:458-460](../../../../apps/ui/src/board/Board.tsx#L458)). Contents, top to bottom: the `✦` mark at
 reduced opacity · a one-line heading naming what will live here (**"Live terminals"**) · a one-line
 muted sub-line · a single row of destination links to the other surfaces.
 
@@ -867,7 +867,7 @@ muted sub-line · a single row of destination links to the other surfaces.
 will build this". Internal scheduling is not product copy.
 
 **A flagged regression risk, for the PO and the architect.** Today, **no `?mode=` renders the config
-editor** ([main.tsx:1265](../../../../ui/src/main.tsx#L1265)) — so on the `setup-ui` origin, `/` **is** the
+editor** ([main.tsx:1265](../../../../apps/ui/src/main.tsx#L1265)) — so on the `setup-ui` origin, `/` **is** the
 config editor. If `/` becomes the landing on every origin, an operator running `aof ui` lands on a
 placeholder instead of their editor. **Recommended answer:** `/` renders the landing on every origin, and
 **each launcher URL is updated to point at its surface's own path** (`aof ui` → the config editor's path),
@@ -919,7 +919,7 @@ and
 
 **Design ramp:** `border-dashed border-border` + `text-muted-foreground` for the card (the house's
 absent/not-yet primitive), `text-foreground` for the heading, `text-primary` for the destination links (the
-same token the product already uses for links, [index.css:183-185](../../../../ui/src/index.css#L183)).
+same token the product already uses for links, [index.css:183-185](../../../../apps/ui/src/index.css#L183)).
 `bg-background` inherited. **No `accent`, no `destructive`, no `primary` fill, no motion** — nothing here
 is an error, a warning, or an action.
 
@@ -954,20 +954,20 @@ before — so several of these have no precedent to inherit.
    milestone introduces.
 6. **One `banner`, one `main`.** The shell owns the single `<header>` banner and the single `<main>` (the
    content region). The routed surfaces' current top-level `<header>`s
-   ([Fleet.tsx:281](../../../../ui/src/fleet/Fleet.tsx#L281), [Board.tsx:423](../../../../ui/src/board/Board.tsx#L423))
+   ([Fleet.tsx:281](../../../../apps/ui/src/fleet/Fleet.tsx#L281), [Board.tsx:423](../../../../apps/ui/src/board/Board.tsx#L423))
    are absorbed into the shell's bar — their contents become surface-slot contributions — so **no second
-   banner survives**, and the board's root `<main>` ([Board.tsx:409](../../../../ui/src/board/Board.tsx#L409))
+   banner survives**, and the board's root `<main>` ([Board.tsx:409](../../../../apps/ui/src/board/Board.tsx#L409))
    must not declare a second one.
 7. **Route changes are announced.** A client-side navigation fires no page-load announcement, so a
    screen-reader user gets silence. On a route change, focus moves to the content region's heading (or the
    region itself, `tabIndex={-1}`). This has **no precedent in the existing code** because there is no
    client-side navigation today — it must be built, not inherited.
 8. **Focus order follows visual order:** skip link → nav (route-table order) → surface slot → content. The
-   visible focus indicator uses `--color-ring` ([index.css:23](../../../../ui/src/index.css#L23)); do not
+   visible focus indicator uses `--color-ring` ([index.css:23](../../../../apps/ui/src/index.css#L23)); do not
    remove the UA outline without replacing it.
 9. **The nav disclosure at 390** declares `aria-haspopup="menu"` + `aria-expanded`, `Esc` closes it and
    returns focus to the trigger, and arrow keys move within it — inheriting the switcher pattern at
-   [BoardLanes.tsx:362-363](../../../../ui/src/board/BoardLanes.tsx#L362).
+   [BoardLanes.tsx:362-363](../../../../apps/ui/src/board/BoardLanes.tsx#L362).
 10. **The fullscreen occupant** traps focus, declares `aria-modal="true"` and an `aria-label` naming the
     session, and **returns focus to the enter control on exit**.
 11. **Target size ≥24×24 CSS px** (WCAG 2.2 SC 2.5.8) for every nav item, the disclosure trigger and every
@@ -977,12 +977,12 @@ before — so several of these have no precedent to inherit.
     truncated. Never focusable, never a switcher in this milestone.
 13. **The notice rail is never colour-only, and never clipped** — the `⚠` glyph plus the **full** sentence
     carry it, exactly as the board's strip already does
-    ([Board.tsx:412-419](../../../../ui/src/board/Board.tsx#L412)). `role="alert"` for a condition that
+    ([Board.tsx:412-419](../../../../apps/ui/src/board/Board.tsx#L412)). `role="alert"` for a condition that
     **arrives**; never for one already present at mount. Past the 25% bound the rail scrolls rather than
     truncates — clipped `role="alert"` content is an accessibility defect, which is exactly why §The chrome
     budget rejects clamping the message as the answer to the budget breach.
 14. **No motion means no motion trap.** The shell animates nothing, so
-    `prefers-reduced-motion` ([index.css:101-105](../../../../ui/src/index.css#L101)) gains no new surface.
+    `prefers-reduced-motion` ([index.css:101-105](../../../../apps/ui/src/index.css#L101)) gains no new surface.
 
 ---
 
@@ -1059,7 +1059,7 @@ Listed so the review knows which rulings above are provisional and what it costs
 6. **Dark mode / a dark shell.** The terminal surfaces are already dark (`#0b0f14` / `#0f1629`) and m49
    makes terminals the home screen. **If the mock shows a dark shell, that is a theme decision beyond this
    milestone's ramp** and must come back as its own design gap with its own token work — this milestone
-   ships the light ramp that exists at [index.css:3-25](../../../../ui/src/index.css#L3) and adds no token.
+   ships the light ramp that exists at [index.css:3-25](../../../../apps/ui/src/index.css#L3) and adds no token.
    *(Carried as its own Outline row in the `@uat` review feature.)*
 7. **The exact route table.** `ARCHITECTURE.md` did not exist in this folder at authoring time
    (2026-08-06). The regions above are written to hold any four-entry table; the nav's labels and order

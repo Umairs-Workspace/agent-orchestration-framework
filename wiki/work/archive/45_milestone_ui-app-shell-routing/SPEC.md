@@ -23,7 +23,7 @@ aofVersion: 0.1.0
 
 `ui/` is not an application. It is three unrelated roots sharing one bundle, selected by a query
 parameter at the render root — `?mode=fleet` → `<Fleet>`, `?mode=board` → `<Board>`, anything else →
-the config editor `<App>` ([main.tsx:1261](../../../../ui/src/main.tsx#L1261)). There is no router, no
+the config editor `<App>` ([main.tsx:1261](../../../../apps/ui/src/main.tsx#L1261)). There is no router, no
 shell, and no navigation between the three.
 
 This milestone makes it an application: **real URL paths behind a shared shell**, so that every
@@ -56,7 +56,7 @@ In scope:
 
 - **A router and real paths.** `/` (the terminals home's future address), `/fleet`, and the board's
   existing surface as paths rather than `?mode=` values. The render-root ternary at
-  [main.tsx:1261](../../../../ui/src/main.tsx#L1261) is replaced, not wrapped.
+  [main.tsx:1261](../../../../apps/ui/src/main.tsx#L1261) is replaced, not wrapped.
 - **A shared app shell** — top bar, group chip, scope/nav — that the three surfaces mount inside, and
   which gives the arc its navigation between them. The shell owns the layout primitives milestone 46's
   terminal control consumes.
@@ -66,9 +66,9 @@ In scope:
 - **Back-compatible `?mode=` redirects.** Every existing entry point keeps working: the legacy
   `?mode=fleet` / `?mode=board` URLs, the `/api/mesh/board-url` consumers, the in-app cross-links that
   currently hard-code `http://127.0.0.1:4181/?mode=fleet`
-  ([Board.tsx:331](../../../../ui/src/board/Board.tsx#L331),
-  [DetailPanel.tsx:212](../../../../ui/src/board/DetailPanel.tsx#L212),
-  [:798](../../../../ui/src/board/DetailPanel.tsx#L798)), and the Rust desktop app's entry URLs.
+  ([Board.tsx:331](../../../../apps/ui/src/board/Board.tsx#L331),
+  [DetailPanel.tsx:212](../../../../apps/ui/src/board/DetailPanel.tsx#L212),
+  [:798](../../../../apps/ui/src/board/DetailPanel.tsx#L798)), and the Rust desktop app's entry URLs.
 - **`?scope=` survives.** It is a deep-link contract with existing consumers; the router carries it
   through untouched. Whether it is subsumed by milestone 47's repo filter is 47's question, not this
   one.

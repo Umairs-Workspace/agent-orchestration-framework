@@ -17,11 +17,11 @@ architecture test files. These are dated observations, not thresholds or a maint
 
 The root [package.json](../../../package.json) already declares `ui` as an npm workspace. Its
 runtime dependencies combine prompting, WebSockets, native PTY support, and headless terminal
-emulation. [ui/package.json](../../../ui/package.json) declares React/Vite and browser terminal
+emulation. [ui/package.json](../../../apps/ui/package.json) declares React/Vite and browser terminal
 dependencies. A separate `ui/package-lock.json` also exists alongside the root lockfile.
 
 The desktop application is a Rust/Tauri project under
-[app/desktop](../../../app/desktop/Cargo.toml), with its own frontend and Cargo lockfiles. Its core
+[app/desktop](../../../apps/desktop/Cargo.toml), with its own frontend and Cargo lockfiles. Its core
 crate and Tauri shell have deliberately different build/test scopes. A Yarn workspace wrapper
 must preserve Cargo's ownership rather than treating desktop as an existing Node application.
 
@@ -55,7 +55,7 @@ that the present source tree already implements the proposed package boundaries.
 | [memory/graphify-backend.mjs](../../../src/memory/graphify-backend.mjs) | Imports `invoke` and workspace loading from the central command registry. | Extract a graph service API or inject a narrow invocation interface. |
 | [work/read.mjs](../../../src/work/read.mjs) | Combines local work queries, global cache access and mesh worktree classification. | Keep local work mechanics independent of mesh-specific projection/admission policy. |
 | [agent-session-driver.mjs](../../../src/agent-session-driver.mjs) | Combines provider/terminal execution with observation and phase-brief helpers. | Separate session mechanics from work-specific input assembly and policy. |
-| [ui/src/board/action.mjs](../../../ui/src/board/action.mjs) | Imports formatting helpers through `../../../src/notify/form.mjs`. | Browser-safe shared helpers need a public export instead of a sibling-source escape. |
+| [ui/src/board/action.mjs](../../../apps/ui/src/board/action.mjs) | Imports formatting helpers through `../../../src/notify/form.mjs`. | Browser-safe shared helpers need a public export instead of a sibling-source escape. |
 
 These inspected imports establish boundary leaks, not an exhaustive cycle census. Refinement needs
 a resolver-aware dependency graph covering static imports, re-exports, literal dynamic imports,

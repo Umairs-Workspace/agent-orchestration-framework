@@ -59,7 +59,7 @@ report.
 touch disjoint files. `47/03` depends on this one for its functions.
 
 **One home, and it is an existing one.** ADR-001: the filter EXTENDS
-[ui/src/fleet/scope.mjs](../../../../../../ui/src/fleet/scope.mjs) — there is no sibling filter module,
+[ui/src/fleet/scope.mjs](../../../../../../apps/ui/src/fleet/scope.mjs) — there is no sibling filter module,
 and no module outside that one home names the `repo` query key. This is the standing house rule
 (*extend existing surfaces, never add siblings*) and m45/ADR-006's *"`scope` keeps its existing ONE
 home"* made structural rather than remembered.
@@ -84,7 +84,7 @@ read `.body`; the strings they assert on are unchanged.
 > so shipping `{ heading, body }` without the call-site edit renders an object as a child and breaks
 > the live empty state at runtime *and* at `tsc` — meaning the deferral this paragraph specifies was
 > never available. The one-line adaptation therefore landed in **this** story
-> ([Fleet.tsx:1330-1347](../../../../../../ui/src/fleet/Fleet.tsx#L1330), labelled *"CALL-SITE
+> ([Fleet.tsx:1330-1347](../../../../../../apps/ui/src/fleet/Fleet.tsx#L1330), labelled *"CALL-SITE
 > ADAPTATION ONLY"*, verified behaviour-preserving — heading and body byte-identical to the strings
 > the component rendered before). Three consequences, recorded rather than left implicit:
 > **(1)** this story is **not** zero-blast-radius and does **not** touch only two files;

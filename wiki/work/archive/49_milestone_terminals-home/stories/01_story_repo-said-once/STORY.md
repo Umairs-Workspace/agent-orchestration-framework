@@ -55,7 +55,7 @@ tool and still duplicates.
 **Governing ADR: [ADR-010](../../ARCHITECTURE.md) — and the reason this is ONE commit is not tidiness.**
 Four things move together:
 
-1. the JS formatter, `fleetCurrentWorkLines` ([runs.mjs](../../../../../../ui/src/fleet/runs.mjs), ← 7);
+1. the JS formatter, `fleetCurrentWorkLines` ([runs.mjs](../../../../../../apps/ui/src/fleet/runs.mjs), ← 7);
 2. the Rust view-model, `app/desktop/crates/core/src/{status.rs,view_model.rs}`;
 3. the local JS pin, `test/mesh-fleet-session-subsumption-render.test.mjs` row 6 — whose own comment
    says the rule is milestone 49's to decide;

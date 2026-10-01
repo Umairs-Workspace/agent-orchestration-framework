@@ -39,13 +39,13 @@ because one pulsing dot on one card is what hid this, and a grid of a dozen is w
 
 Measured at this refine and re-verified independently at source:
 
-- [palette.mjs:186-188](../../../../../../ui/src/terminal/palette.mjs#L186) states, in a comment:
+- [palette.mjs:186-188](../../../../../../apps/ui/src/terminal/palette.mjs#L186) states, in a comment:
   *"Both pulses honour `prefers-reduced-motion` through the existing scoping convention in
   `ui/src/index.css`, which is why the class is the house's own and not a terminal-local animation."*
 - The **only** `prefers-reduced-motion` rule anywhere in `ui/` is
-  [index.css:112-116](../../../../../../ui/src/index.css#L112), and it names **`.aof-pending` alone.**
+  [index.css:112-116](../../../../../../apps/ui/src/index.css#L112), and it names **`.aof-pending` alone.**
 - `TERMINAL_MOTION_CLASS.pulse` emits a bare `animate-pulse`, and it is applied **unconditionally** at
-  [TerminalIdentity.tsx:119](../../../../../../ui/src/terminal/TerminalIdentity.tsx#L119). There is no
+  [TerminalIdentity.tsx:119](../../../../../../apps/ui/src/terminal/TerminalIdentity.tsx#L119). There is no
   `motion-reduce:` variant and no CSS rule that silences it.
 
 So the escape hatch the comment points at does not cover the class it claims to cover. That combination

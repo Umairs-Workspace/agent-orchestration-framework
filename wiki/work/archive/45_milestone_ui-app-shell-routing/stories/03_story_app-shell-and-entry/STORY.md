@@ -72,8 +72,8 @@ Total chrome is capped at **88px** because the desktop app's window is 760×520,
 ≥432px of content.
 
 **Two design gaps this story closes** (DESIGN.md): **DG-45-1** — the fleet and board paint *different*
-brand marks in the same bar position ([Fleet.tsx:283-285](../../../../../../ui/src/fleet/Fleet.tsx#L283-L285)
-vs [Board.tsx:425-427](../../../../../../ui/src/board/Board.tsx#L425-L427)); the shell paints one.
+brand marks in the same bar position ([Fleet.tsx:283-285](../../../../../../apps/ui/src/fleet/Fleet.tsx#L283-L285)
+vs [Board.tsx:425-427](../../../../../../apps/ui/src/board/Board.tsx#L425-L427)); the shell paints one.
 **DG-45-2** — `z-50` currently means three unrelated things; the shell owns a named ladder and `z-50`
 becomes fullscreen alone.
 

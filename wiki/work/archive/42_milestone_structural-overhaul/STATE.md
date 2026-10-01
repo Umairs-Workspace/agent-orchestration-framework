@@ -403,7 +403,7 @@ doc: state
     wins `mergePresence` — anything it omits is not merged around, it is destroyed. m38/ADR-001's additive
     fifth key `sessions` is therefore dropped for every remote node, on every tick.
   - **Consequence.** The Rust desktop's only fleet-data command is `aof mesh status --json`
-    ([poll.rs](../../../../app/desktop/crates/core/src/poll.rs#L20-L22)) and its `current_work()` reads
+    ([poll.rs](../../../../apps/desktop/crates/core/src/poll.rs#L20-L22)) and its `current_work()` reads
     `presence.sessions` — so a worker being actively worked on reads **`idle`** on the desktop fleet. The web
     fleet (`/api/mesh/status`, presence read straight off disk) is unaffected.
   - **Measured** (isolated `AOF_GLOBAL_HOME`, real publishers, real `mesh:status` invoke, `ctx.fabricPeers`

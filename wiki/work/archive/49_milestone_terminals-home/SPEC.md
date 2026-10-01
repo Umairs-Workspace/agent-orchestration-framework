@@ -67,7 +67,7 @@ In scope:
 - **Invariant 4 of `acd-fleet-terminal-input-constrained` amended, deliberately and in one place.** That
   invariant currently reads "THE FLEET PAGE STAYS A MONITOR — the interactive surface is the BOARD DOCK",
   and it is true today — the fleet declares `POSTURE_READ_ONLY` as a literal in
-  [ui/src/fleet/terminal-mount.mjs](../../../../ui/src/fleet/terminal-mount.mjs), and the policy turns that
+  [ui/src/fleet/terminal-mount.mjs](../../../../apps/ui/src/fleet/terminal-mount.mjs), and the policy turns that
   into `disableStdin: true` with no `onData` sink registered at all. This milestone makes the fleet
   origin an interactive surface, so that invariant must be rewritten — not deleted, and not quietly
   broken. The other three invariants survive unchanged; the amendment is the narrow one.

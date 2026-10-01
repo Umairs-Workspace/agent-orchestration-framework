@@ -122,7 +122,7 @@ its roving stop.
 ### One live region, not N
 
 [DESIGN DG-49-7](../../DESIGN.md), confirmed at source: `aria-live="polite"` is on the **per-pane**
-state chip ([TerminalIdentity.tsx:117](../../../../../../ui/src/terminal/TerminalIdentity.tsx#L117)). One
+state chip ([TerminalIdentity.tsx:117](../../../../../../apps/ui/src/terminal/TerminalIdentity.tsx#L117)). One
 pane on one card was fine; a dozen panes is a screen reader narrating the entire fleet, continuously.
 This story replaces that with **one grid-level polite region**. Note this is an edit to the *shared*
 control, so it must not regress the board dock or the fleet card — both still need their announcement.

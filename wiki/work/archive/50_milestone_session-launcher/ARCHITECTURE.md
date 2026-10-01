@@ -776,23 +776,23 @@ ONE subscriber ([mesh-ui-serve.mjs:1081-1083](../../../../src/mesh-ui-serve.mjs#
 **Every hop the ack needs already exists, is wired at a production call site, and is under test.**
 
 **5. The fleet's data visibility is POLL, not push.** `Fleet.tsx`'s own comment at
-[:457-463](../../../../ui/src/fleet/Fleet.tsx#L457) — "Poll-only freshness (NO WebSocket, NO SSE)" — and
-`POLL_MS = 5000` ([assign-affordance.mjs:54](../../../../ui/src/fleet/assign-affordance.mjs#L54)). The one
+[:457-463](../../../../apps/ui/src/fleet/Fleet.tsx#L457) — "Poll-only freshness (NO WebSocket, NO SSE)" — and
+`POLL_MS = 5000` ([assign-affordance.mjs:54](../../../../apps/ui/src/fleet/assign-affordance.mjs#L54)). The one
 socket the fleet opens is `/ws/terminal-view`, an opaque byte pipe. And the sibling affordance this one
 mirrors already solved "a dispatch that never answers": `ASSIGN_TIMEOUT_MS = POLL_MS * 2`
-([:71](../../../../ui/src/fleet/assign-affordance.mjs#L71)) with the copy `"no answer — timed out"` and a
-detail that says the outcome is **UNKNOWN, not negative** ([:129-137](../../../../ui/src/fleet/assign-affordance.mjs#L129)).
+([:71](../../../../apps/ui/src/fleet/assign-affordance.mjs#L71)) with the copy `"no answer — timed out"` and a
+detail that says the outcome is **UNKNOWN, not negative** ([:129-137](../../../../apps/ui/src/fleet/assign-affordance.mjs#L129)).
 
 **6. A launched session would render DEAD in the grid, and the arithmetic that makes it so is pinned
 by a gate that names this ADR as its only amender.** Milestone 49's terminals home derives each pane's
 **feed axis** in the browser from ONE field: `establishedProducer` requires a non-blank `ref` AND
-`assignmentId` on `workItem` ([feed-axis.mjs:79-98](../../../../ui/src/home/feed-axis.mjs#L79)). A launched
+`assignmentId` on `workItem` ([feed-axis.mjs:79-98](../../../../apps/ui/src/home/feed-axis.mjs#L79)). A launched
 session is a *free* session — no assignment, so `workItem` is `null` — so it lands in `no-producer`, and
 four already-built consequences follow: no socket
-([grid.mjs:181-185](../../../../ui/src/home/grid.mjs#L181)), a read-only mount
-([session-mount.mjs:21-39](../../../../ui/src/home/session-mount.mjs#L21)), the chip `no live output` with
+([grid.mjs:181-185](../../../../apps/ui/src/home/grid.mjs#L181)), a read-only mount
+([session-mount.mjs:21-39](../../../../apps/ui/src/home/session-mount.mjs#L21)), the chip `no live output` with
 the pane line `no live output — no assignment is relaying this session`
-([feed-axis.mjs:57](../../../../ui/src/home/feed-axis.mjs#L57), [:229](../../../../ui/src/home/feed-axis.mjs#L229)),
+([feed-axis.mjs:57](../../../../apps/ui/src/home/feed-axis.mjs#L57), [:229](../../../../apps/ui/src/home/feed-axis.mjs#L229)),
 and neither header control — no expand, no `Watch terminal →`, which is the only way to type. **All
 while story 03 is streaming that session's bytes and accepting input on them.** That is SPEC's
 "appearing in the terminals-home grid like any other session" and "a launcher that produces a second
@@ -841,7 +841,7 @@ the terminal view; delaying it delays the terminal.
 The trade-off is named honestly: an optimistic 200 means **`200` proves the dispatch was accepted, never
 that a session exists**. That is the same statement `/api/mesh/assign`'s affordance already makes — "the
 affordance reports the CALL; region 5 reports the ASSIGNMENT"
-([assign-affordance.mjs:29-36](../../../../ui/src/fleet/assign-affordance.mjs#L29)) — and story 04's UI
+([assign-affordance.mjs:29-36](../../../../apps/ui/src/fleet/assign-affordance.mjs#L29)) — and story 04's UI
 must speak it the same way (DESIGN owns the words).
 
 **2. The ack rides the SHIPPED loopback relay, on the machinery terminal frames already use.** Three
@@ -1018,14 +1018,14 @@ looking like a slow success.
 
 DESIGN §The state machine states both and rules that they "must not be one number"; it derives them and
 leaves the pinning here. Both are expressed in terms of **`HOME_POLL_MS = 5000`**
-([page-state.mjs:357](../../../../ui/src/home/page-state.mjs#L357)) — the terminals home's OWN cadence
+([page-state.mjs:357](../../../../apps/ui/src/home/page-state.mjs#L357)) — the terminals home's OWN cadence
 constant, **not** `ui/src/fleet/`'s `POLL_MS`, because `ui/src/home/` may import nothing from
 `ui/src/fleet/` (49/ADR-001, gated) and `page-state.mjs` already declares its own for exactly that
 reason. Neither is ever a second literal.
 
 - **The POST deadline — `2 × HOME_POLL_MS` (10s).** The request itself hanging. Inherited verbatim with
   its reasoning from m38: *"one interval is too eager for a cross-machine POST; two is past the point
-  any answer is still useful"* ([assign-affordance.mjs:63-71](../../../../ui/src/fleet/assign-affordance.mjs#L63)).
+  any answer is still useful"* ([assign-affordance.mjs:63-71](../../../../apps/ui/src/fleet/assign-affordance.mjs#L63)).
   It abandons the WAIT, never the CALL — no abort and no retry, because a possibly-successful
   server-side mint must not be made ambiguous.
 - **The outcome window — `3 × HOME_POLL_MS` (15s).** The 200 is in hand and the session is not yet
@@ -1071,7 +1071,7 @@ fact is produced where it is known and carried where every other session fact al
   order — is a GAP"). With a boolean the payload **cannot** distinguish the two populations, so
   no-second-class is structural rather than a rule someone must remember.
 - **The wire states a transport fact; the browser keeps its own word.** The field is `relaying`; the
-  axis stays `producer-known`. `feed-axis.mjs` "DEFINES NO STATE WORD" ([:12-18](../../../../ui/src/home/feed-axis.mjs#L12))
+  axis stays `producer-known`. `feed-axis.mjs` "DEFINES NO STATE WORD" ([:12-18](../../../../apps/ui/src/home/feed-axis.mjs#L12))
   and this does not give it one — no vocabulary crosses in either direction.
 - **The WORKER writes it, and only the worker.** `mesh-session-spawn-handler.mjs` passes `relaying: true`
   to its `startSession` and `pingSession` calls (ADR-004 decision 1-2's existing calls, one field wider).
@@ -1153,12 +1153,12 @@ now rather than at build time:
    the two deadlines derived from `HOME_POLL_MS`, the code→copy map, and the derived-not-remembered
    selection resolution. It **must** be a module: this repo has no React test harness, and "a rule that
    can only be exercised through a component is a rule with no test"
-   ([feed-axis.mjs:6-9](../../../../ui/src/home/feed-axis.mjs#L6)) — DESIGN's failure map alone is fourteen
+   ([feed-axis.mjs:6-9](../../../../apps/ui/src/home/feed-axis.mjs#L6)) — DESIGN's failure map alone is fourteen
    testable rows.
 2. `ui/src/home/session-launcher.d.mts` — 49/ADR-001's split, which that budget entry itself calls "not
    optional".
 3. `ui/src/home/SessionLauncher.tsx` — the ONE component (trigger + panel), mounted from `Home.tsx`'s
-   **existing** `<SurfaceSlot>` contribution ([Home.tsx:150-164](../../../../ui/src/home/Home.tsx#L150)).
+   **existing** `<SurfaceSlot>` contribution ([Home.tsx:150-164](../../../../apps/ui/src/home/Home.tsx#L150)).
 
 **The launcher is not a SPLIT of an existing noun — it is the domain's first WRITER**, where all fifteen
 existing members are readers. That is what makes it a new noun rather than the growth the entry closed
@@ -1178,7 +1178,7 @@ the directory against. The three alternatives, each rejected on a measured groun
 The route paths and the poll constant the launcher needs live where the home already keeps its own —
 beside `HOME_STATUS_PATH` / `HOME_POLL_MS` in `page-state.mjs`, or in the launcher module — **never**
 imported from `ui/src/fleet/api.ts`. The home declares its own, and the duplication is named rather than
-accidental, exactly as `HOME_POLL_MS` already is ([page-state.mjs:346-357](../../../../ui/src/home/page-state.mjs#L346)).
+accidental, exactly as `HOME_POLL_MS` already is ([page-state.mjs:346-357](../../../../apps/ui/src/home/page-state.mjs#L346)).
 
 **11. Fitness functions this ADR owes.**
 
@@ -1299,7 +1299,7 @@ accidental, exactly as `HOME_POLL_MS` already is ([page-state.mjs:346-357](../..
 - **Fold `spawnOutcomes` onto the existing `GET /api/mesh/status` payload.** The strongest rejected
   option: no route-table churn at all, and one poll loop. Rejected on three grounds. (i) `/api/mesh/status`
   answers *what the fleet is* — a projection of the durable store, typed in the client as
-  `FleetStatus = GlobalMeshStatus` ([api.ts:267](../../../../ui/src/fleet/api.ts#L267)); a per-dispatch
+  `FleetStatus = GlobalMeshStatus` ([api.ts:267](../../../../apps/ui/src/fleet/api.ts#L267)); a per-dispatch
   transient event is not fleet state, and smuggling one in makes that type a lie for every grid consumer.
   (ii) It is the **expensive** read — a machine-wide `queryGlobalMeshStatus` — so the affordance could
   never poll it faster than the grid, and a refusal known worker-side in 200ms would sit unseen for up
@@ -1332,7 +1332,7 @@ accidental, exactly as `HOME_POLL_MS` already is ([page-state.mjs:346-357](../..
 - **Let the browser infer `producer-known` from "no work item ⇒ a launched session".** Rejected, and it
   is the option a build reaches for first because it needs no wire change at all. It is a guess about a
   process on another machine — the exact class of assertion `streaming` beat `running` for refusing to
-  make ([feed-axis.mjs:12-18](../../../../ui/src/home/feed-axis.mjs#L12)) — and it is wrong for the
+  make ([feed-axis.mjs:12-18](../../../../apps/ui/src/home/feed-axis.mjs#L12)) — and it is wrong for the
   population that motivated `no-producer` in the first place: a hook-registered `claude` an operator
   started by hand on a worker also has no work item, and nothing relays it. The guess would light up
   every one of those panes with a socket that never delivers a byte.

@@ -24,14 +24,14 @@ doc: architecture
 > - **[45 · ui-app-shell-routing](../45_milestone_ui-app-shell-routing/ARCHITECTURE.md) — shipped
 >   (`14ac6e1`), and its ADR-005 is a CONTRACT written for this milestone.** Every primitive m46
 >   needs already exists on disk and was read here: the three region constants
->   ([shell-layout.mjs:35-41](../../../../ui/src/app/shell-layout.mjs#L35-L41)), the z ladder with
->   `z-30` reserved for this dock ([:611](../../../../ui/src/app/shell-layout.mjs#L611)), the published
->   chrome height ([:274](../../../../ui/src/app/shell-layout.mjs#L274),
->   [:278](../../../../ui/src/app/shell-layout.mjs#L278)), the two content modes with `content:fixed`
->   BINDING for a terminal-hosting surface ([:369-382](../../../../ui/src/app/shell-layout.mjs#L369-L382),
->   [:393](../../../../ui/src/app/shell-layout.mjs#L393)), and the fullscreen door whose whole shape was
+>   ([shell-layout.mjs:35-41](../../../../apps/ui/src/app/shell-layout.mjs#L35-L41)), the z ladder with
+>   `z-30` reserved for this dock ([:611](../../../../apps/ui/src/app/shell-layout.mjs#L611)), the published
+>   chrome height ([:274](../../../../apps/ui/src/app/shell-layout.mjs#L274),
+>   [:278](../../../../apps/ui/src/app/shell-layout.mjs#L278)), the two content modes with `content:fixed`
+>   BINDING for a terminal-hosting surface ([:369-382](../../../../apps/ui/src/app/shell-layout.mjs#L369-L382),
+>   [:393](../../../../apps/ui/src/app/shell-layout.mjs#L393)), and the fullscreen door whose whole shape was
 >   fixed for this milestone's caller
->   ([shell-bus.mjs:115-135](../../../../ui/src/app/shell-bus.mjs#L115-L135)).
+>   ([shell-bus.mjs:115-135](../../../../apps/ui/src/app/shell-bus.mjs#L115-L135)).
 >
 > **Memory recall — run before the first ADR, and it came back NON-empty.**
 > `aof work memory recall "one terminal control extracted, session-source parameterisation, origin
@@ -90,7 +90,7 @@ doc: architecture
 > **Corrections to this milestone's own citations, measured 2026-08-08 at `14ac6e1`.** Recorded here
 > because a stale pointer in a SPEC becomes a wrong edit in a story:
 > - SPEC says the fleet card peek is mounted at `Fleet.tsx:675`. It is at
->   **[Fleet.tsx:759](../../../../ui/src/fleet/Fleet.tsx#L759)**.
+>   **[Fleet.tsx:759](../../../../apps/ui/src/fleet/Fleet.tsx#L759)**.
 > - The spike's `## Outcome / Next` table marks `mirror` "interactive: yes (since m42)". True of the
 >   BOARD dock's remote lane ([TerminalDock.tsx:261-263](../../../../ui/src/board/TerminalDock.tsx#L261-L263));
 >   **false, deliberately, of the FLEET peek**, which is read-only in fact
@@ -155,7 +155,7 @@ the `.tsx` is, by construction, untestable in this repo.
   a `.d.mts` sibling, as every existing helper here does.
 - **The `.mjs` set touches no `window` and no `location`.** It receives them. This is
   `ui/src/app/routes.mjs`'s rule and `ui/src/app/shell-nav.mjs`'s
-  ([:15-21](../../../../ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an INPUT precisely so
+  ([:15-21](../../../../apps/ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an INPUT precisely so
   the module stays headless), and it is what makes ADR-004's origin handling testable at all.
 - **This is an INVARIANT, not a default.** A story that puts a decision in the `.tsx` because it was
   quicker has removed it from the test suite, and no reviewer reliably notices an absence.
@@ -356,8 +356,8 @@ discovery at all:
 
 And the board→fleet case is real even with no fleet running: the mirror affordance is fed by the
 board's OWN work rows (`item.execution.{nodeId, sessionId}`,
-[DetailPanel.tsx:256](../../../../ui/src/board/DetailPanel.tsx#L256) →
-[Board.tsx:368](../../../../ui/src/board/Board.tsx#L368)), which exist whether or not `aof mesh ui` is up.
+[DetailPanel.tsx:256](../../../../apps/ui/src/board/DetailPanel.tsx#L256) →
+[Board.tsx:368](../../../../apps/ui/src/board/Board.tsx#L368)), which exist whether or not `aof mesh ui` is up.
 
 **Decision.**
 
@@ -418,7 +418,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
 
 - **ONE pure builder in the `.mjs` set: `terminalSocketUrl(source, params, { origins })`.** It takes
   the origins as an ARGUMENT and reads no global — the same shape as
-  [shell-nav.mjs:15-21](../../../../ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an input
+  [shell-nav.mjs:15-21](../../../../apps/ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an input
   "precisely so the whole task stays headless". The `.tsx` supplies `window.location` for
   `originRole: "self"`. `wss:` iff the page is `https:`, as both current builders already do.
 - **THE INVARIANT: no terminal surface holds a port literal.** Not a constant, not a template, not a
@@ -454,7 +454,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
   ([mesh-ui-serve.mjs:768-772](../../../../src/mesh-ui-serve.mjs#L768-L772)).
 - **An unreachable origin renders a LABELLED unavailable pane naming its cause and what to run**, never
   a blank one and never a spinner — spike 44 sub-question 5, and the same vocabulary the shell's nav
-  already speaks ([shell-nav.mjs:42-47](../../../../ui/src/app/shell-nav.mjs#L42-L47), where an
+  already speaks ([shell-nav.mjs:42-47](../../../../apps/ui/src/app/shell-nav.mjs#L42-L47), where an
   unreachable destination carries a COMMAND rather than an apology).
 - **Nothing on the fleet face becomes a mutation.** The fleet side of this milestone adds no route and
   no write; m38/ADR-012's single carve-out is untouched (spike sub-question 3).
@@ -557,7 +557,7 @@ output` forever.
 > **The implementation was already correct, and that is what makes this a documentation defect only.**
 > [DESIGN §The merged ramp](DESIGN.md) states *"Seven states plus one fallback"* and tables all eight
 > words; the shipped core agrees exactly —
-> [ui/src/terminal/state-ramp.mjs:47-58](../../../../ui/src/terminal/state-ramp.mjs#L47-L58) freezes
+> [ui/src/terminal/state-ramp.mjs:47-58](../../../../apps/ui/src/terminal/state-ramp.mjs#L47-L58) freezes
 > `TERMINAL_STATES` at those seven members with `TERMINAL_STATE_LIST` derived from it, and keeps
 > `UNKNOWN_STATE = "unknown"` deliberately OUT of the list under its own comment: *"`unknown` is
 > deliberately NOT a member: it is what a state the ramp has not learned resolves TO, never a state a
@@ -660,7 +660,7 @@ deleting it, because a green gate is read as a satisfied contract.
 - **Invariant 4 is RE-EXPRESSED at the same strength, on a subject that still exists after the move.**
   Three assertions replace one sweep:
   1. **The call site.** `ui/src/fleet/Fleet.tsx` mounts the control in its **read-only posture** —
-     asserted at [Fleet.tsx:759](../../../../ui/src/fleet/Fleet.tsx#L759)'s mount, structurally.
+     asserted at [Fleet.tsx:759](../../../../apps/ui/src/fleet/Fleet.tsx#L759)'s mount, structurally.
   2. **The policy.** ADR-002's `inputEnabled = source.canInput && !mount.readOnly` is a pure function
      driven BEHAVIOURALLY over the whole frozen source table × both postures, asserting that a
      read-only mount yields `disableStdin: true` and no `onData` registration. A pure function tested
@@ -848,16 +848,16 @@ or a 700 ms fallback ([:186-198](../../../../ui/src/board/TerminalDock.tsx#L186-
 
 **Context, read at source in the shipped m45 code.** ADR-005 [Build-3] ruled the dock's region home is
 `overlay` and reserved `z-30` for it, and Shell.tsx renders that row today
-([:316-360](../../../../ui/src/app/Shell.tsx#L316-L360)) with a comment naming *"m46's dock"* as the next
+([:316-360](../../../../apps/ui/src/app/Shell.tsx#L316-L360)) with a comment naming *"m46's dock"* as the next
 occupant. But the surface→shell bus offers only TWO contribution slots — `SLOT_SURFACE` and
-`SLOT_NOTICE` ([shell-bus.mjs:30-31](../../../../ui/src/app/shell-bus.mjs#L30-L31)) — plus the fullscreen
+`SLOT_NOTICE` ([shell-bus.mjs:30-31](../../../../apps/ui/src/app/shell-bus.mjs#L30-L31)) — plus the fullscreen
 door. **There is no channel by which a surface can put a dock in the overlay region.** Meanwhile the
-dock still renders inside the board's own tree ([Board.tsx:561-563](../../../../ui/src/board/Board.tsx#L561-L563)),
+dock still renders inside the board's own tree ([Board.tsx:561-563](../../../../apps/ui/src/board/Board.tsx#L561-L563)),
 hoisted only out of the board's internal conditional
-([:535-539](../../../../ui/src/board/Board.tsx#L535-L539)).
+([:535-539](../../../../apps/ui/src/board/Board.tsx#L535-L539)).
 
 Shell.tsx also warns, in terms, that this is the next collision:
-[:349-358](../../../../ui/src/app/Shell.tsx#L349-L358) explains that the adoption host is childless
+[:349-358](../../../../apps/ui/src/app/Shell.tsx#L349-L358) explains that the adoption host is childless
 *"the moment [Build-3]'s overlay region gains a second React child (m46's dock is the named next
 occupant of this very region)"*.
 
@@ -865,26 +865,26 @@ occupant of this very region)"*.
 promise something the architecture cannot deliver.** [Build-3] argues a `content`-parented dock *"is
 unmounted by every route change, so navigating from `/board` to `/fleet` would kill the PTY"*. The
 CONCLUSION is right; the MECHANISM is not. m45's navigation is real `<a href>` links with no client-side
-interception ([Shell.tsx:395-398](../../../../ui/src/app/Shell.tsx#L395-L398)) and the entry evaluates
+interception ([Shell.tsx:395-398](../../../../apps/ui/src/app/Shell.tsx#L395-L398)) and the entry evaluates
 `routeFor(location.pathname)` exactly once at module load
-([main.tsx:49-61](../../../../ui/src/main.tsx#L49-L61)). **A surface change is a full document load.** The
+([main.tsx:49-61](../../../../apps/ui/src/main.tsx#L49-L61)). **A surface change is a full document load.** The
 PTY dies at the browser, before React gets a say, and no DOM re-parenting can save it.
 
 **Decision.**
 - **The dock is contributed to the shell's `overlay` region through a THIRD slot on the existing bus**
-  (`contribute(...)` is already region-keyed, [shell-bus.mjs:72-84](../../../../ui/src/app/shell-bus.mjs#L72-L84);
+  (`contribute(...)` is already region-keyed, [shell-bus.mjs:72-84](../../../../apps/ui/src/app/shell-bus.mjs#L72-L84);
   this adds the slot constant and the shell's read-back beside
-  [Shell.tsx:131-132](../../../../ui/src/app/Shell.tsx#L131-L132)). It takes `z-30` from the ladder —
+  [Shell.tsx:131-132](../../../../apps/ui/src/app/Shell.tsx#L131-L132)). It takes `z-30` from the ladder —
   imported, never retyped, per `acd-shell-z-ladder-single-home`.
 - **The degraded path is preserved and is the reason the bus is the right seam:** with no shell present
-  the contribution renders IN PLACE ([shell-bus.mjs:18-22](../../../../ui/src/app/shell-bus.mjs#L18-L22)),
+  the contribution renders IN PLACE ([shell-bus.mjs:18-22](../../../../apps/ui/src/app/shell-bus.mjs#L18-L22)),
   so `test/support/board-app-harness.mjs` keeps working untouched.
 - **NO per-surface `fixed inset-0` layer.** That is ADR-005's named prohibition, and
   [FleetTerminalView.tsx:411-412](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L411-L412)
   is the one live violation — carried by m45 on an explicit shrink-only exemption *because this
   milestone deletes the file*. Re-creating that shape in the extracted control would make the exemption
   permanent under a new name.
-- **Fullscreen goes through `requestFullscreen`** ([shell-bus.mjs:115-135](../../../../ui/src/app/shell-bus.mjs#L115-L135)),
+- **Fullscreen goes through `requestFullscreen`** ([shell-bus.mjs:115-135](../../../../apps/ui/src/app/shell-bus.mjs#L115-L135)),
   handing the LIVE DOM node and its `home`, with `claimsEscape: true` when input is enabled — because
   this control forwards stdin ([TerminalDock.tsx:261-263](../../../../ui/src/board/TerminalDock.tsx#L261-L263))
   and `Esc` is a live keystroke for the `claude` TUI ([Build-2]). The visible exit control remains
@@ -909,11 +909,11 @@ PTY dies at the browser, before React gets a say, and no DOM re-parenting can sa
   measured reason `--aof-shell-chrome-height` was promoted into ADR-005's contract as point 7. The clamp
   becomes a pure function of the content box, using
   `CHROME_HEIGHT_PROPERTY` / `CONTENT_HEIGHT_EXPRESSION`
-  ([shell-layout.mjs:274](../../../../ui/src/app/shell-layout.mjs#L274),
-  [:278](../../../../ui/src/app/shell-layout.mjs#L278)) — the same primitive
-  [Board.tsx:420](../../../../ui/src/board/Board.tsx#L420) already sizes itself with.
+  ([shell-layout.mjs:274](../../../../apps/ui/src/app/shell-layout.mjs#L274),
+  [:278](../../../../apps/ui/src/app/shell-layout.mjs#L278)) — the same primitive
+  [Board.tsx:420](../../../../apps/ui/src/board/Board.tsx#L420) already sizes itself with.
 - **A terminal-hosting surface declares `content:fixed`**, per
-  [shell-layout.mjs:369-393](../../../../ui/src/app/shell-layout.mjs#L369-L393) (binding, and `board`
+  [shell-layout.mjs:369-393](../../../../apps/ui/src/app/shell-layout.mjs#L369-L393) (binding, and `board`
   already does).
 - **STATED PLAINLY, so no story promises it: a session does NOT survive navigation between surfaces, and
   this milestone does not make it.** Navigation is a document load. The reasons to host in `overlay` are

@@ -90,7 +90,7 @@ Without the narrowing there is no producer for that state and the requirement wo
 nothing; with it, the honest label appears exactly where the keystroke would have died.
 
 **`SET_POSTURE` costs the SESSION, and this story must not discover that the hard way.**
-[host-model.mjs:287](../../../../../../ui/src/terminal/host-model.mjs#L287) records it for this milestone by
+[host-model.mjs:287](../../../../../../apps/ui/src/terminal/host-model.mjs#L287) records it for this milestone by
 name: *"stdin is fixed at xterm construction — UNREACHABLE in m46, named so m49 does not discover it."*
 A pane that is read-only inline and interactive when expanded would rebuild the xterm and reopen the
 socket, and because the mirror is ephemeral the pane would come back **empty**. Hence
@@ -98,7 +98,7 @@ socket, and because the mirror is ephemeral the pane would come back **empty**. 
 
 **The fourth host and its mount land together.** A host with no mount is an unreachable table; a mount
 naming an unknown host **fails closed to no affordances**
-([host-model.mjs:144-152](../../../../../../ui/src/terminal/host-model.mjs#L144)) — a pane with no controls
+([host-model.mjs:144-152](../../../../../../apps/ui/src/terminal/host-model.mjs#L144)) — a pane with no controls
 at all, which reads as a rendering bug rather than as a missing table.
 
 **Declare every affordance, including the absences, with a reason.** `host-model.mjs`'s existing tables

@@ -46,8 +46,8 @@ were harness capability, not grid logic:
   ([terminal-control-harness.mjs:48](../../../../../../test/support/terminal-control-harness.mjs#L48)), so
   every grid, focus and live-region scenario needs a harness that does not exist.
 - `hasShellHost()` reads **false** in the harness bundle
-  ([shell-bus.mjs:56](../../../../../../ui/src/app/shell-bus.mjs#L56)), so `offersFullscreen`
-  ([TerminalControl.tsx:739](../../../../../../ui/src/terminal/TerminalControl.tsx#L739)) is false and
+  ([shell-bus.mjs:56](../../../../../../apps/ui/src/app/shell-bus.mjs#L56)), so `offersFullscreen`
+  ([TerminalControl.tsx:739](../../../../../../apps/ui/src/terminal/TerminalControl.tsx#L739)) is false and
   **every expand scenario in the milestone is unreachable**.
 - The DOM stand-in's `focus()` is a **no-op** with no `activeElement` and no key dispatch — so the whole
   focus model, `Enter`-to-present, `Escape`-claiming and roving-tabstop contract cannot be observed.

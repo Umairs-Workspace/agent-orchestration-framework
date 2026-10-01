@@ -31,7 +31,7 @@ RELATIVE — `/board` after m45 — so on the fleet origin it resolves to `:4181
 the link is UNREACHABLE anyway (m45 QA **F-45-04-QA-3**): since m34/ADR-006 the fleet face's
 `/api/mesh/status` payload carries no `boards` key, so `BoardsRegion` has rendered its empty
 placeholder in production for two milestones. After this story the drill-in resolves through the
-route the peer-board branch and [Fleet.tsx:528](../../../../../../ui/src/fleet/Fleet.tsx#L528) already
+route the peer-board branch and [Fleet.tsx:528](../../../../../../apps/ui/src/fleet/Fleet.tsx#L528) already
 use, and the branch that could never render is gone rather than quietly waiting to ship a broken
 link.
 
@@ -107,4 +107,4 @@ no region — a restored row must carry `workspaceId` ON THE ROW, published into
 never a second read path in the fleet face. The next author meets a decision, not an empty region.
 
 Governing ADRs: **006**. Fitness function: `test/arch/acd-fleet-board-link-resolved.test.mjs` (RED on
-arrival — [Fleet.tsx:1427](../../../../../../ui/src/fleet/Fleet.tsx#L1427) is the violation it names).
+arrival — [Fleet.tsx:1427](../../../../../../apps/ui/src/fleet/Fleet.tsx#L1427) is the violation it names).

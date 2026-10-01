@@ -29,8 +29,8 @@ so that what I learn about one is true of the other, and a fix I ask for lands e
 in whichever of the two I happened to be looking at.
 
 This is the milestone's headline story. It renders the control from `46/03`'s core, points
-[Board.tsx](../../../../../../ui/src/board/Board.tsx) and
-[Fleet.tsx:759](../../../../../../ui/src/fleet/Fleet.tsx#L759) at it, and **deletes**
+[Board.tsx](../../../../../../apps/ui/src/board/Board.tsx) and
+[Fleet.tsx:759](../../../../../../apps/ui/src/fleet/Fleet.tsx#L759) at it, and **deletes**
 `ui/src/board/TerminalDock.tsx`, `ui/src/board/terminal/` and `ui/src/fleet/terminal-view/` in the same
 change that replaces them.
 

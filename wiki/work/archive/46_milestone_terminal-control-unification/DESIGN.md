@@ -125,9 +125,9 @@ inside that shell and does not get its own breakpoint system.
 
 - **1280** — the primary judgement width.
 - **768** — the desktop-app proxy (the Rust window is **760×520**,
-  [app/desktop/ui/styles.css:50](../../../../app/desktop/ui/styles.css#L50)).
+  [app/desktop/ui/styles.css:50](../../../../apps/desktop/ui/styles.css#L50)).
 - **390** — mobile; the page root's `overflow-x: clip` backstop
-  ([index.css:27-45](../../../../ui/src/index.css#L27)) must not be needed to save this control.
+  ([index.css:27-45](../../../../apps/ui/src/index.css#L27)) must not be needed to save this control.
 - **520 tall (binding, and it decides a number below).** With the shell's 88px steady-state chrome, the
   content box at the desktop window is **432px**. §S1's height rule is derived from exactly that.
 
@@ -136,7 +136,7 @@ does not run the browser):
 
 | # | Surface | Origin | States to capture |
 |---|---|---|---|
-| R-A | **S1** at 1280 | board origin — **ephemeral**, supplied at capture time, never hard-coded ([Board.tsx:47-51](../../../../ui/src/board/Board.tsx#L47)) | no session · connecting · waiting · streaming · exited (0) · exited (1) · error · **unavailable** · collapsed |
+| R-A | **S1** at 1280 | board origin — **ephemeral**, supplied at capture time, never hard-coded ([Board.tsx:47-51](../../../../apps/ui/src/board/Board.tsx#L47)) | no session · connecting · waiting · streaming · exited (0) · exited (1) · error · **unavailable** · collapsed |
 | R-B | **S1** at 760×520 | board origin | streaming, at the **clamped default height** (§S1's height rule) |
 | R-C | **S1** at 390 | board origin | streaming — the header must not wrap into two rows |
 | R-D | **S2** at 1280 | fleet origin `http://127.0.0.1:4181/fleet` | collapsed (at rest) · waiting · streaming · stream ended · error · `no live output` (terminal assignment) · **unavailable** |
@@ -169,8 +169,8 @@ bounds what this control may do.
 | Two identity forms: `item <ref>` + a `remote · <nodeId>` badge, vs `<ref> → <nodeId> · session <id>` | [TerminalDock.tsx:314-318](../../../../ui/src/board/TerminalDock.tsx#L314), [:363-371](../../../../ui/src/board/TerminalDock.tsx#L363) vs [stream.mjs:102-103](../../../../ui/src/fleet/terminal-view/stream.mjs#L102) | One identity line, source-shaped. §S-common region C1. |
 | The dark surface is **four hex literals**, in two files, with no named home | `#0b0f14` / `#0f1629` / `#1e2a44` / `#0b1120` — [TerminalDock.tsx:158](../../../../ui/src/board/TerminalDock.tsx#L158), [:287](../../../../ui/src/board/TerminalDock.tsx#L287), [:330](../../../../ui/src/board/TerminalDock.tsx#L330); [FleetTerminalView.tsx:176](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L176), [:332](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L332) | **DG-46-2.** One home, no new `@theme` token (a dark theme is [45/DESIGN open question 6](../45_milestone_ui-app-shell-routing/DESIGN.md)). |
 | The dock clamps drag-resize to `Math.round(window.innerHeight / 2)` — the **viewport**, not the shell box | [TerminalDock.tsx:120](../../../../ui/src/board/TerminalDock.tsx#L120) | Wrong by exactly the chrome height under a shell. ADR-005 point 7 promoted `--aof-shell-chrome-height` for this ([45/ARCHITECTURE](../45_milestone_ui-app-shell-routing/ARCHITECTURE.md)). §S1's height rule. |
-| The dock's region home is **`overlay`, out of flow**, `z-30`, decided in m45 and with **no caller yet** | [45/ARCHITECTURE ADR-005 [Build-3]](../45_milestone_ui-app-shell-routing/ARCHITECTURE.md); [shell-layout.mjs:616-617](../../../../ui/src/app/shell-layout.mjs#L616) | m46 is the first caller. **DG-46-1** — an out-of-flow dock that covers the board's own controls is not an acceptable extraction. |
-| The fullscreen door already exists, unused, with its shape fixed **for this milestone** — live-node adoption, `claimsEscape`, `onLayout` | [shell-bus.mjs:94-151](../../../../ui/src/app/shell-bus.mjs#L94) ("m46 is the caller this door is built for") | S3 stops portalling to `document.body` and asks the shell. §S3. |
+| The dock's region home is **`overlay`, out of flow**, `z-30`, decided in m45 and with **no caller yet** | [45/ARCHITECTURE ADR-005 [Build-3]](../45_milestone_ui-app-shell-routing/ARCHITECTURE.md); [shell-layout.mjs:616-617](../../../../apps/ui/src/app/shell-layout.mjs#L616) | m46 is the first caller. **DG-46-1** — an out-of-flow dock that covers the board's own controls is not an acceptable extraction. |
+| The fullscreen door already exists, unused, with its shape fixed **for this milestone** — live-node adoption, `claimsEscape`, `onLayout` | [shell-bus.mjs:94-151](../../../../apps/ui/src/app/shell-bus.mjs#L94) ("m46 is the caller this door is built for") | S3 stops portalling to `document.body` and asks the shell. §S3. |
 | Collapse (dock) and Hide (card) look alike and cost differently: collapse keeps the session ALIVE; Hide **closes the socket** | [TerminalDock.tsx:137-141](../../../../ui/src/board/TerminalDock.tsx#L137), [:409-412](../../../../ui/src/board/TerminalDock.tsx#L409) vs [FleetTerminalView.tsx:145](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L145), [:235](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L235) | §Collapse is not Hide. Two operations, two forms, no shared name. |
 | Header controls are under the 24px target size on the card: `px-1.5 py-0.5` around an `h-3.5 w-3.5` icon (~18px tall) | [FleetTerminalView.tsx:347](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L347), [:359](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L359) | WCAG 2.2 SC 2.5.8. §Accessibility 7, and a knowing +6px on the card header. |
 | The peek panel's total height is a fixed **192px** and V11 pins it as constant (163 bytes + 29 bar) | [FleetTerminalView.tsx:369](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L369) (`h-48`); [38/DESIGN:1059](../38_milestone_cross-machine-worker-execution/DESIGN.md) | The non-live bar is **paid for out of the byte area** on every surface. Never extra height. |
@@ -196,7 +196,7 @@ an amendment, never as a CSS decision taken inside a story."*
 
 **m46 finds it needs exactly that, and the reason is this milestone's own success condition.** Today the
 dock is an in-flow flex child of the board's `h-dvh overflow-hidden` column
-([Board.tsx:561-563](../../../../ui/src/board/Board.tsx#L561)), so opening it *shrinks* the lanes and the
+([Board.tsx:561-563](../../../../apps/ui/src/board/Board.tsx#L561)), so opening it *shrinks* the lanes and the
 detail panel and everything stays reachable. An overlaying dock at the default 280px covers the bottom
 280px of the detail panel — which is where the detail panel's action strip lives. An extraction that
 takes the operator's buttons away is not an extraction.
@@ -292,7 +292,7 @@ its own reasoning per word.
 [TerminalDock.tsx:449-466](../../../../ui/src/board/TerminalDock.tsx#L449),
 [FleetTerminalView.tsx:95-99](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L95),
 [view-state.mjs:60-112](../../../../ui/src/fleet/terminal-view/view-state.mjs#L60) and
-[Fleet.tsx:1177-1181](../../../../ui/src/fleet/Fleet.tsx#L1177). **No value below is new.**
+[Fleet.tsx:1177-1181](../../../../apps/ui/src/fleet/Fleet.tsx#L1177). **No value below is new.**
 
 > **CORRECTION 1, 2026-08-08 — the `streaming` WORD takes the mock's lighter teal; the DOT does not.**
 >
@@ -467,13 +467,13 @@ unknown *state* renders the word `unknown`.
    truncated, never abbreviated to fit. **A state with no visible word is a GAP.**
 2. **The dot's fill and shape.** Filled for every state whose origin resolved; **dashed and hollow** for
    `unavailable` — the product's existing absent/not-yet primitive
-   ([Fleet.tsx:1180](../../../../ui/src/fleet/Fleet.tsx#L1180), [status.tsx:121](../../../../ui/src/board/status.tsx#L121),
+   ([Fleet.tsx:1180](../../../../apps/ui/src/fleet/Fleet.tsx#L1180), [status.tsx:121](../../../../apps/ui/src/board/status.tsx#L121),
    and m45's unavailable nav item).
 3. **Motion, on the two states that mean "expect this to change".** `connecting` and `streaming` pulse;
    **nothing else ever does.** In particular `waiting` carries no motion at all — that is
    [view-state.mjs:56-59](../../../../ui/src/fleet/terminal-view/view-state.mjs#L56)'s explicit rule, so the
    honest cold-start can never render as a spinner-forever. Both pulses honour `prefers-reduced-motion`
-   under the existing scoping conventions ([index.css:101-105](../../../../ui/src/index.css#L101)).
+   under the existing scoping conventions ([index.css:101-105](../../../../apps/ui/src/index.css#L101)).
 4. **The mandatory cause line**, on `error` and on `unavailable`. A failure that does not name itself is
    half a signal.
 
@@ -601,7 +601,7 @@ is a documented default the operator's mock may overrule — §Open questions.)*
 
 A box measured before layout returns scale **1** — render at natural size, scale nothing
 ([geometry.mjs:38-39](../../../../ui/src/fleet/terminal-view/geometry.mjs#L38)) — and the next tick re-fits.
-The shell's post-present `onLayout` tick ([shell-bus.mjs:128-129](../../../../ui/src/app/shell-bus.mjs#L128))
+The shell's post-present `onLayout` tick ([shell-bus.mjs:128-129](../../../../apps/ui/src/app/shell-bus.mjs#L128))
 and the existing `requestAnimationFrame(fit)` exist for exactly this. **A render caught mid-tick showing
 an unscaled screen is a capture artifact, not a finding** — the reviewer should ask for a re-capture
 rather than log a gap.
@@ -709,8 +709,8 @@ a third ruled here on 2026-08-08 (RULING 2, below) — and the wording of each i
   state exists to prevent.**
 - **The state chip reads `unavailable`** with the **dashed hollow dot**, on `text-zinc-400`.
 - **The byte area holds a centred dashed block** — the house's absent/not-yet primitive
-  (`rounded-md border border-dashed`, [Board.tsx:458](../../../../ui/src/board/Board.tsx#L458);
-  [Fleet.tsx:1211](../../../../ui/src/fleet/Fleet.tsx#L1211)) re-homed onto the dark chrome:
+  (`rounded-md border border-dashed`, [Board.tsx:458](../../../../apps/ui/src/board/Board.tsx#L458);
+  [Fleet.tsx:1211](../../../../apps/ui/src/fleet/Fleet.tsx#L1211)) re-homed onto the dark chrome:
   `rounded-md border border-dashed border-[#1e2a44] px-4 py-3 text-center`, holding the cause on
   `mono text-xs text-zinc-400` and the recovery line beneath it on `mono text-[11px] text-zinc-500`.
   **Byte-identical for all three causes** — only the two strings differ.
@@ -853,7 +853,7 @@ text-zinc-200`, full content width, with the drag handle
 
 **Reading order is binding: identity > posture > state > expand > toggle.** A control that outweighs the
 stream's own name inverts a monitor into a control (V12; the measured regression at
-[index.css:57-77](../../../../ui/src/index.css#L57) is what that costs).
+[index.css:57-77](../../../../apps/ui/src/index.css#L57) is what that costs).
 
 **C2 — the byte area.** `relative min-h-0 flex-1 bg-[#0b0f14]`, the xterm host inset
 (`absolute inset-0 overflow-hidden`, `p-2` inline / `p-3` fullscreen). Fit or scale per source.
@@ -887,7 +887,7 @@ posture. **A build that adds an input row, in either posture, is a GAP.**
   checklist below still binds wherever the mock is silent — enumerated at that file's §6.)*
 - **Host:** the board, `content:fixed` ([45/DESIGN](../45_milestone_ui-app-shell-routing/DESIGN.md): *"a
   surface that hosts a terminal must be `content:fixed`"*). Region home **`overlay`**, rung **`z-30`**
-  (ADR-005 [Build-3]; [shell-layout.mjs:616-617](../../../../ui/src/app/shell-layout.mjs#L616)), with the
+  (ADR-005 [Build-3]; [shell-layout.mjs:616-617](../../../../apps/ui/src/app/shell-layout.mjs#L616)), with the
   published dock inset of **DG-46-1** so nothing is covered.
 - **Declares:** `posture: interactive` · `source: local-pty | mirror` · drag-resize **on** · fullscreen
   **on** (change 11) · collapse **chevron** · close `✕`.
@@ -967,7 +967,7 @@ except the one CORRECTION 1 names and counts.
   committed mock is [`mocks/Terminal Panel Spec.dc.html`](mocks/Terminal%20Panel%20Spec.dc.html) and the
   binding value table for this surface is [`mocks/CONFORMANCE.md` §2·S2](mocks/CONFORMANCE.md).)*
 - **Host:** an assignment card inside `<Fleet>`, a sibling below the affordance row
-  ([Fleet.tsx:759](../../../../ui/src/fleet/Fleet.tsx#L759)) — never nested inside the drill-in button.
+  ([Fleet.tsx:759](../../../../apps/ui/src/fleet/Fleet.tsx#L759)) — never nested inside the drill-in button.
 - **Declares:** `posture: **read-only**` · `source: mirror` · drag-resize **off** · fullscreen **on** ·
   worded **Watch/Hide** toggle · no close.
 
@@ -1038,7 +1038,7 @@ gives up space rather than being overprinted.*
 - **Host:** the shell's **`shell:fullscreen`** slot, rung **`z-50` — the top rung, and the occupant is its
   ONLY occupant** ([45/DESIGN DG-45-2 and §`shell:fullscreen`](../45_milestone_ui-app-shell-routing/DESIGN.md)).
   It is reached through `requestFullscreen({ id, label, node, home, opener, claimsEscape, onLayout })`
-  ([shell-bus.mjs:115-135](../../../../ui/src/app/shell-bus.mjs#L115)) — **not** a component-owned
+  ([shell-bus.mjs:115-135](../../../../apps/ui/src/app/shell-bus.mjs#L115)) — **not** a component-owned
   `createPortal(document.body)`.
 
 **The five inherited clauses, restated because they are what make S3 look like nothing new:**
@@ -1101,13 +1101,13 @@ therefore: **empty ≡** *unreachable* (fullscreen cannot be entered from a coll
 | **Picker well** | `#0b1120` | [TerminalDock.tsx:330](../../../../ui/src/board/TerminalDock.tsx#L330) |
 | **Terminal foreground** | `#d7dde3` | both xterm `theme.foreground` |
 | **Text steps** | `text-zinc-200` (body) · `text-zinc-300` (lockup, resolved values) · `text-zinc-400` (quiet, controls, muted states) · `text-zinc-500` (field labels: `provider:`, `item` — **and see RAISED-1/RAISED-2**) · `text-zinc-100` (hover only) | [TerminalDock.tsx:287](../../../../ui/src/board/TerminalDock.tsx#L287), [:307](../../../../ui/src/board/TerminalDock.tsx#L307), [:326](../../../../ui/src/board/TerminalDock.tsx#L326), [:363](../../../../ui/src/board/TerminalDock.tsx#L363), [:385](../../../../ui/src/board/TerminalDock.tsx#L385) |
-| **State tokens** | **dots:** `bg-primary` (teal `hsl(174 72% 27%)`) · `bg-secondary` (`hsl(214 18% 88%)`) · `bg-muted-foreground` (`hsl(218 9% 38%)`) · `bg-destructive` (`hsl(0 73% 43%)`). **words:** `text-zinc-400` · `text-red-400` on dark · and the `streaming` word **`hsl(174 58% 52%)`** — **CORRECTION 1, 2026-08-08, superseding `text-primary` here and in §The merged ramp** | [TerminalDock.tsx:449-466](../../../../ui/src/board/TerminalDock.tsx#L449); [index.css:10-19](../../../../ui/src/index.css#L10); the `streaming` word from the committed mock, adopted by PO ruling |
-| **Absent / unavailable** | `border-dashed` + `border-muted-foreground/40` (dot) and `border-[#1e2a44]` (block), `bg-transparent` | [Fleet.tsx:1180](../../../../ui/src/fleet/Fleet.tsx#L1180); [status.tsx:121](../../../../ui/src/board/status.tsx#L121); [TerminalDock.tsx:353](../../../../ui/src/board/TerminalDock.tsx#L353) |
+| **State tokens** | **dots:** `bg-primary` (teal `hsl(174 72% 27%)`) · `bg-secondary` (`hsl(214 18% 88%)`) · `bg-muted-foreground` (`hsl(218 9% 38%)`) · `bg-destructive` (`hsl(0 73% 43%)`). **words:** `text-zinc-400` · `text-red-400` on dark · and the `streaming` word **`hsl(174 58% 52%)`** — **CORRECTION 1, 2026-08-08, superseding `text-primary` here and in §The merged ramp** | [TerminalDock.tsx:449-466](../../../../ui/src/board/TerminalDock.tsx#L449); [index.css:10-19](../../../../apps/ui/src/index.css#L10); the `streaming` word from the committed mock, adopted by PO ruling |
+| **Absent / unavailable** | `border-dashed` + `border-muted-foreground/40` (dot) and `border-[#1e2a44]` (block), `bg-transparent` | [Fleet.tsx:1180](../../../../apps/ui/src/fleet/Fleet.tsx#L1180); [status.tsx:121](../../../../apps/ui/src/board/status.tsx#L121); [TerminalDock.tsx:353](../../../../ui/src/board/TerminalDock.tsx#L353) |
 | **Terminal type** | `var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace)` at `fontSize: 13` | both `new Terminal({ … })` |
-| **Chrome type** | header + identity + state `text-[11px]` · pills `text-[10px] font-semibold uppercase tracking-wide` · messages `mono text-xs` · ids/refs/messages carry `.mono` (`ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace`) | [FleetTerminalView.tsx:305](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L305), [:312](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L312), [:385](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L385); [index.css:79-83](../../../../ui/src/index.css#L79) |
-| **Radius** | `rounded` / `rounded-md` (`--radius: 0.5rem`) | [index.css:24](../../../../ui/src/index.css#L24) |
+| **Chrome type** | header + identity + state `text-[11px]` · pills `text-[10px] font-semibold uppercase tracking-wide` · messages `mono text-xs` · ids/refs/messages carry `.mono` (`ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace`) | [FleetTerminalView.tsx:305](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L305), [:312](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L312), [:385](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L385); [index.css:79-83](../../../../apps/ui/src/index.css#L79) |
+| **Radius** | `rounded` / `rounded-md` (`--radius: 0.5rem`) | [index.css:24](../../../../apps/ui/src/index.css#L24) |
 | **Motion** | `animate-pulse` on `connecting` and `streaming` **only** | [TerminalDock.tsx:453](../../../../ui/src/board/TerminalDock.tsx#L453); [FleetTerminalView.tsx:320](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L320) |
-| **Z rungs** | dock `z-30` · fullscreen `z-50` (alone) | [shell-layout.mjs:613-638](../../../../ui/src/app/shell-layout.mjs#L613) |
+| **Z rungs** | dock `z-30` · fullscreen `z-50` (alone) | [shell-layout.mjs:613-638](../../../../apps/ui/src/app/shell-layout.mjs#L613) |
 
 **Hierarchy, binding:** identity > `read-only` > state > expand > toggle. **Nothing in C1 carries weight
 above the identity line** except the `▣ TERMINAL` lockup and the `read-only` pill, both of which are
@@ -1142,7 +1142,7 @@ switched on, axe-core-via-Playwright (QA-owned) checks them at **WCAG 2.1 AA** p
    naming why. The selected dot is decoration (`aria-hidden`); `aria-checked` is the programmatic signal.
 6. **The fullscreen occupant** traps focus, declares `role="dialog"` + `aria-modal="true"` + an
    `aria-label` naming the session, and **returns focus to the opener** — never the document body
-   ([shell-bus.mjs:126](../../../../ui/src/app/shell-bus.mjs#L126)). `Esc` **and** a visible control; when
+   ([shell-bus.mjs:126](../../../../apps/ui/src/app/shell-bus.mjs#L126)). `Esc` **and** a visible control; when
    the occupant claims `Esc` ([Build-2]) the visible control is the only exit and is therefore
    **always visible**.
 7. **Target size ≥24×24 CSS px** (SC 2.5.8) for every header control — **achieved by padding, never by
@@ -1154,7 +1154,7 @@ switched on, axe-core-via-Playwright (QA-owned) checks them at **WCAG 2.1 AA** p
    control a keyboard user cannot reach. It must be focusable, and **↑/↓ resize it** within the clamp.
    **No precedent today — this must be built.**
 9. **Focus order follows visual order:** drag handle → header controls in C1's declared order → the
-   terminal. The visible focus indicator uses `--color-ring` ([index.css:23](../../../../ui/src/index.css#L23));
+   terminal. The visible focus indicator uses `--color-ring` ([index.css:23](../../../../apps/ui/src/index.css#L23));
    do not remove the UA outline without replacing it.
 10. **The non-live bar is `role="status"`, not `role="alert"`** — a stream ending is information, not an
     emergency. It is **never clipped and never truncated**; if it cannot fit, it wraps.
@@ -1162,7 +1162,7 @@ switched on, axe-core-via-Playwright (QA-owned) checks them at **WCAG 2.1 AA** p
     used — there is no control to disable; there is a labelled absence. **Three named causes**
     (§The unavailable pane); a fourth is raised, never mapped onto one of the three.
 12. **Motion is confined to two states** and honours `prefers-reduced-motion` under the existing scoping
-    conventions ([index.css:101-105](../../../../ui/src/index.css#L101)). With motion reduced, the label and
+    conventions ([index.css:101-105](../../../../apps/ui/src/index.css#L101)). With motion reduced, the label and
     the dot's colour still carry `connecting` and `streaming` — **the pulse is never the only difference
     between two states.**
 13. **Contrast on the dark chrome.** `text-zinc-300` and `text-zinc-400` on `#0f1629` carry the header;

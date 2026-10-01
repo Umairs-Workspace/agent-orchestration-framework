@@ -23,7 +23,7 @@ aofVersion: 0.1.0
 ## Objective
 
 The fleet page renders everything the mesh knows — every workspace, every milestone card, every node
-([Fleet.tsx:372-388](../../../../ui/src/fleet/Fleet.tsx#L372-L388)) — and the only narrowing available is
+([Fleet.tsx:372-388](../../../../apps/ui/src/fleet/Fleet.tsx#L372-L388)) — and the only narrowing available is
 `?scope=global|local`, which means "the whole mesh" versus "the daemon's own workspace". An operator
 working in one repo has no way to say so.
 

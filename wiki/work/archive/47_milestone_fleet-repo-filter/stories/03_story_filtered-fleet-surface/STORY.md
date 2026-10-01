@@ -74,7 +74,7 @@ m34/ADR-006.
 
 **The chip lives in the page, not the bar** (DESIGN, three reasons incl. m45's *"a second word would
 say it twice"*), and the in-body `Filtered to workspace` line at
-[Fleet.tsx:442](../../../../../../ui/src/fleet/Fleet.tsx#L442) is **re-homed, not duplicated** — it sits
+[Fleet.tsx:442](../../../../../../apps/ui/src/fleet/Fleet.tsx#L442) is **re-homed, not duplicated** — it sits
 inside the populated branch today, which is exactly why a filtered *empty* page currently says
 nothing (**DG-47-1**).
 
