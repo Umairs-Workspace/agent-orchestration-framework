@@ -5,9 +5,9 @@
 // PRODUCTION RENDERS / INVOKES … establish, from the producer, WHICH component
 // the real payload mounts." This repo ships no React test harness: the
 // render-logic under test lives in the pure fleet helpers
-// (ui/src/fleet/scope.mjs's `assignableNodeOptions` + assignments.mjs's
+// (apps/ui/src/fleet/scope.mjs's `assignableNodeOptions` + assignments.mjs's
 // `assignmentChip`) — the SAME helpers the production Fleet.tsx card renders
-// the picker + chip from (ui/src/fleet/Fleet.tsx's GlobalMilestoneCard).
+// the picker + chip from (apps/ui/src/fleet/Fleet.tsx's GlobalMilestoneCard).
 //
 // @executable proves the DATA is PRODUCER-FED, not fixture-shaped: the roster
 // the picker offers is derived from the REAL GET /api/mesh/status payload
@@ -19,9 +19,9 @@
 // — a REAL end-to-end publish (workspace snapshot + node registry), so a node is
 // VISIBLE through the REAL registry read, not just eligible on the write side.
 import assert from "node:assert/strict";
-import { assignableNodeOptions } from "../../ui/src/fleet/scope.mjs";
-import { assignmentChip } from "../../ui/src/fleet/assignments.mjs";
-import { POLL_MS } from "../../ui/src/fleet/assign-affordance.mjs";
+import { assignableNodeOptions } from "../../apps/ui/src/fleet/scope.mjs";
+import { assignmentChip } from "../../apps/ui/src/fleet/assignments.mjs";
+import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 import {
   withPublishedAssignFixture,
   sameOriginAssign,

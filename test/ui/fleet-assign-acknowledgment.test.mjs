@@ -11,7 +11,7 @@
 // rest (A7).
 //
 // DRIVEN TWO WAYS, deliberately:
-//   1. the PURE state machine (ui/src/fleet/assign-affordance.mjs) — the house
+//   1. the PURE state machine (apps/ui/src/fleet/assign-affordance.mjs) — the house
 //      pattern, since this repo ships no React harness;
 //   2. the REAL, UNMODIFIED production <Fleet/> component tree, mounted
 //      headlessly against the REAL fleet face, with a real click going through
@@ -58,7 +58,7 @@ import {
   assignAffordanceView,
   assignTimedOut,
   runAssign,
-} from "../../ui/src/fleet/assign-affordance.mjs";
+} from "../../apps/ui/src/fleet/assign-affordance.mjs";
 import {
   withPublishedAssignFixture,
   sameOriginAssign,
@@ -68,7 +68,7 @@ import {
 import { withFleetApp } from "../support/fleet-app-harness.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const ASSIGN_AFFORDANCE_MJS = path.join(repoRoot, "ui", "src", "fleet", "assign-affordance.mjs");
+const ASSIGN_AFFORDANCE_MJS = path.join(repoRoot, "apps", "ui", "src", "fleet", "assign-affordance.mjs");
 
 // withHungAssign(app, fn) — click "Assign →" with the route's ANSWER held, let
 // the affordance's deadline elapse, and hand the caller the released-response

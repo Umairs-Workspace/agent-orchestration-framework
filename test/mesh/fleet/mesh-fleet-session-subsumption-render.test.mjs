@@ -3,7 +3,7 @@
 // it rendered before, now that the wire carries the sessions a run already accounts
 // for".
 //
-// THE FUNCTION UNDER TEST is the PURE `fleetCurrentWorkLines` (ui/src/fleet/runs.mjs)
+// THE FUNCTION UNDER TEST is the PURE `fleetCurrentWorkLines` (apps/ui/src/fleet/runs.mjs)
 // — no React, no DOM, no I/O, no clock — imported directly and called with literal
 // presence objects. NO STORE, NO SERVER, NO PORT: nothing here touches `~/.aof` and
 // nothing binds. (The suite still runs under the house per-test hermetic
@@ -20,7 +20,7 @@
 // 48/01); the structural halves — that the producer filter is gone and that the
 // formatter reads the fact STRICTLY — (the amended fitness function
 // test/arch/session/acd-session-run-reconciliation.test.mjs). The Rust desktop surface needs no
-// change: `current_work` (app/desktop/crates/core/src/view_model.rs) short-circuits on
+// change: `current_work` (apps/desktop/crates/core/src/view_model.rs) short-circuits on
 // `!runs.is_empty()` BEFORE it reads sessions, so a newly-present entry is never
 // rendered there — stated so nobody goes looking for a change that is deliberately
 // absent.
@@ -39,7 +39,7 @@
 // THIS IS NOT A UI-SURFACE TASK. `runs.mjs` is framework-free; no component, layout,
 // interaction or style is in scope.
 import assert from "node:assert/strict";
-import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
+import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
 // milestone 49 / story 01 (ADR-010) — the RULE that replaces m48's own rule-form
 // assertion on the two-sessions-one-repo row below. One home, shared with this story's
 // suite (test/mesh/fleet/mesh-fleet-repo-dedupe-count.test.mjs), because a rule with two

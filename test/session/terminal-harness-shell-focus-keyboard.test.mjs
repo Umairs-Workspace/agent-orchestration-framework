@@ -40,9 +40,9 @@ import { withTerminalControl, CONTROL_STUBS, CONTROL_RESOLVE, findAll } from "..
 import { withMountedApp } from "../support/react-app-harness.mjs";
 import { isUiSourceFile } from "../support/ui-source-files.mjs";
 import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, TERMINAL_ENV_RESOLVE, TERMINAL_ENV_STUBS } from "../support/terminal-dom.mjs";
-import * as processShellBus from "../../ui/src/app/shell-bus.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
+import * as processShellBus from "../../apps/ui/src/app/shell-bus.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
 import {
   declaresAffordance,
   terminalControlState,
@@ -53,8 +53,8 @@ import {
   HOST_FLEET_CARD,
   HOST_FULLSCREEN,
   WATCH_LABEL,
-} from "../../ui/src/terminal/host-model.mjs";
-import { terminalFullscreenExits, terminalFullscreenId } from "../../ui/src/terminal/fullscreen-request.mjs";
+} from "../../apps/ui/src/terminal/host-model.mjs";
+import { terminalFullscreenExits, terminalFullscreenId } from "../../apps/ui/src/terminal/fullscreen-request.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GRID_ENTRY = path.join(repoRoot, "test", "support", "terminal-grid-entry.tsx");
@@ -120,9 +120,9 @@ const stripComments = (source) => source.replace(/(^|[^:])\/\/.*$/gm, "$1").repl
 // The keyboard step, READ OFF THE SHIPPED SOURCE rather than retyped. `node` cannot import a
 // `.tsx`, and typing `16` here would make the lane below agree with itself the day the constant
 // moves — which is the one way a keyboard assertion can stay green while the keyboard changes.
-const DRAG_KEY_STEP = Number(/export const DRAG_KEY_STEP\s*=\s*(\d+)/.exec(sourceOf("ui/src/terminal/TerminalDragHandle.tsx"))?.[1]);
+const DRAG_KEY_STEP = Number(/export const DRAG_KEY_STEP\s*=\s*(\d+)/.exec(sourceOf("apps/ui/src/terminal/TerminalDragHandle.tsx"))?.[1]);
 
-// The `ui/src` sweep uses the tree's ONE declared predicate (`test/support/ui-source-files.mjs`,
+// The `apps/ui/src` sweep uses the tree's ONE declared predicate (`test/support/ui-source-files.mjs`,
 // landed by m49/02 for the per-file and per-directory budget gates) rather than a fourth inline
 // copy of the same regex — its own header says why: a second copy is how two gates come to
 // disagree about what a file IS.
@@ -136,7 +136,7 @@ function filesUnder(dir, matches) {
   return out;
 }
 
-const uiSourceFiles = () => filesUnder(path.join(repoRoot, "ui", "src"), isUiSourceFile);
+const uiSourceFiles = () => filesUnder(path.join(repoRoot, "apps", "ui", "src"), isUiSourceFile);
 // The TEST tree is a different question from the ui tree — it holds `.mjs` suites and `.tsx`
 // harness entries and nothing is budgeted — so it keeps its own predicate, stated here rather
 // than borrowed from a gate that means something else by it.
@@ -352,7 +352,7 @@ export const terminalHarnessShellFocusKeyboardTests = [
       // writes it to a fresh temp path per call, so `await import()` evaluates a NEW module every
       // lane and the flag cannot physically survive one. That is the guarantee, so that is what is
       // asserted; the `resetShellBus()` calls are FORWARD COVER for the day the bundle FILE is
-      // cached too (the obvious optimisation — and `ui/src/app/shell-bus.mjs`'s three module-scope
+      // cached too (the obvious optimisation — and `apps/ui/src/app/shell-bus.mjs`'s three module-scope
       // `let`s are the only mutable state in the whole bundle, all three of them reset by
       // `resetShellBus`). The day that lands, THIS assertion goes red rather than the régime
       // changing quietly.
@@ -383,10 +383,10 @@ export const terminalHarnessShellFocusKeyboardTests = [
   },
 
   {
-    name: "shell/05 NO declarer is added to the product tree — `declareShellPresent(` is called exactly once across `ui/src`, at module scope, from `ui/src/app/Shell.tsx`, and the harness reaches the declaration through the BUNDLED module from `test/`",
+    name: "shell/05 NO declarer is added to the product tree — `declareShellPresent(` is called exactly once across `apps/ui/src`, at module scope, from `apps/ui/src/app/Shell.tsx`, and the harness reaches the declaration through the BUNDLED module from `test/`",
     run: () => {
       // `test/arch/mesh/acd-shell-bus-single-host.test.mjs` scans the ui tree only, so a `test/` caller
-      // is out of its scope BY CONSTRUCTION and a `ui/src/` caller is a CI failure. The flag means
+      // is out of its scope BY CONSTRUCTION and a `apps/ui/src/` caller is a CI failure. The flag means
       // "a shell exists in this bundle"; only the module that renders the shell root may assert it.
       const callers = [];
       for (const file of uiSourceFiles()) {
@@ -396,9 +396,9 @@ export const terminalHarnessShellFocusKeyboardTests = [
         const count = calls.length - definition;
         if (count > 0) callers.push([path.relative(repoRoot, file).split(path.sep).join("/"), count]);
       }
-      assert.deepEqual(callers, [["ui/src/app/Shell.tsx", 1]], `exactly one caller, and it is the shell root (found: ${JSON.stringify(callers)})`);
+      assert.deepEqual(callers, [["apps/ui/src/app/Shell.tsx", 1]], `exactly one caller, and it is the shell root (found: ${JSON.stringify(callers)})`);
 
-      const shell = stripComments(sourceOf("ui/src/app/Shell.tsx"));
+      const shell = stripComments(sourceOf("apps/ui/src/app/Shell.tsx"));
       const line = shell.split(/\r?\n/).find((candidate) => candidate.includes("declareShellPresent("));
       assert.ok(/^declareShellPresent\(\);?\s*$/.test(line.trim()), `the call is at MODULE scope (found: ${JSON.stringify(line)})`);
 

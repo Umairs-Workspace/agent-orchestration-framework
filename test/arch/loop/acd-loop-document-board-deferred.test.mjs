@@ -143,7 +143,7 @@ export const archTests = [
   {
     name: "arch/79/03 the UI gains no reference to the loop family",
     run: async () => {
-      const files = await uiSourceFiles(path.join(repoRoot, "ui"));
+      const files = await uiSourceFiles(path.join(repoRoot, "apps", "ui"));
       assert.ok(files.length > 10, "the ui/ sweep is non-vacuous");
       const tokens = [ID, OP, "loop-document", "loopDocument", "work-loops", "loops-graph", "loops-validate"];
       for (const file of files) {

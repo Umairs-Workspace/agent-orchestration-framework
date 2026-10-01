@@ -35,7 +35,7 @@
 // be downgraded to a source read.
 //
 // NOT ASSERTED HERE — the three PLACEMENT invariants (no hard-coded board address anywhere
-// in `ui/src/fleet/`; `api.ts` declares `boardUrl` over the ONE route; `Fleet.tsx` calls
+// in `apps/ui/src/fleet/`; `api.ts` declares `boardUrl` over the ONE route; `Fleet.tsx` calls
 // `fleetApi.boardUrl`). They are owned by `test/arch/ui/acd-fleet-board-link-resolved.test.mjs`.
 // What this file asserts is the half that gate CANNOT see: an address composed at RUNTIME
 // leaves no literal in source, and no static rule can tell whether the request carried the
@@ -62,7 +62,7 @@ import { withTwoWorkspaceAssignFixture, removeWorkspaceFromProjection } from "..
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
 import { visibleTextOf } from "../support/mini-react.mjs";
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
-import { POLL_MS } from "../../ui/src/fleet/assign-affordance.mjs";
+import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");

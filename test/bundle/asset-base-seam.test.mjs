@@ -29,7 +29,7 @@ async function makePackagedFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-sea-fixture-"));
   await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(tmp, "bundle"), { recursive: true });
   await mkdir(path.join(tmp, "ui"), { recursive: true });
-  await cp(path.join(repoRoot, "ui", "dist"), path.join(tmp, "ui", "dist"), { recursive: true });
+  await cp(path.join(repoRoot, "apps", "ui", "dist"), path.join(tmp, "ui", "dist"), { recursive: true });
   await writeFile(path.join(tmp, "package.json"), JSON.stringify({ version: "9.9.9-fixture" }, null, 2), "utf8");
   return tmp;
 }

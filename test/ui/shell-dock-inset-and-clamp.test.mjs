@@ -8,8 +8,8 @@
 // lives. **An extraction that takes the operator's buttons away is not an extraction.**
 //
 // THE CHANNEL: every Then below is a returned VALUE from a framework-free `.mjs` loaded under
-// plain `node` — `ui/src/app/shell-layout.mjs` (the published names, the chrome model, the content
-// modes) and `ui/src/terminal/clamp.mjs`, which per ADR-001 touches no `window` and RECEIVES its
+// plain `node` — `apps/ui/src/app/shell-layout.mjs` (the published names, the chrome model, the content
+// modes) and `apps/ui/src/terminal/clamp.mjs`, which per ADR-001 touches no `window` and RECEIVES its
 // box. No bundler, no DOM, no browser. The arithmetic is therefore checkable to the pixel without
 // rendering anything, which is the entire reason the chrome height became a published contract in
 // m45 rather than a number each surface re-derived.
@@ -38,14 +38,14 @@ import {
   DOCK_INSET_PROPERTY,
   chromeModel,
   contentModeFor,
-} from "../../ui/src/app/shell-layout.mjs";
+} from "../../apps/ui/src/app/shell-layout.mjs";
 import {
   DOCK_DEFAULT_HEIGHT,
   DOCK_MIN_HEIGHT,
   clampDockHeight,
   dockDefaultHeight,
   dockHeightBounds,
-} from "../../ui/src/terminal/clamp.mjs";
+} from "../../apps/ui/src/terminal/clamp.mjs";
 
 // The two viewports every row is expressed against, as the shell's own model sees them.
 function published({ viewportHeight, viewportWidth, bars, rail = null, dock = null }) {
@@ -465,7 +465,7 @@ export const shellDockInsetAndClampTests = [
       //
       // A NUMERIC MODEL CANNOT CATCH THIS — that is why the assertion is over the panel's declared
       // flex behaviour. The inset arithmetic in every lane above was correct throughout.
-      const source = await readFile(path.join(repoRoot, "ui", "src", "board", "DetailPanel.tsx"), "utf8");
+      const source = await readFile(path.join(repoRoot, "apps", "ui", "src", "board", "DetailPanel.tsx"), "utf8");
 
       const strip = source.match(/<div className="[^"]*border-t border-border[^"]*"/);
       assert.ok(strip, "the detail panel renders its action strip as a top-bordered block");

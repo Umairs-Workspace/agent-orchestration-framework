@@ -1,7 +1,7 @@
 // Mount the REAL production app shell headlessly (milestone 45 / story 03).
 //
 // The mechanism is the shared core (./react-app-harness.mjs): the real, unmodified
-// `ui/src/app/Shell.tsx` esbuild-bundled with its real siblings (shell-layout.mjs,
+// `apps/ui/src/app/Shell.tsx` esbuild-bundled with its real siblings (shell-layout.mjs,
 // shell-nav.mjs, shell-bus.mjs, SurfaceSlot.tsx and the route table), a minimal
 // React, and a controllable clock. (`Landing.tsx` was on that list until m49/04 DELETED it: `/`
 // is a routed surface now, so the shell renders no landing of its own to bundle.) NOTHING about

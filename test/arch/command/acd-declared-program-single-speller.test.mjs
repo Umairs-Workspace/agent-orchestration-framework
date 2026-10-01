@@ -216,7 +216,7 @@ export const archTests = [
         { rel: "packages/core/src/frameworks.mjs", shape: "builds an npm: package-source string", token: '"npm:"', stripped: true },
         { rel: "packages/core/src/frameworks.mjs", shape: "sets npm_config_* environment keys", token: "npm_config_", stripped: true },
         { rel: "packages/work/src/observe.mjs", shape: "names runners in a comment about what it must not match", token: "vitest", stripped: false },
-        { rel: "packages/server/src/board-serve.mjs", shape: "prints an npm --prefix instruction inside a message to a human", token: "npm --prefix", stripped: false },
+        { rel: "packages/server/src/board-serve.mjs", shape: "prints a yarn ui:build instruction inside a message to a human", token: "yarn ui:build", stripped: false },
       ];
       for (const row of admitted) {
         const module = await readIfPresent(row.rel);
@@ -293,7 +293,7 @@ export const archTests = [
       assert.ok(keyPattern("work.test.command").test(contract), "…and the contract does carry the key, so the exclusion is doing work");
       const suite = await readFile(path.join(repoRoot, "test", "work", "work-toolchain-declaration.test.mjs"), "utf8");
       assert.ok(keyPattern("work.test.command").test(suite), "…as does the behavioural suite");
-      for (const module of modules) assert.match(module.rel, /^(?:src\/|ui\/src\/|packages\/[^/]+\/(?:src|bin)\/|packages\/core\/assets\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
+      for (const module of modules) assert.match(module.rel, /^(?:src\/|apps\/ui\/src\/|packages\/[^/]+\/(?:src|bin)\/|packages\/core\/assets\/)/u, `the walk stayed inside runtime source: ${module.rel}`);
     },
   },
 

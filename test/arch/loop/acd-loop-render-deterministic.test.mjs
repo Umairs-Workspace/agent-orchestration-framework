@@ -58,7 +58,7 @@ const loopRecord = (id, title, extra = "") => `---\nid: loop:${id}\nkind: loop\n
 // FF-5208 means `ui/` SOURCE — the files this repository authors. `ui/dist/assets/*.js` is a
 // minified single-line bundle, on which the `(?:route|argv)…["']loops["']` proximity regex below
 // is a false-positive surface rather than a measurement (every token is within 100 characters of
-// every other one); `ui/node_modules` is a dependency tree, empty here only because deps hoist to
+// every other one); `apps/ui/node_modules` is a dependency tree, empty here only because deps hoist to
 // the repository root, which is an install-layout accident this gate should not rest on.
 const UNAUTHORED = new Set(["node_modules", "dist"]);
 
@@ -111,7 +111,7 @@ export const archTests = [
   {
     name: "arch/52 FF-5208: UI carries no loop-registry token or loops route literal",
     run: async () => {
-      const files = await filesBelow(path.join(root, "ui"));
+      const files = await filesBelow(path.join(root, "apps", "ui"));
       assert.ok(files.length > 10);
       for (const file of files) {
         const source = stripComments(await readFile(file, "utf8"));

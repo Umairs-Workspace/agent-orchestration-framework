@@ -31,7 +31,7 @@
 // there is one `activeElement`, `focus()` moves it, the previous holder loses it, and an element
 // the renderer stops rendering does not keep it (`releaseDetached`).
 import { walk } from "./mini-react.mjs";
-import { CHROME_HEIGHT_PROPERTY } from "../../ui/src/app/shell-layout.mjs";
+import { CHROME_HEIGHT_PROPERTY } from "../../apps/ui/src/app/shell-layout.mjs";
 
 // ── the module-path stub the three SURFACE harnesses share, and its opt-out ─────────────────
 // One spelling of the filter and one spelling of the stub, because three copies of a regex is

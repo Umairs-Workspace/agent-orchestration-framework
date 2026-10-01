@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 46 / story 03 / task 01 —
 // tasks/01_the-merged-state-ramp.feature (@executable).
 //
-// THE CHANNEL. `ui/src/terminal/state-ramp.mjs` is PURE, so every scenario is confirmed by
+// THE CHANNEL. `apps/ui/src/terminal/state-ramp.mjs` is PURE, so every scenario is confirmed by
 // `node:test` importing it under plain `node` and asserting on RETURNED VALUES — the state a
 // transition yields, and the descriptor a state yields (its label, its dot, its motion, how
 // it reads, and its cause line where one is mandatory). No bundler, no DOM, no socket, no
@@ -10,8 +10,8 @@
 // The PIXEL half — whether the rendered chip paints the ruled token, whether the pulse
 // honours `prefers-reduced-motion`, whether the cause line is legible on the dark chrome —
 // is 46/04's design-conformance review and its `@uat` render verdict. The STRUCTURAL half —
-// that neither `DOCK_STATES` nor `TERMINAL_VIEW_STATES` is defined anywhere in `ui/src`, and
-// that the shared set imports nothing from `ui/src/fleet/` — is
+// that neither `DOCK_STATES` nor `TERMINAL_VIEW_STATES` is defined anywhere in `apps/ui/src`, and
+// that the shared set imports nothing from `apps/ui/src/fleet/` — is
 // `acd-terminal-control-boundary`'s. What is below is the behavioural half of the injected
 // reason: the shared describer produces the fleet's wording only from a string it was handed.
 //
@@ -55,8 +55,8 @@ import {
   applyTerminalEvent,
   applyControlFrame,
   describeTerminalState,
-} from "../../ui/src/terminal/state-ramp.mjs";
-import { TERMINAL_MOTION_CLASS } from "../../ui/src/terminal/palette.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
+import { TERMINAL_MOTION_CLASS } from "../../apps/ui/src/terminal/palette.mjs";
 
 const SERVER_MESSAGE = "claude: command not found";
 

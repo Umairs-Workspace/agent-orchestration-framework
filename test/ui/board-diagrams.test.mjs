@@ -1,12 +1,12 @@
 // milestone 133 / story 04 / task 01 — a milestone's ARCHITECTURE tab renders each linked diagram as
 // an image figure in one of four states (ADR-007 §4, DESIGN's binding checklist).
 //
-// `ui/src/board/diagrams.mjs` is imported headlessly, the way the other board ramps are. The
+// `apps/ui/src/board/diagrams.mjs` is imported headlessly, the way the other board ramps are. The
 // rendering scenarios drive a per-call `Marked` with the renderer the module hands `Markdown`, which
 // is exactly what `Markdown.tsx` does.
 import assert from "node:assert/strict";
 import { Marked, marked } from "marked";
-import { diagramFileUrl, diagramMembers, diagramRenderer, figureHtml, figureState, svgDataUri } from "../../ui/src/board/diagrams.mjs";
+import { diagramFileUrl, diagramMembers, diagramRenderer, figureHtml, figureState, svgDataUri } from "../../apps/ui/src/board/diagrams.mjs";
 
 const render = (text, images) => {
   const instance = new Marked({ gfm: true, breaks: false });

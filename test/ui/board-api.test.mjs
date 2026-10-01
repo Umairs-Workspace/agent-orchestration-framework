@@ -935,7 +935,7 @@ export const boardApiTests = [
         });
       }, { stream: THREE_ROOT_STREAM });
 
-      const apiSource = await readFile(path.join(repoRoot, "ui", "src", "board", "api.ts"), "utf8");
+      const apiSource = await readFile(path.join(repoRoot, "apps", "ui", "src", "board", "api.ts"), "utf8");
       const workItem = apiSource.slice(apiSource.indexOf("export type WorkItem = {"), apiSource.indexOf("export type WorkStatus"));
       for (const key of ["number?: null;", "backlog?: string;", "archived?: true;"]) {
         assert.ok(workItem.includes(key), `WorkItem declares ${key}`);
@@ -947,7 +947,7 @@ export const boardApiTests = [
 
       // `tsc -b` in ui/ — the build's own type pass (scripts/ui-build.mjs runs exactly this).
       const tsc = spawnSync(process.execPath, [path.join(repoRoot, "node_modules", "typescript", "bin", "tsc"), "-b"], {
-        cwd: path.join(repoRoot, "ui"),
+        cwd: path.join(repoRoot, "apps", "ui"),
         encoding: "utf8",
         env: { ...process.env, NODE_NO_WARNINGS: "1" },
       });

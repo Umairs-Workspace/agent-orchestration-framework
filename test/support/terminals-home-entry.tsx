@@ -1,8 +1,8 @@
 // A HARNESS ENTRY THAT MOUNTS THE REAL TERMINALS-HOME GRID (milestone 49 / story 05).
 //
-// IT MOUNTS THE PRODUCT, NOT A FIXTURE OF IT. `ui/src/home/SessionGrid.tsx` composes the rows,
+// IT MOUNTS THE PRODUCT, NOT A FIXTURE OF IT. `apps/ui/src/home/SessionGrid.tsx` composes the rows,
 // arbitrates the sockets, owns the keyboard and holds the one live region; it renders
-// `SessionPane`, which mounts the REAL, UNMODIFIED `ui/src/terminal/TerminalControl.tsx`. So
+// `SessionPane`, which mounts the REAL, UNMODIFIED `apps/ui/src/terminal/TerminalControl.tsx`. So
 // "sixteen sockets were constructed" is a fact about the shipped grid rather than about a test
 // harness that happened to hand sixteen mounts to sixteen controls.
 //
@@ -19,8 +19,8 @@
 // test process sets a different module instance's flag — the call succeeds, the flag reads true,
 // and the mounted control still offers no expand control.
 import type * as React from "react";
-import * as shellBus from "../../ui/src/app/shell-bus.mjs";
-import { SessionGrid } from "../../ui/src/home/SessionGrid";
+import * as shellBus from "../../apps/ui/src/app/shell-bus.mjs";
+import { SessionGrid } from "../../apps/ui/src/home/SessionGrid";
 
 export { shellBus };
 

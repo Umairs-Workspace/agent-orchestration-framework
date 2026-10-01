@@ -6,7 +6,7 @@
 //
 // WHAT THIS SUITE IS ABOUT, IN ONE SENTENCE: `/` stops being a card the shell draws itself and
 // becomes a surface the shell HOSTS — inside `SurfaceBoundary`'s crash containment, at
-// `content:fixed`, with `ui/src/app/Landing.tsx` DELETED rather than parked beside it.
+// `content:fixed`, with `apps/ui/src/app/Landing.tsx` DELETED rather than parked beside it.
 //
 // AND THE DANGEROUS FAILURE IS THE HALF-LANDED ONE, which is why scenario 2 is an Outline over
 // a truth table rather than a sentence. `surfaceMountFor` returns THREE booleans off TWO inputs,
@@ -25,8 +25,8 @@ import http from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { NOT_FOUND_ROUTE, ROUTES, routeFor } from "../../ui/src/app/routes.mjs";
-import { HISTORY_NONE, HISTORY_REPLACE, SHELL_RENDERED_ROUTES, entryPlanFor, surfaceMountFor } from "../../ui/src/app/entry.mjs";
+import { NOT_FOUND_ROUTE, ROUTES, routeFor } from "../../apps/ui/src/app/routes.mjs";
+import { HISTORY_NONE, HISTORY_REPLACE, SHELL_RENDERED_ROUTES, entryPlanFor, surfaceMountFor } from "../../apps/ui/src/app/entry.mjs";
 import {
   CONTENT_MODE_FIXED,
   CONTENT_MODE_PAGE,
@@ -34,7 +34,7 @@ import {
   STATE_POPULATED,
   contentModeFor,
   contentStateFor,
-} from "../../ui/src/app/shell-layout.mjs";
+} from "../../apps/ui/src/app/shell-layout.mjs";
 import { withShellApp, withShellComposedHome, findAll, textOf } from "../support/shell-app-harness.mjs";
 import { isUiSourceFile } from "../support/ui-source-files.mjs";
 
@@ -47,7 +47,7 @@ const PLACEHOLDER_SENTENCE = "Live terminals will appear here.";
 const PLACEHOLDER_MARK = "✦";
 
 // ── READING `SURFACES` ─────────────────────────────────────────────────────────────────────
-// The entry's surface map is a module-scope const in `ui/src/main.tsx`, and that file cannot be
+// The entry's surface map is a module-scope const in `apps/ui/src/main.tsx`, and that file cannot be
 // imported: its last statement is `createRoot(...).render(...)`, so importing it mounts an app.
 // So the map is read where it is DECLARED, off its one declaration site — which is also what
 // makes the reading non-vacuous: if the declaration moves or is renamed, this returns null and
@@ -57,7 +57,7 @@ const PLACEHOLDER_MARK = "✦";
 // (test/ui/shell-entry-plan.test.mjs). A hand-typed list is exactly what cannot catch a HALF-LANDED
 // diff: it would go on saying the map has three keys long after the map had four.
 async function surfaceMapKeys() {
-  const source = await readFile(path.join(repoRoot, "ui", "src", "main.tsx"), "utf8");
+  const source = await readFile(path.join(repoRoot, "apps", "ui", "src", "main.tsx"), "utf8");
   const declaredAt = source.indexOf("const SURFACES");
   if (declaredAt < 0) return null;
   const open = source.indexOf("{", declaredAt);
@@ -80,7 +80,7 @@ function importSpecifiersOf(source) {
   return [...clean.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map((match) => match[1]);
 }
 
-// The sweep both non-vacuity claims below rest on — "ui/src was actually walked" for the
+// The sweep both non-vacuity claims below rest on — "apps/ui/src was actually walked" for the
 // no-importer clause and for the placeholder-sentence clause.
 //
 // IT TAKES THE SHIPPED PREDICATE AND DOES NOT RE-TYPE ONE. `test/support/ui-source-files.mjs`
@@ -90,7 +90,7 @@ function importSpecifiersOf(source) {
 // counted 96". A third copy here would be worse than either, because this sweep is what makes
 // the DELETION claim mean anything: if the predicates drift, this walks a different tree than
 // the gates meter and reports green over the difference.
-async function uiSourceFiles(relative = "ui/src", out = []) {
+async function uiSourceFiles(relative = "apps/ui/src", out = []) {
   for (const entry of await readdir(path.join(repoRoot, relative), { withFileTypes: true })) {
     const next = `${relative}/${entry.name}`;
     if (entry.isDirectory()) await uiSourceFiles(next, out);
@@ -150,7 +150,7 @@ export const terminalsHomeRouteTests = [
 
       // (2) `landing` is a key of SURFACES, alongside the other three.
       const keys = await surfaceMapKeys();
-      assert.ok(Array.isArray(keys), "the SURFACES declaration was FOUND in ui/src/main.tsx (non-vacuous: a null read fails here rather than asserting over an empty list)");
+      assert.ok(Array.isArray(keys), "the SURFACES declaration was FOUND in apps/ui/src/main.tsx (non-vacuous: a null read fails here rather than asserting over an empty list)");
       assert.ok(keys.length >= 4, `…and it really has entries: ${JSON.stringify(keys)}`);
       assert.deepEqual(keys, ["landing", "fleet", "board", "config"], "landing is a key of SURFACES, alongside fleet, board and config");
 
@@ -161,21 +161,21 @@ export const terminalsHomeRouteTests = [
       assert.equal(mount.surfaceFailed, false, "…and nothing is wrong");
 
       // (4) the file is GONE from a real directory listing — not merely unimported.
-      const appDir = await readdir(path.join(repoRoot, "ui", "src", "app"));
-      assert.ok(appDir.length > 5, `ui/src/app/ was actually listed: ${appDir.length} entries`);
-      assert.equal(appDir.includes("Landing.tsx"), false, `a real directory listing of ui/src/app/ contains no Landing.tsx: ${JSON.stringify(appDir)}`);
+      const appDir = await readdir(path.join(repoRoot, "apps", "ui", "src", "app"));
+      assert.ok(appDir.length > 5, `apps/ui/src/app/ was actually listed: ${appDir.length} entries`);
+      assert.equal(appDir.includes("Landing.tsx"), false, `a real directory listing of apps/ui/src/app/ contains no Landing.tsx: ${JSON.stringify(appDir)}`);
 
       // (5) …and NOTHING imports it, in any spelling. A retained import with no file is a build
       // break; a retained FILE with no importer is the dead code m46/ADR-007 diagnosed.
       const files = await uiSourceFiles();
-      assert.ok(files.length > 50, `ui/src was actually swept: ${files.length} modules`);
+      assert.ok(files.length > 50, `apps/ui/src was actually swept: ${files.length} modules`);
       const importers = [];
       for (const file of files) {
         for (const specifier of importSpecifiersOf(await readFile(path.join(repoRoot, file), "utf8"))) {
           if (/(^|\/)Landing(\.tsx?)?$/.test(specifier)) importers.push(`${file} → ${specifier}`);
         }
       }
-      assert.deepEqual(importers, [], "no module under ui/src/ imports ./Landing, ../app/Landing or any spelling of that path");
+      assert.deepEqual(importers, [], "no module under apps/ui/src/ imports ./Landing, ../app/Landing or any spelling of that path");
 
       // (6) ONE claimant. The route has one component, not two.
       assert.equal(keys.filter((key) => key === "landing").length, 1, "exactly ONE entry of SURFACES maps the landing id");
@@ -223,7 +223,7 @@ export const terminalsHomeRouteTests = [
       // in-process assertion can tell them apart while the list is single-valued — so the
       // derivation is read where it is written, exactly as GAP-5's own clause reads `Shell.tsx`'s
       // root line for a fact about the cascade that no model-level check can reach.
-      const entrySource = await readFile(path.join(repoRoot, "ui", "src", "app", "entry.mjs"), "utf8");
+      const entrySource = await readFile(path.join(repoRoot, "apps", "ui", "src", "app", "entry.mjs"), "utf8");
       const derivation = entrySource.split("\n").find((line) => /\bconst\s+shellRenders\s*=/.test(line));
       assert.ok(derivation, "surfaceMountFor derives `shellRenders` (non-vacuous: the derivation was found in the shipped source)");
       assert.match(
@@ -427,7 +427,7 @@ export const terminalsHomeRouteTests = [
     name: "home-route/00 the placeholder is unreachable from every address, and the shell's shared card wrapper is reached by not-found ALONE (00 scenario 6)",
     async run() {
       // It is not merely unrouted — it is not in the product. The sentence and the decorative
-      // mark are gone from every `ui/src` module, which is the claim "deleted" actually makes.
+      // mark are gone from every `apps/ui/src` module, which is the claim "deleted" actually makes.
       for (const file of await uiSourceFiles()) {
         const source = await readFile(path.join(repoRoot, file), "utf8");
         assert.equal(source.includes(PLACEHOLDER_SENTENCE), false, `${file} still carries the placeholder sentence`);
@@ -483,14 +483,14 @@ export const terminalsHomeRouteTests = [
       // ROW 1 IS THE ONE THIS STORY IS JUDGED ON, and it is an INEQUALITY rather than a number:
       // the story removes a branch and an import, and a build that came out even has absorbed
       // grid logic into the shell — the signal ARCHITECTURE names.
-      const shell = await gateLineCount("ui/src/app/Shell.tsx");
-      assert.ok(shell < 931, `ui/src/app/Shell.tsx is ${shell} lines, and must be STRICTLY FEWER than the 931 measured at refine`);
+      const shell = await gateLineCount("apps/ui/src/app/Shell.tsx");
+      assert.ok(shell < 931, `apps/ui/src/app/Shell.tsx is ${shell} lines, and must be STRICTLY FEWER than the 931 measured at refine`);
       assert.ok(shell <= 940, `…and inside its 940-line ceiling (${shell})`);
 
       // ROW 2 IS TECH_DEBT 33'S NAMED PREDICTION FOR THIS MILESTONE, and it is stated as an
       // EXACT count because "zero vocabulary added" is not observable from a ceiling with 44
       // lines of room: the failure it predicts would stay green all the way through.
-      assert.equal(await gateLineCount("ui/src/app/shell-layout.mjs"), 1016, "ui/src/app/shell-layout.mjs gains ZERO lines — one row's VALUE changed and nothing else");
+      assert.equal(await gateLineCount("apps/ui/src/app/shell-layout.mjs"), 1016, "apps/ui/src/app/shell-layout.mjs gains ZERO lines — one row's VALUE changed and nothing else");
       assert.ok(1016 <= 1060, "…inside its 1060-line ceiling");
 
       // ROWS 3-6: the blast radius this story must not touch. Row 5 is on the table because a
@@ -512,9 +512,9 @@ export const terminalsHomeRouteTests = [
         // card — `nodeWorkRegion` in place of `nodeCurrentWork`, one `LoopStopRow`, the rung memory —
         // with every rendered fact precomputed in runs.mjs/scope.mjs. AT its ceiling with ZERO
         // headroom (the ceiling's own rule: the next region belongs in its own file, and
-        // ui/src/fleet/ is itself at 20/20 — TECH_DEBT item 33). The card peek still does not move.
-        ["ui/src/fleet/Fleet.tsx", 1560, 1560, "130/03's loop line + Stop, inside its ceiling with zero headroom; the card peek does not move"],
-        ["ui/src/terminal/TerminalControl.tsx", 840, 840, "story 05's wiring, inside its ceiling with zero headroom"],
+        // apps/ui/src/fleet/ is itself at 20/20 — TECH_DEBT item 33). The card peek still does not move.
+        ["apps/ui/src/fleet/Fleet.tsx", 1560, 1560, "130/03's loop line + Stop, inside its ceiling with zero headroom; the card peek does not move"],
+        ["apps/ui/src/terminal/TerminalControl.tsx", 840, 840, "story 05's wiring, inside its ceiling with zero headroom"],
         // 1000 -> 994 on 2026-09-15 by 127/04: `humanizeSlug` moved to `model.ts` (the backlog row
         // shares it) and the archived pill joined the header cluster — net −6, so the ZERO
         // headroom this row was really about is now six lines. The re-aim is the Fleet.tsx row's idiom.
@@ -522,8 +522,8 @@ export const terminalsHomeRouteTests = [
         // `DiagramMarkdown` call — everything else went to `diagrams.mjs`. Four lines of headroom.
         // 996 -> 998 by 131/05 (ADR-006 §4): the ask card's import and its one-line mount; the card
         // is its own module (`AskCard.tsx`). Two lines of headroom.
-        ["ui/src/board/DetailPanel.tsx", 998, 1000, "127/04's move out and pill in, 133/04's tab, then 131/05's ask card mount; two lines of headroom now"],
-        ["ui/src/config/App.tsx", 1298, 1300, "untouched"],
+        ["apps/ui/src/board/DetailPanel.tsx", 998, 1000, "127/04's move out and pill in, 133/04's tab, then 131/05's ask card mount; two lines of headroom now"],
+        ["apps/ui/src/config/App.tsx", 1298, 1300, "untouched"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {
         const lines = await gateLineCount(file);

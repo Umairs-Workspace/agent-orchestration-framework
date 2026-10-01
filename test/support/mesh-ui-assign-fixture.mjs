@@ -146,7 +146,7 @@ async function writeDist(dir) {
 // IT IS THE PRODUCER F-47-04-QA-9 SAYS NO FIXTURE HAD. `Fleet.tsx` renders a
 // secondary token beside the chip whenever `inReview > 0 || isDone`, and
 // `inReview` is a TALLY OF STORIES in the `in-review` status
-// (`ui/src/fleet/scope.mjs`'s `milestoneCardModels`) — so with the shipped
+// (`apps/ui/src/fleet/scope.mjs`'s `milestoneCardModels`) — so with the shipped
 // `not-started` story every mounted card on this fixture was a TWO-child cluster
 // and the three-child row that ADR-014 measures could not be rendered at all.
 // `storyStatus: "in-review"` publishes the same story in that status through the
@@ -685,7 +685,7 @@ export async function withEmptyFleetFace(fn) {
 
 // THE REFUSAL BODY, MINTED ONCE (F-47-03-ARCH-3, must-fix, closed here). It is `sendApiError`'s
 // shape for a global-store-unavailable read — INCLUDING the `path` row, which is not decoration:
-// `errorPathFor` (`ui/src/fleet/scope.mjs`) prefers the thrown error's own `path` because a
+// `errorPathFor` (`apps/ui/src/fleet/scope.mjs`) prefers the thrown error's own `path` because a
 // FIRST-LOAD failure leaves `status` null, so it is the only source for the error state's
 // `Global mesh store: <path>` line. A body without it renders a strictly less honest page.
 //

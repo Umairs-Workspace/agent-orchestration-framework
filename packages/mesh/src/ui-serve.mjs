@@ -185,7 +185,7 @@ function meshUiUrlForPort(port) {
 // is on (milestone 45 / ADR-001's route table), never by a separate build and no
 // longer by a query selector (task 00 DEV note; ADR-003 decision 4).
 function meshUiDist(repoRoot) {
-  return path.join(repoRoot, "ui", "dist");
+  return path.join(repoRoot, "apps", "ui", "dist");
 }
 
 // m42 wave (d) leg d1 (wave-3 tail) — the NON-BLOCKING probe behind the registered
@@ -285,10 +285,10 @@ async function serveMeshUi({
   // The board's friendly build-missing refusal, mirrored verbatim onto the fleet
   // verb (task 00): a missing ui/dist is a caught { code:"ui-build-missing" }
   // refusal, never a stack trace. (The message keeps the board's literal — the
-  // build command is the same `npm --prefix ui run build`.)
+  // build command is the same `yarn ui:build`.)
   if (!existsSync(path.join(dist, "index.html"))) {
     const error = new Error(
-      `The fleet UI build is missing at ${dist}. Build it first: npm --prefix ui run build`
+      `The fleet UI build is missing at ${dist}. Build it first: yarn ui:build`
     );
     error.code = "ui-build-missing";
     throw error;

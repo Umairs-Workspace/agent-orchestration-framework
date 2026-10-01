@@ -27,7 +27,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   4. THE POSTURE HAS ONE AUTHOR PER SURFACE — the interactive surfaces are the
 //      BOARD DOCK and the TERMINALS HOME, the FLEET PAGE STAYS A MONITOR, and no
 //      render site in any of the three assembles the value that decides whether an
-//      operator can type into another machine. ui/src/fleet and ui/src/home wire no
+//      operator can type into another machine. apps/ui/src/fleet and apps/ui/src/home wire no
 //      input source and send nothing on any socket of their own. RE-EXPRESSED by
 //      m46/04 and AMENDED by m49/03 (see both notes below).
 //
@@ -45,20 +45,20 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //
 // (b) INVARIANT 4 IS RE-EXPRESSED AT EQUAL STRENGTH, because the move this milestone
 //     makes would otherwise leave it GREEN AND VACUOUS. Its detector is a DIRECTORY
-//     SWEEP over `ui/src/fleet/**` asserting no file there wires `onData`/`onKey`/
+//     SWEEP over `apps/ui/src/fleet/**` asserting no file there wires `onData`/`onKey`/
 //     `onBinary` or sends on a socket. The one terminal control now lives in
-//     `ui/src/terminal/` and genuinely DOES both — for the board's interactive mount —
+//     `apps/ui/src/terminal/` and genuinely DOES both — for the board's interactive mount —
 //     so the sweep would keep passing while asserting nothing about the property it
 //     names. A green gate is read as a satisfied contract, which is worse than a deleted
 //     one. ADR-006 rules the replacement, and it is THREE assertions where there was one:
-//       1. THE CALL SITE — `ui/src/fleet/**` declares the read-only posture and has no
+//       1. THE CALL SITE — `apps/ui/src/fleet/**` declares the read-only posture and has no
 //          path to `interactive`, asserted structurally AND behaviourally by importing
 //          the fleet's real mount module and running the real policy over it;
 //       2. THE POLICY — `inputEnabled = source.canInput && !mount.readOnly`, driven over
 //          the WHOLE frozen source table x BOTH postures x every malformed declaration.
 //          A pure function driven exhaustively is a far stronger pin than an
 //          absence-of-string sweep;
-//       3. THE SWEEP SURVIVES, still walking `ui/src/fleet/**` — still non-vacuous
+//       3. THE SWEEP SURVIVES, still walking `apps/ui/src/fleet/**` — still non-vacuous
 //          (`Fleet.tsx`, `api.ts`, `assignments.mjs`, `scope.mjs`, `terminal-mount.mjs`
 //          remain) and still proving no fleet-local module grows its own input path.
 //     Two SPELLINGS this detector asserted are gone with the files that carried them, and
@@ -78,7 +78,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // to fail silently. Both notes stay; two amendments, one trail.
 //
 // THE COUNTER-INTUITIVE MEASUREMENT THAT DECIDES THE SHAPE (ADR-008): because ADR-001 puts the
-// home in `ui/src/home/` rather than in `ui/src/fleet/`, ALL THREE PARTS BELOW STAY LITERALLY
+// home in `apps/ui/src/home/` rather than in `apps/ui/src/fleet/`, ALL THREE PARTS BELOW STAY LITERALLY
 // TRUE AND NON-VACUOUS AFTER m49 WITH NO EDIT AT ALL. Nothing goes red. What breaks is the
 // PROPERTY: *the value that decides whether an operator can type into another machine has
 // exactly ONE author, and it is not a render site* would be enforced on ONE of three surfaces,
@@ -92,20 +92,20 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //     every clause it had still runs, on the same inputs, with the same verdicts.
 //   · PART 2 (the policy) IS UNTOUCHED — not one character. It is a pure function over the
 //     frozen source table and the two postures, and m49 changes neither.
-//   · PART 3 (the sweep) IS UNTOUCHED AND GAINS A DIRECTORY: `ui/src/home/**` is swept for the
-//     same input paths and browser sockets `ui/src/fleet/**` is. The home is interactive
+//   · PART 3 (the sweep) IS UNTOUCHED AND GAINS A DIRECTORY: `apps/ui/src/home/**` is swept for the
+//     same input paths and browser sockets `apps/ui/src/fleet/**` is. The home is interactive
 //     THROUGH THE ONE CONTROL AND ONLY THROUGH IT, and a new top-level directory would
 //     otherwise sit outside the only sweep that catches a surface file wiring its own socket.
 //
 // TWO ASYMMETRIES ARE DELIBERATE, AND GENERALISING EITHER ONE BREAKS THE GATE:
-//   (a) `INTERACTIVE_DECLARATION` STAYS SCOPED TO `ui/src/fleet/**`. It is the READ-ONLY
+//   (a) `INTERACTIVE_DECLARATION` STAYS SCOPED TO `apps/ui/src/fleet/**`. It is the READ-ONLY
 //       surface's clause and it means "this surface has nothing to flip". Generalised, it fails
-//       immediately and for the right reason: `ui/src/board/dock-mount.mjs` has named
-//       `POSTURE_INTERACTIVE` since m42 and `ui/src/home/session-mount.mjs` MUST name it. A
+//       immediately and for the right reason: `apps/ui/src/board/dock-mount.mjs` has named
+//       `POSTURE_INTERACTIVE` since m42 and `apps/ui/src/home/session-mount.mjs` MUST name it. A
 //       clause that forbids the interactive surfaces from naming the interactive posture
 //       forbids the milestone.
 //   (b) THE AUTHORSHIP CLAUSE COVERS ALL THREE SURFACE DIRECTORIES AND REACHES NONE OF
-//       `ui/src/terminal/**`. It is posture-VALUE-blind — it constrains WHO writes the key, not
+//       `apps/ui/src/terminal/**`. It is posture-VALUE-blind — it constrains WHO writes the key, not
 //       WHICH word they write — which is exactly why it generalises where (a) cannot. The core
 //       writes a `posture:` key at SEVEN sites across THREE modules (`input-policy.mjs`, which
 //       DEFINES the vocabulary; `host-model.mjs`'s control-state constructor and `SET_POSTURE`
@@ -150,16 +150,16 @@ const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_IN
 // m46/04 — INVARIANT 4's POLICY HALF is driven BEHAVIOURALLY, over the REAL modules the
 // browser imports. A source-grep could only say the words are present; running the real
 // policy over the real frozen table says the ANSWER is right, for every pair.
-import { SESSION_SOURCES, sessionSourceFor } from "../../../ui/src/terminal/source-table.mjs";
-import { inputPolicyFor, mountModelFor, POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../../ui/src/terminal/input-policy.mjs";
-import { fleetTerminalMount } from "../../../ui/src/fleet/terminal-mount.mjs";
-import { boardDockMount } from "../../../ui/src/board/dock-mount.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../../../apps/ui/src/terminal/source-table.mjs";
+import { inputPolicyFor, mountModelFor, POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../../apps/ui/src/terminal/input-policy.mjs";
+import { fleetTerminalMount } from "../../../apps/ui/src/fleet/terminal-mount.mjs";
+import { boardDockMount } from "../../../apps/ui/src/board/dock-mount.mjs";
 // m49/03 — THE THIRD PRODUCER, and the import is why the amendment and the module are ONE
 // story: before this file exists the whole lane throws, and after it exists but before the
 // table below is told about it the lane is GREEN AND VACUOUS about the new interactive surface.
 // Vacuous is the dangerous one and it is this gate's own recorded history.
-import { homeSessionMount } from "../../../ui/src/home/session-mount.mjs";
-import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../../ui/src/home/feed-axis.mjs";
+import { homeSessionMount } from "../../../apps/ui/src/home/session-mount.mjs";
+import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../../apps/ui/src/home/feed-axis.mjs";
 
 import { importSpecifiers } from "../../support/module-family.mjs";
 
@@ -172,20 +172,20 @@ const WORKER_EXECUTION = path.join(repoRoot, "packages", "mesh", "src", "worker-
 // terminal component at all, and the ONE control all three surfaces mount lives here. The fleet
 // directory is still swept whole — that sweep is invariant 4's surviving third — and m49/03
 // adds the home's directory beside it.
-const FLEET_UI_DIR = path.join(repoRoot, "ui", "src", "fleet");
-const HOME_UI_DIR = path.join(repoRoot, "ui", "src", "home");
-const TERMINAL_CONTROL = path.join(repoRoot, "ui", "src", "terminal", "TerminalControl.tsx");
+const FLEET_UI_DIR = path.join(repoRoot, "apps", "ui", "src", "fleet");
+const HOME_UI_DIR = path.join(repoRoot, "apps", "ui", "src", "home");
+const TERMINAL_CONTROL = path.join(repoRoot, "apps", "ui", "src", "terminal", "TerminalControl.tsx");
 // The DESCRIPTOR MODULE. After ADR-001 the `/ws/terminal-view` literal lives in the frozen
 // source table, not in any component — so the clause that used to read the dock's raw source
 // for that route is re-aimed HERE. A re-point at the control would fail for a reason that
 // looks like a bug and is not.
-const SOURCE_TABLE = path.join(repoRoot, "ui", "src", "terminal", "source-table.mjs");
+const SOURCE_TABLE = path.join(repoRoot, "apps", "ui", "src", "terminal", "source-table.mjs");
 // The FLEET's own call-site module — the home of the four behaviours that had none after the
 // deletion, and the file that declares the read-only posture invariant 4 rests on. m49/03 makes
 // it one ROW of the surface → posture-home table below rather than the only named author; the
 // POSITIVE read of it (that it names `POSTURE_READ_ONLY` by name) is now driven per surface,
 // from that table, and still runs against this exact file.
-const FLEET_TERMINAL_MOUNT = path.join(repoRoot, "ui", "src", "fleet", "terminal-mount.mjs");
+const FLEET_TERMINAL_MOUNT = path.join(repoRoot, "apps", "ui", "src", "fleet", "terminal-mount.mjs");
 // The worker's own local /ws/terminal (scanned, never modified): its
 // bidirectional input direction predates and outlives this feature.
 const TERMINAL_WS = path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs");
@@ -353,11 +353,11 @@ function durabilityProblems({ bridgeSource, mirrorSource }) {
 
 // --- detector #4 — INVARIANT 4, RE-EXPRESSED (m46/04, ADR-006): the FLEET PAGE stays a
 // MONITOR. The interactive surface is the ONE control mounted by the BOARD DOCK;
-// `ui/src/fleet/**` wires no input source and sends on no socket ---
+// `apps/ui/src/fleet/**` wires no input source and sends on no socket ---
 //
 // THE SWEEP BELOW IS ONE OF THREE, and on its own it is no longer sufficient. The control
-// moved to `ui/src/terminal/` and genuinely wires `onData` there for the board's interactive
-// mount, so a directory sweep of `ui/src/fleet/**` would stay green while saying nothing about
+// moved to `apps/ui/src/terminal/` and genuinely wires `onData` there for the board's interactive
+// mount, so a directory sweep of `apps/ui/src/fleet/**` would stay green while saying nothing about
 // whether the FLEET can type. It is kept because it is still non-vacuous and still proves that
 // no fleet-LOCAL module grows its own input path; the call-site clause and the exhaustively
 // driven policy are what carry the property now.
@@ -386,11 +386,11 @@ const INTERACTIVE_DECLARATION = /\bPOSTURE_INTERACTIVE\b|["']interactive["']|\br
 // are the same shape, and they are the spellings m49's own feature will reach for.
 //
 // So the rule is about WHO MAY WRITE THE FIELD, not about which word they write: `posture:` is a
-// key only `terminal-mount.mjs` may author anywhere under `ui/src/fleet/**`. It is deliberately
+// key only `terminal-mount.mjs` may author anywhere under `apps/ui/src/fleet/**`. It is deliberately
 // the same shape as the sibling gate's descriptor-field ratchet, for the same reason — a value
 // that decides a permission may have exactly one author.
 const POSTURE_KEY_WRITE = /(^|[\s{,(])posture\s*:/m;
-const FLEET_POSTURE_HOME = "ui/src/fleet/terminal-mount.mjs";
+const FLEET_POSTURE_HOME = "apps/ui/src/fleet/terminal-mount.mjs";
 
 function browserSocketSend(source) {
   return SOCKET_NAMED.test(source) && ANY_SEND_CALL.test(source);
@@ -423,7 +423,7 @@ async function listSourceFiles(dir) {
 export const POSTURE_HOMES = Object.freeze([
   Object.freeze({
     surface: "the fleet page (the monitor)",
-    dir: "ui/src/fleet",
+    dir: "apps/ui/src/fleet",
     // THE m46 CONSTANT, PRESERVED AND RE-HOMED rather than re-typed: the fleet's single author
     // is the same fact it always was, now stated as one row of a table instead of as one clause.
     postureHome: FLEET_POSTURE_HOME,
@@ -434,8 +434,8 @@ export const POSTURE_HOMES = Object.freeze([
   }),
   Object.freeze({
     surface: "the board dock",
-    dir: "ui/src/board",
-    postureHome: "ui/src/board/dock-mount.mjs",
+    dir: "apps/ui/src/board",
+    postureHome: "apps/ui/src/board/dock-mount.mjs",
     declares: "POSTURE_INTERACTIVE",
     bareCall: /^boardDockMount\(/,
     call: "boardDockMount(",
@@ -443,8 +443,8 @@ export const POSTURE_HOMES = Object.freeze([
   }),
   Object.freeze({
     surface: "the terminals home",
-    dir: "ui/src/home",
-    postureHome: "ui/src/home/session-mount.mjs",
+    dir: "apps/ui/src/home",
+    postureHome: "apps/ui/src/home/session-mount.mjs",
     declares: "POSTURE_INTERACTIVE",
     bareCall: /^homeSessionMount\(/,
     call: "homeSessionMount(",
@@ -490,7 +490,7 @@ const MOUNT_PROP = /<\s*TerminalControl[\s\S]{0,400}?mount=\{([^\n]*)\}\s*\n/g;
 const CONTROL_MOUNT = /<\s*TerminalControl\b/g;
 
 // Every detector below takes a LISTING — `[{ path, source }]` — so a plant is synthesized text
-// and never a file written into `ui/src/**`, which would race every other suite reading that
+// and never a file written into `apps/ui/src/**`, which would race every other suite reading that
 // tree and would survive a crashed run. It strips comments itself (idempotent on already-clean
 // input, LINE-FIRST per TECH_DEBT 24) so no plant can arrive un-stripped by accident.
 function cleaned(file) {
@@ -505,7 +505,7 @@ function surfaceOf(relative, table) {
 // Posture-VALUE-blind by design: it constrains WHO writes the key, never WHICH word they write.
 // That is what lets it cover all three surfaces where the absence sweep below cannot, and it is
 // why a file OUTSIDE the three surface directories is skipped rather than reported —
-// `ui/src/terminal/**` defines the vocabulary, transforms state within it and reads it through.
+// `apps/ui/src/terminal/**` defines the vocabulary, transforms state within it and reads it through.
 export function postureAuthorOffenders(files, table = POSTURE_HOMES) {
   const offenders = [];
   const listing = Array.isArray(files) ? files : [];
@@ -538,15 +538,15 @@ export function postureAuthorOffenders(files, table = POSTURE_HOMES) {
 }
 
 // ── PART 1, CLAUSE B — THE FLEET NAMES NO INTERACTIVE POSTURE AT ALL ───────────────────────
-// SCOPED TO `ui/src/fleet/**` AND TO NOTHING ELSE, deliberately (see the m49 note in the header).
+// SCOPED TO `apps/ui/src/fleet/**` AND TO NOTHING ELSE, deliberately (see the m49 note in the header).
 // Generalising this needle is not a strengthening; it makes the amendment unsatisfiable.
 export function fleetInteractivePostureOffenders(files) {
   const offenders = [];
   for (const file of Array.isArray(files) ? files : []) {
-    if (!String(file?.path ?? "").startsWith("ui/src/fleet/")) continue;
+    if (!String(file?.path ?? "").startsWith("apps/ui/src/fleet/")) continue;
     if (!INTERACTIVE_DECLARATION.test(cleaned(file))) continue;
     offenders.push(
-      `${file.path} names the INTERACTIVE posture — the fleet page stays a MONITOR. m49 makes the fleet ORIGIN interactive at ui/src/home/, not the fleet card, and reversing the card's posture is a decision no story in this milestone took.`,
+      `${file.path} names the INTERACTIVE posture — the fleet page stays a MONITOR. m49 makes the fleet ORIGIN interactive at apps/ui/src/home/, not the fleet card, and reversing the card's posture is a decision no story in this milestone took.`,
     );
   }
   return offenders;
@@ -599,7 +599,7 @@ export function mountSiteOffenders(files, table = POSTURE_HOMES) {
 }
 
 // ── PART 3 — NO SURFACE DIRECTORY GROWS AN INPUT PATH OR A SOCKET OF ITS OWN ───────────────
-// One detector, two directories (`ui/src/fleet/**` since m42, `ui/src/home/**` since m49). The
+// One detector, two directories (`apps/ui/src/fleet/**` since m42, `apps/ui/src/home/**` since m49). The
 // home is interactive THROUGH THE ONE CONTROL and only through it; a home module that grew a
 // private socket would be a second input seam beside the tuple-bound one, which is invariant 1's
 // whole subject.
@@ -851,18 +851,18 @@ export const archTests = [
       assert.deepEqual(
         postureAuthorOffenders(listing),
         [],
-        "no value any surface holds — no assignment field, no roster fact, no query parameter, no operator action — may assemble the posture at a render site. Each surface has exactly ONE module that may write the key, and `ui/src/terminal/**` is not swept because the core DEFINES the vocabulary rather than authoring a permission.",
+        "no value any surface holds — no assignment field, no roster fact, no query parameter, no operator action — may assemble the posture at a render site. Each surface has exactly ONE module that may write the key, and `apps/ui/src/terminal/**` is not swept because the core DEFINES the vocabulary rather than authoring a permission.",
       );
 
       // CLAUSE B — and the FLEET still names no interactive posture at all. Scope unchanged.
       assert.deepEqual(
         fleetInteractivePostureOffenders(listing),
         [],
-        "the fleet page stays a MONITOR: nothing under ui/src/fleet/ names POSTURE_INTERACTIVE, the quoted word, `readOnly: false` or MOUNT_INTERACTIVE. m49 makes the fleet ORIGIN interactive at ui/src/home/; it does not reverse the card.",
+        "the fleet page stays a MONITOR: nothing under apps/ui/src/fleet/ names POSTURE_INTERACTIVE, the quoted word, `readOnly: false` or MOUNT_INTERACTIVE. m49 makes the fleet ORIGIN interactive at apps/ui/src/home/; it does not reverse the card.",
       );
       // …and the other two surfaces are NOT swept by that needle, which is what makes the
       // amendment satisfiable at all: both of them MUST name the interactive posture.
-      for (const dir of ["ui/src/board/", "ui/src/home/"]) {
+      for (const dir of ["apps/ui/src/board/", "apps/ui/src/home/"]) {
         const named = listing.filter((file) => file.path.startsWith(dir) && INTERACTIVE_DECLARATION.test(file.source));
         assert.ok(
           named.length >= 1,
@@ -898,7 +898,7 @@ export const archTests = [
       assert.equal(
         path.join(repoRoot, ...POSTURE_HOMES[0].postureHome.split("/")),
         FLEET_TERMINAL_MOUNT,
-        "the fleet's posture-home row IS ui/src/fleet/terminal-mount.mjs, the file m46's clause named",
+        "the fleet's posture-home row IS apps/ui/src/fleet/terminal-mount.mjs, the file m46's clause named",
       );
 
       // BEHAVIOURAL — the REAL mount the fleet computes for a REAL resolved assignment, run
@@ -990,16 +990,16 @@ export const archTests = [
       for (const [label, file, source] of [
         [
           "the exact spelling m46's own structural review found walking past the word sweep",
-          "ui/src/home/GridTile.tsx",
+          "apps/ui/src/home/GridTile.tsx",
           "export function GridTile({ row }) {\n  return <TerminalControl host={HOST_GRID_PANE} mount={{ ...homeSessionMount(row), posture: { readOnly: !!0 } }} />;\n}\n",
         ],
         [
           "a home helper module that decides the posture too",
-          "ui/src/home/tile-mount.mjs",
+          "apps/ui/src/home/tile-mount.mjs",
           'export function tileMount(row) {\n  return { bound: true, posture: POSTURE_INTERACTIVE };\n}\n',
         ],
-        ["the same move, one directory over", "ui/src/board/DockTile.tsx", "const mount = { bound: true, posture: dockPosture };\n"],
-        ["and the clause it already had", "ui/src/fleet/PeekTile.tsx", "const mount = { bound: true, posture: peekPosture };\n"],
+        ["the same move, one directory over", "apps/ui/src/board/DockTile.tsx", "const mount = { bound: true, posture: dockPosture };\n"],
+        ["and the clause it already had", "apps/ui/src/fleet/PeekTile.tsx", "const mount = { bound: true, posture: peekPosture };\n"],
       ]) {
         const planted = plant(file, source);
         landed(planted);
@@ -1012,9 +1012,9 @@ export const archTests = [
         assert.deepEqual(postureAuthorOffenders(clean), [], "…and the CLEAN tree, in this same lane, reports none");
       }
 
-      // ── AND IT REACHES NONE OF `ui/src/terminal/**`, which is the trap. The shipped control
+      // ── AND IT REACHES NONE OF `apps/ui/src/terminal/**`, which is the trap. The shipped control
       //    writes `posture: mount.posture` — a READ-THROUGH of the value this gate protects.
-      for (const file of ["ui/src/terminal/TerminalControl.tsx", "ui/src/terminal/input-policy.mjs", "ui/src/terminal/host-model.mjs"]) {
+      for (const file of ["apps/ui/src/terminal/TerminalControl.tsx", "apps/ui/src/terminal/input-policy.mjs", "apps/ui/src/terminal/host-model.mjs"]) {
         assert.deepEqual(
           postureAuthorOffenders([{ path: file, source: "const identity = terminalSessionIdentity({ posture: mount.posture });\n" }, ...clean]),
           [],
@@ -1031,15 +1031,15 @@ export const archTests = [
       // ADVANCES `lastIndex`, so the next file is searched from a stale offset and the answer
       // depends on the order files arrive in. It failed CLOSED here (the count guard below went
       // red) but a wrong answer in the newest clause is not something to leave to a guard.
-      const homeless = clean.filter((file) => !(file.path.startsWith("ui/src/home/") && [...file.source.matchAll(MOUNT_PROP)].length > 0));
+      const homeless = clean.filter((file) => !(file.path.startsWith("apps/ui/src/home/") && [...file.source.matchAll(MOUNT_PROP)].length > 0));
       assert.equal(homeless.length, clean.length - 1, "the floor plant LANDED: exactly one home mount site was removed, and the fleet's and the board's are untouched");
       assert.ok(
-        homeless.some((file) => file.path.startsWith("ui/src/fleet/")) && homeless.some((file) => file.path.startsWith("ui/src/board/")),
+        homeless.some((file) => file.path.startsWith("apps/ui/src/fleet/")) && homeless.some((file) => file.path.startsWith("apps/ui/src/board/")),
         "…with both other surfaces still present, so this is a MISSING HOME SITE and not an empty tree",
       );
       const floorFired = mountSiteOffenders(homeless);
       assert.ok(
-        floorFired.some((offender) => offender.includes("ui/src/home/") && offender.includes("the terminals home")),
+        floorFired.some((offender) => offender.includes("apps/ui/src/home/") && offender.includes("the terminals home")),
         `self-check: deleting the home's mount site turns the clause RED and the refusal NAMES the surface that lost it. Got: ${JSON.stringify(floorFired)}`,
       );
       // …and the CONCATENATED floor this replaced would have stayed green on the same plant,
@@ -1052,7 +1052,7 @@ export const archTests = [
       assert.deepEqual(mountSiteOffenders(clean), [], "…and the CLEAN tree, in this same lane, reports none");
 
       // ── ITS MIRROR: the sweep must be shown to FIND the site, not merely to count one ──
-      const spread = plant("ui/src/home/SpreadTile.tsx", "  <TerminalControl\n    host={HOST_GRID_PANE}\n    mount={{ ...homeSessionMount(row) }}\n  />\n");
+      const spread = plant("apps/ui/src/home/SpreadTile.tsx", "  <TerminalControl\n    host={HOST_GRID_PANE}\n    mount={{ ...homeSessionMount(row) }}\n  />\n");
       landed(spread);
       assert.ok(
         mountSiteOffenders(spread).some((offender) => offender.includes("SpreadTile") && offender.includes("bare")),
@@ -1068,7 +1068,7 @@ export const archTests = [
       // policy the second site is `inputEnabled: true`: the exact m46 spelling this clause
       // exists to catch, on the surface that can type.
       const twoSites = plant(
-        "ui/src/home/TwoTiles.tsx",
+        "apps/ui/src/home/TwoTiles.tsx",
         [
           'import { TerminalControl } from "../terminal/TerminalControl";',
           'import { HOST_GRID_PANE } from "../terminal/host-model.mjs";',
@@ -1107,7 +1107,7 @@ export const archTests = [
       // …and its sibling spelling — the one that DOES write the key — is caught by BOTH, so the
       // two clauses are shown to overlap where they overlap and not where they do not.
       const twoSitesPostureKey = plant(
-        "ui/src/home/TwoTilesPosture.tsx",
+        "apps/ui/src/home/TwoTilesPosture.tsx",
         [
           "export const A = ({ row, o }) => <TerminalControl host={HOST_GRID_PANE} mount={homeSessionMount(row)} origins={o} />;",
           "",
@@ -1126,7 +1126,7 @@ export const archTests = [
         "the bare-call clause reads the second site",
       );
       assert.ok(
-        postureAuthorOffenders(twoSitesPostureKey).some((offender) => offender.startsWith("ui/src/home/TwoTilesPosture.tsx WRITES")),
+        postureAuthorOffenders(twoSitesPostureKey).some((offender) => offender.startsWith("apps/ui/src/home/TwoTilesPosture.tsx WRITES")),
         "…and the authorship clause reports it independently, so the two fail together rather than relying on each other",
       );
       assert.deepEqual(mountSiteOffenders(clean), [], "…and the CLEAN tree, in this same lane, reports none");
@@ -1185,17 +1185,17 @@ export const archTests = [
     },
   },
 
-  // ══ invariant #4 · PART 3 — THE SWEEP SURVIVES. Still walking `ui/src/fleet/**`, still
+  // ══ invariant #4 · PART 3 — THE SWEEP SURVIVES. Still walking `apps/ui/src/fleet/**`, still
   //    non-vacuous, still proving that no fleet-LOCAL module grows its own input path. On its
   //    own it is no longer sufficient (the control left this directory), which is why parts 1
   //    and 2 exist — but it is not weaker than it was, and deleting it would give up the only
   //    clause that catches a NEW fleet file wiring a socket of its own. ══
   {
-    name: "arch/42+46+49 terminal-input (invariant 4, part 3 — the surviving sweep, and it GAINS a directory): neither ui/src/fleet nor ui/src/home wires an input source or sends on a socket of its own, and the fleet still mounts the ONE control against the tuple-bound route",
+    name: "arch/42+46+49 terminal-input (invariant 4, part 3 — the surviving sweep, and it GAINS a directory): neither apps/ui/src/fleet nor apps/ui/src/home wires an input source or sends on a socket of its own, and the fleet still mounts the ONE control against the tuple-bound route",
     async run() {
       const fleetListing = await readSurfaceListing(FLEET_UI_DIR);
       assert.ok(fleetListing.length >= 5, `the fleet UI surface is found and is non-vacuous: ${fleetListing.length} files`);
-      // m49/03 — THE SECOND SWEPT DIRECTORY. `ui/src/home/` is a NEW top-level directory that
+      // m49/03 — THE SECOND SWEPT DIRECTORY. `apps/ui/src/home/` is a NEW top-level directory that
       // would otherwise sit outside the only clause that catches a surface file wiring a socket
       // of its own — the same blind spot, one milestone later. Its absence FAILS loudly (see
       // `readSurfaceListing`) rather than passing over nothing.
@@ -1206,7 +1206,7 @@ export const archTests = [
       assert.deepEqual(
         inputSourceOffenders(swept),
         [],
-        "the fleet page remains a monitor, and the home is interactive THROUGH THE ONE CONTROL AND ONLY THROUGH IT. NOTE, because the move makes this clause weaker than it reads: the ONE control lives in `ui/src/terminal/` and DOES wire onData there for the two interactive mounts — so this sweep alone can no longer answer 'can this surface type?'. Parts 1 and 2 above are what answer it now.",
+        "the fleet page remains a monitor, and the home is interactive THROUGH THE ONE CONTROL AND ONLY THROUGH IT. NOTE, because the move makes this clause weaker than it reads: the ONE control lives in `apps/ui/src/terminal/` and DOES wire onData there for the two interactive mounts — so this sweep alone can no longer answer 'can this surface type?'. Parts 1 and 2 above are what answer it now.",
       );
 
       // …AND THE SWEEP GENUINELY FIRES, on both directories, against the SHIPPED detector. Each
@@ -1214,10 +1214,10 @@ export const archTests = [
       // in the same lane — a detector only ever shown to stay QUIET is one mutation from
       // asserting nothing.
       for (const [label, file, source] of [
-        ["a home module taking keystrokes", "ui/src/home/keys.mjs", "export function wire(term) {\n  term.onData((bytes) => queue.push(bytes));\n}\n"],
-        ["a home module with its own wire", "ui/src/home/socket.mjs", 'export function open(url) {\n  const ws = new WebSocket(url);\n  ws.send("hello");\n  return ws;\n}\n'],
-        ["a home module keying off the DOM", "ui/src/home/keymap.mjs", "export function bind(term) {\n  term.attachCustomKeyEventHandler(() => true);\n}\n"],
-        ["the fleet clause, unchanged", "ui/src/fleet/peek-keys.mjs", "export function wire(term) {\n  term.onKey((event) => event);\n}\n"],
+        ["a home module taking keystrokes", "apps/ui/src/home/keys.mjs", "export function wire(term) {\n  term.onData((bytes) => queue.push(bytes));\n}\n"],
+        ["a home module with its own wire", "apps/ui/src/home/socket.mjs", 'export function open(url) {\n  const ws = new WebSocket(url);\n  ws.send("hello");\n  return ws;\n}\n'],
+        ["a home module keying off the DOM", "apps/ui/src/home/keymap.mjs", "export function bind(term) {\n  term.attachCustomKeyEventHandler(() => true);\n}\n"],
+        ["the fleet clause, unchanged", "apps/ui/src/fleet/peek-keys.mjs", "export function wire(term) {\n  term.onKey((event) => event);\n}\n"],
       ]) {
         const planted = [...swept, { path: file, source }];
         assert.notEqual(planted.length, swept.length, `${label}: the plant LANDED`);
@@ -1238,7 +1238,7 @@ export const archTests = [
         "export const wired = true;",
       ].join("\n");
       assert.ok(
-        inputSourceOffenders([...swept, { path: "ui/src/home/blinded.mjs", source: blinding }]).some((offender) => offender.startsWith("ui/src/home/blinded.mjs")),
+        inputSourceOffenders([...swept, { path: "apps/ui/src/home/blinded.mjs", source: blinding }]).some((offender) => offender.startsWith("apps/ui/src/home/blinded.mjs")),
         "a LINE comment containing `/*` twenty lines above an `onData` wiring does NOT blind the sweep — line comments are stripped FIRST, block comments SECOND",
       );
       const blockFirst = (source) => source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
@@ -1247,7 +1247,7 @@ export const archTests = [
         "…and with the strip order REVERSED the same file reports NOTHING AT ALL, which is why the order is asserted here and not merely commented",
       );
       assert.deepEqual(
-        inputSourceOffenders([{ path: "ui/src/home/commented.mjs", source: "/*\nterm.onData((bytes) => queue.push(bytes));\n*/\nexport const x = 1;\n" }]),
+        inputSourceOffenders([{ path: "apps/ui/src/home/commented.mjs", source: "/*\nterm.onData((bytes) => queue.push(bytes));\n*/\nexport const x = 1;\n" }]),
         [],
         "…while an `onData` that appears ONLY inside a genuine block comment is NOT reported: the stripper still strips",
       );
@@ -1287,7 +1287,7 @@ export const archTests = [
       //    invariant ("no half-disabled widget that swallows keystrokes silently") is the
       //    POLICY's now, driven exhaustively in part 2 — and it is stronger here than a string
       //    ever was, because the control may not spell either value as a LITERAL at all.
-      const identity = await realSource(path.join(repoRoot, "ui", "src", "terminal", "pane-identity.mjs"));
+      const identity = await realSource(path.join(repoRoot, "apps", "ui", "src", "terminal", "pane-identity.mjs"));
       assert.ok(/→\s*\$\{far\}|\$\{owner\}\s*→/.test(identity), "the identity line names the far end — a remote session says so in WORDS");
       assert.ok(
         !/disableStdin\s*:\s*(?:true|false)\b/.test(controlSource),

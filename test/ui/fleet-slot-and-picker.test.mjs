@@ -36,8 +36,8 @@ import {
   chipClear,
   regionSummary,
 } from "../support/fleet-filter-readers.mjs";
-import { slotAidForm, clampedPopover, SLOT_AID_DROP_WIDTH, POPOVER_GUTTER } from "../../ui/src/fleet/slot-aids.mjs";
-import { emptyStateCopy } from "../../ui/src/fleet/scope.mjs";
+import { slotAidForm, clampedPopover, SLOT_AID_DROP_WIDTH, POPOVER_GUTTER } from "../../apps/ui/src/fleet/slot-aids.mjs";
+import { emptyStateCopy } from "../../apps/ui/src/fleet/scope.mjs";
 
 // The resting label. A `.tsx` cannot be imported by `node:test`, so it is pinned here and
 // checked against the module's own literal by `fleet-filter-control/01` — the two cannot drift.
@@ -49,9 +49,9 @@ const ALL_REPOS = "All repos";
 // live in different files. F-47-V-23 is what happens when one moves and the other does not.
 async function pickerConstantForBoundary() {
   const { readFile } = await import("node:fs/promises");
-  const source = await readFile(new URL("../../ui/src/fleet/RepoPicker.tsx", import.meta.url), "utf8");
+  const source = await readFile(new URL("../../apps/ui/src/fleet/RepoPicker.tsx", import.meta.url), "utf8");
   const match = source.match(/export const REPO_TRIGGER_WIDTH =\s*"([^"]*)"/);
-  assert.ok(match, "ui/src/fleet/RepoPicker.tsx declares `export const REPO_TRIGGER_WIDTH` as a string literal");
+  assert.ok(match, "apps/ui/src/fleet/RepoPicker.tsx declares `export const REPO_TRIGGER_WIDTH` as a string literal");
   return match[1];
 }
 

@@ -1,8 +1,8 @@
 // Traceability for milestone 46 / story 04 / task 02 —
 // `02_the-duplicate-is-deleted-and-the-gates-follow.feature`, the `@executable` half.
 //
-// AFTER THIS TASK THERE IS ONE TERMINAL IMPLEMENTATION. `ui/src/board/TerminalDock.tsx`,
-// `ui/src/board/terminal/` and `ui/src/fleet/terminal-view/` are DELETED, both call sites render
+// AFTER THIS TASK THERE IS ONE TERMINAL IMPLEMENTATION. `apps/ui/src/board/TerminalDock.tsx`,
+// `apps/ui/src/board/terminal/` and `apps/ui/src/fleet/terminal-view/` are DELETED, both call sites render
 // the one control, and every gate whose file list named them names the new home instead — in the
 // same change.
 //
@@ -17,15 +17,15 @@
 // ISOLATION: run focused, with `AOF_GLOBAL_HOME=$(mktemp -d)`. Never the full suite.
 import assert from "node:assert/strict";
 
-import { SESSION_SOURCES, sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
 import {
   inputPolicyFor,
   mountModelFor,
   POSTURE_INTERACTIVE,
   POSTURE_READ_ONLY,
-} from "../../ui/src/terminal/input-policy.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount, terminalAssignmentReason } from "../../ui/src/fleet/terminal-mount.mjs";
+} from "../../apps/ui/src/terminal/input-policy.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { fleetTerminalMount, terminalAssignmentReason } from "../../apps/ui/src/fleet/terminal-mount.mjs";
 import {
   applyControlFrame,
   applyTerminalEvent,
@@ -37,7 +37,7 @@ import {
   TRANSPORT_CAUSE_LINE,
   UNKNOWN_STATE,
   WAITING_PANE_LINE,
-} from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
 import {
   declaresAffordance,
   hostAffordances,
@@ -50,7 +50,7 @@ import {
   AFFORDANCE_WATCH_HIDE,
   HOST_BOARD_DOCK,
   HOST_FLEET_CARD,
-} from "../../ui/src/terminal/host-model.mjs";
+} from "../../apps/ui/src/terminal/host-model.mjs";
 
 const MIRROR = sessionSourceFor("mirror").source;
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
@@ -81,7 +81,7 @@ export const terminalOneImplementationTests = [
   // every malformed input it can be handed. 8 rows.
   //
   // This is INVARIANT 4's policy half, and it is load-bearing: once the control left
-  // `ui/src/fleet/`, that gate's directory sweep reads green while asserting nothing about
+  // `apps/ui/src/fleet/`, that gate's directory sweep reads green while asserting nothing about
   // whether the fleet can type. A pure function driven exhaustively is a far stronger pin than an
   // absence-of-string sweep.
   //
@@ -346,7 +346,7 @@ export const terminalOneImplementationTests = [
     // ROW 14 IS THE COUPLING TEST, and it is the one that proves the SEPARATION rather than the
     // behaviour. The wording is FLEET-domain (it comes from the m35 `assignmentChip`), so the
     // shared describer takes an optional `reason` STRING and the FLEET call site computes it. A
-    // shared control importing `ui/src/fleet/assignments.mjs` would re-couple the two surfaces
+    // shared control importing `apps/ui/src/fleet/assignments.mjs` would re-couple the two surfaces
     // this milestone exists to decouple — invisibly, inside a module named for terminals.
     name: "46/04 task02 V10 — a terminal assignment with no bytes reads `no live output`, with the wording INJECTED by the fleet call site and computed nowhere in the shared set",
     run() {

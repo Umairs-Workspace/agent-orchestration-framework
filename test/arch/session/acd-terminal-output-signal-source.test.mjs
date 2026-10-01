@@ -176,7 +176,7 @@ const SEND_TERMINAL_FRAME_CALL = /\.sendTerminalFrame\s*\(/g;
 // ═══ RAISED 2 → 3 BY m50/ADR-008 DECISION 9, AND THE RE-DERIVATION IS THE SUBSTANCE OF THE RAISE ══
 //
 // The clause above reserved this number's increase to "an ADR that re-derives the feed axis". This is
-// that raise, m50/ADR-008 is that ADR, and the re-derivation landed in the SAME diff — `ui/src/home/
+// that raise, m50/ADR-008 is that ADR, and the re-derivation landed in the SAME diff — `apps/ui/src/home/
 // feed-axis.mjs`, this file, and the four wire hops between them are one change. 49/DESIGN §DG-49-2
 // wrote the instruction in words and named milestone 50 as the amender.
 //
@@ -331,7 +331,7 @@ export function outputSignalProblems({ bridgeSource, srcSources }) {
 //       is forbidden: the browser writes those bytes straight into xterm, so a worker's own PTY
 //       output could FORGE its pane's state by printing it (SECURITY T14).
 const SPAWN_HANDLER = path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs");
-const FEED_AXIS = path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs");
+const FEED_AXIS = path.join(repoRoot, "apps", "ui", "src", "home", "feed-axis.mjs");
 
 // callArgs(source, name) — the paren-balanced ARGUMENT TEXT of every `name(` call, cut on the
 // language's own structure so a nested call, an object literal or an arrow with its own commas
@@ -380,14 +380,14 @@ export function producerFactProblems({ handlerSource, feedAxisSource }) {
   // The signature, read as a signature: `feedAxisFor(row, context)` and nothing else.
   const signature = /export\s+function\s+feedAxisFor\s*\(([^)]*)\)/.exec(feedAxisSource);
   if (signature == null) {
-    problems.push("ui/src/home/feed-axis.mjs no longer exports a `feedAxisFor(` function this clause can read — re-aim it rather than delete it; the no-byte-parameter invariant is gated, not advisory.");
+    problems.push("apps/ui/src/home/feed-axis.mjs no longer exports a `feedAxisFor(` function this clause can read — re-aim it rather than delete it; the no-byte-parameter invariant is gated, not advisory.");
   } else {
     const params = signature[1].split(",").map((param) => param.trim()).filter((param) => param.length > 0);
     if (params.length > 2) {
-      problems.push(`ui/src/home/feed-axis.mjs: \`feedAxisFor\` takes ${params.length} parameters (${params.join(", ")}) — it takes exactly \`(row, context)\`. A THIRD parameter is how a byte parameter arrives, and there must be none: the browser writes terminal bytes straight into xterm, so a worker's own printed output could FORGE its pane's axis.`);
+      problems.push(`apps/ui/src/home/feed-axis.mjs: \`feedAxisFor\` takes ${params.length} parameters (${params.join(", ")}) — it takes exactly \`(row, context)\`. A THIRD parameter is how a byte parameter arrives, and there must be none: the browser writes terminal bytes straight into xterm, so a worker's own printed output could FORGE its pane's axis.`);
     }
     if (/\b(?:byte|bytes|chunk|chunks|data|output)\b/i.test(signature[1])) {
-      problems.push(`ui/src/home/feed-axis.mjs: \`feedAxisFor\`'s parameter list mentions bytes/chunk/data/output (\`${signature[1].trim()}\`) — the axis is derived from wire FIELDS and roster membership, never from terminal output (SECURITY T14; the invariant is a SIGNATURE rather than a promise).`);
+      problems.push(`apps/ui/src/home/feed-axis.mjs: \`feedAxisFor\`'s parameter list mentions bytes/chunk/data/output (\`${signature[1].trim()}\`) — the axis is derived from wire FIELDS and roster membership, never from terminal output (SECURITY T14; the invariant is a SIGNATURE rather than a promise).`);
     }
   }
   return problems;

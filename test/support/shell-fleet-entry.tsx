@@ -7,7 +7,7 @@
 // module instance at both ends.
 //
 // WHY THAT MATTERS ENOUGH FOR A THIRD ENTRY (architect's structural review, F6). The channel's
-// host flag is MODULE state (`ui/src/app/shell-bus.mjs`'s `shellPresent`, set by importing
+// host flag is MODULE state (`apps/ui/src/app/shell-bus.mjs`'s `shellPresent`, set by importing
 // Shell.tsx). Two harnesses that each bundle one half therefore each get their own copy of the
 // bus, and every clause about the JOIN — the fleet's scope control leaving the fleet's own body
 // and arriving in the shell's slot, in the loading state as well as the populated one — is
@@ -18,8 +18,8 @@
 // The stub is the same ONE leaf the fleet's own harness stubs, for the same reason: the
 // terminal view wants xterm and a real DOM canvas, it has its own suites, and rendering
 // nothing is exactly what production does for an assignment with no live session.
-import { Shell } from "../../ui/src/app/Shell";
-import { Fleet } from "../../ui/src/fleet/Fleet";
+import { Shell } from "../../apps/ui/src/app/Shell";
+import { Fleet } from "../../apps/ui/src/fleet/Fleet";
 
 type CompositionProps = Record<string, unknown>;
 

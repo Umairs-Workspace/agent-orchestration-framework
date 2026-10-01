@@ -1,18 +1,18 @@
 // Traceability wiring for milestone 46 / story 03 / task 04 —
 // tasks/04_input-is-capability-times-posture.feature (@executable).
 //
-// THE CHANNEL. `ui/src/terminal/input-policy.mjs` and `ui/src/terminal/provider-picker.mjs`
+// THE CHANNEL. `apps/ui/src/terminal/input-policy.mjs` and `apps/ui/src/terminal/provider-picker.mjs`
 // are PURE, so the policy and the mount model are read as VALUES under plain `node` — what
 // `inputEnabled` answers, what the mount model declares, which labels it carries, which
 // chrome it offers. No bundler, no DOM, no xterm, no socket, no source read.
 //
 // THIS IS ARCH-TEST INVARIANT 4'S POLICY HALF, AND IT IS LOAD-BEARING. ADR-006 re-expresses
-// invariant 4 as three assertions because a directory sweep of `ui/src/fleet/**` will read
+// invariant 4 as three assertions because a directory sweep of `apps/ui/src/fleet/**` will read
 // GREEN and VACUOUS once the control moves out of that directory — "worse than deleting it,
 // because a green gate is read as a satisfied contract". Assertion 2 is this suite: the
 // policy driven BEHAVIOURALLY over the whole frozen source table x both postures.
 //
-// The CALL-SITE half (`ui/src/fleet/Fleet.tsx` mounts the control read-only) and the
+// The CALL-SITE half (`apps/ui/src/fleet/Fleet.tsx` mounts the control read-only) and the
 // surviving directory sweep are `acd-fleet-terminal-input-constrained`'s; whether the pill is
 // PAINTED on both headers is 46/04's design-conformance review.
 //
@@ -40,15 +40,15 @@ import {
   mountPosture,
   inputPolicyFor,
   mountModelFor,
-} from "../../ui/src/terminal/input-policy.mjs";
+} from "../../apps/ui/src/terminal/input-policy.mjs";
 import {
   PROVIDER_IDS,
   initialPicker,
   selectProvider,
   isSelected,
   selectedCount,
-} from "../../ui/src/terminal/provider-picker.mjs";
-import { SESSION_SOURCES, sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
+} from "../../apps/ui/src/terminal/provider-picker.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

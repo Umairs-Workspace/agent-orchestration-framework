@@ -67,7 +67,7 @@ import {
   RESYNC_WATCH_INTERVALS,
   resyncAnswered,
   resyncView,
-} from "../../ui/src/board/resync.mjs";
+} from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, visibleTextOf } from "../support/board-app-harness.mjs";
 

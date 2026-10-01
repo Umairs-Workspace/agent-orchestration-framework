@@ -26,24 +26,24 @@
 // ISOLATION: run focused, with `AOF_GLOBAL_HOME=$(mktemp -d)`. Never the full suite.
 import assert from "node:assert/strict";
 
-import { SESSION_SOURCES, sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
 import {
   inputPolicyFor,
   mountModelFor,
   POSTURE_INTERACTIVE,
   POSTURE_READ_ONLY,
-} from "../../ui/src/terminal/input-policy.mjs";
+} from "../../apps/ui/src/terminal/input-policy.mjs";
 import {
   geometryPlanFor,
   GEOMETRY_FIT,
   GEOMETRY_SCALE,
   terminalFitScale,
-} from "../../ui/src/terminal/geometry.mjs";
-import { terminalSocketUrl } from "../../ui/src/terminal/socket-url.mjs";
-import { terminalPaneIdentity, terminalPaneKey } from "../../ui/src/terminal/pane-identity.mjs";
-import { initialPicker, selectProvider, withSelectedProvider, PROVIDER_IDS } from "../../ui/src/terminal/provider-picker.mjs";
+} from "../../apps/ui/src/terminal/geometry.mjs";
+import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
+import { terminalPaneIdentity, terminalPaneKey } from "../../apps/ui/src/terminal/pane-identity.mjs";
+import { initialPicker, selectProvider, withSelectedProvider, PROVIDER_IDS } from "../../apps/ui/src/terminal/provider-picker.mjs";
 
 const BOARD_PORT_ORIGIN = "http://127.0.0.1:41773"; // an EPHEMERAL board origin, as production has
 const FLEET_ORIGIN = "http://127.0.0.1:4181";

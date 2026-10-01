@@ -43,7 +43,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 const GLOBAL_MESH_QUERY = path.join(repoRoot, "packages", "mesh", "src", "global-query.mjs");
-const FLEET_API_TS = path.join(repoRoot, "ui", "src", "fleet", "api.ts");
+const FLEET_API_TS = path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts");
 
 // The status route's ENTIRE accepted input, today and after m47 (ADR-002). One key.
 const STATUS_ROUTE_QUERY_KEYS = ["scope"];
@@ -146,7 +146,7 @@ export const archTests = [
       assert.deepEqual(
         hits,
         [],
-        `ui/src/fleet/api.ts mints a request carrying the filter (${hits.join(", ")}). The filter is CLIENT-SIDE (m47/ADR-002): no new fetch, no re-poll, no request parameter — which is also what keeps the filter switch synchronous with the click instead of one round trip and one keep-last-good poll behind it (Fleet.tsx:127-159).`,
+        `apps/ui/src/fleet/api.ts mints a request carrying the filter (${hits.join(", ")}). The filter is CLIENT-SIDE (m47/ADR-002): no new fetch, no re-poll, no request parameter — which is also what keeps the filter switch synchronous with the click instead of one round trip and one keep-last-good poll behind it (Fleet.tsx:127-159).`,
       );
 
       // Non-vacuity: the detector reads THIS file's real request-building, and fires on a plant.

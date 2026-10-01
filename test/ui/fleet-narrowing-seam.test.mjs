@@ -68,7 +68,7 @@ import {
   clickNode,
   refreshControl,
 } from "../support/fleet-filter-readers.mjs";
-import { POLL_MS } from "../../ui/src/fleet/assign-affordance.mjs";
+import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 
 const FLEET = "/fleet";
 

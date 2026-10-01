@@ -2,7 +2,7 @@
 //
 // Every scenario and every Examples ROW of
 // `wiki/work/49_milestone_terminals-home/stories/03_story_pane-declaration-and-invariant-4/tasks/00_the-fourth-host.feature`,
-// driven against the SHIPPED `ui/src/terminal/host-model.mjs`. No React, no DOM, no socket, no
+// driven against the SHIPPED `apps/ui/src/terminal/host-model.mjs`. No React, no DOM, no socket, no
 // clock, no store, no port — every scenario imports the framework-free `.mjs` and reads returned
 // values.
 //
@@ -49,10 +49,10 @@ import {
   declaresAffordance,
   hostAffordances,
   hostRestPane,
-} from "../../ui/src/terminal/host-model.mjs";
-import { PANE_EMPTY_HOST } from "../../ui/src/terminal/state-ramp.mjs";
-import { sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../ui/src/terminal/input-policy.mjs";
+} from "../../apps/ui/src/terminal/host-model.mjs";
+import { PANE_EMPTY_HOST } from "../../apps/ui/src/terminal/state-ramp.mjs";
+import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../apps/ui/src/terminal/input-policy.mjs";
 
 const GRID = () => hostAffordances(HOST_GRID_PANE);
 const CARD = () => hostAffordances(HOST_FLEET_CARD);

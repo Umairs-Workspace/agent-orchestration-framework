@@ -9,8 +9,8 @@
 //
 // THE CHANNEL. The feature's LITMUS: "every Then is a returned VALUE from a framework-free
 // `.mjs` module loaded by node:test with no bundler and no DOM — `routeFor` from
-// `ui/src/app/routes.mjs`, the entry's own decision plan, the shell's region/state model, and
-// the fullscreen state machine that ADR-005 puts in `ui/src/app/shell-layout.mjs`."
+// `apps/ui/src/app/routes.mjs`, the entry's own decision plan, the shell's region/state model, and
+// the fullscreen state machine that ADR-005 puts in `apps/ui/src/app/shell-layout.mjs`."
 //
 // PLUS the rendered document where a clause is about the document: that the not-found state
 // really renders inside the chrome with the nav usable, and that the presented occupant really
@@ -40,10 +40,10 @@ import {
   fullscreenReducer,
   fullscreenState,
   presentedStateModel,
-} from "../../ui/src/app/shell-layout.mjs";
-import { routeFor } from "../../ui/src/app/routes.mjs";
-import { entryPlanFor, addressToString } from "../../ui/src/app/entry.mjs";
-import { navModel } from "../../ui/src/app/shell-nav.mjs";
+} from "../../apps/ui/src/app/shell-layout.mjs";
+import { routeFor } from "../../apps/ui/src/app/routes.mjs";
+import { entryPlanFor, addressToString } from "../../apps/ui/src/app/entry.mjs";
+import { navModel } from "../../apps/ui/src/app/shell-nav.mjs";
 import { withShellApp } from "../support/shell-app-harness.mjs";
 import { findAll, textOf } from "../support/mini-react.mjs";
 

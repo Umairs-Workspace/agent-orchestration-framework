@@ -156,7 +156,7 @@ aof work doc <ref> <DOC> [--json]    # read a record doc (SPEC / STATE / ARCHITE
 aof work tasks <ref> [--json]        # an item's task list
 aof work feedback <ref> --note "…" [--actor …]   # append an attributed feedback bullet (the only CLI write)
 aof work memory <verb> [args] [--json]           # recall / brief / ingest / reindex / status
-aof work ui [--port 4180]            # serve the local board UI (built ui/dist) — one origin
+aof work ui [--port 4180]            # serve the local board UI (built apps/ui/dist) — one origin
 aof work orchestrator [fable|opus] [--show]      # pick the main-session (orchestrator) model — Fable 5 or Opus 4.8
 aof work delegation [on|off] [--gpt-model <id>] [--show]   # toggle bulk-work delegation (default off), optionally set the model
 aof work delegation-model [<id>] [--show]        # get/set the Codex delegation model (default gpt-5.6-sol)
@@ -282,6 +282,13 @@ aof packages add gsd                  # declare a managed framework pack (e.g. G
 `aof assets apply` is lock-driven and idempotent: it records every generated path + content hash in `.aof/aof.lock.json`, reports a `drift-warning` (and skips) when it sees a hand-edited generated file, and prunes only files it still owns. `--strict` promotes adapter warnings to failures for CI. The full DSL — overrides, workflow-backed assets, `{{skills.*}}` / `{{workflows.*}}` references, MCP/hooks/docs primitives, and the per-runtime adapter rules — is configured in `.aof/aof.config.json`; run `aof project validate` / `aof project doctor` to check it.
 
 ---
+
+## Applications
+
+Two optional applications live under `apps/`; the CLI (`packages/core`, installed as `aof`) works without either.
+
+- **`apps/ui`** (`@aof/ui`) — the React/Vite front-end behind `aof work ui`, `aof mesh ui` and `aof assets ui`: one bundle, the surface chosen by URL path, talking to the backend only over HTTP/WebSocket. `yarn ui:build` builds `apps/ui/dist` (what a source checkout serves; installed payloads and release archives carry it as `ui/dist/` beside the launcher, resolved through the core asset seam); `yarn ui:dev` runs Vite on `127.0.0.1:4177`.
+- **`apps/desktop`** (`@aof/desktop`) — the Tauri mesh desktop supervisor and its pure Rust core. See [apps/desktop/README.md](apps/desktop/README.md) for prerequisites and the `yarn workspace @aof/desktop test | check | build` scripts.
 
 ## Tests
 

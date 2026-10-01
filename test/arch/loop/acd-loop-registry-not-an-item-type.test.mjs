@@ -59,11 +59,11 @@ export const archTests = [
       // `type: "…"|"…";` union in the file, so any earlier string-union property — on a wrapper,
       // an envelope, a future `type: "run" | "session"` — silently re-aims this gate at a
       // different declaration while it keeps reporting on the item vocabulary.
-      const board = stripComments(await readFile(path.join(root, "ui/src/board/api.ts"), "utf8"));
+      const board = stripComments(await readFile(path.join(root, "apps/ui/src/board/api.ts"), "utf8"));
       const declaredAt = board.indexOf("export type WorkItem = {");
-      assert.ok(declaredAt >= 0, "ui/src/board/api.ts: `export type WorkItem = {` NOT FOUND — the cut could not be made, so nothing below was measured");
+      assert.ok(declaredAt >= 0, "apps/ui/src/board/api.ts: `export type WorkItem = {` NOT FOUND — the cut could not be made, so nothing below was measured");
       const workItem = matchedBraceBody(board, declaredAt);
-      assert.ok(workItem, "ui/src/board/api.ts: the WorkItem body did not close — the cut could not be made");
+      assert.ok(workItem, "apps/ui/src/board/api.ts: the WorkItem body did not close — the cut could not be made");
       const union = workItem.match(/\btype:\s*((?:"[^"]+"\s*\|\s*)*"[^"]+")\s*;/);
       assert.ok(union, "board WorkItem type union was found inside the WorkItem declaration itself");
       assert.deepEqual([...union[1].matchAll(/"([^"]+)"/g)].map((m) => m[1]), six);

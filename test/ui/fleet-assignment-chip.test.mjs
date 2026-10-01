@@ -1,12 +1,12 @@
 // Traceability wiring for milestone 35 / story 03 / task 01 —
 // tasks/01_lifecycle-render.feature (@executable).
 //
-// The pure assignment-chip helper (ui/src/fleet/assignments.mjs, exporting
+// The pure assignment-chip helper (apps/ui/src/fleet/assignments.mjs, exporting
 // `assignmentChip`) is framework-free ESM — no React, no DOM, no I/O, no clock —
 // so every scenario/example row runs HEADLESSLY, mirroring the run-chip /
 // relative-time / in-flight helper convention (node:test, no browser).
 import assert from "node:assert/strict";
-import { assignmentChip, assignmentSummary } from "../../ui/src/fleet/assignments.mjs";
+import { assignmentChip, assignmentSummary } from "../../apps/ui/src/fleet/assignments.mjs";
 
 export const fleetAssignmentChipTests = [
   // Scenario Outline: each lifecycle state maps to its fixed chip — label,

@@ -20,7 +20,7 @@ import { blockedRunParkingTests } from "./blocked-run-parking.test.mjs";
 // milestone 35 / story 03 — the READ-ONLY assignment lifecycle in the fleet UI
 // (ADR-007): task 00 extends the /api/mesh/status read shape (shapeGlobalStatus)
 // to carry assignment rows per item/node; task 01 is the pure assignment-chip
-// helper (ui/src/fleet/assignments.mjs) mirroring the run-state ramp; task 02
+// helper (apps/ui/src/fleet/assignments.mjs) mirroring the run-state ramp; task 02
 // re-arms the m34 read-only serve-face posture over the extended shape
 // (fitness #11, acd-mesh-ui-read-only). Independent of stories 01/02 — renders
 // whatever assignment rows Story 00 wrote.

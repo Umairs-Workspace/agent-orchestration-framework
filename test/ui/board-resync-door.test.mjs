@@ -47,7 +47,7 @@ import {
   RESYNC_LABEL_WIDTH_CH,
   RESYNC_REQUEST_INTERVALS,
   RESYNC_WATCH_INTERVALS,
-} from "../../ui/src/board/resync.mjs";
+} from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../support/board-app-harness.mjs";
 

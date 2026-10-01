@@ -467,8 +467,8 @@ function main() {
 
   // --- 4. desktop app (optional, Windows) ---
   if (o.desktop) {
-    const manifest = path.join("app", "desktop", "crates", "app", "Cargo.toml");
-    const targetDir = path.join(repoRoot, "app", "desktop", "crates", "app", "target");
+    const manifest = path.join("apps", "desktop", "crates", "app", "Cargo.toml");
+    const targetDir = path.join(repoRoot, "apps", "desktop", "crates", "app", "target");
     run("cargo build the desktop app (release)", "cargo",
       ["build", "--release", "--manifest-path", manifest, "--target-dir", targetDir]);
     const desktopBuilt = path.join(targetDir, "release", "mesh-desktop-app.exe");

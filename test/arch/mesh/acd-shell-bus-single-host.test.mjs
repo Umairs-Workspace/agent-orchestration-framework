@@ -1,7 +1,7 @@
 // Fitness function: acd-shell-bus-single-host (m45 / ADR-005 contract points 3 and 5) —
 //
 //   "The surface → shell channel has ONE host. `declareShellPresent()` is called exactly
-//    once in `ui/src`, by the module that renders the shell root; and no routed surface
+//    once in `apps/ui/src`, by the module that renders the shell root; and no routed surface
 //    may import the shell."
 //
 // EXPECTED GREEN from the moment story 45/03 lands. Unlike this milestone's other four
@@ -9,8 +9,8 @@
 // already has, so that the ONE accident that would silently break it cannot happen.
 //
 // WHY IT EXISTS — the architect's structural review of 45/03, 2026-08-07. The shell bus
-// (`ui/src/app/shell-bus.mjs`) carries a MODULE-SCOPE flag, `shellPresent`, flipped by
-// `declareShellPresent()` at `ui/src/app/Shell.tsx`'s module scope — i.e. by IMPORTING the
+// (`apps/ui/src/app/shell-bus.mjs`) carries a MODULE-SCOPE flag, `shellPresent`, flipped by
+// `declareShellPresent()` at `apps/ui/src/app/Shell.tsx`'s module scope — i.e. by IMPORTING the
 // shell, not by mounting it. That design was reviewed and ACCEPTED, and the reasoning is
 // worth restating because this test exists to protect it rather than to grumble at it:
 //
@@ -30,8 +30,8 @@
 //     (which mount the surface COMPONENT directly) working with zero harness edits.
 //
 // THE ONE WAY IT BREAKS, AND IT BREAKS SILENTLY. The flag is write-only and is set by an
-// IMPORT. So the day any module under `ui/src/{fleet,board,config}/` imports anything at all
-// from `ui/src/app/Shell` — a type, `ShellProps`, a constant — `shellPresent` becomes true
+// IMPORT. So the day any module under `apps/ui/src/{fleet,board,config}/` imports anything at all
+// from `apps/ui/src/app/Shell` — a type, `ShellProps`, a constant — `shellPresent` becomes true
 // in that bundle with no shell mounted to receive anything. Every surface then publishes its
 // controls to a bus nobody reads and renders NOTHING in place: the fleet's scope control, the
 // board's sync button and the board's `serverGone` notice all just vanish. No exception, no
@@ -47,16 +47,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UI_SRC = "ui/src";
-const BUS_MODULE = "ui/src/app/shell-bus.mjs";
+const UI_SRC = "apps/ui/src";
+const BUS_MODULE = "apps/ui/src/app/shell-bus.mjs";
 // The module that renders the shell root, and therefore the ONE module allowed to declare a
 // shell present. Named rather than inferred: "whichever file happens to call it" is not an
 // invariant, it is a description.
-const SHELL_COMPONENT = "ui/src/app/Shell.tsx";
+const SHELL_COMPONENT = "apps/ui/src/app/Shell.tsx";
 // The routed surfaces' folders. Each mounts INSIDE the shell and must stay ignorant of it —
-// they reach the chrome through `ui/src/app/SurfaceSlot.tsx` and the bus, never through the
-// component. (ARCHITECTURE §Codebase health finding 2: the shared layer is `ui/src/app/`.)
-const SURFACE_DIRS = ["ui/src/fleet", "ui/src/board", "ui/src/config"];
+// they reach the chrome through `apps/ui/src/app/SurfaceSlot.tsx` and the bus, never through the
+// component. (ARCHITECTURE §Codebase health finding 2: the shared layer is `apps/ui/src/app/`.)
+const SURFACE_DIRS = ["apps/ui/src/fleet", "apps/ui/src/board", "apps/ui/src/config"];
 
 async function uiSourceFiles() {
   const found = [];
@@ -82,7 +82,7 @@ function stripComments(source) {
   return source.replace(/^[ \t]*\/\/.*$/gm, " ").replace(/\/\*[\s\S]*?\*\//g, " ");
 }
 
-// A TYPE DECLARATION IS NOT A CALL SITE. `ui/src/app/shell-bus.d.mts` carries
+// A TYPE DECLARATION IS NOT A CALL SITE. `apps/ui/src/app/shell-bus.d.mts` carries
 // `export declare function declareShellPresent(): void;` — the parenthesis is a signature,
 // not an invocation, and nothing in a `.d.mts` ever executes. Excluded by construction
 // rather than by a special case in the matcher, because the same is true of every one of
@@ -138,7 +138,7 @@ async function readUiTree() {
 
 export const archTests = [
   {
-    name: "arch/45 ADR-005 (acd-shell-bus-single-host): `declareShellPresent()` has exactly ONE call site in ui/src, and it is the module that renders the shell root",
+    name: "arch/45 ADR-005 (acd-shell-bus-single-host): `declareShellPresent()` has exactly ONE call site in apps/ui/src, and it is the module that renders the shell root",
     run: async () => {
       const { callers, total } = declarersIn(await readUiTree());
 
@@ -188,7 +188,7 @@ export const archTests = [
       assert.deepEqual(
         offenders,
         [],
-        `these routed-surface modules import ${SHELL_COMPONENT}: ${offenders.join(", ")}. The import ALONE is the defect, whatever it is for (a type, a constant, a lazy reference): ${SHELL_COMPONENT} calls \`declareShellPresent()\` at module scope, so importing it into a surface bundle sets "a shell is present" with NO shell mounted — every contribution then goes to a bus nobody reads and renders nothing in place. The fleet's scope control, the board's sync button and the board's serverGone notice would each disappear with every suite still green, because \`acd-mesh-ui-scope-visible\` mounts <Fleet> alone. A surface reaches the chrome through ui/src/app/SurfaceSlot.tsx and ui/src/app/shell-bus.mjs — never through the component (ARCHITECTURE §Codebase health finding 2: ui/src/app/ is the shared layer, and the dependency runs surface → layer, never surface → shell).`,
+        `these routed-surface modules import ${SHELL_COMPONENT}: ${offenders.join(", ")}. The import ALONE is the defect, whatever it is for (a type, a constant, a lazy reference): ${SHELL_COMPONENT} calls \`declareShellPresent()\` at module scope, so importing it into a surface bundle sets "a shell is present" with NO shell mounted — every contribution then goes to a bus nobody reads and renders nothing in place. The fleet's scope control, the board's sync button and the board's serverGone notice would each disappear with every suite still green, because \`acd-mesh-ui-scope-visible\` mounts <Fleet> alone. A surface reaches the chrome through apps/ui/src/app/SurfaceSlot.tsx and apps/ui/src/app/shell-bus.mjs — never through the component (ARCHITECTURE §Codebase health finding 2: apps/ui/src/app/ is the shared layer, and the dependency runs surface → layer, never surface → shell).`,
       );
 
       // NON-VACUITY: the detector was actually pointed at files. A rename of the surface
@@ -201,9 +201,9 @@ export const archTests = [
       // …and that it can SEE an import of the shell at all: the shell's own consumer proves
       // the matcher is not simply blind.
       assert.equal(
-        importsShellComponent(await readFile(path.join(repoRoot, "ui/src/main.tsx"), "utf8")),
+        importsShellComponent(await readFile(path.join(repoRoot, "apps/ui/src/main.tsx"), "utf8")),
         true,
-        "the import detector recognises ui/src/main.tsx's own `import { Shell } from \"./app/Shell\"` — if this fails the matcher is blind and the assertion above is vacuous.",
+        "the import detector recognises apps/ui/src/main.tsx's own `import { Shell } from \"./app/Shell\"` — if this fails the matcher is blind and the assertion above is vacuous.",
       );
     },
   },
@@ -219,11 +219,11 @@ export const archTests = [
       // mounted last.
       const secondDeclarer = declarersIn([
         ...tree,
-        { file: "ui/src/app/SecondShell.tsx", source: 'import { declareShellPresent } from "./shell-bus.mjs";\ndeclareShellPresent();\n' },
+        { file: "apps/ui/src/app/SecondShell.tsx", source: 'import { declareShellPresent } from "./shell-bus.mjs";\ndeclareShellPresent();\n' },
       ]);
       assert.deepEqual(
         secondDeclarer.callers,
-        [SHELL_COMPONENT, "ui/src/app/SecondShell.tsx"],
+        [SHELL_COMPONENT, "apps/ui/src/app/SecondShell.tsx"],
         "the call-site detector reports a SECOND declarer when one is planted",
       );
 
@@ -234,13 +234,13 @@ export const archTests = [
       // erases it, but only after the bundler has already followed it and run the module.
       const plantedImports = surfacesImportingShellIn([
         ...tree,
-        { file: "ui/src/fleet/Probe.tsx", source: 'import { Shell } from "../app/Shell";\n' },
-        { file: "ui/src/board/Probe.tsx", source: 'import type { ShellProps } from "@/app/Shell";\n' },
-        { file: "ui/src/config/Probe.tsx", source: 'const lazy = () => import("../app/Shell.tsx");\n' },
+        { file: "apps/ui/src/fleet/Probe.tsx", source: 'import { Shell } from "../app/Shell";\n' },
+        { file: "apps/ui/src/board/Probe.tsx", source: 'import type { ShellProps } from "@/app/Shell";\n' },
+        { file: "apps/ui/src/config/Probe.tsx", source: 'const lazy = () => import("../app/Shell.tsx");\n' },
       ]);
       assert.deepEqual(
         plantedImports,
-        ["ui/src/fleet/Probe.tsx", "ui/src/board/Probe.tsx", "ui/src/config/Probe.tsx"],
+        ["apps/ui/src/fleet/Probe.tsx", "apps/ui/src/board/Probe.tsx", "apps/ui/src/config/Probe.tsx"],
         "the import detector fires on a value import, a TYPE-ONLY import and a dynamic import, in all three surface folders — a type-only import is erased by tsc but is still followed by the bundler, so it flips the flag exactly as a value import does",
       );
 
@@ -249,11 +249,11 @@ export const archTests = [
       assert.deepEqual(declarersIn(tree).callers, [SHELL_COMPONENT]);
       assert.deepEqual(surfacesImportingShellIn(tree), []);
 
-      // A LOOK-ALIKE THAT MUST NOT FIRE: `ui/src/app/SurfaceSlot.tsx` is the module every
+      // A LOOK-ALIKE THAT MUST NOT FIRE: `apps/ui/src/app/SurfaceSlot.tsx` is the module every
       // surface DOES import, and its header narrates the shell at length. Detecting it would
       // make this test forbid the very seam ADR-005 contract point 5 requires.
       assert.equal(
-        importsShellComponent(await readFile(path.join(repoRoot, "ui/src/app/SurfaceSlot.tsx"), "utf8")),
+        importsShellComponent(await readFile(path.join(repoRoot, "apps/ui/src/app/SurfaceSlot.tsx"), "utf8")),
         false,
         "the sanctioned seam (SurfaceSlot → shell-bus) is NOT mistaken for an import of the shell component",
       );

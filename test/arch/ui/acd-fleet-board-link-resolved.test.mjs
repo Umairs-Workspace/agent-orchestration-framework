@@ -4,7 +4,7 @@
 //    `GET /api/mesh/board-url` — the ONE resolver that knows which port a board is actually on."
 //
 // EXPECTED, at refine time (2026-08-10): **1 RED, 2 GREEN.** The RED one is the inherited defect
-// itself, at `ui/src/fleet/Fleet.tsx:1427`: `href="/board"`, relative. The two green ones pin the
+// itself, at `apps/ui/src/fleet/Fleet.tsx:1427`: `href="/board"`, relative. The two green ones pin the
 // resolver path that already exists and the detector that finds the violation.
 //
 // THE DEFECT, measured. On the fleet origin a relative `/board` resolves to `:4181`, which
@@ -18,7 +18,7 @@
 // PER-WORKSPACE and on an EPHEMERAL port — `boardUrlForWorkspace` (`mesh-ui-serve.mjs:820-838`)
 // launches one on demand, memoises it per workspace id, and since m46/ADR-004 hands it the
 // launching fleet's own origin. `GET /api/mesh/board-url?workspaceId=&ref=` (`:310-340`) is the
-// only thing that knows the answer, `ui/src/fleet/api.ts:284-290` is its client, and
+// only thing that knows the answer, `apps/ui/src/fleet/api.ts:284-290` is its client, and
 // `Fleet.tsx:528-538`'s milestone-card drill-in already goes through it. TECH_DEBT item 31 names
 // the same asymmetry from the navigation's side: "the fleet already answers it correctly in its
 // content … the nav bypasses the one place the answer lives."
@@ -38,7 +38,7 @@ import { fileURLToPath } from "node:url";
 import { stripComments, matchedBraceBody, enclosingParenGroup, blockOrStatementAfter, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FLEET_DIR = path.join(repoRoot, "ui", "src", "fleet");
+const FLEET_DIR = path.join(repoRoot, "apps", "ui", "src", "fleet");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // m47/ADR-011's vocabulary for ONE fact — *this row's checkout is not on this machine*.
@@ -203,11 +203,11 @@ async function fleetSourceFiles(dir = FLEET_DIR, out = []) {
 
 export const archTests = [
   {
-    name: "arch/47 ADR-006a (acd-fleet-board-link-resolved): NO hard-coded board address anywhere in ui/src/fleet/ — a board's port is ephemeral and per-workspace, so a literal address is wrong by construction [EXPECTED RED: Fleet.tsx:1427]",
+    name: "arch/47 ADR-006a (acd-fleet-board-link-resolved): NO hard-coded board address anywhere in apps/ui/src/fleet/ — a board's port is ephemeral and per-workspace, so a literal address is wrong by construction [EXPECTED RED: Fleet.tsx:1427]",
     run: async () => {
       const files = await fleetSourceFiles();
-      assert.ok(files.length > 5, `ui/src/fleet/ was actually walked (non-vacuous): ${files.length} source files`);
-      assert.ok(files.includes("ui/src/fleet/Fleet.tsx"), "the walker reaches the fleet surface itself");
+      assert.ok(files.length > 5, `apps/ui/src/fleet/ was actually walked (non-vacuous): ${files.length} source files`);
+      assert.ok(files.includes("apps/ui/src/fleet/Fleet.tsx"), "the walker reaches the fleet surface itself");
 
       const violations = [];
       for (const rel of files) {
@@ -233,19 +233,19 @@ export const archTests = [
       const api = stripComments(await readFile(path.join(FLEET_DIR, "api.ts"), "utf8"));
       assert.ok(
         api.includes(RESOLVER_ROUTE),
-        `ui/src/fleet/api.ts must call ${RESOLVER_ROUTE} — the ONE resolver that knows which port a workspace's board is on.`,
+        `apps/ui/src/fleet/api.ts must call ${RESOLVER_ROUTE} — the ONE resolver that knows which port a workspace's board is on.`,
       );
       assert.match(
         api,
         new RegExp(`async\\s+${RESOLVER_CLIENT}\\s*\\(`),
-        `ui/src/fleet/api.ts must expose \`fleetApi.${RESOLVER_CLIENT}(workspaceId, ref)\` — the named client m47/ADR-006a binds the fleet's board drill-in to.`,
+        `apps/ui/src/fleet/api.ts must expose \`fleetApi.${RESOLVER_CLIENT}(workspaceId, ref)\` — the named client m47/ADR-006a binds the fleet's board drill-in to.`,
       );
 
       const fleet = stripComments(await readFile(path.join(FLEET_DIR, "Fleet.tsx"), "utf8"));
       assert.match(
         fleet,
         new RegExp(`fleetApi\\.${RESOLVER_CLIENT}\\s*\\(`),
-        `ui/src/fleet/Fleet.tsx must reach a board through fleetApi.${RESOLVER_CLIENT}(...) — Fleet.tsx:528-538's milestone-card drill-in already does, which is precisely why the relative href beside it is an inconsistency rather than an unsolved problem.`,
+        `apps/ui/src/fleet/Fleet.tsx must reach a board through fleetApi.${RESOLVER_CLIENT}(...) — Fleet.tsx:528-538's milestone-card drill-in already does, which is precisely why the relative href beside it is an inconsistency rather than an unsolved problem.`,
       );
     },
   },
@@ -253,7 +253,7 @@ export const archTests = [
   {
     name: "arch/47 ADR-006a (acd-fleet-board-link-resolved): self-check — the detector fires on the REAL Fleet.tsx:1427 line and on an absolute board origin, and stays silent on /api/mesh/board-url, on boardUrl(...) and on a comment narrating the defect (non-vacuous)",
     run: () => {
-      // The REAL violating line, verbatim from ui/src/fleet/Fleet.tsx:1427.
+      // The REAL violating line, verbatim from apps/ui/src/fleet/Fleet.tsx:1427.
       assert.ok(hardCodedBoardHits('        href="/board"').length > 0, "the detector catches the real relative href");
       // The form someone reaches for next — a port that is ephemeral by construction. This one
       // lives inside an http:// URL, which is the case a naive comment stripper destroys.

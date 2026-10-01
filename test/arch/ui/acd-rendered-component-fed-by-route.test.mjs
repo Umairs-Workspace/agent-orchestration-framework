@@ -9,7 +9,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // its `nodeCurrentWork` wrapper). No branch of the page may render a node card with no
 // current-work line — and no branch may fork its own collapse rule.
 //
-// WHY IT EXISTS — finding F9 (aof:verify 38, BLOCKER). `ui/src/fleet/Fleet.tsx`
+// WHY IT EXISTS — finding F9 (aof:verify 38, BLOCKER). `apps/ui/src/fleet/Fleet.tsx`
 // branches `isGlobalStatus(status) ? <GlobalScopeView/> : <NodesRegion/>`. Milestone
 // 38's session render went into `NodesRegion → NodeCard`. But `packages/core/src/mesh/ui-serve.mjs`
 // serves BOTH scopes from `queryGlobalMeshStatus` (its ONE data source), whose payload
@@ -44,11 +44,11 @@ const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMe
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
-const FLEET_TSX = "ui/src/fleet/Fleet.tsx";
+const FLEET_TSX = "apps/ui/src/fleet/Fleet.tsx";
 const MESH_UI_SERVE = "packages/mesh/src/ui-serve.mjs";
 
-// The ONE shared current-work projection (ui/src/fleet/runs.mjs) and its thin
-// node-shaped wrapper (ui/src/fleet/scope.mjs) — the only sanctioned derivations.
+// The ONE shared current-work projection (apps/ui/src/fleet/runs.mjs) and its thin
+// node-shaped wrapper (apps/ui/src/fleet/scope.mjs) — the only sanctioned derivations.
 // 130/03 (ADR-005 §5) — `nodeWorkRegion` is the third spelling: the WHOLE current-work region
 // (`{ lines, token, loops }`), which composes `fleetCurrentWorkLines` with the loop lines beside
 // it and is what the production card calls now. It is a wrapper OVER the one projection, never a

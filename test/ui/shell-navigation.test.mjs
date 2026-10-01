@@ -2,10 +2,10 @@
 // `stories/03_story_app-shell-and-entry/tasks/02_navigation.feature` (@executable).
 //
 // THE CHANNEL. The feature's LITMUS: "every Then is a returned VALUE from the shell's
-// framework-free nav model — a `.mjs` module in `ui/src/app/` beside the route table, loaded by
+// framework-free nav model — a `.mjs` module in `apps/ui/src/app/` beside the route table, loaded by
 // node:test with no bundler and no DOM. The model is PURE over the facts the shell hands it:
 // the current address (pathname / search / hash), the viewport width, and whether each
-// destination is resolvable from this origin." That module is `ui/src/app/shell-nav.mjs`.
+// destination is resolvable from this origin." That module is `apps/ui/src/app/shell-nav.mjs`.
 //
 // The one thing added on top, because it is the claim a model cannot make: the REAL shell
 // renders those items as REAL `<a href>` elements in a real `<nav aria-label="Surfaces">`
@@ -30,8 +30,8 @@ import {
   navModel,
   navResolvableFor,
   probeFleetOrigin,
-} from "../../ui/src/app/shell-nav.mjs";
-import { ROUTES } from "../../ui/src/app/routes.mjs";
+} from "../../apps/ui/src/app/shell-nav.mjs";
+import { ROUTES } from "../../apps/ui/src/app/routes.mjs";
 import { withShellApp, withShellComposedBoard } from "../support/shell-app-harness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { findAll } from "../support/mini-react.mjs";
@@ -313,7 +313,7 @@ export const shellNavigationTests = [
       // IT USED TO BE TWO NODES HERE, and this count moved with milestone 49 / story 04: the
       // landing placeholder restated `nav.items` two rows below the nav, so an unavailable
       // destination carried the marking TWICE — once in the nav, once in the card. `/` is a
-      // routed surface now and `ui/src/app/Landing.tsx` is deleted, so the nav is the ONE place
+      // routed surface now and `apps/ui/src/app/Landing.tsx` is deleted, so the nav is the ONE place
       // the rule is expressed. The rule itself is unchanged and every clause below still binds.
       await withShellApp({ routeId: "landing", address: addressOf("/"), identity: "aof", viewportWidth: 1280, resolvable: { board: false } }, async (app) => {
         const disabled = findAll(app.tree(), (node) => node.props?.["aria-disabled"] === "true");

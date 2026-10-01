@@ -19,7 +19,7 @@ const LOOP_FAMILY = Object.freeze(new Set([...expectedLoopModules, "packages/cor
 
 // What TEXT carries and no resolver can reach: a `work:loops-*` command id, a bare `"loops-show"`
 // route or id string, a prose citation, and an EXTENSIONLESS `ui/` import (Vite's default
-// `resolve.extensions` includes `.mjs`, so `"../../../packages/core/src/commands/loops-graph"` is a live
+// `resolve.extensions` includes `.mjs`, so `"../../../../packages/core/src/commands/loops-graph"` is a live
 // bundler edge that resolves to no file on disk).
 //
 // This token is no longer the import rule — `reachesLoopFamily` is, by resolution — and that is
@@ -76,7 +76,7 @@ async function discoverLoopModules() {
 
 // FF-5208 means `ui/` SOURCE. `ui/dist/assets/*.js` is minified onto single lines — a false-
 // positive surface for the proximity regex below, where any `route`/`argv` token lands within
-// 100 characters of an unrelated `"loops"` string — and `ui/node_modules` is a dependency tree
+// 100 characters of an unrelated `"loops"` string — and `apps/ui/node_modules` is a dependency tree
 // this repository does not author (empty here only because deps hoist to the root, which is an
 // accident of install layout rather than a property this gate should rest on).
 const UNAUTHORED = new Set(["node_modules", "dist"]);
@@ -128,7 +128,7 @@ export const archTests = [
       // a table edit somebody reads.
       assert.ok(doctorModules.length >= 9, `the doctor family was actually swept: ${doctorModules.length} modules under src/work/ — a sweep that finds fewer than the nine delivered must RED, never pass on the UI tree alone (ADR-003 §4)`);
       targets.push(...doctorModules);
-      targets.push(...await filesBelow(path.join(root, "ui")));
+      targets.push(...await filesBelow(path.join(root, "apps", "ui")));
       assert.ok(targets.length > 10, "reverse boundary sweep is non-vacuous");
       // TWO CHECKS, because the claim has two halves and only one of them is a spelling. The EDGE is
       // resolved (an import of the loop family from anywhere in the tree, however deep the importer
@@ -162,7 +162,7 @@ export const archTests = [
       ]) {
         assert.equal(reachesLoopFamily("packages/work/src/doctor/loop-ready.mjs", source).length, 1, `self-check: ${what} is an edge and is caught`);
       }
-      assert.deepEqual(reachesLoopFamily("ui/src/pages/Page.tsx", 'import { x } from "../../../packages/core/src/commands/loops-graph";').length, 1, "self-check: an EXTENSIONLESS ui/ import is the bundler edge it would be at build time");
+      assert.deepEqual(reachesLoopFamily("apps/ui/src/pages/Page.tsx", 'import { x } from "../../../../packages/core/src/commands/loops-graph";').length, 1, "self-check: an EXTENSIONLESS ui/ import is the bundler edge it would be at build time");
     },
   },
 ];

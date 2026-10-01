@@ -34,7 +34,7 @@ import { decideLoopScope } from "@aof/work-loop/engine";
 // this adds is to a zero-import leaf and drags no subtree behind it.
 
 // The closed set of dispatchable phases (the ACD lifecycle verbs a worker can be told
-// to run). The three lifecycle verbs mirror ui/src/board/action.mjs's own primaryAction
+// to run). The three lifecycle verbs mirror apps/ui/src/board/action.mjs's own primaryAction
 // kinds (refine → continue → verify); `autonomous` is the CASCADE directive (operator,
 // 2026-07-26: "continue xy should be a continuation of the entire milestone. All
 // stories") — the continue door resolves a MILESTONE continue to it, so the worker

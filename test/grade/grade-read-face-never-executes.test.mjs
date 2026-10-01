@@ -289,7 +289,7 @@ export const gradeReadFaceNeverExecutesTests = [
             else if (/\.(m?[jt]sx?|vue|svelte)$/.test(entry.name)) uiFiles.push(full);
           }
         };
-        await walk(path.join(repoRoot, "ui"));
+        await walk(path.join(repoRoot, "apps", "ui"));
         for (const file of uiFiles) {
           const text = await readFile(file, "utf8");
           assert.ok(!text.includes("work:grade"), `no file under ui/ was edited to make that true (${path.relative(repoRoot, file)})`);

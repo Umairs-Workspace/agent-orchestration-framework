@@ -1,7 +1,7 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
-// Traceability wiring for milestone 34 / story 03 — ui/src/fleet/scope.mjs, the
+// Traceability wiring for milestone 34 / story 03 — apps/ui/src/fleet/scope.mjs, the
 // pure render-decision helper Fleet.tsx imports for the two @executable UI task
 // features. There is NO React test harness in this repo (no vitest/testing-
 // library) — per the house pattern (terminal-dock.test.mjs / action.test.mjs),
@@ -36,8 +36,8 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStopRung } from "../../ui/src/fleet/runs.mjs";
-import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../ui/src/fleet/assign-affordance.mjs";
+import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStopRung } from "../../apps/ui/src/fleet/runs.mjs";
+import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 import { removeWorkspaceFromProjection, withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
 const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
@@ -50,7 +50,7 @@ const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
 const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
-// FF-11902 — "no new file under ui/src/fleet/" is the directory budget's ceiling, read from its ONE
+// FF-11902 — "no new file under apps/ui/src/fleet/" is the directory budget's ceiling, read from its ONE
 // home rather than retyped here as a count the next story to move a file would pay for.
 import { UI_DIRECTORY_BUDGETS } from "../arch/testing/acd-ui-directory-budget.test.mjs";
 import {
@@ -85,7 +85,7 @@ import {
   filterToWorkStatus,
   hiddenMilestoneCount,
   workStatusSummaryTail,
-} from "../../ui/src/fleet/scope.mjs";
+} from "../../apps/ui/src/fleet/scope.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -453,7 +453,7 @@ export const fleetScopeTests = [
   //     `driver.navigations()`, and a real GET proving the origin it landed on serves the
   //     board's stream.
   //   · `test/arch/ui/acd-fleet-board-link-resolved.test.mjs` — the PLACEMENT half
-  //     (m47/ADR-006(a)): no hard-coded board address anywhere in `ui/src/fleet/`, and
+  //     (m47/ADR-006(a)): no hard-coded board address anywhere in `apps/ui/src/fleet/`, and
   //     `api.ts`/`Fleet.tsx` on the ONE resolver route. A "the source contains no relative
   //     href" assertion is a fitness function, and that is where it now lives.
   // This module keeps what it is FOR: the pure, headless render-decision helpers.
@@ -543,7 +543,7 @@ export const fleetScopeTests = [
   // MILESTONE 47 / STORY 02 — THE REPO FILTER AS A PURE MODULE.
   //
   // Three @executable task features, driven exactly the way each one's own Background
-  // specifies: "ui/src/fleet/scope.mjs imported directly by node:test under plain node —
+  // specifies: "apps/ui/src/fleet/scope.mjs imported directly by node:test under plain node —
   // no bundler, no DOM, no React". This repo has no React harness at all, which is why the
   // narrowing lives in the pure module and why these are the ONLY channel through which
   // its decisions are confirmable.
@@ -1730,7 +1730,7 @@ export const fleetScopeTests = [
   {
     name: "the-line-and-the-button-are-pure/03 the pinned projections are byte-identical — fleetCurrentWorkLines over the captured producer fixtures answers the Rust-pinned lines, and nodeCurrentWork(node) equals fleetCurrentWorkLines(node.presence) for every fixture node, one with loops included",
     async run() {
-      const rust = await readFile(path.join(repoRoot, "app", "desktop", "crates", "core", "src", "view_model.rs"), "utf8");
+      const rust = await readFile(path.join(repoRoot, "apps", "desktop", "crates", "core", "src", "view_model.rs"), "utf8");
       const fixtures = [...rust.matchAll(/const\s+([A-Z0-9_]*REAL_CAPTURED[A-Z0-9_]*)\s*:\s*&str\s*=\s*r#"([\s\S]*?)"#;/g)].map((match) => ({ name: match[1], doc: JSON.parse(match[2]) }));
       assert.ok(fixtures.length > 0, "the captured producer fixtures were read (non-vacuous)");
       let nodesSeen = 0;
@@ -1774,7 +1774,7 @@ export const fleetScopeTests = [
   {
     name: "the-line-and-the-button-are-pure/03 the type declarations name the four exports — runs.d.mts declares fleetLoopLines, loopStopAffordance and rememberStopRung with their shapes; scope.d.mts declares nodeWorkRegion",
     async run() {
-      const runs = await readFile(path.join(repoRoot, "ui", "src", "fleet", "runs.d.mts"), "utf8");
+      const runs = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "runs.d.mts"), "utf8");
       assert.match(runs, /export declare function fleetLoopLines\(/);
       assert.match(runs, /export declare function loopStopAffordance\(/);
       assert.match(runs, /export declare function rememberStopRung\(/);
@@ -1782,7 +1782,7 @@ export const fleetScopeTests = [
       assert.match(runs, /export type LoopStopButton = \{[\s\S]*?rung: 1 \| 2;[\s\S]*?label: "Stop" \| "Stop now";[\s\S]*?title: string;[\s\S]*?tone: "muted" \| "destructive";[\s\S]*?\};/, "the button's shape");
       assert.match(runs, /button: LoopStopButton \| null;[\s\S]*?remote: boolean;/, "the affordance's shape");
       assert.match(runs, /export type StopRungMemory = Map<string, RememberedStopRung>;/, "the memory's shape");
-      const scope = await readFile(path.join(repoRoot, "ui", "src", "fleet", "scope.d.mts"), "utf8");
+      const scope = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "scope.d.mts"), "utf8");
       assert.match(scope, /export declare function nodeWorkRegion\(/);
       assert.match(scope, /export type NodeWorkRegion = \{[\s\S]*?lines: string\[\];[\s\S]*?token: "primary" \| "muted";[\s\S]*?loops: FleetLoopLine\[\];[\s\S]*?\};/, "the region's shape");
     },
@@ -2050,15 +2050,15 @@ export const fleetScopeTests = [
 
   // ══ Scenario: the one fetch and the budgets ══
   {
-    name: "the-card-renders/04 the one fetch and the budgets — exactly api.ts fetches /api/mesh/loop-stop inside fleetApi.loopStop and throws the coded envelope on a non-2xx; ui/src/fleet holds exactly 20 files; Fleet.tsx is at most 1560 lines; no loops-* token anywhere under ui/",
+    name: "the-card-renders/04 the one fetch and the budgets — exactly api.ts fetches /api/mesh/loop-stop inside fleetApi.loopStop and throws the coded envelope on a non-2xx; apps/ui/src/fleet holds exactly 20 files; Fleet.tsx is at most 1560 lines; no loops-* token anywhere under ui/",
     async run() {
-      const uiSrc = path.join(repoRoot, "ui", "src");
+      const uiSrc = path.join(repoRoot, "apps", "ui", "src");
       const files = await filesBelow(uiSrc);
       const fetching = [];
       for (const file of files) {
         if ((await readFile(file, "utf8")).includes('fetch("/api/mesh/loop-stop"')) fetching.push(path.relative(repoRoot, file).replaceAll("\\", "/"));
       }
-      assert.deepEqual(fetching, ["ui/src/fleet/api.ts"], "exactly one file fetches the route");
+      assert.deepEqual(fetching, ["apps/ui/src/fleet/api.ts"], "exactly one file fetches the route");
       const api = await readFile(path.join(uiSrc, "fleet", "api.ts"), "utf8");
       const loopStop = /async loopStop\(scope: string, workspaceId: string\)[\s\S]*?\n  \},/.exec(api);
       assert.ok(loopStop, "fleetApi.loopStop(scope, workspaceId) is declared");
@@ -2066,15 +2066,15 @@ export const fleetScopeTests = [
       assert.match(loopStop[0], /if \(!response\.ok\) throw await safeError\(response\);/, "…throwing the coded envelope on a non-2xx as assign does");
       const fleetFiles = (await readdir(path.join(uiSrc, "fleet"), { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name);
       const fleetBudget = UI_DIRECTORY_BUDGETS.find((row) => row.directory === "fleet");
-      assert.ok(fleetBudget, "ui/src/fleet has a directory-budget row (the ceiling's one home)");
+      assert.ok(fleetBudget, "apps/ui/src/fleet has a directory-budget row (the ceiling's one home)");
       for (const touched of ["api.ts", "runs.mjs", "runs.d.mts", "scope.mjs", "scope.d.mts", "Fleet.tsx"]) {
         assert.ok(fleetFiles.includes(touched), `the walk reached the directory (non-vacuous): ${touched} is a member`);
       }
-      assert.ok(fleetFiles.length <= fleetBudget.ceiling + fleetBudget.allowance, `no new file under ui/src/fleet/ — ${fleetFiles.length} members against the directory budget's ceiling of ${fleetBudget.ceiling} (acd-ui-directory-budget: ${fleetBudget.why.slice(0, 60)}…)`);
+      assert.ok(fleetFiles.length <= fleetBudget.ceiling + fleetBudget.allowance, `no new file under apps/ui/src/fleet/ — ${fleetFiles.length} members against the directory budget's ceiling of ${fleetBudget.ceiling} (acd-ui-directory-budget: ${fleetBudget.why.slice(0, 60)}…)`);
       const fleet = await readFile(path.join(uiSrc, "fleet", "Fleet.tsx"), "utf8");
       assert.ok(fleet.split(/\r?\n/).length <= 1560, `Fleet.tsx is at most 1560 lines — measured ${fleet.split(/\r?\n/).length}`);
       const forbidden = /work[-/]loops|loops-show|loops-graph|loops-groundedness|loops-validate|work:loops-/;
-      for (const file of await filesBelow(path.join(repoRoot, "ui"))) {
+      for (const file of await filesBelow(path.join(repoRoot, "apps", "ui"))) {
         assert.doesNotMatch(await readFile(file, "utf8"), forbidden, `${path.relative(repoRoot, file)} carries no loops-* token (FF-5202)`);
       }
     },
@@ -2082,7 +2082,7 @@ export const fleetScopeTests = [
 
   // ══ Scenario: FF-5307 is re-pinned with the measurement, or not at all ══
   {
-    name: "the-card-renders/04 FF-5307 is re-pinned with the measurement — the ui/ hash comment names milestone 130, every fleet file git diff reports, nothing under ui/src/board/ and board-ui.mjs's unchanged digest; the store and board pins are unmoved; the control is green over the delivered tree",
+    name: "the-card-renders/04 FF-5307 is re-pinned with the measurement — the ui/ hash comment names milestone 130, every fleet file git diff reports, nothing under apps/ui/src/board/ and board-ui.mjs's unchanged digest; the store and board pins are unmoved; the control is green over the delivered tree",
     async run() {
       const gate = await readFile(path.join(repoRoot, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8");
       const rePin = /RE-PINNED by 130\/03[\s\S]*?assert\.equal\(hash\.digest\("hex"\)/.exec(gate);
@@ -2090,7 +2090,7 @@ export const fleetScopeTests = [
       for (const file of ["api.ts", "runs.mjs", "runs.d.mts", "scope.mjs", "scope.d.mts", "Fleet.tsx", "assign-affordance.mjs", "assign-affordance.d.mts"]) {
         assert.ok(rePin[0].includes(file), `the re-pin names ${file}`);
       }
-      assert.match(rePin[0], /nothing under `ui\/src\/board\/`/i, "…says nothing under ui/src/board/ moved");
+      assert.match(rePin[0], /nothing under `apps\/ui\/src\/board\/`/i, "…says nothing under apps/ui/src/board/ moved");
       assert.match(rePin[0], /packages\/core\/src\/board-ui\.mjs/, "…and that packages/core/src/board-ui.mjs's digest is unchanged");
       // 142 moves the unchanged run implementation into execution and records the source-body
       // and persisted-byte parity evidence above its replacement pin.

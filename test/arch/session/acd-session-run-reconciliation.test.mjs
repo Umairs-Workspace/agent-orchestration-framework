@@ -8,8 +8,8 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // RENDER instead of on the WIRE.
 //
 // WHAT m38 DECIDED, AND WHY IT MOVED. m38's F1 review found that the render helper
-// `ui/src/fleet/runs.mjs` cannot perform run→workspace attribution: `activeRuns` is
-// the frozen m23 `string[]` of bare run ids (23/ADR-002; `ui/src/fleet/api.ts`),
+// `apps/ui/src/fleet/runs.mjs` cannot perform run→workspace attribution: `activeRuns` is
+// the frozen m23 `string[]` of bare run ids (23/ADR-002; `apps/ui/src/fleet/api.ts`),
 // carrying NO workspace id, so the fact the subsumption rule needs was not on the
 // wire. m38 therefore applied the rule UPSTREAM, in the assembler
 // (`packages/core/src/mesh/launcher.mjs`), by DROPPING a same-workspace session before publishing.
@@ -58,13 +58,13 @@ const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 const startSession = _aofHooks.meshSession.startSession;
-import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
+import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-10T12:00:00.000Z";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
-const FORMATTER_FILE = path.join("ui", "src", "fleet", "runs.mjs");
+const FORMATTER_FILE = path.join("apps", "ui", "src", "fleet", "runs.mjs");
 const PRODUCER_FILE = path.join("packages", "mesh", "src", "launcher.mjs");
 
 // Source is read NORMALISED (this tree is CRLF in places and LF in others — story 01's
@@ -147,7 +147,7 @@ function formatterViolations(source) {
     : [`${FORMATTER_FILE}: the subsumption predicate \`${predicate}\` is not a STRICT comparison against boolean true — m48/ADR-010 R3: an absent or non-boolean workspaceHasRun is an UNSTATED fact and never subsumes, and a truthiness test reads the STRING "false" as true and hides a live session`];
 }
 
-// Load a PLANTED variant of the real formatter as a real module. `ui/src/fleet/runs.mjs`
+// Load a PLANTED variant of the real formatter as a real module. `apps/ui/src/fleet/runs.mjs`
 // imports nothing (measured: a zero-import leaf), so a mutated copy in a temp dir is
 // the real code path with one line changed — not a re-implementation of it.
 async function loadPlantedFormatter(source) {

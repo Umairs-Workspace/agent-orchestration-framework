@@ -174,7 +174,7 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7807 the UI gains no reference to this command",
     run: async () => {
-      const files = await uiSourceFiles(path.join(repoRoot, "ui"));
+      const files = await uiSourceFiles(path.join(repoRoot, "apps", "ui"));
       assert.ok(files.length > 10, "the ui/ sweep is non-vacuous");
       // This command's own tokens, plus the family tokens 52/FF-5202 already bans — asserted here
       // for THIS story rather than as a re-run of that gate, so a `ui/` reference added by this

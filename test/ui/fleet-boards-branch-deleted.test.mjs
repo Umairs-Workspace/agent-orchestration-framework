@@ -33,7 +33,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //       branch is gone.
 //   (2) THE CLI FACE, driven as a child process, which still renders boards. This is what
 //       separates "the dead UI branch went" from "the product lost boards".
-//   (3) THE UI BUILD — `npm --prefix ui run build` is `tsc -b && vite build`, so a wire type
+//   (3) THE UI BUILD — `yarn ui:build` is `tsc -b && vite build`, so a wire type
 //       deleted while a reader survives fails there, loudly, by name.
 //
 // THE SEQUENCING CONSTRAINT, made structural rather than remembered (m45/STATE: "fixing (b)
@@ -515,7 +515,7 @@ export const fleetBoardsBranchDeletedTests = [
   // THE COUNTS ARE THE ASSERTION, and the sweep clause is knowingly vacuous where a count
   // is zero — the m45 amendment (QA F-45-04-QA-1) made exactly this correction to exactly
   // this sweep, and the reading it delivered is the stronger one: an anchor APPEARING is as
-  // loud as one disappearing. Measured at m45, `ui/src/fleet/` rendered exactly ONE anchor
+  // loud as one disappearing. Measured at m45, `apps/ui/src/fleet/` rendered exactly ONE anchor
   // in total — the local-board drill-in — and this task deletes it, so ZERO is the true
   // value for every state.
   //
@@ -677,18 +677,17 @@ export const fleetBoardsBranchDeletedTests = [
   // builds and still runs.
   // ══════════════════════════════════════════════════════════════════════════
   {
-    name: "fleet-boards-branch-deleted/01 the orphaned wire types leave cleanly — `npm --prefix ui run build` is green and the surface still mounts (01 scenario 6)",
+    name: "fleet-boards-branch-deleted/01 the orphaned wire types leave cleanly — `yarn ui:build` is green and the surface still mounts (01 scenario 6)",
     async run() {
       // GUARD-IF-PRESENT, the house ethos for a lane that shells a toolchain: without the
       // ui/ dependency tree there is nothing to build, and a lane that failed for that would
       // be reporting on the checkout rather than on the code.
-      const uiModules = path.join(repoRoot, "ui", "node_modules");
+      const uiModules = path.join(repoRoot, "apps", "ui", "node_modules");
       assert.ok(existsSync(uiModules), `the ui dependency tree is present at ${uiModules} — install it before running this lane`);
 
-      const build = spawnSync("npm", ["--prefix", "ui", "run", "build"], {
+      const build = spawnSync(process.execPath, [path.join("scripts", "ui-build.mjs")], {
         cwd: repoRoot,
         encoding: "utf8",
-        shell: process.platform === "win32",
         env: { ...process.env, NODE_NO_WARNINGS: "1" },
       });
       const output = `${build.stdout ?? ""}${build.stderr ?? ""}`;
@@ -701,12 +700,12 @@ export const fleetBoardsBranchDeletedTests = [
       assert.match(output, /built in/, `and the bundle builds:\n${output}`);
 
       // The bundle really landed, and it really carries this surface.
-      const indexHtml = path.join(repoRoot, "ui", "dist", "index.html");
+      const indexHtml = path.join(repoRoot, "apps", "ui", "dist", "index.html");
       assert.ok(existsSync(indexHtml), "…writing its index.html");
       const html = await readFile(indexHtml, "utf8");
       const assetMatch = html.match(/src="([^"]*index-[^"]*\.js)"/);
       assert.ok(assetMatch, "…and naming its built entry chunk");
-      const bundle = await readFile(path.join(repoRoot, "ui", "dist", assetMatch[1].replace(/^\//, "")), "utf8");
+      const bundle = await readFile(path.join(repoRoot, "apps", "ui", "dist", assetMatch[1].replace(/^\//, "")), "utf8");
       assert.ok(bundle.includes("Open board"), "…which still carries the fleet surface's own drill-in copy");
       assert.equal(bundle.includes(PLACEHOLDER), false, `…and no longer carries "${PLACEHOLDER}" — the deleted region is out of the shipped bundle too`);
 

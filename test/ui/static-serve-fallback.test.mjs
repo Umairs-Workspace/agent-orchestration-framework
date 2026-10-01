@@ -116,7 +116,7 @@ function stubSpawn() {
 //
 // ONE repoRoot serves all three because `boardUiDist(root)` and `meshUiDist(root)` are
 // the same `<root>/ui/dist` — which also gives the features' "a file named package.json
-// one directory ABOVE that bundle" exactly one home (`<root>/ui/package.json`) instead of
+// one directory ABOVE that bundle" exactly one home (`<root>/apps/ui/package.json`) instead of
 // three, so every origin's `..` row aims at the same target.
 async function startOrigins() {
   const repo = await makeRepo();
@@ -125,7 +125,7 @@ async function startOrigins() {
   assert.equal(dist, boardUiDist(root), "the board and the fleet resolve the SAME ui/dist off one repoRoot");
   // The marker file, one directory ABOVE the served bundle. The served bundle has no
   // package.json of its own, so a 200 carrying MARKER could only have escaped the root.
-  await writeFile(path.join(root, "ui", "package.json"), `{ "marker": "${MARKER}" }\n`, "utf8");
+  await writeFile(path.join(root, "apps", "ui", "package.json"), `{ "marker": "${MARKER}" }\n`, "utf8");
 
   const globalHome = await mkdtemp(path.join(os.tmpdir(), "aof-static-serve-gh-"));
   const globalStoreOptions = { env: { AOF_GLOBAL_HOME: globalHome } };

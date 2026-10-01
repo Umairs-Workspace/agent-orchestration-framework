@@ -7,8 +7,8 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // THE INVARIANT. `presence.activeRuns` on the wire is the FROZEN m23 `string[]` of
 // bare run ids (23/ADR-002) — it carries NO per-run attribution (no `ref`, no
 // `title`, no `workspaceId`). EVERY surface that consumes it — the JS render helper
-// (ui/src/fleet/runs.mjs), the TS type surface (ui/src/fleet/api.ts), the RUST
-// desktop view-model (app/desktop/crates/core/src) — must therefore treat an element
+// (apps/ui/src/fleet/runs.mjs), the TS type surface (apps/ui/src/fleet/api.ts), the RUST
+// desktop view-model (apps/desktop/crates/core/src) — must therefore treat an element
 // as a bare STRING and MUST NOT index it as an object.
 //
 // WHY IT EXISTS. Two of milestone 38's verify findings are the SAME defect in two
@@ -230,12 +230,12 @@ const CONSUMER_FILES = [
   "packages/mesh/src/global-node-registry.mjs",
   "packages/mesh/src/commands/identity.mjs",
   "packages/mesh/src/commands/heartbeat.mjs",
-  "ui/src/fleet/runs.mjs",
-  "ui/src/fleet/runs.d.mts",
-  "ui/src/fleet/scope.mjs",
-  "ui/src/fleet/api.ts",
-  "app/desktop/crates/core/src/status.rs",
-  "app/desktop/crates/core/src/view_model.rs",
+  "apps/ui/src/fleet/runs.mjs",
+  "apps/ui/src/fleet/runs.d.mts",
+  "apps/ui/src/fleet/scope.mjs",
+  "apps/ui/src/fleet/api.ts",
+  "apps/desktop/crates/core/src/status.rs",
+  "apps/desktop/crates/core/src/view_model.rs",
 ];
 
 async function readConsumers() {
@@ -381,7 +381,7 @@ export const archTests = [
       assert.equal(declarationViolations("planted/api.ts", plantedTsDecl).length, 1, "an attributed-object TS declaration is flagged");
       assert.equal(declarationViolations("planted/status.rs", plantedRustDecl).length, 1, "a Vec<Value> Rust declaration is flagged");
       // …and the REAL declarations pass the SAME detector.
-      assert.deepEqual(declarationViolations("ui/src/fleet/api.ts", "export type P = {\n  activeRuns: string[];\n};\n"), []);
+      assert.deepEqual(declarationViolations("apps/ui/src/fleet/api.ts", "export type P = {\n  activeRuns: string[];\n};\n"), []);
       assert.deepEqual(declarationViolations("status.rs", "pub struct P {\n    pub active_runs: Vec<String>,\n}\n"), []);
 
       // ── planted ELEMENT ACCESS — F1, verbatim in shape (the collapse rule keyed
@@ -405,7 +405,7 @@ export const archTests = [
 
       // ── the CORRECT (real) usages are NOT flagged by the same detector ───────
       assert.deepEqual(
-        elementAccessViolations("ui/src/fleet/runs.mjs", "const activeRuns = presence.activeRuns ?? [];\nlines.push(`running ${activeRuns.length} runs`);\n"),
+        elementAccessViolations("apps/ui/src/fleet/runs.mjs", "const activeRuns = presence.activeRuns ?? [];\nlines.push(`running ${activeRuns.length} runs`);\n"),
         [],
         "counting a bare string array is not a violation",
       );

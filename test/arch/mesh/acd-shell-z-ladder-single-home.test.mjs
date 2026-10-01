@@ -4,11 +4,11 @@
 //    'the shell's fullscreen occupant' and nothing else; a rung not on the ladder is a
 //    GAP whose fix is to add the rung to the ladder first."
 //
-// EXPECTED RED until milestone 45 / story 03 lands: `ui/src/app/shell-layout.mjs` does not
+// EXPECTED RED until milestone 45 / story 03 lands: `apps/ui/src/app/shell-layout.mjs` does not
 // exist, and three of the four `z-50` literals below still live in surface components.
 //
 // WHY THIS IS A RATCHET AND NOT A SCENARIO. Story 45/03's own feature says, in terms, that
-// it does NOT assert "no `z-50` literal survives anywhere else in `ui/src`" — a behavioural
+// it does NOT assert "no `z-50` literal survives anywhere else in `apps/ui/src`" — a behavioural
 // Then cannot make a whole-tree claim without smuggling a source read into it, and QA
 // refused to (correctly). So the gap closes in 03 and reopens the moment 46, 47 or 49 adds
 // an overlay — and 49 is PRECISELY the milestone that puts a surface fullscreen. That is the
@@ -32,7 +32,7 @@
 // than re-pointed, exactly as its own reason text required.
 //
 // THE ONE CONTROL THAT REPLACED IT TAKES THE RUNG BY IMPORT (`Z_CLASSES.fullscreen` from
-// ui/src/app/shell-layout.mjs), not by retyping the number — which is why this list did not need
+// apps/ui/src/app/shell-layout.mjs), not by retyping the number — which is why this list did not need
 // a successor entry. That is the outcome the exemption was betting on, and the stale-exemption
 // clause below is what would have caught the bet failing.
 //
@@ -44,8 +44,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UI_SRC = "ui/src";
-const LADDER_MODULE = "ui/src/app/shell-layout.mjs";
+const UI_SRC = "apps/ui/src";
+const LADDER_MODULE = "apps/ui/src/app/shell-layout.mjs";
 
 // DESIGN DG-45-2 fixes these five rungs and no others. `dock` is reserved for milestone 46's
 // docked terminal so that 46 does not have to invent a number under time pressure.
@@ -53,7 +53,7 @@ const DECLARED_RUNGS = new Set(["10", "20", "30", "40", "50"]);
 
 // Shrink-only, and EMPTY since milestone 46 / story 04 deleted its one entry's file. Keyed by
 // repo-relative path; the value is the reason a reviewer needs. An empty map is the strongest
-// state this list can be in — every `z-50` in `ui/src` now comes from the ladder.
+// state this list can be in — every `z-50` in `apps/ui/src` now comes from the ladder.
 const FULLSCREEN_RUNG_EXEMPTIONS = new Map([]);
 
 async function uiSourceFiles() {
@@ -90,7 +90,7 @@ function stripSourceComments(source) {
 
 export const archTests = [
   {
-    name: "arch/45 ADR-005 [Amigos-5] (acd-shell-z-ladder-single-home): the z-ladder is DECLARED in ui/src/app/shell-layout.mjs beside the region names — a rung typed as a class literal in a surface is a rung nobody can find",
+    name: "arch/45 ADR-005 [Amigos-5] (acd-shell-z-ladder-single-home): the z-ladder is DECLARED in apps/ui/src/app/shell-layout.mjs beside the region names — a rung typed as a class literal in a surface is a rung nobody can find",
     run: async () => {
       let ladder;
       try {
@@ -117,7 +117,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/45 ADR-005 [Amigos-5] (acd-shell-z-ladder-single-home): `z-50` appears NOWHERE in ui/src outside the ladder module — it means the shell's fullscreen occupant and nothing else (one named, shrink-only exemption, retiring with m46)",
+    name: "arch/45 ADR-005 [Amigos-5] (acd-shell-z-ladder-single-home): `z-50` appears NOWHERE in apps/ui/src outside the ladder module — it means the shell's fullscreen occupant and nothing else (one named, shrink-only exemption, retiring with m46)",
     run: async () => {
       const offenders = [];
       for (const file of await uiSourceFiles()) {
@@ -166,7 +166,7 @@ export const archTests = [
           if (DECLARED_RUNGS.has(match[2])) offenders.push(`${file} → ${match[1]}: ${match[2]}`);
         }
       }
-      assert.ok(scanned > 30, `ui/src was actually read (non-vacuous): ${scanned} files`);
+      assert.ok(scanned > 30, `apps/ui/src was actually read (non-vacuous): ${scanned} files`);
 
       assert.deepEqual(
         offenders,
@@ -185,7 +185,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/45 ADR-005 [Amigos-5] (acd-shell-z-ladder-single-home): every stacking utility in ui/src sits on a rung the ladder DECLARES — no arbitrary z-[…] values, no rung invented at the call site",
+    name: "arch/45 ADR-005 [Amigos-5] (acd-shell-z-ladder-single-home): every stacking utility in apps/ui/src sits on a rung the ladder DECLARES — no arbitrary z-[…] values, no rung invented at the call site",
     run: async () => {
       const undeclared = [];
       const arbitrary = [];

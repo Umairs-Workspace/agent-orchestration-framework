@@ -85,7 +85,7 @@ import {
   assignAffordanceView,
   assignRefused,
   assignRefusalLadder,
-} from "../../ui/src/fleet/assign-affordance.mjs";
+} from "../../apps/ui/src/fleet/assign-affordance.mjs";
 import {
   withPublishedAssignFixture,
   withTwoWorkspaceAssignFixture,
@@ -95,8 +95,8 @@ import {
 import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const FLEET_API_TS = path.join(repoRoot, "ui", "src", "fleet", "api.ts");
-const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
+const FLEET_API_TS = path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts");
+const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 // The four phases the row ever renders. Kept here (not derived from the view) so
 // a phase quietly dropped from the state machine would be noticed rather than
@@ -104,7 +104,7 @@ const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
 const EVERY_PHASE = ["rest", "sending", "sent", "refused"];
 
 // codedRefusalFromRoute(url, request) — a REAL refusal, taken from the REAL
-// route, rebuilt into the Error the REAL api client throws. `ui/src/fleet/api
+// route, rebuilt into the Error the REAL api client throws. `apps/ui/src/fleet/api
 // .ts`'s safeError lifts `error`/`code` and (after this pass) the verb's own
 // extra fields `holder`/`target` onto the Error; this mirrors that lift exactly,
 // so `assignRefused` is fed the same envelope production feeds it. The lift

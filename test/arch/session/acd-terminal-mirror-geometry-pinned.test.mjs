@@ -7,7 +7,7 @@
 // exists.
 //
 // WHY IT HAD TO BE A FITNESS FUNCTION AND NOT A `.feature` SCENARIO. The tie is a structural
-// assertion ACROSS TWO BUILDS THAT CANNOT IMPORT EACH OTHER: `ui/src/**` is bundled by vite
+// assertion ACROSS TWO BUILDS THAT CANNOT IMPORT EACH OTHER: `apps/ui/src/**` is bundled by vite
 // for a browser and `packages/core/src/**` runs under node in the CLI. There is no runtime at which one
 // could read the other's constant, so the only place the pair can be compared is a test that
 // reads BOTH FILES AS TEXT.
@@ -19,7 +19,7 @@
 // into an unreadable scatter. That was a real defect, found and fixed in a live two-machine
 // soak in m38.
 //
-// AND THE PREDECESSOR CLAIMED THIS TIE WAS ALREADY HELD. `ui/src/fleet/terminal-view/geometry.mjs:20-23`
+// AND THE PREDECESSOR CLAIMED THIS TIE WAS ALREADY HELD. `apps/ui/src/fleet/terminal-view/geometry.mjs:20-23`
 // states in terms: "the tie is held by test/fleet-terminal-view-geometry.test.mjs, which reads
 // BOTH files and fails if the numbers drift apart." THAT FILE HAS NEVER EXISTED — confirmed on
 // the codebase graph (geometry.mjs had no test importer at all) and by grep
@@ -39,7 +39,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const UI_SOURCE_TABLE = path.join("ui", "src", "terminal", "source-table.mjs");
+const UI_SOURCE_TABLE = path.join("apps", "ui", "src", "terminal", "source-table.mjs");
 const WORKER_EXECUTION = path.join("packages/core/src/application/bindings/mesh/worker-execution.mjs");
 
 async function read(rel) {
@@ -114,10 +114,10 @@ export const archTests = [
     run: async () => {
       // The pair has ONE home. A module that re-typed `cols: 80` beside the descriptor would
       // be a second copy that this gate could not see drift in.
-      const geometry = await read(path.join("ui", "src", "terminal", "geometry.mjs"));
+      const geometry = await read(path.join("apps", "ui", "src", "terminal", "geometry.mjs"));
       assert.ok(
         !/\bcols:\s*80\b/.test(geometry) && !/\brows:\s*24\b/.test(geometry),
-        "ui/src/terminal/geometry.mjs derives the fixed geometry from the descriptor and never re-types the worker's numbers",
+        "apps/ui/src/terminal/geometry.mjs derives the fixed geometry from the descriptor and never re-types the worker's numbers",
       );
       // …and it really does read the descriptor's own field, so the derivation is live.
       assert.match(geometry, /fixedGeometry/, "the geometry plan reads the descriptor's fixedGeometry");

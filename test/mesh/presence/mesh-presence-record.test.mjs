@@ -487,7 +487,7 @@ export const meshPresenceRecordTests = [
   {
     name: "presence-carries-the-loops/00 the desktop's parser tolerates the new key — the Presence struct carries no deny_unknown_fields, so `loops` parses and active_runs reads as before",
     async run() {
-      const source = await readFile(path.join(repoRoot, "app", "desktop", "crates", "core", "src", "status.rs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "apps", "desktop", "crates", "core", "src", "status.rs"), "utf8");
       const at = source.indexOf("pub struct Presence {");
       assert.ok(at > 0, "the Presence struct is where the desktop parses a presence record");
       const attributes = source.slice(source.lastIndexOf("\n\n", at), at);

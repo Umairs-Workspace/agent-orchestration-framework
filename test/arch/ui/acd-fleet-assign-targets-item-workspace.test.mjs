@@ -54,7 +54,7 @@ import { seedTargetNode, readAssignmentRows } from "../../support/mesh-assign-fi
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
-const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
+const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

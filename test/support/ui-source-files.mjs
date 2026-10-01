@@ -1,4 +1,4 @@
-// WHAT COUNTS AS A `ui/src` SOURCE FILE — ONE predicate, two ratchets.
+// WHAT COUNTS AS A `apps/ui/src` SOURCE FILE — ONE predicate, two ratchets.
 //
 // `acd-ui-surface-file-budget` (m43/ADR-015/F2) meters the tree per FILE; `acd-ui-directory-budget`
 // (m49/ADR-001, TECH_DEBT 28/33 fix (b)) meters it per DIRECTORY. They must never disagree about

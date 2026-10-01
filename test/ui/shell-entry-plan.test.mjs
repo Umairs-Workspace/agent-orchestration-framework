@@ -3,9 +3,9 @@
 //
 // THE CHANNEL. The feature's own LITMUS: "every Then is a returned VALUE from a framework-free
 // `.mjs` module that node:test loads with no bundler, no DOM and no browser". That module is
-// `ui/src/app/entry.mjs` — the entry's decision, extracted exactly as the feature's FEASIBILITY
+// `apps/ui/src/app/entry.mjs` — the entry's decision, extracted exactly as the feature's FEASIBILITY
 // note requires ("the steps read a plan of the shape `{ replace: {pathname,search,hash}|null,
-// surface }` derived from the incoming URL parts"). `ui/src/main.tsx` does nothing with the
+// surface }` derived from the incoming URL parts"). `apps/ui/src/main.tsx` does nothing with the
 // plan but call `history.replaceState` when `replace` is non-null and hand `surface` to the
 // shell, so nothing about the decision is left where a test cannot reach it.
 //
@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { ROUTES, routeFor } from "../../ui/src/app/routes.mjs";
+import { ROUTES, routeFor } from "../../apps/ui/src/app/routes.mjs";
 import {
   applyEntryPlan,
   entryPlanFor,
@@ -26,8 +26,8 @@ import {
   surfaceMountFor,
   HISTORY_NONE,
   HISTORY_REPLACE,
-} from "../../ui/src/app/entry.mjs";
-import { scopeFromSearch } from "../../ui/src/fleet/scope.mjs";
+} from "../../apps/ui/src/app/entry.mjs";
+import { scopeFromSearch } from "../../apps/ui/src/fleet/scope.mjs";
 import { withShellApp } from "../support/shell-app-harness.mjs";
 import { findAll, textOf } from "../support/mini-react.mjs";
 
@@ -62,7 +62,7 @@ function partsOf(address) {
   return { pathname, search, hash };
 }
 
-// How the BOARD reads its fragment back (ui/src/board/Board.tsx:601-605, verbatim). The
+// How the BOARD reads its fragment back (apps/ui/src/board/Board.tsx:601-605, verbatim). The
 // fragment is a live deep-link contract, so the passthrough is asserted through the surface's
 // OWN reader rather than through the router's.
 function boardFragmentRead(hash) {
@@ -121,7 +121,7 @@ export const shellEntryPlanTests = [
         // ROW 6, THE CONTESTED ROW, SETTLED AT BUILD: a legacy `mode` on an address that
         // ALREADY carries a path resolves to the PATH's surface, and nothing is rewritten —
         // the stray parameter rides through untouched like every other parameter the router
-        // has never heard of. The reason is stated in ui/src/app/entry.mjs's header and in
+        // has never heard of. The reason is stated in apps/ui/src/app/entry.mjs's header and in
         // routes.mjs's ("THE PATH WINS"): a legacy query parameter that could override a real
         // address is backwards for a milestone whose point is that the address bar is the
         // truth. What it is NOT is a 404.
@@ -312,7 +312,7 @@ export const shellEntryPlanTests = [
           address: "/?mode=fleet&scope=local",
           surface: "fleet",
           survives: [["scope", "local"]],
-          read: (plan) => assert.equal(scopeFromSearch(plan.address.search), "local", "`scopeFromSearch` (ui/src/fleet/scope.mjs) reads back \"local\""),
+          read: (plan) => assert.equal(scopeFromSearch(plan.address.search), "local", "`scopeFromSearch` (apps/ui/src/fleet/scope.mjs) reads back \"local\""),
         },
         {
           address: "/?mode=fleet&scope=global&repo=aof",
@@ -479,8 +479,8 @@ export const shellEntryPlanTests = [
       // story forces no edit on them, and every existing behavioural suite driving those two
       // surfaces keeps its expectations.
       for (const [harness, surface] of [
-        ["test/support/fleet-app-harness.mjs", "ui/src/fleet/Fleet.tsx"],
-        ["test/support/board-app-harness.mjs", "ui/src/board/Board.tsx"],
+        ["test/support/fleet-app-harness.mjs", "apps/ui/src/fleet/Fleet.tsx"],
+        ["test/support/board-app-harness.mjs", "apps/ui/src/board/Board.tsx"],
       ]) {
         const source = await readFile(path.join(repoRoot, harness), "utf8");
         const parts = surface.split("/");

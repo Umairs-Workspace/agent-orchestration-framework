@@ -73,21 +73,21 @@ import {
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { seedAssignment, seedTargetNode } from "../support/mesh-assign-fixture.mjs";
 
-// RE-POINTED (m46/04): `ui/src/fleet/terminal-view/` is DELETED. The stream resolution is
-// fleet-DOMAIN and lives at `ui/src/fleet/terminal-mount.mjs`; the URL builder and the state ramp
+// RE-POINTED (m46/04): `apps/ui/src/fleet/terminal-view/` is DELETED. The stream resolution is
+// fleet-DOMAIN and lives at `apps/ui/src/fleet/terminal-mount.mjs`; the URL builder and the state ramp
 // are the SHARED core the board mounts too. Every assertion below survives the move — the merge
 // dropped nothing — and the two changed WORDS are DESIGN rulings: `disconnected` retires as a
 // STATE and becomes the mandatory cause line on `error`.
-import { resolveTerminalStream, NO_STREAM } from "../../ui/src/fleet/terminal-mount.mjs";
-import { sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
-import { terminalSocketUrl } from "../../ui/src/terminal/socket-url.mjs";
+import { resolveTerminalStream, NO_STREAM } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
 import {
   bindSource,
   applyTerminalEvent,
   describeTerminalState,
   TERMINAL_EVENTS,
   TERMINAL_STATES,
-} from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 // The mirror descriptor, and the four ramp calls this suite used to make, expressed in the merged
 // vocabulary so every lane below reads exactly as it did.

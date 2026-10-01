@@ -38,8 +38,8 @@ const FEEDBACK_RECORDS = new URL("../../../packages/work/src/feedback-records.mj
 // EXTEND-not-sibling decision): the board face's run READ route + the rerun
 // affordance's UI wiring. The rerun's launch is the m03 ADR-006 typed-PTY-input
 // path (runAgent → TerminalDock), never a board write/route/shell-out.
-const RERUN_UI = new URL("../../../ui/src/board/runs.mjs", import.meta.url);
-const DETAIL_PANEL = new URL("../../../ui/src/board/DetailPanel.tsx", import.meta.url);
+const RERUN_UI = new URL("../../../apps/ui/src/board/runs.mjs", import.meta.url);
+const DETAIL_PANEL = new URL("../../../apps/ui/src/board/DetailPanel.tsx", import.meta.url);
 
 async function snapshotDir(dir) {
   const snap = new Map();

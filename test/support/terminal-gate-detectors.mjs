@@ -2,7 +2,7 @@
 // (`acd-terminal-origin-not-port` and `acd-terminal-control-boundary`).
 //
 // WHY THIS FILE EXISTS. Each of those gates is SPLIT in two by what it can turn green:
-// the clauses about `ui/src/terminal/` are green the day 46/03 lands and are REGISTERED as
+// the clauses about `apps/ui/src/terminal/` are green the day 46/03 lands and are REGISTERED as
 // `*.test.mjs`; the WHOLE-TREE clauses stay red until 46/04 deletes the duplicate terminal
 // implementation and are PARKED as `*.mjs` (off the suite glob, so the registration ratchet is
 // neither tripped nor satisfied by a mention). Both halves need the same source-analysis
@@ -17,13 +17,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const TERMINAL_DIR = path.join(repoRoot, "ui", "src", "terminal");
-export const UI_SRC = path.join(repoRoot, "ui", "src");
+export const TERMINAL_DIR = path.join(repoRoot, "apps", "ui", "src", "terminal");
+export const UI_SRC = path.join(repoRoot, "apps", "ui", "src");
 
 // DG-46-2's five, which get ONE home in the control's own framework-free `.mjs` and are read
 // by BOTH consumers — the xterm `theme` object and the documented class list.
 export const PALETTE = ["#0b0f14", "#0f1629", "#1e2a44", "#0b1120", "#d7dde3"];
-export const PALETTE_HOME = "ui/src/terminal/palette.mjs";
+export const PALETTE_HOME = "apps/ui/src/terminal/palette.mjs";
 
 export const NAMED_PRODUCT_PORTS = ["4177", "4178", "4180", "4181"];
 
@@ -52,7 +52,7 @@ export const BROWSER_GLOBALS = [
 // (`acd-rendered-component-fed-by-route` failed about a subject that had not changed, and the
 // next reviewer's cheapest hypothesis — "the diff broke it" — was wrong). The cost this file
 // was actually exposed to is worse and is a FALSE GREEN: both of its readers assert
-// `deepEqual(violations, [])` over `ui/src/terminal/**`, a folder whose own ADRs REQUIRE it to
+// `deepEqual(violations, [])` over `apps/ui/src/terminal/**`, a folder whose own ADRs REQUIRE it to
 // explain in prose the defects it guards against. A stripper that eats the file finds no
 // violations in it, and the gate passes while asserting nothing — the exact
 // reads-green-asserts-nothing shape ADR-006 and ADR-007 exist to end.

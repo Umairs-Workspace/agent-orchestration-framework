@@ -1,7 +1,7 @@
 // The mount entry for the REAL-COMPOSITION harness, board half (milestone 46 / story 05).
 //
 // The exact sibling of `shell-fleet-entry.tsx`, and it exists for the reason that one names: the
-// channel's host flag is MODULE state (`ui/src/app/shell-bus.mjs`'s `shellPresent`, set by
+// channel's host flag is MODULE state (`apps/ui/src/app/shell-bus.mjs`'s `shellPresent`, set by
 // IMPORTING Shell.tsx), so a harness that bundles only one half of the join gets its own copy of
 // the bus and every clause about the JOIN is true in neither bundle.
 //
@@ -17,8 +17,8 @@
 // Rendering nothing is exactly what the production control does for a mount with no panel — and
 // it is enough here, because what this entry measures is WHERE the dock's contribution lands,
 // not what it paints.
-import { Shell } from "../../ui/src/app/Shell";
-import { Board } from "../../ui/src/board/Board";
+import { Shell } from "../../apps/ui/src/app/Shell";
+import { Board } from "../../apps/ui/src/board/Board";
 
 type CompositionProps = Record<string, unknown>;
 

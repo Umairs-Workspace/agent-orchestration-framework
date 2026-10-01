@@ -5,9 +5,9 @@ import path from "node:path";
 export function createBoardServer({ serveSetupUi, ensureWorktreeTrusted, assetPath }) {
 // The same-origin board server (finding F-1).
 //
-// The board's API calls are same-origin relative paths (ui/src/board/api.ts →
+// The board's API calls are same-origin relative paths (apps/ui/src/board/api.ts →
 // fetch("/api/work/list")) and the terminal WS URL is built from
-// window.location.host (ui/src/board/TerminalDock.tsx). So the board page MUST be
+// window.location.host (apps/ui/src/board/TerminalDock.tsx). So the board page MUST be
 // served from ONE origin that also routes /api/work* and /ws/terminal. The single
 // serveSetupUi server already routes all three on one port; this helper points it
 // at the BUILT bundle (ui/dist) — not the vite-only dev source — and refuses to
@@ -22,7 +22,7 @@ export function createBoardServer({ serveSetupUi, ensureWorktreeTrusted, assetPa
 // Original aof code (adapts nothing from vibeyard) — no attribution needed.
 
 function boardUiDist(repoRoot) {
-  return path.join(repoRoot, "ui", "dist");
+  return path.join(repoRoot, "apps", "ui", "dist");
 }
 
 // m42 wave (d) leg d1 (wave-3 tail) — the NON-BLOCKING probe behind work:ui's
@@ -62,7 +62,7 @@ async function serveBoard({ projectDir = process.cwd(), port = 4178, repoRoot, s
 
   if (!existsSync(path.join(dist, "index.html"))) {
     const error = new Error(
-      `The board UI build is missing at ${dist}. Build it first: npm --prefix ui run build`
+      `The board UI build is missing at ${dist}. Build it first: yarn ui:build`
     );
     error.code = "ui-build-missing";
     throw error;

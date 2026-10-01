@@ -18,7 +18,7 @@
 //
 // NOTE on ui-build-missing: NOT asserted at the verb level. The launch body calls
 // serveMeshUi({ projectDir, port, scope, … }) WITHOUT repoRoot, so the guard keys on the
-// REAL repo's ui/dist (present after `npm --prefix ui run build`), NOT on the fixture /
+// REAL repo's ui/dist (present after `yarn ui:build`), NOT on the fixture /
 // --target. It is not cleanly triggerable here without an artificial hack, so it stays
 // covered at the module boundary in mesh-ui-serve.test.mjs ("a missing ui/dist build is
 // a friendly ui-build-missing refusal").

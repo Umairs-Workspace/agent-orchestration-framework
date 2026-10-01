@@ -2,7 +2,7 @@
 //
 // Every Scenario and every Examples ROW of
 // `wiki/work/50_milestone_session-launcher/stories/04_story_session-launcher-affordance/tasks/02_operator-state-machine.feature`,
-// driven against the SHIPPED `ui/src/home/session-launcher.mjs` with an INJECTED CLOCK (`now`)
+// driven against the SHIPPED `apps/ui/src/home/session-launcher.mjs` with an INJECTED CLOCK (`now`)
 // and INJECTED route answers (the `answer`/`outcome`/`observe` events). The module is pure, so
 // the clock and the responses are data and nothing here binds a port or opens a store.
 import assert from "node:assert/strict";
@@ -10,7 +10,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../support/terminal-gate-detectors.mjs";
-import { HOME_POLL_MS } from "../../ui/src/home/page-state.mjs";
+import { HOME_POLL_MS } from "../../apps/ui/src/home/page-state.mjs";
 import {
   HOME_SESSION_OUTCOME_PATH,
   LAUNCHER_DISPATCHED,
@@ -34,7 +34,7 @@ import {
   launcherRest,
   launcherStartedLine,
   sessionLauncherView,
-} from "../../ui/src/home/session-launcher.mjs";
+} from "../../apps/ui/src/home/session-launcher.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -150,7 +150,7 @@ export const homeSessionLauncherStateTests = [
 
   // ══ Scenario: the deadlines are derived from the home's own cadence and are not one number ═
   {
-    name: "50/04 task02 — two deadlines, two numbers: 2 × HOME_POLL_MS and 3 × HOME_POLL_MS, derived and not literals, and neither imported from ui/src/fleet/",
+    name: "50/04 task02 — two deadlines, two numbers: 2 × HOME_POLL_MS and 3 × HOME_POLL_MS, derived and not literals, and neither imported from apps/ui/src/fleet/",
     run: async () => {
       assert.equal(HOME_POLL_MS, 5000);
       assert.equal(LAUNCHER_POST_DEADLINE_MS, HOME_POLL_MS * 2);
@@ -158,12 +158,12 @@ export const homeSessionLauncherStateTests = [
       assert.notEqual(LAUNCHER_POST_DEADLINE_MS, LAUNCHER_OUTCOME_WINDOW_MS, "they are two numbers because they wait on two facts");
       assert.equal(LAUNCHER_OUTCOME_POLL_MS, HOME_POLL_MS / 5, "the outcome poll's cadence is derived from the same one number");
 
-      const source = stripComments(await readFile(path.join(repoRoot, "ui/src/home/session-launcher.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "apps/ui/src/home/session-launcher.mjs"), "utf8"));
       assert.ok(source.replace(/\s+/g, "").length > 0, "the comment-stripped source is non-empty (the sweep is not blinded)");
       for (const literal of [/\b10000\b/, /\b15000\b/, /\b10\b/, /\b15\b/]) {
         assert.equal(literal.test(source), false, `neither deadline is a second literal (${literal})`);
       }
-      assert.equal(/from\s+["'][^"']*fleet\//.test(source), false, "and nothing is imported from ui/src/fleet/");
+      assert.equal(/from\s+["'][^"']*fleet\//.test(source), false, "and nothing is imported from apps/ui/src/fleet/");
       assert.ok(/HOME_POLL_MS \* 2/.test(source) && /HOME_POLL_MS \* 3/.test(source), "both are expressed in terms of HOME_POLL_MS");
 
       // The outcome poll lives in ONE home and STOPS when the window closes.
@@ -202,7 +202,7 @@ export const homeSessionLauncherStateTests = [
         if (row.machine.attempt != null) assert.deepEqual({ ...row.machine.attempt.request }, { nodeId: "n1", workspaceId: "ws-aof" }, `${row.label}: one request, unchanged`);
       }
       // …and the module cannot abort or re-send: it issues no request at all.
-      const source = stripComments(await readFile(path.join(repoRoot, "ui/src/home/session-launcher.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "apps/ui/src/home/session-launcher.mjs"), "utf8"));
       for (const forbidden of [/AbortController/, /\.abort\s*\(/, /\bfetch\s*\(/, /setTimeout|setInterval/]) {
         assert.equal(forbidden.test(source), false, `the decision module neither calls nor cancels anything (${forbidden})`);
       }

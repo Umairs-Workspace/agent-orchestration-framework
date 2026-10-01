@@ -5,10 +5,10 @@
 //  (spawning `aof mesh serve`/`aof mesh ui` on THIS machine). Assignment stays CLI-only
 //  (`aof mesh assign`, milestone 35), never dispatched from this surface."
 //
-// GUARD-IF-PRESENT (refine, pre-build): a clean no-op while `app/desktop/` is absent;
+// GUARD-IF-PRESENT (refine, pre-build): a clean no-op while `apps/desktop/` is absent;
 // a hard assertion the moment the crate lands. Green now, RED-if-violated once built.
 //
-// Proof, over every `app/desktop/**/*.rs` (Rust comments stripped): NO mesh-MUTATING
+// Proof, over every `apps/desktop/**/*.rs` (Rust comments stripped): NO mesh-MUTATING
 // verb is ever spawned. The allow-list of spawnable `aof mesh` verbs is EXACTLY
 // {status (read), serve (supervise), ui (supervise)}. A spawn of assign/issue/revoke/
 // invite/join is a read-only violation.
@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { matchedBraceBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const DESKTOP_DIR = path.join(repoRoot, "app", "desktop");
+const DESKTOP_DIR = path.join(repoRoot, "apps", "desktop");
 
 // The fleet-MUTATING mesh verbs the read-only app must NEVER spawn — argv-array form
 // (`["mesh","assign"`) and joined-string form (`mesh assign`).
@@ -106,7 +106,7 @@ export const rosterTests = [
     name: "arch/126 ADR-006 §8 (acd-desktop-read-only-fleet, EXTENDED): the spawnable-verb roster is an ALLOW-LIST of exactly four — mesh status, mesh serve, mesh ui, work loop — and nothing else",
     run: async () => {
       if (!(await dirExists(DESKTOP_DIR))) {
-        assert.equal(await dirExists(DESKTOP_DIR), false, "app/desktop/ absent (pre-build)");
+        assert.equal(await dirExists(DESKTOP_DIR), false, "apps/desktop/ absent (pre-build)");
         return;
       }
       const files = await collectRustFiles(DESKTOP_DIR);
@@ -209,7 +209,7 @@ export const archTests = [
     name: "arch/36 ADR-004 (acd-desktop-read-only-fleet): the app NEVER spawns a mesh-mutating verb (assign/issue/revoke/invite/join) — read-only over the fleet (guard-if-present)",
     run: async () => {
       if (!(await dirExists(DESKTOP_DIR))) {
-        assert.equal(await dirExists(DESKTOP_DIR), false, "app/desktop/ absent (pre-build); armed at build by story 00");
+        assert.equal(await dirExists(DESKTOP_DIR), false, "apps/desktop/ absent (pre-build); armed at build by story 00");
         return;
       }
       const files = await collectRustFiles(DESKTOP_DIR);

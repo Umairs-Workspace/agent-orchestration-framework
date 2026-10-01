@@ -391,6 +391,6 @@ export const yarnInstallationTests = [
     assert.match(config, new RegExp('yarn-' + pkg.packageManager.slice(5).replaceAll('.', '\\.') + '\\.cjs'));
     const { existsSync } = await import('node:fs');
     assert.equal(existsSync(path.join(root, 'package-lock.json')), false);
-    assert.equal(existsSync(path.join(root, 'ui/package-lock.json')), false);
+    assert.equal(existsSync(path.join(root, 'apps/ui/package-lock.json')), false);
   } },
 ];

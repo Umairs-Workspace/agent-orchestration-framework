@@ -2,7 +2,7 @@
 //
 // Every Scenario and every Examples ROW of
 // `wiki/work/50_milestone_session-launcher/stories/04_story_session-launcher-affordance/tasks/01_new-session-picker.feature`,
-// driven against the SHIPPED `ui/src/home/session-launcher.mjs` with literal
+// driven against the SHIPPED `apps/ui/src/home/session-launcher.mjs` with literal
 // `/api/mesh/status` payloads. Every `Then` reads a RETURNED VALUE or the REQUEST BODY the
 // module produces — no scenario reads a DOM node, a React state or a rendered string.
 //
@@ -31,7 +31,7 @@ import {
   launcherResolveSelection,
   launcherRest,
   sessionLauncherView,
-} from "../../ui/src/home/session-launcher.mjs";
+} from "../../apps/ui/src/home/session-launcher.mjs";
 
 // ── the payload, spelled the way the fleet face serves it ────────────────────────────────
 const node = (nodeId, freshness = "live", workspaceIds = []) => ({

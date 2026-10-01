@@ -3,7 +3,7 @@
 // deliverable of the story rather than a convenience).
 //
 // The mechanism is the shared core (./react-app-harness.mjs): the real,
-// unmodified `ui/src/board/Board.tsx` esbuild-bundled with its real siblings
+// unmodified `apps/ui/src/board/Board.tsx` esbuild-bundled with its real siblings
 // (BoardLanes, Overview, DetailPanel, ActionsStrip, Markdown, status.tsx,
 // freshness.mjs, api.ts …), a minimal React, an instrumented `fetch` onto the
 // real face's origin, and a controllable clock that ALSO owns `Date.now()`.
@@ -33,11 +33,11 @@ import { withMountedApp, findAll, textOf, visibleTextOf, FRAGMENT } from "./reac
 import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, XTERM_RESOLVE, XTERM_STUBS } from "./terminal-dom.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BOARD_TSX = path.join(repoRoot, "ui", "src", "board", "Board.tsx");
+const BOARD_TSX = path.join(repoRoot, "apps", "ui", "src", "board", "Board.tsx");
 
 // milestone 46 / story 04 — the stub RE-POINTS with the code. The board no longer owns a
-// terminal component: `ui/src/board/TerminalDock.tsx` is deleted and both surfaces mount the ONE
-// control at `ui/src/terminal/TerminalControl.tsx`. It is stubbed for the SAME reason its
+// terminal component: `apps/ui/src/board/TerminalDock.tsx` is deleted and both surfaces mount the ONE
+// control at `apps/ui/src/terminal/TerminalControl.tsx`. It is stubbed for the SAME reason its
 // predecessor was — it alone pulls `@xterm/*` x3, which want a real DOM — and rendering nothing
 // is exactly what the production control does for a mount with no panel to render.
 // The icons the board subtree imports today (ActionsStrip's `Send`; the control's six, kept so a

@@ -23,7 +23,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // read the REAL `/api/mesh/status` shaping (`queryGlobalMeshStatus`) — never a
 // hand-built assignment row asserted against itself. The render lanes drive the
 // framework-free `.mjs` helpers `FleetTerminalView.tsx` ITSELF imports (the
-// ui/src/board/terminal/*.mjs + test/session/terminal-dock.test.mjs house precedent) —
+// apps/ui/src/board/terminal/*.mjs + test/session/terminal-dock.test.mjs house precedent) —
 // headless, no browser — and the multiplex lane drives BOTH resolved URLs into the
 // REAL serveMeshUi `/ws/terminal-view` route over the REAL in-memory mirror.
 //
@@ -61,10 +61,10 @@ const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
 
 // ═══ RE-POINTED BY MILESTONE 46 / STORY 04, IN THE DIFF THAT DELETED THE MODULES ═════════════
-// `ui/src/fleet/terminal-view/` is gone. Its four behaviours went to two homes, and WHICH home
+// `apps/ui/src/fleet/terminal-view/` is gone. Its four behaviours went to two homes, and WHICH home
 // is the milestone's own argument:
 //   · FLEET-DOMAIN (they read `assignment.targetNodeId` / the m35 assignment chip) →
-//     `ui/src/fleet/terminal-mount.mjs`: `resolveTerminalStream`, `NO_STREAM`,
+//     `apps/ui/src/fleet/terminal-mount.mjs`: `resolveTerminalStream`, `NO_STREAM`,
 //     `terminalAssignmentReason`;
 //   · NOT fleet-domain → the SHARED core the board mounts too: the multiplex key is
 //     `terminalPaneKey` (keyed on the SOURCE's declared params rather than on one surface's
@@ -87,10 +87,10 @@ import {
   terminalAssignmentReason,
   fleetTerminalMount,
   NO_STREAM,
-} from "../../ui/src/fleet/terminal-mount.mjs";
-import { sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
-import { terminalSocketUrl } from "../../ui/src/terminal/socket-url.mjs";
-import { terminalPaneIdentity, terminalPaneKey } from "../../ui/src/terminal/pane-identity.mjs";
+} from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
+import { terminalPaneIdentity, terminalPaneKey } from "../../apps/ui/src/terminal/pane-identity.mjs";
 import {
   bindSource,
   applyTerminalEvent,
@@ -98,16 +98,16 @@ import {
   TERMINAL_EVENTS,
   TERMINAL_STATES,
   TRANSPORT_CAUSE_LINE,
-} from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
 import {
   TERMINAL_DOT_CLASS_DESTRUCTIVE,
   TERMINAL_DOT_CLASS_MUTED,
   TERMINAL_LABEL_CLASS_FAILURE,
-} from "../../ui/src/terminal/palette.mjs";
+} from "../../apps/ui/src/terminal/palette.mjs";
 
 const NOW = "2026-07-23T10:00:00.000Z";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const TERMINAL_DIR = path.join(repoRoot, "ui", "src", "terminal");
+const TERMINAL_DIR = path.join(repoRoot, "apps", "ui", "src", "terminal");
 const TERMINAL_CONTROL = path.join(TERMINAL_DIR, "TerminalControl.tsx");
 
 // The terminal surface is several components (the control, the identity chip, the byte
@@ -136,7 +136,7 @@ async function terminalBarSites() {
 }
 // m49/00 scenario 6 — the browser's own declaration of this wire (the OTHER half
 // of the same contract, asserted by a file's content and a build's exit code).
-const FLEET_API_TS = path.join(repoRoot, "ui", "src", "fleet", "api.ts");
+const FLEET_API_TS = path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts");
 
 // The `mirror` descriptor — the ONE source a fleet card mounts, taken as a WHOLE ROW off the
 // frozen table (never assembled: `acd-terminal-control-boundary`'s call-site ratchet refuses it).
@@ -191,8 +191,8 @@ function terminalStreamHeader(stream, { itemRef, assignmentId } = {}) {
 
 // lf(source) — CRLF-normalise before ANY cross-file text comparison (the normaliser
 // every arch test in this repo already carries; added here at the architect's N6,
-// 2026-07-23). This tree is MIXED: `ui/src/board/TerminalDock.tsx` is CRLF and
-// `ui/src/fleet/terminal-view/FleetTerminalView.tsx` is LF, so the theme/font
+// 2026-07-23). This tree is MIXED: `apps/ui/src/board/TerminalDock.tsx` is CRLF and
+// `apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx` is LF, so the theme/font
 // comparisons below were comparing raw bytes ACROSS line-ending regimes — green
 // today only because both matches happen to be single-line. Reformat either
 // declaration onto multiple lines and the lane fails on line endings ALONE, which
@@ -628,7 +628,7 @@ export const fleetTerminalViewSurfaceTests = [
       // `waiting for output` — a specific, checkable claim ("bytes are still
       // plausibly coming") that nothing had established, on a surface whose whole
       // discipline is never to assert a liveness the source does not. The house
-      // idiom (ui/src/fleet/assignments.mjs's UNKNOWN_CHIP, and the board run
+      // idiom (apps/ui/src/fleet/assignments.mjs's UNKNOWN_CHIP, and the board run
       // chip's fallback) labels itself `unknown`; so does this now.
       assert.equal(unknown.text, "unknown", "an unrecognised state names ITSELF — it never borrows a known state's words");
       assert.equal(unknown.state, "unknown");
@@ -814,7 +814,7 @@ export const fleetTerminalViewSurfaceTests = [
       // `descriptor.showsBar` is the structural anchor: it is what DECIDES the bar exists.
       const bars = await terminalBarSites();
       // A FLOOR AND A DECLARED CEILING, never a retyped count (FF-11902). The floor is the sweep's
-      // own non-vacuity: a bar site exists somewhere under ui/src/terminal. The ceiling is a
+      // own non-vacuity: a bar site exists somewhere under apps/ui/src/terminal. The ceiling is a
       // DECISION — ONE byte area, called by both surfaces — and a second copy is how the overlay
       // came to render one of the four treatments instead of all four. Every site found is judged.
       assert.ok(bars.length >= 1, `the sweep of ${TERMINAL_DIR} found no bar site keyed on descriptor.showsBar`);
@@ -999,7 +999,7 @@ export const fleetTerminalViewSurfaceTests = [
 
       // No terminal palette outside its one home: not one of DG-46-2's five hexes is typed here.
       const invented = (control.match(/#[0-9a-fA-F]{3,8}/g) ?? []).filter((hex) => !/^#[0-9a-fA-F]{6}$/.test(hex) || true);
-      assert.deepEqual(invented, [], "the one control invents — and types — NO colour of its own; every value is imported from ui/src/terminal/palette.mjs");
+      assert.deepEqual(invented, [], "the one control invents — and types — NO colour of its own; every value is imported from apps/ui/src/terminal/palette.mjs");
     },
   },
   {
@@ -1026,15 +1026,15 @@ export const fleetTerminalViewSurfaceTests = [
       // — the source table and the input policy are what a mount module asks — so the check is
       // over the whole production tree that reaches the folder, not over one file.
       const control = await readFile(TERMINAL_CONTROL, "utf8");
-      const boardMount = await readFile(path.join(repoRoot, "ui", "src", "board", "dock-mount.mjs"), "utf8");
-      const fleetMount = await readFile(path.join(repoRoot, "ui", "src", "fleet", "terminal-mount.mjs"), "utf8");
+      const boardMount = await readFile(path.join(repoRoot, "apps", "ui", "src", "board", "dock-mount.mjs"), "utf8");
+      const fleetMount = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "terminal-mount.mjs"), "utf8");
       const consumers = `${control}\n${boardMount}\n${fleetMount}`;
       for (const helper of helpers) {
         assert.ok(consumers.includes(`/${helper}`) || consumers.includes(`./${helper}`), `${helper} is imported by the control or by a call site's mount module`);
       }
       // And the fleet page MOUNTS the control (F-38.06c was a component-shaped hole; an unmounted
       // component would be the same hole one layer in).
-      const fleet = await readFile(path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx"), "utf8");
+      const fleet = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx"), "utf8");
       assert.ok(fleet.includes("TerminalControl"), "Fleet.tsx mounts the one terminal control from the work-item card");
       assert.ok(fleet.includes("fleetTerminalMount"), "…handing it the mount its own module computes");
     },
@@ -1043,7 +1043,7 @@ export const fleetTerminalViewSurfaceTests = [
     // The REAL half of the V3 step "…so `tsc -b && vite build` passes" (QA
     // SHOULD-FIX 1, 2026-07-23). The companion-presence lane above proves the FILES
     // are there; only the compiler proves they TYPE. This milestone's own F2 was
-    // exactly that gap — `ui/src/fleet/runs.mjs` shipped without its `.d.mts`, the
+    // exactly that gap — `apps/ui/src/fleet/runs.mjs` shipped without its `.d.mts`, the
     // node suite stayed green, and `tsc -b && vite build` failed on an implicit any.
     //
     // GUARD-IF-PRESENT, mirroring the cargo lanes in scripts/test.mjs: TypeScript is
@@ -1053,22 +1053,22 @@ export const fleetTerminalViewSurfaceTests = [
     // this process's own node (`process.execPath node_modules/typescript/bin/tsc`) —
     // never `npx` (policy-blocked, and it would resolve/fetch off-tree).
     //
-    // `-b ui` builds the ui/ solution (tsconfig.app.json + tsconfig.node.json). Both
+    // `-b apps/ui` builds the apps/ui/ solution (tsconfig.app.json + tsconfig.node.json). Both
     // are `noEmit` with their tsBuildInfoFile under an ignored node_modules/.tmp, so
     // this writes NOTHING into the tracked tree. `--force` defeats the incremental
     // cache: a lane that silently no-ops because a previous build left a fresh
     // .tsbuildinfo would be a hollow pass — the exact class of defect this file was
     // written to catch. Measured ~2s.
-    name: "task04/38-06 the typed UI build genuinely type-checks — `tsc -b ui` compiles the fleet terminal-view clean (guard-if-present; skips when TypeScript is not installed)",
+    name: "task04/38-06 the typed UI build genuinely type-checks — `tsc -b apps/ui` compiles the fleet terminal-view clean (guard-if-present; skips when TypeScript is not installed)",
     async run() {
       const tsc = path.join(repoRoot, "node_modules", "typescript", "bin", "tsc");
-      const solution = path.join(repoRoot, "ui", "tsconfig.json");
+      const solution = path.join(repoRoot, "apps", "ui", "tsconfig.json");
       if (!existsSync(tsc) || !existsSync(solution)) {
         // The honest-degrade path: announce the skip rather than pretend a pass.
-        console.log(`# skip - tsc -b ui (typescript=${existsSync(tsc)}, ui/tsconfig.json=${existsSync(solution)})`);
+        console.log(`# skip - tsc -b apps/ui (typescript=${existsSync(tsc)}, apps/ui/tsconfig.json=${existsSync(solution)})`);
         return;
       }
-      const result = spawnSync(process.execPath, [tsc, "-b", "ui", "--force"], {
+      const result = spawnSync(process.execPath, [tsc, "-b", "apps/ui", "--force"], {
         cwd: repoRoot,
         encoding: "utf8",
         timeout: 300000,
@@ -1334,7 +1334,7 @@ export const fleetTerminalViewSurfaceTests = [
     async run() {
       const source = lf(await readFile(FLEET_API_TS, "utf8"));
       const block = /export type WorkAssignment = \{\n([\s\S]*?)\n\};/.exec(source)?.[1];
-      assert.ok(block, "ui/src/fleet/api.ts declares the WorkAssignment type");
+      assert.ok(block, "apps/ui/src/fleet/api.ts declares the WorkAssignment type");
       const members = [...block.matchAll(/^ {2}(\w+)(\??): ([^;]+);$/gm)].map((match) => `${match[1]}${match[2]}: ${match[3]}`);
 
       // Every pre-existing member keeps its name, its type and its position; `code`
@@ -1372,15 +1372,15 @@ export const fleetTerminalViewSurfaceTests = [
     // toolchain it never installed), same direct `node node_modules/typescript/bin/tsc`
     // invocation (never `npx` — policy-blocked and off-tree), same `--force` so a
     // stale .tsbuildinfo cannot hollow the pass.
-    name: "task00/49-00 the typed UI build over `ui/` exits zero with the new wire member — `tsc -b ui --force` (guard-if-present; skips when TypeScript is not installed)",
+    name: "task00/49-00 the typed UI build over `apps/ui/` exits zero with the new wire member — `tsc -b apps/ui --force` (guard-if-present; skips when TypeScript is not installed)",
     async run() {
       const tsc = path.join(repoRoot, "node_modules", "typescript", "bin", "tsc");
-      const solution = path.join(repoRoot, "ui", "tsconfig.json");
+      const solution = path.join(repoRoot, "apps", "ui", "tsconfig.json");
       if (!existsSync(tsc) || !existsSync(solution)) {
-        console.log(`# skip - tsc -b ui (typescript=${existsSync(tsc)}, ui/tsconfig.json=${existsSync(solution)})`);
+        console.log(`# skip - tsc -b apps/ui (typescript=${existsSync(tsc)}, apps/ui/tsconfig.json=${existsSync(solution)})`);
         return;
       }
-      const result = spawnSync(process.execPath, [tsc, "-b", "ui", "--force"], {
+      const result = spawnSync(process.execPath, [tsc, "-b", "apps/ui", "--force"], {
         cwd: repoRoot,
         encoding: "utf8",
         timeout: 300000,

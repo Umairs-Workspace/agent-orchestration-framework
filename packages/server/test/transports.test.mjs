@@ -36,7 +36,7 @@ test('HTTP composition shares one origin for command routes, config and static a
 }));
 
 test('board probe does not launch or trust a workspace and launch forwards the supplied origin',()=>scratch(async root=>{
- const dist=path.join(root,'ui','dist');await mkdir(dist,{recursive:true});await writeFile(path.join(dist,'index.html'),'fixture');
+ const dist=path.join(root,'apps','ui','dist');await mkdir(dist,{recursive:true});await writeFile(path.join(dist,'index.html'),'fixture');
  const calls=[],trust=()=>{};const api=createBoardServer({assetPath:()=>dist,ensureWorktreeTrusted:trust,serveSetupUi:async(catalog,options)=>{calls.push({catalog,options});return {server:'fixture',url:'http://127.0.0.1:4321/'};}});
  assert.equal(api.boardUiProbe({projectDir:root,repoRoot:root}).uiBuildPresent,true);assert.deepEqual(calls,[]);
  const fleetOrigin={origin:'http://127.0.0.1:4567',source:'launcher'};

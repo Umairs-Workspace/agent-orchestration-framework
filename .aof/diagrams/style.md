@@ -4,7 +4,7 @@
 ADR-009). It is a complete style guide in the structure of the diagram skill's own
 `references/style-guide.md`, and `aof diagram plan` hands its path to the drawing agent as the
 effective style, which pre-empts the skill's onboarding step. Every value traces to the web
-console's design tokens in `ui/src/index.css` (the `@theme` block), so a diagram reads as part of
+console's design tokens in `apps/ui/src/index.css` (the `@theme` block), so a diagram reads as part of
 the console it is shown in.
 
 ---

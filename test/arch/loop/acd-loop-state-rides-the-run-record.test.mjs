@@ -57,10 +57,10 @@ async function normalizedDigest(file) {
 // can hand it an edited tree in memory and watch it refuse. The tree is git's TRACKED list read from
 // the working tree: path then LF-normalised content, in path order.
 async function uiTreePairs() {
-  const manifest = JSON.parse(await readFile(path.join(root, "ui/package.json"), "utf8"));
+  const manifest = JSON.parse(await readFile(path.join(root, "apps/ui/package.json"), "utf8"));
   // Include the new public development helper before it enters the Git index too.
-  const publicFiles = Object.values(manifest.exports ?? {}).map(target => path.resolve(root, "ui", target));
-  const files = [...new Set([...trackedFilesUnder(path.join(root, "ui")), ...publicFiles])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
+  const publicFiles = Object.values(manifest.exports ?? {}).map(target => path.resolve(root, "apps", "ui", target));
+  const files = [...new Set([...trackedFilesUnder(path.join(root, "apps", "ui")), ...publicFiles])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   return Promise.all(files.map(async (file) => [path.relative(root, file).replaceAll("\\", "/"), await readFile(file, "utf8")]));
 }
 
@@ -72,52 +72,58 @@ function assertUiFrozen(pairs) {
     // dependency. Normalize only those exact ownership edits; the UI behavior
     // and every other byte still have to match the existing frozen digest.
     let normalized = content.replace(/\r\n/gu, "\n");
-    if (rel === "ui/src/board/action.mjs") normalized = normalized.replace('"@aof/messaging/form"', '"../../../src/notify/form.mjs"');
-    if (rel === "ui/package.json") normalized = normalized.replace('    "@aof/messaging": "workspace:*",\n', '');
+    if (rel === "apps/ui/src/board/action.mjs") normalized = normalized.replace('"@aof/messaging/form"', '"../../../src/notify/form.mjs"');
+    if (rel === "apps/ui/package.json") normalized = normalized.replace('    "@aof/messaging": "workspace:*",\n', '');
     hash.update(normalized);
     hash.update("\0");
   }
-  // RE-PINNED by 119/01 — 11 lines across 9 files under `ui/src/{board,fleet,home,terminal}/`,
+  // RE-PINNED by 119/01 — 11 lines across 9 files under `apps/ui/src/{board,fleet,home,terminal}/`,
   // in `.ts`, `.mjs` and `.d.mts`. EVERY ONE is a comment citation of a module this story
   // moved (`packages/core/src/mesh-*` -> `packages/core/src/mesh/*`, `packages/core/src/board-worker-stream.mjs` -> `packages/core/src/cache-read.mjs`);
   // no component, style, route, export or behaviour changed. `git diff 7893d02c..HEAD -- ui/`
   // is the whole of it, and it is the diff to read before accepting this pin.
   //
   // RE-PINNED AGAIN by 119/03, same species and the same test applied: 12 files under
-  // `ui/src/{app,fleet,home,terminal}/`, 36 changed lines, and EVERY ONE is a comment citation
+  // `apps/ui/src/{app,fleet,home,terminal}/`, 36 changed lines, and EVERY ONE is a comment citation
   // of a SUITE this story moved (`test/x.test.mjs` -> `test/<subject>/x.test.mjs`). Measured
   // rather than asserted — `git show adca2f80 -- ui/` filtered to non-comment changed lines is
   // EMPTY — so the zero-board-change contract holds and only the pin moves. That measurement is
   // the condition of accepting this pin: a re-pin taken without it converts the freeze into a
   // rubber stamp, which is the one way a digest gate quietly stops being one.
   // RE-PINNED 2026-09-11 for an operator-requested FLEET change, and the contract this pin
-  // guards is measured intact: `git diff -- ui/` is five files, all under `ui/src/fleet/`
+  // guards is measured intact: `git diff -- ui/` is five files, all under `apps/ui/src/fleet/`
   // (`scope.mjs` + `.d.mts`, `Fleet.tsx`, `RepoPicker.tsx`, `FilterBanner.tsx`) — a third
   // narrowing over milestone rows by work status, open by default, and the workspace cards
-  // as a second door into the repo narrowing. NOTHING under `ui/src/board/` moved, no run
+  // as a second door into the repo narrowing. NOTHING under `apps/ui/src/board/` moved, no run
   // record key is read that was not read before, and the loop's state still rides the run
   // record with no face of its own — which is what 53/ADR-004 froze this tree to protect.
   // The pin is a proxy for that contract, not for the fleet's look; it moves with the diff.
   //
   // RE-PINNED by 127/04 (ADR-006 §2–§4; DESIGN.md surfaces 1 and 2), measured the same way:
-  // `git diff d7806cb..b8cd0a1 -- ui/` is 9 files, 376 insertions, all under `ui/src/board/`
+  // `git diff d7806cb..b8cd0a1 -- ui/` is 9 files, 376 insertions, all under `apps/ui/src/board/`
   // (`ArchivedPill.tsx` new; `Board.tsx`, `BoardLanes.tsx`, `DetailPanel.tsx`, `Overview.tsx`,
-  // `api.ts`, `model.ts`) and `ui/src/fleet/{api.ts,scope.mjs}` — the backlog rows, the
+  // `api.ts`, `model.ts`) and `apps/ui/src/fleet/{api.ts,scope.mjs}` — the backlog rows, the
   // `Show archived` toggle threading `includeArchived` into the LIST request, the archived pill,
   // and the fleet's backlog partition. Filtered to added lines that name a run record (`runs`,
   // `runId`, `run.state`, `run.brief`, `heartbeat`, `retryOf`) the diff is EMPTY: the board reads
   // the WORK LIST differently and no run-record key it did not read before, so the loop's state
   // still rides the run record with no face of its own. Re-pinned at aof:verify 127.
   //
+  // RE-PINNED by 142 Plan 04: `ui/` moved to `apps/ui/` (paths are part of the digest). Measured the same way:
+  // `git diff -M HEAD` over the moved tree, filtered to non-comment changed lines, is EMPTY apart from one CSS
+  // comment continuation, plus the two developer-facing citations inside `shell-layout.mjs`'s refusal text (now
+  // `apps/ui/src/...`; the dock test asserts the new path). The config editor placeholder `e.g. src, ui/src` is an
+  // example path scope for the operator's own repository, not this tree, and was left untouched on purpose.
+  //
   // RE-PINNED by 130/03 (ADR-005 §5-§6; ADR-006 §3), measured the same way: `git diff -- ui/`
-  // is EIGHT files, all under `ui/src/fleet/` — `api.ts`, `runs.mjs`, `runs.d.mts`,
+  // is EIGHT files, all under `apps/ui/src/fleet/` — `api.ts`, `runs.mjs`, `runs.d.mts`,
   // `scope.mjs`, `scope.d.mts`, `Fleet.tsx` (the six the ADR named) plus
   // `assign-affordance.mjs` and `assign-affordance.d.mts` (the one orchestrator generalised
   // by two additive options, `refusalCopy` / `timedOut`, so the loop line's Stop rides the
   // assign affordance's machine instead of a second copy of its deadline race). It is the
   // fleet node card's loop line and its Stop: `presence.loops[]` rendered beside the pinned
   // current-work lines, ONE button on the serving node's card, `fleetApi.loopStop` the one
-  // fetch. NOTHING under `ui/src/board/` moved (`git diff -- ui/src/board/` is empty);
+  // fetch. NOTHING under `apps/ui/src/board/` moved (`git diff -- apps/ui/src/board/` is empty);
   // `packages/core/src/board-ui.mjs`'s digest above is UNCHANGED (959ebf96…), as is `packages/core/src/run-store.mjs`'s;
   // and the `ui/` diff reads NO run record at all — every `runId` it names is a field of the
   // presence record's additive `loops[]` entry (the node's projection of its own run
@@ -126,12 +132,12 @@ function assertUiFrozen(pairs) {
   // BOARD_DEFERRED; no `/api/work/loop` exists.
   //
   // RE-PINNED by the placeholder-node-name rename (2026-09-23, operator request), measured the
-  // same way: `git diff -- ui/` is ONE file, `ui/src/fleet/assign-affordance.mjs`, 4 lines,
+  // same way: `git diff -- ui/` is ONE file, `apps/ui/src/fleet/assign-affordance.mjs`, 4 lines,
   // all COMMENTS — a fixture node name in prose, swapped for a same-length placeholder. No
-  // code moved, nothing under `ui/src/board/`, no run-record key read.
+  // code moved, nothing under `apps/ui/src/board/`, no run-record key read.
   //
   // RE-PINNED by 133/04 (ADR-007 §3-§5; DESIGN §"Surface — the ARCHITECTURE tab"), measured the same
-  // way: `git diff -- ui/` is FIVE files, all under `ui/src/board/` — `diagrams.mjs` + `.d.mts`
+  // way: `git diff -- ui/` is FIVE files, all under `apps/ui/src/board/` — `diagrams.mjs` + `.d.mts`
   // (new; the figure states, markup and renderer), `Markdown.tsx` (an optional `images` prop and
   // the `DiagramMarkdown` wrapper), `api.ts` (`ARCHITECTURE` in `DocName`, an optional member on
   // `doc`) and `DetailPanel.tsx` (the tab, the Records row, one call). Filtered to added lines that
@@ -140,7 +146,7 @@ function assertUiFrozen(pairs) {
   // run-record key is read, and the loop's state still rides the run record with no face of its own.
   //
   // RE-PINNED at `aof:verify 133` (F-133-01/02, story 04 task 03), measured the same way: THREE
-  // files, all under `ui/src/board/` — `diagrams.mjs` + `.d.mts` (the expand hook on a populated
+  // files, all under `apps/ui/src/board/` — `diagrams.mjs` + `.d.mts` (the expand hook on a populated
   // figure, `diagramFileUrl`, and a `link` override that points the block's `diagrams/` links at
   // `/api/diagram/file`), `Markdown.tsx` (the full-size `DiagramViewer` over the same data URI, presented as the shell's fullscreen occupant through `requestFullscreen`)
   // and `DetailPanel.tsx` (one `itemRef` prop on the one call). The run-key filter over the
@@ -148,7 +154,7 @@ function assertUiFrozen(pairs) {
   //
   // RE-PINNED by 131/05 (ADR-006 §2, §4; DESIGN §1): an ask face, not a loop face. Measured the
   // same way, with `AskCard.tsx` in the index: `git diff --numstat -- ui/` is SIX files, all
-  // under `ui/src/board/` — `AskCard.tsx` (new, 122), `DetailPanel.tsx` (+2: the import and the
+  // under `apps/ui/src/board/` — `AskCard.tsx` (new, 122), `DetailPanel.tsx` (+2: the import and the
   // mount), `action.mjs` (+89 −1: `askCardState` and the header relabel), `action.d.mts` (+33 −2),
   // `api.ts` (+47: `AskFact`, `AnswerDocument`, `workApi.answer`) and `Board.tsx` (+5 −3: the
   // silent list poll also arms while a row carries an ask, and its comment). What it reads is the ask
@@ -160,7 +166,7 @@ function assertUiFrozen(pairs) {
   // 142/06 adds explicit exports and the Node-only vite-cli development helper.
   // The helper resolves Vite from its UI owner; browser sources, styles and run/board reads
   // are unchanged. The complete remaining tree, including this public helper, stays pinned.
-  assert.equal(hash.digest("hex"), "ba426252f2c166a955b832464175279b6593c4b41d5c177093c816adf75c9a68", "ui/ changed despite the zero-board-change contract");
+  assert.equal(hash.digest("hex"), "181fc1551816aa14a999d634ae56bfe4726a8827687afa79260632273051f0ac", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -299,13 +305,13 @@ export const archTests = [
   },
   {
     // 131/05 task 03 — the re-pin did not loosen the freeze: one character appended to any tracked
-    // `ui/src` file, in memory and one file at a time, turns the pinned assertion red.
-    name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): a one-character edit to any file under ui/src turns the ui/ freeze red",
+    // `apps/ui/src` file, in memory and one file at a time, turns the pinned assertion red.
+    name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): a one-character edit to any file under apps/ui/src turns the ui/ freeze red",
     run: async () => {
       const pairs = await uiTreePairs();
       assertUiFrozen(pairs);
-      const sources = pairs.map(([rel], index) => [rel, index]).filter(([rel]) => rel.startsWith("ui/src/"));
-      assert.ok(sources.length > 100, `every ui/src file is edited in turn: ${sources.length}`);
+      const sources = pairs.map(([rel], index) => [rel, index]).filter(([rel]) => rel.startsWith("apps/ui/src/"));
+      assert.ok(sources.length > 100, `every apps/ui/src file is edited in turn: ${sources.length}`);
       for (const [rel, index] of sources) {
         const edited = pairs.map((pair, at) => (at === index ? [pair[0], `${pair[1]}x`] : pair));
         assert.throws(() => assertUiFrozen(edited), /ui\/ changed despite the zero-board-change contract/u, `${rel} + one character is caught`);

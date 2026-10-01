@@ -1,7 +1,7 @@
 // src/notify/form.mjs — THE ONE SHAPE OF AN ASK, SHARED BY EVERY FACE (milestone 131; ADR-006 §1,
 // DESIGN "The one shape"). The terminal's account line, the Discord message and the board's card
 // all read these six functions, so the event phrases and the elapsed ladder are spelled HERE and
-// nowhere else. Pure and zero-import on purpose: the board imports this file from outside `ui/src`
+// nowhere else. Pure and zero-import on purpose: the board imports this file from outside `apps/ui/src`
 // (the one such import, fenced by FF-13108), and a formatter that imported anything would drag that
 // dependency into the browser bundle.
 //

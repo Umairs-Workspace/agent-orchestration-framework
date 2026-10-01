@@ -13,7 +13,7 @@
 //   (2) THE FRESHNESS VERDICT. `cacheFreshness` is `src/`'s DEFINITION OF RECORD for the
 //       verdict — not, today, a predicate any production reader in `src/` calls. The wire
 //       carries FACTS (`syncedAt`, `reportedBy`) plus the window, and every verdict this
-//       milestone renders is computed client-side by `ui/src/board/freshness.mjs`, which is
+//       milestone renders is computed client-side by `apps/ui/src/board/freshness.mjs`, which is
 //       ADR-006's own architecture rather than an oversight. It lives here so that the first
 //       server-side reader that needs a verdict — a CLI freshness view, doctor — reaches for
 //       this instead of hand-rolling a comparison, and so the shape the browser must agree

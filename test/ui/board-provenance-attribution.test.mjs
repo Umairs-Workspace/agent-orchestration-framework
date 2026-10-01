@@ -68,7 +68,7 @@
 // judged SEPARATELY, and the reworded placeholder's exact sentence shape and
 // dashed treatment — is asserted verbatim; only the doc's NAME differs.
 import assert from "node:assert/strict";
-import { freshness } from "../../ui/src/board/freshness.mjs";
+import { freshness } from "../../apps/ui/src/board/freshness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";

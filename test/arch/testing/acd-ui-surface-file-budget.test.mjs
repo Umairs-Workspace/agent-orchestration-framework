@@ -11,9 +11,9 @@
 // Measured 2026-08-03 across the repo's own history:
 //
 //   file                            m03      m26      07-30    43/03    43/04
-//   ui/src/board/DetailPanel.tsx     434      707        814      839    1,123   +284 (+34%)
-//   ui/src/fleet/Fleet.tsx             —      508      1,463    1,463    1,521    +58
-//   ui/src/board/Board.tsx           315      367        437      485      581    +96
+//   apps/ui/src/board/DetailPanel.tsx     434      707        814      839    1,123   +284 (+34%)
+//   apps/ui/src/fleet/Fleet.tsx             —      508      1,463    1,463    1,521    +58
+//   apps/ui/src/board/Board.tsx           315      367        437      485      581    +96
 //
 // DetailPanel grew MORE in story 43/04 alone (+284) than in the whole month before it
 // (+132), and crossed 1,000 lines in that one diff. That is B4's own curve, one layer over.
@@ -38,7 +38,7 @@
 //     belongs in another module — that is the ratchet working." Raising a number here is a
 //     decision that needs an ADR, not a diff.
 //
-// `ui/src/board/Board.tsx` is deliberately NOT capped, and the reason is on the record so a
+// `apps/ui/src/board/Board.tsx` is deliberately NOT capped, and the reason is on the record so a
 // later reviewer meets the decision rather than the omission: it is the composition ROOT.
 // Its +96 is almost entirely prop threading (`freshnessOf`, `pollMs`, `onResyncWatch`) and
 // two effects, which is what a root is FOR — capping it would push state back down into the
@@ -47,7 +47,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-// ONE predicate for "what counts as a ui/src source file", shared with m49's
+// ONE predicate for "what counts as a apps/ui/src source file", shared with m49's
 // `acd-ui-directory-budget` (the per-DIRECTORY half of the same ratchet). Extracted 2026-08-13
 // rather than re-typed there: two copies of this regex is how the per-file gate and the
 // per-directory gate come to report different totals for the same tree.
@@ -59,7 +59,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // read cannot turn a ceiling into a silent pass on a file that is no longer there.
 const BUDGETS = [
   {
-    file: "ui/src/board/DetailPanel.tsx",
+    file: "apps/ui/src/board/DetailPanel.tsx",
     ceiling: 1000,
     floor: 400,
     // Set BELOW the delivered 1,123 on purpose (ADR-015/F2): the extraction of
@@ -70,7 +70,7 @@ const BUDGETS = [
     why: "the board's detail panel — it hosts the header, the provenance box, four doc tabs, the tasks view and the runs view; each milestone adds one more region. `ProvenanceLine` belongs in its own module (its pure half already is: ./resync.mjs), called from here.",
   },
   {
-    file: "ui/src/fleet/Fleet.tsx",
+    file: "apps/ui/src/fleet/Fleet.tsx",
     ceiling: 1560,
     floor: 600,
     // Set just ABOVE the delivered 1,521, and that asymmetry with DetailPanel is
@@ -79,11 +79,11 @@ const BUDGETS = [
     why: "the largest file in ui/ (508 -> 1,521). Its regions — nodes, boards, milestones, the assign affordance, diagnostics, the legend — are already separate components in one file; the next one belongs in its own.",
   },
   {
-    file: "ui/src/config/App.tsx",
+    file: "apps/ui/src/config/App.tsx",
     ceiling: 1300,
     floor: 500,
     // Added 2026-08-07 at the architect's structural review of 45/03, the milestone that
-    // MADE this a file: `<App>` was 1,260 of `ui/src/main.tsx`'s 1,267 lines, so the
+    // MADE this a file: `<App>` was 1,260 of `apps/ui/src/main.tsx`'s 1,267 lines, so the
     // second-largest surface in `ui/` has never been visible to this ratchet — the budget
     // could not name a file that did not exist. It does now (1,276 lines), and the moment
     // a thing becomes a file is the moment to cap it.
@@ -92,14 +92,14 @@ const BUDGETS = [
     // surface without touching one view of it (SPEC: "re-skinning the config editor is out
     // of scope"), so its size is debt that story did not create and must not be made to
     // pay. The ceiling holds the line for the NEXT author instead.
-    why: "the config editor — one file holding the sidebar, the section editors, the resource editors, the review panel and every dialog. Each milestone that adds a config section adds another block here; the next one belongs in its own module under ui/src/config/.",
+    why: "the config editor — one file holding the sidebar, the section editors, the resource editors, the review panel and every dialog. Each milestone that adds a config section adds another block here; the next one belongs in its own module under apps/ui/src/config/.",
   },
   {
-    file: "ui/src/terminal/TerminalControl.tsx",
+    file: "apps/ui/src/terminal/TerminalControl.tsx",
     ceiling: 840,
     floor: 300,
     // Added 2026-08-08 at milestone 46 / story 04's delivery, the story that MADE this a file —
-    // the same rule that added `ui/src/config/App.tsx` at m45's structural review: the moment a
+    // the same rule that added `apps/ui/src/config/App.tsx` at m45's structural review: the moment a
     // thing becomes a file is the moment to cap it, and 46's own ARCHITECTURE §Codebase health
     // finding 2 REQUIRED the entry rather than leaving it to be discovered.
     //
@@ -115,13 +115,13 @@ const BUDGETS = [
     // move deliberately — the 80x24 two-machine soak (why a `mirror` scales and must never
     // reflow) and the collapse-must-not-tear-the-session-down rule. A diff that fits under this
     // number by removing either has raised the real cost while lowering the measured one.
-    why: "the ONE terminal control — three hosts (the board dock, the fleet card peek, the fullscreen overlay) of one component. Its LOGIC already lives in ui/src/terminal/*.mjs by ADR-001's invariant, so growth here is JSX: the next region belongs in a sibling component with a prop boundary, not another block.",
+    why: "the ONE terminal control — three hosts (the board dock, the fleet card peek, the fullscreen overlay) of one component. Its LOGIC already lives in apps/ui/src/terminal/*.mjs by ADR-001's invariant, so growth here is JSX: the next region belongs in a sibling component with a prop boundary, not another block.",
   },
   {
-    file: "ui/src/app/Shell.tsx",
+    file: "apps/ui/src/app/Shell.tsx",
     ceiling: 860,
     floor: 400,
-    // LOWERED 940 -> 860 on 2026-09-12, when the nav was CUT to ui/src/app/ShellNav.tsx — the
+    // LOWERED 940 -> 860 on 2026-09-12, when the nav was CUT to apps/ui/src/app/ShellNav.tsx — the
     // first of the two cuts this entry's own `why` names. The shell sat at 929 and DG-45-5's
     // producer (the origin probe) needed a home; the cut took the nav and its probe out
     // together (847 delivered). The ceiling follows the delivered size DOWN, the direction
@@ -130,7 +130,7 @@ const BUDGETS = [
     //
     // Added 2026-08-08 at milestone 46 / story 05's delivery, and it was a NAMED OBLIGATION of
     // that story rather than a discovery: 46/ARCHITECTURE §Codebase health finding 5 recorded
-    // that `ui/src/app/Shell.tsx` (842) and `shell-layout.mjs` (845) arrived in m45 "new, large,
+    // that `apps/ui/src/app/Shell.tsx` (842) and `shell-layout.mjs` (845) arrived in m45 "new, large,
     // and unbudgeted", and routed the entry CONDITIONALLY — "if m46's dock-host work touches
     // Shell.tsx, that story adds the budget entry at delivery". ADR-009 touched it (the third
     // contribution slot, the published dock inset, the occupant-owned chrome), so here it is.
@@ -145,10 +145,10 @@ const BUDGETS = [
     // the NEXT author — and the shell has three more milestones queued against it (47's repo
     // filter, 49's terminal grid), which is exactly the "one justified block at a time" curve
     // ADR-015/F2 exists to interrupt.
-    why: "the app shell — five rows, the nav, the not-found and landing states, the surface-crash boundary, the fullscreen adoption slot and now the dock's overlay host. Its DECISIONS already live in ui/src/app/shell-layout.mjs and shell-nav.mjs by ADR-005's invariant, so growth here is DOM: the next region belongs in a sibling component (the top bar and the nav are the two obvious cuts), not another block inside the root.",
+    why: "the app shell — five rows, the nav, the not-found and landing states, the surface-crash boundary, the fullscreen adoption slot and now the dock's overlay host. Its DECISIONS already live in apps/ui/src/app/shell-layout.mjs and shell-nav.mjs by ADR-005's invariant, so growth here is DOM: the next region belongs in a sibling component (the top bar and the nav are the two obvious cuts), not another block inside the root.",
   },
   {
-    file: "ui/src/app/shell-layout.mjs",
+    file: "apps/ui/src/app/shell-layout.mjs",
     ceiling: 1060,
     floor: 400,
     // Added 2026-08-08 alongside `Shell.tsx`, and it should have been added WITH it: 46's health
@@ -164,12 +164,12 @@ const BUDGETS = [
     why: "the shell's whole layout vocabulary in one module — the regions and rows, the published chrome height and its budget, the content modes, the closed z ladder and the fullscreen state machine. Every downstream milestone binds to these names, which is exactly why the next vocabulary belongs in its own module beside this one (`shell-fullscreen.mjs` is the obvious first cut) rather than appended here.",
   },
   {
-    file: "ui/src/home/session-launcher.mjs",
+    file: "apps/ui/src/home/session-launcher.mjs",
     ceiling: 840,
     floor: 400,
     // Added 2026-08-14 at milestone 50 / story 04's structural review, and it is owed by THIS
     // story under this table's own rule — "This entry is imposed by the milestone that edited
-    // the file" (see `ui/src/app/Shell.tsx` above). The file is the story's own creation.
+    // the file" (see `apps/ui/src/app/Shell.tsx` above). The file is the story's own creation.
     //
     // IT WAS AT EXACTLY THE THRESHOLD, WHICH IS THE WORST PLACE TO BE. Measured by the sweep's
     // own arithmetic (`source.split(/\r?\n/).length`) the module is 800 lines, and the sweep
@@ -180,7 +180,7 @@ const BUDGETS = [
     // is documented NOT to be. A table row costs one diff; that experience costs a reader.
     //
     // THE ROW IS THE FIX, AND SPLITTING THE MODULE WOULD NOT BE. 50/ADR-008 decision 10 raised
-    // `ui/src/home/` from 15 to 18 files with allowance 0 and argued the raise BEFORE the files
+    // `apps/ui/src/home/` from 15 to 18 files with allowance 0 and argued the raise BEFORE the files
     // existed — its closing sentence is that the domain now has a reader set and one writer and
     // "the NEXT member is still a split". A 19th file added by the very story that argued that
     // ceiling would re-open the conversation in the same milestone that had it, and would do it
@@ -202,24 +202,24 @@ const BUDGETS = [
 // was named beside `Shell.tsx` in 46's own health findings and still arrived here unbudgeted,
 // because the routing sentence only mentioned the other one.
 //
-// So the table itself is now ratcheted: any `ui/src` file over the threshold must CARRY an entry.
+// So the table itself is now ratcheted: any `apps/ui/src` file over the threshold must CARRY an entry.
 // The threshold is deliberately below every current ceiling — it is a "declare your intent" line,
 // not a size limit — so crossing it costs one table row with a stated reason, and nothing else.
 const BUDGET_REQUIRED_ABOVE = 800;
 
-// ── AND NO ui/src SOURCE FILE MAY BE BINARY TO GIT ──────────────────────────────────────────────
+// ── AND NO apps/ui/src SOURCE FILE MAY BE BINARY TO GIT ──────────────────────────────────────────────
 //
 // Added 2026-08-13 (m49/02, architect's review), as the N+1th instance of a defect this gate is the
-// natural home for: it already reads every `ui/src` source file, and a file it measures in LINES
+// natural home for: it already reads every `apps/ui/src` source file, and a file it measures in LINES
 // must be a file a reviewer can READ AS LINES.
 //
 // THE MEASURED INSTANCE. Two production modules of milestone 49 shipped with a RAW U+0000 byte as
-// the pane-key separator (`ui/src/home/socket-cap.mjs`, `ui/src/home/layout.mjs`) instead of the
+// the pane-key separator (`apps/ui/src/home/socket-cap.mjs`, `apps/ui/src/home/layout.mjs`) instead of the
 // source-level escape `"\0"`. The runtime key is identical; everything else is not:
 //   ·  git calls the file `Bin 0 -> 14098 bytes` — `git diff` shows NO CONTENT, `git log -p` shows
 //      none, `git blame` cannot run, and a PR review of the milestone's critical-path arbiter is a
 //      file name and a byte count.
-//   ·  ripgrep SKIPS a binary file silently, so `git grep -n MAX_LIVE_PANES -- ui/src/home/`
+//   ·  ripgrep SKIPS a binary file silently, so `git grep -n MAX_LIVE_PANES -- apps/ui/src/home/`
 //      answered `Binary file … matches` and a plain `rg` sweep answers NOTHING AT ALL — in a repo
 //      whose ADRs are routinely argued from grep-verified absence claims. A gate that sweeps
 //      sources would read one too (`readFile(…, "utf8")` yields U+FFFD, so a text clause looking
@@ -233,7 +233,7 @@ export const BINARY_BYTE = String.fromCharCode(0);
 export function binaryUiSourceViolations(files) {
   const swept = Array.isArray(files) ? files : [];
   if (swept.length === 0) {
-    return ["NO ui/src files were handed to the binary-source detector — an absence sweep over an empty set is a green run that asserted nothing."];
+    return ["NO apps/ui/src files were handed to the binary-source detector — an absence sweep over an empty set is a green run that asserted nothing."];
   }
   const violations = [];
   for (const file of swept) {
@@ -292,7 +292,7 @@ export const archTests = [
   },
 
   {
-    name: `arch/43 ADR-015/F2 (acd-ui-surface-file-budget): EVERY ui/src file over ${BUDGET_REQUIRED_ABOVE} lines carries a budget entry — the ratchet is not a thing a reviewer has to remember`,
+    name: `arch/43 ADR-015/F2 (acd-ui-surface-file-budget): EVERY apps/ui/src file over ${BUDGET_REQUIRED_ABOVE} lines carries a budget entry — the ratchet is not a thing a reviewer has to remember`,
     run: async () => {
       const budgeted = new Set(BUDGETS.map((budget) => budget.file));
       const unbudgeted = [];
@@ -309,17 +309,17 @@ export const archTests = [
           if (lines > BUDGET_REQUIRED_ABOVE && !budgeted.has(next)) unbudgeted.push(`${next} (${lines} lines)`);
         }
       };
-      await walk("ui/src");
+      await walk("apps/ui/src");
 
       assert.deepEqual(
         unbudgeted,
         [],
-        `these ui/src modules are over ${BUDGET_REQUIRED_ABOVE} lines and carry NO budget entry: ${unbudgeted.join(", ")}.\n`
+        `these apps/ui/src modules are over ${BUDGET_REQUIRED_ABOVE} lines and carry NO budget entry: ${unbudgeted.join(", ")}.\n`
           + "Add one to BUDGETS with a ceiling just above its delivered size and a `why` naming the NEXT extraction — that is one table row, and it is the whole cost. This clause exists because every existing entry was added by a reviewer happening to notice, and that process demonstrably misses one: 46's own health finding named `shell-layout.mjs` beside `Shell.tsx` and it still arrived unbudgeted while growing 845 -> 1,006 lines in a single story.",
       );
 
       // NON-VACUOUS: the sweep really walked the tree and really found the files it is meant to
-      // see. A rename of `ui/src` would otherwise empty the loop and leave a guard that guards
+      // see. A rename of `apps/ui/src` would otherwise empty the loop and leave a guard that guards
       // nothing — the exact shape m46 keeps finding.
       let scanned = 0;
       const count = async (relative) => {
@@ -328,8 +328,8 @@ export const archTests = [
           else if (isUiSourceFile(entry.name)) scanned += 1;
         }
       };
-      await count("ui/src");
-      assert.ok(scanned > 50, `ui/src was actually walked: ${scanned} modules`);
+      await count("apps/ui/src");
+      assert.ok(scanned > 50, `apps/ui/src was actually walked: ${scanned} modules`);
       assert.ok(
         BUDGETS.every((budget) => budget.ceiling > BUDGET_REQUIRED_ABOVE || budget.floor < BUDGET_REQUIRED_ABOVE),
         "the declare-your-intent threshold sits below every ceiling, so crossing it is a table row rather than a size limit",
@@ -338,7 +338,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/49 (acd-ui-surface-file-budget): NO ui/src source file is BINARY to git — a raw U+0000 byte makes a module undiffable and invisible to ripgrep, and the escape `\\0` is the same string",
+    name: "arch/49 (acd-ui-surface-file-budget): NO apps/ui/src source file is BINARY to git — a raw U+0000 byte makes a module undiffable and invisible to ripgrep, and the escape `\\0` is the same string",
     run: async () => {
       const files = [];
       const walk = async (relative) => {
@@ -348,14 +348,14 @@ export const archTests = [
           else if (isUiSourceFile(entry.name)) files.push({ path: next, source: await readFile(path.join(repoRoot, next), "utf8") });
         }
       };
-      await walk("ui/src");
-      assert.ok(files.length > 50, `ui/src was actually walked: ${files.length} source files`);
-      assert.deepEqual(binaryUiSourceViolations(files), [], "every ui/src source file is TEXT — diffable, greppable, reviewable");
+      await walk("apps/ui/src");
+      assert.ok(files.length > 50, `apps/ui/src was actually walked: ${files.length} source files`);
+      assert.deepEqual(binaryUiSourceViolations(files), [], "every apps/ui/src source file is TEXT — diffable, greppable, reviewable");
 
       // THE PLANT is synthesized text, never a file written into the real tree, and it is the
       // exact defect that landed: a key joined on the raw byte rather than on the escape.
-      const clean = { path: "ui/src/home/plant.mjs", source: `export const keyOf = (a, b) => \`\${a}${"\\0"}\${b}\`;` };
-      const planted = { path: "ui/src/home/plant.mjs", source: `export const keyOf = (a, b) => \`\${a}${BINARY_BYTE}\${b}\`;` };
+      const clean = { path: "apps/ui/src/home/plant.mjs", source: `export const keyOf = (a, b) => \`\${a}${"\\0"}\${b}\`;` };
+      const planted = { path: "apps/ui/src/home/plant.mjs", source: `export const keyOf = (a, b) => \`\${a}${BINARY_BYTE}\${b}\`;` };
       assert.notEqual(planted.source, clean.source, "the plant LANDED — the planted text differs from the clean text");
       assert.equal(
         `a-b${BINARY_BYTE}c`,
@@ -364,7 +364,7 @@ export const archTests = [
       );
 
       const violations = binaryUiSourceViolations([...files, planted]);
-      assert.ok(violations.length >= 1, "a raw U+0000 byte in a ui/src source file fires the shipped detector");
+      assert.ok(violations.length >= 1, "a raw U+0000 byte in a apps/ui/src source file fires the shipped detector");
       assert.ok(
         violations.some((violation) => violation.includes("plant.mjs") && /RAW U\+0000/.test(violation) && /ripgrep/.test(violation)),
         `the refusal names the file, the byte and why it matters: ${JSON.stringify(violations)}`,
@@ -373,7 +373,7 @@ export const archTests = [
       assert.deepEqual(binaryUiSourceViolations(files), [], "…and the CLEAN tree, in this same lane, returns none");
       assert.deepEqual(
         binaryUiSourceViolations([]),
-        ["NO ui/src files were handed to the binary-source detector — an absence sweep over an empty set is a green run that asserted nothing."],
+        ["NO apps/ui/src files were handed to the binary-source detector — an absence sweep over an empty set is a green run that asserted nothing."],
         "an empty sweep FAILS rather than passing quietly",
       );
     },

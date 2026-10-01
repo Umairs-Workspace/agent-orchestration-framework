@@ -14,7 +14,7 @@
 //
 // TWO LANES, and which claim goes in which is deliberate:
 //   · SELECTOR + COPY facts — which state, which sentence, which count — are driven over the
-//     framework-free `ui/src/home/page-state.mjs` under plain `node`, exhaustively.
+//     framework-free `apps/ui/src/home/page-state.mjs` under plain `node`, exhaustively.
 //   · RENDERED facts — the card's classes, the anchor's href, the one `<h1>`, the slot's home,
 //     "no second bar" — are driven through the MOUNT harness against a REAL fixture face, which
 //     reads the rendered tree rather than a source file. A link composed at runtime from a
@@ -48,7 +48,7 @@ import {
   homeFaultMessage,
   homePageState,
   homeSlotSummary,
-} from "../../ui/src/home/page-state.mjs";
+} from "../../apps/ui/src/home/page-state.mjs";
 import { withShellComposedHome, findAll, textOf } from "../support/shell-app-harness.mjs";
 
 const NOW = "2026-08-13T09:00:00.000Z";

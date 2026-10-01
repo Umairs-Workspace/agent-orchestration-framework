@@ -1,15 +1,15 @@
 // Traceability wiring for milestone 46 / story 03 / task 03 —
 // tasks/03_the-socket-url-is-built-from-an-origin.feature (@executable).
 //
-// THE CHANNEL. `ui/src/terminal/socket-url.mjs` is PURE, so every scenario is confirmed by
+// THE CHANNEL. `apps/ui/src/terminal/socket-url.mjs` is PURE, so every scenario is confirmed by
 // `node:test` importing it under plain `node` and asserting on RETURNED VALUES. The point of
 // the second scenario is that under plain `node` there is no browser global in scope AT ALL —
 // and then that a decoy one, deliberately placed in its way, changes nothing.
 //
 // WHERE THE ORIGIN COMES FROM is not this task's business, and that is exactly why the
 // argument exists: the `{ fleetOrigin, source }` payload threaded down the server seam is
-// story 46/02's, end to end. THE STRUCTURAL HALF — no module under `ui/src/terminal/` names
-// a port at all, and no `ws://`/`wss://` URL anywhere in `ui/src` carries a port literal — is
+// story 46/02's, end to end. THE STRUCTURAL HALF — no module under `apps/ui/src/terminal/` names
+// a port at all, and no `ws://`/`wss://` URL anywhere in `apps/ui/src` carries a port literal — is
 // `acd-terminal-origin-not-port`'s source-analysis sweep. A gate that greps and a test that
 // runs the builder fail for different reasons, and the pair is worth having.
 //
@@ -24,8 +24,8 @@
 //   Scenario Outline: the scheme follows the origin being dialled (4 rows)
 //   Scenario Outline: each source dials its own route, compared as a WHOLE path (2 rows)
 import assert from "node:assert/strict";
-import { terminalSocketUrl } from "../../ui/src/terminal/socket-url.mjs";
-import { sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
+import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
+import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

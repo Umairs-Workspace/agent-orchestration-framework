@@ -16,7 +16,7 @@ import { stripComments as stripJsComments } from "../../support/source-slice.mjs
 //     `./feature-parse.mjs`, `./command-core.mjs` and `./commands/*` — green, useful,
 //     and silent about `./mesh-ui-serve.mjs`. It also never reads `board-serve.mjs`.
 //   - `acd-terminal-origin-not-port` (story 46/03) is scoped to socket-URL construction
-//     under `ui/src`, deliberately, so it can never fight the other origin gate over an
+//     under `apps/ui/src`, deliberately, so it can never fight the other origin gate over an
 //     exemption list. It does not reach `packages/core/src/`.
 // A prohibition honoured only by memory is not a prohibition. It lands in its OWN file
 // rather than folded into `acd-work-ui-no-core-import` because it is a different ADR

@@ -1,11 +1,11 @@
 // Traceability wiring for milestone 46 / story 03 / task 00 —
 // tasks/00_the-session-source-table.feature (@executable).
 //
-// THE CHANNEL. `ui/src/terminal/source-table.mjs` is PURE and has no CLI surface, so the
+// THE CHANNEL. `apps/ui/src/terminal/source-table.mjs` is PURE and has no CLI surface, so the
 // black-box channel every scenario below is confirmed through is `node:test` importing the
 // module directly under plain `node` and asserting on RETURNED VALUES — no bundler, no DOM,
 // no socket, no clock. That is the house pattern (test/ui/app-routes.test.mjs does exactly this
-// for ui/src/app/routes.mjs), and it is what the feature's own LITMUS demands.
+// for apps/ui/src/app/routes.mjs), and it is what the feature's own LITMUS demands.
 //
 // Nothing here reads the module's SOURCE. The five structural invariants the feature
 // deliberately withholds — no port literal on a terminal surface, exactly one xterm
@@ -33,11 +33,11 @@ import {
   RESIZE_CONTROL_FRAME,
   sessionSourceTable,
   sessionSourceFor,
-} from "../../ui/src/terminal/source-table.mjs";
-import * as sourceTableModule from "../../ui/src/terminal/source-table.mjs";
-import { geometryModeFor } from "../../ui/src/terminal/geometry.mjs";
-import { inputPolicyFor, mountPosture, POSTURE_INTERACTIVE } from "../../ui/src/terminal/input-policy.mjs";
-import { terminalSocketUrl } from "../../ui/src/terminal/socket-url.mjs";
+} from "../../apps/ui/src/terminal/source-table.mjs";
+import * as sourceTableModule from "../../apps/ui/src/terminal/source-table.mjs";
+import { geometryModeFor } from "../../apps/ui/src/terminal/geometry.mjs";
+import { inputPolicyFor, mountPosture, POSTURE_INTERACTIVE } from "../../apps/ui/src/terminal/input-policy.mjs";
+import { terminalSocketUrl } from "../../apps/ui/src/terminal/socket-url.mjs";
 
 const ORIGINS = { self: "http://127.0.0.1:53219", fleet: "http://127.0.0.1:4181" };
 const PARAMS = {

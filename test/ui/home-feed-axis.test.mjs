@@ -2,8 +2,8 @@
 //
 // Every scenario and every Examples ROW of
 // `wiki/work/49_milestone_terminals-home/stories/02_story_home-core/tasks/00_the-feed-axis.feature`,
-// driven against the SHIPPED `ui/src/home/feed-axis.mjs` and the SHIPPED, UNEDITED
-// `ui/src/terminal/state-ramp.mjs`. Exhaustive by the PO's ruling and by invariant 4 part 2's
+// driven against the SHIPPED `apps/ui/src/home/feed-axis.mjs` and the SHIPPED, UNEDITED
+// `apps/ui/src/terminal/state-ramp.mjs`. Exhaustive by the PO's ruling and by invariant 4 part 2's
 // precedent: the whole input matrix, including the malformed and adversarial rows that must
 // fail closed, because each of these answers a question where a wrong answer is SILENT ON
 // SCREEN.
@@ -26,16 +26,16 @@ import {
   composeHomePane,
   feedAxisFor,
   feedAxisForPoll,
-} from "../../ui/src/home/feed-axis.mjs";
+} from "../../apps/ui/src/home/feed-axis.mjs";
 import {
   TERMINAL_STATES,
   TERMINAL_STATE_LIST,
   UNAVAILABLE_CAUSES,
   UNKNOWN_STATE,
   describeTerminalState,
-} from "../../ui/src/terminal/state-ramp.mjs";
-import { COST_SUBSCRIPTION } from "../../ui/src/terminal/host-model.mjs";
-import { HELD_AT_CAP, HELD_HIDDEN, RECOVERY_HIDE_ONE, RELEASED_LEFT_INDEX, subscribedPaneSet } from "../../ui/src/home/socket-cap.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
+import { COST_SUBSCRIPTION } from "../../apps/ui/src/terminal/host-model.mjs";
+import { HELD_AT_CAP, HELD_HIDDEN, RECOVERY_HIDE_ONE, RELEASED_LEFT_INDEX, subscribedPaneSet } from "../../apps/ui/src/home/socket-cap.mjs";
 
 const AXIS_VALUES = [FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER, FEED_ROSTER_GONE];
 const RAMP_WORDS = [...TERMINAL_STATE_LIST, UNKNOWN_STATE];

@@ -9,7 +9,7 @@
 // over the real source, plus the shared behavioural contract (the URL scope
 // round-trip) already exercised directly against ./scope.mjs by
 // fleet-scope.test.mjs:
-//   (a) ui/src/fleet/Fleet.tsx renders the ScopeControl INSIDE the TopBar (the
+//   (a) apps/ui/src/fleet/Fleet.tsx renders the ScopeControl INSIDE the TopBar (the
 //       top-level shell, mounted in EVERY page state — loading/error/empty/
 //       populated all render the same <TopBar>), not inside a body region that
 //       swaps out under load/error/empty;
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { scopeFromSearch, withScopeParam } from "../../../ui/src/fleet/scope.mjs";
+import { scopeFromSearch, withScopeParam } from "../../../apps/ui/src/fleet/scope.mjs";
 // THE SLICER IS SHARED, AND THAT IS THE FIX (F-47-03-ARCH-4, closed by m47/04).
 //
 // Both halves of this gate used to cut source POSITIONALLY, and the second cut was the
@@ -39,7 +39,7 @@ import { scopeFromSearch, withScopeParam } from "../../../ui/src/fleet/scope.mjs
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
+const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 export const archTests = [
   {
@@ -92,7 +92,7 @@ export const archTests = [
       // fleetApi.status itself is called with the scope argument somewhere down
       // the chain (api.ts's status(scope) — the transport-level proof that the
       // scope actually reaches the wire, not just an internal variable).
-      const apiSource = await readFile(path.join(repoRoot, "ui", "src", "fleet", "api.ts"), "utf8");
+      const apiSource = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts"), "utf8");
       assert.ok(
         /status\s*\(\s*scope\s*\?\s*:\s*["']global["']\s*\|\s*["']local["']\s*\)/.test(stripComments(apiSource).replace(/\s+/g, " ")),
         "fleetApi.status accepts an explicit scope parameter the caller threads through",

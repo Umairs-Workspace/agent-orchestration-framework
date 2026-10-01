@@ -73,7 +73,7 @@ export const bundleAssetManifestCompleteTests = [
     name: "bundle-asset-manifest-complete/01 the generated manifest covers every file under ui/dist/**, empty diff both directions",
     run: async () => {
       const manifest = generateAssetManifest(repoRoot);
-      const direct = listFilesDirect(path.join(repoRoot, "ui", "dist"));
+      const direct = listFilesDirect(path.join(repoRoot, "apps", "ui", "dist"));
 
       assert.ok(direct.length > 0, "the real ui/dist/** tree carries at least one file (the built UI is present)");
       assert.deepEqual(manifest.ui, direct, "the generated ui manifest is byte-identical (set + order) to the real tree's direct enumeration");
@@ -93,12 +93,12 @@ export const bundleAssetManifestCompleteTests = [
       try {
         const fixtureRepo = path.join(tmp, "repo");
         await mkdir(path.join(fixtureRepo, "packages", "core", "src"), { recursive: true });
-        await mkdir(path.join(fixtureRepo, "ui"), { recursive: true });
+        await mkdir(path.join(fixtureRepo, "apps", "ui"), { recursive: true });
         await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(fixtureRepo, "packages", "core", "assets"), { recursive: true });
-        await cp(path.join(repoRoot, "ui", "dist"), path.join(fixtureRepo, "ui", "dist"), { recursive: true });
+        await cp(path.join(repoRoot, "apps", "ui", "dist"), path.join(fixtureRepo, "apps", "ui", "dist"), { recursive: true });
         await cp(path.join(repoRoot, 'yarn.lock'), path.join(fixtureRepo, 'yarn.lock'));
         await cp(path.join(repoRoot, 'packages/core/package.json'), path.join(fixtureRepo, 'packages/core/package.json'));
-        await cp(path.join(repoRoot, 'ui/package.json'), path.join(fixtureRepo, 'ui/package.json'));
+        await cp(path.join(repoRoot, 'apps/ui/package.json'), path.join(fixtureRepo, 'apps/ui/package.json'));
 
         // Generate the manifest BEFORE planting the un-manifested file — it
         // freezes the member set at that moment, exactly like a real build

@@ -18,13 +18,13 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // the count (ADR-006 cited "4 of 6"; counted at source it was FIVE `ui/` entries, and using the
 // FILE rather than the ADR's number is the whole point of writing this down):
 //
-//   ui/src/board/TerminalDock.tsx                     ─┐  the xterm pane wiring: new Terminal(),
-//   ui/src/fleet/terminal-view/FleetTerminalView.tsx  ─┘  FitAddon/WebLinksAddon, open(), fit(),
+//   apps/ui/src/board/TerminalDock.tsx                     ─┐  the xterm pane wiring: new Terminal(),
+//   apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx  ─┘  FitAddon/WebLinksAddon, open(), fit(),
 //                                                         onData → carrier, dispose/close
-//                                                    →  ui/src/terminal/TerminalControl.tsx
-//   ui/src/board/terminal/dock-state.mjs   → ui/src/terminal/state-ramp.mjs   (the state ramp)
-//   ui/src/board/terminal/resize.mjs       → ui/src/terminal/geometry.mjs     (fit → resize)
-//   ui/src/board/terminal/provider-picker.mjs → ui/src/terminal/provider-picker.mjs (already
+//                                                    →  apps/ui/src/terminal/TerminalControl.tsx
+//   apps/ui/src/board/terminal/dock-state.mjs   → apps/ui/src/terminal/state-ramp.mjs   (the state ramp)
+//   apps/ui/src/board/terminal/resize.mjs       → apps/ui/src/terminal/geometry.mjs     (fit → resize)
+//   apps/ui/src/board/terminal/provider-picker.mjs → apps/ui/src/terminal/provider-picker.mjs (already
 //                                                 listed by 46/03, which created that home)
 //
 // TWO OF THE NEW ENTRIES ARE NEW GUARDS, NOT RE-POINTS: `state-ramp.mjs` and `geometry.mjs` were
@@ -35,10 +35,10 @@ const ADAPTED_FILES = [
   "packages/server/src/terminal-ws.mjs",
   "packages/execution/src/pty.mjs",
   "packages/execution/src/providers.mjs",
-  "ui/src/terminal/TerminalControl.tsx",
-  "ui/src/terminal/state-ramp.mjs",
-  "ui/src/terminal/geometry.mjs",
-  "ui/src/terminal/provider-picker.mjs",
+  "apps/ui/src/terminal/TerminalControl.tsx",
+  "apps/ui/src/terminal/state-ramp.mjs",
+  "apps/ui/src/terminal/geometry.mjs",
+  "apps/ui/src/terminal/provider-picker.mjs",
 ];
 
 export const archTests = [
@@ -86,7 +86,7 @@ export const archTests = [
       assert.deepEqual(
         [...published].sort(),
         [...ADAPTED_FILES].sort(),
-        "the NOTICE's published list and this gate's ADAPTED_FILES are ONE set. They drifted at 46/04's first cut — the NOTICE still named `ui/src/board/TerminalDock.tsx`, `ui/src/board/terminal/{dock-state,provider-picker,resize}.mjs` after all four were deleted — and only the per-file half was guarded. Both halves move in the diff that moves the code.",
+        "the NOTICE's published list and this gate's ADAPTED_FILES are ONE set. They drifted at 46/04's first cut — the NOTICE still named `apps/ui/src/board/TerminalDock.tsx`, `apps/ui/src/board/terminal/{dock-state,provider-picker,resize}.mjs` after all four were deleted — and only the per-file half was guarded. Both halves move in the diff that moves the code.",
       );
 
       // …and every published path is on disk, which is what makes the set-equality a claim about

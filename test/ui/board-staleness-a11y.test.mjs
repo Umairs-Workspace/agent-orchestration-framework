@@ -29,7 +29,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { FRESHNESS_GLYPH, freshness } from "../../ui/src/board/freshness.mjs";
+import { FRESHNESS_GLYPH, freshness } from "../../apps/ui/src/board/freshness.mjs";
 import { bundleSurface } from "../support/react-app-harness.mjs";
 import { createRuntime } from "../support/mini-react.mjs";
 import {
@@ -38,7 +38,7 @@ import {
   RESYNC_LABEL_SENDING,
   resyncAnswered,
   resyncView,
-} from "../../ui/src/board/resync.mjs";
+} from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, findAll, textOf, visibleTextOf } from "../support/board-app-harness.mjs";
 
@@ -63,7 +63,7 @@ const staleDescriptor = () => freshness({ syncedAt: at(-720), reportedBy: NODE }
 // is asserted from source.
 const STALE_BADGE_TSX = path.join(
   path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".."),
-  "ui", "src", "board", "StaleBadge.tsx",
+  "apps", "ui", "src", "board", "StaleBadge.tsx",
 );
 
 let badgeComponents = null;

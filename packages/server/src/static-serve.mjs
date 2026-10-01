@@ -73,7 +73,7 @@ export function safeStaticPath(uiRoot, pathname) {
 // rejected alternatives: `Accept: text/html` (it makes one URL answer differently for
 // curl, for this repo's headless harnesses and for a browser) and a route-derived
 // allowlist (the server would have to learn the client's route table — either `src/`
-// imports `ui/src/`, a new and wrong coupling direction, or the list gets a second home
+// imports `apps/ui/src/`, a new and wrong coupling direction, or the list gets a second home
 // and drifts the first time milestone 47 or 49 adds a route).
 //
 // IT READS THE PATH THE SERVER ACTUALLY RESOLVED, NOT THE RAW BYTES. `new URL()` does

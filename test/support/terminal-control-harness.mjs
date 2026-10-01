@@ -14,7 +14,7 @@
 // line that moves the state off `idle` never ran.
 //
 // A model-only assertion cannot close that gap. This can: it bundles the REAL, UNMODIFIED
-// `ui/src/terminal/TerminalControl.tsx` with its real siblings (the state ramp, the source table,
+// `apps/ui/src/terminal/TerminalControl.tsx` with its real siblings (the state ramp, the source table,
 // the socket builder, the geometry rule, the input policy, the byte area, the picker), mounts it
 // on mini-react with HOST NODES ATTACHED TO REFS, and hands the lane the list of WebSockets the
 // component constructed. "A socket was opened" is then an observable, not an internal.
@@ -31,7 +31,7 @@
 //      `renderer.mount(...)` call and nothing deeper. With it comes a PER-PANE driver:
 //      "the last socket constructed" is a correct answer at N=1 and a silently wrong one at N=12.
 //
-//   2. THE SHELL. `hasShellHost()` reads the BUNDLE's own copy of `ui/src/app/shell-bus.mjs`, and
+//   2. THE SHELL. `hasShellHost()` reads the BUNDLE's own copy of `apps/ui/src/app/shell-bus.mjs`, and
 //      a lane that imports that module in the test process sets a DIFFERENT module instance's
 //      flag — the call succeeds, the flag reads true, and the mounted control still offers
 //      nothing. So the entry re-exports the bundled bus and the harness declares the shell THERE.
@@ -80,7 +80,7 @@ import {
 } from "./terminal-dom.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const CONTROL_TSX = path.join(repoRoot, "ui", "src", "terminal", "TerminalControl.tsx");
+const CONTROL_TSX = path.join(repoRoot, "apps", "ui", "src", "terminal", "TerminalControl.tsx");
 const ELEMENT = Symbol.for("aof.mini.element");
 
 // The DEFAULT entry — the real control itself, exactly as milestone 46 named it. A caller that
@@ -115,7 +115,7 @@ const SETTLE_PASSES = 50;
 // `pane(i)` that does not run the component under test.
 //
 // THE CHECK IS MADE AGAINST THE BUNDLE TEXT rather than against the entry's path, because a path
-// can be anything: only `ui/src/terminal/`'s own modules emit these four literals, and a fake that
+// can be anything: only `apps/ui/src/terminal/`'s own modules emit these four literals, and a fake that
 // reproduced all four would have had to reproduce the control. Each is a load-bearing string from
 // a DIFFERENT module, so deleting any one of them from the product is a CI failure here rather
 // than a silent downgrade of this check:
@@ -172,7 +172,7 @@ export async function withTerminalControl(options, fn) {
   // have bundled the real ones; a caller that says it mounts none gets no pane driver at all.
   if (mountsTerminals && !bundleCarriesTheRealControl(bundleSource)) {
     throw new Error(
-      `terminal-control harness: the entry ${entry} renders panes but its bundle does not carry the REAL ui/src/terminal/TerminalControl — a substitute mounts green, reports panes and constructs no socket, which satisfies every ABSENCE assertion without running the component under test (TECH_DEBT 29). An entry that deliberately mounts no terminal declares \`terminals: false\`, and then it has no pane driver.`,
+      `terminal-control harness: the entry ${entry} renders panes but its bundle does not carry the REAL apps/ui/src/terminal/TerminalControl — a substitute mounts green, reports panes and constructs no socket, which satisfies every ABSENCE assertion without running the component under test (TECH_DEBT 29). An entry that deliberately mounts no terminal declares \`terminals: false\`, and then it has no pane driver.`,
     );
   }
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-terminal-control-"));

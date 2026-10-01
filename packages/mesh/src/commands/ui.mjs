@@ -187,7 +187,7 @@ const meshUiCommand = {
     // invocation launches), but the bijection contract requires a render and the
     // board/MCP faces may invoke the probe headlessly.
     render(result) {
-      const build = result.uiBuildPresent ? "ui build present" : "ui build MISSING (npm --prefix ui run build)";
+      const build = result.uiBuildPresent ? "ui build present" : "ui build MISSING (yarn ui:build)";
       const relay = result.relayConfigured ? "relay configured" : "relay not configured";
       return `Fleet UI probe — would serve ${result.fleetUrl} from ${result.projectDir} (${build}; ${relay})`;
     },

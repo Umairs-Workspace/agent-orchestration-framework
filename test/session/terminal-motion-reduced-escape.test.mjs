@@ -7,13 +7,13 @@
 // The task's six scenarios are split three ways by what can honestly be measured, and the split
 // is the ARCHITECT's, recorded in `49/ARCHITECTURE.md` §Fitness functions:
 //   · SCENARIOS 1 and 5 — this file. They are answerable from the pure `.mjs` source plus the
-//     text of `ui/src/index.css`, under plain `node`, with no browser and no DOM. This is the
+//     text of `apps/ui/src/index.css`, under plain `node`, with no browser and no DOM. This is the
 //     lane that runs everywhere, including the WSL worker.
 //   · SCENARIOS 2 and 3 — the computed-animation readings. **THE BROWSER LANE WAS DECLINED FOR
 //     MILESTONE 49** and the contract's own header says what happens then: they move to `@manual`
 //     unchanged. The reason they can be declined without weakening the proof is the MECHANISM
 //     RULING — the escape is ONE CSS rule, so `acd-motion-has-an-escape`'s set containment over
-//     `ui/src/**` is a COMPLETE proof of the invariant from source, and a browser would only
+//     `apps/ui/src/**` is a COMPLETE proof of the invariant from source, and a browser would only
 //     re-confirm that Chromium implements `@media (prefers-reduced-motion)`, which is a platform
 //     fact rather than our invariant. The condition that overturns that decision is named there:
 //     the first invariant whose truth depends on rendered geometry or computed style rather than
@@ -31,7 +31,7 @@
 // this to change", and the module's stated mechanism is the mechanism actually in force.
 //
 // TRAP 1, AND IT IS WHY THIS STORY EXISTS AT ALL: a sweep that does not strip comments is GREEN
-// on this defect. `prefers-reduced-motion` appears in `ui/src/terminal/palette.mjs` today — it
+// on this defect. `prefers-reduced-motion` appears in `apps/ui/src/terminal/palette.mjs` today — it
 // appeared there while the defect was live, inside a false sentence. Every reading below is over
 // `stripComments`ed source (LINE comments first, BLOCK comments second — TECH_DEBT item 24), from
 // the ONE home, and the stripper is self-checked before it is trusted.
@@ -51,7 +51,7 @@ import {
   stripComments,
 } from "../support/motion-escape-detectors.mjs";
 
-import { TERMINAL_MOTION_CLASS } from "../../ui/src/terminal/palette.mjs";
+import { TERMINAL_MOTION_CLASS } from "../../apps/ui/src/terminal/palette.mjs";
 import {
   MOTION_NONE,
   MOTION_PULSE,
@@ -59,7 +59,7 @@ import {
   TERMINAL_STATE_LIST,
   UNKNOWN_STATE,
   describeTerminalState,
-} from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 const TERMINAL_DIR = path.join(UI_SRC, "terminal");
 const PALETTE = path.join(TERMINAL_DIR, "palette.mjs");
@@ -141,7 +141,7 @@ export const terminalMotionReducedEscapeTests = [
 
       assert.ok(
         variantMechanism || cssMechanism,
-        `the class the ramp emits for \`connecting…\` and \`streaming\` — \`${pulseClass}\` — is silenced by NEITHER sanctioned mechanism. DESIGN DG-49-6 clause 1: either \`TERMINAL_MOTION_CLASS.pulse\` carries a reduced-motion-conditional variant, or a \`prefers-reduced-motion: reduce\` block in ui/src/index.css names the class it resolves to. Today the block silences: ${[...silenced].sort().join(", ") || "(nothing)"}.`,
+        `the class the ramp emits for \`connecting…\` and \`streaming\` — \`${pulseClass}\` — is silenced by NEITHER sanctioned mechanism. DESIGN DG-49-6 clause 1: either \`TERMINAL_MOTION_CLASS.pulse\` carries a reduced-motion-conditional variant, or a \`prefers-reduced-motion: reduce\` block in apps/ui/src/index.css names the class it resolves to. Today the block silences: ${[...silenced].sort().join(", ") || "(nothing)"}.`,
       );
 
       // ── "…and whichever holds, it is spelled ONCE."
@@ -221,7 +221,7 @@ export const terminalMotionReducedEscapeTests = [
       assert.doesNotMatch(
         proseOf(comment),
         /honour\s+`?prefers-reduced-motion`?\s+through\s+the\s+existing\s+scoping\s+convention/i,
-        "the false sentence is back. It claimed both pulses were covered by a convention in ui/src/index.css that named `.aof-pending` ALONE — a different class over a different animation — and it is the reason this defect survived a whole milestone with a reviewer, a design gate and 500+ tests looking straight at it.",
+        "the false sentence is back. It claimed both pulses were covered by a convention in apps/ui/src/index.css that named `.aof-pending` ALONE — a different class over a different animation — and it is the reason this defect survived a whole milestone with a reviewer, a design gate and 500+ tests looking straight at it.",
       );
 
       // ── "…and whatever mechanism it now describes is one a reader can verify from the two
@@ -261,7 +261,7 @@ export const terminalMotionReducedEscapeTests = [
         "// `none` is the EMPTY string on purpose: motion is on exactly the two states that mean",
         '// "expect this to change", and every other state must emit no animation class at all rather',
         "// than an inert one. Both pulses honour `prefers-reduced-motion` through the existing scoping",
-        "// convention in `ui/src/index.css`, which is why the class is the house's own and not a",
+        "// convention in `apps/ui/src/index.css`, which is why the class is the house's own and not a",
         "// terminal-local animation.",
         "export const TERMINAL_MOTION_CLASS = Object.freeze({",
       ].join("\n");
@@ -280,7 +280,7 @@ export const terminalMotionReducedEscapeTests = [
 
       // ── …and the checkability clause fires too, on a comment that claims coverage for
       //    something the block does not silence.
-      const overclaiming = "// The dots honour reduced motion: `ui/src/index.css` silences `animate-spin` under\n// `prefers-reduced-motion`.\nexport const TERMINAL_MOTION_CLASS = Object.freeze({";
+      const overclaiming = "// The dots honour reduced motion: `apps/ui/src/index.css` silences `animate-spin` under\n// `prefers-reduced-motion`.\nexport const TERMINAL_MOTION_CLASS = Object.freeze({";
       const overclaimed = animationsNamedIn(proseOf(commentAbove(overclaiming, "export const TERMINAL_MOTION_CLASS")));
       assert.ok(overclaimed.has("animate-spin"), "self-check: the plant LANDED — the overclaiming comment names an animation");
       assert.deepEqual(

@@ -30,7 +30,7 @@ import { meshWorktreePrepareTests } from "./mesh-worktree-prepare.test.mjs";
 // rendering, 03_empty-error-and-health-states. Three fitness units:
 // acd-mesh-ui-global-default, acd-mesh-ui-local-filter-preserves-status,
 // acd-mesh-ui-scope-visible. The React fleet surface's scope/region/state/
-// credential-guard logic lives in the pure ui/src/fleet/scope.mjs helper (no
+// credential-guard logic lives in the pure apps/ui/src/fleet/scope.mjs helper (no
 // React test harness in this repo), exercised headlessly by fleet-scope.test.mjs.
 import { globalMeshQueryTests } from "./global-mesh-query.test.mjs";
 // milestone 33 (story 01) — fabric-native transport + coordination launcher. task 00

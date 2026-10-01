@@ -4,7 +4,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // tasks/03_freshness-ramp-and-stale-badge.feature (@executable).
 //
 // DRIVEN TWO WAYS, exactly as the task's LITMUS requires:
-//   1. the PURE ramp module (ui/src/board/freshness.mjs) for its return value
+//   1. the PURE ramp module (apps/ui/src/board/freshness.mjs) for its return value
 //      over injected inputs — the state, both renderings, the tooltip sentence;
 //   2. the REAL, UNMODIFIED production <Board/> tree, mounted headlessly against
 //      a REAL board face (packages/core/src/board-ui.mjs) over an isolated global store, on a
@@ -76,7 +76,7 @@ import {
   freshnessState,
   isCachePublished,
   readStalenessWindow,
-} from "../../ui/src/board/freshness.mjs";
+} from "../../apps/ui/src/board/freshness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf, isBadgeNode } from "../support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";

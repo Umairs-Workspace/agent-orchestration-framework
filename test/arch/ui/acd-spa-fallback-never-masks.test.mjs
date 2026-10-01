@@ -73,7 +73,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //     request header, so curl, this repo's headless harnesses and a browser get different
 //     bodies for the same address.
 //   - A route-derived allowlist was REJECTED — the server would have to learn the client's
-//     route table, which means either `packages/core/src/` imports `ui/src/` (a new and wrong coupling
+//     route table, which means either `packages/core/src/` imports `apps/ui/src/` (a new and wrong coupling
 //     direction) or the list is duplicated (two homes for one fact). It would also split the
 //     not-found experience in two: a deep-linked typo would get a plain-text server 404 while
 //     the same typo reached by in-app navigation gets the shell's 404 surface (ADR-002).

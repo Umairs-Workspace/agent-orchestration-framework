@@ -1,8 +1,8 @@
 // THE GRID OF LIVE PANES (milestone 49 / story 05 — tasks 00-05).
 //
 // ═══ THE ONE THING THIS SUITE IS FOR ═════════════════════════════════════════════════════════
-// A TILE OPENS A REAL SOCKET, and it is proved by mounting the PRODUCT — `ui/src/home/
-// SessionGrid.tsx` → `SessionPane.tsx` → the real, unmodified `ui/src/terminal/TerminalControl.tsx`
+// A TILE OPENS A REAL SOCKET, and it is proved by mounting the PRODUCT — `apps/ui/src/home/
+// SessionGrid.tsx` → `SessionPane.tsx` → the real, unmodified `apps/ui/src/terminal/TerminalControl.tsx`
 // — through story 08's harness and reading the sockets the component constructed. Milestone 46
 // shipped a control that opened NO socket at all past 537 green tests, a 71-mutant battery and
 // five reviews, because every harness stubbed the control by module path (TECH_DEBT 29). Nothing
@@ -22,8 +22,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { withTerminalControl, ancestryOf, findAll, visibleTextOf } from "../support/terminal-control-harness.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
 import {
   hostAnnouncesState,
   terminalPaneStanding,
@@ -33,24 +33,24 @@ import {
   HOST_FULLSCREEN,
   HOST_GRID_PANE,
   WATCH_LABEL,
-} from "../../ui/src/terminal/host-model.mjs";
-import { terminalPaneKey } from "../../ui/src/terminal/pane-identity.mjs";
-import { sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
-import { describeTerminalState, IDLE_PANE_LINE, TERMINAL_STATES, TERMINAL_STATE_LIST, WAITING_PANE_LINE } from "../../ui/src/terminal/state-ramp.mjs";
-import { TERMINAL_FOCUS_RING_CLASS, TERMINAL_FOCUS_RING_INSET_CLASS, TERMINAL_STATE_DOT_CLASS } from "../../ui/src/terminal/palette.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../ui/src/terminal/input-policy.mjs";
+} from "../../apps/ui/src/terminal/host-model.mjs";
+import { terminalPaneKey } from "../../apps/ui/src/terminal/pane-identity.mjs";
+import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { describeTerminalState, IDLE_PANE_LINE, TERMINAL_STATES, TERMINAL_STATE_LIST, WAITING_PANE_LINE } from "../../apps/ui/src/terminal/state-ramp.mjs";
+import { TERMINAL_FOCUS_RING_CLASS, TERMINAL_FOCUS_RING_INSET_CLASS, TERMINAL_STATE_DOT_CLASS } from "../../apps/ui/src/terminal/palette.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../apps/ui/src/terminal/input-policy.mjs";
 import {
   fullscreenOpenerFor,
   terminalFullscreenRequest,
   FOCUS_PRESENTS_EXIT,
   FOCUS_PRESENTS_TERMINAL,
-} from "../../ui/src/terminal/fullscreen-request.mjs";
-import { FORM_ICON_CONTROL, FORM_PANE_ACTIVATION } from "../../ui/src/terminal/host-model.mjs";
-import { homeGridAnnouncement, homeGridFocus, homeGridFocusAfterPoll, homeGridRows, MARK_NEEDS_INPUT } from "../../ui/src/home/grid.mjs";
-import { heldPaneLine, homePageOrigins, homeSessionMount, HELD_LINE } from "../../ui/src/home/session-mount.mjs";
-import { HELD_AT_CAP, MAX_LIVE_PANES } from "../../ui/src/home/socket-cap.mjs";
-import { NO_LIVE_OUTPUT_REASON } from "../../ui/src/home/feed-axis.mjs";
-import { homeSlotSummary, HOME_EMPTY_CARD_CLASS, HOME_E2_WHY, HOME_PAGE_STATE_POPULATED } from "../../ui/src/home/page-state.mjs";
+} from "../../apps/ui/src/terminal/fullscreen-request.mjs";
+import { FORM_ICON_CONTROL, FORM_PANE_ACTIVATION } from "../../apps/ui/src/terminal/host-model.mjs";
+import { homeGridAnnouncement, homeGridFocus, homeGridFocusAfterPoll, homeGridRows, MARK_NEEDS_INPUT } from "../../apps/ui/src/home/grid.mjs";
+import { heldPaneLine, homePageOrigins, homeSessionMount, HELD_LINE } from "../../apps/ui/src/home/session-mount.mjs";
+import { HELD_AT_CAP, MAX_LIVE_PANES } from "../../apps/ui/src/home/socket-cap.mjs";
+import { NO_LIVE_OUTPUT_REASON } from "../../apps/ui/src/home/feed-axis.mjs";
+import { homeSlotSummary, HOME_EMPTY_CARD_CLASS, HOME_E2_WHY, HOME_PAGE_STATE_POPULATED } from "../../apps/ui/src/home/page-state.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const HOME_ENTRY = path.join(repoRoot, "test", "support", "terminals-home-entry.tsx");
@@ -1160,7 +1160,7 @@ export const terminalsHomeGridTests = [
       // The UA default was what shipped: 1px, no offset, no token — the identical treatment a nav
       // text link gets, so a focused tile was indistinguishable from an unfocused one across a
       // grid, and invisible by construction on the expanded pane's `#0b0f14`.
-      const css = await readFile(path.join(repoRoot, "ui", "src", "index.css"), "utf8");
+      const css = await readFile(path.join(repoRoot, "apps", "ui", "src", "index.css"), "utf8");
       assert.match(css, /--color-ring:\s*hsl\(174 72% 27%\)/, "the token this ring names is the house's own, defined in index.css");
       for (const [name, className] of [["the tile frame", TERMINAL_FOCUS_RING_CLASS], ["the expanded byte area", TERMINAL_FOCUS_RING_INSET_CLASS]]) {
         assert.match(className, /outline-\[var\(--color-ring\)\]/, `${name}: the ring is the TOKEN, never the user agent's default`);
@@ -1198,7 +1198,7 @@ export const terminalsHomeGridTests = [
       assert.ok(!/\bmono\b|text-\[13px\]/.test(HOME_EMPTY_CARD_CLASS), "…and NOT mono: forking the light shell's type ramp for one string is what the ruling rejected");
       assert.match(HOME_EMPTY_CARD_CLASS, /rounded-lg border border-dashed border-border bg-card\/40 p-6 text-sm text-muted-foreground/, "…the house primitive itself is verbatim");
 
-      const home_ = await readFile(path.join(repoRoot, "ui", "src", "home", "Home.tsx"), "utf8");
+      const home_ = await readFile(path.join(repoRoot, "apps", "ui", "src", "home", "Home.tsx"), "utf8");
       const failed = home_.match(/data-home-state=\{HOME_PAGE_STATE_ERROR\}[^\n]*/)?.[0] ?? "";
       assert.ok(!failed.includes("items-center"), `the failed state is TOP-ANCHORED like E1, E2 and loading (GAP-4): ${failed}`);
       assert.ok(failed.includes("justify-center"), "…still horizontally centred, still the fleet's own treatment");

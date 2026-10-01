@@ -1,13 +1,13 @@
 // Traceability wiring for milestone 46 / story 03 / task 02 —
 // tasks/02_fit-or-scale-is-derived-from-the-source.feature (@executable).
 //
-// THE CHANNEL. `ui/src/terminal/geometry.mjs` is PURE, so geometry is tested as ARITHMETIC
+// THE CHANNEL. `apps/ui/src/terminal/geometry.mjs` is PURE, so geometry is tested as ARITHMETIC
 // and as a derived PLAN: the mode a descriptor yields, the frames a fit emits, the scalar a
 // box yields. `node:test` under plain `node` — no bundler, no DOM, no xterm, no
 // `ResizeObserver`, no clock.
 //
 // THIS SUITE CLOSES A COVERAGE HOLE THAT WAS BELIEVED CLOSED. The predecessor
-// `ui/src/fleet/terminal-view/geometry.mjs:20-23` states in terms that its 80x24 tie and its
+// `apps/ui/src/fleet/terminal-view/geometry.mjs:20-23` states in terms that its 80x24 tie and its
 // scale math are held by `test/fleet-terminal-view-geometry.test.mjs`. THAT FILE HAS NEVER
 // EXISTED — confirmed on the codebase graph (no test importer at all) and by grep. So the
 // mirror lane's entire scale math, and the cross-build constant whose drift produces an
@@ -44,8 +44,8 @@ import {
   emitFit,
   resizeMessage,
   terminalFitScale,
-} from "../../ui/src/terminal/geometry.mjs";
-import { sessionSourceFor, RESIZE_CONTROL_FRAME, ORIGIN_ROLE_SELF, ORIGIN_ROLE_FLEET } from "../../ui/src/terminal/source-table.mjs";
+} from "../../apps/ui/src/terminal/geometry.mjs";
+import { sessionSourceFor, RESIZE_CONTROL_FRAME, ORIGIN_ROLE_SELF, ORIGIN_ROLE_FLEET } from "../../apps/ui/src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

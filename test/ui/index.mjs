@@ -87,7 +87,7 @@ import { setupUiTests } from "./setup-ui.test.mjs";
 // (RENDER). This module is the traceability wiring for the close: the REAL frame
 // handler over a REAL store (incl. the in-place, idempotent PRAGMA-checked column
 // migration), the REAL /api/mesh/status shaping, and the framework-free
-// ui/src/fleet/terminal-view/*.mjs helpers FleetTerminalView.tsx itself imports —
+// apps/ui/src/fleet/terminal-view/*.mjs helpers FleetTerminalView.tsx itself imports —
 // stream resolution (ADR-014 inv.4) + the honest waiting/streaming/ended/disconnected
 // ramp (DESIGN §Surface 3 V7/V9) — plus a multiplex lane over the REAL serveMeshUi
 // /ws/terminal-view route. acd-fleet-terminal-mirror-read-only gains the BROWSER half
@@ -135,7 +135,7 @@ import { catalogTests } from "./catalog.test.mjs";
 //     rendered since m34 is gone and the surface still stands for every payload it can be
 //     handed; no anchor it renders names a board in ANY state; the boards PRODUCER and the
 //     CLI face are untouched (the deletion is of a dead UI branch, not of a feature); every
-//     region the real face can reach renders exactly as before; and `npm --prefix ui run
+//     region the real face can reach renders exactly as before; and `yarn ui:build` (was `npm --prefix ui run
 //     build` typechecks, which is where a wire type deleted while a reader survives fails
 //     loudly and by name.
 import { fleetBoardDrillInTests } from "./fleet-board-drill-in.test.mjs";
@@ -177,7 +177,7 @@ import { uiDirectoryBudgetTests } from "./ui-directory-budget.test.mjs";
 // ── milestone 49 / story 04 — `/` BECOMES THE TERMINALS HOME (ADR-001; DESIGN §S1, DG-49-1).
 // FOUR EDITS IN ONE DIFF, and the whole risk is that they land separately: `main.tsx`'s `SURFACES`
 // gains `landing`, `entry.mjs`'s `SHELL_RENDERED_ROUTES` shrinks to `["not-found"]`, `Shell.tsx`'s
-// inline landing branch goes, and `ui/src/app/Landing.tsx` is DELETED rather than parked beside a
+// inline landing branch goes, and `apps/ui/src/app/Landing.tsx` is DELETED rather than parked beside a
 // real home. The route TABLE is untouched — the `landing` id survives verbatim, exactly as m45
 // promised — and what changed is WHO renders it: `/` is now hosted inside `SurfaceBoundary`'s
 // crash containment, because a static card was safe outside the net and a surface that fetches,
@@ -202,8 +202,8 @@ import { terminalsHomePageStatesTests } from "./terminals-home-page-states.test.
 //   because research measured a keystroke into a free session swallowed at one of two hops.
 import { homeSessionMountTests } from "./home-session-mount.test.mjs";
 // ── milestone 49 / story 05 — THE GRID OF LIVE PANES, the milestone's heart and the whole arc's.
-// Mounted through story 08's harness against the PRODUCT — `ui/src/home/SessionGrid.tsx` →
-// `SessionPane.tsx` → the REAL, UNMODIFIED `ui/src/terminal/TerminalControl.tsx` — so "sixteen
+// Mounted through story 08's harness against the PRODUCT — `apps/ui/src/home/SessionGrid.tsx` →
+// `SessionPane.tsx` → the REAL, UNMODIFIED `apps/ui/src/terminal/TerminalControl.tsx` — so "sixteen
 // sockets were constructed" is a fact about the shipped grid rather than about sixteen mounts a
 // test handed to sixteen controls. That distinction is TECH_DEBT 29 exactly: milestone 46 shipped
 // a control that opened NO SOCKET AT ALL past 537 green tests because every harness stubbed the
@@ -222,30 +222,30 @@ import { homeSessionMountTests } from "./home-session-mount.test.mjs";
 //   and `Enter` presents the pane for the price of a layout change.
 //   task 05 — one live region, not N — and the other three hosts keep their own.
 import { terminalsHomeGridTests } from "./terminals-home-grid.test.mjs";
-// ── milestone 45 / story 01 — THE ROUTE MODEL (ADR-001/002/003/006): ui/src/app/routes.mjs,
+// ── milestone 45 / story 01 — THE ROUTE MODEL (ADR-001/002/003/006): apps/ui/src/app/routes.mjs,
 // the ONE pure route table (`routeFor`) plus the ONE legacy `?mode=` translation
 // (`legacyRedirectFor`). Framework-free by contract — this repo has NO React test harness, so
 // the route decision lives in a plain .mjs that node:test drives headlessly, in the house
-// pattern of ui/src/fleet/scope.mjs + test/ui/fleet-scope.test.mjs. Three @executable task
+// pattern of apps/ui/src/fleet/scope.mjs + test/ui/fleet-scope.test.mjs. Three @executable task
 // features: 00_route-table (four paths, one shared 404, frozen/origin-blind table),
 // 01_legacy-mode-redirect (every advertised ?mode= URL onto its path, `mode` the only thing
 // removed, idempotent), 02_query-and-fragment-passthrough (`?scope=`, unknown parameters and
 // the `#ref` fragment survive, in order).
 import { appRoutesTests } from "./app-routes.test.mjs";
 // ── milestone 45 / story 03 — THE APP SHELL & THE ENTRY (ADR-002 + ADR-005 with its five
-// [Build-N] amendments). `ui/src/main.tsx` stops being a surface (its 1,260-line config editor
-// moved to `ui/src/config/App.tsx`) and becomes three acts: mount, apply the legacy `?mode=`
+// [Build-N] amendments). `apps/ui/src/main.tsx` stops being a surface (its 1,260-line config editor
+// moved to `apps/ui/src/config/App.tsx`) and becomes three acts: mount, apply the legacy `?mode=`
 // translation ONCE as a replace, render the shell around the surface the ONE route table names.
 // Four @executable task features, each with its own suite:
-//   00_entry-selects-a-surface — the entry's decision (`ui/src/app/entry.mjs`): four canonical
+//   00_entry-selects-a-surface — the entry's decision (`apps/ui/src/app/entry.mjs`): four canonical
 //     addresses, the whole advertised legacy set rewritten exactly once, the surface read from
 //     the POST-rewrite address, and every parameter and fragment reaching the surface in order.
-//   01_shell-regions — the layout MODEL (`ui/src/app/shell-layout.mjs`): five rows in one
+//   01_shell-regions — the layout MODEL (`apps/ui/src/app/shell-layout.mjs`): five rows in one
 //     order, the 88px chrome budget with the notice rail exempt/additive/REPORTED, the one
 //     published `--aof-shell-chrome-height`, the two content modes, one banner and one `<main>`
 //     (driven through the REAL shell AND the real fleet/board, which is where the absorption of
 //     their own bars could regress), DG-45-1's one brand mark and DG-45-2's one ladder.
-//   02_navigation — the nav MODEL (`ui/src/app/shell-nav.mjs`): four real links from the ROUTE
+//   02_navigation — the nav MODEL (`apps/ui/src/app/shell-nav.mjs`): four real links from the ROUTE
 //     TABLE's order, three non-colour active signals, the positional href rule that carries the
 //     current address's own parameters and invents none, honest locality, the 390 disclosure,
 //     and the four-item/ten-character budget REPORTED rather than absorbed.
@@ -275,7 +275,7 @@ import { shellSurfaceContainmentTests } from "./shell-surface-containment.test.m
 import { staticServeFallbackTests } from "./static-serve-fallback.test.mjs";
 import { inAppCrossLinksTests } from "./in-app-cross-links.test.mjs";
 // milestone 43 / story 04 — STALENESS, NEVER EVICTION (ADR-006 + DESIGN's freshness ramp).
-// Task 03: the fifth ramp. One pure headless module (ui/src/board/freshness.mjs) emits the
+// Task 03: the fifth ramp. One pure headless module (apps/ui/src/board/freshness.mjs) emits the
 // three states and both renderings with `now` passed in and strict `>`, so it agrees with
 // src/'s shared isStale AT the threshold instant; the board paints `stale` as a dashed
 // `muted` pill immediately left of the right-anchored status chip; and the badge appears
@@ -307,7 +307,7 @@ import { boardBacklogAndArchiveTests } from "./board-backlog-and-archive.test.mj
 import { boardStalenessA11yTests } from "./board-staleness-a11y.test.mjs";
 // milestone 50 / story 04, lane C — THE OPERATOR-FACING AFFORDANCE (ADR-008 decision 10;
 // DESIGN §The picker's shape / §The state machine / §The failure map). Both suites drive the
-// SHIPPED `ui/src/home/session-launcher.mjs` — a pure module by ADR, because the rules being
+// SHIPPED `apps/ui/src/home/session-launcher.mjs` — a pure module by ADR, because the rules being
 // tested (options from the payload alone, a derived-not-remembered target, eight states, two
 // deadlines and fourteen coded rows) would otherwise be reachable only through a React
 // component this repo has no harness for.

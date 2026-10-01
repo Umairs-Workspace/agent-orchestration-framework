@@ -37,7 +37,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROOTS = ["packages/core/src", "test", "scripts", path.join("ui", "src")];
+const ROOTS = ["packages/core/src", "test", "scripts", path.join("apps", "ui", "src")];
 const SCANNED = new Set([".mjs", ".js", ".ts", ".tsx"]);
 
 // Assembled rather than written, so this module is not its own subject (see the note above).

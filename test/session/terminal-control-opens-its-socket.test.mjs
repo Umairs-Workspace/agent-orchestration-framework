@@ -27,7 +27,7 @@
 //
 // That gap is what this suite closes, and it is closed at the LOWEST LEVEL THAT GENUINELY BITES:
 // `test/support/terminal-control-harness.mjs` bundles the REAL, UNMODIFIED
-// `ui/src/terminal/TerminalControl.tsx` with its real siblings and mounts it on mini-react with
+// `apps/ui/src/terminal/TerminalControl.tsx` with its real siblings and mounts it on mini-react with
 // HOST NODES ATTACHED TO REFS (the harness capability whose absence made this untestable — see
 // mini-react.mjs's `createRuntime({ hostNode })`). The assertion is the OBSERVABLE — a WebSocket
 // was constructed, to the URL the origins compose, and the pane host exists — never an internal.
@@ -50,9 +50,9 @@
 import assert from "node:assert/strict";
 
 import { withTerminalControl } from "../support/terminal-control-harness.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
-import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../../ui/src/terminal/host-model.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../../apps/ui/src/terminal/host-model.mjs";
 import {
   applyTerminalEvent,
   bindSource,
@@ -67,7 +67,7 @@ import {
   TERMINAL_STATES,
   UNAVAILABLE_CAUSES,
   WAITING_PANE_LINE,
-} from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 // An EPHEMERAL board origin, as production has, and the fleet's fixed one.
 const BOARD_ORIGIN = "http://127.0.0.1:41773";

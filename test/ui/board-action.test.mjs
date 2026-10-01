@@ -1,4 +1,4 @@
-// Unit coverage for the state-aware primary action mapping (ui/src/board/action.ts
+// Unit coverage for the state-aware primary action mapping (apps/ui/src/board/action.ts
 // — DESIGN: the detail panel's primary "Run agent" button is state-aware). Pure
 // data: status + ctx in, { kind, label, command?, disabled? } out. Imported here
 // the same way the React DetailPanel imports it, so the lifecycle mapping
@@ -8,7 +8,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { askCardState, primaryAction } from "../../ui/src/board/action.mjs";
+import { askCardState, primaryAction } from "../../apps/ui/src/board/action.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
 // A minimal WorkItem stub — primaryAction reads only `status` and `ref`.
@@ -177,7 +177,7 @@ const HELPER = "Sent to the session word for word and kept on the run record.";
 const workerAsk = () => A({ runId: null, state: "waiting", question: null, phase: null, local: false, node: "node-2976", sessionId: "S9" });
 const EX = { active: true, state: "running", code: "needs-input", nodeId: "node-2976", sessionId: "S9" };
 
-const readUi = async (rel) => stripComments(await readFile(new URL(`../../ui/src/board/${rel}`, import.meta.url), "utf8"));
+const readUi = async (rel) => stripComments(await readFile(new URL(`../../apps/ui/src/board/${rel}`, import.meta.url), "utf8"));
 
 function askCardTests() {
   return [
@@ -421,7 +421,7 @@ function askCardTests() {
         assert.match(lines[mount], /<AskCard\b.*\/>\s*$/u, "the element is on one line");
         assert.match(lines[mount - 1], /className="min-h-0 flex-1 overflow-y-auto p-4">\s*$/u, "directly after the body region's opening tag");
         assert.match(lines[mount + 1], /^\s*<DocBody\b/u, "directly before <DocBody");
-        const raw = await readFile(new URL("../../ui/src/board/DetailPanel.tsx", import.meta.url), "utf8");
+        const raw = await readFile(new URL("../../apps/ui/src/board/DetailPanel.tsx", import.meta.url), "utf8");
         assert.ok(raw.split(/\r?\n/u).length <= 1000, "at most 1,000 lines");
       },
     },
@@ -497,8 +497,8 @@ function askCardTests() {
             else fetches += ((await readFile(full, "utf8")).match(/fetch\("\/api\/work\/answer"/gu) ?? []).length;
           }
         };
-        await walk(fileURLToPath(new URL("../../ui/src", import.meta.url)));
-        assert.equal(fetches, 1, "ui/src holds exactly one fetch of the answer route");
+        await walk(fileURLToPath(new URL("../../apps/ui/src", import.meta.url)));
+        assert.equal(fetches, 1, "apps/ui/src holds exactly one fetch of the answer route");
         assert.match(api, /\n\s{2}ask\?: AskFact;/u, "WorkItem declares an optional ask");
         const fact = api.slice(api.indexOf("export type AskFact"), api.indexOf("};", api.indexOf("export type AskFact")));
         const keys = [...fact.matchAll(/^\s{2}(\w+):/gmu)].map((match) => match[1]);
@@ -511,11 +511,11 @@ function askCardTests() {
       name: "131/05 task02 — the board type-checks with the card",
       run() {
         const tsc = spawnSync(process.execPath, [fileURLToPath(new URL("../../node_modules/typescript/bin/tsc", import.meta.url)), "-b"], {
-          cwd: fileURLToPath(new URL("../../ui", import.meta.url)),
+          cwd: fileURLToPath(new URL("../../apps/ui", import.meta.url)),
           encoding: "utf8",
           env: { ...process.env, NODE_NO_WARNINGS: "1" },
         });
-        assert.equal(tsc.status, 0, `tsc -b in ui/ is clean:\n${tsc.stdout}${tsc.stderr}`);
+        assert.equal(tsc.status, 0, `tsc -b in apps/ui/ is clean:\n${tsc.stdout}${tsc.stderr}`);
       },
     },
   ];

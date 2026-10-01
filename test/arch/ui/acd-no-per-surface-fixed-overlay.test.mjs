@@ -9,7 +9,7 @@
 // ═══ WHY THIS FILE EXISTS AT ALL, AND IT IS THE WHOLE POINT ═══════════════════════════════════
 //
 // ADR-005 named this prohibition in m45 and gave it NO DETECTOR. What it gave instead was an
-// EXEMPTION: `acd-shell-z-ladder-single-home` carried `ui/src/fleet/terminal-view/FleetTerminalView.tsx`
+// EXEMPTION: `acd-shell-z-ladder-single-home` carried `apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx`
 // on a shrink-only list, "because milestone 46 deletes the file". That exemption caught only the
 // `z-50` HALF of the violation — the `fixed inset-0` half was never detected anywhere — and it
 // was keyed to a FILE.
@@ -30,7 +30,7 @@
 //
 //   1. The portal clause matched `createPortal(` … `document.body` within 400 characters. The
 //      REAL historical violation's span is **1,593 characters** (measured against
-//      `git show HEAD:ui/src/fleet/terminal-view/FleetTerminalView.tsx`), so the clause fired on
+//      `git show HEAD:apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx`), so the clause fired on
 //      the seven-line synthesized plant and NOT on the actual thing it was written about. That
 //      fixture is now committed (`test/fixtures/fleet-terminal-view-fullscreen-portal.txt`,
 //      verbatim from history) and every clause is asserted against IT — a detector calibrated
@@ -61,7 +61,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UI_SRC = "ui/src";
+const UI_SRC = "apps/ui/src";
 
 // THE SHELL'S ONE HOME. The overlay that presents a `shell:fullscreen` occupant, on the ladder's
 // top rung, with the focus trap, the `Escape` listener and the adoption host beside it. It is
@@ -72,14 +72,14 @@ const UI_SRC = "ui/src";
 // binds a surface — the shell ADOPTS a node into its own React-childless host, and a shell that
 // portalled into `document.body` would have the same escape-from-the-tree defect it exists to
 // take away from everybody else.
-const SHELL_OVERLAY = "ui/src/app/Shell.tsx";
+const SHELL_OVERLAY = "apps/ui/src/app/Shell.tsx";
 
 // THE NAMED SUBJECT (m46/05). The file the prohibition escaped into once already — the extracted
 // control that replaced `FleetTerminalView.tsx` — asserted to EXIST and to be swept, so this gate
 // can never repeat the failure it was written about: an assertion aimed at a file that is gone.
-const NAMED_SUBJECT = "ui/src/terminal/TerminalControl.tsx";
+const NAMED_SUBJECT = "apps/ui/src/terminal/TerminalControl.tsx";
 
-// The REAL violation, verbatim from `git show HEAD:ui/src/fleet/terminal-view/FleetTerminalView.tsx`
+// The REAL violation, verbatim from `git show HEAD:apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx`
 // before story 46/04 deleted it. Committed as a fixture because history is not a test dependency:
 // once this milestone lands, `HEAD` no longer carries the file, and a self-check that reached for
 // it would quietly stop asserting.
@@ -243,7 +243,7 @@ export function fixedOverlayProblems(file, source) {
     const offending = groups.find((group) => isFixed(group) && fullViewportExtent(group));
     if (offending !== undefined) {
       problems.push(
-        `${file}: paints a FULL-VIEWPORT fixed layer — \`${offending.replace(/\s+/g, " ").trim().slice(0, 120)}\`. ADR-005: a surface ASKS the shell to present it — \`requestFullscreen({ id, label, node, home, opener, claimsEscape, onLayout })\` in ui/src/app/shell-bus.mjs — and hands over the LIVE node. A layer of its own is a second stacking vocabulary, a second \`Escape\` handler and a second focus trap beside the shell's one overlay.`,
+        `${file}: paints a FULL-VIEWPORT fixed layer — \`${offending.replace(/\s+/g, " ").trim().slice(0, 120)}\`. ADR-005: a surface ASKS the shell to present it — \`requestFullscreen({ id, label, node, home, opener, claimsEscape, onLayout })\` in apps/ui/src/app/shell-bus.mjs — and hands over the LIVE node. A layer of its own is a second stacking vocabulary, a second \`Escape\` handler and a second focus trap beside the shell's one overlay.`,
       );
     }
   }
@@ -308,14 +308,14 @@ export function verdictFor(records, exemptions = FIXED_OVERLAY_EXEMPTIONS) {
 
 export const archTests = [
   {
-    name: "arch/45 ADR-005 + 46 ADR-009 (acd-no-per-surface-fixed-overlay): no module in ui/src outside the shell paints a full-viewport fixed layer, and nothing anywhere portals into document.body",
+    name: "arch/45 ADR-005 + 46 ADR-009 (acd-no-per-surface-fixed-overlay): no module in apps/ui/src outside the shell paints a full-viewport fixed layer, and nothing anywhere portals into document.body",
     run: async () => {
       const tree = await readUiTree();
 
       // NON-VACUITY, FIRST AND EXPLICITLY, because vacuity is the failure this gate was written
       // about. The tree was really read; the shell's one home really exists; and the NAMED
       // SUBJECT — the file the prohibition escaped into once — is really among the files swept.
-      assert.ok(tree.length > 30, `ui/src was actually read: ${tree.length} files`);
+      assert.ok(tree.length > 30, `apps/ui/src was actually read: ${tree.length} files`);
       const shell = tree.find((record) => record.file === SHELL_OVERLAY);
       assert.ok(shell, `${SHELL_OVERLAY} is missing — the shell's ONE overlay home has moved, so this gate's exemption-by-name is now pointing at nothing. Re-point it at the module that renders the shell root; do NOT delete the clause.`);
       const subject = tree.find((record) => record.file === NAMED_SUBJECT);
@@ -362,10 +362,10 @@ export const archTests = [
 
       // The validator genuinely refuses both barred shapes.
       const barred = validateExemptions([
-        ["ui/src/terminal/TerminalControl.tsx", "milestone 47 deletes this file"],
-        ["ui/src/fleet/Fleet.tsx", { reason: "we will remove it next milestone", expires: "2099-01-01" }],
-        ["ui/src/board/Board.tsx", { reason: "a genuinely temporary carve-out", expires: "2020-01-01" }],
-        ["ui/src/config/App.tsx", { reason: "a genuinely temporary carve-out", expires: "soon" }],
+        ["apps/ui/src/terminal/TerminalControl.tsx", "milestone 47 deletes this file"],
+        ["apps/ui/src/fleet/Fleet.tsx", { reason: "we will remove it next milestone", expires: "2099-01-01" }],
+        ["apps/ui/src/board/Board.tsx", { reason: "a genuinely temporary carve-out", expires: "2020-01-01" }],
+        ["apps/ui/src/config/App.tsx", { reason: "a genuinely temporary carve-out", expires: "soon" }],
       ]);
       assert.equal(barred.length, 4);
       assert.match(barred[0], /must be `\{ reason, expires \}`/, "a bare string is refused: a permission slip with no end date");
@@ -374,7 +374,7 @@ export const archTests = [
       assert.match(barred[3], /ISO date/);
       // A well-formed, unexpired, honestly-reasoned entry is accepted — so the refusals above are
       // the rule doing its job rather than the validator refusing everything.
-      assert.deepEqual(validateExemptions([["ui/src/x.tsx", { reason: "the shell cannot host it yet", expires: "2099-01-01" }]]), []);
+      assert.deepEqual(validateExemptions([["apps/ui/src/x.tsx", { reason: "the shell cannot host it yet", expires: "2099-01-01" }]]), []);
 
       // AND THE ASSERTION PATH ITSELF: an exemption cannot wave a LIVE violation through the
       // real sweep silently — it is `verdictFor` that would have to be neutered, and this lane
@@ -398,13 +398,13 @@ export const archTests = [
     name: "arch/45 ADR-005 (acd-no-per-surface-fixed-overlay): self-check — the REAL deleted violation (verbatim from history) trips BOTH clauses, ten spellings of the same layer trip the extent clause, and every sanctioned shape stays quiet",
     run: async () => {
       // ══ THE REAL THING, FIRST. Verbatim from
-      //    `git show HEAD:ui/src/fleet/terminal-view/FleetTerminalView.tsx` before 46/04 deleted
+      //    `git show HEAD:apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx` before 46/04 deleted
       //    it. A detector calibrated against its own plant proves the plant: the first cut's
       //    portal clause matched within 400 characters and this span is 1,593.
       const historical = await readFile(path.join(repoRoot, HISTORICAL_VIOLATION), "utf8");
       const span = historical.indexOf("document.body") - historical.indexOf("createPortal(");
       assert.ok(span > 1000, `the fixture really is the long-span shape (${span} characters between \`createPortal(\` and \`document.body\`) — if this shrinks, the fixture has been trimmed and the calibration is lost`);
-      const onHistory = fixedOverlayProblems("ui/src/fleet/terminal-view/FleetTerminalView.tsx", historical);
+      const onHistory = fixedOverlayProblems("apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx", historical);
       assert.ok(onHistory.some((problem) => /FULL-VIEWPORT fixed layer/i.test(problem)), "the extent clause fires on the REAL violation");
       assert.ok(onHistory.some((problem) => /document\.body/.test(problem)), "…and so does the portal clause, across 1,593 characters of JSX");
 
@@ -424,7 +424,7 @@ export const archTests = [
       ];
       for (const [label, plant] of layers) {
         assert.ok(
-          fixedOverlayProblems("ui/src/fleet/Plant.tsx", plant).some((problem) => /FULL-VIEWPORT fixed layer/i.test(problem)),
+          fixedOverlayProblems("apps/ui/src/fleet/Plant.tsx", plant).some((problem) => /FULL-VIEWPORT fixed layer/i.test(problem)),
           `self-check: ${label} — ${plant}`,
         );
       }
@@ -436,23 +436,23 @@ export const archTests = [
         ["the app root by id", 'return createPortal(<div />, document.getElementById("root"));'],
       ];
       for (const [label, plant] of portals) {
-        assert.ok(fixedOverlayProblems("ui/src/board/Plant.tsx", plant).length > 0, `self-check: ${label} — ${plant}`);
+        assert.ok(fixedOverlayProblems("apps/ui/src/board/Plant.tsx", plant).length > 0, `self-check: ${label} — ${plant}`);
       }
 
       // ══ THE SANCTIONED SHAPES STAY QUIET, and this half matters as much: a gate that fired on
       //    the board's toast or on the shell's own dock band would be relaxed rather than obeyed.
       const quiet = [
-        ["a TOAST on its own rung", "ui/src/board/Board.tsx", 'className="fixed bottom-4 right-4 z-40 max-w-md rounded-md"'],
-        ["the shell's dock band across the bottom edge", "ui/src/app/Probe.tsx", 'className={`fixed inset-x-0 bottom-0 ${Z_CLASSES.dock}`}'],
-        ["a child filling its OWN box", "ui/src/terminal/Probe.tsx", 'className="absolute inset-0 overflow-hidden"'],
-        ["…and one sized to the box it was given", "ui/src/terminal/Probe.tsx", 'className={cn("flex h-full min-h-0 flex-col", TERMINAL_VIEWPORT_BG_CLASS)}'],
-        ["a portal into a node the component OWNS — which is what adoption requires", "ui/src/terminal/Probe.tsx", 'const host = document.createElement("div");\nreturn createPortal(<div className="h-full" />, host);'],
+        ["a TOAST on its own rung", "apps/ui/src/board/Board.tsx", 'className="fixed bottom-4 right-4 z-40 max-w-md rounded-md"'],
+        ["the shell's dock band across the bottom edge", "apps/ui/src/app/Probe.tsx", 'className={`fixed inset-x-0 bottom-0 ${Z_CLASSES.dock}`}'],
+        ["a child filling its OWN box", "apps/ui/src/terminal/Probe.tsx", 'className="absolute inset-0 overflow-hidden"'],
+        ["…and one sized to the box it was given", "apps/ui/src/terminal/Probe.tsx", 'className={cn("flex h-full min-h-0 flex-col", TERMINAL_VIEWPORT_BG_CLASS)}'],
+        ["a portal into a node the component OWNS — which is what adoption requires", "apps/ui/src/terminal/Probe.tsx", 'const host = document.createElement("div");\nreturn createPortal(<div className="h-full" />, host);'],
         [
           "`fixed bottom-4` in one string and `inset-0` in another — two facts, not one layer",
-          "ui/src/board/Probe.tsx",
+          "apps/ui/src/board/Probe.tsx",
           'const toast = "fixed bottom-4 right-4";\nconst fill = "absolute inset-0";',
         ],
-        ["a sticky bar", "ui/src/app/Probe.tsx", 'className="sticky top-0 z-10 shrink-0"'],
+        ["a sticky bar", "apps/ui/src/app/Probe.tsx", 'className="sticky top-0 z-10 shrink-0"'],
       ];
       for (const [label, file, plant] of quiet) {
         assert.deepEqual(fixedOverlayProblems(file, plant), [], `self-check (quiet): ${label}`);

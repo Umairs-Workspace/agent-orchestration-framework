@@ -2,7 +2,7 @@
 //
 // Every scenario and every Examples ROW of
 // `.../02_story_home-core/tasks/01_the-socket-cap-arbiter.feature`, driven against the SHIPPED
-// `ui/src/home/socket-cap.mjs` and — for the gate lanes — against the SHIPPED violations
+// `apps/ui/src/home/socket-cap.mjs` and — for the gate lanes — against the SHIPPED violations
 // function exported by `test/arch/ui/acd-home-socket-cap-single-arbiter.test.mjs`.
 //
 // EVERY PLANT IS SYNTHESIZED SOURCE TEXT handed to that shipped detector. Never by editing a
@@ -25,9 +25,9 @@ import {
   paneKeyOf,
   paneTuple,
   subscribedPaneSet,
-} from "../../ui/src/home/socket-cap.mjs";
+} from "../../apps/ui/src/home/socket-cap.mjs";
 import { socketCapViolations } from "../arch/ui/acd-home-socket-cap-single-arbiter.test.mjs";
-import { UNAVAILABLE_CAUSES, FAILURE_CAUSES } from "../../ui/src/terminal/state-ramp.mjs";
+import { UNAVAILABLE_CAUSES, FAILURE_CAUSES } from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 const rows = (count, prefix = "s") =>
   Array.from({ length: count }, (_unused, index) => ({
@@ -156,17 +156,17 @@ const CLEAN_MIRROR = [
   "export const MAX_TAIL_BYTES_PER_KEY = 256 * 1024;",
   "export const MAX_TAIL_KEYS = 64;",
 ].join("\n");
-const cleanPair = () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT }], mirror: CLEAN_MIRROR });
+const cleanPair = () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT }], mirror: CLEAN_MIRROR });
 
 const PLANTS = [
   [
     "the cap rises past the mirror's tail budget",
-    () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("MAX_LIVE_PANES = 16", "MAX_LIVE_PANES = 128") }], mirror: CLEAN_MIRROR }),
+    () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("MAX_LIVE_PANES = 16", "MAX_LIVE_PANES = 128") }], mirror: CLEAN_MIRROR }),
     [/MAX_TAIL_KEYS/, /milestone 49 \/ ADR-006/],
   ],
   [
     "the cap rises to exactly one over",
-    () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("MAX_LIVE_PANES = 16", "MAX_LIVE_PANES = 65") }], mirror: CLEAN_MIRROR }),
+    () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("MAX_LIVE_PANES = 16", "MAX_LIVE_PANES = 65") }], mirror: CLEAN_MIRROR }),
     [/MAX_TAIL_KEYS/, /\b65\b/, /\b64\b/],
   ],
   [
@@ -175,30 +175,30 @@ const PLANTS = [
     // reads ONE build and believes it read two. Lowering the NODE side while the client stays
     // legal is the only plant that distinguishes them.
     "the MIRROR's budget is lowered instead",
-    () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT }], mirror: CLEAN_MIRROR.replace("MAX_TAIL_KEYS = 64", "MAX_TAIL_KEYS = 8") }),
+    () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT }], mirror: CLEAN_MIRROR.replace("MAX_TAIL_KEYS = 64", "MAX_TAIL_KEYS = 8") }),
     [/MAX_LIVE_PANES/, /\b8\b/],
   ],
   [
     "the client constant is deleted",
-    () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("export const MAX_LIVE_PANES = 16;\n", "") }], mirror: CLEAN_MIRROR }),
+    () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("export const MAX_LIVE_PANES = 16;\n", "") }], mirror: CLEAN_MIRROR }),
     [/CLIENT half could not be read/],
   ],
   [
     "the client constant is renamed",
-    () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("MAX_LIVE_PANES = 16", "PANE_LIMIT = 16") }], mirror: CLEAN_MIRROR }),
+    () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("MAX_LIVE_PANES = 16", "PANE_LIMIT = 16") }], mirror: CLEAN_MIRROR }),
     [/CLIENT half could not be read/],
   ],
   [
     "the mirror constant is deleted",
-    () => ({ files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT }], mirror: CLEAN_MIRROR.replace("export const MAX_TAIL_KEYS = 64;", "") }),
+    () => ({ files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT }], mirror: CLEAN_MIRROR.replace("export const MAX_TAIL_KEYS = 64;", "") }),
     [/NODE half could not be read/],
   ],
   [
     "a component holds the number",
     () => ({
       files: [
-        { path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
-        { path: "ui/src/home/Home.tsx", source: "export function Home({ rows }) {\n  return rows.slice(0, 16);\n}" },
+        { path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
+        { path: "apps/ui/src/home/Home.tsx", source: "export function Home({ rows }) {\n  return rows.slice(0, 16);\n}" },
       ],
       mirror: CLEAN_MIRROR,
     }),
@@ -208,8 +208,8 @@ const PLANTS = [
     "a second module declares a cap",
     () => ({
       files: [
-        { path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
-        { path: "ui/src/home/grid.mjs", source: "export const MAX_LIVE_PANES = 16;" },
+        { path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
+        { path: "apps/ui/src/home/grid.mjs", source: "export const MAX_LIVE_PANES = 16;" },
       ],
       mirror: CLEAN_MIRROR,
     }),
@@ -220,7 +220,7 @@ const PLANTS = [
     () => ({
       files: [
         {
-          path: "ui/src/home/socket-cap.mjs",
+          path: "apps/ui/src/home/socket-cap.mjs",
           source: CLEAN_CLIENT.replace(
             "export function subscribedPaneSet(rows, cap, intents, currentlySubscribed) {\n  return { cap, rows, intents, currentlySubscribed, decisions: [], subscribed: [] };",
             "export function subscribedPaneSet(rows, intents, currentlySubscribed) {\n  const cap = MAX_LIVE_PANES;\n  return { cap, rows, intents, currentlySubscribed, decisions: [], subscribed: [] };",
@@ -236,7 +236,7 @@ const PLANTS = [
     () => ({
       files: [
         {
-          path: "ui/src/home/socket-cap.mjs",
+          path: "apps/ui/src/home/socket-cap.mjs",
           source: CLEAN_CLIENT.replace(
             "  return { cap, rows, intents, currentlySubscribed, decisions: [], subscribed: [] };",
             "  if (rows.length > 16) return { cap, rows: rows.slice(0, cap), intents, currentlySubscribed, decisions: [], subscribed: [] };\n  return { cap, rows, intents, currentlySubscribed, decisions: [], subscribed: [] };",
@@ -264,7 +264,7 @@ const PLANTS = [
     () => ({
       files: [
         {
-          path: "ui/src/home/socket-cap.mjs",
+          path: "apps/ui/src/home/socket-cap.mjs",
           source: CLEAN_CLIENT.replace(
             [
               "// The live-socket ceiling. The number is argued from the mirror's synchronous replay burst,",
@@ -285,7 +285,7 @@ const PLANTS = [
     () => ({
       files: [
         {
-          path: "ui/src/home/socket-cap.mjs",
+          path: "apps/ui/src/home/socket-cap.mjs",
           source: CLEAN_CLIENT.replace(
             "// The platform is NOT the wall and this number is not derived from one.",
             [
@@ -310,7 +310,7 @@ const PLANTS = [
   [
     "the arbiter is RENAMED, which would vacate every clause scoped by its signature",
     () => ({
-      files: [{ path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("export function subscribedPaneSet(", "export function paneSubscriptions(") }],
+      files: [{ path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT.replace("export function subscribedPaneSet(", "export function paneSubscriptions(") }],
       mirror: CLEAN_MIRROR,
     }),
     [/ARBITER could not be found/, /vacate/, /amendment \(1\)/],
@@ -320,7 +320,7 @@ const PLANTS = [
     () => ({
       files: [
         {
-          path: "ui/src/home/socket-cap.mjs",
+          path: "apps/ui/src/home/socket-cap.mjs",
           source: CLEAN_CLIENT.replace(
             "export function subscribedPaneSet(rows, cap, intents, currentlySubscribed) {\n  return { cap, rows, intents, currentlySubscribed, decisions: [], subscribed: [] };",
             "export function subscribedPaneSet(rows, cap, intents) {\n  return { cap, rows, intents, decisions: [], subscribed: [] };",
@@ -336,9 +336,9 @@ const PLANTS = [
     "a second module declares an arbiter of its own",
     () => ({
       files: [
-        { path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
+        { path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
         {
-          path: "ui/src/home/grid.mjs",
+          path: "apps/ui/src/home/grid.mjs",
           source: "export function subscribedPaneSet(rows, cap, intents, currentlySubscribed) {\n  return { cap, rows, intents, currentlySubscribed };\n}",
         },
       ],
@@ -355,8 +355,8 @@ const PLANTS = [
     "the `.d.mts` sibling's literal type disagrees with the shipped constant",
     () => ({
       files: [
-        { path: "ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
-        { path: "ui/src/home/socket-cap.d.mts", source: "export declare const MAX_LIVE_PANES: 8;\nexport declare function subscribedPaneSet(): unknown;\n" },
+        { path: "apps/ui/src/home/socket-cap.mjs", source: CLEAN_CLIENT },
+        { path: "apps/ui/src/home/socket-cap.d.mts", source: "export declare const MAX_LIVE_PANES: 8;\nexport declare function subscribedPaneSet(): unknown;\n" },
       ],
       mirror: CLEAN_MIRROR,
     }),
@@ -957,7 +957,7 @@ export const homeSocketCapArbiterTests = [
       const planted = {
         files: [
           ...clean.files,
-          { path: "ui/src/home/Home.tsx", source: "import { subscribedPaneSet } from \"./socket-cap.mjs\";\nexport const decide = (rows) => subscribedPaneSet(rows, 16, {}, []);" },
+          { path: "apps/ui/src/home/Home.tsx", source: "import { subscribedPaneSet } from \"./socket-cap.mjs\";\nexport const decide = (rows) => subscribedPaneSet(rows, 16, {}, []);" },
         ],
         mirror: clean.mirror,
       };
@@ -970,7 +970,7 @@ export const homeSocketCapArbiterTests = [
       const fixed = {
         files: [
           ...clean.files,
-          { path: "ui/src/home/Home.tsx", source: "import { MAX_LIVE_PANES, subscribedPaneSet } from \"./socket-cap.mjs\";\nexport const decide = (rows) => subscribedPaneSet(rows, MAX_LIVE_PANES, {}, []);" },
+          { path: "apps/ui/src/home/Home.tsx", source: "import { MAX_LIVE_PANES, subscribedPaneSet } from \"./socket-cap.mjs\";\nexport const decide = (rows) => subscribedPaneSet(rows, MAX_LIVE_PANES, {}, []);" },
         ],
         mirror: clean.mirror,
       };
@@ -983,7 +983,7 @@ export const homeSocketCapArbiterTests = [
     run: async () => {
       const clean = cleanPair();
       const agreeing = {
-        files: [...clean.files, { path: "ui/src/home/socket-cap.d.mts", source: "export declare const MAX_LIVE_PANES: 16;\n" }],
+        files: [...clean.files, { path: "apps/ui/src/home/socket-cap.d.mts", source: "export declare const MAX_LIVE_PANES: 16;\n" }],
         mirror: clean.mirror,
       };
       assert.deepEqual(
@@ -993,7 +993,7 @@ export const homeSocketCapArbiterTests = [
       );
 
       const disagreeing = {
-        files: [...clean.files, { path: "ui/src/home/socket-cap.d.mts", source: "export declare const MAX_LIVE_PANES: 8;\n" }],
+        files: [...clean.files, { path: "apps/ui/src/home/socket-cap.d.mts", source: "export declare const MAX_LIVE_PANES: 8;\n" }],
         mirror: clean.mirror,
       };
       assert.notDeepEqual(disagreeing.files, agreeing.files, "the plant LANDED");

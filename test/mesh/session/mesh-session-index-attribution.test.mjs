@@ -61,7 +61,7 @@ const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "
 // feature". The real `shapeGlobalStatus` has also carried `stalenessSeconds` since
 // milestone 43 / story 04 (the cache-freshness window, stated once per response) — it
 // predates this story, which neither adds it, moves it, nor reads it. The feature's
-// six match `ui/src/fleet/api.ts`'s `GlobalMeshStatus` declaration, which deliberately
+// six match `apps/ui/src/fleet/api.ts`'s `GlobalMeshStatus` declaration, which deliberately
 // does not spell that key (its ONE ui-side reader is `../board/freshness.mjs`). The
 // binding clause — "the same set, with the same values, that the same fixture produces
 // without this feature" — is asserted here against what the shaper really produces, so

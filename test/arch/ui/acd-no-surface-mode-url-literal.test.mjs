@@ -10,10 +10,10 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //   packages/core/src/board-serve.mjs:41,62                          `?mode=board`
 //   packages/core/src/mesh/ui-serve.mjs:143,736                       `?mode=fleet[&scope=…]`
 //   packages/core/src/commands/assets-ui.mjs:45,117                   `?mode=assets`
-//   app/desktop/crates/app/src/supervisor.rs:44         `?mode=fleet&scope=global`  (COMPILED)
-//   ui/src/board/Board.tsx:416                          `http://127.0.0.1:4181/?mode=fleet`
-//   ui/src/board/DetailPanel.tsx:270                    `…/?mode=fleet&scope=global`
-//   ui/src/fleet/Fleet.tsx:1398                         `/?mode=board`
+//   apps/desktop/crates/app/src/supervisor.rs:44         `?mode=fleet&scope=global`  (COMPILED)
+//   apps/ui/src/board/Board.tsx:416                          `http://127.0.0.1:4181/?mode=fleet`
+//   apps/ui/src/board/DetailPanel.tsx:270                    `…/?mode=fleet&scope=global`
+//   apps/ui/src/fleet/Fleet.tsx:1398                         `/?mode=board`
 //
 // WHY THIS IS A STRUCTURAL RULE AND NOT A TIDY-UP. ADR-003's back-compat guarantee rests
 // on a measurement: *every* URL this system has ever advertised carries `?mode=`, and
@@ -23,7 +23,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // address bar goes back to meaning two things at once. So the rule is not "clean these
 // up"; it is "the legacy vocabulary is read-only, and only the translator may read it".
 //
-// SCOPE: production code only — `packages/core/src/`, `ui/src/`, `app/desktop/`. The behavioural suites
+// SCOPE: production code only — `packages/core/src/`, `apps/ui/src/`, `apps/desktop/`. The behavioural suites
 // that assert an advertised URL *contains* `mode=` (test/mesh/ui/mesh-ui-serve.test.mjs:126,303,
 // test/ui/board-serve.test.mjs:186, test/ui/work-ui-verb-rename.test.mjs:187,
 // test/mesh/ui/mesh-ui-cli-face.test.mjs:205, test/mesh/ui/mesh-ui-global-scope.test.mjs:219) change in the
@@ -50,7 +50,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //   - the four listed producers each name their path (assertion 2) — a CLOSED list, and its
 //     name now says "these four" instead of claiming to see a fifth.
 //   - the CLOSING rule (assertion 3, new) — the open sweep the name was promising: every file
-//     in `packages/core/src/` · `ui/src/` · `app/desktop/` that mints an ADR-002 ROUTE PATH must be one of
+//     in `packages/core/src/` · `apps/ui/src/` · `apps/desktop/` that mints an ADR-002 ROUTE PATH must be one of
 //     the eight files declared here. A fifth producer now fails CI naming its two remedies.
 // This matters because milestones 47, 49 and 50 each plausibly add a URL producer, and
 // ADR-002's "small, enumerable edit set — not a sweep" is exactly the property that decays
@@ -65,7 +65,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // gate. Neither is a substitute for the other, and saying so here stops a later reader
 // mistaking one green for both.
 //
-// `ui/src/app/shell-nav.mjs` is deliberately NOT on the allow-list, though it is the shell's
+// `apps/ui/src/app/shell-nav.mjs` is deliberately NOT on the allow-list, though it is the shell's
 // navigation home: it derives every href from `ROUTES` (`ROUTES.filter(...)`, `route.path`) and
 // names no literal at all. Allow-listing it would pre-authorise a hard-coded path in the one
 // module whose whole design is not to have one.
@@ -76,10 +76,10 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const SCAN_ROOTS = [ path.join("ui", "src"), path.join("app", "desktop")];
+const SCAN_ROOTS = [ path.join("apps", "ui", "src"), path.join("apps", "desktop")];
 const SCANNED_EXT = new Set([".mjs", ".js", ".ts", ".tsx", ".mts", ".rs"]);
 // The ONE module allowed to name the legacy vocabulary: it owns the translation (ADR-003).
-const LEGACY_ALLOWED = new Set(["ui/src/app/routes.mjs", "ui/src/app/routes.d.mts"]);
+const LEGACY_ALLOWED = new Set(["apps/ui/src/app/routes.mjs", "apps/ui/src/app/routes.d.mts"]);
 
 // A `?mode=<surface>` / `&mode=<surface>` URL selector literal.
 const MODE_URL_LITERAL = /[?&]mode=(fleet|board|assets)\b/g;
@@ -106,7 +106,7 @@ const PRODUCERS = [
   { file: "packages/server/src/board-serve.mjs", path: "/board", what: "the board launcher's `boardUrl` (:41 probe, :62 serve)" },
   { file: "packages/mesh/src/ui-serve.mjs", path: "/fleet", what: "the fleet launcher's `fleetUrl` (:143 probe, :736 serve)" },
   { file: "packages/core/src/application/bindings/commands/assets/ui.mjs", path: "/config", what: "the config editor's `uiUrl` (:45 serve, :117 probe) — `/config`, NOT `/assets`, because `/assets` is the built bundle's own asset directory (ui/dist/assets/index-*.js)" },
-  { file: "app/desktop/crates/app/src/supervisor.rs", path: "/fleet", what: "the desktop tray's COMPILED `MESH_UI_URL` (:44) — a binary constant, which is also why ADR-003 sets no expiry on the legacy translation" },
+  { file: "apps/desktop/crates/app/src/supervisor.rs", path: "/fleet", what: "the desktop tray's COMPILED `MESH_UI_URL` (:44) — a binary constant, which is also why ADR-003 sets no expiry on the legacy translation" },
 ];
 
 // The OTHER four files allowed to name a route path, and why each one has to. Together with
@@ -118,22 +118,22 @@ const PRODUCERS = [
 // is the same shape `acd-shell-z-ladder-single-home` uses for its one retiring exemption.
 const ROUTE_VOCABULARY_ALLOWED = [
   {
-    file: "ui/src/app/routes.mjs",
-    why: "the ONE route table (ADR-001) — the authoritative home of the path vocabulary, and the module every other `ui/` consumer derives from. `ui/src/app/shell-nav.mjs` and `ui/src/home/page-state.mjs` read it rather than naming a literal, which is why neither is listed here. (It used to name `ui/src/app/Landing.tsx` as the second example; m49/04 DELETED that file, and the terminals home's `Open the fleet →` exit derives its href the same way the nav does.)",
+    file: "apps/ui/src/app/routes.mjs",
+    why: "the ONE route table (ADR-001) — the authoritative home of the path vocabulary, and the module every other `ui/` consumer derives from. `apps/ui/src/app/shell-nav.mjs` and `apps/ui/src/home/page-state.mjs` read it rather than naming a literal, which is why neither is listed here. (It used to name `apps/ui/src/app/Landing.tsx` as the second example; m49/04 DELETED that file, and the terminals home's `Open the fleet →` exit derives its href the same way the nav does.)",
   },
   // The three hard-coded in-app cross-links (ADR-002's consequence, story 45/04). They are
   // literals rather than table reads because each is a CROSS-ORIGIN address: the first two
   // name the fleet's FIXED :4181 from a board whose own port is ephemeral, and the third is
   // deliberately relative. See `test/ui/in-app-cross-links.test.mjs` for their behavioural half.
   {
-    file: "ui/src/board/Board.tsx",
+    file: "apps/ui/src/board/Board.tsx",
     why: "the dead-server banner's \"the fleet\" link — absolute on :4181, because a board port is ephemeral and the fleet's is not",
   },
   {
-    file: "ui/src/board/DetailPanel.tsx",
+    file: "apps/ui/src/board/DetailPanel.tsx",
     why: "the \"watch on the fleet\" link — absolute on :4181, still carrying `scope=global` as a real parameter on the path",
   },
-  // `ui/src/fleet/Fleet.tsx` WAS THE THIRD, and it is GONE from this table — the exemption
+  // `apps/ui/src/fleet/Fleet.tsx` WAS THE THIRD, and it is GONE from this table — the exemption
   // is retired, not re-aimed, which is the shrink-only direction this list is supposed to
   // move in. It was here for the local-board drill-in's deliberately RELATIVE `/board`, a
   // dead end m45/STATE deferred to milestone 47. m47/ADR-006 took that deferral and answered
@@ -185,7 +185,7 @@ function routePathLiterals(source) {
 
 export const archTests = [
   {
-    name: "arch/45 ADR-003 (acd-no-surface-mode-url-literal): no production module in src/ · ui/src/ · app/desktop/ mints a `?mode=` surface URL — the legacy vocabulary is READ-ONLY, and only the translator reads it",
+    name: "arch/45 ADR-003 (acd-no-surface-mode-url-literal): no production module in src/ · apps/ui/src/ · apps/desktop/ mints a `?mode=` surface URL — the legacy vocabulary is READ-ONLY, and only the translator reads it",
     run: async () => {
       const files = (await readRuntimeFiles(repoRoot)).map(file => file.rel);
       for (const root of SCAN_ROOTS) await sourceFiles(path.join(repoRoot, root), files);
@@ -206,7 +206,7 @@ export const archTests = [
         "ADR-003's back-compat guarantee is total ONLY because every advertised URL carries the legacy",
         "selector and can therefore be translated once, at the entry, forever. A NEW producer emitting the",
         "legacy form re-opens the two-vocabularies problem the milestone closes. Emit the PATH (/fleet,",
-        "/board, /config); the translation stays in ui/src/app/routes.mjs and nowhere else.",
+        "/board, /config); the translation stays in apps/ui/src/app/routes.mjs and nowhere else.",
       ].join(" ");
       assert.deepEqual(
         violations,
@@ -281,8 +281,8 @@ export const archTests = [
         "site minting a route path is written down. Two remedies, and the right one is usually the second:",
         "  (1) this really is a new advertised-URL producer — add it to PRODUCERS (with its path) or to",
         "      ROUTE_VOCABULARY_ALLOWED (with the reason it must name a literal), so the enumeration stays honest; or",
-        "  (2) it should not be minting one at all — derive the path from `ui/src/app/routes.mjs`'s table",
-        "      (the way `ui/src/app/shell-nav.mjs` does), or, in `packages/core/src/` and `app/desktop/` where that import",
+        "  (2) it should not be minting one at all — derive the path from `apps/ui/src/app/routes.mjs`'s table",
+        "      (the way `apps/ui/src/app/shell-nav.mjs` does), or, in `packages/core/src/` and `apps/desktop/` where that import",
         "      direction is forbidden (ADR-004), route the URL through the producer that already owns it.",
       ].join("\n");
 
@@ -348,7 +348,7 @@ export const archTests = [
       const notRoutePaths = [
         // API namespaces — `/config` and `/board` appear INSIDE a longer path here, and the
         // leading-letter exclusion is what spares them. These are real lines from the tree
-        // (ui/src/config/App.tsx, packages/core/src/mesh/ui-serve.mjs) and there are dozens more like them.
+        // (apps/ui/src/config/App.tsx, packages/core/src/mesh/ui-serve.mjs) and there are dozens more like them.
         'const response = await fetch("/api/config");',
         'await fetch("/api/config/sections", { method: "POST" });',
         'if (pathname === "/api/mesh/board-url") {',
@@ -357,7 +357,7 @@ export const archTests = [
         'import { Board } from "@/board/Board";',
         'import { runStateChip } from "../board/runs.mjs";',
         'import { freshness } from "../board/freshness.mjs";',
-        // a route ID is not a route path (ui/src/app/routes.d.mts:11) — no leading slash
+        // a route ID is not a route path (apps/ui/src/app/routes.d.mts:11) — no leading slash
         'export type RouteId = "landing" | "fleet" | "board" | "config" | "not-found";',
         // and the legacy form is the OTHER detector's business, not this one's
         'boardUrl: `http://127.0.0.1:${port}/?mode=board`,',

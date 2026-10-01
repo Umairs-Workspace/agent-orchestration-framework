@@ -52,7 +52,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //     one thing a second evaluator CANNOT avoid — reading the INSTANT: only freshness.mjs
 //     may read `syncedAt` off a record. Passing the whole record to the ramp is not a read,
 //     which is what every legitimate consumer does.
-//  4. ARMED — once ui/src/board/freshness.mjs exists it takes `now` as a parameter, reads
+//  4. ARMED — once apps/ui/src/board/freshness.mjs exists it takes `now` as a parameter, reads
 //     no clock of its own, and uses strict `>` (never `>=`).
 //  5. THE ONE-MAPPER RATCHET — no module in src/ other than cache-provenance.mjs may build
 //     a `reportedBy`/`syncedAt` wire key out of a STORAGE spelling; one named baseline.
@@ -69,8 +69,8 @@ const isNodeStale = _aofApplication.mesh.presence.isNodeStale;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SRC = path.join(repoRoot, "packages", "core", "src");
-const UI_SRC = path.join(repoRoot, "ui", "src");
-const FRESHNESS = path.join(repoRoot, "ui", "src", "board", "freshness.mjs");
+const UI_SRC = path.join(repoRoot, "apps", "ui", "src");
+const FRESHNESS = path.join(repoRoot, "apps", "ui", "src", "board", "freshness.mjs");
 
 const CACHE_TABLES = ["work_items", "work_item_docs", "work_item_runs"];
 const TIME_COLUMNS = ["updated_at", "synced_at", "last_published_at", "reported_at"];
@@ -97,7 +97,7 @@ const HAND_ROLLED_BASELINE = ["packages/mesh/src/projection-store.mjs — report
 //   `const { syncedAt } = row`                            — destructuring.
 // Handing the WHOLE record to the ramp (`freshnessOf(item)`, `freshness(record, …)`) is NOT
 // a read and must stay legal — it is what every legitimate consumer does.
-const UI_ONE_EVALUATOR = "ui/src/board/freshness.mjs";
+const UI_ONE_EVALUATOR = "apps/ui/src/board/freshness.mjs";
 // `.mts` is in the scan (it was not before ADR-015/F1): a declaration file is harmless, but
 // an EVALUATOR written as a `.mts` would otherwise have been invisible to every clause here.
 const UI_EXTS = [".ts", ".tsx", ".mts", ".mjs", ".js"];
@@ -200,7 +200,7 @@ export const archTests = [
     name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): ui/ carries at most ONE freshness evaluator and NO hard-coded staleness threshold — the window arrives on the wire",
     run: async () => {
       const files = await filesUnder(UI_SRC, UI_EXTS);
-      assert.ok(files.length > 0, "ui/src has source files (non-vacuous)");
+      assert.ok(files.length > 0, "apps/ui/src has source files (non-vacuous)");
       const evaluators = [];
       const literals = [];
       for (const file of files) {
@@ -228,7 +228,7 @@ export const archTests = [
     // renaming the parameter, which is what `ui/` already calls it everywhere downstream
     // (`windowSeconds`). This clause holds the same rule over the one thing a second
     // evaluator cannot rename away: the INSTANT it must read to have an opinion at all.
-    name: "arch/43 ADR-015/F1 (acd-cache-staleness-single-predicate): only ui/src/board/freshness.mjs READS a record's `syncedAt` — the rename-proof half of ADR-006's one-evaluator clause",
+    name: "arch/43 ADR-015/F1 (acd-cache-staleness-single-predicate): only apps/ui/src/board/freshness.mjs READS a record's `syncedAt` — the rename-proof half of ADR-006's one-evaluator clause",
     run: async () => {
       const offenders = [];
       for (const file of await filesUnder(UI_SRC, UI_EXTS)) {
@@ -246,7 +246,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): ARMED — once ui/src/board/freshness.mjs exists it takes `now` as a parameter, reads no clock of its own, and uses strict `>` (never `>=`)",
+    name: "arch/43 ADR-006 (acd-cache-staleness-single-predicate): ARMED — once apps/ui/src/board/freshness.mjs exists it takes `now` as a parameter, reads no clock of its own, and uses strict `>` (never `>=`)",
     run: async () => {
       if (!existsSync(FRESHNESS)) return; // not-yet-built: a clean skip that arms the moment the ramp lands
       const code = stripComments(await readFile(FRESHNESS, "utf8"));

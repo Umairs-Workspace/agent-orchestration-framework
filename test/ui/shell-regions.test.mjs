@@ -2,7 +2,7 @@
 // `stories/03_story_app-shell-and-entry/tasks/01_shell-regions.feature` (@executable).
 //
 // THE CHANNEL. The feature's LITMUS: "every Then is a returned VALUE from
-// `ui/src/app/shell-layout.mjs` — the framework-free module ADR-005 names, loaded by node:test
+// `apps/ui/src/app/shell-layout.mjs` — the framework-free module ADR-005 names, loaded by node:test
 // with no bundler and no DOM. The shell's LAYOUT is therefore tested as a MODEL." Every lane
 // below reads that model.
 //
@@ -52,8 +52,8 @@ import {
   shellRows,
   surfaceBarStands,
   topBarModel,
-} from "../../ui/src/app/shell-layout.mjs";
-import { routeFor } from "../../ui/src/app/routes.mjs";
+} from "../../apps/ui/src/app/shell-layout.mjs";
+import { routeFor } from "../../apps/ui/src/app/routes.mjs";
 import { withShellApp, withShellComposedFleet } from "../support/shell-app-harness.mjs";
 import { withFleetApp } from "../support/fleet-app-harness.mjs";
 import { withBoardApp } from "../support/board-app-harness.mjs";
@@ -753,7 +753,7 @@ export const shellRegionsTests = [
   // Scenario: the shell's own card state has ONE wrapper (01 scenario 5)
   //
   // IT USED TO BE TWO STATES SHARING ONE WRAPPER — the landing and not-found — and milestone 49 /
-  // story 04 made it one. `/` is a routed surface now and `ui/src/app/Landing.tsx` is DELETED, so
+  // story 04 made it one. `/` is a routed surface now and `apps/ui/src/app/Landing.tsx` is DELETED, so
   // the shell draws exactly one card of its own. The wrapper's whole reason survives unchanged
   // (`min-h-full` centres nothing against a parent with no definite height), and it is asserted
   // here on the one state that still reaches it; that the OTHER state no longer does is asserted

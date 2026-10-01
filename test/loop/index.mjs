@@ -166,7 +166,7 @@ import { laneIsLocalSlotTests } from "./lane-is-local-slot.test.mjs";
 //   SHIPPED detectors: part 1 generalised to a surface → posture-home table with PER-SURFACE JSX
 //   floors (a concatenated floor is satisfied by Fleet alone and leaves the home unchecked — this
 //   clause's own recorded failure mode, and the floor plant is what proves it), part 2 untouched,
-//   part 3 untouched plus a `ui/src/home/**` sweep. The last two lanes are the strictly-stronger
+//   part 3 untouched plus a `apps/ui/src/home/**` sweep. The last two lanes are the strictly-stronger
 //   checklist: twelve surviving assertions re-run, eight additions, nothing exempted.
 import { invariant4AmendedTests } from "./invariant-4-amended.test.mjs";
 // milestone 57 / story 01 — computed watcher independence (tasks 00–02) and

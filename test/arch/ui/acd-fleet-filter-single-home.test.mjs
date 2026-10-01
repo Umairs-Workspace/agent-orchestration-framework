@@ -1,6 +1,6 @@
 // Fitness function: acd-fleet-filter-single-home (m47 / ADR-001 + ADR-003) —
 //
-//   "The fleet's repo filter has ONE home: `ui/src/fleet/scope.mjs`. No sibling filter module
+//   "The fleet's repo filter has ONE home: `apps/ui/src/fleet/scope.mjs`. No sibling filter module
 //    exists, no module outside that home names the `repo` query key — not the router, not the
 //    shell nav — and the narrowing has exactly ONE call site."
 //
@@ -18,11 +18,11 @@
 // copy (`emptyStateCopy`). A new `repo-filter.mjs` would not be a new concept — it would be HALF
 // of an existing one, and the two halves would each own a different half of the same question
 // ("what is this view narrowed to"). m45/ADR-006 pinned the same rule one layer up in terms:
-// "`scope` keeps its existing ONE home in `ui/src/fleet/scope.mjs`".
+// "`scope` keeps its existing ONE home in `apps/ui/src/fleet/scope.mjs`".
 //
 // WHY THE `repo` KEY SWEEP REACHES THE ROUTER AND THE SHELL. m45/ADR-006 makes the router a PATH
 // router that carries every unrecognised parameter through by copy-and-delete, and
-// `ui/src/app/shell-nav.mjs:161-169`'s href rule is POSITIONAL for the same reason — its own
+// `apps/ui/src/app/shell-nav.mjs:161-169`'s href rule is POSITIONAL for the same reason — its own
 // comment says a rule that forwarded fleet parameters onto the board "would require the shell to
 // know which parameters belong to which surface — which is exactly what keeps milestone 47's repo
 // filter local to the fleet." So the filter working "for free" through the shell is a property of
@@ -36,9 +36,9 @@
 //
 // ── ASSERTION 4 (added 2026-08-12, F-47-04-ARCH-1) — ADR-008's ONE HOME, WHICH WAS UNRATCHETED ──
 //
-// ADR-008 gives region 5's drop decision ONE home — `ui/src/fleet/assign-affordance.mjs`, "as a
+// ADR-008 gives region 5's drop decision ONE home — `apps/ui/src/fleet/assign-affordance.mjs`, "as a
 // pure function beside the budget it reads" — and nothing in this repo enforced it. The
-// structural review of 47/04 proved that by planting `ui/src/fleet/region5-name-drop.mjs`, a
+// structural review of 47/04 proved that by planting `apps/ui/src/fleet/region5-name-drop.mjs`, a
 // SECOND home for the drop predicate with the original export left in place, and the whole
 // milestone's gates passed **51 / 51**: this file's sibling-module rule matches
 // `/(repo|filter|narrow)/i`, which `region5NameDropped` is not, and its narrowing vocabulary does
@@ -63,17 +63,17 @@ import { stripComments, functionBody } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UI_SRC = path.join(repoRoot, "ui", "src");
+const UI_SRC = path.join(repoRoot, "apps", "ui", "src");
 const FLEET_DIR = path.join(UI_SRC, "fleet");
 
 // THE ONE HOME (m47/ADR-001), and its type sidecar. One module, one sidecar — a second `.d.mts`
 // is a second home wearing a type hat.
-const FILTER_HOME = "ui/src/fleet/scope.mjs";
-const FILTER_HOME_SIDECAR = "ui/src/fleet/scope.d.mts";
+const FILTER_HOME = "apps/ui/src/fleet/scope.mjs";
+const FILTER_HOME_SIDECAR = "apps/ui/src/fleet/scope.d.mts";
 const REPO_KEY_ALLOWED = new Set([FILTER_HOME, FILTER_HOME_SIDECAR]);
 
 // The surface that wires the filter up — one call site, and it lives here (m47/ADR-004's seam).
-const FLEET_TSX = "ui/src/fleet/Fleet.tsx";
+const FLEET_TSX = "apps/ui/src/fleet/Fleet.tsx";
 
 // The narrowing, and the two URL helpers. THE SPELLINGS ARE CANONICAL AND BINDING, and that is a
 // lesson paid for in m45: its [Amigos-1] amendment records a build that would have satisfied its
@@ -85,7 +85,7 @@ const URL_HELPERS = ["repoFromSearch", "withRepoParam"];
 // ── WHAT COUNTS AS A SECOND HOME (m47/ADR-001, as amended at the developer's feasibility pass,
 // 2026-08-10 — [Feasibility-2]) ───────────────────────────────────────────────────────────────
 //
-// The first cut of this gate refused ANY file under ui/src/fleet/ whose NAME matched the concept,
+// The first cut of this gate refused ANY file under apps/ui/src/fleet/ whose NAME matched the concept,
 // and the developer found that it forbids the very thing another gate DEMANDS: a `RepoPicker.tsx`
 // or a `FilterBanner.tsx` would fail CI, while `acd-ui-surface-file-budget`'s own failure message
 // instructs the author to "Extract the next region into a sibling component with a prop boundary"
@@ -147,7 +147,7 @@ async function uiSourceFiles(dir = UI_SRC, out = []) {
 }
 
 // The fleet subtree, RECURSIVELY — directories and files alike. [Feasibility-2]: the first cut
-// used a flat `readdir`, so a `ui/src/fleet/filter/` DIRECTORY — the shape ADR-001 forbids by
+// used a flat `readdir`, so a `apps/ui/src/fleet/filter/` DIRECTORY — the shape ADR-001 forbids by
 // name — escaped the gate entirely. A non-recursive sweep of a rule about subtrees is a rule
 // about one directory.
 async function fleetTree(dir = FLEET_DIR, out = { dirs: [], files: [] }) {
@@ -186,8 +186,8 @@ async function fleetTree(dir = FLEET_DIR, out = { dirs: [], files: [] }) {
 // px facts, its re-derivation of the two `_CH` budgets (they move DOWN), and any rename. Freezing a
 // list of today's symbols would have been wrong within hours of being written — ADR-014 landed the
 // same day.
-const GEOMETRY_HOME = "ui/src/fleet/assign-affordance.mjs";
-const GEOMETRY_HOME_SIDECAR = "ui/src/fleet/assign-affordance.d.mts";
+const GEOMETRY_HOME = "apps/ui/src/fleet/assign-affordance.mjs";
+const GEOMETRY_HOME_SIDECAR = "apps/ui/src/fleet/assign-affordance.d.mts";
 const REGION5_CONCEPT = /region[\s_-]?5/i;
 const REGION5_BUDGET = /^REGION5_/;
 
@@ -292,7 +292,7 @@ function queryKeyHits(source, key) {
 
 export const archTests = [
   {
-    name: "arch/47 ADR-001 (acd-fleet-filter-single-home): the filter's ONE home is ui/src/fleet/scope.mjs — it is framework-free and node-loadable, and NO sibling filter module exists under ui/src/fleet/",
+    name: "arch/47 ADR-001 (acd-fleet-filter-single-home): the filter's ONE home is apps/ui/src/fleet/scope.mjs — it is framework-free and node-loadable, and NO sibling filter module exists under apps/ui/src/fleet/",
     run: async () => {
       // The home is loadable by plain node. That load IS the proof: this repo has no React test
       // harness, so a narrowing decision that can only be exercised through a component is a
@@ -325,7 +325,7 @@ export const archTests = [
       // NO SECOND LOGIC HOME, in the three clauses [Feasibility-2] settled — RECURSIVELY, because
       // the shape ADR-001 forbids by name is a DIRECTORY and a flat readdir cannot see one.
       const tree = await fleetTree();
-      assert.ok(tree.files.length > 5, `ui/src/fleet/ was actually walked (non-vacuous): ${tree.files.length} files, ${tree.dirs.length} directories`);
+      assert.ok(tree.files.length > 5, `apps/ui/src/fleet/ was actually walked (non-vacuous): ${tree.files.length} files, ${tree.dirs.length} directories`);
 
       const secondHomes = [];
       // (a) a DIRECTORY named for the concept declares a home by its name, whatever it contains.
@@ -350,7 +350,7 @@ export const archTests = [
       assert.deepEqual(
         secondHomes,
         [],
-        `these paths under ui/src/fleet/ are a SECOND home for the narrowing:\n  ${secondHomes.join("\n  ")}\n`
+        `these paths under apps/ui/src/fleet/ are a SECOND home for the narrowing:\n  ${secondHomes.join("\n  ")}\n`
           + `m47/ADR-001: the repo filter EXTENDS ${FILTER_HOME}. scope.mjs already owns the URL round-trip, the client filter, the empty predicate and the empty copy — a second module would own HALF of one concept, and the two halves would each answer "what is this view narrowed to" differently. Same ruling m45/ADR-006 made for \`scope\`.\n`
           + "WHAT THIS DOES *NOT* FORBID, because the first cut of this gate did and it was wrong: a PRESENTATIONAL child. `RepoPicker.tsx`, `FilterBanner.tsx` and `NarrowingChip.tsx` all pass — they are components, not logic homes, and `acd-ui-surface-file-budget` actively instructs the author to extract exactly those (\"Extract the next region into a sibling component with a prop boundary\"). What makes something a home is what it EXPORTS, not what it is called.",
       );
@@ -385,11 +385,11 @@ export const archTests = [
   },
 
   {
-    name: "arch/47 ADR-003 (acd-fleet-filter-single-home): NO module in ui/src outside the one home names the `repo` query key — not the route module, not the shell nav; the filter stays local to the fleet",
+    name: "arch/47 ADR-003 (acd-fleet-filter-single-home): NO module in apps/ui/src outside the one home names the `repo` query key — not the route module, not the shell nav; the filter stays local to the fleet",
     run: async () => {
       const files = await uiSourceFiles();
-      assert.ok(files.length > 50, `the ui/src tree was actually walked (non-vacuous): ${files.length} source files`);
-      for (const required of [FLEET_TSX, "ui/src/app/routes.mjs", "ui/src/app/shell-nav.mjs"]) {
+      assert.ok(files.length > 50, `the apps/ui/src tree was actually walked (non-vacuous): ${files.length} source files`);
+      for (const required of [FLEET_TSX, "apps/ui/src/app/routes.mjs", "apps/ui/src/app/shell-nav.mjs"]) {
         assert.ok(files.includes(required), `the walker reaches ${required} — the modules most likely to grow a special case`);
       }
 
@@ -402,7 +402,7 @@ export const archTests = [
       assert.deepEqual(
         violations,
         [],
-        `these ui/src modules name the \`repo\` query key outside the ONE home (${FILTER_HOME}):\n  ${violations.join("\n  ")}\n`
+        `these apps/ui/src modules name the \`repo\` query key outside the ONE home (${FILTER_HOME}):\n  ${violations.join("\n  ")}\n`
           + "m47/ADR-003: the router and the shell carry the filter through WITHOUT KNOWING ITS NAME — m45/ADR-006's copy-and-delete builder preserves it by default, and shell-nav.mjs:161-169's positional href rule carries the CURRENT route's search byte-identically and gives every other item its bare path. Both of those are properties of not knowing the name, and one special case is how they die. Read the key in scope.mjs and hand the value in.",
       );
 
@@ -432,7 +432,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/47 ADR-001+004 (acd-fleet-filter-single-home): the one home exports the URL round-trip, and the narrowing has EXACTLY ONE call site in ui/src — in Fleet.tsx [EXPECTED RED until m47's stories land]",
+    name: "arch/47 ADR-001+004 (acd-fleet-filter-single-home): the one home exports the URL round-trip, and the narrowing has EXACTLY ONE call site in apps/ui/src — in Fleet.tsx [EXPECTED RED until m47's stories land]",
     run: async () => {
       const home = await import(new URL(`../../../${FILTER_HOME}`, import.meta.url).href);
       for (const name of URL_HELPERS) {
@@ -460,8 +460,8 @@ export const archTests = [
       // would have FAILED A CORRECT IMPLEMENTATION. `path.extname("scope.d.mts")` is `.mts`, so the
       // sidecar is in the walk, and its line 44 reads `export declare function filterToWorkspace(`
       // — which the naive `\bfilterToWorkspace\s*\(` counts as a call site. Measured: the sweep
-      // returned `["ui/src/fleet/scope.d.mts (1)"]` TODAY, and would have returned
-      // `["ui/src/fleet/Fleet.tsx (1)", "ui/src/fleet/scope.d.mts (1)"]` after 47/02 and 47/03 land
+      // returned `["apps/ui/src/fleet/scope.d.mts (1)"]` TODAY, and would have returned
+      // `["apps/ui/src/fleet/Fleet.tsx (1)", "apps/ui/src/fleet/scope.d.mts (1)"]` after 47/02 and 47/03 land
       // correctly — failing the deepEqual against a one-element array, while the assertion twenty
       // lines above REQUIRES that same sidecar to declare that same name. The gate contradicted its
       // own ADR, and was masked only because it fails earlier on `repoFromSearch` today.
@@ -491,12 +491,12 @@ export const archTests = [
         `self-check: the sweep really does exclude ${FILTER_HOME_SIDECAR} — the exact false positive [Feasibility-1] fixes (its \`export declare function ${NARROWING}(\` at :44 is a DECLARATION, and the assertion above REQUIRES it to be there)`,
       );
       assert.ok(scanned.includes(FLEET_TSX), `self-check: the sweep still reaches ${FLEET_TSX} — the file the one call site belongs in (non-vacuous)`);
-      assert.ok(scanned.length > 50, `self-check: the sweep still covers the ui/src tree (non-vacuous): ${scanned.length} files scanned, ${excluded.length} declarations excluded`);
+      assert.ok(scanned.length > 50, `self-check: the sweep still covers the apps/ui/src tree (non-vacuous): ${scanned.length} files scanned, ${excluded.length} declarations excluded`);
 
       assert.deepEqual(
         callSites,
         [`${FLEET_TSX} (1)`],
-        `\`${NARROWING}\` must be called EXACTLY ONCE in ui/src, from ${FLEET_TSX} — found: ${callSites.length === 0 ? "NO call site at all" : callSites.join(", ")}.\n`
+        `\`${NARROWING}\` must be called EXACTLY ONCE in apps/ui/src, from ${FLEET_TSX} — found: ${callSites.length === 0 ? "NO call site at all" : callSites.join(", ")}.\n`
           + "m47/ADR-004: the narrowing is applied ONCE, above the region fan-out, so `GlobalScopeView` and every region receive an ALREADY-NARROWED payload and a region cannot opt out by construction — which is what makes SPEC's \"every region, or none\" structural instead of a per-region habit that the NEXT milestone's author has no reason to know about.\n"
           + "AT REFINE TIME THIS IS RED FOR A MEASURED REASON, not a missing file: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it and test/ui/fleet-scope.test.mjs pins it, and Fleet.tsx's import list (:28-40) does not name it. The function exists, is tested, and has never rendered anything.",
       );
@@ -504,7 +504,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/47 ADR-008 + ADR-014 clause 4 (acd-fleet-filter-single-home): region 5's GEOMETRY has ONE home — assign-affordance.mjs holds the budgets AND every decision taken against them; no other file under ui/src/fleet/ declares a budget, names region 5 in an export, compares against a budget, or re-derives one from a copy of its value [any violation is reported at the LIVE address it is found at, never a stored one]",
+    name: "arch/47 ADR-008 + ADR-014 clause 4 (acd-fleet-filter-single-home): region 5's GEOMETRY has ONE home — assign-affordance.mjs holds the budgets AND every decision taken against them; no other file under apps/ui/src/fleet/ declares a budget, names region 5 in an export, compares against a budget, or re-derives one from a copy of its value [any violation is reported at the LIVE address it is found at, never a stored one]",
     run: async () => {
       // THE BUDGETS ARE DISCOVERED, NOT LISTED. Reading them off the loaded module is what makes
       // this assertion a statement about the CONCEPT: ADR-014 may add region-5 predicates here,
@@ -527,11 +527,11 @@ export const archTests = [
         `${GEOMETRY_HOME} must export at least one DECISION that reads a region-5 budget — m47/ADR-008: "the predicate gets ONE home, as a pure function beside the budget it reads", so that fleet-assign-row-geometry.test.mjs drives the decision directly instead of inferring it from a rendered class name. Found only budgets, no decision: the predicate has gone back inline.`,
       );
 
-      // THE SWEEP — RECURSIVE, because a `ui/src/fleet/region5/` DIRECTORY is a home declared by
+      // THE SWEEP — RECURSIVE, because a `apps/ui/src/fleet/region5/` DIRECTORY is a home declared by
       // its name whatever it contains, and a flat readdir cannot see one. That defect is not
       // hypothetical: it is the one [Feasibility-2] fixed in the narrowing clauses above.
       const tree = await fleetTree();
-      assert.ok(tree.files.length > 5, `ui/src/fleet/ was actually walked (non-vacuous): ${tree.files.length} files, ${tree.dirs.length} directories`);
+      assert.ok(tree.files.length > 5, `apps/ui/src/fleet/ was actually walked (non-vacuous): ${tree.files.length} files, ${tree.dirs.length} directories`);
       assert.ok(tree.files.includes(GEOMETRY_HOME), `the walk reaches the geometry home itself (non-vacuous): ${GEOMETRY_HOME}`);
 
       const violations = [];
@@ -546,7 +546,7 @@ export const archTests = [
       assert.deepEqual(
         violations,
         [],
-        `these paths under ui/src/fleet/ are a SECOND home for region 5's geometry:\n  ${violations.join("\n  ")}\n`
+        `these paths under apps/ui/src/fleet/ are a SECOND home for region 5's geometry:\n  ${violations.join("\n  ")}\n`
           + `m47/ADR-008: the drop decision lives "as a pure function BESIDE THE BUDGET IT READS" — ${GEOMETRY_HOME} — because one boolean feeds both the render and DG-22's alignment consequence and the two must not be able to disagree. DG-20's own defect (absence-of-name becoming a second signal for "this card has an assignment") is what a second derivation re-opens, from whichever end it is added.\n`
           + "WHAT THIS DOES *NOT* FORBID: a presentational child that RENDERS the decision it is handed, or IMPORTS a budget to lay itself out (ADR-001 [Feasibility-2]'s carve-out — `acd-ui-surface-file-budget` actively instructs the author to extract such a child). ADR-014 clause 4 draws the line at the COMPARISON: `AssignmentChip` and `BoardDrillIn` become consumers that receive the decision as props, exactly as `BoardDrillIn` already receives `abbreviated`.\n"
           + "THE ADDRESSES ARE THE ONES LISTED ABOVE, READ OFF THE TREE ON THIS RUN — this message deliberately states no count and names no file, and that is a correction rather than a style: an earlier version of it read \"RED at TWO KNOWN ADDRESSES\" and named `Fleet.tsx`'s `abbreviateDrillIn` and `AssignmentChip.tsx`'s `slotFits`, and both were deleted by ADR-014 clause 4's derivation within hours — the first while the review citing it was being written. A gate that stores what it once found reports history; this one reports the tree. The remedy is always the same: the decision moves into the ONE derivation in assign-affordance.mjs and the component takes it as a prop.",
@@ -569,7 +569,7 @@ export const archTests = [
       // (1) THE REVIEW'S OWN PLANT, verbatim in shape: a second module exporting the drop
       //     predicate under its real name, with the original left in place. This passed 51/51.
       const reviewPlant = plant(
-        "ui/src/fleet/region5-name-drop.mjs",
+        "apps/ui/src/fleet/region5-name-drop.mjs",
         'export function region5NameDropped({ assignment, workspaceName, repoFiltered } = {}) {\n  if (repoFiltered) return true;\n  return !!assignment && String(workspaceName ?? "").length > 8;\n}\n',
       );
       assert.ok(reviewPlant.some((v) => /exports `region5NameDropped`/.test(v)), `self-check (b): the planted second home the 47/04 review used is detected — ${JSON.stringify(reviewPlant)}`);
@@ -577,7 +577,7 @@ export const archTests = [
       // (2) THE SAME SECOND HOME, RENAMED so no clause about names can see it. It is caught by
       //     what it DOES: it takes a DECISION against a budget that belongs to the one home.
       const renamedPlant = plant(
-        "ui/src/fleet/name-drop.mjs",
+        "apps/ui/src/fleet/name-drop.mjs",
         'import { REGION5_NAME_BUDGET_CH } from "./assign-affordance.mjs";\nexport function nameDropped(name, filtered) {\n  return filtered || String(name).length > REGION5_NAME_BUDGET_CH;\n}\n',
       );
       assert.ok(renamedPlant.some((v) => /decides against a region-5 budget/.test(v)), `self-check (c): a differently-NAMED second home is caught by what it DOES — ${JSON.stringify(renamedPlant)}`);
@@ -588,12 +588,12 @@ export const archTests = [
       //      them. A local const inside a component is the exact form both take — no export, no
       //      file name, nothing an export-shaped or name-shaped rule could ever have caught.
       const slotFitsPlant = plant(
-        "ui/src/fleet/AssignmentChip.tsx",
+        "apps/ui/src/fleet/AssignmentChip.tsx",
         'import { REGION5_CHIP_SLOT_BUDGET_CH } from "./assign-affordance.mjs";\nexport function AssignmentChip({ assignment }) {\n  const slotFits = `→ ${assignment.targetNodeId}`.length <= REGION5_CHIP_SLOT_BUDGET_CH;\n  return slotFits ? null : null;\n}\n',
       );
       assert.ok(slotFitsPlant.some((v) => /decides against a region-5 budget/.test(v)), `self-check (ADR-014 clause 4): \`slotFits\` — a LOCAL const in a component — is caught: ${JSON.stringify(slotFitsPlant)}`);
       const abbreviatePlant = plant(
-        "ui/src/fleet/Fleet.tsx",
+        "apps/ui/src/fleet/Fleet.tsx",
         "  const abbreviateDrillIn = !!assignment\n    && `→ ${assignment.targetNodeId}`.length > REGION5_DRILLIN_ABBREV_AT_CH;\n",
       );
       assert.ok(abbreviatePlant.some((v) => /decides against a region-5 budget/.test(v)), `self-check (ADR-014 clause 4): \`abbreviateDrillIn\` is caught: ${JSON.stringify(abbreviatePlant)}`);
@@ -616,11 +616,11 @@ export const archTests = [
         characterBudget,
         `the home must export at least one integer \`*_CH\` character budget for clause (d)'s fixture — found ${JSON.stringify(budgets.map(([n, v]) => [n, v]))}. NOT FOUND is what this says: if the character budgets have become derived non-integers, clause (d) needs re-deriving with them, not silently skipping.`,
       );
-      const valuePlant = plant("ui/src/fleet/fit.mjs", `export const fitsRow = (label) => label.length > ${characterBudget[1]};\n`);
+      const valuePlant = plant("apps/ui/src/fleet/fit.mjs", `export const fitsRow = (label) => label.length > ${characterBudget[1]};\n`);
       assert.ok(valuePlant.some((v) => /compares a length against the literal/.test(v)), `self-check (d): a hard-coded copy of \`${characterBudget[0]}\`'s VALUE (${characterBudget[1]}) is caught — ${JSON.stringify(valuePlant)}`);
 
       // (4) THE SECOND BUDGET — the same second home entered from the budget end.
-      const budgetPlant = plant("ui/src/fleet/geometry.mjs", "export const REGION5_NAME_BUDGET_CH = 12;\n");
+      const budgetPlant = plant("apps/ui/src/fleet/geometry.mjs", "export const REGION5_NAME_BUDGET_CH = 12;\n");
       assert.ok(budgetPlant.some((v) => /declares its own region-5 budget/.test(v)), `self-check (a): a second budget constant is caught — ${JSON.stringify(budgetPlant)}`);
 
       // (5) THE CASES THAT MUST STAY SILENT, and this is the half the first cut of the narrowing
@@ -630,13 +630,13 @@ export const archTests = [
       //     consumer that IMPORTS a budget to lay itself out — without deciding against it — is
       //     what ADR-014 turns both components into. Refusing either would fail a correct build.
       assert.deepEqual(
-        plant("ui/src/fleet/NameCell.tsx", "export function NameCell({ dropped, name }) {\n  return dropped ? null : name;\n}\n"),
+        plant("apps/ui/src/fleet/NameCell.tsx", "export function NameCell({ dropped, name }) {\n  return dropped ? null : name;\n}\n"),
         [],
         "self-check: a presentational child that renders the decision it is handed is NOT a second home",
       );
       assert.deepEqual(
         plant(
-          "ui/src/fleet/AssignmentChip.tsx",
+          "apps/ui/src/fleet/AssignmentChip.tsx",
           'import { REGION5_CHIP_SLOT_BUDGET_CH } from "./assign-affordance.mjs";\nexport function AssignmentChip({ assignment, tailFits }) {\n  const width = `min-w-[${REGION5_CHIP_SLOT_BUDGET_CH}ch]`;\n  return tailFits ? width : null;\n}\n',
         ),
         [],

@@ -41,14 +41,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const assembleSessionRecord = _aofHooks.meshSession.assembleSessionRecord;
-import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../ui/src/home/feed-axis.mjs";
+import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../apps/ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SESSION = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
 const PRESENCE = path.join(repoRoot, "packages", "mesh", "src", "presence.mjs");
 const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 const QUERY = path.join(repoRoot, "packages", "mesh", "src", "global-query.mjs");
-const FEED_AXIS = path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs");
+const FEED_AXIS = path.join(repoRoot, "apps", "ui", "src", "home", "feed-axis.mjs");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND (TECH_DEBT item 24) — and it matters here more
 // than usual: every one of these five files documents the key in prose beside the code, so a

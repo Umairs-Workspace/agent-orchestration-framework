@@ -18,18 +18,18 @@
 //   2. IT RE-EXPORTS THE BUNDLE'S OWN `shell-bus.mjs`. This is the ONLY way to declare the shell
 //      present where the mounted control can see it. The control reads `hasShellHost()` once at
 //      first render, from the copy of that module INSIDE its own esbuild bundle; a lane that
-//      imports `ui/src/app/shell-bus.mjs` in the test process and calls `declareShellPresent()`
+//      imports `apps/ui/src/app/shell-bus.mjs` in the test process and calls `declareShellPresent()`
 //      sets a different module instance's flag — the call succeeds, the flag reads true, and the
 //      mounted control still offers no expand control. Re-exporting the namespace is not a test
-//      seam in the product: nothing under `ui/src/` gains a caller, and
+//      seam in the product: nothing under `apps/ui/src/` gains a caller, and
 //      `acd-shell-bus-single-host` (which scans the ui tree only) is untouched.
 //
 // IT ADDS NO BEHAVIOUR. Every pane's host, mount and origins come from the caller; this file
 // decides nothing about which rows become panes, what any pane says, or how many may subscribe.
 // Those are milestone 49's product stories and none of them is here.
 import type * as React from "react";
-import * as shellBus from "../../ui/src/app/shell-bus.mjs";
-import { TerminalControl } from "../../ui/src/terminal/TerminalControl";
+import * as shellBus from "../../apps/ui/src/app/shell-bus.mjs";
+import { TerminalControl } from "../../apps/ui/src/terminal/TerminalControl";
 
 export { shellBus };
 

@@ -2,7 +2,7 @@
 //
 // Every scenario and every Examples ROW of
 // `wiki/work/49_milestone_terminals-home/stories/03_story_pane-declaration-and-invariant-4/tasks/01_the-mount-declares-the-posture.feature`,
-// driven against the SHIPPED `ui/src/home/session-mount.mjs` and read through the SHIPPED
+// driven against the SHIPPED `apps/ui/src/home/session-mount.mjs` and read through the SHIPPED
 // `inputPolicyFor` / `mountModelFor` / `sessionSourceFor` — never a policy re-implemented here.
 // ADR-003 states `input-policy.mjs` is not edited by this milestone; the home CONSUMES that
 // model, and these scenarios are what make "consumes" checkable rather than claimed.
@@ -14,11 +14,11 @@ import {
   READ_ONLY_CAUSE_REASON,
   ROSTER_GONE_REASON,
   homeSessionMount,
-} from "../../ui/src/home/session-mount.mjs";
-import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE, NO_LIVE_OUTPUT_REASON } from "../../ui/src/home/feed-axis.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
+} from "../../apps/ui/src/home/session-mount.mjs";
+import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE, NO_LIVE_OUTPUT_REASON } from "../../apps/ui/src/home/feed-axis.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
 import {
   KEYSTROKE_SINK,
   POSTURE_INTERACTIVE,
@@ -27,9 +27,9 @@ import {
   SEND_PATH,
   inputPolicyFor,
   mountModelFor,
-} from "../../ui/src/terminal/input-policy.mjs";
-import { HOST_FULLSCREEN } from "../../ui/src/terminal/host-model.mjs";
-import { TERMINAL_STATE_LIST } from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/input-policy.mjs";
+import { HOST_FULLSCREEN } from "../../apps/ui/src/terminal/host-model.mjs";
+import { TERMINAL_STATE_LIST } from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 // A row as the session index publishes it (m48): `nodeId`, `sessionId`, `workspaceId`, `repo`,
 // `assistant`, `lastPingAt`, `workspaceHasRun`, `workItem`.

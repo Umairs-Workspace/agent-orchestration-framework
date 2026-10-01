@@ -22,24 +22,24 @@ attribution notice:
   - packages/server/src/terminal-ws.mjs
   - packages/execution/src/pty.mjs
   - packages/execution/src/providers.mjs
-  - ui/src/terminal/TerminalControl.tsx
-  - ui/src/terminal/state-ramp.mjs
-  - ui/src/terminal/geometry.mjs
-  - ui/src/terminal/provider-picker.mjs
+  - apps/ui/src/terminal/TerminalControl.tsx
+  - apps/ui/src/terminal/state-ramp.mjs
+  - apps/ui/src/terminal/geometry.mjs
+  - apps/ui/src/terminal/provider-picker.mjs
 
 Milestone 46 unified the browser terminal: the board dock and the fleet card peek
 became one control, and the four browser-side files that carried this notice were
 replaced by the four above. The attribution TRAVELS WITH THE DERIVATION, so what
 moved is recorded rather than dropped:
   - the xterm terminal-pane wiring (new Terminal / FitAddon / WebLinksAddon /
-    open / fit / onData -> carrier / dispose) from ui/src/board/TerminalDock.tsx
-    and ui/src/fleet/terminal-view/FleetTerminalView.tsx, which reached it
-    through the dock, is now ui/src/terminal/TerminalControl.tsx;
-  - the connection-state ramp from ui/src/board/terminal/dock-state.mjs is now
-    ui/src/terminal/state-ramp.mjs;
-  - the fit -> resize signal from ui/src/board/terminal/resize.mjs is now part of
-    ui/src/terminal/geometry.mjs;
-  - the provider picker moved unchanged to ui/src/terminal/provider-picker.mjs.
+    open / fit / onData -> carrier / dispose) from apps/ui/src/board/TerminalDock.tsx
+    and apps/ui/src/fleet/terminal-view/FleetTerminalView.tsx, which reached it
+    through the dock, is now apps/ui/src/terminal/TerminalControl.tsx;
+  - the connection-state ramp from apps/ui/src/board/terminal/dock-state.mjs is now
+    apps/ui/src/terminal/state-ramp.mjs;
+  - the fit -> resize signal from apps/ui/src/board/terminal/resize.mjs is now part of
+    apps/ui/src/terminal/geometry.mjs;
+  - the provider picker moved unchanged to apps/ui/src/terminal/provider-picker.mjs.
 test/arch/acd-vibeyard-attribution.test.mjs parses THIS LIST and asserts it is
 exactly the set of files carrying the per-file notice, so the two cannot drift.
 

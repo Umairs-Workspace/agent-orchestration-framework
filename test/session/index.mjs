@@ -32,7 +32,7 @@ import { terminalWsPreSessionQueueTests } from "./terminal-ws-presession-queue.t
 import { terminalWsPreSessionBoundTests } from "./terminal-ws-presession-bound.test.mjs";
 import { terminalSessionsTests } from "./terminal-sessions.test.mjs";
 // milestone 46 / story 03 (ADR-001/002/003/004/005; DG-46-2) — THE SHARED TERMINAL CORE.
-// One framework-free `.mjs` set at `ui/src/terminal/`, imported by nothing yet: this repo has
+// One framework-free `.mjs` set at `apps/ui/src/terminal/`, imported by nothing yet: this repo has
 // NO React test harness, so every decision the two terminals disagree about is landed as a
 // value plain `node` can drive BEFORE a single pixel renders it. Five @executable task
 // features, each with its own suite:
@@ -44,7 +44,7 @@ import { terminalSessionsTests } from "./terminal-sessions.test.mjs";
 //     self-labelling `unknown`, the 30-cell transition matrix driven exhaustively (the ramp is
 //     a TOTAL function), the exit code that outranks a later bare close, the failure that is
 //     never laundered into a clean finish, and the fleet's assignment-derived wording arriving
-//     as an INJECTED string so the shared set imports nothing from `ui/src/fleet/`.
+//     as an INJECTED string so the shared set imports nothing from `apps/ui/src/fleet/`.
 //   02_fit-or-scale-is-derived-from-the-source — ADR-003: `fit ⇔ the source declares a resize
 //     control frame`, exactly one resize frame per fit (and silence for an unmeasured box),
 //     and `terminalFitScale`'s FIRST coverage — its predecessor's header named a test file
@@ -57,7 +57,7 @@ import { terminalSessionsTests } from "./terminal-sessions.test.mjs";
 //   04_input-is-capability-times-posture — ADR-002's `inputEnabled = source.canInput &&
 //     !mount.readOnly`, driven over the WHOLE frozen table x BOTH postures. This is arch-test
 //     invariant 4's POLICY half, and it is load-bearing: once the control leaves
-//     `ui/src/fleet/`, that gate's directory sweep reads green and VACUOUS, which is worse
+//     `apps/ui/src/fleet/`, that gate's directory sweep reads green and VACUOUS, which is worse
 //     than deleting it.
 import { terminalCoreSourceTableTests } from "./terminal-core-source-table.test.mjs";
 import { terminalCoreStateRampTests } from "./terminal-core-state-ramp.test.mjs";
@@ -74,10 +74,10 @@ import { terminalCoreInputPolicyTests } from "./terminal-core-input-policy.test.
 // not allowed to drag it to).
 import { terminalCorePaneIdentityAndClampTests } from "./terminal-core-pane-identity-and-clamp.test.mjs";
 // milestone 46 / story 04 (ADR-001..006; DESIGN §Surfaces) — ONE CONTROL, BOTH CALL SITES, AND THE
-// DUPLICATE DELETED IN THE SAME DIFF. `ui/src/board/TerminalDock.tsx`, `ui/src/board/terminal/` and
-// `ui/src/fleet/terminal-view/` are gone; `ui/src/terminal/TerminalControl.tsx` is the one
+// DUPLICATE DELETED IN THE SAME DIFF. `apps/ui/src/board/TerminalDock.tsx`, `apps/ui/src/board/terminal/` and
+// `apps/ui/src/fleet/terminal-view/` are gone; `apps/ui/src/terminal/TerminalControl.tsx` is the one
 // component, and each surface hands it a SOURCE and a POSTURE computed by its own mount module
-// (`ui/src/board/dock-mount.mjs`, `ui/src/fleet/terminal-mount.mjs`). Four @executable task
+// (`apps/ui/src/board/dock-mount.mjs`, `apps/ui/src/fleet/terminal-mount.mjs`). Four @executable task
 // features, each with its own suite:
 //   00_one-control-renders-both-sources — the COMPOSITION 46/03's core suites deliberately do not
 //     cover: what each CALL SITE hands the control, what it derives from that (route, geometry
@@ -151,7 +151,7 @@ import { modelTests } from "./model.test.mjs";
 // ── milestone 49 / story 03 — THE PANE DECLARES ITSELF, AND THE GATE SAYS SO (ADR-007 the fourth
 // host + the posture; ADR-008 the amendment). THE MILESTONE'S ONE DELIBERATE REVERSAL, and the
 // three task features below are one story for one reason: part 1's new surface → posture-home
-// table NAMES `ui/src/home/session-mount.mjs` and the amended gate IMPORTS it, so before the
+// table NAMES `apps/ui/src/home/session-mount.mjs` and the amended gate IMPORTS it, so before the
 // module exists CI is red for a whole story, and after the module exists but before the table is
 // updated CI is GREEN AND VACUOUS about the new interactive surface — the dangerous one, and this
 // gate's own recorded history (m46/ADR-006).

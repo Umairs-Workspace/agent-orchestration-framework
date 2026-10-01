@@ -225,7 +225,7 @@ export const boardServeTests = [
         assert.ok(rejected, "serveBoard rejects when the build is missing");
         assert.equal(rejected.code, "ui-build-missing", "the rejection carries the ui-build-missing code");
         assert.ok(
-          /build/.test(rejected.message) && /npm --prefix ui run build/.test(rejected.message),
+          /build/.test(rejected.message) && /yarn ui:build/.test(rejected.message),
           "the message reports the build is missing and how to produce it"
         );
         assert.equal(server, undefined, "no server was left listening");

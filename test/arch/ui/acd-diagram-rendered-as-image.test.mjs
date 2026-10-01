@@ -1,6 +1,6 @@
 // FF-13304 (milestone 133 / ADR-007 §4) — THE CONSOLE RENDERS A DIAGRAM ONLY AS AN IMAGE.
 //
-// "In `ui/src/board/**`, a `DIAGRAMS` doc body reaches the page only through `encodeURIComponent`
+// "In `apps/ui/src/board/**`, a `DIAGRAMS` doc body reaches the page only through `encodeURIComponent`
 //  into a `data:image/svg+xml` URI in an image `src`. It is never passed to `marked.parse`,
 //  `dangerouslySetInnerHTML` or `innerHTML`. `api.doc` is the only fetch of `DIAGRAMS`."
 //
@@ -13,11 +13,11 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { diagramRenderer, figureHtml, figureState } from "../../../ui/src/board/diagrams.mjs";
+import { diagramRenderer, figureHtml, figureState } from "../../../apps/ui/src/board/diagrams.mjs";
 import { Marked } from "marked";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD = path.join(repoRoot, "ui", "src", "board");
+const BOARD = path.join(repoRoot, "apps", "ui", "src", "board");
 const CODE = /\.(tsx?|mjs)$/;
 const SINKS = /\bmarked\.parse\s*\(|\.parse\s*\(|dangerouslySetInnerHTML|\binnerHTML\b/;
 
@@ -64,7 +64,7 @@ const HOSTILE = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><sc
 
 export const archTests = [
   {
-    name: "arch/133 FF-13304: in ui/src/board, a DIAGRAMS body reaches the page only as an encoded data URI, and api.doc is its only fetch",
+    name: "arch/133 FF-13304: in apps/ui/src/board, a DIAGRAMS body reaches the page only as an encoded data URI, and api.doc is its only fetch",
     run: async () => {
       const sources = await boardSources();
       assert.ok(sources.some((source) => source.file === "diagrams.mjs"), "the figure module is swept");

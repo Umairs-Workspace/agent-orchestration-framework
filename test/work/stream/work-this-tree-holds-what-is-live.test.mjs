@@ -62,7 +62,7 @@ import { censusItemPathMentions } from "./work-archive-is-a-move.test.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const workRoot = path.join(repoRoot, "wiki", "work");
-const MODEL_TS = path.join(repoRoot, "ui", "src", "board", "model.ts");
+const MODEL_TS = path.join(repoRoot, "apps", "ui", "src", "board", "model.ts");
 const THIS_SUITE = "test/work/stream/work-this-tree-holds-what-is-live.test.mjs";
 
 const slash = (value) => String(value).replaceAll("\\", "/");

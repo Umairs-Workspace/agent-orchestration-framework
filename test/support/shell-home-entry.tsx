@@ -8,7 +8,7 @@
 //
 // WHY IT HAS TO BE A THIRD COMPOSITION rather than mounting `<Home/>` alone (the same argument
 // `shell-fleet-entry.tsx` records, and it applies here for one extra reason). The surface → shell
-// channel's host flag is MODULE state (`ui/src/app/shell-bus.mjs`'s `shellPresent`, set by
+// channel's host flag is MODULE state (`apps/ui/src/app/shell-bus.mjs`'s `shellPresent`, set by
 // importing Shell.tsx), so two harnesses that each bundle one half each get their own copy of the
 // bus and every clause about the JOIN is true in neither. The home's own G0 contribution — one
 // summary line, present from the FIRST paint rather than once data arrives — is exactly such a
@@ -18,8 +18,8 @@
 // NOTHING IS STUBBED. The home imports no terminal control and no xterm in this story — it
 // renders no session row at all (ARCHITECTURE bad cut 3: rows and sockets are ONE cut, and story
 // 05 makes it) — so the bundle is the real shell, the real home and their real siblings.
-import { Shell } from "../../ui/src/app/Shell";
-import { Home } from "../../ui/src/home/Home";
+import { Shell } from "../../apps/ui/src/app/Shell";
+import { Home } from "../../apps/ui/src/home/Home";
 
 type CompositionProps = Record<string, unknown>;
 

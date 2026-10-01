@@ -326,7 +326,7 @@ export const advertisedPathsTests = [
               // realpath on both sides: macOS resolves the temp dir through /private, so
               // comparing raw strings would measure the platform, not the envelope.
               assert.equal(realpathSync(envelope.projectDir), realpathSync(repo), "…and it names the resolved project dir");
-              assert.equal(envelope.uiDist, path.join(repoRoot, "ui", "dist"), "…and the dist it would serve");
+              assert.equal(envelope.uiDist, path.join(repoRoot, "apps", "ui", "dist"), "…and the dist it would serve");
               assert.equal(typeof envelope.uiBuildPresent, "boolean", "…and whether that build is present");
             },
           },

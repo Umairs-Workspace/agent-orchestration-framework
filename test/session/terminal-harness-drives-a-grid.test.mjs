@@ -44,10 +44,10 @@ import { bundleCacheKey, bundleSurface } from "../support/react-app-harness.mjs"
 import { TERMINAL_CONTROL_STUB } from "../support/terminal-dom.mjs";
 import { terminalControlOpensItsSocketTests } from "./terminal-control-opens-its-socket.test.mjs";
 import { terminalControlHeaderYieldTests } from "./terminal-control-header-yield.test.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
-import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../../ui/src/terminal/host-model.mjs";
-import { IDLE_PANE_LINE } from "../../ui/src/terminal/state-ramp.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../../apps/ui/src/terminal/host-model.mjs";
+import { IDLE_PANE_LINE } from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GRID_ENTRY = path.join(repoRoot, "test", "support", "terminal-grid-entry.tsx");
@@ -466,7 +466,7 @@ export const terminalHarnessDrivesAGridTests = [
     run: async () => {
       assert.equal(
         path.relative(repoRoot, CONTROL_TSX).split(path.sep).join("/"),
-        "ui/src/terminal/TerminalControl.tsx",
+        "apps/ui/src/terminal/TerminalControl.tsx",
         "the default entry is the REAL control, exactly as milestone 46 named it",
       );
       await withTerminalControl(
@@ -520,8 +520,8 @@ export const terminalHarnessDrivesAGridTests = [
         "TerminalControl",
         "./TerminalControl",
         "../terminal/TerminalControl",
-        "ui/src/terminal/TerminalControl",
-        "ui/src/terminal/TerminalControl.tsx",
+        "apps/ui/src/terminal/TerminalControl",
+        "apps/ui/src/terminal/TerminalControl.tsx",
         "@/terminal/TerminalControl",
       ];
       for (const key of Object.keys(CONTROL_STUBS)) {
@@ -595,7 +595,7 @@ export const terminalHarnessDrivesAGridTests = [
         const twentyPanes = { panes: Array.from({ length: 20 }, (_, i) => i) };
         await assert.rejects(
           () => withTerminalControl({ entry: fake, exportName: "TerminalGrid", props: twentyPanes }, () => {}),
-          /does not carry the REAL ui\/src\/terminal\/TerminalControl/,
+          /does not carry the REAL apps\/ui\/src\/terminal\/TerminalControl/,
           "an entry that claims to mount terminals must be an entry that bundled the real control",
         );
 
@@ -644,10 +644,10 @@ export const terminalHarnessDrivesAGridTests = [
       // the keyboard-operable separator, and `idle`'s own copy — so this lane is where a rename
       // announces itself, instead of the guard quietly matching three of four and then none.
       for (const [literal, home] of [
-        ["absolute inset-0 overflow-hidden", "ui/src/terminal/TerminalByteArea.tsx"],
-        ["Expand terminal to full screen", "ui/src/terminal/TerminalControls.tsx"],
-        ["Resize terminal dock", "ui/src/terminal/TerminalDragHandle.tsx"],
-        ["No session. Press Run agent on an item.", "ui/src/terminal/state-ramp.mjs"],
+        ["absolute inset-0 overflow-hidden", "apps/ui/src/terminal/TerminalByteArea.tsx"],
+        ["Expand terminal to full screen", "apps/ui/src/terminal/TerminalControls.tsx"],
+        ["Resize terminal dock", "apps/ui/src/terminal/TerminalDragHandle.tsx"],
+        ["No session. Press Run agent on an item.", "apps/ui/src/terminal/state-ramp.mjs"],
       ]) {
         assert.ok(sourceOf(home).includes(literal), `${home} still emits ${JSON.stringify(literal)} — the entry guard reads it`);
       }

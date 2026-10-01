@@ -58,14 +58,14 @@ import { archTests as acdTriggerIsNonVacuousOverThisRepoTests } from "./acd-trig
 import { archTests as acdDwellGatesReversionOnlyTests } from "./acd-dwell-gates-reversion-only.test.mjs";
 import { archTests as acdNoUncappedFrameworkLoopTests } from "./acd-no-uncapped-framework-loop.test.mjs";
 // ── milestone 49 / story 06 — THE PULSE HONOURS REDUCED MOTION (DESIGN DG-49-6). Not a gap: a
-// SHIPPED defect whose own code comment claimed the opposite. `ui/src/terminal/palette.mjs` said
-// both pulses honoured `prefers-reduced-motion` through a convention in `ui/src/index.css`; the
+// SHIPPED defect whose own code comment claimed the opposite. `apps/ui/src/terminal/palette.mjs` said
+// both pulses honoured `prefers-reduced-motion` through a convention in `apps/ui/src/index.css`; the
 // only such rule in the whole of `ui/` named `.aof-pending` — a different class over a different
 // animation — so the `connecting…` and `streaming` dots kept pulsing for every operator whose
 // system had asked them to stop (measured in a real browser at refine: `pulse`, 2s, with reduce
 // FORCED). One pulsing dot on one card hid it; milestone 49's grid of a dozen is what exposed it.
 //   THE FIX IS ONE CSS RULE, and that is ARCHITECTURE's ruling rather than a shortcut: twelve
-//   `animate-pulse` sites exist across `ui/src` and twelve per-site escapes would be twelve edits
+//   `animate-pulse` sites exist across `apps/ui/src` and twelve per-site escapes would be twelve edits
 //   with a thirteenth site one diff away, while widening the stylesheet's ONE reduced-motion block
 //   covers the site nobody has written yet. Because the block IS the mechanism, the source gate
 //   below is a COMPLETE proof of the invariant — which is why the browser lane was DECLINED and

@@ -71,9 +71,9 @@ import {
   markRepoPublished,
   seedNodeWorkspaceMembership,
 } from "../support/mesh-worker-exec-fixture.mjs";
-import { homeGridRows, dialableTiles } from "../../ui/src/home/grid.mjs";
-import { homeSessionMount } from "../../ui/src/home/session-mount.mjs";
-import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER, FEED_AXIS_VALUES } from "../../ui/src/home/feed-axis.mjs";
+import { homeGridRows, dialableTiles } from "../../apps/ui/src/home/grid.mjs";
+import { homeSessionMount } from "../../apps/ui/src/home/session-mount.mjs";
+import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER, FEED_AXIS_VALUES } from "../../apps/ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const NODE_ID = "worker-a";
@@ -1082,7 +1082,7 @@ export const sessionSpawnOutcomeLaneTests = [
       );
 
       // `feedAxisFor` STILL TAKES NO BYTE PARAMETER, optional or otherwise.
-      const axis = (await readFile(path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const axis = (await readFile(path.join(repoRoot, "apps", "ui", "src", "home", "feed-axis.mjs"), "utf8")).replace(/\r\n/g, "\n");
       const signature = /export function feedAxisFor\(([^)]*)\)/.exec(axis);
       assert.ok(signature != null, "feedAxisFor is still exported as a function");
       assert.equal(signature[1].trim(), "row, context", "…taking exactly (row, context) — no byte parameter, optional or otherwise");

@@ -377,7 +377,7 @@ async function staticImportClosure(entry) {
 }
 
 // A copy of this repository's runnable tree — everything `scripts/test.mjs` reaches at LOAD (the
-// runner imports every suite before it selects, and suites import `packages/core/src/`, `ui/src/` and the hook
+// runner imports every suite before it selects, and suites import `packages/core/src/`, `apps/ui/src/` and the hook
 // under `.claude/hooks/` at module scope) — with a FIXTURE registry and its own config, placed
 // INSIDE this repository (under the git-ignored `.aof-test/`) so bare imports resolve up to this
 // tree's `node_modules` without a link or a junction. The gate is then run in it exactly as the
@@ -391,7 +391,7 @@ async function makeGateFixture() {
   // `graphify-reranking`). The fixture's OWN document is written over the copy below, from the
   // fixture's own registry, before the gate is first run. Run records and observability snapshots
   // are left out: nothing loads them, and they are the bulk of the tree.
-  for (const tree of ["packages/core/src", "packages", "test", "scripts", "ui/src", ".claude/hooks", "wiki"]) {
+  for (const tree of ["packages/core/src", "packages", "test", "scripts", "apps/ui/src", ".claude/hooks", "wiki"]) {
     await cp(path.join(repoRoot, ...tree.split("/")), path.join(root, ...tree.split("/")), {
       recursive: true,
       filter: (source) => !/[\\/](?:runs|observability|node_modules)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),

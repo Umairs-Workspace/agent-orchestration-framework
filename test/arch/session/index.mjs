@@ -22,16 +22,16 @@ import { archTests as acdTerminalServerOnlyTests } from "./acd-terminal-server-o
 // unguarded, and whose own predecessor comment claimed a test file that has never existed.
 //
 // The other two are SPLIT BY CLAUSE, which is how 46/03's story record rules it. What is
-// registered below is everything about `ui/src/terminal/` that passes the day the core lands:
+// registered below is everything about `apps/ui/src/terminal/` that passes the day the core lands:
 // no module names a port; the socket URL is built by ONE pure builder that reads no browser
 // global; the shared set imports no React and touches no DOM global in its modules OR its
-// declarations; and it imports nothing from `ui/src/fleet/` or `ui/src/board/`. Those clauses
+// declarations; and it imports nothing from `apps/ui/src/fleet/` or `apps/ui/src/board/`. Those clauses
 // matter MOST during 46/04 and 46/05 — the stories that write the React component against this
 // `.mjs` set — because ADR-001 makes the framework-free split an INVARIANT rather than a
 // preference precisely on the grounds that "no reviewer reliably notices an absence".
 //
-// Their WHOLE-TREE clauses (no socket URL anywhere in `ui/src` carries a port literal; neither
-// `DOCK_STATES` nor `TERMINAL_VIEW_STATES` is defined anywhere in `ui/src`; the five terminal
+// Their WHOLE-TREE clauses (no socket URL anywhere in `apps/ui/src` carries a port literal; neither
+// `DOCK_STATES` nor `TERMINAL_VIEW_STATES` is defined anywhere in `apps/ui/src`; the five terminal
 // hex literals have one home) cannot go green until the duplicate implementation is deleted,
 // so they wait in parked siblings that 46/04 promotes in that same diff. They are not named in
 // this file: a runner that merely MENTIONS a suite satisfies the registration ratchet by
@@ -106,7 +106,7 @@ import { archTests as acdSessionOrphanReapedTests } from "./acd-session-orphan-r
 // (packages/core/src/mesh/presence.mjs) projects every live session record to the FROZEN ORDERED SIX
 // `{ sessionId, workspaceId, repo, assistant, lastPingAt, workspaceHasRun }` — an
 // insertion at the head and an append at the tail, so the m38 four keep their relative
-// order — and `ui/src/fleet/api.ts`'s `PresenceSession` is its typed mirror. The story is
+// order — and `apps/ui/src/fleet/api.ts`'s `PresenceSession` is its typed mirror. The story is
 // BEHAVIOUR-NEUTRAL by contract: the injected `workspacesWithRuns` set DEFAULTS TO EMPTY,
 // so every entry reports `workspaceHasRun: false`, the launcher's own filter still runs,
 // and no rendered output moves until story 02 lands.

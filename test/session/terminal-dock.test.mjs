@@ -16,7 +16,7 @@
 //
 // RE-POINTED AT THE ONE CONTROL'S CORE (milestone 46 / story 04). The three modules this suite
 // imported — `board/terminal/{dock-state,provider-picker,resize}.mjs` — are DELETED; their
-// behaviour lives in `ui/src/terminal/{state-ramp,provider-picker,geometry}.mjs`. Every scenario
+// behaviour lives in `apps/ui/src/terminal/{state-ramp,provider-picker,geometry}.mjs`. Every scenario
 // below still asserts what it always asserted, because every distinction it asserts SURVIVED the
 // merge; only the module specifier and two state WORDS changed, and both changes are DESIGN's:
 //   · `DOCK_STATES.RUNNING` → `TERMINAL_STATES.STREAMING` (change 1 — `running` asserted a
@@ -32,15 +32,15 @@ import {
   TERMINAL_EVENTS,
   TERMINAL_STATES,
   applyTerminalEvent,
-} from "../../ui/src/terminal/state-ramp.mjs";
+} from "../../apps/ui/src/terminal/state-ramp.mjs";
 import {
   initialPicker,
   selectProvider,
   isSelected,
   selectedCount,
   PROVIDER_IDS,
-} from "../../ui/src/terminal/provider-picker.mjs";
-import { emitFit } from "../../ui/src/terminal/geometry.mjs";
+} from "../../apps/ui/src/terminal/provider-picker.mjs";
+import { emitFit } from "../../apps/ui/src/terminal/geometry.mjs";
 
 // The dock's old `RUNNING` state, in the merged vocabulary: a BOUND source whose socket has
 // delivered bytes. `idle` holds no socket, so a byte cannot reach it — binding is what leaves it.

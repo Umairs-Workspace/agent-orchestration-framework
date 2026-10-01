@@ -9,15 +9,15 @@
 // adds exactly that and nothing else, and every scenario below is one more entry in an existing
 // vocabulary read back as a value.
 //
-// THE CHANNEL THIS SUITE USES: `ui/src/app/shell-bus.mjs` and `ui/src/app/shell-layout.mjs` under
+// THE CHANNEL THIS SUITE USES: `apps/ui/src/app/shell-bus.mjs` and `apps/ui/src/app/shell-layout.mjs` under
 // plain `node` — no bundler, no DOM, no browser — plus, where a clause is about the rendered TREE
 // rather than the model, a fact read off the tree the house's headless mini-React harnesses
 // render. Both lanes are `node --test`; no scenario here needs a browser.
 //
 // NOT ASSERTED HERE (structural, and each owned by a gate): the z rung is IMPORTED rather than
-// retyped, and no undeclared rung literal survives in `ui/src` → `acd-shell-z-ladder-single-home`;
-// the control contributes and does not import `ui/src/app/Shell` → `acd-shell-bus-single-host`;
-// NO per-surface `fixed inset-0` layer exists in `ui/src` → `acd-no-per-surface-fixed-overlay`,
+// retyped, and no undeclared rung literal survives in `apps/ui/src` → `acd-shell-z-ladder-single-home`;
+// the control contributes and does not import `apps/ui/src/app/Shell` → `acd-shell-bus-single-host`;
+// NO per-surface `fixed inset-0` layer exists in `apps/ui/src` → `acd-no-per-surface-fixed-overlay`,
 // which this story writes because the prohibition never had one (the QA FLAG in the feature
 // header, now closed).
 //
@@ -43,7 +43,7 @@ import {
   rungFor,
   shellRows,
   slotPlacement,
-} from "../../ui/src/app/shell-layout.mjs";
+} from "../../apps/ui/src/app/shell-layout.mjs";
 import {
   SHELL_SLOTS,
   SLOT_DOCK,
@@ -53,7 +53,7 @@ import {
   contribute,
   contributionFor,
   resetShellBus,
-} from "../../ui/src/app/shell-bus.mjs";
+} from "../../apps/ui/src/app/shell-bus.mjs";
 import { withBoardApp } from "../support/board-app-harness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withShellApp, withShellComposedBoard } from "../support/shell-app-harness.mjs";
@@ -359,7 +359,7 @@ export const shellDockRegionTests = [
       }
 
       // THE REFUSALS. Never a number — "an element that needs a rung this list does not name is a
-      // GAP whose fix is to add the rung to ui/src/app/shell-layout.mjs FIRST, with a stated
+      // GAP whose fix is to add the rung to apps/ui/src/app/shell-layout.mjs FIRST, with a stated
       // meaning", so the failure this closes is a story inventing `z-35` at 2am to get a dock
       // above a legend.
       const refusals = [
@@ -376,7 +376,7 @@ export const shellDockRegionTests = [
             for (const declared of ["stickyChrome", "popover", "dock", "toast", "fullscreen"]) {
               assert.ok(error.message.includes(declared), `the refusal names ${declared}`);
             }
-            assert.ok(error.message.includes("ui/src/app/shell-layout.mjs"), "…and the module to add a rung to");
+            assert.ok(error.message.includes("apps/ui/src/app/shell-layout.mjs"), "…and the module to add a rung to");
             return true;
           },
           `${JSON.stringify(name)} is refused`,

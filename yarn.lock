@@ -11,6 +11,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/desktop@workspace:apps/desktop":
+  version: 0.0.0-use.local
+  resolution: "@aof/desktop@workspace:apps/desktop"
+  languageName: unknown
+  linkType: soft
+
 "@aof/effects@workspace:*, @aof/effects@workspace:packages/effects":
   version: 0.0.0-use.local
   resolution: "@aof/effects@workspace:packages/effects"
@@ -118,9 +124,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@aof/ui@workspace:*, @aof/ui@workspace:ui":
+"@aof/ui@workspace:*, @aof/ui@workspace:apps/ui":
   version: 0.0.0-use.local
-  resolution: "@aof/ui@workspace:ui"
+  resolution: "@aof/ui@workspace:apps/ui"
   dependencies:
     "@aof/messaging": "workspace:*"
     "@dnd-kit/core": "npm:^6.3.1"

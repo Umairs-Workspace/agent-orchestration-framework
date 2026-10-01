@@ -90,10 +90,10 @@ import { archTests as acdNativeAddonDegradesTests } from "./acd-native-addon-deg
 //                 — 49 being precisely the milestone that puts a surface fullscreen.
 import { archTests as acdShellZLadderSingleHomeTests } from "./acd-shell-z-ladder-single-home.test.mjs";
 //   ADR-005     — the surface → shell channel has ONE host: `declareShellPresent()` is called
-//                 exactly once in ui/src, at MODULE scope, by the module that renders the shell
+//                 exactly once in apps/ui/src, at MODULE scope, by the module that renders the shell
 //                 root, and NO routed surface imports the shell component. Added at the
 //                 architect's structural review of 45/03 (2026-08-07). The bus flag is set by
-//                 IMPORTING Shell.tsx, so a single stray import inside ui/src/{fleet,board,
+//                 IMPORTING Shell.tsx, so a single stray import inside apps/ui/src/{fleet,board,
 //                 config}/ — even a `type` one, which tsc erases but the bundler still follows —
 //                 would declare a shell that is not mounted, and every contributed control (the
 //                 fleet's scope switch, the board's sync, the board's serverGone notice) would

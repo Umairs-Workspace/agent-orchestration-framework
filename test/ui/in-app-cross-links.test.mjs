@@ -35,7 +35,7 @@
 // `BoardsRegion` always renders its "No boards registered in the group yet" placeholder.
 // The `boards` aggregate is real and still produced — by `aof mesh status --json`
 // (`packages/core/src/commands/mesh-identity.mjs`'s `boardsProjection`), which is the producer
-// `ui/src/fleet/api.ts` documents the local `MeshStatus` shape against ("deep-equal to
+// `apps/ui/src/fleet/api.ts` documents the local `MeshStatus` shape against ("deep-equal to
 // `aof mesh status --json` for the same fixture").
 //
 // So the fleet lanes below are PRODUCER-FED rather than face-fed: a REAL group registry
@@ -48,7 +48,7 @@
 // reconnected a data path would be two changes in one diff), and is reported as a finding.
 //
 // NOT ASSERTED HERE:
-//   · "no `?mode=` literal survives in ui/src" — a PLACEMENT invariant owned by
+//   · "no `?mode=` literal survives in apps/ui/src" — a PLACEMENT invariant owned by
 //     `test/arch/ui/acd-no-surface-mode-url-literal.test.mjs`. What IS asserted below is its
 //     behavioural neighbour, which the arch gate cannot see: no RENDERED anchor names
 //     `mode`, in any state these lanes drive. A link composed at RUNTIME from a variable
@@ -352,8 +352,8 @@ export const inAppCrossLinksTests = [
   // ── F-45-04-DEV-2, a feature defect FLAGGED rather than fixed ─────────────────────
   // The outline's last Then — "at least one anchor was collected, so the sweep is
   // non-vacuous" — is UNSATISFIABLE for three of its own six rows, measured against the
-  // real surfaces at HEAD. `ui/src/board/` renders exactly TWO anchors in total (the
-  // banner's and the detail panel's, both conditional) and `ui/src/fleet/` renders
+  // real surfaces at HEAD. `apps/ui/src/board/` renders exactly TWO anchors in total (the
+  // banner's and the detail panel's, both conditional) and `apps/ui/src/fleet/` renders
   // exactly ONE (the local-board drill-in). So `the board, healthy` (0), `the board,
   // deep-linked by hash` (0 — the panel opens, but the watch link needs an ACTIVE
   // assignment with no session, which that row does not state) and `the fleet, a peer
@@ -433,7 +433,7 @@ export const inAppCrossLinksTests = [
       // renders today fails here rather than passing an emptier sweep.
       //
       // ROWS 5 AND 6 MOVED TO ZERO AT m47/ADR-006, and the move is the point rather than
-      // a maintenance edit: `ui/src/fleet/` used to render exactly ONE anchor in total —
+      // a maintenance edit: `apps/ui/src/fleet/` used to render exactly ONE anchor in total —
       // the local board's relative `/board` — and the branch that rendered it is deleted.
       // The fleet's board door is now a CONTROL that mints its destination at click time,
       // so ZERO is the true value for every fleet state, and pinning it is what stops a

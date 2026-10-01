@@ -2,7 +2,7 @@
 //
 // Every scenario and every Examples ROW of
 // `.../02_story_home-core/tasks/02_the-layout-filter.feature`, driven against the SHIPPED
-// `ui/src/home/layout.mjs` with a HAND-WRITTEN storage double whose `getItem` and `setItem` can
+// `apps/ui/src/home/layout.mjs` with a HAND-WRITTEN storage double whose `getItem` and `setItem` can
 // each be made to throw, to return a non-string, or to be absent entirely.
 //
 // THE TEST PROCESS HAS NO DOM, and that is the point: `globalThis.window`,
@@ -13,9 +13,9 @@
 //
 // ISOLATION. No `~/.aof`, no store, no server, no port.
 import assert from "node:assert/strict";
-import { LAYOUT_SCHEMA_VERSION, LAYOUT_STORAGE_KEY, composeHomeLayout, saveHomeLayout } from "../../ui/src/home/layout.mjs";
-import { paneKeyOf, paneTuple } from "../../ui/src/home/socket-cap.mjs";
-import { TERMINAL_STATE_LIST, UNKNOWN_STATE } from "../../ui/src/terminal/state-ramp.mjs";
+import { LAYOUT_SCHEMA_VERSION, LAYOUT_STORAGE_KEY, composeHomeLayout, saveHomeLayout } from "../../apps/ui/src/home/layout.mjs";
+import { paneKeyOf, paneTuple } from "../../apps/ui/src/home/socket-cap.mjs";
+import { TERMINAL_STATE_LIST, UNKNOWN_STATE } from "../../apps/ui/src/terminal/state-ramp.mjs";
 
 const row = (nodeId, sessionId, extra = {}) => ({ nodeId, sessionId, repo: "demo", ...extra });
 const stored = (panes, focus = null, version = LAYOUT_SCHEMA_VERSION) => JSON.stringify({ version, panes, focus });

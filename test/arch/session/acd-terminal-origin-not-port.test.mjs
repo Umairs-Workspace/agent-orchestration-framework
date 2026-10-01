@@ -5,8 +5,8 @@
 //    template, not a default argument."
 //
 // THE SPLIT IS OVER. 46/03 authored this gate in two halves because only one of them could be
-// green on arrival: the `ui/src/terminal/` clauses shipped here and ran from that story onward,
-// while the WHOLE-TREE clause — no socket URL ANYWHERE in `ui/src` carries a port literal — sat
+// green on arrival: the `apps/ui/src/terminal/` clauses shipped here and ran from that story onward,
+// while the WHOLE-TREE clause — no socket URL ANYWHERE in `apps/ui/src` carries a port literal — sat
 // in a parked `acd-terminal-origin-not-port.mjs`, off the suite glob, because
 // `TerminalDock.tsx`'s `const FLEET_PORT = 4181` made it RED. 46/04 deleted that file, so the
 // clause is MERGED IN below and the parked sibling is gone. A gate lands in the story that turns
@@ -46,7 +46,7 @@ export const archTests = [
   // ══ THE STRIPPER ITSELF, FIRST. Every clause below is an ABSENCE sweep over a
   //    comment-stripped source, and TECH_DEBT item 24 measured what a blinded stripper does to
   //    that shape: it finds no violations and the gate passes. This detector's own subject is
-  //    `ui/src/terminal/**`, a folder whose ADRs REQUIRE it to explain in prose the defects it
+  //    `apps/ui/src/terminal/**`, a folder whose ADRs REQUIRE it to explain in prose the defects it
   //    guards against — so one `// … the /* … */ …` comment is all it would take. The helper
   //    was on item 24's hazardous list until this story corrected it; this clause is what stops
   //    it drifting back, and it names the STRIPPER rather than the subject when it fires.
@@ -58,7 +58,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/46 ADR-004 (acd-terminal-origin-not-port): no module under ui/src/terminal/ names a port at all — not a constant, not a template, not a default argument",
+    name: "arch/46 ADR-004 (acd-terminal-origin-not-port): no module under apps/ui/src/terminal/ names a port at all — not a constant, not a template, not a default argument",
     run: async () => {
       const files = await collect(TERMINAL_DIR, [".mjs", ".d.mts", ".ts", ".tsx"]);
       assert.ok(files.length >= 5, `the shared terminal set was actually read (non-vacuous): ${files.length} files`);
@@ -90,12 +90,12 @@ export const archTests = [
         const clean = stripComments(await readFile(file, "utf8"));
         if (/\bwss?\b/.test(clean) && /:\/\//.test(clean)) builders.push(rel(file));
       }
-      assert.deepEqual(builders, ["ui/src/terminal/socket-url.mjs"], "exactly one module builds a socket URL");
+      assert.deepEqual(builders, ["apps/ui/src/terminal/socket-url.mjs"], "exactly one module builds a socket URL");
 
       const clean = stripComments(await readFile(path.join(TERMINAL_DIR, "socket-url.mjs"), "utf8"));
       // The companion assertion TECH_DEBT item 24 asks every stripped-source suite to carry: an
       // empty strip is a BLINDING, not a clean file, and the absence sweeps below would all pass.
-      assert.equal(nonVacuousSource("ui/src/terminal/socket-url.mjs", clean), null);
+      assert.equal(nonVacuousSource("apps/ui/src/terminal/socket-url.mjs", clean), null);
       // It is EXPORTED, it takes the origins as an ARGUMENT, and it reads them off that
       // argument rather than off anything ambient.
       assert.match(clean, /export function terminalSocketUrl\s*\([^)]*\{\s*origins\s*\}/s, "the builder takes `{ origins }` as an argument");
@@ -128,10 +128,10 @@ export const archTests = [
   //    `` `${scheme}://${hostname}:${FLEET_PORT}/ws/terminal-view` ``, and fell back to the bare
   //    authority `"127.0.0.1:4177"`. A gate that could not see those is a gate worth nothing.
   {
-    name: "arch/46 ADR-004 (acd-terminal-origin-not-port): no socket URL anywhere in ui/src carries a port literal — FLEET_PORT is DELETED, not relocated",
+    name: "arch/46 ADR-004 (acd-terminal-origin-not-port): no socket URL anywhere in apps/ui/src carries a port literal — FLEET_PORT is DELETED, not relocated",
     run: async () => {
       const files = await collect(UI_SRC, [".mjs", ".ts", ".tsx", ".js", ".jsx"]);
-      assert.ok(files.length > 30, `ui/src was actually read (non-vacuous): ${files.length} files`);
+      assert.ok(files.length > 30, `apps/ui/src was actually read (non-vacuous): ${files.length} files`);
 
       const offenders = [];
       let inScope = 0;
@@ -150,7 +150,7 @@ export const archTests = [
       );
 
       // NON-VACUOUS IN THE OTHER DIRECTION, and this is the clause that keeps the sweep honest
-      // after the move. Once the two components were deleted, "no file under `ui/src` that
+      // after the move. Once the two components were deleted, "no file under `apps/ui/src` that
       // builds a socket URL holds a port" would go green if NO file built one at all — which is
       // exactly the vacuity ADR-006 caught in invariant 4's sibling. Socket URLs are still
       // built here, and they are built in the ONE place the clause above pins.

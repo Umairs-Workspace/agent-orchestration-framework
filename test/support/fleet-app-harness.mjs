@@ -7,7 +7,7 @@
 // there for milestone 43 / story 04 (ADR-010 R4.5), which needs the same
 // instrument for the BOARD; this file keeps exactly what is fleet-specific:
 //
-//   - the ENTRY (ui/src/fleet/Fleet.tsx) and its one net-new stub (the terminal
+//   - the ENTRY (apps/ui/src/fleet/Fleet.tsx) and its one net-new stub (the terminal
 //     view, which wants xterm + a real DOM canvas — story 06 owns its lanes, and
 //     rendering nothing here is exactly what the production component does for an
 //     assignment with no live session);
@@ -24,7 +24,7 @@ import { withMountedApp, findAll, textOf, FRAGMENT } from "./react-app-harness.m
 import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, XTERM_RESOLVE, XTERM_STUBS } from "./terminal-dom.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
+const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 // The ONE terminal control (m46/04, re-pointed off the deleted `terminal-view/FleetTerminalView`)
 // wants xterm + a real DOM canvas; it is not what these lanes are about and it has its own

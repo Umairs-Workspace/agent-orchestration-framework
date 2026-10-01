@@ -106,7 +106,7 @@ export const citedPathResolveTests = [
     name: "119/00 task02 — one resolver answers every citation: two ways to resolve, and four ways not to",
     run: async () => {
       const renameMap = await realRenameMap();
-      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", "ui/src/fleet/scope.mjs"]);
+      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", "apps/ui/src/fleet/scope.mjs"]);
       const existsAtHead = (candidate) => present.has(candidate);
       const answer = (cited, map = renameMap) => resolveCitedPath(cited, { existsAtHead, renameMap: map });
 
@@ -138,10 +138,10 @@ export const citedPathResolveTests = [
       assert.equal(answer("src/work/doctor.mjs:513-529").path, "src/work/doctor.mjs", "…and so does a range locator");
 
       // THE LEFT ANCHOR IS A CRITERION, NOT A DETAIL. An extractor without one clips `ui/` off
-      // `ui/src/**` paths and manufactures phantom casualties; the resolver must never treat the
+      // `apps/ui/src/**` paths and manufactures phantom casualties; the resolver must never treat the
       // two as one path either.
-      const ui = answer("ui/src/fleet/scope.mjs");
-      assert.deepEqual([ui.resolved, ui.at], [true, "ui/src/fleet/scope.mjs"], "a ui/src path resolves as itself");
+      const ui = answer("apps/ui/src/fleet/scope.mjs");
+      assert.deepEqual([ui.resolved, ui.at], [true, "apps/ui/src/fleet/scope.mjs"], "a apps/ui/src path resolves as itself");
       assert.equal(answer("src/fleet/scope.mjs").resolved, false, "…and is NEVER read as src/fleet/scope.mjs");
     },
   },

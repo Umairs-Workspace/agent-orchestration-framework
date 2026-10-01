@@ -31,7 +31,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //     terminal mirror through no import edge.
 //  3. STRUCTURAL — `shapeGlobalStatus`'s return grows by EXACTLY one key: every
 //     pre-existing key keeps its place, `sessions` is the only addition.
-//  4. STRUCTURAL — `ui/src/fleet/api.ts`'s `MeshSession` is the TYPED MIRROR of that
+//  4. STRUCTURAL — `apps/ui/src/fleet/api.ts`'s `MeshSession` is the TYPED MIRROR of that
 //     entry: the same NINE keys, in the same order, with `sessionId: string` (narrowed
 //     to non-null at the index — arithmetic, not divergence) and `workItem` explicitly
 //     nullable; and `GlobalMeshStatus` carries `sessions: MeshSession[]` non-optionally,
@@ -79,7 +79,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
 const QUERY_FILE = "packages/mesh/src/global-query.mjs";
-const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
+const WIRE_TYPE_FILE = "apps/ui/src/fleet/api.ts";
 
 // The ADR-007 entry, in its exact order: nodeId, then ADR-005's frozen six verbatim,
 // then the ONE derived field.
@@ -578,7 +578,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/48 ADR-007 (acd-session-index-derived-not-stored): ui/src/fleet/api.ts's MeshSession is the typed mirror of the index entry — same NINE keys (m50/ADR-008 decision 8 appended 'relaying'), same order, `sessionId: string`, `workItem` nullable — and GlobalMeshStatus carries `sessions: MeshSession[]` (structural)",
+    name: "arch/48 ADR-007 (acd-session-index-derived-not-stored): apps/ui/src/fleet/api.ts's MeshSession is the typed mirror of the index entry — same NINE keys (m50/ADR-008 decision 8 appended 'relaying'), same order, `sessionId: string`, `workItem` nullable — and GlobalMeshStatus carries `sessions: MeshSession[]` (structural)",
     run: async () => {
       const violations = wireTypeViolations(await readSource(WIRE_TYPE_FILE));
       assert.deepEqual(violations, [], `the wire's typed mirror has drifted from the index entry:\n${violations.join("\n")}`);
@@ -989,7 +989,7 @@ export const archTests = [
       assert.ok(typeIdIndex > 0 && typeWorkItemIndex > typeIdIndex, "the real declaration has both a sessionId and a trailing workItem line");
       const plantMesh = (lines) => {
         const planted = wireType.replace(meshLiteral, lines.join(typeEol));
-        assert.notEqual(planted, wireType, "the plant genuinely landed in ui/src/fleet/api.ts");
+        assert.notEqual(planted, wireType, "the plant genuinely landed in apps/ui/src/fleet/api.ts");
         return planted;
       };
       const indentOf = (line) => line.match(/^\s*/)[0];
@@ -1029,7 +1029,7 @@ export const archTests = [
       assert.ok(statusSessionsIndex > 0 && statusDiagnosticsIndex > statusSessionsIndex, "the real payload type declares `sessions` ahead of `diagnostics`");
       const plantStatus = (lines) => {
         const planted = wireType.replace(statusLiteral, lines.join(typeEol));
-        assert.notEqual(planted, wireType, "the plant genuinely landed in ui/src/fleet/api.ts");
+        assert.notEqual(planted, wireType, "the plant genuinely landed in apps/ui/src/fleet/api.ts");
         return planted;
       };
 

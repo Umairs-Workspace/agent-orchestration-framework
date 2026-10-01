@@ -1,11 +1,11 @@
-// Traceability wiring for milestone 45 / story 01 (the route model) — ui/src/app/routes.mjs,
+// Traceability wiring for milestone 45 / story 01 (the route model) — apps/ui/src/app/routes.mjs,
 // the ONE pure route table and the ONE legacy `?mode=` translation.
 //
 // THE CHANNEL. This module is PURE and has NO CLI surface, so the black-box channel every
 // scenario below is confirmed through is `node:test` importing the module directly and
 // asserting on RETURNED VALUES — no bundler, no DOM, no React harness (this repo has none
 // at all). That is the house pattern: test/ui/fleet-scope.test.mjs does exactly this for
-// ui/src/fleet/scope.mjs. Nothing here reads the module's source; the two PLACEMENT
+// apps/ui/src/fleet/scope.mjs. Nothing here reads the module's source; the two PLACEMENT
 // invariants (React-free/DOM-free, and "names no query key but `mode`") are owned by
 // test/arch/command/acd-route-logic-framework-free.test.mjs, and "the entry applies the translation
 // exactly once" is story 45/03's, owned by acd-ui-single-route-table.
@@ -44,7 +44,7 @@
 // is asserted through behaviour (the asset-directory scenario) rather than by reading a
 // build artefact that a clean checkout has not produced yet.
 import assert from "node:assert/strict";
-import { ROUTES, NOT_FOUND_ROUTE, routeFor, legacyRedirectFor } from "../../ui/src/app/routes.mjs";
+import { ROUTES, NOT_FOUND_ROUTE, routeFor, legacyRedirectFor } from "../../apps/ui/src/app/routes.mjs";
 
 // A surviving query string is read back the way every consumer in this codebase reads it —
 // with URLSearchParams, IN ORDER. Tolerant of the leading "?" and order-SENSITIVE, because

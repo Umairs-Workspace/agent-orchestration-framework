@@ -80,10 +80,10 @@ import {
   placeholders,
   regionSummary,
 } from "../support/fleet-filter-readers.mjs";
-import { POLL_MS } from "../../ui/src/fleet/assign-affordance.mjs";
+import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const REPO_PICKER_TSX = path.join(repoRoot, "ui", "src", "fleet", "RepoPicker.tsx");
+const REPO_PICKER_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "RepoPicker.tsx");
 
 // The two constants the control declares, read out of its SOURCE rather than imported: a `.tsx`
 // is not loadable by plain node, and this repo has no React test harness that would make it so.
@@ -93,7 +93,7 @@ const REPO_PICKER_TSX = path.join(repoRoot, "ui", "src", "fleet", "RepoPicker.ts
 async function pickerConstant(name) {
   const source = await readFile(REPO_PICKER_TSX, "utf8");
   const match = source.match(new RegExp(`export const ${name} =\\s*"([^"]*)"`));
-  assert.ok(match, `ui/src/fleet/RepoPicker.tsx declares \`export const ${name}\` as a string literal`);
+  assert.ok(match, `apps/ui/src/fleet/RepoPicker.tsx declares \`export const ${name}\` as a string literal`);
   return match[1];
 }
 
@@ -637,7 +637,7 @@ export const fleetFilterControlTests = [
 
       // GATE B (ADR-014's precedent): COUPLE THE CLAIM TO THE CSS FACT RATHER THAN TO A COMMENT.
       // The whole defect was a hand-carried number about a file this one never read. Read it.
-      const shell = await readFile(new URL("../../ui/src/app/Shell.tsx", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../apps/ui/src/app/Shell.tsx", import.meta.url), "utf8");
       const slotRow = shell.match(/data-shell-slot="surface-bar"\s+className="([^"]*)"/);
       assert.ok(slotRow, "`Shell.tsx` declares the surface-bar slot row's classes as a literal this gate can read");
       assert.match(slotRow[1], /(^|\s)flex-nowrap(\s|$)/, "the slot row is `flex-nowrap`: it lives in a fixed `h-10` bar whose overflow is VISIBLE, so a wrap is not a degradation — it draws over the chrome above and the content below (F-47-V-18). `flex-wrap` also makes the trigger's `min-w-0` unreachable, because line-breaking uses each item's HYPOTHETICAL size and wraps before anything is allowed to shrink");

@@ -177,38 +177,38 @@ async function runSuite(tests, { lanes = true } = {}) {
     process.env.AOF_IN_PROCESS_INTEGRATION = previousInProcess;
   }
 
-  // milestone 36 / story 00 — the guard-if-present cargo lane for the app/desktop/ Rust core.
+  // milestone 36 / story 00 — the guard-if-present cargo lane for the apps/desktop/ Rust core.
   // Shells `cargo test` when the Rust toolchain AND the crate are both present; a clean, explicit
   // skip otherwise (mirroring the guard-if-present arch-test ethos) so the suite stays green pre-build
   // and becomes a real gate the moment the crate lands. Folds cargo's exit code into `failures`.
-  console.log("# cargo (app/desktop)");
+  console.log("# cargo (apps/desktop)");
   {
     const { spawnSync } = await import("node:child_process");
     const { existsSync } = await import("node:fs");
     const { fileURLToPath } = await import("node:url");
-    const cargoManifest = fileURLToPath(new URL("../app/desktop/Cargo.toml", import.meta.url));
+    const cargoManifest = fileURLToPath(new URL("../apps/desktop/Cargo.toml", import.meta.url));
     const hasCargo = spawnSync("cargo", ["--version"], { stdio: "ignore", shell: process.platform === "win32" }).status === 0;
     if (hasCargo && existsSync(cargoManifest)) {
       const result = spawnSync("cargo", ["test", "--manifest-path", cargoManifest], { stdio: "inherit", shell: process.platform === "win32" });
       if (result.status !== 0) failures += 1;
-      console.log(result.status === 0 ? "ok - cargo test (app/desktop)" : "not ok - cargo test (app/desktop)");
+      console.log(result.status === 0 ? "ok - cargo test (apps/desktop)" : "not ok - cargo test (apps/desktop)");
     } else {
-      console.log(`ok - cargo test (app/desktop) skipped (cargo=${hasCargo}, manifest=${existsSync(cargoManifest)})`);
+      console.log(`ok - cargo test (apps/desktop) skipped (cargo=${hasCargo}, manifest=${existsSync(cargoManifest)})`);
     }
 
     // The Tauri shell (`crates/app`) is deliberately EXCLUDED from the workspace
-    // `members` (see app/desktop/Cargo.toml) so `cargo test` above never pulls in
+    // `members` (see apps/desktop/Cargo.toml) so `cargo test` above never pulls in
     // tauri/WebView2 — but that also means nothing compiles the shell, so a core API
     // change could silently break it while this suite stays green. `cargo check`
     // (not `build` — cheaper, still catches API drift) closes that gap, gated behind
     // the SAME guard-if-present shape as the lane above.
-    const appManifest = fileURLToPath(new URL("../app/desktop/crates/app/Cargo.toml", import.meta.url));
+    const appManifest = fileURLToPath(new URL("../apps/desktop/crates/app/Cargo.toml", import.meta.url));
     if (hasCargo && existsSync(appManifest)) {
       const shellResult = spawnSync("cargo", ["check", "--manifest-path", appManifest, "--quiet"], { stdio: "inherit", shell: process.platform === "win32" });
       if (shellResult.status !== 0) failures += 1;
-      console.log(shellResult.status === 0 ? "ok - cargo check (app/desktop shell)" : "not ok - cargo check (app/desktop shell)");
+      console.log(shellResult.status === 0 ? "ok - cargo check (apps/desktop shell)" : "not ok - cargo check (apps/desktop shell)");
     } else {
-      console.log(`ok - cargo check (app/desktop shell) skipped (cargo=${hasCargo}, manifest=${existsSync(appManifest)})`);
+      console.log(`ok - cargo check (apps/desktop shell) skipped (cargo=${hasCargo}, manifest=${existsSync(appManifest)})`);
     }
   }
 

@@ -5,16 +5,16 @@
 // table resolved, the address it resolved it from, and the surface element to mount. So this
 // file is the shell's propless wrapper, reading its props from a global the lane sets before
 // the bundle is imported. It is the ONLY thing between the lane and the REAL production
-// `ui/src/app/Shell.tsx`; nothing about the shell is stubbed.
+// `apps/ui/src/app/Shell.tsx`; nothing about the shell is stubbed.
 //
 // The stub SURFACE is deliberate and is itself part of what a lane checks: it contributes to
 // the shell's slot and notice rail through the REAL `SurfaceSlot` and the REAL shell bus, so a
 // lane exercises the whole surface → shell channel rather than a mock of it. What it does NOT
 // do is fetch anything or want a DOM canvas, which is the same reason the fleet's xterm view
 // and the board's dock are stubbed in their own harnesses.
-import { Shell } from "../../ui/src/app/Shell";
-import { SurfaceDock, SurfaceNotice, SurfaceSlot } from "../../ui/src/app/SurfaceSlot";
-import { dismissFullscreen, requestFullscreen, resetShellBus } from "../../ui/src/app/shell-bus.mjs";
+import { Shell } from "../../apps/ui/src/app/Shell";
+import { SurfaceDock, SurfaceNotice, SurfaceSlot } from "../../apps/ui/src/app/SurfaceSlot";
+import { dismissFullscreen, requestFullscreen, resetShellBus } from "../../apps/ui/src/app/shell-bus.mjs";
 
 // The bundle has its OWN copy of the shell bus (it is bundled, not imported from node), so a
 // lane that wants to ask the shell to present something must reach THIS copy — the one the

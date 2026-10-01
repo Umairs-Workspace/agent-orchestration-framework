@@ -265,7 +265,7 @@ const workUiCommand = {
     // The probe's human line — unreachable from the CLI today; other faces may
     // invoke the probe headlessly.
     render(result) {
-      const build = result.uiBuildPresent ? "ui build present" : "ui build MISSING (npm --prefix ui run build)";
+      const build = result.uiBuildPresent ? "ui build present" : "ui build MISSING (yarn ui:build)";
       return `Board probe — would serve ${result.boardUrl} from ${result.projectDir} (${build})`;
     },
 

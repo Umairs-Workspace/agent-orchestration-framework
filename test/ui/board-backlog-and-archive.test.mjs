@@ -28,8 +28,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { FRESHNESS_GLYPH } from "../../ui/src/board/freshness.mjs";
-import { milestoneListItems, filterToWorkStatus, hiddenMilestoneCount, workStatusSummaryTail } from "../../ui/src/fleet/scope.mjs";
+import { FRESHNESS_GLYPH } from "../../apps/ui/src/board/freshness.mjs";
+import { milestoneListItems, filterToWorkStatus, hiddenMilestoneCount, workStatusSummaryTail } from "../../apps/ui/src/fleet/scope.mjs";
 import { withBoardFace, DEFAULT_STREAM } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, isBadgeNode, findAll, visibleTextOf, textOf } from "../support/board-app-harness.mjs";
 import { bundleSurface } from "../support/react-app-harness.mjs";
@@ -42,7 +42,7 @@ const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeR
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const MODEL_TS = path.join(repoRoot, "ui", "src", "board", "model.ts");
+const MODEL_TS = path.join(repoRoot, "apps", "ui", "src", "board", "model.ts");
 
 const NODE = "umamis-mac-mini";
 const at = (secondsFromNow) => new Date(BOARD_EPOCH + secondsFromNow * 1000).toISOString();
@@ -805,7 +805,7 @@ export const boardBacklogAndArchiveTests = [
       const listed = milestoneListItems(rows);
       assert.deepEqual(listed, [{ type: "milestone", ref: "12", archived: true }], "exactly the 12 row");
       assert.equal(listed[0], rows[1], "…the same object — the filter rewrites nothing");
-      const source = await readFile(path.join(repoRoot, "ui", "src", "fleet", "api.ts"), "utf8");
+      const source = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts"), "utf8");
       const type = source.slice(source.indexOf("export type GlobalWorkItem = {"), source.indexOf("export type GlobalNode"));
       for (const key of ["number?: null;", "backlog?: string;", "archived?: true;"]) assert.ok(type.includes(key), `GlobalWorkItem declares ${key}`);
     },

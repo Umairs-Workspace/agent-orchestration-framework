@@ -13,7 +13,7 @@
 //
 // THE LEFT ANCHOR IS LOAD-BEARING AND IS A CRITERION HERE, NOT A DETAIL. `grep -rhoE
 // 'src/[A-Za-z0-9_./-]+\.mjs' wiki/work/` — no anchor — reports 22 more distinct tokens, because it
-// clips `ui/` off every `ui/src/**` path. An extractor that manufactures phantom casualties prices
+// clips `ui/` off every `apps/ui/src/**` path. An extractor that manufactures phantom casualties prices
 // the ceiling wrong on the day it is pinned, so the anchor is asserted below rather than trusted.
 //
 // THE MAP IS DERIVED FROM HISTORY, SO IT CANNOT GO STALE — and on the day it lands it resolves
@@ -56,7 +56,7 @@ const SPINE = "packages/work/src/doctor/index.mjs";
 const EDGE = "packages/work/src/commands/doctor.mjs";
 
 // THE ANCHORED EXTRACTOR. The lookbehind is the whole difference between 357 tokens and 379: without
-// it, `ui/src/fleet/scope.mjs` is read as `src/fleet/scope.mjs` and counted as a casualty.
+// it, `apps/ui/src/fleet/scope.mjs` is read as `src/fleet/scope.mjs` and counted as a casualty.
 const CITATION = /(?<![A-Za-z0-9_./-])(?:src|packages\/[A-Za-z0-9_-]+\/src)\/[A-Za-z0-9_./-]+\.mjs/gu;
 
 // THE SHRINK-ONLY CEILING, pinned to the count measured on the day this control landed, with NO
@@ -212,7 +212,7 @@ export const archTests = [
     name: "arch/119 FF-11903: one resolver answers every citation — at HEAD, or through a rename this repository recorded",
     run: async () => {
       const renameMap = await renameMapFromHistory();
-      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", "ui/src/fleet/scope.mjs"]);
+      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", "apps/ui/src/fleet/scope.mjs"]);
       const existsAtHead = (candidate) => present.has(candidate);
       const answer = (cited, map = renameMap) => resolveCitedPath(cited, { existsAtHead, renameMap: map });
 
@@ -228,7 +228,7 @@ export const archTests = [
       assert.equal(answer("src/mesh-sync.mjs").resolved, false, "a path deleted with no rename record is unresolved");
       assert.equal(answer("src/never-was.mjs").resolved, false, "a src/ path that never existed is unresolved");
       assert.deepEqual([answer("src/work/doctor.mjs:522").resolved, answer("src/work/doctor.mjs:522").locator], [true, ":522"], "a locator is dropped for resolution and reported, never resolved against");
-      assert.equal(answer("ui/src/fleet/scope.mjs").resolved, true, "a ui/src path resolves as itself…");
+      assert.equal(answer("apps/ui/src/fleet/scope.mjs").resolved, true, "a apps/ui/src path resolves as itself…");
       assert.equal(answer("src/fleet/scope.mjs").resolved, false, "…and is never read as src/fleet/scope.mjs");
     },
   },
@@ -373,9 +373,9 @@ export const archTests = [
   },
 
   {
-    name: "arch/119 FF-11903: the extractor's LEFT ANCHOR is a criterion — a ui/src path is never clipped into a phantom src/ casualty",
+    name: "arch/119 FF-11903: the extractor's LEFT ANCHOR is a criterion — a apps/ui/src path is never clipped into a phantom src/ casualty",
     run: () => {
-      const text = "see ui/src/fleet/scope.mjs and src/work/doctor.mjs and node_modules/x/src/y.mjs";
+      const text = "see apps/ui/src/fleet/scope.mjs and src/work/doctor.mjs and node_modules/x/src/y.mjs";
       assert.deepEqual([...text.matchAll(CITATION)].map((m) => m[0]), ["src/work/doctor.mjs"], "only the unprefixed src/ path is a citation");
       const unanchored = /src\/[A-Za-z0-9_./-]+\.mjs/gu;
       assert.equal([...text.matchAll(unanchored)].length, 3, "an extractor without the anchor reports three, two of them manufactured");

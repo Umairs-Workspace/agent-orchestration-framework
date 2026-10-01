@@ -1,5 +1,5 @@
 // Traceability wiring for milestone 21 — the PURE run-observability helpers
-// (ui/src/board/runs.mjs). Covers every HEADLESS @executable scenario across the
+// (apps/ui/src/board/runs.mjs). Covers every HEADLESS @executable scenario across the
 // two stories' task features, imported the same way the React DetailPanel imports
 // the module (Node ≥20, no type-stripping — the action.mjs / dock-state.mjs
 // convention), so the formatter / selection / chip ramp / verb / predicate are
@@ -19,7 +19,7 @@ import {
   runStateChip,
   rerunVerb,
   isInFlight,
-} from "../../ui/src/board/runs.mjs";
+} from "../../apps/ui/src/board/runs.mjs";
 
 const NOW = "2026-06-30T12:00:00.000Z";
 const nowMs = Date.parse(NOW);

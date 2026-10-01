@@ -27,7 +27,7 @@
 // workspace's own `.aof/aof.config.json` and resolved by the face's own resolver
 // — never injected into a response.
 import assert from "node:assert/strict";
-import { FRESHNESS_GLYPH } from "../../ui/src/board/freshness.mjs";
+import { FRESHNESS_GLYPH } from "../../apps/ui/src/board/freshness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, isBadgeNode } from "../support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
@@ -190,7 +190,7 @@ export const boardFreshnessLegendTests = [
       // separate code paths. (The reader itself is `readStalenessWindow`, whose
       // four-way behaviour task 03 pins; what matters HERE is that the legend
       // renders the SAME words for every one of them.)
-      const { freshnessLegendRows } = await import("../../ui/src/board/freshness.mjs");
+      const { freshnessLegendRows } = await import("../../apps/ui/src/board/freshness.mjs");
       for (const [label, value] of [["field absent", undefined], ["explicit null", null], ["non-numeric", "5m"], ["not finite", Number.NaN]]) {
         assert.equal(
           freshnessLegendRows(value)[0].text,

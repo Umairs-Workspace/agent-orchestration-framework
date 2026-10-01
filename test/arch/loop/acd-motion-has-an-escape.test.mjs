@@ -1,14 +1,14 @@
 // Fitness function: acd-motion-has-an-escape (milestone 49 / DESIGN DG-49-6 / ARCHITECTURE
 // §Fitness functions — the NINTH, added 2026-08-13 at the PO's story-06 ruling) —
 //
-//   "Every `animate-*` utility EMITTED anywhere under `ui/src/**` is named in
-//    `ui/src/index.css`'s `@media (prefers-reduced-motion: reduce)` block, and named there in a
+//   "Every `animate-*` utility EMITTED anywhere under `apps/ui/src/**` is named in
+//    `apps/ui/src/index.css`'s `@media (prefers-reduced-motion: reduce)` block, and named there in a
 //    rule that actually stops the animation."
 //
 // WHY IT EXISTS, and it is a defect this repo SHIPPED rather than a hazard it imagined.
-// Until 49/06, `ui/src/terminal/palette.mjs` carried a comment stating that both terminal pulses
+// Until 49/06, `apps/ui/src/terminal/palette.mjs` carried a comment stating that both terminal pulses
 // honoured `prefers-reduced-motion` "through the existing scoping convention in
-// `ui/src/index.css`". The only such rule in the whole of `ui/` named `.aof-pending` — a
+// `apps/ui/src/index.css`". The only such rule in the whole of `ui/` named `.aof-pending` — a
 // different class over a different animation — so the two state dots kept pulsing for every
 // operator whose system had asked them to stop. Measured in a real browser at the refine:
 // with reduce FORCED, `connecting` and `streaming` both reported `animationName: "pulse", 2s`
@@ -33,7 +33,7 @@
 // name-only check while leaving the dots pulsing, so `silencesAnimation` is part of the
 // membership test.
 //
-// SCOPE IS THE WHOLE OF `ui/src/**`, DELIBERATELY, and that is a consequence of the MECHANISM
+// SCOPE IS THE WHOLE OF `apps/ui/src/**`, DELIBERATELY, and that is a consequence of the MECHANISM
 // RULING rather than scope creep by this gate. ARCHITECTURE ruled ONE CSS rule over twelve
 // call-site edits: twelve per-site escapes are twelve edits and a thirteenth site is one diff
 // away, while the block covers a site nobody has written yet. Because the block is the mechanism,
@@ -61,9 +61,9 @@ import {
 // The sweep found the tree, not an empty directory.
 //
 // TWO NUMBERS, AND THEY ARE NOT THE SAME NUMBER — stated because the refine's prose and this
-// gate's arithmetic disagreed once already. `ui/src` carries TWELVE `animate-pulse`
+// gate's arithmetic disagreed once already. `apps/ui/src` carries TWELVE `animate-pulse`
 // OCCURRENCES across EIGHT files (Shell.tsx has three, PageStates.tsx two, and the other six
-// files one each, `ui/src/terminal/palette.mjs` among them). The containment question is about
+// files one each, `apps/ui/src/terminal/palette.mjs` among them). The containment question is about
 // DISTINCT utilities per file — `animate-pulse` twice in one file is one class to escape — so
 // this gate counts FILES that emit at least one `animate-*`, and its floor is set below the
 // measured eight so removing a skeleton does not turn the gate red for a reason that has nothing
@@ -72,11 +72,11 @@ const EMITTING_FILE_FLOOR = 6;
 
 export const archTests = [
   {
-    name: "arch/49 DG-49-6 (acd-motion-has-an-escape): every `animate-*` utility emitted under ui/src/** is silenced by the ONE reduced-motion block in ui/src/index.css",
+    name: "arch/49 DG-49-6 (acd-motion-has-an-escape): every `animate-*` utility emitted under apps/ui/src/** is silenced by the ONE reduced-motion block in apps/ui/src/index.css",
     run: async () => {
       const css = await readFile(UI_STYLESHEET, "utf8");
       const files = await collectFiles(UI_SRC, EMITTING_EXTENSIONS);
-      assert.ok(files.length >= 40, `the ui/src tree was actually walked (non-vacuous): ${files.length} files`);
+      assert.ok(files.length >= 40, `the apps/ui/src tree was actually walked (non-vacuous): ${files.length} files`);
 
       const blocks = reducedMotionBlocks(css);
       assert.equal(
@@ -89,10 +89,10 @@ export const archTests = [
 
       assert.ok(
         emittedBy.size >= EMITTING_FILE_FLOOR,
-        `the emitted-utility sweep has teeth: ${emittedBy.size} file(s) under ui/src emit an \`animate-*\` utility, floor ${EMITTING_FILE_FLOOR}. A sweep that finds nothing is contained by anything.`,
+        `the emitted-utility sweep has teeth: ${emittedBy.size} file(s) under apps/ui/src emit an \`animate-*\` utility, floor ${EMITTING_FILE_FLOOR}. A sweep that finds nothing is contained by anything.`,
       );
       assert.ok(
-        emittedBy.has("ui/src/terminal/palette.mjs"),
+        emittedBy.has("apps/ui/src/terminal/palette.mjs"),
         "…and the sweep reaches the terminal's own motion column — the file this story repairs. A tree-wide gate that happened to miss the one file it was written for is the vacuity this milestone keeps finding.",
       );
       assert.ok(silenced.size > 0, "the reduced-motion block silences at least one class — an empty escape satisfies containment vacuously");
@@ -100,7 +100,7 @@ export const archTests = [
       assert.deepEqual(
         offenders,
         [],
-        "an `animate-*` utility is emitted with NO reduced-motion escape. This is the shipped defect DG-49-6 was written for: motion that an operator's own accessibility setting cannot stop, on a screen designed to be left open all day. THE FIX IS ONE CSS RULE, NOT ONE PER SITE — name the utility in `ui/src/index.css`'s `@media (prefers-reduced-motion: reduce)` block with `animation: none`, which covers every site including the ones nobody has written yet (49/ARCHITECTURE §Fitness functions, MECHANISM RULING).\n"
+        "an `animate-*` utility is emitted with NO reduced-motion escape. This is the shipped defect DG-49-6 was written for: motion that an operator's own accessibility setting cannot stop, on a screen designed to be left open all day. THE FIX IS ONE CSS RULE, NOT ONE PER SITE — name the utility in `apps/ui/src/index.css`'s `@media (prefers-reduced-motion: reduce)` block with `animation: none`, which covers every site including the ones nobody has written yet (49/ARCHITECTURE §Fitness functions, MECHANISM RULING).\n"
           + `  emitted, by file:\n${[...emittedBy].map(([file, list]) => `    ${file} → ${list.join(", ")}`).join("\n")}\n`
           + `  silenced under reduce: ${[...silenced].sort().join(", ") || "(nothing)"}`,
       );
@@ -127,7 +127,7 @@ export const archTests = [
         "}",
       ].join("\n");
 
-      // ── PLANT 1, the one ARCHITECTURE names: a ui/src file emitting `animate-spin` while the
+      // ── PLANT 1, the one ARCHITECTURE names: a apps/ui/src file emitting `animate-spin` while the
       //    block names only `animate-pulse`. It is fed to the SHIPPED detector — m46 found a plant
       //    being fed to a locally re-implemented copy, so the shipped function was never once
       //    driven to a violation.
@@ -142,7 +142,7 @@ export const archTests = [
       const fired = await unescapedMotionSites([path.join(UI_SRC, "planted.tsx")], CLEAN_CSS, readPlanted);
       assert.deepEqual(
         fired.offenders,
-        ["ui/src/planted.tsx → animate-spin"],
+        ["apps/ui/src/planted.tsx → animate-spin"],
         "self-check: the detector FIRES on an emitted utility the reduce block does not name, and names the SITE in its refusal",
       );
 
@@ -152,7 +152,7 @@ export const archTests = [
       //    word sweep is GREEN on it.
       const commentOnly = [
         "// Both pulses honour `prefers-reduced-motion` through the existing scoping convention in",
-        "// `ui/src/index.css`, which is why the class is the house's own.",
+        "// `apps/ui/src/index.css`, which is why the class is the house's own.",
         'export const MOTION = Object.freeze({ none: "", pulse: "animate-spin" });',
       ].join("\n");
       assert.match(commentOnly, /prefers-reduced-motion/, "self-check: plant 2 LANDED — the false sentence is present in the raw file, which is exactly what makes a word sweep green on it");
@@ -162,7 +162,7 @@ export const archTests = [
       const proseIsNoEscape = await unescapedMotionSites([path.join(UI_SRC, "prose.mjs")], CLEAN_CSS, readCommentOnly);
       assert.deepEqual(
         proseIsNoEscape.offenders,
-        ["ui/src/prose.mjs → animate-spin"],
+        ["apps/ui/src/prose.mjs → animate-spin"],
         "self-check: a `prefers-reduced-motion` sentence in a COMMENT satisfies nothing. This is the whole finding: the naive sweep certified the exact defect it was written for, out of a comment.",
       );
 
@@ -172,7 +172,7 @@ export const archTests = [
       const notSilenced = await unescapedMotionSites([path.join(UI_SRC, "planted.tsx")], namedButNotSilenced, readPlanted);
       assert.deepEqual(
         notSilenced.offenders,
-        ["ui/src/planted.tsx → animate-spin"],
+        ["apps/ui/src/planted.tsx → animate-spin"],
         "self-check: naming the class in the reduce block without stopping the animation does NOT count as an escape",
       );
       assert.ok(classesSilencedUnderReduce(CLEAN_CSS).has("animate-pulse"), "self-check: …while a rule that does stop it does count");
@@ -186,7 +186,7 @@ export const archTests = [
 
       // ── THE HISTORICAL PLANT, over the REAL TREE. The plants above are synthesized files; this
       //    one is the escape block EXACTLY AS IT SHIPPED, driven against every real file under
-      //    `ui/src`. It answers the question a green gate cannot: would this instrument have
+      //    `apps/ui/src`. It answers the question a green gate cannot: would this instrument have
       //    caught the defect it was written for? The PO's ruling is that a gate which only ever
       //    shows the rule is present is one refactor from asserting nothing.
       const SHIPPED_BLOCK_BEFORE_49_06 = "@media (prefers-reduced-motion: reduce) {\n  .aof-pending {\n    animation: none;\n  }\n}";
@@ -197,7 +197,7 @@ export const archTests = [
         `self-check: against the escape block as it SHIPPED — \`.aof-pending\` alone — this gate goes red on the real tree, refusing ${wouldHaveCaught.offenders.length} file(s). If it does not, the gate is measuring something other than the escape.`,
       );
       assert.ok(
-        wouldHaveCaught.offenders.includes("ui/src/terminal/palette.mjs → animate-pulse"),
+        wouldHaveCaught.offenders.includes("apps/ui/src/terminal/palette.mjs → animate-pulse"),
         `self-check: …and the terminal's own motion column is AMONG the files it refuses — the one a comment in that very file claimed was already covered. (Order is alphabetical by path, so it is last rather than first; the claim is membership, never position.) Refused: ${wouldHaveCaught.offenders.join(", ")}`,
       );
       assert.deepEqual(
@@ -209,7 +209,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/49 DG-49-6 (acd-motion-has-an-escape): the escape is read from ui/src/index.css itself and names the terminal ramp's own utility — the two artefacts a reader can check without running anything",
+    name: "arch/49 DG-49-6 (acd-motion-has-an-escape): the escape is read from apps/ui/src/index.css itself and names the terminal ramp's own utility — the two artefacts a reader can check without running anything",
     run: async () => {
       const css = await readFile(UI_STYLESHEET, "utf8");
       const clean = stripComments(css);

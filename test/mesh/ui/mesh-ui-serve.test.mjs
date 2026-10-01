@@ -244,7 +244,7 @@ export const meshUiServeTests = [
         assert.ok(rejected, "serveMeshUi rejects when the build is missing");
         assert.equal(rejected.code, "ui-build-missing", "the rejection carries the ui-build-missing code");
         assert.ok(
-          /build/i.test(rejected.message) && /npm --prefix ui run build/.test(rejected.message),
+          /build/i.test(rejected.message) && /yarn ui:build/.test(rejected.message),
           "the message tells the operator to build the UI first"
         );
         assert.equal(server, undefined, "no server was left listening");
@@ -539,7 +539,7 @@ export const meshUiServeTests = [
   {
     name: "status-names-the-serving-node/01 the wire types name the two additive facts — FleetStatus declares localNodeId?: string | null, PresenceRecord declares loops?: PresenceLoop[] with the eleven keys and stop: null | \"drain\" | \"cancel\"",
     async run() {
-      const api = await readFile(path.join(repoRoot, "ui", "src", "fleet", "api.ts"), "utf8");
+      const api = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts"), "utf8");
       assert.match(api, /export type GlobalMeshStatus = \{[\s\S]*?localNodeId\?: string \| null;/, "GlobalMeshStatus (= FleetStatus) declares localNodeId?: string | null");
       assert.match(api, /export type FleetStatus = GlobalMeshStatus;/, "FleetStatus is that type");
       assert.match(api, /export type PresenceRecord = \{[\s\S]*?loops\?: PresenceLoop\[\];[\s\S]*?\};/, "PresenceRecord declares loops?: PresenceLoop[]");

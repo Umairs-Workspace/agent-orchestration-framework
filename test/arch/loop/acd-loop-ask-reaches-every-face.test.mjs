@@ -33,19 +33,19 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // call in `packages/core/src/commands/resume.mjs`, serving both the local and the mesh leg.
 //
 // FF-13108, structural then fixture. `packages/core/src/notify/form.mjs` imports nothing, and its direct importers
-// are `packages/core/src/loop/ask.mjs`, `packages/core/src/notify/discord.mjs` and `ui/src/board/action.mjs` (task 00 ruling 3:
+// are `packages/core/src/loop/ask.mjs`, `packages/core/src/notify/discord.mjs` and `apps/ui/src/board/action.mjs` (task 00 ruling 3:
 // the shell renders its ask block through `ask.mjs`'s `askBlockLines`, and spells no phrase of its
-// own). `waiting on you` is spelled in no other comment-stripped `packages/core/src/**` or `ui/src/**` module, and
+// own). `waiting on you` is spelled in no other comment-stripped `packages/core/src/**` or `apps/ui/src/**` module, and
 // no module but `form.mjs` DEFINES `formatElapsed` (ruling 9: the register's red probe, a second
-// ladder, imports nothing and need not spell the phrase). The one `ui/src/**` specifier that
-// resolves outside `ui/src` is the board's import of the form. Fixture: `accountLine` and the
+// ladder, imports nothing and need not spell the phrase). The one `apps/ui/src/**` specifier that
+// resolves outside `apps/ui/src` is the board's import of the form. Fixture: `accountLine` and the
 // Discord line 1 share a byte-identical `<ref> — <phrase> (<phase>, <elapsed>)`.
 //
 // FF-13109, structural then fixture. In `packages/core/src/board-ui.mjs` every body read (`readJsonBody(`) is
 // preceded, in its own branch, by `admitWriteRequest(`; the answer branch lifts exactly
 // `body.ref`, `body.text` and `body.actor`. Both faces' `admitWriteRequest` call `isLoopbackHost(`,
 // and a rebinding request (`Host: evil.example:1234`, its Origin matching) is refused
-// `non-loopback-host` on the board and on the fleet. `ui/src/**` holds one
+// `non-loopback-host` on the board and on the fleet. `apps/ui/src/**` holds one
 // `fetch("/api/work/answer"`, and `AskCard.tsx` renders no `Markdown`, sets no placeholder, keys on
 // `item.ask` and holds its buttons under ruling 4: one SEND button, at most one clamp toggle.
 //
@@ -135,17 +135,17 @@ const SEVEN = FIRING_SITES.length;
 const ENVELOPE_KEYS = Object.freeze(["event", "ref", "at", "node", "phase", "elapsedMs", "question", "stop", "outcome", "answerPath", "link"]);
 // Task 00 ruling 3: the form's direct importers — and, as amended at 131/11 (ADR-009 §5), the slash
 // commands' renders, which read a waiting row exactly as the terminal and the posted message do.
-const FORM_IMPORTERS = Object.freeze(["packages/messaging/src/discord-commands.mjs", "packages/core/src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "ui/src/board/action.mjs"]);
+const FORM_IMPORTERS = Object.freeze(["packages/messaging/src/discord-commands.mjs", "packages/core/src/application/bindings/loop/ask.mjs", "packages/messaging/src/discord.mjs", "apps/ui/src/board/action.mjs"]);
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const PHRASES = Object.freeze(["waiting on you", "answered by", "parked, unanswered", "loop halted", "loop died", "loop relaunched"]);
 const THE_PHRASE = "waiting on you";
-const UI_OUTSIDE = Object.freeze([{ file: "ui/src/board/action.mjs", specifier: "@aof/messaging/form" }]);
+const UI_OUTSIDE = Object.freeze([{ file: "apps/ui/src/board/action.mjs", specifier: "@aof/messaging/form" }]);
 const UI_EXTENSIONS = /\.(?:mjs|mts|ts|tsx|js)$/u;
 const BOARD = "packages/server/src/board-ui.mjs";
 const FLEET = "packages/mesh/src/ui-serve.mjs";
 const ANSWER_ROUTE = "/api/work/answer";
 const ANSWER_FIELDS = Object.freeze(["actor", "ref", "text"]);
-const ASK_CARD = "ui/src/board/AskCard.tsx";
+const ASK_CARD = "apps/ui/src/board/AskCard.tsx";
 const REBIND = "evil.example:1234";
 
 function assertRead(what, count, floor, unit = "file(s)") {
@@ -187,7 +187,7 @@ async function srcUnits() {
   return units;
 }
 
-// ONE read of `ui/src/**` script modules, comment-stripped, declaration files marked.
+// ONE read of `apps/ui/src/**` script modules, comment-stripped, declaration files marked.
 async function uiUnits() {
   const units = [];
   const walk = async (dir) => {
@@ -200,7 +200,7 @@ async function uiUnits() {
       }
     }
   };
-  await walk(path.join(repoRoot, "ui", "src"));
+  await walk(path.join(repoRoot, "apps", "ui", "src"));
   return units;
 }
 
@@ -634,7 +634,7 @@ export const archTests = [
       assert.deepEqual(dependencySpecifiers(form.code), [], "packages/core/src/notify/form.mjs has zero imports");
       assert.deepEqual(computedDynamicImports(form.code), [], "…and no computed dynamic import");
       const importers = units.filter((unit) => !unit.declaration && dependencySpecifiers(unit.code).some(({ specifier }) => resolved(unit.rel, specifier) === FORM)).map(({ rel }) => rel).sort();
-      assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "packages/core/src/notify/form.mjs's direct importers are ask.mjs, notify/discord.mjs and ui/src/board/action.mjs (ruling 3), and discord/commands.mjs (as amended at 131/11)");
+      assert.deepEqual(importers, [...FORM_IMPORTERS].sort(), "packages/core/src/notify/form.mjs's direct importers are ask.mjs, notify/discord.mjs and apps/ui/src/board/action.mjs (ruling 3), and discord/commands.mjs (as amended at 131/11)");
       const shell = unitOf(units, SHELL);
       const phrases = PHRASES.filter((phrase) => shell.code.includes(phrase));
       assert.deepEqual(phrases, [], `${SHELL} spells no event phrase of its own — it renders the ask block through ask.mjs's askBlockLines: ${phrases.join(", ")}`);
@@ -642,15 +642,15 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13108 (acd-loop-ask-reaches-every-face): structural — waiting on you is spelled in form.mjs alone, formatElapsed is defined in no module but src/notify/form.mjs, and the one ui/src specifier that leaves ui/src is the board's import of the form",
+    name: "arch/131 FF-13108 (acd-loop-ask-reaches-every-face): structural — waiting on you is spelled in form.mjs alone, formatElapsed is defined in no module but src/notify/form.mjs, and the one apps/ui/src specifier that leaves apps/ui/src is the board's import of the form",
     run: async () => {
       const src = await srcUnits();
       const ui = await uiUnits();
       assertRead("the src/** sweep", src.length, 150);
-      assertRead("the ui/src/** sweep", ui.length, 50);
+      assertRead("the apps/ui/src/** sweep", ui.length, 50);
       const units = [...src, ...ui];
       const spellers = units.filter(({ code }) => code.includes(THE_PHRASE)).map(({ rel }) => rel);
-      assert.deepEqual(spellers, [FORM], `the phrase "waiting on you" is spelled in no other comment-stripped src/** or ui/src/** module — spelled in ${spellers.join(", ")}`);
+      assert.deepEqual(spellers, [FORM], `the phrase "waiting on you" is spelled in no other comment-stripped src/** or apps/ui/src/** module — spelled in ${spellers.join(", ")}`);
 
       const definers = units.filter(({ code }) => /(?<!declare\s+)\bfunction\s+formatElapsed\b|\b(?:const|let|var)\s+formatElapsed\s*=/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(definers, [FORM], `formatElapsed is defined in no module but packages/core/src/notify/form.mjs — defined in ${definers.join(", ")}. The elapsed ladder has one home (ADR-006 §1)`);
@@ -659,10 +659,10 @@ export const archTests = [
       for (const unit of ui) {
         for (const { specifier } of dependencySpecifiers(unit.code)) {
           if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
-          if (!resolved(unit.rel, specifier).startsWith("ui/src/")) outside.push({ file: unit.rel, specifier });
+          if (!resolved(unit.rel, specifier).startsWith("apps/ui/src/")) outside.push({ file: unit.rel, specifier });
         }
       }
-      assert.deepEqual(outside, [...UI_OUTSIDE], `the only import specifier in ui/src/** that resolves outside ui/src is ../../../packages/core/src/notify/form.mjs in ui/src/board/action.mjs — found ${JSON.stringify(outside)}`);
+      assert.deepEqual(outside, [...UI_OUTSIDE], `the only import specifier in apps/ui/src/** that resolves outside apps/ui/src is ../../../packages/core/src/notify/form.mjs in apps/ui/src/board/action.mjs — found ${JSON.stringify(outside)}`);
     },
   },
   {
@@ -725,12 +725,12 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13109 (acd-loop-ask-reaches-every-face): structural — ui/src holds exactly one fetch of the answer route, and AskCard renders no Markdown, sets no placeholder, keys on item.ask and holds its buttons under ruling 4",
+    name: "arch/131 FF-13109 (acd-loop-ask-reaches-every-face): structural — apps/ui/src holds exactly one fetch of the answer route, and AskCard renders no Markdown, sets no placeholder, keys on item.ask and holds its buttons under ruling 4",
     run: async () => {
       const ui = await uiUnits();
-      assertRead("the ui/src/** sweep", ui.length, 50);
+      assertRead("the apps/ui/src/** sweep", ui.length, 50);
       const fetches = ui.flatMap(({ rel, code }) => [...code.matchAll(/\bfetch\s*\(\s*["'`]\/api\/work\/answer["'`]/gu)].map(() => rel));
-      assert.deepEqual(fetches, ["ui/src/board/api.ts"], `ui/src/** holds exactly one fetch("/api/work/answer" — found in ${fetches.join(", ") || "nothing"}`);
+      assert.deepEqual(fetches, ["apps/ui/src/board/api.ts"], `apps/ui/src/** holds exactly one fetch("/api/work/answer" — found in ${fetches.join(", ") || "nothing"}`);
 
       const card = unitOf(ui, ASK_CARD);
       const markdown = dependencySpecifiers(card.code).filter(({ specifier }) => /markdown/iu.test(specifier));

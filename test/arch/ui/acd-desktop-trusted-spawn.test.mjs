@@ -7,10 +7,10 @@
 //  install together, so the sibling path is unambiguous. Spawns are shell-less argv
 //  (never a `cmd /c` / shell string)."
 //
-// GUARD-IF-PRESENT (refine, pre-build): a clean no-op while `app/desktop/` is absent;
+// GUARD-IF-PRESENT (refine, pre-build): a clean no-op while `apps/desktop/` is absent;
 // a hard assertion the moment the crate lands. Green now, RED-if-violated once built.
 //
-// Proof, over every `app/desktop/**/*.rs` (Rust comments stripped):
+// Proof, over every `apps/desktop/**/*.rs` (Rust comments stripped):
 //  1. NO spawn of a bare `"aof"` / `"aof.exe"` program name (which would trigger a
 //     PATH search) — `Command::new("aof")` / `Command::new("aof.exe")` are forbidden.
 //     The program passed to the spawn is a RESOLVED path variable, not a bare literal.
@@ -25,7 +25,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const DESKTOP_DIR = path.join(repoRoot, "app", "desktop");
+const DESKTOP_DIR = path.join(repoRoot, "apps", "desktop");
 
 // A bare-PATH spawn of the aof binary (the hijack risk), or a shell-string spawn.
 const FORBIDDEN_SPAWN_FORMS = [
@@ -64,7 +64,7 @@ export const archTests = [
     name: "arch/36 ADR-004 (acd-desktop-trusted-spawn): the aof binary is spawned by a resolved absolute co-located path, never bare-PATH or a shell string (guard-if-present)",
     run: async () => {
       if (!(await dirExists(DESKTOP_DIR))) {
-        assert.equal(await dirExists(DESKTOP_DIR), false, "app/desktop/ absent (pre-build); armed at build by story 00");
+        assert.equal(await dirExists(DESKTOP_DIR), false, "apps/desktop/ absent (pre-build); armed at build by story 00");
         return;
       }
       const files = await collectRustFiles(DESKTOP_DIR);

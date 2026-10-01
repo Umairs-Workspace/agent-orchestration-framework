@@ -1,14 +1,14 @@
 // Traceability wiring for milestone 46 / story 03 — the two capabilities the shared core was
 // missing, both raised at the architect's review of this story and both ruled to belong HERE:
 //
-//   · PER-PANE IDENTITY (`ui/src/terminal/pane-identity.mjs`) — the multiplex key and
+//   · PER-PANE IDENTITY (`apps/ui/src/terminal/pane-identity.mjs`) — the multiplex key and
 //     m38/ADR-014 invariant 4's V1 rule, "a terminal with no visible owner is never rendered".
 //     Its predecessor carried V1 STRUCTURALLY, by returning `null` instead of a header model,
 //     and 46/04 deletes that file wholesale. Without a home here the rule would survive only
 //     as a comment. The generic half is the core's (a key over the descriptor's own declared
 //     params); the fleet-DOMAIN half — resolving an assignment row, and the assignment-derived
 //     wording — stays with the fleet and is 46/04's to author.
-//   · THE DRAG CLAMP (`ui/src/terminal/clamp.mjs`) — ADR-009's clause that the clamp moves off
+//   · THE DRAG CLAMP (`apps/ui/src/terminal/clamp.mjs`) — ADR-009's clause that the clamp moves off
 //     the viewport and onto the published chrome height, and ADR-001's rule that it may not
 //     live in the `.tsx`. 46/04's `04_the-two-terminals-agree.feature` asserts the clamped
 //     default `min(280, floor(box/2))` against the shell content box, with the 760x520 desktop
@@ -21,16 +21,16 @@ import {
   NOT_RENDERED,
   terminalPaneKey,
   terminalPaneIdentity,
-} from "../../ui/src/terminal/pane-identity.mjs";
+} from "../../apps/ui/src/terminal/pane-identity.mjs";
 import {
   DOCK_MIN_HEIGHT,
   DOCK_DEFAULT_HEIGHT,
   dockHeightBounds,
   clampDockHeight,
   dockDefaultHeight,
-} from "../../ui/src/terminal/clamp.mjs";
-import { describeTerminalState, TERMINAL_STATES, terminalStateUnavailable, UNAVAILABLE_CAUSES } from "../../ui/src/terminal/state-ramp.mjs";
-import { sessionSourceFor, SESSION_SOURCES } from "../../ui/src/terminal/source-table.mjs";
+} from "../../apps/ui/src/terminal/clamp.mjs";
+import { describeTerminalState, TERMINAL_STATES, terminalStateUnavailable, UNAVAILABLE_CAUSES } from "../../apps/ui/src/terminal/state-ramp.mjs";
+import { sessionSourceFor, SESSION_SOURCES } from "../../apps/ui/src/terminal/source-table.mjs";
 
 const LOCAL_PTY = sessionSourceFor("local-pty").source;
 const MIRROR = sessionSourceFor("mirror").source;

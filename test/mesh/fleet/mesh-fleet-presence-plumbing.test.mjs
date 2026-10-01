@@ -5,7 +5,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // tasks/08_bug-web-fleet-presence-plumbing.feature — finding F6 (aof:verify 38,
 // BLOCKER): the web fleet's ONE read route (`GET /api/mesh/status`, served by
 // packages/core/src/mesh/ui-serve.mjs through packages/core/src/global-mesh-query.mjs's queryGlobalMeshStatus)
-// carried NO `presence` key on any node object, so ui/src/fleet/Fleet.tsx's
+// carried NO `presence` key on any node object, so apps/ui/src/fleet/Fleet.tsx's
 // `fleetCurrentWorkLines(node.presence ?? {})` always received `{}` and row 3
 // always rendered `idle` — even with a REAL live coding-assistant session on disk.
 //
@@ -18,14 +18,14 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // the real one).
 //
 // FOLLOW-ON finding F9 (aof:verify 38, found by a headless-Chromium render AFTER
-// F6 landed): F6 put `presence` on the wire, but `ui/src/fleet/Fleet.tsx`'s
+// F6 landed): F6 put `presence` on the wire, but `apps/ui/src/fleet/Fleet.tsx`'s
 // `isGlobalStatus(status)` is ALWAYS true for a real `/api/mesh/status` response
 // (mesh-ui-serve.mjs serves BOTH scopes from queryGlobalMeshStatus, whose payload
 // always carries `workspaces`) — so production ALWAYS renders `GlobalScopeView` →
 // `GlobalNodePanel`, and NEVER the `NodeCard` that calls `fleetCurrentWorkLines`.
 // `GlobalNodePanel` had no current-work line at all. The fix wires
 // `GlobalNodePanel` to the SAME projection through a new node:test-exercisable
-// wrapper, `nodeCurrentWork` (ui/src/fleet/scope.mjs) — this file's F9 block
+// wrapper, `nodeCurrentWork` (apps/ui/src/fleet/scope.mjs) — this file's F9 block
 // asserts THAT wrapper (the one the actually-rendered component calls) over the
 // real route payload, not the dead `NodeCard`.
 import assert from "node:assert/strict";
@@ -40,16 +40,16 @@ const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeR
 const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
 const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
-// ui/src/fleet/runs.mjs's fleetCurrentWorkLines — the SAME pure projection
-// ui/src/fleet/Fleet.tsx:631 (NodeCard) hands `node.presence ?? {}` to. Imported
+// apps/ui/src/fleet/runs.mjs's fleetCurrentWorkLines — the SAME pure projection
+// apps/ui/src/fleet/Fleet.tsx:631 (NodeCard) hands `node.presence ?? {}` to. Imported
 // directly (node:test has no React harness in this repo, the house pattern —
 // see test/mesh/fleet/mesh-fleet-session-render.test.mjs).
-import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
-// finding F9 — nodeCurrentWork (ui/src/fleet/scope.mjs) is the EXACT function
+import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
+// finding F9 — nodeCurrentWork (apps/ui/src/fleet/scope.mjs) is the EXACT function
 // GlobalNodePanel calls to derive row 3 in production; asserting THIS function
 // (not a re-implemented/parallel call to fleetCurrentWorkLines) closes the
 // component-vs-test drift the finding names.
-import { nodeCurrentWork } from "../../../ui/src/fleet/scope.mjs";
+import { nodeCurrentWork } from "../../../apps/ui/src/fleet/scope.mjs";
 
 // --- fixtures (mesh-ui-global-scope.test.mjs idiom — a minimal REAL ui/dist so
 // serveMeshUi's build-missing guard is satisfied without depending on a real
@@ -240,7 +240,7 @@ export const meshFleetPresencePlumbingTests = [
           const body = await (await fetch(`http://127.0.0.1:${address.port}/api/mesh/status`)).json();
           const node = body.nodes.find((n) => n.nodeId === "node-one-session");
 
-          // ui/src/fleet/Fleet.tsx:631's EXACT call.
+          // apps/ui/src/fleet/Fleet.tsx:631's EXACT call.
           const rendered = fleetCurrentWorkLines(node.presence);
           assert.deepEqual(rendered.lines, ["working · repoA (session)"]);
           assert.equal(rendered.token, "primary", "the token is primary, not the muted idle token");

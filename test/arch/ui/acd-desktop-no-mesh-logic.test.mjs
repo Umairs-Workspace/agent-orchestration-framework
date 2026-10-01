@@ -4,12 +4,12 @@
 //  store, the tailscale/fabric transport, the relay, or the global-work store in Rust."
 //
 // GUARD-IF-PRESENT (refine, pre-build): the Rust app does not exist yet. This test is
-// a clean no-op while `app/desktop/` (the greenfield Rust subtree) is absent, and
+// a clean no-op while `apps/desktop/` (the greenfield Rust subtree) is absent, and
 // converts to a HARD assertion the moment the crate lands — mirroring the repo's
 // graceful-degradation ethos (m28/ADR-002's degrade-on-absent-addon, m33's
 // designed-not-shipped). It stays GREEN now and RED-if-violated once built.
 //
-// Proof, over every `app/desktop/**/*.rs` (Rust line-comments `//` stripped):
+// Proof, over every `apps/desktop/**/*.rs` (Rust line-comments `//` stripped):
 //  1. NO Rust source pulls in a mesh-transport / git / websocket-server crate that
 //     would indicate a reimplemented relay/store/fabric (`use tokio_tungstenite`,
 //     `use git2`, `use rusqlite`, `use tungstenite`, a `Shell_NotifyIcon`-adjacent
@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 // The greenfield Rust subtree. Story 00 (supervisor-core) creates it; until then this
 // test is a deliberate no-op (guard-if-present).
-const DESKTOP_DIR = path.join(repoRoot, "app", "desktop");
+const DESKTOP_DIR = path.join(repoRoot, "apps", "desktop");
 
 // A reimplemented mesh transport/store/fabric would import one of these crate families
 // or carry one of the fleet-record schema literals. The supervisor imports NONE — it
@@ -84,8 +84,8 @@ export const archTests = [
       if (!(await dirExists(DESKTOP_DIR))) {
         // Pre-build no-op: the Rust subtree does not exist yet. Pin the vacuity
         // explicitly so the proof is a deliberate green, not an accidental skip —
-        // story 00 (supervisor-core) creates app/desktop/ and arms this guard.
-        assert.equal(await dirExists(DESKTOP_DIR), false, "app/desktop/ absent (pre-build); armed at build by story 00");
+        // story 00 (supervisor-core) creates apps/desktop/ and arms this guard.
+        assert.equal(await dirExists(DESKTOP_DIR), false, "apps/desktop/ absent (pre-build); armed at build by story 00");
         return;
       }
       const files = await collectRustFiles(DESKTOP_DIR);

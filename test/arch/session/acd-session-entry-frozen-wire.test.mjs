@@ -36,7 +36,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 //     ONE place; and `packages/core/src/mesh/launcher.mjs` does not stamp the run fact inline
 //     (ADR-009: the projection has one home, and this milestone REMOVES a block from
 //     the widest-out-degree file in src/ rather than adding one).
-//  3. STRUCTURAL — `ui/src/fleet/api.ts`'s `PresenceSession` declares exactly those six
+//  3. STRUCTURAL — `apps/ui/src/fleet/api.ts`'s `PresenceSession` declares exactly those six
 //     keys, in that order, with `sessionId: string | null` and `workspaceHasRun:
 //     boolean`. A type that lags the wire is how the next milestone reads a field that
 //     is not there.
@@ -65,7 +65,7 @@ const REPO = path.resolve(HERE, "..", "..", "..");
 const PROJECTION_FILE = "packages/mesh/src/presence.mjs";
 const CONTROL_FILE = "packages/mesh/src/control-stream-server.mjs";
 const LAUNCHER_FILE = "packages/mesh/src/launcher.mjs";
-const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
+const WIRE_TYPE_FILE = "apps/ui/src/fleet/api.ts";
 
 // The FROZEN ORDERED SIX (ADR-005) — one spelling, shared by every proof below.
 //
@@ -380,7 +380,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/48+50 ADR-005 (acd-session-entry-frozen-wire): ui/src/fleet/api.ts's PresenceSession is the typed mirror of the SEVEN (the frozen six plus m50's appended `relaying`) — same keys, same order, `sessionId: string | null` (structural)",
+    name: "arch/48+50 ADR-005 (acd-session-entry-frozen-wire): apps/ui/src/fleet/api.ts's PresenceSession is the typed mirror of the SEVEN (the frozen six plus m50's appended `relaying`) — same keys, same order, `sessionId: string | null` (structural)",
     run: async () => {
       const violations = wireTypeViolations(await readSource(WIRE_TYPE_FILE));
       assert.deepEqual(violations, [], `the wire's typed mirror has drifted from the wire:\n${violations.join("\n")}`);

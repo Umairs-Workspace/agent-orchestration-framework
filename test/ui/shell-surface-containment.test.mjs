@@ -40,9 +40,9 @@ import {
   STATE_POPULATED,
   contentModeFor,
   contentStateFor,
-} from "../../ui/src/app/shell-layout.mjs";
+} from "../../apps/ui/src/app/shell-layout.mjs";
 import { withShellApp, findAll, textOf } from "../support/shell-app-harness.mjs";
-import { ConfigLoadError, isConfigPayload, loadScope } from "../../ui/src/config/config-load.mjs";
+import { ConfigLoadError, isConfigPayload, loadScope } from "../../apps/ui/src/config/config-load.mjs";
 
 // A `fetch` that answers exactly what a given origin would, so the load rule is driven against
 // the real shapes rather than a hand-made "bad object".
@@ -230,7 +230,7 @@ export const shellSurfaceContainmentTests = [
   // Scenario Outline: a failed surface and an unmatched path stay distinct states
   //
   // IT WAS THREE ROWS UNTIL MILESTONE 49 / STORY 04, and the third one is GONE rather than
-  // relaxed: `/` is a routed surface now and `ui/src/app/Landing.tsx` is deleted, so "the landing"
+  // relaxed: `/` is a routed surface now and `apps/ui/src/app/Landing.tsx` is deleted, so "the landing"
   // is no longer a state the shell can be IN. Its clause here — `doesNotMatch(main, /Live
   // terminals/)` against a FAILED `/config` — would have gone on passing forever while asserting
   // nothing at all, because the component that could have produced that text no longer exists in
@@ -339,7 +339,7 @@ export const shellSurfaceContainmentTests = [
       // own. This is the assertion that would have caught GAP-5: the defect was a hand-typed
       // `overflow-x-hidden` in the className, invisible to every model-level check.
       const { readFile } = await import("node:fs/promises");
-      const shell = await readFile(new URL("../../ui/src/app/Shell.tsx", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../apps/ui/src/app/Shell.tsx", import.meta.url), "utf8");
       const rootLine = shell.split("\n").find((l) => l.includes("contentMode.rootClass"));
       assert.ok(rootLine, "the root takes its class from the content mode");
       assert.doesNotMatch(
@@ -351,7 +351,7 @@ export const shellSurfaceContainmentTests = [
       // `hidden`. They clamp identically, but `hidden` computes the other axis to `auto` and so
       // makes the element a scroll container; `body` being one is what still defeated the
       // sticky chrome after the shell root was cleared. `clip` establishes no scrollport.
-      const css = await readFile(new URL("../../ui/src/index.css", import.meta.url), "utf8");
+      const css = await readFile(new URL("../../apps/ui/src/index.css", import.meta.url), "utf8");
       assert.equal(
         (css.match(/overflow-x:\s*clip/g) ?? []).length,
         2,
@@ -425,7 +425,7 @@ export const shellSurfaceContainmentTests = [
       // The class must stay a LITERAL — Tailwind emits utilities by scanning source text, so a
       // composed class names a rule that is never generated and the reservation vanishes.
       const { readFile } = await import("node:fs/promises");
-      const source = await readFile(new URL("../../ui/src/app/shell-layout.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../apps/ui/src/app/shell-layout.mjs", import.meta.url), "utf8");
       assert.match(
         source,
         /IDENTITY_CHIP_WIDTH_CLASS = "min-w-\[calc\(7ch\+1\.125rem\)\] max-w-\[18ch\]"/,

@@ -25,7 +25,7 @@ import { archTests as acdDebtLedgerBudgetTests } from "./acd-debt-ledger-budget.
 import { archTests as acdTestSuiteRegistrationTests } from "./acd-test-suite-registration.test.mjs";
 //     · acd-ui-directory-budget — TECH_DEBT 28/33 fix (b), landing with the diff that creates the
 //       8th directory, because a ratchet authored after the growth it questions RATIFIES it. Six
-//       per-file ceilings cannot see a tree that grows by ADDING files, which is what `ui/src`
+//       per-file ceilings cannot see a tree that grows by ADDING files, which is what `apps/ui/src`
 //       did four milestones running (54 -> 71 -> 91 -> 99) with every per-file gate green.
 import { archTests as acdUiDirectoryBudgetTests } from "./acd-ui-directory-budget.test.mjs";
 import { archTests as acdOneSelectorOneChangedSetTests } from "./acd-one-selector-one-changed-set.test.mjs";

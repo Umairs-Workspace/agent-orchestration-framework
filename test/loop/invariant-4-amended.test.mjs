@@ -29,12 +29,12 @@ import {
   mountSiteOffenders,
   postureAuthorOffenders,
 } from "../arch/ui/acd-fleet-terminal-input-constrained.test.mjs";
-import { fleetTerminalMount } from "../../ui/src/fleet/terminal-mount.mjs";
-import { boardDockMount } from "../../ui/src/board/dock-mount.mjs";
-import { homeSessionMount } from "../../ui/src/home/session-mount.mjs";
-import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../ui/src/home/feed-axis.mjs";
-import { SESSION_SOURCES, sessionSourceFor } from "../../ui/src/terminal/source-table.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY, inputPolicyFor, mountModelFor } from "../../ui/src/terminal/input-policy.mjs";
+import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
+import { homeSessionMount } from "../../apps/ui/src/home/session-mount.mjs";
+import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../apps/ui/src/home/feed-axis.mjs";
+import { SESSION_SOURCES, sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY, inputPolicyFor, mountModelFor } from "../../apps/ui/src/terminal/input-policy.mjs";
 import { registeredSuitePaths, registrationSurface } from "../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -47,7 +47,7 @@ const gateSource = async () => (await readFile(GATE, "utf8")).replace(/\r\n/g, "
 const stripComments = (source) => source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 const lf = (source) => source.replace(/\r\n/g, "\n");
 
-// The REAL `ui/src/**` of this repository, as the gate reads it: `.ts`/`.tsx`/`.mjs`, `.d.mts`
+// The REAL `apps/ui/src/**` of this repository, as the gate reads it: `.ts`/`.tsx`/`.mjs`, `.d.mts`
 // excluded, comment-stripped and CRLF-normalised.
 async function readSurface(dir) {
   const listing = [];
@@ -154,9 +154,9 @@ export const invariant4AmendedTests = [
 
   // ══ PART 1 · THE AUTHORSHIP TABLE. 3 rows. ═══════════════════════════════════════════════
   ...[
-    { case: "the monitor", dir: "ui/src/fleet", module: "ui/src/fleet/terminal-mount.mjs", declares: "POSTURE_READ_ONLY", files: 5 },
-    { case: "the dock", dir: "ui/src/board", module: "ui/src/board/dock-mount.mjs", declares: "POSTURE_INTERACTIVE", files: 5 },
-    { case: "the terminals home", dir: "ui/src/home", module: "ui/src/home/session-mount.mjs", declares: "POSTURE_INTERACTIVE", files: 2 },
+    { case: "the monitor", dir: "apps/ui/src/fleet", module: "apps/ui/src/fleet/terminal-mount.mjs", declares: "POSTURE_READ_ONLY", files: 5 },
+    { case: "the dock", dir: "apps/ui/src/board", module: "apps/ui/src/board/dock-mount.mjs", declares: "POSTURE_INTERACTIVE", files: 5 },
+    { case: "the terminals home", dir: "apps/ui/src/home", module: "apps/ui/src/home/session-mount.mjs", declares: "POSTURE_INTERACTIVE", files: 2 },
   ].map((example) => ({
     name: `49/03 task02 — each surface has exactly ONE module that may write the \`posture:\` key — ${example.case}`,
     run: async () => {
@@ -180,31 +180,31 @@ export const invariant4AmendedTests = [
   ...[
     {
       case: "the spelling a word sweep cannot see",
-      dir: "ui/src/home",
-      file: "ui/src/home/GridTile.tsx",
+      dir: "apps/ui/src/home",
+      file: "apps/ui/src/home/GridTile.tsx",
       source: "export function GridTile({ row }) {\n  return <TerminalControl mount={{ ...homeSessionMount(row), posture: { readOnly: !!0 } }} />;\n}\n",
-      home: "ui/src/home/session-mount.mjs",
+      home: "apps/ui/src/home/session-mount.mjs",
     },
     {
       case: "a helper module that decides it too",
-      dir: "ui/src/home",
-      file: "ui/src/home/tile-mount.mjs",
+      dir: "apps/ui/src/home",
+      file: "apps/ui/src/home/tile-mount.mjs",
       source: "export function tileMount(row) {\n  return { bound: true, posture: POSTURE_INTERACTIVE };\n}\n",
-      home: "ui/src/home/session-mount.mjs",
+      home: "apps/ui/src/home/session-mount.mjs",
     },
     {
       case: "the same move, one directory over",
-      dir: "ui/src/board",
-      file: "ui/src/board/DockTile.tsx",
+      dir: "apps/ui/src/board",
+      file: "apps/ui/src/board/DockTile.tsx",
       source: "const mount = { bound: true, posture: dockPosture };\n",
-      home: "ui/src/board/dock-mount.mjs",
+      home: "apps/ui/src/board/dock-mount.mjs",
     },
     {
       case: "and the clause it already had",
-      dir: "ui/src/fleet",
-      file: "ui/src/fleet/PeekTile.tsx",
+      dir: "apps/ui/src/fleet",
+      file: "apps/ui/src/fleet/PeekTile.tsx",
       source: "const mount = { bound: true, posture: peekPosture };\n",
-      home: "ui/src/fleet/terminal-mount.mjs",
+      home: "apps/ui/src/fleet/terminal-mount.mjs",
     },
   ].map((example) => ({
     name: `49/03 task02 — a second author for the posture is reported, wherever it is spelled — ${example.case}`,
@@ -224,10 +224,10 @@ export const invariant4AmendedTests = [
 
   // ══ Scenario Outline: INTERACTIVE_DECLARATION still sweeps the fleet, and only the fleet. 4 rows.
   ...[
-    { case: "the monitor may not name it", dir: "ui/src/fleet", offender: true },
-    { case: "the dock has named it since m42", dir: "ui/src/board", offender: false },
-    { case: "the home must name it", dir: "ui/src/home", offender: false },
-    { case: "the control is not a call site", dir: "ui/src/terminal", offender: false },
+    { case: "the monitor may not name it", dir: "apps/ui/src/fleet", offender: true },
+    { case: "the dock has named it since m42", dir: "apps/ui/src/board", offender: false },
+    { case: "the home must name it", dir: "apps/ui/src/home", offender: false },
+    { case: "the control is not a call site", dir: "apps/ui/src/terminal", offender: false },
   ].map((example) => ({
     name: `49/03 task02 — \`INTERACTIVE_DECLARATION\` still sweeps the fleet, and only the fleet — ${example.case}`,
     run: async () => {
@@ -243,7 +243,7 @@ export const invariant4AmendedTests = [
   })),
 
   {
-    name: "49/03 task02 — the `INTERACTIVE_DECLARATION` needle's own VALUE is unchanged, and the authorship clause's swept set is exactly the three surface directories with `ui/src/terminal/` not among them",
+    name: "49/03 task02 — the `INTERACTIVE_DECLARATION` needle's own VALUE is unchanged, and the authorship clause's swept set is exactly the three surface directories with `apps/ui/src/terminal/` not among them",
     run: async () => {
       const source = await gateSource();
       assert.match(
@@ -253,22 +253,22 @@ export const invariant4AmendedTests = [
       );
       for (const spelling of ["POSTURE_INTERACTIVE", '"interactive"', "readOnly: false", "MOUNT_INTERACTIVE"]) {
         assert.ok(
-          fleetInteractivePostureOffenders([{ path: "ui/src/fleet/plant.mjs", source: `const x = { ${spelling} };\n` }]).length === 1,
+          fleetInteractivePostureOffenders([{ path: "apps/ui/src/fleet/plant.mjs", source: `const x = { ${spelling} };\n` }]).length === 1,
           `…and it still fires on a fleet file spelling it \`${spelling}\``,
         );
       }
 
       assert.deepEqual(
         POSTURE_HOMES.map((entry) => entry.dir),
-        ["ui/src/fleet", "ui/src/board", "ui/src/home"],
+        ["apps/ui/src/fleet", "apps/ui/src/board", "apps/ui/src/home"],
         "the swept set of the authorship clause is exactly the three SURFACE directories",
       );
-      assert.ok(!POSTURE_HOMES.some((entry) => entry.dir.includes("terminal")), "…and `ui/src/terminal/` is not among them");
+      assert.ok(!POSTURE_HOMES.some((entry) => entry.dir.includes("terminal")), "…and `apps/ui/src/terminal/` is not among them");
       // THE TRAP, DRIVEN: the shipped control writes `posture: mount.posture` — a READ-THROUGH of
-      // the value this gate protects. A sweep extended over `ui/src/**` would report the product.
+      // the value this gate protects. A sweep extended over `apps/ui/src/**` would report the product.
       assert.deepEqual(
         postureAuthorOffenders([
-          { path: "ui/src/terminal/TerminalControl.tsx", source: "const identity = terminalSessionIdentity({ posture: mount.posture });\n" },
+          { path: "apps/ui/src/terminal/TerminalControl.tsx", source: "const identity = terminalSessionIdentity({ posture: mount.posture });\n" },
           ...(await wholeTree()),
         ]),
         [],
@@ -279,9 +279,9 @@ export const invariant4AmendedTests = [
 
   // ══ PART 1 · THE JSX CLAUSE. 3 rows. ═════════════════════════════════════════════════════
   ...[
-    { case: "the fleet card", dir: "ui/src/fleet", call: "fleetTerminalMount(" },
-    { case: "the board dock", dir: "ui/src/board", call: "boardDockMount(" },
-    { case: "the grid tile", dir: "ui/src/home", call: "homeSessionMount(" },
+    { case: "the fleet card", dir: "apps/ui/src/fleet", call: "fleetTerminalMount(" },
+    { case: "the board dock", dir: "apps/ui/src/board", call: "boardDockMount(" },
+    { case: "the grid tile", dir: "apps/ui/src/home", call: "homeSessionMount(" },
   ].map((example) => ({
     name: `49/03 task02 — every mount site hands the control its own module's return value, bare — ${example.case}`,
     run: async () => {
@@ -306,9 +306,9 @@ export const invariant4AmendedTests = [
       assert.deepEqual(mountSiteOffenders(clean), [], "precondition: three surfaces, three sites, zero offenders");
 
       // (a) THE MANDATORY PLANT — the home's mount site DELETED, the other two untouched.
-      const deleted = clean.filter((file) => !(file.path.startsWith("ui/src/home/") && /<\s*TerminalControl/.test(file.source)));
+      const deleted = clean.filter((file) => !(file.path.startsWith("apps/ui/src/home/") && /<\s*TerminalControl/.test(file.source)));
       assert.equal(deleted.length, clean.length - 1, "the plant LANDED: exactly one home mount site removed");
-      assert.ok(deleted.some((file) => file.path.startsWith("ui/src/fleet/")) && deleted.some((file) => file.path.startsWith("ui/src/board/")), "…while the fleet's and the board's remain");
+      assert.ok(deleted.some((file) => file.path.startsWith("apps/ui/src/fleet/")) && deleted.some((file) => file.path.startsWith("apps/ui/src/board/")), "…while the fleet's and the board's remain");
       const fired = mountSiteOffenders(deleted);
       assert.ok(fired.length >= 1, "the clause FAILS");
       assert.ok(fired.some((offender) => /the terminals home/.test(offender)), `…naming the SURFACE whose mount site it could not find — ${JSON.stringify(fired)}`);
@@ -333,7 +333,7 @@ export const invariant4AmendedTests = [
         "",
       ].join("\n");
       assert.equal([...invisible.matchAll(/<\s*TerminalControl[\s\S]{0,400}?mount=\{([^\n]*)\}\s*\n/g)].length, 0, "the extractor finds NOTHING in a site whose `mount=` prop does not close its own line");
-      const hidden = mountSiteOffenders([...deleted, { path: "ui/src/home/InvisibleTile.tsx", source: invisible }]);
+      const hidden = mountSiteOffenders([...deleted, { path: "apps/ui/src/home/InvisibleTile.tsx", source: invisible }]);
       assert.ok(hidden.some((offender) => /the terminals home/.test(offender)), "…so a home whose only site is spelled that way STILL fails the clause rather than passing it");
       assert.ok(
         hidden.some((offender) => /InvisibleTile\.tsx mounts the control 1 time\(s\) but this clause could read only 0/.test(offender)),
@@ -362,13 +362,13 @@ export const invariant4AmendedTests = [
       assert.ok(oldCapture[0].startsWith("homeSessionMount("), "…and it began with the COMPLIANT call, so the clause was satisfied by the site that was fine");
       assert.ok(/<\s*TerminalControl/.test(oldCapture[0]), "…while the SECOND site lived inside that one match's own span, which is how it disappeared");
 
-      const twoFired = mountSiteOffenders([...clean, { path: "ui/src/home/TwoTiles.tsx", source: twoSites }]);
+      const twoFired = mountSiteOffenders([...clean, { path: "apps/ui/src/home/TwoTiles.tsx", source: twoSites }]);
       assert.ok(twoFired.some((offender) => /TwoTiles\.tsx hands the control a `mount` prop that is not a bare/.test(offender)), `the bounded capture READS the second site and reports it — ${JSON.stringify(twoFired)}`);
       assert.ok(twoFired.some((offender) => /TwoTiles\.tsx mounts the control 2 time\(s\) but this clause could read only 1/.test(offender)), "…and reports the file's REACH independently");
       // …and it is the ONLY clause that sees that spelling: `readOnly: false` names no posture
       // word and writes no `posture:` key, so nothing else in this gate would have caught it.
-      assert.deepEqual(fleetInteractivePostureOffenders([{ path: "ui/src/home/TwoTiles.tsx", source: twoSites }]), [], "the word sweep is silent, by design");
-      assert.deepEqual(postureAuthorOffenders([...clean, { path: "ui/src/home/TwoTiles.tsx", source: twoSites }]), [], "…and so is the authorship clause: `readOnly: false` is not a `posture:` key");
+      assert.deepEqual(fleetInteractivePostureOffenders([{ path: "apps/ui/src/home/TwoTiles.tsx", source: twoSites }]), [], "the word sweep is silent, by design");
+      assert.deepEqual(postureAuthorOffenders([...clean, { path: "apps/ui/src/home/TwoTiles.tsx", source: twoSites }]), [], "…and so is the authorship clause: `readOnly: false` is not a `posture:` key");
       const smuggled = { ...homeSessionMount(producerRow(), { axis: FEED_PRODUCER_KNOWN }), posture: { readOnly: false } };
       assert.equal(inputPolicyFor(smuggled.source, smuggled.posture).inputEnabled, true, "…while the second site measures TYPEABLE through the real policy, which is what was at stake");
 
@@ -378,7 +378,7 @@ export const invariant4AmendedTests = [
       assert.ok(concatenated.length >= 1, `the old \`mountProps.length >= 1\` floor is satisfied by ${concatenated.length} surviving Fleet/Board match(es) on the same plant — one match, and the new interactive surface is policed by nothing while CI reads green`);
 
       // (d) …and the MIRROR: the sweep is shown to FIND the site, not merely to count one.
-      const spread = mountSiteOffenders([...clean, { path: "ui/src/home/SpreadTile.tsx", source: "  <TerminalControl\n    mount={{ ...homeSessionMount(row) }}\n  />\n" }]);
+      const spread = mountSiteOffenders([...clean, { path: "apps/ui/src/home/SpreadTile.tsx", source: "  <TerminalControl\n    mount={{ ...homeSessionMount(row) }}\n  />\n" }]);
       assert.ok(spread.some((offender) => /SpreadTile/.test(offender)), "a home site whose prop is a SPREAD is reported by path");
       assert.deepEqual(mountSiteOffenders(clean), [], "…and the clean tree, in this same lane, reports none");
     },
@@ -458,7 +458,7 @@ export const invariant4AmendedTests = [
 
       // "UNTOUCHED" IS A CHECKABLE CLAIM, not a promise: the two modules this lane drives are
       // unmodified in this milestone's working tree.
-      for (const file of ["ui/src/terminal/input-policy.mjs", "ui/src/terminal/source-table.mjs"]) {
+      for (const file of ["apps/ui/src/terminal/input-policy.mjs", "apps/ui/src/terminal/source-table.mjs"]) {
         const source = await readFile(path.join(repoRoot, ...file.split("/")), "utf8");
         assert.ok(!/milestone 49|m49/.test(source), `${file} carries no m49 edit — the lane passes without a single change to it`);
       }
@@ -486,14 +486,14 @@ export const invariant4AmendedTests = [
 
   // ══ PART 3 · UNTOUCHED, AND IT GAINS A DIRECTORY. 4 rows. ════════════════════════════════
   ...[
-    { case: "a home module taking keystrokes", dir: "ui/src/home", file: "ui/src/home/keys.mjs", source: "export function wire(term) {\n  term.onData((bytes) => queue.push(bytes));\n}\n", wired: /input source/ },
-    { case: "a home module with its own wire", dir: "ui/src/home", file: "ui/src/home/socket.mjs", source: 'export function open(url) {\n  const ws = new WebSocket(url);\n  ws.send("x");\n}\n', wired: /sends on a socket/ },
-    { case: "a home module keying off the DOM", dir: "ui/src/home", file: "ui/src/home/keymap.mjs", source: "export function bind(term) {\n  term.attachCustomKeyEventHandler(() => true);\n}\n", wired: /input source/ },
-    { case: "the fleet clause, unchanged", dir: "ui/src/fleet", file: "ui/src/fleet/peek-keys.mjs", source: "export function wire(term) {\n  term.onKey((event) => event);\n}\n", wired: /input source/ },
+    { case: "a home module taking keystrokes", dir: "apps/ui/src/home", file: "apps/ui/src/home/keys.mjs", source: "export function wire(term) {\n  term.onData((bytes) => queue.push(bytes));\n}\n", wired: /input source/ },
+    { case: "a home module with its own wire", dir: "apps/ui/src/home", file: "apps/ui/src/home/socket.mjs", source: 'export function open(url) {\n  const ws = new WebSocket(url);\n  ws.send("x");\n}\n', wired: /sends on a socket/ },
+    { case: "a home module keying off the DOM", dir: "apps/ui/src/home", file: "apps/ui/src/home/keymap.mjs", source: "export function bind(term) {\n  term.attachCustomKeyEventHandler(() => true);\n}\n", wired: /input source/ },
+    { case: "the fleet clause, unchanged", dir: "apps/ui/src/fleet", file: "apps/ui/src/fleet/peek-keys.mjs", source: "export function wire(term) {\n  term.onKey((event) => event);\n}\n", wired: /input source/ },
   ].map((example) => ({
     name: `49/03 task02 — neither surface directory grows an input path or a socket of its own — ${example.case}`,
     run: async () => {
-      const clean = [...(await readSurface("ui/src/fleet")), ...(await readSurface("ui/src/home"))];
+      const clean = [...(await readSurface("apps/ui/src/fleet")), ...(await readSurface("apps/ui/src/home"))];
       assert.deepEqual(inputSourceOffenders(clean), [], "the clean tree, against which the sweep reports zero offenders");
 
       const planted = [...clean, { path: example.file, source: example.source }];
@@ -505,10 +505,10 @@ export const invariant4AmendedTests = [
   })),
 
   {
-    name: "49/03 task02 — on the clean tree BOTH swept directories are non-vacuous, and an ABSENT `ui/src/home/` fails the lane loudly rather than passing it over nothing",
+    name: "49/03 task02 — on the clean tree BOTH swept directories are non-vacuous, and an ABSENT `apps/ui/src/home/` fails the lane loudly rather than passing it over nothing",
     run: async () => {
-      const fleet = await readSurface("ui/src/fleet");
-      const home = await readSurface("ui/src/home");
+      const fleet = await readSurface("apps/ui/src/fleet");
+      const home = await readSurface("apps/ui/src/home");
       assert.ok(fleet.length >= 5, `the fleet sweep still walks at least five swept files: ${fleet.length}`);
       assert.ok(home.length >= 2, `…and the home sweep at least two: ${home.length}`);
 
@@ -517,7 +517,7 @@ export const invariant4AmendedTests = [
       // before the module lands rather than green and vacuous after it.
       const source = await gateSource();
       assert.match(source, /A sweep that cannot see its subject must FAIL/, "the reader refuses an unreadable surface directory by name");
-      await assert.rejects(() => readSurface("ui/src/does-not-exist"), /ENOENT/, "…and a walk over a directory that is not there throws rather than reporting a clean sweep");
+      await assert.rejects(() => readSurface("apps/ui/src/does-not-exist"), /ENOENT/, "…and a walk over a directory that is not there throws rather than reporting a clean sweep");
       assert.deepEqual(
         inputSourceOffenders([]),
         [],
@@ -531,21 +531,21 @@ export const invariant4AmendedTests = [
     run: async () => {
       await run(laneNamed(/part 3 — the surviving sweep/));
 
-      const fleetPage = lf(stripComments(await readFile(path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx"), "utf8")));
+      const fleetPage = lf(stripComments(await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx"), "utf8")));
       assert.match(fleetPage, /<\s*TerminalControl\b/, "the fleet page still mounts the ONE control by name");
       assert.match(fleetPage, /fleetTerminalMount\s*\(/, "…and still hands it `fleetTerminalMount(`");
 
-      const tableRaw = lf(await readFile(path.join(repoRoot, "ui", "src", "terminal", "source-table.mjs"), "utf8"));
+      const tableRaw = lf(await readFile(path.join(repoRoot, "apps", "ui", "src", "terminal", "source-table.mjs"), "utf8"));
       assert.match(tableRaw, /\/ws\/terminal-view/, "the source table still declares `/ws/terminal-view`, read RAW");
       assert.match(tableRaw, /\/ws\/terminal\b/, "…and `/ws/terminal`, because a `ws://` inside a template literal reads as a line comment to the stripper");
 
-      const control = lf(stripComments(await readFile(path.join(repoRoot, "ui", "src", "terminal", "TerminalControl.tsx"), "utf8")));
+      const control = lf(stripComments(await readFile(path.join(repoRoot, "apps", "ui", "src", "terminal", "TerminalControl.tsx"), "utf8")));
       assert.match(control, /\.\s*(?:onData|onKey|onBinary)\s*\(/, "the one control still wires a terminal input source");
       assert.ok(/\bWebSocket\b/.test(control) && /\.\s*send\s*\(/.test(control), "…and still sends on its socket: the interactive lane is real, on a surface this gate is not sweeping");
       assert.ok(!/disableStdin\s*:\s*(?:true|false)\b/.test(control), "the control still spells `disableStdin` as no literal");
       assert.ok(!/cursorBlink\s*:\s*(?:true|false)\b/.test(control), "…nor `cursorBlink`");
 
-      const identity = lf(stripComments(await readFile(path.join(repoRoot, "ui", "src", "terminal", "pane-identity.mjs"), "utf8")));
+      const identity = lf(stripComments(await readFile(path.join(repoRoot, "apps", "ui", "src", "terminal", "pane-identity.mjs"), "utf8")));
       assert.match(identity, /→\s*\$\{far\}|\$\{owner\}\s*→/, "the identity line still names the far end in WORDS");
 
       const terminalWs = lf(stripComments(await readFile(path.join(repoRoot, "packages", "server", "src", "terminal-ws.mjs"), "utf8")));
@@ -565,13 +565,13 @@ export const invariant4AmendedTests = [
       ].join("\n");
 
       assert.ok(
-        inputSourceOffenders([{ path: "ui/src/home/blinded.mjs", source: blinding }]).some((offender) => /blinded\.mjs/.test(offender)),
+        inputSourceOffenders([{ path: "apps/ui/src/home/blinded.mjs", source: blinding }]).some((offender) => /blinded\.mjs/.test(offender)),
         "the `onData` wiring IS reported as an offender",
       );
       const blockFirst = (source) => source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
       assert.ok(!/\.\s*onData\s*\(/.test(blockFirst(blinding)), "…and with the strip order REVERSED the same file would report nothing at all");
       assert.deepEqual(
-        inputSourceOffenders([{ path: "ui/src/home/commented.mjs", source: "/*\nterm.onData((x) => x);\n*/\nexport const x = 1;\n" }]),
+        inputSourceOffenders([{ path: "apps/ui/src/home/commented.mjs", source: "/*\nterm.onData((x) => x);\n*/\nexport const x = 1;\n" }]),
         [],
         "…while a `term.onData(` that appears ONLY inside a genuine block comment is NOT reported",
       );
@@ -589,7 +589,7 @@ export const invariant4AmendedTests = [
       claim: "`INTERACTIVE_DECLARATION`'s literal value is unchanged, and it still fires on a fleet file that names the posture",
       check: async (source) => {
         assert.match(source, /\\bPOSTURE_INTERACTIVE\\b\|\["']interactive\["']\|\\breadOnly\\s\*:\\s\*false\\b\|\\bMOUNT_INTERACTIVE\\b/, "value unchanged");
-        assert.equal(fleetInteractivePostureOffenders([{ path: "ui/src/fleet/x.mjs", source: "const m = { readOnly: false };" }]).length, 1, "…and it fires");
+        assert.equal(fleetInteractivePostureOffenders([{ path: "apps/ui/src/fleet/x.mjs", source: "const m = { readOnly: false };" }]).length, 1, "…and it fires");
       },
     },
     {
@@ -598,7 +598,7 @@ export const invariant4AmendedTests = [
       check: async (source) => {
         assert.match(source, /const POSTURE_KEY_WRITE = \/\(\^\|\[\\s\{,\(\]\)posture\\s\*:\/m;/, "value unchanged");
         assert.ok(
-          postureAuthorOffenders([...(await wholeTree()), { path: "ui/src/fleet/x.tsx", source: "const m = { posture: peek };" }]).some((offender) => offender.startsWith("ui/src/fleet/x.tsx")),
+          postureAuthorOffenders([...(await wholeTree()), { path: "apps/ui/src/fleet/x.tsx", source: "const m = { posture: peek };" }]).some((offender) => offender.startsWith("apps/ui/src/fleet/x.tsx")),
           "…and it fires",
         );
       },
@@ -616,15 +616,15 @@ export const invariant4AmendedTests = [
       n: 4,
       claim: "the fleet's JSX mount prop is still required to be a bare `fleetTerminalMount(` call with no spread",
       check: async () => {
-        const fired = mountSiteOffenders([...(await wholeTree()), { path: "ui/src/fleet/Spread.tsx", source: "  <TerminalControl\n    mount={{ ...fleetTerminalMount(a) }}\n  />\n" }]);
+        const fired = mountSiteOffenders([...(await wholeTree()), { path: "apps/ui/src/fleet/Spread.tsx", source: "  <TerminalControl\n    mount={{ ...fleetTerminalMount(a) }}\n  />\n" }]);
         assert.ok(fired.some((offender) => /Spread\.tsx/.test(offender)), "a fleet spread is still reported");
       },
     },
     {
       n: 5,
-      claim: "`ui/src/fleet/terminal-mount.mjs` is still read positively for `POSTURE_READ_ONLY` by name",
+      claim: "`apps/ui/src/fleet/terminal-mount.mjs` is still read positively for `POSTURE_READ_ONLY` by name",
       check: async () => {
-        const module = (await readSurface("ui/src/fleet")).find((file) => file.path === "ui/src/fleet/terminal-mount.mjs");
+        const module = (await readSurface("apps/ui/src/fleet")).find((file) => file.path === "apps/ui/src/fleet/terminal-mount.mjs");
         assert.match(module.source, /\bPOSTURE_READ_ONLY\b/, "the positive read survives");
       },
     },
@@ -675,9 +675,9 @@ export const invariant4AmendedTests = [
     },
     {
       n: 10,
-      claim: "part 3's `ui/src/fleet/**` sweep still runs, still with a file floor, still finding zero offenders",
+      claim: "part 3's `apps/ui/src/fleet/**` sweep still runs, still with a file floor, still finding zero offenders",
       check: async (source) => {
-        const fleet = await readSurface("ui/src/fleet");
+        const fleet = await readSurface("apps/ui/src/fleet");
         assert.ok(fleet.length >= 5, `the floor is still there and still met: ${fleet.length}`);
         assert.deepEqual(inputSourceOffenders(fleet), []);
         assert.match(source, /fleetListing\.length >= 5/, "…and the floor is asserted in the gate itself");
@@ -708,34 +708,34 @@ export const invariant4AmendedTests = [
   ...[
     {
       n: 1,
-      claim: "`ui/src/board/**` has exactly one posture author, and it is `dock-mount.mjs`",
+      claim: "`apps/ui/src/board/**` has exactly one posture author, and it is `dock-mount.mjs`",
       check: async () => {
-        const writers = (await readSurface("ui/src/board")).filter((file) => /(^|[\s{,(])posture\s*:/m.test(file.source)).map((file) => file.path);
+        const writers = (await readSurface("apps/ui/src/board")).filter((file) => /(^|[\s{,(])posture\s*:/m.test(file.source)).map((file) => file.path);
         // ONE AUTHOR, spelled as the floor plus a declared ceiling — never as a one-member census
-        // (FF-11902): the module is named AMONG what the sweep of ui/src/board found.
-        assert.ok(writers.length >= 1, "the sweep of ui/src/board found no posture author");
-        assert.ok(writers.length <= 1, `ui/src/board has exactly one posture author — found: ${writers.join(", ")}`);
-        assert.equal(writers[0], "ui/src/board/dock-mount.mjs", "…and it is dock-mount.mjs");
+        // (FF-11902): the module is named AMONG what the sweep of apps/ui/src/board found.
+        assert.ok(writers.length >= 1, "the sweep of apps/ui/src/board found no posture author");
+        assert.ok(writers.length <= 1, `apps/ui/src/board has exactly one posture author — found: ${writers.join(", ")}`);
+        assert.equal(writers[0], "apps/ui/src/board/dock-mount.mjs", "…and it is dock-mount.mjs");
       },
     },
     {
       n: 2,
-      claim: "`ui/src/home/**` has exactly one posture author, and it is `session-mount.mjs`",
+      claim: "`apps/ui/src/home/**` has exactly one posture author, and it is `session-mount.mjs`",
       check: async () => {
-        const writers = (await readSurface("ui/src/home")).filter((file) => /(^|[\s{,(])posture\s*:/m.test(file.source)).map((file) => file.path);
+        const writers = (await readSurface("apps/ui/src/home")).filter((file) => /(^|[\s{,(])posture\s*:/m.test(file.source)).map((file) => file.path);
         // ONE AUTHOR, spelled as the floor plus a declared ceiling — never as a one-member census
-        // (FF-11902): the module is named AMONG what the sweep of ui/src/home found.
-        assert.ok(writers.length >= 1, "the sweep of ui/src/home found no posture author");
-        assert.ok(writers.length <= 1, `ui/src/home has exactly one posture author — found: ${writers.join(", ")}`);
-        assert.equal(writers[0], "ui/src/home/session-mount.mjs", "…and it is session-mount.mjs");
+        // (FF-11902): the module is named AMONG what the sweep of apps/ui/src/home found.
+        assert.ok(writers.length >= 1, "the sweep of apps/ui/src/home found no posture author");
+        assert.ok(writers.length <= 1, `apps/ui/src/home has exactly one posture author — found: ${writers.join(", ")}`);
+        assert.equal(writers[0], "apps/ui/src/home/session-mount.mjs", "…and it is session-mount.mjs");
       },
     },
     {
       n: 3,
       claim: "the board's JSX mount site is checked for the bare call, per surface, with a floor of one",
       check: async () => {
-        const board = await readSurface("ui/src/board");
-        const fired = mountSiteOffenders(board.filter((file) => !/<\s*TerminalControl/.test(file.source)), POSTURE_HOMES.filter((entry) => entry.dir === "ui/src/board"));
+        const board = await readSurface("apps/ui/src/board");
+        const fired = mountSiteOffenders(board.filter((file) => !/<\s*TerminalControl/.test(file.source)), POSTURE_HOMES.filter((entry) => entry.dir === "apps/ui/src/board"));
         assert.ok(fired.some((offender) => /the board dock/.test(offender)), "a board with no mount site fails its OWN floor");
       },
     },
@@ -744,7 +744,7 @@ export const invariant4AmendedTests = [
       claim: "the home's JSX mount site is checked the same way, discovered by sweep rather than named",
       check: async (source) => {
         assert.ok(!/home\/[A-Za-z]+\.tsx/.test(source.slice(source.indexOf("export const POSTURE_HOMES"), source.indexOf("const MOUNT_PROP"))), "the table names no home COMPONENT file — only the directory and the module");
-        const home = await readSurface("ui/src/home");
+        const home = await readSurface("apps/ui/src/home");
         const sites = home.filter((file) => /<\s*TerminalControl/.test(file.source)).map((file) => file.path);
         assert.ok(sites.length >= 1, `the site is DISCOVERED by sweeping the directory: ${sites.join(", ")}`);
       },
@@ -767,11 +767,11 @@ export const invariant4AmendedTests = [
     },
     {
       n: 7,
-      claim: "`ui/src/home/**` is swept for input sources and browser sockets",
+      claim: "`apps/ui/src/home/**` is swept for input sources and browser sockets",
       check: async () => {
-        const home = await readSurface("ui/src/home");
+        const home = await readSurface("apps/ui/src/home");
         assert.deepEqual(inputSourceOffenders(home), []);
-        assert.ok(inputSourceOffenders([...home, { path: "ui/src/home/x.mjs", source: "term.onData((b) => b);" }]).length >= 1);
+        assert.ok(inputSourceOffenders([...home, { path: "apps/ui/src/home/x.mjs", source: "term.onData((b) => b);" }]).length >= 1);
       },
     },
     {

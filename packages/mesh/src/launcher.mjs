@@ -359,7 +359,7 @@ function resolveAggregationWorkspaces(ws, registryResult) {
 // `string[]` of bare run ids (23/ADR-002) — it carries NO workspace attribution, so
 // a render-layer helper fed only `{ activeRuns, sessions }` can never correctly
 // decide "which workspace does this run belong to" (the bug the review caught:
-// ui/src/fleet/runs.mjs was keying subsumption off a shape production never emits).
+// apps/ui/src/fleet/runs.mjs was keying subsumption off a shape production never emits).
 // The attribution EXISTS only here, in this per-workspace loop — so the "run
 // subsumes a same-workspace session" reconciliation (ADR-004) MUST happen here, not
 // in the render helper. This function assembles activeRuns AND returns the set of
