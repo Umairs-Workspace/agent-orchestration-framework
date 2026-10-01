@@ -15,7 +15,7 @@ import { EventEmitter } from "node:events";
 import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 import { stripComments } from "../support/source-slice.mjs";
@@ -461,7 +461,8 @@ const stopRequestTests = [
     async run() {
       const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
       const own = "packages/work-loop/src/stop-request.mjs";
-      const modules = (await readRuntimeFiles(root)).map(file => file.rel).sort();
+      // This contract governs the Node home-side writers; browser response types are consumers.
+      const modules = (await readRuntimeFiles(root, { runtime: "node" })).map(file => file.rel).sort();
       assert.ok(modules.includes(own), "the module is on disk");
       assert.ok(modules.length > 50, "the sweep is non-vacuous");
       // A module that speaks of a stop request at all: the token set the shell, the verb and the
@@ -971,9 +972,10 @@ const stopRequestTests = [
   {
     name: "130/01 stop-request/02 a real interval never holds a finished process open — a child that starts a source with the real process and the default pollMs exits on its own",
     async run() {
-      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "work-loop", "src", "stop-request.mjs")).href;
+      const module = new URL("../../packages/core/src/application/default.mjs", import.meta.url).href;
       const script = [
-        `import { createStopSource, loopStopsDir } from ${JSON.stringify(module)};`,
+        `import { defaultApplication } from ${JSON.stringify(module)};`,
+        `const { createStopSource, loopStopsDir } = defaultApplication.loop.stopRequest;`,
         `const source = createStopSource({ loopRunId: "L1", dir: loopStopsDir() });`,
         `source.start();`,
       ].join("\n");

@@ -126,7 +126,7 @@ const TASKS_5802 = path.join(
 
 // The five authorities, each a module exporting an array of `{ name, run }`.
 const AUTHORITIES_5802 = Object.freeze({
-  checks: "./work-loops-checks.test.mjs",
+  checks: "../../packages/work-graph/test/work-loops-checks.suite.mjs",
   // 119/03 — `test/arch/` has subject directories now and all three of these gates live under
   // `test/arch/loop/`. The specifiers were `./arch/...`, which resolved from this suite's own
   // directory to `test/loop/arch/` — a directory that has never existed. It failed at import
