@@ -409,9 +409,10 @@ export const seamLivenessTests = [
         ["./scaffold.mjs", "src/holder.mjs", false, "a module at the top of src/"],
         ["../scaffold.mjs", "src/commands/holder.mjs", false, "a module one directory under src/"],
         ["../../scaffold.mjs", "src/a/b/holder.mjs", false, "a module two directories under src/"],
-        ["../packages/core/src/scaffold.mjs", "test/holder.test.mjs", true, "a file under test/"],
+        ["../src/scaffold.mjs", "test/holder.test.mjs", true, "a file under test/"],
       ];
       for (const [literal, holder, expectNamed, why] of rows) {
+        assert.equal(path.posix.normalize(path.posix.join(path.posix.dirname(holder), literal)), "src/scaffold.mjs", "the synthetic reference resolves to the supplied fixture module");
         const { findings } = await laneOver(
           { "src/scaffold.mjs": EXPORTS_ONE, [holder]: `export async function go() { await import("${literal}"); }\n` },
           { files: ["src/scaffold.mjs", holder], edges: [] },

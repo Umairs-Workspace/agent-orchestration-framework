@@ -1,4 +1,5 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRunsFromFreshApplication } from "../support/workspace/fresh-run-reader.mjs";
 // Traceability wiring for milestone 20 / story 00 — the resilience record keys.
 //
 // Covers EVERY @executable scenario in
@@ -308,8 +309,7 @@ export const runResilienceRecordKeysTests = [
         await writeRecordFile(item, populated);
 
         // a FRESH store load (the in-process analogue of a fresh process)
-        const fresh = await import("../../packages/core/src/run-store.mjs?fresh-reskeys");
-        const runs = await fresh.readRuns(item);
+        const runs = await readRunsFromFreshApplication(item);
         assert.equal(runs.length, 1, "the populated record reads back as one run");
         const [record] = runs;
         assert.equal(record.failureReason, "timeout", "the reloaded failureReason is timeout");

@@ -56,7 +56,8 @@ async function exhaust(fx, plan, { report = capturingReport(), driver = completi
 async function gradesInAFreshProcess(fx, ref, loopRunId) {
   const item = await resolveItemExact(fx.ctx, ref);
   const script = `
-    const { readRuns } = await import(${JSON.stringify(new URL("../../packages/core/src/application/bindings/run-store.mjs", import.meta.url).href)});
+    const { defaultApplication } = await import(${JSON.stringify(new URL("../../packages/core/src/application/default.mjs", import.meta.url).href)});
+    const { readRuns } = defaultApplication.execution.runs;
     const runs = await readRuns({ dir: ${JSON.stringify(item.dir)}, ref: ${JSON.stringify(ref)} });
     const rebuilt = runs
       .filter((run) => run?.brief?.loop?.loopRunId === ${JSON.stringify(loopRunId)})

@@ -1,4 +1,5 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRunsFromFreshApplication } from "../support/workspace/fresh-run-reader.mjs";
 // Traceability wiring for milestone 19 / story 00 — the run-record store.
 //
 // Covers EVERY @executable scenario in tasks/00_run-record-store.feature,
@@ -666,8 +667,7 @@ export const runStoreRecordTests = [
         await startRun(item, { sessionId: "sess-load", brief });
 
         // a FRESH store load (a re-import is the in-process analogue of a fresh process)
-        const fresh = await import("../../packages/core/src/run-store.mjs?fresh-record");
-        const runs = await fresh.readRuns(item);
+        const runs = await readRunsFromFreshApplication(item);
         assert.equal(runs.length, 1, "I get 1 run record");
         const [record] = runs;
         assert.equal(record.sessionId, "sess-load", "the record's sessionId survives the round-trip");

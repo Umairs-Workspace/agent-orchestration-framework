@@ -29,8 +29,9 @@ function spawnDispatchProcess(root, refs, bound, { marker = "", delayMs = 0 } = 
     import { pathToFileURL } from "node:url";
     const root = process.env.AOF_TEST_PROJECT_ROOT;
     const code = process.env.AOF_TEST_CODE_ROOT;
-    const { dispatchCommand } = await import(pathToFileURL(path.join(code, "packages", "core", "src", "commands", "dispatch.mjs")));
-    const { resolveDispatchLane } = await import(pathToFileURL(path.join(code, "packages", "core", "src", "work", "dispatch.mjs")));
+    const { defaultApplication } = await import(pathToFileURL(path.join(code, "packages", "core", "src", "application", "default.mjs")));
+    const dispatchCommand = defaultApplication.getCommand("work:dispatch");
+    const { resolveDispatchLane } = defaultApplication.loop.work.dispatch;
     let opened = 0;
     const result = await dispatchCommand.run({ refs: JSON.parse(process.env.AOF_TEST_REFS) }, {
       workspace: { projectRoot: root, config: { work: { dispatch: { concurrency: Number(process.env.AOF_TEST_BOUND) } } } },

@@ -1,4 +1,5 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRunsFromFreshApplication } from "../support/workspace/fresh-run-reader.mjs";
 // Traceability wiring for milestone 20 / story 00 — dedup + atomic persist.
 //
 // Covers EVERY @executable scenario in
@@ -420,8 +421,7 @@ export const runDedupAtomicPersistTests = [
         const record = await startRun(item, { sessionId: "sess-atomic", brief: { k: "v" }, now: "2026-06-30T09:00:00.000Z" });
 
         // a FRESH store load reads the committed record fully-formed
-        const fresh = await import("../../packages/core/src/run-store.mjs?fresh-dedup-atomic");
-        const runs = await fresh.readRuns(item);
+        const runs = await readRunsFromFreshApplication(item);
         assert.equal(runs.length, 1, "the record reloads as one run");
         const [reloaded] = runs;
         // it parses as complete JSON carrying all fourteen frozen keys
@@ -512,8 +512,7 @@ export const runDedupAtomicPersistTests = [
           await row.drive(item);
 
           // reload the store fresh and assert every record parses as complete JSON
-          const fresh = await import(`../../packages/core/src/run-store.mjs?fresh-persist-${rows.indexOf(row)}`);
-          const runs = await fresh.readRuns(item);
+          const runs = await readRunsFromFreshApplication(item);
           assert.ok(runs.length >= 1, `[${row.label}] at least one record persists`);
           for (const run of runs) {
             const onDisk = JSON.parse(await readFileBytes(item, run.runId));

@@ -52,7 +52,7 @@ const buildTerminalResumeEnvelope = _aofApplication.mesh.terminalRelayBridge.bui
 const createTerminalRelayPushTransport = _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport;
 const createTerminalMirror = _aofApplication.mesh.terminalMirror.createTerminalMirror;
 
-const BRIDGE_URL = new URL("../../../packages/core/src/application/bindings/mesh/terminal-relay-bridge.mjs", import.meta.url).href;
+const BRIDGE_URL = new URL("../../../packages/mesh/src/terminal-relay-bridge.mjs", import.meta.url).href;
 
 // --- the REAL in-process relay harness (mirrors test/mesh-relay-broker-fanout /
 // mesh-relay-envelope-resilience's own connect()/waitFor() shape) ---
@@ -281,7 +281,7 @@ export const meshTerminalRelayBridgeTests = [
       assert.equal(bridge.wireTerminalBridge, undefined);
 
       // CONTROL — the probe mechanism itself works: a module taking a LIVE export links.
-      const liveProbe = `import { buildTerminalFrameEnvelope } from ${JSON.stringify(BRIDGE_URL)};\nexport const ok = typeof buildTerminalFrameEnvelope === "function";\n`;
+      const liveProbe = `import { createTerminalRelayBridge } from ${JSON.stringify(BRIDGE_URL)};\nexport const ok = typeof createTerminalRelayBridge({ reportDegrade() {} }).buildTerminalFrameEnvelope === "function";\n`;
       const live = await import(`data:text/javascript,${encodeURIComponent(liveProbe)}`);
       assert.equal(live.ok, true, "the probe mechanism links a module that takes a LIVE export — so a rejection below is about the NAME, not the probe");
 
