@@ -14,7 +14,7 @@
 //     flake, reported by name; --strict makes a flake fail the run.
 //
 //   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--strict] [--no-lanes]
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -36,6 +36,15 @@ const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const outDir = path.join(repo, ".tmp", "test-sharded", stamp);
 mkdirSync(outDir, { recursive: true });
 const timingsPath = path.join(repo, ".tmp", "test-timings.json");
+// A gate runs from a fresh detached worktree, which has no `.tmp/` history: without timings the slow files run unsplit
+// and the run's floor is its heaviest file. So timings are also read from, and written back to, the main checkout.
+const mainTimingsPath = (() => {
+  try {
+    const common = execFileSync("git", ["rev-parse", "--path-format=absolute", "--git-common-dir"], { cwd: repo, encoding: "utf8", windowsHide: true }).trim();
+    const main = path.join(path.dirname(common), ".tmp", "test-timings.json");
+    return path.resolve(main) === path.resolve(timingsPath) ? null : main;
+  } catch { return null; }
+})();
 
 // 1. THE REGISTRY, and every registered case mapped to the file that exports it.
 const { tests } = await import(pathToFileURL(path.join(repo, "scripts", "test.mjs")).href);
@@ -65,7 +74,8 @@ if (unassigned.length || duplicates) {
 console.log(`# sharded: ${tests.length} registered cases from ${units.size} files, ${JOBS} workers`);
 
 // 2. WORK UNITS, longest first, the slow files split into case chunks.
-const timings = existsSync(timingsPath) ? JSON.parse(readFileSync(timingsPath, "utf8")) : {};
+const timingsSource = [timingsPath, mainTimingsPath].find((candidate) => candidate && existsSync(candidate));
+const timings = timingsSource ? JSON.parse(readFileSync(timingsSource, "utf8")) : {};
 const plan = [];
 for (const [file, positions] of units) {
   const key = rel(file);
@@ -132,8 +142,12 @@ for (const result of results) {
   const entry = perFile[result.unit.key] ?? (perFile[result.unit.key] = { seconds: 0, cases: 0 });
   entry.seconds += result.seconds; entry.cases += result.unit.positions.length;
 }
-writeFileSync(timingsPath, JSON.stringify(perFile, null, 1));
-const executed = results.filter((result) => !result.unit.lanes).reduce((sum, result) => sum + Math.max(0, result.executed), 0);
+for (const target of [timingsPath, mainTimingsPath].filter(Boolean)) {
+  try { mkdirSync(path.dirname(target), { recursive: true }); writeFileSync(target, JSON.stringify(perFile, null, 1)); } catch { /* best-effort */ }
+}
+// A unit that failed in the pool counts what its alone-retry executed: the retry ran exactly that unit's cases again.
+const retried = new Map([...flakes, ...failures].map(({ first, retry }) => [first, retry]));
+const executed = results.filter((result) => !result.unit.lanes).reduce((sum, result) => sum + Math.max(0, (retried.get(result) ?? result).executed), 0);
 const summed = results.reduce((sum, result) => sum + result.seconds, 0);
 const wall = (Date.now() - started) / 1000;
 const slowest = Object.entries(perFile).sort((a, b) => b[1].seconds - a[1].seconds).slice(0, 12);

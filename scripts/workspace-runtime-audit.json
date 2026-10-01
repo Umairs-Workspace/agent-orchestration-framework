@@ -860,7 +860,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
+    "sourceDigest": "7ee59706b5436dfc5a0fc6d05858040d8f2a9c28c71665df3be01834ba0d129b",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -868,7 +868,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
+    "sourceDigest": "7ee59706b5436dfc5a0fc6d05858040d8f2a9c28c71665df3be01834ba0d129b",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -876,7 +876,7 @@
     "kind": "child-process",
     "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
     "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
-    "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
+    "sourceDigest": "7ee59706b5436dfc5a0fc6d05858040d8f2a9c28c71665df3be01834ba0d129b",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
   },
   {
@@ -886,5 +886,13 @@
     "digest": "21a42fb352806b055fe00b19220e5c034f37c3cfb7aedb55d3a7dc625401743f",
     "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
     "reason": "Repository test tooling: a suite that imports the runner itself sits on an import ring with its directory index; the unit enters through `scripts/test.mjs` first, exactly as the whole-tree run does."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
+    "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
+    "sourceDigest": "7ee59706b5436dfc5a0fc6d05858040d8f2a9c28c71665df3be01834ba0d129b",
+    "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   }
 ]

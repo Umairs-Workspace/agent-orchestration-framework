@@ -691,17 +691,25 @@ export const agentSessionDriverTranscriptTests = [
       const declared = defaultWatchTranscriptCompletion({ ...opts, sessionId: "declared" });
       const undeclared = defaultWatchTranscriptCompletion({ ...opts, sessionId: "undeclared" });
 
-      // Let both take their first tick (which is what starts the quiet stretch), then
-      // move the clock past the SHORT window only.
-      await new Promise((resolve) => setTimeout(resolve, 40));
-      clock.advance(2_000);
+      // Let both take their first tick (which is what starts the quiet stretch), then move the clock past the SHORT
+      // window only. The first tick is a real-time poll, and on a loaded machine it can land AFTER any fixed pause — the
+      // clock would then never move again and the bare await hung a sharded run for 20 minutes (142 Plan 09). So the
+      // clock advances in SHORT-window steps until the declared watch settles: at most 100 × 2,000 ms of virtual time,
+      // far inside the 500,000 ms LONG window the undeclared assertion below depends on.
+      let declaredOutcome = { settled: false };
+      for (let step = 0; step < 100 && !declaredOutcome.settled; step += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        clock.advance(2_000);
+        declaredOutcome = await settledWithin(declared, 20);
+      }
+      if (!declaredOutcome.settled) declaredOutcome = { settled: true, value: await settledOrFail(declared, "the declared watch") };
 
-      assert.deepEqual(await declared, { outcome: "done", declared: true }, "the declared outcome settles on the short window");
+      assert.deepEqual(declaredOutcome.value, { outcome: "done", declared: true }, "the declared outcome settles on the short window");
       const stillWaiting = await settledWithin(undeclared, 120);
       assert.equal(stillWaiting.settled, false, "the undeclared end_turn, quiet for the same stretch, has NOT settled — a premature done destroys work and reports success");
 
       clock.advance(600_000);
-      assert.deepEqual(await undeclared, { outcome: "done", declared: false }, "it settles only once the long window has passed");
+      assert.deepEqual(await settledOrFail(undeclared, "the undeclared watch"), { outcome: "done", declared: false }, "it settles only once the long window has passed");
     }),
   },
   {
