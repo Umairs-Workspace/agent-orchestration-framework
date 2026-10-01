@@ -1,7 +1,7 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
-// test/ui/board-mesh-execution.test.mjs — VERIFICATION (board mesh-execution overlay,
+// test/surfaces/board-mesh-execution.test.mjs — VERIFICATION (board mesh-execution overlay,
 // live two-machine soak 2026-07-25).
 //
 // THE DEFECT (operator-reported): the board showed milestone 18 as "not started" while a

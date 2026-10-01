@@ -166,7 +166,7 @@ async function faceList(projectDir, home, { includeArchived = false } = {}) {
 }
 
 // The board's read model, bundled from the REAL `model.ts` through the same esbuild instrument
-// the mounted lanes use (test/ui/board-backlog-and-archive), so `deriveBoard` is the production
+// the mounted lanes use (test/surfaces/board-backlog-and-archive), so `deriveBoard` is the production
 // derivation and not a re-spelling.
 let model = null;
 async function loadModel() {

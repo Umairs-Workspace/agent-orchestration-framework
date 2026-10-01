@@ -5,13 +5,13 @@ import { pathTests } from "../packages/core/test/paths.suite.mjs";
 import { promptTests } from "../packages/core/test/prompt.suite.mjs";
 import { modelTests } from "../packages/core/test/model.suite.mjs";
 import { workspaceTests } from "../packages/core/test/workspace.suite.mjs";
-import { renderPlanTests } from "../test/ui/render-plan.test.mjs";
+import { renderPlanTests } from "../test/surfaces/render-plan.test.mjs";
 import { configInspectTests } from "../test/command/config-inspect.test.mjs";
 import { configEditorTests } from "../test/command/config-editor.test.mjs";
 import { frameworkTests } from "../packages/core/test/frameworks.suite.mjs";
 import { cleanTests } from "../packages/core/test/clean.suite.mjs";
 import { dslPrimitiveTests } from "../test/command/dsl-primitives.test.mjs";
-import { setupUiTests } from "../test/ui/setup-ui.test.mjs";
+import { setupUiTests } from "../test/surfaces/setup-ui.test.mjs";
 import { schemaTests } from "../test/bundle/schema.test.mjs";
 import { adapterWarningTests } from "../test/bundle/adapter-warnings.test.mjs";
 import { packageTests } from "../packages/core/test/packages.suite.mjs";
@@ -35,7 +35,7 @@ import { archTests as acdGlobalNodeRegistryProjectionOnlyTests } from "../test/a
 // tests, the pure fleet scope.mjs helper tests, and the story's 3 fitness units.
 import { globalMeshQueryTests } from "../test/mesh/global-mesh-query.test.mjs";
 import { meshUiGlobalScopeTests } from "../test/mesh/ui/mesh-ui-global-scope.test.mjs";
-import { fleetScopeTests } from "../test/ui/fleet-scope.test.mjs";
+import { fleetScopeTests } from "../test/surfaces/fleet-scope.test.mjs";
 import { archTests as acdMeshUiGlobalDefaultTests } from "../test/arch/mesh/acd-mesh-ui-global-default.test.mjs";
 import { archTests as acdMeshUiLocalFilterPreservesStatusTests } from "../test/arch/mesh/acd-mesh-ui-local-filter-preserves-status.test.mjs";
 import { archTests as acdMeshUiScopeVisibleTests } from "../test/arch/mesh/acd-mesh-ui-scope-visible.test.mjs";
@@ -93,7 +93,7 @@ import { memoryHooksInertTests } from "../test/memory/memory-hooks-inert.test.mj
 // milestone 03 — work board UI
 import { workListTests } from "../test/work/lifecycle/work-list.test.mjs";
 import { archTests as acdWorkListContractTests } from "../test/arch/work/acd-work-list-contract.test.mjs";
-import { boardApiTests } from "../test/ui/board-api.test.mjs";
+import { boardApiTests } from "../test/surfaces/board-api.test.mjs";
 import { archTests as acdBoardWriteIsolationTests } from "../test/arch/ui/acd-board-write-isolation.test.mjs";
 import { terminalDockTests } from "../apps/ui/test/terminal-dock.suite.mjs";
 import { terminalWsTests } from "../test/session/terminal-ws.test.mjs";

@@ -1,6 +1,6 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
-// test/ui/fleet-terminal-view-surface.test.mjs — traceability for milestone 38 /
+// test/surfaces/fleet-terminal-view-surface.test.mjs — traceability for milestone 38 /
 // story 06 / task 04 (tasks/04_bug-fleet-terminal-view-surface.feature; BLOCKER
 // F-38.06c). ARCHITECTURE ADR-013 (the `session_id` join key) + ADR-014 (the
 // read-only mirror, routed by (nodeId, sessionId)); DESIGN §Surface 3 (V1-V9 + the

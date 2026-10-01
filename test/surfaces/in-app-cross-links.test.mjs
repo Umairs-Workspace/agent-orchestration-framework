@@ -94,11 +94,11 @@
 //     advertised board URL — the same two-real-faces claim, made where the answer now
 //     lives.
 // The behavioural half of m47's own contract lives in `test/fleet-board-drill-in
-// .test.mjs` and `test/ui/fleet-boards-branch-deleted.test.mjs`; this file keeps the m45
+// .test.mjs` and `test/surfaces/fleet-boards-branch-deleted.test.mjs`; this file keeps the m45
 // claims that outlived the change.
 //
 // Run focused and isolated (hook-enforced):
-//   AOF_GLOBAL_HOME=$(mktemp -d) node --test test/ui/in-app-cross-links.test.mjs
+//   AOF_GLOBAL_HOME=$(mktemp -d) node --test test/surfaces/in-app-cross-links.test.mjs
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

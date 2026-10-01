@@ -30,7 +30,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 //     lane below claims a redirect. What IS claimed is narrower and is this story's own:
 //     every legacy address these producers USED to hand out still gets a 200 and the app
 //     shell from the very server that used to hand it out.
-//   · the extension-less fallback RULE is 45/02's (`test/ui/static-serve-fallback.test.mjs`).
+//   · the extension-less fallback RULE is 45/02's (`test/surfaces/static-serve-fallback.test.mjs`).
 //     Here it is only CONSUMED — STORY.md names "an advertised URL that 404s" as a worse
 //     regression than the one the milestone fixes, so every advertised address is fetched.
 //

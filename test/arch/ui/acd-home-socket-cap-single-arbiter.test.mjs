@@ -34,7 +34,7 @@
 // The VALUE 16 and its argument are ADR-006's; this gate pins that the number is an argument,
 // lives in one place, and is tied to `MAX_TAIL_KEYS`. It does not re-argue the number. The
 // arbiter's BEHAVIOUR — the no-demote invariant, the fail-closed cap, the two held frames — is
-// driven exhaustively in `test/ui/home-socket-cap-arbiter.test.mjs` against this same module.
+// driven exhaustively in `test/surfaces/home-socket-cap-arbiter.test.mjs` against this same module.
 //
 // AND ITS SECOND-COPY SWEEP HAS A DECLARED LIMIT, stated so a reader meets the boundary rather
 // than assumes there is none: it catches the number re-typed as a SLICE BOUND (`.slice(0, 16)`)

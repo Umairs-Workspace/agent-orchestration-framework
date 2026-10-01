@@ -639,7 +639,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
 // that answers `/api/mesh/status` with the coded 503 the global store mints when it is
 // unavailable: the error state's own producer.
 //
-// Both are lifted here from `test/ui/fleet-boards-branch-deleted.test.mjs`, where 47/01 wrote them
+// Both are lifted here from `test/surfaces/fleet-boards-branch-deleted.test.mjs`, where 47/01 wrote them
 // as file-local helpers, because m47/03's four task features need the same two faces in four
 // more files and a fifth copy of "what an empty mesh looks like" is how two lanes start
 // disagreeing about it. That suite's own copies are left untouched — this is an addition, not a
@@ -649,7 +649,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
 // duplicate as harmless if nobody migrates it, and by the time the review read this file BOTH
 // remaining copies of the refusal face had already drifted from this one on the same row — the
 // 503's `path`. m47/03's own copy is deleted (its lane now calls `withRefusingFace` with the
-// options below); 47/01's pair in `test/ui/fleet-boards-branch-deleted.test.mjs:129-169` is NOT
+// options below); 47/01's pair in `test/surfaces/fleet-boards-branch-deleted.test.mjs:129-169` is NOT
 // touched here, because that file is another story's and 47/04 is editing its neighbours in
 // parallel. It is the outstanding half of this finding and is reported as such, not silently
 // tolerated: its `withRefusingFace` still mints a body with no `path`, so its error-state lanes
@@ -689,10 +689,10 @@ export async function withEmptyFleetFace(fn) {
 // FIRST-LOAD failure leaves `status` null, so it is the only source for the error state's
 // `Global mesh store: <path>` line. A body without it renders a strictly less honest page.
 //
-// It is a constant because it had already drifted twice: `test/ui/fleet-filter-address.test.mjs` and
-// `test/ui/fleet-boards-branch-deleted.test.mjs` each re-typed this object inline and BOTH dropped
+// It is a constant because it had already drifted twice: `test/surfaces/fleet-filter-address.test.mjs` and
+// `test/surfaces/fleet-boards-branch-deleted.test.mjs` each re-typed this object inline and BOTH dropped
 // `path`, so two lanes were asserting the error state over a payload the producer does not send.
-// `test/ui/fleet-empty-states.test.mjs`'s "no way of arriving at nothing is dressed as a failure"
+// `test/surfaces/fleet-empty-states.test.mjs`'s "no way of arriving at nothing is dressed as a failure"
 // lane is the behavioural pin on the row (it asserts `Global mesh store: ` is rendered), and it
 // only holds for faces that read from HERE.
 const GLOBAL_STORE_UNAVAILABLE_503 = {

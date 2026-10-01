@@ -460,7 +460,7 @@ export const archTests = [
       const narrowAt = fleetBody.indexOf("filterToWorkspace(");
       assert.ok(
         narrowAt >= 0,
-        "`filterToWorkspace(` is not called inside Fleet() at all. m47/ADR-004: <Fleet> narrows the payload ONCE, before rendering, and hands GlobalScopeView an ALREADY-NARROWED status — so no region receives the raw payload, no region applies a filter of its own, and a region added by a LATER milestone is narrowed on the day it is added without its author knowing this rule exists. That last property is the whole point.\nRED at refine time for a measured reason: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it, test/ui/fleet-scope.test.mjs pins it — and Fleet.tsx's import list (:28-40) does not name it.",
+        "`filterToWorkspace(` is not called inside Fleet() at all. m47/ADR-004: <Fleet> narrows the payload ONCE, before rendering, and hands GlobalScopeView an ALREADY-NARROWED status — so no region receives the raw payload, no region applies a filter of its own, and a region added by a LATER milestone is narrowed on the day it is added without its author knowing this rule exists. That last property is the whole point.\nRED at refine time for a measured reason: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it, test/surfaces/fleet-scope.test.mjs pins it — and Fleet.tsx's import list (:28-40) does not name it.",
       );
 
       const pageStateAt = fleetBody.indexOf("pageState({");

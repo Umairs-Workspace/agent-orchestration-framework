@@ -5,7 +5,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // `<Fleet/>` — extracted here for milestone 47 / story 01 (ADR-006(b)).
 //
 // WHERE IT CAME FROM, and why it moved. It was written inside
-// `test/ui/in-app-cross-links.test.mjs` (m45/04/01) as `withFleetBoards`, and it is the
+// `test/surfaces/in-app-cross-links.test.mjs` (m45/04/01) as `withFleetBoards`, and it is the
 // exact instrument that PROVED the fleet's local-shape branch unreachable — m45 QA's
 // F-45-04-QA-3. m47/01 task 01 is the change that deletes that branch, and its lanes
 // need the same instrument to prove the branch is gone. Two copies of a fixture whose

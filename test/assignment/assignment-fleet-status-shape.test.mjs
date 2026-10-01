@@ -236,7 +236,7 @@ export const assignmentFleetStatusShapeTests = [
   // SCENARIOS 3 and 5 land here, in the PURE shaper's own suite, because both are
   // properties of the projection literal over planted rows: no store, no I/O, no
   // port. (Scenarios 1/2/4/6 are producer-fed or file-shaped and live in
-  // test/ui/fleet-terminal-view-surface.test.mjs.) Row 6 of scenario 3 is the reason
+  // test/surfaces/fleet-terminal-view-surface.test.mjs.) Row 6 of scenario 3 is the reason
   // the value axis is exercised HERE rather than through SQLite: a TEXT column's
   // affinity would coerce the stored `42` to `"42"` and the non-string case could
   // never reach the guard at all.

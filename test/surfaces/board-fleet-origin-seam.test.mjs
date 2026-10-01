@@ -21,7 +21,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // response from a REAL `serveMeshUi` / `serveBoard` on EPHEMERAL ports — never a mock of
 // either server, and never a source read. The fixture idiom is this repo's own
 // (`test/mesh/ui/mesh-ui-serve.test.mjs`'s makeRepo + publishWorkspaceSnapshot, and
-// `test/ui/board-serve.test.mjs`'s writeDist).
+// `test/surfaces/board-serve.test.mjs`'s writeDist).
 //
 // THE PORT TRAP, and it governs every lane: no server here binds a fixed port. The live
 // daemons on the control node hold :4181 (fleet UI) and :4182 (control serve), so a lane

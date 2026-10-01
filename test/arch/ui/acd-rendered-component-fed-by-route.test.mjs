@@ -52,7 +52,7 @@ const MESH_UI_SERVE = "packages/mesh/src/ui-serve.mjs";
 // 130/03 (ADR-005 §5) — `nodeWorkRegion` is the third spelling: the WHOLE current-work region
 // (`{ lines, token, loops }`), which composes `fleetCurrentWorkLines` with the loop lines beside
 // it and is what the production card calls now. It is a wrapper OVER the one projection, never a
-// fork of its collapse rule (test/ui/fleet-scope.test.mjs pins nodeCurrentWork === the projection).
+// fork of its collapse rule (test/surfaces/fleet-scope.test.mjs pins nodeCurrentWork === the projection).
 const PROJECTION_CALL = /\b(?:fleetCurrentWorkLines|nodeCurrentWork|nodeWorkRegion)\s*\(/;
 // A component that renders a per-node card maps over the `nodes` array.
 const PER_NODE_RENDER = /\bnodes\b[^;\n]{0,40}\.map\s*\(/;

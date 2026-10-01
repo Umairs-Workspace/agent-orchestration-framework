@@ -248,7 +248,7 @@ export function targetResolutionProblems(rawSource) {
 // --- the THIRD structural clause: one cadence, one hold, no second copy ------
 //
 // REVIEW FIX F-D (architect, 2026-07-24). This assertion used to live in
-// test/ui/fleet-assign-acknowledgment.test.mjs (task 06's story acceptance),
+// test/surfaces/fleet-assign-acknowledgment.test.mjs (task 06's story acceptance),
 // driven from a Gherkin scenario. It is a STRUCTURAL assertion about the
 // component's shape — "POLL_MS is ONE value and the component schedules from it,
 // never from a literal of its own" — so in story acceptance it ages with the

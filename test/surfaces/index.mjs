@@ -1,4 +1,6 @@
-// THE UI SUITES — this directory's index, and the ONE place its membership is
+// THE SURFACE SUITES — the board, fleet, shell and terminal faces mounted against the REAL server, mesh and
+// assembled application (renamed from `test/ui` by 142 Plan 09: the UI-only suites live in `apps/ui/test`; what stays
+// here is integration, which is what root `test/` is for). This directory's index, and the ONE place its membership is
 // written down (119/03, ADR-010). The registry names directories; a directory names its own
 // suites. A new suite here is one import and one spread IN THIS FILE, and `scripts/test.mjs`
 // is unchanged by its arrival.
@@ -216,7 +218,7 @@ import { uiDirectoryBudgetTests } from "./ui-directory-budget.test.mjs";
 // the ONE pure route table (`routeFor`) plus the ONE legacy `?mode=` translation
 // (`legacyRedirectFor`). Framework-free by contract — this repo has NO React test harness, so
 // the route decision lives in a plain .mjs that node:test drives headlessly, in the house
-// pattern of apps/ui/src/fleet/scope.mjs + test/ui/fleet-scope.test.mjs. Three @executable task
+// pattern of apps/ui/src/fleet/scope.mjs + test/surfaces/fleet-scope.test.mjs. Three @executable task
 // features: 00_route-table (four paths, one shared 404, frozen/origin-blind table),
 // 01_legacy-mode-redirect (every advertised ?mode= URL onto its path, `mode` the only thing
 // removed, idempotent), 02_query-and-fragment-passthrough (`?scope=`, unknown parameters and

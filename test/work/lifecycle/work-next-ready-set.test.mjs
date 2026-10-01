@@ -31,7 +31,7 @@ import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture
 import { withStream } from "../../support/story-depends-fixture.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, WORKER_NODE, SYNCED_AT } from "../../support/cache-read-fixture.mjs";
 import { commandCoreContractTests } from "../../command/command-core-contract.test.mjs";
-import { boardFaceContractTests } from "../../ui/board-face-contract.test.mjs";
+import { boardFaceContractTests } from "../../surfaces/board-face-contract.test.mjs";
 
 const NOT_STARTED = "not-started";
 const refsOf = (result) => (result.readySet ?? []).map((member) => member.ref);

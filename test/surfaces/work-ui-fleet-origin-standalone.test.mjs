@@ -21,7 +21,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //
 // LITMUS, as the feature states it: every Then is a value read off a real HTTP response
 // from a REAL `serveBoard` on an ephemeral port, or off a real `aof work ui` process's
-// stdout and exit code (the launch-and-read shape test/ui/work-ui-verb-rename.test.mjs
+// stdout and exit code (the launch-and-read shape test/surfaces/work-ui-verb-rename.test.mjs
 // already uses). The one production module imported for a NUMBER is
 // `packages/core/src/mesh/ui-serve.mjs`, and only to read `DEFAULT_MESH_UI_PORT` for comparison — the
 // TEST may import both faces, which is precisely what the production modules may not do,

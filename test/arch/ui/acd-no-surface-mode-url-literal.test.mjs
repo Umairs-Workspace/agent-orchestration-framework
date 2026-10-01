@@ -25,7 +25,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //
 // SCOPE: production code only — `packages/core/src/`, `apps/ui/src/`, `apps/desktop/`. The behavioural suites
 // that assert an advertised URL *contains* `mode=` (test/mesh/ui/mesh-ui-serve.test.mjs:126,303,
-// test/ui/board-serve.test.mjs:186, test/ui/work-ui-verb-rename.test.mjs:187,
+// test/surfaces/board-serve.test.mjs:186, test/surfaces/work-ui-verb-rename.test.mjs:187,
 // test/mesh/ui/mesh-ui-cli-face.test.mjs:205, test/mesh/ui/mesh-ui-global-scope.test.mjs:219) change in the
 // same story that changes the producers; they are the milestone's OWN proof, and having
 // this gate also police them would report one change twice.
@@ -58,7 +58,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 //
 // WHY A LITERAL SWEEP IS THE RIGHT DETECTOR HERE, and what it deliberately does NOT do. It
 // cannot see a path composed at runtime from a variable — that half is behavioural and is
-// owned by `test/ui/in-app-cross-links.test.mjs` (no RENDERED anchor names `mode`) and by
+// owned by `test/surfaces/in-app-cross-links.test.mjs` (no RENDERED anchor names `mode`) and by
 // `test/command/advertised-paths.test.mjs` (every launcher's real `--json` and announce channel).
 // The two halves are complementary by construction: a hand-rolled copy fails the gate without
 // failing those suites, and a runtime-composed selector fails those suites without failing the
@@ -124,7 +124,7 @@ const ROUTE_VOCABULARY_ALLOWED = [
   // The three hard-coded in-app cross-links (ADR-002's consequence, story 45/04). They are
   // literals rather than table reads because each is a CROSS-ORIGIN address: the first two
   // name the fleet's FIXED :4181 from a board whose own port is ephemeral, and the third is
-  // deliberately relative. See `test/ui/in-app-cross-links.test.mjs` for their behavioural half.
+  // deliberately relative. See `test/surfaces/in-app-cross-links.test.mjs` for their behavioural half.
   {
     file: "apps/ui/src/board/Board.tsx",
     why: "the dead-server banner's \"the fleet\" link — absolute on :4181, because a board port is ephemeral and the fleet's is not",

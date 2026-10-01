@@ -4,7 +4,7 @@
 // THE CHANNEL. This module is PURE and has NO CLI surface, so the black-box channel every
 // scenario below is confirmed through is `node:test` importing the module directly and
 // asserting on RETURNED VALUES — no bundler, no DOM, no React harness (this repo has none
-// at all). That is the house pattern: test/ui/fleet-scope.test.mjs does exactly this for
+// at all). That is the house pattern: test/surfaces/fleet-scope.test.mjs does exactly this for
 // apps/ui/src/fleet/scope.mjs. Nothing here reads the module's source; the two PLACEMENT
 // invariants (React-free/DOM-free, and "names no query key but `mode`") are owned by
 // test/arch/command/acd-route-logic-framework-free.test.mjs, and "the entry applies the translation

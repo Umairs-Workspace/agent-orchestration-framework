@@ -19,7 +19,7 @@
 //     "no second bar" — are driven through the MOUNT harness against a REAL fixture face, which
 //     reads the rendered tree rather than a source file. A link composed at runtime from a
 //     variable satisfies every source-text gate and can still be wrong; that is the precedent
-//     `test/ui/in-app-cross-links.test.mjs` set and it is why these are not source assertions.
+//     `test/surfaces/in-app-cross-links.test.mjs` set and it is why these are not source assertions.
 //
 // ISOLATION. No store, no database, no mesh. The face binds `port: 0` and the lane reads back
 // `address().port` — `:4181` and `:4182` are held by live daemons on this machine and NO LANE

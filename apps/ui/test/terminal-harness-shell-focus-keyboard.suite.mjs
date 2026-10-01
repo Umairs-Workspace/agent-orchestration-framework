@@ -762,7 +762,7 @@ export const terminalHarnessShellFocusKeyboardTests = [
         // reads bare `document` and positions its listbox off `getBoundingClientRect`, so opening it
         // headlessly needs a real host node and a rect stamped on it — asked for BY THAT SUITE, per
         // lane, which is exactly the shape this leg admits; no harness asks on its behalf.
-        ["apps/ui/test/terminal-harness-shell-focus-keyboard.suite.mjs", "test/ui/board-backlog-and-archive.test.mjs"],
+        ["apps/ui/test/terminal-harness-shell-focus-keyboard.suite.mjs", "test/surfaces/board-backlog-and-archive.test.mjs"],
         `only the suites that legitimately ask for host nodes do so, per lane — no harness asks on a suite's behalf (found: ${askers.join(", ")})`,
       );
 

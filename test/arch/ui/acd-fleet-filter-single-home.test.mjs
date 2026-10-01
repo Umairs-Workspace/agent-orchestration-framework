@@ -8,7 +8,7 @@
 // the CURRENT tree — there is no sibling module and nothing names `repo` yet — so they are
 // ratchets that arm before the build rather than reports on it. The third is RED until m47's
 // stories land: `filterToWorkspace` (`scope.mjs:162`) is exported, typed (`scope.d.mts:44`) and
-// pinned by `test/ui/fleet-scope.test.mjs`, and **`Fleet.tsx` does not import it**. That is the
+// pinned by `test/surfaces/fleet-scope.test.mjs`, and **`Fleet.tsx` does not import it**. That is the
 // measurement ADR-002 turns on — the client-side narrowing already exists, is already tested,
 // and has never rendered anything.
 //
@@ -498,7 +498,7 @@ export const archTests = [
         [`${FLEET_TSX} (1)`],
         `\`${NARROWING}\` must be called EXACTLY ONCE in apps/ui/src, from ${FLEET_TSX} — found: ${callSites.length === 0 ? "NO call site at all" : callSites.join(", ")}.\n`
           + "m47/ADR-004: the narrowing is applied ONCE, above the region fan-out, so `GlobalScopeView` and every region receive an ALREADY-NARROWED payload and a region cannot opt out by construction — which is what makes SPEC's \"every region, or none\" structural instead of a per-region habit that the NEXT milestone's author has no reason to know about.\n"
-          + "AT REFINE TIME THIS IS RED FOR A MEASURED REASON, not a missing file: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it and test/ui/fleet-scope.test.mjs pins it, and Fleet.tsx's import list (:28-40) does not name it. The function exists, is tested, and has never rendered anything.",
+          + "AT REFINE TIME THIS IS RED FOR A MEASURED REASON, not a missing file: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it and test/surfaces/fleet-scope.test.mjs pins it, and Fleet.tsx's import list (:28-40) does not name it. The function exists, is tested, and has never rendered anything.",
       );
     },
   },

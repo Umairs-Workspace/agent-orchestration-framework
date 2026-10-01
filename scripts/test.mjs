@@ -82,7 +82,7 @@ import { tests as sessionTests } from "../test/session/index.mjs";
 import { tests as storeTests } from "../test/store/index.mjs";
 import { tests as terminalTests } from "../test/terminal/index.mjs";
 import { tests as testingTests } from "../test/testing/index.mjs";
-import { tests as uiTests } from "../test/ui/index.mjs";
+import { tests as surfacesTests } from "../test/surfaces/index.mjs";
 import { tests as workTests } from "../test/work/index.mjs";
 import { tests as workGateTests } from "../test/work/gate/index.mjs";
 import { tests as workLifecycleTests } from "../test/work/lifecycle/index.mjs";
@@ -153,7 +153,7 @@ export const tests = [
   ...storeTests,
   ...terminalTests,
   ...testingTests,
-  ...uiTests,
+  ...surfacesTests,
   ...workTests,
   ...workGateTests,
   ...workLifecycleTests,

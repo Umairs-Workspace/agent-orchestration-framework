@@ -12,7 +12,7 @@
 // decisions in framework-free `.mjs` beside the component so node:test drives them
 // headlessly: apps/ui/src/fleet/scope.mjs (whose own header states the rule), apps/ui/src/board/
 // {runs,action,freshness,resync}.mjs, apps/ui/src/board/terminal/*.mjs. The canonical shape is
-// test/ui/fleet-scope.test.mjs. If the route table were JSX/hook-shaped — a router library's
+// test/surfaces/fleet-scope.test.mjs. If the route table were JSX/hook-shaped — a router library's
 // <Routes>/<Navigate>/loader config — the URL-to-surface mapping would be the one thing in
 // this milestone that CANNOT be tested here. That, and not bundle size, is why m45/ADR-001
 // rejects react-router-dom for a four-route surface. `scope.mjs`'s discipline is copied

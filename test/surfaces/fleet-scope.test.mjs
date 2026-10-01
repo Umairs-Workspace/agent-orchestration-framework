@@ -446,7 +446,7 @@ export const fleetScopeTests = [
   // It is RETIRED rather than reduced because nothing it owned is left unowned. Its two
   // replacements were written in the same change, and between them they assert strictly
   // more:
-  //   · `test/ui/fleet-board-drill-in.test.mjs` — the RUNTIME half (m47/01 task 00). The
+  //   · `test/surfaces/fleet-board-drill-in.test.mjs` — the RUNTIME half (m47/01 task 00). The
   //     REAL <Fleet/> over the REAL two-workspace face: exactly ONE `/api/mesh/board-url`
   //     request per click, carrying that CARD's own workspaceId and ref (the F21 shape a
   //     single-workspace fixture cannot see), the app's ONE navigation read off
@@ -2114,7 +2114,7 @@ export const fleetScopeTests = [
 // ══════════════════════ m47 / story 02 — the task-01 and task-02 payload fixtures ══════
 //
 // Declared AFTER the array on purpose: function declarations hoist, and moving them above
-// it would shift the lane ADR-009 pins by line number (test/ui/fleet-scope.test.mjs:100-105).
+// it would shift the lane ADR-009 pins by line number (test/surfaces/fleet-scope.test.mjs:100-105).
 // The shape is the one `shapeGlobalStatus` (packages/core/src/global-mesh-query.mjs:269-291) actually
 // emits — `scope`, `workspaceId`, `stalenessSeconds`, `workspaces[]`, `items[]`, `nodes[]`
 // and a `diagnostics` block. Each call returns a FRESH object so a lane asserting

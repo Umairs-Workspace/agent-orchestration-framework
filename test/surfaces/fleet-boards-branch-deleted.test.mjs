@@ -459,15 +459,15 @@ const REGION_ROWS = [
 // export was renamed so the runner imports `undefined` and spreads nothing. Both holes are
 // closed below by importing each module and counting its lanes.
 const REAL_COMPONENT_SUITES = [
-  "test/ui/fleet-assign-acknowledgment.test.mjs",
-  "test/ui/fleet-assign-affordance.test.mjs",
-  "test/ui/fleet-assign-row-geometry.test.mjs",
+  "test/surfaces/fleet-assign-acknowledgment.test.mjs",
+  "test/surfaces/fleet-assign-affordance.test.mjs",
+  "test/surfaces/fleet-assign-row-geometry.test.mjs",
   "test/mesh/ui/mesh-ui-assign-item-workspace.test.mjs",
-  "test/ui/shell-regions.test.mjs",
+  "test/surfaces/shell-regions.test.mjs",
   "apps/ui/test/shell-entry-plan.suite.mjs",
-  "test/ui/board-freshness-legend.test.mjs",
-  "test/ui/board-freshness-ramp.test.mjs",
-  "test/ui/board-provenance-attribution.test.mjs",
+  "test/surfaces/board-freshness-legend.test.mjs",
+  "test/surfaces/board-freshness-ramp.test.mjs",
+  "test/surfaces/board-provenance-attribution.test.mjs",
 ];
 
 export const fleetBoardsBranchDeletedTests = [

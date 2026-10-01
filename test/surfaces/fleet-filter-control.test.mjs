@@ -20,7 +20,7 @@
 // rather than a workaround: mini-react re-invokes every function component on every pass, the
 // fleet's inline `onRefresh` arrow is a new function each time, its `SurfaceSlot` deps therefore
 // differ, the contribution re-publishes and the two spin. Lanes settle by bounded `renderOnly()`
-// passes, exactly as `test/ui/shell-regions.test.mjs` already does. **This milestone adds a FOURTH
+// passes, exactly as `test/surfaces/shell-regions.test.mjs` already does. **This milestone adds a FOURTH
 // contribution to that slot, and every value it hands the slot is referentially STABLE** —
 // `repo` is a primitive, the picker's view object is `useMemo`'d on three primitives, the
 // options array is the payload's own (or one module-level empty constant) and the handler is a

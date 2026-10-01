@@ -1,11 +1,11 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
-// test/ui/fleet-terminal-view-producer-fed.test.mjs — QA-authored behavioural coverage
+// test/surfaces/fleet-terminal-view-producer-fed.test.mjs — QA-authored behavioural coverage
 // for milestone 38 / story 06 / task 04 (BLOCKER F-38.06c), added at the task-04
 // behavioural review (2026-07-23). Carries findings **F-38.06d** and **F-38.06e**.
 //
 // WHY THIS FILE EXISTS. Task 04's own traceability module
-// (test/ui/fleet-terminal-view-surface.test.mjs) proves each LINK of the three-link
+// (test/surfaces/fleet-terminal-view-surface.test.mjs) proves each LINK of the three-link
 // chain against a payload the TEST chooses:
 //   - PERSIST is fed `buildAssignmentStatusFrame(..., { sessionId: "sess-1" })` —
 //     the real frame BUILDER, but with the TEST deciding that a session id rides a

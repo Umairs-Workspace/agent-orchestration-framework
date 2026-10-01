@@ -233,7 +233,7 @@ export async function withShellComposedHome(options, fn) {
 
 // How a lane addresses the HOME's own regions. Every one of them is read off the RENDERED tree
 // rather than off a source file: the page's states are a fact about what the operator is looking
-// at, and `test/ui/in-app-cross-links.test.mjs` set the precedent for reading an href out of
+// at, and `test/surfaces/in-app-cross-links.test.mjs` set the precedent for reading an href out of
 // production render output for exactly this reason (a link composed at runtime from a variable
 // satisfies a source-text gate and can still be wrong).
 export function homeAccessors(driver) {

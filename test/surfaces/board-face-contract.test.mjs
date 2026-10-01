@@ -5,7 +5,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // the REAL migrated `/api/work*` seam (board-ui.mjs reduced to route → invoke →
 // projection, wired into serveSetupUi) against temp fixture repos — never the
 // UI, never a mock server, never the command modules directly. Mirrors
-// test/ui/board-api.test.mjs (the milestone-03 byte-for-byte oracle): build temp
+// test/surfaces/board-api.test.mjs (the milestone-03 byte-for-byte oracle): build temp
 // fixtures, stand up serveSetupUi(null, { projectDir, port:0 }), fetch the
 // routes, assert.
 //

@@ -33,6 +33,11 @@ registry (none missing, none over-registered).
 
 ### What stays at the root, and why
 
+Root `test/` is the integration home, so its subject folders name what they integrate: `test/ui` was renamed **`test/surfaces`**
+(41 suites — the board, fleet, shell and terminal faces mounted against the real server, mesh and assembled application;
+they cannot live in `apps/ui` because an app may not import the assembled core). Names identical before and after.
+
+
 | Suites | Reason |
 | ---: | --- |
 | 482 | Repository-wide architecture guards (`test/arch`, by the placement rule). |

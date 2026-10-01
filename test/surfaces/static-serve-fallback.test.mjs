@@ -31,7 +31,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // you ask" is the story's whole claim.
 //
 // Run focused and isolated (hook-enforced):
-//   AOF_GLOBAL_HOME=$(mktemp -d) node --test test/ui/static-serve-fallback.test.mjs
+//   AOF_GLOBAL_HOME=$(mktemp -d) node --test test/surfaces/static-serve-fallback.test.mjs
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import os from "node:os";

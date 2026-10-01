@@ -285,7 +285,7 @@ export const meshUiAssignItemWorkspaceTests = [
     // to omit the field (that is the point of the fix). The app-level "a coded
     // refusal surfaces inline in the `destructive` token" leg is task 06's, driven
     // through the REAL mounted <Fleet/> against a REAL verb refusal
-    // (test/ui/fleet-assign-acknowledgment.test.mjs).
+    // (test/surfaces/fleet-assign-acknowledgment.test.mjs).
     async run() {
       await withTwoWorkspaceAssignFixture(async ({ url, home, workspaceIdA, workspaceIdB }) => {
         const response = await postAssign(url, { ref: "18", nodeId: "worker-a", workspaceId: null, origin: "SAME" });
