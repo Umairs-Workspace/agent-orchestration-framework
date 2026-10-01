@@ -36,13 +36,13 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { withTerminalControl, CONTROL_STUBS, CONTROL_RESOLVE, findAll } from "../support/terminal-control-harness.mjs";
-import { withMountedApp } from "../support/react-app-harness.mjs";
-import { isUiSourceFile } from "../support/ui-source-files.mjs";
-import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, TERMINAL_ENV_RESOLVE, TERMINAL_ENV_STUBS } from "../support/terminal-dom.mjs";
-import * as processShellBus from "../../apps/ui/src/app/shell-bus.mjs";
-import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { withTerminalControl, CONTROL_STUBS, CONTROL_RESOLVE, findAll } from "./support/terminal-control-harness.mjs";
+import { withMountedApp } from "./support/react-app-harness.mjs";
+import { isUiSourceFile } from "./support/ui-source-files.mjs";
+import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, TERMINAL_ENV_RESOLVE, TERMINAL_ENV_STUBS } from "./support/terminal-dom.mjs";
+import * as processShellBus from "../src/app/shell-bus.mjs";
+import { boardDockMount } from "../src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../src/fleet/terminal-mount.mjs";
 import {
   declaresAffordance,
   terminalControlState,
@@ -53,13 +53,13 @@ import {
   HOST_FLEET_CARD,
   HOST_FULLSCREEN,
   WATCH_LABEL,
-} from "../../apps/ui/src/terminal/host-model.mjs";
-import { terminalFullscreenExits, terminalFullscreenId } from "../../apps/ui/src/terminal/fullscreen-request.mjs";
+} from "../src/terminal/host-model.mjs";
+import { terminalFullscreenExits, terminalFullscreenId } from "../src/terminal/fullscreen-request.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const GRID_ENTRY = path.join(repoRoot, "test", "support", "terminal-grid-entry.tsx");
-const FOCUS_ENTRY = path.join(repoRoot, "test", "support", "terminal-focus-entry.tsx");
-const SURFACE_ENTRY = path.join(repoRoot, "test", "support", "terminal-surface-entry.tsx");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const GRID_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "terminal-grid-entry.tsx");
+const FOCUS_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "terminal-focus-entry.tsx");
+const SURFACE_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "terminal-surface-entry.tsx");
 
 const BOARD_ORIGIN = "http://127.0.0.1:41773";
 const FLEET_ORIGIN = "http://127.0.0.1:4181";
@@ -122,7 +122,7 @@ const stripComments = (source) => source.replace(/(^|[^:])\/\/.*$/gm, "$1").repl
 // moves — which is the one way a keyboard assertion can stay green while the keyboard changes.
 const DRAG_KEY_STEP = Number(/export const DRAG_KEY_STEP\s*=\s*(\d+)/.exec(sourceOf("apps/ui/src/terminal/TerminalDragHandle.tsx"))?.[1]);
 
-// The `apps/ui/src` sweep uses the tree's ONE declared predicate (`test/support/ui-source-files.mjs`,
+// The `apps/ui/src` sweep uses the tree's ONE declared predicate (`apps/ui/test/support/ui-source-files.mjs`,
 // landed by m49/02 for the per-file and per-directory budget gates) rather than a fourth inline
 // copy of the same regex — its own header says why: a second copy is how two gates come to
 // disagree about what a file IS.
@@ -140,7 +140,8 @@ const uiSourceFiles = () => filesUnder(path.join(repoRoot, "apps", "ui", "src"),
 // The TEST tree is a different question from the ui tree — it holds `.mjs` suites and `.tsx`
 // harness entries and nothing is budgeted — so it keeps its own predicate, stated here rather
 // than borrowed from a gate that means something else by it.
-const testTreeFiles = () => filesUnder(path.join(repoRoot, "test"), (name) => /\.(mjs|tsx?)$/.test(name));
+// 142 Plan 09: the UI-only suites and their harnesses live in `apps/ui/test`, so the tree this sweep reads is both roots.
+const testTreeFiles = () => ["apps/ui/test", "test"].flatMap((root) => filesUnder(path.join(repoRoot, root), (name) => /\.(mjs|tsx?)$/.test(name)));
 
 export const terminalHarnessShellFocusKeyboardTests = [
   // ══════════════════════════════════════════════════════════════════════════════════════════
@@ -403,11 +404,11 @@ export const terminalHarnessShellFocusKeyboardTests = [
       assert.ok(/^declareShellPresent\(\);?\s*$/.test(line.trim()), `the call is at MODULE scope (found: ${JSON.stringify(line)})`);
 
       // The harness's own declarer lives in `test/`, on the BUNDLE's re-exported namespace.
-      const entry = stripComments(sourceOf("test/support/terminal-grid-entry.tsx"));
+      const entry = stripComments(sourceOf("apps/ui/test/support/terminal-grid-entry.tsx"));
       assert.ok(entry.includes("shell-bus.mjs"), "the harness entry re-exports the bundled bus");
       assert.ok(!entry.includes("declareShellPresent("), "…and does not itself declare — the harness does, from `test/`");
       assert.ok(
-        stripComments(sourceOf("test/support/terminal-control-harness.mjs")).includes("shellBus.declareShellPresent()"),
+        stripComments(sourceOf("apps/ui/test/support/terminal-control-harness.mjs")).includes("shellBus.declareShellPresent()"),
         "…which is where the declaration is made",
       );
     },
@@ -662,7 +663,7 @@ export const terminalHarnessShellFocusKeyboardTests = [
       );
 
       // The m46 socket suite's own `click` call sites are the check, and there are four of them.
-      const socketSuite = sourceOf("test/session/terminal-control-opens-its-socket.test.mjs");
+      const socketSuite = sourceOf("apps/ui/test/terminal-control-opens-its-socket.suite.mjs");
       assert.equal((socketSuite.match(/\.click\(/g) ?? []).length, 4, "the shipping suite's four `click` call sites are unchanged in number");
     },
   },
@@ -761,7 +762,7 @@ export const terminalHarnessShellFocusKeyboardTests = [
         // reads bare `document` and positions its listbox off `getBoundingClientRect`, so opening it
         // headlessly needs a real host node and a rect stamped on it — asked for BY THAT SUITE, per
         // lane, which is exactly the shape this leg admits; no harness asks on its behalf.
-        ["test/session/terminal-harness-shell-focus-keyboard.test.mjs", "test/ui/board-backlog-and-archive.test.mjs"],
+        ["apps/ui/test/terminal-harness-shell-focus-keyboard.suite.mjs", "test/ui/board-backlog-and-archive.test.mjs"],
         `only the suites that legitimately ask for host nodes do so, per lane — no harness asks on a suite's behalf (found: ${askers.join(", ")})`,
       );
 
@@ -769,7 +770,7 @@ export const terminalHarnessShellFocusKeyboardTests = [
       // option is destructured with `= false`, which is what makes every defaulting caller
       // unaffected.
       for (const harness of ["fleet-app-harness", "board-app-harness", "shell-app-harness"]) {
-        const source = stripComments(sourceOf(`test/support/${harness}.mjs`));
+        const source = stripComments(sourceOf(`apps/ui/test/support/${harness}.mjs`));
         const defaults = [...source.matchAll(/\bhostNodes\s*=\s*(\w+)/g)].map((match) => match[1]);
         assert.ok(defaults.length > 0, `${harness} takes the option at all`);
         assert.deepEqual(
@@ -817,7 +818,7 @@ export const terminalHarnessShellFocusKeyboardTests = [
         assert.ok(TERMINAL_CONTROL_FILTER.test(spelling), `the shared filter still matches \`${spelling}\``);
       }
       for (const harness of ["fleet-app-harness", "board-app-harness", "shell-app-harness"]) {
-        const source = sourceOf(`test/support/${harness}.mjs`);
+        const source = sourceOf(`apps/ui/test/support/${harness}.mjs`);
         assert.ok(source.includes("TERMINAL_CONTROL_FILTER"), `${harness} resolves the control through the shared filter`);
         assert.ok(source.includes("TERMINAL_CONTROL_STUB"), `${harness} substitutes the shared stub`);
         assert.match(source, /realTerminalControl = false/, `${harness} defaults to the STUB — the opt-out is a caller's ask`);

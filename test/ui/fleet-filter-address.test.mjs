@@ -38,8 +38,8 @@
 // touches :4181 or :4182.
 import assert from "node:assert/strict";
 import { withTwoWorkspaceAssignFixture, withRefusingFace } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
-import { withShellComposedFleet, withShellApp } from "../support/shell-app-harness.mjs";
+import { withFleetApp, findAll, textOf } from "../../apps/ui/test/support/fleet-app-harness.mjs";
+import { withShellComposedFleet, withShellApp } from "../../apps/ui/test/support/shell-app-harness.mjs";
 import {
   trigger,
   triggerLabel,
@@ -56,7 +56,7 @@ import {
   errorState,
   refreshControl,
   regionSummary,
-} from "../support/fleet-filter-readers.mjs";
+} from "../../apps/ui/test/support/fleet-filter-readers.mjs";
 import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 
 const FLEET = "/fleet";

@@ -16,7 +16,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 export const TERMINAL_DIR = path.join(repoRoot, "apps", "ui", "src", "terminal");
 export const UI_SRC = path.join(repoRoot, "apps", "ui", "src");
 

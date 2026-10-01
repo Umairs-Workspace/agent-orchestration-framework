@@ -28,13 +28,13 @@ import { fileURLToPath } from "node:url";
 import { withMountedApp, findAll, textOf, visibleTextOf, FRAGMENT } from "./react-app-harness.mjs";
 import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, XTERM_RESOLVE, XTERM_STUBS } from "./terminal-dom.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SHELL_ENTRY = path.join(repoRoot, "test", "support", "shell-harness-entry.tsx");
-const SHELL_FLEET_ENTRY = path.join(repoRoot, "test", "support", "shell-fleet-entry.tsx");
-const SHELL_BOARD_ENTRY = path.join(repoRoot, "test", "support", "shell-board-entry.tsx");
-const SHELL_HOME_ENTRY = path.join(repoRoot, "test", "support", "shell-home-entry.tsx");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const SHELL_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "shell-harness-entry.tsx");
+const SHELL_FLEET_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "shell-fleet-entry.tsx");
+const SHELL_BOARD_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "shell-board-entry.tsx");
+const SHELL_HOME_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "shell-home-entry.tsx");
 
-// The fleet's ONE stubbed leaf, copied from test/support/fleet-app-harness.mjs verbatim: the ONE
+// The fleet's ONE stubbed leaf, copied from apps/ui/test/support/fleet-app-harness.mjs verbatim: the ONE
 // terminal control (m46/04, re-pointed off the deleted `terminal-view/FleetTerminalView`) wants
 // xterm and a real DOM canvas, it has its own suites, and rendering nothing is exactly what the
 // production control does for an assignment with no live session. Nothing else about either the
@@ -134,7 +134,7 @@ export async function withShellComposedFleet(options, fn) {
 // withShellComposedBoard({ url, ...shellProps }, fn) — the REAL `<Board/>` inside the REAL
 // `<Shell/>`, in ONE bundle, against the REAL board face listening at `url` (m46/05).
 //
-// The board's own harness (test/support/board-app-harness.mjs) mounts the component ALONE and
+// The board's own harness (apps/ui/test/support/board-app-harness.mjs) mounts the component ALONE and
 // must stay unmodified — that is m46/ADR-009's degraded-path clause, and it is what keeps every
 // existing board suite's expectations. This is the other half of the same claim: the SAME
 // component, hosted, renders none of its three contributions in place.

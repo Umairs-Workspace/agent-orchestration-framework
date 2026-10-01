@@ -60,8 +60,8 @@ import {
   withEmptyFleetFace,
   withRefusingFace,
 } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll } from "../support/fleet-app-harness.mjs";
-import { withShellComposedFleet } from "../support/shell-app-harness.mjs";
+import { withFleetApp, findAll } from "../../apps/ui/test/support/fleet-app-harness.mjs";
+import { withShellComposedFleet } from "../../apps/ui/test/support/shell-app-harness.mjs";
 import {
   trigger,
   triggerLabel,
@@ -79,7 +79,7 @@ import {
   pageStateOf,
   placeholders,
   regionSummary,
-} from "../support/fleet-filter-readers.mjs";
+} from "../../apps/ui/test/support/fleet-filter-readers.mjs";
 import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

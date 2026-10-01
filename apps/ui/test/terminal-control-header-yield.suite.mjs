@@ -42,23 +42,23 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { findAll, withTerminalControl } from "../support/terminal-control-harness.mjs";
-import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { findAll, withTerminalControl } from "./support/terminal-control-harness.mjs";
+import { boardDockMount } from "../src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../src/fleet/terminal-mount.mjs";
 import {
   AFFORDANCE_PROVIDER_PICKER,
   declaresAffordance,
   HOST_BOARD_DOCK,
   HOST_FLEET_CARD,
   HOST_FULLSCREEN,
-} from "../../apps/ui/src/terminal/host-model.mjs";
+} from "../src/terminal/host-model.mjs";
 import {
   TERMINAL_YIELD_FIELD_LABEL_CLASS,
   TERMINAL_YIELD_TAIL_CLASS,
   TERMINAL_YIELD_WORD_CLASS,
-} from "../../apps/ui/src/terminal/palette.mjs";
+} from "../src/terminal/palette.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const TERMINAL_DIR = path.join(repoRoot, "apps", "ui", "src", "terminal");
 
 const BOARD_ORIGIN = "http://127.0.0.1:41773";

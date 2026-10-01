@@ -46,7 +46,7 @@ const registryDir = _aofApplication.mesh.registry.registryDir;
 const emptyRegistry = _aofApplication.mesh.registry.emptyRegistry;
 const admitNode = _aofApplication.mesh.registry.admitNode;
 const registerBoard = _aofApplication.mesh.registry.registerBoard;
-import { withFleetApp } from "./fleet-app-harness.mjs";
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 
 export const BOARDS_FIXTURE_NOW = "2026-07-01T12:00:00.000Z";
 export const BOARDS_FIXTURE_LOCAL_NODE = "aof-control";

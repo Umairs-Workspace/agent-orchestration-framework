@@ -20,7 +20,7 @@
 // host, the mount and the origins are the lane's, and this file adds no product behaviour.
 import { useEffect, useRef, useState } from "react";
 import type * as React from "react";
-import { TerminalControl } from "../../apps/ui/src/terminal/TerminalControl";
+import { TerminalControl } from "../../src/terminal/TerminalControl";
 
 type SurfaceSpec = {
   host?: string;

@@ -79,7 +79,7 @@ import {
   VIEWPORT_HEIGHT,
 } from "./terminal-dom.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const CONTROL_TSX = path.join(repoRoot, "apps", "ui", "src", "terminal", "TerminalControl.tsx");
 const ELEMENT = Symbol.for("aof.mini.element");
 

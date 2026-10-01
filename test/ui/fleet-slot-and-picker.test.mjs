@@ -25,7 +25,7 @@
 // under `AOF_GLOBAL_HOME=$(mktemp -d)`. Every fixture server binds port 0.
 import assert from "node:assert/strict";
 import { withTwoWorkspaceAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp } from "../support/fleet-app-harness.mjs";
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 import {
   trigger,
   triggerLabel,
@@ -35,7 +35,7 @@ import {
   bannerChips,
   chipClear,
   regionSummary,
-} from "../support/fleet-filter-readers.mjs";
+} from "../../apps/ui/test/support/fleet-filter-readers.mjs";
 import { slotAidForm, clampedPopover, SLOT_AID_DROP_WIDTH, POPOVER_GUTTER } from "../../apps/ui/src/fleet/slot-aids.mjs";
 import { emptyStateCopy } from "../../apps/ui/src/fleet/scope.mjs";
 

@@ -65,7 +65,7 @@ import {
   readAssignmentRows,
   advanceAssignmentState,
 } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp } from "../support/fleet-app-harness.mjs";
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ASSIGN_AFFORDANCE_MJS = path.join(repoRoot, "apps", "ui", "src", "fleet", "assign-affordance.mjs");

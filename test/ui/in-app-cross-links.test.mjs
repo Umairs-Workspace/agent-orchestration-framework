@@ -3,8 +3,8 @@
 // (@executable). Every Scenario and every Scenario-Outline ROW is covered here.
 //
 // THE CHANNEL, taken from the feature's LITMUS verbatim: these three links DO have a
-// black-box runtime channel and it is already built. `test/support/board-app-harness.mjs`
-// and `test/support/fleet-app-harness.mjs` esbuild the REAL, unmodified `Board.tsx` /
+// black-box runtime channel and it is already built. `apps/ui/test/support/board-app-harness.mjs`
+// and `apps/ui/test/support/fleet-app-harness.mjs` esbuild the REAL, unmodified `Board.tsx` /
 // `Fleet.tsx` and mount them headlessly against a REAL running face, over a minimal React
 // with a controllable clock and an instrumented `fetch`. `findAll(tree, …)` walks the
 // RENDERED tree, so every href below is read out of production render output — never out
@@ -103,14 +103,14 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp } from "../support/board-app-harness.mjs";
+import { withBoardApp } from "../../apps/ui/test/support/board-app-harness.mjs";
 import {
   withFleetBoards,
   BOARDS_FIXTURE_NOW as NOW,
   BOARDS_FIXTURE_PEER_NODE as PEER_NODE,
 } from "../support/mesh-status-boards-fixture.mjs";
 import { withTwoWorkspaceAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { findAll, textOf, visibleTextOf } from "../support/mini-react.mjs";
+import { findAll, textOf, visibleTextOf } from "../../apps/ui/test/support/mini-react.mjs";
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");

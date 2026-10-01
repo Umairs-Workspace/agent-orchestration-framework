@@ -18,7 +18,7 @@
 // CORRECTION, 2026-08-09 — HALF OF THAT PARAGRAPH IS NO LONGER TRUE, and the half that was true
 // is how a control that opened NO SOCKET shipped with every suite green. mini-react now attaches
 // HOST NODES to refs on request (`createRuntime({ hostNode })`), so
-// `test/session/terminal-control-opens-its-socket.test.mjs` mounts the REAL `TerminalControl.tsx` and
+// `apps/ui/test/terminal-control-opens-its-socket.suite.mjs` mounts the REAL `TerminalControl.tsx` and
 // asserts that a WebSocket is constructed, at all three call sites. What stays `@manual` is what
 // a stand-in genuinely cannot answer: a painted glyph, an unwrapped 80th column, a byte that
 // really crossed a wire.

@@ -47,7 +47,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { bundleSurface } from "../../support/react-app-harness.mjs";
+import { bundleSurface } from "../../../apps/ui/test/support/react-app-harness.mjs";
 const handleWorkApi = _aofApplication.server.board.handleWorkApi;
 const ITEM_RE = _aofPublic_aof_work_identity.ITEM_RE;
 const ARCHIVE_ROOT = _aofPublic_aof_work_identity.ARCHIVE_ROOT;

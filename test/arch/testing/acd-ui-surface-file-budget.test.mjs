@@ -51,7 +51,7 @@ import { fileURLToPath } from "node:url";
 // `acd-ui-directory-budget` (the per-DIRECTORY half of the same ratchet). Extracted 2026-08-13
 // rather than re-typed there: two copies of this regex is how the per-file gate and the
 // per-directory gate come to report different totals for the same tree.
-import { isUiSourceFile } from "../../support/ui-source-files.mjs";
+import { isUiSourceFile } from "../../../apps/ui/test/support/ui-source-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

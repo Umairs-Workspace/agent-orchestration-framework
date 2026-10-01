@@ -12,9 +12,9 @@
 // lane exercises the whole surface → shell channel rather than a mock of it. What it does NOT
 // do is fetch anything or want a DOM canvas, which is the same reason the fleet's xterm view
 // and the board's dock are stubbed in their own harnesses.
-import { Shell } from "../../apps/ui/src/app/Shell";
-import { SurfaceDock, SurfaceNotice, SurfaceSlot } from "../../apps/ui/src/app/SurfaceSlot";
-import { dismissFullscreen, requestFullscreen, resetShellBus } from "../../apps/ui/src/app/shell-bus.mjs";
+import { Shell } from "../../src/app/Shell";
+import { SurfaceDock, SurfaceNotice, SurfaceSlot } from "../../src/app/SurfaceSlot";
+import { dismissFullscreen, requestFullscreen, resetShellBus } from "../../src/app/shell-bus.mjs";
 
 // The bundle has its OWN copy of the shell bus (it is bundled, not imported from node), so a
 // lane that wants to ask the shell to present something must reach THIS copy — the one the

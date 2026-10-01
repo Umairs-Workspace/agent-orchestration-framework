@@ -59,8 +59,8 @@ import net from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { withTwoWorkspaceAssignFixture, removeWorkspaceFromProjection } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
-import { visibleTextOf } from "../support/mini-react.mjs";
+import { withFleetApp, findAll, textOf } from "../../apps/ui/test/support/fleet-app-harness.mjs";
+import { visibleTextOf } from "../../apps/ui/test/support/mini-react.mjs";
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
 import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 

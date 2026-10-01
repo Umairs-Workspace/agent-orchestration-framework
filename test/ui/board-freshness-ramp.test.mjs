@@ -78,9 +78,9 @@ import {
   readStalenessWindow,
 } from "../../apps/ui/src/board/freshness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf, isBadgeNode } from "../support/board-app-harness.mjs";
+import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf, isBadgeNode } from "../../apps/ui/test/support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp } from "../support/fleet-app-harness.mjs";
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 
 // The window the whole feature is written against (Background: `stalenessSeconds`
 // = 300). It is stated ONCE here, put on the wire by the fixture, and read back

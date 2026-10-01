@@ -54,10 +54,10 @@ import {
   contributionFor,
   resetShellBus,
 } from "../../apps/ui/src/app/shell-bus.mjs";
-import { withBoardApp } from "../support/board-app-harness.mjs";
+import { withBoardApp } from "../../apps/ui/test/support/board-app-harness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withShellApp, withShellComposedBoard } from "../support/shell-app-harness.mjs";
-import { findAll, textOf, visibleTextOf } from "../support/mini-react.mjs";
+import { withShellApp, withShellComposedBoard } from "../../apps/ui/test/support/shell-app-harness.mjs";
+import { findAll, textOf, visibleTextOf } from "../../apps/ui/test/support/mini-react.mjs";
 
 const addressOf = (pathname) => ({ pathname, search: "", hash: "" });
 
@@ -236,7 +236,7 @@ export const shellDockRegionTests = [
       // The two clicks are driven off the RENDERED TREE rather than through a harness accessor,
       // because only one of the two mounts has the board's accessors — and this scenario's whole
       // claim is that the SAME component behaves differently only in where its contributions
-      // land. `test/support/board-app-harness.mjs` stays unmodified, which is the clause.
+      // land. `apps/ui/test/support/board-app-harness.mjs` stays unmodified, which is the clause.
       const click = async (app, matches, what) => {
         const node = findAll(app.tree(), (candidate) => candidate.type === "button" && matches(textOf(candidate)))[0] ?? null;
         assert.ok(node, `the board offers ${what}`);

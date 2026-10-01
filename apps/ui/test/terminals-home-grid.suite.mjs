@@ -21,9 +21,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { withTerminalControl, ancestryOf, findAll, visibleTextOf } from "../support/terminal-control-harness.mjs";
-import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
+import { withTerminalControl, ancestryOf, findAll, visibleTextOf } from "./support/terminal-control-harness.mjs";
+import { boardDockMount } from "../src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../src/fleet/terminal-mount.mjs";
 import {
   hostAnnouncesState,
   terminalPaneStanding,
@@ -33,27 +33,27 @@ import {
   HOST_FULLSCREEN,
   HOST_GRID_PANE,
   WATCH_LABEL,
-} from "../../apps/ui/src/terminal/host-model.mjs";
-import { terminalPaneKey } from "../../apps/ui/src/terminal/pane-identity.mjs";
-import { sessionSourceFor } from "../../apps/ui/src/terminal/source-table.mjs";
-import { describeTerminalState, IDLE_PANE_LINE, TERMINAL_STATES, TERMINAL_STATE_LIST, WAITING_PANE_LINE } from "../../apps/ui/src/terminal/state-ramp.mjs";
-import { TERMINAL_FOCUS_RING_CLASS, TERMINAL_FOCUS_RING_INSET_CLASS, TERMINAL_STATE_DOT_CLASS } from "../../apps/ui/src/terminal/palette.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../../apps/ui/src/terminal/input-policy.mjs";
+} from "../src/terminal/host-model.mjs";
+import { terminalPaneKey } from "../src/terminal/pane-identity.mjs";
+import { sessionSourceFor } from "../src/terminal/source-table.mjs";
+import { describeTerminalState, IDLE_PANE_LINE, TERMINAL_STATES, TERMINAL_STATE_LIST, WAITING_PANE_LINE } from "../src/terminal/state-ramp.mjs";
+import { TERMINAL_FOCUS_RING_CLASS, TERMINAL_FOCUS_RING_INSET_CLASS, TERMINAL_STATE_DOT_CLASS } from "../src/terminal/palette.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY } from "../src/terminal/input-policy.mjs";
 import {
   fullscreenOpenerFor,
   terminalFullscreenRequest,
   FOCUS_PRESENTS_EXIT,
   FOCUS_PRESENTS_TERMINAL,
-} from "../../apps/ui/src/terminal/fullscreen-request.mjs";
-import { FORM_ICON_CONTROL, FORM_PANE_ACTIVATION } from "../../apps/ui/src/terminal/host-model.mjs";
-import { homeGridAnnouncement, homeGridFocus, homeGridFocusAfterPoll, homeGridRows, MARK_NEEDS_INPUT } from "../../apps/ui/src/home/grid.mjs";
-import { heldPaneLine, homePageOrigins, homeSessionMount, HELD_LINE } from "../../apps/ui/src/home/session-mount.mjs";
-import { HELD_AT_CAP, MAX_LIVE_PANES } from "../../apps/ui/src/home/socket-cap.mjs";
-import { NO_LIVE_OUTPUT_REASON } from "../../apps/ui/src/home/feed-axis.mjs";
-import { homeSlotSummary, HOME_EMPTY_CARD_CLASS, HOME_E2_WHY, HOME_PAGE_STATE_POPULATED } from "../../apps/ui/src/home/page-state.mjs";
+} from "../src/terminal/fullscreen-request.mjs";
+import { FORM_ICON_CONTROL, FORM_PANE_ACTIVATION } from "../src/terminal/host-model.mjs";
+import { homeGridAnnouncement, homeGridFocus, homeGridFocusAfterPoll, homeGridRows, MARK_NEEDS_INPUT } from "../src/home/grid.mjs";
+import { heldPaneLine, homePageOrigins, homeSessionMount, HELD_LINE } from "../src/home/session-mount.mjs";
+import { HELD_AT_CAP, MAX_LIVE_PANES } from "../src/home/socket-cap.mjs";
+import { NO_LIVE_OUTPUT_REASON } from "../src/home/feed-axis.mjs";
+import { homeSlotSummary, HOME_EMPTY_CARD_CLASS, HOME_E2_WHY, HOME_PAGE_STATE_POPULATED } from "../src/home/page-state.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const HOME_ENTRY = path.join(repoRoot, "test", "support", "terminals-home-entry.tsx");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const HOME_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "terminals-home-entry.tsx");
 
 // The terminals home IS the fleet origin — it is served by the same face — and BOTH keys are
 // supplied so a builder that fell back to `self` for a `fleet`-role source would still be caught.
@@ -392,7 +392,7 @@ export const terminalsHomeGridTests = [
       // control, same source, same harness — only the MOUNT's posture differs.
       await withTerminalControl(
         {
-          entry: path.join(repoRoot, "test", "support", "terminal-grid-entry.tsx"),
+          entry: path.join(repoRoot, "apps", "ui", "test", "support", "terminal-grid-entry.tsx"),
           exportName: "TerminalGrid",
           props: {
             panes: [

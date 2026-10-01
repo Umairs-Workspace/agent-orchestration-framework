@@ -38,14 +38,14 @@ import {
   DOCK_INSET_PROPERTY,
   chromeModel,
   contentModeFor,
-} from "../../apps/ui/src/app/shell-layout.mjs";
+} from "../src/app/shell-layout.mjs";
 import {
   DOCK_DEFAULT_HEIGHT,
   DOCK_MIN_HEIGHT,
   clampDockHeight,
   dockDefaultHeight,
   dockHeightBounds,
-} from "../../apps/ui/src/terminal/clamp.mjs";
+} from "../src/terminal/clamp.mjs";
 
 // The two viewports every row is expressed against, as the shell's own model sees them.
 function published({ viewportHeight, viewportWidth, bars, rail = null, dock = null }) {
@@ -58,7 +58,7 @@ function published({ viewportHeight, viewportWidth, bars, rail = null, dock = nu
   });
 }
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 export const shellDockInsetAndClampTests = [
   // ======================================================================

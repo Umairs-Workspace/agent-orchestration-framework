@@ -54,8 +54,8 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments } from "../../support/terminal-gate-detectors.mjs";
-import { isUiSourceFile } from "../../support/ui-source-files.mjs";
+import { stripComments } from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
+import { isUiSourceFile } from "../../../apps/ui/test/support/ui-source-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

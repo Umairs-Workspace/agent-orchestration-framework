@@ -9,8 +9,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments } from "../support/terminal-gate-detectors.mjs";
-import { HOME_POLL_MS } from "../../apps/ui/src/home/page-state.mjs";
+import { stripComments } from "./support/terminal-gate-detectors.mjs";
+import { HOME_POLL_MS } from "../src/home/page-state.mjs";
 import {
   HOME_SESSION_OUTCOME_PATH,
   LAUNCHER_DISPATCHED,
@@ -34,9 +34,9 @@ import {
   launcherRest,
   launcherStartedLine,
   sessionLauncherView,
-} from "../../apps/ui/src/home/session-launcher.mjs";
+} from "../src/home/session-launcher.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const node = (nodeId, freshness = "live", workspaceIds = []) => ({ nodeId, role: "worker", freshness, workspaceIds });
 const workspace = (workspaceId, name = null) => ({ workspaceId, projectRoot: `C:/src/${workspaceId}`, name });

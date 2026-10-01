@@ -25,7 +25,7 @@ const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 // three-root stream (the m43 fixture, which learned the two roots for this story), the REAL
 // <Board/> for the client's URL composition, and the CLI as a child process for the frozen face.
 import { withBoardFace, DEFAULT_STREAM } from "../support/board-face-fixture.mjs";
-import { withBoardApp, findAll } from "../support/board-app-harness.mjs";
+import { withBoardApp, findAll } from "../../apps/ui/test/support/board-app-harness.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import http from "node:http";
 const loadWorkspace = _aofApplication.loadWorkspace;

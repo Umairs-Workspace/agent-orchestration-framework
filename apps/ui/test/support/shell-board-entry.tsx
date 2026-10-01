@@ -9,7 +9,7 @@
 // board makes THREE contributions — its status legend + ⟳ sync to the surface slot, its
 // `serverGone` strip to the notice rail, and now its terminal DOCK to the overlay region — and
 // the claim is that the SAME component renders all three IN PLACE with no shell and NONE of them
-// in place under one. `test/support/board-app-harness.mjs` proves the first half and must stay
+// in place under one. `apps/ui/test/support/board-app-harness.mjs` proves the first half and must stay
 // UNMODIFIED (that is the clause). This entry proves the second half with the same component.
 //
 // The ONE stub is the same leaf every other harness stubs, for the same reason: the terminal
@@ -17,8 +17,8 @@
 // Rendering nothing is exactly what the production control does for a mount with no panel — and
 // it is enough here, because what this entry measures is WHERE the dock's contribution lands,
 // not what it paints.
-import { Shell } from "../../apps/ui/src/app/Shell";
-import { Board } from "../../apps/ui/src/board/Board";
+import { Shell } from "../../src/app/Shell";
+import { Board } from "../../src/board/Board";
 
 type CompositionProps = Record<string, unknown>;
 

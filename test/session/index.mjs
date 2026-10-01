@@ -97,8 +97,7 @@ import { terminalSessionsTests } from "./terminal-sessions.test.mjs";
 // module path and every other suite in the milestone drives the framework-free model. This is the
 // first suite in the repo that mounts the REAL `TerminalControl.tsx` and asserts the OBSERVABLE —
 // a WebSocket was constructed, to the URL the handed origins compose — through
-// `test/support/terminal-control-harness.mjs` and mini-react's new opt-in host-node refs.
-import { terminalControlOpensItsSocketTests } from "./terminal-control-opens-its-socket.test.mjs";
+// `apps/ui/test/support/terminal-control-harness.mjs` and mini-react's new opt-in host-node refs.
 // ── milestone 46 — the OTHER three defects the same browser pass found, and they are the same
 // blindness: the dock's header overflowed its own frame at 390 (`scrollWidth 451` vs
 // `clientWidth 390`), which put `✕ Close terminal dock` outside the frame and collapsed the
@@ -106,7 +105,6 @@ import { terminalControlOpensItsSocketTests } from "./terminal-control-opens-its
 // card inside a 1280 window kept the whole session tail and truncated the ref instead
 // (CONFORMANCE C13, inverted); and the fullscreen exit — the ONLY exit once the pane claims
 // `Escape` — rendered at 17×28 because `h-7 w-7` is a flex basis nothing had marked `shrink-0`.
-import { terminalControlHeaderYieldTests } from "./terminal-control-header-yield.test.mjs";
 // ── milestone 49 / story 08 — THE INSTRUMENT, taken from ONE control to a grid. TECH_DEBT 29's
 // remedy finished: the harness was built to the size of m46's problem — one control — and m49 is
 // the first milestone to need many. Four capabilities, each of which turned a family of
@@ -115,8 +113,6 @@ import { terminalControlHeaderYieldTests } from "./terminal-control-header-yield
 // genuinely opens; a live `activeElement` a real `focus()` moves, with keys routed BY FOCUS; and
 // events that propagate up the rendered tree and can be stopped. Both suites are also the guard
 // on the one forbidden fix — `TerminalControl` may never enter a stub set the harness controls.
-import { terminalHarnessDrivesAGridTests } from "./terminal-harness-drives-a-grid.test.mjs";
-import { terminalHarnessShellFocusKeyboardTests } from "./terminal-harness-shell-focus-keyboard.test.mjs";
 // milestone 68 / story 01 — attribution-at-spawn: the session id persisted onto the
 // run record by the driver's two production callers (ADR-005 §1) + the OTel spawn
 // attribution with no receiver (ADR-005 §2). Traced by test/session/attribution-at-spawn.test.mjs;
@@ -188,14 +184,10 @@ export const tests = [
   // are NOT separate imports: 46/04 merged them back into their registered siblings above, in the
   // same diff that deleted the duplicate, so each invariant has one file again.
   // milestone 46 — the mounted-for-real control: it opens its socket, or this suite is red.
-  ...terminalControlOpensItsSocketTests,
   // …and its header yields in DESIGN's order, keyed to its own width, with a door that stays 28px.
-  ...terminalControlHeaderYieldTests,
   // milestone 49 / story 08 — the same instrument, now able to drive a GRID: N panes each
   // addressable on its own, a shell that is really there, a focus model that really moves, and
   // gestures that really propagate. Proved at N=1 against milestone 46's own passing values.
-  ...terminalHarnessDrivesAGridTests,
-  ...terminalHarnessShellFocusKeyboardTests,
   // milestone 68 / story 01 — attribution-at-spawn: the two @executable task
   // features + the story's one fitness function (FF-6808, acd-no-otlp-receiver).
   ...attributionAtSpawnTests,

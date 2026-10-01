@@ -22,7 +22,7 @@
 //   - The two obvious alternatives are worse HERE, measured rather than assumed: a prop is
 //     forbidden by task 00's own scenario ("no surface is passed a route, a shell handle or
 //     a mode value it did not receive before"), and a React context is unreachable by
-//     `test/support/mini-react.mjs`, which implements the five hooks the production surfaces
+//     `apps/ui/test/support/mini-react.mjs`, which implements the five hooks the production surfaces
 //     use and NO context — so a context channel would force a rewrite of the fleet's and the
 //     board's existing behavioural suites around a shell they do not mount.
 //   - The degraded path is the point, not a fallback: with no shell in the bundle a

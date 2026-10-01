@@ -18,8 +18,8 @@
 // NOTHING IS STUBBED. The home imports no terminal control and no xterm in this story — it
 // renders no session row at all (ARCHITECTURE bad cut 3: rows and sockets are ONE cut, and story
 // 05 makes it) — so the bundle is the real shell, the real home and their real siblings.
-import { Shell } from "../../apps/ui/src/app/Shell";
-import { Home } from "../../apps/ui/src/home/Home";
+import { Shell } from "../../src/app/Shell";
+import { Home } from "../../src/home/Home";
 
 type CompositionProps = Record<string, unknown>;
 

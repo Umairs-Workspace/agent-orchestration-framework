@@ -38,7 +38,7 @@
 // under `AOF_GLOBAL_HOME=$(mktemp -d)`. Every fixture server binds port 0.
 import assert from "node:assert/strict";
 import { withTwoWorkspaceAssignFixture, withEmptyFleetFace, withRefusingFace, publishRepoInto } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll } from "../support/fleet-app-harness.mjs";
+import { withFleetApp, findAll } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 import {
   emptyState,
   banner,
@@ -54,7 +54,7 @@ import {
   triggerLabel,
   errorState,
   regionHeaders,
-} from "../support/fleet-filter-readers.mjs";
+} from "../../apps/ui/test/support/fleet-filter-readers.mjs";
 
 const FLEET = "/fleet";
 const ALL_REPOS = "All repos";

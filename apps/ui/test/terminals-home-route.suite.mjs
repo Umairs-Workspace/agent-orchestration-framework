@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 49 / story 04, task 00 —
 // `stories/04_story_route-becomes-the-home/tasks/00_the-route-is-the-home.feature`
 // (@ui @work @design). Its LAST scenario is `@manual`: no headless lane can see a deployed
-// build's first paint, because `test/support/mini-react.mjs` never assigns a node to a ref and
+// build's first paint, because `apps/ui/test/support/mini-react.mjs` never assigns a node to a ref and
 // the built Tailwind bundle is not in play here at all. That one is recorded at `aof:verify 49`.
 //
 // WHAT THIS SUITE IS ABOUT, IN ONE SENTENCE: `/` stops being a card the shell draws itself and
@@ -16,7 +16,7 @@
 // are already on. The function's own comment tells a reviewer that state is FINE. It is not.
 //
 // ISOLATION. Nothing here touches a store, a database or the mesh. The model lanes run under
-// plain `node:test`; the harness lanes mount through test/support/shell-app-harness.mjs, which
+// plain `node:test`; the harness lanes mount through apps/ui/test/support/shell-app-harness.mjs, which
 // serves from `http://127.0.0.1:9` and supplies `identity` so the shell's one probe never fires,
 // or through `withShellComposedHome` against an ephemeral loopback face. NO LANE BINDS A FIXED
 // PORT — `:4181` and `:4182` are held by live daemons on this machine.
@@ -25,8 +25,8 @@ import http from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { NOT_FOUND_ROUTE, ROUTES, routeFor } from "../../apps/ui/src/app/routes.mjs";
-import { HISTORY_NONE, HISTORY_REPLACE, SHELL_RENDERED_ROUTES, entryPlanFor, surfaceMountFor } from "../../apps/ui/src/app/entry.mjs";
+import { NOT_FOUND_ROUTE, ROUTES, routeFor } from "../src/app/routes.mjs";
+import { HISTORY_NONE, HISTORY_REPLACE, SHELL_RENDERED_ROUTES, entryPlanFor, surfaceMountFor } from "../src/app/entry.mjs";
 import {
   CONTENT_MODE_FIXED,
   CONTENT_MODE_PAGE,
@@ -34,11 +34,11 @@ import {
   STATE_POPULATED,
   contentModeFor,
   contentStateFor,
-} from "../../apps/ui/src/app/shell-layout.mjs";
-import { withShellApp, withShellComposedHome, findAll, textOf } from "../support/shell-app-harness.mjs";
-import { isUiSourceFile } from "../support/ui-source-files.mjs";
+} from "../src/app/shell-layout.mjs";
+import { withShellApp, withShellComposedHome, findAll, textOf } from "./support/shell-app-harness.mjs";
+import { isUiSourceFile } from "./support/ui-source-files.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ADDRESS = (pathname, search = "", hash = "") => ({ pathname, search, hash });
 
 // The shell's own placeholder sentence and its decorative mark — the two strings that must not
@@ -54,7 +54,7 @@ const PLACEHOLDER_MARK = "✦";
 // every lane below fails loudly rather than asserting about an empty list.
 //
 // Every existing suite that needed this list hand-typed `["fleet", "board", "config"]`
-// (test/ui/shell-entry-plan.test.mjs). A hand-typed list is exactly what cannot catch a HALF-LANDED
+// (apps/ui/test/shell-entry-plan.suite.mjs). A hand-typed list is exactly what cannot catch a HALF-LANDED
 // diff: it would go on saying the map has three keys long after the map had four.
 async function surfaceMapKeys() {
   const source = await readFile(path.join(repoRoot, "apps", "ui", "src", "main.tsx"), "utf8");
@@ -83,7 +83,7 @@ function importSpecifiersOf(source) {
 // The sweep both non-vacuity claims below rest on — "apps/ui/src was actually walked" for the
 // no-importer clause and for the placeholder-sentence clause.
 //
-// IT TAKES THE SHIPPED PREDICATE AND DOES NOT RE-TYPE ONE. `test/support/ui-source-files.mjs`
+// IT TAKES THE SHIPPED PREDICATE AND DOES NOT RE-TYPE ONE. `apps/ui/test/support/ui-source-files.mjs`
 // was extracted in THIS milestone precisely so the per-file gate and the per-directory gate
 // cannot disagree about what a file is, and its header states the failure it exists to prevent:
 // "a second copy is how the per-file gate would come to count 98 files while the directory gate

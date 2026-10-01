@@ -57,8 +57,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
 const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
-import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
-import { visibleTextOf } from "../support/mini-react.mjs";
+import { withFleetApp, findAll, textOf } from "../../apps/ui/test/support/fleet-app-harness.mjs";
+import { visibleTextOf } from "../../apps/ui/test/support/mini-react.mjs";
 import { withFleetBoards, withMeshStatusBoards, BOARDS_FIXTURE_LOCAL_NODE, BOARDS_FIXTURE_PEER_NODE } from "../support/mesh-status-boards-fixture.mjs";
 import { withTwoWorkspaceAssignFixture, sameOriginAssign, readAssignmentRows } from "../support/mesh-ui-assign-fixture.mjs";
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
@@ -464,7 +464,7 @@ const REAL_COMPONENT_SUITES = [
   "test/ui/fleet-assign-row-geometry.test.mjs",
   "test/mesh/ui/mesh-ui-assign-item-workspace.test.mjs",
   "test/ui/shell-regions.test.mjs",
-  "test/ui/shell-entry-plan.test.mjs",
+  "apps/ui/test/shell-entry-plan.suite.mjs",
   "test/ui/board-freshness-legend.test.mjs",
   "test/ui/board-freshness-ramp.test.mjs",
   "test/ui/board-provenance-attribution.test.mjs",

@@ -69,7 +69,7 @@ import {
   resyncView,
 } from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp, BOARD_EPOCH, visibleTextOf } from "../support/board-app-harness.mjs";
+import { withBoardApp, BOARD_EPOCH, visibleTextOf } from "../../apps/ui/test/support/board-app-harness.mjs";
 
 const NODE = "umamis-mac-mini";
 const CONTROL = "aof-control";

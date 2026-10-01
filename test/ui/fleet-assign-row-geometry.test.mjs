@@ -21,7 +21,7 @@
 //
 // HOW THESE LANES ARE DRIVEN, AND WHAT THEY CAN PROVE. Every clause is asserted
 // off the REAL, unmodified production <Fleet/> mounted headlessly against the
-// REAL fleet face (test/support/fleet-app-harness.mjs), reading the RENDERED
+// REAL fleet face (apps/ui/test/support/fleet-app-harness.mjs), reading the RENDERED
 // props/classNames the component actually emits — the house idiom for a render
 // fact. That makes each clause a CLASS/STRUCTURE fact:
 //   - "the action's reserved width is the SAME value in every state, and it is
@@ -92,7 +92,7 @@ import {
   sameOriginAssign,
   seedTargetNode,
 } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
+import { withFleetApp, findAll, textOf } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FLEET_API_TS = path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts");

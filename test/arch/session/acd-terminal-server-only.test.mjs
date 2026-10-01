@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments, stripperSelfCheck } from "../../support/terminal-gate-detectors.mjs";
+import { stripComments, stripperSelfCheck } from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 

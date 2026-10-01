@@ -29,7 +29,7 @@ import {
   readAssignmentRows,
   countAllAssignmentRows,
 } from "../../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp } from "../../support/fleet-app-harness.mjs";
+import { withFleetApp } from "../../../apps/ui/test/support/fleet-app-harness.mjs";
 
 async function statusOf(url) {
   const response = await fetch(new URL("/api/mesh/status", url));

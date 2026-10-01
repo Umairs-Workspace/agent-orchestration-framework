@@ -40,7 +40,7 @@ import { workUiFleetOriginStandaloneTests } from "./work-ui-fleet-origin-standal
 // Three task features, three traceability modules:
 //   00_the-dock-is-contributed-to-the-overlay-region — the CHANNEL: one bus, three slots, the
 //     region each slot names, the one-per-slot cap and its stale release, the degraded in-place
-//     render (which is what keeps `test/support/board-app-harness.mjs` unedited), the rung taken
+//     render (which is what keeps `apps/ui/test/support/board-app-harness.mjs` unedited), the rung taken
 //     from the closed ladder BY NAME, and the collision Shell.tsx warned about in advance — the
 //     dock and the fullscreen occupant sharing one region without fighting over it.
 //   01_the-dock-inset-is-published-and-the-content-box-honours-it — DG-46-1's arithmetic: a
@@ -57,7 +57,6 @@ import { workUiFleetOriginStandaloneTests } from "./work-ui-fleet-origin-standal
 // (03_an-open-dock-covers-nothing is `@uat` — a person's render verdict — and deliberately has
 // no module here.)
 import { shellDockRegionTests } from "./shell-dock-region.test.mjs";
-import { shellDockInsetAndClampTests } from "./shell-dock-inset-and-clamp.test.mjs";
 import { boardFaceContractTests } from "./board-face-contract.test.mjs";
 // milestone 21 — board-run-observability. story 00 (run-observability): the
 // additive /api/work/run-status read route (the server-side @executable scenarios)
@@ -181,7 +180,6 @@ import { uiDirectoryBudgetTests } from "./ui-directory-budget.test.mjs";
 //   BOTH lists, `surfaceMountFor` answers "there is nothing to mount and nothing is wrong" —
 //   three booleans byte-identical to today's, no red, no console line, no address-bar evidence,
 //   and the operator gets a placeholder while a real home sits mounted by nobody.
-import { terminalsHomeRouteTests } from "./terminals-home-route.test.mjs";
 //   …and task 01, the page's own states: ONE total selector over every payload the face can
 //   serve, TWO empty states (E2 is the one the live fleet is measurably in — every node reports
 //   an empty index while two report runs, because the bundle wires session hooks for Codex only),
@@ -189,7 +187,6 @@ import { terminalsHomeRouteTests } from "./terminals-home-route.test.mjs";
 //   that names the fault, and no command anywhere: which command wires Claude's hooks is a
 //   producer-side decision the architect still owns, and the house's own `EmptyFleet` prints three
 //   different ones in exactly this slot.
-import { terminalsHomePageStatesTests } from "./terminals-home-page-states.test.mjs";
 //   task 01 — the home's mount declaration: the SAME thirteen-key shape the fleet's producer
 //   returns, `interactive` as ONE literal at ONE call site (the word m46 left, changed here and
 //   nowhere else), NARROWED by the feed axis to a LABELLED read-only whenever a keystroke would
@@ -215,7 +212,6 @@ import { terminalsHomePageStatesTests } from "./terminals-home-page-states.test.
 //   task 04 — focus and expand: twelve tiles are ONE tab stop, arrows move by rendered geometry,
 //   and `Enter` presents the pane for the price of a layout change.
 //   task 05 — one live region, not N — and the other three hosts keep their own.
-import { terminalsHomeGridTests } from "./terminals-home-grid.test.mjs";
 // ── milestone 45 / story 01 — THE ROUTE MODEL (ADR-001/002/003/006): apps/ui/src/app/routes.mjs,
 // the ONE pure route table (`routeFor`) plus the ONE legacy `?mode=` translation
 // (`legacyRedirectFor`). Framework-free by contract — this repo has NO React test harness, so
@@ -252,11 +248,8 @@ import { terminalsHomeGridTests } from "./terminals-home-grid.test.mjs";
 //     through its own error state before it ever gets there.
 // (04_app-shell-visual-review is @uat — a person's render verdict — and deliberately has no
 // suite here.)
-import { shellEntryPlanTests } from "./shell-entry-plan.test.mjs";
 import { shellRegionsTests } from "./shell-regions.test.mjs";
 import { shellNavigationTests } from "./shell-navigation.test.mjs";
-import { shellNotFoundAndFullscreenTests } from "./shell-not-found-and-fullscreen.test.mjs";
-import { shellSurfaceContainmentTests } from "./shell-surface-containment.test.mjs";
 // milestone 45 / story 02 (ADR-004) — the BEHAVIOURAL half of the static-serving rules, and
 // the traceability wiring for all three of that story's @executable task features
 // (00_one-traversal-guard, 01_history-fallback, 02_missing-asset-still-404s). Real HTTP
@@ -311,7 +304,6 @@ import { boardStalenessA11yTests } from "./board-staleness-a11y.test.mjs";
 //   the outcome window (3 × HOME_POLL_MS) as two numbers waiting on two facts, the GRID as the
 //   success authority and the lane as the failure one, a late arrival clearing `no answer`, a
 //   NEW sessionId on every retry, and one lane per coded refusal.
-import { homeSessionLauncherStateTests } from "./home-session-launcher-states.test.mjs";
 
 // milestone 133 / story 04 — the diagram figure module, headless (ADR-007 §4).
 export const tests = [
@@ -325,7 +317,6 @@ export const tests = [
   // milestone 46 / story 05 — the dock's home in the shell (tasks 00-02's @executable halves; 03
   // is @uat), and the gate the `fixed inset-0` prohibition never had.
   ...shellDockRegionTests,
-  ...shellDockInsetAndClampTests,
   ...boardFaceContractTests,
   // milestone 21 — board-run-observability (story 00: run-observability route +
   // pure helpers; story 01: rerun verb + in-flight predicate)
@@ -365,20 +356,14 @@ export const tests = [
   // deletion and the file-budget accounting by the gate's OWN arithmetic); task 01 is the page's
   // own states. Task 00's last scenario is @manual and task 01's is @uat — recorded at
   // `aof:verify 49`, not here.
-  ...terminalsHomeRouteTests,
-  ...terminalsHomePageStatesTests,
   // milestone 49 / story 05 — the grid of live panes: the row set and its ONE sort site, the
   // socket every subscribed tile really constructs (mounted through the PRODUCT's own grid, never
   // a stub), the honest feed states, the cap that lists rather than evicts, the roving stop and
   // the expand door, and the one live region that replaced twelve.
-  ...terminalsHomeGridTests,
   // milestone 45 / story 01 — the route model (tasks 00–02, all @executable)
   // milestone 45 / story 03 — the app shell & the entry (tasks 00–03; 04 is @uat)
-  ...shellEntryPlanTests,
   ...shellRegionsTests,
   ...shellNavigationTests,
-  ...shellNotFoundAndFullscreenTests,
-  ...shellSurfaceContainmentTests,
   // milestone 45 / story 02 — the static-serving leaf (tasks 00–02, all @executable)
   ...staticServeFallbackTests,
   ...inAppCrossLinksTests,
@@ -395,6 +380,5 @@ export const tests = [
   ...boardStalenessA11yTests,
   // milestone 50 / story 04 lane C — the new-session picker (task 01) and the
   // operator-visible state machine (task 02), both over the pure launcher module
-  ...homeSessionLauncherStateTests,
   // milestone 133 / story 04 — the ARCHITECTURE tab's diagram figures (task 01).
 ];

@@ -13,7 +13,7 @@
 //   - esbuild-bundles the REAL, UNMODIFIED .tsx entry (with its real siblings
 //     bundled in — nothing about the code under test is stubbed);
 //   - substitutes ONLY the environment React itself would provide: a minimal
-//     react / react/jsx-runtime (test/support/mini-react.mjs), `location` /
+//     react / react/jsx-runtime (apps/ui/test/support/mini-react.mjs), `location` /
 //     `history` / `window`, a `fetch` that resolves the app's same-origin
 //     relative URLs against the fixture server's real origin — plus whatever
 //     leaf the CALLER declares unmountable here (the ONE xterm terminal control

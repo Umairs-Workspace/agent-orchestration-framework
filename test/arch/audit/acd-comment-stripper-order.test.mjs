@@ -18,7 +18,7 @@
 // WHAT IS ASSERTED. For every module under the scanned roots that removes block comments at
 // all: some LINE-comment removal must come FIRST. Both house spellings of "remove line
 // comments" count — a `.replace(` over a `//` pattern, and the `.filter(`/`.map(` form that
-// drops or blanks `//` lines while walking them (`test/support/terminal-gate-detectors.mjs`,
+// drops or blanks `//` lines while walking them (`apps/ui/test/support/terminal-gate-detectors.mjs`,
 // which was already correct and already carries the self-check this file generalises).
 //
 // THE BASELINE IS NAMED AND SHRINK-ONLY, in `acd-test-suite-registration`'s idiom: four files

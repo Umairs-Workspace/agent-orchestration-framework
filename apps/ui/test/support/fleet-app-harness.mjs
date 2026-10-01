@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import { withMountedApp, findAll, textOf, FRAGMENT } from "./react-app-harness.mjs";
 import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, XTERM_RESOLVE, XTERM_STUBS } from "./terminal-dom.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 // The ONE terminal control (m46/04, re-pointed off the deleted `terminal-view/FleetTerminalView`)

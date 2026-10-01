@@ -49,7 +49,7 @@ import {
   RESYNC_WATCH_INTERVALS,
 } from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../support/board-app-harness.mjs";
+import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../../apps/ui/test/support/board-app-harness.mjs";
 
 const NODE = "umamis-mac-mini";
 const at = (secondsFromNow) => new Date(BOARD_EPOCH + secondsFromNow * 1000).toISOString();

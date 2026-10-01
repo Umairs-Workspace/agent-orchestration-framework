@@ -48,8 +48,8 @@ import {
   homeFaultMessage,
   homePageState,
   homeSlotSummary,
-} from "../../apps/ui/src/home/page-state.mjs";
-import { withShellComposedHome, findAll, textOf } from "../support/shell-app-harness.mjs";
+} from "../src/home/page-state.mjs";
+import { withShellComposedHome, findAll, textOf } from "./support/shell-app-harness.mjs";
 
 const NOW = "2026-08-13T09:00:00.000Z";
 const ADDRESS = (pathname = "/") => ({ pathname, search: "", hash: "" });

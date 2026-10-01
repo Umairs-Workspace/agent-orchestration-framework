@@ -39,7 +39,7 @@
 // …AND "UNTESTABLE HERE" IS NOT A LICENCE, which is the lesson of 2026-08-09: the whole of that
 // day's blocker — a control that rendered correctly and never opened a socket, at both call sites,
 // for both sources — lived in the `.tsx`, under this gate, with 537 tests green.
-// `test/session/terminal-control-opens-its-socket.test.mjs` now MOUNTS the real component (mini-react
+// `apps/ui/test/terminal-control-opens-its-socket.suite.mjs` now MOUNTS the real component (mini-react
 // attaches host nodes to refs on request) and asserts the socket. The split below is unchanged and
 // still right; what changed is that the residue in the `.tsx` is no longer beyond reach.
 //
@@ -64,7 +64,7 @@ import {
   stripComments,
   stripperSelfCheck,
   nonVacuousSource,
-} from "../../support/terminal-gate-detectors.mjs";
+} from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 // The one home of the frozen table, and the ONLY file allowed to write a descriptor's fields.

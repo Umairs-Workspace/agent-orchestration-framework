@@ -172,7 +172,7 @@ export function createClock({ epoch = null } = {}) {
 // ever assigns a node to, so every effect guarded by `if (!ref.current) return;` early-returns
 // for the whole life of a mount. That is not a cosmetic divergence from React — it is the exact
 // guard the one terminal control opens its WebSocket behind, so a suite mounting it here could
-// only ever prove that no socket was opened. `test/session/terminal-control-opens-its-socket.test.mjs`
+// only ever prove that no socket was opened. `apps/ui/test/terminal-control-opens-its-socket.suite.mjs`
 // is what needed it and is the reason it exists.
 //
 // It stays OPT-IN because a stand-in node is a stand-in: it answers the handful of DOM calls the

@@ -70,9 +70,9 @@
 import assert from "node:assert/strict";
 import { freshness } from "../../apps/ui/src/board/freshness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../support/board-app-harness.mjs";
+import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../../apps/ui/test/support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp } from "../support/fleet-app-harness.mjs";
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 
 const WINDOW = 300;
 const NODE = "umamis-mac-mini";

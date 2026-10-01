@@ -30,8 +30,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { FRESHNESS_GLYPH, freshness } from "../../apps/ui/src/board/freshness.mjs";
-import { bundleSurface } from "../support/react-app-harness.mjs";
-import { createRuntime } from "../support/mini-react.mjs";
+import { bundleSurface } from "../../apps/ui/test/support/react-app-harness.mjs";
+import { createRuntime } from "../../apps/ui/test/support/mini-react.mjs";
 import {
   RESYNC_LABEL_ACCEPTED,
   RESYNC_LABEL_IDLE,
@@ -40,7 +40,7 @@ import {
   resyncView,
 } from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp, BOARD_EPOCH, findAll, textOf, visibleTextOf } from "../support/board-app-harness.mjs";
+import { withBoardApp, BOARD_EPOCH, findAll, textOf, visibleTextOf } from "../../apps/ui/test/support/board-app-harness.mjs";
 
 const WINDOW = 300;
 const NODE = "umamis-mac-mini";

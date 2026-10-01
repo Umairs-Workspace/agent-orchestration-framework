@@ -11,7 +11,7 @@
 //     observable-behaviour claims about the terminal's two motion-carrying states.
 // Copying the detector would put the mechanism in two places inside the very milestone whose
 // finding is a mechanism claimed in one place and implemented in none. One home, two readers —
-// the same argument `test/support/terminal-gate-detectors.mjs` records for its own existence.
+// the same argument `apps/ui/test/support/terminal-gate-detectors.mjs` records for its own existence.
 //
 // COMMENTS ARE STRIPPED BEFORE EVERY READING, AND THAT IS THE WHOLE POINT HERE.
 // The defect this milestone found is a COMMENT that claimed the escape existed

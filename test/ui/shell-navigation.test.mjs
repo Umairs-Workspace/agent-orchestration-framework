@@ -32,9 +32,9 @@ import {
   probeFleetOrigin,
 } from "../../apps/ui/src/app/shell-nav.mjs";
 import { ROUTES } from "../../apps/ui/src/app/routes.mjs";
-import { withShellApp, withShellComposedBoard } from "../support/shell-app-harness.mjs";
+import { withShellApp, withShellComposedBoard } from "../../apps/ui/test/support/shell-app-harness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { findAll } from "../support/mini-react.mjs";
+import { findAll } from "../../apps/ui/test/support/mini-react.mjs";
 
 function addressOf(address) {
   const [beforeHash, ...hashRest] = address.split("#");

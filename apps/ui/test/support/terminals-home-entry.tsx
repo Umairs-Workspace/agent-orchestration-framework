@@ -19,8 +19,8 @@
 // test process sets a different module instance's flag — the call succeeds, the flag reads true,
 // and the mounted control still offers no expand control.
 import type * as React from "react";
-import * as shellBus from "../../apps/ui/src/app/shell-bus.mjs";
-import { SessionGrid } from "../../apps/ui/src/home/SessionGrid";
+import * as shellBus from "../../src/app/shell-bus.mjs";
+import { SessionGrid } from "../../src/home/SessionGrid";
 
 export { shellBus };
 

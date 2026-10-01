@@ -28,8 +28,8 @@
 // decides nothing about which rows become panes, what any pane says, or how many may subscribe.
 // Those are milestone 49's product stories and none of them is here.
 import type * as React from "react";
-import * as shellBus from "../../apps/ui/src/app/shell-bus.mjs";
-import { TerminalControl } from "../../apps/ui/src/terminal/TerminalControl";
+import * as shellBus from "../../src/app/shell-bus.mjs";
+import { TerminalControl } from "../../src/terminal/TerminalControl";
 
 export { shellBus };
 

@@ -19,7 +19,7 @@ import {
   uiDirectoryBudget,
   uiDirectoryBudgetViolations,
 } from "../arch/testing/acd-ui-directory-budget.test.mjs";
-import { isUiSourceFile } from "../support/ui-source-files.mjs";
+import { isUiSourceFile } from "../../apps/ui/test/support/ui-source-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -207,10 +207,10 @@ export const uiDirectoryBudgetTests = [
     run: async () => {
       const { readFile } = await import("node:fs/promises");
       const perFile = await readFile(path.join(repoRoot, "test/arch/testing/acd-ui-surface-file-budget.test.mjs"), "utf8");
-      assert.match(perFile, /from "(?:\.\.\/)+support\/ui-source-files\.mjs"/, "the per-FILE ratchet imports the shared predicate");
+      assert.match(perFile, /from "(?:\.\.\/)+(?:apps\/ui\/test\/)?support\/ui-source-files\.mjs"/, "the per-FILE ratchet imports the shared predicate");
       assert.ok(!/\/\\\.\(tsx\?\|mts\|mjs\)\$\//.test(perFile), "…and no longer re-types it");
       const perDirectory = await readFile(path.join(repoRoot, "test/arch/testing/acd-ui-directory-budget.test.mjs"), "utf8");
-      assert.match(perDirectory, /from "(?:\.\.\/)+support\/ui-source-files\.mjs"/, "the per-DIRECTORY ratchet imports the same one");
+      assert.match(perDirectory, /from "(?:\.\.\/)+(?:apps\/ui\/test\/)?support\/ui-source-files\.mjs"/, "the per-DIRECTORY ratchet imports the same one");
 
       // …and the reconciliation this predicate makes reproducible: 96 in directories + 2 root
       // modules = 98, where ARCHITECTURE §Codebase health quotes 99 by counting `index.css`.

@@ -40,12 +40,12 @@ import {
   fullscreenReducer,
   fullscreenState,
   presentedStateModel,
-} from "../../apps/ui/src/app/shell-layout.mjs";
-import { routeFor } from "../../apps/ui/src/app/routes.mjs";
-import { entryPlanFor, addressToString } from "../../apps/ui/src/app/entry.mjs";
-import { navModel } from "../../apps/ui/src/app/shell-nav.mjs";
-import { withShellApp } from "../support/shell-app-harness.mjs";
-import { findAll, textOf } from "../support/mini-react.mjs";
+} from "../src/app/shell-layout.mjs";
+import { routeFor } from "../src/app/routes.mjs";
+import { entryPlanFor, addressToString } from "../src/app/entry.mjs";
+import { navModel } from "../src/app/shell-nav.mjs";
+import { withShellApp } from "./support/shell-app-harness.mjs";
+import { findAll, textOf } from "./support/mini-react.mjs";
 
 function addressOf(address) {
   const [beforeHash, ...hashRest] = address.split("#");

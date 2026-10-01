@@ -19,6 +19,18 @@ import { homeFeedAxisTests } from "./home-feed-axis.suite.mjs";
 import { homeLayoutFilterTests } from "./home-layout-filter.suite.mjs";
 import { homeSessionLauncherPickerTests } from "./home-session-launcher.suite.mjs";
 import { homeSessionMountTests } from "./home-session-mount.suite.mjs";
+import { terminalControlHeaderYieldTests } from "./terminal-control-header-yield.suite.mjs";
+import { terminalControlOpensItsSocketTests } from "./terminal-control-opens-its-socket.suite.mjs";
+import { terminalHarnessDrivesAGridTests } from "./terminal-harness-drives-a-grid.suite.mjs";
+import { terminalHarnessShellFocusKeyboardTests } from "./terminal-harness-shell-focus-keyboard.suite.mjs";
+import { homeSessionLauncherStateTests } from "./home-session-launcher-states.suite.mjs";
+import { shellDockInsetAndClampTests } from "./shell-dock-inset-and-clamp.suite.mjs";
+import { shellEntryPlanTests } from "./shell-entry-plan.suite.mjs";
+import { shellNotFoundAndFullscreenTests } from "./shell-not-found-and-fullscreen.suite.mjs";
+import { shellSurfaceContainmentTests } from "./shell-surface-containment.suite.mjs";
+import { terminalsHomeGridTests } from "./terminals-home-grid.suite.mjs";
+import { terminalsHomePageStatesTests } from "./terminals-home-page-states.suite.mjs";
+import { terminalsHomeRouteTests } from "./terminals-home-route.suite.mjs";
 
 export const tests = [
   ...terminalCollapseIsNotHideTests,
@@ -42,4 +54,16 @@ export const tests = [
   ...homeLayoutFilterTests,
   ...homeSessionLauncherPickerTests,
   ...homeSessionMountTests,
+  ...terminalControlHeaderYieldTests,
+  ...terminalControlOpensItsSocketTests,
+  ...terminalHarnessDrivesAGridTests,
+  ...terminalHarnessShellFocusKeyboardTests,
+  ...homeSessionLauncherStateTests,
+  ...shellDockInsetAndClampTests,
+  ...shellEntryPlanTests,
+  ...shellNotFoundAndFullscreenTests,
+  ...shellSurfaceContainmentTests,
+  ...terminalsHomeGridTests,
+  ...terminalsHomePageStatesTests,
+  ...terminalsHomeRouteTests,
 ];

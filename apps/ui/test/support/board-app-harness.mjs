@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { withMountedApp, findAll, textOf, visibleTextOf, FRAGMENT } from "./react-app-harness.mjs";
 import { TERMINAL_CONTROL_FILTER, TERMINAL_CONTROL_STUB, XTERM_RESOLVE, XTERM_STUBS } from "./terminal-dom.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 const BOARD_TSX = path.join(repoRoot, "apps", "ui", "src", "board", "Board.tsx");
 
 // milestone 46 / story 04 — the stub RE-POINTS with the code. The board no longer owns a

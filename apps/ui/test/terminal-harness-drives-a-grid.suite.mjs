@@ -17,7 +17,7 @@
 // the other's failures — a red assertion is "the grid isn't finished" on Monday and "the harness
 // can't see it yet" on Tuesday, and nothing is ever wrong. So the new N-capable path is driven
 // first at behaviour that is ALREADY TRUE AND ALREADY ASSERTED: the shipping board dock and the
-// shipping fleet card, which `test/session/terminal-control-opens-its-socket.test.mjs` pins exhaustively.
+// shipping fleet card, which `apps/ui/test/terminal-control-opens-its-socket.suite.mjs` pins exhaustively.
 // **If the entry-parameterised path cannot reproduce m46's own passing assertions at N=1, it is
 // not ready to be believed at N=12.** Lanes `grid/01` and `grid/02` are that proof, and they are
 // first deliberately. Every value in them is copied from that suite rather than invented beside
@@ -39,19 +39,19 @@ import {
   CONTROL_RESOLVE,
   CONTROL_TSX,
   findAll,
-} from "../support/terminal-control-harness.mjs";
-import { bundleCacheKey, bundleSurface } from "../support/react-app-harness.mjs";
-import { TERMINAL_CONTROL_STUB } from "../support/terminal-dom.mjs";
-import { terminalControlOpensItsSocketTests } from "./terminal-control-opens-its-socket.test.mjs";
-import { terminalControlHeaderYieldTests } from "./terminal-control-header-yield.test.mjs";
-import { boardDockMount } from "../../apps/ui/src/board/dock-mount.mjs";
-import { fleetTerminalMount } from "../../apps/ui/src/fleet/terminal-mount.mjs";
-import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../../apps/ui/src/terminal/host-model.mjs";
-import { IDLE_PANE_LINE } from "../../apps/ui/src/terminal/state-ramp.mjs";
+} from "./support/terminal-control-harness.mjs";
+import { bundleCacheKey, bundleSurface } from "./support/react-app-harness.mjs";
+import { TERMINAL_CONTROL_STUB } from "./support/terminal-dom.mjs";
+import { terminalControlOpensItsSocketTests } from "./terminal-control-opens-its-socket.suite.mjs";
+import { terminalControlHeaderYieldTests } from "./terminal-control-header-yield.suite.mjs";
+import { boardDockMount } from "../src/board/dock-mount.mjs";
+import { fleetTerminalMount } from "../src/fleet/terminal-mount.mjs";
+import { HOST_BOARD_DOCK, HOST_FLEET_CARD, WATCH_LABEL } from "../src/terminal/host-model.mjs";
+import { IDLE_PANE_LINE } from "../src/terminal/state-ramp.mjs";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const GRID_ENTRY = path.join(repoRoot, "test", "support", "terminal-grid-entry.tsx");
-const FOCUS_ENTRY = path.join(repoRoot, "test", "support", "terminal-focus-entry.tsx");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
+const GRID_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "terminal-grid-entry.tsx");
+const FOCUS_ENTRY = path.join(repoRoot, "apps", "ui", "test", "support", "terminal-focus-entry.tsx");
 
 // An EPHEMERAL board origin, as production has, and the fleet's fixed one — m46's own values.
 const BOARD_ORIGIN = "http://127.0.0.1:41773";
@@ -79,8 +79,8 @@ const focusFixtureOptions = { entry: FOCUS_ENTRY, exportName: "FocusFixture", te
 // "they still pass" — it is that they were not rewritten around a new signature to make N work,
 // which is the cheapest way to break the promise this story makes to every existing lane.
 const SHIPPING_CONSUMERS = [
-  "test/session/terminal-control-opens-its-socket.test.mjs",
-  "test/session/terminal-control-header-yield.test.mjs",
+  "apps/ui/test/terminal-control-opens-its-socket.suite.mjs",
+  "apps/ui/test/terminal-control-header-yield.suite.mjs",
 ];
 const sourceOf = (relative) => readFileSync(path.join(repoRoot, relative), "utf8");
 

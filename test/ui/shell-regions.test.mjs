@@ -7,7 +7,7 @@
 // below reads that model.
 //
 // THREE CLAUSES ARE ABOUT THE DOCUMENT, NOT THE MODEL, and they are driven through the REAL
-// rendered tree instead (test/support/shell-app-harness.mjs, and the fleet's and board's own
+// rendered tree instead (apps/ui/test/support/shell-app-harness.mjs, and the fleet's and board's own
 // harnesses): that exactly one `banner` and one `<main>` SURVIVE the absorption of the
 // surfaces' own bars, that the skip link is the FIRST focusable element, and that no routed
 // surface paints a brand mark or a wordmark of its own. A model cannot see any of those, and
@@ -54,11 +54,11 @@ import {
   topBarModel,
 } from "../../apps/ui/src/app/shell-layout.mjs";
 import { routeFor } from "../../apps/ui/src/app/routes.mjs";
-import { withShellApp, withShellComposedFleet } from "../support/shell-app-harness.mjs";
-import { withFleetApp } from "../support/fleet-app-harness.mjs";
-import { withBoardApp } from "../support/board-app-harness.mjs";
+import { withShellApp, withShellComposedFleet } from "../../apps/ui/test/support/shell-app-harness.mjs";
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
+import { withBoardApp } from "../../apps/ui/test/support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { findAll, textOf } from "../support/mini-react.mjs";
+import { findAll, textOf } from "../../apps/ui/test/support/mini-react.mjs";
 
 // An origin nothing is listening on. These lanes are STRUCTURAL — they ask what a surface
 // contributes and what landmarks it declares, which is true in every page state — so the
@@ -757,7 +757,7 @@ export const shellRegionsTests = [
   // the shell draws exactly one card of its own. The wrapper's whole reason survives unchanged
   // (`min-h-full` centres nothing against a parent with no definite height), and it is asserted
   // here on the one state that still reaches it; that the OTHER state no longer does is asserted
-  // where it belongs, at test/ui/terminals-home-route.test.mjs's scenario 6.
+  // where it belongs, at apps/ui/test/terminals-home-route.suite.mjs's scenario 6.
   // ======================================================================
   {
     name: "shell-regions/01 the shell's own card state (not-found, ALONE since m49/04) has ONE centred wrapper with a real height — never `min-h-full` against a parent that has none (01 scenario 5)",
@@ -872,7 +872,7 @@ export const shellRegionsTests = [
             // SETTLED BY RENDER PASSES RATHER THAN `flush()`, and the reason is a property of
             // the INSTRUMENT, recorded here because it looks like a workaround otherwise.
             // `flush()` waits for the render to go STABLE, and this composition never does
-            // under `test/support/mini-react.mjs`: that renderer re-invokes every function
+            // under `apps/ui/test/support/mini-react.mjs`: that renderer re-invokes every function
             // component on every pass (it has no equivalent of React's bail-out when a child
             // ELEMENT is referentially identical), so `<Fleet>` is re-invoked whenever the
             // shell re-renders, its `onRefresh` (Fleet.tsx:222, an inline arrow at the call

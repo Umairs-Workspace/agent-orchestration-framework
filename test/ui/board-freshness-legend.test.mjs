@@ -29,10 +29,10 @@
 import assert from "node:assert/strict";
 import { FRESHNESS_GLYPH } from "../../apps/ui/src/board/freshness.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
-import { withBoardApp, BOARD_EPOCH, isBadgeNode } from "../support/board-app-harness.mjs";
+import { withBoardApp, BOARD_EPOCH, isBadgeNode } from "../../apps/ui/test/support/board-app-harness.mjs";
 import { withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll } from "../support/fleet-app-harness.mjs";
-import { visibleTextOf } from "../support/mini-react.mjs";
+import { withFleetApp, findAll } from "../../apps/ui/test/support/fleet-app-harness.mjs";
+import { visibleTextOf } from "../../apps/ui/test/support/mini-react.mjs";
 
 const NODE = "umamis-mac-mini";
 const at = (secondsFromNow) => new Date(BOARD_EPOCH + secondsFromNow * 1000).toISOString();

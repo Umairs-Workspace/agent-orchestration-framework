@@ -18,8 +18,8 @@
 // The stub is the same ONE leaf the fleet's own harness stubs, for the same reason: the
 // terminal view wants xterm and a real DOM canvas, it has its own suites, and rendering
 // nothing is exactly what production does for an assignment with no live session.
-import { Shell } from "../../apps/ui/src/app/Shell";
-import { Fleet } from "../../apps/ui/src/fleet/Fleet";
+import { Shell } from "../../src/app/Shell";
+import { Fleet } from "../../src/fleet/Fleet";
 
 type CompositionProps = Record<string, unknown>;
 

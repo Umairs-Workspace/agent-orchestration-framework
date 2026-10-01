@@ -40,7 +40,7 @@ import {
   nonVacuousSource,
   portLiteralsIn,
   buildsASocketUrl,
-} from "../../support/terminal-gate-detectors.mjs";
+} from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
 
 export const archTests = [
   // ══ THE STRIPPER ITSELF, FIRST. Every clause below is an ABSENCE sweep over a

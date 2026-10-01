@@ -39,7 +39,7 @@ import { fileURLToPath } from "node:url";
 import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStopRung } from "../../apps/ui/src/fleet/runs.mjs";
 import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 import { removeWorkspaceFromProjection, withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll, textOf } from "../support/fleet-app-harness.mjs";
+import { withFleetApp, findAll, textOf } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
 const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
 import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";

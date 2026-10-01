@@ -18,7 +18,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { ROUTES, routeFor } from "../../apps/ui/src/app/routes.mjs";
+import { ROUTES, routeFor } from "../src/app/routes.mjs";
 import {
   applyEntryPlan,
   entryPlanFor,
@@ -26,10 +26,10 @@ import {
   surfaceMountFor,
   HISTORY_NONE,
   HISTORY_REPLACE,
-} from "../../apps/ui/src/app/entry.mjs";
-import { scopeFromSearch } from "../../apps/ui/src/fleet/scope.mjs";
-import { withShellApp } from "../support/shell-app-harness.mjs";
-import { findAll, textOf } from "../support/mini-react.mjs";
+} from "../src/app/entry.mjs";
+import { scopeFromSearch } from "../src/fleet/scope.mjs";
+import { withShellApp } from "./support/shell-app-harness.mjs";
+import { findAll, textOf } from "./support/mini-react.mjs";
 
 // A history that RECORDS instead of navigating. The entry's obligations are all about the
 // call — one `replaceState`, no `pushState` ever, to the plan's own composed address — and a
@@ -48,7 +48,7 @@ function spyHistory() {
   };
 }
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // A `location`-shaped record, the way the entry reads one and the way a browser presents one:
 // `search` carries its own "?", `hash` its own "#", and either may be "". Composing a URL
@@ -251,7 +251,7 @@ export const shellEntryPlanTests = [
       // tree and became a surface the shell HOSTS, inside `SurfaceBoundary`. A static card was
       // safe outside the crash net; a surface that fetches, polls and holds sockets is not.
       // Its truth table — including the HALF-LANDED row whose three booleans are byte-identical
-      // to today's — is driven exhaustively by test/ui/terminals-home-route.test.mjs.
+      // to today's — is driven exhaustively by apps/ui/test/terminals-home-route.suite.mjs.
       const mapped = ["landing", "fleet", "board", "config"];
 
       for (const id of mapped) {
@@ -479,8 +479,8 @@ export const shellEntryPlanTests = [
       // story forces no edit on them, and every existing behavioural suite driving those two
       // surfaces keeps its expectations.
       for (const [harness, surface] of [
-        ["test/support/fleet-app-harness.mjs", "apps/ui/src/fleet/Fleet.tsx"],
-        ["test/support/board-app-harness.mjs", "apps/ui/src/board/Board.tsx"],
+        ["apps/ui/test/support/fleet-app-harness.mjs", "apps/ui/src/fleet/Fleet.tsx"],
+        ["apps/ui/test/support/board-app-harness.mjs", "apps/ui/src/board/Board.tsx"],
       ]) {
         const source = await readFile(path.join(repoRoot, harness), "utf8");
         const parts = surface.split("/");

@@ -52,7 +52,7 @@
 // or :4182.
 import assert from "node:assert/strict";
 import { withTwoWorkspaceAssignFixture, publishRepoInto, withEmptyFleetFace, withRefusingFace } from "../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp, findAll } from "../support/fleet-app-harness.mjs";
+import { withFleetApp, findAll } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 import {
   documentFacts,
   mentionsFact,
@@ -67,7 +67,7 @@ import {
   chipClear,
   clickNode,
   refreshControl,
-} from "../support/fleet-filter-readers.mjs";
+} from "../../apps/ui/test/support/fleet-filter-readers.mjs";
 import { POLL_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 
 const FLEET = "/fleet";
