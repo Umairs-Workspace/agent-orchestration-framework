@@ -88,7 +88,7 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
 }
 
 // The real CLI in `dir`, under the process's (the harness's isolated) global home.
-const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "packages", "core", "bin", "aof.mjs");
+const BIN = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 function cliIn(dir, args) {
   const run = spawnSync(process.execPath, [BIN, ...args], { cwd: dir, encoding: "utf8", windowsHide: true, env: { ...process.env } });
   return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
