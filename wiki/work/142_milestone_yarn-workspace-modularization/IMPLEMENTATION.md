@@ -2133,3 +2133,16 @@ All 134 CLI integration cases, all 118 Rust tests and the desktop shell cargo ch
 Plan 05's current-layout implementation is delivered. Final application-layout confirmation awaits
 Plan 04. Other native/platform execution and signing remain Plan 08; inherited source-reader and
 generated/citation findings retain Plans 06/07/08 assignments.
+
+## Plans 04, 07 and 08 — apps layout, asset reconciliation, final verification (2026-10-01)
+
+UI and desktop now live at `apps/ui` (workspace `@aof/ui`) and `apps/desktop` (new private `@aof/desktop` wrapping Cargo).
+Canonical asset citations were retargeted at the final owning files, the manifest regenerated, and — within the operator's
+explicit approvals — 35 generated copies, their lock hashes and `wiki/work/loops.md` refreshed. Two migration regressions
+were found and fixed: loop groundedness reported six stale anchors (framework `module:src/...` pointers now resolve through
+one core resolver and one shared declaration predicate), and tune provenance could not follow moved files (it now uses the
+one rename resolver). The whole-tree gate ran from a clean detached worktree: 11,537 root cases (12 failures: 7 fixed and
+re-run green, 1 aggregate-load flake passing in isolation, 4 pre-existing work-record ratchets), 13 workspace suites, 134 CLI
+integration cases, 118 Rust cases, supply-chain audit, immutable install, UI build, and a real Windows SEA release gate (8
+checks). The live desktop-app run, Linux/WSL re-run, macOS/arm64 and hosted CI remain open.
+Code commits: `ada86aef`, `66e3b47e`, `b0221661`, `2cd5d915`. Evidence: `plans/04-APPS.md`, `plans/07-ASSETS.md`, `plans/08-VERIFICATION.md`, `COMPLETION.md`.

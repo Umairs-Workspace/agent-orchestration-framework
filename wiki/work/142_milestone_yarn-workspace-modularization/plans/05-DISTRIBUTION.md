@@ -1,5 +1,9 @@
 # Plan 05 distribution and tooling evidence
 
+> **Update 2026-10-01:** Plan 04 relocated the apps. The Windows x64 gate (`build-sea` → `stage-release-assets` →
+> `verify-distribution`) was re-run on `2cd5d915` with `apps/ui` in place and passes all eight checks
+> ([08-VERIFICATION.md](08-VERIFICATION.md)). The Linux/WSL leg below was proved at `23676ce5` and has not been re-run.
+
 Implementation is delivered for the current layout. Plan 04 still owns relocating the applications
 and the desktop consumers as one batch. UI staging already follows the locked `@aof/ui` owner, and
 a relocated `apps/ui` fixture passes. Final app-layout confirmation and unexecuted release-matrix
