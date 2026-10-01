@@ -8,8 +8,9 @@ inferred from source inspection.
 
 **Verdict:** the migration is implemented and verified on this host (Windows x64). It is **not**
 claimed complete across the full platform matrix: the real desktop-app run, the Linux/WSL native leg on this
-revision, macOS/arm64 and the hosted CI release matrix remain open (below), and four pre-existing work-record
-ratchets remain red with documented dispositions.
+revision, macOS/arm64 and the hosted CI release matrix remain open (below), and three pre-existing work-record
+ratchets remain red with documented dispositions (the fourth, the wiki link floor, was a migration regression and is repaired —
+[09-CLEANUP](plans/09-CLEANUP.md)).
 
 | Requirement | Status | Current evidence |
 | --- | --- | --- |
@@ -40,8 +41,12 @@ ratchets remain red with documented dispositions.
 
 1. **Real desktop app**: launch, supervision/shutdown, terminal connection of a new build (operator-gated; app is running).
 2. **Linux/WSL native leg** on this revision; **macOS, arm64, hosted CI matrix, signing, publishing** (unavailable here).
-3. **Four pre-existing `work/this-tree-holds-what-is-live` ratchets** (reproduced on baseline `6a04b43`): need operator decisions on 142's
-   record format, backlog story contract, story 141's archival and the wiki link floor. Not changed to quiet tests.
+3. **Three `work/this-tree-holds-what-is-live` ratchets** (reproduced on baseline `6a04b43`): operator decisions on 142's record format
+   (it has no `SPEC.md`), the backlog story contract (`a-running-loop-is-visible-in-the-ui` declares neither `reads` nor `files`) and
+   story 141's archival. Not changed to quiet tests. The fourth, the wiki link floor, was not pre-existing in the form recorded: 1,057
+   links broke in the migration and were repaired (2,471 against the 2,317 floor).
+4. **The 505 assembled-application suites** stay at the root with the wiring evidence in [09-test-ledger.json](plans/09-test-ledger.json);
+   rewriting them per subject is an operator decision.
 
 ## What moved and the supported seams
 

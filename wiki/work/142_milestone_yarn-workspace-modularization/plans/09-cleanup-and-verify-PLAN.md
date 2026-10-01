@@ -1,8 +1,11 @@
 # Plan 09 — Cleanup and verify
 
-Status: pending. The final pass, after [Plan 08](08-final-verification-PLAN.md). Requested by the operator
+Status: executed 2026-10-01 — `[~]` marks work done in part, the rest recorded as an operator decision; see [09-CLEANUP](09-CLEANUP.md) for the record and [09-test-ledger.json](09-test-ledger.json) for the evidence. The final pass, after [Plan 08](08-final-verification-PLAN.md). Requested by the operator
 2026-10-01: double-check the refactor, and put every test where it belongs — the root `test/` folder is for
 cross-package integration only.
+
+Independent review 2026-10-01: **signoff withheld** at `dd8b610e`; see
+[findings and fresh verification](09-REVIEW.md). Each finding's resolution is in [09-CLEANUP](09-CLEANUP.md).
 
 ## Objective
 
@@ -32,36 +35,36 @@ Packages already hold 88 test files. These are starting observations, not move t
 
 ## Work
 
-- [ ] **Ledger.** Classify every root test file into a tracked `09-test-ledger.json`: owners reached (imports,
+- [x] **Ledger** (all 1,106 baseline files classified, names recorded): Classify every root test file into a tracked `09-test-ledger.json`: owners reached (imports,
   source paths read, processes spawned), verdict (move to `<home>` / rewrite then move / stays: reason), and its
   registered test names. Recompute rather than trusting the heuristic above.
-- [ ] **Move package-owned tests** in per-package batches. Preserve every test name, register each case
+- [x] **Move package-owned tests** (69 moved; names identical, 11,537): in per-package batches. Preserve every test name, register each case
   exactly once (root runner, package entry and the workspace-boundary census agree), keep source guards
   non-vacuous, and move shared helpers with their only consumer or into a package's test support.
-- [ ] **Create `apps/ui/test/`** with a test entry for UI-only suites. The `ui/` freeze digest hashes every
+- [x] **Create `apps/ui/test/`** (freeze narrowed, not re-pinned): with a test entry for UI-only suites. The `ui/` freeze digest hashes every
   tracked file under `apps/ui`: re-pin it once, with the measured diff (tests added, no `src/` byte changed), or
   narrow the freeze to `apps/ui/src` with the same measurement — decide in the batch, record which.
-- [ ] **Rewrite convenience-assembled tests** where the subject is one package; keep the rest with a reason.
-- [ ] **Update the readers**: `scripts/test.mjs` / `test-unit.mjs` registration, `test-workspace.mjs`, source-
+- [~] **Rewrite convenience-assembled tests** — NOT done: 505 suites stay, with the wiring evidence recorded; an operator decision: where the subject is one package; keep the rest with a reason.
+- [x] **Update the readers**: `scripts/test.mjs` / `test-unit.mjs` registration, `test-workspace.mjs`, source-
   directory budgets, accepted-suite ceilings (FF-5311), test-traceability pointers, CI and docs. Re-pins
   carry their reason; no floor is lowered to make a move pass.
-- [ ] **Double-check the refactor.** Sweep active code, scripts, workflows and docs for retired locations
+- [x] **Double-check the refactor.** Sweep active code, scripts, workflows and docs for retired locations
   (`src/`, `ui/`, `app/desktop`, root `bin/`, `src/bundle`); dead or forward-only files; unused exports and
   dependencies per package; duplicated helpers that should have one home; stale `.gitignore` entries; empty
   shells. Reconcile `TECH_DEBT` entries the migration discharged or created. Review the full
   `main..HEAD` diff once more for behaviour drift (commands, flags, outputs, persisted formats).
-- [ ] **Clean up**: remove migration-only scratch (ignored `.tmp/workspace-migration/` stays local),
+- [x] **Clean up**: remove migration-only scratch (ignored `.tmp/workspace-migration/` stays local),
   leftover worktrees and stray build output; confirm the local `aof` link targets `packages/core`.
-- [ ] Bring the four pre-existing `work/this-tree-holds-what-is-live` dispositions to the operator for a
+- [~] Bring the four pre-existing `work/this-tree-holds-what-is-live` dispositions to the operator for a
   decision (142's record format, story 141's archival, the backlog story contract, the wiki link floor).
 
 ## Verification and exit
 
-- [ ] Every root test file is cross-package or a repository-wide guard, with the ledger as evidence; every
+- [~] Every root test file is cross-package or a repository-wide guard, with the ledger as evidence; every
   package and `@aof/ui` runs its own suite green in isolation (`AOF_GLOBAL_HOME` isolated).
-- [ ] Registered-case total is unchanged or explained case by case; no test name lost or duplicated.
+- [x] Registered-case total is unchanged or explained case by case; no test name lost or duplicated.
 - [ ] Whole-tree gate from a clean detached worktree, the workspace suites, CLI integration, cargo, the UI
   build and the Windows distribution gate pass with only recorded dispositions.
-- [ ] The completion audit and plan index are updated; open platform items stay open.
+- [x] The completion audit and plan index are updated; open platform items stay open.
 
 Move tests in reversible batches; do not change production behaviour to make a test movable.

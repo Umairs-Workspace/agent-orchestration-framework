@@ -2,7 +2,7 @@
 
 Planning baseline: `e343d50` (`refactor: move domain transitions into owning workspaces`),
 2026-09-29. These are ordinary engineering plans, outside the AOF workflow. They do not
-create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host (Windows x64, 2026-10-01); Plan 09 (cleanup and verify) is pending. The open platform/desktop
+create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host (Windows x64, 2026-10-01); Plan 09 (cleanup and verify) is executed — see [09-CLEANUP](09-CLEANUP.md) for what moved and what is left to the operator. The open platform/desktop
 legs are listed in [08-VERIFICATION.md](08-VERIFICATION.md) and the [completion audit](../COMPLETION.md).
 
 The agreed boundaries remain in [SPEC](../SPEC.md) and [MIGRATION](../MIGRATION.md).
@@ -19,8 +19,9 @@ Graph MCP is already server-owned; the older knowledge row in COMPLETION is stal
 
 The last recorded copied-payload check retains 117 command definitions; the package-test bridge
 has 217 cases. These are baseline observations, not final verification or permanent count targets.
-Core now owns the installed product under `packages/core/`; its configured compatibility adapters
-and forwards remain private pending Plan 06. UI is at `ui/`, and desktop is at `app/desktop/`.
+Core owns the installed product under `packages/core/`; the compatibility forwards were retired by Plan 06. UI is at
+`apps/ui/` and desktop at `apps/desktop/`. 69 root test suites now live with the workspace that proves them
+(`apps/ui/test`, `packages/*/test`); the placement ledger is [09-test-ledger.json](09-test-ledger.json).
 
 ## Execution order
 
@@ -34,7 +35,7 @@ and forwards remain private pending Plan 06. UI is at `ui/`, and desktop is at `
 | [06 — Test ownership and adapter removal](06-tests-and-boundaries-PLAN.md) | Public APIs replace compatibility paths; whole-tree boundary checks enforce the architecture. | Prepare guards during 01; remove adapters after 02–05 |
 | [07 — Assets, citations and skill compatibility](07-assets-and-skills-PLAN.md) | Complete: shipped assets and required CLI operations agree with final source locations; [evidence](07-ASSETS.md). | Update per move; final sweep after 06 |
 | [08 — Final verification and handover](08-final-verification-PLAN.md) | Complete on this host: [verification and handover](08-VERIFICATION.md); platform limits explicit. | 01–07 |
-| [09 — Cleanup and verify](09-cleanup-and-verify-PLAN.md) | Pending: every test lives with the workspace it proves (root `test/` = cross-package integration and repository-wide guards); a final double-check and cleanup of the refactor. | 01–08 |
+| [09 — Cleanup and verify](09-cleanup-and-verify-PLAN.md) | Executed: 69 suites moved to their workspaces by measurement ([ledger](09-test-ledger.json)), the wiki link regressions repaired, the retired layout swept; the assembled-application suites and three work-record ratchets are left to the operator. [Record and final gate](09-CLEANUP.md). | 01–08 |
 
 Numbers describe the main sequence, not permission to leave intermediate builds broken. Bring
 distribution changes, architecture-reader updates and canonical citation fixes into the batch

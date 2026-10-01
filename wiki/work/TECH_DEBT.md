@@ -1508,7 +1508,9 @@ worth buying for a path no measured producer can reach.
 
 **Status:** open (raised 2026-08-13 during story 49/00's structural review, which watched it happen to
 the story it was reviewing). **Severity:** silent destruction of uncommitted work, followed by a green
-test report over a tree that cannot build the UI at all.
+test report over a tree that cannot build the UI at all. **142 (2026-10-01):** the workspace is
+`apps/ui/` now (the `node_modules/@aof/ui` link is unchanged and still crosses into it), and it holds
+the UI's own tests since Plan 09 — a destroyed `apps/ui/` takes `@aof/ui`'s 776-case suite with it.
 
 > **UPDATE 2026-08-13, ~17:05 — IT HAPPENED A SECOND TIME, four hours later, and `npm` was not
 > involved.** The title above originally read *"A root-level `npm ci` can DELETE…"*. That framing is
@@ -3105,7 +3107,8 @@ admission (`src/mesh/worker-repo-admission.mjs`), taking the file **2,462 -> 1,9
 and 4 — worktree lifecycle and run bracketing — did NOT, so the entry stays open with its remaining
 scope narrowed to those two. The measurements below are the pre-split ones and are kept as the
 baseline the split is measured against; the file's path also changed at `119/01` (`src/` gained an
-interior), which is why the heading now spells it `src/mesh/`.
+interior), which is why the heading now spells it `src/mesh/`. **142 (2026-10-01):** `@aof/mesh` owns it now —
+`packages/mesh/src/worker-execution.mjs`, 1,871 lines; seams 3 and 4 are unchanged and still open.
 **2026-09-13 (`129/03` accept, 129/ADR-008 §4):** one verb of seam 3 paid the way seams 1 and 2 were —
 `commitWorktreeChanges` moved to `src/mesh/worktree.mjs` (absent definition, present re-export) and
 `resolveRefInWorktree` / `worktreeWorkDir` to `src/work/dispatch.mjs`, the two worker call sites

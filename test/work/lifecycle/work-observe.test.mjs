@@ -217,7 +217,7 @@ test("diagnostics: toolchain wait, thrash, interleave rhythm, and errors are com
   assert.equal(d.interleave.editActions, 6);
   assert.equal(d.interleave.editsPerTest, 1);
   assert.match(d.interleave.pattern, /tight fix-test loop/);
-  assert.equal(d.hotFiles.edited[0].file, "packages/core/src/interactions/router.ts");
+  assert.equal(d.hotFiles.edited[0].file, "src/interactions/router.ts");
   assert.equal(d.hotFiles.edited[0].count, 6);
   assert.equal(d.repeatedCommands[0].count, 6, "the same vitest suite re-run 6×");
   assert.equal(d.errors.toolErrors, 5, "five failing runs before the green one");
