@@ -102,4 +102,28 @@ runs) had a fixture expectation rewritten by the core move to a path its own inp
 
 ## Final gate
 
-(Recorded below after the clean-worktree run.)
+Run from clean detached worktrees (`git worktree add --detach`, `prepare-worktree.mjs`, `ui-build.mjs`, isolated
+`AOF_GLOBAL_HOME`), on Windows x64, 2026-10-01.
+
+**The whole tree now signs off in about 24 minutes, not ~1¾ hours.** The serial runner was stopped at 6,707 of 11,537 cases
+after ~55 minutes (one failure, the site-build fixture below, since fixed). `scripts/test-sharded.mjs` (`yarn test:sharded`) runs
+the same registry across 16 worker processes: every registered case is mapped to its file by identity before anything runs
+(a run that cannot account for a case refuses to start), each unit runs through the runner's own `runCases` with an isolated
+home, units go longest-first from recorded timings and slow files split into case chunks, a failed unit is retried once
+alone, and the integration and cargo lanes run once through `scripts/test.mjs --lanes-only`. FF-5311's residue was re-pinned
+for it with the measured diff.
+
+| Run | Cases | Wall | Result |
+| --- | --- | --- | --- |
+| Sharded #1 at `8478cc07` | 11,525 of 11,537 (12 lost to an import ring, now fixed) | 23.6 min | 5 real failures — all fixed in `681567f2`: the shard's import ring, two helper consolidations that broke FF-6304/2 and FF-7805, six exports FF-11903 needs, 12 archive links (54 > 52 in a clean tree) — plus the known ratchets; 4 load flakes |
+| Sharded #2 at `681567f2` | **11,537 of 11,537** | 23.8 min | Only the three operator ratchets and one unaudited import (fixed in `36988e87`, re-run green); 4 load flakes green alone, two of them a Windows `EBUSY` temp cleanup now retried in every fixture (`36988e87`) |
+| Workspace suites | 14 workspaces, 1,344 registered + 248 native | — | all green in isolation |
+| Integration + cargo lanes | inside the sharded runs | — | green |
+| UI build / supply-chain audit | — | — | pass / 0 warnings |
+| Windows distribution (`build-sea` → `stage-release-assets` → `verify-distribution`) | 8 checks | — | all pass, including the real SEA PTY round-trip and the built UI |
+
+Where the time goes (summed across workers, from `.tmp/test-timings.json`): 341 minutes in total. The process-spawning tail
+dominates (`loop-command-wave`, `loop-command-reconcile`, `work-dispatch-lanes`, the gate-propagation suites), and under 16-way
+load each of their cases runs several times slower than alone. The 643 files under 5 s sum to 25 minutes, so per-process start-up
+is not the limit. Further gains are in those suites themselves (the backlog story `the-whole-tree-run-signs-off-in-minutes`
+names them), not in more workers. Linux/WSL, macOS and the hosted CI matrix remain open, as recorded in 08-VERIFICATION.
