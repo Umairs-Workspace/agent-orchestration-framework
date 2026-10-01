@@ -536,7 +536,7 @@ export async function withTerminalControl(options, fn) {
     // reason on a day nobody changed anything.
     shellBus?.resetShellBus();
     restoreGlobals();
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

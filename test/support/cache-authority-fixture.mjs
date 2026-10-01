@@ -186,7 +186,7 @@ export async function breakItem(fx, ref, { workDir = fx.workDir } = {}) {
 // removeStream(fx) — the whole work stream disappears from under the publisher (the
 // read FAILS, which is not the same fact as "the stream is empty").
 export async function removeStream(fx, { workDir = fx.workDir } = {}) {
-  await rm(workDir, { recursive: true, force: true });
+  await rm(workDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 }
 
 // workerWorktree(fx, refs) — a SECOND, GENUINELY SEPARATE work dir standing in for the

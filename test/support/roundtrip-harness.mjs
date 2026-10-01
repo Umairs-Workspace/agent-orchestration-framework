@@ -55,7 +55,7 @@ export async function createRoundTripRepo() {
   // cleanup() removes the dir; `force: true` makes it safe when the dir is
   // already gone or cleanup runs twice (idempotent — never throws).
   const cleanup = async () => {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   };
 
   return { dir, cleanup };

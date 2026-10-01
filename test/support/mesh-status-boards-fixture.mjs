@@ -136,7 +136,7 @@ export async function withMeshStatusBoards({ local = null, peer = null, nodes = 
   } finally {
     if (previousHome === undefined) delete process.env.AOF_GLOBAL_HOME;
     else process.env.AOF_GLOBAL_HOME = previousHome;
-    await rm(repo, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

@@ -852,7 +852,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(file)).href)",
     "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "765728b44a15f6c043634d89749caf5bc8783f38355ce27bc6af575df51058af",
+    "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
     "reason": "Repository test tooling: imports the one suite file the sharded run assigned this unit, by path, so the unit never loads the registry. Same rule as `scripts/test.mjs --only`."
   },
   {
@@ -878,5 +878,13 @@
     "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
     "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
+  },
+  {
+    "file": "scripts/test-shard.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), \"test.mjs\")).href)",
+    "digest": "21a42fb352806b055fe00b19220e5c034f37c3cfb7aedb55d3a7dc625401743f",
+    "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
+    "reason": "Repository test tooling: a suite that imports the runner itself sits on an import ring with its directory index; the unit enters through `scripts/test.mjs` first, exactly as the whole-tree run does."
   }
 ]

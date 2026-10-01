@@ -80,7 +80,7 @@ export async function withMeshWorkerExecFixture(fn, { milestoneNumber = "35", st
 
     return await fn({ tmp, home, root, workDir, workspace, workspaceId, itemRef, env, ctx, headSha, git: (args) => git(root, args) });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

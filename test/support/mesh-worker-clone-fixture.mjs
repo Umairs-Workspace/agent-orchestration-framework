@@ -68,7 +68,7 @@ export async function withMeshCloneFixture(fn, { cloneUrl, milestoneNumber = "38
 
     return await fn({ tmp, home, root, workDir, workspace, workspaceId, itemRef, env, headSha, git: (args) => git(root, args) });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

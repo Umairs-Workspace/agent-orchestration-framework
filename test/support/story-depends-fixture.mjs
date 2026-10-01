@@ -81,7 +81,7 @@ export async function withStream(drivers, body, options) {
   try {
     return await body(work, root);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

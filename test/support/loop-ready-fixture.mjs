@@ -119,7 +119,7 @@ export async function makeLoopReadyRepo({
     globalHome,
     env,
     ctx,
-    cleanup: () => rm(repo, { recursive: true, force: true }),
+    cleanup: () => rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }),
   };
 }
 

@@ -169,7 +169,7 @@ export async function buildItemLine(fx, { cutFrom = "C1", workerCommits = 2, con
     } finally {
       git(fx.root, ["worktree", "remove", scratch]);
       git(fx.root, ["worktree", "prune"]);
-      await rm(scratch, { recursive: true, force: true });
+      await rm(scratch, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     }
   }
   [shape.W1, shape.W2] = shape.workerCommits;
@@ -195,7 +195,7 @@ export async function seedOriginOnlyCommit(fx, { onto = "control", file = GATE_E
   gitOk(scratch, ["commit", "-q", "-m", "c2-gate-edit-origin-only"]);
   const hash = revParse(scratch, "HEAD");
   gitOk(scratch, ["push", "-q", "origin", `HEAD:refs/heads/${onto}`]);
-  await rm(scratch, { recursive: true, force: true });
+  await rm(scratch, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   return hash;
 }
 

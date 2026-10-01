@@ -151,6 +151,6 @@ export async function withMeshMemorySyncbackFixture(fn, { milestoneNumber = "97"
 
     return await fn({ tmp, root, workDir, milestoneDir, baseBranch, git: (args) => git(root, args), mergeWorkerBranch });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }

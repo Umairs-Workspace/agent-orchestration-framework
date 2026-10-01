@@ -125,6 +125,6 @@ export async function withPerOrgAppIdentityFixture(fn, { launch = {}, others = [
 
     return await fn({ tmp, home, env, ws, writeKeyFile });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }

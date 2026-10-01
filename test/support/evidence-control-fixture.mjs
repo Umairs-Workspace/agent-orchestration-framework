@@ -133,6 +133,6 @@ export async function withControlFixtureRepo(body) {
     }
     return await body(dir);
   } finally {
-    await rm(dir, { recursive: true, force: true });
+    await rm(dir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }

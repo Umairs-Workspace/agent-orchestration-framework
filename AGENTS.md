@@ -37,6 +37,9 @@ Prefer focused checks first:
 - `node scripts/supply-chain-audit.mjs` when dependencies or install behavior change
 - `yarn test:unit`
 - `yarn test`
+- `yarn test:sharded` — the same registered cases across worker processes (minutes, not an hour): it refuses to run if any
+  registered case maps to no file, re-runs a failed unit once alone, reports load flakes by name, and runs the integration and
+  cargo lanes once. Run it from a clean detached worktree with `AOF_GLOBAL_HOME` isolated.
 - `yarn ui:build` when UI files change
 
 Use `.planning/ROADMAP.md` and the active phase plan to decide broader verification.

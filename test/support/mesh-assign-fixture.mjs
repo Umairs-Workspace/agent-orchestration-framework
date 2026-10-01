@@ -50,7 +50,7 @@ export async function withMeshAssignFixture(fn, { seedItems = ["00"] } = {}) {
     const ctx = { globalWorkStoreOptions: { env } };
     return await fn({ tmp, home, root, workspace, workspaceId, env, ctx });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

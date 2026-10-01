@@ -639,7 +639,7 @@ export async function withMountedApp(options, fn) {
     if (previous.location === undefined) delete globalThis.location; else globalThis.location = previous.location;
     if (previous.history === undefined) delete globalThis.history; else globalThis.history = previous.history;
     if (previous.window === undefined) delete globalThis.window; else globalThis.window = previous.window;
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

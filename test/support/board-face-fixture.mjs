@@ -535,7 +535,7 @@ export async function withBoardFace(fn, { stream = DEFAULT_STREAM, nodeId = "aof
     await new Promise((resolve) => server.close(resolve));
     if (previousHome === undefined) delete process.env.AOF_GLOBAL_HOME;
     else process.env.AOF_GLOBAL_HOME = previousHome;
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

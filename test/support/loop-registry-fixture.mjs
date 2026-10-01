@@ -164,7 +164,7 @@ export async function makeLoopRegistry(files, { label = null, parent = "work" } 
       await mkdir(loopsDir, { recursive: true });
       await writeAll(loopsDir, more ?? {});
     },
-    cleanup: () => rm(temp, { recursive: true, force: true }),
+    cleanup: () => rm(temp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }),
   };
 }
 

@@ -80,12 +80,12 @@ through those exports. They are load-bearing for the record, not dead. `aof/asse
 The `apps/ui` freeze was re-pinned once for the manifest change, with the previous digest reproduced from the previous manifest.
 
 **Duplicated helpers.** A scan for function bodies identical after comment/whitespace normalisation (≥120 characters) finds 17
-across files — all 17 already existed at the pre-142 baseline, which had 19 (the migration removed two and created none). The eight
-within-package pairs that are pure now have one home, the copy deleted and the kept definition imported: `deepFreeze` (work-loop
-trigger), `compareEdges` + `nodeKeys` (work-graph, which also retires loops-graph's now-dead `compareCodeUnits`/`baseNodeKey`),
-`intervalTicker`, `readPresentedCredential`, `frameByteLength`, `routingKey` (mesh) and `findSection` (work). Left on purpose:
-`isRevokedLocal`, whose comment records the copy as a boundary decision (the control stream must not pull in the registry's
-credential surface); the cross-package pairs (`isoInstant`, `renameWithRetry`, `settleExecFile`, `sendMethodNotAllowed`, core's
+across files — all 17 already existed at the pre-142 baseline, which had 19 (the migration removed two and created none). Five pure
+within-package pairs now have one home, the copy deleted and the kept definition imported: `intervalTicker`,
+`readPresentedCredential`, `frameByteLength`, `routingKey` (mesh) and `findSection` (work). Three more were consolidated and then
+**reverted because a guard forbids the edge**: `deepFreeze` (FF-6304/2: the trigger level leaf imports only the gate home) and
+`compareEdges`/`nodeKeys` (FF-7805: the record renderer's bytes are composed in one place). Left on purpose: `isRevokedLocal`, whose
+comment records the copy as a boundary decision (the control stream must not pull in the registry's credential surface); the cross-package pairs (`isoInstant`, `renameWithRetry`, `settleExecFile`, `sendMethodNotAllowed`, core's
 `readConfig`/`defaultWhich`), each a new dependency edge or a digest-pinned file; and `defaultPushExec`/`defaultCloneExec`, two
 named seams.
 

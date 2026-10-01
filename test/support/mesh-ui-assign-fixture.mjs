@@ -244,7 +244,7 @@ export async function withAssignRouteFixture(fn, { scope = "global" } = {}) {
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -333,7 +333,7 @@ export async function withPublishedAssignFixture(fn, { nodes = [], scope = "glob
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -595,7 +595,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
 
     // The vanished workspace's projection row survives its checkout; the path
     // does not — `workspace-not-local`'s producer, never a hand-built row.
-    await rm(rootGone, { recursive: true, force: true });
+    await rm(rootGone, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 
     // The RE-KEYED checkout: its projection row still carries the path-derived
     // id it was published under, but the checkout now declares an explicit
@@ -628,7 +628,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -679,7 +679,7 @@ export async function withEmptyFleetFace(fn) {
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

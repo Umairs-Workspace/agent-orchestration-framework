@@ -32,7 +32,7 @@ export async function withWork(body) {
   try {
     return await body(work);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -100,7 +100,7 @@ export async function withUpgradeProject(build, body) {
     if (build) await build({ repo, workDir });
     return await body({ repo, workDir });
   } finally {
-    await rm(repo, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

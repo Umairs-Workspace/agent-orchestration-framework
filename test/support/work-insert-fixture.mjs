@@ -59,7 +59,7 @@ export async function withInsertFixture(body, configOverrides = {}) {
     const workspace = await loadWorkspace(repo);
     return await body({ repo, workDir, workspace });
   } finally {
-    await rm(repo, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

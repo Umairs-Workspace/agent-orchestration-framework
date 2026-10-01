@@ -37,7 +37,7 @@ export async function withMeshDesktopFixture(fn, { seedAofBinary = true, seedArt
 
     return await fn({ tmp, home, installDir, artifactsDir, appArtifactPath, bootstrapperArtifactPath });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
