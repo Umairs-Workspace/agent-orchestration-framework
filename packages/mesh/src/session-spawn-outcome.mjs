@@ -51,7 +51,7 @@ export const SPAWN_OUTCOME_RETENTION_MS = 120_000;
 // never matches anything (no accidental "undefined::x"), which is also what makes
 // `read` total: a null tuple, a numeric sessionId and a frozen argument all resolve to
 // a null key and answer `null` rather than throwing.
-function routingKey(nodeId, sessionId) {
+export function routingKey(nodeId, sessionId) {
   if (typeof nodeId !== "string" || nodeId.length === 0) return null;
   if (typeof sessionId !== "string" || sessionId.length === 0) return null;
   return `${nodeId}::${sessionId}`;

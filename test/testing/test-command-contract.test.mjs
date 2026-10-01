@@ -680,7 +680,8 @@ export const testCommandContractTests = [
       const harness = await readFile(new URL("../../scripts/test-harness.mjs", import.meta.url), "utf8");
       const loops = (source + harness).split("for (const { name, run } of tests)").length - 1;
       assert.equal(loops, 1, "exactly one loop prints results and counts failures");
-      assert.match(source, /import \{ runCases \} from "\.\/test-harness\.mjs"/u, "the root runner uses the shared execution loop");
+      // 142 Plan 09: the same import also names `runnerShapedExports`, whose one home moved to the harness.
+      assert.match(source, /import \{ runCases(?:, runnerShapedExports)? \} from "\.\/test-harness\.mjs"/u, "the root runner uses the shared execution loop");
       assert.ok(source.includes("await runCases(tests)"), "the suite executes through that imported loop");
       assert.ok(source.includes("runSuite(tests)"), "the full path calls it");
       assert.ok(source.includes("runSuite(selected, { lanes: false })"), "…and the selected path calls the SAME one");

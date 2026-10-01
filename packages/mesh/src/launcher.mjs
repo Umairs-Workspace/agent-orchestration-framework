@@ -6,6 +6,8 @@ import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "./fabric
 import { meshRole, resolveWorkerStreamTarget } from "./role.mjs";
 import { syncCadenceFromConfig } from "./sync-cadence.mjs";
 import { buildSessionSpawnAckEnvelope } from "./session-spawn-directive.mjs";
+import { intervalTicker } from "./presence-loop.mjs";
+import { readPresentedCredential } from "./relay.mjs";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
@@ -613,16 +615,6 @@ function configuredServiceUrlForAddress(config, dialAddress) {
   const port = configuredServicePort(config);
   return `${protocol}//${hostForUrl(dialAddress)}${port != null ? `:${port}` : ""}${pathname}`;
 }
-function intervalTicker() {
-  return {
-    start(intervalSeconds, onTick) {
-      return setInterval(onTick, intervalSeconds * 1000);
-    },
-    stop(handle) {
-      clearInterval(handle);
-    },
-  };
-}
 // peerNodeIdsFrom(peers) — the ONE roster-extraction shape both the launch-time
 // admission roster AND the peer-poll refresh use (review fix P0.2): a resolvePeers()
 // row array reduced to its resolved, non-empty nodeIds. Factored out so the two call
@@ -638,12 +630,6 @@ function peerNodeIdsFrom(peers) {
 // behaviour to mesh-relay.mjs's own reader (the enrollment surface's auth gate), so the
 // two admission surfaces agree on how a credential is carried. A missing/blank header
 // is an ABSENT credential (null), which the caller turns into a refusal.
-function readPresentedCredential(request) {
-  const header = request?.headers?.authorization;
-  if (typeof header !== "string") return null;
-  const value = header.replace(/^Bearer\s+/i, "").trim();
-  return value.length > 0 ? value : null;
-}
 
 // createCredentialOriginResolver(ws) — the control server's `resolveOrigin`, resolving a
 // connection's identity from the ENROLLMENT CREDENTIAL it presents rather than from its

@@ -8,6 +8,20 @@ import { countShiftedByInsert } from "../reindex.mjs";
 import { writeText } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
+// Pure, so it lives at module scope and is shared (142 Plan 09: one home for a duplicated helper).
+export function findHeadingSection(lines, headingRe) {
+  const headingIdx = lines.findIndex((line) => headingRe.test(line.trim()));
+  if (headingIdx === -1) return null;
+  let end = lines.length;
+  for (let i = headingIdx + 1; i < lines.length; i += 1) {
+    if (/^#{1,6}\s/.test(lines[i])) {
+      end = i;
+      break;
+    }
+  }
+  return { headingIdx, end };
+}
+
 // Core supplies stream transitions, installed-version policy and composed insertion services.
 export function createWorkInsertion({ transitionStreamReindexed, packageVersionString }) {
 // Shared mechanics for the milestone 41 insert-* command family. Originally
@@ -368,18 +382,6 @@ const STORIES_HEADING_RE = /^##\s+Stories\s*$/;
 // Locate a `## <heading>` section's line range: `[headingIdx+1, end)` is the
 // section BODY, `end` the index of the next heading (or EOF). Mirrors
 // `commands/feedback.mjs`'s own section-walk (`appendFeedbackBullet`).
-function findHeadingSection(lines, headingRe) {
-  const headingIdx = lines.findIndex((line) => headingRe.test(line.trim()));
-  if (headingIdx === -1) return null;
-  let end = lines.length;
-  for (let i = headingIdx + 1; i < lines.length; i += 1) {
-    if (/^#{1,6}\s/.test(lines[i])) {
-      end = i;
-      break;
-    }
-  }
-  return { headingIdx, end };
-}
 
 // A `## Stories` bullet in the FIXTURE-ONLY `NN/SS` convention (feature 02's
 // own tests: `- [ ] `NN/SS` — `SS_story_<slug>` — <one-line outcome>.`).

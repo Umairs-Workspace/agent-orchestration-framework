@@ -7,7 +7,7 @@ import { tests as ownedUiTests } from "../apps/ui/test/index.mjs";
 import { tests as ownedWorkLoopTests } from "../packages/work-loop/test/index.mjs";
 import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
 import { tests as ownedKnowledgeTests } from "../packages/knowledge/test/index.mjs";
-import { runCases } from "./test-harness.mjs";
+import { runCases, runnerShapedExports } from "./test-harness.mjs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 // THE SUITE REGISTRY — it names DIRECTORIES, not suites (119/03, ADR-010 §1).
@@ -246,6 +246,9 @@ async function runSuite(tests, { lanes = true } = {}) {
 // this path RUNS what it takes, so such an entry would throw inside the loop instead of being
 // reported as an unusable file. Here `run` must be a function.
 export const ONLY_FLAG = "--only";
+// The whole-suite lanes (integration, cargo) and nothing else: `scripts/test-sharded.mjs` runs the registered cases
+// across worker processes and these lanes exactly once, through this flag, so the lanes keep their one home here.
+export const LANES_ONLY_FLAG = "--lanes-only";
 
 // The files a selection names, or null when this argv is not a selection at all. THE SENTINEL IS
 // REQUIRED and bare positionals are never treated as suite files - which is what makes the
@@ -263,15 +266,8 @@ export function selectionArgv(argv) {
 // first one found: a file exporting two registered arrays would otherwise contribute half its
 // tests, and a selection that runs FEWER tests than the file registers is exactly the silent
 // narrowing this milestone's invariant refuses.
-export function runnerShapedExports(module) {
-  const found = [];
-  for (const value of Object.values(module ?? {})) {
-    if (!Array.isArray(value) || value.length === 0) continue;
-    if (!value.every((entry) => entry != null && typeof entry === "object" && typeof entry.name === "string" && typeof entry.run === "function")) continue;
-    if (!found.includes(value)) found.push(value);
-  }
-  return found;
-}
+// Its one home is `test-harness.mjs`, shared with the sharded runner's children (`scripts/test-shard.mjs`).
+export { runnerShapedExports };
 
 // Import each named file and take its tests. A file that is not on disk, that does not evaluate,
 // or that exports nothing runner-shaped is UNUSABLE and is reported BY PATH - never dropped, and
@@ -327,7 +323,8 @@ async function runSelection(files) {
 const invokedDirectly = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
 if (invokedDirectly) {
   const only = selectionArgv(process.argv.slice(2));
-  const body = only == null ? runSuite(tests) : runSelection(only);
+  const lanesOnly = only == null && process.argv.includes(LANES_ONLY_FLAG);
+  const body = lanesOnly ? runSuite([]) : only == null ? runSuite(tests) : runSelection(only);
   body.catch((error) => {
     console.error(error.stack ?? error.message);
     process.exitCode = 1;

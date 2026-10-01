@@ -114,7 +114,7 @@ export const TRIGGER_SIGNAL_REFUSALS = Object.freeze([
   TRIGGER_SIGNAL_NO_CAPTURE,
 ]);
 
-function deepFreeze(value) {
+export function deepFreeze(value) {
   if (value === null || typeof value !== "object" || Object.isFrozen(value)) return value;
   for (const key of Object.keys(value)) deepFreeze(value[key]);
   return Object.freeze(value);

@@ -299,7 +299,13 @@ const RUNNER_REGIONS = Object.freeze([
 // Pin both real files together, including the awaited bridge and executed count.
 // RE-PINNED by 142 Plan 04: the cargo lane's Rust-core path moved `app/desktop` -> `apps/desktop` (a path literal, a
 // comment and three console labels). The mask set and every runner-logic line are unchanged.
-const RUNNER_RESIDUE = "2db82135f1ffa7ac0718dbdc00614865376e276b064c4e2d235756a880ef20da";
+// RE-PINNED by 142 Plan 09 (the sharded whole-tree run, backlog: the-whole-tree-run-signs-off-in-minutes — the
+// FF-5311 grant that item reserved). Measured residue diff, and nothing else: `runnerShapedExports` moves verbatim to
+// `scripts/test-harness.mjs` (its one home, shared with `scripts/test-shard.mjs`) and is re-exported here; the harness
+// import names it; `LANES_ONLY_FLAG` is declared; and the dispatch runs `runSuite([])` under that flag (`runSuite(tests)` otherwise),
+// so `scripts/test-sharded.mjs` can run the integration and cargo lanes exactly once. Every pinned region above is
+// unchanged.
+const RUNNER_RESIDUE = "d5350861a1b09ec975fdefbf125727dd2bb4edc79b82bd61abde66fcd4d6678f";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

@@ -79,6 +79,16 @@ passes. Six export subpaths had no consumer anywhere and nothing builds specifie
 `aof/asset-base` stays (a documented public seam). One empty, untracked leftover directory (`packages/core/src/notify/`) was removed.
 The `apps/ui` freeze was re-pinned once for the manifest change, with the previous digest reproduced from the previous manifest.
 
+**Duplicated helpers.** A scan for function bodies identical after comment/whitespace normalisation (≥120 characters) finds 17
+across files — all 17 already existed at the pre-142 baseline, which had 19 (the migration removed two and created none). The eight
+within-package pairs that are pure now have one home, the copy deleted and the kept definition imported: `deepFreeze` (work-loop
+trigger), `compareEdges` + `nodeKeys` (work-graph, which also retires loops-graph's now-dead `compareCodeUnits`/`baseNodeKey`),
+`intervalTicker`, `readPresentedCredential`, `frameByteLength`, `routingKey` (mesh) and `findSection` (work). Left on purpose:
+`isRevokedLocal`, whose comment records the copy as a boundary decision (the control stream must not pull in the registry's
+credential surface); the cross-package pairs (`isoInstant`, `renameWithRetry`, `settleExecFile`, `sendMethodNotAllowed`, core's
+`readConfig`/`defaultWhich`), each a new dependency edge or a digest-pinned file; and `defaultPushExec`/`defaultCloneExec`, two
+named seams.
+
 One latent defect surfaced and was fixed: `test/work/lifecycle/work-observe.test.mjs` (a known unregistered native test the gate never
 runs) had a fixture expectation rewritten by the core move to a path its own input never produced, so it failed 1 of 21 when run directly.
 

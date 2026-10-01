@@ -35,3 +35,16 @@ export async function runCases(tests) {
   console.log(`# executed ${tests.length} cases; failures ${failures}`);
   return failures;
 }
+
+// Every runner-shaped array a module exports, deduped by identity. ALL of them rather than the first one found:
+// a file exporting two registered arrays would otherwise contribute half its tests (the `--only` rule, 72/ADR-004).
+export function runnerShapedExports(module) {
+  const found = [];
+  for (const value of Object.values(module ?? {})) {
+    if (!Array.isArray(value) || value.length === 0) continue;
+    if (!value.every((entry) => entry != null && typeof entry === "object" && typeof entry.name === "string" && typeof entry.run === "function")) continue;
+    if (!found.includes(value)) found.push(value);
+  }
+  return found;
+}
+

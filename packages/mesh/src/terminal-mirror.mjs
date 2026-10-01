@@ -1,4 +1,6 @@
 import { WebSocket } from "ws";
+import { routingKey } from "./session-spawn-outcome.mjs";
+import { frameByteLength } from "./relay.mjs";
 
 export const MAX_TAIL_BYTES_PER_KEY = 256 * 1024;
 export const MAX_TAIL_KEYS = 64;
@@ -59,14 +61,10 @@ export function createTerminalMirroring({ DEFAULT_MAX_FRAME_BYTES, resolveMaxFra
 
 
 
-// routingKey(nodeId, sessionId) — the ONE (nodeId, sessionId) → string key both
-// apply() and subscribe() use, so the two sides can never drift on how a tuple is
-// joined. A missing half never matches anything (no accidental "undefined::x").
-function routingKey(nodeId, sessionId) {
-  if (typeof nodeId !== "string" || nodeId.length === 0) return null;
-  if (typeof sessionId !== "string" || sessionId.length === 0) return null;
-  return `${nodeId}::${sessionId}`;
-}
+// routingKey(nodeId, sessionId) — imported from session-spawn-outcome.mjs, the ONE
+// (nodeId, sessionId) → string key both apply() and subscribe() use (and the spawn-outcome
+// lane), so no two sides can drift on how a tuple is joined. A missing half never matches
+// anything (no accidental "undefined::x").
 
 // createTerminalMirror() — the in-memory, EPHEMERAL, live-tail mirror. A plain
 // closure over a Map<routingKey, Set<listener>> — no fs handle, no socket held
@@ -232,14 +230,6 @@ function createTerminalMirror() {
 // `signal` content is NOT inspected here — createTerminalMirror's own apply()
 // decides whether the kind/shape is one it stores, keeping this parse
 // payload-agnostic about signal CONTENT.
-function frameByteLength(data) {
-  if (data == null) return 0;
-  if (Buffer.isBuffer(data)) return data.length;
-  if (Array.isArray(data)) return data.reduce((sum, part) => sum + frameByteLength(part), 0);
-  if (data instanceof ArrayBuffer) return data.byteLength;
-  if (ArrayBuffer.isView(data)) return data.byteLength;
-  return Buffer.byteLength(String(data));
-}
 
 function parseInboundTerminalFrame(data, maxFrameBytes = DEFAULT_MAX_FRAME_BYTES) {
   if (frameByteLength(data) > maxFrameBytes) return null;

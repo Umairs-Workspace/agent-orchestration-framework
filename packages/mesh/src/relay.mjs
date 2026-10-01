@@ -2,6 +2,24 @@ import http from "node:http";
 import crypto from "node:crypto";
 import { WebSocketServer } from "ws";
 
+// Pure, so it lives at module scope and is shared (142 Plan 09: one home for a duplicated helper).
+export function frameByteLength(data) {
+  if (data == null) return 0;
+  if (Buffer.isBuffer(data)) return data.length;
+  if (Array.isArray(data)) return data.reduce((sum, part) => sum + frameByteLength(part), 0);
+  if (data instanceof ArrayBuffer) return data.byteLength;
+  if (ArrayBuffer.isView(data)) return data.byteLength;
+  return Buffer.byteLength(String(data));
+}
+
+// Pure, so it lives at module scope and is shared (142 Plan 09: one home for a duplicated helper).
+export function readPresentedCredential(request) {
+  const header = request?.headers?.authorization;
+  if (typeof header !== "string") return null;
+  const value = header.replace(/^Bearer\s+/i, "").trim();
+  return value.length > 0 ? value : null;
+}
+
 export const RELAY_PATH = "/ws/relay";
 export const DEFAULT_MAX_FRAME_BYTES = 1048576;
 export const DEFAULT_CODE_TTL_SECONDS = 300;
@@ -226,12 +244,6 @@ function requestPathname(request) {
 // Sec-WebSocket-Protocol subprotocol to avoid the subprotocol-echo handshake flake). Read
 // the presented relayAuth token off the header, tolerant of an optional `Bearer ` prefix;
 // a missing/blank header is an absent credential (a deny for a group connection).
-function readPresentedCredential(request) {
-  const header = request?.headers?.authorization;
-  if (typeof header !== "string") return null;
-  const value = header.replace(/^Bearer\s+/i, "").trim();
-  return value.length > 0 ? value : null;
-}
 
 // Is this a LOOPBACK (same-host) connection? Loopback stays the m23 local default — a
 // same-host connection to its own relay needs NO credential (ADR-003 move 2; A3 "the
@@ -257,14 +269,6 @@ function defaultIsGroupConnection(request) {
 // The byte-length of an inbound ws frame, tolerant of Buffer / ArrayBuffer / array-of-
 // Buffer / string shapes (ws delivers any of these depending on fragmentation). Used by
 // the hand-rolled over-limit check — measured in BYTES, never characters.
-function frameByteLength(data) {
-  if (data == null) return 0;
-  if (Buffer.isBuffer(data)) return data.length;
-  if (Array.isArray(data)) return data.reduce((sum, part) => sum + frameByteLength(part), 0);
-  if (data instanceof ArrayBuffer) return data.byteLength;
-  if (ArrayBuffer.isView(data)) return data.byteLength;
-  return Buffer.byteLength(String(data));
-}
 
 // Send a frozen control-frame ({ type:'error'|'joined', … }) — never throws into the
 // caller (the socket may already be closing). The 03/ADR-003 sendControl shape.

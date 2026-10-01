@@ -1,3 +1,4 @@
+import { findHeadingSection as findSection } from "../insertion/scaffold.mjs";
 
 // The chore CONTENT seed — milestone 71 / story 01, ADR-004.
 //
@@ -23,18 +24,6 @@ export const NO_REGRESSION_ITEM = "`aof work validate` is green (no regression)"
 // Locate a `## <heading>` section's line range: `[headingIdx+1, end)` is the section BODY, `end` the
 // index of the next heading (or EOF). A LOCAL copy of insert-shared.mjs's own idiom — deliberately
 // not imported, so this module never reaches into that file's Tier-2 checklist internals.
-function findSection(lines, headingRe) {
-  const headingIdx = lines.findIndex((line) => headingRe.test(line.trim()));
-  if (headingIdx === -1) return null;
-  let end = lines.length;
-  for (let i = headingIdx + 1; i < lines.length; i += 1) {
-    if (/^#{1,6}\s/.test(lines[i])) {
-      end = i;
-      break;
-    }
-  }
-  return { headingIdx, end };
-}
 
 // Seed a freshly-scaffolded chore with its close criterion and its provenance.
 //

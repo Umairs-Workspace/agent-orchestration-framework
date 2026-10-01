@@ -804,7 +804,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "dfa244076bc8b166dd06fa8d4db5aaa076031443925faac48c87d1237b41c557",
+    "sourceDigest": "a07d84872c9e86f5a92638aed94198d498f79a81f567498fdb52599124145cfb",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -812,7 +812,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "dfa244076bc8b166dd06fa8d4db5aaa076031443925faac48c87d1237b41c557",
+    "sourceDigest": "a07d84872c9e86f5a92638aed94198d498f79a81f567498fdb52599124145cfb",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -820,7 +820,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "dfa244076bc8b166dd06fa8d4db5aaa076031443925faac48c87d1237b41c557",
+    "sourceDigest": "a07d84872c9e86f5a92638aed94198d498f79a81f567498fdb52599124145cfb",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -828,7 +828,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(file)).href)",
     "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "dfa244076bc8b166dd06fa8d4db5aaa076031443925faac48c87d1237b41c557",
+    "sourceDigest": "a07d84872c9e86f5a92638aed94198d498f79a81f567498fdb52599124145cfb",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -846,5 +846,37 @@
     "digest": "859ca70504d4d5f0086a77eee455ffe18bad6afae5245f5c0ea1a76145ef6efe",
     "sourceDigest": "bb3fa7beb0e5f39ad3708a0f2852c7a01a065aec9bd4b1c97ba5315217e4a810",
     "reason": "Runs the pinned checked-in Yarn entry, never a globally selected package manager."
+  },
+  {
+    "file": "scripts/test-shard.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.resolve(file)).href)",
+    "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
+    "sourceDigest": "765728b44a15f6c043634d89749caf5bc8783f38355ce27bc6af575df51058af",
+    "reason": "Repository test tooling: imports the one suite file the sharded run assigned this unit, by path, so the unit never loads the registry. Same rule as `scripts/test.mjs --only`."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
+    "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
+    "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
+    "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(file).href)",
+    "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
+    "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
+    "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "child-process",
+    "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
+    "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
+    "sourceDigest": "bb0484b4880238dd9b44b5793608e50909550b2b895ff1843f0b077ac4cdfd26",
+    "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
   }
 ]
