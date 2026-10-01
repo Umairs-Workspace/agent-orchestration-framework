@@ -173,7 +173,11 @@ function assertUiFrozen(pairs) {
   // 142/06 adds explicit exports and the Node-only vite-cli development helper.
   // The helper resolves Vite from its UI owner; browser sources, styles and run/board reads
   // are unchanged. The complete remaining tree, including this public helper, stays pinned.
-  assert.equal(hash.digest("hex"), "181fc1551816aa14a999d634ae56bfe4726a8827687afa79260632273051f0ac", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 142 Plan 09: `apps/ui/package.json` loses four dependencies nothing in the tree imports
+  // (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, `tunnel-rat`). Measured: recomputing this digest
+  // with the previous manifest reproduces the previous pin (181fc155…); the four deleted lines are the whole diff,
+  // and no file under `apps/ui/src` changed.
+  assert.equal(hash.digest("hex"), "d67e36840fd5efc80f324166583fe6962d42cba65c79ac2f2a2258215ed23064", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

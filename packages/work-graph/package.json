@@ -9,7 +9,6 @@
     "./record": "./src/record.mjs",
     "./record-render": "./src/record-render.mjs",
     "./document": "./src/document.mjs",
-    "./shapes": "./src/shapes.mjs",
     "./commands/loops-show": "./src/commands/loops-show.mjs",
     "./commands/loops-graph": "./src/commands/loops-graph.mjs",
     "./commands/loops-validate": "./src/commands/loops-validate.mjs",

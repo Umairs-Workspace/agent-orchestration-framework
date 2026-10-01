@@ -391,7 +391,8 @@ async function makeGateFixture() {
   // `graphify-reranking`). The fixture's OWN document is written over the copy below, from the
   // fixture's own registry, before the gate is first run. Run records and observability snapshots
   // are left out: nothing loads them, and they are the bulk of the tree.
-  for (const tree of ["packages/core/src", "packages", "test", "scripts", "apps/ui/src", ".claude/hooks", "wiki"]) {
+  // `apps/ui/test` since 142 Plan 09: the runner registers the UI's own suites from `apps/ui/test/index.mjs`.
+  for (const tree of ["packages/core/src", "packages", "test", "scripts", "apps/ui/src", "apps/ui/test", ".claude/hooks", "wiki"]) {
     await cp(path.join(repoRoot, ...tree.split("/")), path.join(root, ...tree.split("/")), {
       recursive: true,
       filter: (source) => !/[\\/](?:runs|observability|node_modules)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),

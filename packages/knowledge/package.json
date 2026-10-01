@@ -13,7 +13,6 @@
     "./memory/local-backend": "./src/memory/local-backend.mjs",
     "./memory/graphify-backend": "./src/memory/graphify-backend.mjs",
     "./memory": "./src/memory.mjs",
-    "./commands/shared": "./src/commands/shared.mjs",
     "./commands/graph-impact": "./src/commands/graph-impact.mjs",
     "./commands/graph-build": "./src/commands/graph-build.mjs",
     "./commands/graph-query": "./src/commands/graph-query.mjs",

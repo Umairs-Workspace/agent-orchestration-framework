@@ -39,8 +39,11 @@ registry (none missing, none over-registered).
 | 505 | Drive the assembled application. These are **not** a mechanical move: package modules are factories (for example
 `createMeshPresence` in `@aof/mesh/presence`) that `packages/core/src/application/assemble.mjs` wires with explicit collaborators from
 `bindings/`. Moving a suite means rebuilding its collaborator graph by hand. The ledger records the namespaces each touches
-(189 touch exactly one and spawn nothing, mostly `work`, `mesh`, `assets`, `knowledge`, `execution`). Whether to rewrite those is an
-**operator decision**; nothing here pretends it is done. |
+(189 touch exactly one and spawn nothing, mostly `work`, `mesh`, `assets`, `knowledge`, `execution`). Measured by **object identity**, not name: of the 2,407 `const x = _aofApplication…;`
+accessors in 468 such suites, only **3** are the very object a feature package exports; **2,187** are closures that exist only once
+core has assembled them (200 are primitives). One suite reaches nothing but package exports, and it still mounts an assembled fixture
+helper. So no suite in this group moves by swapping imports; each would need its collaborator graph built by hand. Whether to do
+that is an **operator decision**; nothing here pretends it is done. |
 | 14 / 11 / 5 | Spawn the CLI / exercise `scripts/` / repo-level fixtures. |
 | 15 | Read a repository artifact no workspace owns (`schemas/`, live wiki, hooks, tracked renders), import an arch guard, or use the
 repo-wide `source-slice` helper (imported by 226 suites) — each named in the ledger. |
@@ -66,6 +69,15 @@ is deliberate or frozen: comments naming the installed `ui/dist` layout (Plan 05
 root `bin/aof.mjs` as a build input (left, not changed); stale test-path citations inside `apps/ui/src` comments (editing them would
 break the freeze pin). `.gitignore` entries all match existing paths; no leftover worktree; the global `node_modules/aof` junction
 targets `packages/core`. Two TECH_DEBT entries gained a path note (item 83, item 36); none was discharged and none opened.
+
+**Per-package hygiene** (static scan of every workspace's manifest against every tracked importer): no feature package declares a
+dependency it does not import. `@aof/ui` declared four nothing imports (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`,
+`tunnel-rat`); they are removed, Yarn's lockfile-only update drops them and four transitive packages, and the supply-chain audit
+passes. Six export subpaths had no consumer anywhere and nothing builds specifiers dynamically (`@aof/knowledge/commands/shared`,
+`@aof/mesh/terminal-resume-refusal`, `@aof/work/doctor/freshness`, `@aof/work/doctor/identity`, `@aof/work/promote/chore-seed`,
+`@aof/work-graph/shapes`); they are removed from the manifests, their modules stay (each is imported inside its own package).
+`aof/asset-base` stays (a documented public seam). One empty, untracked leftover directory (`packages/core/src/notify/`) was removed.
+The `apps/ui` freeze was re-pinned once for the manifest change, with the previous digest reproduced from the previous manifest.
 
 One latent defect surfaced and was fixed: `test/work/lifecycle/work-observe.test.mjs` (a known unregistered native test the gate never
 runs) had a fixture expectation rewritten by the core move to a path its own input never produced, so it failed 1 of 21 when run directly.
