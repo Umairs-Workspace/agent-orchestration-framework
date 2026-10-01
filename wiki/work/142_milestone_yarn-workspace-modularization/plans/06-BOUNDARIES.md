@@ -1,19 +1,22 @@
 # Plan 06 — Test ownership and boundary evidence
 
-Implementation and verification in progress, starting from `55bb9c41`. These are ordinary engineering
+Implementation and verification complete, starting from `55bb9c41`; inherited failures and two
+aggregate/isolated discrepancies are recorded below. These are ordinary engineering
 batches; no managed work state or generated assistant assets are changed.
 
 ## Public-forward removal
 
-The pre-removal inventory in [06-removal-map.json](06-removal-map.json) records 311
+The removal inventory in [06-removal-map.json](06-removal-map.json) records 312
 candidate modules: 85 single-destination public forwards, one mixed forward, 224 configured
-entries and one relative alias, with their exports,
+entries, one relative alias and one unused declaration forward, with their exports,
 static consumers, package test programs and the baseline case-name multiset hash.
 The first batch removes 85 forwards with a single public package destination. Imports
 now use those public APIs; structural readers inspect the owning implementations.
 The subsequent batch removes the mixed forward, all configured entries and the alias.
 The original inventory incorrectly skipped the real `commands/assets/` source directory;
-the correction adds its nine configured entries and the relative mesh-log alias.
+the correction adds its nine configured entries and the relative mesh-log alias. A final
+declaration-aware census also found and removed the unused `notify/form.d.mts` forward;
+the original JavaScript-only inventory had omitted it.
 
 All 11,533 aggregate case names and multiplicities match the baseline. The coupled
 architecture, application and command checks execute 703 cases: 701 pass, with only the
@@ -70,7 +73,8 @@ the failure must print its case name, report one executed case and exit nonzero.
 ## Source and dependency boundaries
 
 The locked owner manifests determine fifteen actual source surfaces, including current UI,
-core CLI and repository tooling: 728 files. Static imports, re-exports, literal dynamic imports,
+core CLI and repository tooling: 766 files, including 38 owned `.d.mts` declarations.
+Static imports, re-exports, type imports, literal dynamic imports,
 `require`/`require.resolve`, aliased `createRequire`, computed selection and child invocations
 are inspected through TypeScript's parser. Declarations and UI aliases remain part of the
 census. The UI `@/` alias must match its actual owner and `tsconfig.json` mapping.
@@ -82,7 +86,8 @@ reviewed runtime expressions carry a per-file reason and hashes of both the expr
 the complete comment-free source: changing a selector invalidates review even if the call
 text stays the same. Positive fixtures and planted undeclared/private/core-back/cyclic,
 computed, stale-review and static-development-only dependencies exercise the same detector.
-The actual census passes with zero findings.
+The final Windows and Linux censuses both pass with zero findings. Private declaration-import
+violations and a public declaration-import control use this same discovery/parser path.
 
 Source guards follow public factories and their actual injected collaborators. Shrinking
 directories lower their exact ceilings with no growth allowance. Historical module citations
@@ -93,7 +98,7 @@ from current implementation paths.
 
 ## Deliberate composition and external compatibility
 
-All 311 temporary compatibility modules and the root `bin/aof.mjs` launcher are removed.
+All 312 temporary compatibility entries and the root `bin/aof.mjs` launcher are removed.
 Core keeps its 224 deliberate DI bindings, the command registry and scoped public application
 entries. Source CLI callers now use the owned core bin. Root build tools use explicit public
 core/feature entries; the old flat export catalog is gone.
@@ -113,16 +118,67 @@ SEA keeps this helper outside its runtime bundle. The built installed UI and the
 startup need no development-server dependency. The UI build, immutable install and required
 supply-chain audit pass; third-party versions and lifecycle policy remain unchanged.
 
-## Native verification and remaining reconciliation
+## Native verification and aggregate reconciliation
 
 Windows x64 native build/staging and all eight isolated distribution checks pass after the final
-removals: installer layout/update, source-help parity, both-runtime work-init assets, isolated
+JavaScript removals: installer layout/update, source-help parity, both-runtime work-init assets, isolated
 module loading, SEA census, bundled audit children, built UI and real PTY input/output.
 Linux x64 passes the same eight checks from a clean disposable Ubuntu 22.04 clone at
 `84aabf7d`, using Node 22.23.1, immutable pinned Yarn, the reviewed native rebuild and a
 fresh UI build. Its source boundary census and supply-chain audit pass, and the clone has
-no tracked changes. Windows uses Node 22.22.2. Remaining source-guard fixes change tests
-only. The full repository failure reconciliation remains in progress.
+no tracked changes. The disposable clone was removed after its receipts were saved.
+Windows uses Node 22.22.2. Later repairs change test/tooling guards, and remove the unused
+declaration forward; executable production source remains unchanged. The final UI type build
+and copied-install checks pass after that declaration removal. The final Linux boundary
+census over the current checkout also covers all 766 files without findings.
+
+The unit lane executes 998 cases: 997 pass and the inherited `141/03` generated-render
+comparison fails. The aggregate run began before the final source-guard repairs, so its
+original failures are reconciled by case title against subsequent focused execution receipts.
+A delayed dispatch child still importing a removed wrapper stopped the initial run after
+5,037 completed cases. After its repair, a temporary selection suite checks those result names
+against the exact registry prefix and runs all 6,499 remaining cases through the canonical
+repository harness. Both dispatch concurrency cases also pass in the focused child-consumer
+rerun. Fresh persistence readers construct and close a new application, avoiding reuse of an
+in-memory configured store; the focused child/terminal/store suites execute 106 passing cases.
+The watcher/stop migration repairs execute 64 passing cases, and the synthetic dynamic-reference
+fixture now verifies that its literal actually resolves to its supplied module.
+
+The separate CLI integration lane passes all 134 cases. Desktop `cargo test` passes 118 tests
+and the shell `cargo check` passes. The aggregate continuation is complete: its 6,499 cases
+and the original 5,037 results match all 11,536 registered names in exact order, with no omitted
+or repeated case. The original runs report 11,448 passes and 88 failures. Focused receipts
+reconcile 71 of those failures (69 repaired migration checks and the two discrepancies below),
+leaving 17 failures from the recorded Plan 05 baseline and no unexplained migration failure.
+Six of the baseline's original 23 failures now pass. This is not a fully green aggregate run.
+Local receipts: `full-test.log`, `remainder-test.log`, `completion-proof.json`,
+`fresh-child-consumers.log`, `stop-authorities-recheck.log`, `synthetic-seam-recheck.log`,
+`cli-integration.log`, `desktop-tests.log`, `desktop-shell-check.log` and `reconciled.json`.
+Final guard receipts include `late-guard-final.log` (163 passing cases),
+`feature-surface-final.log` (39 passing cases), `final-controls-recheck.log`,
+`final-boundaries.json`, `linux-final-boundaries.json` and `ui-types-final.log`.
+The last three guard suites execute 139 cases; 138 pass in that receipt, and the corrected
+archive-budget case passes in `final-archive-recheck.log` without repeating the other 138.
+Focused counts overlap and are not added to the aggregate total.
+
+The unchanged `129/04 task04` three-row wave-heartbeat case fails in the aggregate run
+(`halted` versus `done`) and passes twice in independent isolated reruns. This is an observed
+full-run/isolated discrepancy, not a proven baseline failure or a diagnosed cause. Its assertions
+and timing allowances are unchanged. Receipts: `wave-heartbeat-recheck.log` and
+`wave-heartbeat-repeat.log`.
+
+The unchanged `72/00 task00` repository toolchain-declaration case sees Yarn's temporary
+Windows `node.CMD` shim on PATH during the aggregate, and correctly refuses it under the
+strict executable policy. The same case passes outside that shim PATH in
+`toolchain-environment-recheck.log`. No toolchain configuration or shim-refusal assertion is
+weakened. This environment-dependent discrepancy is separate from the inherited baseline.
+
+The 17 inherited failures concern generated asset/render/lock agreement (FF-5312, FF-5313,
+FF-6302/7, FF-12405 legs 8/9, 141/03, 133/05 and 140/00), historical defining-line/evidence
+and prose authorities (FF-5810, FF-6208, loops-census/04 and anchor-taxonomy/03), the existing
+124/00 wave/census rule check, and four real-stream/archive/link ratchets. Their exact titles
+and focused reconciliation receipts are retained in `reconciled.json`.
+
 Plan 04's UI/desktop relocation, Plan 07's documentation refresh and Plan 08's broader native
 matrix/signing are still separate work. No real workflow state or generated assistant assets
 are refreshed to quiet inherited verification failures.
