@@ -884,7 +884,7 @@ function runWaitTests() {
       name: "131/01 task05 — the engine stays pure: src/work/loop.mjs has zero imports and reads no clock",
       async run() {
         const { stripComments } = await import("../support/source-slice.mjs");
-        const source = stripComments(await readFile(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "src", "work", "loop.mjs"), "utf8"));
+        const source = stripComments(await readFile(new URL("../../packages/work-loop/src/engine.mjs", import.meta.url), "utf8"));
         assert.doesNotMatch(source, /^\s*import\s/mu, "zero import statements");
         assert.ok(!source.includes("Date.now(") && !source.includes("new Date("), "no Date.now( and no new Date(");
       },

@@ -13750,6 +13750,17 @@
           "from": "../diagnostics/log.mjs"
         }
       ]
+    },
+    {
+      "coreRelativePath": "notify/form.d.mts",
+      "kind": "type-forward",
+      "targets": [
+        {
+          "from": "@aof/messaging/form"
+        }
+      ],
+      "consumers": [],
+      "reason": "Unused compatibility declaration; UI and core consume the owned messaging entry and its declaration."
     }
   ],
   "baselineCore": "packages/core/src",

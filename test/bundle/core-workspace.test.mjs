@@ -12,6 +12,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { installPayload } from '../../scripts/install-local.mjs';
 import { inspectBoundaries, dependencyCycles, moduleReferences } from '../../scripts/workspace-boundaries.mjs';
 import { workspaceTestInventory, assertNativeTestSource } from '../../scripts/workspace-tests.mjs';
+import { sourceFiles } from '../../scripts/source-inventory.mjs';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 function ownershipFixture(run) {
@@ -211,6 +212,13 @@ export const coreWorkspaceTests = [
     try {
       for (const file of files) { mkdirSync(path.dirname(file.path), { recursive: true }); writeFileSync(file.path, 'export const value = 1;'); }
       assert.deepEqual(inspectBoundaries(root, { owners, files }).findings, []);
+      const declaration = path.join(owners[0].directory, 'src/api.d.mts');
+      writeFileSync(declaration, 'export type Public = import("@aof/leaf/entry").value;');
+      const declaredFiles = sourceFiles(root, owners.map(owner => ({ owner: owner.manifest.name, directory: path.relative(root, path.join(owner.directory, 'src')).replaceAll('\\', '/') })));
+      assert.ok(declaredFiles.some(file => file.path === declaration), 'the actual source walker includes ESM type declarations');
+      assert.deepEqual(inspectBoundaries(root, { owners, files: declaredFiles }).findings, [], 'public type imports pass through the same detector');
+      writeFileSync(declaration, 'export type Private = import("@aof/leaf/private").Hidden;');
+      assert.ok(inspectBoundaries(root, { owners, files: declaredFiles }).findings.some(finding => finding.includes('missing explicit export')), 'a planted private type import fails through the actual declaration census');
       writeFileSync(files[0].path, 'import "not-declared"; import "../../owner-1/src/entry.mjs"; import "@aof/leaf/private"; await import("@aof/leaf/private"); require("@aof/leaf/private"); await import(selected); spawn(process.execPath, [selected]);');
       writeFileSync(files[1].path, 'import "aof/entry";');
       const planted = inspectBoundaries(root, { owners, files }).findings.join('\n');

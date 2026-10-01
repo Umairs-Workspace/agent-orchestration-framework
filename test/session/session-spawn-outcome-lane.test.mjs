@@ -805,8 +805,8 @@ export const sessionSpawnOutcomeLaneTests = [
         // NOTHING IN THE CONTROL'S PROCESS WRITES, DERIVES OR INFERS THIS FIELD FOR ANOTHER
         // NODE. Read off the control-side modules: the wire hop passes it through, the index
         // reads it, and neither MINTS it.
-        for (const file of ["control-stream-server.mjs", "global-mesh-query.mjs", "mesh/ui-serve.mjs"]) {
-          const source = (await readFile(path.join(repoRoot, "packages", "core", "src", file), "utf8"))
+        for (const file of ["control-stream-server.mjs", "global-query.mjs", "ui-serve.mjs"]) {
+          const source = (await readFile(path.join(repoRoot, "packages", "mesh", "src", file), "utf8"))
             .replace(/\r\n/g, "\n")
             .replace(/\/\/[^\n]*/g, "")
             .replace(/\/\*[\s\S]*?\*\//g, "");

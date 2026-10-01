@@ -50,6 +50,9 @@ export function moduleReferences(source, file = 'source.mjs') {
     if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier) {
       references.push({ kind: 'static', specifier: literal(node.moduleSpecifier), typeOnly: node.isTypeOnly === true || node.importClause?.isTypeOnly === true });
     }
+    if (ts.isImportTypeNode(node)) {
+      references.push({ kind: 'static', specifier: ts.isLiteralTypeNode(node.argument) ? literal(node.argument.literal) : null, typeOnly: true });
+    }
     if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.initializer && ts.isCallExpression(node.initializer)
       && (requireFactories.has(node.initializer.expression.getText(ast))
         || [...moduleNamespaces].some(name => node.initializer.expression.getText(ast) === `${name}.createRequire`))) requires.add(node.name.text);

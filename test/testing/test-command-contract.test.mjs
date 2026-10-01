@@ -677,8 +677,11 @@ export const testCommandContractTests = [
       await control.run();
 
       const source = (await readFile(runnerPath, "utf8")).replace(/\r\n/gu, "\n");
-      const loops = source.split("for (const { name, run } of tests)").length - 1;
+      const harness = await readFile(new URL("../../scripts/test-harness.mjs", import.meta.url), "utf8");
+      const loops = (source + harness).split("for (const { name, run } of tests)").length - 1;
       assert.equal(loops, 1, "exactly one loop prints results and counts failures");
+      assert.match(source, /import \{ runCases \} from "\.\/test-harness\.mjs"/u, "the root runner uses the shared execution loop");
+      assert.ok(source.includes("await runCases(tests)"), "the suite executes through that imported loop");
       assert.ok(source.includes("runSuite(tests)"), "the full path calls it");
       assert.ok(source.includes("runSuite(selected, { lanes: false })"), "…and the selected path calls the SAME one");
       assert.ok(!source.includes("async function runSelection(files) {\n  let failures = 0;"), "…rather than carrying a second copy of it");

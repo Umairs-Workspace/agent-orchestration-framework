@@ -207,17 +207,17 @@ export const notifyMessagingTests = [
   {
     name: "131/08 task00 — the new directories are budgeted: src/commands/messaging an exemption naming 131/08, the src/commands row still 69, and the live tree green",
     async run() {
-      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/commands/messaging");
-      assert.ok(exemption, "packages/core/src/commands/messaging is an exemption");
-      assert.ok(exemption.why.includes("131/08") && exemption.why.includes("messaging.mjs"), "its why names 131/08 and its member");
-      const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/core/src/commands");
-      assert.equal(row.ceiling, 69, "the src/commands row is still 69");
+      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/application/bindings/commands/messaging");
+      assert.ok(exemption, "core's messaging composition has an exemption");
+      assert.ok((await readdir(path.join(repoRoot, exemption.directory))).includes("messaging.mjs"), "the configured command binding exists");
+      const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/core/src/application/bindings/commands");
+      assert.equal(row.ceiling, 62, "the command composition ceiling shrank with the removal");
       assert.equal(row.allowance, 0);
-      for (const [dir, member] of [["packages/core/src/notify", "secret.mjs"], ["test/notify", "notify-messaging"]]) {
-        assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === dir).why.includes(member), `${dir}'s why names ${member}`);
-      }
+      const owner = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/messaging/src");
+      assert.ok(owner.why.includes("secret.mjs"), "messaging owns the secret store");
+      assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "test/notify").why.includes("notify-messaging"), "the suite exemption names notify-messaging");
       const named = sourceDirectoryBudgetViolations(await readTreeListing())
-        .filter((v) => /src\/commands|(?:src|test)\/notify/u.test(v.message ?? JSON.stringify(v)));
+        .filter((v) => /bindings\/commands|packages\/messaging\/src|bindings\/notify|test\/notify/u.test(v.message ?? JSON.stringify(v)));
       assert.deepEqual(named, [], "the budget's own run over the live tree names none of them");
     },
   },

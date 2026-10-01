@@ -22,13 +22,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
 import { parseFeature } from "@aof/work/feature-parse";
 const validateWork = _aofWorkspace.work.validateWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");
-const srcWork = path.join(repoRoot, "packages", "work", "src", "discovery.mjs");
 const srcParser = path.join(repoRoot, "packages/work/src/feature-parse.mjs");
 const validationSource = path.join(repoRoot, "packages/work/src/validation.mjs");
 
@@ -500,8 +499,8 @@ export const featureParseStrictTests = [
   {
     name: "66/00 parse: no exported signature of `src/work.mjs` is added, removed, renamed or re-typed (243 dependents)",
     run: async () => {
-      // Runtime exports include compatibility forwards; source declarations alone hide them.
-      const surface = await import(pathToFileURL(srcWork).href);
+      // The configured workspace API retains the inherited operations after forward removal.
+      const surface = _aofWorkspace.work;
       const exported = Object.keys(surface);
       // The exported surface measured at HEAD before 66/00 (`git show HEAD:packages/core/src/work.mjs`).
       const AT_HEAD = [

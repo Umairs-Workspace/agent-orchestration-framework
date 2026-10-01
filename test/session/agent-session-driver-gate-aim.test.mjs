@@ -376,9 +376,12 @@ export const agentSessionDriverGateAimTests = [
       // not the gate being re-pointed, and the second leg below is what still says so.
       assert.match(
         s.gate.raw,
-        /import \{ driveInteractiveClaudeSession, NEEDS_INPUT_SENTINEL \} from "(?:\.\.\/)+packages\/core\/src\/mesh\/worker-execution\.mjs";/u,
-        "the gate's import line still takes both names FROM THE SINK — the verbatim re-export is what keeps it so",
+        /import \{ defaultApplication as _aofApplication \} from "aof\/default-application";/u,
+        "the behavioural gate obtains the configured worker from the public application",
       );
+      for (const name of ["driveInteractiveClaudeSession", "NEEDS_INPUT_SENTINEL"]) {
+        assert.ok(s.gate.raw.includes(`const ${name} = _aofApplication.mesh.worker.${name};`), `${name} still comes from the configured worker sink`);
+      }
       assert.equal(/from "(?:\.\.\/)+packages\/core\/src\/agent-session-driver\.mjs"/u.test(s.gate.raw), false, "the gate was NOT re-pointed at the new module for its behavioural legs");
       // And the legs themselves resolve their outcomes — the four gate entries carrying a
       // behavioural half are run here as well as by the green lane above.

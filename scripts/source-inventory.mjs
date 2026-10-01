@@ -27,7 +27,7 @@ export function sourceFiles(root, surfaces = workspaceSourceRoots(root)) {
       const containment = path.relative(workspace, full);
       if (containment === '..' || containment.startsWith('..' + path.sep) || path.isAbsolute(containment)) throw Error(`Source escapes workspace: ${relative}`);
       if (entry.isDirectory()) walk(relative, owner);
-      else if (/\.(?:[cm]?js|jsx|tsx?)$/u.test(entry.name) && !seen.has(full)) {
+      else if (/\.(?:[cm]?js|[cm]ts|jsx|tsx?)$/u.test(entry.name) && !seen.has(full)) {
         seen.add(full); files.push({ owner, rel: relative, path: full });
       }
     }

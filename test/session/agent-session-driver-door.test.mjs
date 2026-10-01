@@ -902,12 +902,14 @@ export const agentSessionDriverDoorTests = [
           // member that names the driver as a subject rather than as an import.
           "test/arch/assignment/acd-assignment-resolves-to-a-loop-call.test.mjs",
           "test/arch/assignment/acd-worker-driver-no-headless-print.test.mjs",
+          // Plan 06's ownership gate drives the configured service as well as reading its source.
+          "test/arch/session/acd-session-driver-single-home.test.mjs",
           // 63/06 — the loop-shaped watch lane, which names the driver for its positive
           // control: the session-shaped default it must be shown to have replaced.
           "test/mesh/assignment/mesh-assignment-loop-directive.test.mjs",
           "test/work/phase-brief-seams.test.mjs",
         ],
-        "the four named census members are exactly the deliberately re-aimed source gate, 70/00's seam suite, 63/03's fence and 63/06's loop-watch lane",
+        "the named census members are exactly the re-aimed gates and the ownership gate that drives the configured service",
       );
     },
   },
