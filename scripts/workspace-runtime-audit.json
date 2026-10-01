@@ -804,7 +804,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "601a681e1360eff1ad8115a1794a880b3f07eaceb166c406ae6d0dce79a1d18d",
+    "sourceDigest": "6e1d0ba5d9d114d3cfc6674a4e884b92dae20745ca62ac086b43b7a51f2ea7df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -812,7 +812,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "601a681e1360eff1ad8115a1794a880b3f07eaceb166c406ae6d0dce79a1d18d",
+    "sourceDigest": "6e1d0ba5d9d114d3cfc6674a4e884b92dae20745ca62ac086b43b7a51f2ea7df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -820,7 +820,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "601a681e1360eff1ad8115a1794a880b3f07eaceb166c406ae6d0dce79a1d18d",
+    "sourceDigest": "6e1d0ba5d9d114d3cfc6674a4e884b92dae20745ca62ac086b43b7a51f2ea7df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -828,7 +828,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(file)).href)",
     "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "601a681e1360eff1ad8115a1794a880b3f07eaceb166c406ae6d0dce79a1d18d",
+    "sourceDigest": "6e1d0ba5d9d114d3cfc6674a4e884b92dae20745ca62ac086b43b7a51f2ea7df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {

@@ -4,14 +4,12 @@
 
 // milestone 134 / story 02 — the map's closed grammar, its queries and its token (tasks 00-01), and
 // the `work.examples.enabled` gate (task 02).
-import { exampleMapParseTests } from "./example-map-parse.test.mjs";
 import { examplesConfigGateTests } from "./examples-config-gate.test.mjs";
 // milestone 134 / story 03 — the one reader of a person's answer, its stamp at settle, and the
 // settle reading the transcript store that exists (tasks 00-02).
 import { exampleAnswersTests } from "./example-answers.test.mjs";
 
 export const tests = [
-  ...exampleMapParseTests,
   ...examplesConfigGateTests,
   ...exampleAnswersTests,
 ];

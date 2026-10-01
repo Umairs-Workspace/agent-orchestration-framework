@@ -49,7 +49,6 @@ import { graphifyDegradeTests } from "./graphify-degrade.test.mjs";
 // coupling command the running agents consume. The NON-VACUOUS value test (computeImpact
 // returns EXACT dependents/dependencies; the build-first precondition), replacing the
 // superseded "zero production code" stance with a real, tested consumer.
-import { tests as graphImpactTests } from "./graph-impact.test.mjs";
 // milestone 12 — managed tool provisioning (story 02: graphify retrofit — the
 // store-first re-point of resolveGraphifyBinary onto resolveManagedBinary, ADR-004
 // task 00; @executable traceability)
@@ -67,6 +66,5 @@ export const tests = [
   ...graphifyRerankingTests,
   ...graphifyPostureTests,
   ...graphifyDegradeTests,
-  ...graphImpactTests,
   ...graphifyStoreFirstTests,
 ];

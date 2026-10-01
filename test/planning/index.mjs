@@ -23,7 +23,6 @@ import { tuneCorpusTests } from "./tune-corpus.test.mjs";
 
 // milestone 62 / story 05 — pure, lossless candidate formation under a readable,
 // variable criterion, plus FF-6209's partition and content-derived tie-break.
-import { tuneFormationTests } from "./tune-formation.test.mjs";
 // milestone 62 / story 04 — the registered read face, acceptor-only verdict seam,
 // byte-level read-only proof and the integrated real-corpus acceptance condition.
 import { tuneCommandTests } from "./tune-command.test.mjs";
@@ -57,7 +56,6 @@ export const tests = [
   // milestone 62 / story 02 — provenance resolution and FF-6204.
   // milestone 62 / story 03 — measured distance and FF-6206.
   // milestone 62 / story 05 — candidate formation tasks 00–04 and FF-6209.
-  ...tuneFormationTests,
   // milestone 62 / story 04 — tasks 00–04 plus FF-6201, FF-6207 and FF-6208.
   ...tuneCommandTests,
   ...planningInitTests,

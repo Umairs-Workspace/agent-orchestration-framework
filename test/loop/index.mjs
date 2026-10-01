@@ -26,13 +26,8 @@ import { workLoopsRegistryCensusTests } from "./work-loops-registry-census.test.
 import { workLoopsCoverageLedgerTests } from "./work-loops-coverage-ledger.test.mjs";
 // milestone 53 / story 01 — the pure loop engine's seven executable task suites.
 // Each suite is imported and spread with the module whose decisions it mechanises.
-import { workLoopScopeGuardTests } from "./work-loop-scope-guard.test.mjs";
-import { workLoopLevelLadderTests } from "./work-loop-level-ladder.test.mjs";
 import { workLoopPhaseMapTests } from "./work-loop-phase-map.test.mjs";
-import { workLoopStopSetTests } from "./work-loop-stop-set.test.mjs";
-import { workLoopGateOrderTests } from "./work-loop-gate-order.test.mjs";
 import { workLoopDeclarationTests } from "./work-loop-declaration.test.mjs";
-import { workLoopDeterminismTests } from "./work-loop-determinism.test.mjs";
 // milestone 53 / story 02 — the launcher shell and local phase executors.
 import { driveCommandPhaseDriverTests } from "./drive-command-phase-drivers.test.mjs";
 import { loopCommandProbeTests } from "./loop-command-probe.test.mjs";
@@ -152,7 +147,6 @@ import { reviewStaysColdTests } from "./review-stays-cold.test.mjs";
 import { loopBoundsTests, clampTests } from "./loop-bounds.test.mjs";
 // 2026-09-11 — the loop's exit-reason recorder (packages/core/src/loop-diag.mjs).
 import { loopDiagTests } from "./loop-diag.test.mjs";
-import { workLoopReviewBoundTests } from "./work-loop-review-bound.test.mjs";
 import { workLoopProductionReviewBoundTests } from "./work-loop-production-review-bound.test.mjs";
 import { workLoopsResolvedCeilingsTests } from "./work-loops-resolved-ceilings.test.mjs";
 // milestone 69 / story 03 — deterministic progress samples, append-only ledger,
@@ -266,13 +260,8 @@ export const tests = [
   ...workLoopsRegistryCensusTests,
   ...workLoopsCoverageLedgerTests,
   // milestone 53 / story 01 — scope, level, phase, stops, gate, declaration, determinism
-  ...workLoopScopeGuardTests,
-  ...workLoopLevelLadderTests,
   ...workLoopPhaseMapTests,
-  ...workLoopStopSetTests,
-  ...workLoopGateOrderTests,
   ...workLoopDeclarationTests,
-  ...workLoopDeterminismTests,
   // milestone 53 / story 02 — one code-owned shell and three local executors
   ...driveCommandPhaseDriverTests,
   ...loopCommandProbeTests,
@@ -331,7 +320,6 @@ export const tests = [
   // milestone 61 / story 00 — the clamp (tasks 00, 01, 02). FF-6111 rides the
   // already-spread acdLoopCapSingleHomeTests suite above.
   ...clampTests,
-  ...workLoopReviewBoundTests,
   ...workLoopProductionReviewBoundTests,
   ...workLoopsResolvedCeilingsTests,
   // milestone 69 / story 03 — all three executable tasks + FF-6906.

@@ -5,8 +5,8 @@ import {
   decideLoop,
   resolveLoopLevel,
   resolveLoopLevelGate,
-} from "../../packages/work-loop/src/engine.mjs";
-import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
+} from "../src/engine.mjs";
+import { workLoopStoryFixturesFor } from "./support/work-loop-story-fixtures.mjs";
 
 export const workLoopLevelLadderTests = [
   {

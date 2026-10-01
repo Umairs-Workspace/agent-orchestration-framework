@@ -60,7 +60,6 @@ import { contractParsesTests } from "./work-validate-contract-parses.test.mjs";
 import { workRatchetTests } from "./work-ratchet.test.mjs";
 // milestone 57 / story 04 — finding-escape + intervention counters (tasks
 // 00–02), with a read-only observation-boundary/registration fitness suite.
-import { workCountersTests } from "./work-counters.test.mjs";
 
 // story 137 — validate holds an AOF.md record doc to the template (task 02).
 import { workValidateDigestTemplateTests } from "./work-validate-digest-template.test.mjs";
@@ -79,7 +78,6 @@ export const tests = [
   // milestone 57 / story 03 — contract-integrity ratchet (tasks 00–04) + FF-5705
   ...workRatchetTests,
   // milestone 57 / story 04 — escape/intervention counters (tasks 00–02)
-  ...workCountersTests,
   // story 137 — validate holds an AOF.md record doc to the template (task 02).
   ...workValidateDigestTemplateTests,
 ];

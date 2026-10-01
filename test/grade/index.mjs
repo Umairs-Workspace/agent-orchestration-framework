@@ -116,7 +116,6 @@ import { gradeSpawnBoundedAndSingleTests } from "./grade-spawn-bounded-and-singl
 // never-executes discipline: the report arrives as SNAPSHOT TEXT at the engine's one impure
 // edge and the lane is a pure `(snapshot, ctx) => Finding[]`. FF-5408 is the story's own
 // fitness function.
-import { rubricJoinIsDeclaredTests } from "./rubric-join-is-declared.test.mjs";
 import { rubricMissIsReportedUnjoinedTests } from "./rubric-miss-is-reported-unjoined.test.mjs";
 import { rubricLaneReadsAndNeverRunsTests } from "./rubric-lane-reads-and-never-runs.test.mjs";
 // story 81 — the loop's bounds survive a grader that takes real time. Four behavioural suites,
@@ -189,7 +188,6 @@ export const tests = [
   ...gradeReadFaceNeverExecutesTests,
   ...gradeSpawnBoundedAndSingleTests,
   // milestone 54 / story 04 — scenario traceability (tasks 00–02) + FF-5408.
-  ...rubricJoinIsDeclaredTests,
   ...rubricMissIsReportedUnjoinedTests,
   ...rubricLaneReadsAndNeverRunsTests,
   ...gradeWaitsWithoutBlockingTests,

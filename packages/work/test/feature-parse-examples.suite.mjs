@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { parseFeature } from "@aof/work/feature-parse";
-import { featureFiles, loadPreExamplesParser, withoutExamples } from "../support/feature-parse-pre-examples.mjs";
+import { featureFiles, loadPreExamplesParser, withoutExamples } from "./support/feature-parse-pre-examples.mjs";
 
 const parse = (body) => parseFeature(`@executable\nFeature: examples\n\n${body}`);
 

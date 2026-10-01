@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 
 import { rubricTraceabilityGroup, executableScenariosOf, joinCases } from "@aof/work/doctor/rubric";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // A feature file's text, built from scenario declarations so a test reads as the contract does.
 function feature(featureTags, scenarios) {

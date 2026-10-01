@@ -191,7 +191,6 @@ import { itemLockOperatorVsAutomaticTests } from "./item-lock-operator-vs-automa
 import { featureParseStrictTests } from "./feature-parse-strict.test.mjs";
 // milestone 57 / story 02 — additive Examples metadata on the one feature parser
 // (tasks 00–01) + FF-5704's whole-corpus compatibility differential.
-import { featureParseExamplesTests } from "./feature-parse-examples.test.mjs";
 // milestone 57 / story 05 — the day-one pairing table (tasks 00–01): the three
 // shipped watcher records + FF-5707 (counter resolution) and FF-5708 (table complete).
 import { pairingTableTests } from "./pairing-table.test.mjs";
@@ -305,7 +304,6 @@ export const tests = [
   // milestone 66 / story 00 — contract parses (tasks 00–02) + its two fitness functions
   ...featureParseStrictTests,
   // milestone 57 / story 02 — additive Examples metadata (tasks 00–01) + FF-5704
-  ...featureParseExamplesTests,
   // milestone 57 / story 05 — the day-one pairing table (tasks 00–01) + FF-5707/FF-5708
   ...pairingTableTests,
   // milestone 66 / story 03 — the ask (tasks 00–02) + its one fitness function

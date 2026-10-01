@@ -5,8 +5,8 @@ import {
   decideLoop,
   decideLoopAction,
   mapStoreRefusal,
-} from "../../packages/work-loop/src/engine.mjs";
-import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
+} from "../src/engine.mjs";
+import { workLoopStoryFixturesFor } from "./support/work-loop-story-fixtures.mjs";
 
 const base = {
   next: { state: "ready", ref: "53/01", type: "story" },

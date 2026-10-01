@@ -5,17 +5,17 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import * as loopEngine from "../../packages/work-loop/src/engine.mjs";
+import * as loopEngine from "../src/engine.mjs";
 import {
   WORK_LOOP_STORY_FIXTURE_FAMILIES,
   WORK_LOOP_STORY_FIXTURES,
-} from "../support/work-loop-story-fixtures.mjs";
+} from "./support/work-loop-story-fixtures.mjs";
 
 const { LOOP_STOPS, decideLoop } = loopEngine;
 
 const execFileAsync = promisify(execFile);
 const here = path.dirname(fileURLToPath(import.meta.url));
-const modulePath = path.join(here, "..", "..", "packages", "work-loop", "src", "engine.mjs");
+const modulePath = path.join(here, "..", "src", "engine.mjs");
 const fixture = {
   scope: "53",
   level: "L2",

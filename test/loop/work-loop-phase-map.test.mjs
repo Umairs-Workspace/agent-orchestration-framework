@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { decideLoop, decideLoopAction, decideLoopPhase, decideWave } from "../../packages/work-loop/src/engine.mjs";
 import { stripComments } from "../support/source-slice.mjs";
-import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
+import { workLoopStoryFixturesFor } from "../../packages/work-loop/test/support/work-loop-story-fixtures.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

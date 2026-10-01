@@ -14,7 +14,7 @@
 // So the core sits at `src/`, a sibling of its own face — the tree's existing convention
 // (`src/mesh/session.mjs` ↔ `src/commands/mesh-session.mjs`, and three more pairs) — and
 // `src/commands/graph-impact.mjs` RE-EXPORTS it, so every existing consumer is byte-unchanged.
-// Measured blast radius at the move: two importers, the command and `test/graph/graph-impact.test.mjs`.
+// Measured blast radius at the move: two importers, the command and `packages/knowledge/test/graph-impact.suite.mjs`.
 //
 // WHAT DID NOT COME WITH IT: `matchFile`, which was declared in the command and never used. A dead
 // helper carried through a move is a dead helper with a new address.

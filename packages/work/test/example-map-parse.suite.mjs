@@ -28,7 +28,7 @@ import {
   rulesWithoutExample,
 } from "@aof/work/examples/map";
 
-const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const MAP_MODULE = path.join(repoRoot, "packages", "work", "src", "examples", "map.mjs");
 
 // ── fixtures ─────────────────────────────────────────────────────────────────

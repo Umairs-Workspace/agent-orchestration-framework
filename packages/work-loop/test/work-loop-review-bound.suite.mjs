@@ -11,9 +11,9 @@ import {
   isReviewBlockerClaim,
   reviewBlockerFromFinding,
   reviewFindingDisposition,
-} from "../../packages/work-loop/src/engine.mjs";
+} from "../src/engine.mjs";
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const defaultCap = reviewRoundsFromConfig({ config: {} });
 const findingRows = [
   ["a production defect", true, "production-defect"],

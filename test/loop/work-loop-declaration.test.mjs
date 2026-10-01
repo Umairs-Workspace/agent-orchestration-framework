@@ -7,7 +7,7 @@ import {
   readLoopDeclaration,
   resolveLoopResume,
 } from "../../packages/work-loop/src/engine.mjs";
-import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
+import { workLoopStoryFixturesFor } from "../../packages/work-loop/test/support/work-loop-story-fixtures.mjs";
 
 const loop = (overrides = {}) => ({
   loopRunId: "lr-7",
