@@ -1,4 +1,5 @@
 import { discordInviteUrl, isDiscordBotToken, isDiscordSnowflake, renderDiscord, renderDiscordTest, sendDiscord } from "./discord.mjs";
+import { trimRun } from "@aof/foundation/text";
 
 // Core supplies configured application services; construction performs no I/O.
 export function createNotifier({ reportDegrade, resolveWorkspaceId, recordAskMessage, readMessagingSecret }) {
@@ -200,7 +201,7 @@ function projectName(workspace) {
   if (nonBlank(name)) return name.trim();
   const root = workspace?.projectRoot;
   if (!nonBlank(root)) return null;
-  const folder = root.replace(/[\\/]+$/u, "").split(/[\\/]/u).pop();
+  const folder = trimRun(root, "\\/", { start: false }).split(/[\\/]/u).pop();
   return nonBlank(folder) ? folder : null;
 }
 

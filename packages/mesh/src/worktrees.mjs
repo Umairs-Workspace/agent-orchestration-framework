@@ -1,6 +1,7 @@
 import path from "node:path";
 import { createWorktreeOperations, defaultGitExec, resolveExec, parsePorcelainStatus } from "@aof/execution/worktrees";
 import { gitPositional } from "@aof/foundation/git-args";
+import { trimRun } from "@aof/foundation/text";
 
 // Mesh owns lane paths, naming, retention, staging and preparation policy.
 // Composition is inert; the application supplies workspace loading and the lazy toolchain port.
@@ -782,15 +783,4 @@ async function sweepRetainedWorktrees(projectRoot, retainedAssignments, options 
 }
 
   return { DEFAULT_WORKTREE_RETENTION_MS, WORKTREE_PREPARE_DEADLINE_EXPIRED, WORKTREE_PREPARE_FAILED, WORKTREE_PREPARE_NOT_STARTED, addDispatchWorktree, addSessionWorktree, addWorktree, adoptRemoteBranch, advanceBranchToBase, commitWorktreeChanges, defaultGitExec, dispatchWorktreeSlug, ensureCommitAvailable, findItemWorktree, headCommit, isInsideMeshWorktree, isUnderMeshDispatchWorktreesRoot, isUnderMeshSessionWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, localBranchExists, meshDispatchWorktreePath, meshDispatchWorktreesRoot, meshIdentityArgs, meshItemBranchName, meshSessionWorktreePath, meshSessionWorktreesRoot, meshWorktreePath, meshWorktreesRoot, parsePorcelainStatus, remoteBranchExists, removeDispatchWorktree, removeWorktree, resolveExec, reuseWorktreeOnBranch, sessionWorktreeSlug, sweepRetainedWorktrees };
-}
-
-// Strip every leading and/or trailing `ch` with a linear scan. An end-anchored regex (`/-+$/`)
-// retries from each position of a long run that is NOT at the end, which is quadratic, and these
-// values can arrive from another node.
-function trimRun(value, ch, { start = true, end = true } = {}) {
-  let from = 0;
-  let to = value.length;
-  if (start) while (from < to && value[from] === ch) from += 1;
-  if (end) while (to > from && value[to - 1] === ch) to -= 1;
-  return value.slice(from, to);
 }

@@ -7,6 +7,7 @@ import { createDegradeReporter } from '@aof/foundation/degrade';
 import { createJsonlLogSink, readJsonlLog } from '@aof/foundation/log';
 import { readJson, writeText, normalizeId, createTempFileSweeper } from '@aof/foundation/fs';
 import { gitPositional } from '@aof/foundation/git-args';
+import { trimRun } from '@aof/foundation/text';
 
 async function fixture(run) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'aof-foundation-'));
@@ -121,4 +122,16 @@ test('a git positional is refused when git could read it as an option', () => {
   assert.throws(() => gitPositional('-u', 'branch'), /may not start with "-"/);
   assert.throws(() => gitPositional('', 'branch'), /non-empty string/);
   assert.throws(() => gitPositional(undefined, 'branch'), /non-empty string/);
+});
+
+test('trimRun strips a leading/trailing character run in linear time', () => {
+  assert.equal(trimRun('--a-b--', '-'), 'a-b');
+  assert.equal(trimRun('..a.lock..', '.', { end: false }), 'a.lock..');
+  assert.equal(trimRun('abc==', '=', { start: false }), 'abc');
+  assert.equal(trimRun('C:\\proj\\//', '\\/', { start: false }), 'C:\\proj');
+  assert.equal(trimRun('----', '-'), '');
+  const hostile = 'a' + '-'.repeat(200_000) + 'b';
+  const started = performance.now();
+  assert.equal(trimRun(hostile, '-'), hostile);
+  assert.ok(performance.now() - started < 1_000, 'a long interior run is not rescanned');
 });

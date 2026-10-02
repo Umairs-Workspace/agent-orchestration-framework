@@ -241,7 +241,7 @@ function stripHtmlTags(value) {
   let previous;
   do {
     previous = current;
-    current = current.replace(/<[^>]+>/g, "");
+    current = htmlTagsOnce(current);
   } while (current !== previous);
   return current;
 }
@@ -265,4 +265,19 @@ export function storyAnchorResolves(text, anchor) {
     if (slug === sought || slug.startsWith(`${sought}-`)) return true;
   }
   return false;
+}
+
+// One linear pass removing `<…>` spans — exactly what `/<[^>]+>/g` removes, without its quadratic rescans.
+function htmlTagsOnce(text) {
+  let out = "";
+  let at = 0;
+  for (;;) {
+    const open = text.indexOf("<", at);
+    if (open < 0) return out + text.slice(at);
+    const close = text.indexOf(">", open + 1);
+    if (close < 0) return out + text.slice(at);
+    if (close === open + 1) { out += text.slice(at, open + 1); at = open + 1; continue; }
+    out += text.slice(at, open);
+    at = close + 1;
+  }
 }

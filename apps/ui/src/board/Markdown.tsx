@@ -43,7 +43,7 @@ export function stripHtmlComments(text: string): string {
   let previous: string;
   do {
     previous = current;
-    current = current.replace(/<!--[\s\S]*?--!?>/g, "");
+    current = htmlCommentsOnce(current);
   } while (current !== previous);
   return current;
 }
@@ -173,4 +173,23 @@ export function DiagramMarkdown({
       ) : null}
     </div>
   );
+}
+
+// One linear pass removing `<!-- … -->` / `<!-- … --!>` spans — exactly what `/<!--[\s\S]*?--!?>/g` removes,
+// without the regex's quadratic rescans when many `<!--` have no end.
+function htmlCommentsOnce(text: string): string {
+  let out = "";
+  let at = 0;
+  for (;;) {
+    const open = text.indexOf("<!--", at);
+    if (open < 0) return out + text.slice(at);
+    let end = -1;
+    for (let dash = text.indexOf("--", open + 4); dash >= 0; dash = text.indexOf("--", dash + 1)) {
+      if (text[dash + 2] === ">") { end = dash + 3; break; }
+      if (text[dash + 2] === "!" && text[dash + 3] === ">") { end = dash + 4; break; }
+    }
+    if (end < 0) return out + text.slice(at);
+    out += text.slice(at, open);
+    at = end;
+  }
 }

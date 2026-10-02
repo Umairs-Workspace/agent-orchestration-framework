@@ -178,10 +178,11 @@ async function probe(cwd, args) {
 // A test proxy forwards only the PATH it received, onto its own upstream origin: an absolute or
 // protocol-relative request target (`http://elsewhere/`, `//elsewhere/`) can never move the fetch to another host.
 function upstreamUrl(rawTarget, upstream) {
-  const origin = new URL(upstream).origin;
   const { pathname, search } = new URL(rawTarget ?? "/", "http://proxy.invalid");
-  const url = new URL(`${origin}/${pathname.replace(/^\/+/, "")}${search}`);
-  if (url.origin !== origin) throw new Error(`refusing to proxy ${rawTarget} away from ${origin}`);
+  // Built from the upstream, then only the path and query are set: the host cannot change.
+  const url = new URL(upstream);
+  url.pathname = pathname;
+  url.search = search;
   return url;
 }
 

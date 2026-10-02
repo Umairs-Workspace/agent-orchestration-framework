@@ -43,6 +43,7 @@
 import path from "node:path";
 import crypto from "node:crypto";
 import { readJson, writeText } from "@aof/foundation/fs";
+import { trimRun } from "@aof/foundation/text";
 
 // The ONE sidecar-path builder (ADR-004.1): `.aof/mesh/identity.json`, anchored on
 // the ALREADY-computed `aofDir` (work.mjs:57) — never a hard-coded machine path.
@@ -433,15 +434,4 @@ export async function resolveInstallSalt(sidecarPath, config, { writePatch = wri
     await writePatch(sidecarPath, { salt });
   }
   return salt;
-}
-
-// Strip every leading and/or trailing `ch` with a linear scan. An end-anchored regex (`/-+$/`)
-// retries from each position of a long run that is NOT at the end, which is quadratic, and these
-// values can arrive from another node.
-function trimRun(value, ch, { start = true, end = true } = {}) {
-  let from = 0;
-  let to = value.length;
-  if (start) while (from < to && value[from] === ch) from += 1;
-  if (end) while (to > from && value[to - 1] === ch) to -= 1;
-  return value.slice(from, to);
 }

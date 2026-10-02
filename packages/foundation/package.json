@@ -9,7 +9,8 @@
     "./log": "./src/log.mjs",
     "./sqlite-runtime": "./src/sqlite-runtime.mjs",
     "./git-args": "./src/git-args.mjs",
-    "./markdown": "./src/markdown.mjs"
+    "./markdown": "./src/markdown.mjs",
+    "./text": "./src/text.mjs"
   },
   "files": [
     "src"

@@ -198,7 +198,7 @@ function deliveredSectionOf(text) {
   let previous;
   do {
     previous = section;
-    section = section.replace(/<!--[\s\S]*?--!?>/g, "");
+    section = htmlCommentsOnce(section);
   } while (section !== previous);
   return section.trim();
 }
@@ -418,5 +418,24 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   } catch (error) {
     console.error(error instanceof SiteBuildError ? error.message : error.stack ?? String(error));
     process.exitCode = 1;
+  }
+}
+
+// One linear pass removing `<!-- … -->` / `<!-- … --!>` spans — exactly what `/<!--[\s\S]*?--!?>/g` removes,
+// without the regex's quadratic rescans when many `<!--` have no end.
+function htmlCommentsOnce(text) {
+  let out = "";
+  let at = 0;
+  for (;;) {
+    const open = text.indexOf("<!--", at);
+    if (open < 0) return out + text.slice(at);
+    let end = -1;
+    for (let dash = text.indexOf("--", open + 4); dash >= 0; dash = text.indexOf("--", dash + 1)) {
+      if (text[dash + 2] === ">") { end = dash + 3; break; }
+      if (text[dash + 2] === "!" && text[dash + 3] === ">") { end = dash + 4; break; }
+    }
+    if (end < 0) return out + text.slice(at);
+    out += text.slice(at, open);
+    at = end;
   }
 }

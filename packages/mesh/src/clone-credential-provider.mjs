@@ -1,5 +1,6 @@
 import { parseRepoFromCloneUrl } from "./worker-repo-admission.mjs";
 import { createSign } from "node:crypto";
+import { trimRun } from "@aof/foundation/text";
 export const CLONE_CREDENTIAL_PROVIDER_UNKNOWN = "clone-credential-provider-unknown";
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
@@ -69,7 +70,7 @@ export function createCloneCredentialProviders({ defaultMintCloneCredential }) {
 
 
 function base64url(input) {
-  return Buffer.from(input).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return trimRun(Buffer.from(input).toString("base64").replace(/\+/g, "-").replace(/\//g, "_"), "=", { start: false });
 }
 
 // defaultSignAppJwt({ appId, privateKey, now }) — the REAL production signer: RS256

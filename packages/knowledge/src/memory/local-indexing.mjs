@@ -5,6 +5,7 @@ import { readFile, readdir } from "node:fs/promises";
 import { headingSplitRe, headingCaptureRe } from "@aof/work/declared-id";
 import { refInScope } from "@aof/work/ref-scope";
 import { readJson, writeText } from "@aof/foundation/fs";
+import { trimRun } from "@aof/foundation/text";
 
 // Configured application services are supplied by core; construction performs no I/O.
 export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, ensureAofGitignore, importStoreRoot, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, AOF_FILE }) {
@@ -274,7 +275,7 @@ function parseAof(text, { item, itemSlug, workRelPath }) {
 
 // A heading → a stable kebab id ("Key decision" → "key-decision"). Empty → "section".
 function slugifyHeading(title) {
-  return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "section";
+  return trimRun(title.toLowerCase().replace(/[^a-z0-9]+/g, "-"), "-") || "section";
 }
 
 // --------------------------------------------------------- OUTCOME parser ----

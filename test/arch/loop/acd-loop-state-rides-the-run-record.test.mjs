@@ -179,9 +179,9 @@ function assertUiFrozen(pairs) {
   // and no file under `apps/ui/src` changed.
   // RE-PINNED by 142's CodeQL fixes (js/incomplete-multi-character-sanitization): the detail panel's HTML-comment
   // strip runs to a fixed point. Measured: `git diff --numstat -- apps/ui/src` is TWO files, both under
-  // `apps/ui/src/board/` — `Markdown.tsx` (+12: `stripHtmlComments`, the loop) and `DetailPanel.tsx` (+2 −2: the
+  // `apps/ui/src/board/` — `Markdown.tsx` (+31: `stripHtmlComments`, the fixed-point loop over a linear `htmlCommentsOnce` scan) and `DetailPanel.tsx` (+2 −2: the
   // import and the one call that replaces the single-pass regex). No run-record key, cycle, level or loop state is read.
-  assert.equal(hash.digest("hex"), "ceb64ca68496f3ceebdbdddbbbdbc38a907b60fcb161a82ed0f07b12587491ca", "ui/ changed despite the zero-board-change contract");
+  assert.equal(hash.digest("hex"), "51aa705bad44c2d76c1144f1bcd9a9c25c52e1550f5dfd14a95d32eb4648b654", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
