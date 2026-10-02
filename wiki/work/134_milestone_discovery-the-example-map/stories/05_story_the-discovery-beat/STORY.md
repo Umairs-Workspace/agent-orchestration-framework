@@ -5,10 +5,10 @@ slug: the-discovery-beat
 title: "The discovery beat — refine maps rules, key examples and questions before any headline Scenario, asks a person the business questions, and --autonomous asks them at its one stop"
 parent: 134
 depends: [02]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-10-02
 adrs: [ADR-001, ADR-003, ADR-004, ADR-005, ADR-006]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -20,24 +20,24 @@ reads:
   - wiki/work/134_milestone_discovery-the-example-map/ARCHITECTURE.md#ADR-006
   - wiki/planning/research/RESEARCH-specification-by-example.md
   - wiki/acceptance-criteria.md
-  - src/work-examples/map.mjs
-  - src/bundle/commands/refine.md
-  - src/bundle/agents/aof-product-owner.md
-  - src/bundle/agents/aof-architect.md
-  - src/bundle/agents/aof-qa.md
-  - src/bundle/templates/story/PLAN.md
-  - src/bundle/bundle.json
+  - packages/work/src/examples/map.mjs
+  - packages/core/assets/commands/refine.md
+  - packages/core/assets/agents/aof-product-owner.md
+  - packages/core/assets/agents/aof-architect.md
+  - packages/core/assets/agents/aof-qa.md
+  - packages/core/assets/templates/story/PLAN.md
+  - packages/core/assets/bundle.json
   - test/bundle/bundle-architect-draws.test.mjs
   - test/work/story-plan-document.test.mjs
   - test/examples/index.mjs
-  - src/commands/insert-shared.mjs
+  - packages/work/src/insertion/scaffold.mjs
   - test/support/source-slice.mjs
 files:
-  - src/bundle/commands/refine.md
-  - src/bundle/agents/aof-product-owner.md
-  - src/bundle/agents/aof-architect.md
-  - src/bundle/templates/story/EXAMPLES.md
-  - src/bundle/manifest.json
+  - packages/core/assets/commands/refine.md
+  - packages/core/assets/agents/aof-product-owner.md
+  - packages/core/assets/agents/aof-architect.md
+  - packages/core/assets/templates/story/EXAMPLES.md
+  - packages/core/assets/manifest.json
   - wiki/acceptance-criteria.md
   - .claude/commands/aof/refine.md
   - .claude/agents/aof-product-owner.md
@@ -84,11 +84,11 @@ the level above the three zoom levels. All rendered copies are refreshed through
 
 ## Tasks
 
-- [ ] 00 [refine opens the story contract with a discovery beat when the gate is on](tasks/00_refine-opens-the-story-contract-with-a-discovery-beat-when-the-gate-is-on.feature)
-- [ ] 01 [--autonomous brings every open business question to its one stop as a question](tasks/01_autonomous-brings-every-open-business-question-to-its-one-stop-as-a-question.feature)
-- [ ] 02 [the PO brief learns the map and the architect brief learns the classification review](tasks/02_the-po-brief-learns-the-map-and-the-architect-brief-learns-the-classification-review.feature)
-- [ ] 03 [the EXAMPLES.md template is a legal map the bundle installs](tasks/03_the-examples-template-is-a-legal-map-the-bundle-installs.feature)
-- [ ] 04 [the acceptance-criteria guide names discovery above the three zoom levels](tasks/04_the-acceptance-criteria-guide-names-discovery-above-the-three-zoom-levels.feature)
+- [x] 00 [refine opens the story contract with a discovery beat when the gate is on](tasks/00_refine-opens-the-story-contract-with-a-discovery-beat-when-the-gate-is-on.feature)
+- [x] 01 [--autonomous brings every open business question to its one stop as a question](tasks/01_autonomous-brings-every-open-business-question-to-its-one-stop-as-a-question.feature)
+- [x] 02 [the PO brief learns the map and the architect brief learns the classification review](tasks/02_the-po-brief-learns-the-map-and-the-architect-brief-learns-the-classification-review.feature)
+- [x] 03 [the EXAMPLES.md template is a legal map the bundle installs](tasks/03_the-examples-template-is-a-legal-map-the-bundle-installs.feature)
+- [x] 04 [the acceptance-criteria guide names discovery above the three zoom levels](tasks/04_the-acceptance-criteria-guide-names-discovery-above-the-three-zoom-levels.feature)
 
 ## Notes
 

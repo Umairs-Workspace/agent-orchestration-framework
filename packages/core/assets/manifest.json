@@ -285,6 +285,15 @@
       "hash": "sha256:2ad536da4be2e5243771a559f77dc4ea9bf935614363bc848901754da6a83e4c"
     },
     {
+      "path": ".aof/templates/work/story/EXAMPLES.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "story",
+        "kind": "template"
+      },
+      "hash": "sha256:8cb6baedbd87fada5f224716c5db26460ba812cd937b6964ebce68790dcfe317"
+    },
+    {
       "path": ".aof/templates/work/story/PLAN.md",
       "runtime": "claude",
       "resource": {
@@ -345,7 +354,7 @@
         "id": "aof-architect",
         "kind": "agent"
       },
-      "hash": "sha256:1fe227588ca7f9fe7f526ed861f133a5cdf7e1330247c3b301e60fc42b583ca4"
+      "hash": "sha256:dcc0b7d3804cf6c60f966a52da308d6412bdb65804db08e2a72ad1c0975ce33c"
     },
     {
       "path": ".claude/agents/aof-compliance.md",
@@ -381,7 +390,7 @@
         "id": "aof-product-owner",
         "kind": "agent"
       },
-      "hash": "sha256:de3dd6ff14082056ad73b1cd83768754d3ff1a1dff0579d0617f199ec70b985f"
+      "hash": "sha256:525ee73cd1b2275fe2d6b9a8f907de463acf101c32f572e0ecfa9013bc9110e6"
     },
     {
       "path": ".claude/agents/aof-qa.md",
@@ -624,7 +633,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:8677fbc7ca3840c54f3022379db63f7decad5d7ea9ae365ed623161bd6bc9509"
+      "hash": "sha256:4dc1400fb9e0b5560ccfcbb8b4dd0e03f3a1c23bb93bf262a885b8ba0ed00c51"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",
@@ -714,7 +723,7 @@
         "id": "aof-architect",
         "kind": "agent"
       },
-      "hash": "sha256:bc8bf4943277134bf8e39f8d5dc97d60cb0fccfda8dbde9343d40ffedd03224a"
+      "hash": "sha256:153a8ff4c2dff02cf0eeecd98dd7ac91c50aab7f22b525e591e33a6585e81dda"
     },
     {
       "path": ".codex/agents/aof-compliance.md",
@@ -750,7 +759,7 @@
         "id": "aof-product-owner",
         "kind": "agent"
       },
-      "hash": "sha256:6184e3100eab17e22f14fdd277fd1c72b7ff579af3cf7e2dbfbbe69c8f7a6a9c"
+      "hash": "sha256:44e2e1e229ce06672e20bf99087dc4513dc3fc99b05ef42121f5168757f4a4e4"
     },
     {
       "path": ".codex/agents/aof-qa.md",
@@ -1002,7 +1011,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:e59981fadce09e3edc90cec9e5614a97e585569bef2a309b86737e6922d752d7"
+      "hash": "sha256:7c1a31b150f4b4c3fa2b83082375c89e925da28a364794fef33a1d13b9f0331a"
     },
     {
       "path": ".codex/skills/aof-retrospective/SKILL.md",

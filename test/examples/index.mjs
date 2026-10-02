@@ -12,10 +12,14 @@ import { exampleAnswersTests } from "./example-answers.test.mjs";
 // continue door that refuses a story while a business question stands (task 02).
 import { doctorExamplesLaneTests } from "./doctor-examples-lane.test.mjs";
 import { continueDoorExamplesTests } from "./continue-door-examples.test.mjs";
+// milestone 134 / story 05 — the discovery beat: refine's prose, the two briefs, the EXAMPLES.md
+// template and the acceptance-criteria guide (tasks 00-04).
+import { refineDiscoveryBeatTests } from "./refine-discovery-beat.test.mjs";
 
 export const tests = [
   ...examplesConfigGateTests,
   ...exampleAnswersTests,
   ...doctorExamplesLaneTests,
   ...continueDoorExamplesTests,
+  ...refineDiscoveryBeatTests,
 ];

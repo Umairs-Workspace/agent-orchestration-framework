@@ -225,8 +225,45 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      source exactly as before: no block, no crash, no noise, and no reading of a stale artifact as if it
      were this build's output.
 
-- **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`: PO writes the
-  headline Scenarios; `aof-qa` writes the Examples tables; `aof-developer` checks feasibility.
+- **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`, opening with
+  the discovery beat below when the project has turned it on.
+
+  Discovery comes first, and ONLY when the project has turned it on: read `work.examples.enabled`
+  from `.aof/aof.config.json`. It defaults to **off**, and only the boolean `true` turns it on —
+  absent, `false` or any other value (the string `"true"` included) is off. When it is off, write
+  no `EXAMPLES.md`, ask no question, and author the Contract exactly as the rest of this section
+  says; nothing else in the Contract changes. When it is on, before any `.feature` exists:
+
+  - **The PO drafts the example map** — one `EXAMPLES.md` in the story's own folder, from the
+    story's user story and the milestone SPEC. It holds the rules, two or three key examples per
+    rule with real values including the awkward edge, and every question the PO cannot answer from
+    the record. Its form is the template at `.aof/templates/work/story/EXAMPLES.md`; copy that,
+    never a grammar from memory. Every example the PO writes is `proposed`, and only a person's
+    recorded answer makes one `confirmed` or `stated`. A story with no rule a person owns
+    declares the map not applicable in one line, as the template shows.
+  - **Which answer licenses which label.** An example's `confirmed` is written only after the
+    person's recorded answer to the example's own token, `<story ref> E<n>`. An example's
+    `stated Q<n>` and a question's `answered` are written only after the person's recorded answer
+    to the question's token, `<story ref> Q<n>`.
+  - **The architect reviews every question the PO labelled `technical`**, and relabels one that is
+    really policy as `business`. A technical question may take a documented default, recorded as
+    `defaulted <pointer>`; a business question never does.
+  - **The main session asks** each business question through `AskUserQuestion`, in solo and in
+    orchestrated mode alike: a spawned agent drafts and returns its questions, it never asks them.
+    Each question opens with its token — `<story ref> Q<n>`, or `<story ref> E<n>` when a
+    proposed example is put to the person to confirm. Worked, for story 7/2:
+    `7/2 Q1 · Does a reserved book count toward the five?` and
+    `7/2 E2 · Is a sixth loan refused while five are out?`. The token goes at the head of the
+    question text, never in its header, and one call carries at most four questions. The agent
+    writes the answer into the map, but it is the harness's record of the answer, not the map,
+    that makes the label hold.
+  - **Then ask the doctor.** Once the questions are asked, run `aof work doctor <story> --json`.
+    Any error-severity `example-*` finding stops the Contract stage before the first headline
+    Scenario, and no `tasks/` is written; settle the map and run it again. A warn does not stop
+    the stage.
+
+  **Formulation.** PO writes the headline Scenarios; `aof-qa` writes the Examples tables;
+  `aof-developer` checks feasibility.
   **Under orchestrated mode, one `aof-qa` writes the Examples tables for all of the story's tasks**
   — a single pass that sees every task at once. **The QA pass is never split into one agent per
   task**: each such agent re-reads the same story, ADRs and code at full cost, and none of them sees
@@ -278,7 +315,15 @@ story-by-story is needless friction once the breakdown is trusted):
   fanning out the Three Amigos in parallel (the stories are independent by construction). Take
   **documented default decisions** for non-critical open questions (record them in `STATE.md`); **stop
   early only** for a genuine blocking unknown or an unsafe/irreversible decision — a real gate, never
-  routine breakdown or contract authoring.
+  routine breakdown or contract authoring. When `work.examples.enabled` is on, a business-rule
+  question from a story's example map never takes a default. The cascade runs the discovery beat for
+  every story, and authors a story's Contract only when its map has no open business question. Every
+  open business question from every story is asked at the single end review, through
+  `AskUserQuestion`, as a question and never as a default, each carrying its map token (in batches
+  of four). An answered question is written into its story's map, and the contracts the answers
+  unblock are authored inside that same stop, each once its story passes the beat's doctor stop. A
+  question the person does not answer — deferred by the person, or refused by the harness — leaves
+  its story at the Contract gate with no `tasks/` written; the other stories go on.
 - **story** → author its full Contract (already a single stage).
 - **spike / chore** → the refuse/redirect above applies unchanged; `--autonomous` has nothing to
   cascade (no sub-stage exists for either type).
@@ -344,6 +389,8 @@ Still **doc-producing only**: stop before any build.
 **Default** — report what was produced + what's still open.
 **`--autonomous`** — present the full refined tree (the milestone breakdown + every story's authored
 contract) as a single review surface, calling out any default decisions taken and anything still open.
+When `work.examples.enabled` is on, it lists the business questions asked and their answers apart from
+the default decisions taken, and names each story a deferred question left at the Contract gate.
 **spike / chore** — report the decline (nothing to break down/contract) and point at `aof:verify <ref>`
 as the type's own close path; produce nothing on disk.
 Either way — Next: `aof:continue <ref>`. If a story feeds a `uat` gate, restate that the gate is

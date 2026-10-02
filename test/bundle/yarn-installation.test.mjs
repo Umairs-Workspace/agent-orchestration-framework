@@ -212,7 +212,8 @@ export const yarnInstallationTests = [
         'commands/run-retry.mjs': ['@aof/contracts/error'],
         'commands/run-status.mjs': ['@aof/contracts/error'],
         'commands/item-status.mjs': ['node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs'],
-        'commands/continue.mjs': ['@aof/contracts/error'],
+        // 134/04: the continue door reads the story's own EXAMPLES.md before it opens the build.
+        'commands/continue.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/resume.mjs': ['@aof/contracts/error', '@aof/contracts/loop-bounds'],
         'commands/regression-gate.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs'],
         'regression-record.mjs': ['node:path'],
@@ -258,6 +259,7 @@ export const yarnInstallationTests = [
         'loop-record.mjs': ['node:path'],
         'depends.mjs': ['node:path'],
         'diagrams.mjs': ['node:path'],
+        'examples.mjs': ['node:path'],
         'controls.mjs': ['node:path'],
         'census.mjs': ['node:path', 'node:fs/promises'],
         'evidence.mjs': ['node:path', 'node:fs/promises'],

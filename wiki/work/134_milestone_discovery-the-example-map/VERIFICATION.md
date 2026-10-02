@@ -111,3 +111,40 @@ held by a deterministic re-run as well as by its source grep.
   `archive/`). This branch lowers the live count by four (134/03's three, 134/04's one).
 - **This repository's doctor** (`aof work doctor --json` from the root, gate off): 0 `example-*`
   findings and 0 `doc-over-budget` naming `EXAMPLES.md`.
+- **Caught after the commit, by 134/05's sweep:** `yarn-installation/extracted kernels cannot import
+  core…` was red. The work kernel's native imports are exact file-level ports, and the build added
+  `node:path` to the lane and `node:path` + `node:fs/promises` to the continue door without stating
+  them. Both are now stated ports in `test/bundle/yarn-installation.test.mjs`, and the suite is
+  green. The importer sweep selected suites by what they name, and a tree-wide purity scan names
+  none, so the `test/bundle` and `test/command` indexes were then run whole. That run found two more:
+  the runtime audit's `sourceDigest` for `packages/work/src/commands/doctor.mjs` (its audited
+  `execFileAsync("git", …)` expression is unchanged, so only the file digest was re-stamped, to
+  `e52155fa…`, in `scripts/workspace-runtime-audit.json`), and the Plan 09 ledger's
+  `registryCases` (11539 → 11604, exactly the 65 cases 134/04 and 134/05 add). The ledger lives in
+  the archived `142/plans/09-test-ledger.json`, so every story that adds a case edits a delivered
+  milestone's folder. That is recorded as a finding below. `test/bundle` + `test/command`: 380
+  cases, 0 not ok.
+
+## 134/05 — the discovery beat
+
+Build: inline in the operator's session `ed33b986-4965-4b5f-98cb-1174699c96aa`, run
+`20261002T194754792Z-0001`, branch `134-discovery-example-map`, 2026-10-02 (a wave of one).
+
+- **Built against the post-142 layout.** The bundle sources are `packages/core/assets/`
+  (`commands/refine.md`, `agents/aof-{product-owner,architect}.md`, `templates/story/EXAMPLES.md`,
+  `manifest.json`), not `src/bundle/`. The suite's header names the translation.
+- **Rendered through the one door:** `aof work update` → `1 created, 9 updated, 145 up-to-date, 0
+  deleted, 0 drift-warning`, then `node scripts/generate-bundle-manifest.mjs` → `116 entries`. No
+  rendered copy was hand-edited. The two `.aof/loops` copies that refine expected to be rewritten
+  were already current, so they are unchanged.
+- **The template parses clean:** `parseExampleMap` over the source and the installed copy reads 0
+  malformed lines and `notApplicable: null`; the lifted `Not applicable:` line parses alone with a
+  reason and 0 malformed lines. The installed copy is 36 lines, against the 50-line `examples`
+  budget.
+- **Tasks 00-04 `@executable`: GREEN.** `test/examples/refine-discovery-beat.test.mjs` 38 ok,
+  including the `aof work update --dry-run --json` byte-identity of all nine rendered copies and
+  the installed template (`skip`).
+- **Bundle-reader sweep** (every suite that reads refine, the two briefs, the manifest, the story
+  templates or the guide, plus the examples indexes): 1787 cases, 3 not ok. One was real, and it
+  was 134/04's (the kernel import ports; see 134/04 above). FF-9603 (2) and 96/02-00 are the `143`
+  stream's. `shared-cli.steps.mjs` is not a runner suite.

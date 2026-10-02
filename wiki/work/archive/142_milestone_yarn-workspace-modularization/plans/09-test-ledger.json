@@ -62,7 +62,7 @@
    "reads this repository's own .aof/aof.config.json (the toolchain declaration of this repo), a repository-level artifact": 1
   },
   "namesInLedger": 11272,
-  "registryCases": 11539,
+  "registryCases": 11604,
   "ledgerNamesMissingFromRegistry": 0,
   "ledgerNamesOverRegistered": 0,
   "goneFromBaseline": [],

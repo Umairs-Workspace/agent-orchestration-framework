@@ -149,6 +149,21 @@ because `packages/work/src/examples/answers.mjs` is a factory and `src/work-exam
 
 ## Feedback (for retro)
 
+- **Review close for 134/04 and 134/05 (inline, 2026-10-02): no Blocker.** Each lens was taken in
+  turn in this session against the task features and the ADRs. Routed:
+  - *story (operator)*: **142's restructure left inherited reds that no 134 story can clear.**
+    FF-11903 (the rename map no longer resolves `packages/core/src/command-error.mjs`, and 347
+    citations sit against a ceiling of 55), FF-5204 (a shipped loop record cites
+    `src/run-store.mjs`) and `this-tree-holds-what-is-live` 00/02 (122 stale reads against 117, all
+    under `archive/`). These modules were deleted and re-created, so git recorded no rename. The
+    fix is an alias source for the cited-path resolver, or a re-citation of the shipped loop
+    records, either of which is a story that needs its own criteria.
+  - *story (operator)*: **the Plan 09 test ledger is a live ratchet stored in a delivered
+    milestone's folder** (`archive/142/plans/09-test-ledger.json`, `registryCases`). Every story
+    that adds a case must edit an archived record. Its home should move to a live path.
+  - *recorded*: the importer sweep that selects suites by the symbols they name cannot select a
+    tree-wide scan (the kernel-ports purity check, the runtime audit, the case ledger). 134/04
+    shipped three reds that only a whole-directory run found.
 - **142's squash left 134/03's contract pointing at deleted paths (2026-10-02).** Most `src/` moves
   kept a rename edge and resolved, but three modules were deleted and re-created as core bindings
   (`run-spend-ingest`, `work`, `degrade`), so `validate 134/03` went red on a story nobody had

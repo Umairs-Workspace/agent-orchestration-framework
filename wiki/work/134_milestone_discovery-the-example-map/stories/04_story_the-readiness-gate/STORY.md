@@ -54,6 +54,9 @@ files:
   - packages/work/test/support/doctor-services.mjs
   - test/work/doctor-diagrams-lane.test.mjs
   - test/arch/loop/acd-loop-record-is-a-face.test.mjs
+  - test/bundle/yarn-installation.test.mjs
+  - scripts/workspace-runtime-audit.json
+  - wiki/work/archive/142_milestone_yarn-workspace-modularization/plans/09-test-ledger.json
   - test/examples/index.mjs
   - test/examples/doctor-examples-lane.test.mjs
   - test/examples/continue-door-examples.test.mjs

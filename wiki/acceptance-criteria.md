@@ -59,6 +59,23 @@ in the machinery," "the workflow blob is never parsed." These are real and verif
 The architect owns these ([agents.md](agents.md)). The value is preserved; the home is correct; and
 the invariant is enforced *continuously* rather than asserted once in prose.
 
+## Before the zoom levels: the example map (discovery)
+
+The three levels below are formulation: they decide how a behaviour is written down. Discovery is
+the level above them, and it comes first. When a project turns on `work.examples.enabled` (it is
+off by default), each story gets an **example map** before any Scenario is written. That is the
+story's `EXAMPLES.md`, whose form is defined by its template,
+`.aof/templates/work/story/EXAMPLES.md`. It holds the story's rules, two or three key examples per
+rule with real values, and the questions the record cannot answer. Its key examples are agreed
+with a person rather than enumerated as a coverage matrix. The matrix is still QA's, later, in the
+Examples tables.
+
+Who decides is the point. A business-rule question goes to a person, and the build waits for the
+answer. A technical question may take a documented default. An example is `proposed` until a
+person's recorded answer makes it `confirmed` or `stated`, and the gate checks that answer
+against the harness's own record, never against the map's word for it. The map's grammar lives in
+its template and in `aof work doctor`'s examples lane, not here.
+
 ## Three zoom levels from one source
 
 The tension to resolve: the feature file must stay **scannable** (few headline outcomes) while test
