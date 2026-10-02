@@ -279,7 +279,10 @@ export const archTests = [
       for (const file of ["packages/execution/src/run-transitions.mjs", "packages/mesh/src/assignment-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)));
       // Plan 01 splits cache/brief/journal services and domain store declarations; direct public imports remove forwards.
       // The static closure grows 108 -> 117; the driver isolation and denylist above remain unchanged.
-      assert.equal(sinkGraph.seen.size, 119, "Plans 02/03 add the application path policy and pure core manifest locator to the 117-module worker closure");
+      // 142 security fixes add two leaf helpers, MEASURED by diffing this walker's closure per commit:
+      // @aof/foundation/git-args (via execution/worktrees, d0b83a39) and @aof/foundation/text (via mesh
+      // node-identity, 5a677e4e). Both import nothing; the driver isolation is unchanged.
+      assert.equal(sinkGraph.seen.size, 121, "Plans 02/03 add the application path policy and pure core manifest locator to the 117-module worker closure; 142 adds git-args and text");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },
