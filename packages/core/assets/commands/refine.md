@@ -248,6 +248,12 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
   - **The architect reviews every question the PO labelled `technical`**, and relabels one that is
     really policy as `business`. A technical question may take a documented default, recorded as
     `defaulted <pointer>`; a business question never does.
+  - **Strike before asking.** Before any question reaches a person, strike every one the record
+    already answers (the story's user story, title and Notes, the SPEC, the ADRs), and relabel
+    every engineering choice `technical`. A map with no business question left is a good outcome.
+    Each question that remains carries the context the person needs to answer it (what was
+    measured, and what each option costs), in the person's terms, never an internal name or number
+    they were not given.
   - **The main session asks** each business question through `AskUserQuestion`, in solo and in
     orchestrated mode alike: a spawned agent drafts and returns its questions, it never asks them.
     Each question opens with its token — `<story ref> Q<n>`, or `<story ref> E<n>` when a

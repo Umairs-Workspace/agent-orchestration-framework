@@ -30,6 +30,9 @@
     "plan": {
       "enabled": true
     },
+    "examples": {
+      "enabled": true
+    },
     "diagrams": {
       "generator": "diagram-design",
       "formats": [

@@ -1,16 +1,16 @@
 ---
 type: story
-number:
+number: 144
 slug: the-whole-tree-run-signs-off-in-minutes
 title: "The whole-tree test run signs off in minutes, not half a day — per-case timing, sharded workers, and the slow tail trimmed"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-10-02
 schema: 1
 aofVersion: 0.1.0
 ---
-# The whole-tree test run signs off in minutes, not half a day
+# 144 · The whole-tree test run signs off in minutes, not half a day
 
 ## User story
 
