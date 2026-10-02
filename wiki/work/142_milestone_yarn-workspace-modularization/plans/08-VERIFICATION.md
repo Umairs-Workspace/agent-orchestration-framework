@@ -66,10 +66,8 @@ reasons (a `scripts/test.mjs` path literal; a suite-path spelling for the moved 
 
 ## Still open (not verified here; not marked passed)
 
-- **Real desktop application**: launch, supervision/shutdown and terminal connection of a freshly built
-  `mesh-desktop-app.exe`. The operator's desktop app is running and is single-instance; starting or restarting
-  it is the operator's act (`aof mesh desktop run` after quitting the app, then `node scripts/install-local.mjs --desktop`
-  to install the release build).
+- ~~**Real desktop application**~~ — **verified 2026-10-02** on the `0366a4fa` build: launch, supervision, shutdown and a
+  terminal session; see [04-APPS](04-APPS.md#not-verified-here).
 - **Linux/WSL native leg on this revision.** Plan 05 proved a disposable Ubuntu 22.04 clone at `23676ce5`;
   the apps move does not change that path (UI staging already followed the locked `@aof/ui` owner) but it was not
   re-run on `2cd5d915`.

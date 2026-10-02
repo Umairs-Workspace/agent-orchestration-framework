@@ -50,6 +50,24 @@ name and user-data locations are unchanged. Root `package.json` workspaces are n
 
 ## Not verified here
 
-Real desktop application launch/supervision/shutdown and terminal connection were not exercised: the
-operator's desktop app is running and single-instance, and starting or restarting it is the operator's
-act. A release build proves resource inclusion only (see Plan 08).
+~~Real desktop application launch/supervision/shutdown and terminal connection were not exercised.~~
+
+**Verified 2026-10-02 on the real app, built from `0366a4fa`** (`node scripts/install-local.mjs --sea --desktop`, payload
+`0366a4fa.20261002T103106`):
+
+- **Launch.** The app was started with `aof mesh desktop run` from the repository root.
+- **Supervision.** `aof-mesh-desktop.exe` parents `aof.exe mesh ui` (owns `:4181`; logs `daemon-started … build payload 0366a4fa`)
+  and `aof.exe mesh serve --serve` (owns `:4182`). The fleet returns HTTP 200. The terminal-view socket accepts a
+  `(nodeId, sessionId)` tuple and refuses anything else.
+- **Shutdown.** Quitting from the tray left no `aof.exe` or desktop process and freed both ports. This was checked once on the
+  old build and once on the new build.
+- **Terminal.** The operator opened a session from Terminals → New session, and it ran.
+
+Found along the way, outside 142's code:
+
+- **The fleet was flooded with dead registrations.** Leaked test fixtures and dead dispatch lanes added 352 records to
+  `~/.aof/mesh/workspaces`. One more record was created by launching from the home folder, because identity is
+  derived from the current directory. All were moved to `~/.aof/mesh/workspaces-pruned-*`, and their projection rows
+  were removed after a backup.
+- **Four repositories have no pinned `mesh.workspaceId`,** so the `workspace-identity-pinned` preflight fails. This is captured
+  as backlog story `every-command-runs-over-a-valid-config`.

@@ -7,7 +7,7 @@ linked from [plans/README.md](plans/README.md). "Open" means not verified on an 
 inferred from source inspection.
 
 **Verdict:** the migration is implemented and verified on this host (Windows x64). It is **not**
-claimed complete across the full platform matrix: the real desktop-app run, the Linux/WSL native leg on this
+claimed complete across the full platform matrix: the Linux/WSL native leg on this
 revision, macOS/arm64 and the hosted CI release matrix remain open (below), and one work-record ratchet remains red
 with a documented, accepted disposition (142 has no AOF record doc; the link floor, story 141 and the backlog story are resolved —
 [09-CLEANUP](plans/09-CLEANUP.md)). Test ownership is done: 131 suites moved to their workspaces and every retained root suite carries a specific reason.
@@ -26,7 +26,7 @@ with a documented, accepted disposition (142 has no AOF record doc; the link flo
 | Messaging owns Discord/notifications; Knowledge owns memory/Graphify; Notion owns sync | Verified | Package suites pass; Notion is optional and isolated (own suite; CLI-only payload runs without it). |
 | Effects kernel separate from domain handlers | Verified | `@aof/effects` kernel; domain reactors owned by mesh/execution/work; effect replay/ack suites pass. |
 | Server owns transport adapters with injected services | Verified | `@aof/server` (board, setup UI, terminal WebSocket, static serving, graph MCP); served-UI integration tests and distribution UI check pass. |
-| UI and desktop are separate apps with package scripts | Verified (build/test); **open** (live app) | `apps/ui` builds; `apps/desktop` has `@aof/desktop` scripts; 118 Rust tests, `cargo check` and a release build pass. A freshly built desktop app was not launched ([plans/04-APPS.md](plans/04-APPS.md)). |
+| UI and desktop are separate apps with package scripts | Verified (build/test and live app, 2026-10-02) | `apps/ui` builds; `apps/desktop` has `@aof/desktop` scripts; 118 Rust tests, `cargo check` and a release build pass. The `0366a4fa` build was installed and run live: launch, supervision of both daemons, shutdown and a terminal session ([plans/04-APPS.md](plans/04-APPS.md#not-verified-here)). |
 | Feature-owned CLI definitions, shared namespaces, conflict detection | Verified | Contribution contract and registry; frozen 117-command inventory unchanged. |
 | Shared invocation for CLI/UI/MCP; lightweight registration | Verified | Registration is inert; invocation suites pass across the board/fleet/terminal surfaces. |
 | Base install contains all skill-required operations | Verified | Fixture project, unrelated cwd, no UI: init, insert, list, validate, next, run-start/status, status, loops groundedness, update --dry-run all dispatch ([07-ASSETS](plans/07-ASSETS.md)); distribution gate checks work-init assets from the extracted release. |
@@ -39,7 +39,7 @@ with a documented, accepted disposition (142 has no AOF record doc; the link flo
 
 ## Open requirements
 
-1. **Real desktop app**: launch, supervision/shutdown, terminal connection of a new build (operator-gated; app is running).
+1. ~~**Real desktop app**~~ — verified 2026-10-02 on the `0366a4fa` build ([plans/04-APPS.md](plans/04-APPS.md#not-verified-here)).
 2. **Linux/WSL native leg** on this revision; **macOS, arm64, hosted CI matrix, signing, publishing** (unavailable here).
 3. **142's record doc** (`work/this-tree-holds-what-is-live` cases 00 and 02): accepted, not resolved — 142's `SPEC.md` states it proceeds outside
    the AOF workflow ([09-CLEANUP](plans/09-CLEANUP.md#work-stream-dispositions-and-what-stays-open)). The wiki link floor (repaired), story 141

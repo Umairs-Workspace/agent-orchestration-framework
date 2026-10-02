@@ -335,5 +335,6 @@ Against the findings:
   127/05 contract pins their directory's budget — each named, each movable only with those dependents.
 - The intermediate gate at `c611275d` caught the 127/05 pin; the three suites were returned byte-identical in `5035a225`.
 
-Open, and not claimed: the real desktop-app run, Linux/WSL on this revision, macOS/arm64, the hosted CI matrix, and 142's record
+Desktop app: verified live on the `0366a4fa` build on 2026-10-02 (launch, supervision, shutdown, terminal; [04-APPS](04-APPS.md#not-verified-here)).
+Open, and not claimed: Linux/WSL on this revision, macOS/arm64, the hosted CI matrix, and 142's record
 doc (an operator decision).
