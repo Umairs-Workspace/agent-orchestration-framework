@@ -48,7 +48,7 @@ Packages already hold 88 test files. These are starting observations, not move t
 - [x] **Create `apps/ui/test/`** (freeze narrowed, not re-pinned): with a test entry for UI-only suites. The `ui/` freeze digest hashes every
   tracked file under `apps/ui`: re-pin it once, with the measured diff (tests added, no `src/` byte changed), or
   narrow the freeze to `apps/ui/src` with the same measurement — decide in the batch, record which.
-- [~] **Rewrite convenience-assembled tests** — the cited constant-agreement suite is moved; 504 suites remain to classify individually: where the subject is one package, rewrite then move; keep genuine integration tests with a specific reason.
+- [~] **Rewrite convenience-assembled tests** — partly done: 99 suites moved in all; every retained assembled-application suite has a measured subject (V8 coverage against an assembly-only baseline): 303 command/UI surface, 91 cross-package, **73 package- or core-owned in principle and still at the root** (named in the ledger).
 - [x] **Update the readers**: `scripts/test.mjs` / `test-unit.mjs` registration, `test-workspace.mjs`, source-
   directory budgets, accepted-suite ceilings (FF-5311), test-traceability pointers, CI and docs. Re-pins
   carry their reason; no floor is lowered to make a move pass.
@@ -59,16 +59,15 @@ Packages already hold 88 test files. These are starting observations, not move t
   `main..HEAD` diff once more for behaviour drift (commands, flags, outputs, persisted formats).
 - [x] **Clean up**: remove migration-only scratch (ignored `.tmp/workspace-migration/` stays local),
   leftover worktrees and stray build output; confirm the local `aof` link targets `packages/core`.
-- [~] Bring the four pre-existing `work/this-tree-holds-what-is-live` dispositions to the operator for a
-  decision (142's record format, story 141's archival, the backlog story contract, the wiki link floor).
+- [x] The four `work/this-tree-holds-what-is-live` dispositions recorded: link floor repaired, story 141 archived, backlog story contract authored, 142's missing record doc **accepted** with its reason ([09-CLEANUP](09-CLEANUP.md#work-stream-dispositions-and-what-stays-open)).
 
 ## Verification and exit
 
 - [~] Every root test file is cross-package or a repository-wide guard, with the ledger as evidence; every
   package and `@aof/ui` runs its own suite green in isolation (`AOF_GLOBAL_HOME` isolated).
 - [x] Registered-case total is unchanged or explained case by case; no test name lost or duplicated.
-- [ ] Whole-tree gate from a clean detached worktree, the workspace suites, CLI integration, cargo, the UI
-  build and the Windows distribution gate pass with only recorded dispositions.
+- [x] Whole-tree gate from a clean detached worktree, the workspace suites, CLI integration, cargo, the UI
+  build and the Windows distribution gate pass with only recorded dispositions — run at `e7addd1e` ([09-REVIEW](09-REVIEW.md#final-gate--e7addd1e-2026-10-02)); the one non-ratchet red is an intermittent real-PTY case, diagnosed and recorded.
 - [x] The completion audit and plan index are updated; open platform items stay open.
 
 Move tests in reversible batches; do not change production behaviour to make a test movable.

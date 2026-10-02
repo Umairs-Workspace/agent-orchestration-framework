@@ -2,7 +2,7 @@
 
 Planning baseline: `e343d50` (`refactor: move domain transitions into owning workspaces`),
 2026-09-29. These are ordinary engineering plans, outside the AOF workflow. They do not
-create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host (Windows x64, 2026-10-01); Plan 09 (cleanup and verify) is executed — see [09-CLEANUP](09-CLEANUP.md) for what moved and what is left to the operator. The open platform/desktop
+create managed stories, runs, or acceptance state. Plans 01–08 are complete on the available host (Windows x64, 2026-10-01); Plan 09 (cleanup and verify) is executed and gated, with its ownership requirement partial — see [09-CLEANUP](09-CLEANUP.md) for what moved and what is open. The open platform/desktop
 legs are listed in [08-VERIFICATION.md](08-VERIFICATION.md) and the [completion audit](../COMPLETION.md).
 
 The agreed boundaries remain in [SPEC](../SPEC.md) and [MIGRATION](../MIGRATION.md).
@@ -35,7 +35,7 @@ Core owns the installed product under `packages/core/`; the compatibility forwar
 | [06 — Test ownership and adapter removal](06-tests-and-boundaries-PLAN.md) | Public APIs replace compatibility paths; whole-tree boundary checks enforce the architecture. | Prepare guards during 01; remove adapters after 02–05 |
 | [07 — Assets, citations and skill compatibility](07-assets-and-skills-PLAN.md) | Complete: shipped assets and required CLI operations agree with final source locations; [evidence](07-ASSETS.md). | Update per move; final sweep after 06 |
 | [08 — Final verification and handover](08-final-verification-PLAN.md) | Complete on this host: [verification and handover](08-VERIFICATION.md); platform limits explicit. | 01–07 |
-| [09 — Cleanup and verify](09-cleanup-and-verify-PLAN.md) | Executed: 69 suites moved to their workspaces by measurement ([ledger](09-test-ledger.json)), the wiki link regressions repaired, the retired layout swept; the assembled-application suites and three work-record ratchets are left to the operator. [Record and final gate](09-CLEANUP.md). | 01–08 |
+| [09 — Cleanup and verify](09-cleanup-and-verify-PLAN.md) | Executed and gated at `e7addd1e` (Windows x64): 99 suites moved to their workspaces by measurement ([ledger](09-test-ledger.json)), the wiki link regressions repaired, the retired layout swept, three work-record ratchets resolved and 142's accepted. **Open: 73 package- or core-owned suites still at the root.** [Record and final gate](09-CLEANUP.md), [review](09-REVIEW.md#final-gate--e7addd1e-2026-10-02). | 01–08 |
 
 Numbers describe the main sequence, not permission to leave intermediate builds broken. Bring
 distribution changes, architecture-reader updates and canonical citation fixes into the batch

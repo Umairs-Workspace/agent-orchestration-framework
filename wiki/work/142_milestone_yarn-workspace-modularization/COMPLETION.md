@@ -8,9 +8,9 @@ inferred from source inspection.
 
 **Verdict:** the migration is implemented and verified on this host (Windows x64). It is **not**
 claimed complete across the full platform matrix: the real desktop-app run, the Linux/WSL native leg on this
-revision, macOS/arm64 and the hosted CI release matrix remain open (below), and three pre-existing work-record
-ratchets remain red with documented dispositions (the fourth, the wiki link floor, was a migration regression and is repaired —
-[09-CLEANUP](plans/09-CLEANUP.md)).
+revision, macOS/arm64 and the hosted CI release matrix remain open (below), and one work-record ratchet remains red
+with a documented, accepted disposition (142 has no AOF record doc; the link floor, story 141 and the backlog story are resolved —
+[09-CLEANUP](plans/09-CLEANUP.md)). Test ownership is **partial**: 73 root suites are package-owned in principle and not yet moved.
 
 | Requirement | Status | Current evidence |
 | --- | --- | --- |
@@ -34,19 +34,19 @@ ratchets remain red with documented dispositions (the fourth, the wiki link floo
 | Remove temporary forwards and legacy-source imports | Verified | No root `src/`, no root forwarders; whole-tree guards pass ([06-BOUNDARIES](plans/06-BOUNDARIES.md)). |
 | Source, copied payload, standalone/native installation | Verified (Windows x64); **open** (others) | Source CLI, copied payload and a real SEA release build/extract/update/PTY/UI pass on Windows x64 (`verify-distribution`, 8 checks). Linux x64 passed at `23676ce5` ([05-DISTRIBUTION](plans/05-DISTRIBUTION.md)); not re-run on `2cd5d915`. |
 | Worktree prep, Windows/WSL, CI, release paths follow the final layout | Verified (Windows); **open** (WSL re-run, CI) | `prepare-worktree`, `install-local` (apps paths), `build-sea`, release scripts and the gitignore follow `apps/`; WSL transport synchronizes locked owners (Plan 05). Hosted CI not run. |
-| Package tests plus cross-package, architecture and release verification | Verified with documented reds | Plan 09 final gate from a clean worktree ([09-CLEANUP](plans/09-CLEANUP.md#final-gate)): all 11,537 registered cases executed by the sharded run in 23.8 min; only the three operator ratchets red; load flakes re-run green alone. 14 workspace suites green in isolation; integration and cargo lanes green; Windows distribution gate 8/8. |
+| Package tests plus cross-package, architecture and release verification | Verified with documented reds | Plan 09 final gate from a clean worktree ([09-CLEANUP](plans/09-CLEANUP.md#final-gate)): all 11,539 registered cases executed by the sharded run in 33.9 min at `e7addd1e`; only the accepted 142 finding red plus one intermittent real-PTY case (diagnosed in [09-REVIEW](plans/09-REVIEW.md#final-gate--e7addd1e-2026-10-02)); load flakes re-run green alone. 14 workspace suites green in isolation; integration and cargo lanes green; Windows distribution gate 8/8. |
 | Behavior, persisted state and generated output remain compatible | Verified (checked-in parity: scoped) | No persisted format, command id, flag, default or route changed. Generated copies refreshed only within the operator's approvals (35 files + hashes; `wiki/work/loops.md`); `work update` reports 0 drift. |
 
 ## Open requirements
 
 1. **Real desktop app**: launch, supervision/shutdown, terminal connection of a new build (operator-gated; app is running).
 2. **Linux/WSL native leg** on this revision; **macOS, arm64, hosted CI matrix, signing, publishing** (unavailable here).
-3. **Three `work/this-tree-holds-what-is-live` ratchets** (reproduced on baseline `6a04b43`): operator decisions on 142's record format
-   (it has no `SPEC.md`), the backlog story contract (`a-running-loop-is-visible-in-the-ui` declares neither `reads` nor `files`) and
-   story 141's archival. Not changed to quiet tests. The fourth, the wiki link floor, was not pre-existing in the form recorded: 1,057
-   links broke in the migration and were repaired (2,471 against the 2,317 floor).
-4. **The 505 assembled-application suites** stay at the root with the wiring evidence in [09-test-ledger.json](plans/09-test-ledger.json);
-   rewriting them per subject is an operator decision.
+3. **142's record doc** (`work/this-tree-holds-what-is-live` cases 00 and 02): accepted, not resolved — 142's `SPEC.md` states it proceeds outside
+   the AOF workflow ([09-CLEANUP](plans/09-CLEANUP.md#work-stream-dispositions-and-what-stays-open)). The wiki link floor (repaired), story 141
+   (archived) and the backlog story contract (authored) are resolved.
+4. **73 package- or core-owned suites still at the root** ([09-test-ledger.json](plans/09-test-ledger.json); Plan 09's ownership
+   requirement is not complete until they move or the reduction is explicitly accepted). The other 402 assembled-application suites are
+   measured integration or command-surface tests.
 
 ## What moved and the supported seams
 

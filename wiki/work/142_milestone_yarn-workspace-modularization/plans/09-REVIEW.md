@@ -1,8 +1,7 @@
 # Plan 09 independent acceptance review
 
-Latest recorded assessment: **the shard and ledger findings are resolved in the working tree;
-the cited ownership example is fixed, but the broader ownership finding remains partial**. See
-[the 2026-10-02 recheck](#recheck-and-fixes--2026-10-02). Full Plan 09 signoff remains withheld.
+Latest recorded assessment: **gate run at `e7addd1e`; the verified scope (Windows x64) is supported, the full Plan 09 requirement is not met**. See
+[the 2026-10-02 final gate](#final-gate--e7addd1e-2026-10-02). Full Plan 09 signoff remains withheld until the 73 open ownership suites are moved or the reduced scope is explicitly accepted.
 The earlier sections below preserve the review of `dd8b610e` and its follow-up evidence.
 
 Reviewed 2026-10-01 at `dd8b610e`, on `refactor/yarn-workspace-modularization`.
@@ -268,3 +267,41 @@ Receipts are in ignored `.tmp/signoff-142/`. No dependencies were installed or c
 acceptance threshold was lowered, and no repository work-item state was altered. Full Plan 09
 acceptance still requires the remaining ownership work and the final gate/dispositions recorded
 in the plan; this focused recheck does not replace those requirements.
+
+## Final gate — e7addd1e (2026-10-02)
+
+Run from a clean detached worktree at the tested commit `e7addd1e` (`prepare-worktree`, isolated
+`AOF_GLOBAL_HOME`, clean launch environment), Windows x64. Logs are in ignored `.tmp/gate-142/`. Docs-only commits
+after it change no code.
+
+| Check | Result |
+| --- | --- |
+| Supply-chain audit | pass, 0 warnings |
+| Workspace boundaries | pass, 0 findings |
+| UI production build | pass |
+| Workspace suites (`test-workspace --all`) | 14 workspaces, 1,594 cases, 0 failures |
+| Whole tree, sharded | **11,539 of 11,539** cases executed in 33.9 min; 2 failing units, 4 load flakes green alone |
+| Integration and cargo lanes | green (`cargo test`, `cargo check` of `apps/desktop`) |
+| Windows distribution | `build-sea` → `stage-release-assets` → `verify-distribution`: all 8 checks pass |
+
+Failures, each diagnosed:
+
+- **`work-this-tree-holds-what-is-live` cases 00 and 02** — one finding only: the 142 milestone's `SPEC.md`,
+  "missing or empty record doc". This is the **accepted** 142 disposition ([09-CLEANUP](09-CLEANUP.md#work-stream-dispositions-and-what-stays-open)).
+  Case 01 (the link floor) passes; story 141 is archived and the backlog story validates, so neither appears.
+- **`fleet-terminal-view-producer-fed` case 38-06** — a real interactive-session case ("precondition: the interactive session was
+  spawned and handed its command"). It failed in the pool and on the alone-retry, then passed two of three unloaded reruns, and the
+  failing case differed between runs (38-06d once, 38-06e in the gate). The file and its fixture are unchanged since the
+  `test/surfaces` rename. Recorded as an intermittent real-PTY race, not a regression of this change; not weakened.
+- Four load flakes, green alone: `agent-session-driver-transcript`, `loop-diag`, `session-screen-verdicts`, `mesh-worker-completion-detection`.
+
+What this does and does not establish:
+
+- P09-R2-01 and P09-R2-02 are fixed and exercised by the registered regression cases. P09-R2-03 is fixed for the cited suite
+  and for 29 further suites; every retained assembled-application suite now has a measured subject.
+- **Not met:** 73 retained suites execute one feature package, or only core, and are package-owned in principle (listed in the
+  ledger with the reasons `executes exactly one feature package…` and `executes only core…`). Plan 09's "every root test is
+  cross-package or a repository-wide guard" is therefore false until they move.
+- **Not verified:** the real desktop-app run, Linux/WSL on this revision, macOS/arm64 and the hosted CI matrix remain open.
+- Signoff of the **verified scope** (Windows x64) is supportable on this evidence **only if** the 73 open suites and the accepted
+  142 finding are accepted as a stated reduction; otherwise Plan 09 is incomplete.

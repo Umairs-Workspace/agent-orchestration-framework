@@ -144,10 +144,13 @@ for it with the measured diff.
 | Sharded #2 at `681567f2` | **11,537 of 11,537** | 23.8 min | Only the three operator ratchets and one unaudited import (fixed in `36988e87`, re-run green); 4 load flakes green alone, two of them a Windows `EBUSY` temp cleanup now retried in every fixture (`36988e87`) |
 | Sharded #3 at `fb9e8f4b` (after the `test/surfaces` rename) | 11,537 (the report then miscounted retried units) | 38.0 min | Only the ratchets — but it ran without timings (fresh worktree) and two units burned 20-min kills: the slow file ran unsplit, and a transcript case hung on a real-time race outside its own 30 s ceiling. Both fixed in `d48bf751` |
 | **Sharded #4 at `d48bf751` — the confirming run** | **11,537 of 11,537** | **23.1 min** | **Only the three operator ratchets.** Four timing-sensitive cases red under 16-way load, green alone (named in the run's SUMMARY.txt) |
-| Workspace suites | 14 workspaces, 1,344 registered + 248 native | — | all green in isolation |
-| Integration + cargo lanes | inside the sharded runs | — | green |
-| UI build / supply-chain audit | — | — | pass / 0 warnings |
-| Windows distribution (`build-sea` → `stage-release-assets` → `verify-distribution`) | 8 checks | — | all pass, including the real SEA PTY round-trip and the built UI |
+| **Sharded #5 at `e7addd1e` - the tested commit for the second-review fixes** | **11,539 of 11,539** | **33.9 min** | Only the accepted 142 record-doc finding (cases 00 and 02 of the live-tree suite; case 01, the link floor, passes). `fleet-terminal-view-producer-fed` (a real-session case) failed in the pool and on its alone-retry, then passed 2 of 3 unloaded runs (the failing case differed between runs: an intermittent real-PTY race; the file is unchanged since the rename). Four load flakes green alone. |
+| Workspace suites | 14 workspaces, 1,594 cases at `e7addd1e` (execution 93, mesh 62, core 343, notion 21, knowledge 44, work 150, work-loop 42, work-graph 63, ui 776) | — | all green in isolation, from the clean worktree |
+| Integration + cargo lanes | inside the sharded runs | — | green (`cargo test` and `cargo check` of `apps/desktop` pass at `e7addd1e`) |
+| UI build / supply-chain audit / workspace boundaries | — | — | pass / 0 warnings / 0 findings (at `e7addd1e`) |
+| Windows distribution (`build-sea` → `stage-release-assets` → `verify-distribution`) | 8 checks | — | all pass at `e7addd1e` (fresh SEA build), including the real SEA PTY round-trip and the built UI |
+
+The wall time rose from 23.1 to 33.9 minutes at `e7addd1e`: suites are now atomic by default (P09-R2-01), so the heaviest unmarked files run as one unit each (`acd-tune-is-non-vacuous-over-this-repo` 451 s and `work-this-tree-holds-what-is-live` 426 s summed under load) and only the seven marked files still split. That is the price of not cutting a suite between a case and its setup; marking more files `independentCases`, after the same alone-run evidence, is the way back.
 
 Where the time goes (summed across workers, from `.tmp/test-timings.json`): 341 minutes in total. The process-spawning tail
 dominates (`loop-command-wave`, `loop-command-reconcile`, `work-dispatch-lanes`, the gate-propagation suites), and under 16-way
