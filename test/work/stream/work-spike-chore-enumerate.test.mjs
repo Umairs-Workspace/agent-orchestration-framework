@@ -1,4 +1,4 @@
-import { work as _workServices } from "./support/work-services.mjs";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 37 / story 00
 // tasks/00_admit-and-enumerate.feature — "spike and chore folders are enumerated
 // as first-class item types".
@@ -12,8 +12,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-const findWork = _workServices.findWork;
-const listStream = _workServices.listStream;
+const findWork = _aofWorkspace.work.findWork;
+const listStream = _aofWorkspace.work.listStream;
 
 function frontmatter(fields) {
   const lines = Object.entries(fields).map(([key, value]) => `${key}: ${value}`);

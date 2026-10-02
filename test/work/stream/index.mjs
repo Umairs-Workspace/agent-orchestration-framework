@@ -55,6 +55,9 @@ import { workInsertStoryChecklistTests } from "./work-insert-story-checklist.tes
 import { workInsertStoryCountGateTests } from "./work-insert-story-count-gate.test.mjs";
 // milestone 37 / story 00 — the 3 task-feature traceability modules (every
 // @executable scenario + Examples row wired to the LOCKED engine surface).
+import { workSpikeChoreEnumerateTests } from "./work-spike-chore-enumerate.test.mjs";
+import { workSpikeChoreNextTests } from "./work-spike-chore-next.test.mjs";
+import { workSpikeChoreValidateTests } from "./work-spike-chore-validate.test.mjs";
 // milestone 37 / story 01 — scaffold commands & templates (task-feature traceability
 // for 00_spike-template-and-command, 01_chore-template-and-command, 02_bundle-membership).
 import { workSpikeTemplateTests } from "./work-spike-template.test.mjs";
@@ -134,6 +137,9 @@ export const tests = [
   ...workInsertStoryCountGateTests,
   // milestone 37 / story 00 — task-feature traceability (00_admit-and-enumerate,
   // 01_drivers-ordering-and-next, 02_record-doc-and-structural-validate)
+  ...workSpikeChoreEnumerateTests,
+  ...workSpikeChoreNextTests,
+  ...workSpikeChoreValidateTests,
   // milestone 37 / story 01 — scaffold commands & templates
   ...workSpikeTemplateTests,
   ...workChoreTemplateTests,

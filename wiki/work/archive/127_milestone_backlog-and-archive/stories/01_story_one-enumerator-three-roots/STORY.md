@@ -41,7 +41,7 @@ reads:
   - test/arch/work/acd-work-list-contract.test.mjs
   - test/arch/store/acd-cache-read-surface-boundary.test.mjs
   - test/arch/planning/acd-proposal-provenance-resolves.test.mjs
-  - packages/work/test/work-spike-chore-enumerate.suite.mjs
+  - test/work/stream/work-spike-chore-enumerate.test.mjs
   - wiki/work/127_milestone_backlog-and-archive/DESIGN.md
 files:
   - src/work.mjs

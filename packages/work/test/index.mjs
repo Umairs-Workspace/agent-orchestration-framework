@@ -19,9 +19,6 @@ import { workObserveAttributionTests } from "./work-observe-attribution.suite.mj
 import { workObserveSnapshotsTests } from "./work-observe-snapshots.suite.mjs";
 import { resolveItemsTests } from "./work-resolve.suite.mjs";
 import { workDoctorTests } from "./work-doctor.suite.mjs";
-import { workSpikeChoreEnumerateTests } from "./work-spike-chore-enumerate.suite.mjs";
-import { workSpikeChoreNextTests } from "./work-spike-chore-next.suite.mjs";
-import { workSpikeChoreValidateTests } from "./work-spike-chore-validate.suite.mjs";
 import { verifyAuthorsOutcomeTests } from "./verify-authors-outcome.suite.mjs";
 import { workTests } from "./work.suite.mjs";
 
@@ -47,9 +44,6 @@ export const tests = [
   ...workObserveSnapshotsTests,
   ...resolveItemsTests,
   ...workDoctorTests,
-  ...workSpikeChoreEnumerateTests,
-  ...workSpikeChoreNextTests,
-  ...workSpikeChoreValidateTests,
   ...verifyAuthorsOutcomeTests,
   ...workTests,
 ];

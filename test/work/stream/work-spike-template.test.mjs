@@ -8,7 +8,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // — no fixture text is hand-authored here for the instantiated doc's shape.
 // Placeholders are filled by simple string substitution (the same substitution an
 // agent running /aof:add-spike performs), then the folder is validated with the
-// LOCKED engine `validateWork` (../packages/core/src/work.mjs), mirroring packages/work/test/work-spike-chore-validate.suite.mjs.
+// LOCKED engine `validateWork` (../packages/core/src/work.mjs), mirroring test/work/stream/work-spike-chore-validate.test.mjs.
 //
 // The @manual scenario (/aof:add-spike scaffolds a spike folder that validates
 // clean) is agent-work the executable suite can't do — its procedure is recorded
