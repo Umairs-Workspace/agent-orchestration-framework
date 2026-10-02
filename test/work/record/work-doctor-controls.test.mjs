@@ -229,7 +229,7 @@ export const workDoctorControlsTests = [
         "verification-missing-red-probe": /FF-02/,
         "control-unresolved": /FF-02/,
         "control-unregistered": /FF-03/,
-        "control-runner-unchecked": new RegExp(RUNNERS_CONFIG_KEY.replace(/\./g, "\\.")),
+        "control-runner-unchecked": new RegExp(RUNNERS_CONFIG_KEY.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")),
         "staged-control": /thing\.test\.mjs/,
       };
       for (const [code, pattern] of Object.entries(named)) {

@@ -1,4 +1,5 @@
 import path from "node:path";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
@@ -261,7 +262,7 @@ function proseAfter(body, headingRe) {
       if (out.length > 0) pendingBreak = true; // a paragraph break, NOT the end
       continue;
     }
-    if (/^<!--/.test(trimmed) || /^-->/.test(trimmed)) continue; // HTML comment lines
+    if (/^<!--/.test(trimmed) || /^--!?>/.test(trimmed)) continue; // HTML comment lines (`--!>` also closes one)
     if (/^>/.test(trimmed)) continue; // blockquote callout (e.g. SPEC "> Inputs:")
     if (out.length === 0) {
       out.push(trimmed);
@@ -383,7 +384,7 @@ function readmeOverview(body) {
       if (seenProse) break;
       continue;
     }
-    if (/^<!--/.test(line) || /^-->/.test(line)) continue;
+    if (/^<!--/.test(line) || /^--!?>/.test(line)) continue;
     if (/^(\[!\[|!\[|\[!)/.test(line)) continue; // badge / shield image lines
     out.push(line);
     seenProse = true;
@@ -516,7 +517,7 @@ function titleFromFilename(file) {
 // prose for the materialized block.
 function stripFrontmatterAndComments(text) {
   let body = text.replace(/^---\n[\s\S]*?\n---\n?/, "");
-  body = body.replace(/<!--[\s\S]*?-->/g, "");
+  body = stripHtmlComments(body);
   return body.trim();
 }
 

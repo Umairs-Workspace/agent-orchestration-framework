@@ -583,7 +583,7 @@ export const workPromoteMintsTheNumberTests = [
           return;
         }
         assert.equal(outcome.code, refused, `refused ${refused} (got ${outcome.code}: ${outcome.message})`);
-        for (const named of names ?? []) assert.match(outcome.message, new RegExp(named.replace(/\//g, "\\/")), `the message names ${named}`);
+        for (const named of names ?? []) assert.match(outcome.message, new RegExp(named.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")), `the message names ${named}`);
         if ((names ?? []).length === 0 && refused === "promote-not-found") {
           assert.ok(!/Already in the stream/.test(outcome.message), `the message names no candidate: ${outcome.message}`);
         }
@@ -922,7 +922,7 @@ export const workPromoteMintsTheNumberTests = [
         const outcome = await refusal(() => promote(workspace, { slug: "x", ...(at == null ? {} : { at }), yes: true }));
         if (refused) {
           assert.equal(outcome.code, refused, `refused ${refused} (got ${outcome.code}: ${outcome.message})`);
-          for (const named of names) assert.match(outcome.message, new RegExp(named.replace(/\//g, "\\/")), `the message names ${named}`);
+          for (const named of names) assert.match(outcome.message, new RegExp(named.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")), `the message names ${named}`);
           return;
         }
         assert.equal(outcome.code, null, `it proceeds (refused ${outcome.code}: ${outcome.message})`);

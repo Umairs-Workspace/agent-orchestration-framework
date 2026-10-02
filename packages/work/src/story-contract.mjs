@@ -234,11 +234,20 @@ export function resolveDeclaredSet(text, key, { storyDir, projectRoot }) {
   return { present: true, malformed: false, entries };
 }
 
+// Tags stripped to a fixed point (one pass can join the text around a removed tag into a new one).
+// Local, because this parser leaf imports no project module (FF-9602).
+function stripHtmlTags(value) {
+  let current = value;
+  let previous;
+  do {
+    previous = current;
+    current = current.replace(/<[^>]+>/g, "");
+  } while (current !== previous);
+  return current;
+}
+
 function headingSlug(heading) {
-  return heading
-    .trim()
-    .toLowerCase()
-    .replace(/<[^>]+>/g, "")
+  return stripHtmlTags(heading.trim().toLowerCase())
     .replace(/[`*_~]/g, "")
     .replace(/[^\p{L}\p{N}\s-]/gu, "")
     .replace(/\s+/g, "-");

@@ -193,7 +193,14 @@ function deliveredSectionOf(text) {
   if (!start) return null;
   const rest = text.slice(start.index + start[0].length);
   const next = /^## /m.exec(rest);
-  return (next ? rest.slice(0, next.index) : rest).replace(/<!--[\s\S]*?-->/g, "").trim();
+  // Strip HTML comments to a fixed point: one pass can leave a joined `<!--` behind, and `--!>` also closes one.
+  let section = next ? rest.slice(0, next.index) : rest;
+  let previous;
+  do {
+    previous = section;
+    section = section.replace(/<!--[\s\S]*?--!?>/g, "");
+  } while (section !== previous);
+  return section.trim();
 }
 
 function titleOfOutcome(text, fallback) {

@@ -366,7 +366,7 @@ export const workUiFleetOriginStandaloneTests = [
           // malformed row's own value can supply, so the assertion cannot be satisfied
           // by the message merely echoing the input back.
           assert.ok(
-            output.includes("https://fleet.example"),
+            /e\.g\. http:\/\/127\.0\.0\.1:\d+ or https:\/\/fleet\.example\b/.test(output),
             `${row.case}: …and says what a valid one looks like (got: ${JSON.stringify(output)})`
           );
           assert.ok(!/at Object\.<anonymous>/.test(output), `${row.case}: the message is a sentence, not a stack trace`);

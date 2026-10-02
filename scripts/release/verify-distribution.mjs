@@ -92,8 +92,11 @@ export async function verifyDistribution({ stageDir, os: targetOs, arch }) {
       await writeFile(installer, `$ErrorActionPreference = 'Stop'\n$env:AOF_INSTALL_TEST = '1'\n. ${psQuote(path.join(repoRoot, 'install.ps1'))}\nInstall-AofFiles -WorkDir ${psQuote(stageDir)} -Asset ${psQuote(binary)} -Sidecar ${psQuote(sidecar)} -InstallDir ${psQuote(installed)}\n`);
       place = () => execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-File', installer], { stdio: 'pipe', windowsHide: true });
     } else {
-      place = () => execFileSync('sh', ['-c', 'export AOF_INSTALL_TEST=1; . "$1"; aof_install_files "$2" "$3" "$4" "$5"',
-        'aof-release-proof', path.join(repoRoot, 'install.sh'), stageDir, binary, sidecar, installed], { stdio: 'pipe' });
+      // Every path reaches the shell as an environment variable the constant script names, never as script text.
+      place = () => execFileSync('sh', ['-c', 'export AOF_INSTALL_TEST=1; . "$AOF_PROOF_INSTALL_SH"; aof_install_files "$AOF_PROOF_STAGE" "$AOF_PROOF_BINARY" "$AOF_PROOF_SIDECAR" "$AOF_PROOF_INSTALLED"'], {
+        stdio: 'pipe',
+        env: { ...process.env, AOF_PROOF_INSTALL_SH: path.join(repoRoot, 'install.sh'), AOF_PROOF_STAGE: stageDir, AOF_PROOF_BINARY: binary, AOF_PROOF_SIDECAR: sidecar, AOF_PROOF_INSTALLED: installed },
+      });
     }
     place();
     await writeFile(path.join(installed, 'bundle', 'retired.md'), 'stale asset');

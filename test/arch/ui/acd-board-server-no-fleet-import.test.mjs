@@ -124,7 +124,7 @@ function specifiersOf(source) {
 // cache-busting query or a fragment, which resolve to the same module and would
 // otherwise walk straight past an `$`-anchored test.
 function namesModule(specifier, basename) {
-  return new RegExp(`(^|/)${basename.replace(/\./g, "\\.")}([?#].*)?$`).test(specifier);
+  return new RegExp(`(^|/)${basename.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")}([?#].*)?$`).test(specifier);
 }
 
 function namesMeshUiServe(specifier) {

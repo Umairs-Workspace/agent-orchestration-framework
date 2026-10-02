@@ -72,7 +72,11 @@ const readModule = (rel) => readFile(path.join(repoRoot, ...rel.split("/")), "ut
 // string — mesh-worktree.mjs's own rule), flattened to a scannable token list.
 export function gitArgvTokens(code) {
   const groups = [];
-  const re = /\[\s*((?:"[^"]*"|'[^']*'|`[^`]*`|[^[\]])*?)\s*\]/g;
+  // Each element is a quoted token, ONE nested `[…]` (a conditional spread such as
+  // `...(force ? ["--force"] : [])` belongs to the argv around it), or a plain char that is none of
+  // those openers — the alternatives are disjoint, so the scan is linear and a quote inside a
+  // comment can no longer stretch one group across the module.
+  const re = /\[\s*((?:"[^"]*"|'[^']*'|`[^`]*`|\[[^\]]*\]|[^[\]"'`])*?)\s*\]/g;
   let m;
   while ((m = re.exec(code)) !== null) {
     const tokens = [...m[1].matchAll(/["'`]([^"'`]*)["'`]/g)].map((t) => t[1]);

@@ -45,7 +45,6 @@ function instantiate(raw, overrides = {}) {
   text = text.replaceAll("<Spike Title>", fields.title); // fill the body H1 too (QA m37/01 minor-1: faithful scaffold)
   text = text.replace("<role>", fields.owner);
   text = text.replaceAll("YYYY-MM-DD", fields.created); // created + updated (both occurrences)
-  text = text.replace("depends: []", "depends: []");
   text = text.replace("<e.g. 1d / 2d>", fields.timebox);
   // milestone 40 born-stamp (ADR-002): fill <schema-version>/<aof-version> the
   // same way insert-shared.mjs's stampVersion does, so the instantiated folder

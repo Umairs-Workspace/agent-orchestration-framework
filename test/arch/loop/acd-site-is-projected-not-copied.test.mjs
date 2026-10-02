@@ -59,7 +59,7 @@ async function deliveredReaderLiteral() {
   const source = stripComments(await readFile(path.join(repoRoot, DELIVERED_CONTROL), "utf8"));
   const line = source.split("\n").find((candidate) => candidate.includes("LOOP_DOCUMENT_BASENAME") && candidate.includes(".test("));
   if (!line) return null;
-  return /(\/(?:\\.|[^/\n])+\/[a-z]*)\.test\(/.exec(line)?.[1] ?? null;
+  return /(\/(?:\\.|[^/\n\\])+\/[a-z]*)\.test\(/.exec(line)?.[1] ?? null;
 }
 
 export const archTests = [

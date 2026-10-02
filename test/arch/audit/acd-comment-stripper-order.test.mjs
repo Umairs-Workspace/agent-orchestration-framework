@@ -48,7 +48,7 @@ const BLOCK_CLOSE = STAR + SLASH; // the escaped closer
 const LINE_MARK = SLASH + SLASH; // the escaped line-comment marker
 
 // A regex literal's source text, as written in a `.replace(` / `.filter(` / `.map(` argument.
-const PATTERN = /\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\\n])+)\/[gimsuy]*/g;
+const PATTERN = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\\n[])+)\/[gimsuy]*/g;
 
 // A pattern that removes BLOCK comments names both the opener and the closer.
 const removesBlock = (body) => body.includes(BLOCK_OPEN) && body.includes(BLOCK_CLOSE);

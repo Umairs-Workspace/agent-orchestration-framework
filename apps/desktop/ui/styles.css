@@ -1,6 +1,6 @@
 /*
   Milestone 36 · Mesh Desktop App — design system (DESIGN.md §Shared ramp; ADR-001 Tauri WebView).
-  Tokens lifted verbatim from the approved design (mocks/AOF Mesh - standalone.html → MeshWindow.dc.html).
+  Tokens lifted verbatim from the approved design (mocks/AOF Mesh - standalone.html.txt → MeshWindow.dc.html).
   TWO health vocabularies, never conflated (DESIGN §Non-negotiable framing):
     · local process health  → the control-bar pills (running / stopped / restarting)
     · fleet presence         → the body node dots (online / stale / offline)

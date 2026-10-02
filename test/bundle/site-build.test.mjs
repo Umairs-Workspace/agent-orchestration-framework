@@ -1,4 +1,5 @@
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 125 (the loop graph gets a published face),
 // task 00_the-site-has-a-publishing-path.feature + task 01_the-graph-page-is-projected-not-copied.feature.
@@ -895,7 +896,7 @@ export const siteBuildTests = [
       // Both jobs need the workspace links supplied by the immutable installation.
       const verdict = lintPagesWorkflow(readWorkflow());
       assert.deepEqual(verdict.problems, []);
-      assert.match(verdict.deployBody, new RegExp(BUILDER.replace(/[./]/g, "\\$&")), "and it runs the builder");
+      assert.match(verdict.deployBody, new RegExp(BUILDER.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")), "and it runs the builder");
     },
   },
 
@@ -964,7 +965,7 @@ export const siteBuildTests = [
       // Only the executable half of the layout: the file's own HTML comment explains the floating
       // tags it refuses, and the script's comments name the shapes — a lint that read either
       // would red on the explanation.
-      const script = stripComments(layout.replace(/<!--[\s\S]*?-->/g, ""));
+      const script = stripComments(stripHtmlComments(layout));
       const include = /import\(\s*["']([^"']*mermaid[^"']*)["']\s*\)/.exec(script);
       assert.ok(include, "the layout imports Mermaid from a CDN, dynamically");
       assert.match(include[1], /\/mermaid@\d+\.\d+\.\d+\//, `the include names an exact version: ${include[1]}`);

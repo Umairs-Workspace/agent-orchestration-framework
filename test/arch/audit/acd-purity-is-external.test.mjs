@@ -95,9 +95,9 @@ export function classifyImportBan(patternSource) {
 // says exactly the same thing to a reader and nothing at all to a detector that only knows the first.
 // A tenth guard written next year is as likely to reach for one as the other.
 const BAN_FORMS = [
-  /assert\.doesNotMatch\(\s*[^,]+,\s*\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\//gu,
-  /assert\.(?:ok|equal)\(\s*!\s*\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\/[a-z]*\.test\(/gu,
-  /assert\.equal\(\s*\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\/[a-z]*\.test\([^)]*\)\s*,\s*false/gu,
+  /assert\.doesNotMatch\(\s*[^,]+,\s*\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\//gu,
+  /assert\.(?:ok|equal)\(\s*!\s*\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*\.test\(/gu,
+  /assert\.equal\(\s*\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*\.test\([^)]*\)\s*,\s*false/gu,
 ];
 
 export function importBanSites(source) {

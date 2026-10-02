@@ -2,7 +2,7 @@
 
 The HTML/CSS/JS view for **milestone 36 · Mesh Desktop App** (ADR-001 → Tauri v2, WebView2-hosted).
 This is the rendered surface only — the **node/work window** (DESIGN.md §Surface 1) and the **tray menu**
-(§Surface 2). It realizes the approved claude.ai design (`../../wiki/work/36_milestone_mesh-desktop-app/mocks/AOF Mesh - standalone.html`)
+(§Surface 2). It realizes the approved claude.ai design (`../../wiki/work/archive/36_milestone_mesh-desktop-app/mocks/AOF Mesh - standalone.html.txt`, the design export stored inert)
 as clean, ship-quality vanilla code — the exact tokens/structure, no design-tool runtime.
 
 ## Files

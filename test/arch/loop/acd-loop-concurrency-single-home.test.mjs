@@ -195,7 +195,7 @@ export const archTests = [
         assert.ok(declaredAt >= 0, `${BOUNDS_HOME}: NOT FOUND — ${mapName} is not declared`);
         const literal = matchedBraceBody(home, declaredAt);
         assert.ok(literal != null, `${BOUNDS_HOME}: NOT FOUND — ${mapName}'s object literal could not be cut`);
-        const entry = new RegExp(`"${KEY.replace(/\./gu, "\\.")}"\\s*:\\s*([^,\\n]+)`, "u").exec(literal);
+        const entry = new RegExp(`"${KEY.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&")}"\\s*:\\s*([^,\\n]+)`, "u").exec(literal);
         assert.ok(entry != null, `${BOUNDS_HOME}: NOT FOUND — ${mapName} has no entry for ${KEY}`);
         assert.match(entry[1].trim(), /^[A-Za-z_$][\w$]*$/u, `${mapName}'s ${KEY} entry is a bare identifier`);
       }

@@ -26,6 +26,12 @@ import { fileURLToPath } from "node:url";
 import { bundledFrozenSet, compileFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../../packages/core/src/frozen-set.mjs";
 import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
 
+// A value embedded as a string literal in generated JavaScript: JSON.stringify, plus the characters JSON
+// leaves raw that still mean something in a script context (`<`, `>`, `/`, U+2028, U+2029) as \uXXXX.
+function jsLiteral(value) {
+  return JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SETTINGS_SOURCE = path.join(repoRoot, "packages", "core", "src", "claude-settings.mjs");
 const BUNDLE_DESCRIPTOR = path.join(repoRoot, "packages", "core", "assets", "bundle.json");
@@ -281,7 +287,7 @@ export const archTests = [
       const memberSource = await readFile(MEMBER_CENSUS_SOURCE, "utf8");
       assert.equal(censusForm(memberSource)?.form, "derived", "guard: the shipped member census is derived from the declaration");
       const extra = { ...declaration, members: [...declaration.members, structuredClone(HOOK_MEMBER)] };
-      const retyped = `assert.deepEqual(declaration.members.map((member) => member.id), ${JSON.stringify(declaration.members.map((member) => member.id))});`;
+      const retyped = `assert.deepEqual(declaration.members.map((member) => member.id), ${jsLiteral(declaration.members.map((member) => member.id))});`;
       assert.ok(censusProblems(extra, retyped).some((problem) => problem.includes("the census literal disagrees with the declaration")));
       assert.deepEqual(censusProblems(declaration, retyped), [], "…and a literal that agrees passes");
       assert.ok(censusProblems(declaration, "no census here").some((problem) => problem.includes("could be read in neither form")), "…and an absent census is named, never passed");

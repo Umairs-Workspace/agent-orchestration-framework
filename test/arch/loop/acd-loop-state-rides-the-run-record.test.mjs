@@ -177,7 +177,11 @@ function assertUiFrozen(pairs) {
   // (`@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`, `tunnel-rat`). Measured: recomputing this digest
   // with the previous manifest reproduces the previous pin (181fc155…); the four deleted lines are the whole diff,
   // and no file under `apps/ui/src` changed.
-  assert.equal(hash.digest("hex"), "d67e36840fd5efc80f324166583fe6962d42cba65c79ac2f2a2258215ed23064", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 142's CodeQL fixes (js/incomplete-multi-character-sanitization): the detail panel's HTML-comment
+  // strip runs to a fixed point. Measured: `git diff --numstat -- apps/ui/src` is TWO files, both under
+  // `apps/ui/src/board/` — `Markdown.tsx` (+12: `stripHtmlComments`, the loop) and `DetailPanel.tsx` (+2 −2: the
+  // import and the one call that replaces the single-pass regex). No run-record key, cycle, level or loop state is read.
+  assert.equal(hash.digest("hex"), "ceb64ca68496f3ceebdbdddbbbdbc38a907b60fcb161a82ed0f07b12587491ca", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

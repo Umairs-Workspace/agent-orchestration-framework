@@ -1,4 +1,5 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 // Traceability wiring for milestone 39 / story 01
 // tasks/00_outcome-template.feature — "The OUTCOME.md bundle template ships with
 // the pinned Delivered/Assumptions/Gaps grammar" (@executable).
@@ -57,7 +58,7 @@ function extractSectionBody(text, heading) {
 }
 
 function stripComments(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, "");
+  return stripHtmlComments(text);
 }
 
 export const outcomeTemplateTests = [

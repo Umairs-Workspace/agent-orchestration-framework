@@ -16,3 +16,5 @@ baseline. Once committed, the PNG becomes the pixel source of truth.
 To generate the mocks, paste [`PROMPT.md`](PROMPT.md) into a UI/design agent (claude.ai design,
 Figma AI, or any HTML-artifact tool) — it is grounded in `../DESIGN.md` so the output conforms to the
 binding checklist the `@uat` design gate judges against.
+
+`AOF Mesh - standalone.html.txt` is the approved claude.ai design export, kept as the token/structure source the desktop UI was built from. It is a self-unpacking bundle that parses its own embedded template as HTML and runs it, so it is stored inert (`.txt`) rather than as executable code in the repository; copy it to a `.html` file to view it in a browser. The PNGs above are the pixel baselines.

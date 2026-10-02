@@ -1,4 +1,5 @@
 import path from "node:path";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { headingSplitRe, headingCaptureRe } from "@aof/work/declared-id";
@@ -351,7 +352,7 @@ function extractGapParts(bodyLines) {
     else if (line.trim().length > 0) proseLines.push(line);
   }
   const statusLine = fieldLines.find((l) => /\*\*Status[:.]\*\*/i.test(l)) ?? "";
-  const statusMatch = statusLine.replace(/<!--[\s\S]*?-->/g, "").match(/\*\*Status[:.]\*\*\s*(.+)/i);
+  const statusMatch = stripHtmlComments(statusLine).match(/\*\*Status[:.]\*\*\s*(.+)/i);
   const status = (statusMatch ? statusMatch[1].trim() : "") || "open"; // default open (ADR-001)
   const dischargeLine = fieldLines.find((l) => /\*\*Discharge condition[:.]\*\*/i.test(l)) ?? "";
   const dischargeMatch = dischargeLine.match(/\*\*Discharge condition[:.]\*\*\s*(.+)/i);

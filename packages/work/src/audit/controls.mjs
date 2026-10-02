@@ -190,16 +190,25 @@ export function controlPathsIn(cell) {
 
 // ──────────────────────────────────────────────────────── markdown table cutting ──
 
-// An HTML comment span on a declaration's own line. The block walk in
-// `declared-id.mjs` already refuses any line inside a MULTI-LINE `<!-- … -->`, so the
-// only residual case is an inline span on a row that does declare. Measured: 0 today.
-const INLINE_COMMENT = /<!--[\s\S]*?-->/g;
+// An HTML comment span on a declaration's own line. The block walk in `declared-id.mjs` already
+// refuses any line inside a MULTI-LINE `<!-- … -->`, so the only residual case is an inline span on
+// a row that does declare. Measured: 0 today. Stripped to a fixed point (one pass can leave a joined
+// `<!--` behind; `--!>` also closes a comment); local, because this lane's imports are fixed (FF-6605).
+function stripHtmlComments(value) {
+  let current = String(value ?? "");
+  let previous;
+  do {
+    previous = current;
+    current = current.replace(/<!--[\s\S]*?--!?>/g, "");
+  } while (current !== previous);
+  return current;
+}
 
 // Cells of a markdown table row, or null when the line is not one. Split on an
 // UNESCAPED pipe — the house writes `\|` inside a cell to talk about table syntax
 // (ADR-001 §1's own table does), and splitting on it would shear the row.
 function tableCells(line) {
-  const stripped = String(line ?? "").replace(INLINE_COMMENT, "");
+  const stripped = stripHtmlComments(line);
   const trimmed = stripped.trim();
   if (!trimmed.startsWith("|")) return null;
   const parts = trimmed.split(/(?<!\\)\|/);
@@ -270,7 +279,7 @@ const PENDING_TOKEN = /(?<![A-Za-z])pending(?![A-Za-z])/i;
 export function fitnessDeclarations(text, file = "ARCHITECTURE.md") {
   const lines = String(text ?? "").split(/\r?\n/);
   return registerDeclarations(text, file).map((declaration) => {
-    const entry = String(lines[declaration.line - 1] ?? "").replace(INLINE_COMMENT, "");
+    const entry = stripHtmlComments(lines[declaration.line - 1]);
     const cells = tableCells(lines[declaration.line - 1]);
     const index = cells == null ? -1 : columnIndex(headerCellsAbove(lines, declaration.line), ENFORCED_BY_COLUMN);
     // `null` (no enforced-by column at all) is distinguished from `""` (the column

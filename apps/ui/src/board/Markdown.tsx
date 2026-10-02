@@ -36,6 +36,18 @@ function renderHtml(source: string, images?: DiagramImages, ref?: string): strin
   return new Marked({ gfm: true, breaks: false }).use({ renderer: diagramRenderer(images, { ref: ref ?? null }) }).parse(source, { async: false }) as string;
 }
 
+// HTML comments stripped to a fixed point: one pass can leave a joined `<!--` behind, and `--!>` also
+// closes a comment. The packages' home for this is @aof/foundation/markdown; the UI bundle keeps its own.
+export function stripHtmlComments(text: string): string {
+  let current = text;
+  let previous: string;
+  do {
+    previous = current;
+    current = current.replace(/<!--[\s\S]*?--!?>/g, "");
+  } while (current !== previous);
+  return current;
+}
+
 export function Markdown({ source, images, itemRef }: { source: string; images?: DiagramImages; itemRef?: string }) {
   const html = useMemo(() => renderHtml(source, images, itemRef), [source, images, itemRef]);
   return <div className="md" dangerouslySetInnerHTML={{ __html: html }} />;

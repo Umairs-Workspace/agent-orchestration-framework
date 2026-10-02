@@ -175,6 +175,16 @@ async function probe(cwd, args) {
   return JSON.parse(result.stdout);
 }
 
+// A test proxy forwards only the PATH it received, onto its own upstream origin: an absolute or
+// protocol-relative request target (`http://elsewhere/`, `//elsewhere/`) can never move the fetch to another host.
+function upstreamUrl(rawTarget, upstream) {
+  const origin = new URL(upstream).origin;
+  const { pathname, search } = new URL(rawTarget ?? "/", "http://proxy.invalid");
+  const url = new URL(`${origin}/${pathname.replace(/^\/+/, "")}${search}`);
+  if (url.origin !== origin) throw new Error(`refusing to proxy ${rawTarget} away from ${origin}`);
+  return url;
+}
+
 // --- a proxy in front of the REAL face ----------------------------------------
 //
 // Scenario 5 needs two causes the fixture cannot produce on its own: a status payload whose
@@ -195,7 +205,7 @@ async function withFaceProxy({ target, rewriteStatus = null, onResolve = null },
   const server = http.createServer(async (request, response) => {
     const requested = new URL(request.url ?? "/", "http://127.0.0.1");
     if (requested.pathname === "/api/mesh/status" && rewriteStatus) {
-      const upstream = await forward(new URL(request.url ?? "/", target));
+      const upstream = await forward(upstreamUrl(request.url, target));
       const payload = rewriteStatus(await upstream.json());
       response.writeHead(upstream.status, { "content-type": "application/json" });
       response.end(JSON.stringify(payload));
@@ -205,7 +215,7 @@ async function withFaceProxy({ target, rewriteStatus = null, onResolve = null },
       onResolve({ request, response, stop: () => { closed = true; for (const socket of sockets) socket.destroy(); server.close(); } });
       return;
     }
-    const upstream = await forward(new URL(request.url ?? "/", target), { method: request.method });
+    const upstream = await forward(upstreamUrl(request.url, target), { method: request.method });
     const text = await upstream.text();
     response.writeHead(upstream.status, { "content-type": upstream.headers.get("content-type") ?? "application/json" });
     response.end(text);

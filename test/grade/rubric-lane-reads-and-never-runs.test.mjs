@@ -203,7 +203,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
         const result = await invoke("work:doctor", { scope: "03/00" }, await ctxFor(fx.repo));
         const ours = result.findings.filter((finding) => /unjoin|rubric-join/.test(finding.code));
         assert.deepEqual(codes(ours), ["rubric-join-unchecked"], "it reports that the join was not checked");
-        assert.match(ours[0].message, new RegExp(RUBRIC_REPORT_CONFIG_KEY.replace(/\./gu, "\\.")), "the message names the configuration key that would enable it");
+        assert.match(ours[0].message, new RegExp(RUBRIC_REPORT_CONFIG_KEY.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&")), "the message names the configuration key that would enable it");
         // IT REPORTS NO `scenario-unjoined` FOR ANY SCENARIO — the fixture declares two, and
         // a lane that read silence as a miss would report both.
         assert.deepEqual(ours.filter((finding) => finding.code === "scenario-unjoined"), [], "it reports no scenario-unjoined finding for any scenario");

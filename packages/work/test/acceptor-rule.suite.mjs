@@ -349,8 +349,8 @@ export const acceptorRuleTests = [
       assert.deepEqual(read.steps, [], "no step is produced for either knob");
       assert.equal(read.step, null);
       assert.deepEqual([...read.keys], [ORDERED_KNOB, SECOND_ORDERED_KNOB], "the refusal names both knobs");
-      assert.match(read.message, new RegExp(ORDERED_KNOB.replace(/\./gu, "\\.")));
-      assert.match(read.message, new RegExp(SECOND_ORDERED_KNOB.replace(/\./gu, "\\.")));
+      assert.match(read.message, new RegExp(ORDERED_KNOB.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&")));
+      assert.match(read.message, new RegExp(SECOND_ORDERED_KNOB.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&")));
       assert.equal(read.accrues, false, "neither knob accrues a pair from it");
     },
   },

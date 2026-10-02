@@ -130,7 +130,7 @@ export const loopRecordRenderTests = [
       for (const [registry, source, target] of [[forward, "loop:alpha", "loop:zulu"], [backward, "loop:zulu", "loop:alpha"]]) {
         const runs = [...engagementRuns(source, "lr-a", 1), ...engagementRuns(target, "lr-b", 1)];
         const graph = renderExecutionGraph({ model: modelFor(registry, runs), registry });
-        assert.match(graph.text, /-->|monitoring| /, `the declared edge ${source} -> ${target} is drawn`);
+        assert.ok(graph.text.includes("-->|monitoring| "), `the declared edge ${source} -> ${target} is drawn`);
         assert.equal(graph.edgeCount, 1);
       }
     },

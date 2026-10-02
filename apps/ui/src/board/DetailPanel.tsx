@@ -32,7 +32,7 @@ import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { ProvenanceLine } from "./ProvenanceLine";
 import { ActionsStrip } from "./ActionsStrip";
 import { AskCard } from "./AskCard";
-import { DiagramMarkdown, Markdown } from "./Markdown";
+import { DiagramMarkdown, Markdown, stripHtmlComments } from "./Markdown";
 
 type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
 
@@ -990,7 +990,7 @@ function shortSession(sessionId: string | null): string {
 // "frontmatter shown as the objective" bug.
 function cleanDoc(markdown: string): string {
   let out = markdown.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, "");
-  out = out.replace(/<!--[\s\S]*?-->/g, "");
+  out = stripHtmlComments(out);
   return out.replace(/^\s+/, "").replace(/\n{3,}/g, "\n\n");
 }
 

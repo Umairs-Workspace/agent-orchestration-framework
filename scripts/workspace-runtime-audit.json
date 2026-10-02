@@ -244,7 +244,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\n    \"git\",\n    [\"-C\", sourceDir, \"log\", \"--reverse\", \"--no-merges\", \"--format=%s\"],\n    { encoding: \"utf8\" }\n  )",
     "digest": "682eefaa50f230a40bcc574998814383b5850d48465dee1bde991a146d3c1404",
-    "sourceDigest": "3d23e9b2a60395e83485b606b1538056eeae0168e0d52d8f9c51fc6b25aea181",
+    "sourceDigest": "dbaba2b30d3b1dbe2b7722c8c960e3ad40f17ab7a4d0c4b46b53b8595ead93e2",
     "reason": "Reads commit subjects through Git to recover interrupted imports; no application source entry."
   },
   {
@@ -716,7 +716,7 @@
     "kind": "child-process",
     "expression": "spawn(exe, ['work', 'ui', '--port', '0', '--target', project], {\n    cwd: project, env: childEnv, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,\n  })",
     "digest": "536d5bd6e5acd9fab777cb60e812e51d232229f279ee7a69c2441a112a4c4f8f",
-    "sourceDigest": "97f6e020f58b6f5fd8a7c9427fb05586cf6162ebd256b994e6c3e86979477498",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
     "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
   },
   {
@@ -724,15 +724,15 @@
     "kind": "child-process",
     "expression": "execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-File', installer], { stdio: 'pipe', windowsHide: true })",
     "digest": "b923c4837e20281d7c63f075f26b69329d4df067cc275f735268aeff22c40136",
-    "sourceDigest": "97f6e020f58b6f5fd8a7c9427fb05586cf6162ebd256b994e6c3e86979477498",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
     "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
   },
   {
     "file": "scripts/release/verify-distribution.mjs",
     "kind": "child-process",
-    "expression": "execFileSync('sh', ['-c', 'export AOF_INSTALL_TEST=1; . \"$1\"; aof_install_files \"$2\" \"$3\" \"$4\" \"$5\"',\n        'aof-release-proof', path.join(repoRoot, 'install.sh'), stageDir, binary, sidecar, installed], { stdio: 'pipe' })",
-    "digest": "a711cb07f6679f1c04898fb43d1124da7115f6937e3356523571b55b5fd25e3a",
-    "sourceDigest": "97f6e020f58b6f5fd8a7c9427fb05586cf6162ebd256b994e6c3e86979477498",
+    "expression": "execFileSync('sh', ['-c', 'export AOF_INSTALL_TEST=1; . \"$AOF_PROOF_INSTALL_SH\"; aof_install_files \"$AOF_PROOF_STAGE\" \"$AOF_PROOF_BINARY\" \"$AOF_PROOF_SIDECAR\" \"$AOF_PROOF_INSTALLED\"'], {\n        stdio: 'pipe',\n        env: { ...process.env, AOF_PROOF_INSTALL_SH: path.join(repoRoot, 'install.sh'), AOF_PROOF_STAGE: stageDir, AOF_PROOF_BINARY: binary, AOF_PROOF_SIDECAR: sidecar, AOF_PROOF_INSTALLED: installed },\n      })",
+    "digest": "9f4723ba7d5f6261a45b16800b0fada4183af5c26744e64944344da1c72ad41b",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
     "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
   },
   {
@@ -740,7 +740,7 @@
     "kind": "child-process",
     "expression": "execFileSync(exe, args, { cwd: project, env, encoding: 'utf8', timeout: 60_000, windowsHide: true })",
     "digest": "1f320669d6b7915390fb8867876ea20bb9a7fed57edb5e9a36a496ccdd63639c",
-    "sourceDigest": "97f6e020f58b6f5fd8a7c9427fb05586cf6162ebd256b994e6c3e86979477498",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
     "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
   },
   {
@@ -748,7 +748,7 @@
     "kind": "child-process",
     "expression": "execFileSync(process.execPath, [path.join(repoRoot, 'packages/core/bin/aof.mjs'), '--help'], { cwd: project, env: { ...env, NODE_OPTIONS: '' }, encoding: 'utf8' })",
     "digest": "e077e42f6bb7028650dadbab410344f6e67f2911566f8c85577d2db82b9fd3e0",
-    "sourceDigest": "97f6e020f58b6f5fd8a7c9427fb05586cf6162ebd256b994e6c3e86979477498",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
     "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
   },
   {
@@ -756,7 +756,7 @@
     "kind": "child-process",
     "expression": "execFileSync(node, [path.join(installed, 'src/work', child + '.mjs'), runner], { cwd: project, env, encoding: 'utf8', timeout: 60_000, windowsHide: true })",
     "digest": "bbdd776807c5dac288fafd9807731961bfa98e31bd5b83d0d5bcefb94f2a896e",
-    "sourceDigest": "97f6e020f58b6f5fd8a7c9427fb05586cf6162ebd256b994e6c3e86979477498",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
     "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
   },
   {

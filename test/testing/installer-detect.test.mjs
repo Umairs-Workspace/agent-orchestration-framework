@@ -56,12 +56,12 @@ function runShDetect(uname_os, uname_arch) {
   const script = `
     AOF_INSTALL_TEST=1
     export AOF_INSTALL_TEST
-    . "${toPosixPath(installSh)}"
+    . "$AOF_INSTALL_SH"
     set +e
     aof_detect "$1" "$2"
     echo "EXIT:$?"
   `;
-  const result = spawnSync(POSIX_SHELL.bash, ["-c", script, "_", uname_os, uname_arch], { encoding: "utf8" });
+  const result = spawnSync(POSIX_SHELL.bash, ["-c", script, "_", uname_os, uname_arch], { encoding: "utf8", env: { ...process.env, AOF_INSTALL_SH: toPosixPath(installSh) } });
   return parseShOutput(result);
 }
 
@@ -71,13 +71,13 @@ function runShUnameParse(rawUname) {
   const script = `
     AOF_INSTALL_TEST=1
     export AOF_INSTALL_TEST
-    . "${toPosixPath(installSh)}"
+    . "$AOF_INSTALL_SH"
     set +e
     uname() { printf '%s' "$1"; }
     aof_uname_pair "$@"
     echo "EXIT:$?"
   `;
-  const result = spawnSync(POSIX_SHELL.bash, ["-c", script, "_", rawUname], { encoding: "utf8" });
+  const result = spawnSync(POSIX_SHELL.bash, ["-c", script, "_", rawUname], { encoding: "utf8", env: { ...process.env, AOF_INSTALL_SH: toPosixPath(installSh) } });
   return parseShOutput(result);
 }
 

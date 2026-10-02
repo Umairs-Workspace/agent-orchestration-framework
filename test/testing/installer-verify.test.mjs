@@ -140,7 +140,7 @@ function exportPublicKey(posixHome, fingerprint, destPath) {
 
 function runShFn(fnCall, { fingerprint, pubkeyFile } = {}) {
   const envAssigns = [
-    fingerprint ? `AOF_RELEASE_GPG_FINGERPRINT=${JSON.stringify(fingerprint)}` : "",
+    fingerprint ? `AOF_RELEASE_GPG_FINGERPRINT=${shellValue(fingerprint)}` : "",
     pubkeyFile ? `AOF_RELEASE_GPG_PUBKEY_FILE=${q(pubkeyFile)}` : "",
   ]
     .filter(Boolean)
@@ -150,12 +150,12 @@ function runShFn(fnCall, { fingerprint, pubkeyFile } = {}) {
     AOF_INSTALL_TEST=1
     ${envAssigns}
     export AOF_INSTALL_TEST ${envNames}
-    . "${installSh.split("\\").join("/")}"
+    . ${q(installSh)}
     set +e
     ${fnCall}
     echo "EXIT:$?"
   `;
-  const result = spawnSync(POSIX_SHELL.bash, ["-c", script], { encoding: "utf8" });
+  const result = spawnSync(POSIX_SHELL.bash, ["-c", script], { encoding: "utf8", env: shellEnv() });
   const stdout = result.stdout ?? "";
   const match = stdout.match(/EXIT:(-?\d+)\s*$/);
   const exit = match ? Number(match[1]) : null;
@@ -163,8 +163,21 @@ function runShFn(fnCall, { fingerprint, pubkeyFile } = {}) {
   return { stdout: body, stderr: result.stderr ?? "", exit };
 }
 
+// Values reach bash as environment variables; the script text only names them ("$AOF_SH_n"). A path
+// carrying `$`, a backtick or a quote is then data, never shell syntax. Names are never reused, so a
+// script built before another one ran still finds its values.
+const shellValues = new Map();
+function shellValue(value) {
+  const name = `AOF_SH_${shellValues.size}`;
+  shellValues.set(name, value);
+  return `"$${name}"`;
+}
+function shellEnv() {
+  return { ...process.env, ...Object.fromEntries(shellValues) };
+}
+
 function q(p) {
-  return JSON.stringify(p.split("\\").join("/"));
+  return shellValue(p.split("\\").join("/"));
 }
 
 // --- install.ps1 child-process helpers ---------------------------------------
@@ -270,7 +283,7 @@ export const installerVerifyTests = [
         // against it now must fail with "No public key" (the F1 bug this
         // test guards against regressing).
         const beforeImport = runShFn(
-          `aof_verify_gpg_signature ${q(fixture.manifestPath)} ${q(ascPath)} ${JSON.stringify(freshKeyringPosix)}`,
+          `aof_verify_gpg_signature ${q(fixture.manifestPath)} ${q(ascPath)} ${q(freshKeyringPosix)}`,
           { fingerprint: key.fingerprint }
         );
         assert.notEqual(beforeImport.exit, 0, "sanity: verifying against a genuinely empty, never-imported homedir fails");
@@ -279,7 +292,7 @@ export const installerVerifyTests = [
         // test-only AOF_RELEASE_GPG_PUBKEY_FILE override) THEN
         // aof_verify_gpg_signature against that SAME now-provisioned homedir.
         const afterImport = runShFn(
-          `aof_import_release_key ${JSON.stringify(freshKeyringPosix)} && aof_verify_gpg_signature ${q(fixture.manifestPath)} ${q(ascPath)} ${JSON.stringify(freshKeyringPosix)}`,
+          `aof_import_release_key ${q(freshKeyringPosix)} && aof_verify_gpg_signature ${q(fixture.manifestPath)} ${q(ascPath)} ${q(freshKeyringPosix)}`,
           { fingerprint: key.fingerprint, pubkeyFile }
         );
         assert.equal(

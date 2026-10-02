@@ -89,7 +89,7 @@ export function createNotionSync({
       return "";
     }
     let body = text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/, ""); // drop frontmatter
-    body = body.replace(/<!--[\s\S]*?-->/g, ""); // drop HTML comments
+    body = stripHtmlComments(body); // drop HTML comments
     body = body.replace(/^\s*#\s+.*(?:\r?\n)+/, ""); // drop a leading H1 (title is a property)
     return body.trim();
   }
@@ -242,4 +242,16 @@ export function createNotionSync({
   }
 
   return { defaultNotionSpawnFor, syncMilestoneWork };
+}
+
+// Strip HTML comments to a fixed point (one pass can leave a joined `<!--` behind; `--!>` also closes a
+// comment). The packages' one home is @aof/foundation/markdown, which this package does not depend on.
+function stripHtmlComments(text) {
+  let current = String(text ?? "");
+  let previous;
+  do {
+    previous = current;
+    current = current.replace(/<!--[\s\S]*?--!?>/g, "");
+  } while (current !== previous);
+  return current;
 }

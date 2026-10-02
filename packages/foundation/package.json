@@ -8,7 +8,8 @@
     "./degrade": "./src/degrade.mjs",
     "./log": "./src/log.mjs",
     "./sqlite-runtime": "./src/sqlite-runtime.mjs",
-    "./git-args": "./src/git-args.mjs"
+    "./git-args": "./src/git-args.mjs",
+    "./markdown": "./src/markdown.mjs"
   },
   "files": [
     "src"

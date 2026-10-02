@@ -702,6 +702,15 @@ const GLOBAL_STORE_UNAVAILABLE_503 = {
   path: "/tmp/aof/global-mesh.sqlite",
 };
 
+// A test proxy forwards only the PATH it received, onto its own upstream origin: an absolute or
+// protocol-relative request target (`http://elsewhere/`, `//elsewhere/`) can never move the fetch to another host.
+function upstreamUrl(rawTarget, upstream) {
+  const origin = new URL(upstream).origin;
+  const { pathname, search } = new URL(rawTarget ?? "/", "http://proxy.invalid");
+  const url = new URL(`${origin}/${pathname.replace(/^\/+/, "")}${search}`);
+  if (url.origin !== origin) throw new Error(`refusing to proxy ${rawTarget} away from ${origin}`);
+  return url;
+}
 // withRefusingFace(fn, { refusals, proxyTo }) — the error state's own producer.
 //
 // By default it refuses EVERY request, which is what a face standing in for an unreachable global
@@ -725,7 +734,7 @@ export async function withRefusingFace(fn, { refusals = Infinity, proxyTo = null
       response.end(JSON.stringify(GLOBAL_STORE_UNAVAILABLE_503));
       return;
     }
-    const upstream = await fetch(new URL(request.url, proxyTo));
+    const upstream = await fetch(upstreamUrl(request.url, proxyTo));
     const body = await upstream.text();
     response.writeHead(upstream.status, { "content-type": upstream.headers.get("content-type") ?? "application/json" });
     response.end(body);

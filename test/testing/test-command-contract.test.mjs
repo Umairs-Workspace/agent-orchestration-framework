@@ -36,6 +36,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runBounded } from "@aof/execution/bounded-process";
+
+// A value embedded as a string literal in generated JavaScript: JSON.stringify, plus the characters JSON
+// leaves raw that still mean something in a script context (`<`, `>`, `/`, U+2028, U+2029) as \uXXXX.
+function jsLiteral(value) {
+  return JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
+
 // The story's own subject, and its two faces — taken from the REGISTERED command object rather
 // than from a private helper, so what these rows measure is what the runtime runs.
 const NO_SCOPE = _aofApplication.work.commandTools.test.NO_SCOPE;
@@ -165,12 +172,12 @@ const record = (row) => { if (sink != null) appendFileSync(sink, \`\${JSON.strin
 const observe = (name) => {
   const home = process.env.AOF_GLOBAL_HOME ?? null;
   const there = home != null && existsSync(home);
-  record({ phase: "test", suite: ${JSON.stringify(id)}, name, home, entries: there ? readdirSync(home).length : 0 });
+  record({ phase: "test", suite: ${jsLiteral(id)}, name, home, entries: there ? readdirSync(home).length : 0 });
 };
-process.on("exit", () => record({ phase: "exit", suite: ${JSON.stringify(id)}, home: process.env.AOF_GLOBAL_HOME ?? null }));
+process.on("exit", () => record({ phase: "exit", suite: ${jsLiteral(id)}, home: process.env.AOF_GLOBAL_HOME ?? null }));
 export const probeTests = [
-  { name: ${JSON.stringify(`${id} one`)}, run: () => observe(${JSON.stringify(`${id} one`)}) },
-  { name: ${JSON.stringify(`${id} two`)}, run: () => observe(${JSON.stringify(`${id} two`)}) },
+  { name: ${jsLiteral(`${id} one`)}, run: () => observe(${jsLiteral(`${id} one`)}) },
+  { name: ${jsLiteral(`${id} two`)}, run: () => observe(${jsLiteral(`${id} two`)}) },
 ];
 `;
 }

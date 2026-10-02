@@ -1,4 +1,5 @@
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 // Traceability wiring for milestone 37 / story 01
 // tasks/01_chore-template-and-command.feature — "the bundled CHORE.md template
 // instantiates to a folder that validates clean".
@@ -176,7 +177,7 @@ export const workChoreTemplateTests = [
       const instantiated = instantiate(stripStamp(raw));
       const body = extractSectionBody(instantiated, "## Definition of Done");
       assert.ok(body !== null, 'the "## Definition of Done" section is present');
-      const withoutComments = body.replace(/<!--[\s\S]*?-->/g, "");
+      const withoutComments = stripHtmlComments(body);
       const nonCommentLines = withoutComments
         .split(/\r?\n/)
         .map((line) => line.trim())
