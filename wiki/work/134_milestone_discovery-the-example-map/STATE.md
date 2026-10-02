@@ -95,7 +95,7 @@ doc: state
 - **`ruled` rejected** (ADR-001 §3): an ADR is agent-written, so a business rule decided by one
   is the smuggled default this milestone exists to stop.
 
-## 134/03 task 03 — the anchor measured at the source (operator procedure, pending)
+## 134/03 task 03 — the anchor measured at the source (operator procedure, RUN — evidence in VERIFICATION.md)
 
 The build lane (loop run `20260924T141559728Z-0001`, worktree `dispatch-134-03`) cannot run these:
 every leg needs an interactive session no shell is driving, the answer leg needs a person, and no
@@ -142,9 +142,22 @@ paraphrase. Evidence lands in `VERIFICATION.md` under `134/03 task 03`.
 - Then the `brief.answers` of the run record on disk holds no record for `134/03 Q2` — paste:
   `______`
 
-Until these slots are filled, 134/03 stays `in-progress` (task 03's contract).
+**Run 2026-09-24 (A, B, C) and leg B re-run 2026-10-02 through "Other".** The output is pasted in
+`VERIFICATION.md` under `134/03`, which is where this procedure says the evidence lands. Since 142,
+step B5 calls `collectAnswers` through the assembled application (`application.work.examples.answers`),
+because `packages/work/src/examples/answers.mjs` is a factory and `src/work-examples/answers.mjs` is gone.
 
 ## Feedback (for retro)
+
+- **142's squash left 134/03's contract pointing at deleted paths (2026-10-02).** Most `src/` moves
+  kept a rename edge and resolved, but three modules were deleted and re-created as core bindings
+  (`run-spend-ingest`, `work`, `degrade`), so `validate 134/03` went red on a story nobody had
+  touched. The continue repointed every `reads:`/`files:` entry at its package home. A restructure
+  that splits a module owes the in-flight stories' contracts in the same change.
+- **134/03 review close (inline, 2026-10-02): no Blocker. One recorded Nit:** FF-13401's third
+  case title (`test/arch/examples/acd-example-answer-one-reader.test.mjs:76`) and its header comment
+  still name `src/run-store.mjs`. The writer lives in `packages/execution/src/runs.mjs` since 142,
+  so the assertion is right and the label is stale.
 
 - **134/03's finished build was reclaimed as `runtime_offline` and retried (2026-09-24).** Run
   `20260924T141559728Z-0001`'s session built tasks 00-02, reviewed them and handed back for the

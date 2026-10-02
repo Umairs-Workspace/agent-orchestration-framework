@@ -50,3 +50,23 @@ Near-miss recall (`transcript settle spend answers AskUserQuestion run record`):
     rejected. `brief.answers` holds no `134/03 Q2` — it holds only the session's earlier
     `134/03 Q1` record, re-read because the reader scans the whole session transcript:
     `20260924T182500633Z-0005 done [{"token":"134/03 Q1",…,"answer":"Leave it for now",…}]`
+- **Task 03 leg B re-run 2026-10-02 — the deviation is closed.** Interactive session
+  S = `ed33b986-4965-4b5f-98cb-1174699c96aa` (`claude-vscode`), repository root, bare `aof` =
+  source `88ebd022+dirty` (the npm link to this checkout, 134/03's code on `main` since `0b46709`).
+  `aof work run-start 134/03 --session S --json` → run `20261002T174343324Z-0006`,
+  `"sessionId": "ed33b986-4965-4b5f-98cb-1174699c96aa"`, `"sessionSource": "flag"`. One
+  `AskUserQuestion` call: a `134/03 Q1 · ` question the operator answered through "Other" in their
+  own words, plus an untokened control question. `cd wiki` → `aof work run-complete 134/03 --outcome done`
+  → `Completed run 20261002T174343324Z-0006 for 134/03 — state done.` The record on disk:
+  `done ed33b986-4965-4b5f-98cb-1174699c96aa [{"token":"134/03 Q1",…,"answer":"What? Your fucking questions are hilariously bad","toolUseId":"toolu_013tjAKapMdTaQFcHmo5Kcgk","sessionId":"ed33b986-4965-4b5f-98cb-1174699c96aa","at":"2026-10-02T18:32:30.722Z","entrypoint":"claude-vscode"}] {"model":"claude-opus-5-5","effort":"high","tokens":{"input":106,"output":30843,"cacheRead":4720902,"cacheCreate":159311},"costUsd":2.47664985,"costSource":"priced","priceTable":"price-table-2026-08-v1","turns":53,"toolCalls":24,"exitReason":"final_output"}`
+  (`question` elided). Exactly one record: the untokened control left none. The free-text answer is
+  stamped verbatim, with the run's `sessionId` and the session's entrypoint, and the settle from
+  `wiki/` stamped spend again (leg A). `collectAnswers` for `134/03` with no transcript directory,
+  through the assembled application (`application.work.examples.answers`, since 142 the module is a
+  factory), answers both stamped records, `question` elided:
+  `[{"token":"134/03 Q1","answer":"Leave it for now","toolUseId":"toolu_01AhzTpg9kX8Xom6HrCYXfaF","sessionId":"5625226d-2c06-4958-b197-b69add9044d9","at":"2026-09-24T18:24:25.640Z","entrypoint":"claude-vscode"},{"token":"134/03 Q1","answer":"What? Your fucking questions are hilariously bad","toolUseId":"toolu_013tjAKapMdTaQFcHmo5Kcgk","sessionId":"ed33b986-4965-4b5f-98cb-1174699c96aa","at":"2026-10-02T18:32:30.722Z","entrypoint":"claude-vscode"}]`
+- **Re-gated after 142 (2026-10-02).** `validate 134/03` was red: three `reads:` paths deleted in
+  the 142 squash with no rename edge (`src/run-spend-ingest.mjs`, `src/work.mjs`, `src/degrade.mjs`).
+  Every `reads:`/`files:` source path was repointed at its package home, then validate PASS and
+  doctor clean. Focused set (`scripts/test.mjs --only`, temp `AOF_GLOBAL_HOME`/`CLAUDE_CONFIG_DIR`):
+  55 cases, 0 failures, including every `134-03` case and FF-13401/FF-13404.
