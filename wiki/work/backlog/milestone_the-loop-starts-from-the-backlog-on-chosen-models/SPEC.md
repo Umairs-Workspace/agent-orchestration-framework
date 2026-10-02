@@ -21,7 +21,7 @@ phase.** An outsider can check this by doing three things:
 - Point the loop at a backlog item: it promotes the item, records the number it minted, and carries on.
 - Ask for an autonomous refine: the whole item is broken down and every story's contract authored in
   one refine pass, instead of one story per drive.
-- Run `aof work loop <ref>` with a refine model, a build model and a verify model: each phase's
+- Run `aof work loop <ref>` with a model and effort for refine, continue (build) and verify: each phase's
   session runs on the model named, and the run record says which model ran which phase.
 
 ## Scope
@@ -36,9 +36,29 @@ In scope:
   `drive refine <unrefined[0]>`, one story per drive. It gains a mode that refines the whole item in one
   pass (break down plus every contract, the cascade `aof:refine --autonomous` performs) and then
   continues. The mode is a config setting, overridable per run from the command line.
-- **Per-phase models from the command line.** For example: Opus for refine, Sonnet for build/continue,
-  Opus or Fable for verify. They are set on `aof work loop <ref> --…`, layered over the existing
-  per-phase session config, and recorded on the run.
+- **Per-phase model and effort from the command line**, on one repeatable flag (agreed with the operator
+  2026-10-02):
+
+  ```
+  aof work loop <ref> --model sonnet:high --model refine=opus:xhigh --model verify=fable:high
+  ```
+
+  - **Shape.** `--model [<phase>=][<model>][:<effort>]`. A value with no phase applies to every phase; a
+    `<phase>=` value overrides that phase. The phases are the loop's existing names: `refine`, `continue`,
+    `verify`. Every part is optional: `--model opus`, `--model verify=fable`, `--model verify=fable:high`,
+    `--model refine=:xhigh` (effort only, the model stays as configured), `--model sonnet:medium`.
+  - **Parsing.** Split on the LAST `:` only, and only when what follows is an effort spelling
+    (`low|medium|high|xhigh|extra-high|max`, through the existing `normalizeEffort`). A full model id
+    that itself contains a colon (Bedrock-style `…-v1:0`) is therefore read as a model. An unknown phase
+    or effort is refused with a coded error, never guessed at.
+  - **`--thinking` keeps working, with no double meaning.** It stays the effort-only flag and gains the
+    same per-phase form (`--thinking verify=max`). If both flags set an effort for the same phase, the
+    command refuses with a coded error naming the conflict; it does not pick a winner.
+  - **Precedence, per phase.** The flag wins, then `work.agents.session` (`.models` / `.effort`), then
+    the built-in default (`DEFAULT_EFFORT`; no model, so the launch passes no `--model`).
+  - **The record.** The resolved model and effort for each phase, and where each came from (flag, config
+    or default), are recorded on the run. `--resume` reruns on the recorded choices unless new flags
+    are given.
 
 Out of scope:
 
@@ -50,20 +70,12 @@ Out of scope:
 
 ## Open questions (settle with the operator at refine)
 
-- **The command-line layout for per-phase models.** Candidates:
-  - one flag carrying a map: `--model refine=opus,build=sonnet,verify=fable`;
-  - one flag per phase: `--refine-model opus --build-model sonnet --verify-model fable`;
-  - a default plus overrides: `--model sonnet --phase-model verify=fable`.
-
-  Whichever layout wins, it should match the existing `--thinking LEVEL` (story 141), which today sets one
-  effort for every phase.
-- **Precedence and the record.** The proposed default order is flag, then `work.agents.session`, then
-  the built-in default. Open: what the run record stores, so a resumed loop reruns on the same models
-  (`--resume`).
 - **Whether subagent role models are in scope.** Should `--model` also override the role map
-  (`work.agents.models`), or only the session that aof spawns?
+  (`work.agents.models`), or only the session that aof spawns? Proposed: the session only. Subagent
+  models stay in config, which keeps ADR-005's two surfaces apart.
 - **Where the autonomous-refine setting lives.** Candidates: `work.autonomous`, the loop declaration, or
-  both. Also the name of its per-run override.
+  both. Proposed: `work.autonomous.refine: "whole-item" | "per-story"` (default `per-story`, today's
+  behaviour), overridden per run by `--refine whole-item|per-story`.
 
 ## Stories
 
