@@ -41,9 +41,9 @@ with a documented, accepted disposition (142 has no AOF record doc; the link flo
 
 1. ~~**Real desktop app**~~ — verified 2026-10-02 on the `0366a4fa` build ([plans/04-APPS.md](plans/04-APPS.md#not-verified-here)).
 2. **Linux/WSL native leg** on this revision; **macOS, arm64, hosted CI matrix, signing, publishing** (unavailable here).
-3. **142's record doc** (`work/this-tree-holds-what-is-live` cases 00 and 02): accepted, not resolved — 142's `SPEC.md` states it proceeds outside
-   the AOF workflow ([09-CLEANUP](plans/09-CLEANUP.md#work-stream-dispositions-and-what-stays-open)). The wiki link floor (repaired), story 141
-   (archived) and the backlog story contract (authored) are resolved.
+3. ~~**142's record doc**~~ — resolved 2026-10-02: 142 was imported (`aof import milestone`, co-located `AOF.md` digest),
+   moved to `done` (the regression-gate override cites the `5035a225` gate; see `REGRESSION.md`) and archived. The live-tree suite
+   is 19 of 19 green. The digest's two records (intent, scope) are in memory.
 4. **Test ownership** is closed: 131 suites moved; the 18 suites bound to shared root fixtures and the 5 pinned at their path stay with
    named reasons in [09-test-ledger.json](plans/09-test-ledger.json) and can move only together with their dependents.
 

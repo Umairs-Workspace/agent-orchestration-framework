@@ -1,8 +1,8 @@
 # Plan 09 independent acceptance review
 
 Latest recorded assessment: **final gate at `5035a225` — Plan 09 is complete for the verified scope (Windows x64)**. See
-[the final gate](#final-gate--5035a225-2026-10-02). The only red is the accepted 142 record-doc finding; the desktop app,
-Linux/WSL, macOS/arm64 and the hosted CI matrix remain open and are not claimed.
+[the final gate](#final-gate--5035a225-2026-10-02). The 142 record-doc finding was resolved afterwards by importing 142 (`AOF.md`) and archiving it; the desktop app was
+verified live. Linux/WSL, macOS/arm64 and the hosted CI matrix remain open and are not claimed.
 The earlier sections below preserve the review of `dd8b610e` and its follow-up evidence.
 
 Reviewed 2026-10-01 at `dd8b610e`, on `refactor/yarn-workspace-modularization`.

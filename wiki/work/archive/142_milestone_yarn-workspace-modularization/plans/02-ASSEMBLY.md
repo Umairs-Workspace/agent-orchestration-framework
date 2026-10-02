@@ -7,7 +7,7 @@ resolving integration credentials remain runtime operations.
 
 ## Entry points and ownership
 
-[`createApplication({ env })`](../../../../packages/core/src/application/assemble.mjs) constructs a fresh application.
+[`createApplication({ env })`](../../../../../packages/core/src/application/assemble.mjs) constructs a fresh application.
 The default is `process.env`; an explicit environment supplies that application's workspace and
 global-home policy. It returns command invocation/lookup, CLI presentation, and named execution,
 effects, work, mesh and server APIs, plus `close()`.
@@ -55,7 +55,7 @@ spawns a CLI process to perform a domain operation.
 
 ## Lifetime and lightweight entry points
 
-[`lifetime.mjs`](../../../../packages/core/src/application/lifetime.mjs) owns opened journal/projection handles,
+[`lifetime.mjs`](../../../../../packages/core/src/application/lifetime.mjs) owns opened journal/projection handles,
 started launchers, and setup/board/fleet HTTP servers. Manual close/stop disowns a resource and keeps
 the existing synchronous or asynchronous contract. Application close revokes runtime callbacks,
 closes owned resources in reverse order, attempts all closes even if one fails, reports an aggregate
@@ -81,7 +81,7 @@ implementation leaves remain deliberate dependencies for Plan 03 relocation.
 The contracts registry remains the only registry. Package contributions retain deterministic order,
 including feature commands under shared namespaces. All 117 baseline descriptors, schemas, routes,
 aliases, defaults and validation metadata match the
-[frozen baseline inventory](../../../../test/fixtures/application/command-inventory.json).
+[frozen baseline inventory](../../../../../test/fixtures/application/command-inventory.json).
 
 An owner may declare `extensionPoints` with permitted contributor names, flag names and positional
 argument names. A contribution's `extensions` adds only those declared inputs. Positional additions
