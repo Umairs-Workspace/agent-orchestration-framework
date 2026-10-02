@@ -1,24 +1,27 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12706 — milestone 127 / ADR-002 §1–§3: THE SCHEDULING WALKERS FILTER THROUGH THE ONE
 // PREDICATE; THE RESOLVING READERS DO NOT.
 //
-// `isLiveStreamRow` (`src/work.mjs`) is the only place `number` and `archived` are read together
+// `isLiveStreamRow` (`packages/core/src/work.mjs`) is the only place `number` and `archived` are read together
 // as a scheduling question. Two kinds of reader hang off it, and they must not drift:
 //   · the walkers that answer "what is next" — `nextWork`, `listStream`'s default path, and
 //     `recent` through `work:list` — REFERENCE the predicate (asserted textually) and, driven
 //     over the three-root fixture, return no backlog and no archived row;
-//   · the readers that answer "what is this ref" — `findWork`, `validateWork`, `src/work/doctor.mjs`
+//   · the readers that answer "what is this ref" — `findWork`, `validateWork`, `packages/core/src/work/doctor.mjs`
 //     — contain NO `archived` filter, and driven over the same fixture `findWork("05")` answers
 //     the archived row with `archived: true`.
-// The loop has no walk of its own: `src/commands/loop.mjs` and `src/work/loop.mjs` import none
-// of the four disk readers from `src/work.mjs`, so its only views of the stream are the
+// The loop has no walk of its own: `packages/core/src/commands/loop.mjs` and `packages/work-loop/src/engine.mjs` import none
+// of the four disk readers from `packages/core/src/work.mjs`, so its only views of the stream are the
 // registered `work:next` and `work:list`, which filter.
 //
-// The `.archived` member token appears in `src/**` only in `src/work.mjs`, and there only inside
+// The `.archived` member token appears in `packages/core/src/**` only in `packages/core/src/work.mjs`, and there only inside
 // the bodies of `isLiveStreamRow`, `listItems`, `listStream` and `findWork` — so a status-based
 // or location-based exclusion cannot grow in a second module without failing here — PLUS the two
 // STORE-BOUNDARY CARRIERS 127/04 landed (ADR-006 §1: the cache row carries the flag "exactly as
-// `listItems` emits them"): `src/work/item-row.mjs` screens it at the bind (`true → 1`) and
-// widens a stored row back to `archived: true`; `src/work/read.mjs` rebuilds a cache-only row in
+// `listItems` emits them"): `packages/core/src/work/item-row.mjs` screens it at the bind (`true → 1`) and
+// widens a stored row back to `archived: true`; `packages/core/src/work/read.mjs` rebuilds a cache-only row in
 // the enumerator's shape. A carrier is not a filter: each is allow-listed BY PATH and asserted to
 // hold no `.filter(…archived)`, no status stand-in and no `isLiveStreamRow` call of its own, so
 // the exclusion this leg guards against still cannot grow outside the one predicate.
@@ -31,16 +34,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, blankStringLiterals } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
-import { findWork, listStream, nextWork } from "../../../src/work.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const listStream = _aofWorkspace.work.listStream;
+const nextWork = _aofWorkspace.work.nextWork;
 import { withThreeRoots } from "../../work/stream/work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const WORK = path.join(repoRoot, "src", "work.mjs");
+const DISCOVERY = "packages/work/src/discovery.mjs";
+const WORK = path.join(repoRoot, DISCOVERY);
+const READINESS = path.join(repoRoot, "packages/work/src/readiness.mjs");
+const VALIDATION = path.join(repoRoot, "packages/work/src/validation.mjs");
 
-const DISK_READERS = ["listItems", "listStream", "findWork", "nextWork"];
+const DISK_READERS = ["listItems", "listStream", "findWork", "nextWork", "readWorkDirectory"];
 // A member access, not a spread: `...archived` is a spread of a local, `row.archived` a read.
 const ARCHIVED_MEMBER_RE = /(?<!\.)\.archived\b/g;
 // A `.filter(…)` whose argument reads `archived` — the callback's own parameter list is one nested
@@ -52,20 +60,20 @@ const bodyOf = (code, name) => functionBody(code, `function ${name}(`) ?? functi
 // The store-boundary carriers (127/04, ADR-006 §1) — each reads the flag to carry it, never to
 // exclude on it. Named by path with the reason, exactly as FF-12701 names its keepers.
 const CARRIERS = Object.freeze({
-  "src/work/item-row.mjs": "the work_items row's screen, bind mapping (true → 1) and stored-row widening — the store boundary in both directions",
-  "src/work/read.mjs": "cacheOnlyItem rebuilds a cache-only row in the enumerator's shape, archived: true included",
+  "packages/work/src/item-row.mjs": "the work_items row's screen, bind mapping (true → 1) and stored-row widening — the store boundary in both directions",
+  "packages/work/src/read.mjs": "cacheOnlyItem rebuilds a cache-only row in the enumerator's shape, archived: true included",
 });
 
-// The disk readers `rel` imports from src/work.mjs. Reads the import CLAUSE of a `work.mjs`
+// The disk readers `rel` imports from packages/core/src/work.mjs. Reads the import CLAUSE of a `work.mjs`
 // import — the specifier is matched, never captured, so this is not a second specifier
 // extractor (FF-11901 · 121: the one home is `importSpecifiers`, which answers specifiers, not
 // the bindings a clause names). `importSpecifiers` is what proves the file reaches work.mjs at all.
 function importsDiskReaderFromWork(stripped, rel) {
   const dir = path.posix.dirname(rel);
-  const reachesWork = importSpecifiers(stripped).some((entry) => path.posix.normalize(path.posix.join(dir, entry.specifier)) === "src/work.mjs");
+  const reachesWork = importSpecifiers(stripped).some((entry) => (["@aof/work/discovery", "@aof/work/readiness"].includes(entry.specifier) || path.posix.normalize(path.posix.join(dir, entry.specifier)) === "packages/core/src/application/bindings/work.mjs"));
   if (!reachesWork) return [];
   const hits = [];
-  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*\bwork\.mjs["']/g)) {
+  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bwork\.mjs|@aof\/work\/(?:discovery|readiness))["']/g)) {
     for (const name of match[1].split(",").map((entry) => entry.trim().split(/\s+as\s+/)[0])) {
       if (DISK_READERS.includes(name)) hits.push(name);
     }
@@ -82,18 +90,18 @@ export const archTests = [
       const predicate = bodyOf(work, "isLiveStreamRow");
       assert.match(predicate, /row\.number != null && row\.archived !== true/, "⇔ number != null && archived !== true");
       for (const walker of ["nextWork", "listStream"]) {
-        const body = bodyOf(work, walker);
+        const body = bodyOf(walker === "nextWork" ? stripComments(await readFile(READINESS, "utf8")) : work, walker);
         assert.ok(body, `${walker} is declared`);
         assert.ok(/\bisLiveStreamRow\b/.test(body), `${walker} references isLiveStreamRow — a walker that stops filtering through the one predicate fails here`);
       }
       for (const reader of ["findWork", "validateWork"]) {
-        const body = bodyOf(work, reader);
+        const body = bodyOf(reader === "validateWork" ? stripComments(await readFile(VALIDATION, "utf8")) : work, reader);
         assert.ok(body, `${reader} is declared`);
         assert.ok(!ARCHIVED_FILTER_RE.test(body), `${reader} is a resolving reader and filters on neither \`archived\` nor a status standing in for it`);
         assert.ok(!/\bisLiveStreamRow\b/.test(body), `${reader} does not filter through the scheduling predicate either`);
       }
-      const doctor = stripComments(await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8"));
-      assert.ok(!ARCHIVED_MEMBER_RE.test(doctor) && !/\bisLiveStreamRow\b/.test(doctor), "src/work/doctor.mjs reads no `.archived` and applies no live-row filter — doctor sees all three roots");
+      const doctor = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "index.mjs"), "utf8"));
+      assert.ok(!ARCHIVED_MEMBER_RE.test(doctor) && !/\bisLiveStreamRow\b/.test(doctor), "packages/core/src/work/doctor.mjs reads no `.archived` and applies no live-row filter — doctor sees all three roots");
     },
   },
   {
@@ -101,9 +109,9 @@ export const archTests = [
     run: async () => {
       const outside = [];
       const carriersSeen = [];
-      for (const file of await readSrcFiles(repoRoot)) {
-        const rel = `src/${file.rel}`;
-        if (rel === "src/work.mjs") continue;
+      for (const file of await readRuntimeFiles(repoRoot, { runtime: "node" })) {
+        const rel = file.rel;
+        if (rel === DISCOVERY) continue;
         // A member READ, never a string: the stream's own event name `stream.archived`
         // (127/ADR-004, story 03) is a literal the seam and the ledger spell, not a read of a
         // row's flag — so string literals are blanked before the token is looked for, exactly
@@ -118,25 +126,27 @@ export const archTests = [
         assert.ok(!ARCHIVED_FILTER_RE.test(stripped), `${rel} carries the flag and filters on neither \`archived\` nor a status standing in for it (${CARRIERS[rel]})`);
         assert.ok(!/\bisLiveStreamRow\b/.test(stripped), `${rel} applies no live-row filter of its own — the scheduling question has one home`);
       }
-      assert.deepEqual(outside, [], "no src module other than src/work.mjs and the two named carriers reads `.archived`");
+      assert.deepEqual(outside, [], "no src module other than packages/core/src/work.mjs and the two named carriers reads `.archived`");
       assert.deepEqual(carriersSeen.sort(), Object.keys(CARRIERS).sort(), "non-vacuous: both allow-listed carriers really read the flag (an allow-list entry nothing needs is a permission nobody asked for)");
       const work = stripComments(await readFile(WORK, "utf8"));
       const allowed = ["isLiveStreamRow", "listItems", "listStream", "findWork"].map((name) => bodyOf(work, name)).filter(Boolean);
       assert.equal(allowed.length, 4, "the four bodies are found");
       const inside = allowed.reduce((count, body) => count + (body.match(ARCHIVED_MEMBER_RE) ?? []).length, 0);
       const total = (work.match(ARCHIVED_MEMBER_RE) ?? []).length;
-      assert.ok(total > 0, "non-vacuous: the token is read somewhere in src/work.mjs");
-      assert.equal(total, inside, `every \`.archived\` read in src/work.mjs sits inside one of the four bodies (${total - inside} outside)`);
+      assert.ok(total > 0, "non-vacuous: the token is read somewhere in packages/core/src/work.mjs");
+      assert.equal(total, inside, `every \`.archived\` read in packages/core/src/work.mjs sits inside one of the four bodies (${total - inside} outside)`);
     },
   },
   {
     name: "arch/FF-12706 (acd-next-walkers-exclude-archived): the loop has no walk of its own — src/commands/loop.mjs and src/work/loop.mjs import none of the four disk readers from src/work.mjs",
     run: async () => {
-      for (const rel of ["src/commands/loop.mjs", "src/work/loop.mjs"]) {
+      for (const rel of ["packages/work-loop/src/commands/loop.mjs", "packages/work-loop/src/engine.mjs"]) {
         const stripped = stripComments(await readFile(path.join(repoRoot, ...rel.split("/")), "utf8"));
-        assert.deepEqual(importsDiskReaderFromWork(stripped, rel), [], `${rel} imports no disk reader from src/work.mjs — the loop reaches the stream only through the registered work:next and work:list`);
+        assert.deepEqual(importsDiskReaderFromWork(stripped, rel), [], `${rel} imports no disk reader from packages/core/src/work.mjs — the loop reaches the stream only through the registered work:next and work:list`);
       }
-      const loopShell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      assert.deepEqual(importsDiskReaderFromWork('import { listItems as scan } from "@aof/work/discovery";', "packages/work-loop/src/commands/loop.mjs"), ["listItems"], "a package import is still a disk-reader dependency");
+      assert.deepEqual(importsDiskReaderFromWork('import { nextWork as next } from "@aof/work/readiness";', "packages/work-loop/src/commands/loop.mjs"), ["nextWork"], "package readiness remains a disk reader");
+      const loopShell = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.ok(/"work:next"/.test(loopShell) && /"work:list"/.test(loopShell), "…and those two are the legs it does use");
     },
   },

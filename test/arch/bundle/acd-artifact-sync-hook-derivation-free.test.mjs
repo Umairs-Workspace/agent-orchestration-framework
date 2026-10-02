@@ -39,12 +39,12 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SETTINGS = path.join(repoRoot, ".claude", "settings.json");
 const EXISTING_HOOK = path.join(repoRoot, ".claude", "hooks", "aof", "guard-test-isolation.mjs");
-const BUNDLE_HOOKS = path.join(repoRoot, "src", "bundle", "hooks");
+const BUNDLE_HOOKS = path.join(repoRoot, "packages", "core", "assets", "hooks");
 
 // Where the story may land the enqueue script — the bundle source (the aof-exclusive,
 // content-hashed asset, ADR-002) or its installed location in this repo.
 const ENQUEUE_CANDIDATES = [
-  path.join(repoRoot, "src", "bundle", "hooks", "artifact-sync-enqueue.mjs"),
+  path.join(repoRoot, "packages", "core", "assets", "hooks", "artifact-sync-enqueue.mjs"),
   path.join(repoRoot, ".claude", "hooks", "aof", "artifact-sync-enqueue.mjs"),
 ];
 
@@ -159,10 +159,10 @@ export const archTests = [
       // EXTENDED 2026-08-27 (milestone 55 / VERIFICATION F-55-M-3), and extended rather
       // than relaxed. A bundled hook body is installed by a DECLARATION, and there are now
       // two first-class kinds: a sibling `.json` descriptor (43/69's shape), and a FROZEN-SET
-      // MEMBER whose compiled rule installs it (55/ADR-004 — `src/bundle/frozen-set.jsonc`).
+      // MEMBER whose compiled rule installs it (55/ADR-004 — `packages/core/assets/frozen-set.jsonc`).
       // For a compiled member the frozen set IS the declaration, so adding a sibling `.json`
       // beside it would be a SECOND competing source for one entry — the thing 55/04 exists to
-      // remove — which is why the fix is here and not a new file in src/bundle/hooks/.
+      // remove — which is why the fix is here and not a new file in packages/core/assets/hooks/.
       // Both kinds normalise to the same {type, command, args} triple and BOTH are held to exec
       // form; a body with NEITHER declaration still fails, which is the leg that carries the rule.
       // 2026-08-27 (story 87): the frozen-member SOURCE below is currently unexercised — the
@@ -171,7 +171,7 @@ export const archTests = [
       // descriptors, not an assertion (the `descriptor != null` leg still binds over both
       // bodies), and because deleting it would silently un-accommodate the next hook member
       // anyone declares — the same re-arming property FF-5505's re-aim exists to keep.
-      const frozenSetPath = path.join(repoRoot, "src", "bundle", "frozen-set.jsonc");
+      const frozenSetPath = path.join(repoRoot, "packages", "core", "assets", "frozen-set.jsonc");
       const frozenMembers = existsSync(frozenSetPath)
         ? (JSON.parse(stripComments(await readFile(frozenSetPath, "utf8")))?.members ?? [])
         : [];
@@ -185,7 +185,7 @@ export const archTests = [
         const code = stripComments(await readFile(path.join(BUNDLE_HOOKS, body.name), "utf8"));
         assert.deepEqual(bundledHookProblems(code), [], `${body.name} is derivation-free and cannot exit non-zero`);
         const descriptor = descriptors.find((candidate) => JSON.stringify(candidate).includes(body.name));
-        assert.ok(descriptor != null, `${body.name} has a bundled hook descriptor — either a sibling .json in src/bundle/hooks/ or a frozen-set member in src/bundle/frozen-set.jsonc whose rule installs it`);
+        assert.ok(descriptor != null, `${body.name} has a bundled hook descriptor — either a sibling .json in packages/core/assets/hooks/ or a frozen-set member in packages/core/assets/frozen-set.jsonc whose rule installs it`);
         assert.deepEqual(
           execFormProblems({ ...descriptor, args: descriptor.claude?.args }),
           [],
@@ -193,7 +193,7 @@ export const archTests = [
         );
       }
 
-      const planted = 'import { loadWorkspace } from "../../../src/work.mjs";\nprocess.exit(2);';
+      const planted = 'import { loadWorkspace } from "../../../packages/core/src/work.mjs";\nprocess.exit(2);';
       assert.deepEqual(bundledHookProblems(planted), [
         "the bundled hook imports from src/ — it must be standalone",
         "the bundled hook calls loadWorkspace() — it must derive nothing",
@@ -220,7 +220,7 @@ export const archTests = [
       `;
       assert.deepEqual(enqueueProblems(cleanScript), [], "a clean derivation-free enqueue passes");
       assert.ok(
-        enqueueProblems(cleanScript + '\nimport { workspaceIdFor } from "../../../src/workspace-identity.mjs";').length > 0,
+        enqueueProblems(cleanScript + '\nimport { workspaceIdFor } from "../../../packages/core/src/workspace-identity.mjs";').length > 0,
         "a planted workspace-identity derivation trips the detector",
       );
       assert.ok(

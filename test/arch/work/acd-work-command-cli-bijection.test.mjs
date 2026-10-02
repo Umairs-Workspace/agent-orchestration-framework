@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 08 / ADR-004 inv. 2, GENERALISED by milestone 15
 // / ADR-005 from "exactly six" to REGISTRY-DERIVED (command → CLI injection):
 // "Every registry work:* command has a non-null `cli` adapter (`cli.argv`/
@@ -22,17 +24,17 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, cp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
 // m42 wave (d) leg d1 — a work:* command may now dispatch through the
 // registry-DERIVED route table (cli.route + the one generic face) instead of a
 // hand-kept `subcommand === "…"` ladder branch; the gate accepts EITHER door
 // and re-derives the routed set from the registry, never from grepping.
-import { deriveRouteTable } from "../../../src/spine/face.mjs";
-import { startRun } from "../../../src/run-store.mjs";
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const startRun = _aofApplication.execution.runs.startRun;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The work-surface subcommands DERIVED from the registry — every work:* command's
 // op segment. (NOT a hard-coded literal: a new work:* command is covered with no
@@ -105,7 +107,7 @@ async function buildFixture() {
   // exit 1. Copy the bundled source into the fixture exactly as the templates above are copied,
   // so this probe exercises the verb's real resolving path — four declared triggers resolving to
   // four `work:loop` argvs — rather than its missing-file refusal.
-  await cp(path.join(repoRoot, "src", "bundle", "triggers.jsonc"), path.join(aofDir, "triggers.jsonc"));
+  await cp(path.join(repoRoot, "packages", "core", "assets", "triggers.jsonc"), path.join(aofDir, "triggers.jsonc"));
   await writeFile(
     path.join(milestoneDir, "SPEC.md"),
     frontmatter({ type: "milestone", number: "03", slug: "board", status: "in-progress", title: '"Board"', created: "2026-06-19", updated: "2026-06-19" }),

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // EVIDENCE RE-RUN — milestone 59 / story 02. The behavioural suite for all four task features:
 //
 //   00_the-register-is-re-executed.feature
@@ -21,23 +22,21 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 
-import {
-  DRIVE_PROGRAM,
-  EVIDENCE_FINDING_CODES,
-  EVIDENCE_VERDICTS,
-  MESSAGE_NORMALISATIONS,
-  dispositionOf,
-  messagesAgree,
-  normalizeMessage,
-  observedMessage,
-  recordedCasesIn,
-  recordedResultIn,
-  recordedRowsFor,
-  runEvidence,
-  SIZE_KINDS,
-  sizeFor,
-  verdictFor,
-} from "../../src/work-audit/evidence.mjs";
+const DRIVE_PROGRAM = _aofApplication.work.audit.evidence.DRIVE_PROGRAM;
+const EVIDENCE_FINDING_CODES = _aofApplication.work.audit.evidence.EVIDENCE_FINDING_CODES;
+const EVIDENCE_VERDICTS = _aofApplication.work.audit.evidence.EVIDENCE_VERDICTS;
+const MESSAGE_NORMALISATIONS = _aofApplication.work.audit.evidence.MESSAGE_NORMALISATIONS;
+const dispositionOf = _aofApplication.work.audit.evidence.dispositionOf;
+const messagesAgree = _aofApplication.work.audit.evidence.messagesAgree;
+const normalizeMessage = _aofApplication.work.audit.evidence.normalizeMessage;
+const observedMessage = _aofApplication.work.audit.evidence.observedMessage;
+const recordedCasesIn = _aofApplication.work.audit.evidence.recordedCasesIn;
+const recordedResultIn = _aofApplication.work.audit.evidence.recordedResultIn;
+const recordedRowsFor = _aofApplication.work.audit.evidence.recordedRowsFor;
+const runEvidence = _aofApplication.work.audit.evidence.runEvidence;
+const SIZE_KINDS = _aofApplication.work.audit.evidence.SIZE_KINDS;
+const sizeFor = _aofApplication.work.audit.evidence.sizeFor;
+const verdictFor = _aofApplication.work.audit.evidence.verdictFor;
 // THE ONE HOME for the control corpus and the throwaway repository that holds it. Two copies of
 // this fixture had already diverged (green was 2 cases here and 3 there) before it was lifted.
 import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../support/evidence-control-fixture.mjs";
@@ -266,7 +265,7 @@ export const evidenceReRunTests = [
         ];
         // The SEAM is counted, not stubbed: the children are real, and the count is what proves
         // no memoisation by control path crept in.
-        const { runBounded } = await import("../../src/work-audit/spawn.mjs");
+        const { runBounded } = await import("@aof/execution/bounded-process");
         const started = [];
         const spawn = async (options) => {
           started.push(options.args[options.args.length - 1]);

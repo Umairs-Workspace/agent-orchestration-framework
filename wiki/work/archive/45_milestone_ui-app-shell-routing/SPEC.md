@@ -23,7 +23,7 @@ aofVersion: 0.1.0
 
 `ui/` is not an application. It is three unrelated roots sharing one bundle, selected by a query
 parameter at the render root — `?mode=fleet` → `<Fleet>`, `?mode=board` → `<Board>`, anything else →
-the config editor `<App>` ([main.tsx:1261](../../../../ui/src/main.tsx#L1261)). There is no router, no
+the config editor `<App>` ([main.tsx:1261](../../../../apps/ui/src/main.tsx#L1261)). There is no router, no
 shell, and no navigation between the three.
 
 This milestone makes it an application: **real URL paths behind a shared shell**, so that every
@@ -39,10 +39,10 @@ Origin: [PRD — Web UI Restructure](../../../planning/PRD-web-ui-restructure.md
 404 a client-side path on refresh. The fleet server does not — it already falls back to `index.html`
 ([mesh-ui-serve.mjs:528-533](../../../../src/mesh-ui-serve.mjs#L528-L533)), so `/fleet` deep-linked on
 `:4181` renders today. The gap is `safeStaticPath` in
-[setup-ui.mjs:269](../../../../src/setup-ui.mjs#L269), reached via
-[:130](../../../../src/setup-ui.mjs#L130) — a literal file lookup with no fallback — and that one handler
+[setup-ui.mjs:269](../../../../packages/server/src/setup-ui.mjs#L269), reached via
+[:130](../../../../packages/server/src/setup-ui.mjs#L130) — a literal file lookup with no fallback — and that one handler
 backs **both** the board and the config editor, because `board-serve.mjs` delegates to `serveSetupUi`
-([board-serve.mjs:20](../../../../src/board-serve.mjs#L20)). So this is one server-side fix, not two.
+([board-serve.mjs:20](../../../../packages/server/src/board-serve.mjs#L20)). So this is one server-side fix, not two.
 
 ## Scope
 
@@ -56,7 +56,7 @@ In scope:
 
 - **A router and real paths.** `/` (the terminals home's future address), `/fleet`, and the board's
   existing surface as paths rather than `?mode=` values. The render-root ternary at
-  [main.tsx:1261](../../../../ui/src/main.tsx#L1261) is replaced, not wrapped.
+  [main.tsx:1261](../../../../apps/ui/src/main.tsx#L1261) is replaced, not wrapped.
 - **A shared app shell** — top bar, group chip, scope/nav — that the three surfaces mount inside, and
   which gives the arc its navigation between them. The shell owns the layout primitives milestone 46's
   terminal control consumes.
@@ -66,9 +66,9 @@ In scope:
 - **Back-compatible `?mode=` redirects.** Every existing entry point keeps working: the legacy
   `?mode=fleet` / `?mode=board` URLs, the `/api/mesh/board-url` consumers, the in-app cross-links that
   currently hard-code `http://127.0.0.1:4181/?mode=fleet`
-  ([Board.tsx:331](../../../../ui/src/board/Board.tsx#L331),
-  [DetailPanel.tsx:212](../../../../ui/src/board/DetailPanel.tsx#L212),
-  [:798](../../../../ui/src/board/DetailPanel.tsx#L798)), and the Rust desktop app's entry URLs.
+  ([Board.tsx:331](../../../../apps/ui/src/board/Board.tsx#L331),
+  [DetailPanel.tsx:212](../../../../apps/ui/src/board/DetailPanel.tsx#L212),
+  [:798](../../../../apps/ui/src/board/DetailPanel.tsx#L798)), and the Rust desktop app's entry URLs.
 - **`?scope=` survives.** It is a deep-link contract with existing consumers; the router carries it
   through untouched. Whether it is subsumed by milestone 47's repo filter is 47's question, not this
   one.

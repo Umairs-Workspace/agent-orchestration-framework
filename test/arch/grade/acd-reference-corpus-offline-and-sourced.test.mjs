@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 // Fitness function: acd-reference-corpus-offline-and-sourced (milestone 77 / story 03, FF-7705;
 // ADR-007 §1, §2, §2b, §3; ADR-008 §1, §3).
 //
@@ -42,17 +44,17 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importClosure, staticImportSpecifiers } from "../audit/acd-audit-never-imports-project-code.test.mjs";
-import { AUDIT_FINDING_CODES } from "../../../src/work-audit/census.mjs";
-import { HARNESS_REFERENCE_ROWS, REFERENCE_ROW_FLOOR, checkReferenceCorpus, referenceCorpusProblems } from "../../../src/harness-reference.mjs";
-import { DECLARED_BOUNDS_FINDING_CODES } from "../../../src/work-audit/declared-bounds.mjs";
-import { listCommands } from "../../../src/command-core.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+import { HARNESS_REFERENCE_ROWS, REFERENCE_ROW_FLOOR, checkReferenceCorpus, referenceCorpusProblems } from "../../../packages/core/src/harness-reference.mjs";
+const DECLARED_BOUNDS_FINDING_CODES = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_FINDING_CODES;
+const listCommands = _aofApplication.listCommands;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const CORPUS_REL = "src/harness-reference.mjs";
-const LANE_REL = "src/work-audit/declared-bounds.mjs";
+const CORPUS_REL = "packages/core/src/harness-reference.mjs";
+const LANE_REL = "packages/work/src/audit/declared-bounds.mjs";
 const REFRESH_REL = "scripts/refresh-harness-reference.mjs";
 const VIEW_REL = "wiki/reference/harness-baselines.md";
 // The modules THIS STORY ADDS — the subject of the vocabulary and import legs. The refresh is a
@@ -60,7 +62,7 @@ const VIEW_REL = "wiki/reference/harness-baselines.md";
 // project's source.
 const STORY_MODULES = Object.freeze([CORPUS_REL, LANE_REL]);
 
-const FAMILY_ROOT = "src/work-audit";
+const FAMILY_ROOT = "packages/core/src/application/bindings/work-audit";
 const CLOSURE_FLOOR = 6;
 
 const read = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
@@ -136,13 +138,14 @@ async function familyClosure() {
     }
   }
   await walk(path.join(repoRoot, FAMILY_ROOT), FAMILY_ROOT);
-  const { closure } = await importClosure(roots, async (rel) => {
+  const { closure, unresolved } = await importClosure(roots, async (rel) => {
     try {
       return await readFile(path.join(repoRoot, rel), "utf8");
     } catch {
       return null;
     }
-  });
+  }, await applicationConstructionGraph(repoRoot));
+  assert.deepEqual(unresolved, [], "every audit dependency is readable");
   return closure;
 }
 
@@ -216,11 +219,11 @@ export const archTests = [
   {
     name: "acd-reference-corpus-offline-and-sourced: no module in src/ and no module of the family names the refresh program",
     async run() {
-      const files = await readSrcFiles(repoRoot);
-      assert.equal(files.length > 50, true, `src/** was walked (${files.length} modules)`);
+      const files = await readRuntimeFiles(repoRoot);
+      assert.equal(files.length > 50, true, `packages/core/src/** was walked (${files.length} modules)`);
       const offenders = [];
       for (const file of files) {
-        offenders.push(...pathReaches(`src/${file.rel}`, stripComments(await readFile(file.path, "utf8")), REFRESH_REL));
+        offenders.push(...pathReaches(file.rel, stripComments(await readFile(file.path, "utf8")), REFRESH_REL));
       }
       assert.deepEqual(offenders, [], "no module under src/ imports, spawns or spells the refresh program");
 
@@ -275,12 +278,12 @@ export const archTests = [
       // THE RULE IS READ FROM THE INSTALLER, then its consequence is driven.
       const installer = read("scripts/install-local.mjs");
       const copied = [...installer.matchAll(/cpSync\(path\.join\(repoRoot,\s*"([^"]+)"\)/gu)].map((match) => match[1]);
-      assert.equal(copied.includes("src"), true, `the installer copies src/ into the payload (copies: ${copied.join(", ") || "none"})`);
+      assert.equal(/cpSync\(path\.join\(repoRoot,\s*"packages",\s*"core",\s*"src"\)/u.test(installer), true, `the installer copies src/ into the payload (copies: ${copied.join(", ") || "none"})`);
       assert.equal(copied.includes("scripts"), false, "…and copies no scripts/ directory at all");
 
       const payload = mkdtempSync(path.join(os.tmpdir(), "aof-payload-"));
       try {
-        cpSync(path.join(repoRoot, "src"), path.join(payload, "src"), { recursive: true });
+        cpSync(path.join(repoRoot, "packages", "core", "src"), path.join(payload, "packages", "core", "src"), { recursive: true });
         assert.equal(existsSync(path.join(payload, CORPUS_REL)), true, "the corpus is in the payload");
         const rows = readFileSync(path.join(payload, CORPUS_REL), "utf8");
         for (const row of HARNESS_REFERENCE_ROWS) assert.equal(rows.includes(row.id), true, `…and its rows are readable there (${row.id})`);
@@ -298,10 +301,10 @@ export const archTests = [
       assert.match(view, /do not hand-edit/iu, "…and says it is not to be hand-edited");
       for (const row of HARNESS_REFERENCE_ROWS) assert.equal(view.includes(row.id), true, `it renders the module's rows (${row.id})`);
 
-      const files = await readSrcFiles(repoRoot);
+      const files = await readRuntimeFiles(repoRoot);
       const readers = [];
       for (const file of files) {
-        readers.push(...pathReaches(`src/${file.rel}`, stripComments(await readFile(file.path, "utf8")), VIEW_REL));
+        readers.push(...pathReaches(file.rel, stripComments(await readFile(file.path, "utf8")), VIEW_REL));
       }
       assert.deepEqual(readers, [], "and no module under src/ reads it, parses it, imports it or spells its path");
 
@@ -334,7 +337,7 @@ export const archTests = [
       }
 
       const plants = [
-        ["src/work-audit/baseline-corpus.mjs", "export const A = 1;\n", "a module named for a baseline"],
+        ["packages/core/src/work-audit/baseline-corpus.mjs", "export const A = 1;\n", "a module named for a baseline"],
         [LANE_REL, "export const REFERENCE_BASELINE = 1;\n", "an exported constant whose name contains BASELINE"],
         [LANE_REL, 'const codes = ["audit-baseline-drift"];\n', "a finding code containing the word baseline"],
         [LANE_REL, "const row = { baseline: 10 };\n", "a row field named baseline"],
@@ -359,7 +362,7 @@ export const archTests = [
       for (const code of ["audit-baseline-stale", "audit-baseline-unreasoned"]) {
         assert.equal(AUDIT_FINDING_CODES.includes(code), true, `the exemption ledger's ${code} is unchanged`);
       }
-      const census = read("src/work-audit/census.mjs");
+      const census = read("packages/work/src/audit/census.mjs");
       assert.match(census, /UNREGISTERED_BASELINE = Object\.freeze\(\[/u, "…and the ledger still names suites");
       assert.match(census, /suite: "test\//u, "…by suite path");
     },
@@ -372,11 +375,13 @@ export const archTests = [
       const closure = await familyClosure();
       const reaches = [];
       for (const [rel, code] of closure) reaches.push(...registryReaches(rel, stripComments(code)));
-      assert.deepEqual(reaches, [], "no module the family loads reaches src/work/loops.mjs");
+      assert.deepEqual(reaches, [], "no module the family loads reaches packages/core/src/work/loops.mjs");
 
       const lane = stripComments(read(LANE_REL));
-      assert.match(lane, /from "\.\.\/loop-bounds\.mjs"/u, "the lane resolves config: pointers through the bounds home");
-      assert.match(lane, /from "\.\.\/harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
+      const wiring = stripComments(read("packages/core/src/application/bindings/work-audit/declared-bounds.mjs"));
+      assert.match(lane, /createAuditDeclaredBounds\(/u, "the implementation receives the supplied corpus and resolvers");
+      assert.match(wiring, /from "@aof\/contracts\/loop-bounds"/u, "the lane resolves config: pointers through the bounds home");
+      assert.match(wiring, /from "(?:\.\.\/)+harness-reference\.mjs"/u, "…and joins against the corpus by module resolution");
       assert.equal(/from "node:/u.test(lane), false, "…and imports no node builtin, so it touches no filesystem and no clock");
       assert.equal(/Date\.now\(\)|new Date\(\)/u.test(lane), false, "…and reads no clock: the instant arrives on the call");
 

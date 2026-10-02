@@ -1,9 +1,13 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -27,20 +31,20 @@ export const archTests = [
         assert.deepEqual(resolved.rest, ["tail"]);
       }
       assert.equal(resolveRoute(["work", "loops"], commands), null);
-      const cli = stripComments(await readFile(path.join(root, "src/cli.mjs"), "utf8"));
+      const cli = stripComments(await readFile(path.join(root, "packages/core/src/cli.mjs"), "utf8"));
       assert.doesNotMatch(cli, /subcommand\s*===\s*["']loops["']|loops-(?:show|graph|validate|groundedness)/);
 
       // THE WHOLE-FILE TOKEN GREP ABOVE IS SPELLING-BOUND: `sub === "loops"`,
       // `switch (subcommand) { case "loops": }` and `subcommand == 'loops'` all slip through it,
-      // and the whole file is not the region ADR-008's rule is about — `src/cli.mjs` legitimately
+      // and the whole file is not the region ADR-008's rule is about — `packages/core/src/cli.mjs` legitimately
       // names other things. So the ladder is read where it lives: the isolated `workCommand`
       // body, cut on the language's own structure through the one home
       // (`test/support/source-slice.mjs`), then matched for the ROUTE WORD in any quoting.
       // 03_command-surface.feature:66-77 asks for exactly this pair, plus the non-vacuity leg —
       // a cut that silently returned nothing would otherwise "prove" the absence of every branch.
       const workBody = functionBody(cli, "async function workCommand(args)");
-      assert.ok(workBody, "src/cli.mjs: `async function workCommand(args)` NOT FOUND — the ladder cut could not be made, so no claim below was measured");
-      assert.ok(workBody.trim().length > 0, "src/cli.mjs: the isolated workCommand body is empty — the cut landed on the wrong region");
+      assert.ok(workBody, "packages/core/src/cli.mjs: `async function workCommand(args)` NOT FOUND — the ladder cut could not be made, so no claim below was measured");
+      assert.ok(workBody.trim().length > 0, "packages/core/src/cli.mjs: the isolated workCommand body is empty — the cut landed on the wrong region");
       assert.match(workBody, /\bsubcommand\b/, "the isolated body is the ladder itself — it destructures the subcommand it dispatches on (non-vacuous)");
       assert.doesNotMatch(workBody, /["']loops["']/, "workCommand carries no loops dispatch branch, however the comparison is spelled — the route table is the only admitted door (ADR-008)");
     },

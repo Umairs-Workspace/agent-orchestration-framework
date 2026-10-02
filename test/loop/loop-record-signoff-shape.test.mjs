@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 78 / story 03, task `00_the-frozen-signoff-block`.
 //
 // Covers EVERY @executable scenario in
@@ -9,8 +10,8 @@
 // shape by name.
 //
 // TWO SIDES OF ONE SHAPE, AND BOTH ARE EXERCISED HERE. `readSignoff`
-// (`src/work/doctor-loop-record.mjs`) is the CHECKER's reader; the WRITER
-// (`src/commands/loop-record.mjs`, 78/02) is what produces the rows in the first place. A test that
+// (`packages/core/src/work/doctor-loop-record.mjs`) is the CHECKER's reader; the WRITER
+// (`packages/core/src/commands/loop-record.mjs`, 78/02) is what produces the rows in the first place. A test that
 // only exercised the reader would freeze a shape nothing writes; one that only exercised the writer
 // would freeze a shape nothing checks. So the rows the reader judges are, wherever the scenario is
 // about a real record, the ones the writer actually wrote — through 78/02's own fixture, rather than
@@ -25,8 +26,8 @@ import {
   SIGNOFF_PLACEHOLDER,
   isSignedRow,
   readSignoff,
-} from "../../src/work/doctor-loop-record.mjs";
-import { loopRecordCommand } from "../../src/commands/loop-record.mjs";
+} from "@aof/work/doctor/loop-record";
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { BARE_RUNS, ITEM_REF, ctxFor, signInPlace, signedRow, withRepo } from "./loop-record-command.test.mjs";
 
 const write = async (repo) => await loopRecordCommand.run({ ref: ITEM_REF, write: true }, await ctxFor(repo));
@@ -89,7 +90,7 @@ export const loopRecordSignoffShapeTests = [
       }
 
       // THE ID IS A LOOP ID in the registry's own endpoint grammar — this milestone introduces no
-      // new id form (`src/declared-id.mjs`'s set is closed and extended by ADR alone, m66/ADR-008).
+      // new id form (`packages/core/src/declared-id.mjs`'s set is closed and extended by ADR alone, m66/ADR-008).
       await withRepo({}, async (repo) => {
         for (const row of readSignoff((await write(repo)).text).rows) {
           assert.match(row.loop, /^loop:[A-Za-z0-9-]+$/, `${row.loop} is a loop: endpoint, not a new id form`);

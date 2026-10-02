@@ -1,3 +1,5 @@
+import * as _aofPublic_aof_contracts_cache_provenance from "@aof/contracts/cache-provenance";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 04 (staleness, never eviction), task
 //   .../04_story_staleness-and-resync/tasks/02_stale-marks-never-evicts.feature
 //
@@ -26,9 +28,10 @@
 // instant. A `>=` implementation passes every other row in the first Outline and fails only
 // the one named "EXACTLY at the window".
 import assert from "node:assert/strict";
-import { invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { cacheFreshness } from "../../src/cache-provenance.mjs";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+const cacheFreshness = _aofPublic_aof_contracts_cache_provenance.cacheFreshness;
+const upsertWorkItems = _aofApplication.mesh.store.upsertWorkItems;
 import {
   withStalenessFixture,
   setStalenessWindow,

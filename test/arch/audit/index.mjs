@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -25,11 +25,11 @@ import { archTests as acdDuplicationRuleStatesItsBlindnessTests } from "./acd-du
 // `evidence-unrunnable`, and `aof work audit --strict` failed in every governed project on aof's own
 // file layout. So the roots are NAMED APART: `repoRoot` keeps its meaning (the register, the cited
 // controls, the runner, the suite population, each child's working directory) and the TOOLKIT root —
-// where aof was installed — is derived once, in `src/work-audit/toolkit.mjs`, and nowhere else.
+// where aof was installed — is derived once, in `packages/core/src/work-audit/toolkit.mjs`, and nowhere else.
 // Deriving it is only half the fix and TECH_DEBT 72's own prescription stopped there: the payload is
-// a copy of `src/` and carries no `scripts/` at all, so the driver MOVED to
-// `src/work/audit-drive.mjs`, beside its exact precedent — which also closes item 70's enumeration
-// hole, since clause (E) of FF-5904 skips a named path that does not resolve under `src/`. The
+// a copy of `packages/core/src/` and carries no `scripts/` at all, so the driver MOVED to
+// `packages/core/src/work/audit-drive.mjs`, beside its exact precedent — which also closes item 70's enumeration
+// hole, since clause (E) of FF-5904 skips a named path that does not resolve under `packages/core/src/`. The
 // evidence fixture stops planting a driver inside the subject repository, and that absence is the
 // proof: a real driver still runs, from the toolkit. Both @executable task features plus FF-7706,
 // whose root claims are driven with the two roots FORCED APART — the one shape this repository

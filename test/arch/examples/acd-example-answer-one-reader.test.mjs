@@ -1,9 +1,9 @@
 // FF-13401 (milestone 134 / ADR-003 §1, §3) — THE HARNESS'S ANSWER HAS ONE READER, AND ITS STAMP
 // ONE WRITER.
 //
-// "`toolUseResult` appears in `src/work-examples/answers.mjs` and in no other module;
+// "`toolUseResult` appears in `packages/work/src/examples/answers.mjs` and in no other module;
 //  `answers.mjs` does not spell the string `AskUserQuestion`; and `answers` is written onto a run's
-//  `brief` only inside `recordAnswers` in `src/run-store.mjs`."
+//  `brief` only inside `recordAnswers` in `packages/core/src/run-store.mjs`."
 //
 // Why it matters: an example labelled `confirmed` or `stated` is checked against the person's
 // answer in the harness transcript. Two readers of that record can disagree about what counts as an
@@ -15,30 +15,21 @@
 // `brief.answers` (or `brief?.answers`), an assignment through `brief["answers"]`, and an
 // `answers` key (or shorthand) inside an object literal that is the value of a `brief:` key.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_READER = "src/work-examples/answers.mjs";
-const THE_WRITER = "src/run-store.mjs";
-const WRITER_HEADER = "export async function recordAnswers(";
+const THE_READER = "packages/work/src/examples/answers.mjs";
+const THE_WRITER = "packages/execution/src/runs.mjs";
+const WRITER_HEADER = "async function recordAnswers(";
 
-async function modules(dir = path.join(repoRoot, "src")) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      if (entry.name !== "bundle") out.push(...await modules(full));
-    } else if (entry.name.endsWith(".mjs")) {
-      out.push(full);
-    }
-  }
-  return out;
+async function modules() {
+  return (await readRuntimeFiles(repoRoot)).filter(file => !file.rel.startsWith("packages/core/assets/")).map(file => file.path);
 }
 
-// Does this (comment-stripped) code read the harness's answer record?
 const readsToolUseResult = (code) => /\btoolUseResult\b/.test(code);
 
 // The writes of `answers` onto a `brief` in this (comment-stripped) code.
@@ -61,7 +52,7 @@ function outsideTheWriter(code) {
 
 export const archTests = [
   {
-    name: "arch/134 FF-13401: `toolUseResult` is read in src/work-examples/answers.mjs and in no other module",
+    name: "arch/134 FF-13401: `toolUseResult` is read in packages/work/src/examples/answers.mjs and in no other module",
     run: async () => {
       const readers = [];
       for (const full of await modules()) {
@@ -76,7 +67,9 @@ export const archTests = [
     run: async () => {
       const code = stripComments(await readFile(path.join(repoRoot, THE_READER), "utf8"));
       assert.doesNotMatch(code, /AskUserQuestion/, "answers.mjs does not spell the tool's name");
-      assert.match(code, /import\s*\{[^}]*\bHUMAN_INPUT_TOOL_NAMES\b[^}]*\}\s*from\s*["']\.\.\/agent-session-driver\.mjs["']/, "it imports the list from its one home");
+      assert.match(code, /createExampleAnswers\(\{[^}]*HUMAN_INPUT_TOOL_NAMES/, "the reader receives the shared tool vocabulary");
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work-examples/answers.mjs"), "utf8"));
+      assert.match(adapter, /const\s*\{[^}]*HUMAN_INPUT_TOOL_NAMES[^}]*\}\s*= agentSessionDriverServices/, "core binds the list from its one home");
     },
   },
   {

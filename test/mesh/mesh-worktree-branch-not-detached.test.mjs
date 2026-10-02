@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/mesh-worktree-branch-not-detached.test.mjs — traceability for milestone 38 /
 // story 07, task 00 (00_real-branch-not-detached.feature, ADR-015 decision 1).
 // Exercised against the REAL `createMeshWorkerExecutionHandler` driving a REAL `git
@@ -7,9 +9,12 @@
 // git exec fake for the branch-existence assertions themselves (task 00's own
 // Background: "@executable over a REAL LOCAL git repo ... NO real GitHub, NO network").
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath, meshItemBranchName, listWorktrees, removeWorktree } from "../../src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 
@@ -165,7 +170,45 @@ export const meshWorktreeBranchNotDetachedTests = [
       const { mkdtemp, rm, writeFile: writeFileFs } = await import("node:fs/promises");
       const os = await import("node:os");
       const path = await import("node:path");
-      const { ensureCommitAvailable } = await import("../../src/mesh/worktree.mjs");
+      const { ensureCommitAvailable } = await Promise.resolve(Object.freeze({
+  DEFAULT_WORKTREE_RETENTION_MS: _aofApplication.mesh.worktree.DEFAULT_WORKTREE_RETENTION_MS,
+  WORKTREE_PREPARE_DEADLINE_EXPIRED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_DEADLINE_EXPIRED,
+  WORKTREE_PREPARE_FAILED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_FAILED,
+  WORKTREE_PREPARE_NOT_STARTED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_NOT_STARTED,
+  addDispatchWorktree: _aofApplication.mesh.worktree.addDispatchWorktree,
+  addSessionWorktree: _aofApplication.mesh.worktree.addSessionWorktree,
+  addWorktree: _aofApplication.mesh.worktree.addWorktree,
+  adoptRemoteBranch: _aofApplication.mesh.worktree.adoptRemoteBranch,
+  advanceBranchToBase: _aofApplication.mesh.worktree.advanceBranchToBase,
+  commitWorktreeChanges: _aofApplication.mesh.worktree.commitWorktreeChanges,
+  defaultGitExec: _aofApplication.mesh.worktree.defaultGitExec,
+  dispatchWorktreeSlug: _aofApplication.mesh.worktree.dispatchWorktreeSlug,
+  ensureCommitAvailable: _aofApplication.mesh.worktree.ensureCommitAvailable,
+  findItemWorktree: _aofApplication.mesh.worktree.findItemWorktree,
+  headCommit: _aofApplication.mesh.worktree.headCommit,
+  isInsideMeshWorktree: _aofApplication.mesh.worktree.isInsideMeshWorktree,
+  isUnderMeshDispatchWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshDispatchWorktreesRoot,
+  isUnderMeshSessionWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot,
+  isUnderMeshWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot,
+  listWorktrees: _aofApplication.mesh.worktree.listWorktrees,
+  localBranchExists: _aofApplication.mesh.worktree.localBranchExists,
+  meshDispatchWorktreePath: _aofApplication.mesh.worktree.meshDispatchWorktreePath,
+  meshDispatchWorktreesRoot: _aofApplication.mesh.worktree.meshDispatchWorktreesRoot,
+  meshIdentityArgs: _aofApplication.mesh.worktree.meshIdentityArgs,
+  meshItemBranchName: _aofApplication.mesh.worktree.meshItemBranchName,
+  meshSessionWorktreePath: _aofApplication.mesh.worktree.meshSessionWorktreePath,
+  meshSessionWorktreesRoot: _aofApplication.mesh.worktree.meshSessionWorktreesRoot,
+  meshWorktreePath: _aofApplication.mesh.worktree.meshWorktreePath,
+  meshWorktreesRoot: _aofApplication.mesh.worktree.meshWorktreesRoot,
+  parsePorcelainStatus: _aofApplication.mesh.worktree.parsePorcelainStatus,
+  remoteBranchExists: _aofApplication.mesh.worktree.remoteBranchExists,
+  removeDispatchWorktree: _aofApplication.mesh.worktree.removeDispatchWorktree,
+  removeWorktree: _aofApplication.mesh.worktree.removeWorktree,
+  resolveExec: _aofApplication.mesh.worktree.resolveExec,
+  reuseWorktreeOnBranch: _aofApplication.mesh.worktree.reuseWorktreeOnBranch,
+  sessionWorktreeSlug: _aofApplication.mesh.worktree.sessionWorktreeSlug,
+  sweepRetainedWorktrees: _aofApplication.mesh.worktree.sweepRetainedWorktrees,
+}));
       const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-commit-avail-"));
       try {
         const seed = path.join(tmp, "seed");

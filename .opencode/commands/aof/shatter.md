@@ -27,7 +27,7 @@ whether they're installed) — it just consumes the document. An optional group 
 arguments (`in <group/path>`) and is a PATH and nothing more — none is invented when it is absent.
 
 1. **Resolve the PRD** per the `discoverPrd(workspaceDir, explicitPath)` rule in
-   `src/planning-prd.mjs`: an explicit "$ARGUMENTS" path always wins (even an unprefixed one), else
+   `packages/core/src/planning-prd.mjs`: an explicit "$ARGUMENTS" path always wins (even an unprefixed one), else
    auto-find a single `PRD-*.md` at the workspace root. `PRD-*.md` is an agent-honoured CONVENTION, not
    a tool-enforced path — so **never guess among other `*.md`**: zero or two-or-more `PRD-*.md` (and no
    explicit path) → **stop and ask** for one (pass its path, or produce one upstream with your planner
@@ -41,7 +41,7 @@ Spawn `aof-product-owner` (orchestrated) or run inline (per `work.agents.product
 the PRD:
 
 1. **Read the seam, not the whole PRD.** Extract only ACD's input contract — the read-out the
-   `readSeam(prd)` rule in `src/planning-prd.mjs` pins: the initiative's **objective(s)**, **scope**
+   `readSeam(prd)` rule in `packages/core/src/planning-prd.mjs` pins: the initiative's **objective(s)**, **scope**
    (in/out), and enough structure to identify **milestone-sized chunks**. The PRD's other sections are
    the planner's business — ignore them.
    **Recall prior lessons first — ONCE for this PRD, and before the cut is made.** The

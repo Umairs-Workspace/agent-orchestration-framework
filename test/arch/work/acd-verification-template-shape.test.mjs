@@ -1,15 +1,15 @@
 // FF-6608 — "The bundle asks for what the checks enforce" (milestone 66 / story 03; ADR-005,
 // ADR-006, ADR-007 §1/§3, ADR-009/H+I, ADR-011/E).
 //
-// WHAT THIS GATE EXISTS FOR. ACD's gates are met by agents reading `src/bundle/` prompts and
+// WHAT THIS GATE EXISTS FOR. ACD's gates are met by agents reading `packages/core/assets/` prompts and
 // templates, so a refusal no prompt ever asked for arrives as a surprise at `validate` and the
 // agent's only recovery is to guess (ADR-007 §1). This suite asserts the ASK is present, in the
 // file whose reader must obey it, spelled in the frozen wording — and it is the literal discharge
-// of the finding's measured zero: eight falsifiability terms, 0 files each across `src/bundle/`.
+// of the finding's measured zero: eight falsifiability terms, 0 files each across `packages/core/assets/`.
 //
 // MEASURED AT HEAD BEFORE ANY EDIT (ADR-009/A — a "0 files contain X" claim is a MEASUREMENT, and
 // this one was run from a script file with each constructed pattern printed beside its result,
-// ADR-010/E). Over the 61 files of `src/bundle/` on 2026-08-16, case-insensitive, files-with-match:
+// ADR-010/E). Over the 61 files of `packages/core/assets/` on 2026-08-16, case-insensitive, files-with-match:
 //
 //   red probe 0 · seen red 0 · vacuous 0 · positive control 0 · falsifi 0 · must fail 0 ·
 //   observed failing 0 · probe 0
@@ -26,7 +26,7 @@
 // THE TWO CROSS-BOUNDARY IDENTITIES ARE THE POINT, not decoration. A markdown template cannot
 // import a JS constant, so the red-probe placeholder is two physically separate literals — the one
 // 66/02's `recordsARedProbe` refuses and the one the template renders. Nothing but an assertion
-// that reads both can hold them equal (`src/work/doctor-controls.mjs:79-88` says so in its own
+// that reads both can hold them equal (`packages/core/src/work/doctor-controls.mjs:79-88` says so in its own
 // comment and names this file). The same applies to the two register headings, which must be the
 // openers 66/01's recogniser actually accepts, in the kind ADR-008 ruling 4 assigns them.
 import assert from "node:assert/strict";
@@ -41,11 +41,11 @@ import {
   declaredIdOn,
   normalizeOpener,
   qualifiedRefsIn,
-} from "../../../src/declared-id.mjs";
-import { RED_PROBE_PLACEHOLDER, CONTROL_FINDING_CODES, recordsARedProbe } from "../../../src/work/doctor-controls.mjs";
+} from "@aof/work/declared-id";
+import { RED_PROBE_PLACEHOLDER, CONTROL_FINDING_CODES, recordsARedProbe } from "@aof/work/audit/controls";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(repoRoot, "src", "bundle");
+const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
 
 const VERIFICATION_TEMPLATE = "templates/milestone/VERIFICATION.md";
 const ARCHITECTURE_TEMPLATE = "templates/milestone/ARCHITECTURE.md";
@@ -131,7 +131,7 @@ const RED_PROBE_ASK =
   "The `red probe` cell records what was changed to make the control fail, and the message observed.";
 
 // THE SEVENTH ASK — ADR-010/D's write-apart rule, frozen in an ADR and shipped to nobody. Measured
-// over `src/bundle/` before this round: 0 files carried it, in any spelling. The other five citation
+// over `packages/core/assets/` before this round: 0 files carried it, in any spelling. The other five citation
 // asks all say "cite only ids that resolve" and say NOTHING about how to quote an id that does not —
 // so `register-dangling-citation` shipped as a refusal whose prevention lived only in a document no
 // downstream project reads. That is the trap ADR-007 §1 forbids, in the milestone that wrote it.
@@ -478,7 +478,7 @@ export const archTests = [
       const lines = bundleText(VERIFICATION_TEMPLATE).split("\n").map((line) => line.trim());
       assert.ok(lines.includes(FITNESS_HEADER_ROW), `the fitness register's header row is ${FITNESS_HEADER_ROW}`);
       assert.ok(lines.includes(FINDINGS_HEADER_ROW), `the findings register's header row is ${FINDINGS_HEADER_ROW}`);
-      // The seven are the seven `src/bundle/commands/verify.md` prescribes in prose, in order.
+      // The seven are the seven `packages/core/assets/commands/verify.md` prescribes in prose, in order.
       const columns = FINDINGS_HEADER_ROW.split("|").map((cell) => cell.trim()).filter(Boolean);
       assert.deepEqual(columns, ["id", "observed", "type", "severity", "triage", "routed-to", "status"]);
       // …and they are the SAME SEVEN, IN THE SAME ORDER, that verify.md prescribes in prose (the
@@ -527,7 +527,7 @@ export const archTests = [
     run: async () => {
       const text = bundleText(VERIFICATION_TEMPLATE);
       const occurrences = text.split(RED_PROBE_PLACEHOLDER).length - 1;
-      assert.equal(occurrences, 1, "the template carries the placeholder exactly once, byte-for-byte as `src/work/doctor-controls.mjs` exports it");
+      assert.equal(occurrences, 1, "the template carries the placeholder exactly once, byte-for-byte as `packages/core/src/work/doctor-controls.mjs` exports it");
       assert.equal(
         RED_PROBE_PLACEHOLDER,
         "<what was changed to make it fail, and the message observed>",

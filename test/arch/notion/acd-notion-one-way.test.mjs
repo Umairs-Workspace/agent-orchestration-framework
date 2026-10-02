@@ -3,7 +3,7 @@
 //    (create/patch) or an addressing metadata read; NO path reads a Notion page's
 //    status/title and writes it to disk; on divergence disk overwrites Notion."
 //
-// Source-grep of src/notion/sync.mjs + projection.mjs, CI-able offline:
+// Source-grep of packages/core/src/notion/sync.mjs + projection.mjs, CI-able offline:
 //   (a) The Notion-CLI spawn argv only ever names PAGE create / PAGE patch
 //       (`pages create` / `pages update`) — a disk→Notion write (the as-built egress,
 //       STATE story-02 note). There is no Notion READ verb whose result feeds disk.
@@ -18,8 +18,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SYNC = path.join(repoRoot, "src", "notion", "sync.mjs");
-const PROJECTION = path.join(repoRoot, "src", "notion", "projection.mjs");
+const SYNC = path.join(repoRoot, "packages", "integration-notion", "src", "sync.mjs");
+const PROJECTION = path.join(repoRoot, "packages", "integration-notion", "src", "projection.mjs");
 
 // Keep STRING literals (so we read argv-token strings) but drop comments — a `pages`
 // in a comment is discounted while a real `["pages", "create", …]` argv survives.

@@ -1,0 +1,20 @@
+{
+  "name": "@aof/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./commands": "./src/commands.mjs",
+    "./loop-bounds": "./src/loop-bounds.mjs",
+    "./error": "./src/error.mjs",
+    "./claim-provenance": "./src/claim-provenance.mjs",
+    "./freshness": "./src/freshness.mjs",
+    "./cache-provenance": "./src/cache-provenance.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/contracts"
+  }
+}

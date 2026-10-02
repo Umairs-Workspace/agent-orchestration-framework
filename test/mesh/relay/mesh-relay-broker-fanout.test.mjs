@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 23 / story 01 — task 00
 // (tasks/00_relay-broker-fanout.feature). serveRelay stands up a stateless ws@8 broker
 // that fans one node's signal out to the OTHER nodes and persists nothing.
 //
 // Covers EVERY @executable scenario, exercising the REAL in-process serveRelay
-// (src/mesh/relay.mjs) over an EPHEMERAL port (port: 0) with an in-process `ws` client —
+// (packages/core/src/mesh/relay.mjs) over an EPHEMERAL port (port: 0) with an in-process `ws` client —
 // NO spawn (the 22/R3 flake is sidestepped by going fully in-process). The ack-on-connect
 // (join-confirm) barrier ({ type:'joined' }) is the DETERMINISTIC proof a peer is in the
 // broadcast set before the sender publishes — every ordering-sensitive assertion awaits
@@ -14,7 +15,7 @@ import { mkdtemp, rm, mkdir, writeFile, readdir, readFile, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveRelay } from "../../../src/mesh/relay.mjs";
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
 
 // --- the in-process ws harness ------------------------------------------------
 

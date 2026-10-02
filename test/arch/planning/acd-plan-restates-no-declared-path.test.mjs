@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9603 (96/ADR-005, ADR-006) — THE PLAN RESTATES NO DECLARED PATH, AND ITS LENGTH IS GOVERNED
 // BY THE ONE BUDGET FAMILY.
 //
@@ -24,8 +25,9 @@
 //      exactly what it was: one code, and the warn/error pair the accepting-item ladder already
 //      shipped. The plan fires the EXISTING code.
 //   5. THE GATE HAS ONE READER. `work.plan.enabled` defaults false and is named by no module in
-//      `src/` outside its own validator — ADR-006 §4's claim that nothing needs to read it, stated
+//      `packages/core/src/` outside its own validator — ADR-006 §4's claim that nothing needs to read it, stated
 //      as a census rather than trusted to stay true.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
@@ -33,29 +35,26 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 import { restatementViolations } from "../../support/plan-restatement-ban.mjs";
-import { budgetKeyFor, budgetGroup } from "../../../src/work/doctor-budget.mjs";
-import { budgetsFromConfig } from "../../../src/work/doctor.mjs";
+import { budgetKeyFor, budgetGroup } from "@aof/work/doctor/budget";
+const budgetsFromConfig = _aofApplication.work.doctor.budgetsFromConfig;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const TEMPLATE = "src/bundle/templates/story/PLAN.md";
-const BUDGET_GROUP = "src/work/doctor-budget.mjs";
-const BUDGET_DEFAULTS = "src/work/doctor.mjs";
-const GATE_VALIDATOR = "src/config-inspect.mjs";
+const TEMPLATE = "packages/core/assets/templates/story/PLAN.md";
+const BUDGET_GROUP = "packages/work/src/doctor/budget.mjs";
+const BUDGET_DEFAULTS = "packages/work/src/doctor/index.mjs";
+const GATE_VALIDATOR = "packages/core/src/application/bindings/config-inspect.mjs";
 const WORK_DIR = path.join(repoRoot, "wiki", "work");
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 const raw = (rel) => readFile(path.join(repoRoot, rel), "utf8");
 
-// Every `.mjs` under `src/`, so the gate census is over the module set rather than over a list
+// Every `.mjs` under `packages/core/src/`, so the gate census is over the module set rather than over a list
 // someone remembered to extend.
-async function srcModules(dir = path.join(repoRoot, "src"), found = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) await srcModules(full, found);
-    else if (entry.name.endsWith(".mjs")) found.push(path.relative(repoRoot, full).split(path.sep).join("/"));
-  }
-  return found;
+async function srcModules() {
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.some(file => file.rel === BUDGET_GROUP), "the budget implementation participates in the census");
+  return files.map(file => file.rel);
 }
 
 async function streamPlans(dir, found = []) {
@@ -162,7 +161,7 @@ export const archTests = [
 
       // …and its documented default is OFF, asserted at the resolver rather than in a comment.
       const validator = await source(GATE_VALIDATOR);
-      assert.match(validator, /export function planEnabledFromConfig/, "the gate's one resolver lives with its validator");
+      assert.match(validator, /function planEnabledFromConfig/, "the gate's one resolver lives with its validator");
       assert.match(
         validator,
         /config\?\.work\?\.plan\?\.enabled === true/,

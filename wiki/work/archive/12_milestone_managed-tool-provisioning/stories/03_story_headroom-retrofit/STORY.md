@@ -31,7 +31,7 @@ so that headroom is an aof-managed dependency like graphify, and an operator on 
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-004** the retrofit + platform
 matrix; **ADR-001/002** the resolver + uv lane). This story **owns**: the re-point of headroom's binary
-lookup in [headroom.mjs](../../../../../../src/headroom.mjs) + [work-headroom.mjs](../../../../../../src/work-headroom.mjs)
+lookup in [headroom.mjs](../../../../../../packages/core/src/headroom.mjs) + [work-headroom.mjs](../../../../../../src/work-headroom.mjs)
 to front the store-first resolver (PATH fallback retained), and the headroom tool descriptor (with the
 `platforms` matrix — win32 `supported:false`/Rust prereq, per RESEARCH §A3). It does **not** touch graphify
 (02), the store/registry (00), or the provision command/doctor wiring (01 — it consumes them). headroom's

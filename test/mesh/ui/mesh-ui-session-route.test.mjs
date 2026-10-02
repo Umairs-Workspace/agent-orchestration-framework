@@ -1,3 +1,7 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 50 / story 02 — tasks 00 + 02
 // (tasks/00_spawn-route-handler.feature, tasks/02_honest-failure-responses.feature,
 // both @executable). Task 01 is a fitness-function update and is armed in
@@ -13,7 +17,7 @@
 //
 // SO "a session-spawn directive was dispatched to n1" IS PROVEN THROUGH THE PRODUCTION
 // CHAIN, not from the response body: the route's envelope is captured off the SAME
-// `terminalInputPush` seam `src/commands/mesh-ui.mjs` wires literally, then handed to
+// `terminalInputPush` seam `packages/core/src/commands/mesh-ui.mjs` wires literally, then handed to
 // the REAL `createTerminalInputRouter` (which the serve process feeds from its own
 // broker subscription, mesh-launcher.mjs), which dispatches through a REAL
 // `startControlStreamServer` to a REAL worker stream client's `onSessionSpawn` lane.
@@ -23,27 +27,29 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 // The closed set the route validates `assistant` against, read from its ONE home so this
 // suite cannot drift from the module the face imports (ADR-002 decision 2's
 // `"claude"|"codex"|"gemini"`; ADR-007 decision 3 keeps it closed as a session-key LABEL).
-import { PROVIDER_IDS } from "../../../src/terminal-providers.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createTerminalInputRouter } from "../../../src/mesh/terminal-input.mjs";
-import { SESSION_SPAWN_KIND } from "../../../src/mesh/session-spawn-directive.mjs";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
-import { createWorkerStreamClient, createWorkerWsTransport } from "../../../src/worker-stream-client.mjs";
+const PROVIDER_IDS = _aofSessions.terminalProviders.PROVIDER_IDS;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
+import { SESSION_SPAWN_KIND } from "@aof/mesh/session-spawn-directive";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
 
 // A v4 UUID, the shape `crypto.randomUUID()` mints (ADR-002 decision 2 — the session's
 // routable address, minted CONTROL-side so the 200 can carry it).
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 // The fixture pins its workspace ids through `config.mesh.workspaceId` — the REAL
-// production precedence (`src/workspace-identity.mjs`: an explicit pin outranks the
+// production precedence (`packages/core/src/workspace-identity.mjs`: an explicit pin outranks the
 // path derivation, and is what a scoped clone carries), so the locked scenarios'
 // `workspaceId: "ws-aof"` is the id the projection actually holds rather than a
 // sha256 of a temp path the feature file could never name.
@@ -648,7 +654,7 @@ export const meshUiSessionRouteTests = [
   //
   // REVIEW FIX (2026-08-14): the route forwarded ANYTHING — `"not-a-provider"`,
   // `"../../../etc/passwd"`, a 4096-character string — to the worker. Traversal is closed
-  // downstream by `safeSegment` (src/mesh/session.mjs), but LENGTH is not, and the value
+  // downstream by `safeSegment` (packages/core/src/mesh/session.mjs), but LENGTH is not, and the value
   // becomes a filename segment of the worker's session leaf: an over-long `assistant` can
   // fail the worker's session-record write AFTER the PTY is already alive, i.e. a live
   // shell with no grid record. The set is validated at the door, from its one home.
@@ -737,7 +743,7 @@ export const meshUiSessionRouteTests = [
   {
     name: "mesh-ui-session-route/02 the session route's catch-all has its OWN code — `session-dispatch-failed` is spelled exactly once (the relay hand-off), and the catch-all is neither it nor story 03's `session-spawn-failed`",
     async run() {
-      const source = await readFile(new URL("../../../src/mesh/ui-serve.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../../packages/mesh/src/ui-serve.mjs", import.meta.url), "utf8");
       const code = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       const dispatchFailedCount = (code.match(/"session-dispatch-failed"/g) ?? []).length;
       assert.equal(dispatchFailedCount, 1, "`session-dispatch-failed` names ONE fact — the relay hand-off that threw — and is spelled once");

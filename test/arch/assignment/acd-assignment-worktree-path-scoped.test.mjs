@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-worktree-path-scoped (milestone 35 / ADR-004,
 // fitness #8) — "every worktree materialization joins the ONE defined mesh-worktrees
 // root, keyed by assignmentId — no ad-hoc temp path."
@@ -10,7 +11,7 @@
 // acd-status-rollback-bounded).
 //
 // Proofs:
-//  1. Structural — src/mesh/worktree.mjs's `git worktree add` target is built ONLY
+//  1. Structural — packages/core/src/mesh/worktree.mjs's `git worktree add` target is built ONLY
 //     from meshWorktreePath(projectRoot, assignmentId), which itself joins
 //     meshWorktreesRoot (".aof/mesh/worktrees"); no os.tmpdir() join, no other
 //     hand-built path feeds a `git worktree add` call.
@@ -23,11 +24,14 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { addWorktree, meshWorktreePath, isUnderMeshWorktreesRoot, removeWorktree } from "../../../src/mesh/worktree.mjs";
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const worktreeSourcePath = path.join(repoRoot, "src", "mesh", "worktree.mjs");
+const worktreeSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worktrees.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

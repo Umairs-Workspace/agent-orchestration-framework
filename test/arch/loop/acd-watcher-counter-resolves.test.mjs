@@ -1,14 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const getCommand = _aofApplication.getCommand;
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "src", "bundle", "loops");
+const loopsDir = path.join(root, "packages", "core", "assets", "loops");
 
 // The three shipped watchers, and the registered command each measurement must resolve to.
 const WATCHERS = Object.freeze([

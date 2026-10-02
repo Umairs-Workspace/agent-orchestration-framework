@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 37 / ADR-001 (FF-3702):
 // "`isDriver` is TRUE for `spike` and `chore` — they sit at the stream root, carry
 //  `depends`, and participate in the ordering/gating graph exactly like milestone|uat."
@@ -15,10 +16,10 @@ import { readFile, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listItems } from "../../../src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages", "work", "src", "identity.mjs");
 
 async function itemTypeAlternation() {
   const src = await readFile(workSrc, "utf8");
@@ -58,10 +59,10 @@ export const archTests = [
     name: "arch/spike-chore-are-drivers: the isDriver predicate names `spike` and `chore` (FF-3702, source)",
     run: async () => {
       if (!(await vocabularyLanded())) return; // inert-green until the vocabulary lands
-      const src = await readFile(workSrc, "utf8");
+      const src = await readFile(path.join(repoRoot, "packages/work/src/dependencies.mjs"), "utf8");
       // The isDriver predicate (or an equivalent item-is-a-driver helper) must admit both.
       const isDriverLine = src.match(/const\s+isDriver\s*=\s*\(item\)\s*=>[^;]+;/);
-      assert.ok(isDriverLine, "isDriver predicate is present in src/work.mjs");
+      assert.ok(isDriverLine, "isDriver predicate is present in packages/core/src/work.mjs");
       assert.match(isDriverLine[0], /spike/, "isDriver admits `spike`");
       assert.match(isDriverLine[0], /chore/, "isDriver admits `chore`");
     },

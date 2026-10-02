@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 59 / story 01 —
 // tasks/03_the-audit-runs-code-in-a-child-and-never-in-itself.feature.
 //
@@ -24,8 +25,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EventEmitter } from "node:events";
-import { runBounded, argumentVectorProblem, attemptedCommand, DEFAULT_DEADLINE_MS, DEFAULT_GRACE_MS, SPAWN_OUTCOMES, SPAWN_RESULT_KEYS } from "../../src/work-audit/spawn.mjs";
-import { assembledSuite } from "../../src/work-audit/census.mjs";
+import { runBounded, argumentVectorProblem, attemptedCommand, DEFAULT_DEADLINE_MS, DEFAULT_GRACE_MS, SPAWN_OUTCOMES, SPAWN_RESULT_KEYS } from "@aof/execution/bounded-process";
+const assembledSuite = _aofApplication.work.audit.census.assembledSuite;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

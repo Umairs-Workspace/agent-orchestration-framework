@@ -1,15 +1,19 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 01 (version stamp & reader), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
 //     01_story_version-stamp-and-reader/tasks/00_reader-schema-and-provenance.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the LOCKED reader seam — `readItemSchema`/`readItemVersion`
-// (src/work.mjs, ADR-001/ADR-003) — and the exported `WORK_ITEM_SCHEMA_VERSION`
+// (packages/core/src/work.mjs, ADR-001/ADR-003) — and the exported `WORK_ITEM_SCHEMA_VERSION`
 // constant, read back over a hand-authored fixture on disk, cross-checked
 // against a fresh `parseFrontmatter` call proving the shared parser is
 // UNCHANGED (18/ADR-007): it hands back the raw scalar, never a coerced value —
 // the reader's coercion is the reader's job, not the parser's.
 import assert from "node:assert/strict";
-import { readItemSchema, readItemVersion, parseFrontmatter, WORK_ITEM_SCHEMA_VERSION } from "../../src/work.mjs";
+const readItemSchema = _aofWorkspace.work.readItemSchema;
+const readItemVersion = _aofWorkspace.work.readItemVersion;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { withWork, writeMilestoneRecordDoc } from "../support/work-version-fixture.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";

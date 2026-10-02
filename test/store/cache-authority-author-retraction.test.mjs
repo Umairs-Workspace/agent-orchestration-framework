@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 02 (the authority cut), task
 //   .../02_story_cache-authority/tasks/02_author-retraction-is-the-only-deletion.feature
 //
@@ -16,8 +17,8 @@
 // "no time-predicated DELETE exists" — that is the arch-test's job
 // (acd-cache-staleness-single-predicate).
 import assert from "node:assert/strict";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
-import { invoke } from "../../src/command-core.mjs";
+const upsertWorkItems = _aofApplication.mesh.store.upsertWorkItems;
+const invoke = _aofApplication.invoke;
 import {
   withCacheFixture,
   withStore,

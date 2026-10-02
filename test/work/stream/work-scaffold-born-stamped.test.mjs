@@ -1,23 +1,28 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 01 (version stamp & reader), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
 //     01_story_version-stamp-and-reader/tasks/01_new-items-born-stamped.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the REAL registered scaffold commands `work:insert-milestone` /
-// `work:insert-story` (src/commands/insert-milestone.mjs / insert-story.mjs,
-// thin wrappers over src/commands/insert-shared.mjs's runInsertTopLevel /
+// `work:insert-story` (packages/core/src/commands/insert-milestone.mjs / insert-story.mjs,
+// thin wrappers over packages/core/src/commands/insert-shared.mjs's runInsertTopLevel /
 // runInsertStory — the SAME engine `add-milestone`/`add-story` scaffold from),
-// invoked in-process through the command core (src/command-core.mjs), against a
+// invoked in-process through the command core (packages/core/src/command-core.mjs), against a
 // REAL fixture project carrying the real committed `.aof/templates/work/`
 // templates (test/support/work-insert-fixture.mjs, the SAME fixture milestone
 // 41's own insert-command tests use). Read back black-box: the new item's
 // on-disk record doc frontmatter, and the story-01 reader
-// (readItemSchema/readItemVersion, src/work.mjs) — no source read.
+// (readItemSchema/readItemVersion, packages/core/src/work.mjs) — no source read.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../src/command-core.mjs";
-import { parseFrontmatter, readItemSchema, readItemVersion, WORK_ITEM_SCHEMA_VERSION } from "../../../src/work.mjs";
-import { packageVersionString } from "../../../src/asset-base.mjs";
+const invoke = _aofApplication.invoke;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const readItemSchema = _aofWorkspace.work.readItemSchema;
+const readItemVersion = _aofWorkspace.work.readItemVersion;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
+import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
 import { withInsertFixture, buildMilestone } from "../../support/work-insert-fixture.mjs";
 
 export const workScaffoldBornStampedTests = [

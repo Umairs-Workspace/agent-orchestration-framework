@@ -1,0 +1,42 @@
+{
+  "name": "@aof/execution",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./runs": "./src/runs.mjs",
+    "./spend": "./src/spend.mjs",
+    "./heartbeats": "./src/heartbeats.mjs",
+    "./session-capture": "./src/session-capture.mjs",
+    "./providers": "./src/providers.mjs",
+    "./terminal-sessions": "./src/terminal-sessions.mjs",
+    "./pty": "./src/pty.mjs",
+    "./session-driver": "./src/session-driver.mjs",
+    "./terminal/screen": "./src/terminal/screen.mjs",
+    "./terminal/session-screen": "./src/terminal/session-screen.mjs",
+    "./claude-trust": "./src/claude-trust.mjs",
+    "./terminal/claude-screens": "./src/terminal/claude-screens.mjs",
+    "./worktrees": "./src/worktrees.mjs",
+    "./bounded-process": "./src/bounded-process.mjs",
+    "./rubric-process": "./src/rubric-process.mjs",
+    "./run-transitions": "./src/run-transitions.mjs",
+    "./reconcile": "./src/reconcile.mjs",
+    "./session-model": "./src/session-model.mjs",
+    "./otel-attribution": "./src/otel-attribution.mjs",
+    "./svg-rasterizer": "./src/svg-rasterizer.mjs",
+    "./journal-queries": "./src/journal-queries.mjs",
+    "./store-metadata": "./src/store-metadata.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/execution"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/foundation": "workspace:*",
+    "@xterm/headless": "6.0.0",
+    "node-pty": "1.1.0"
+  }
+}

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6102 (milestone 61 / ADR-002) — THE TRIAL METRIC IS DECLARED, RESOLVABLE AND
 // SWAPPABLE, AND THE ENGINE NAMES NONE OF IT.
 //
@@ -22,8 +24,10 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import * as workCounters from "../../../src/work/counters.mjs";
-import { CriterionError, defaultCriterion, makeCriterion } from "../../../src/work-acceptor/criterion.mjs";
+import * as workCounters from "@aof/work/counters";
+const CriterionError = _aofApplication.work.acceptor.criterion.CriterionError;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
 import {
   COUNTER_METRIC_UNRESOLVABLE,
   METRIC_UNMEASURABLE,
@@ -36,29 +40,30 @@ import {
   metricPopulation,
   parsePointer,
   readArm,
-} from "../../../src/work-acceptor/rule.mjs";
+} from "@aof/work/acceptor/rule";
 import {
   PAIR_OUTCOMES as LEDGER_PAIR_OUTCOMES,
   evaluateRun,
-} from "../../../src/work-acceptor/ledger.mjs";
+} from "@aof/work/acceptor/ledger";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COUNTERS_LEAF = "src/work/counters.mjs";
-const ENGINE_MODULES = Object.freeze(["src/work-acceptor/rule.mjs", "src/work-acceptor/ledger.mjs"]);
+const COUNTERS_IMPLEMENTATION = "packages/work/src/counters.mjs";
+const ENGINE_MODULES = Object.freeze(["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]);
 
 const shipped = defaultCriterion();
 const { N: _derived, ...shippedFields } = shipped;
 const revising = (fields) => makeCriterion({ ...shippedFields, ...fields });
 const registry = deriveMetricRegistry({ [COUNTERS_LEAF]: workCounters });
 
-// Every module under `src/work-acceptor/`, read from disk rather than listed, so a
+// Every module under `packages/core/src/work-acceptor/`, read from disk rather than listed, so a
 // module a later story adds is swept the day it appears.
 async function acceptorModules() {
-  const dir = path.join(root, "src", "work-acceptor");
+  const dir = path.join(root, "packages", "work", "src", "acceptor");
   const modules = [];
   for (const name of (await readdir(dir)).sort()) {
     if (!name.endsWith(".mjs")) continue;
-    modules.push({ rel: `src/work-acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
+    modules.push({ rel: `packages/work/src/acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
   }
   return modules;
 }
@@ -74,14 +79,6 @@ export function spelledMetricNames(modules, symbols) {
   });
 }
 
-async function walk(dir, prefix = "src") {
-  const found = [];
-  for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-    if (entry.isDirectory()) found.push(...await walk(path.join(dir, entry.name), `${prefix}/${entry.name}`));
-    else if (entry.name.endsWith(".mjs")) found.push(`${prefix}/${entry.name}`);
-  }
-  return found;
-}
 
 function refusalFrom(body) {
   try {
@@ -121,7 +118,7 @@ export const archTests = [
       assert.ok(notCallable.length > 0, `the leaf also exports non-callables: ${notCallable.join(", ")}`);
       for (const name of notCallable) assert.equal(Object.hasOwn(registry, `module:${COUNTERS_LEAF}#${name}`), false, `${name} is not a resolver`);
       // …and a planted allow-list-shaped namespace of strings yields an EMPTY registry.
-      assert.deepEqual(deriveMetricRegistry({ "src/planted.mjs": { roundsToAccept: "a name nobody computes" } }), {});
+      assert.deepEqual(deriveMetricRegistry({ "packages/core/src/planted.mjs": { roundsToAccept: "a name nobody computes" } }), {});
 
       // A POINTER NAMING A SYMBOL THAT DOES NOT EXIST is refused when the criterion is
       // built, not discovered at the moment a ruling was due.
@@ -150,9 +147,9 @@ export const archTests = [
       assert.deepEqual(spelledMetricNames(modules, symbols), []);
       // NON-VACUITY, and the distinction itself: a name HELD in code is reported; the
       // same name inside the declared pointer string is not.
-      const held = [{ rel: "src/work-acceptor/planted.mjs", code: `const reading = counters.${symbols[0]}(items);\n` }];
+      const held = [{ rel: "packages/work/src/acceptor/planted.mjs", code: `const reading = counters.${symbols[0]}(items);\n` }];
       assert.equal(spelledMetricNames(held, symbols).length, 1, "a metric named in code is the engine knowing its metric");
-      const declared = [{ rel: "src/work-acceptor/planted.mjs", code: `metric: "module:${COUNTERS_LEAF}#${symbols[0]}",\n` }];
+      const declared = [{ rel: "packages/work/src/acceptor/planted.mjs", code: `metric: "module:${COUNTERS_LEAF}#${symbols[0]}",\n` }];
       assert.deepEqual(spelledMetricNames(declared, symbols), [], "a pointer is data an operator edits, not a name the engine holds");
 
       // NO TIE-RATE LITERAL IN THE ENGINE. The rate is DECLARED on the criterion as a
@@ -174,23 +171,25 @@ export const archTests = [
       assert.equal(metric.module, COUNTERS_LEAF, "the trial metric resolves into the counters leaf");
       assert.equal(counter.module, metric.module, "…and so does its paired counter-metric");
 
+      const implementation = await import("@aof/work/counters");
+      for (const symbol of [metric.symbol, counter.symbol]) assert.equal(workCounters[symbol], implementation[symbol], "the historical metric pointer forwards to the implementation");
       // THE LEAF STILL IMPORTS NOTHING AND WRITES NOTHING (57/04's own discipline,
       // re-asserted from this milestone's side because 61/04 added a function to it).
-      const leaf = await readFile(path.join(root, ...COUNTERS_LEAF.split("/")), "utf8");
+      const leaf = await readFile(path.join(root, ...COUNTERS_IMPLEMENTATION.split("/")), "utf8");
       // The leaf depends on nothing outside itself, asserted over its FAMILY (119/ADR-002) so the
       // decomposition a growing leaf needs stays legal while every external dependency stays a
       // violation naming the file and the specifier.
-      await assertFamilyPurity(assert, root, COUNTERS_LEAF);
+      await assertFamilyPurity(assert, root, COUNTERS_IMPLEMENTATION);
       assert.doesNotMatch(leaf, /\b(?:readFile|writeFile|appendFile|execFile|spawn|process\.|Date\.now)\b/u, "…and writes nothing and reads no clock");
       assert.match(leaf, new RegExp(`export function ${metric.symbol}\\b`, "u"), "…and it is where the trial metric lives");
 
       // NO SECOND HOME: the modules exporting either pointed-at symbol are exactly one.
       const homes = [];
-      for (const rel of await walk(path.join(root, "src"))) {
+      for (const rel of (await readRuntimeFiles(root)).map(file => file.rel)) {
         const code = await readFile(path.join(root, rel), "utf8");
         if ([metric.symbol, counter.symbol].some((symbol) => new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let)\\s+${symbol}\\b`, "u").test(code))) homes.push(rel);
       }
-      assert.deepEqual(homes, [COUNTERS_LEAF], "one deterministic-counter home, not two");
+      assert.deepEqual(homes, [COUNTERS_IMPLEMENTATION], "one deterministic-counter home, not two");
     },
   },
   {

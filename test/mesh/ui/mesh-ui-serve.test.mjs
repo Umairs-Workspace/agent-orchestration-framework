@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 25 / story 02 / task 00 —
 // tasks/00_mesh-ui-serve.feature (@executable).
 //
@@ -29,16 +32,20 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, DEFAULT_MESH_UI_PORT, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { queryGlobalMeshStatus } from "../../../src/global-mesh-query.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
-import { loopStopsDir, readStopRequest } from "../../../src/loop/stop-request.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const DEFAULT_MESH_UI_PORT = _aofApplication.mesh.uiServe.DEFAULT_MESH_UI_PORT;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
 import { publishRepoInto, withPublishedAssignFixture } from "../../support/mesh-ui-assign-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -237,7 +244,7 @@ export const meshUiServeTests = [
         assert.ok(rejected, "serveMeshUi rejects when the build is missing");
         assert.equal(rejected.code, "ui-build-missing", "the rejection carries the ui-build-missing code");
         assert.ok(
-          /build/i.test(rejected.message) && /npm --prefix ui run build/.test(rejected.message),
+          /build/i.test(rejected.message) && /yarn ui:build/.test(rejected.message),
           "the message tells the operator to build the UI first"
         );
         assert.equal(server, undefined, "no server was left listening");
@@ -532,7 +539,7 @@ export const meshUiServeTests = [
   {
     name: "status-names-the-serving-node/01 the wire types name the two additive facts — FleetStatus declares localNodeId?: string | null, PresenceRecord declares loops?: PresenceLoop[] with the eleven keys and stop: null | \"drain\" | \"cancel\"",
     async run() {
-      const api = await readFile(path.join(repoRoot, "ui", "src", "fleet", "api.ts"), "utf8");
+      const api = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts"), "utf8");
       assert.match(api, /export type GlobalMeshStatus = \{[\s\S]*?localNodeId\?: string \| null;/, "GlobalMeshStatus (= FleetStatus) declares localNodeId?: string | null");
       assert.match(api, /export type FleetStatus = GlobalMeshStatus;/, "FleetStatus is that type");
       assert.match(api, /export type PresenceRecord = \{[\s\S]*?loops\?: PresenceLoop\[\];[\s\S]*?\};/, "PresenceRecord declares loops?: PresenceLoop[]");
@@ -573,7 +580,7 @@ export const meshUiServeTests = [
   {
     name: "loop-stop-route/02 the two helpers exist exactly once each, every write branch calls admitWriteRequest( before any readJsonBody(, and the assign + session branches call resolveLocalWorkspaceRow( with no inline find of their own",
     async run() {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"));
       assert.equal((source.match(/function admitWriteRequest\s*\(/g) ?? []).length, 1, "admitWriteRequest is defined exactly once");
       assert.equal((source.match(/function resolveLocalWorkspaceRow\s*\(/g) ?? []).length, 1, "resolveLocalWorkspaceRow is defined exactly once");
       for (const route of ["/api/mesh/assign", "/api/mesh/session", "/api/mesh/loop-stop"]) {
@@ -774,8 +781,10 @@ export const meshUiServeTests = [
   {
     name: "loop-stop-route/02 the face imports the core and nothing from commands — ../loop/stop.mjs is among ui-serve.mjs's specifiers, none is under ../commands/, and acd-mesh-ui-no-core-import's allow-list names it as the second sanctioned write door",
     async run() {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"));
-      const specifiers = importSpecifiers(source).map((entry) => entry.specifier);
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
+      for (const text of [source, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*stopLoop/su);
+      const specifiers = dependencySpecifiers(source + "\n" + adapter).map((entry) => entry.specifier);
       assert.ok(specifiers.includes("../loop/stop.mjs"), `imports ../loop/stop.mjs — got ${JSON.stringify(specifiers)}`);
       assert.deepEqual(specifiers.filter((spec) => spec.startsWith("../commands/") || spec.startsWith("./commands/")), [], "nothing under commands/");
       const gate = await readFile(path.join(repoRoot, "test", "arch", "mesh", "acd-mesh-ui-no-core-import.test.mjs"), "utf8");
@@ -854,7 +863,7 @@ function loopbackHostTests() {
     {
       name: "131/04 task02 — the predicate answers only for a loopback name (forty-seven rows)",
       async run() {
-        const { isLoopbackHost } = await import("../../../src/static-serve.mjs");
+        const { isLoopbackHost } = await import("@aof/server/static-serve");
         const rows = [
           ["127.0.0.1", true], ["127.0.0.1:4181", true], ["localhost", true], ["localhost:4181", true], ["LOCALHOST:4181", true],
           ["[::1]", true], ["[::1]:4181", true], ["127.1.2.3:80", true], ["evil.example:1234", false], ["192.168.1.5:4181", false],
@@ -924,11 +933,11 @@ function loopbackHostTests() {
       name: "131/04 task02 — the predicate is one export in the shared leaf, called by both admissions",
       async run() {
         const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => stripComments(text));
-        const leaf = await read("src/static-serve.mjs");
+        const leaf = await read("packages/server/src/static-serve.mjs");
         assert.deepEqual(importSpecifiers(leaf).map((entry) => entry.specifier), ["node:path"], "static-serve.mjs imports only node:path");
         const exported = [...leaf.matchAll(/^export function (\w+)/gmu)].map((match) => match[1]).sort();
         assert.deepEqual(exported, ["contentType", "isLoopbackHost", "safeStaticPath", "shouldServeAppShell"]);
-        for (const rel of ["src/board-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+        for (const rel of ["packages/server/src/board-ui.mjs", "packages/mesh/src/ui-serve.mjs"]) {
           const source = await read(rel);
           const at = source.indexOf("function admitWriteRequest(");
           assert.ok(at >= 0, `${rel} defines admitWriteRequest`);
@@ -941,7 +950,7 @@ function loopbackHostTests() {
           assert.equal((source.match(/isLoopbackHost\(/gu) ?? []).length, 1, `${rel}: no second isLoopbackHost( call`);
           assert.ok(!/headers\.host\s*(?:===|!==|==|!=)/u.test(source) && !/(?:===|!==|==|!=)\s*request\.headers\.host/u.test(source), `${rel}: no comparison made on headers.host`);
         }
-        const fleet = await read("src/mesh/ui-serve.mjs");
+        const fleet = await read("packages/mesh/src/ui-serve.mjs");
         assert.equal((fleet.match(/function admitWriteRequest\(/gu) ?? []).length, 1, "the fleet still defines exactly one admitWriteRequest");
       },
     },

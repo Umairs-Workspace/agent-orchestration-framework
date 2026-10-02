@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 126 / story 04, tasks
 // 00_autostart-is-a-flag-on-install.feature, 01_the-registry-is-reached-through-one-
 // injected-runner.feature and 02_off-windows-is-a-coded-refusal.feature.
@@ -12,15 +14,15 @@
 // prior-state table meaningful rather than a check that a stub was called.
 import assert from "node:assert/strict";
 import path from "node:path";
-import {
-  applyAutostart,
-  resolveAutostartAction,
-  AUTOSTART_RUN_KEY,
-  AUTOSTART_VALUE_NAME,
-  DESKTOP_APP_EXE,
-} from "../../../src/commands/mesh/desktop.mjs";
-import { getCommand, invoke, listCommands } from "../../../src/command-core.mjs";
-import { runCommandFace } from "../../../src/spine/face.mjs";
+const applyAutostart = _aofApplication.mesh.commandTools.mesh.desktop.applyAutostart;
+const resolveAutostartAction = _aofApplication.mesh.commandTools.mesh.desktop.resolveAutostartAction;
+const AUTOSTART_RUN_KEY = _aofApplication.mesh.commandTools.mesh.desktop.AUTOSTART_RUN_KEY;
+const AUTOSTART_VALUE_NAME = _aofApplication.mesh.commandTools.mesh.desktop.AUTOSTART_VALUE_NAME;
+const DESKTOP_APP_EXE = _aofApplication.mesh.commandTools.mesh.desktop.DESKTOP_APP_EXE;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const runCommandFace = _aofApplication.cli.runCommandFace;
 import { withMeshDesktopFixture } from "../../support/mesh-desktop-fixture.mjs";
 
 // `reg`'s own sentence for "no such value" — the ONE stderr text that makes a non-zero
@@ -543,7 +545,7 @@ export const meshDesktopAutostartTests = [
     name: "126/04 task02 the refusal reaches the operator as ONE { ok:false, error, code } envelope with a non-zero exit, through the real routed face",
     async run() {
       // WHY THE PLATFORM REFUSAL IS ASSERTED AT THE CORE AND THE ENVELOPE AT THE FACE.
-      // `runCommandFace(command, args)` takes NO ctx (`src/spine/face.mjs:128`), so the
+      // `runCommandFace(command, args)` takes NO ctx (`packages/core/src/spine/face.mjs:128`), so the
       // face cannot be handed an injected platform — the same limit this directory's
       // delivered run suite already documents for `spawnFn`, and the reason it asserts a
       // success envelope through `invoke` and a refusal through the face. So: the darwin

@@ -36,7 +36,14 @@ const families = Object.freeze([
 // The stand-in a PERMITTED line is replaced BY — never removed, so its POSITION enters the digest.
 const MASK = "<<< permitted region line, masked in place >>>";
 const normalize = (text) => text.replace(/\r\n/gu, "\n");
-const digest = (text) => createHash("sha256").update(text).digest("hex");
+// Plan 03 relocates imports and source citations. Normalize only the declared
+// core paths before hashing; all assertions, masks and their positions retain
+// the existing pins, including every planted non-path edit below.
+const digest = (text) => createHash("sha256").update(text
+  .replaceAll("packages/core/src/", "src/")
+  .replaceAll("packages/core/assets", "src/bundle")
+  .replaceAll('"packages", "core", "src"', '"src"')
+  .replaceAll('"packages", "core", "assets"', '"src", "bundle"')).digest("hex");
 
 async function importArch(name) {
   return await import(pathToFileURL(path.join(root, "test", "arch", name)).href);
@@ -288,8 +295,25 @@ const RUNNER_REGIONS = Object.freeze([
   { id: "the per-test global-home restore (the loop's finally)", from: (suite, loop) => ({ code: loop, at: loop.indexOf("} finally") + "} finally".length }), pin: "0de5a2941999272297fc2f5ef6f776d2f55f4917e67c66bb215d09638c9a1540" },
   { id: "the integration lane's environment restore", from: (suite) => ({ code: suite, at: suite.indexOf("if (previousInProcess === undefined)") + "if (previousInProcess === undefined)".length }), pin: "4726fd6d84c3867494fce10e78674196f83921d2ccb29665da7ddd252c9b3e6d" },
 ]);
-const RUNNER_RESIDUE = "d7c50c16e14ea92e6797dfd491afee7a91755f0d38c6ec2906792878c924b81a";
-const REGISTRATION_IMPORT = /^import\s+\{[^}]*\}\s+from\s+"\.\.\/test\/[^"]+";$/u;
+// Plan 06 extracts the unchanged per-case isolation/loop into test-harness.mjs.
+// Pin both real files together, including the awaited bridge and executed count.
+// RE-PINNED by 142 Plan 04: the cargo lane's Rust-core path moved `app/desktop` -> `apps/desktop` (a path literal, a
+// comment and three console labels). The mask set and every runner-logic line are unchanged.
+// RE-PINNED by 142 Plan 09 (the sharded whole-tree run, backlog: the-whole-tree-run-signs-off-in-minutes — the
+// FF-5311 grant that item reserved). Measured residue diff, and nothing else: `runnerShapedExports` moves verbatim to
+// `scripts/test-harness.mjs` (its one home, shared with `scripts/test-shard.mjs`) and is re-exported here; the harness
+// import names it; `LANES_ONLY_FLAG` is declared; and the dispatch runs `runSuite([])` under that flag (`runSuite(tests)` otherwise),
+// so `scripts/test-sharded.mjs` can run the integration and cargo lanes exactly once. Every pinned region above is
+// unchanged.
+// 142/09 recheck: the harness gains only suiteCaseChunks (12 non-comment lines),
+// the shared atomic-by-default planner covered by the workspace sharding regression.
+// runCases, runnerShapedExports, and all three pinned execution/isolation regions are unchanged.
+const RUNNER_RESIDUE = "bd6e01cac4e2e6e412b7348893c6a3201d89702fd564a2f3aa82483a3757575d";
+// RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
+// `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
+// loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below
+// is the first and last re-pin an owned-suite move needs.
+const REGISTRATION_IMPORT = /^import\s+\{[^}]*\}\s+from\s+"\.\.\/(?:test|packages\/[a-z-]+\/test|apps\/[a-z-]+\/test)\/[^"]+";$/u;
 const REGISTRATION_SPREAD = /^\s*\.\.\.[A-Za-z_$][\w$]*,?$/u;
 const COMMENT_OR_BLANK = /^\s*(?:\/\/.*)?$/u;
 
@@ -312,11 +336,12 @@ function runnerPins(source) {
   if (registration.error != null) return { error: registration.error };
   const suite = functionBody(text, "async function runSuite(");
   if (suite == null) return { error: "NOT FOUND — `async function runSuite(` has no cuttable body, so none of the runner's logic regions can be located" };
-  const loop = blockOrStatementAfter(suite, suite.indexOf(RUNNER_LOOP_HEADER) + RUNNER_LOOP_HEADER.length);
+  const cases = functionBody(text, "export async function runCases(") ?? suite;
+  const loop = blockOrStatementAfter(cases, cases.indexOf(RUNNER_LOOP_HEADER) + RUNNER_LOOP_HEADER.length);
   if (loop == null || !loop.braced) return { error: `NOT FOUND — the suite loop \`${RUNNER_LOOP_HEADER}\` owns no braced body. A runner whose loop destructures anything but \`{ name, run }\` cannot be cut here, and a proof against a stale runner is no proof.` };
   const regions = {};
   for (const region of RUNNER_REGIONS) {
-    const { code, at } = region.from(suite, loop.body);
+    const { code, at } = region.from(region.id.startsWith("the integration") ? suite : cases, loop.body);
     const cut = blockOrStatementAfter(code, at);
     if (cut == null) return { error: `NOT FOUND — ${region.id} could not be cut from scripts/test.mjs` };
     regions[region.id] = digest(cut.body);
@@ -582,7 +607,7 @@ const ACCEPTED_CEILINGS = Object.freeze([
     floor: 300,
     // RE-PINNED by 119/01: import specifiers and read-subject paths only (see the file header).
     // RE-PINNED AGAIN by 119/03, and this is the reason: the suite MOVED into `test/arch/loop/`,
-    // which re-depthed its `../../src/` and `../../support/` specifiers by one segment. Those lines
+    // which re-depthed its `../../packages/core/src/` and `../../support/` specifiers by one segment. Those lines
     // are outside the permitted regions, so the residue moved — which is the ceiling working, not
     // failing. The three permitted lines were each verified present EXACTLY ONCE before the
     // re-stamp, so the mask set is unchanged and nothing new is exempted; the next unattributed
@@ -596,7 +621,10 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // so the widened census is frozen again at its new value, which is this ceiling's own rule
     // and the reason the next unattributed byte still fails. Verified by planting one: a trailing
     // comment appended to the accepted suite reds REG-MUT-15 against this pin.
-    residue: "0afed223e0386b9174bffa734ab7811ec195a72d13794da638057a599579525f",
+    // 142: five read-subject/child-import path lines now name work-graph source.
+    // Assertions, fixtures, pinned regions and line positions are unchanged.
+    // Plan 06: configured services use public scoped bindings; case bodies stay pinned.
+    residue: "50c5340a673a954e5ee04b434e645177aea22f12aaa596153ddf0ffc8305a30b",
     regions: [
       {
         id: "FF-5209 roster",
@@ -669,7 +697,11 @@ const ACCEPTED_CEILINGS = Object.freeze([
     // `archive/` segment so its oracles keep reading the features they cite — the same class of
     // byte 119/03 re-pinned for when the suite itself moved. The mask set is unchanged; every other
     // byte is frozen at its value, and an archived folder never moves again.
-    residue: "1bf4beac4927417568bc0c2dc96dbc900f0410e9f532c3a36a1ecd9c098287fd",
+    // Plan 06: the owned work-graph suite moves; its imported coverage and cases stay pinned.
+    // RE-STAMPED by 142 Plan 06/08: the work-graph checks suite moved to its owning package, so the ledger row
+    // names `packages/work-graph/test/work-loops-checks.suite.mjs` and the STATE-box check strips `.suite.mjs` too.
+    // Two lines, both specifier/path spellings; the mask set is unchanged and every other byte stays frozen.
+    residue: "cc109cc659cffed86dc6574f79f882e800c1f2f5d35b42bfc2d3da55c9f2dfda",
     regions: [
       {
         id: "leg 5 exclusion-pointer roster (beyond §8's enumeration — see above)",
@@ -760,7 +792,9 @@ export const archTests = [
   {
     name: "arch/53 FF-5311 (acd-loop-suite-registration): the runner's real destructuring makes a planted wrong-key member unreachable",
     run: async () => {
-      const runner = stripComments(await readFile(path.join(root, "scripts", "test.mjs"), "utf8"));
+      const rootRunner = stripComments(await readFile(path.join(root, "scripts", "test.mjs"), "utf8"));
+      assert.match(rootRunner, /await runCases\(tests\)/u, "the root actually delegates every selected case");
+      const runner = stripComments(await readFile(path.join(root, "scripts", "test-harness.mjs"), "utf8"));
       assert.match(runner, /for\s*\(\s*const\s*\{\s*name\s*,\s*run\s*\}\s*of\s*tests\s*\)/u);
       const calls = [];
       const members = [{ name: "a", run: async () => calls.push("a") }, { name: "b", wrong: async () => calls.push("b") }];
@@ -950,7 +984,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5311 (acd-loop-suite-registration): REG-MUT-11 — the suite loop, the global-home handling, the integration lane and every runner line outside the labelled blocks are frozen",
     run: async () => {
-      const source = await readFile(path.join(root, "scripts", "test.mjs"), "utf8");
+      const source = (await readFile(path.join(root, "scripts", "test.mjs"), "utf8")) + "\n" + (await readFile(path.join(root, "scripts", "test-harness.mjs"), "utf8"));
       const exists = (specifier) => existsSync(path.join(root, "scripts", specifier));
       const pins = { regions: Object.fromEntries(RUNNER_REGIONS.map((region) => [region.id, region.pin])), residue: RUNNER_RESIDUE };
       assert.deepEqual(runnerLogicProblems(source, pins, exists), []);
@@ -1216,7 +1250,7 @@ export const archTests = [
       const normalized = normalize(await readFile(file, "utf8"));
       const lines = normalized.split("\n");
       const keyLines = lines.filter((line) => line.includes("Object.keys("));
-      assert.equal(lines.length - 1, 683, "doctor-command-core remains 683 newline-terminated lines");
+      assert.equal(lines.length - 1, 688, "Plan 06 adds five public service bindings; the 24 case bodies and their ceiling remain frozen");
       assert.equal(keyLines.length, 1, "exactly one Object.keys( occurrence is the envelope ceiling");
       assert.equal(
         keyLines[0],
@@ -1228,11 +1262,12 @@ export const archTests = [
       // the `doctor/00` envelope test entirely for zero problems.
       const residue = lines.map((line) => (line.includes("Object.keys(") ? MASK : line)).join("\n");
       // RE-PINNED by 119/01: one import specifier and one comment citation; 683 lines, unchanged.
-      // RE-PINNED AGAIN by 119/03: the suite moved into `test/work/` and its `../src/` specifiers
+      // RE-PINNED AGAIN by 119/03: the suite moved into `test/work/` and its `../packages/core/src/` specifiers
       // gained a segment. The file is STILL 683 lines and still carries exactly ONE `Object.keys(`,
       // both asserted above before the residue is taken, so the ceiling's own claim is untouched —
       // only the bytes around it moved, which is what the residue exists to notice.
-      assert.equal(digest(residue), "cca976b5f9e8f454c25b19e7422e60f57e24eff01c8a7985cf53319531f0a2df");
+      // Plan 06's public API bindings change only imports and their local declarations.
+      assert.equal(digest(residue), "59d9dcbc968625eff8642befcb3faccd7710b412d5ed1d3af37f8a58f4ae2f8d");
       const moved = [keyLines[0], ...lines.filter((line) => !line.includes("Object.keys("))].map((line) => (line.includes("Object.keys(") ? MASK : line)).join("\n");
       assert.notEqual(digest(moved), digest(residue), "relocating the one permitted line changes the residue — position is hashed, not just content");
       const { doctorCommandCoreTests } = await import(pathToFileURL(file).href);

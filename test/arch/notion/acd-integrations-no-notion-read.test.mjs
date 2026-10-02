@@ -1,7 +1,7 @@
 // Fitness function FF-D for milestone 18 / ADR-006 (no Notion read on associate or
 // projection — 17/ADR-003 REAFFIRMED):
-//   Neither the associate write (src/commands/notion-associate.mjs) nor the projection
-//   (src/notion/projection.mjs) imports/constructs a Notion spawn seam (makeNotionSpawn /
+//   Neither the associate write (packages/core/src/commands/notion-associate.mjs) nor the projection
+//   (packages/core/src/notion/projection.mjs) imports/constructs a Notion spawn seam (makeNotionSpawn /
 //   notion/cli / notionSpawn) NOR a Notion read-verb argv (retrieve/query/search/list/
 //   get). Addressing (board/parent) comes ONLY from committed config + the descriptor,
 //   never a Notion query. PLUS a SNAPSHOT guard over acd-notion-one-way's allowed/
@@ -16,8 +16,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ASSOCIATE = path.join(repoRoot, "src", "commands", "notion-associate.mjs");
-const PROJECTION = path.join(repoRoot, "src", "notion", "projection.mjs");
+const ASSOCIATE = path.join(repoRoot, "packages", "integration-notion", "src", "notion-associate.mjs");
+const PROJECTION = path.join(repoRoot, "packages", "integration-notion", "src", "projection.mjs");
 const ONE_WAY = path.join(repoRoot, "test", "arch", "notion", "acd-notion-one-way.test.mjs");
 
 function stripComments(source) {

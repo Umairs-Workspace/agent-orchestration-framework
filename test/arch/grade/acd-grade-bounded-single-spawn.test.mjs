@@ -1,13 +1,14 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5406 (milestone 54 / ADR-003 §1-§2, ADR-005 §5) — THE COMPILER IS A PURE LEAF AND THE
 // SPAWN IS BOUNDED IN ONE PLACE.
 //
-// Two halves of one shape. `src/work/grade.mjs` COMPILES a record from observations handed
-// to it — it imports nothing from `src/`, no `node:child_process`, no `node:fs`, and reads no
+// Two halves of one shape. `packages/core/src/work/grade.mjs` COMPILES a record from observations handed
+// to it — it imports nothing from `packages/core/src/`, no `node:child_process`, no `node:fs`, and reads no
 // clock — which is exactly what lets a unit test assert every verdict rule without a live
-// binary. `src/commands/grade.mjs` GATHERS them, and holds the one spawn: no shell, stdin
+// binary. `packages/core/src/commands/grade.mjs` GATHERS them, and holds the one spawn: no shell, stdin
 // closed, a RESOLVED deadline and a kill signal.
 //
-// `m15/R3`: the scan is over the whole `src/**` family, not over the two modules this
+// `m15/R3`: the scan is over the whole `packages/core/src/**` family, not over the two modules this
 // milestone happens to have written — a second spawn of the declared rubric added anywhere
 // else is exactly the regression this guards, and it would not be added here.
 import assert from "node:assert/strict";
@@ -15,9 +16,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { rubricSpawnOptions, rubricChildEnv, GRADE_REENTRANCY_ENV } from "../../../src/commands/grade.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOptions;
+const rubricChildEnv = _aofApplication.work.commandTools.grade.rubricChildEnv;
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -27,11 +30,11 @@ export const archTests = [
   {
     name: "arch/FF-5406 src/work/grade.mjs is a pure leaf — only the pure provenance leaf, no child_process, no fs, no clock",
     run: async () => {
-      const text = await readFile(path.join(repoRoot, "src", "work", "grade.mjs"), "utf8");
+      const text = await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8");
       const code = stripComments(text);
 
-      const imports = importSpecifiers(code).map((entry) => entry.specifier);
-      assert.deepEqual(imports, ["../claim-provenance.mjs"], `the pure leaf imports only the pure provenance compiler (found: ${imports.join(", ")})`);
+      const imports = dependencySpecifiers(code).map((entry) => entry.specifier);
+      assert.deepEqual(imports, ["@aof/contracts/claim-provenance"], `the pure leaf imports only the pure provenance compiler (found: ${imports.join(", ")})`);
       assert.ok(!/\bimport\s*\(/.test(code), "…and performs no dynamic import either");
 
       // NO CLOCK. `gradedAt` is INJECTED — a module that read one could not be asserted
@@ -50,7 +53,7 @@ export const archTests = [
     name: "arch/FF-5406 exactly one module in src/** spawns the declared rubric argv",
     run: async () => {
       const spawners = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const code = stripComments(await readFile(file.path, "utf8"));
         // The declared rubric is reached through the `work.rubric` KEY — that, and nothing
         // looser, is what makes a module the rubric's reader. (`plan.command` is deliberately
@@ -61,7 +64,19 @@ export const archTests = [
         const spawns = /\bspawnSync\s*\(|\bspawn\s*\(|\bexecFile|\bexec\s*\(/.test(code);
         if (readsTheRubric && spawns) spawners.push(file.rel);
       }
-      assert.deepEqual(spawners, ["commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
+      assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], `exactly one module spawns the declared rubric argv (found: ${spawners.join(", ")})`);
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/commands/grade.mjs"), "utf8"));
+      assert.match(composition, /import \{ spawnRubricAsync \} from "@aof\/execution\/rubric-process"/);
+      assert.match(composition, /createGradeCommand\(\{ spawnRubricAsync,/);
+      const command = stripComments(await readFile(path.join(repoRoot, spawners[0]), "utf8"));
+      assert.doesNotMatch(command, /node:child_process/);
+      assert.match(command, /ctx\.spawnRubric \?\? spawnRubricAsync/);
+      const implementations = [];
+      for (const file of await readRuntimeFiles(repoRoot)) {
+        const code = stripComments(await readFile(file.path, "utf8"));
+        if (/function\s+spawnRubricAsync\s*\(/.test(code)) implementations.push(file.rel);
+      }
+      assert.deepEqual(implementations, ["packages/execution/src/rubric-process.mjs"]);
     },
   },
 
@@ -98,11 +113,11 @@ export const archTests = [
       // 54 ENFORCES A BOUND AND CHOOSES NONE (`53/ADR-009` §1). A literal here would be a
       // rival home for `69/ADR-002`'s `startToClose`, and `acd-loop-cap-single-home` plus
       // 69/ADR-001's non-annexation rule are the authority it would be breaking.
-      const code = stripComments(await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src/commands/grade.mjs"), "utf8"));
       // 81/00 — THE GUARD THAT PINNED THE OLD RESOLVER BY NAME NOW PINS THE NEW ONE. The
       // deadline is `min(startToClose, heartbeat)`, DERIVED in the same single home, so the
       // property this rung protects is unchanged and only the name it protects moved.
-      assert.match(code, /import \{ gradeDeadlineFromConfig \} from "(?:\.\.?\/)+loop-bounds\.mjs"/, "the deadline is resolved through 69/ADR-001's home");
+      assert.match(code, /import \{ gradeDeadlineFromConfig \} from "@aof\/contracts\/loop-bounds"/, "the deadline is resolved through 69/ADR-001's home");
       assert.ok(!code.includes("startToCloseFromConfig"), "…and the grade path no longer resolves the unclamped bound it used to");
       assert.ok(!/\btimeout\s*[:=]\s*\d/.test(code), "the grade path hard-codes no timeout value");
       assert.ok(!/\b\d{5,}\b/.test(code.replace(/MAX_CAPTURE_BYTES[\s\S]{0,60}/, "")), "…and carries no bare millisecond literal");

@@ -3,46 +3,50 @@
 // Before this milestone `ITEM_RE` had three homes and seven modules paired a `readdir` of a work
 // root with an item-name match of their own — so a new root (the backlog, the archive) would
 // have had to be taught to eight scanners, and would have been taught to some. This control
-// holds the cut in two sweeps over a comment-stripped read of every file under `src/**`:
+// holds the cut over core and workspace runtime source. Migration 142 moves the grammar
+// into identity.mjs and the enumerator into discovery.mjs; packages/core/src/work.mjs forwards both APIs.
 //
 //   1. THE REGEX HOME. `ITEM_RE` and `BACKLOG_ITEM_RE` are each bound to a regex literal
-//      (`const … = /…/`) in exactly one src file, `src/work.mjs`; every other src reference to
+//      (`const … = /…/`) in exactly one file, `packages/work/src/identity.mjs`; every other reference to
 //      either name is an import from it (or a re-export of that import). The two root names are
 //      spelled as string literals in that file alone.
 //   2. THE PAIRING. A file that holds a `readdir`/`readdirSync` AND an item-name match — the
 //      identifiers `ITEM_RE`/`BACKLOG_ITEM_RE`, a regex literal containing
 //      `_(milestone|story|task|uat|spike|chore)_` or `_milestone_`, or a numbered-folder regex
-//      literal beginning `/^(\d+)` — is a scanner. Exactly one is the enumerator (`src/work.mjs`,
+//      literal beginning `/^(\d+)` — is a scanner. Exactly one is the enumerator (discovery.mjs,
 //      whose pairing the sweep MUST find, or the control is vacuous); every other is one of six
 //      allow-listed keepers, each carrying the reason it may keep its listing. An allow-listed
 //      path whose pairing the sweep no longer finds is itself a failure — a stale keeper cannot
 //      outlive its reason.
 //
-// `src/memory/local-indexing.mjs` is asserted to hold NO item-name match at all: it walks the
+// `packages/core/src/memory/local-indexing.mjs` is asserted to hold NO item-name match at all: it walks the
 // wiki for `AOF.md` files and de-duplicates against the enumerator's row dirs, and the item
 // shape lives only in its comments — which the strip removes. The assertion is what keeps it
 // from becoming a keeper silently.
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENUMERATOR = "src/work.mjs";
+const ENUMERATOR = "packages/work/src/discovery.mjs";
+const IDENTITY = "packages/work/src/identity.mjs";
 
 // The six keepers, by path and reason (task 01's table; ADR-001 §5 as corrected there).
 export const KEEPERS = Object.freeze([
-  { file: "src/work/doctor.mjs", reason: "the orphan lane's raw listing — it exists to see what the enumerator DROPS, so it cannot ask the enumerator; it learns the roots through the exported names" },
-  { file: "src/integrations/routing.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
-  { file: "src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
-  { file: "src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
-  { file: "src/work-tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },
-  { file: "src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
+  { file: "packages/work/src/doctor/index.mjs", reason: "the orphan lane's raw listing — it exists to see what the enumerator DROPS, so it cannot ask the enumerator; it learns the roots through the exported names" },
+  { file: "packages/work/src/legacy-milestone-discovery.mjs", reason: "matches a FOREIGN `NN-slug`/`NN_slug` form (NUMBERED_FOLDER_RE) the shared grammar does not admit" },
+  { file: "packages/knowledge/src/import/recovery.mjs", reason: "scans a FOREIGN source tree (AOF_MILESTONE_RE + loose forms); not a work-root scanner" },
+  { file: "packages/work/src/commands/migrate-folder.mjs", reason: "scans a FOREIGN source tree's stories/tasks with STORY_FOLDER_RE, read-only; its work-root scan (nextFreeSlot) is retired onto appendPosition" },
+  { file: "packages/work/src/tune/provenance.mjs", reason: "a SYNCHRONOUS resolver (resolveCitationAtEmit → emitProposals) that cannot take the async enumerator; a second readdirSync over the SHARED regex, walking root + archive, never a second regex home" },
+  { file: "packages/work/src/commands/ratchet.mjs", reason: "walks an ITEM subtree for files and parses path SEGMENTS with /^(\\d+)_/, never a listing" },
 ]);
 
-export const ASSERTED_NO_MATCH = "src/memory/local-indexing.mjs";
+export const ASSERTED_NO_MATCH = "packages/knowledge/src/memory/local-indexing.mjs";
 
 const REGEX_BINDING_RE = /\b(?:const|let|var)\s+(ITEM_RE|BACKLOG_ITEM_RE)\s*=\s*\//g;
 const IDENTIFIER_RE = /\b(?:ITEM_RE|BACKLOG_ITEM_RE)\b/;
@@ -53,7 +57,7 @@ const IDENTIFIER_RE = /\b(?:ITEM_RE|BACKLOG_ITEM_RE)\b/;
 // shape), a config value `intake: "backlog"` (story 02's key) — names no root and is admitted;
 // a leg that forbade the literal outright (round-one review, 2026-09-11) would have false-failed
 // both stories and been loosened under delivery pressure.
-export const ROOT_NAMING_LITERAL_RE = /\b(?:join|resolve)\s*\([^)]*["'`](?:backlog|archive)["'`]|["'`](?:backlog|archive)\/|\/(?:backlog|archive)["'`]/;
+export const ROOT_NAMING_LITERAL_RE = /\b(?:join|resolve)\s*\([^)]*["'`](?:backlog|archive)["'`]|["'`](?:backlog|archive)\/|["'`](?!@aof\/)[^"'`\r\n]*\/(?:backlog|archive)["'`]/;
 const READDIR_RE = /\breaddir(?:Sync)?\b/;
 // A regex literal token: `/…/flags`, escapes honoured, never spanning a line. Division
 // expressions can match too — harmless, because only the CONTENT is inspected.
@@ -76,26 +80,32 @@ export function sweepFile(strippedSource) {
 
 async function sweepSrc() {
   const files = new Map();
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const source = await readFile(file.path, "utf8");
-    files.set(`src/${file.rel}`, { source, stripped: stripComments(source) });
+    files.set(file.rel, { source, stripped: stripComments(source) });
   }
   return files;
 }
 
-// Does `stripped` import `name` from src/work.mjs? Reads the import CLAUSE of a `work.mjs`
+// Does `stripped` import `name` from packages/core/src/work.mjs? Reads the import CLAUSE of a `work.mjs`
 // import (the shape `acd-cache-read-surface-boundary`'s `workImportBindings` uses) — the
 // specifier itself is matched, not captured, so this is not a second specifier extractor
 // (FF-11901 · 121: `importSpecifiers` in test/support/module-family.mjs is the one home for
 // that, and it answers specifiers, not the bindings a clause names).
 function importsFromWork(rel, stripped, name) {
-  const dir = path.posix.dirname(rel);
-  const specifierIsWork = (from) => path.posix.normalize(path.posix.join(dir, from)) === ENUMERATOR;
-  for (const match of stripped.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'][^"']*\bwork\.mjs["']/g)) {
-    const from = match[0].slice(match[0].lastIndexOf("from") + 4).trim().replace(/^["']|["']$/g, "");
-    if (!specifierIsWork(from)) continue;
-    const names = match[1].split(",").map((entry) => entry.trim().split(/\s+as\s+/)[0]).filter(Boolean);
-    if (names.includes(name)) return true;
+  const resolve = createRequire(path.join(repoRoot, rel));
+  for (const { specifier, dynamic, parameter } of dependencySpecifiers(stripped)) {
+    if (dynamic || (!specifier.startsWith('.') && !specifier.startsWith('@aof/'))) continue;
+    const target = path.relative(repoRoot, resolve.resolve(specifier)).split(path.sep).join('/');
+    if (!["packages/core/src/application/bindings/work.mjs", IDENTITY, ENUMERATOR].includes(target)) continue;
+    const escaped = specifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (parameter && new RegExp('const\\s*\\{[^}]*\\b' + name + '\\b[^}]*\\}\\s*= ' + parameter).test(stripped)) return true;
+    const namespace = new RegExp('import\\s*\\*\\s*as\\s+(\\w+)\\s*from\\s*["\']' + escaped + '["\']').exec(stripped)?.[1];
+    if (namespace && new RegExp('\\b' + namespace + '\\.' + name + '\\b').test(stripped)) return true;
+    const pattern = new RegExp('(?:import|export)\\s*\\{([^}]*)\\}\\s*from\\s*["\']' + escaped + '["\']', 'g');
+    for (const match of stripped.matchAll(pattern)) {
+      if (match[1].split(',').some(entry => entry.trim().split(/\s+as\s+/)[0] === name)) return true;
+    }
   }
   return false;
 }
@@ -109,28 +119,28 @@ export const archTests = [
       for (const [rel, { stripped }] of files) {
         for (const match of stripped.matchAll(REGEX_BINDING_RE)) definitions.push(`${rel}:${match[1]}`);
       }
-      assert.deepEqual(definitions.sort(), ["src/work.mjs:BACKLOG_ITEM_RE", "src/work.mjs:ITEM_RE"], "one definition of each, both in src/work.mjs");
+      assert.deepEqual(definitions.sort(), [`${IDENTITY}:BACKLOG_ITEM_RE`, `${IDENTITY}:ITEM_RE`], "one definition of each, both in the identity module");
       for (const [rel, { stripped }] of files) {
-        if (rel === ENUMERATOR) continue;
+        if (rel === IDENTITY) continue;
         for (const name of ["ITEM_RE", "BACKLOG_ITEM_RE"]) {
           if (!new RegExp(`\\b${name}\\b`).test(stripped)) continue;
-          assert.ok(importsFromWork(rel, stripped, name), `${rel} references ${name} without importing it from src/work.mjs`);
+          assert.ok(importsFromWork(rel, stripped, name), `${rel} references ${name} without importing it from packages/core/src/work.mjs`);
         }
       }
       // The two root names are spelled once, in the enumerator's file: no other module NAMES a
       // root with the literal (a path-builder argument or a path segment — ROOT_NAMING_LITERAL_RE).
       for (const [rel, { stripped }] of files) {
-        if (rel === ENUMERATOR) continue;
-        assert.ok(!ROOT_NAMING_LITERAL_RE.test(stripped), `${rel} names a root with a string literal — import BACKLOG_ROOT / ARCHIVE_ROOT from src/work.mjs instead`);
+        if (rel === IDENTITY) continue;
+        assert.ok(!ROOT_NAMING_LITERAL_RE.test(stripped), `${rel} names a root with a string literal — import BACKLOG_ROOT / ARCHIVE_ROOT from packages/core/src/work.mjs instead`);
       }
-      const work = files.get(ENUMERATOR).stripped;
+      const work = files.get(IDENTITY).stripped;
       assert.equal((work.match(/"backlog"/g) ?? []).length, 1);
       assert.equal((work.match(/"archive"/g) ?? []).length, 1);
       // Self-check: the shape catches a root NAMED and admits the bare word in another vocabulary.
       for (const named of ['path.join(workDir, "archive")', 'resolve(root, "backlog")', 'const p = "backlog/" + name', "const p = `${dir}/archive`"]) {
         assert.ok(ROOT_NAMING_LITERAL_RE.test(named), `catches a root named as: ${named}`);
       }
-      for (const bare of ['route: ["work", "archive"]', 'intake: "backlog"', 'if (mode === "archive")']) {
+      for (const bare of ['route: ["work", "archive"]', 'intake: "backlog"', 'if (mode === "archive")', 'export { archiveItems } from "@aof/work/archive";']) {
         assert.ok(!ROOT_NAMING_LITERAL_RE.test(bare), `admits the bare word in another vocabulary: ${bare}`);
       }
     },
@@ -139,18 +149,18 @@ export const archTests = [
     name: "arch/FF-12701 (acd-work-root-one-enumerator): doctor's family reaches the regex through one import — doctor.mjs imports ITEM_RE from ../work.mjs and defines none; doctor-freshness.mjs imports no item regex at all",
     run: async () => {
       const files = await sweepSrc();
-      const doctor = files.get("src/work/doctor.mjs").stripped;
-      assert.ok(importsFromWork("src/work/doctor.mjs", doctor, "ITEM_RE"), "doctor.mjs imports ITEM_RE from ../work.mjs");
+      const doctor = files.get("packages/work/src/doctor/index.mjs").stripped;
+      assert.ok(importsFromWork("packages/work/src/doctor/index.mjs", doctor, "ITEM_RE"), "doctor.mjs imports ITEM_RE from ../work.mjs");
       assert.ok(!/\b(?:const|let|var)\s+ITEM_RE\b/.test(doctor), "…and defines none");
-      const freshness = files.get("src/work/doctor-freshness.mjs").stripped;
+      const freshness = files.get("packages/work/src/doctor/freshness.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(freshness), "doctor-freshness.mjs imports no ITEM_RE — roadmapFolderMismatch reads milestone numbers off snapshot.items");
       assert.ok(!READDIR_RE.test(freshness), "…and lists nothing of its own");
-      const migrate = files.get("src/commands/migrate-folder.mjs").stripped;
+      const migrate = files.get("packages/work/src/commands/migrate-folder.mjs").stripped;
       assert.ok(!IDENTIFIER_RE.test(migrate), "migrate-folder.mjs no longer references ITEM_RE (its only use was nextFreeSlot)");
       assert.ok(!/nextFreeSlot/.test(migrate), "nextFreeSlot is gone");
-      assert.ok(importsFromWork("src/work-tune/provenance.mjs", files.get("src/work-tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from src/work.mjs");
-      const observe = files.get("src/work/observe.mjs").stripped;
-      assert.ok(importsFromWork("src/work/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
+      assert.ok(importsFromWork("packages/work/src/tune/provenance.mjs", files.get("packages/work/src/tune/provenance.mjs").stripped, "ARCHIVE_ROOT"), "provenance imports the archive root's name from packages/core/src/work.mjs");
+      const observe = files.get("packages/work/src/observe.mjs").stripped;
+      assert.ok(importsFromWork("packages/work/src/observe.mjs", observe, "listItems"), "observe.mjs takes its items from listItems");
       assert.ok(!/\/\^\(\\d\+\)_/.test(observe), "observe.mjs holds no regex literal beginning /^(\\d+)_");
       assert.deepEqual(itemNameMatchesIn(observe), [], "observe.mjs holds no item-name match of its own");
       // The three retired scanners, per function. `buildSessionItemIndex` and `resolveMilestoneFolder`
@@ -160,7 +170,7 @@ export const archTests = [
       // matches no item name (the pairing sweep below is what proves that; recorded as a contract
       // deviation at 127/01's build, since the feature's "no readdir of the work root" cannot hold
       // for an orphan count while `work-observe-scope/02` asserts a stray dir's runs are counted).
-      for (const header of ["export async function buildSessionItemIndex(", "export async function resolveMilestoneFolder("]) {
+      for (const header of ["async function buildSessionItemIndex(", "async function resolveMilestoneFolder("]) {
         const body = functionBody(observe, header);
         assert.ok(body, `${header} is declared`);
         assert.ok(/listItems\(/.test(body), `${header} takes its items from listItems`);
@@ -169,7 +179,7 @@ export const archTests = [
       const unattributed = functionBody(observe, "async function countUnattributedRuns(");
       assert.ok(unattributed && /listItems\(/.test(unattributed), "countUnattributedRuns takes the item set from listItems");
       assert.ok(/BACKLOG_ROOT/.test(unattributed) && /ARCHIVE_ROOT/.test(unattributed), "…and knows the two roots through their exported names");
-      const observeMilestoneBody = functionBody(observe, "export async function observeMilestone(");
+      const observeMilestoneBody = functionBody(observe, "async function observeMilestone(");
       assert.ok(observeMilestoneBody && !/readdir\(storiesDir/.test(observeMilestoneBody), "observeMilestone lists no milestone's stories/ either — its story refs are the enumerator's rows by containment");
     },
   },
@@ -181,7 +191,7 @@ export const archTests = [
       for (const [rel, { stripped }] of files) {
         if (sweepFile(stripped).paired) paired.push(rel);
       }
-      assert.ok(paired.includes(ENUMERATOR), "non-vacuous: the sweep finds src/work.mjs's own readdir + ITEM_RE pairing");
+      assert.ok(paired.includes(ENUMERATOR), "non-vacuous: the sweep finds discovery.mjs's readdir + ITEM_RE pairing");
       const keeperPaths = KEEPERS.map((keeper) => keeper.file);
       const undeclared = paired.filter((rel) => rel !== ENUMERATOR && !keeperPaths.includes(rel));
       assert.deepEqual(undeclared, [], `undeclared work-root scanners (a readdir paired with an item-name match): ${undeclared.join(", ")} — retire onto listItems, or add a keeper row WITH its reason`);

@@ -96,7 +96,7 @@ precedent. Zero scenarios retag `@executable → @manual`.
 - **(task 00) `issuedAt` determinism** — LOCKED to the injected-clock precedent, exact-value assert stays.
   `issuedAt` is a REQUIRED parameter the assembler stamps verbatim (no internal `new Date()` fallback,
   unlike `assembleDescriptor`'s `now ?? new Date().toISOString()`,
-  [src/node-identity.mjs:143](../../../../../../src/node-identity.mjs#L143)) — the stricter
+  [src/node-identity.mjs:143](../../../../../../packages/mesh/src/node-identity.mjs#L143)) — the stricter
   `assembleClaimRecord` form, where the caller always supplies `claimedAt`
   ([src/mesh-lease.mjs:61](../../../../../../src/mesh-lease.mjs#L61), sourced from `acquireLease`'s injected
   `nowIso` at [:298](../../../../../../src/mesh-lease.mjs#L298)). A wall-clock default is story 01's
@@ -107,7 +107,7 @@ precedent. Zero scenarios retag `@executable → @manual`.
   [:162](../../../../../../src/mesh-lease.mjs#L162)): `export function nodeSatisfiesTarget(descriptor,
   target)`, two plain-data positional args, no injected roster/fs/config/clock. `runtimes`/`skills` are read
   via inline `Array.isArray(x) ? x : []` coercion (the `assembleDescriptor` field-coercion idiom,
-  [src/node-identity.mjs:140-141](../../../../../../src/node-identity.mjs#L140)) — no separate helper module,
+  [src/node-identity.mjs:140-141](../../../../../../packages/mesh/src/node-identity.mjs#L140)) — no separate helper module,
   so nothing further needs a purity certificate.
 - **(task 02) Windows EOL byte-stability** — LOCKED to the PROVEN m22/m26 harness neutralisation: per-clone
   `core.autocrlf false` + `core.eol lf` plus a fixture-level `.gitattributes` of `* -text`

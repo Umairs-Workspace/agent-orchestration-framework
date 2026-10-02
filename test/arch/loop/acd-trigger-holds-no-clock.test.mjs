@@ -1,7 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6303 — aof holds NO clock and NO receiver, and the face writes nothing (63/ADR-003,
 // ADR-008 §7, ADR-010 §6).
 //
-// A clock in `src/` is a supervisor with one entry in its table, and the first flag on a read face
+// A clock in `packages/core/src/` is a supervisor with one entry in its table, and the first flag on a read face
 // is how a read face stops being one. This control asks two questions the sibling
 // `acd-trigger-is-a-caller-not-a-coordinator` does not: does anything in this family SCHEDULE, and
 // does anything in it WRITE. The two rows are separate files on purpose — they fail for different
@@ -17,9 +18,10 @@
 // THE CLOCK CLAIM IS ASSERTED OVER THE WHOLE IMPORT CLOSURE, not just over the family's own four
 // files, so a timer reached through a helper is caught. That walk turns up exactly one timer in
 // the whole closure and it is not a scheduler — `renameWithRetry`'s bounded backoff in
-// `src/fs.mjs` — so the leg is written as a RATCHET rather than as an exemption: the closure holds
+// `packages/foundation/src/fs.mjs` — so the leg is written as a RATCHET rather than as an exemption: the closure holds
 // that one, at that one site, and any second timer anywhere in it fails.
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
@@ -28,12 +30,13 @@ import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
-import { buildTriggerReport, triggerCommand } from "../../../src/commands/trigger.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+const getCommand = _aofApplication.getCommand;
+const buildTriggerReport = _aofApplication.loop.commandTools.trigger.buildTriggerReport;
+const triggerCommand = _aofApplication.getCommand("work:trigger");
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const cliPath = path.join(root, "bin", "aof.mjs");
+const cliPath = path.join(root, "packages", "core", "bin", "aof.mjs");
 
 // THE FAMILY AND ITS CLOSURE ARE EXPORTED, and `acd-trigger-is-a-caller-not-a-coordinator` reads
 // them from here. That is a shared DERIVATION, not a merged claim: the two rows keep their own
@@ -42,11 +45,11 @@ const cliPath = path.join(root, "bin", "aof.mjs");
 // itself; a second brace-and-import walker written beside this one is the species TECH_DEBT 24
 // and 57 have already been paid for twice.
 export const FAMILY = [
-  "src/commands/trigger.mjs",
-  ...readdirSync(path.join(root, "src", "work-trigger"))
+  "packages/work-loop/src/commands/trigger.mjs",
+  ...readdirSync(path.join(root, "packages", "work-loop", "src", "trigger"))
     .filter((name) => name.endsWith(".mjs"))
     .sort()
-    .map((name) => `src/work-trigger/${name}`),
+    .map((name) => `packages/work-loop/src/trigger/${name}`),
 ];
 
 const sourceOf = (file) => stripComments(readFileSync(path.join(root, file), "utf8"));
@@ -63,15 +66,15 @@ function importClosure(entries) {
     seen.add(relative);
     const absolute = path.join(root, relative);
     if (!existsSync(absolute)) continue;
-    for (const { specifier } of importSpecifiers(sourceOf(relative)).filter((entry) => !entry.dynamic)) {
-      if (!specifier.startsWith(".")) continue;
-      queue.push(path.relative(root, path.resolve(path.dirname(absolute), specifier)).split(path.sep).join("/"));
+    for (const { specifier } of dependencySpecifiers(sourceOf(relative)).filter((entry) => !entry.dynamic)) {
+      if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
+      queue.push(path.relative(root, createRequire(absolute).resolve(specifier)).split(path.sep).join("/"));
     }
   }
   return [...seen].sort();
 }
 
-export const CLOSURE = importClosure(FAMILY);
+export const CLOSURE = importClosure([...FAMILY, "packages/core/src/application/bindings/commands/trigger.mjs"]);
 export const familySource = (file) => sourceOf(file);
 const CLOSURE_TEXT = CLOSURE.map((file) => sourceOf(file)).join("\n");
 const FAMILY_TEXT = FAMILY.map((file) => sourceOf(file)).join("\n");
@@ -175,14 +178,14 @@ export const archTests = [
       // a RATCHET rather than as an exemption — a second timer anywhere in the closure fails here,
       // and so does a change to this one, so the closure can never quietly acquire a scheduler.
       const sites = CLOSURE.flatMap((file) => [...sourceOf(file).matchAll(/\bsetTimeout\b/gu)].map(() => file));
-      assert.deepEqual(sites, ["src/fs.mjs"], `the closure holds exactly one setTimeout, in src/fs.mjs (got ${sites.join(", ") || "none"})`);
-      // ASSERTED AS A SHAPE, NEVER AS ITS ARITHMETIC. `src/fs.mjs` has 52 `src/` dependents and
+      assert.deepEqual(sites, ["packages/foundation/src/fs.mjs"], `the closure holds exactly one setTimeout, in packages/foundation/src/fs.mjs (got ${sites.join(", ") || "none"})`);
+      // ASSERTED AS A SHAPE, NEVER AS ITS ARITHMETIC. `packages/foundation/src/fs.mjs` has 52 `packages/core/src/` dependents and
       // none of them is ours; pinning `25 * (attempt + 1)` byte-for-byte would red this control
       // the day someone tunes that constant for the Windows rename contention the retry exists
       // for — sending its reader to hunt a defect in a family that did not change, which is the
       // failure FF-6308's own row forbids by name. What this row actually claims is that the one
       // timer in the closure SCHEDULES NOTHING, and that is a property of its shape and its site.
-      const fs = sourceOf("src/fs.mjs");
+      const fs = sourceOf("packages/foundation/src/fs.mjs");
       const body = functionBody(fs, "function renameWithRetry(");
       assert.ok(body != null, "renameWithRetry is where it lives, and its body was found");
       assert.equal((body.match(/\bsetTimeout\b/gu) ?? []).length, 1, "the file's one timer is inside that function");
@@ -334,14 +337,14 @@ export const archTests = [
   {
     name: "architecture: FF-6303 the exit mapping is the single-expression form, so the two sides cannot drift into a per-case table",
     run: () => {
-      // `src/commands/tune.mjs:590` already ships this exact shape, and the reason it is pinned as
+      // `packages/core/src/commands/tune.mjs:590` already ships this exact shape, and the reason it is pinned as
       // a SHAPE is that ADR-010 §6 states the rule as a CAUSE: an enumeration would have to grow a
       // branch for every case nobody listed, which is how one reading put an unreachable registry
       // on both sides of the rule at once.
       const expression = String(triggerCommand.cli.exit).replace(/\s+/gu, " ").trim();
       assert.equal(expression, "(result) => (result.failure == null ? 0 : 1)", "the exit adapter is one expression over whether a failure exists");
       assert.equal(String(getCommand("work:tune").cli.exit).replace(/\s+/gu, " ").trim(), expression, "byte for byte the expression the sibling face already ships");
-      assert.doesNotMatch(sourceOf("src/commands/trigger.mjs"), /exit:\s*\(result\)\s*=>\s*\{/u, "and it is not a per-case table wearing an adapter's name");
+      assert.doesNotMatch(sourceOf("packages/work-loop/src/commands/trigger.mjs"), /exit:\s*\(result\)\s*=>\s*\{/u, "and it is not a per-case table wearing an adapter's name");
     },
   },
 ];

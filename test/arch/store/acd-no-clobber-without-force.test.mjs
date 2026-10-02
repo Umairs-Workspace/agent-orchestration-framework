@@ -15,11 +15,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { writeLock } from "../../../src/lock.mjs";
-import { createLockManifest, executeApplyActions, planApplyActions } from "../../../src/render-plan.mjs";
-import { loadBundle } from "../../../src/work/bundle.mjs";
-import { synthesizeBundleConfig } from "../../../src/work/bundle-synthesis.mjs";
-import { updateWork, workLockPath } from "../../../src/work/update.mjs";
+import { writeLock } from "../../../packages/core/src/lock.mjs";
+import { createLockManifest, executeApplyActions, planApplyActions } from "../../../packages/core/src/render-plan.mjs";
+import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
+import { synthesizeBundleConfig } from "../../../packages/core/src/work/bundle-synthesis.mjs";
+import { updateWork, workLockPath } from "../../../packages/core/src/work/update.mjs";
 
 // Base install reusing the engine path init uses (no hand-rolled drift logic).
 // ADR-009: the install manifest is the `work` SECTION of the unified lock (minus

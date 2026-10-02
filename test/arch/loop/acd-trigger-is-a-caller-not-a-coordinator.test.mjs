@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6301 — the trigger layer is a CALLER, not a coordinator (63/ADR-001, ADR-003 §2, ADR-007 §3,
 // ADR-011 §2).
 //
 // The failure this control exists to refuse is easy to name and easy to build by accident: a
 // trigger layer that grows a scheduler, then a dispatcher, then a policy for what to do when two
 // triggers fire at once — fleet-level orchestration arriving one noun at a time. So the claim is
-// asserted as FOUR ABSENCES and ONE OUTPUT SHAPE, over `src/work-trigger/**` AND the face
+// asserted as FOUR ABSENCES and ONE OUTPUT SHAPE, over `packages/core/src/work-trigger/**` AND the face
 // together, because the family only coordinates if some member of it does.
 //
 // ITS SIBLING IS A SEPARATE FILE ON PURPOSE. `acd-trigger-holds-no-clock` asks whether the family
@@ -32,29 +33,32 @@ import { spawnCliSync } from "../../support/cli-spawn.mjs";
 // leaves the other legible. A second brace-and-import walker written beside that one would be
 // TECH_DEBT 24 and 57's species, in the milestone that indicts it.
 import { CLOSURE, familySource } from "./acd-trigger-holds-no-clock.test.mjs";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { resolveTriggerLevel } from "../../../src/work-trigger/level.mjs";
-import { ASSIGNMENT_PHASES } from "../../../src/mesh/assignment-directive.mjs";
-import { RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS, LEVEL_FLAG } from "../../../src/commands/trigger.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
+import { ASSIGNMENT_PHASES } from "@aof/mesh/assignment-directive";
+const RESOLVED_TRIGGER_KEYS = _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS;
+const LOOP_INPUT_KEYS = _aofApplication.loop.commandTools.trigger.LOOP_INPUT_KEYS;
+const LEVEL_FLAG = _aofApplication.loop.commandTools.trigger.LEVEL_FLAG;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
-// The FAMILY: the face and every module under `src/work-trigger/`. Discovered by reading the
+// The FAMILY: the face and every module under `packages/core/src/work-trigger/`. Discovered by reading the
 // directory rather than by a list kept here, so a fifth leaf cannot arrive uncovered.
 const { readdirSync } = await import("node:fs");
 const FAMILY = [
-  "src/commands/trigger.mjs",
-  ...readdirSync(`${root}/src/work-trigger`)
+  "packages/work-loop/src/commands/trigger.mjs",
+  ...readdirSync(`${root}/packages/work-loop/src/trigger`)
     .filter((name) => name.endsWith(".mjs"))
     .sort()
-    .map((name) => `src/work-trigger/${name}`),
+    .map((name) => `packages/work-loop/src/trigger/${name}`),
 ];
 
 const sourceOf = (file) => stripComments(readFileSync(`${root}/${file}`, "utf8"));
 const FAMILY_TEXT = FAMILY.map((file) => sourceOf(file)).join("\n");
 
 const LOOP_ID = "work:loop";
-const BOARD_UI = `${root}/src/board-ui.mjs`;
+const BOARD_UI = `${root}/packages/server/src/board-ui.mjs`;
 const ROUTE_COVERAGE = `${root}/test/arch/work/acd-work-command-route-coverage.test.mjs`;
 
 // The three commands the family may reach, plus its own id. A `work:` literal outside this set is
@@ -97,8 +101,8 @@ const ABSENCES = [
 
 // SPAWNING NEEDS A DOOR, and over the CLOSURE the door is what is banned rather than the word.
 // The family's own four files carry the broad ban above — `\\bexec\\b` and every sibling spelling —
-// because none of them holds a regex. The closure cannot: `src/feature-parse.mjs:183` and
-// `src/work/loop.mjs:388` legitimately call `RegExp.prototype.exec`, so a word ban over eighteen
+// because none of them holds a regex. The closure cannot: `packages/core/src/feature-parse.mjs:183` and
+// `packages/work-loop/src/engine.mjs:388` legitimately call `RegExp.prototype.exec`, so a word ban over eighteen
 // files would red two modules that spawn nothing. What no spawn can do without is the IMPORT, and
 // a bare call is the other half; both are asserted, and each is driven against a plant.
 const CLOSURE_SPAWN = [
@@ -195,8 +199,8 @@ export const archTests = [
       // NON-VACUITY FIRST: every leg below is over `FAMILY_TEXT`, so a control reading an empty
       // or truncated family would pass every ban while holding nothing.
       assert.ok(FAMILY.length >= 4, `the family holds the face and every leaf (got ${FAMILY.join(", ")})`);
-      assert.ok(FAMILY.includes("src/commands/trigger.mjs"), "the face is in the family");
-      assert.ok(FAMILY.some((file) => file.startsWith("src/work-trigger/")), "and so are the leaves");
+      assert.ok(FAMILY.includes("packages/work-loop/src/commands/trigger.mjs"), "the face is in the family");
+      assert.ok(FAMILY.some((file) => file.startsWith("packages/work-loop/src/trigger/")), "and so are the leaves");
       for (const file of FAMILY) assert.ok(sourceOf(file).length > 200, `${file} has real source to assert over`);
     },
   },
@@ -266,7 +270,7 @@ export const archTests = [
         const marker = path.join(directory, "spawns.log");
         await writeFile(preload, SPAWN_PRELOAD, "utf8");
         await writeFile(marker, "", "utf8");
-        const result = spawnCliSync(process.execPath, ["--require", preload, path.join(root, "bin", "aof.mjs"), "work", "trigger", "--json"], {
+        const result = spawnCliSync(process.execPath, ["--require", preload, path.join(root, "packages", "core", "bin", "aof.mjs"), "work", "trigger", "--json"], {
           cwd: root,
           encoding: "utf8",
           env: { ...process.env, NODE_NO_WARNINGS: "1", AOF_TRIGGER_SPAWN_MARKER: marker },
@@ -312,7 +316,24 @@ export const archTests = [
   {
     name: "architecture: FF-6301 the object the FACE projects carries the loop's input, the argv and ONE identity key",
     async run() {
-      const { buildTriggerReport } = await import("../../../src/commands/trigger.mjs");
+      const { buildTriggerReport } = await Promise.resolve(Object.freeze({
+  LEVEL_FLAG: _aofApplication.loop.commandTools.trigger.LEVEL_FLAG,
+  LOOP_INPUT_KEYS: _aofApplication.loop.commandTools.trigger.LOOP_INPUT_KEYS,
+  RESOLVED_TRIGGER_KEYS: _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS,
+  TRIGGER_GATE_READING_FAILED: _aofApplication.loop.commandTools.trigger.TRIGGER_GATE_READING_FAILED,
+  TRIGGER_GATE_READING_UNOBTAINED: _aofApplication.loop.commandTools.trigger.TRIGGER_GATE_READING_UNOBTAINED,
+  TRIGGER_GATE_READING_UNREACHABLE: _aofApplication.loop.commandTools.trigger.TRIGGER_GATE_READING_UNREACHABLE,
+  TRIGGER_LOOP_UNREGISTERED: _aofApplication.loop.commandTools.trigger.TRIGGER_LOOP_UNREGISTERED,
+  TRIGGER_SIGNAL_UNMATCHED: _aofApplication.loop.commandTools.trigger.TRIGGER_SIGNAL_UNMATCHED,
+  TRIGGER_SIGNAL_UNREADABLE: _aofApplication.loop.commandTools.trigger.TRIGGER_SIGNAL_UNREADABLE,
+  TRIGGER_SOURCE_UNDECLARED_GAP: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNDECLARED_GAP,
+  TRIGGER_SOURCE_UNKNOWN: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNKNOWN,
+  TRIGGER_SOURCE_UNRESOLVABLE_HERE: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNRESOLVABLE_HERE,
+  TRIGGER_SOURCE_UNRESOLVED_GAP: _aofApplication.loop.commandTools.trigger.TRIGGER_SOURCE_UNRESOLVED_GAP,
+  TRIGGER_UNKNOWN: _aofApplication.loop.commandTools.trigger.TRIGGER_UNKNOWN,
+  buildTriggerReport: _aofApplication.loop.commandTools.trigger.buildTriggerReport,
+  triggerCommand: _aofApplication.getCommand("work:trigger"),
+}));
       const report = await buildTriggerReport({}, {
         workspace: { projectRoot: `${root}`, workDir: `${root}/wiki/work`, config: {} },
         trigger: {
@@ -378,12 +399,12 @@ export const archTests = [
     name: "architecture: FF-6301 the gate readings are handed over UNCOERCED — no default stands between the registry's answer and the leaf",
     run: () => {
       // ADR-011 §3's whole subject, and it is asserted STRUCTURALLY because today it cannot be
-      // asserted any other way: `src/work-trigger/level.mjs:145` reads `undefined`, `null` and
+      // asserted any other way: `packages/core/src/work-trigger/level.mjs:145` reads `undefined`, `null` and
       // absent as one answer, so `value ?? null` at this seam changes no observable outcome — it
       // passed the entire suite when it was planted. The day ADR-010 §11's distinction is taught
       // to the leaf, a face quietly written back to `?? null` sits on the wrong side of the exit
       // boundary with nothing red. So the hand-over is pinned as the statement it must be.
-      const face = sourceOf("src/commands/trigger.mjs");
+      const face = sourceOf("packages/work-loop/src/commands/trigger.mjs");
       const gather = functionBody(face, "async function gatherGateReadings(");
       assert.ok(gather != null, "gatherGateReadings is where the two readings are obtained, and its body was found");
       const normalised = gather.replace(/\s+/gu, " ");
@@ -442,8 +463,9 @@ export const archTests = [
       // is the only probe that sees this class, because every suite in this tree reaches these
       // modules through a warmed cache.
       assert.doesNotMatch(FAMILY_TEXT, /^import[^\n]*command-core\.mjs/mu, "no family module imports the registry at module scope");
-      assert.match(sourceOf("src/commands/trigger.mjs"), /await import\("\.\.\/command-core\.mjs"\)/u, "the face reaches it through a deferred dynamic import");
-      for (const file of [...FAMILY, "src/command-core.mjs"]) {
+      assert.match(sourceOf("packages/core/src/application/bindings/commands/trigger.mjs"), /\(\) => provideCommandCore\(\)/u, "core supplies the ready registry callback");
+      assert.match(sourceOf("packages/work-loop/src/commands/trigger.mjs"), /await loadCommandCore\(\)/u, "the face calls the supplied loader lazily");
+      for (const file of [...FAMILY, "packages/core/src/application/bindings/commands/trigger.mjs", "packages/core/src/application/bindings/command-core.mjs"]) {
         const url = pathToFileURL(`${root}/${file}`).href;
         const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `await import(${JSON.stringify(url)})`], {
           cwd: root,

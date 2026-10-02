@@ -1,13 +1,17 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ADMITTED_KEYS, GROUND_VALUES, NODE_KINDS, SENTINEL_TOKENS, loadLoops,
-} from "../../src/work/loops.mjs";
-import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const GROUND_VALUES = _aofApplication.graph.work.loops.GROUND_VALUES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const SENTINEL_TOKENS = _aofApplication.graph.work.loops.SENTINEL_TOKENS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const resolveAnchorAuthorities = _aofApplication.graph.commandTools.loopsGroundedness.resolveAnchorAuthorities;
+import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import { examplesTables } from "../support/feature-parse.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -173,7 +177,7 @@ export const anchorTaxonomyTests = [
       const anchors = installed.nodes.filter((node) => node.kind === "anchor");
       assert.deepEqual(anchors.map((node) => path.basename(node.path)).sort(), expected);
       for (const filename of expected) {
-        const source = await readFile(path.join(root, "src", "bundle", "loops", filename), "utf8");
+        const source = await readFile(path.join(root, "packages", "core", "assets", "loops", filename), "utf8");
         const copy = await readFile(path.join(root, ".aof", "loops", filename), "utf8");
         assert.equal(copy, source);
         assert.match(source, /^---\r?\n# aof-generated: true/m);
@@ -184,8 +188,10 @@ export const anchorTaxonomyTests = [
         const node = anchors.find((candidate) => path.basename(candidate.path) === filename);
         const authority = node.fields.observes.pointer;
         assert.equal(authority.scheme, "module");
-        const authoritySource = await readFile(path.join(root, authority.operand), "utf8");
-        assert.match(authoritySource, new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let|class)\\s+${authority.symbol}\\b`));
+        // The framework record's pointer is resolved by the PRODUCTION resolver (composition binding -> owning
+        // workspace module -> a symbol its surface declares), not by reading a retired root path.
+        const resolutions = await resolveAnchorAuthorities(installed, { projectRoot: root }, {});
+        assert.equal(resolutions[node.id]?.resolved, true, `${node.id}: ${authority.operand}#${authority.symbol} resolves in the owning workspace`);
         const body = source.slice(source.indexOf("\n---\n") + 5);
         for (const endpoints of Object.values(node.edges)) for (const endpoint of endpoints) {
           assert.match(body, new RegExp(endpoint.operand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));

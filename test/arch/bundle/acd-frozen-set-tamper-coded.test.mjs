@@ -6,7 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SETTINGS_SOURCE = path.join(repoRoot, "src", "claude-settings.mjs");
+const SETTINGS_SOURCE = path.join(repoRoot, "packages", "core", "src", "claude-settings.mjs");
 
 function tamperProblems(source) {
   const problems = [];

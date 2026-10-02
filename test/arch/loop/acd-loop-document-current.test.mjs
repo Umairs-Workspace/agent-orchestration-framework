@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 79 / task 02 — THE DRIFT CHECK.
 //
 //   "A committed projection of a deterministic function is a thing CI can check."
@@ -21,9 +22,10 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, loadWorkspace } from "../../../src/command-core.mjs";
-import { loopDocumentCommand } from "../../../src/commands/loop-document.mjs";
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../../src/loop-document.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
+import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import { RECORDS, loop, record, snapshot, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
@@ -170,7 +172,7 @@ export const archTests = [
       // grepping for the composer's name — a whole-file grep for a symbol would be satisfied by
       // the assertion that spells it, which is a gate that can only pass.
       const bindings = [...self.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/gm)]
-        .filter(([, , from]) => from.endsWith("/loop-document.mjs") && !from.includes("/commands/"))
+        .filter(([, , from]) => from === "@aof/work-graph/document")
         .flatMap(([, names]) => names.split(",").map((name) => name.trim()).filter(Boolean));
       assert.deepEqual(bindings.sort(), ["REGENERATE_COMMAND", "loopDocumentPath"], "it takes the path and the remedy from the one home, and no composer");
 
@@ -217,7 +219,7 @@ export const archTests = [
           assert.doesNotMatch(text, /loops\.md/, `no finding is sourced from the stale document: ${text}`);
         }
 
-        // AND NO ACCEPTOR DOOR READS IT. The document has exactly two readers in `src/`: the
+        // AND NO ACCEPTOR DOOR READS IT. The document has exactly two readers in `packages/core/src/`: the
         // module that derives its path and the command that writes it. Anything else — a doctor
         // lane, the acceptor, a status edge — would be this story making the graph gate something,
         // which its scope excludes.
@@ -227,17 +229,18 @@ export const archTests = [
             const full = path.join(dir, entry.name);
             if (entry.isDirectory()) await walk(full);
             else if (entry.name.endsWith(".mjs")) {
-              const source = stripComments(await readFile(full, "utf8"));
+              const source = stripComments(await readFile(full, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "");
               if (/loopDocumentPath|LOOP_DOCUMENT_BASENAME|["'`]loops\.md["'`]/.test(source)) {
                 readers.push(path.relative(repoRoot, full).split(path.sep).join("/"));
               }
             }
           }
         }
-        await walk(path.join(repoRoot, "src"));
+        await walk(path.join(repoRoot, "packages", "core", "src"));
+        await walk(path.join(repoRoot, "packages"));
         assert.deepEqual(
           readers.sort(),
-          ["src/commands/loop-document.mjs", "src/loop-document.mjs"],
+          ["packages/work-graph/src/commands/loop-document.mjs", "packages/work-graph/src/document.mjs"],
           "the document is read by its own two modules and by no lifecycle, doctor or acceptor door"
         );
       });

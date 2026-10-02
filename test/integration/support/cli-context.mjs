@@ -6,7 +6,7 @@ import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 export const integrationDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 export const repoRoot = path.resolve(integrationDir, "..", "..");
-export const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+export const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 export const useInProcessCli = process.env.AOF_IN_PROCESS_INTEGRATION === "1";
 
 export async function createCliContext() {
@@ -55,7 +55,7 @@ export function runCli(context, command, input = "", options = {}) {
 }
 
 export async function runCliInProcess(context, command, input = "", options = {}) {
-  const { run } = await import("../../../src/cli.mjs");
+  const { run } = await import("../../../packages/core/src/cli.mjs");
   const previousCwd = process.cwd();
   const previousDataDir = process.env.AOF_DATA_DIR;
   const previousNoWarnings = process.env.NODE_NO_WARNINGS;

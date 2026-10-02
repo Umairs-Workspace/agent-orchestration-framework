@@ -1,10 +1,13 @@
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 79 / task 00 — the composed document.
 //
 // Covers EVERY @executable scenario in
 //   wiki/work/79_story_committed-loop-graph/tasks/00_the-document.feature
-// exercising the REAL src/loop-document.mjs composer over injected models, with the fenced
+// exercising the REAL packages/core/src/loop-document.mjs composer over injected models, with the fenced
 // block's bytes produced by the REAL exported `renderLoopGraph` from
-// src/commands/loops-graph.mjs. One test object per @executable scenario (the Scenario Outline
+// packages/core/src/commands/loops-graph.mjs. One test object per @executable scenario (the Scenario Outline
 // folded into one entry iterating its rows), each name tracing to feature + scenario.
 // node:assert/strict.
 //
@@ -17,10 +20,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { composeLoopDocument, loopDocumentPath, REGENERATE_COMMAND } from "../../src/loop-document.mjs";
-import { renderLoopGraph } from "../../src/commands/loops-graph.mjs";
-import { loopsGraphCommand } from "../../src/commands/loops-graph.mjs";
-import { parseFrontmatter } from "../../src/work.mjs";
+import { composeLoopDocument, loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
+const renderLoopGraph = _aofPublic_aof_work_graph_commands_loops_graph.renderLoopGraph;
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
 // THE ONE HOME for cutting source (m47 / F-47-04-ARCH-2). Its `stripComments` strips LINE
 // COMMENTS FIRST — TECH_DEBT item 24's trap order. The source sweeps below MUST run over the
 // stripped text: this module's own header names `process.cwd()` as a thing it does not reach,
@@ -99,24 +102,24 @@ export const loopDocumentTests = [
 
       // No glyph, node ordering or edge ordering is restated OUTSIDE the renderer: the composer's
       // own source carries none of the shapes 52/FF-5208 froze, and no ordering of its own.
-      const composer = stripComments(await readFile(path.join(repoRoot, "src/loop-document.mjs"), "utf8"));
+      const composer = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/document.mjs"), "utf8"));
       for (const glyph of ['(["', '(("', '{{"', '[/"', '-->|', "flowchart LR"]) {
-        assert.ok(!composer.includes(glyph), `src/loop-document.mjs restates no renderer glyph or edge form (${glyph})`);
+        assert.ok(!composer.includes(glyph), `packages/core/src/loop-document.mjs restates no renderer glyph or edge form (${glyph})`);
       }
-      assert.doesNotMatch(composer, /\.sort\s*\(/, "src/loop-document.mjs imposes no ordering of its own — the renderer owns node and edge order");
+      assert.doesNotMatch(composer, /\.sort\s*\(/, "packages/core/src/loop-document.mjs imposes no ordering of its own — the renderer owns node and edge order");
     },
   },
   {
     name: "loop-document/00 the frozen renderer is left byte-unmodified",
     async run() {
       // This story IMPORTS `renderLoopGraph` and restates none of it, so the only ways it could
-      // have moved `src/commands/loops-graph.mjs` are the two the contract names: an output-path
+      // have moved `packages/core/src/commands/loops-graph.mjs` are the two the contract names: an output-path
       // input, or a write call form. Both are asserted here, on the file as it stands.
-      const source = stripComments(await readFile(path.join(repoRoot, "src/commands/loops-graph.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loops-graph.mjs"), "utf8"));
       assert.doesNotMatch(
         source,
         /\b(?:writeFile|appendFile|mkdir|rm|rename)\s*\(/,
-        "src/commands/loops-graph.mjs gained no write call form — 52/FF-5201's sweep over it passes exactly as before"
+        "packages/core/src/commands/loops-graph.mjs gained no write call form — 52/FF-5201's sweep over it passes exactly as before"
       );
       assert.deepEqual(
         Object.keys(loopsGraphCommand.input.properties),
@@ -231,7 +234,7 @@ export const loopDocumentTests = [
   {
     name: "loop-document/00 composition reaches no clock, no filesystem and no environment",
     async run() {
-      const composer = stripComments(await readFile(path.join(repoRoot, "src/loop-document.mjs"), "utf8"));
+      const composer = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/document.mjs"), "utf8"));
       const imports = [...composer.matchAll(/^import\s[^;]*?from\s+["']([^"']+)["']/gm)].map((match) => match[1]);
       assert.deepEqual(imports, ["node:path"], "the composer's DIRECT imports are exactly node:path — no fs, no os, no child_process");
       for (const reach of [/\bDate\b/, /\bprocess\.env\b/, /\bprocess\.cwd\b/, /\bhostname\b/, /\bnode:fs\b/]) {

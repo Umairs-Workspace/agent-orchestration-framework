@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-spawn-ack-has-reader (milestone 50 / story 04;
 // ARCHITECTURE ADR-008 FF-A).
 //
@@ -43,14 +44,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
-import { applyStreamFrame } from "../../../src/control-stream-server.mjs";
-import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "../../../src/mesh/session-spawn-directive.mjs";
-import { createSpawnOutcomeRegistry } from "../../../src/mesh/session-spawn-outcome.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+import { buildSessionSpawnAckFrame, buildSessionSpawnAckEnvelope, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
+import { createSpawnOutcomeRegistry } from "@aof/mesh/session-spawn-outcome";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
-const LAUNCHER = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND (TECH_DEBT item 24).
 function stripComments(source) {

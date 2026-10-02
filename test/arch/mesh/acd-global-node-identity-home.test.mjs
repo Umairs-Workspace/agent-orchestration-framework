@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness (milestone 34 / story 05): the node identity is resolved from the MACHINE-WIDE
 // global AOF home, never a per-workspace aofDir. This is the structural guard that was
 // MISSING at the first accept — a global work store keyed on nodeId is only coherent if
@@ -8,8 +9,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const stripComments = (s) => s.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -43,14 +44,14 @@ export const archTests = [
   {
     name: "arch/34 ADR-05: loadWorkspace reads identity from globalMeshPaths, and the minting callers write to ws.identityPath (not the per-workspace sidecar as primary)",
     run: async () => {
-      const work = stripComments(await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8"));
+      const work = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work.mjs"), "utf8"));
       // The PRIMARY identity read in loadWorkspace routes through the global home.
       assert.ok(/const\s+globalMesh\s*=\s*globalMeshPaths\(\s*\{\s*env\s*\}\s*\)/.test(work), "loadWorkspace resolves global mesh paths via globalMeshPaths({ env })");
       assert.ok(/const\s+globalIdentityPath\s*=\s*globalMesh\.identityPath/.test(work), "loadWorkspace reads identityPath from the resolved global mesh paths");
       assert.ok(/identityPath:\s*globalIdentityPath/.test(work), "loadWorkspace exposes ws.identityPath = the global path");
 
-      for (const file of ["commands/mesh/identity.mjs", "commands/mesh/heartbeat.mjs", "mesh/launcher.mjs"]) {
-        const src = stripComments(await readFile(path.join(repoRoot, "src", file), "utf8"));
+      for (const file of ["packages/mesh/src/commands/identity.mjs", "packages/mesh/src/commands/heartbeat.mjs", "packages/mesh/src/launcher.mjs"]) {
+        const src = stripComments(await readFile(path.join(repoRoot, file), "utf8"));
         assert.ok(/ws\.identityPath/.test(src), `${file} mints/reads identity via ws.identityPath (the global home), not the per-workspace sidecar as primary`);
       }
     },

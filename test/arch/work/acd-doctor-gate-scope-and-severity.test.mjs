@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5410 (milestone 54 / ADR-007 §2) — THE DOCTOR GATE'S ADMITTED SCOPE, SEVERITY AND CODE
 // SET ARE EXACTLY THE RULED ONES.
 //
@@ -26,14 +27,15 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../../src/commands/loop.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const ladderBody = async () => {
-  const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+  const source = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
   const body = functionBody(source, "async function invokeGateLadder(");
   assert.ok(body != null, "the gate ladder's body was found structurally — a moved declaration fails HERE, loudly, rather than asserting over the wrong region");
   return body;
@@ -55,7 +57,7 @@ export const archTests = [
       // A NINTH CONTROL CODE CANNOT SILENTLY JOIN OR LEAVE THE GATE. Proven on the source,
       // because the property is precisely that there is no second list to fall out of step:
       // no admitted code appears as a literal anywhere in the module.
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.match(source, /DOCTOR_GATE_CODES\s*=\s*Object\.freeze\(\s*CONTROL_FINDING_CODES\.filter/u, "the set is a filter over the frozen array");
       for (const code of expected) {
         assert.ok(!source.includes(`"${code}"`), `no admitted code is restated as a literal (found "${code}")`);
@@ -93,7 +95,7 @@ export const archTests = [
       }
       // `severityFor` IS NEITHER RE-DERIVED NOR MODIFIED. The gate takes the severity the
       // doctor already reported; the horizon stays the single authority (`66/ADR-002`).
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.ok(!source.includes("severityFor"), "the loop shell neither calls nor re-implements severityFor");
       assert.ok(!source.includes("acceptance-horizon"), "…and does not import the horizon to second-guess it");
     },

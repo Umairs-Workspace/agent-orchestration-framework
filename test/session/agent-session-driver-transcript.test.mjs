@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/session/agent-session-driver-transcript.test.mjs — milestone 53 / story 00, task 03
 // (03_the-transcript-watches.feature; ADR-001 §1 and §3, RESEARCH §Q1 and §Q8).
 //
@@ -11,7 +13,7 @@
 // forever.
 //
 // THE HERMETIC SEAM IS `CLAUDE_CONFIG_DIR`. `claudeProjectsDir` reads it before it falls
-// back to the home directory (src/work/observe.mjs), so a `mkdtemp` root plus a
+// back to the home directory (packages/core/src/work/observe.mjs), so a `mkdtemp` root plus a
 // synthetic `cwd` gives every scenario below a real directory, real `.jsonl` files and
 // real mtimes with no `~/.claude` anywhere near it — the idiom
 // test/mesh/worker/mesh-worker-completion-detection.test.mjs already uses. `pollMs`, `idleMs`,
@@ -33,20 +35,39 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, utimes, stat } from "node:fs/p
 import { utimesSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {
-  defaultWatchTranscriptSessionId,
-  defaultWatchTranscriptCompletion,
-  driveInteractiveClaudeSession,
-  HUMAN_INPUT_TOOL_NAMES,
-  NEEDS_INPUT_SENTINEL,
-  DIRECTIVE_COMPLETE_SENTINEL,
-  NEEDS_INPUT_INSTRUCTION,
-  DIRECTIVE_COMPLETE_INSTRUCTION,
-  WORKER_SESSION_INSTRUCTION,
-} from "../../src/agent-session-driver.mjs";
-import * as driverModule from "../../src/agent-session-driver.mjs";
-import { claudeProjectsDir, readLastAssistantTurn, askQuestionFromTurn, readAskQuestion } from "../../src/work/observe.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+const defaultWatchTranscriptSessionId = _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId;
+const defaultWatchTranscriptCompletion = _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion;
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const HUMAN_INPUT_TOOL_NAMES = _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES;
+const NEEDS_INPUT_SENTINEL = _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL;
+const DIRECTIVE_COMPLETE_SENTINEL = _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL;
+const NEEDS_INPUT_INSTRUCTION = _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION;
+const DIRECTIVE_COMPLETE_INSTRUCTION = _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION;
+const WORKER_SESSION_INSTRUCTION = _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION;
+const driverModule = Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+});
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const readLastAssistantTurn = _aofSessions.workObserve.readLastAssistantTurn;
+const askQuestionFromTurn = _aofSessions.workObserve.askQuestionFromTurn;
+const readAskQuestion = _aofSessions.workObserve.readAskQuestion;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { fileURLToPath } from "node:url";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
@@ -136,7 +157,7 @@ function bumpMtimeSync(file) {
 // family; the driver's outcome is a mapping over it, and the rows at the foot of this block are
 // the delivered mapping read through the driver's own watch, unchanged.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const DRIVER_SOURCE = path.join(repoRoot, "src", "agent-session-driver.mjs");
+const DRIVER_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
 
 const textBlock = (text) => ({ type: "text", text });
 const toolBlock = (name, input = {}) => ({ type: "tool_use", name, input });
@@ -376,18 +397,17 @@ function readerAndProducerTests() {
       name: "131/01 task00 — the driver's scan is a mapping over the one reader: it imports readLastAssistantTurn, walks no transcript, and keeps the frozen seventeen",
       run: async () => {
         const driver = stripLikeTheDriverControl(await readFile(DRIVER_SOURCE, "utf8"));
-        assert.match(driver, /import\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*from\s*"\.\/work\/observe\.mjs"/u);
-        const spawnRuntime = driver.slice(driver.indexOf("export function defaultSpawnRuntime("));
+        assert.match(driver, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*=\s*transcripts/u);
+        const spawnRuntime = driver.slice(driver.indexOf("function defaultSpawnRuntime("));
         assert.equal(occurrences(driver, "JSON.parse("), occurrences(spawnRuntime, "JSON.parse("), "the one JSON.parse left is the codex stdout parse in defaultSpawnRuntime");
         assert.equal(occurrences(driver, "stop_reason"), 1, "one stop_reason read is left in the driver");
         assert.equal(occurrences(spawnRuntime, "stop_reason"), 1, "…and it is defaultSpawnRuntime's, which is not a transcript scan");
 
-        const srcRoot = path.join(repoRoot, "src");
-        const { readdir } = await import("node:fs/promises");
-        const walk = async (d) => (await Promise.all((await readdir(d, { withFileTypes: true })).map((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : e.name.endsWith(".mjs") ? [path.join(d, e.name)] : [])))).flat();
-        for (const file of await walk(srcRoot)) {
-          const rel = path.relative(srcRoot, file).split(path.sep).join("/");
-          if (rel === "work/observe.mjs" || rel === "agent-session-driver.mjs") continue;
+        const { readRuntimeFiles } = await import("../support/read-src-files.mjs");
+        const files = await readRuntimeFiles(repoRoot);
+        assert.ok(files.length > 100 && files.some(file => file.path === DRIVER_SOURCE), "the runtime sweep includes the driver implementation");
+        for (const { path: file, rel } of files) {
+          if (rel === "packages/work/src/observe.mjs" || rel === "packages/execution/src/session-driver.mjs") continue;
           assert.equal(occurrences(stripLikeTheDriverControl(await readFile(file, "utf8")), "stop_reason"), 0, `${rel} reads no stop_reason`);
         }
         assert.equal(Object.keys(driverModule).length, 17, "the driver's export set is still the frozen seventeen");
@@ -671,17 +691,25 @@ export const agentSessionDriverTranscriptTests = [
       const declared = defaultWatchTranscriptCompletion({ ...opts, sessionId: "declared" });
       const undeclared = defaultWatchTranscriptCompletion({ ...opts, sessionId: "undeclared" });
 
-      // Let both take their first tick (which is what starts the quiet stretch), then
-      // move the clock past the SHORT window only.
-      await new Promise((resolve) => setTimeout(resolve, 40));
-      clock.advance(2_000);
+      // Let both take their first tick (which is what starts the quiet stretch), then move the clock past the SHORT
+      // window only. The first tick is a real-time poll, and on a loaded machine it can land AFTER any fixed pause — the
+      // clock would then never move again and the bare await hung a sharded run for 20 minutes (142 Plan 09). So the
+      // clock advances in SHORT-window steps until the declared watch settles: at most 100 × 2,000 ms of virtual time,
+      // far inside the 500,000 ms LONG window the undeclared assertion below depends on.
+      let declaredOutcome = { settled: false };
+      for (let step = 0; step < 100 && !declaredOutcome.settled; step += 1) {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+        clock.advance(2_000);
+        declaredOutcome = await settledWithin(declared, 20);
+      }
+      if (!declaredOutcome.settled) declaredOutcome = { settled: true, value: await settledOrFail(declared, "the declared watch") };
 
-      assert.deepEqual(await declared, { outcome: "done", declared: true }, "the declared outcome settles on the short window");
+      assert.deepEqual(declaredOutcome.value, { outcome: "done", declared: true }, "the declared outcome settles on the short window");
       const stillWaiting = await settledWithin(undeclared, 120);
       assert.equal(stillWaiting.settled, false, "the undeclared end_turn, quiet for the same stretch, has NOT settled — a premature done destroys work and reports success");
 
       clock.advance(600_000);
-      assert.deepEqual(await undeclared, { outcome: "done", declared: false }, "it settles only once the long window has passed");
+      assert.deepEqual(await settledOrFail(undeclared, "the undeclared watch"), { outcome: "done", declared: false }, "it settles only once the long window has passed");
     }),
   },
   {

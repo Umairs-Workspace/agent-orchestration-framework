@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 05 / story 00 `memory-seam`.
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
 // story's four task features is covered here, exercised against the REAL seam
 // (`runMemory` / `parseMemoryArgv` / `resolveConfiguredBackend` in
-// ../src/work/memory.mjs) and the REAL `none` backend (../src/memory/none-backend.mjs).
+// ../packages/core/src/work/memory.mjs) and the REAL `none` backend (../packages/core/src/memory/none-backend.mjs).
 // The routing/scope/render scenarios run against an in-memory STUB backend that
 // records the call it received, echoes the scope/opts it was handed, and returns a
 // fixed RecallResult — so the seam never needs story 01/02's code or a real index.
@@ -22,16 +23,14 @@
 //        --limit into `opts`; text view by default, structured records array under --json.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import {
-  runMemory,
-  parseMemoryArgv,
-  resolveConfiguredBackend,
-  selectBackendName,
-  BACKEND_REGISTRY,
-  MEMORY_VERBS,
-  memoryUsage
-} from "../../../src/work/memory.mjs";
-import noneBackend from "../../../src/memory/none-backend.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const parseMemoryArgv = _aofApplication.knowledge.work.memory.parseMemoryArgv;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const selectBackendName = _aofApplication.knowledge.work.memory.selectBackendName;
+const BACKEND_REGISTRY = _aofApplication.knowledge.work.memory.BACKEND_REGISTRY;
+const MEMORY_VERBS = _aofApplication.knowledge.work.memory.MEMORY_VERBS;
+const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
+import noneBackend from "@aof/knowledge/memory/none-backend";
 
 // ------------------------------------------------------------ test rig ----
 

@@ -1,3 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 96 / story 00 — the run record on the phase path.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -5,9 +10,9 @@
 //   tasks/01_the-phase-mints-at-its-top-and-closes-its-own-run.feature
 //   tasks/02_an-unattributed-run-reports-what-it-cost.feature
 //
-// exercised against the REAL modules — `src/mesh/session.mjs`'s new live-store rung,
-// the REAL `work:run-start` / `work:run-complete` through `src/command-core.mjs`, and
-// the REAL `src/work/observe.mjs` — over temp fixture repos and temp session stores
+// exercised against the REAL modules — `packages/core/src/mesh/session.mjs`'s new live-store rung,
+// the REAL `work:run-start` / `work:run-complete` through `packages/core/src/command-core.mjs`, and
+// the REAL `packages/core/src/work/observe.mjs` — over temp fixture repos and temp session stores
 // (mkdtemp → write → invoke → rm in finally). One test object per @executable
 // scenario, Scenario-Outline rows folded into one entry iterating the rows, each name
 // tracing to feature + scenario. node:assert/strict, `{ name, run }` shape.
@@ -24,11 +29,15 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace, findWork } from "../../src/work.mjs";
-import { pingSession, resolveSessionIdFromLiveStore, DEFAULT_SESSION_TTL_SECONDS } from "../../src/mesh/session.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { observeMilestone, projectSlug } from "../../src/work/observe.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const pingSession = _aofHooks.meshSession.pingSession;
+const resolveSessionIdFromLiveStore = _aofHooks.meshSession.resolveSessionIdFromLiveStore;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const projectSlug = _aofSessions.workObserve.projectSlug;
 
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -167,7 +176,7 @@ async function writeRunRecord(dir, record) {
 
 // ── the shipped phase documents ──────────────────────────────────────────────
 
-const PHASE_DOCS = ["src/bundle/commands/refine.md", "src/bundle/commands/continue.md"];
+const PHASE_DOCS = ["packages/core/assets/commands/refine.md", "packages/core/assets/commands/continue.md"];
 const ROLE_AGENT = /aof-(developer|researcher|architect|qa|designer|product-owner)/;
 
 export const runMintSessionAttributionTests = [
@@ -373,7 +382,7 @@ export const runMintSessionAttributionTests = [
         { status: "in-progress", after: "in-progress" },
         // The reactor's edge is bounded to `not-started|blocked`, so a mint on a blocked item
         // starts it. The contract's Examples row said `blocked` and was amended to match the
-        // reactor it declares unchanged (2026-09-04, operator's call): `src/effects/table.mjs` is
+        // reactor it declares unchanged (2026-09-04, operator's call): `packages/core/src/effects/table.mjs` is
         // in this story's `reads:` and not its `files:`, which is what settled which of the two
         // was the error.
         { status: "blocked", after: "in-progress" },
@@ -471,7 +480,7 @@ export const runMintSessionAttributionTests = [
         // …and nothing in the story's module set leaves a pointer the hook could read
         // instead: a pointer file would make the one component that must never block a
         // tool call a second authority for which run is live (ADR-002 §3).
-        for (const file of ["src/mesh/session.mjs", "src/commands/run-start.mjs", "src/work/observe.mjs"]) {
+        for (const file of ["packages/core/src/application/bindings/mesh/session.mjs", "packages/core/src/application/bindings/commands/run-start.mjs", "packages/core/src/application/bindings/work/observe.mjs"]) {
           const source = await readFile(path.join(repoRoot, file), "utf8");
           assert.ok(!/AOF_RUN_ID|AOF_RUN_ITEM_DIR|\.heartbeats\.ndjson/.test(source), `${file} names no live-run pointer for that hook to read`);
         }

@@ -45,8 +45,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // have disarmed this file. The handler it left is still swept — it must not grow a second, unscoped
 // clone target — but it carries no such requirement, because it is no longer supposed to clone.
 const SUBJECTS = Object.freeze([
-  { rel: "src/mesh/worker-repo-admission.mjs", clones: true },
-  { rel: "src/mesh/worker-execution.mjs", clones: false },
+  { rel: "packages/mesh/src/worker-repo-admission.mjs", clones: true },
+  { rel: "packages/mesh/src/worker-execution.mjs", clones: false },
 ]);
 
 function sourcePathOf(rel) {

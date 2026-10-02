@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-spa-fallback-never-masks (m45 / ADR-004) —
 //
 //   "ONE shared module holds ALL THREE static-serving rules for BOTH servers: the history
@@ -5,16 +6,16 @@
 //    and the MIME table each have exactly one definition, and the guard is decided BEFORE
 //    the fallback so a refused path can never be answered with the app shell."
 //
-// EXPECTED RED until milestone 45's stories land: `src/static-serve.mjs` does not exist,
+// EXPECTED RED until milestone 45's stories land: `packages/core/src/static-serve.mjs` does not exist,
 // neither server imports it, `safeStaticPath` and `contentType` are each defined twice, and
 // `GET /fleet` on a setup/board origin 404s today.
 //
 // FOUR FINDINGS, NOT ONE — measured at source 2026-08-06 (`eacbd57`); (b) and (d) were added
 // by the Three Amigos pass (Amigos-4 and Amigos-2 in ARCHITECTURE.md):
 //
-//   (a) `src/setup-ui.mjs` has NO fallback at all. `safeStaticPath` (:269) is a literal
+//   (a) `packages/core/src/setup-ui.mjs` has NO fallback at all. `safeStaticPath` (:269) is a literal
 //       file lookup and the handler (:130-140) is readFile().catch(404). That one handler
-//       backs BOTH the board origin and the config origin, because `src/board-serve.mjs:20`
+//       backs BOTH the board origin and the config origin, because `packages/core/src/board-serve.mjs:20`
 //       imports `serveSetupUi` and `serveBoard` (:60) points it at ui/dist. (Established by
 //       GREP: the codebase graph's TSX/entry coverage did not reach setup-ui.mjs, so its
 //       coupling is UNKNOWN to the graph — recording it as "no coupling" is exactly the
@@ -39,7 +40,7 @@
 //       YET. The merged table is the UNION (the fleet's richer one) — the intersection would
 //       silently regress the origin that is currently correct.
 //
-//   (c) `src/mesh/ui-serve.mjs:558-568` falls back UNCONDITIONALLY. SPEC asks that the fleet
+//   (c) `packages/core/src/mesh/ui-serve.mjs:558-568` falls back UNCONDITIONALLY. SPEC asks that the fleet
 //       server's fallback be pinned by a test rather than assumed — but pinning it AS IS
 //       would ratify a defect: a missing `/assets/index-abc.js` is answered with index.html
 //       and `Content-Type: text/html`, so a broken deploy surfaces in the browser console as
@@ -62,7 +63,7 @@
 //
 // WHY A SHARED MODULE AND NOT TWO CONDITIONS. A rule copied into two servers is a rule that
 // is true in one of them — (b2) is the PROOF, not the theory: same duplication moment, and
-// one of the pair has already diverged. `src/static-serve.mjs` is a pure leaf holding all
+// one of the pair has already diverged. `packages/core/src/static-serve.mjs` is a pure leaf holding all
 // three rules; both servers import all three and re-derive none. It is named for what it
 // holds: calling it `spa-fallback.mjs` and then putting a traversal guard and a MIME table in
 // it would be the same under-description one layer up.
@@ -72,7 +73,7 @@
 //     request header, so curl, this repo's headless harnesses and a browser get different
 //     bodies for the same address.
 //   - A route-derived allowlist was REJECTED — the server would have to learn the client's
-//     route table, which means either `src/` imports `ui/src/` (a new and wrong coupling
+//     route table, which means either `packages/core/src/` imports `apps/ui/src/` (a new and wrong coupling
 //     direction) or the list is duplicated (two homes for one fact). It would also split the
 //     not-found experience in two: a deep-linked typo would get a plain-text server 404 while
 //     the same typo reached by in-app navigation gets the shell's 404 surface (ADR-002).
@@ -81,14 +82,14 @@ import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const STATIC_SERVE_MODULE = "src/static-serve.mjs";
+const STATIC_SERVE_MODULE = "packages/server/src/static-serve.mjs";
 const SERVERS = [
-  { file: "src/setup-ui.mjs", what: "the setup/board/config origin (board-serve.mjs:20 delegates here, so ONE fix covers both)" },
-  { file: "src/mesh/ui-serve.mjs", what: "the fleet origin — TIGHTENED by the same predicate, not pinned as-is (its :558-568 fallback is unconditional today)" },
+  { file: "packages/server/src/setup-ui.mjs", what: "the setup/board/config origin (board-serve.mjs:20 delegates here, so ONE fix covers both)" },
+  { file: "packages/mesh/src/ui-serve.mjs", what: "the fleet origin — TIGHTENED by the same predicate, not pinned as-is (its :558-568 fallback is unconditional today)" },
 ];
 
 // The behavioural contract, stated as a table so it is read as a spec rather than as code.
@@ -181,7 +182,7 @@ export const archTests = [
       const found = [];
       for (const helper of HELPERS) {
         const definitions = [];
-        for (const rel of [STATIC_SERVE_MODULE, "src/setup-ui.mjs", "src/mesh/ui-serve.mjs"]) {
+        for (const rel of [STATIC_SERVE_MODULE, "packages/server/src/setup-ui.mjs", "packages/mesh/src/ui-serve.mjs"]) {
           let source;
           try {
             source = await readFile(path.join(repoRoot, rel), "utf8");
@@ -224,7 +225,7 @@ export const archTests = [
         assert.equal(
           shouldServeAppShell(pathname),
           false,
-          `${pathname} is an ASSET request and must 404 when it is missing. Answering it with index.html turns a broken deploy into "Uncaught SyntaxError: Unexpected token '<'" in the browser console — a failure arbitrarily far from its cause. This is the exact defect src/mesh/ui-serve.mjs:558-568 has today.`,
+          `${pathname} is an ASSET request and must 404 when it is missing. Answering it with index.html turns a broken deploy into "Uncaught SyntaxError: Unexpected token '<'" in the browser console — a failure arbitrarily far from its cause. This is the exact defect packages/core/src/mesh/ui-serve.mjs:558-568 has today.`,
         );
       }
       for (const pathname of API_PATHS) {
@@ -275,7 +276,7 @@ export const archTests = [
       for (const server of SERVERS) {
         const code = stripComments(await readFile(path.join(repoRoot, server.file), "utf8"));
         assert.ok(code.length > 1000, `${server.file} was actually read (non-vacuous)`);
-        if (!/from\s+["'](?:\.\.?\/)+static-serve\.mjs["']/.test(code)) missing.push(`${server.file} — ${server.what}`);
+        if (!/from\s+["'](?:(?:\.\.?\/)+static-serve\.mjs|@aof\/server\/static-serve)["']/.test(code)) missing.push(`${server.file} — ${server.what}`);
       }
       assert.deepEqual(
         missing,

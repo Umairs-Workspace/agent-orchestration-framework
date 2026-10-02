@@ -2,7 +2,7 @@
 //
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/54_milestone_verification-loop/stories/00_story_the-grade-record/tasks/01_green-is-positive-evidence.feature
-// against the LOCKED surface: `compileGrade` in ../src/work/grade.mjs.
+// against the LOCKED surface: `compileGrade` in ../packages/core/src/work/grade.mjs.
 //
 // THE MEASURED CASE IS DRIVEN FROM ITS REAL CAPTURE, not from a specimen of it. At HEAD,
 // `node --test test/arch/audit/acd-controls-never-execute.test.mjs` reports one case, one pass and
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileGrade } from "../../src/work/grade.mjs";
+import { compileGrade } from "@aof/work/grade";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "rubric-reports");
 const capture = (name) => readFileSync(path.join(fixturesDir, name), "utf8");

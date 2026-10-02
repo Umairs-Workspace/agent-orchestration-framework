@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 13 / story 00 — the import command + the
 // frozen materialize contract (the SPINE).
 //
@@ -35,18 +37,20 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, invoke } from "../../src/command-core.mjs";
-import { materializeImport } from "../../src/import/materialize.mjs";
-import { importStoreRoot } from "../../src/import/store.mjs";
-import { memoryIndexPath } from "../../src/memory/local-indexing.mjs";
-import { parseArchitecture, parseRetrospective } from "../../src/memory/local-indexing.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const importStoreRoot = _aofApplication.knowledge.import.store.importStoreRoot;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // The work-item naming pattern an import must NEVER match (ADR-004, mirrors
-// src/work.mjs ITEM_RE).
+// packages/core/src/work.mjs ITEM_RE).
 const WORK_ITEM_RE = /^\d+_(milestone|story|task|uat)_[a-z0-9-]+$/;
 
 // --- fixed recovery input (the features' "fixed recovery input" Background) ------

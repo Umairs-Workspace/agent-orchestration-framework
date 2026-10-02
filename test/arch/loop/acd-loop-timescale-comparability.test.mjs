@@ -1,15 +1,17 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CADENCE_KINDS, EVENT_TRIGGERS } from "../../../src/work/loops.mjs";
-import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey } from "../../../src/loop-bounds.mjs";
-import { MIN_SEPARATION_RATIO, checkReferenceOwnership, checkTimescale } from "../../../src/work/loops-checks.mjs";
+const CADENCE_KINDS = _aofApplication.graph.work.loops.CADENCE_KINDS;
+const EVENT_TRIGGERS = _aofApplication.graph.work.loops.EVENT_TRIGGERS;
+import { LOOP_BOUND_CONFIG_KEYS, resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
+import { MIN_SEPARATION_RATIO, checkReferenceOwnership, checkTimescale } from "@aof/work-graph/checks";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const checksPath = path.join(root, "src/work/loops-checks.mjs");
-const loaderPath = path.join(root, "src/work/loops.mjs");
+const checksPath = path.join(root, "packages/work-graph/src/checks.mjs");
+const loaderPath = path.join(root, "packages/work-graph/src/registry.mjs");
 const endpoint = (raw, resolved = true) => ({ raw, scheme: "loop", operand: raw.slice(5), resolved });
 function loop(id, cadence, edges = {}, layer = null) {
   const fields = { cadence };
@@ -94,7 +96,7 @@ export const archTests = [
         });
         assert.deepEqual(checkTimescale({ source: root, nodes: [external] }), [], `${scheme} endpoint is outside the loop timescale domain`);
       }
-      const source = stripComments(await readFile(path.join(root, "src/work/loops-checks.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages/work-graph/src/checks.mjs"), "utf8"));
       for (const trigger of EVENT_TRIGGERS) assert.equal(source.includes(trigger), false, `${trigger} has no duration mapping in checks`);
     },
   },

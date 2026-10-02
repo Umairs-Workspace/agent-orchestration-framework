@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 61 / story 05 — the event a ruling raises.
 //
 //   tasks/00_a-ruling-raises-a-declared-event.feature
@@ -22,41 +23,42 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import { AOF_GITIGNORE_ENTRIES, ensureAofGitignore } from "../../src/aof-gitignore.mjs";
-import {
-  EFFECTS,
-  EVENT_NOT_DECLARED,
-  applicableReactors,
-  effectsFor,
-  knownEvents,
-} from "../../src/effects/table.mjs";
-import { openEffectsJournal, appendEvent, markStep, pendingSteps, readEventSteps, readEvents } from "../../src/effects/journal.mjs";
-import { drainEffects } from "../../src/effects/dispatch.mjs";
-import {
-  HARNESS_DRAIN_NOT_OPTIONAL,
-  HARNESS_RECORD_NOT_STAMPED,
-  HARNESS_RULED,
-  STAMP_EVIDENCE,
-  transitionHarnessRuled,
-} from "../../src/effects/harness-transitions.mjs";
-import {
-  LEDGER_LINE_CONFLICT,
-  LEDGER_LINE_KEY,
-  PROJECT_DIR_UNSET,
-  STORE_REFUSALS,
-  appendRuling,
-  ledgerPath,
-  readLedger,
-  setKnobValue,
-} from "../../src/work-acceptor/store.mjs";
-import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES, deriveRule } from "../../src/work-acceptor/rule.mjs";
+import { AOF_GITIGNORE_ENTRIES, ensureAofGitignore } from "../../packages/core/src/aof-gitignore.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const EVENT_NOT_DECLARED = _aofApplication.effects.reactors.EVENT_NOT_DECLARED;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
+const effectsFor = _aofApplication.effects.reactors.effectsFor;
+const knownEvents = _aofApplication.effects.reactors.knownEvents;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const markStep = _aofApplication.effects.journal.markStep;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const HARNESS_DRAIN_NOT_OPTIONAL = _aofApplication.work.harness.HARNESS_DRAIN_NOT_OPTIONAL;
+const HARNESS_RECORD_NOT_STAMPED = _aofApplication.work.harness.HARNESS_RECORD_NOT_STAMPED;
+const HARNESS_RULED = _aofApplication.work.harness.HARNESS_RULED;
+const STAMP_EVIDENCE = _aofApplication.work.harness.STAMP_EVIDENCE;
+const transitionHarnessRuled = _aofApplication.work.harness.transitionHarnessRuled;
+const LEDGER_LINE_CONFLICT = _aofApplication.work.acceptor.store.LEDGER_LINE_CONFLICT;
+const LEDGER_LINE_KEY = _aofApplication.work.acceptor.store.LEDGER_LINE_KEY;
+const PROJECT_DIR_UNSET = _aofApplication.work.acceptor.store.PROJECT_DIR_UNSET;
+const STORE_REFUSALS = _aofApplication.work.acceptor.store.STORE_REFUSALS;
+const appendRuling = _aofApplication.work.acceptor.store.appendRuling;
+const ledgerPath = _aofApplication.work.acceptor.store.ledgerPath;
+const readLedger = _aofApplication.work.acceptor.store.readLedger;
+const setKnobValue = _aofApplication.work.acceptor.store.setKnobValue;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+import { PAIR_OUTCOMES, deriveRule } from "@aof/work/acceptor/rule";
 
 // One derivation of the repo root, not one per leg. Two legs below each spelled their own
 // hand-rolled URL-to-path conversion, and when 119/03 moved this suite into test/grade/ both went
 // stale at once — the same hop-count they had both written down by hand.
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
-import { RULING_INCOMPLETE, RULING_KEYS, accrue, attained } from "../../src/work-acceptor/ledger.mjs";
+import { RULING_INCOMPLETE, RULING_KEYS, accrue, attained } from "@aof/work/acceptor/ledger";
 
 const shipped = defaultCriterion();
 const rule = deriveRule(shipped);
@@ -68,7 +70,7 @@ const T = PAIR_OUTCOMES.TIE;
 
 // The knob a ruling in these fixtures moves. Spelled in the TEST, never in an acceptor
 // module: the tunable set is the registry's `parameter-tuning:` edge, and a key held in
-// `src/work-acceptor/` would be a second home for it (FF-6110).
+// `packages/core/src/work-acceptor/` would be a second home for it (FF-6110).
 const KNOB = "work.loop.reviewRounds";
 
 // A CO-AUTHORED configuration: keys an operator chose, in an order they chose, with
@@ -761,13 +763,13 @@ const featureTwo = [
     name: "61/05 task 02 · every seam already in service keeps working — each raises the name it has always raised, none is refused, and each is owed the consequences it was owed before",
     run: async () => {
       const seams = [
-        "src/effects/run-transitions.mjs",
-        "src/effects/item-transitions.mjs",
-        "src/effects/doc-transitions.mjs",
-        "src/effects/stream-transitions.mjs",
-        "src/effects/assignment-transitions.mjs",
-        "src/effects/reconcile.mjs",
-        "src/effects/harness-transitions.mjs",
+        "packages/execution/src/run-transitions.mjs",
+        "packages/work/src/item-transitions.mjs",
+        "packages/work/src/doc-transitions.mjs",
+        "packages/work/src/stream-transitions.mjs",
+        "packages/mesh/src/assignment-transitions.mjs",
+        "packages/execution/src/reconcile.mjs",
+        "packages/work/src/harness-transitions.mjs",
       ];
 
       const raised = new Set();
@@ -811,7 +813,7 @@ const featureTwo = [
 
       // …and it is STRUCTURAL, not a habit of this test: every seam resolves before it
       // appends, so there is no ordering in which a refused name could reach storage.
-      for (const seam of ["src/effects/run-transitions.mjs", "src/effects/item-transitions.mjs", "src/effects/doc-transitions.mjs", "src/effects/stream-transitions.mjs", "src/effects/harness-transitions.mjs"]) {
+      for (const seam of ["packages/execution/src/run-transitions.mjs", "packages/work/src/item-transitions.mjs", "packages/work/src/doc-transitions.mjs", "packages/work/src/stream-transitions.mjs", "packages/work/src/harness-transitions.mjs"]) {
         const source = await readFile(path.join(repoRoot, seam), "utf8");
         const resolves = source.indexOf("applicableReactors(");
         const appends = source.indexOf("appendEvent(", source.indexOf("await applicableReactors"));

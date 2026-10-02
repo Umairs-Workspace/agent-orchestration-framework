@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 125 / task 02 — THE README CANNOT NAME A COMMAND THAT DOES NOT RESOLVE.
 //
 //   "The one line is a specimen, not the defect."
@@ -6,7 +8,7 @@
 // it was the thing driving the repository — a claim about the state of the system, written once
 // and never re-asked, which is the same failure the site's drift gate exists to prevent for the
 // graph page. So the fix carries a control: every `aof …` invocation the README spells is resolved
-// against the route set `deriveRouteTable` derives from the registry (`src/spine/face.mjs`), through
+// against the route set `deriveRouteTable` derives from the registry (`packages/core/src/spine/face.mjs`), through
 // the CLI's own longest-prefix resolver, and the control keeps no list of route names of its own.
 // With no registry handed to it, nothing resolves — that is the proof it holds no list.
 //
@@ -35,8 +37,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const README = "README.md";

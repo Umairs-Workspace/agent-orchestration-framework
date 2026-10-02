@@ -1,16 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 62 / story 00 — the three corpus lanes and the absence floor.
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 
-import {
-  CORPUS_LANES,
-  assembleCorpus,
-  corpusFinding,
-  renderCorpusReport,
-} from "../../src/work-tune/corpus.mjs";
-import { loopPointersIn } from "../../src/work/loops.mjs";
+const CORPUS_LANES = _aofApplication.work.tune.corpus.CORPUS_LANES;
+const assembleCorpus = _aofApplication.work.tune.corpus.assembleCorpus;
+const corpusFinding = _aofApplication.work.tune.corpus.corpusFinding;
+const renderCorpusReport = _aofApplication.work.tune.corpus.renderCorpusReport;
+const loopPointersIn = _aofApplication.graph.work.loops.loopPointersIn;
 
 async function put(file, body) {
   await mkdir(path.dirname(file), { recursive: true });
@@ -96,7 +95,7 @@ export const tuneCorpusTests = [
         "## R1 — Trace the structured pointer",
         "- **Kind:** near-miss · **Area:** delivery · **Stage:** review · **Owner:** architect",
         "",
-        "**What happened.** `src/bundle/loops/review-fix-rereview.md` declares `ceiling: [config:work.loop.reviewRounds]`.",
+        "**What happened.** `packages/core/assets/loops/review-fix-rereview.md` declares `ceiling: [config:work.loop.reviewRounds]`.",
         "",
         "**Lesson.** Structured pointers are source facts.",
         "",
@@ -108,12 +107,12 @@ export const tuneCorpusTests = [
         "**Lesson.** Larger-token substrings are prose, not structured pointers.",
         "",
       ].join("\n"));
-      await put(path.join(cwd, "src", "bundle", "loops", "review-fix-rereview.md"), "# loop\n");
+      await put(path.join(cwd, "packages", "core", "assets", "loops", "review-fix-rereview.md"), "# loop\n");
 
       const corpus = await assembleCorpus({ cwd, lanes: lowFloors() });
       const lessons = corpus.lanes.find((entry) => entry.lane === "lessons").contribution;
       assert.equal(lessons[0].target, "config:work.loop.reviewRounds");
-      assert.ok(lessons[0].citations.includes("src/bundle/loops/review-fix-rereview.md"));
+      assert.ok(lessons[0].citations.includes("packages/core/assets/loops/review-fix-rereview.md"));
       assert.ok(lessons[0].citations.some((citation) => citation.startsWith("wiki/work/83_")));
       assert.equal(lessons[1].target, null, "embedded URL and larger-token text cannot promote a lesson target");
 

@@ -8,7 +8,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { readDescriptor, bundleRoot } from "../../../src/work/bundle.mjs";
+import { readDescriptor, bundleRoot } from "../../../packages/core/src/work/bundle.mjs";
 
 // The 8 ACD agents (product-owner, researcher, architect, designer, developer,
 // qa, security, compliance) — the frozen actor set.

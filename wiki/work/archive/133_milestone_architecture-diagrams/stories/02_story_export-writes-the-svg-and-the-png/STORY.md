@@ -30,7 +30,7 @@ files:
   - src/commands/diagram/export.mjs
   - src/command-core.mjs
   - test/diagrams/index.mjs
-  - test/diagrams/diagram-rasterize.test.mjs
+  - packages/execution/test/diagram-rasterize.suite.mjs
   - test/diagrams/diagram-export-command.test.mjs
   - test/arch/diagrams/index.mjs
   - test/arch/diagrams/acd-diagram-export-no-playwright.test.mjs

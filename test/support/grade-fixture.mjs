@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/support/grade-fixture.mjs — the fixture builder the four milestone-54 / story-01
 // behavioural suites share. ONE builder, four consumers: a rubric fixture that four files
 // each re-derived would drift, and the thing they are all asserting about is the SAME
@@ -13,7 +14,7 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 
-import { loadWorkspace } from "../../src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const FIXTURE_DATE = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 

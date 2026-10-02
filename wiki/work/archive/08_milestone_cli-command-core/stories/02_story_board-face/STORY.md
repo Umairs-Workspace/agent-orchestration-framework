@@ -31,7 +31,7 @@ so that the board returns **byte-for-byte what it does today** while carrying **
 ## Notes
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-003**). This story **owns**
-[board-ui.mjs](../../../../../../src/board-ui.mjs): each `/api/work*` route becomes
+[board-ui.mjs](../../../../../../packages/server/src/board-ui.mjs): each `/api/work*` route becomes
 route → `invoke(id, input, { workspace })` → **board projection** (relativise-to-`projectRoot` +
 forward-slash + compact JSON, ADR-002). It **strips** the direct `loadWorkspace, listStream, findWork,
 validateWork, nextWork` import (`board-ui.mjs:16`), the `parseFeature` import (`:17`), and ALL bespoke

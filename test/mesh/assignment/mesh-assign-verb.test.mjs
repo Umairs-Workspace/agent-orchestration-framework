@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 01 — `aof mesh assign <ref> --to <nodeId>` mints an assigned record and
 // enforces one active assignment per item (milestone 35 / story 00, ADR-001/003/007).
 // Hermetic over AOF_GLOBAL_HOME opening a v3 store + an injected clock. Every target
 // is available here (the repo-availability gate itself is task 03's own suite).
 import assert from "node:assert/strict";
-import { assignWork } from "../../../src/mesh/assignment.mjs";
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { withMeshAssignFixture, seedTargetNode, seedAssignment, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 
 const NOW = "2026-07-08T12:00:00.000Z";

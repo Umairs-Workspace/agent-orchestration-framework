@@ -15,9 +15,9 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initPlanning, planPlanningInstall, planningLockPath, MARKETPLACE_REF } from "../../../src/planning-init.mjs";
+import { initPlanning, planPlanningInstall, planningLockPath, MARKETPLACE_REF } from "../../../packages/core/src/planning-init.mjs";
 
-const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src");
+const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src");
 const planningSourcePath = path.join(srcDir, "planning-init.mjs");
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 

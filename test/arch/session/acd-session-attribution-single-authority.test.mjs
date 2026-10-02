@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-attribution-single-authority (milestone 48 / ADR-003 +
 // ADR-007) — "the work item derives onto the session and is stored nowhere; a free
 // session is first-class".
@@ -51,21 +54,25 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus, shapeGlobalStatus, workspaceIdForProjectRoot } from "../../../src/global-mesh-query.mjs";
-import { publishPresenceRecord, readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { meshDir, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../src/assignment-record.mjs";
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
+const workspaceIdForProjectRoot = _aofApplication.mesh.globalMeshQuery.workspaceIdForProjectRoot;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const meshDir = _aofHooks.meshStore.meshDir;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
-const QUERY_FILE = "src/global-mesh-query.mjs";
-const SESSION_FILE = "src/mesh/session.mjs";
-const SESSION_CLI_FILE = "src/commands/mesh/session.mjs";
+const QUERY_FILE = "packages/mesh/src/global-query.mjs";
+const SESSION_FILE = "packages/mesh/src/session.mjs";
+const SESSION_CLI_FILE = "packages/mesh/src/commands/session.mjs";
 
 // The keys a session record may NEVER carry: attribution derives onto the session and
 // is stored nowhere (ADR-003).
@@ -105,7 +112,7 @@ function stripComments(source) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). `workItemHomeViolations`
-// sweeps ALL of `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the
+// sweeps ALL of `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the
 // stripper deleted the source it was meant to read — item 24's named "silent false
 // GREEN" shape. The anchor is each module's OWN exported symbol names: a name a module
 // `export`s at line start is code by construction, so if it does not survive
@@ -383,10 +390,10 @@ export const archTests = [
             continue;
           }
           if (!item.name.endsWith(".mjs")) continue;
-          entries.push([`src/${relPath}`, await readFile(path.join(dir, item.name), "utf8")]);
+          entries.push([`packages/core/src/${relPath}`, await readFile(path.join(dir, item.name), "utf8")]);
         }
       }
-      await walk(path.join(REPO, "src"), "");
+      await walk(path.join(REPO, "packages", "core", "src"), "");
       assert.ok(entries.length > 50, `the scan really walked src/ (found ${entries.length} modules)`);
 
       // …and the sweep really READ what it walked (TECH_DEBT item 24): an absence-rule

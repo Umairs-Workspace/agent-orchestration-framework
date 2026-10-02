@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 81, task `03_the-transport-carries-what-the-transport-needs`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,11 +24,11 @@ import { writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import {
-  LOOP_FIX_TRANSPORT_KEYS, fixTransport, runLoopBody,
-} from "../../src/commands/loop.mjs";
-import { createPhaseDriverCommand } from "../../src/commands/drive.mjs";
+const invoke = _aofApplication.invoke;
+const LOOP_FIX_TRANSPORT_KEYS = _aofApplication.loop.commandTools.loop.LOOP_FIX_TRANSPORT_KEYS;
+const fixTransport = _aofApplication.loop.commandTools.loop.fixTransport;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const createPhaseDriverCommand = _aofApplication.loop.commandTools.drive.createPhaseDriverCommand;
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsFailing, gradingCtx, gradingFixture, stubRubric,
@@ -35,11 +36,11 @@ import {
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-const loopSource = async () => strip(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+const loopSource = async () => strip(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
 // 129/04 (ADR-008 §3) — the sites that prepare a re-drive are split between the shell (the resume
-// path's two and the fresh gate's) and the ladder (`src/loop/cycle.mjs`: the gate re-drive, the
+// path's two and the fresh gate's) and the ladder (`packages/core/src/loop/cycle.mjs`: the gate re-drive, the
 // progress reset and the progress continue). The four causes are asserted over BOTH.
-const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "src", "loop", "cycle.mjs"), "utf8"))].join("\n");
+const familySource = async () => [await loopSource(), strip(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "cycle.mjs"), "utf8"))].join("\n");
 
 const INVALID_FEATURE = "Feature: Invalid\n  Scenario: missing lane\n    Given a fixture\n";
 const seedInvalid = (fx) => writeFileSync(path.join(fx.storyDir, "tasks", "00_ready.feature"), INVALID_FEATURE);
@@ -149,7 +150,7 @@ export const loopFixTransportShapeTests = [
       // AND NO PERSISTENCE MODULE WAS EDITED TO CARRY IT. Both are passed THROUGH: neither
       // reads the grade, branches on it, or names it anywhere except the one pre-existing
       // provenance guard 54 already placed on every stamped claim.
-      for (const rel of [["src", "run-store.mjs"], ["src", "effects", "run-transitions.mjs"]]) {
+      for (const rel of [["packages", "execution", "src", "runs.mjs"], ["packages", "execution", "src", "run-transitions.mjs"]]) {
         const code = strip(await readFile(path.join(repoRoot, ...rel), "utf8"));
         const mentions = [...code.matchAll(/\bgrade\b/gu)].length;
         const guarded = [...code.matchAll(/assertStampedClaim\(brief\.grade\)/gu)].length;

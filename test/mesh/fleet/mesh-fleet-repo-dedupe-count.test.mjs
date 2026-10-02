@@ -10,17 +10,17 @@
 // above one — the sign being U+00D7, never the letter `x` — and join with ", " inside the
 // unchanged frame `working · … (session)`.
 //
-// THE FUNCTION UNDER TEST is the PURE `fleetCurrentWorkLines` (ui/src/fleet/runs.mjs) —
+// THE FUNCTION UNDER TEST is the PURE `fleetCurrentWorkLines` (apps/ui/src/fleet/runs.mjs) —
 // no React, no DOM, no I/O, no clock — imported directly and called with literal presence
 // objects. NO STORE, NO SERVER, NO PORT: nothing here touches `~/.aof` and nothing binds.
 // (The suite still runs under the house per-test hermetic `AOF_GLOBAL_HOME`; it simply has
 // nothing to write there.)
 //
 // THE OTHER IMPLEMENTATION. The same rule has a second implementation in Rust
-// (`session_line_parts()`, app/desktop/crates/core/src/status.rs, read by `current_work()` and
+// (`session_line_parts()`, apps/desktop/crates/core/src/status.rs, read by `current_work()` and
 // rendered by `CurrentWork::display()`), and ADR-010 lands both in ONE commit. Two
 // distinct checks hold them together and NEITHER is this file alone:
-//   · the RUNTIME half runs under `cargo test --manifest-path app/desktop/Cargo.toml`
+//   · the RUNTIME half runs under `cargo test --manifest-path apps/desktop/Cargo.toml`
 //     (view_model.rs's `m49_*` tests) — and is SILENTLY ABSENT on a machine with no Rust
 //     toolchain, because scripts/test.mjs's cargo lane is guard-if-present;
 //   · the SOURCE-TEXT half is `crossSurfaceDriftViolations`
@@ -49,11 +49,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
+import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
 import { sessionLineRuleViolations, survivingRepos } from "../../support/session-line-rule.mjs";
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const RUST_VIEW_MODEL = path.join(REPO, "app", "desktop", "crates", "core", "src", "view_model.rs");
+const RUST_VIEW_MODEL = path.join(REPO, "apps", "desktop", "crates", "core", "src", "view_model.rs");
 const M48_PIN = path.join(REPO, "test", "mesh", "fleet", "mesh-fleet-session-subsumption-render.test.mjs");
 
 const PING = "2026-08-13T12:00:00.000Z";
@@ -365,7 +365,7 @@ export const meshFleetRepoDedupeCountTests = [
   //    The SOURCE-TEXT half of the cross-language tie, by the SAME mechanism the shipped
   //    gate uses — it runs with no Rust toolchain, which is exactly the case where the
   //    cargo lane is silently absent. The RUNTIME half is view_model.rs's own `m49_*`
-  //    tests under `cargo test --manifest-path app/desktop/Cargo.toml`.
+  //    tests under `cargo test --manifest-path apps/desktop/Cargo.toml`.
   //    Every row carries an EMPTY `activeRuns` ON PURPOSE (see the header).
   {
     name: "mesh-fleet-repo-dedupe-count/00 the desktop app renders the identical line for the identical payload (Examples: 3 rows)",

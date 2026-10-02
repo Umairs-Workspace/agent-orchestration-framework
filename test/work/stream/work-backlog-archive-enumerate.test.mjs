@@ -1,7 +1,11 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 127 / story 01 — "One enumerator, three roots".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of the story's five
-// executable task features is asserted here against the LOCKED engine in src/work.mjs and its
+// executable task features is asserted here against the LOCKED engine in packages/core/src/work.mjs and its
 // consumers, driven over THE THREE-ROOT FIXTURE task 00 names once for the whole story:
 //
 //   <work>/10_milestone_alpha/SPEC.md            in-progress   + stories/00_story_alpha-one  not-started
@@ -25,33 +29,32 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import {
-  listItems,
-  listStream,
-  findWork,
-  nextWork,
-  validateWork,
-  loadWorkspace,
-  isLiveStreamRow,
-  ITEM_RE,
-  BACKLOG_ITEM_RE,
-  BACKLOG_ROOT,
-  ARCHIVE_ROOT,
-} from "../../../src/work.mjs";
-import { doctorWork, buildSnapshot } from "../../../src/work/doctor.mjs";
-import { resolvedDependsEdges, classifyDependsEdges } from "../../../src/work/doctor-depends.mjs";
-import { statusCoherenceGroup } from "../../../src/work/doctor-coherence.mjs";
-import { appendPosition } from "../../../src/work-promote/promotion.mjs";
-import { countShiftedByInsert, refsTouchedByInsert } from "../../../src/work/reindex.mjs";
-import { buildRecords } from "../../../src/memory/local-indexing.mjs";
-import { resolveCitationAtEmit } from "../../../src/work-tune/provenance.mjs";
-import { resolveMilestoneFolder } from "../../../src/work/observe.mjs";
-import { migrateFolderCommand } from "../../../src/commands/migrate-folder.mjs";
-import { docCommand } from "../../../src/commands/doc.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+const listItems = _aofWorkspace.work.listItems;
+const listStream = _aofWorkspace.work.listStream;
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const isLiveStreamRow = _aofWorkspace.work.isLiveStreamRow;
+const ITEM_RE = _aofPublic_aof_work_identity.ITEM_RE;
+const BACKLOG_ITEM_RE = _aofPublic_aof_work_identity.BACKLOG_ITEM_RE;
+const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
+const ARCHIVE_ROOT = _aofPublic_aof_work_identity.ARCHIVE_ROOT;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
+import { resolvedDependsEdges, classifyDependsEdges } from "@aof/work/doctor/depends";
+import { statusCoherenceGroup } from "@aof/work/doctor/coherence";
+import { appendPosition } from "@aof/work/promote/promotion";
+import { countShiftedByInsert, refsTouchedByInsert } from "@aof/work/reindex";
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+import { resolveCitationAtEmit } from "@aof/work/tune/provenance";
+const resolveMilestoneFolder = _aofSessions.workObserve.resolveMilestoneFolder;
+const migrateFolderCommand = _aofApplication.getCommand("migrate:folder");
+const docCommand = _aofApplication.getCommand("work:doc");
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const RECORD_DOC = { milestone: "SPEC.md", story: "STORY.md", uat: "SESSION.md", spike: "SPIKE.md", chore: "CHORE.md" };
 const SEVEN_KEYS = ["dir", "parent", "ref", "slug", "status", "title", "type"];
@@ -360,7 +363,7 @@ export const workBacklogArchiveEnumerateTests = [
       assert.equal(ITEM_RE.source, "^(\\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$", "ITEM_RE's value is unchanged");
       assert.equal(BACKLOG_ROOT, "backlog");
       assert.equal(ARCHIVE_ROOT, "archive");
-      const source = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/work/src/identity.mjs"), "utf8");
       assert.equal((source.match(/const BACKLOG_ITEM_RE = \//g) ?? []).length, 1, "BACKLOG_ITEM_RE is defined once");
       assert.equal((source.match(/const ITEM_RE = \//g) ?? []).length, 1, "ITEM_RE is defined once");
       assert.equal((source.match(/"backlog"/g) ?? []).length, 1, "the backlog root name is spelled once");
@@ -514,7 +517,7 @@ export const workBacklogArchiveEnumerateTests = [
   {
     name: "work/backlog-archive-enumerate: 02 the backlog sort compares group path and slug as plain strings (`<`), never localeCompare",
     run: async () => {
-      const source = await readFile(path.join(repoRoot, "src", "work.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/work/src/discovery.mjs"), "utf8");
       const start = source.indexOf("function byGroupThenSlug");
       assert.ok(start > 0, "the backlog comparator is named");
       const body = source.slice(start, source.indexOf("\n}", start));
@@ -613,7 +616,7 @@ export const workBacklogArchiveEnumerateTests = [
   {
     name: "work/backlog-archive-enumerate: 02 recent enumerates through `aof work list --json`, not through its own NN_type_slug walk",
     run: async () => {
-      const recent = await readFile(path.join(repoRoot, "src", "bundle", "commands", "recent.md"), "utf8");
+      const recent = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "recent.md"), "utf8");
       const process = recent.slice(recent.indexOf("<process>"), recent.indexOf("</process>"));
       assert.match(process, /^1\.[\s\S]*aof work list --json/m, "step 1 runs the listing");
       assert.match(process, /--all/, "…and --all when the operator asks for the archive");
@@ -830,9 +833,9 @@ export const workBacklogArchiveEnumerateTests = [
         assert.equal(moved.message, `folder "ideas/52_milestone_moved" is a numbered item under the backlog — a backlog item carries no number; 'aof work promote' is the door into the stream`);
         const stories = orphans.find((finding) => finding.path.replace(/\\/g, "/").endsWith("backlog/chore_gamma/stories"));
         assert.equal(stories.message, `folder "chore_gamma/stories" — a backlog driver has no stories; promote it first`);
-        const doctorSource = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
+        const doctorSource = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "index.mjs"), "utf8");
         assert.ok(!/"backlog"|"archive"/.test(doctorSource), "doctor.mjs spells neither root name as a quoted literal");
-        assert.match(doctorSource, /BACKLOG_ROOT,\s*\r?\n\s*ARCHIVE_ROOT,[\s\S]*from "\.\.\/work\.mjs"/, "both root names are imported from work.mjs");
+        assert.match(doctorSource, /import \{[^}]*BACKLOG_ROOT,\s*ARCHIVE_ROOT[^}]*\} from "\.\.\/identity\.mjs"/, "both root names are imported from work.mjs");
       }),
   },
 
@@ -1043,9 +1046,9 @@ export const workBacklogArchiveEnumerateTests = [
           const result = await migrateFolderCommand.run({ folder: src, migratedAt: "2026-09-11" }, { workspace, globalWorkStoreOptions: {} });
           assert.equal(result.milestoneRef, "12", "after 11_chore_beta, never on the archived 05 or 06");
           assert.ok(existsSync(path.join(work, "12_milestone_calls")), "the folder lands at the root");
-          const source = await readFile(path.join(repoRoot, "src", "commands", "migrate-folder.mjs"), "utf8");
+          const source = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "migrate-folder.mjs"), "utf8");
           assert.ok(!/function nextFreeSlot/.test(source), "nextFreeSlot is gone");
-          assert.match(source, /import \{ appendPosition \} from "\.\.\/work-promote\/promotion\.mjs"/);
+          assert.match(source, /import \{ appendPosition \} from "\.\.\/promote\/promotion\.mjs"/);
         } finally {
           await rm(src, { recursive: true, force: true });
         }
@@ -1060,9 +1063,9 @@ export const workBacklogArchiveEnumerateTests = [
         await writeFile(path.join(work, "archive", "05_milestone_zeta", "ARCHITECTURE.md"), "## ADR-001: an archived decision\n", "utf8");
         const answer = resolveCitationAtEmit("m05/ADR-001", { rootDir: root });
         assert.equal(answer.ok, true, JSON.stringify(answer));
-        const source = await readFile(path.join(repoRoot, "src", "work-tune", "provenance.mjs"), "utf8");
-        assert.match(source, /import \{ ITEM_RE \} from "\.\.\/work\.mjs"/);
-        assert.match(source, /import \{ ARCHIVE_ROOT \} from "\.\.\/work\.mjs"/);
+        const source = await readFile(path.join(repoRoot, "packages", "work", "src", "tune", "provenance.mjs"), "utf8");
+        assert.match(source, /import \{ ITEM_RE \} from "\.\.\/identity\.mjs"/);
+        assert.match(source, /import \{ ARCHIVE_ROOT \} from "\.\.\/identity\.mjs"/);
         assert.ok(!/"archive"|"backlog"/.test(source), "spells neither root name itself");
       }),
   },

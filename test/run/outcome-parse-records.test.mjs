@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 39 / story 02, task 00
 // (00_parse-outcome-records.feature).
 //
 // Every @executable scenario AND every Scenario-Outline Examples row is covered
-// here, exercised DIRECTLY against `parseOutcome` (`src/memory/local-indexing.mjs`)
+// here, exercised DIRECTLY against `parseOutcome` (`packages/core/src/memory/local-indexing.mjs`)
 // over the feature's own FIXTURE OUTCOME.md (the Background block, copied
 // verbatim) — no CLI, no story-01 authoring path, so this story stays independent
 // of story 01's code (per the story Notes).
@@ -19,7 +20,9 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseOutcome, buildRecords, reindex } from "../../src/memory/local-indexing.mjs";
+const parseOutcome = _aofApplication.knowledge.memory.localIndexing.parseOutcome;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -311,7 +314,7 @@ export const outcomeParseRecordsTests = [
   {
     name: "00/outcome: regression — parsing the shipped OUTCOME.md template produces zero delivery records",
     run: async () => {
-      const templatePath = path.join(repoRoot, "src", "bundle", "templates", "shared", "OUTCOME.md");
+      const templatePath = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
       const templateText = await readFile(templatePath, "utf8");
       const records = parseOutcome(templateText, META);
       assert.deepEqual(records, [], `the unauthored template yields zero records; got ${JSON.stringify(records)}`);

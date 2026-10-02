@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "./cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+export const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // ---------------------------------------------------------- bare work dir --
 
@@ -32,7 +32,7 @@ export async function withWork(body) {
   try {
     return await body(work);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -100,7 +100,7 @@ export async function withUpgradeProject(build, body) {
     if (build) await build({ repo, workDir });
     return await body({ repo, workDir });
   } finally {
-    await rm(repo, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Security fitness function: acd-worktree-path-scoped (F4, T4/T3b) — "the
 // materialised worktree path is under the dedicated mesh worktree root, and the
 // assigned ref cannot escape it."
@@ -25,22 +27,23 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { addWorktree, removeWorktree } from "../../../src/mesh/worktree.mjs";
-import { resolveRefInWorktree } from "../../../src/mesh/worker-execution.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
+const resolveRefInWorktree = _aofApplication.mesh.worker.resolveRefInWorktree;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 // The ref-resolution module. 129/03 (129/ADR-008 §4, ADR-005 §5) moved `resolveRefInWorktree`
-// and its `worktreeWorkDir` helper OUT of `src/mesh/worker-execution.mjs` INTO
-// `src/work/dispatch.mjs` — the lane's home — so the loop's wave can resolve an item as it lives
+// and its `worktreeWorkDir` helper OUT of `packages/core/src/mesh/worker-execution.mjs` INTO
+// `packages/core/src/work/dispatch.mjs` — the lane's home — so the loop's wave can resolve an item as it lives
 // in a lane without importing the module that imports the PTY driver. The structural leg below
 // (no `path.join(root, ref)`, resolution via `findWork(rootedWorkDir, itemRef)`) follows the
 // DEFINITION to its new home; the behavioural leg keeps importing the name from
 // `worker-execution.mjs`, which is now a re-export, so the same test also proves the god-node still
 // hands out the SAME reference every existing importer expects.
-const executionSourcePath = path.join(repoRoot, "src", "work", "dispatch.mjs");
+const executionSourcePath = path.join(repoRoot, "packages", "work-loop", "src", "dispatch.mjs");
 const testSuitePath = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripCommentsAndStrings(source) {

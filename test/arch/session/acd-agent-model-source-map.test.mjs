@@ -2,13 +2,13 @@
 //
 // The task feature flagged two STRUCTURAL invariants as arch-tests (NOT Thens):
 //   (1) every one of the 8 frozen ACD roles declares a `model` in the bundle
-//       SOURCE (`src/bundle/agents/*.md` frontmatter) — no role un-mapped;
+//       SOURCE (`packages/core/assets/agents/*.md` frontmatter) — no role un-mapped;
 //   (2) the declared SOURCE value is a family alias (lowercase `opus`/`sonnet`),
 //       never a dated/fully-pinned id (e.g. anything shaped like `claude-…-N-N`).
 //
 // These check the bundle SOURCE frontmatter — a DISTINCT surface from the
 // rendered `.claude/agents/<role>.md` file the behavioural test in
-// test/bundle/bundle-model-map.test.mjs asserts. Do not collapse the two: the render
+// packages/core/test/bundle-model-map.suite.mjs asserts. Do not collapse the two: the render
 // pass could in principle drop or reshape the value, so the source is pinned
 // here on its own. The frozen 8-role set is fixed by the descriptor
 // (readDescriptor), so this test derives the role set live rather than
@@ -17,12 +17,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDescriptor, bundleRoot } from "../../../src/work/bundle.mjs";
+import { readDescriptor, bundleRoot } from "../../../packages/core/src/work/bundle.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SESSION_MODEL_SOURCE = path.join(root, "src", "session-model.mjs");
-const BUNDLE_SOURCE = path.join(root, "src", "work", "bundle.mjs");
+const SESSION_MODEL_SOURCE = path.join(root, "packages", "execution", "src", "session-model.mjs");
+const BUNDLE_SOURCE = path.join(root, "packages", "core", "src", "work", "bundle.mjs");
 
 // The two moving family aliases the bundle is allowed to ship. Lowercase and
 // un-hyphenated — the "moving alias, not a pinned id" contract (STORY.md).
@@ -31,7 +31,7 @@ const ALLOWED_ALIASES = new Set(["opus", "sonnet"]);
 // Read the single-line `model:` frontmatter value from a bundle agent SOURCE
 // file, or null when absent. Reads ONLY the leading `---`…`---` block so a body
 // mention cannot false-match. Mirrors the bundle's own single-line frontmatter
-// contract (splitFrontmatter in src/work/bundle.mjs).
+// contract (splitFrontmatter in packages/core/src/work/bundle.mjs).
 function sourceModelValue(role) {
   const member = readDescriptor().members.find((m) => m.id === role && m.kind === "agent");
   assert.ok(member, `descriptor declares agent member ${role}`);

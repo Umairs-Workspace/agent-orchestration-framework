@@ -1,3 +1,4 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-session-producer-fact-survives-the-wire (milestone 50 / story 04;
 // ARCHITECTURE ADR-008 FF-F).
 //
@@ -39,15 +40,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assembleSessionRecord } from "../../../src/mesh/session.mjs";
-import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../ui/src/home/feed-axis.mjs";
+const assembleSessionRecord = _aofHooks.meshSession.assembleSessionRecord;
+import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER } from "../../../apps/ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SESSION = path.join(repoRoot, "src", "mesh", "session.mjs");
-const PRESENCE = path.join(repoRoot, "src", "mesh", "presence.mjs");
-const CONTROL = path.join(repoRoot, "src", "control-stream-server.mjs");
-const QUERY = path.join(repoRoot, "src", "global-mesh-query.mjs");
-const FEED_AXIS = path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs");
+const SESSION = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
+const PRESENCE = path.join(repoRoot, "packages", "mesh", "src", "presence.mjs");
+const CONTROL = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const QUERY = path.join(repoRoot, "packages", "mesh", "src", "global-query.mjs");
+const FEED_AXIS = path.join(repoRoot, "apps", "ui", "src", "home", "feed-axis.mjs");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND (TECH_DEBT item 24) — and it matters here more
 // than usual: every one of these five files documents the key in prose beside the code, so a

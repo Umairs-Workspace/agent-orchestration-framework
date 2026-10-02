@@ -29,14 +29,14 @@ import {
   FROZEN_ENFORCEMENT_POINTS,
   FROZEN_MEMBER_MARKER,
   FrozenSetError,
-} from "../../src/frozen-set.mjs";
-import { AOF_HOOK_MARKER, applyClaudeSettingsMerge, claudeSettingsPath, isAofEntry } from "../../src/claude-settings.mjs";
-import { loadBundle, readDescriptor, renderBundleOutputs } from "../../src/work/bundle.mjs";
+} from "../../packages/core/src/frozen-set.mjs";
+import { AOF_HOOK_MARKER, applyClaudeSettingsMerge, claudeSettingsPath, isAofEntry } from "../../packages/core/src/claude-settings.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import { generateAssetManifest } from "../../scripts/sea-asset-manifest.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GUARD_TARGET = ".claude/hooks/aof/guard-test-isolation.mjs";
-const GUARD_BODY = path.join(repoRoot, "src", "bundle", "hooks", "guard-test-isolation.mjs");
+const GUARD_BODY = path.join(repoRoot, "packages", "core", "assets", "hooks", "guard-test-isolation.mjs");
 
 // THE MEMBERS THAT REMAIN ARE READ FROM THE DECLARATION, never retyped here (119/ADR-003,
 // chore 120). This file used to carry a `REMAINING` table of `[id, enforcementPoint]` pairs,
@@ -135,7 +135,7 @@ export const frameworkStopsShippingGuardTests = [
       assert.equal(existsSync(GUARD_BODY), false, "the guard body is absent from the bundle's own hook tree");
 
       const manifest = generateAssetManifest(repoRoot);
-      const direct = listFilesDirect(path.join(repoRoot, "src", "bundle"));
+      const direct = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
       assert.deepEqual(manifest.bundle, direct, "the generated asset census matches the real bundle tree exactly, in both directions");
       assert.equal(direct.includes("hooks/guard-test-isolation.mjs"), false, "…and the withdrawn body is in neither");
     },
@@ -201,7 +201,7 @@ export const frameworkStopsShippingGuardTests = [
       const declaration = bundledFrozenSet();
       const descriptor = readDescriptor();
       const compiled = compileFrozenSet(declaration);
-      const bundleTree = listFilesDirect(path.join(repoRoot, "src", "bundle"));
+      const bundleTree = listFilesDirect(path.join(repoRoot, "packages", "core", "assets"));
       const censusSource = await readFile(path.join(repoRoot, "test", "bundle", "bundle-asset-manifest-complete.test.mjs"), "utf8");
 
       const rows = [
@@ -230,7 +230,7 @@ export const frameworkStopsShippingGuardTests = [
           // AMENDED (TECH_DEBT item 80, `c1c5e4bd`). This read the census's hand-typed count and
           // asserted it had been re-measured to the smaller tree. That literal was red at HEAD ten
           // times over, because a number is only re-measured by whoever remembers to; the census
-          // now compares its walk against `git ls-files src/bundle`, a reader the author of a
+          // now compares its walk against `git ls-files packages/core/assets`, a reader the author of a
           // bundle change necessarily updates by committing.
           //
           // The claim survives and gets stronger. "Re-measured to the smaller tree" was a way of

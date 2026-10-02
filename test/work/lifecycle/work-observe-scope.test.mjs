@@ -1,11 +1,13 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 68 / story 04 — story- and phase-scoped observe.
 //
 // Covers EVERY @executable scenario in the three task features:
 //   tasks/00_story-scoped-ref.feature
 //   tasks/01_per-phase-rollup.feature
 //   tasks/02_json-contract.feature
-// exercising the REAL src/work/observe.mjs resolver + rollup/report path and the REAL
-// registered src/commands/observe.mjs --json door, against a temp fixture work stream
+// exercising the REAL packages/core/src/work/observe.mjs resolver + rollup/report path and the REAL
+// registered packages/core/src/commands/observe.mjs --json door, against a temp fixture work stream
 // (mkdtemp → write folders/runs/config → observe → rm in finally). One test object per
 // @executable scenario (Scenario-Outline rows folded into one entry iterating the rows),
 // each name tracing to feature + scenario. node:assert/strict. `{ name, run }` shape so
@@ -14,13 +16,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  resolveMilestoneFolder,
-  observeMilestone,
-  rollupRunsByPhase,
-  observabilityEnabled,
-} from "../../../src/work/observe.mjs";
-import { observeCommand } from "../../../src/commands/observe.mjs";
+const resolveMilestoneFolder = _aofSessions.workObserve.resolveMilestoneFolder;
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const rollupRunsByPhase = _aofSessions.workObserve.rollupRunsByPhase;
+const observabilityEnabled = _aofSessions.workObserve.observabilityEnabled;
+const observeCommand = _aofApplication.getCommand("work:observe");
 
 const T0 = Date.parse("2026-08-20T10:00:00.000Z");
 

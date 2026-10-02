@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 04, task `01_a-miss-is-reported-unjoined`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -14,10 +15,11 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { rubricTraceabilityGroup, RUBRIC_FINDING_CODES } from "../../src/work/doctor-rubric.mjs";
-import { compileGrade } from "../../src/work/grade.mjs";
-import { admittedDoctorFindings, DOCTOR_GATE_CODES } from "../../src/commands/loop.mjs";
-import { CONTROL_FINDING_CODES } from "../../src/work/doctor-controls.mjs";
+import { rubricTraceabilityGroup, RUBRIC_FINDING_CODES } from "@aof/work/doctor/rubric";
+import { compileGrade } from "@aof/work/grade";
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 
 function feature(scenarios) {
   return `@executable\nFeature: F\n${scenarios.map((name) => `\n  Scenario: ${name}\n    Given a\n    When b\n    Then c\n`).join("")}`;

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 01, task 00 —
 // tasks/00_projection-board-routing.feature (@executable, every scenario). One test
 // object per @executable scenario; ADR-003/005.
@@ -12,8 +13,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveNotionRouting } from "../../src/integrations/routing.mjs";
-import { projectMilestone } from "../../src/notion/projection.mjs";
+const resolveNotionRouting = _aofApplication.work.integrations.routing.resolveNotionRouting;
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const FULL_STATUS_MAP = {
   "not-started": "Not started",

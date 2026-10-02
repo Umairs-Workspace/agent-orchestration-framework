@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Traceability wiring for milestone 43 / story 01 (the exclusive item lock), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/01_story_item-lock/
 //     tasks/05_operator-refused-automatic-skipped-and-counted.feature
@@ -22,15 +24,16 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../src/command-core.mjs";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../src/global-work-store.mjs";
-import { reportDegrade, setDegradeSinkForTest } from "../../src/degrade.mjs";
+const invoke = _aofApplication.invoke;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
+const reportDegrade = _aofFoundation.degrade.reportDegrade;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { withItemLockFixture, seedActive, seedWorker, settle, withStore, refuse, assertValidateCleanAfterInsert } from "../support/item-lock-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const HOLDER = "aof-wsl";
 const TARGET = "worker-b";
 const CONTROL = "control-a";
@@ -59,7 +62,7 @@ async function retitle(fx, number, slug, title) {
 
 // captureTickOutput(fx, body) — EVERY channel a line could come out of while `body`
 // runs, as one string: the process console (all four levels), the durable degrade sink
-// (`reportDegrade`'s injectable factory — src/degrade.mjs), and afterwards both
+// (`reportDegrade`'s injectable factory — packages/core/src/degrade.mjs), and afterwards both
 // operator-readable log reads (`aof mesh logs` local + `--node <control>`).
 //
 // The `mesh logs` reads ALONE are not a falsifiable channel in-process: no daemon runs,

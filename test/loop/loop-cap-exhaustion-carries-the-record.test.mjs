@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 03, task `02_cap-exhaustion-carries-the-record`.
 //
 // Every @executable scenario of
@@ -21,9 +22,10 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
-import { LOOP_REFUSALS, LOOP_STOPS } from "../../src/work/loop.mjs";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+import { LOOP_REFUSALS, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { completingDriver } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsFailing, emitsPassing, findingsFrom, gradingCtx, gradingFixture,
@@ -54,7 +56,8 @@ async function exhaust(fx, plan, { report = capturingReport(), driver = completi
 async function gradesInAFreshProcess(fx, ref, loopRunId) {
   const item = await resolveItemExact(fx.ctx, ref);
   const script = `
-    const { readRuns } = await import(${JSON.stringify(new URL("../../src/run-store.mjs", import.meta.url).href)});
+    const { defaultApplication } = await import(${JSON.stringify(new URL("../../packages/core/src/application/default.mjs", import.meta.url).href)});
+    const { readRuns } = defaultApplication.execution.runs;
     const runs = await readRuns({ dir: ${JSON.stringify(item.dir)}, ref: ${JSON.stringify(ref)} });
     const rebuilt = runs
       .filter((run) => run?.brief?.loop?.loopRunId === ${JSON.stringify(loopRunId)})
@@ -121,7 +124,7 @@ export const loopCapExhaustionCarriesTheRecordTests = [
           "guard: the loop drove the build, crossed to verify, came back to a story still in-progress, and handed it to its plan",
         );
         // THE STOP IS UNCHANGED AND ITS PRODUCER IS THE ENGINE'S — no module outside
-        // `src/work/loop.mjs` mints this stop any more (124/01 task 00).
+        // `packages/work-loop/src/engine.mjs` mints this stop any more (124/01 task 00).
         assert.equal(state.act.stop, "cap-exhausted");
         assert.equal(state.act.producer, "engine:ready-set-exhausted", "the walk ran out of members to offer, and the engine named the stop");
         assert.equal(state.act.ref, "03/01", "…naming the unit that exhausted");
@@ -177,7 +180,45 @@ export const loopCapExhaustionCarriesTheRecordTests = [
 
         // AND IT WAS ASSEMBLED BY FILTERING RUN RECORDS ON THIS LOOP'S OWN ID: every entry
         // that names a run names one this loop minted, carrying this loop's declaration.
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
         const runs = await readRuns(await resolveItemExact(fx.ctx, "03/01"));
         const mine = new Map(runs.filter((run) => run.brief?.loop?.loopRunId === state.loopRunId).map((run) => [run.runId, run]));
         for (const entry of record.filter((row) => row.runId != null)) {
@@ -219,7 +260,45 @@ export const loopCapExhaustionCarriesTheRecordTests = [
         assert.equal(state.act.stop, "cap-exhausted", "guard: the loop still exhausted its cap");
 
         // THE LINEAGE IS REAL: two run records for one cycle, the second naming the first.
-        const { readRuns } = await import("../../src/run-store.mjs");
+        const { readRuns } = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
         const runs = await readRuns(await resolveItemExact(retried.ctx, "03/01"));
         const mine = runs.filter((run) => run.brief?.loop?.loopRunId === state.loopRunId);
         const lineage = mine.filter((run) => run.retryOf != null);
@@ -333,7 +412,12 @@ export const loopCapExhaustionCarriesTheRecordTests = [
         // AND AN ITEM THAT WAS NEVER GRADED CONTRIBUTES NOTHING RATHER THAN A FICTIONAL
         // ENTRY: the findings are the validator's, unaltered — not even a producer tag was
         // added, because there was no second producer to tell them apart from.
-        const { invoke } = await import("../../src/command-core.mjs");
+        const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
         const validate = await invoke("work:validate", { scope: "03/01" }, fx.ctx);
         assert.deepEqual(record, validate.findings, "the record is exactly the validator's findings");
       } finally {
@@ -847,3 +931,7 @@ export const loopCapExhaustionReturnsToThePlanTests = [
     },
   },
 ];
+
+// Every case here passes alone, in a fresh process (142 Plan 09 measured each position separately), so the sharded run may
+// split this file across workers. Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;

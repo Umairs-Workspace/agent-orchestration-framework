@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7808 (78/ADR-007) — THE RECORD NEVER GATES. No status, doctor, validate or acceptor door reads
 // the signature as a verdict, and doctor's findings for it carry severity `warn`.
 //
@@ -24,12 +25,13 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../../src/command-core.mjs";
-import { CHECK_GROUPS, doctorWork } from "../../../src/work/doctor.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
-import { DOCTOR_GATE_CODES } from "../../../src/commands/loop.mjs";
-import { LOOP_RECORD_FINDING_CODES, loopRecordLane } from "../../../src/work/doctor-loop-record.mjs";
-import { loopRecordCommand } from "../../../src/commands/loop-record.mjs";
+const invoke = _aofApplication.invoke;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
+import { LOOP_RECORD_FINDING_CODES, loopRecordLane } from "@aof/work/doctor/loop-record";
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, signInPlace, withRepo } from "../../loop/loop-record-command.test.mjs";
 import { seedGreenRegressionGate } from "../../support/regression-gate-fixture.mjs";
@@ -39,10 +41,10 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The four doors ADR-007 names, plus the acceptor's two leaves. A door that read the signature would
 // have to name it, so the sweep is over the vocabulary a reader of the block would need.
 const DOORS = [
-  "src/commands/item-status.mjs",
-  "src/commands/validate.mjs",
-  "src/work-acceptor/admissibility.mjs",
-  "src/work-acceptor/rule.mjs",
+  "packages/core/src/application/bindings/commands/item-status.mjs",
+  "packages/work/src/commands/validate.mjs",
+  "packages/work/src/acceptor/admissibility.mjs",
+  "packages/work/src/acceptor/rule.mjs",
 ];
 
 const SIGNATURE_VOCABULARY = ["EXECUTION.md", "Sign-off", "SIGNOFF", "signoff", "isSignedRow", "loop-record-unsigned", "loopEngagements"];
@@ -94,7 +96,7 @@ export const archTests = [
 
       // …and structurally: the module holds exactly ONE severity literal, so no future caller can
       // harden one code without this gate reding.
-      const code = stripComments(await readFile(path.join(repoRoot, "src/work/doctor-loop-record.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/loop-record.mjs"), "utf8"));
       assert.equal((code.match(/"error"/g) ?? []).length, 0, "the lane names no error severity anywhere");
       assert.equal((code.match(/ADVISORY_SEVERITY\s*=\s*"warn"/g) ?? []).length, 1, "its severity is one constant");
       assert.doesNotMatch(code, /severityFor|acceptance|horizon\b/, "and it consults no acceptance horizon");
@@ -129,18 +131,18 @@ export const archTests = [
       }
       // AND THE ACCEPTOR FAMILY WHOLESALE, not just its two named leaves — a door added later would
       // otherwise be outside the sweep.
-      const acceptorDir = path.join(repoRoot, "src/work-acceptor");
+      const acceptorDir = path.join(repoRoot, "packages/work/src/acceptor");
       const leaves = (await readdir(acceptorDir)).filter((name) => name.endsWith(".mjs"));
       assert.ok(leaves.length >= 2, "the acceptor sweep is non-vacuous");
       for (const name of leaves) {
         const source = stripComments(await readFile(path.join(acceptorDir, name), "utf8"));
         for (const token of SIGNATURE_VOCABULARY) {
-          assert.ok(!source.includes(token), `src/work-acceptor/${name} carries no token naming the record (${token})`);
+          assert.ok(!source.includes(token), `packages/core/src/work-acceptor/${name} carries no token naming the record (${token})`);
         }
       }
-      // `src/work/doctor.mjs` IS permitted to name the record — it performs the snapshot read at the
+      // `packages/core/src/work/doctor.mjs` IS permitted to name the record — it performs the snapshot read at the
       // engine's one impure edge — but it must not judge it: no severity decision, no signed test.
-      const engine = stripComments(await readFile(path.join(repoRoot, "src/work/doctor.mjs"), "utf8"));
+      const engine = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
       assert.ok(engine.includes("EXECUTION_RECORD_BASENAME"), "the engine reads the record (the impure edge)");
       for (const token of ["isSignedRow", "readSignoff", "Sign-off", "loop-record-unsigned"]) {
         assert.ok(!engine.includes(token), `but it renders no verdict about it (${token})`);
@@ -187,7 +189,7 @@ export const archTests = [
       // not as being LAST: the next milestone to append a lane would red on `at(-1)`, and a gate that
       // reds on a sanctioned append is a gate the next author deletes rather than reads.
       assert.equal(CHECK_GROUPS.filter((group) => group === loopRecordLane).length, 1, "registered exactly once");
-      const { rubricTraceabilityGroup } = await import("../../../src/work/doctor-rubric.mjs");
+      const { rubricTraceabilityGroup } = await import("@aof/work/doctor/rubric");
       assert.ok(
         CHECK_GROUPS.indexOf(loopRecordLane) > CHECK_GROUPS.indexOf(rubricTraceabilityGroup),
         "and appended after the lanes that existed before it, never inserted among them",

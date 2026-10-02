@@ -12,9 +12,9 @@
 // spawn `worktree add` itself.
 //
 // Proofs:
-//  1. Structural — src/mesh/worktree.mjs is the ONLY module containing a literal
+//  1. Structural — packages/core/src/mesh/worktree.mjs is the ONLY module containing a literal
 //     `"worktree", "add"` (or `worktree add`) argv shape.
-//  2. Structural — src/mesh/worker-execution.mjs calls addWorktree(...) (the existing
+//  2. Structural — packages/core/src/mesh/worker-execution.mjs calls addWorktree(...) (the existing
 //     m35 seam) and contains NO second `"worktree"` / `"add"` argv pairing of its own.
 //  3. Structural — the ARCHITECTURE #8 sibling (acd-assignment-worktree-path-scoped)
 //     stays registered in the suite — this file re-arms it, never duplicates its body
@@ -26,10 +26,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workerSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
-const worktreeSourcePath = path.join(repoRoot, "src", "mesh", "worktree.mjs");
+const workerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
+const worktreeSourcePath = path.join(repoRoot, "packages", "execution", "src", "worktrees.mjs");
 const testSuitePath = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripComments(source) {
@@ -38,7 +39,7 @@ function stripComments(source) {
 
 // A "worktree add" argv shape: two adjacent argv-array string literals "worktree",
 // "add" (allowing for --detach etc between/after), OR the shell-form "worktree add".
-const WORKTREE_ADD_PATTERN = /["']worktree["']\s*,\s*["']add["']|worktree\s+add\b/;
+const WORKTREE_ADD_PATTERN = /["']worktree["']\s*,\s*["']add["']|\b(?:exec|execSync)\s*\(\s*["'`]git\s+worktree\s+add\b/;
 
 function callsAddWorktreeSeam(code) {
   return /\baddWorktree\s*\(/.test(code);
@@ -50,6 +51,13 @@ export const archTests = [
     run: async () => {
       const worktreeSource = stripComments(await readFile(worktreeSourcePath, "utf8"));
       assert.ok(WORKTREE_ADD_PATTERN.test(worktreeSource), "mesh-worktree.mjs still contains the ONE worktree-add call site");
+      const homes = [];
+      const files = await readRuntimeFiles(repoRoot);
+      assert.ok(files.length > 0, "runtime census is non-empty");
+      for (const file of files) {
+        if (WORKTREE_ADD_PATTERN.test(stripComments(await readFile(file.path, "utf8")))) homes.push(file.rel);
+      }
+      assert.deepEqual(homes, ["packages/execution/src/worktrees.mjs"], "one materialization implementation across all runtime packages");
     },
   },
   {
@@ -84,6 +92,8 @@ export const archTests = [
 
       const plantedSecondSeam = `${workerSource}\nasync function plantedSecondWorktreeAdd(exec, dest, commitish) { return exec(["worktree", "add", "--detach", dest, commitish]); }\n`;
       assert.ok(WORKTREE_ADD_PATTERN.test(plantedSecondSeam), "a planted second `worktree add` call site trips the detector");
+      assert.ok(WORKTREE_ADD_PATTERN.test('execSync("git worktree add tree HEAD")'), "an executable shell form also trips the detector");
+      assert.ok(!WORKTREE_ADD_PATTERN.test('throw new Error("git worktree add failed")'), "diagnostic prose is not a second materialization call");
     },
   },
 ];

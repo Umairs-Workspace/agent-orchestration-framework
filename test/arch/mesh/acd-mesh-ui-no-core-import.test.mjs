@@ -2,7 +2,7 @@
 // ARCHITECTURE 25/ADR-003 decision 3 — the registry is the only door, the mesh-face
 // mirror of 08/ADR-004 inv.3 / acd-work-ui-no-core-import).
 //
-// "The new fleet web face (`src/mesh/ui-serve.mjs`) imports NO mesh-core/operation
+// "The new fleet web face (`packages/core/src/mesh/ui-serve.mjs`) imports NO mesh-core/operation
 //  module — `mesh-store.mjs`, `mesh-presence.mjs`, `mesh-registry.mjs`,
 //  `mesh-sync.mjs`, `./commands/*` — except `./command-core.mjs`; it performs no
 //  operation fs write. Positive: it DOES import `./command-core.mjs` (the one door)."
@@ -18,10 +18,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 // Discount `// …` and `/* … */` so a comment naming a verb/module is not a match.
 function stripComments(source) {
@@ -32,8 +32,11 @@ export const archTests = [
   {
     name: "arch/34 ADR-006 + 38/ADR-012: global-mesh-query.mjs is the ONLY fleet-data READ import, and ./mesh/assignment.mjs the ONE sanctioned WRITE-verb import, in mesh-ui-serve.mjs",
     run: async () => {
-      const source = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
-      const specifiers = importSpecifiers(source).map((i) => i.specifier);
+      const implementation = stripComments(await readFile(MESH_UI_SERVE, "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/ui-serve.mjs"), "utf8"));
+      for (const text of [implementation, adapter]) assert.match(text, /createMeshUiServer\(\{[^}]*queryGlobalMeshStatus[^}]*assignWork[^}]*stopLoop/su, "the configured fleet doors reach the package");
+      const source = adapter + "\n" + implementation;
+      const specifiers = dependencySpecifiers(source).map((i) => i.specifier);
       // The door IS imported — the positive assertion a deny-list lint cannot make.
       assert.ok(
         specifiers.includes("../global-mesh-query.mjs"),
@@ -60,7 +63,7 @@ export const archTests = [
       );
       // No OTHER local ./<module> import brings in fleet-core/operation logic. The
       // deny-list is the mesh-core modules + ANY direct command-body import.
-      const operationBearing = importSpecifiers(source).filter((i) => {
+      const operationBearing = dependencySpecifiers(source).filter((i) => {
         const spec = i.specifier;
         if (!spec.startsWith(".")) return false; // node:* / package deps are not fleet-core
         if (spec === "../global-mesh-query.mjs") return false; // the read door
@@ -82,7 +85,7 @@ export const archTests = [
         import { stopLoop } from "../loop/stop.mjs";
         import { issueDirective } from "./commands/mesh-issue.mjs";
       `);
-      const plantedOperationBearing = importSpecifiers(plantedBypass).filter((i) => {
+      const plantedOperationBearing = dependencySpecifiers(plantedBypass).filter((i) => {
         const spec = i.specifier;
         if (!spec.startsWith(".")) return false;
         if (spec === "./global-mesh-query.mjs") return false;
@@ -102,7 +105,7 @@ export const archTests = [
         import { workLoopCommand } from "../commands/loop.mjs";
       `);
       assert.deepEqual(
-        importSpecifiers(plantedCommandFace).filter((i) => i.specifier.startsWith("../commands/")).map((i) => i.specifier),
+        dependencySpecifiers(plantedCommandFace).filter((i) => i.specifier.startsWith("../commands/")).map((i) => i.specifier),
         ["../commands/loop.mjs"],
         "self-check: the loop's COMMAND module is caught as a commands/* import — only the core is sanctioned"
       );

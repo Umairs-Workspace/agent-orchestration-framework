@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import * as _aofPublic_aof_work_graph_commands_loop_record from "@aof/work-graph/commands/loop-record";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 78 / story 02 — the record command: a read face, one door to
 // disk, and a signature that survives.
 //
@@ -7,7 +10,7 @@
 // (task 02's registration/deferral scenarios are mechanised by FF-7807's gate,
 // `test/arch/loop/acd-loop-record-board-deferred.test.mjs`, and by the two frozen-list controls it reads.)
 //
-// It exercises the REAL `src/commands/loop-record.mjs` against a temp fixture project (mkdtemp →
+// It exercises the REAL `packages/core/src/commands/loop-record.mjs` against a temp fixture project (mkdtemp →
 // build a registry, an item and its run records → run → rm in finally), through the REAL
 // `loadWorkspace` and the REAL ref resolver, so the configured `work.dir` and the item's own
 // `runs/` directory are genuinely read rather than assumed. One test object per @executable
@@ -22,20 +25,18 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../src/work.mjs";
-import {
-  EXECUTION_RECORD_BASENAME,
-  SIGNOFF_DIVIDER,
-  SIGNOFF_HEADER,
-  SIGNOFF_HEADING,
-  SIGNOFF_PLACEHOLDER,
-  loopRecordCommand,
-} from "../../src/commands/loop-record.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const EXECUTION_RECORD_BASENAME = _aofPublic_aof_work_graph_commands_loop_record.EXECUTION_RECORD_BASENAME;
+const SIGNOFF_DIVIDER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_DIVIDER;
+const SIGNOFF_HEADER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_HEADER;
+const SIGNOFF_HEADING = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_HEADING;
+const SIGNOFF_PLACEHOLDER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_PLACEHOLDER;
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { record, snapshot, writeRegistry } from "../support/loop-document-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // ---------------------------------------------------------------- the fixture ----
 
@@ -47,7 +48,7 @@ const ITEM_DIR = "03_milestone_board";
 
 // THE FIXTURE REGISTRY, and its ceilings are the reason it is not story 79's. That module's `loop()`
 // spells `ceiling: [uncapped]` — an INLINE LIST — and the loader admits a sentinel ceiling only as a
-// SCALAR (`src/work/loops.mjs`: an inline `ceiling` entry goes through `pointerField`, so a bare word
+// SCALAR (`packages/core/src/work/loops.mjs`: an inline `ceiling` entry goes through `pointerField`, so a bare word
 // there is a bad value and the field is never parsed at all). A fixture built on it therefore carries
 // loop records with NO ceiling, which the projection reports as `unknown` — and every ceiling
 // assertion over it would pass for the wrong reason. That is m77/R8 exactly ("the fixture was written
@@ -59,7 +60,7 @@ const ITEM_DIR = "03_milestone_board";
 // produce the same record, so the fixture must be able to tell them apart.
 const CEILING_KEY = "work.loop.buildNoProgressRounds";
 // The number that key resolves to for a config that does not set it — the bound the machinery would
-// really enforce, which is what the projection reports (`src/loop-bounds.mjs` owns it, and the pin
+// really enforce, which is what the projection reports (`packages/core/src/loop-bounds.mjs` owns it, and the pin
 // below asserts this constant against that resolver rather than trusting the literal).
 export const CEILING_BOUND = 2;
 
@@ -224,8 +225,24 @@ export const loopRecordFixtureShapeTests = [
   {
     name: "loop-record-command/fixture the real loader parses this registry's two ceiling states",
     async run() {
-      const { loadLoops } = await import("../../src/work/loops.mjs");
-      const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("../../src/loop-bounds.mjs");
+      const { loadLoops } = await Promise.resolve(Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+}));
+      const { LOOP_BOUND_CONFIG_RESOLVERS } = await import("@aof/contracts/loop-bounds");
       await withRepo({}, async (repo) => {
         const registry = await loadLoops((await ctxFor(repo)).workspace);
         assert.equal(registry.present, true, "the fixture registry is found where 53/07 puts one");

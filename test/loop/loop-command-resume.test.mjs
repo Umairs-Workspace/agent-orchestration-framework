@@ -1,12 +1,26 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { completeRun, heartbeat, isStale, retryRun, startRun, readRuns } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
-import { lineageElapsedMs } from "../../src/work/loop.mjs";
-import { loopResumesDir, loopStopsDir, markStopHonoured, readResumeRequest, readStopRequest, requestLoopResume, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
+const completeRun = _aofApplication.execution.runs.completeRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryRun = _aofApplication.execution.runs.retryRun;
+const startRun = _aofApplication.execution.runs.startRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const loopCommand = _aofApplication.getCommand("work:loop");
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+import { lineageElapsedMs } from "../../packages/work-loop/src/engine.mjs";
+const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const readResumeRequest = _aofApplication.loop.stopRequest.readResumeRequest;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopResume = _aofApplication.loop.stopRequest.requestLoopResume;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -20,6 +34,7 @@ import {
 } from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { stripComments } from "../support/source-slice.mjs";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 // 130/02 — the closing commands: a verify drive moves its item to done, so a resumed walk under a
 // level-0 source reaches `done`.
@@ -696,14 +711,22 @@ export const loopCommandResumeTests = [
   {
     name: "130/02 task04 the shell spells no path and calls no fs — every write goes through stop-request.mjs's exports",
     async run() {
-      const raw = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const raw = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const shell = stripComments(raw);
       assert.doesNotMatch(shell, /loop-stops/u, "the segment literal lives in stop-request.mjs and nowhere else");
       assert.doesNotMatch(shell, /\b(?:writeFile|mkdir|rename)\s*\(/u);
-      const imported = /import \{([^}]*)\} from "\.\.\/loop\/stop-request\.mjs";/u.exec(raw);
-      assert.ok(imported, "the shell imports the request's one home");
-      const names = imported[1].split(",").map((name) => name.trim()).filter(Boolean);
-      for (const name of ["createStopSource", "loopStopsDir", "markStopHonoured", "clearStopRequest", "readStopRequest"]) assert.ok(names.includes(name), name);
+      const adapter = await readFile(new URL("../../packages/core/src/application/bindings/commands/loop.mjs", import.meta.url), "utf8");
+      assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "loopStopRequestServices" && edge.specifier === "../loop/stop-request.mjs"), "the shell receives the request's one configured home");
+      const names = [...adapter.matchAll(/const\s*\{([^}]*)\}\s*=\s*loopStopRequestServices/gu)]
+        .flatMap(match => match[1].split(",").map(name => name.trim()).filter(Boolean));
+      const supplied = /stopRequests:\s*\{([^}]*)\}/u.exec(adapter);
+      const received = /const\s*\{([^}]*)\}\s*=\s*stopRequests/u.exec(raw);
+      assert.ok(supplied && received, "the adapter supplies and the implementation receives the request services");
+      for (const name of ["createStopSource", "loopStopsDir", "markStopHonoured", "clearStopRequest", "readStopRequest"]) {
+        assert.ok(names.includes(name), name);
+        assert.ok(supplied[1].split(",").map(value => value.trim()).includes(name), `${name} supplied`);
+        assert.ok(received[1].split(",").map(value => value.trim()).includes(name), `${name} received`);
+      }
     },
   },
   {

@@ -1,11 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 39 / ADR-002:
-// "`buildRecords` (src/memory/local-indexing.mjs) remains the SINGLE shared
+// "`buildRecords` (packages/core/src/memory/local-indexing.mjs) remains the SINGLE shared
 //  record-source seam BOTH backends consume; `parseOutcome` is composed into it,
 //  not bolted onto one backend — so a delivery record reaches `local` AND
 //  `graphify` with no graphify-only parser."
 //
 // Graph-verified blast radius (fresh `graph build src`): `graph impact
-// src/memory/local-indexing.mjs` → `imported/called by ← (2)` = local-backend +
+// packages/core/src/memory/local-indexing.mjs` → `imported/called by ← (2)` = local-backend +
 // graphify-backend, exactly the two backends. So a source parser added HERE reaches
 // both; a source parser added in a BACKEND would fork the seam.
 //
@@ -22,16 +23,31 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const INDEXING = path.join(repoRoot, "src", "memory", "local-indexing.mjs");
-const GRAPHIFY_BACKEND = path.join(repoRoot, "src", "memory", "graphify-backend.mjs");
-const LOCAL_BACKEND = path.join(repoRoot, "src", "memory", "local-backend.mjs");
+const INDEXING = path.join(repoRoot, "packages", "knowledge", "src/memory/local-indexing.mjs");
+const GRAPHIFY_BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/graphify-backend.mjs");
+const LOCAL_BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/local-backend.mjs");
 
 // A parser DEFINITION (not a re-export / import): `function parseX(` or
 // `const parseX =`. Used to prove the source parsers live only in local-indexing.
 const PARSER_DEF_RE = /(?:function|const)\s+(parse(?:Outcome|Architecture|Retrospective|Aof)\b)/g;
 
 async function outcomeParser() {
-  const mod = await import("../../../src/memory/local-indexing.mjs");
+  const mod = await Promise.resolve(Object.freeze({
+  INDEX_VERSION: _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION,
+  memoryIndexPath: _aofApplication.knowledge.memory.localIndexing.memoryIndexPath,
+  parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+  parseArchitecture: _aofApplication.knowledge.memory.localIndexing.parseArchitecture,
+  parseAof: _aofApplication.knowledge.memory.localIndexing.parseAof,
+  parseOutcome: _aofApplication.knowledge.memory.localIndexing.parseOutcome,
+  IMPORT_ITEM_PREFIX: _aofApplication.knowledge.memory.localIndexing.IMPORT_ITEM_PREFIX,
+  importItem: _aofApplication.knowledge.memory.localIndexing.importItem,
+  isImportRecord: _aofApplication.knowledge.memory.localIndexing.isImportRecord,
+  resolveRecordSourcePath: _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath,
+  buildRecords: _aofApplication.knowledge.memory.localIndexing.buildRecords,
+  buildIndex: _aofApplication.knowledge.memory.localIndexing.buildIndex,
+  reindex: _aofApplication.knowledge.memory.localIndexing.reindex,
+  status: _aofApplication.knowledge.memory.localIndexing.status,
+}));
   return typeof mod.parseOutcome === "function" ? mod.parseOutcome : null;
 }
 
@@ -46,9 +62,12 @@ export const archTests = [
       // (a) graphify reaches records ONLY through the shared buildRecords import.
       assert.match(
         graphifySrc,
-        /import\s*\{[^}]*\bbuildRecords\b[^}]*\}\s*from\s*["']\.\/local-indexing\.mjs["']/,
-        "graphify-backend imports buildRecords from local-indexing (the shared seam)",
+        /function createGraphifyBackend\(\{[^}]*\bbuildRecords\b/,
+        "graphify-backend receives the shared record builder",
       );
+      const binding = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/memory/graphify-backend.mjs"), "utf8");
+      assert.match(binding, /const\s*\{\s*buildRecords\s*\}\s*= memoryLocalIndexingServices/);
+      assert.match(binding, /createGraphifyBackend\(\{[^}]*\bbuildRecords\b/);
 
       // (b) NO source parser is defined inside a backend — they all live in local-indexing.
       for (const [label, src] of [["graphify-backend", graphifySrc], ["local-backend", localBackendSrc]]) {
@@ -75,7 +94,22 @@ export const archTests = [
 
       // Prove the parser is WIRED INTO buildRecords (not merely exported): a milestone
       // folder carrying an OUTCOME.md must yield delivery records from buildRecords.
-      const { buildRecords } = await import("../../../src/memory/local-indexing.mjs");
+      const { buildRecords } = await Promise.resolve(Object.freeze({
+  INDEX_VERSION: _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION,
+  memoryIndexPath: _aofApplication.knowledge.memory.localIndexing.memoryIndexPath,
+  parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+  parseArchitecture: _aofApplication.knowledge.memory.localIndexing.parseArchitecture,
+  parseAof: _aofApplication.knowledge.memory.localIndexing.parseAof,
+  parseOutcome: _aofApplication.knowledge.memory.localIndexing.parseOutcome,
+  IMPORT_ITEM_PREFIX: _aofApplication.knowledge.memory.localIndexing.IMPORT_ITEM_PREFIX,
+  importItem: _aofApplication.knowledge.memory.localIndexing.importItem,
+  isImportRecord: _aofApplication.knowledge.memory.localIndexing.isImportRecord,
+  resolveRecordSourcePath: _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath,
+  buildRecords: _aofApplication.knowledge.memory.localIndexing.buildRecords,
+  buildIndex: _aofApplication.knowledge.memory.localIndexing.buildIndex,
+  reindex: _aofApplication.knowledge.memory.localIndexing.reindex,
+  status: _aofApplication.knowledge.memory.localIndexing.status,
+}));
       const projectRoot = await mkdtemp(path.join(os.tmpdir(), "aof-arch-outcome-seam-"));
       const workDir = path.join(projectRoot, "wiki", "work");
       const dir = path.join(workDir, "39_milestone_delivery-memory-outcome");

@@ -38,7 +38,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const launcherSourcePath = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const launcherSourcePath = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 const adrPath = path.join(repoRoot, "wiki", "work", "archive", "38_milestone_cross-machine-worker-execution", "ARCHITECTURE.md");
 
 function stripComments(source) {

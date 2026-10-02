@@ -1,10 +1,13 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 25 / story 01 — the boards projection
 // (tasks/00_boards-projection.feature).
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
 // tasks/00_boards-projection.feature, exercising the REAL in-process registry
-// (src/command-core.mjs + the EXTENDED mesh:status in src/commands/mesh-identity.mjs
-// over src/mesh/registry.mjs + src/mesh/presence.mjs) against a temp fixture repo —
+// (packages/core/src/command-core.mjs + the EXTENDED mesh:status in packages/core/src/commands/mesh-identity.mjs
+// over packages/core/src/mesh/registry.mjs + packages/core/src/mesh/presence.mjs) against a temp fixture repo —
 // loadWorkspace + invoke, real fs, in-process. `now` is an INJECTED value (white-box
 // over the inputs). One test object per scenario (outline rows folded into one entry
 // iterating the rows). node:assert/strict.
@@ -21,10 +24,16 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../src/mesh/store.mjs";
-import { registryPath, registryDir, emptyRegistry, admitNode, registerBoard } from "../../../src/mesh/registry.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const registryPath = _aofApplication.mesh.registry.registryPath;
+const registryDir = _aofApplication.mesh.registry.registryDir;
+const emptyRegistry = _aofApplication.mesh.registry.emptyRegistry;
+const admitNode = _aofApplication.mesh.registry.admitNode;
+const registerBoard = _aofApplication.mesh.registry.registerBoard;
 
 const NOW = "2026-07-01T12:00:00.000Z";
 

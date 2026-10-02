@@ -1,10 +1,11 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 00/01 `validate-stream`.
 //
 // Each test below proves one @executable scenario (or one example-table row)
 // from the three task features under
 //   wiki/work/00_milestone_work-cli/stories/01_story_validate-stream/tasks/
 // against the LOCKED engine `validateWork(workDir, config, scopeRef)` in
-// ../src/work.mjs. We assert on `finding.problem` substrings using the exact
+// ../packages/core/src/work.mjs. We assert on `finding.problem` substrings using the exact
 // wording the engine emits — we never change the engine or the contract.
 //
 // SUPERSEDED IN PART BY MILESTONE 66 / STORY 00, RECORDED IN THE ACCEPTING ITEM:
@@ -14,12 +15,12 @@
 // delivered stays true on every file that parses inside the horizon, and its feature
 // file stays byte-intact. What changed here is fixture status words (see `writeStory`).
 //
-// Mirrors the temp-dir fixture style of test/work/work.test.mjs.
+// Mirrors the temp-dir fixture style of packages/work/test/work.suite.mjs.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateWork } from "../../../src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
 
 // The config supplies the closed vocabulary. @validate is the configured domain
 // tag the features lean on; @backend is a layer some fixtures decorate with.

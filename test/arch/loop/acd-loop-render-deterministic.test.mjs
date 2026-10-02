@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -5,7 +7,8 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { loopsGraphCommand, renderLoopGraph } from "../../../src/commands/loops-graph.mjs";
+const loopsGraphCommand = _aofApplication.getCommand("work:loops-graph");
+const renderLoopGraph = _aofPublic_aof_work_graph_commands_loops_graph.renderLoopGraph;
 import { stripComments } from "../../support/source-slice.mjs";
 
 const runFile = promisify(execFile);
@@ -55,7 +58,7 @@ const loopRecord = (id, title, extra = "") => `---\nid: loop:${id}\nkind: loop\n
 // FF-5208 means `ui/` SOURCE — the files this repository authors. `ui/dist/assets/*.js` is a
 // minified single-line bundle, on which the `(?:route|argv)…["']loops["']` proximity regex below
 // is a false-positive surface rather than a measurement (every token is within 100 characters of
-// every other one); `ui/node_modules` is a dependency tree, empty here only because deps hoist to
+// every other one); `apps/ui/node_modules` is a dependency tree, empty here only because deps hoist to
 // the repository root, which is an install-layout accident this gate should not rest on.
 const UNAUTHORED = new Set(["node_modules", "dist"]);
 
@@ -99,7 +102,7 @@ export const archTests = [
         assert.equal(commandResult.text.split("\n").filter((line) => line && line !== "flowchart LR" && !line.includes(" -->|")).length, 7);
       } finally { await rm(temp, { recursive: true, force: true }); }
 
-      const url = pathToFileURL(path.join(root, "src/commands/loops-graph.mjs")).href;
+      const url = pathToFileURL(path.join(root, "packages/work-graph/src/commands/loops-graph.mjs")).href;
       const script = `import {renderLoopGraph} from ${JSON.stringify(url)}; console.log(JSON.stringify(renderLoopGraph(${JSON.stringify(shuffledModel(model))})));`;
       const { stdout } = await runFile(process.execPath, ["--input-type=module", "--eval", script]);
       assert.equal(stdout.trim(), JSON.stringify({ text: expectedText, edgeCount: 6 }));
@@ -108,7 +111,7 @@ export const archTests = [
   {
     name: "arch/52 FF-5208: UI carries no loop-registry token or loops route literal",
     run: async () => {
-      const files = await filesBelow(path.join(root, "ui"));
+      const files = await filesBelow(path.join(root, "apps", "ui"));
       assert.ok(files.length > 10);
       for (const file of files) {
         const source = stripComments(await readFile(file, "utf8"));

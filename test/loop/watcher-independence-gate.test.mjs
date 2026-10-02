@@ -1,14 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loopsValidateCommand } from "../../src/commands/loops-validate.mjs";
+const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
 import {
   CHECK_FINDING_CODES,
   GATING_CODES,
   checkPairing,
-} from "../../src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 import { examplesTables, scenarioTitles } from "../support/feature-parse.mjs";
 
@@ -38,7 +39,7 @@ function loopNode(id, options = {}) {
     fields: {
       controlled: { key: "controlled", raw: options.controlled ?? "scenarios green", kind: "phrase" },
       measurement: (options.measurement ?? ["module:src/work.mjs#validateWork"]).map(authority),
-      actuator: (options.actuator ?? ["prose:src/bundle/agents/aof-developer.md"]).map(authority),
+      actuator: (options.actuator ?? ["prose:packages/core/assets/agents/aof-developer.md"]).map(authority),
       optimizing: { key: "optimizing", raw: String(options.optimizing ?? true), kind: "flag", value: options.optimizing ?? true },
     },
     edges: options.edges ?? {},
@@ -71,7 +72,7 @@ title: ${stem}
 controlled: scenarios green
 reference: [module:src/work.mjs#validateWork]
 measurement: [module:src/work.mjs#validateWork]
-actuator: [prose:src/bundle/agents/aof-developer.md]
+actuator: [prose:packages/core/assets/agents/aof-developer.md]
 cadence: event:per-item
 ceiling: none
 owner: actor:product-owner
@@ -125,7 +126,7 @@ const TASKS_5802 = path.join(
 
 // The five authorities, each a module exporting an array of `{ name, run }`.
 const AUTHORITIES_5802 = Object.freeze({
-  checks: "./work-loops-checks.test.mjs",
+  checks: "../../packages/work-graph/test/work-loops-checks.suite.mjs",
   // 119/03 — `test/arch/` has subject directories now and all three of these gates live under
   // `test/arch/loop/`. The specifiers were `./arch/...`, which resolved from this suite's own
   // directory to `test/loop/arch/` — a directory that has never existed. It failed at import
@@ -253,13 +254,13 @@ export const watcherIndependenceGateTests = [
   {
     name: "watcher-independence/01 judges are always visible and shared maker authority is checked per pair",
     run: async () => {
-      const maker = "prose:src/bundle/agents/aof-developer.md";
+      const maker = "prose:packages/core/assets/agents/aof-developer.md";
       const first = loopNode("loop:first", { actuator: [maker] });
-      const second = loopNode("loop:second", { actuator: ["prose:src/bundle/agents/aof-architect.md"] });
+      const second = loopNode("loop:second", { actuator: ["prose:packages/core/assets/agents/aof-architect.md"] });
       const shared = watcherNode("watcher:shared", { determinism: "judge", measurement: [maker], watches: [first.id, second.id] });
       const independent = watcherNode("watcher:independent", {
         determinism: "judge",
-        measurement: ["prose:src/bundle/agents/aof-qa.md"],
+        measurement: ["prose:packages/core/assets/agents/aof-qa.md"],
         watches: [first.id],
       });
       const deterministic = watcherNode("watcher:counter", { watches: [first.id] });
@@ -350,7 +351,7 @@ export const watcherIndependenceGateTests = [
   {
     name: "watcher-independence/03 aof validate carries the loop registry as its own deterministic gate",
     run: async () => {
-      const text = await readFile(path.join(root, "src", "bundle", "commands", "validate.md"), "utf8");
+      const text = await readFile(path.join(root, "packages", "core", "assets", "commands", "validate.md"), "utf8");
       const structural = text.indexOf("aof work validate $ARGUMENTS");
       const loops = text.indexOf("aof work loops validate");
       const doctor = text.indexOf("aof work doctor $ARGUMENTS");

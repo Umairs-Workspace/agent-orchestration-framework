@@ -1,17 +1,18 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/clone/mesh-worker-clone-register-fallthrough.test.mjs — traceability for milestone
 // 38 / story 01 task 02 (02_register-and-fallthrough.feature). Every @executable
 // scenario + Examples row wired to the real engine surface: workerHasRepo /
 // cloneRepoForWorkspace / createMeshWorkerExecutionHandler (src/mesh/worker-
-// execution.mjs), reusing addWorktree VERBATIM (src/mesh/worktree.mjs).
+// execution.mjs), reusing addWorktree VERBATIM (packages/core/src/mesh/worktree.mjs).
 import assert from "node:assert/strict";
-import {
-  workerHasRepo,
-  cloneRepoForWorkspace,
-  createMeshWorkerExecutionHandler,
-} from "../../../src/mesh/worker-execution.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { readJson } from "../../../src/fs.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const workerHasRepo = _aofApplication.mesh.worker.workerHasRepo;
+const cloneRepoForWorkspace = _aofApplication.mesh.worker.cloneRepoForWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const readJson = _aofFoundation.fs.readJson;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import path from "node:path";
 import { execFile } from "node:child_process";
 import {
@@ -141,7 +142,7 @@ export const meshWorkerCloneRegisterFallthroughTests = [
   {
     name: "task02/38 worker-repo-checkout: Examples — workerHasRepo reflects EXACTLY which facts are present (the join semantics)",
     run: async () => withMeshCloneFixture(async ({ workspace, workspaceId, env }) => {
-      const { writeRepoPublishedMarker } = await import("../../../src/mesh/repo-marker.mjs");
+      const { writeRepoPublishedMarker } = await import("@aof/mesh/repo-marker");
       const configPath = path.join(workspace.projectRoot, ".aof", "aof.config.json");
 
       async function writeRow() {
@@ -156,17 +157,67 @@ export const meshWorkerCloneRegisterFallthroughTests = [
       // marker=written, row=written -> true
       await writeRepoPublishedMarker({ configPath, workspaceId, now: "2026-07-10T09:00:00.000Z" });
       await writeRow();
-      let ws = await import("../../../src/work.mjs").then((m) => m.loadWorkspace(workspace.projectRoot, undefined, { env }));
+      let ws = await Promise.resolve(Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+})).then((m) => m.loadWorkspace(workspace.projectRoot, undefined, { env }));
       assert.equal(await workerHasRepo(ws, workspaceId, "worker-a", { globalWorkStoreOptions: { env } }), true, "marker=written, row=written -> true");
     }, { cloneUrl: "https://git.example.com/acme/secret.git" }),
   },
   {
     name: "task02/38 worker-repo-checkout: Examples — marker written, row absent -> false (half-registered never reads as available)",
     run: async () => withMeshCloneFixture(async ({ workspace, workspaceId, env }) => {
-      const { writeRepoPublishedMarker } = await import("../../../src/mesh/repo-marker.mjs");
+      const { writeRepoPublishedMarker } = await import("@aof/mesh/repo-marker");
       const configPath = path.join(workspace.projectRoot, ".aof", "aof.config.json");
       await writeRepoPublishedMarker({ configPath, workspaceId, now: "2026-07-10T09:00:00.000Z" });
-      const ws = await import("../../../src/work.mjs").then((m) => m.loadWorkspace(workspace.projectRoot, undefined, { env }));
+      const ws = await Promise.resolve(Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+})).then((m) => m.loadWorkspace(workspace.projectRoot, undefined, { env }));
       assert.equal(await workerHasRepo(ws, workspaceId, "worker-a", { globalWorkStoreOptions: { env } }), false);
     }, { cloneUrl: "https://git.example.com/acme/secret.git" }),
   },

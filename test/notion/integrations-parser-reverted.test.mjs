@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 18 / story 02, task 00 —
 // tasks/00_parser-reverted-to-minimal.feature (@executable, every scenario + both
 // Scenario-Outline Examples groups). One test object per @executable scenario/row;
@@ -18,10 +19,10 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseFrontmatter } from "../../src/work.mjs";
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // Parse a single frontmatter LINE (the Given is "a frontmatter block with <line>") —
 // wrap it in the `---`-delimited block parseFrontmatter consumes and return the parsed

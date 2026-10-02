@@ -1,7 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 66 / story 02 — the CONTROLS LANE.
 //
 // Every `@executable` scenario (and every Examples row) of the story's four task
-// features, against the LOCKED surfaces in `src/work/doctor-controls.mjs`:
+// features, against the LOCKED surfaces in `packages/core/src/work/doctor-controls.mjs`:
 //   tasks/00_one-lane-that-reads-and-never-runs.feature
 //   tasks/01_a-register-declares-once.feature
 //   tasks/02_a-control-resolves-or-declares-itself-pending.feature
@@ -43,7 +44,7 @@ import {
   recordsARedProbe,
   redProbeRows,
   splitPathLocator,
-} from "../../../src/work/doctor-controls.mjs";
+} from "@aof/work/audit/controls";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -228,7 +229,7 @@ export const workDoctorControlsTests = [
         "verification-missing-red-probe": /FF-02/,
         "control-unresolved": /FF-02/,
         "control-unregistered": /FF-03/,
-        "control-runner-unchecked": new RegExp(RUNNERS_CONFIG_KEY.replace(/\./g, "\\.")),
+        "control-runner-unchecked": new RegExp(RUNNERS_CONFIG_KEY.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")),
         "staged-control": /thing\.test\.mjs/,
       };
       for (const [code, pattern] of Object.entries(named)) {
@@ -287,7 +288,10 @@ export const workDoctorControlsTests = [
   {
     name: "66/02 lane: an ERROR gates and a WARN does not, on the exit code doctor already publishes",
     run: async () => {
-      const { doctorCommand } = await import("../../../src/commands/doctor.mjs");
+      const { doctorCommand } = await Promise.resolve(Object.freeze({
+  doctorCommand: _aofApplication.getCommand("work:doctor"),
+  readRenameMap: _aofApplication.work.commandTools.doctor.readRenameMap,
+}));
       const exitFor = (findings, strict) => doctorCommand.cli.exit({ findings }, { options: strict ? { strict: true } : {} });
       // A stream whose ONLY controls findings are warns: exits zero, and non-zero under
       // `--strict`. Driven over findings the lane really produced, not invented ones.
@@ -318,7 +322,7 @@ export const workDoctorControlsTests = [
       // and that the only genuinely new I/O is one existence probe per cited control
       // path and one read per declared runner file. Asserted over the SHIPPED spine's
       // own read sites, because a fixture cannot say how many times a file is opened.
-      const spine = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
+      const spine = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", "index.mjs"), "utf8");
       // Each site cut to the END OF ITS LINE rather than to the first `)`, because the
       // argument itself contains parens — the positional-slice trap `test/support/`
       // exists to keep out of gates (F-47-04-ARCH-2).
@@ -351,16 +355,14 @@ export const workDoctorControlsTests = [
         [
           "target)).mtimeMs;",
           "path.join(projectRoot, control))).isFile();",
-          // 119/ADR-004 — THE FALL-THROUGH, named rather than admitted by loosening this list.
-          // Leg A above is still the first branch and still answers for every control that exists
-          // at HEAD; only on a MISS is the rename map asked where the file went, and the candidate
-          // it names is probed the same way. That keeps `control-unresolved` meaning "this register
-          // declares a control that does not exist" instead of "somebody moved a file" — which is
-          // the difference between a gate and a permanent finding on twenty immutable registers.
-          "path.join(projectRoot, answer.at))).isFile();",
         ],
-        "one existence probe per cited control path plus one for the rename candidate on a miss, beside the pre-existing mtime stat — and nothing else",
+        "the direct control existence probe and the pre-existing mtime stat",
       );
+      // A deleted mixed forward can name several implementations. Its fall-through
+      // site probes every destination, and a citation resolves only when all exist.
+      assert.equal([...spine.matchAll(/\bstat\(/g)].length, 3, "exactly three stat call sites, including the batched history probe");
+      assert.match(spine, /const destinations = answer\.destinations \?\? \[answer\.at\];/);
+      assert.ok(spine.includes("controlProbes[control] = (await Promise.all(destinations.map(file => stat(path.join(projectRoot, file))))).every(info => info.isFile());"), "the batched probe requires every destination to be a file");
       // One probe per DISTINCT path: a path cited by two declarations is stat'ed once.
       assert.match(spine, /const cited = new Set\(\);/, "the cited paths are unioned before probing");
     },
@@ -549,12 +551,25 @@ export const workDoctorControlsTests = [
       // THE SETTLING SCENARIO, and it is settled by measurement rather than by
       // assertion (ADR-009/A). Run over the real `wiki/work` through the shipped
       // snapshot builder, so the universe is doctor's own — not a fixture's.
-      const { buildSnapshot } = await import("../../../src/work/doctor.mjs");
+      const { buildSnapshot } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const snapshot = await buildSnapshot(path.join(repoRoot, "wiki", "work"), { projectRoot: repoRoot });
       const findings = registerGroup(snapshot, {});
 
       // The universe, counted the way the check counts it.
-      const { qualifiedRefsIn } = await import("../../../src/declared-id.mjs");
+      const { qualifiedRefsIn } = await import("@aof/work/declared-id");
       let policed = 0;
       for (const row of snapshot.items) {
         for (const text of Object.values(row.docTexts ?? {})) policed += qualifiedRefsIn(text).length;
@@ -601,7 +616,20 @@ export const workDoctorControlsTests = [
   {
     name: "66/02 register: the two seed checks keep their own findings — this lane re-implements neither",
     run: async () => {
-      const { duplicateDriverNumberGroup, CHECK_GROUPS } = await import("../../../src/work/doctor.mjs");
+      const { duplicateDriverNumberGroup, CHECK_GROUPS } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const snapshot = snapshotOf([
         item({ ref: "66", number: "66", slug: "a", docs: { "ARCHITECTURE.md": fitnessRegister("| **FF-01** | a | `test/arch/x.test.mjs` | ADR |", "| **FF-01** | b | `test/arch/x.test.mjs` | ADR |") } }),
         item({ ref: "66", number: "66", slug: "b" }),
@@ -713,8 +741,8 @@ export const workDoctorControlsTests = [
         "two paths in one cell, as FF-6607 carries today — the EXTRACTION half; the resolution half is the lane below",
       );
       // a path in a cell of ANY column other than enforced-by is never probed
-      const other = fitnessDeclarations(fitnessRegister("| **FF-01** | the lane at `src/work/doctor.mjs:411-426`, and `test/other.test.mjs` | `test/arch/x.test.mjs` | ADR |"), "ARCHITECTURE.md");
-      assert.deepEqual(other[0].controls, ["test/arch/x.test.mjs"], "`src/work/doctor.mjs:411-426` is never probed, and neither is a test path in the invariant column");
+      const other = fitnessDeclarations(fitnessRegister("| **FF-01** | the lane at `packages/core/src/work/doctor.mjs:411-426`, and `test/other.test.mjs` | `test/arch/x.test.mjs` | ADR |"), "ARCHITECTURE.md");
+      assert.deepEqual(other[0].controls, ["test/arch/x.test.mjs"], "`packages/core/src/work/doctor.mjs:411-426` is never probed, and neither is a test path in the invariant column");
       // no path anywhere in the cell
       const empty = controlGroup(snapshotOf([item({ docs: { "ARCHITECTURE.md": fitnessRegister("| **FF-01** | an invariant | enforced by review | ADR |") } })], { runners: {} }), {});
       assert.deepEqual(only(empty, "control-unresolved").length, 1, "there is no path a runner could see");
@@ -815,7 +843,7 @@ export const workDoctorControlsTests = [
         ["FooTest.cs", true],
         ["Tests.fs", true],
         ["FooTests.vb", true],
-        ["src/Acme.Service/Program.cs", false],
+        ["packages/core/src/Acme.Service/Program.cs", false],
         ["CallMapper.cs", false],
         ["TestSupport.cs", false],
         ["IntegrationTestBase.cs", false],
@@ -831,7 +859,7 @@ export const workDoctorControlsTests = [
       // non-test source in the same cell stays prose
       const DOTNET = "tests/Acme.Service.Tests/Architecture/ContractsBoundaryTests.cs";
       assert.deepEqual(controlPathsIn(`\`${DOTNET}\` — pending`), [DOTNET]);
-      assert.deepEqual(controlPathsIn("`src/Acme.Service/Program.cs` maps none directly"), []);
+      assert.deepEqual(controlPathsIn("`packages/core/src/Acme.Service/Program.cs` maps none directly"), []);
       // …and the resolution half, through the lane: probed present resolves, absent is leg A's miss
       const register = { "ARCHITECTURE.md": fitnessRegister(`| **FF-04** | the boundary | \`${DOTNET}\` — pending | ADR-001 |`) };
       const resolved = controlGroup(snapshotOf([item({ docs: register })], { probes: { [DOTNET]: true } }), {});

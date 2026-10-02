@@ -1,7 +1,7 @@
 // FF-6601 (milestone 66 / ADR-003) — ONE GHERKIN PARSER.
 //
-// "`src/feature-parse.mjs` is the only module under `src/` recognising a Gherkin
-//  keyword; `src/work.mjs` carries no `Feature:`/`Scenario:`/step-keyword regex and
+// "`packages/core/src/feature-parse.mjs` is the only module under `packages/core/src/` recognising a Gherkin
+//  keyword; `packages/core/src/work.mjs` carries no `Feature:`/`Scenario:`/step-keyword regex and
 //  reaches the grammar only by import."
 //
 // MEASURED AT HEAD before story 66/00: TWO recognisers (`work.mjs:719-755`,
@@ -12,7 +12,7 @@
 //
 // THE SCAN DISTINGUISHES A RECOGNISER FROM A RENDERER (ROUND 3/9). A recogniser is a
 // pattern TESTED against input; a renderer EMITS a keyword into a scaffold —
-// `src/commands/migrate-folder.mjs:611-620` (`:571-580` before 66/00 edited above it)
+// `packages/work/src/commands/migrate-folder.mjs:611-620` (`:571-580` before 66/00 edited above it)
 // writes `Feature:`/`Scenario:`/`Given `
 // into a migrated task stub. A bare keyword-string scan reports THREE homes and is
 // wrong about the tree, so the two shapes are classified separately and the renderer
@@ -25,11 +25,11 @@
 //   3. a keyword string that is a member of a KEYWORD TABLE — an ARRAY literal
 //      (`["Given ", "When ", …]`) or an OBJECT one (`{ head: "Feature:", step: "Given " }`).
 // Shape 3 was added at 66/00's review: the one home's own step lexer
-// (`src/feature-parse.mjs:58-60`) is an array of keywords plus `startsWith` over a
+// (`packages/core/src/feature-parse.mjs:58-60`) is an array of keywords plus `startsWith` over a
 // VARIABLE, so shapes 1 and 2 could not see a copy-paste of it — the single likeliest
 // way a third parser arrives. The object half was added at round 2, after the same
 // table with names on its cells measured invisible. Deliberately broad: a table of
-// keyword strings under `src/` is a grammar, wherever it sits — and measured, widening
+// keyword strings under `packages/core/src/` is a grammar, wherever it sits — and measured, widening
 // it to `{` costs 0 false positives across all 226 modules.
 //
 // WHAT THIS SCAN DOES NOT SEE, stated rather than discovered:
@@ -43,33 +43,34 @@
 // A bare keyword string that is neither tested nor emitted as a document — a UI label
 // or an error message such as `"Feature: coming soon"` — is NEITHER, on purpose: a
 // renderer must emit a LINE (a keyword at line start plus a newline), so a future
-// label under `src/` cannot fail this gate with a message pointing at the wrong thing.
+// label under `packages/core/src/` cannot fail this gate with a message pointing at the wrong thing.
 //
 // THE COMMENT HANDLING IS A LEXER, NOT A REGEX STRIPPER — TECH_DEBT item 24's trap
 // (`//` containing `/*` opens a phantom block and deletes the rest of the file) cannot
 // arise here: comments are consumed character by character, in order, by the same pass
 // that reads the literals.
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 // The one home for structural cuts (milestone 47 / F-47-04-ARCH-2). Used here for the
 // outward cut — the call a keyword string is an argument of — so this gate never
 // measures the LENGTH of what sits before a literal, which is a quantity no rule about
 // the Gherkin grammar mentions.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { enclosingParenGroup } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
-const THE_ONE_PARSER = "src/feature-parse.mjs";
-const THE_NAMED_RENDERER = "src/commands/migrate-folder.mjs";
+const THE_ONE_PARSER = "packages/work/src/feature-parse.mjs";
+const THE_NAMED_RENDERER = "packages/work/src/commands/migrate-folder.mjs";
 
 // THE_FORBIDDEN_IMPORTER — the one module that carries a headline recogniser and may
 // NOT reach the one home, named here because two invariants in this repository were in
 // direct conflict and only one of them could stand as written.
 //
-// `src/phase-brief.mjs` condenses a contract to its headlines under a character budget.
+// `packages/work/src/phase-brief.mjs` condenses a contract to its headlines under a character budget.
 // It is a PURE LEAF whose emptiness is not a preference but a guarded contract, twice
 // over: `arch/70 FF-7010` asserts it "pulls in nothing — not even a node builtin", and
 // `arch/53 FF-7002` (extended) asserts "the phase-brief leaf imports nothing from src/
@@ -88,7 +89,7 @@ const THE_NAMED_RENDERER = "src/commands/migrate-folder.mjs";
 // A third module wanting on this list is a review question, not a precedent: the
 // exemption is a named site (m47/R9 — a named site, never a count), so adding one is a
 // visible edit here with its own justification, exactly as this one is.
-const THE_FORBIDDEN_IMPORTER = "src/phase-brief.mjs";
+const THE_FORBIDDEN_IMPORTER = "packages/work/src/phase-brief.mjs";
 
 // The Gherkin vocabulary, exactly as the grammar spells it — step keywords carry
 // their trailing space, because that is what makes them keywords.
@@ -102,7 +103,7 @@ const asPlainGrammar = (pattern) => pattern.replace(/[\\^$?*+|()[\]{}]/g, "");
 
 // A RENDERER emits a Gherkin DOCUMENT: a LINE — a structural keyword (or an indented
 // step) at line start, and a line ending. Both halves are load-bearing. Narrower than
-// "carries a keyword" because six CLI usage strings in `src/cli.mjs` carry a bare
+// "carries a keyword" because six CLI usage strings in `packages/core/src/cli.mjs` carry a bare
 // `Examples:` line; narrower than "a keyword at line start" because a UI label or an
 // error message (`"Feature: coming soon"`) is not a scaffold, and a gate that named it
 // one would fail with a message pointing at the wrong thing.
@@ -113,7 +114,7 @@ const emitsGherkin = (value) => {
 };
 
 // A single-pass LEXER over the source: comments are skipped (a comment is prose ABOUT
-// the grammar — `src/effects/assignment-transitions.mjs:41` says "Then the FACT is
+// the grammar — `packages/core/src/effects/assignment-transitions.mjs:41` says "Then the FACT is
 // written" — and 40-odd modules carry one, so an unstripped scan is noise), and every
 // string / template / regex literal is emitted with its kind and its position. Linear
 // by construction: a regex-based scan of ~120 modules backtracks catastrophically.
@@ -256,7 +257,10 @@ export function classify(sources) {
       // object literal (`{ head: "Feature:", step: "Given " }` — the same table with
       // names on its cells, added at round 2 after the architect measured it invisible;
       // widening to `{` costs 0 false positives across all 226 modules).
-      if (["[", "{"].includes(enclosingOpener(masked, literal.start))) {
+      // A factory body is also a brace block. Only a literal table cell counts;
+      // scalar assignment inside that block is not a keyword table.
+      const tableCell = /(?:\[|,|:)\s*$/.test(masked.slice(0, literal.start));
+      if (tableCell && ["[", "{"].includes(enclosingOpener(masked, literal.start))) {
         hits.recogniser.push(literal.value);
         continue;
       }
@@ -269,18 +273,7 @@ export function classify(sources) {
 }
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  return Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ file: file.rel, text: await readFile(file.path, "utf8") })));
 }
 
 export const archTests = [
@@ -333,8 +326,8 @@ export const archTests = [
   {
     name: "arch/FF-6601: src/work.mjs carries no keyword regex and reaches the grammar only by importing the leaf",
     run: async () => {
-      const text = await readFile(path.join(srcDir, "work.mjs"), "utf8");
-      const { recognisers, renderers } = classify([{ file: "src/work.mjs", text }]);
+      const text = await readFile(path.join(repoRoot, "packages/work/src/validation.mjs"), "utf8");
+      const { recognisers, renderers } = classify([{ file: "packages/core/src/application/bindings/work.mjs", text }]);
       assert.deepEqual(recognisers, [], `work.mjs carries no Gherkin recogniser: ${JSON.stringify(recognisers)}`);
       assert.deepEqual(renderers, [], `and emits no Gherkin either: ${JSON.stringify(renderers)}`);
       // The import-statement parse: the god node reaches the grammar by import.
@@ -349,12 +342,12 @@ export const archTests = [
     run: () => {
       const planted = [
         { file: THE_ONE_PARSER, text: 'const SCENARIO_RE = /^Scenario( Outline)?:/;\nif (/^Feature:/.test(line)) {}\nif (line.startsWith("Given ")) {}\n' },
-        { file: "src/pretend-second-home.mjs", text: 'for (const raw of lines) {\n  if (/^Scenario( Outline)?:/.test(raw.trim())) count += 1;\n}\n' },
+        { file: "packages/core/src/pretend-second-home.mjs", text: 'for (const raw of lines) {\n  if (/^Scenario( Outline)?:/.test(raw.trim())) count += 1;\n}\n' },
       ];
       const { recognisers } = classify(planted);
       assert.deepEqual(
         recognisers.map((entry) => entry.file).sort(),
-        ["src/feature-parse.mjs", "src/pretend-second-home.mjs"],
+        [THE_ONE_PARSER, "packages/core/src/pretend-second-home.mjs"].sort(),
         "a second hand-rolled parse must be visible to this gate — the whole point of FF-6601",
       );
     },
@@ -362,12 +355,12 @@ export const archTests = [
   {
     name: "arch/FF-6601: NON-VACUITY — a planted copy of the ONE HOME'S OWN step lexer (a keyword ARRAY + startsWith over a variable) is detected",
     run: () => {
-      // The shape `src/feature-parse.mjs:58-60` itself uses. Neither a regex literal
+      // The shape `packages/core/src/feature-parse.mjs:58-60` itself uses. Neither a regex literal
       // nor a keyword string next to a matcher, so shapes 1 and 2 are blind to it —
       // and a copy-paste of the one home is the likeliest way a third parser arrives.
       const planted = [
         {
-          file: "src/pretend-third-parser.mjs",
+          file: "packages/core/src/pretend-third-parser.mjs",
           text:
             'const STEP_KEYWORDS = ["Given ", "When ", "Then ", "And ", "But "];\n' +
             "const isStepLine = (line) => STEP_KEYWORDS.some((keyword) => line.startsWith(keyword));\n",
@@ -376,7 +369,7 @@ export const archTests = [
       const { recognisers, renderers } = classify(planted);
       assert.deepEqual(
         recognisers.map((entry) => entry.file),
-        ["src/pretend-third-parser.mjs"],
+        ["packages/core/src/pretend-third-parser.mjs"],
         "an array of Gherkin keywords under src/ IS a grammar, wherever it sits",
       );
       assert.equal(recognisers[0].hits.length, 5, "every keyword in the array is reported, not just the first");
@@ -385,11 +378,11 @@ export const archTests = [
       // shape, invisible to this gate until round 2.
       const asObject = classify([
         {
-          file: "src/pretend-object-table.mjs",
+          file: "packages/core/src/pretend-object-table.mjs",
           text: 'const K = { head: "Feature:", step: "Given " };\nexport const isStep = (line) => line.startsWith(K.step);\n',
         },
       ]);
-      assert.deepEqual(asObject.recognisers.map((entry) => entry.file), ["src/pretend-object-table.mjs"], "a keyword table is a grammar with or without cell names");
+      assert.deepEqual(asObject.recognisers.map((entry) => entry.file), ["packages/core/src/pretend-object-table.mjs"], "a keyword table is a grammar with or without cell names");
       assert.deepEqual(asObject.recognisers[0].hits, ["Feature:", "Given "]);
       // The one home carries this shape, which is why the real sweep still names it.
       const real = classify([{ file: THE_ONE_PARSER, text: 'const STEP_KEYWORDS = ["Given ", "When "];\n' }]);
@@ -400,31 +393,33 @@ export const archTests = [
     name: "arch/FF-6601: a UI label or error string carrying a keyword is NEITHER — the gate never fails pointing at the wrong thing",
     run: () => {
       const planted = [
-        { file: "src/pretend-label.mjs", text: 'const EMPTY = "Feature: coming soon";\nconst ERR = `Scenario: ${name} not found`;\n' },
+        { file: "packages/core/src/pretend-label.mjs", text: 'const EMPTY = "Feature: coming soon";\nconst ERR = `Scenario: ${name} not found`;\n' },
       ];
       assert.deepEqual(classify(planted), { recognisers: [], renderers: [] }, "a label is not a scaffold and not a parser");
+      assert.deepEqual(classify([{ file: "packages/core/src/factory.mjs", text: 'function factory() { const instruction = `When the directive is complete, report it.`; return instruction; }' }]), { recognisers: [], renderers: [] }, "scalar prose inside a function block is not a table");
+      assert.equal(classify([{ file: "packages/core/src/factory.mjs", text: 'function factory() { const keywords = { step: "Given ", when: "When " }; return keywords; }' }]).recognisers.length, 1, "an object keyword table inside the same block is still detected");
       // …while the scaffold shape — a keyword line WITH its line ending — still is.
-      const scaffold = classify([{ file: "src/pretend-scaffold.mjs", text: 'return `Feature: ${title}\\n`;\n' }]);
-      assert.deepEqual(scaffold.renderers.map((entry) => entry.file), ["src/pretend-scaffold.mjs"]);
+      const scaffold = classify([{ file: "packages/core/src/pretend-scaffold.mjs", text: 'return `Feature: ${title}\\n`;\n' }]);
+      assert.deepEqual(scaffold.renderers.map((entry) => entry.file), ["packages/core/src/pretend-scaffold.mjs"]);
     },
   },
   {
     name: "arch/FF-6601: NON-VACUITY — a planted keyword STRING matcher is detected, and a planted RENDERER is not mistaken for one",
     run: () => {
       const planted = [
-        { file: "src/pretend-string-matcher.mjs", text: 'if (line.startsWith("Scenario:")) return true;\nif (trimmed === "Feature:") return false;\n' },
-        { file: "src/pretend-renderer.mjs", text: 'return `Feature: ${title}\\n  Scenario: ${title}\\n    Given the migrated work\\n`;\n' },
-        { file: "src/pretend-comment.mjs", text: '// Then the FACT is written and the EVENT appended (write-then-append)\nconst x = 1;\n' },
+        { file: "packages/core/src/pretend-string-matcher.mjs", text: 'if (line.startsWith("Scenario:")) return true;\nif (trimmed === "Feature:") return false;\n' },
+        { file: "packages/core/src/pretend-renderer.mjs", text: 'return `Feature: ${title}\\n  Scenario: ${title}\\n    Given the migrated work\\n`;\n' },
+        { file: "packages/core/src/pretend-comment.mjs", text: '// Then the FACT is written and the EVENT appended (write-then-append)\nconst x = 1;\n' },
       ];
       const { recognisers, renderers } = classify(planted);
-      assert.deepEqual(recognisers.map((e) => e.file), ["src/pretend-string-matcher.mjs"], "a string matcher IS a recogniser");
-      assert.deepEqual(renderers.map((e) => e.file), ["src/pretend-renderer.mjs"], "a template literal is a RENDERER, and a comment is neither");
+      assert.deepEqual(recognisers.map((e) => e.file), ["packages/core/src/pretend-string-matcher.mjs"], "a string matcher IS a recogniser");
+      assert.deepEqual(renderers.map((e) => e.file), ["packages/core/src/pretend-renderer.mjs"], "a template literal is a RENDERER, and a comment is neither");
       // …including when the call's argument list spans LINES — the cut is the enclosing
       // call, so a matcher does not escape by being formatted across four of them.
       const multiline = classify([
-        { file: "src/pretend-multiline.mjs", text: 'if (\n  line.startsWith(\n    "Given "\n  )\n) return true;\n' },
+        { file: "packages/core/src/pretend-multiline.mjs", text: 'if (\n  line.startsWith(\n    "Given "\n  )\n) return true;\n' },
       ]);
-      assert.deepEqual(multiline.recognisers.map((e) => e.file), ["src/pretend-multiline.mjs"]);
+      assert.deepEqual(multiline.recognisers.map((e) => e.file), ["packages/core/src/pretend-multiline.mjs"]);
     },
   },
 ];

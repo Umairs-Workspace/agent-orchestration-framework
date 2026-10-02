@@ -45,9 +45,9 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-003** —
 read/write resolver split inherited from `08/ADR-003`). This story **owns**:
 `src/commands/run-start.mjs` / `run-complete.mjs` / `run-status.mjs` (each a thin wrapper over story 00's
 `run-store.mjs`, the `next.mjs`-over-`nextWork` idiom), their registration in
-[command-core.mjs](../../../../../../src/command-core.mjs) (one import + one `COMMANDS` entry each — the
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs) (one import + one `COMMANDS` entry each — the
 additive 08 move), and the `work run-start` / `work run-complete` / `work run-status` dispatch + adapters in
-[cli.mjs](../../../../../../src/cli.mjs). It **extends** `test/arch/acd-work-command-cli-bijection.test.mjs`
+[cli.mjs](../../../../../../packages/core/src/cli.mjs). It **extends** `test/arch/acd-work-command-cli-bijection.test.mjs`
 with the three `argsFor` cases. It does **not** author store mechanics (story 00) and does **not** touch
 `board-ui.mjs` (milestone 21).
 

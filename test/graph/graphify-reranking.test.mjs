@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 01 (graph-grounded-reranking),
 // task 00 — 00_graph-reranks-by-file-relatedness.feature.
 //
 // Covers EVERY @executable scenario AND every Scenario-Outline Examples row of that
 // feature, driving the FROZEN pure re-ranker `rerank(records, normalizedGraph, query,
-// scope, opts)` (../src/memory/graphify-backend.mjs) directly over the COMMITTED,
+// scope, opts)` (../packages/core/src/memory/graphify-backend.mjs) directly over the COMMITTED,
 // hand-authored fixtures — NO live binary, NO spawn, NO normalizeGraph round-trip:
 //   tasks/fixtures/reranking-records.json           (frozen 05/ADR-005 MemoryRecords)
 //   tasks/fixtures/reranking-graph.normalized.json  (the 09/ADR-003 normalized graph)
@@ -21,8 +22,8 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { rerank } from "../../src/memory/graphify-backend.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../src/memory/local-retrieval.mjs";
+const rerank = _aofApplication.knowledge.memory.graphifyBackend.rerank;
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FIXTURE_DIR = path.join(

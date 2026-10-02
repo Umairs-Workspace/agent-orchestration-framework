@@ -17,10 +17,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
-import { BRIEF_SECTION_PRIORITY } from "../../../src/phase-brief.mjs";
+import { BRIEF_SECTION_PRIORITY } from "@aof/work/phase-brief";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(root, "src");
+const srcRoot = path.join(root, "packages", "core", "src");
 const FOUR_KEYS = ["itemRef", "worktreeCwd", "task", "command"];
 
 // The `compilePhaseBrief` input key each declared section arrives under. `item` is the one
@@ -42,7 +42,7 @@ const DISK_READS = ["readFile", "readdir", "readOptional", "readTaskContracts"];
 // THERE IS EXACTLY ONE. `callSitePairs` takes the FIRST `compilePhaseBrief(` it finds, so
 // without this the guard says nothing about a second one added later — and a second call
 // site in the reader is precisely where an unaddressed document would come back, since the
-// whole check is "what is bound at the call site". Today `src/` holds one; asserted, not
+// whole check is "what is bound at the call site". Today `packages/core/src/` holds one; asserted, not
 // assumed, and asserted as a COUNT rather than as an existence so both directions fail.
 function assertOneCallSite(reader) {
   assert.equal(
@@ -133,7 +133,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): the driver still takes (brief, options) and reads the additive brief.context — no rival context/payload/digest parameter",
     run: async () => {
-      const driver = await readFile(path.join(srcRoot, "agent-session-driver.mjs"), "utf8");
+      const driver = await readFile(path.join(root, "packages/execution/src/session-driver.mjs"), "utf8");
       assert.match(driver, /driveInteractiveClaudeSession\s*\(\s*brief\s*,\s*options\s*=\s*\{\s*\}\)/u, "the driver's signature stays (brief, options) — the brief bag is the one context carrier");
       assert.match(driver, /brief\.context/u, "the driver reads the additive brief.context key");
       assert.doesNotMatch(driver, /driveInteractiveClaudeSession\s*\(\s*(?:context|payload|digest)\b/u, "no rival-named first parameter was introduced");
@@ -142,8 +142,8 @@ export const archTests = [
   {
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): both callers construct the brief bag with the four existing keys and add context additively, never replacing any",
     run: async () => {
-      const drive = await readFile(path.join(srcRoot, "commands", "drive.mjs"), "utf8");
-      const mesh = await readFile(path.join(srcRoot, "mesh/worker-execution.mjs"), "utf8");
+      const drive = await readFile(path.join(root, "packages/work-loop/src/commands/drive.mjs"), "utf8");
+      const mesh = await readFile(path.join(srcRoot, "../../mesh/src/worker-execution.mjs"), "utf8");
       for (const [name, src] of [["drive.mjs", drive], ["mesh/worker-execution.mjs", mesh]]) {
         for (const key of FOUR_KEYS) {
           assert.ok(new RegExp(`\\b${key}\\b`, "u").test(src), `${name} still constructs the brief bag with ${key}`);
@@ -155,7 +155,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7001 (acd-phase-brief-single-bag): the four existing brief keys keep their meaning — the context is a sibling spread, not a replacement (drive.mjs's additive spread is present)",
     run: async () => {
-      const drive = await readFile(path.join(srcRoot, "commands", "drive.mjs"), "utf8");
+      const drive = await readFile(path.join(root, "packages/work-loop/src/commands/drive.mjs"), "utf8");
       // drive.mjs adds context as a conditional sibling spread on the SAME bag that carries
       // the four keys — never a standalone argument, never replacing a key.
       assert.match(drive, /\{\s*context:\s*phaseContext\s*\}/u, "context is a sibling key on the brief bag");
@@ -167,7 +167,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7010 (acd-phase-brief-single-bag): every section at the compilePhaseBrief call site is bound to a named `const …Section = <helper>(…)` whose helper is imported from ./phase-brief.mjs — all seven of them",
     run: async () => {
-      const reader = stripComments(await readFile(path.join(srcRoot, "phase-brief-read.mjs"), "utf8"));
+      const reader = stripComments(await readFile(path.join(root, "packages/work/src/phase-brief-read.mjs"), "utf8"));
       assertOneCallSite(reader);
       const pairs = callSitePairs(reader);
       assert.ok(pairs != null, "the reader has one compilePhaseBrief call site with an object argument");
@@ -203,7 +203,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7010 (acd-phase-brief-single-bag): no identifier bound directly from a disk read appears in any section value at the compilePhaseBrief call site — `objective: spec` and `story` were the measured violations",
     run: async () => {
-      const reader = stripComments(await readFile(path.join(srcRoot, "phase-brief-read.mjs"), "utf8"));
+      const reader = stripComments(await readFile(path.join(root, "packages/work/src/phase-brief-read.mjs"), "utf8"));
       assertOneCallSite(reader);
       const pairs = callSitePairs(reader);
       assert.ok(pairs != null, "the reader has one compilePhaseBrief call site with an object argument");
@@ -230,12 +230,12 @@ export const archTests = [
       }
 
       // The pure compiler is where addressing lives, and it stays pure while it does so — as a
-      // FAMILY (119/ADR-002): the subject is `src/phase-brief/` when that directory exists and
-      // `src/phase-brief.mjs` when it does not, an intra-family specifier is admitted, and every
+      // FAMILY (119/ADR-002): the subject is `packages/core/src/phase-brief/` when that directory exists and
+      // `packages/work/src/phase-brief.mjs` when it does not, an intra-family specifier is admitted, and every
       // external dependency — a bare specifier, a node builtin, a relative path leaving the family —
       // is still a violation naming the file and the specifier.
-      await assertFamilyPurity(assert, root, "src/phase-brief");
-      const compiler = await readFile(path.join(srcRoot, "phase-brief.mjs"), "utf8");
+      await assertFamilyPurity(assert, root, "packages/work/src/phase-brief");
+      const compiler = await readFile(path.join(root, "packages/work/src/phase-brief.mjs"), "utf8");
       for (const verb of DISK_READS) {
         assert.doesNotMatch(compiler, new RegExp(`\\b${verb}\\b`, "u"), `the compiler performs no ${verb}`);
       }

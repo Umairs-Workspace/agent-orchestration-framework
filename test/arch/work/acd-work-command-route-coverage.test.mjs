@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 08 / ADR-004 inv. 1, GENERALISED by milestone 15
 // / ADR-005 from "exactly six" to REGISTRY-DERIVED (route ↔ command BIJECTION):
 // "The /api/work/<op> set served by board-ui.mjs is in BIJECTION with the
@@ -21,11 +22,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD_UI = path.join(repoRoot, "src", "board-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages", "server", "src", "board-ui.mjs");
 
 // Commands whose BOARD face is deliberately deferred — registered into the core
 // (so the CLI bijection covers them, acd-work-command-cli-bijection) but NOT
@@ -77,14 +79,14 @@ const BOARD_DEFERRED = new Set([
   // member has: a `GET /api/work/grade` that executed the declared rubric would let a PAGE
   // LOAD spawn a test run, and this very gate stands the server up and hits every served
   // route. The grade still reaches the board — it rides the run record (`brief.grade`,
-  // 54/ADR-008 §3) and arrives through `work:run-status` unchanged, so `src/board-ui.mjs`
+  // 54/ADR-008 §3) and arrives through `work:run-status` unchanged, so `packages/core/src/board-ui.mjs`
   // and `ui/` gain nothing. This is a deliberate carve-out, not an oversight.
   "grade",
   // milestone 96 / story 04 (96/ADR-008) — `regression-gate` is deferred for exactly `grade`'s
   // reason, and it is the stronger case of the two: a `GET /api/work/regression-gate` would let a
   // PAGE LOAD run the WHOLE tree, and this very gate stands the server up and hits every served
   // route. What the gate produces is a FILE in the milestone's folder (`REGRESSION.md`), and it is
-  // deferred on the same terms as 78's `EXECUTION.md`: neither is in `src/work/artifacts.mjs`'s
+  // deferred on the same terms as 78's `EXECUTION.md`: neither is in `packages/core/src/work/artifacts.mjs`'s
   // requestable manifest, so neither is board-readable today, and adding a read affordance is a
   // separate, deliberate decision. This entry records both deferrals, not an oversight.
   "regression-gate",
@@ -182,7 +184,7 @@ const BOARD_DEFERRED = new Set([
   // route and re-pinned FF-5307's frozen board seam around it; the route was removed at the 55/01
   // gate and the seam restored, because a board face for this family is not a deferral awaiting a
   // decision — it is a decision already recorded at 53's gate. The report reaches its one real
-  // consumer in-process (`invokeRegistered("work:loops-groundedness")`, src/commands/loop.mjs),
+  // consumer in-process (`invokeRegistered("work:loops-groundedness")`, packages/core/src/commands/loop.mjs),
   // never over HTTP.
   "loops-groundedness",
   // story 79 — `loop-document` is the loop registry's ONE writer: it projects the four reads

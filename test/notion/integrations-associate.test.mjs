@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 00, task 02 —
 // tasks/02_associate-writes-descriptor.feature (@executable, every scenario + every
 // Scenario-Outline row). One test object per @executable scenario/row; ADR-001/003/004/006.
@@ -16,8 +17,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/
 import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { notionAssociateCommand } from "../../src/commands/notion-associate.mjs";
-import { readRouting } from "../../src/integrations/routing.mjs";
+const notionAssociateCommand = _aofApplication.getCommand("notion:associate");
+const readRouting = _aofApplication.work.integrations.routing.readRouting;
 
 const board = (parents) => ({
   dataSourceId: "ds-x",

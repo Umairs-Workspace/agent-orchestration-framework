@@ -55,9 +55,9 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-001** age
 `graph:query` answer, never parses, **ADR-002** the two prompt-wiring edits — `aof-architect.md` +
 `refine.md` step 2, **ADR-003** build-fresh freshness, **ADR-004** advisory-only, **ADR-005** reach via
 the 09 commands / the aof MCP `graph_query` tool + the codebase build scope). This story **owns** the edits
-to [src/bundle/agents/aof-architect.md](../../../../../../src/bundle/agents/aof-architect.md) (the
+to [src/bundle/agents/aof-architect.md](../../../../../../packages/core/assets/agents/aof-architect.md) (the
 structural-review + story-boundary coupling step) and
-[src/bundle/commands/refine.md](../../../../../../src/bundle/commands/refine.md) step 2 (the boundary-coupling
+[src/bundle/commands/refine.md](../../../../../../packages/core/assets/commands/refine.md) step 2 (the boundary-coupling
 step). It **consumes** story-00's convention (build-fresh / read-legible-output / advisory / no-op) and the
 frozen 09 `graph:build` + `graph:query` commands unchanged; it adds **no production code** and reads
 **no `graph.json`** (the agent reads the command's markdown answer — ADR-001).

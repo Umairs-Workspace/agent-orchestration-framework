@@ -6,16 +6,16 @@
 // stylesheet's reduced-motion block actually SILENCE", and "is the answer read from CODE rather
 // than from prose":
 //   · `test/arch/loop/acd-motion-has-an-escape.test.mjs` — the structural gate (set containment over
-//     the WHOLE of `ui/src/**`), which is a fitness function and lives with the other eight.
+//     the WHOLE of `apps/ui/src/**`), which is a fitness function and lives with the other eight.
 //   · `test/session/terminal-motion-reduced-escape.test.mjs` — 49/06's task scenarios 1 and 5, which are
 //     observable-behaviour claims about the terminal's two motion-carrying states.
 // Copying the detector would put the mechanism in two places inside the very milestone whose
 // finding is a mechanism claimed in one place and implemented in none. One home, two readers —
-// the same argument `test/support/terminal-gate-detectors.mjs` records for its own existence.
+// the same argument `apps/ui/test/support/terminal-gate-detectors.mjs` records for its own existence.
 //
 // COMMENTS ARE STRIPPED BEFORE EVERY READING, AND THAT IS THE WHOLE POINT HERE.
 // The defect this milestone found is a COMMENT that claimed the escape existed
-// (`ui/src/terminal/palette.mjs`, until 49/06) while the stylesheet's only reduce rule named
+// (`apps/ui/src/terminal/palette.mjs`, until 49/06) while the stylesheet's only reduce rule named
 // `.aof-pending` alone. A naive `prefers-reduced-motion` word sweep of that file was GREEN on the
 // live defect — it would have certified the exact thing it was written to catch, out of a
 // sentence. So every function below reads `stripComments`ed source, and the stripper is the ONE
@@ -34,7 +34,7 @@ import { matchedBraceBody, stripComments } from "./source-slice.mjs";
 export { stripComments };
 
 export const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const UI_SRC = path.join(repoRoot, "ui", "src");
+export const UI_SRC = path.join(repoRoot, "apps", "ui", "src");
 export const UI_STYLESHEET = path.join(UI_SRC, "index.css");
 
 // The source extensions that can EMIT a utility class. `.css` is deliberately absent: the

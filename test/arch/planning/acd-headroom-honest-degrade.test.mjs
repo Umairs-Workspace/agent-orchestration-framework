@@ -6,7 +6,7 @@
 //   - enabled + routable + headroom on PATH            → { bin:<headroom>, args:['wrap', provider, ...rawArgs] }
 //  It performs no spawn and no real PATH walk — the headroom lookup is the injected `which`."
 //
-// RED-until-built and CORRECT: src/headroom.mjs does not export
+// RED-until-built and CORRECT: packages/core/src/headroom.mjs does not export
 // `resolveHeadroomLaunch` yet, so the import below rejects with ERR_MODULE_NOT_FOUND
 // (a missing-source red, not a syntax error). The wrap-routing story builds the
 // module against this exact frozen signature; the test then drives every branch.
@@ -15,15 +15,15 @@
 // mirrors how terminal-providers injects `which` so degrade branches need no real PATH.
 import assert from "node:assert/strict";
 
-// LAZY resolution (NOT a top-level import): src/headroom.mjs does not exist yet, so
+// LAZY resolution (NOT a top-level import): packages/core/src/headroom.mjs does not exist yet, so
 // each run() dynamically imports it. A missing module is then a CLEAN assertion red
 // inside the case — not an ERR_MODULE_NOT_FOUND that crashes the whole suite at
 // scripts/test.mjs load time (the established RED-until-built idiom, see
 // acd-roundtrip-reuses-shipped-code).
-const headroomUrl = new URL("../../../src/headroom.mjs", import.meta.url).href;
+const headroomUrl = new URL("../../../packages/core/src/headroom.mjs", import.meta.url).href;
 async function loadResolver() {
   const mod = await import(headroomUrl);
-  assert.equal(typeof mod.resolveHeadroomLaunch, "function", "src/headroom.mjs exports resolveHeadroomLaunch (RED until the wrap-routing story builds it)");
+  assert.equal(typeof mod.resolveHeadroomLaunch, "function", "packages/core/src/headroom.mjs exports resolveHeadroomLaunch (RED until the wrap-routing story builds it)");
   return mod.resolveHeadroomLaunch;
 }
 

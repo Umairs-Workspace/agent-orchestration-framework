@@ -1,15 +1,17 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import { mkdtemp, mkdir, rm, writeFile, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { spawnCliSync } from "./cli-spawn.mjs";
 import { renderRecord } from "./loop-registry-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const fixtureDate = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 const fixtureMtime = new Date(`${fixtureDate}T00:00:00Z`);
 
@@ -117,7 +119,7 @@ export async function makeLoopReadyRepo({
     globalHome,
     env,
     ctx,
-    cleanup: () => rm(repo, { recursive: true, force: true }),
+    cleanup: () => rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }),
   };
 }
 

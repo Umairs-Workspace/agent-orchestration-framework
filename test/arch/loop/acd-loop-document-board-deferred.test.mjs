@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 79 / task 03 — REGISTRATION, THE FROZEN LISTS, AND THE ABSENT DOORS.
 //
 // The writer registers into the same command core every `work:*` command uses (08/ADR-001), which
@@ -18,14 +20,16 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
-import { readDescriptor } from "../../../src/work/bundle.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
+import { readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const ROUTE_COVERAGE = path.join(repoRoot, "test/arch/work/acd-work-command-route-coverage.test.mjs");
-const BOARD_UI = path.join(repoRoot, "src/board-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages/server/src/board-ui.mjs");
 const ID = "work:loop-document";
 const OP = "loop-document";
 
@@ -85,7 +89,7 @@ export const archTests = [
       const { spawnCliSync } = await import("../../support/cli-spawn.mjs");
       const { withRepo } = await import("../../support/loop-document-fixture.mjs");
       const command = getCommand(ID);
-      const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+      const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
       await withRepo({}, async (repo) => {
         const env = { ...process.env, AOF_GLOBAL_HOME: repo.root };
@@ -139,7 +143,7 @@ export const archTests = [
   {
     name: "arch/79/03 the UI gains no reference to the loop family",
     run: async () => {
-      const files = await uiSourceFiles(path.join(repoRoot, "ui"));
+      const files = await uiSourceFiles(path.join(repoRoot, "apps", "ui"));
       assert.ok(files.length > 10, "the ui/ sweep is non-vacuous");
       const tokens = [ID, OP, "loop-document", "loopDocument", "work-loops", "loops-graph", "loops-validate"];
       for (const file of files) {
@@ -170,12 +174,28 @@ export const archTests = [
   {
     name: "arch/79/03 every registry read verb and the new writer leave a fixture registry byte-identical",
     run: async () => {
-      const { loadWorkspace } = await import("../../../src/command-core.mjs");
-      const { loopsShowCommand } = await import("../../../src/commands/loops-show.mjs");
-      const { loopsGraphCommand } = await import("../../../src/commands/loops-graph.mjs");
-      const { loopsValidateCommand } = await import("../../../src/commands/loops-validate.mjs");
-      const { createLoopsGroundednessCommand } = await import("../../../src/commands/loops-groundedness.mjs");
-      const { loopDocumentCommand } = await import("../../../src/commands/loop-document.mjs");
+      const { loadWorkspace } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
+      const { loopsShowCommand } = await Promise.resolve(Object.freeze({
+  loopsShowCommand: _aofApplication.getCommand("work:loops-show"),
+}));
+      const { loopsGraphCommand } = await Promise.resolve(Object.freeze({
+  loopsGraphCommand: _aofApplication.getCommand("work:loops-graph"),
+}));
+      const { loopsValidateCommand } = await Promise.resolve(Object.freeze({
+  loopsValidateCommand: _aofApplication.getCommand("work:loops-validate"),
+}));
+      const { createLoopsGroundednessCommand } = await Promise.resolve(Object.freeze({
+  createLoopsGroundednessCommand: _aofApplication.graph.commandTools.loopsGroundedness.createLoopsGroundednessCommand,
+  resolveAnchorAuthorities: _aofApplication.graph.commandTools.loopsGroundedness.resolveAnchorAuthorities,
+}));
+      const { loopDocumentCommand } = await Promise.resolve(Object.freeze({
+  loopDocumentCommand: _aofApplication.getCommand("work:loop-document"),
+}));
       const { snapshot, withRepo } = await import("../../support/loop-document-fixture.mjs");
 
       await withRepo({}, async (repo) => {

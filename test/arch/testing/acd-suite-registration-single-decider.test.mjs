@@ -1,3 +1,5 @@
+import { isArraySuiteSpecifier } from "../../support/registration/registration-surface.mjs";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-suite-registration-single-decider (milestone 72 / story 01, FF-7203;
 // ADR-004 §4, ADR-002 §1c).
 //
@@ -29,15 +31,16 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { registrationDecision, runnerImportedSuites } from "../../../src/work-audit/census.mjs";
-import { registrationReport } from "../../../src/work/test-select.mjs";
+const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
+const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
+const registrationReport = _aofApplication.work.testSelect.registrationReport;
 import { IMPORT_OF, SPREAD_ROW, bindingsOf, directoryCensus, readIndexes, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 
-const CENSUS = "src/work-audit/census.mjs";
-const REPORTER = "src/work/test-select.mjs";
-const STORY_MODULES = Object.freeze([REPORTER, "src/graph-impact.mjs", "src/work/test-changed.mjs"]);
+const CENSUS = "packages/work/src/audit/census.mjs";
+const REPORTER = "packages/work/src/testing/select.mjs";
+const STORY_MODULES = Object.freeze([REPORTER, "packages/knowledge/src/graph-impact.mjs", "packages/work/src/testing/changed.mjs"]);
 
 const sourceOf = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
 const modulesOf = (rels) => rels.map((rel) => ({ rel, code: sourceOf(rel) }));
@@ -49,17 +52,17 @@ const modulesOf = (rels) => rels.map((rel) => ({ rel, code: sourceOf(rel) }));
 const RE_DERIVATIONS = Object.freeze([
   {
     derivation: "a pattern over a suite import line",
-    duplicates: "runnerImportedSuites (src/work-audit/census.mjs), which already reads which suite modules a runner's source names",
+    duplicates: "runnerImportedSuites (packages/core/src/work-audit/census.mjs), which already reads which suite modules a runner's source names",
     test: (code) => /\.test\\\.mjs|from\\s\+"\(\[\^"\]\+\\\.test/u.test(code) || /matchAll\s*\(\s*\/[^/]*\\\.test\\\.mjs/u.test(code) || /\/[^/\n]*from[^/\n]*\\\.test\\\.mjs[^/\n]*\//u.test(code),
   },
   {
     derivation: "a matcher over a spread row",
-    duplicates: "runCensus's never-spread derivation (src/work-audit/census.mjs), the text-level lane the decider deliberately sits above",
+    duplicates: "runCensus's never-spread derivation (packages/core/src/work-audit/census.mjs), the text-level lane the decider deliberately sits above",
     test: (code) => /\\s\*\\\.\\\.\\\./u.test(code) || /\/\^[^/\n]*\\\.\\\.\\\./u.test(code),
   },
   {
     derivation: "a second baseline of unregistered suites",
-    duplicates: "UNREGISTERED_BASELINE (src/work-audit/census.mjs), the shrink-only ledger with one home",
+    duplicates: "UNREGISTERED_BASELINE (packages/core/src/work-audit/census.mjs), the shrink-only ledger with one home",
     test: (code) => /UNREGISTERED_BASELINE\s*=/u.test(code) || /\b(?:unregisteredBaseline|UNREGISTERED_SUITES)\s*=/u.test(code),
   },
   {
@@ -104,10 +107,14 @@ export const archTests = [
     run: () => {
       const source = stripComments(sourceOf(REPORTER));
       assert.ok(source.length > 200, `${REPORTER} was actually read (${source.length} bytes)`);
+      const composition = stripComments(sourceOf("packages/core/src/application/bindings/work/test-select.mjs"));
+      for (const code of [source, composition]) {
+        assert.match(code, /createTestSelector\(\{[^}]*\bregistrationDecision\b/u, "the shared decider is supplied to the package");
+      }
 
       assert.match(
-        source,
-        /import\s*\{[^}]*registrationDecision[^}]*\}\s*from\s+"(?:\.\.?\/)+work-audit\/census\.mjs"/u,
+        composition,
+        /const\s*\{[^}]*registrationDecision[^}]*\}\s*= workAuditCensusServices/u,
         "the decision comes from the shared census module, by import",
       );
       // …and the import is live, not decorative: the function this module calls IS the census's.
@@ -118,7 +125,7 @@ export const archTests = [
       // runner's own process, which is exactly what this module may not do — so it accepts both
       // and produces neither, and the reuse claim stays clearable by a module that cannot honestly
       // produce provenance.
-      const parameters = destructuredParameters(sourceOf(REPORTER), "export function registrationReport");
+      const parameters = destructuredParameters(sourceOf(REPORTER), "function registrationReport");
       assert.ok(Array.isArray(parameters), `the report's parameters were cut structurally: ${JSON.stringify(parameters)}`);
       for (const required of ["selected", "assembled", "suiteNames", "importedBy"]) {
         assert.ok(parameters.includes(required), `${required} is an INJECTED parameter — got ${parameters.join(", ")}`);
@@ -242,7 +249,7 @@ export const archTests = [
 // which is one directory below the duplication this very control forbids, in the file that forbids
 // it. `test/support/registration/registration-surface.mjs` owns them; this reads them.
 //
-// WHY THERE AND NOT `src/work-audit/census.mjs`, which has readers of its own: the census's
+// WHY THERE AND NOT `packages/core/src/work-audit/census.mjs`, which has readers of its own: the census's
 // `runnerBindings` filters to `.test.mjs` specifiers, because registration is the only question it
 // asks. This control must see EVERY import — that is how it catches a registry naming a suite
 // directly, or an index importing another directory's suite — so it needs the unfiltered shape.
@@ -267,7 +274,7 @@ export function indexRegistryProblems({ registry, indexes, dirs, testUnit = null
   const reached = new Set();
   for (const match of registrySource.matchAll(IMPORT_OF)) {
     const specifier = match[2];
-    if (specifier.endsWith(".test.mjs")) {
+    if (isArraySuiteSpecifier(specifier)) {
       problems.push(`the registry names a suite directly (${specifier}) — it names DIRECTORIES; a suite is registered in its own directory's index (ADR-010 §1)`);
       continue;
     }
@@ -297,7 +304,7 @@ export function indexRegistryProblems({ registry, indexes, dirs, testUnit = null
     const spread = new Set([...source.matchAll(SPREAD_ROW)].map((match) => match[1]));
     for (const match of source.matchAll(IMPORT_OF)) {
       const specifier = match[2];
-      if (!specifier.endsWith(".test.mjs")) continue;
+      if (!isArraySuiteSpecifier(specifier)) continue;
       const owner = path.posix.dirname(path.posix.normalize(path.posix.join(index.dir, specifier)));
       if (owner !== index.dir) {
         problems.push(`${index.rel} imports ${specifier}, which lives in ${owner}/ — one directory's suites spread by another's index, so the same entries are assembled twice or under two owners`);
@@ -339,7 +346,7 @@ archTests.push(
     name: "arch/119 FF-11906: the registry no longer grows a line per suite, and names no suite directly",
     run: () => {
       const registry = readFileSync(path.join(repoRoot, "scripts", "test.mjs"), "utf8");
-      const suiteSpecifiers = [...stripComments(registry).matchAll(IMPORT_OF)].filter((match) => match[2].endsWith(".test.mjs"));
+      const suiteSpecifiers = [...stripComments(registry).matchAll(IMPORT_OF)].filter((match) => isArraySuiteSpecifier(match[2]));
       assert.deepEqual(suiteSpecifiers.map((match) => match[2]), [], "the registry names directories, not suites");
       assert.ok(
         registry.split(/\r?\n/).length < 1000,
@@ -425,7 +432,7 @@ archTests.push(
       const specifiers = [...stripComments(source).matchAll(IMPORT_OF)].map((match) => match[2]).filter((specifier) => specifier.includes("/test/"));
       assert.ok(specifiers.length >= 90, `its hand-listed suite imports are intact: ${specifiers.length}`);
       for (const specifier of specifiers) {
-        assert.ok(specifier.endsWith(".test.mjs"), `${specifier}: names a suite, never an index`);
+        assert.ok(isArraySuiteSpecifier(specifier), `${specifier}: names a suite, never an index`);
       }
       assert.equal(/export\s/u.test(stripComments(source)), false, "it still exports nothing");
     },

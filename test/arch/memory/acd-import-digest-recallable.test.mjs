@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for the AOF.md digest-on-import (13/ADR-006 — the deferred 13×14
 // follow-up):
 //   "An import that recovers intent but NO decisions and NO outcomes materializes an
@@ -16,9 +17,12 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { materializeImport, AOF_FILE } from "../../../src/import/materialize.mjs";
-import { buildRecords, resolveRecordSourcePath, isImportRecord } from "../../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const AOF_FILE = _aofApplication.knowledge.import.materialize.AOF_FILE;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const resolveRecordSourcePath = _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath;
+const isImportRecord = _aofApplication.knowledge.memory.localIndexing.isImportRecord;
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -84,11 +88,11 @@ export const archTests = [
     name: "arch/import-digest: the digest is indexed through the EXISTING parseAof; the import side defines no new parser/record shape",
     async run() {
       // The import-store scan reads AOF_FILE and runs the SAME parseAof the work stream uses.
-      const indexing = await readFile(path.join(repoRoot, "src", "memory", "local-indexing.mjs"), "utf8");
+      const indexing = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "memory", "local-indexing.mjs"), "utf8");
       assert.ok(/AOF_FILE/.test(indexing), "local-indexing references AOF_FILE (the digest is a recognised scan artifact)");
       assert.ok(/parseAof\(/.test(indexing), "the digest is indexed through the existing parseAof");
       // The materialize writer RENDERS the digest — it defines no parser and no record shape.
-      const materialize = await readFile(path.join(repoRoot, "src", "import", "materialize.mjs"), "utf8");
+      const materialize = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "import", "materialize.mjs"), "utf8");
       assert.ok(/renderDigest/.test(materialize), "the materialize writer renders the digest (reusing the milestone-14 doc shape)");
       assert.ok(!/function\s+parse[A-Z]/.test(materialize), "the materialize writer defines no parser of its own");
       assert.ok(!/recordType\s*:/.test(materialize), "the materialize writer defines no record shape of its own");

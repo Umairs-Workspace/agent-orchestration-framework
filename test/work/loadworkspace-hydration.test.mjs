@@ -1,7 +1,8 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 33 / story 00 — per-install node identity.
 //
 // Covers EVERY @executable scenario in tasks/01_loadworkspace-hydration.feature,
-// exercising src/work.mjs's loadWorkspace IN-PROCESS against a real temp fixture
+// exercising packages/core/src/work.mjs's loadWorkspace IN-PROCESS against a real temp fixture
 // project (a planted committed config + an optionally-planted sidecar). One test
 // object per @executable scenario (Scenario-Outline rows folded into one entry
 // iterating the rows), each name tracing to feature + scenario. node:assert/strict.
@@ -16,8 +17,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { meshNodeIdOf } from "../../src/commands/mesh/gate.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 
 async function fixtureProject({ committedMesh, sidecar } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-hydration-"));
@@ -37,6 +38,7 @@ async function fixtureProject({ committedMesh, sidecar } = {}) {
       await writeFile(sidecarPath, `${JSON.stringify(sidecar, null, 2)}\n`, "utf8");
     }
   }
+  // These cases exercise the legacy sidecar fallback; never consult the operator's global identity.
   return { root, configPath, sidecarPath };
 }
 
@@ -68,7 +70,7 @@ export const loadworkspaceHydrationTests = [
         const { root, configPath, sidecarPath } = await fixtureProject({ committedMesh, sidecar });
         try {
           const before = await snapshotBytes(configPath, sidecarPath);
-          const ws = await loadWorkspace(root);
+          const ws = await loadWorkspace(root, undefined, { env: { AOF_GLOBAL_HOME: path.join(root, "global-home") } });
           assert.equal(ws.config?.mesh?.nodeId, resolved, `committed=${committed} sidecar=${JSON.stringify(sidecar)} → resolved ${resolved}`);
           const after = await snapshotBytes(configPath, sidecarPath);
           assert.deepEqual(after, before, "loadWorkspace wrote NO file (neither config nor sidecar changed on disk)");
@@ -92,7 +94,7 @@ export const loadworkspaceHydrationTests = [
         const committedMesh = committed !== undefined ? { nodeId: "committed-id", salt: committed } : undefined;
         const { root } = await fixtureProject({ committedMesh, sidecar });
         try {
-          const ws = await loadWorkspace(root);
+          const ws = await loadWorkspace(root, undefined, { env: { AOF_GLOBAL_HOME: path.join(root, "global-home") } });
           assert.equal(ws.config?.mesh?.salt, resolved, `committed=${committed} sidecar=${JSON.stringify(sidecar)} → resolved salt ${resolved}`);
         } finally {
           await rm(root, { recursive: true, force: true });
@@ -115,7 +117,7 @@ export const loadworkspaceHydrationTests = [
         sidecar: { nodeId: "n" },
       });
       try {
-        const ws = await loadWorkspace(root);
+        const ws = await loadWorkspace(root, undefined, { env: { AOF_GLOBAL_HOME: path.join(root, "global-home") } });
         assert.equal(ws.config.mesh.nodeId, "n", "the sidecar's nodeId wins (sidecar > committed)");
         assert.equal(ws.config.mesh.salt, "committed-salt", "the committed salt SURVIVES as the fallback — not clobbered to undefined");
       } finally {
@@ -133,7 +135,7 @@ export const loadworkspaceHydrationTests = [
         sidecar: { nodeId: "macbook-pro", salt: "s" },
       });
       try {
-        const ws = await loadWorkspace(root);
+        const ws = await loadWorkspace(root, undefined, { env: { AOF_GLOBAL_HOME: path.join(root, "global-home") } });
         assert.equal(ws.config.mesh.nodeId, "macbook-pro", "the returned workspace carries the sidecar id");
         assert.equal(meshNodeIdOf(ws.config), "macbook-pro", "the mesh-gate predicate resolves the per-install id");
         assert.notEqual(meshNodeIdOf(ws.config), "win-host-a", "no downstream reader observes the legacy committed id");
@@ -161,7 +163,7 @@ export const loadworkspaceHydrationTests = [
         try {
           let ws, threw = false;
           try {
-            ws = await loadWorkspace(root);
+            ws = await loadWorkspace(root, undefined, { env: { AOF_GLOBAL_HOME: path.join(root, "global-home") } });
           } catch {
             threw = true;
           }

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 102 / story 02 — THE JOIN CLOSES.
 //
 // Covers every @executable scenario in
@@ -24,14 +25,16 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SHELL_LOOP_ID } from "../../src/commands/loop.mjs";
-import { buildLoopDeclaration } from "../../src/work/loop.mjs";
-import { projectExecution } from "../../src/loop-record.mjs";
-import { completeRun, readRuns, startRun } from "../../src/run-store.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
+const SHELL_LOOP_ID = _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID;
+import { buildLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
+import { projectExecution } from "@aof/work-graph/record";
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(root, "src", "bundle");
+const BUNDLE = path.join(root, "packages", "core", "assets");
 
 // The seventeen keys the store froze (131/ADR-003 §3 appended asks), in order — measured against a real record rather than believed.
 const RECORD_KEYS = Object.freeze([
@@ -85,7 +88,7 @@ async function mint(item, briefs) {
 }
 
 // A gap list is a list of `{ subject }` records, never bare strings (`gapList`,
-// `src/loop-record.mjs`) — read through the loader's own shape rather than a belief about it.
+// `packages/core/src/loop-record.mjs`) — read through the loader's own shape rather than a belief about it.
 const names = (gap) => gap.map((entry) => entry.subject);
 
 const project = async (runs) => projectExecution({

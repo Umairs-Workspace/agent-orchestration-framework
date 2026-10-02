@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-worker-driver-no-headless-print (milestone 38 / ADR-013 +
 // its 2026-07-19 AMENDMENT, fitness #16) — "the worker driver path emits NO `claude
 // -p` + `--output-format json` one-shot; the interactive `claude` launch resolves
@@ -44,7 +45,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { driveInteractiveClaudeSession, NEEDS_INPUT_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { readSrcFiles } from "../../support/read-src-files.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
@@ -60,8 +62,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // test carries BOTH halves, so it is the one site that reads both files — six read
 // sites, seven reads. The behavioural legs are untouched: the import at :47 still
 // resolves through the sink's verbatim re-export, which is the whole point of it.
-const DRIVER_SOURCE = path.join(repoRoot, "src", "agent-session-driver.mjs");
-const HANDLER_SOURCE = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const DRIVER_SOURCE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
+const HANDLER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -106,7 +108,7 @@ function hasDriverLaunchShape(code) {
 // The interactive launch resolves through terminal-providers.mjs's resolveProvider,
 // genuinely called (not merely imported-and-unused).
 function resolvesThroughTerminalProviders(rawCode, strippedCode) {
-  const importsIt = /import\s*\{\s*resolveProvider\s*\}\s*from\s*["']\.\/terminal-providers\.mjs["']/.test(rawCode);
+  const importsIt = /const\s*\{\s*resolveProvider\s*,[^}]*\}\s*=\s*launch/.test(rawCode);
   const callsIt = /resolveProvider\s*\(/.test(strippedCode);
   return importsIt && callsIt;
 }
@@ -143,7 +145,7 @@ function typesCommandIntoPtyStdin(strippedCode) {
 // ./work-observe.mjs (imported AND called), the `defaultWatchTranscriptSessionId` seam
 // is defined, and the injected `options.watchTranscriptSessionId` is wired to it.
 function capturesSessionIdViaTranscriptWatch(rawCode, strippedCode) {
-  const importsProjectsDir = /import\s*\{[^}]*\bclaudeProjectsDir\b[^}]*\}\s*from\s*["']\.\/work\/observe\.mjs["']/.test(rawCode);
+  const importsProjectsDir = /const\s*\{[^}]*\bclaudeProjectsDir\b[^}]*\}\s*=\s*transcripts/.test(rawCode);
   const callsProjectsDir = /claudeProjectsDir\s*\(/.test(strippedCode);
   const definesWatchSeam = /function\s+defaultWatchTranscriptSessionId/.test(strippedCode);
   const wiresWatchSeam = /options\.watchTranscriptSessionId\s*\?\?\s*defaultWatchTranscriptSessionId/.test(strippedCode);
@@ -236,7 +238,7 @@ export const archTests = [
       // but the detector's import-half must independently trip. CRLF-safe: matches
       // the import statement itself without anchoring on a literal "\n" (this tree
       // is CRLF; a raw "\n"-anchored regex would silently no-op the plant).
-      const plantedNoImport = raw.replace(/import \{ resolveProvider \} from "\.\/terminal-providers\.mjs";\r?\n/, "");
+      const plantedNoImport = raw.replace("resolveProvider, loadNodePty", "missingProvider, loadNodePty");
       assert.notEqual(plantedNoImport, raw, "the plant actually changed the source text");
       assert.equal(resolvesThroughTerminalProviders(plantedNoImport, stripComments(plantedNoImport)), false, "a stripped resolveProvider import trips the detector");
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 02 (the authority cut), task
 //   .../02_story_cache-authority/tasks/04_contention-is-decided-by-the-assignment-lock.feature
 //
@@ -23,7 +24,7 @@
 // value" is observable in the cached row. Which verb is 43/01's choice, not this
 // story's; what this file pins is what the SEAM does on either side of it.
 import assert from "node:assert/strict";
-import { invoke } from "../../src/command-core.mjs";
+const invoke = _aofApplication.invoke;
 import {
   withCacheFixture,
   seedActive,
@@ -40,7 +41,7 @@ import {
   WORKER_A,
   WORKER_B,
 } from "../support/cache-authority-fixture.mjs";
-import { upsertWorkItems } from "../../src/global-work-store.mjs";
+const upsertWorkItems = _aofApplication.mesh.store.upsertWorkItems;
 
 const STREAM = [{ number: "43", stories: ["01", "02", "03"] }];
 const HELD_SCOPE = "43";

@@ -1,6 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 
-import { getCommand, invoke } from "../../src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
 import {
   invokeDoctor,
   parseJson,

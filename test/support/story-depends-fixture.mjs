@@ -3,7 +3,7 @@
 //
 // WHY A SHARED SUPPORT MODULE rather than a third copy of `buildStream`. Both suites need
 // the SAME thing that no existing fixture builds: a milestone whose STORIES carry
-// `depends`. `test/work/lifecycle/work-next.test.mjs`'s builder is module-private and — measured at HEAD,
+// `depends`. `packages/work/test/work-next.suite.mjs`'s builder is module-private and — measured at HEAD,
 // 2026-08-15 — every one of its 600 lines' `depends` is driver-level, so extending it in
 // place would have meant editing a locked story's own fixture. One home, two consumers.
 //
@@ -81,7 +81,7 @@ export async function withStream(drivers, body, options) {
   try {
     return await body(work, root);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

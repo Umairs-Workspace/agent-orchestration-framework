@@ -49,6 +49,16 @@ function listFilesRecursive(dir) {
 // "copy the node-pty sidecar" step exactly in SHAPE (fixture content, real
 // layout).
 function makeFixtureSeaOut(dir) {
+  mkdirSync(path.join(dir, 'bundle'), { recursive: true });
+  mkdirSync(path.join(dir, 'ui', 'dist'), { recursive: true });
+  writeFileSync(path.join(dir, 'bundle', 'bundle.json'), '{}');
+  writeFileSync(path.join(dir, 'ui', 'dist', 'index.html'), '<main>release UI</main>');
+  writeFileSync(path.join(dir, 'package.json'), '{"version":"0.1.0"}');
+  mkdirSync(path.join(dir, 'src', 'work'), { recursive: true });
+  mkdirSync(path.join(dir, 'node-runtime'), { recursive: true });
+  writeFileSync(path.join(dir, 'src', 'work', 'audit-probe.mjs'), '// child');
+  writeFileSync(path.join(dir, 'src', 'work', 'audit-drive.mjs'), '// child');
+  writeFileSync(path.join(dir, 'node-runtime', 'node'), 'fixture node runtime');
   const sidecarDir = path.join(dir, "node-pty-sidecar");
   mkdirSync(sidecarDir, { recursive: true });
   writeFileSync(path.join(sidecarDir, "pty.node"), "fixture-pty-node-bytes\n", "utf8");

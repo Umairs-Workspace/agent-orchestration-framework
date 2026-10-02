@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 134 / story 02 — the `work.examples.enabled` gate.
 //
 // Covers EVERY @executable scenario in
@@ -13,7 +14,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { examplesEnabledFromConfig, planEnabledFromConfig, validateConfig } from "../../src/config-inspect.mjs";
+const examplesEnabledFromConfig = _aofApplication.assets.configInspect.examplesEnabledFromConfig;
+const planEnabledFromConfig = _aofApplication.assets.configInspect.planEnabledFromConfig;
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 

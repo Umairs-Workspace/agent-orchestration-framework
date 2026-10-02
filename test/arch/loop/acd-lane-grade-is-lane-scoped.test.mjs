@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-lane-grade-is-lane-scoped (milestone 129 / story 05; FF-12905;
 // ADR-003) —
 //
@@ -8,7 +9,7 @@
 // grade, gate and progress sample of a lane runs in the lane's own workspace, and the baseline
 // is a property of the BASE COMMIT, measured once per wave in a lane.
 //
-// STRUCTURAL LEG, over `src/loop/cycle.mjs` and `src/loop/wave.mjs` (comment-stripped, cut on
+// STRUCTURAL LEG, over `packages/core/src/loop/cycle.mjs` and `packages/core/src/loop/wave.mjs` (comment-stripped, cut on
 // the language's own structure): no `process.cwd()` anywhere in either; in `cycle.mjs` every
 // `invokeRegistered("work:grade" | "work:validate" | "work:doctor"` call hands on the `ctx` its
 // enclosing function was HANDED, and every `recordBuildProgress(` call passes the `worktreePath`
@@ -36,8 +37,8 @@ import { fileURLToPath } from "node:url";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CYCLE = "src/loop/cycle.mjs";
-const WAVE = "src/loop/wave.mjs";
+const CYCLE = "packages/work-loop/src/cycle.mjs";
+const WAVE = "packages/work-loop/src/wave.mjs";
 const LANE_PATH_FUNCTION = "runLane";
 // The sequential call site: `settleStoryCycle`'s `worktreePath` default is the one place the
 // ladder names `ctx.workspace.projectRoot`, and there `ctx` is whatever workspace the caller
@@ -63,7 +64,7 @@ function ownerOf(code, offset) {
   return owner;
 }
 
-// PURE — the ladder's rule over `src/loop/cycle.mjs`.
+// PURE — the ladder's rule over `packages/core/src/loop/cycle.mjs`.
 export function cycleGradeScopeProblems(code) {
   const problems = [];
   const found = { gateCalls: 0, samplerCalls: 0 };
@@ -99,7 +100,7 @@ export function cycleGradeScopeProblems(code) {
   return { problems, found };
 }
 
-// PURE — the lane path's rule over `src/loop/wave.mjs`.
+// PURE — the lane path's rule over `packages/core/src/loop/wave.mjs`.
 export function waveGradeScopeProblems(code) {
   const problems = [];
   const found = { laneLadder: 0, laneBaseline: 0, keyedGets: 0, keyedSets: 0 };
@@ -136,8 +137,68 @@ export function waveGradeScopeProblems(code) {
 
 async function driveTwoMemberWaveWithFakeGrade() {
   const fixture = await import("../../support/loop/lane-fixture.mjs");
-  const { runLoopBody } = await import("../../../src/commands/loop.mjs");
-  const { meshDispatchWorktreePath } = await import("../../../src/mesh/worktree.mjs");
+  const { runLoopBody } = await Promise.resolve(Object.freeze({
+  DOCTOR_GATE_CODES: _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES,
+  LOOP_FIX_TRANSPORT_KEYS: _aofApplication.loop.commandTools.loop.LOOP_FIX_TRANSPORT_KEYS,
+  SHELL_LOOP_ID: _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID,
+  admitResumeBuildRun: _aofApplication.loop.commandTools.loop.admitResumeBuildRun,
+  admittedDoctorFindings: _aofApplication.loop.commandTools.loop.admittedDoctorFindings,
+  applyGradeBaseline: _aofApplication.loop.commandTools.loop.applyGradeBaseline,
+  failingCountFromGrade: _aofApplication.loop.commandTools.loop.failingCountFromGrade,
+  fixTransport: _aofApplication.loop.commandTools.loop.fixTransport,
+  gradeFindings: _aofApplication.loop.commandTools.loop.gradeFindings,
+  gradeRoute: _aofApplication.loop.commandTools.loop.gradeRoute,
+  gradeStopCode: _aofApplication.loop.commandTools.loop.gradeStopCode,
+  gradeStopProducer: _aofApplication.loop.commandTools.loop.gradeStopProducer,
+  gradeSummary: _aofApplication.loop.commandTools.loop.gradeSummary,
+  loopCommand: _aofApplication.getCommand("work:loop"),
+  mergeGateFindings: _aofApplication.loop.commandTools.loop.mergeGateFindings,
+  readGradeBaseline: _aofApplication.loop.commandTools.loop.readGradeBaseline,
+  recordBuildProgress: _aofApplication.loop.commandTools.loop.recordBuildProgress,
+  renderLoopState: _aofApplication.loop.commandTools.loop.renderLoopState,
+  runLoopBody: _aofApplication.loop.commandTools.loop.runLoopBody,
+  runLoopLaunch: _aofApplication.loop.commandTools.loop.runLoopLaunch,
+  thinkingNarration: _aofApplication.loop.commandTools.loop.thinkingNarration,
+}));
+  const { meshDispatchWorktreePath } = await Promise.resolve(Object.freeze({
+  DEFAULT_WORKTREE_RETENTION_MS: _aofApplication.mesh.worktree.DEFAULT_WORKTREE_RETENTION_MS,
+  WORKTREE_PREPARE_DEADLINE_EXPIRED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_DEADLINE_EXPIRED,
+  WORKTREE_PREPARE_FAILED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_FAILED,
+  WORKTREE_PREPARE_NOT_STARTED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_NOT_STARTED,
+  addDispatchWorktree: _aofApplication.mesh.worktree.addDispatchWorktree,
+  addSessionWorktree: _aofApplication.mesh.worktree.addSessionWorktree,
+  addWorktree: _aofApplication.mesh.worktree.addWorktree,
+  adoptRemoteBranch: _aofApplication.mesh.worktree.adoptRemoteBranch,
+  advanceBranchToBase: _aofApplication.mesh.worktree.advanceBranchToBase,
+  commitWorktreeChanges: _aofApplication.mesh.worktree.commitWorktreeChanges,
+  defaultGitExec: _aofApplication.mesh.worktree.defaultGitExec,
+  dispatchWorktreeSlug: _aofApplication.mesh.worktree.dispatchWorktreeSlug,
+  ensureCommitAvailable: _aofApplication.mesh.worktree.ensureCommitAvailable,
+  findItemWorktree: _aofApplication.mesh.worktree.findItemWorktree,
+  headCommit: _aofApplication.mesh.worktree.headCommit,
+  isInsideMeshWorktree: _aofApplication.mesh.worktree.isInsideMeshWorktree,
+  isUnderMeshDispatchWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshDispatchWorktreesRoot,
+  isUnderMeshSessionWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot,
+  isUnderMeshWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot,
+  listWorktrees: _aofApplication.mesh.worktree.listWorktrees,
+  localBranchExists: _aofApplication.mesh.worktree.localBranchExists,
+  meshDispatchWorktreePath: _aofApplication.mesh.worktree.meshDispatchWorktreePath,
+  meshDispatchWorktreesRoot: _aofApplication.mesh.worktree.meshDispatchWorktreesRoot,
+  meshIdentityArgs: _aofApplication.mesh.worktree.meshIdentityArgs,
+  meshItemBranchName: _aofApplication.mesh.worktree.meshItemBranchName,
+  meshSessionWorktreePath: _aofApplication.mesh.worktree.meshSessionWorktreePath,
+  meshSessionWorktreesRoot: _aofApplication.mesh.worktree.meshSessionWorktreesRoot,
+  meshWorktreePath: _aofApplication.mesh.worktree.meshWorktreePath,
+  meshWorktreesRoot: _aofApplication.mesh.worktree.meshWorktreesRoot,
+  parsePorcelainStatus: _aofApplication.mesh.worktree.parsePorcelainStatus,
+  remoteBranchExists: _aofApplication.mesh.worktree.remoteBranchExists,
+  removeDispatchWorktree: _aofApplication.mesh.worktree.removeDispatchWorktree,
+  removeWorktree: _aofApplication.mesh.worktree.removeWorktree,
+  resolveExec: _aofApplication.mesh.worktree.resolveExec,
+  reuseWorktreeOnBranch: _aofApplication.mesh.worktree.reuseWorktreeOnBranch,
+  sessionWorktreeSlug: _aofApplication.mesh.worktree.sessionWorktreeSlug,
+  sweepRetainedWorktrees: _aofApplication.mesh.worktree.sweepRetainedWorktrees,
+}));
   const NOW = "2026-09-14T12:00:00.000Z";
   const provenance = { node: "fixture", run: null, commit: null, at: NOW };
   const passing = () => ({ configured: true, grade: { verdict: "pass", codes: [], cases: { total: 1, failed: 0, skipped: 0 }, failures: [], gradedAt: NOW, provenance: { ...provenance } } });
@@ -178,7 +239,33 @@ export const archTests = [
       assert.deepEqual(lane.problems, [], `a lane's grade is taken in the lane:\n${lane.problems.join("\n")}`);
 
       // `readGradeBaseline` answers a `{ baseCommit }` selector — behaviourally, through the leaf.
-      const { readGradeBaseline } = await import("../../../src/loop/cycle.mjs");
+      const { readGradeBaseline } = await Promise.resolve(Object.freeze({
+  LOOP_FIX_TRANSPORT_KEYS: _aofApplication.loop.cycle.LOOP_FIX_TRANSPORT_KEYS,
+  accumulatedRecord: _aofApplication.loop.cycle.accumulatedRecord,
+  admitResumeBuildRun: _aofApplication.loop.cycle.admitResumeBuildRun,
+  applyGradeBaseline: _aofApplication.loop.cycle.applyGradeBaseline,
+  budgetElapsedMs: _aofApplication.loop.cycle.budgetElapsedMs,
+  drivePhase: _aofApplication.loop.cycle.drivePhase,
+  drivenRow: _aofApplication.loop.cycle.drivenRow,
+  failingCountFromGrade: _aofApplication.loop.cycle.failingCountFromGrade,
+  fixTransport: _aofApplication.loop.cycle.fixTransport,
+  gradeFindings: _aofApplication.loop.cycle.gradeFindings,
+  gradeRoute: _aofApplication.loop.cycle.gradeRoute,
+  gradeStopCode: _aofApplication.loop.cycle.gradeStopCode,
+  gradeStopProducer: _aofApplication.loop.cycle.gradeStopProducer,
+  gradeSummary: _aofApplication.loop.cycle.gradeSummary,
+  measureGradeBaseline: _aofApplication.loop.cycle.measureGradeBaseline,
+  mergeGateFindings: _aofApplication.loop.cycle.mergeGateFindings,
+  progressReportFacts: _aofApplication.loop.cycle.progressReportFacts,
+  readGradeBaseline: _aofApplication.loop.cycle.readGradeBaseline,
+  recordBuildProgress: _aofApplication.loop.cycle.recordBuildProgress,
+  reenterPrimaryAsks: _aofApplication.loop.cycle.reenterPrimaryAsks,
+  retryUntilTerminal: _aofApplication.loop.cycle.retryUntilTerminal,
+  runBrief: _aofApplication.loop.cycle.runBrief,
+  settleDriven: _aofApplication.loop.cycle.settleDriven,
+  settleStoryCycle: _aofApplication.loop.cycle.settleStoryCycle,
+  transitionOptionsFor: _aofApplication.loop.cycle.transitionOptionsFor,
+}));
       const runs = [
         { runId: "r1", itemRef: "07/01", createdAt: "2026-09-14T10:00:00.000Z", brief: { gradeBaseline: { measuredAt: "2026-09-14T10:00:00.000Z", priorDrives: 0, failures: ["alpha"], baseCommit: "a".repeat(40) } } },
         { runId: "r2", itemRef: "07/03", createdAt: "2026-09-14T11:00:00.000Z", brief: { gradeBaseline: { measuredAt: "2026-09-14T11:00:00.000Z", priorDrives: 0, failures: ["beta"], baseCommit: "b".repeat(40) } } },

@@ -1,7 +1,9 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 15 / story 01 — the coherence & completeness
 // check-groups (status-coherence + lifecycle-completeness). Covers EVERY
 // @executable scenario across the story's two task features, exercising the REAL
-// engine (src/work/doctor.mjs with the appended groups) over temp fixture repos —
+// engine (packages/core/src/work/doctor.mjs with the appended groups) over temp fixture repos —
 // mirroring doctor-command-core.test.mjs's house style. One test object per
 // @executable scenario (Scenario-Outline rows folded into one entry).
 //
@@ -15,8 +17,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 
 // --- fixture builders --------------------------------------------------------
 
@@ -196,7 +198,7 @@ export const doctorCoherenceCompletenessTests = [
   // `driverStatusByNumber.get(79)` was `undefined`, `undefined !== "done"` scored an
   // already-satisfied edge as unmet, and a `done` dependency was reported as an ordering
   // violation at severity `error`. `validate` and the readiness walk had both been widened for
-  // this exact pair (`test/work/lifecycle/work-next.test.mjs` carries the twin); this lane was the THIRD reader
+  // this exact pair (`packages/work/test/work-next.suite.mjs` carries the twin); this lane was the THIRD reader
   // of one question and was missed. Both halves are pinned, exactly as the walk's twin pins them:
   // widening WHAT a number may name must not make an UNFINISHED one read as met.
   {

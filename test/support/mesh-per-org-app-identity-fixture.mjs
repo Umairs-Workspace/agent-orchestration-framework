@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/mesh-per-org-app-identity-fixture.mjs — shared fixture builder for
 // milestone 38 / story 03 (per-org credential-provider scoping, ADR-011) task
 // traceability modules (tasks 00, 01). Builds a HERMETIC multi-workspace control-node
@@ -6,14 +8,14 @@
 // `mesh.repo.credential.githubApp.*`), and a temp `AOF_GLOBAL_HOME`
 // `global_workspace_descriptors` row per "other" workspace — the ADR-003 descriptor
 // seam `createResolveWorkspaceAppIdentity`/`createResolveWorkspaceCloneUrl`
-// (src/mesh/launcher.mjs, exported) reads FOR REAL through this fixture; no hand-built
+// (packages/core/src/mesh/launcher.mjs, exported) reads FOR REAL through this fixture; no hand-built
 // stand-in for either resolver (ADR-008).
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { generateKeyPairSync } from "node:crypto";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 // generateThrowawayPrivateKeyPem() — a LOCAL, test-only RSA private key (PEM, PKCS#1
 // — GitHub's own App-key download format), never a real GitHub App's registered key.
@@ -123,6 +125,6 @@ export async function withPerOrgAppIdentityFixture(fn, { launch = {}, others = [
 
     return await fn({ tmp, home, env, ws, writeKeyFile });
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }

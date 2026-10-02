@@ -2,13 +2,13 @@
 // "The prompt's gate ladder is the shell's, derived from the shell's own module."
 //
 // The loop SHELL has always run `work:validate`, then — only on a clean result — `work:doctor`,
-// before it reaches its review gate (`invokeGateLadder`, `src/commands/loop.mjs`). A direct
+// before it reaches its review gate (`invokeGateLadder`, `packages/core/src/commands/loop.mjs`). A direct
 // `aof:continue` never enters that shell, so before 71/00 every reviewer this repository spawned by
 // hand was spawned with the free deterministic gate not having run: two commands that cost seconds
 // ordered after two agent lanes that cost tens of minutes.
 //
 // The prompt now walks the same ladder, and this control is what stops the two copies drifting. The
-// shell's rung set is READ OUT OF `src/commands/loop.mjs` rather than written down here, so a rung
+// shell's rung set is READ OUT OF `packages/core/src/commands/loop.mjs` rather than written down here, so a rung
 // added or removed there fails until the prompt agrees. Equality is asserted in BOTH directions — a
 // rung the shell runs and the prompt omits fails, and a rung the prompt names and the shell never
 // runs fails — and ORDER is asserted too, because the ladder is monotone by cost (54/ADR-007) and a
@@ -20,8 +20,8 @@ import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHELL = "src/commands/loop.mjs";
-const PROMPT = "src/bundle/commands/continue.md";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
+const PROMPT = "packages/core/assets/commands/continue.md";
 const LADDER_OPEN = "<gate_ladder>";
 const LADDER_CLOSE = "</gate_ladder>";
 

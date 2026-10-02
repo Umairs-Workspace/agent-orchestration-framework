@@ -1,3 +1,7 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9601 (96/ADR-001, 96/ADR-003) — ATTRIBUTION IS CAPTURED OR ABSENT, AND THERE IS
 // EXACTLY ONE PATH FROM A TRANSCRIPT TO AN ITEM REF.
 //
@@ -12,10 +16,10 @@
 // FIVE CLAIMS, each failing for its own reason:
 //
 //   1. ONE JOIN. `sessionToItem.get(sessionId)` is the only transcript→item resolution in
-//      `src/work/observe.mjs`, the retired matcher's vocabulary appears nowhere, and no module
+//      `packages/core/src/work/observe.mjs`, the retired matcher's vocabulary appears nowhere, and no module
 //      96 touches matches an item ref against a session directory name or an agent's prose.
 //   2. ONE READER OF THE STORE. The `~/.aof/mesh/sessions` partition is addressed from
-//      `src/mesh/session.mjs` and from no other module in `src/` — the rung lives in the
+//      `packages/core/src/mesh/session.mjs` and from no other module in `packages/core/src/` — the rung lives in the
 //      store's own home, so "the ladder grew a rung" can never quietly mean "some other module
 //      grew a filesystem read".
 //   3. THE PURE RESOLVER STAYS PURE. `resolveSessionIdentity` still resolves over
@@ -34,18 +38,19 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { srcFilesContaining } from "../../support/read-src-files.mjs";
+import { runtimeFilesContaining as srcFilesContaining } from "../../support/read-src-files.mjs";
 import { stripComments, functionBody, matchedParenSpan } from "../../support/source-slice.mjs";
-import { pingSession, resolveSessionIdFromLiveStore } from "../../../src/mesh/session.mjs";
-import { runStartCommand } from "../../../src/commands/run-start.mjs";
-import { resolveSessionIdentity } from "../../../src/commands/mesh/session.mjs";
+const pingSession = _aofHooks.meshSession.pingSession;
+const resolveSessionIdFromLiveStore = _aofHooks.meshSession.resolveSessionIdFromLiveStore;
+const runStartCommand = _aofApplication.getCommand("work:run-start");
+const resolveSessionIdentity = _aofHooks.commandsMeshSession.resolveSessionIdentity;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The module set milestone 96 / story 00 touches. The absence is asserted over these and not
-// over `src/**` at large: a control that swept everything would be measuring other milestones'
+// over `packages/core/src/**` at large: a control that swept everything would be measuring other milestones'
 // modules and would fail for their reasons, not this one's.
-const MODULE_SET = ["src/work/observe.mjs", "src/mesh/session.mjs", "src/commands/run-start.mjs"];
+const MODULE_SET = ["packages/work/src/observe.mjs", "packages/mesh/src/session.mjs", "packages/work/src/commands/run-start.mjs"];
 
 // The retired path's own vocabulary. `agentMatchesMilestone` is FF-6805's subject by name; the
 // rest are the shapes a widened join would have to wear — a ref matched against a directory
@@ -81,7 +86,7 @@ export const archTests = [
   {
     name: "arch/96/00 FF-9601 (1a) ONE JOIN — `sessionToItem.get(sessionId)` is the only transcript→item resolution in work-observe, and the retired matcher's vocabulary appears nowhere in the 96 module set",
     run: async () => {
-      const observe = await source("src/work/observe.mjs");
+      const observe = await source("packages/work/src/observe.mjs");
 
       // The index is READ in exactly one place. A second `.get` on it would be a second
       // opportunity to answer with something other than the session's own item.
@@ -139,26 +144,26 @@ export const archTests = [
       // The partition is named exactly once, at its own path builder. Any other module that
       // wanted to read it would have to name the segment or import a builder for it — and no
       // builder is exported.
-      const segment = await srcFilesContaining(repoRoot, '"sessions"', { except: ["mesh/session.mjs"] });
-      assert.deepEqual(segment, [], `only src/mesh/session.mjs names the sessions partition (also: ${segment.join(", ")})`);
+      const segment = await srcFilesContaining(repoRoot, '"sessions"', { runtime: "node", except: ["packages/mesh/src/session.mjs"] });
+      assert.deepEqual(segment, [], `only packages/core/src/mesh/session.mjs names the sessions partition (also: ${segment.join(", ")})`);
 
-      const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { except: ["mesh/session.mjs"] });
-      assert.deepEqual(builders, [], `only src/mesh/session.mjs composes a session record path (also: ${builders.join(", ")})`);
+      const builders = await srcFilesContaining(repoRoot, "sessionRecordPath(", { runtime: "node", except: ["packages/mesh/src/session.mjs"] });
+      assert.deepEqual(builders, [], `only packages/core/src/mesh/session.mjs composes a session record path (also: ${builders.join(", ")})`);
 
       // The rung itself is exported from that module and from nowhere else.
-      const rung = await srcFilesContaining(repoRoot, "export async function resolveSessionIdFromLiveStore");
+      const rung = await srcFilesContaining(repoRoot, "async function resolveSessionIdFromLiveStore", { runtime: "node" });
       // ONE HOME, spelled as the floor plus a declared ceiling — never as a one-member census
       // (FF-11902): the module is named AMONG what the sweep found.
       assert.ok(rung.length >= 1, "the sweep of src/ found no module exporting the live-store rung");
       assert.ok(rung.length <= 1, `the live-store rung has one home (found in: ${rung.join(", ")})`);
-      assert.equal(rung[0], "mesh/session.mjs", "…and it is the session module");
+      assert.equal(rung[0], "packages/mesh/src/session.mjs", "…and it is the session module");
     },
   },
   {
     name: "arch/96/00 FF-9601 (3) THE PURE RESOLVER STAYS PURE — resolveSessionIdentity resolves over { stdinText, env } alone and reads no filesystem",
     run: async () => {
-      const module = await source("src/commands/mesh/session.mjs");
-      const header = "export function resolveSessionIdentity({ stdinText, env } = {})";
+      const module = await source("packages/mesh/src/commands/session.mjs");
+      const header = "function resolveSessionIdentity({ stdinText, env } = {})";
       assert.ok(module.includes(header), "resolveSessionIdentity still takes exactly { stdinText, env }");
 
       const body = functionBody(module, header);
@@ -196,14 +201,14 @@ export const archTests = [
       // The flag heads the ladder, structurally: the store is consulted only under the
       // absent-flag branch, so no future edit can make the store answer over an explicit id
       // without deleting the guard.
-      const runStart = await source("src/commands/run-start.mjs");
+      const runStart = await source("packages/work/src/commands/run-start.mjs");
       const guard = /if\s*\(\s*sessionId\s*==\s*null\s*\)\s*\{[\s\S]{0,400}?resolveSessionIdFromLiveStore/;
       assert.match(runStart, guard, "the live-store rung is consulted only when the --session flag supplied nothing");
 
       // The rung's name never reaches the persisted record: it is spread onto the RESULT and
       // nowhere else, and the store module has never heard of it.
-      const store = await source("src/run-store.mjs");
-      assert.ok(!store.includes("sessionSource"), "src/run-store.mjs does not know the rung's name, so it cannot persist it");
+      const store = await source("packages/execution/src/runs.mjs");
+      assert.ok(!store.includes("sessionSource"), "packages/core/src/run-store.mjs does not know the rung's name, so it cannot persist it");
       const edges = runStart.match(/sessionSource/g) ?? [];
       assert.ok(edges.length > 0, "the command does name the rung — on the envelope");
       const persistedEdge = /transitionRunStart\([\s\S]{0,400}?sessionSource/;
@@ -221,7 +226,7 @@ export const archTests = [
       // ADR-003 is a FACE change and the contract says so on both sides. The list added
       // beside the count must not become a second place an item ref can be inferred, so the
       // rows it emits are asserted to carry an explicit null rather than any derived ref.
-      const observe = await source("src/work/observe.mjs");
+      const observe = await source("packages/work/src/observe.mjs");
       // The ROW ITSELF — the argument list the language draws around it — never a character
       // window or a sentinel end (F-47-04-ARCH-2: both have produced confident reds about a
       // tree that honours the rule). A moved or renamed push fails as NOT FOUND, loudly.

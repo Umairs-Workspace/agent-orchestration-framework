@@ -130,13 +130,13 @@ sequentially in one process, the proven fixture at
   functions' own-node parameter literally named `nodeId` so fitness #6 can assert every written
   `leaseClaimPath(...)` first-arg is the own id (own-path-only, no foreign `holder`).
 
-**`src/work.mjs` (`nextWork`, [line 522](../../../../../../src/work.mjs#L522)):** signature →
+**`src/work.mjs` (`nextWork`, [line 522](../../../../../../packages/core/src/application/bindings/work.mjs#L522)):** signature →
 `nextWork(workDir, scopeRef, { leaseView } = {})`. Touch points: inside the story loop at
-[:565](../../../../../../src/work.mjs#L565) — `leased-live` ⇒ `continue` + set a `leaseSkipped` flag;
+[:565](../../../../../../packages/core/src/application/bindings/work.mjs#L565) — `leased-live` ⇒ `continue` + set a `leaseSkipped` flag;
 `leased-stale` ⇒ `return { ...ready(story, storyMeta.status), reclaimable: true, leasedBy: holder }`; after
-the loop, `if (leaseSkipped) continue;` **before** the [:567](../../../../../../src/work.mjs#L567)
+the loop, `if (leaseSkipped) continue;` **before** the [:567](../../../../../../packages/core/src/application/bindings/work.mjs#L567)
 milestone-accept return (the false-accept guard the all-leased row pins), so
-[:570](../../../../../../src/work.mjs#L570)'s `blocked ?? { state:"done" }` produces the honest
+[:570](../../../../../../packages/core/src/application/bindings/work.mjs#L570)'s `blocked ?? { state:"done" }` produces the honest
 nothing-actionable shape. NO mesh import (fitness #7); absent view ⇒ zero behavioural delta.
 
 **`src/commands/next.mjs`:** add optional `now` to the input schema; in `run`, gate on

@@ -30,7 +30,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const providerSourcePath = path.join(repoRoot, "src", "mesh", "clone-credential-provider.mjs");
+const providerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "clone-credential-provider.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

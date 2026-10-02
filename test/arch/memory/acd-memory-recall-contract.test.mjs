@@ -1,11 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-memory-recall-contract (ADR-004).
 //
 // `recall` returns { query, scope, records[], text }; each record is a
 // MemoryRecord plus a numeric `score`; the `--json` CLI path emits the structured
 // `records` array (the contract), never the rendered `text` blob.
 import assert from "node:assert/strict";
-import { recall, MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
-import { runMemory } from "../../../src/work/memory.mjs";
+import { recall, MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 
 // A minimal frozen-shape fixture index (ADR-005): absent-type fields present-as-"".
 function fixtureRecords() {

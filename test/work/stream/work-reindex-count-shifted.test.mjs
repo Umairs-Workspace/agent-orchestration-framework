@@ -1,15 +1,16 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/04_count-shifted-primitive.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the LOCKED engine `countShiftedByInsert(workDir, { at, space, parent })`
-// (src/work/reindex.mjs), cross-checked against a fresh `listItems`/`findWork`
-// read (src/work.mjs) and (for the last scenario) against
+// (packages/core/src/work/reindex.mjs), cross-checked against a fresh `listItems`/`findWork`
+// read (packages/core/src/work.mjs) and (for the last scenario) against
 // `reindexForInsert`'s own reported shift count — the ADR-004 "one source of
 // truth" guarantee.
 import assert from "node:assert/strict";
-import { listItems } from "../../../src/work.mjs";
-import { countShiftedByInsert, reindexForInsert } from "../../../src/work/reindex.mjs";
+const listItems = _aofWorkspace.work.listItems;
+import { countShiftedByInsert, reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, writeStoryItem, folderNames } from "../../support/work-reindex-fixture.mjs";
 
 async function buildFixture(work) {

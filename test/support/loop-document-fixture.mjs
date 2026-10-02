@@ -80,7 +80,7 @@ export async function makeRepo({ workDir = "./wiki/work", registry = RECORDS } =
 // registry changed", including a row that REMOVES one.
 export async function writeRegistry(repo, registry) {
   const loops = path.join(repo.aofDir, "loops");
-  await rm(loops, { recursive: true, force: true });
+  await rm(loops, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   await mkdir(loops, { recursive: true });
   for (const [name, body] of Object.entries(registry)) await writeFile(path.join(loops, name), body, "utf8");
 }
@@ -90,7 +90,7 @@ export async function withRepo(options, fn) {
   try {
     return await fn(repo);
   } finally {
-    await rm(repo.root, { recursive: true, force: true });
+    await rm(repo.root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

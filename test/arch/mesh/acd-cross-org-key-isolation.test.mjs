@@ -2,7 +2,7 @@
 // SECURITY T12 — architect/developer-owned)
 //
 // ARMED AT BUILD, now that the per-workspace App-identity seam exists
-// (src/mesh/clone-credential-provider.mjs, src/mesh/launcher.mjs) — a detector
+// (packages/core/src/mesh/clone-credential-provider.mjs, packages/core/src/mesh/launcher.mjs) — a detector
 // authored earlier would have scanned absent production wiring (the ADR-008 /
 // SECURITY-F5/F6 deferral precedent this milestone's own lesson pins). Arms ALL FOUR
 // ADR-011 structural invariants:
@@ -37,8 +37,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const providerSourcePath = path.join(repoRoot, "src", "mesh", "clone-credential-provider.mjs");
-const launcherSourcePath = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const providerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "clone-credential-provider.mjs");
+const launcherSourcePath = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -151,7 +151,7 @@ function destructuredKeys(paramsText) {
 // ---------------------------------------------------------------------------------
 function staticIdentityProblems(providerSource) {
   const problems = [];
-  const anchor = "export function createGithubAppMintProvider";
+  const anchor = "function createGithubAppMintProvider";
   const paramsText = functionParams(providerSource, anchor);
   const body = functionBody(providerSource, anchor);
   if (paramsText == null || body == null) {
@@ -180,7 +180,7 @@ function staticIdentityProblems(providerSource) {
 // ---------------------------------------------------------------------------------
 function providerBorrowProblems(providerSource) {
   const problems = [];
-  const body = functionBody(providerSource, "export function createGithubAppMintProvider");
+  const body = functionBody(providerSource, "function createGithubAppMintProvider");
   if (body == null) {
     problems.push("could not locate createGithubAppMintProvider's body");
     return problems;
@@ -212,7 +212,7 @@ function providerBorrowProblems(providerSource) {
 // ---------------------------------------------------------------------------------
 function launcherBorrowProblems(launcherSource) {
   const problems = [];
-  const anchor = "export function createResolveWorkspaceAppIdentity";
+  const anchor = "function createResolveWorkspaceAppIdentity";
   const body = functionBody(launcherSource, anchor);
   if (body == null) {
     problems.push("could not locate createResolveWorkspaceAppIdentity's body");
@@ -288,7 +288,7 @@ function mintSeamSignatureProblems(providerSource) {
 // ---------------------------------------------------------------------------------
 function synthesizeCleanProvider() {
   return [
-    "export function createGithubAppMintProvider({",
+    "function createGithubAppMintProvider({",
     "  resolveWorkspaceAppIdentity,",
     "  resolveWorkspaceCloneUrl,",
     "  signAppJwt = defaultSignAppJwt,",
@@ -312,7 +312,7 @@ function synthesizeCleanProvider() {
 
 function synthesizeStaticIdentityProvider() {
   return [
-    "export function createGithubAppMintProvider({",
+    "function createGithubAppMintProvider({",
     "  appId = null,",
     "  privateKey = null,",
     "  resolveWorkspaceCloneUrl,",
@@ -334,7 +334,7 @@ function synthesizeStaticIdentityProvider() {
 // fallbackIdentity` chained directly onto the resolve call).
 function synthesizeSiblingFallbackProvider() {
   return [
-    "export function createGithubAppMintProvider({",
+    "function createGithubAppMintProvider({",
     "  resolveWorkspaceAppIdentity,",
     "  fallbackIdentity,",
     "  resolveWorkspaceCloneUrl,",
@@ -360,7 +360,7 @@ function synthesizeSiblingFallbackProvider() {
 // forward, never re-resolved fresh per workspaceId).
 function synthesizeCachedLaunchIdentityProvider() {
   return [
-    "export function createGithubAppMintProvider({",
+    "function createGithubAppMintProvider({",
     "  resolveWorkspaceAppIdentity,",
     "  resolveWorkspaceCloneUrl,",
     "  signAppJwt = defaultSignAppJwt,",
@@ -384,7 +384,7 @@ function synthesizeCachedLaunchIdentityProvider() {
 
 function synthesizeCleanResolver() {
   return [
-    "export function createResolveWorkspaceAppIdentity(ws, options = {}) {",
+    "function createResolveWorkspaceAppIdentity(ws, options = {}) {",
     "  const ownWorkspaceId = ws.config?.mesh?.workspaceId ?? workspaceIdFor(ws.projectRoot ?? ws.workDir);",
     "  return async function resolveWorkspaceAppIdentity(workspaceId) {",
     "    if (workspaceId === ownWorkspaceId) {",
@@ -416,7 +416,7 @@ function synthesizeCleanResolver() {
 // ever being consulted for THIS workspace.
 function synthesizeSiblingRegistryResolver() {
   return [
-    "export function createResolveWorkspaceAppIdentity(ws, options = {}) {",
+    "function createResolveWorkspaceAppIdentity(ws, options = {}) {",
     "  const ownWorkspaceId = ws.config?.mesh?.workspaceId ?? workspaceIdFor(ws.projectRoot ?? ws.workDir);",
     "  const resolvedRegistry = new Map();",
     "  return async function resolveWorkspaceAppIdentity(workspaceId) {",
@@ -459,7 +459,7 @@ function synthesizeDefaultKeyPath({ variant = "clean" } = {}) {
 
 function synthesizeCleanMintSignature() {
   return [
-    "export function createGithubAppMintProvider({ resolveWorkspaceAppIdentity, resolveWorkspaceCloneUrl } = {}) {",
+    "function createGithubAppMintProvider({ resolveWorkspaceAppIdentity, resolveWorkspaceCloneUrl } = {}) {",
     "  const mintCloneCredential = async function mintCloneCredential(workspaceId) {",
     "    const identity = await resolveWorkspaceAppIdentity(workspaceId);",
     "    return identity;",
@@ -473,7 +473,7 @@ function synthesizeCleanMintSignature() {
 // F15-bound workspaceId parameter — the seam signature has drifted.
 function synthesizeFrameKeyedMintSignature() {
   return [
-    "export function createGithubAppMintProvider({ resolveWorkspaceAppIdentity, resolveWorkspaceCloneUrl } = {}) {",
+    "function createGithubAppMintProvider({ resolveWorkspaceAppIdentity, resolveWorkspaceCloneUrl } = {}) {",
     "  const mintCloneCredential = async function mintCloneCredential(frame) {",
     "    const identity = await resolveWorkspaceAppIdentity(frame.workspaceId);",
     "    return identity;",

@@ -1,9 +1,13 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { ADMITTED_KEYS, GROUND_VALUES, NODE_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const GROUND_VALUES = _aofApplication.graph.work.loops.GROUND_VALUES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
 // The records milestone 52 shipped — the SEED of this fixture, not its contents. What is copied

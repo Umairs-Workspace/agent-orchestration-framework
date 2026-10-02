@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 45 / story 04, task 00 —
 // `stories/04_story_advertised-entry-points/tasks/00_servers-advertise-paths.feature`
 // (@executable). Every Scenario and every Scenario-Outline ROW of that feature is
@@ -23,16 +26,16 @@
 //     right path from a hand-rolled second copy would pass every lane below and fail that
 //     gate; that division is the design, not a gap.
 //   · WHAT each legacy URL translates INTO is 45/01's `legacyRedirectFor`
-//     (`test/ui/app-routes.test.mjs`), and a fragment never reaches a server at all — so no
+//     (`apps/ui/test/app-routes.suite.mjs`), and a fragment never reaches a server at all — so no
 //     lane below claims a redirect. What IS claimed is narrower and is this story's own:
 //     every legacy address these producers USED to hand out still gets a 200 and the app
 //     shell from the very server that used to hand it out.
-//   · the extension-less fallback RULE is 45/02's (`test/ui/static-serve-fallback.test.mjs`).
+//   · the extension-less fallback RULE is 45/02's (`test/surfaces/static-serve-fallback.test.mjs`).
 //     Here it is only CONSUMED — STORY.md names "an advertised URL that 404s" as a worse
 //     regression than the one the milestone fixes, so every advertised address is fetched.
 //
 // TWO TRAPS, both measured at HEAD, both given their own assertions:
-//   1. `src/commands/mesh-ui.mjs` composed its announce as `${fleetUrl}&scope=${scope}`,
+//   1. `packages/core/src/commands/mesh-ui.mjs` composed its announce as `${fleetUrl}&scope=${scope}`,
 //      with the `&` hard-coded on the assumption that `fleetUrl` already carried a query.
 //      Against a PATH url that same untouched line yields `…/fleet&scope=global` — a
 //      pathname of `/fleet&scope=global` with NO `scope` parameter, which
@@ -54,16 +57,18 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveBoard, boardUiDist } from "../../src/board-serve.mjs";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
+const serveBoard = _aofApplication.server.serve.serveBoard;
+const boardUiDist = _aofApplication.server.serve.boardUiDist;
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 import { spawnCliAsync } from "../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // --- the Background, on disk -------------------------------------------------
 
@@ -281,7 +286,12 @@ async function withFleetFace(fn) {
 
 // The published workspace's id, read back through the same projection the face reads.
 async function publishedWorkspaceId(globalStoreOptions) {
-  const { queryGlobalMeshStatus } = await import("../../src/global-mesh-query.mjs");
+  const { queryGlobalMeshStatus } = await Promise.resolve(Object.freeze({
+  queryGlobalMeshStatus: _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus,
+  buildSessionIndex: _aofApplication.mesh.globalMeshQuery.buildSessionIndex,
+  shapeGlobalStatus: _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus,
+  workspaceIdForProjectRoot: _aofApplication.mesh.globalMeshQuery.workspaceIdForProjectRoot,
+}));
   const status = await queryGlobalMeshStatus({ ...globalStoreOptions });
   const id = (status.workspaces ?? [])[0]?.workspaceId;
   assert.ok(id, "the fixture publishes exactly one workspace into the isolated projection");
@@ -316,7 +326,7 @@ export const advertisedPathsTests = [
               // realpath on both sides: macOS resolves the temp dir through /private, so
               // comparing raw strings would measure the platform, not the envelope.
               assert.equal(realpathSync(envelope.projectDir), realpathSync(repo), "…and it names the resolved project dir");
-              assert.equal(envelope.uiDist, path.join(repoRoot, "ui", "dist"), "…and the dist it would serve");
+              assert.equal(envelope.uiDist, path.join(repoRoot, "apps", "ui", "dist"), "…and the dist it would serve");
               assert.equal(typeof envelope.uiBuildPresent, "boolean", "…and whether that build is present");
             },
           },

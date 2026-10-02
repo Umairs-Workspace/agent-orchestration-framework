@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -25,11 +25,11 @@ import { archTests as acdDebtLedgerBudgetTests } from "./acd-debt-ledger-budget.
 import { archTests as acdTestSuiteRegistrationTests } from "./acd-test-suite-registration.test.mjs";
 //     · acd-ui-directory-budget — TECH_DEBT 28/33 fix (b), landing with the diff that creates the
 //       8th directory, because a ratchet authored after the growth it questions RATIFIES it. Six
-//       per-file ceilings cannot see a tree that grows by ADDING files, which is what `ui/src`
+//       per-file ceilings cannot see a tree that grows by ADDING files, which is what `apps/ui/src`
 //       did four milestones running (54 -> 71 -> 91 -> 99) with every per-file gate green.
 import { archTests as acdUiDirectoryBudgetTests } from "./acd-ui-directory-budget.test.mjs";
 import { archTests as acdOneSelectorOneChangedSetTests } from "./acd-one-selector-one-changed-set.test.mjs";
-// milestone 119 / story 01 — `src/` gets an interior, and the two controls that make the move
+// milestone 119 / story 01 — `packages/core/src/` gets an interior, and the two controls that make the move
 // checkable rather than merely green. FF-11904 (ONE directory-budget table with a row per flat
 // layer, ceiling EQUAL to the measured count and shrink-only — three separate ratchets would
 // have rebuilt the blind spot item 78 measured) and FF-11905 (no route, command id, registry

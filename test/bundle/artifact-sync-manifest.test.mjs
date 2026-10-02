@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 43 / story 03 — task 02: the ARTIFACT SET
 // (`tasks/02_artifact-manifest-widening-and-content-hash.feature`, AC6–AC8, ADR-007).
 //
@@ -17,8 +18,8 @@ import { existsSync } from "node:fs";
 import { rm, utimes, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { withArtifactSyncFixture, writeArtifact, enqueueLine, WORKER_ID, ITEM_REF, RECORD_DOCS } from "../support/artifact-sync-fixture.mjs";
-import { WORK_ITEM_DOC_FILES } from "../../src/global-work-store.mjs";
-import { WORK_ITEM_ARTIFACTS } from "../../src/work/artifacts.mjs";
+const WORK_ITEM_DOC_FILES = _aofApplication.mesh.store.WORK_ITEM_DOC_FILES;
+import { WORK_ITEM_ARTIFACTS } from "@aof/work/artifacts";
 
 // EVERY artifact task 02's Givens describe: every record doc the manifest names plus six
 // `tasks/*.feature` members. Both the seed and its expected COUNT are derived from the

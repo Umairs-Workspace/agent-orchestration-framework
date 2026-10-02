@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-audit-lane-registry-complete (milestone 77 / story 05, FF-7708;
 // ADR-001 §2, ADR-008 §3, §5, ADR-010 §2, §4).
 //
@@ -21,7 +22,7 @@
 //
 // ── AND WHAT THE FACE INJECTS, THE FAMILY MAY NOT REACH ──────────────────────────────────────
 //
-// `59/FF-5904` forbids `src/work-audit/**` from reaching outside `src/` or holding a clock. Three
+// `59/FF-5904` forbids `packages/core/src/work-audit/**` from reaching outside `packages/core/src/` or holding a clock. Three
 // facts the rules need come from outside: the marker naming framework-authored hook entries, the
 // audited project's resolved role routing, and the subject root. All three arrive as arguments at
 // the impure boundary — and a fact read in two places has two expiry dates, so the ABSENCE of a
@@ -33,32 +34,30 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
-import {
-  REPORT_LANES,
-  assertLaneLimits,
-  assertLaneRead,
-  assertLaneRunnersDistinct,
-  runAudit,
-} from "../../../src/work-audit/report.mjs";
-import { sweepDeclarationProblems } from "../../../src/work-audit/reads.mjs";
-import { PROMPT_LAYER_SWEEPS } from "../../../src/work-audit/prompt-layer.mjs";
-import { HOOK_WIRING_SWEEPS } from "../../../src/work-audit/hook-wiring.mjs";
-import { SEAM_LIVENESS_SWEEPS } from "../../../src/work-audit/seam-liveness.mjs";
-import { DECLARED_BOUNDS_SWEEPS } from "../../../src/work-audit/declared-bounds.mjs";
-import { auditCommand } from "../../../src/commands/audit.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const REPORT_LANES = _aofApplication.work.audit.report.REPORT_LANES;
+const assertLaneLimits = _aofApplication.work.audit.report.assertLaneLimits;
+const assertLaneRead = _aofApplication.work.audit.report.assertLaneRead;
+const assertLaneRunnersDistinct = _aofApplication.work.audit.report.assertLaneRunnersDistinct;
+const runAudit = _aofApplication.work.audit.report.runAudit;
+import { sweepDeclarationProblems } from "@aof/work/audit/reads";
+const PROMPT_LAYER_SWEEPS = _aofApplication.work.audit.promptLayer.PROMPT_LAYER_SWEEPS;
+import { HOOK_WIRING_SWEEPS } from "@aof/work/audit/hook-wiring";
+const SEAM_LIVENESS_SWEEPS = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_SWEEPS;
+const DECLARED_BOUNDS_SWEEPS = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_SWEEPS;
+const auditCommand = _aofApplication.getCommand("work:audit");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The modules milestone 77 adds. A list rather than a directory sweep, because `census.mjs`,
 // `evidence.mjs` and `spawn.mjs` are 59's and legitimately start children.
 const MILESTONE_MODULES = Object.freeze([
-  "src/work-audit/prompt-layer.mjs",
-  "src/work-audit/hook-wiring.mjs",
-  "src/work-audit/seam-liveness.mjs",
-  "src/work-audit/declared-bounds.mjs",
-  "src/work-audit/toolkit.mjs",
-  "src/harness-reference.mjs",
+  "packages/work/src/audit/prompt-layer.mjs",
+  "packages/work/src/audit/hook-wiring.mjs",
+  "packages/work/src/audit/seam-liveness.mjs",
+  "packages/work/src/audit/declared-bounds.mjs",
+  "packages/core/src/work-audit/toolkit.mjs",
+  "packages/core/src/harness-reference.mjs",
 ]);
 
 // Every sweep registry milestone 77 adds, so the floor claim is made over declarations rather than
@@ -261,7 +260,7 @@ export const archTests = [
         ["const result = await runBounded({ command, args });", "a child started through the family's own bounded seam"],
       ];
       for (const [planted, what] of plants) {
-        assert.ok(childProcessRoutes("src/work-audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
+        assert.ok(childProcessRoutes("packages/work/src/audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
       }
     },
   },
@@ -275,17 +274,17 @@ export const archTests = [
       assert.deepEqual(found, [], "no module this milestone adds holds a second route to a fact the face supplies");
 
       // …AND NO OTHER MODULE OF THE FAMILY GREW ONE EITHER.
-      const family = (await readSrcFiles(repoRoot)).filter((file) => `src/${file.rel}`.startsWith("src/work-audit/"));
+      const family = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("packages/core/src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       assert.ok(family.length >= 8, `the family was walked (${family.length} modules)`);
       for (const file of family) {
-        const rel = `src/${file.rel}`;
+        const rel = file.rel;
         const code = stripComments(await readFile(file.path, "utf8"));
         assert.equal(/from\s+"[^"]*claude-settings\.mjs"/u.test(code), false, `${rel} does not import the settings module`);
         assert.equal(/work\.agents/u.test(code), false, `${rel} does not read the role-routing configuration key`);
       }
 
       // THE POSITIVE HALF: the face resolves both and hands them in.
-      const face = source("src/commands/audit.mjs");
+      const face = source("packages/work/src/commands/audit.mjs");
       assert.match(face, /markerKey: AOF_HOOK_MARKER/u, "the face injects the marker key");
       assert.match(face, /roleRouting: resolveRoleRouting\(ctx\.workspace\.config\)/u, "…and the resolved role routing");
       assert.match(face, /declaredBoundValues: declaredBoundValues\(ctx\.workspace\)/u, "…and what this project declares for each reference bound");
@@ -302,14 +301,14 @@ export const archTests = [
         ["const root = path.dirname(import.meta.url);", "a subject root derived from the module's own location"],
       ];
       for (const [planted, what] of plants) {
-        assert.ok(injectionBypasses("src/work-audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
+        assert.ok(injectionBypasses("packages/work/src/audit/declared-bounds.mjs", planted).length > 0, `${what} is reported by the file that holds it`);
       }
     },
   },
   {
     name: "arch/77 FF-7708: --strict changes the EXIT CODE and nothing else",
     run() {
-      const face = source("src/commands/audit.mjs");
+      const face = source("packages/work/src/commands/audit.mjs");
       // CUT ON THE LANGUAGE'S OWN STRUCTURE, never positionally — F-47-04-ARCH-2's rule and the one
       // home it prescribes. A `slice` to the next declaration would assume an order nothing pins.
       const runBody = functionBody(face, "async run(input, ctx)");

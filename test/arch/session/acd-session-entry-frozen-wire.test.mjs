@@ -1,9 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-entry-frozen-wire (milestone 48 / ADR-005, with
 // ADR-001's present-and-null clause and ADR-009's one-home clause) —
 // "the presence session ENTRY is a FROZEN, ORDERED SIX, and the wire stays a
 // pass-through".
 //
-// THE INVARIANT. `readLiveSessions` (src/mesh/presence.mjs) projects every live session
+// THE INVARIANT. `readLiveSessions` (packages/core/src/mesh/presence.mjs) projects every live session
 // record to EXACTLY
 //   { sessionId, workspaceId, repo, assistant, lastPingAt, workspaceHasRun }
 // in that order — an INSERTION at the head and an APPEND at the tail, never a reorder
@@ -16,7 +19,7 @@
 //
 // AND THE OTHER HALF, which is why this file exists rather than a behavioural test
 // alone: the wire's remaining hops MUST STAY PASS-THROUGHS. `applyPresenceFrame`'s
-// `safeSessionArray` (src/control-stream-server.mjs) is an ENTRY-level guard — "is this
+// `safeSessionArray` (packages/core/src/control-stream-server.mjs) is an ENTRY-level guard — "is this
 // a non-array object" — and is NEVER taught a per-field whitelist. That helpful-looking
 // change is exactly how this milestone's key would be silently dropped in transit while
 // every other test stayed green, and it is why the highest-fan-in file on the path
@@ -30,10 +33,10 @@
 //     present-and-false by default (and TRUE when a run set says so, so "false" is a
 //     default rather than a constant).
 //  2. STRUCTURAL — the projection's own source names those six keys, in that order, in
-//     ONE place; and `src/mesh/launcher.mjs` does not stamp the run fact inline
+//     ONE place; and `packages/core/src/mesh/launcher.mjs` does not stamp the run fact inline
 //     (ADR-009: the projection has one home, and this milestone REMOVES a block from
 //     the widest-out-degree file in src/ rather than adding one).
-//  3. STRUCTURAL — `ui/src/fleet/api.ts`'s `PresenceSession` declares exactly those six
+//  3. STRUCTURAL — `apps/ui/src/fleet/api.ts`'s `PresenceSession` declares exactly those six
 //     keys, in that order, with `sessionId: string | null` and `workspaceHasRun:
 //     boolean`. A type that lags the wire is how the next milestone reads a field that
 //     is not there.
@@ -51,18 +54,18 @@ import { mkdtemp, mkdir, rm, readdir, readFile, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const meshDir = _aofHooks.meshStore.meshDir;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
-const PROJECTION_FILE = "src/mesh/presence.mjs";
-const CONTROL_FILE = "src/control-stream-server.mjs";
-const LAUNCHER_FILE = "src/mesh/launcher.mjs";
-const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
+const PROJECTION_FILE = "packages/mesh/src/presence.mjs";
+const CONTROL_FILE = "packages/mesh/src/control-stream-server.mjs";
+const LAUNCHER_FILE = "packages/mesh/src/launcher.mjs";
+const WIRE_TYPE_FILE = "apps/ui/src/fleet/api.ts";
 
 // The FROZEN ORDERED SIX (ADR-005) — one spelling, shared by every proof below.
 //
@@ -126,7 +129,7 @@ function balancedSlice(source, openIndex, open = "{", close = "}") {
 
 // The object literal `readLiveSessions` pushes onto its result — the projection itself.
 function projectionLiteral(source) {
-  const fn = source.indexOf("export async function readLiveSessions");
+  const fn = source.indexOf("async function readLiveSessions");
   if (fn < 0) return null;
   const push = source.indexOf("live.push({", fn);
   if (push < 0) return null;
@@ -377,7 +380,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/48+50 ADR-005 (acd-session-entry-frozen-wire): ui/src/fleet/api.ts's PresenceSession is the typed mirror of the SEVEN (the frozen six plus m50's appended `relaying`) — same keys, same order, `sessionId: string | null` (structural)",
+    name: "arch/48+50 ADR-005 (acd-session-entry-frozen-wire): apps/ui/src/fleet/api.ts's PresenceSession is the typed mirror of the SEVEN (the frozen six plus m50's appended `relaying`) — same keys, same order, `sessionId: string | null` (structural)",
     run: async () => {
       const violations = wireTypeViolations(await readSource(WIRE_TYPE_FILE));
       assert.deepEqual(violations, [], `the wire's typed mirror has drifted from the wire:\n${violations.join("\n")}`);

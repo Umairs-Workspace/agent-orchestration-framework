@@ -1,7 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 
-import { resolveLoopLevelGate } from "../../src/work/loop.mjs";
-import { loopCommand } from "../../src/commands/loop.mjs";
+import { resolveLoopLevelGate } from "../../packages/work-loop/src/engine.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
 import { loopFixture } from "./loop-command-probe.test.mjs";
 import { cleanL3Gate } from "../support/l3-gate-fixture.mjs";
 

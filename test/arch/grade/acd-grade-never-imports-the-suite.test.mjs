@@ -10,13 +10,13 @@
 //
 // `m15/R3` (surfaced at recall) is why the scan is over the WHOLE module family rather than
 // over the grade path alone: *a determinism (or any invariant) fitness grep must scan the
-// whole module family it governs*. A guard that only read `src/commands/grade.mjs` would
-// pass on the day someone put the import in `src/work/loop.mjs` instead.
+// whole module family it governs*. A guard that only read `packages/core/src/commands/grade.mjs` would
+// pass on the day someone put the import in `packages/work-loop/src/engine.mjs` instead.
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -33,7 +33,7 @@ export const archTests = [
     name: "arch/FF-5401 no module in src/** imports a runner script or anything under test/**",
     run: async () => {
       const offenders = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const text = await readFile(file.path, "utf8");
         // Comments cite these paths constantly (this milestone's own modules do), so a
         // comment naming `scripts/test.mjs` must not be counted as an import of it.
@@ -46,7 +46,7 @@ export const archTests = [
           if (pattern.test(code)) offenders.push(`${file.rel} (${label})`);
         }
       }
-      assert.deepEqual(offenders, [], `src/** reaches a test suite by import in: ${offenders.join(", ")}`);
+      assert.deepEqual(offenders, [], `packages/core/src/** reaches a test suite by import in: ${offenders.join(", ")}`);
     },
   },
 
@@ -56,7 +56,7 @@ export const archTests = [
       // One module holds the declared-rubric spawn, and that spawn's program comes from the
       // DECLARATION rather than from a literal aof wrote. A grade path naming a runner
       // script by name would be aof choosing the runner — precisely what ADR-004 §2 forbids.
-      const grade = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
+      const grade = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
       const code = grade.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       assert.ok(!code.includes("scripts/test.mjs"), "the grade path names no runner script of its own");
       assert.ok(!code.includes("node --test"), "…and no runner invocation of its own");

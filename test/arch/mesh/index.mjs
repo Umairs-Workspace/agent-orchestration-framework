@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -16,9 +16,9 @@ import { archTests as acdMeshEolPinnedTests } from "./acd-mesh-eol-pinned.test.m
 // milestone 33 / story 01 (ADR-002.1 — F-3204): the node-side PERSISTENT relay SUBSCRIBER
 // (src/mesh-presence-subscriber.mjs) + the in-memory liveness cache
 // (src/mesh-presence-cache.mjs) are DELETED outright — no consumer remains once the fabric
-// peer-map (src/mesh/fabric.mjs's resolvePeers) is the fast liveness read mesh:status
-// consumes instead (src/commands/mesh-identity.mjs's ADR-002.1 cutover). mergePresence
-// itself (src/mesh/presence.mjs) is UNCHANGED — only its caller's second-argument SOURCE
+// peer-map (packages/core/src/mesh/fabric.mjs's resolvePeers) is the fast liveness read mesh:status
+// consumes instead (packages/core/src/commands/mesh-identity.mjs's ADR-002.1 cutover). mergePresence
+// itself (packages/core/src/mesh/presence.mjs) is UNCHANGED — only its caller's second-argument SOURCE
 // re-points from the retired relay cache to the fabric peer-map liveness (see
 // test/mesh/mesh-fabric-liveness-cutover.test.mjs, task 01). meshRelayReceiveApplyTests (task
 // 03's whole subject) and fitness #7 acd-presence-subscriber-cache-only are RETIRED —
@@ -58,8 +58,8 @@ import { archTests as acdMeshUiScopeVisibleTests } from "./acd-mesh-ui-scope-vis
 // identity migrated the committed .aof/aof.config.json's mesh.nodeId/mesh.salt to the
 // git-ignored sidecar .aof/mesh/identity.json via migrateIdentity — its Definition-of-Done).
 // acd-fabric-single-seam (F-3202/F-3204 / ADR-001/002 — the tailscale spawn + peer-address
-// resolution live only in src/mesh/fabric.mjs) is UN-SKIPPED + GREEN (story 01 / fabric-
-// native-transport built src/mesh/fabric.mjs as the sole seam and removed the broker's
+// resolution live only in packages/core/src/mesh/fabric.mjs) is UN-SKIPPED + GREEN (story 01 / fabric-
+// native-transport built packages/core/src/mesh/fabric.mjs as the sole seam and removed the broker's
 // liveness-path callers — its Definition-of-Done).
 import { archTests as acdMeshIdentityNotCommittedTests } from "./acd-mesh-identity-not-committed.test.mjs";
 import { archTests as acdFabricSingleSeamTests } from "./acd-fabric-single-seam.test.mjs";
@@ -90,10 +90,10 @@ import { archTests as acdNativeAddonDegradesTests } from "./acd-native-addon-deg
 //                 — 49 being precisely the milestone that puts a surface fullscreen.
 import { archTests as acdShellZLadderSingleHomeTests } from "./acd-shell-z-ladder-single-home.test.mjs";
 //   ADR-005     — the surface → shell channel has ONE host: `declareShellPresent()` is called
-//                 exactly once in ui/src, at MODULE scope, by the module that renders the shell
+//                 exactly once in apps/ui/src, at MODULE scope, by the module that renders the shell
 //                 root, and NO routed surface imports the shell component. Added at the
 //                 architect's structural review of 45/03 (2026-08-07). The bus flag is set by
-//                 IMPORTING Shell.tsx, so a single stray import inside ui/src/{fleet,board,
+//                 IMPORTING Shell.tsx, so a single stray import inside apps/ui/src/{fleet,board,
 //                 config}/ — even a `type` one, which tsc erases but the bundler still follows —
 //                 would declare a shell that is not mounted, and every contributed control (the
 //                 fleet's scope switch, the board's sync, the board's serverGone notice) would

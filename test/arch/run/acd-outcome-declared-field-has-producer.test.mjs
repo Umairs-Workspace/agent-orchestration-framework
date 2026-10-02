@@ -5,8 +5,8 @@
 //
 // GENERALISES test/arch/assignment/acd-assignment-state-has-producer.test.mjs (35/ADR-001, "no
 // state exists without a writer") from a state ENUM to a record-format FIELD SET:
-//   (i)  the declared field set  = MEMORY_RECORD_FIELDS (src/memory/local-retrieval.mjs)
-//   (ii) the producer modules    = the record parsers (src/memory/local-indexing.mjs:
+//   (i)  the declared field set  = MEMORY_RECORD_FIELDS (packages/core/src/memory/local-retrieval.mjs)
+//   (ii) the producer modules    = the record parsers (packages/core/src/memory/local-indexing.mjs:
 //        parseArchitecture, parseRetrospective, parseAof, and — once story 02 lands,
 //        concurrently — parseOutcome), all of which live in the ONE bounded module.
 //
@@ -34,7 +34,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -42,7 +42,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // MemoryRecord field lives in this ONE module (05/ADR-007's 2-importer seam;
 // 39/ADR-002 composes `parseOutcome` into the SAME file, not a new module) — so a
 // single-file read is the whole bounded set, today and once story 02 lands.
-export const PRODUCER_MODULE_PATHS = ["src/memory/local-indexing.mjs"];
+export const PRODUCER_MODULE_PATHS = ["packages/knowledge/src/memory/local-indexing.mjs"];
 
 // The honest scope boundary as DATA (not just prose) — cross-checked against the
 // top-of-file comment above by this file's own self-test, and reused by the

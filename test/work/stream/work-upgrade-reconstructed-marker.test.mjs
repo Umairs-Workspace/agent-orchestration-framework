@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 40 / story 02 (migration registry &
 // `aof upgrade`), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
 //     02_story_migration-registry-and-upgrade/tasks/04_reconstructed-marker-expressible.feature
 // Every @executable scenario below is wired against the LOCKED engine's
 // injectable `migrations` seam (runUpgrade/planUpgrade's `{ migrations }`
-// option, src/work/upgrade.mjs) — a SYNTHETIC reconstructing transform drives
+// option, packages/core/src/work/upgrade.mjs) — a SYNTHETIC reconstructing transform drives
 // expressibility (ADR-008); the real 0->1 stamp transform is exercised
 // separately to prove it sets NO marker and transforms shape only. No
 // backfill is performed — the real WORK_ITEM_MIGRATIONS declares no
@@ -12,7 +13,8 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { WORK_ITEM_MIGRATIONS, runUpgrade } from "../../../src/work/upgrade.mjs";
+const WORK_ITEM_MIGRATIONS = _aofApplication.work.upgrade.WORK_ITEM_MIGRATIONS;
+const runUpgrade = _aofApplication.work.upgrade.runUpgrade;
 import { withWork, writeItem } from "../../support/work-upgrade-fixture.mjs";
 
 const bodyOf = (text) => text.slice(text.indexOf("\n---", 3) + "\n---".length);

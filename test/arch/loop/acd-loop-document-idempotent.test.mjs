@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for story 79 — REGENERATION IS BYTE-IDENTICAL ON UNCHANGED INPUTS.
 //
 // Inherited, not re-decided: 78/ADR-002 owns the generated-document discipline and 78/ADR-010
@@ -16,14 +17,14 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../../src/command-core.mjs";
-import { loopDocumentCommand } from "../../../src/commands/loop-document.mjs";
-import { loopDocumentPath } from "../../../src/loop-document.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
+import { loopDocumentPath } from "@aof/work-graph/document";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 import { RECORDS, loop, withRepo, writeRegistry } from "../../support/loop-document-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 export const archTests = [
   {

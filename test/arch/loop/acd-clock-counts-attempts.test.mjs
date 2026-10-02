@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12601 — "The clock's subject is the ATTEMPT SERIES, not the calendar: `scheduleToClose` sums
 // attempt durations over the `retryOf` lineage, and downtime is charged to nobody."
 //
@@ -28,15 +29,16 @@ import {
   decideScheduleToClose,
   lineageElapsedMs,
   retryLineage,
-} from "../../../src/work/loop.mjs";
-import { isStale, startRun } from "../../../src/run-store.mjs";
+} from "../../../packages/work-loop/src/engine.mjs";
+const isStale = _aofApplication.execution.runs.isStale;
+const startRun = _aofApplication.execution.runs.startRun;
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24) — a hand-rolled one is
 // what `acd-comment-stripper-order` refuses, and every absence sweep below depends on it.
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENGINE = "src/work/loop.mjs";
-const SHELL = "src/commands/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 
@@ -191,7 +193,7 @@ export const archTests = [
       assert.equal(
         (await read(ENGINE)).split("\n").filter((line) => /^import /u.test(line)).length,
         0,
-        "src/work/loop.mjs imports nothing, exactly as it does today",
+        "packages/work-loop/src/engine.mjs imports nothing, exactly as it does today",
       );
       assert.doesNotMatch(
         engine,
@@ -220,13 +222,13 @@ export const archTests = [
       const cyclic = [mk("C", "B"), mk("B", "C")];
       assert.deepEqual(retryLineage({ runs: cyclic, record: cyclic[0] }).map((r) => r.runId), ["B", "C"]);
 
-      // 129/04 (ADR-008 §3) — the summer's callers moved with the ladder into `src/loop/cycle.mjs`
+      // 129/04 (ADR-008 §3) — the summer's callers moved with the ladder into `packages/core/src/loop/cycle.mjs`
       // (`budgetElapsedMs`, the one budget home); the shell and the wave reach the walk through it.
       // No member of the family traverses `retryOf` itself.
-      for (const rel of [SHELL, "src/loop/cycle.mjs", "src/loop/wave.mjs"]) {
+      for (const rel of [SHELL, "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"]) {
         assert.doesNotMatch(await source(rel), /\.retryOf/u, `${rel} declares no \`retryOf\` traversal of its own: the one walk is the engine's`);
       }
-      assert.match(await source("src/loop/cycle.mjs"), /retryLineage\(/u, "…and the ladder's budget home calls it");
+      assert.match(await source("packages/work-loop/src/cycle.mjs"), /retryLineage\(/u, "…and the ladder's budget home calls it");
     },
   },
   {
@@ -354,10 +356,10 @@ export const archTests = [
     name: "arch/126/00 FF-12601 leg 8: both shell budget sites obtain elapsed from the summer, hand it the store's `isStale` and a threshold from the ONE bound home, and pass no instants",
     run: async () => {
       // 129/04 — THREE budget sites now, over the family: the shell's resume-lineage site, the
-      // ladder's in-process retry site (`src/loop/cycle.mjs`, moved with the retry ladder) and the
-      // wave's lane-resume site (`src/loop/wave.mjs`). Every one obtains its elapsed from the ONE
+      // ladder's in-process retry site (`packages/core/src/loop/cycle.mjs`, moved with the retry ladder) and the
+      // wave's lane-resume site (`packages/core/src/loop/wave.mjs`). Every one obtains its elapsed from the ONE
       // budget home (`budgetElapsedMs`, in the ladder module) and the summer is called exactly once.
-      const shell = [await source(SHELL), await source("src/loop/cycle.mjs"), await source("src/loop/wave.mjs")].join("\n");
+      const shell = [await source(SHELL), await source("packages/work-loop/src/cycle.mjs"), await source("packages/work-loop/src/wave.mjs")].join("\n");
       const shellOnly = await source(SHELL);
       // The call's arguments are cut by MATCHING PARENS, not by a regex looking for the next
       // `})` — the elapsed argument is itself a call with a bag, so a non-greedy pattern would

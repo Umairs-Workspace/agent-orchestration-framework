@@ -51,7 +51,7 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-001** the
 markdown the agent reads, never parsed, **ADR-002** the one prompt-wiring edit — `code-review.md` step 3,
 **ADR-004** advisory-only / the merge gate is unchanged, **ADR-005** reach via the 09 `graph:triage`
 command — CLI-only). This story **owns** the edit to
-[src/bundle/commands/code-review.md](../../../../../../src/bundle/commands/code-review.md) step 3 (the
+[src/bundle/commands/code-review.md](../../../../../../packages/core/assets/commands/code-review.md) step 3 (the
 `graph:triage` PR-impact step). It **consumes** story-00's convention and the frozen 09 `graph:triage`
 command unchanged; it adds **no production code** and parses **nothing** (the agent reads the ranked-queue
 markdown — ADR-001).

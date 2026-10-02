@@ -1,6 +1,10 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
-import { getCommand, listCommands } from "../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../src/spine/face.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 
 export const loopCommandRegistrationTests = [{
   name: "loop command registration — four additive ids have distinct derived routes and report-only CLI probes",

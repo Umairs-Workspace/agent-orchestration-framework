@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // test/terminal/screen-model.test.mjs — milestone 138 / story 00, task 02
 // (02_one-screen-model-renders-what-claude-drew.feature; 138/ADR-001 §1-§4, ADR-003 §7).
 //
@@ -11,8 +13,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createScreen } from "../../src/terminal/screen.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+const createScreen = _aofSessions.terminalScreen.createScreen;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 
 const fixtureDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "claude-screens");
 

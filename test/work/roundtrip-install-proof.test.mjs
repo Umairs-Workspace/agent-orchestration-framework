@@ -42,7 +42,7 @@ import {
   listStream
 } from "../support/roundtrip-harness.mjs";
 
-const cliPath = fileURLToPath(new URL("../../bin/aof.mjs", import.meta.url));
+const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 
 // ---------------------------------------------------------------- helpers ----
 

@@ -19,14 +19,14 @@ const RUN_RECORD_KEYS_AT_M68 = [
 // record; every other later claim still rides the opaque brief.
 const RUN_RECORD_KEYS_AT_M131 = [...RUN_RECORD_KEYS_AT_M68, "asks"];
 const dispatchFiles = [
-  "src/work/dispatch.mjs",
-  "src/commands/dispatch.mjs",
-  "src/mesh/assignment-reclaim.mjs",
-  "src/commands/mesh/terminal-resume.mjs",
-  "src/assignment-record.mjs",
+  "packages/core/src/application/bindings/work/dispatch.mjs",
+  "packages/core/src/application/bindings/commands/dispatch.mjs",
+  "packages/mesh/src/assignment-reclaim.mjs",
+  "packages/mesh/src/commands/terminal-resume.mjs",
+  "packages/mesh/src/assignment-record.mjs",
 ];
 
-async function sourceModules(dir = path.join(root, "src")) {
+async function sourceModules(dir = path.join(root, "packages", "core", "src")) {
   const modules = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const target = path.join(dir, entry.name);
@@ -63,9 +63,9 @@ export const archTests = [
       })));
       assert.deepEqual(persistenceProblems(listing), []);
 
-      const mesh = stripComments(listing.find((entry) => entry.rel.endsWith("mesh/assignment-reclaim.mjs")).source);
+      const mesh = stripComments(listing.find((entry) => entry.rel === "packages/mesh/src/assignment-reclaim.mjs").source);
       assert.match(mesh, /countDispatchSlotsByTarget\(rows\)/, "the slot derives from global assignment rows already read by the tick");
-      const dispatchBody = functionBody(mesh, "export async function runControlDispatchReclaimTick");
+      const dispatchBody = functionBody(mesh, "async function runControlDispatchReclaimTick");
       assert.ok(dispatchBody != null, "the production dispatch/reclaim function is structurally readable");
       assert.doesNotMatch(dispatchBody, /\b(?:INSERT|UPDATE|CREATE|writeFile|appendFile)\b/iu, "admission adds no persistence write");
     },
@@ -73,7 +73,7 @@ export const archTests = [
   {
     name: "arch/69 FF-6908: the run record's top-level schema is milestone 68's plus 131's asks, appended last; later claims ride brief",
     run: async () => {
-      const source = (await readFile(path.join(root, "src", "run-store.mjs"), "utf8")).replaceAll("\r\n", "\n");
+      const source = (await readFile(path.join(root, "packages", "execution", "src", "runs.mjs"), "utf8")).replaceAll("\r\n", "\n");
       const body = functionBody(stripComments(source), "function buildRecord");
       assert.ok(body != null, "the record constructor remains structurally readable");
       const keys = [...body.matchAll(/^\s+([A-Za-z][A-Za-z0-9]*)(?=[:,])/gm)].map((match) => match[1]);

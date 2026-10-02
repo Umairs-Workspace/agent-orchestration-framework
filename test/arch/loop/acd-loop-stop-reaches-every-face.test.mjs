@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-13005 + FF-13006 + FF-13007 (node leg) — THE STOP REACHES EVERY FACE (milestone 130 /
 // story 05; ARCHITECTURE `## Fitness functions`, ADR-005 and ADR-004 §3-§4). Which of this
 // directory's three subjects: the RECORD — the loop's presence entry is the record every face
@@ -9,7 +10,7 @@
 // `activeRuns` stays `string[]` (cited: `acd-active-runs-frozen-string-array`);
 // `assemblePresenceRecord(diskRecordWithLoops)` — the registry's read-side reshape — keeps the
 // entry; `readActiveLoops` over a fixture with one running loop run and a `requested` level-2 file
-// answers exactly one eleven-key entry with `stop: "cancel"`. Structural: every `src/**` module
+// answers exactly one eleven-key entry with `stop: "cancel"`. Structural: every `packages/core/src/**` module
 // that CALLS `readActiveRuns(` also calls `readActiveLoops(` — two today, `heartbeat.mjs` and
 // `launcher.mjs`, and the sweep must find both: the launcher's tick is the record this machine
 // actually publishes, and a heartbeat that carried the key alone would be erased by the next tick.
@@ -18,18 +19,18 @@
 // `node.nodeId !== localNodeId`, and after rung 2; a rung-1 button otherwise; `rememberStopRung`
 // never lowers a rung; `fleetCurrentWorkLines` stays byte-pinned to the Rust `current_work()`
 // over the captured producer fixtures (cited: `acd-captured-producer-fixture`, whose registration
-// is checked here so the citation resolves); `ui/src/fleet/**` contains exactly one
+// is checked here so the citation resolves); `apps/ui/src/fleet/**` contains exactly one
 // `fetch("/api/mesh/loop-stop"` (in `api.ts`) and none of the `work-loops` / `work/loops` /
 // `loops-` tokens (FF-5202 cited); in `ui-serve.mjs` the `/api/mesh/loop-stop` branch reads
 // exactly `body.scope` and `body.workspaceId` and calls `admitWriteRequest(` before
 // `readJsonBody(`; the route table is exactly six (cited: `acd-mesh-ui-read-only`); the status
 // route's body carries `localNodeId`.
 //
-// FF-13007, the NODE LEG. `app/desktop/crates/app/src/supervisor.rs` spells no `"--stop"` literal
+// FF-13007, the NODE LEG. `apps/desktop/crates/app/src/supervisor.rs` spells no `"--stop"` literal
 // and reaches `taskkill` in exactly one place; `main.rs` registers `stop_loop` in
 // `generate_handler!`; `app.js` invokes `stop_loop` from exactly one delegate. The cargo half —
 // `stop_step`, `stop_argv`, `reconcile` under `supervision.rs`'s `#[cfg(test)]` — is story 04's,
-// run by `scripts/test.mjs` over `app/desktop/Cargo.toml`, and is CITED here (its tests are
+// run by `scripts/test.mjs` over `apps/desktop/Cargo.toml`, and is CITED here (its tests are
 // checked to exist by name) rather than re-run.
 //
 // Every cut is structural (`test/support/source-slice.mjs`); every sweep reports what it read.
@@ -37,35 +38,37 @@ import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assemblePresenceRecord, readActiveLoops } from "../../../src/mesh/presence.mjs";
-import { loopStopsDir, requestLoopStop } from "../../../src/loop/stop-request.mjs";
-import { fleetCurrentWorkLines, loopStopAffordance, rememberStopRung } from "../../../ui/src/fleet/runs.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const readActiveLoops = _aofApplication.mesh.presence.readActiveLoops;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+import { fleetCurrentWorkLines, loopStopAffordance, rememberStopRung } from "../../../apps/ui/src/fleet/runs.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 import { loopFixture, resetLoopStops, writeDeclarationRun } from "../../loop/loop-command-probe.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-const PRESENCE = "src/mesh/presence.mjs";
-const READERS_OF_RUNS = Object.freeze(["src/commands/mesh/heartbeat.mjs", "src/mesh/launcher.mjs"]);
+const PRESENCE = "packages/mesh/src/presence.mjs";
+const READERS_OF_RUNS = Object.freeze(["packages/mesh/src/commands/heartbeat.mjs", "packages/mesh/src/launcher.mjs"]);
 const RUNS_CALL = /(?<!function\s)\breadActiveRuns\s*\(/u;
 const LOOPS_CALL = /(?<!function\s)\breadActiveLoops\s*\(/u;
 const SIX_KEYS = Object.freeze(["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion", "buildId"]);
 const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"]);
 
-const FLEET_DIR = "ui/src/fleet";
+const FLEET_DIR = "apps/ui/src/fleet";
 const FLEET_FETCH = 'fetch("/api/mesh/loop-stop"';
 const FORBIDDEN_UI_TOKENS = /work-loops|work\/loops|loops-/u; // FF-5202's forbidden set, the loop registry's names
-const UI_SERVE = "src/mesh/ui-serve.mjs";
+const UI_SERVE = "packages/mesh/src/ui-serve.mjs";
 const ROUTE_TABLE = Object.freeze(["/api/mesh/assign", "/api/mesh/board-url", "/api/mesh/loop-stop", "/api/mesh/session", "/api/mesh/session-outcome", "/api/mesh/status"]);
 const CITED_CAPTURED_PRODUCER = "test/arch/session/acd-captured-producer-fixture.test.mjs";
 const CITED_CAPTURED_PRODUCER_INDEX = "test/arch/session/index.mjs";
 
-const SUPERVISOR_RS = "app/desktop/crates/app/src/supervisor.rs";
-const MAIN_RS = "app/desktop/crates/app/src/main.rs";
-const APP_JS = "app/desktop/ui/app.js";
-const SUPERVISION_RS = "app/desktop/crates/core/src/supervision.rs";
+const SUPERVISOR_RS = "apps/desktop/crates/app/src/supervisor.rs";
+const MAIN_RS = "apps/desktop/crates/app/src/main.rs";
+const APP_JS = "apps/desktop/ui/app.js";
+const SUPERVISION_RS = "apps/desktop/crates/core/src/supervision.rs";
 const CARGO_TESTS = Object.freeze(["stop_step", "stop_argv", "reconcile"]);
 
 function assertRead(what, count, floor, unit = "file(s)") {
@@ -78,8 +81,8 @@ async function source(rel) {
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
-    units.push({ rel: `src/${toPosix(file.rel)}`, code: stripComments(await readFile(file.path, "utf8")) });
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    units.push({ rel: toPosix(file.rel), code: stripComments(await readFile(file.path, "utf8")) });
   }
   return units;
 }
@@ -161,7 +164,7 @@ export const archTests = [
       assert.deepEqual(missing, [], `every src/** module that calls readActiveRuns( also calls readActiveLoops( (ADR-005 §2 — both producers, or the next tick erases the key): ${missing.join(", ")}`);
       // The home defines both and calls neither — the definitions are not counted as calls.
       const presence = units.find(({ rel }) => rel === PRESENCE);
-      assert.ok(presence != null && /\bexport\s+async\s+function\s+readActiveLoops\s*\(/u.test(presence.code), `NOT FOUND: readActiveLoops is defined in ${PRESENCE}`);
+      assert.ok(presence != null && /\basync\s+function\s+readActiveLoops\s*\(/u.test(presence.code), `NOT FOUND: readActiveLoops is defined in ${PRESENCE}`);
       assert.deepEqual(activeRunsCallers([{ rel: "planted.mjs", code: "const ids = await readActiveRuns(items);" }]), [{ rel: "planted.mjs", callsLoops: false }], "self-check: a caller without the loops read is reported");
     },
   },
@@ -195,7 +198,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/130 FF-13006 (acd-loop-stop-reaches-every-face): ui/src/fleet/** reaches /api/mesh/loop-stop from exactly one fetch (in api.ts) and carries none of the loop registry's tokens",
+    name: "arch/130 FF-13006 (acd-loop-stop-reaches-every-face): apps/ui/src/fleet/** reaches /api/mesh/loop-stop from exactly one fetch (in api.ts) and carries none of the loop registry's tokens",
     run: async () => {
       const files = await walkFiles(path.join(repoRoot, FLEET_DIR));
       assertRead(`the ${FLEET_DIR} walk`, files.length, 15);
@@ -208,8 +211,8 @@ export const archTests = [
         for (let i = 0; i < count; i += 1) fetches.push(rel);
         if (FORBIDDEN_UI_TOKENS.test(code)) tokens.push(rel);
       }
-      assert.deepEqual(fetches, [`${FLEET_DIR}/api.ts`], `ui/src/fleet/** contains exactly one fetch("/api/mesh/loop-stop" (in api.ts) — found in: ${fetches.join(", ") || "none"}. The one door (ADR-005 §5); zero means the button reaches no route, two means a second caller of the write`);
-      assert.deepEqual(tokens, [], `ui/src/fleet/** carries none of the work-loops / work/loops / loops- tokens (FF-5202 cited): ${tokens.join(", ")}`);
+      assert.deepEqual(fetches, [`${FLEET_DIR}/api.ts`], `apps/ui/src/fleet/** contains exactly one fetch("/api/mesh/loop-stop" (in api.ts) — found in: ${fetches.join(", ") || "none"}. The one door (ADR-005 §5); zero means the button reaches no route, two means a second caller of the write`);
+      assert.deepEqual(tokens, [], `apps/ui/src/fleet/** carries none of the work-loops / work/loops / loops- tokens (FF-5202 cited): ${tokens.join(", ")}`);
     },
   },
   {
@@ -271,7 +274,7 @@ export const archTests = [
       assert.match(core, /#\[cfg\(test\)\]/u, `${SUPERVISION_RS} carries its #[cfg(test)] module`);
       for (const fn of CARGO_TESTS) {
         assert.match(core, new RegExp(`\\bpub fn ${fn}\\s*\\(`, "u"), `${fn} is a pure core function (cited)`);
-        assert.match(core, new RegExp(`\\bfn ${fn}_\\w+\\s*\\(`, "u"), `${fn} has a #[cfg(test)] case by name — run by scripts/test.mjs over app/desktop/Cargo.toml, not here`);
+        assert.match(core, new RegExp(`\\bfn ${fn}_\\w+\\s*\\(`, "u"), `${fn} has a #[cfg(test)] case by name — run by scripts/test.mjs over apps/desktop/Cargo.toml, not here`);
       }
       assert.match(core, /pub const STOP_GRACE_MS: u64 = 30_000;/u, "STOP_GRACE_MS is the core's default decision (ADR-004 §3)");
     },

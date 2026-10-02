@@ -1,20 +1,21 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadBundle } from "../../src/work/bundle.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
-import { getCommand } from "../../src/command-core.mjs";
-import { updateWork, workLockPath } from "../../src/work/update.mjs";
-import { synthesizeBundleConfig } from "../../src/work/bundle-synthesis.mjs";
-import { planApplyActions, executeApplyActions, createLockManifest } from "../../src/render-plan.mjs";
-import { writeLock } from "../../src/lock.mjs";
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const getCommand = _aofApplication.getCommand;
+import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
+import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
+import { planApplyActions, executeApplyActions, createLockManifest } from "../../packages/core/src/render-plan.mjs";
+import { writeLock } from "../../packages/core/src/lock.mjs";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const loopsDir = path.join(root, "src", "bundle", "loops");
+const loopsDir = path.join(root, "packages", "core", "assets", "loops");
 
 const WATCHERS = Object.freeze([
   { file: "build-to-green-watcher.md", id: "watcher:build-to-green-watcher", watches: "loop:build-to-green", counter: "whether the acceptance criteria got smaller", command: "work:ratchet" },

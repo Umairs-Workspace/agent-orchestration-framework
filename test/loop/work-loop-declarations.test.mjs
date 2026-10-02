@@ -1,3 +1,7 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 // Traceability: milestone 126 / story 02, tasks 00 and 01 (ADR-004). THE DECLARATION PREDICATE,
 // driven over literal run records — which declarations should be running on this node now.
 //
@@ -16,24 +20,25 @@ import {
   buildLoopDeclaration,
   decideSupervisedDeclarations,
   readLoopDeclaration,
-} from "../../src/work/loop.mjs";
-import { isRunning, isStale, retryReadiness } from "../../src/run-store.mjs";
-import { meshStatusCommand } from "../../src/commands/mesh/identity.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { stopLoop } from "../../src/loop/stop.mjs";
-import {
-  clearStopRequest,
-  loopResumesDir,
-  loopStopsDir,
-  markStopHonoured,
-  requestLoopStop,
-  stopRequestPath,
-} from "../../src/loop/stop-request.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const meshStatusCommand = _aofApplication.getCommand("mesh:status");
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const stopLoop = _aofApplication.loop.stop.stopLoop;
+const clearStopRequest = _aofApplication.loop.stopRequest.clearStopRequest;
+const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { stripComments } from "../support/source-slice.mjs";
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 const NOW = "2026-09-08T12:00:00.000Z";
 const CEILING = 7_200_000;
@@ -83,7 +88,7 @@ function ask(runs, { ceilingMs = CEILING, now = NOW, items, ...rest } = {}) {
 }
 
 // The real CLI in `dir`, under the process's (the harness's isolated) global home.
-const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "bin", "aof.mjs");
+const BIN = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 function cliIn(dir, args) {
   const run = spawnSync(process.execPath, [BIN, ...args], { cwd: dir, encoding: "utf8", windowsHide: true, env: { ...process.env } });
   return { status: run.status, stdout: run.stdout ?? "", stderr: run.stderr ?? "" };
@@ -474,7 +479,7 @@ export const workLoopDeclarationsTests = [
     name: "130/04 task03 — the engine imports nothing: no import statement, no require(, no dynamic import(",
     async run() {
       const here = path.dirname(fileURLToPath(import.meta.url));
-      const source = await readFile(path.join(here, "..", "..", "src", "work", "loop.mjs"), "utf8");
+      const source = await readFile(path.join(here, "..", "..", "packages", "work-loop", "src", "engine.mjs"), "utf8");
       const stripped = stripComments(source);
       assert.doesNotMatch(stripped, /(^|\n)\s*import\s/, "no import statement");
       assert.doesNotMatch(stripped, /\brequire\s*\(/, "no require(");
@@ -588,12 +593,18 @@ export const workLoopDeclarationsTests = [
     name: "130/04 task03 — the producer spells no path: readStopRequest and loopStopsDir come from the one module",
     async run() {
       const here = path.dirname(fileURLToPath(import.meta.url));
-      const source = await readFile(path.join(here, "..", "..", "src", "mesh", "declarations.mjs"), "utf8");
+      const source = await readFile(path.join(here, "..", "..", "packages/core/src/application/bindings/mesh/declarations.mjs"), "utf8");
       const stripped = stripComments(source);
-      assert.match(stripped, /import \{[^}]*\breadStopRequest\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports readStopRequest from the one module");
-      assert.match(stripped, /import \{[^}]*\bloopStopsDir\b[^}]*\} from "\.\.\/loop\/stop-request\.mjs"/, "imports loopStopsDir from the one module");
-      assert.doesNotMatch(stripped, /loop-stops/, "spells no path segment");
-      assert.match(stripped, /stopped:/, "hands the set to the engine");
+      assert.ok(dependencySpecifiers(source).some(edge => edge.parameter === "loopStopRequestServices" && edge.specifier === "../loop/stop-request.mjs"), "the supplied request service has one configured home");
+      assert.match(stripped, /const \{[^}]*\breadStopRequest\b[^}]*\} = loopStopRequestServices/, "receives readStopRequest from the one module");
+      assert.match(stripped, /const \{[^}]*\bloopStopsDir\b[^}]*\} = loopStopRequestServices/, "receives loopStopsDir from the one module");
+      const implementation = stripComments(await readFile(path.join(here, "..", "..", "packages/mesh/src/declarations.mjs"), "utf8"));
+      for (const symbol of ["readStopRequest", "loopStopsDir"]) {
+        assert.match(stripped, new RegExp('createSupervisedDeclarations\\(\\{[^}]*\\b' + symbol + '\\b'), "core supplies the shared reader");
+        assert.match(implementation, new RegExp('function createSupervisedDeclarations\\(\\{[^}]*\\b' + symbol + '\\b'), "the package accepts the shared reader");
+      }
+      assert.doesNotMatch(stripped + implementation, /loop-stops/, "spells no path segment");
+      assert.match(implementation, /stopped:/, "hands the set to the engine");
     },
   },
   {

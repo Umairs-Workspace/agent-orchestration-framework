@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/loop/work-loops-record.test.mjs — milestone 52 / story 05, task 00: THE RECORD SUITE.
 //
 // The subject is always the exported `loadLoops(workDir)`, driven over a temp
@@ -39,16 +40,41 @@
 // lines, empty lists, the normalised model), ADR-013 §1–§4 (the total order, `kind`
 // suspension, no dedup).
 import assert from "node:assert/strict";
+import { moduleReferences } from "../../scripts/workspace-boundaries.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  ADMITTED_KEYS, CADENCE_KINDS, EDGE_KEYS, ENDPOINT_SCHEMES, EVENT_TRIGGERS, FIELD_KINDS,
-  GROUND_VALUES, LOADER_FINDING_CODES, NODE_KINDS, PERIODIC_UNITS, POINTER_SCHEMES,
-  SENTINEL_TOKENS, loadLoops,
-} from "../../src/work/loops.mjs";
-import * as loaderModule from "../../src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const CADENCE_KINDS = _aofApplication.graph.work.loops.CADENCE_KINDS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const EVENT_TRIGGERS = _aofApplication.graph.work.loops.EVENT_TRIGGERS;
+const FIELD_KINDS = _aofApplication.graph.work.loops.FIELD_KINDS;
+const GROUND_VALUES = _aofApplication.graph.work.loops.GROUND_VALUES;
+const LOADER_FINDING_CODES = _aofApplication.graph.work.loops.LOADER_FINDING_CODES;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const PERIODIC_UNITS = _aofApplication.graph.work.loops.PERIODIC_UNITS;
+const POINTER_SCHEMES = _aofApplication.graph.work.loops.POINTER_SCHEMES;
+const SENTINEL_TOKENS = _aofApplication.graph.work.loops.SENTINEL_TOKENS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const loaderModule = Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+});
 import { examplesTables } from "../support/feature-parse.mjs";
 import {
   actorRecord, actorRecordNames, codesFor, findingsFor, identityRecord, idsOf,
@@ -1494,14 +1520,13 @@ export const workLoopsRecordTests = [
       // in `test/loop/` and the pinned spelling matched nothing, which reported "no subject
       // module" as an empty set rather than as a red. What the leg means is the MODULE, so it
       // is the module that is named.
-      const suiteDir = path.dirname(fileURLToPath(import.meta.url));
-      const srcImports = [...source.matchAll(/from "((?:\.\.\/)+src\/[^"]+)"/g)]
-        .map((match) => path.relative(path.resolve(suiteDir, "..", ".."), path.resolve(suiteDir, match[1])).split(path.sep).join("/"));
-      assert.deepEqual([...new Set(srcImports)], ["src/work/loops.mjs"], "one subject module, imported by its public path");
-      const named = source.match(/import \{([^}]*)\} from "(?:\.\.\/)+src\/work\/loops\.mjs";/);
-      assert.ok(named, "the named import list is readable");
-      for (const binding of named[1].split(",").map((entry) => entry.trim()).filter(Boolean)) {
+      const srcImports = moduleReferences(source).references.filter(entry => entry.specifier.startsWith("aof/")).map(entry => entry.specifier);
+      assert.ok(srcImports.length > 0 && srcImports.every((specifier) => specifier === "aof/default-application"), "one public core entry supplies the subject");
+      const named = [...source.matchAll(/^const (\w+) = _aofApplication\.graph\.work\.loops\.\1;/gmu)].map(match => match[1]);
+      assert.ok(named.length >= 13 && named.includes("loadLoops"), "the thirteen scoped public loader bindings are readable");
+      for (const binding of named) {
         assert.ok(Object.hasOwn(loaderModule, binding), `${binding} is an exported name, never a module-private one`);
+        assert.equal(loaderModule[binding], _aofApplication.graph.work.loops[binding], `${binding} retains public service identity`);
       }
 
       // (2) EVERY FIXTURE GOES THROUGH `registry()`, which is what makes the Background —

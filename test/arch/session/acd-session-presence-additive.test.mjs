@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-presence-additive (milestone 38 / ADR-001) —
 // "the live-session signal is an ADDITIVE key on the FROZEN m23 presence record; the
 // m23 four keys keep their byte-order, and a record with no sessions is byte-stable."
@@ -23,7 +24,7 @@
 //     record for the same inputs — the additive evolution never disturbs the frozen four.
 //  Self-check (m03 non-vacuous): a reordered / dropped m23 key trips the SAME detector.
 import assert from "node:assert/strict";
-import { assemblePresenceRecord } from "../../../src/mesh/presence.mjs";
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
 
 const M23_FROZEN_KEYS = ["nodeId", "heartbeatAt", "activeRuns", "aofVersion"];
 

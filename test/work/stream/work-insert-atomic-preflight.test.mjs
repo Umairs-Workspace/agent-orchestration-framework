@@ -1,6 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Regression test for review fix 1 (milestone 41 as-built review, 2026-07-16):
 // "Non-atomic insert leaves the stream corrupt on a mid-flight failure."
-// `runInsertTopLevel`/`runInsertStory` (src/commands/insert-shared.mjs) used to
+// `runInsertTopLevel`/`runInsertStory` (packages/core/src/commands/insert-shared.mjs) used to
 // call `reindexForInsert` (rename every affected folder + rewrite frontmatter)
 // BEFORE scaffolding the new item — so a missing/misconfigured template threw
 // `insert-template-missing` AFTER the shift, leaving the whole stream renumbered,
@@ -16,8 +18,9 @@
 import assert from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, listItems } from "../../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
 import { withInsertFixture, buildTopLevelMilestones, buildMilestone, writeStoryItem, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 async function topLevelSnapshot(workDir) {

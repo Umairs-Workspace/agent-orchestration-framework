@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 34 / story 04 — task 02
 // (tasks/02_control-node-stream-server.feature). Covers every @executable scenario /
 // Scenario Outline row:
@@ -20,14 +21,15 @@ import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import {
-  isTailnetPeer,
-  applyStreamFrame,
-  streamLivenessLabel,
-  startControlStreamServer,
-} from "../../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore, queryGlobalWorkProjection, readWorkItemDoc, readWorkItemRuns } from "../../../src/global-work-store.mjs";
-import { readPresenceRecord } from "../../../src/mesh/presence.mjs";
+const isTailnetPeer = _aofApplication.mesh.controlStreamServer.isTailnetPeer;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const streamLivenessLabel = _aofApplication.mesh.controlStreamServer.streamLivenessLabel;
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const queryGlobalWorkProjection = _aofApplication.mesh.store.queryGlobalWorkProjection;
+const readWorkItemDoc = _aofApplication.mesh.store.readWorkItemDoc;
+const readWorkItemRuns = _aofApplication.mesh.store.readWorkItemRuns;
+const readPresenceRecord = _aofApplication.mesh.presence.readPresenceRecord;
 
 const NOW = "2026-07-05T10:00:00.000Z";
 

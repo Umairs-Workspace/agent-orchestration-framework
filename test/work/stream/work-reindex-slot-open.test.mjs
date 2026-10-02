@@ -1,16 +1,19 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/00_slot-open-renames-and-bumps-number.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the LOCKED engine `reindexForInsert(workDir, { at, space, parent })`
-// (src/work/reindex.mjs). Story 01 has NO command surface (STORY.md) — the
+// (packages/core/src/work/reindex.mjs). Story 01 has NO command surface (STORY.md) — the
 // engine is called directly via its API; the OUTCOME is read back through the
 // existing, UNMODIFIED `findWork`/`listItems`/`validateWork` readers
-// (src/work.mjs) against the fixture on disk — the feature's own litmus
+// (packages/core/src/work.mjs) against the fixture on disk — the feature's own litmus
 // ("a fresh `aof work find|validate --json`").
 import assert from "node:assert/strict";
-import { findWork, listItems, validateWork } from "../../../src/work.mjs";
-import { reindexForInsert } from "../../../src/work/reindex.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
+const validateWork = _aofWorkspace.work.validateWork;
+import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, folderNames, SLUGS } from "../../support/work-reindex-fixture.mjs";
 
 const CONFIG = {};

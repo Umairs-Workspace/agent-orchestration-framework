@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-cost-stamped-once (milestone 68 / story 00 / 68/ADR-004 /
 // FF-6804) — "Cost is stamped once."
 //
@@ -5,7 +6,7 @@
 //    priceTable is present exactly when costSource is 'priced'; costSource is the
 //    closed two-member vocabulary."
 //
-// costUsd is stamped ONCE at settle (in the writer, src/run-store.mjs), never
+// costUsd is stamped ONCE at settle (in the writer, packages/core/src/run-store.mjs), never
 // recomputed on read. A price-table correction changes what future runs are stamped
 // with; it never rewrites a run that has already settled.
 import assert from "node:assert/strict";
@@ -15,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(root, "src");
+const SRC = path.join(root, "packages", "core", "src");
 const RUN_STORE = path.join(SRC, "run-store.mjs");
 
 async function modulesUnder(dir) {
@@ -54,7 +55,45 @@ export const archTests = [
   {
     name: "arch/68 FF-6804 (acd-cost-stamped-once): costSource is the closed two-member vocabulary, and priceTable is present exactly when priced",
     run: async () => {
-      const store = await import("../../../src/run-store.mjs");
+      const store = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
       assert.deepEqual(store.COST_SOURCES, ["reported", "priced"], "costSource is the closed two-member set reported|priced");
     },
   },
@@ -80,7 +119,45 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const store = await import("../../../src/run-store.mjs");
+        const store = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
 
         // priced → priceTable present; reported → priceTable null.
         let record = await store.startRun(item, { now: "2026-08-20T10:00:00.000Z" });

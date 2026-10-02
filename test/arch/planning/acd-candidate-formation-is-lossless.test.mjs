@@ -1,19 +1,21 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6209 — formation is a pure, lossless partition with a readable criterion.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { CORPUS_LANES, assembleCorpus } from "../../../src/work-tune/corpus.mjs";
-import { resolveCitationAtEmit } from "../../../src/work-tune/provenance.mjs";
+const CORPUS_LANES = _aofApplication.work.tune.corpus.CORPUS_LANES;
+const assembleCorpus = _aofApplication.work.tune.corpus.assembleCorpus;
+import { resolveCitationAtEmit } from "@aof/work/tune/provenance";
 import {
   FORMATION_CRITERION,
   FORMATION_DEFAULT_BASIS,
   FORMATION_REFUSAL_CODES,
   formCandidates,
   measureFormationCriteria,
-} from "../../../src/work-tune/formation.mjs";
+} from "@aof/work/tune/formation";
 
-const modulePath = fileURLToPath(new URL("../../../src/work-tune/formation.mjs", import.meta.url));
+const modulePath = fileURLToPath(new URL("../../../packages/work/src/tune/formation.mjs", import.meta.url));
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const moduleText = readFileSync(modulePath, "utf8");
 const source = (lane, id, overrides = {}) => ({

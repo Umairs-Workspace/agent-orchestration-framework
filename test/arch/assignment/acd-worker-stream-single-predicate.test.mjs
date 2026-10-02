@@ -27,14 +27,14 @@ export const archTests = [
   {
     name: "arch/34 ADR-007: worker/control role is decided by the ONE shared mesh-role predicate",
     async run() {
-      const roleSource = await readFile(path.join(repoRoot, "src", "mesh", "role.mjs"), "utf8");
+      const roleSource = await readFile(path.join(repoRoot, "packages", "mesh", "src", "role.mjs"), "utf8");
       assert.ok(roleSource.includes("export function meshRole"), "mesh-role.mjs exports the shared predicate");
       assert.ok(roleSource.includes('"worker"') && roleSource.includes('"control"') && roleSource.includes('"standalone"'), "meshRole returns the 3-value role");
 
       // mesh-launcher.mjs is the ONE caller that classifies role today (both the
       // launcher probe and the story-04 stream host read it) — it must route through
       // meshRole(), not re-implement the comparison as a second independent classifier.
-      const launcherSource = await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8");
+      const launcherSource = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
       assert.ok(/from\s*["'](?:\.\.?\/)+(?:mesh\/)?role\.mjs["']/u.test(launcherSource), "the launcher imports the shared mesh-role seam — from wherever in the family it sits");
       assert.ok(launcherSource.includes("meshRole(config, nodeId)"), "mesh-launcher.mjs calls meshRole(config, nodeId) to classify role");
     },
@@ -49,8 +49,8 @@ export const archTests = [
       // flag, story 34/02) make their OWN, unrelated, already-shipped comparison and
       // are out of THIS story's ownership/contract.
       const mustNotCompare = [
-        path.join("src", "worker-stream-client.mjs"),
-        path.join("src", "control-stream-server.mjs"),
+        path.join("packages", "mesh", "src", "worker-stream-client.mjs"),
+        path.join("packages", "mesh", "src", "control-stream-server.mjs"),
       ];
       for (const rel of mustNotCompare) {
         const raw = await readFile(path.join(repoRoot, rel), "utf8");

@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 33 / story 01 — the ws@8 broker retires as the
 // liveness transport (tasks/02_broker-retirement.feature, ADR-002.1/.4/.consequence).
 //
@@ -5,9 +8,9 @@
 // Scenario Outline is @executable-by-construction — covered by simply running the
 // named arch-tests themselves, not re-implemented here per the feature's own SEAM
 // SPLIT note). Exercises the REAL production functions — invoke("mesh:status", …)
-// over src/commands/mesh-identity.mjs, src/mesh/fabric.mjs's resolvePeers-shaped
-// fixture injection (ctx.fabricPeers, task 01's cutover seam), and src/mesh/store.mjs
-// — against a temp fixture repo. No mock/spy of src/mesh/relay.mjs; the "broker never
+// over packages/core/src/commands/mesh-identity.mjs, packages/core/src/mesh/fabric.mjs's resolvePeers-shaped
+// fixture injection (ctx.fabricPeers, task 01's cutover seam), and packages/core/src/mesh/store.mjs
+// — against a temp fixture repo. No mock/spy of packages/core/src/mesh/relay.mjs; the "broker never
 // started" proof is TWO real facts: (a) a static source-import check (this test's own
 // file never imports mesh-relay.mjs, and neither does mesh-identity.mjs — confirmed by
 // reading the actual source, not asserting a belief) and (b) mesh:status is driven to
@@ -28,13 +31,13 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_IDENTITY = path.join(repoRoot, "src", "commands", "mesh", "identity.mjs");
+const MESH_IDENTITY = path.join(repoRoot, "packages", "mesh", "src", "commands", "identity.mjs");
 
 async function makeRepo({ fabricConfigured = true } = {}) {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-broker-retirement-"));
@@ -74,7 +77,7 @@ export const meshBrokerRetirementTests = [
 
         // resolvePeers reports "umamis-mbp" online true and "build-linux" online false —
         // injected via ctx.fabricPeers (task 01's cutover seam), exactly the shape
-        // src/mesh/fabric.mjs's resolvePeers returns. NO serveRelay import, NO ws
+        // packages/core/src/mesh/fabric.mjs's resolvePeers returns. NO serveRelay import, NO ws
         // client, NO relay setup exists anywhere in this test's control flow.
         const fabricPeers = [
           { nodeId: "umamis-mbp", dialAddress: "192.0.2.150", online: true, host: "umamis-mbp" },
@@ -178,10 +181,10 @@ export const meshBrokerRetirementTests = [
       assert.ok(!importSpecifiers.some((s) => /mesh-presence-(subscriber|cache)\.mjs$/.test(s)), "mesh-identity.mjs imports no mesh-presence-subscriber.mjs / mesh-presence-cache.mjs (they no longer exist)");
       // Non-vacuous: the retired modules genuinely do not exist on disk (deleted by
       // this story's task 02) — confirming the import COULD NOT resolve even if written.
-      const subscriberPath = path.join(repoRoot, "src", "mesh-presence-subscriber.mjs");
-      const cachePath = path.join(repoRoot, "src", "mesh-presence-cache.mjs");
-      await assert.rejects(() => readFile(subscriberPath), "src/mesh-presence-subscriber.mjs does not exist on disk (deleted)");
-      await assert.rejects(() => readFile(cachePath), "src/mesh-presence-cache.mjs does not exist on disk (deleted)");
+      const subscriberPath = path.join(repoRoot, "packages", "core", "src", "mesh-presence-subscriber.mjs");
+      const cachePath = path.join(repoRoot, "packages", "core", "src", "mesh-presence-cache.mjs");
+      await assert.rejects(() => readFile(subscriberPath), "packages/core/src/mesh-presence-subscriber.mjs does not exist on disk (deleted)");
+      await assert.rejects(() => readFile(cachePath), "packages/core/src/mesh-presence-cache.mjs does not exist on disk (deleted)");
     },
   },
 ];

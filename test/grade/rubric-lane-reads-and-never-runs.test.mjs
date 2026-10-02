@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 04, task `02_the-lane-reads-and-never-runs`.
 //
 // Every @executable scenario of
@@ -20,9 +21,10 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile, mkdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { buildSnapshot, CHECK_GROUPS } from "../../src/work/doctor.mjs";
-import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "../../src/work/doctor-rubric.mjs";
+const invoke = _aofApplication.invoke;
+const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+import { rubricTraceabilityGroup, RUBRIC_REPORT_CONFIG_KEY, declaredReportFrom } from "@aof/work/doctor/rubric";
 import { stripComments } from "../support/source-slice.mjs";
 import { makeGradeRepo, ctxFor } from "../support/grade-fixture.mjs";
 
@@ -76,7 +78,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
 
       // NO CLOCK, and NO `path.resolve` — a lane that read either could not be replayed from
       // a snapshot, which is the whole determinism contract.
-      const body = stripComments(await readFile(path.join(repoRoot, "src", "work", "doctor-rubric.mjs"), "utf8"));
+      const body = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/rubric.mjs"), "utf8"));
       for (const clock of ["Date.now", "new Date", "performance.now", "process.hrtime", "Date.parse"]) {
         assert.ok(!body.includes(clock), `it read no clock (found ${clock})`);
       }
@@ -100,7 +102,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
         assert.equal(snapshot.rubricReport.format, "tap", "…with the format it was declared in");
 
         // THE LANE ITSELF PERFORMED NO READ — it holds no filesystem import at all.
-        const body = stripComments(await readFile(path.join(repoRoot, "src", "work", "doctor-rubric.mjs"), "utf8"));
+        const body = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/rubric.mjs"), "utf8"));
         for (const io of ["node:fs", "readFile", "readFileSync", "existsSync", "statSync"]) {
           assert.ok(!body.includes(io), `the lane performs no read (found ${io})`);
         }
@@ -133,8 +135,8 @@ export const rubricLaneReadsAndNeverRunsTests = [
         assert.equal(existsSync(witness), false, "the rubric command produced none of its effects");
 
         // AND THE DOCTOR STARTED NO CHILD PROCESS — structurally, over the whole lane family.
-        for (const module of ["work/doctor.mjs", "work/doctor-rubric.mjs", "work/doctor-controls.mjs"]) {
-          const body = stripComments(await readFile(path.join(repoRoot, "src", module), "utf8"));
+        for (const module of ["doctor/index.mjs", "doctor/rubric.mjs", "audit/controls.mjs"]) {
+          const body = stripComments(await readFile(path.join(repoRoot, "packages/work/src", module), "utf8"));
           for (const door of ["child_process", "spawnSync", "execSync", "execFileSync", "fork("]) {
             assert.ok(!body.includes(door), `${module} names no spawn door (found ${door})`);
           }
@@ -157,7 +159,20 @@ export const rubricLaneReadsAndNeverRunsTests = [
         const withoutRubric = CHECK_GROUPS.filter((group) => group !== rubricTraceabilityGroup);
         assert.equal(withoutRubric.length, CHECK_GROUPS.length - 1, "guard: the lane really is one registry entry");
 
-        const { doctorWork } = await import("../../src/work/doctor.mjs");
+        const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
         const baseline = await doctorWork(ctx.workspace.workDir, ctx.workspace.config, "03/00", {
           now: Date.now(),
           projectRoot: ctx.workspace.projectRoot,
@@ -188,7 +203,7 @@ export const rubricLaneReadsAndNeverRunsTests = [
         const result = await invoke("work:doctor", { scope: "03/00" }, await ctxFor(fx.repo));
         const ours = result.findings.filter((finding) => /unjoin|rubric-join/.test(finding.code));
         assert.deepEqual(codes(ours), ["rubric-join-unchecked"], "it reports that the join was not checked");
-        assert.match(ours[0].message, new RegExp(RUBRIC_REPORT_CONFIG_KEY.replace(/\./gu, "\\.")), "the message names the configuration key that would enable it");
+        assert.match(ours[0].message, new RegExp(RUBRIC_REPORT_CONFIG_KEY.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&")), "the message names the configuration key that would enable it");
         // IT REPORTS NO `scenario-unjoined` FOR ANY SCENARIO — the fixture declares two, and
         // a lane that read silence as a miss would report both.
         assert.deepEqual(ours.filter((finding) => finding.code === "scenario-unjoined"), [], "it reports no scenario-unjoined finding for any scenario");

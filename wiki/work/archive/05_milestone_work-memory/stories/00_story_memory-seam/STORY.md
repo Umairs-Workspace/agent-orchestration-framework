@@ -38,7 +38,7 @@ so that I recall prior lessons and ingest new ones through one unchanging interf
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md). This story **owns**: the
 `aof work memory <verb>` CLI dispatch (extends `workCommand` in
-[src/cli.mjs](../../../../../../src/cli.mjs)), argv + scope-flag parsing (`--area --stage --kind --owner
+[src/cli.mjs](../../../../../../packages/core/src/cli.mjs)), argv + scope-flag parsing (`--area --stage --kind --owner
 --item --limit --json`), `config.memory?.backend` resolution (read **once**, ADR-002), the backend
 registry, the **`none`** no-op backend, the `--json`-vs-text rendering of `RecallResult`, and the
 `$defs/memory` schema change + root `$ref` in [schemas/aof.schema.json](../../../../../../schemas/aof.schema.json).

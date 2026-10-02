@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-board-write-isolation (ADR-004, milestone 03; re-anchored
 // by milestone 08's command-core migration).
 //
@@ -7,7 +8,7 @@
 // exposes no restatus route, and runs in-process (no CLI shell-out).
 //
 // Milestone 08 (ADR-002/003) re-homed that sole write OUT of `board-ui.mjs` and
-// INTO the `work:feedback` command (`src/commands/feedback.mjs`): `board-ui.mjs`
+// INTO the `work:feedback` command (`packages/core/src/commands/feedback.mjs`): `board-ui.mjs`
 // is now a thin face that `invoke`s the command through the registry and itself
 // performs NO fs write. The write-isolation GUARANTEE is unchanged — it has only
 // moved with the code — so this fitness function now anchors the "sole writer"
@@ -18,11 +19,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
 import { matchedBraceBody } from "../../support/source-slice.mjs";
 
-const BOARD_UI = new URL("../../../src/board-ui.mjs", import.meta.url);
-const FEEDBACK_COMMAND = new URL("../../../src/commands/feedback.mjs", import.meta.url);
+const BOARD_UI = new URL("../../../packages/server/src/board-ui.mjs", import.meta.url);
+const FEEDBACK_COMMAND = new URL("../../../packages/work/src/commands/feedback.mjs", import.meta.url);
 // m42 wave (d) leg d4 (port 1): the sole feedback write moved AGAIN — out of the
 // command and into the record-doc TRANSITION SEAM, which appends the bullet and
 // raises `feedback.recorded` so publish-on-mutate is the ledger's decision rather
@@ -31,14 +32,14 @@ const FEEDBACK_COMMAND = new URL("../../../src/commands/feedback.mjs", import.me
 // the command); the lens below now points at the seam, and the command itself
 // joins board-ui.mjs in the "writes nothing at all" set — strictly stronger than
 // what this gate asserted before.
-const FEEDBACK_WRITER = new URL("../../../src/effects/doc-transitions.mjs", import.meta.url);
-const FEEDBACK_RECORDS = new URL("../../../src/feedback-records.mjs", import.meta.url);
+const FEEDBACK_WRITER = new URL("../../../packages/work/src/doc-transitions.mjs", import.meta.url);
+const FEEDBACK_RECORDS = new URL("../../../packages/work/src/feedback-records.mjs", import.meta.url);
 // Milestone 21 EXTENDS this guard to the run/rerun surface (ADR-003 — the explicit
 // EXTEND-not-sibling decision): the board face's run READ route + the rerun
 // affordance's UI wiring. The rerun's launch is the m03 ADR-006 typed-PTY-input
 // path (runAgent → TerminalDock), never a board write/route/shell-out.
-const RERUN_UI = new URL("../../../ui/src/board/runs.mjs", import.meta.url);
-const DETAIL_PANEL = new URL("../../../ui/src/board/DetailPanel.tsx", import.meta.url);
+const RERUN_UI = new URL("../../../apps/ui/src/board/runs.mjs", import.meta.url);
+const DETAIL_PANEL = new URL("../../../apps/ui/src/board/DetailPanel.tsx", import.meta.url);
 
 async function snapshotDir(dir) {
   const snap = new Map();
@@ -70,9 +71,12 @@ export const archTests = [
       // Milestone 08 re-homed the write out of board-ui.mjs; m42 wave (d) leg d4
       // re-homed it again, out of the command and into the transition seam. NEITHER
       // the board face NOR the command performs an fs write now — the "sole writer"
-      // lens points at src/effects/doc-transitions.mjs.
+      // lens points at packages/core/src/effects/doc-transitions.mjs.
       const board = await readFile(BOARD_UI, "utf8");
       const command = await readFile(FEEDBACK_COMMAND, "utf8");
+      const composition = await readFile(new URL("../../../packages/core/src/application/bindings/commands/feedback.mjs", import.meta.url), "utf8");
+      assert.match(composition, /createFeedbackCommand\(\{[^}]*transitionFeedbackAppended/);
+      assert.match(command, /await transitionFeedbackAppended\(/);
       for (const [label, text] of [["board-ui.mjs", board], ["commands/feedback.mjs", command]]) {
         for (const verb of ["writeFile", "appendFile"]) {
           assert.ok(
@@ -84,7 +88,7 @@ export const archTests = [
       // The command reaches the fact ONLY through the seam, so it cannot append the
       // bullet without raising the event the ledger hangs its cascade on.
       assert.ok(
-        /from\s+["']\.\.\/effects\/doc-transitions\.mjs["']/.test(command),
+        /const\s*\{\s*transitionFeedbackAppended\s*\}\s*=\s*effectsDocTransitionsServices/.test(composition),
         "the work:feedback command writes through the record-doc transition seam"
       );
 
@@ -140,10 +144,11 @@ export const archTests = [
       const source = await readFile(BOARD_UI, "utf8");
       // The board face invokes operations in-process THROUGH the command registry
       // (the only door, ADR-004 inv. 3) — never a per-request subprocess.
-      assert.ok(
-        /import\s*\{[^}]*\binvoke\b[^}]*\}\s*from\s*["']\.\/command-core\.mjs["']/.test(source),
-        "board-ui.mjs invokes operations in-process through ./command-core.mjs"
-      );
+      const binding = await readFile(new URL("../../../packages/core/src/application/bindings/board-ui.mjs", import.meta.url), "utf8");
+      assert.match(binding, /const\s*\{\s*invoke\s*\}\s*=\s*commandCoreServices/);
+      assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b/);
+      assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b/);
+      assert.match(source, /await invoke\(/, "the transport uses supplied in-process command invocation");
       // No child_process / spawn / exec of a CLI.
       assert.ok(!/child_process/.test(source), "no child_process import");
       for (const verb of ["spawn", "spawnSync", "exec", "execSync", "execFile"]) {

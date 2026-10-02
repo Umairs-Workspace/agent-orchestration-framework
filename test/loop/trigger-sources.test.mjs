@@ -1,7 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 63 / story 04 — THE SIGNALS THAT ARE NOT THE MESH.
 //
 // Every @executable scenario and every Scenario-Outline row of the story's five task features,
-// driven against the real sources (`src/work-trigger/sources.mjs`) and the real scope decision
+// driven against the real sources (`packages/core/src/work-trigger/sources.mjs`) and the real scope decision
 // (`decideLoopScope`, which is the SAME function `work:loop` refuses a scope with). Nothing here
 // re-implements a rule it asserts: the admitted forms, their examples, the refusal code and the
 // refusal's reason are all read off the loop, so a test that passed by agreeing with a private
@@ -50,13 +51,13 @@ import {
   resolveFindingSignal,
   resolveTriggerSignal,
   resolveTriggerSignals,
-} from "../../src/work-trigger/sources.mjs";
-import { TRIGGER_SOURCES } from "../../src/work-trigger/declaration.mjs";
-import { LOOP_LEVELS, decideLoopScope } from "../../src/work/loop.mjs";
+} from "@aof/work-loop/trigger/sources";
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+import { LOOP_LEVELS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 // The two vocabularies the "a refusal carries no more than a resolution does" sweep recognises a
 // level and a cadence BY, rather than by the key they arrive under: `runAt: "L3"` is a level and
 // `every: "1h"` is a cadence, and a name-exact guard sees neither.
-import { parseCadence } from "../../src/work/loops.mjs";
+const parseCadence = _aofApplication.graph.work.loops.parseCadence;
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -66,7 +67,7 @@ const CI = "ci-signal";
 const FINDING = "feedback-finding";
 
 // ─── capture fixtures ──────────────────────────────────────────────────────────────────
-// A capture as `src/commands/feedback.mjs` writes one. Every field here is a field the finding
+// A capture as `packages/core/src/commands/feedback.mjs` writes one. Every field here is a field the finding
 // source must not read, which is why it is planted in full rather than represented.
 const capture = (overrides = {}) => ({
   kind: "raw",
@@ -986,8 +987,8 @@ const ONE_GRAMMAR = [
           }],
       ];
 
-      const loopSource = await readFile(path.join(REPO_ROOT, "src", "work", "loop.mjs"), "utf8");
-      const familySource = await readFile(path.join(REPO_ROOT, "src", "work-trigger", "sources.mjs"), "utf8");
+      const loopSource = await readFile(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs"), "utf8");
+      const familySource = await readFile(path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger", "sources.mjs"), "utf8");
 
       for (const [change, scope, expected, patches, probe] of rows) {
         // In THIS tree the row's scope answers the other way, so the row measures movement rather
@@ -997,10 +998,10 @@ const ONE_GRAMMAR = [
           `${change}: before the change, ${JSON.stringify(scope)} answers the other way`);
 
         await scratch(async (root) => {
-          const src = path.join(root, "src");
+          const src = path.join(root, "packages", "core", "src");
           await mkdir(path.join(src, "work-trigger"), { recursive: true });
-          // 119/01 — the loop module lives at `src/work/loop.mjs` now, so the copy needs the
-          // family directory as well as the sub-family one.
+          // Copy the actual package engine into the consumer's legacy fixture path;
+          // this tests changed grammar without bringing any source dependencies along.
           await mkdir(path.join(src, "work"), { recursive: true });
 
           let patched = loopSource;
@@ -1010,8 +1011,8 @@ const ONE_GRAMMAR = [
           }
           assert.notEqual(patched, loopSource, `${change}: the copy really was changed`);
 
-          await writeFile(path.join(src, "work/loop.mjs"), patched, "utf8");
-          await cp(path.join(REPO_ROOT, "src", "work-trigger", "sources.mjs"), path.join(src, "work-trigger", "sources.mjs"));
+          await writeFile(path.join(src, "engine.mjs"), patched, "utf8");
+          await cp(path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger", "sources.mjs"), path.join(src, "work-trigger", "sources.mjs"));
 
           // No file in this family was edited to bring it about.
           assert.equal(await readFile(path.join(src, "work-trigger", "sources.mjs"), "utf8"), familySource,
@@ -1042,7 +1043,7 @@ const ONE_GRAMMAR = [
         "in this tree, where a single digit is a driver, 7/04 is refused with 7 named");
 
       // The tree this test read is unchanged by it.
-      assert.equal(readFileSync(path.join(REPO_ROOT, "src", "work", "loop.mjs"), "utf8"), loopSource,
+      assert.equal(readFileSync(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs"), "utf8"), loopSource,
         "the repository's own loop module was not edited");
     },
   },

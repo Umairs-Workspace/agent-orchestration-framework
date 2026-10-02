@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-run-phase-single-authority (milestone 68 / story 00 /
 // 68/ADR-002 / FF-6802) — "One phase authority."
 //
@@ -15,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(root, "src");
+const SRC = path.join(root, "packages", "core", "src");
 
 async function modulesUnder(dir) {
   const out = [];
@@ -40,7 +41,45 @@ export const archTests = [
     run: async () => {
       const { repo, item } = await makeItem();
       try {
-        const store = await import("../../../src/run-store.mjs");
+        const store = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
         // The spend envelope's declared set has no phase.
         assert.ok(!store.SPEND_ENVELOPE_KEYS.includes("phase"), "the spend envelope declares no phase key");
         // A minted run record (in memory and on disk) has no phase key.

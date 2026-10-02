@@ -22,10 +22,9 @@
 # NOTHING GENERATED IS COMMITTED. `scripts/site/build-site.mjs` stages the committed `docs/` shell
 # plus the pages it projects (the graph document, the two planning PRDs) into `dist-site/` — git-
 # ignored — and Jekyll builds from THAT directory, so the site sources the one committed artefact
-# and never copies it. The stage step needs no `npm ci`: the builder's static import closure holds
-# node built-ins only (11 modules, zero bare specifiers, measured 2026-09-12), and that premise is
-# held by the "static import closure" row of test/bundle/site-build.test.mjs rather than by this
-# sentence.
+# and never copies it. Both jobs install the locked workspaces and audit them before running
+# project code. The builder now imports workspace APIs; its closure is checked for unexpected
+# external dependencies and computed imports by test/bundle/site-build.test.mjs.
 #
 # The repository's Pages source must be set to "GitHub Actions" by the repository owner before
 # the deploy job can publish anywhere — that is the @uat scenario of tasks/00, and it gates nothing
@@ -63,8 +62,11 @@ jobs:
         with:
           node-version: "22"
 
-      - name: npm ci
-        run: npm ci
+      - name: Yarn immutable install
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: Run story 79's drift control through the project's own test command
         run: AOF_GLOBAL_HOME="$(mktemp -d)" node scripts/test.mjs --only test/arch/loop/acd-loop-document-current.test.mjs
@@ -97,6 +99,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Yarn immutable install
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: Stage the site (the docs/ shell plus the projected pages) into dist-site/
         run: node scripts/site/build-site.mjs --out dist-site

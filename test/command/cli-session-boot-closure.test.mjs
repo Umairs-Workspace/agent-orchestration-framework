@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 72 / story 03 — THE COLD BOOT.
 //
 //   tasks/00_a-session-verb-boots-no-registry.feature
@@ -27,10 +29,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { meshSessionCommand } from "../../src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode } from "../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { runBounded } from "../../src/work-audit/spawn.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { runBounded } from "@aof/execution/bounded-process";
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const NODE_ID = "node-boot";
@@ -164,7 +167,7 @@ export const cliSessionBootClosureTests = [
         // else in this file.
         const child = await runBounded({
           command: process.execPath,
-          args: [path.join(repoRoot, "bin", "aof.mjs"), "session", "ping", "--workspace", "ws-1", "--repo", "my-repo", "--assistant", "claude-code", "--json"],
+          args: [path.join(repoRoot, "packages", "core", "bin", "aof.mjs"), "session", "ping", "--workspace", "ws-1", "--repo", "my-repo", "--assistant", "claude-code", "--json"],
           cwd: fixture.root,
           deadlineMs: 120_000,
           env: { ...process.env, AOF_GLOBAL_HOME: fixture.home },

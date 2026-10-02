@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/grade/gate-propagation-reported-on-base-channel.test.mjs — traceability for milestone 43 /
 // story 05 (gate-time propagation), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/05_story_gate-propagation/
@@ -32,7 +33,7 @@ import {
   isAncestor,
   settledFrame,
 } from "../support/gate-propagation-fixture.mjs";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
 import { existsSync } from "node:fs";
 
 const NOW = "2026-08-04T09:00:00.000Z";

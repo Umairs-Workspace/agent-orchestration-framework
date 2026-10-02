@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 126 / story 01, task 02 (ADR-003 §3-§5). THE DOCUMENT DOES NOT MOVE.
 //
 // The render gained the record's facts; the `--json` document gained nothing. This suite drives the
 // document rather than reading the source for it: `cli.json` is identity, so the value
-// `invoke("work:run-status", …)` returns THROUGH `src/command-core.mjs` IS the document. Every
+// `invoke("work:run-status", …)` returns THROUGH `packages/core/src/command-core.mjs` IS the document. Every
 // answering path is exercised — the disk read, and the five cache/worker paths that a source sweep
 // can see but not prove — because the `fromWorker` / `reportedBy` asymmetry is exactly where a
 // "helpful" key would be added for symmetry and no test would notice.
@@ -15,10 +16,10 @@ import {
   withCacheReadFixture, plantCacheRow, refuseCommand, runCommand, streamRun, writeItem,
   WORKER_NODE,
 } from "../support/cache-read-fixture.mjs";
-import { loadWorkspace } from "../../src/command-core.mjs";
-import { startRun } from "../../src/run-store.mjs";
-import { runStatusCommand } from "../../src/commands/run-status.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
+const runStatusCommand = _aofApplication.getCommand("work:run-status");
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 
 // This node's own disk holds milestone "00" only, so a cache-only ref has genuinely no folder here.
 const DISK_STREAM = [{ number: "00", stories: [] }];

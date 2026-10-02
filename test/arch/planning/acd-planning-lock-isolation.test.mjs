@@ -7,7 +7,7 @@
 // Reframed 2026-06-19 from FILE-isolation ("touch only aof.planning.lock.json") to
 // SECTION-isolation ("write only the `planning` section of aof.lock.json; preserve
 // the foreign sections"). RED until the developer migrates `planning init` to
-// read-merge-write the unified lock (src/planning-init.mjs writeLock target +
+// read-merge-write the unified lock (packages/core/src/planning-init.mjs writeLock target +
 // buildManifest → `planning` section). That red is expected and correct.
 //
 // Proofs:
@@ -23,9 +23,9 @@ import { mkdtemp, mkdir, rm, readFile, writeFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initPlanning } from "../../../src/planning-init.mjs";
+import { initPlanning } from "../../../packages/core/src/planning-init.mjs";
 
-const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "src");
+const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src");
 const planningSourcePath = path.join(srcDir, "planning-init.mjs");
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 

@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 38 / story 00
 // tasks/07_bug-hook-identity-from-cwd.feature — FINDING F4 (aof:verify 38, BLOCKER):
 // a real Claude Code hook payload NEVER carries `workspace`/`repo` (RESEARCH.md
@@ -17,7 +20,7 @@
 // precedence Outline is the one place a payload legitimately carries those fields,
 // because the feature's own contract requires testing that precedence tier).
 //
-// Exercised against the REAL CLI face (src/commands/mesh-session.mjs's
+// Exercised against the REAL CLI face (packages/core/src/commands/mesh-session.mjs's
 // meshSessionCommand) over a hermetic fixture repo + a fixture AOF_GLOBAL_HOME (no
 // real machine state touched) — real fs, in-process. One test object per scenario /
 // Scenario Outline. node:assert/strict.
@@ -25,11 +28,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecordsForNode } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 
 const NODE_ID = "node-a";
 const REPO_NAME = "aof-fixture";

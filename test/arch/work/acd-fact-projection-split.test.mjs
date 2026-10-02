@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d5 (PRD-command-spine-effects-ledger,
 // "fact-projection-split"): the store epistemology is EXECUTABLE, and the last
 // two crash windows the arc named are closed.
@@ -22,30 +24,33 @@
 //       rollback lands. Bounded honestly: only each item's LATEST record, and
 //       nothing from before the ledger's birth, is ever re-announced.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { TABLE_CLASSIFICATION, tableClass, refRemapTables } from "../../../src/effects/stores.mjs";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { transitionStreamReindexed } from "../../../src/effects/stream-transitions.mjs";
-import { transitionRunStart } from "../../../src/effects/run-transitions.mjs";
-import { reconcileRunRecords } from "../../../src/effects/reconcile.mjs";
-import { openEffectsJournal, readEvents, readEventSteps } from "../../../src/effects/journal.mjs";
-import { drainEffects, CONTROL_LOCI } from "../../../src/effects/dispatch.mjs";
-import {
-  openGlobalWorkProjectionStore,
-  remapWorkspaceFactRefs,
-  wholesaleDelete,
-} from "../../../src/global-work-store.mjs";
-import { setItemBranch, readItemBranch } from "../../../src/mesh/assignment-directive.mjs";
-import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startRun, completeRun } from "../../../src/run-store.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+import { TABLE_CLASSIFICATION, tableClass, refRemapTables } from "../../../packages/core/src/effects/stores.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const transitionStreamReindexed = _aofApplication.work.streams.transitionStreamReindexed;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const reconcileRunRecords = _aofApplication.effects.reconcile.reconcileRunRecords;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const CONTROL_LOCI = _aofApplication.effects.dispatcher.CONTROL_LOCI;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const remapWorkspaceFactRefs = _aofApplication.mesh.store.remapWorkspaceFactRefs;
+const wholesaleDelete = _aofApplication.mesh.store.wholesaleDelete;
+import { setItemBranch, readItemBranch } from "@aof/mesh/assignment-directive";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -106,7 +111,9 @@ export const archTests = [
     name: "arch/m42-d5: the classification is TOTAL over the real schema — every created table classified, every classified table created (two-way ratchet)",
     run: async () => {
       const created = new Set();
-      for (const file of await listSourceFiles(SRC_DIR)) {
+      const packageFiles = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(packageFiles.some(file => file.endsWith("journal.mjs")), "the extracted schema is scanned");
+      for (const file of packageFiles) {
         const code = await readFile(file, "utf8");
         for (const match of code.matchAll(/CREATE TABLE IF NOT EXISTS (\w+)/g)) created.add(match[1]);
       }
@@ -151,7 +158,7 @@ export const archTests = [
     //        what this now catches.
     name: "arch/m42-d5 (+m43 ADR-004): wholesale deletes are class-gated — work_items is a FACT the guard refuses, projection_errors is still swept through it, and the only raw cache-table DELETEs are the named retraction and the named removal path",
     run: async () => {
-      const source = await readFile(path.join(SRC_DIR, "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8");
       const code = stripComments(source);
       assert.ok(/function wholesaleDelete\s*\(/.test(code), "the one guard exists");
       assert.ok(/tableClass\(table\)/.test(code), "…and consults the classification");
@@ -159,7 +166,7 @@ export const archTests = [
 
       // (1) THE CUT: no wholesale sweep of work_items survives anywhere in src/.
       const sweepers = [];
-      for (const file of await listSourceFiles(SRC_DIR)) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         if (/wholesaleDelete\s*\([^)]*["']work_items["']/.test(stripComments(await readFile(file, "utf8")))) {
           sweepers.push(path.relative(repoRoot, file));
         }
@@ -169,11 +176,11 @@ export const archTests = [
 
       // (2) THE RAW-SWEEP RULE, with its two named doors. Every raw workspace-scoped
       // DELETE is located, attributed to the function it sits in, and judged there.
-      const removalStart = code.indexOf("export function removeWorkspaceFromCache");
+      const removalStart = code.indexOf("function removeWorkspaceFromCache");
       assert.ok(removalStart > 0, "the named removal path exists (the sweep it replaces is gone, so this door must be there)");
-      const removalEnd = code.indexOf("\nexport ", removalStart + 1);
+      const removalEnd = code.indexOf("\n}", removalStart) + 2;
       const removalBody = code.slice(removalStart, removalEnd === -1 ? undefined : removalEnd);
-      const guardStart = code.indexOf("export function wholesaleDelete");
+      const guardStart = code.indexOf("function wholesaleDelete");
       const guardBody = code.slice(guardStart, code.indexOf("\n}", guardStart));
 
       const offenders = [];
@@ -253,7 +260,7 @@ export const archTests = [
   {
     name: "arch/m42-d5: SQL that mutates a fact table lives only in that table's declared writer module(s)",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const sources = new Map();
       for (const file of files) {
         sources.set(path.relative(repoRoot, file).replaceAll("\\", "/"), stripComments(await readFile(file, "utf8")));

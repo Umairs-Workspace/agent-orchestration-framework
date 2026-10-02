@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,9 +11,9 @@ import {
   normalizeCitedPath,
   pathCitationsIn,
   splitPathLocator,
-} from "../../../src/work/doctor-controls.mjs";
-import { QUALIFIED_REF, qualifiedRefsIn } from "../../../src/declared-id.mjs";
-import { emitProposals, extractProvenanceCitations } from "../../../src/work-tune/provenance.mjs";
+} from "@aof/work/audit/controls";
+import { QUALIFIED_REF, qualifiedRefsIn } from "@aof/work/declared-id";
+import { emitProposals, extractProvenanceCitations } from "@aof/work/tune/provenance";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 
@@ -40,9 +41,8 @@ function makeResolutionFixture() {
 
 function copiedReader(mutator) {
   const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), "aof-grammar-copy-"));
-  const srcDir = path.join(rootDir, "src");
-  const tuneDir = path.join(srcDir, "work-tune");
-  fs.cpSync(path.join(repoRoot, "src"), srcDir, { recursive: true });
+  const tuneDir = path.join(rootDir, "packages", "work", "src", "tune");
+  copyWorkRuntime(repoRoot, rootDir);
   mutator?.(rootDir);
   return {
     rootDir,
@@ -65,10 +65,10 @@ export const archTests = [
       assert.equal(typeof splitPathLocator, "function");
       assert.equal(typeof qualifiedRefsIn, "function");
       assert.equal(QUALIFIED_REF instanceof RegExp, true);
-      const source = fs.readFileSync(path.join(repoRoot, "src", "work-tune", "provenance.mjs"), "utf8");
-      assert.match(source, /import[\s\S]*pathCitationsIn[\s\S]*splitPathLocator[\s\S]*from "\.\.\/work\/doctor-controls\.mjs"/);
+      const source = fs.readFileSync(path.join(repoRoot, "packages", "work", "src", "tune", "provenance.mjs"), "utf8");
+      assert.match(source, /import[\s\S]*pathCitationsIn[\s\S]*splitPathLocator[\s\S]*from "\.\.\/audit\/controls\.mjs"/);
       assert.match(source, /import[\s\S]*QUALIFIED_REF[\s\S]*qualifiedRefsIn[\s\S]*from "\.\.\/declared-id\.mjs"/);
-      assert.match(source, /import \{ ITEM_RE \} from "\.\.\/work\.mjs"/);
+      assert.match(source, /import \{ ITEM_RE \} from "\.\.\/identity\.mjs"/);
       assert.doesNotMatch(source, /CITED_PATH|LOCATOR_SUFFIX|\\d\{1,4\}.*item|#L\\d|A-Za-z0-9_@\.\*-/);
       assert.doesNotMatch(source, /bareId|bareRefsIn|declaredIdOn\(.*provenance/i);
       assert.doesNotMatch(source, /ACCEPTANCE_EVIDENCE_TO_COMMIT|options\.proposalEvidenceFloor/);
@@ -133,7 +133,7 @@ export const archTests = [
     name: "acd-proposal-provenance-resolves: changes to each owning grammar move the copied reader",
     run: async () => {
       const idCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source.replace("m?(\\\\d{1,4}", "(\\\\d{1,4}"));
       });
       try {
@@ -145,7 +145,7 @@ export const archTests = [
       }
 
       const nestedCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source
           .replace("(?:/\\\\d{1,3})*", "")
           .replace("(?<![-\\\\w.])", "(?<![-\\\\w./])"));
@@ -158,7 +158,7 @@ export const archTests = [
       }
 
       const formCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source.replace(
           '  Object.freeze({ name: "R", scope: "document", id: "R\\\\d+", terminator: "\\\\b", separator: SEPARATOR_CLASS }),',
           '  Object.freeze({ name: "X", scope: "document", id: "X-\\\\d+", terminator: "", separator: SEPARATOR_CLASS }),\n  Object.freeze({ name: "R", scope: "document", id: "R\\\\d+", terminator: "\\\\b", separator: SEPARATOR_CLASS }),',
@@ -175,7 +175,7 @@ export const archTests = [
       }
 
       const droppedFormCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "declared-id.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "declared-id.mjs");
         rewrite(file, (source) => source.replace(
           '  Object.freeze({ name: "ADR", scope: "document", id: "ADR-\\\\d+", terminator: "", separator: SEPARATOR_CLASS }),',
           "",
@@ -189,7 +189,7 @@ export const archTests = [
       }
 
       const pathCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "work", "doctor-controls.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "audit", "controls.mjs");
         rewrite(file, (source) => source
           .replace("|:\\d+(?:-\\d+)?)?/g", "|:\\d+(?:-\\d+)?|%\\d+)?/g")
           .replace("|:\\d+(?:-\\d+)?)$/", "|:\\d+(?:-\\d+)?|%\\d+)$/"));
@@ -209,7 +209,7 @@ export const archTests = [
       }
 
       const noLocatorCopy = copiedReader((copyRoot) => {
-        const file = path.join(copyRoot, "src", "work", "doctor-controls.mjs");
+        const file = path.join(copyRoot, "packages", "work", "src", "audit", "controls.mjs");
         rewrite(file, (source) => source.replace("(?:#L\\d+(?:-L?\\d+)?|:\\d+(?:-\\d+)?)?", ""));
       });
       try {
@@ -224,8 +224,8 @@ export const archTests = [
       }
 
       const bothCopy = copiedReader((copyRoot) => {
-        rewrite(path.join(copyRoot, "src", "declared-id.mjs"), (source) => source.replace("m?(\\\\d{1,4}", "(\\\\d{1,4}"));
-        rewrite(path.join(copyRoot, "src", "work", "doctor-controls.mjs"), (source) => source
+        rewrite(path.join(copyRoot, "packages", "work", "src", "declared-id.mjs"), (source) => source.replace("m?(\\\\d{1,4}", "(\\\\d{1,4}"));
+        rewrite(path.join(copyRoot, "packages", "work", "src", "audit", "controls.mjs"), (source) => source
           .replace("|:\\d+(?:-\\d+)?)?/g", "|:\\d+(?:-\\d+)?|%\\d+)?/g")
           .replace("|:\\d+(?:-\\d+)?)$/", "|:\\d+(?:-\\d+)?|%\\d+)$/"));
       });

@@ -7,9 +7,9 @@
 // equals the manifest's hash, and that the manifest's member set equals the
 // rendered set. A stale shipped manifest fails here rather than shipping.
 import assert from "node:assert/strict";
-import { loadBundle, renderBundleOutputs } from "../../../src/work/bundle.mjs";
-import { readShippedManifest } from "../../../src/work/bundle-manifest.mjs";
-import { hashContent } from "../../../src/lock.mjs";
+import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
+import { readShippedManifest } from "../../../packages/core/src/work/bundle-manifest.mjs";
+import { hashContent } from "../../../packages/core/src/lock.mjs";
 
 function normalize(p) {
   return String(p).replaceAll("\\", "/");

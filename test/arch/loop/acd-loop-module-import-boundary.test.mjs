@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
@@ -7,18 +8,18 @@ import { importSpecifiers } from "../../support/module-family.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const expectedLoopModules = [
-  "src/work/loops.mjs", "src/work/loops-checks.mjs", "src/commands/loops-show.mjs",
-  "src/commands/loops-graph.mjs", "src/commands/loops-groundedness.mjs", "src/commands/loops-validate.mjs",
+  "packages/work-graph/src/registry.mjs", "packages/work-graph/src/checks.mjs", "packages/work-graph/src/commands/loops-show.mjs",
+  "packages/work-graph/src/commands/loops-graph.mjs", "packages/work-graph/src/commands/loops-groundedness.mjs", "packages/work-graph/src/commands/loops-validate.mjs",
 ];
 // THE LOOP FAMILY, AS RESOLVED PATHS. The six modules `expectedLoopModules` names are the same
 // six this set holds; it is spelled separately because THIS one is compared against a resolved
 // specifier and that one against a discovered listing, and collapsing them would make one
 // control's answer depend on the other's.
-const LOOP_FAMILY = Object.freeze(new Set(expectedLoopModules));
+const LOOP_FAMILY = Object.freeze(new Set([...expectedLoopModules, "packages/core/src/application/bindings/work/loops.mjs", "packages/core/src/work/loops.mjs", ...["loops-show", "loops-graph", "loops-validate", "loops-groundedness"].flatMap(name => [`packages/core/src/commands/${name}.mjs`, `packages/core/src/application/bindings/commands/${name}.mjs`])]));
 
 // What TEXT carries and no resolver can reach: a `work:loops-*` command id, a bare `"loops-show"`
 // route or id string, a prose citation, and an EXTENSIONLESS `ui/` import (Vite's default
-// `resolve.extensions` includes `.mjs`, so `"../../../src/commands/loops-graph"` is a live
+// `resolve.extensions` includes `.mjs`, so `"../../../../packages/core/src/commands/loops-graph"` is a live
 // bundler edge that resolves to no file on disk).
 //
 // This token is no longer the import rule — `reachesLoopFamily` is, by resolution — and that is
@@ -43,6 +44,10 @@ function reachesLoopFamily(rel, code) {
     // A query or fragment suffix is not part of the path Node resolves, and a `//` is not an
     // empty directory — both were spellings the walk carried through and then failed to match.
     const specifier = entry.specifier.replace(/[?#].*$/u, "");
+    if (/^@aof\/work-graph\/(?:registry|checks|commands\/loops-)/.test(specifier)) {
+      found.push(rel + " imports the graph package at " + specifier);
+      continue;
+    }
     if (!specifier.startsWith(".")) continue;
     const from = rel.split("/").slice(0, -1);
     for (const segment of specifier.split("/")) {
@@ -66,23 +71,12 @@ function reachesLoopFamily(rel, code) {
 // sixth loop module would then be exempt from the `parseFrontmatter`-only seam below, which is
 // the one seam ADR-011 §1 leaves open between the god-node and this family.
 async function discoverLoopModules() {
-  const found = [];
-  // 119/01 — the family moved to `src/work/`, so the sweep walks its new home and matches the
-  // leaf as it now reads. It was `src/` + /^work-loops.*\.mjs$/, which after the move swept a
-  // directory the family had left and would have gone empty; the `deepEqual` against the
-  // expected set below is what turned that into a RED rather than a silent pass (ADR-003 §4).
-  for (const name of await readdir(path.join(root, "src/work"))) {
-    if (/^loops.*\.mjs$/.test(name)) found.push(`src/work/${name}`);
-  }
-  for (const name of await readdir(path.join(root, "src/commands"))) {
-    if (/^loops-.*\.mjs$/.test(name)) found.push(`src/commands/${name}`);
-  }
-  return found.sort();
+  return (await readRuntimeFiles(root)).map(file => file.rel).filter(rel => /^packages\/work-graph\/src\/(?:registry|checks)\.mjs$/.test(rel) || /^packages\/work-graph\/src\/commands\/loops-.*\.mjs$/.test(rel)).sort();
 }
 
 // FF-5208 means `ui/` SOURCE. `ui/dist/assets/*.js` is minified onto single lines — a false-
 // positive surface for the proximity regex below, where any `route`/`argv` token lands within
-// 100 characters of an unrelated `"loops"` string — and `ui/node_modules` is a dependency tree
+// 100 characters of an unrelated `"loops"` string — and `apps/ui/node_modules` is a dependency tree
 // this repository does not author (empty here only because deps hoist to the root, which is an
 // accident of install layout rather than a property this gate should rest on).
 const UNAUTHORED = new Set(["node_modules", "dist"]);
@@ -107,33 +101,34 @@ export const archTests = [
       const discovered = [];
       for (const rel of loopModules) {
         const source = stripComments(await readFile(path.join(root, rel), "utf8"));
-        for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["']([^"']*work\.mjs)["']/g)) {
+        for (const match of source.matchAll(/import\s*\{([^}]*)\}\s*from\s*["'](@aof\/work\/records)["']/g)) {
           discovered.push({ rel, source: match[2], bindings: match[1].split(",").map((value) => value.trim()).filter(Boolean) });
         }
         assert.doesNotMatch(source, /import\s+(?:\*\s+as|[A-Za-z_$])[^;]*from\s+["'][^"']*work\.mjs["']/);
       }
       assert.deepEqual(discovered, [
-        { rel: "src/work/loops.mjs", source: "../work.mjs", bindings: ["parseFrontmatter"] },
+        { rel: "packages/work-graph/src/registry.mjs", source: "@aof/work/records", bindings: ["parseFrontmatter"] },
       ], "the loader has exactly one work.mjs import and the other loop modules cannot widen or erase that seam");
     },
   },
   {
     name: "arch/52 FF-5202: god-node, doctor, CLI and UI do not reference the loop family",
     run: async () => {
-      const targets = [path.join(root, "src/work.mjs"), path.join(root, "src/cli.mjs")];
-      // 119/01 — the doctor family moved to `src/work/` and reads `doctor*.mjs` there. The old
-      // `readdir(src)` + `^work-doctor` filter returned NOTHING after the move, and the
-      // non-vacuity leg below could not see that because `ui/` alone cleared it.
-      const doctorModules = (await readdir(path.join(root, "src/work")))
-        .filter((name) => /^doctor.*\.mjs$/.test(name))
-        .map((name) => path.join(root, "src/work", name));
+      const targets = [path.join(root, "packages/core/src/application/bindings/work.mjs"), path.join(root, "packages/core/src/cli.mjs")];
+      // Inspect implementations and transitional composition together. Counting adapters
+      // alone would leave the package free to acquire a forbidden dependency unnoticed.
+      const doctorFiles = (await readRuntimeFiles(root)).filter(file =>
+        /^packages\/work\/src\/doctor\//u.test(file.rel) || /^src\/work\/doctor.*\.mjs$/u.test(file.rel));
+      const implementations = doctorFiles.filter(file => file.rel.startsWith("packages/"));
+      assert.ok(implementations.length >= 10, "all ten doctor implementation modules are inspected");
+      const doctorModules = doctorFiles.map(file => file.path);
       // The floor is the DELIVERED count, not a round number below it: at `>= 7` two doctor modules
       // could leave the sweep with `ui/` keeping the target leg satisfied, which is the shape this
       // control was just repaired for. It may be lowered by a story that removes a lane, which is
       // a table edit somebody reads.
       assert.ok(doctorModules.length >= 9, `the doctor family was actually swept: ${doctorModules.length} modules under src/work/ — a sweep that finds fewer than the nine delivered must RED, never pass on the UI tree alone (ADR-003 §4)`);
       targets.push(...doctorModules);
-      targets.push(...await filesBelow(path.join(root, "ui")));
+      targets.push(...await filesBelow(path.join(root, "apps", "ui")));
       assert.ok(targets.length > 10, "reverse boundary sweep is non-vacuous");
       // TWO CHECKS, because the claim has two halves and only one of them is a spelling. The EDGE is
       // resolved (an import of the loop family from anywhere in the tree, however deep the importer
@@ -150,22 +145,24 @@ export const archTests = [
       // NON-VACUITY on the resolver itself: it must catch the sibling spelling a doctor module
       // would actually use, and it must not fire on a neighbour that merely looks like one.
       assert.deepEqual(
-        reachesLoopFamily("src/work/doctor-loop-ready.mjs", 'import { loadLoops } from "./loops.mjs";').length,
+        reachesLoopFamily("packages/work/src/doctor/loop-ready.mjs", 'import { loadLoops } from "../../../../packages/core/src/work/loops.mjs";').length,
         1,
-        "self-check: a SIBLING import of the loader is caught — the spelling the move made reachable, and the one a token-only rule missed",
+        "self-check: a package import of the core loader is caught",
       );
-      assert.deepEqual(reachesLoopFamily("src/work/doctor.mjs", 'import { x } from "./doctor-budget.mjs";'), [], "self-check: a lane import inside the doctor family is not a loop-family edge");
-      assert.deepEqual(reachesLoopFamily("src/cli.mjs", 'import { x } from "./work/loops.mjs";').length, 1, "self-check: the CLI reaching the loader is caught at its own depth");
+      assert.deepEqual(reachesLoopFamily("packages/work/src/doctor/index.mjs", 'import { x } from "./budget.mjs";'), [], "self-check: a lane import inside the doctor family is not a loop-family edge");
+      assert.equal(reachesLoopFamily("packages/work/src/doctor/index.mjs", 'import { loadLoops } from "@aof/work-graph/registry";').length, 1,
+        "self-check: the public package route into the registry is also forbidden");
+      assert.deepEqual(reachesLoopFamily("packages/core/src/cli.mjs", 'import { x } from "./work/loops.mjs";').length, 1, "self-check: the CLI reaching the loader is caught at its own depth");
       // The four spellings the review measured loading under Node while this control read green.
       for (const [what, source] of [
-        ["a side-effect import", 'import "./loops.mjs";'],
-        ["a template-literal dynamic import", "const m = await import(`./loops.mjs`);"],
-        ["a query-suffixed specifier", 'import { loadLoops } from "./loops.mjs?v=1";'],
-        ["a doubled slash", 'import { loadLoops } from ".//loops.mjs";'],
+        ["a side-effect import", 'import "../../../../packages/core/src/work/loops.mjs";'],
+        ["a template-literal dynamic import", "const m = await import(`../../../../packages/core/src/work/loops.mjs`);"],
+        ["a query-suffixed specifier", 'import { loadLoops } from "../../../../packages/core/src/work/loops.mjs?v=1";'],
+        ["a doubled slash", 'import { loadLoops } from "../../../../packages/core/src/work//loops.mjs";'],
       ]) {
-        assert.equal(reachesLoopFamily("src/work/doctor-loop-ready.mjs", source).length, 1, `self-check: ${what} is an edge and is caught`);
+        assert.equal(reachesLoopFamily("packages/work/src/doctor/loop-ready.mjs", source).length, 1, `self-check: ${what} is an edge and is caught`);
       }
-      assert.deepEqual(reachesLoopFamily("ui/src/pages/Page.tsx", 'import { x } from "../../../src/commands/loops-graph";').length, 1, "self-check: an EXTENSIONLESS ui/ import is the bundler edge it would be at build time");
+      assert.deepEqual(reachesLoopFamily("apps/ui/src/pages/Page.tsx", 'import { x } from "../../../../packages/core/src/commands/loops-graph";').length, 1, "self-check: an EXTENSIONLESS ui/ import is the bundler edge it would be at build time");
     },
   },
 ];

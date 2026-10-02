@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 2 (PRD-command-spine-effects-
 // ledger, "the two reclaim implementations unify on one transition edge + shared
 // cascade").
@@ -28,22 +30,26 @@
 //   (3) The reclaim edge is stated ONCE (no second literal runtime_offline +
 //       reclaimedAt write anywhere in src/).
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { startRun, heartbeat, readRuns } from "../../../src/run-store.mjs";
-import { findWork } from "../../../src/work.mjs";
-import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../src/mesh/assignment-reclaim.mjs";
-import { transitionStaleRunsReclaimed } from "../../../src/effects/run-transitions.mjs";
-import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const findWork = _aofWorkspace.work.findWork;
+const reclaimStaleAssignments = _aofApplication.mesh.assignmentReclaim.reclaimStaleAssignments;
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
+const transitionStaleRunsReclaimed = _aofApplication.execution.transitions.transitionStaleRunsReclaimed;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 const NOW = "2026-07-09T12:00:00.000Z";
 const TARGET_NODE = "node-b";
@@ -52,17 +58,6 @@ const msBefore = (iso, ms) => new Date(Date.parse(iso) - ms).toISOString();
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-}
-
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
 }
 
 // Flip an item's record doc to in-progress so a rollback is APPLICABLE (the writer
@@ -186,11 +181,12 @@ export const archTests = [
   {
     name: "arch/m42-d4-port2: the reclaim edge is written ONCE — no second inline runtime_offline + reclaimedAt write in src/",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 0, "the runtime source census is non-empty");
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
-        if (rel === "src/run-store.mjs") continue; // the edge's one home
+        if (rel === "packages/execution/src/runs.mjs") continue; // the edge's one home
         const code = stripComments(await readFile(file, "utf8"));
         // The signature of a hand-rolled reclaim: the retryable failure reason and
         // the reclaim stamp written together at one call site.

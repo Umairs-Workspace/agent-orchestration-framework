@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Story 53/07 behavioural proof: fresh delivery, lock addressing, refresh and drift semantics.
 //
 // EXTENDED by 58/01 (`04_the-registry-ships-and-installs.feature`). One milestone ago, 57/05 was
@@ -14,11 +15,11 @@ import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 
-import { loopBoundsFromConfig } from "../../src/loop-bounds.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { loadBundle } from "../../src/work/bundle.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
-import { updateWork, workLockPath } from "../../src/work/update.mjs";
+import { loopBoundsFromConfig } from "@aof/contracts/loop-bounds";
+const initWork = _aofApplication.assets.work.init.initWork;
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
 
 const LOOP_PREFIX = ".aof/loops/";
 const LOOP_ASSETS = loadBundle().assets.filter((asset) => asset.target?.startsWith(LOOP_PREFIX));

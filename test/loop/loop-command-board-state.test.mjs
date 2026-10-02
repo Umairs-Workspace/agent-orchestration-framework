@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 53 (the frozen brief.loop declaration on the board seam) and
 // for milestone 102 / story 01 — THE SHELL DECLARES THE LOOP IT IS.
 //
@@ -8,7 +9,7 @@
 // shell needing no registry to mint one, and the report-only level still writing nothing. The two
 // registry-facing scenarios (the id is a loop the shipped registry declares; the drift check is
 // armed) are `test/arch/mesh/acd-shell-loop-id-is-declared.test.mjs`, because they are a check over
-// `src/bundle/loops/` rather than over a driven loop.
+// `packages/core/assets/loops/` rather than over a driven loop.
 //
 // THE FIXTURE HAS NO `.aof/loops/` DIRECTORY AT ALL (`loopFixture` writes a work tree and a config
 // and nothing else), so every scenario in this file also witnesses the registry-blind claim rather
@@ -18,10 +19,12 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { SHELL_LOOP_ID, runLoopBody } from "../../src/commands/loop.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { readRuns, startRun } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+const SHELL_LOOP_ID = _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const invoke = _aofApplication.invoke;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { stripComments } from "../support/source-slice.mjs";
 import { completingDriver, loopFixture, replaceStatus, treeFiles } from "./loop-command-probe.test.mjs";
 
@@ -179,8 +182,8 @@ export const loopCommandBoardStateTests = [
         // …and neither `scope` nor `level` appears in the id, because the id is a LITERAL: the
         // constant's initialiser is a plain string with no interpolation and no expression, which
         // is what makes "not derived" structural rather than a property of these two rows.
-        const source = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
-        assert.match(source, /export const SHELL_LOOP_ID = "loop:autonomous-cascade";/u);
+        const source = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8"));
+        assert.match(source, /const SHELL_LOOP_ID = "loop:autonomous-cascade";/u);
         for (const run of [...runsA, ...runsB]) {
           assert.equal(run.brief.loop.id.includes(run.brief.loop.scope), false);
           assert.equal(run.brief.loop.id.includes(run.brief.loop.level), false);

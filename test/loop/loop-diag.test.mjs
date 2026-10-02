@@ -1,5 +1,8 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 // test/loop/loop-diag.test.mjs — the loop's HOME-SIDE files: the exit-reason recorder
-// (src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (src/loop/stop-request.mjs).
+// (packages/core/src/loop-diag.mjs, 2026-09-11) and, since 130/01, the stop request (packages/core/src/loop/stop-request.mjs).
 //
 // The recorder is exercised against an INJECTED process double: a real `process.on("exit")` or a
 // wrapped `process.exit` registered in the test runner would outlive the test, so nothing in that
@@ -12,45 +15,39 @@ import { EventEmitter } from "node:events";
 import { access, mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+import { fileURLToPath } from "node:url";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 import { stripComments } from "../support/source-slice.mjs";
-import {
-  STOP_LEVELS,
-  STOP_STATES,
-  clearStopRequest,
-  createStopSource,
-  loopStopsDir,
-  markStopHonoured,
-  readStopRequest,
-  requestLoopStop,
-  stopRequestPath,
-} from "../../src/loop/stop-request.mjs";
-import {
-  answerAsk,
-  askRequestPath,
-  clearAsk,
-  createAskPoll,
-  loopAsksDir,
-  openAsk,
-  parkAsk,
-  readAsk,
-  readAsks,
-} from "../../src/loop/ask-request.mjs";
-import {
-  LOOP_DIAG_ENV,
-  LOOP_DIAG_KEEP,
-  LOOP_DIAG_PREFIX,
-  formatLoopDiagLine,
-  installLoopDiagnostics,
-  loopDiagEnabled,
-  loopDiagLogDir,
-  loopDiagLogPath,
-  loopDiagScopeTag,
-  pruneLoopDiagLogs,
-  readLastLoopDiagEvent,
-} from "../../src/loop-diag.mjs";
+const STOP_LEVELS = _aofApplication.loop.stopRequest.STOP_LEVELS;
+const STOP_STATES = _aofApplication.loop.stopRequest.STOP_STATES;
+const clearStopRequest = _aofApplication.loop.stopRequest.clearStopRequest;
+const createStopSource = _aofApplication.loop.stopRequest.createStopSource;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const clearAsk = _aofApplication.loop.askRequest.clearAsk;
+const createAskPoll = _aofApplication.loop.askRequest.createAskPoll;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const parkAsk = _aofApplication.loop.askRequest.parkAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const LOOP_DIAG_ENV = _aofApplication.loop.loopDiag.LOOP_DIAG_ENV;
+const LOOP_DIAG_KEEP = _aofApplication.loop.loopDiag.LOOP_DIAG_KEEP;
+const LOOP_DIAG_PREFIX = _aofApplication.loop.loopDiag.LOOP_DIAG_PREFIX;
+const formatLoopDiagLine = _aofApplication.loop.loopDiag.formatLoopDiagLine;
+const installLoopDiagnostics = _aofApplication.loop.loopDiag.installLoopDiagnostics;
+const loopDiagEnabled = _aofApplication.loop.loopDiag.loopDiagEnabled;
+const loopDiagLogDir = _aofApplication.loop.loopDiag.loopDiagLogDir;
+const loopDiagLogPath = _aofApplication.loop.loopDiag.loopDiagLogPath;
+const loopDiagScopeTag = _aofApplication.loop.loopDiag.loopDiagScopeTag;
+const pruneLoopDiagLogs = _aofApplication.loop.loopDiag.pruneLoopDiagLogs;
+const readLastLoopDiagEvent = _aofApplication.loop.loopDiag.readLastLoopDiagEvent;
 
 function fakeProcess() {
   const proc = new EventEmitter();
@@ -257,7 +254,7 @@ const recorderTests = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// milestone 130 / story 01 — THE STOP REQUEST HAS ONE HOME (`src/loop/stop-request.mjs`, ADR-001).
+// milestone 130 / story 01 — THE STOP REQUEST HAS ONE HOME (`packages/core/src/loop/stop-request.mjs`, ADR-001).
 //
 // The loop's SECOND home-side file, beside the recorder's log, and its suite sits beside the
 // recorder's for that reason (test/loop is at its ceiling; story 05 owns every budget row). The
@@ -463,11 +460,9 @@ const stopRequestTests = [
     name: "130/01 stop-request/00 the home-side literals have one home — `loop-stops` and the state words are spelled in stop-request.mjs and in no other module under src/",
     async run() {
       const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-      const own = "src/loop/stop-request.mjs";
-      const modules = (await readdir(path.join(root, "src"), { withFileTypes: true, recursive: true }))
-        .filter((entry) => entry.isFile() && entry.name.endsWith(".mjs"))
-        .map((entry) => path.relative(root, path.join(entry.parentPath ?? entry.path, entry.name)).split(path.sep).join("/"))
-        .sort();
+      const own = "packages/work-loop/src/stop-request.mjs";
+      // This contract governs the Node home-side writers; browser response types are consumers.
+      const modules = (await readRuntimeFiles(root, { runtime: "node" })).map(file => file.rel).sort();
       assert.ok(modules.includes(own), "the module is on disk");
       assert.ok(modules.length > 50, "the sweep is non-vacuous");
       // A module that speaks of a stop request at all: the token set the shell, the verb and the
@@ -480,9 +475,9 @@ const stopRequestTests = [
         if (rel === own) {
           assert.ok(code.includes("loop-stops"), "the home spells the segment");
           assert.ok(code.includes('"honoured"') && code.includes('"requested"'), "the home spells both state words");
-          assert.match(code, /import \{ globalMeshPaths \} from "\.\.\/workspace\.mjs"/, "the resolver is imported, never re-spelled");
-          assert.match(code, /import \{[^}]*\bwriteText\b[^}]*\} from "\.\.\/fs\.mjs"/, "every write goes through writeText");
-          assert.match(code, /import \{ reportDegrade \} from "\.\.\/degrade\.mjs"/, "a corrupt file reports through the one degrade emitter");
+          assert.match(code, /getRuntimeRoot\(env\)/u, "core supplies the runtime path policy");
+          assert.match(code, /import \{[^}]*\bwriteText\b[^}]*\} from "@aof\/foundation\/fs"/, "every write goes through writeText");
+          assert.match(code, /createStopRequests\(\{ getRuntimeRoot, reportDegrade \}\)/u, "the diagnostic policy is supplied explicitly");
           continue;
         }
         assert.ok(!code.includes("loop-stops"), `${rel} spells the loop-stops segment — the one home is ${own}`);
@@ -977,9 +972,10 @@ const stopRequestTests = [
   {
     name: "130/01 stop-request/02 a real interval never holds a finished process open — a child that starts a source with the real process and the default pollMs exits on its own",
     async run() {
-      const module = pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "loop", "stop-request.mjs")).href;
+      const module = new URL("../../packages/core/src/application/default.mjs", import.meta.url).href;
       const script = [
-        `import { createStopSource, loopStopsDir } from ${JSON.stringify(module)};`,
+        `import { defaultApplication } from ${JSON.stringify(module)};`,
+        `const { createStopSource, loopStopsDir } = defaultApplication.loop.stopRequest;`,
         `const source = createStopSource({ loopRunId: "L1", dir: loopStopsDir() });`,
         `source.start();`,
       ].join("\n");
@@ -996,7 +992,7 @@ const stopRequestTests = [
 ];
 
 // ---------------------------------------------------------------------------------------------
-// milestone 131 / story 01, tasks 02-03 — THE ASK HAS ONE HOME (`src/loop/ask-request.mjs`,
+// milestone 131 / story 01, tasks 02-03 — THE ASK HAS ONE HOME (`packages/core/src/loop/ask-request.mjs`,
 // ADR-003 §1-§2). The loop's THIRD home-side file, beside the stop request, and driven the same
 // way: inside the isolated aof home the runner hands every test, with the degrade sink injected
 // and reset before every read, and the poll over an injected timer pair.
@@ -1271,17 +1267,18 @@ const askRequestTests = [
   {
     name: "131/01 ask-request/02 the ask's words have one home: no other src module spells loop-asks, and the module imports its three leaves",
     async run() {
-      const srcRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "src");
-      const files = (await readdir(srcRoot, { recursive: true })).filter((f) => f.endsWith(".mjs"));
-      assert.ok(files.length > 100, `the sweep read src/ — ${files.length} modules`);
-      for (const rel of files) {
-        if (rel.split(path.sep).join("/") === "loop/ask-request.mjs") continue;
-        assert.ok(!stripComments(await readFile(path.join(srcRoot, rel), "utf8")).includes("loop-asks"), `${rel} spells loop-asks`);
+      const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+      const files = await readRuntimeFiles(root);
+      const home = "packages/work-loop/src/ask-request.mjs";
+      assert.ok(files.length > 100 && files.some(file => file.rel === home), "the runtime sweep includes the request implementation");
+      for (const file of files) {
+        if (file.rel === home) continue;
+        assert.ok(!stripComments(await readFile(file.path, "utf8")).includes("loop-asks"), file.rel + " spells loop-asks");
       }
-      const own = await readFile(path.join(srcRoot, "loop", "ask-request.mjs"), "utf8");
-      assert.match(own, /import\s*\{[^}]*\bglobalMeshPaths\b[^}]*\}\s*from\s*"\.\.\/workspace\.mjs"/u);
-      assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"\.\.\/fs\.mjs"/u);
-      assert.match(own, /import\s*\{[^}]*\breportDegrade\b[^}]*\}\s*from\s*"\.\.\/degrade\.mjs"/u);
+      const own = await readFile(path.join(root, home), "utf8");
+      assert.match(own, /getRuntimeRoot\(env\)/u);
+      assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"@aof\/foundation\/fs"/u);
+      assert.match(own, /createAskRequests\(\{ getRuntimeRoot, reportDegrade \}\)/u);
     },
   },
 

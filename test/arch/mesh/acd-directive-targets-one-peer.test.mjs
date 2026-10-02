@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-directive-targets-one-peer (milestone 35 / ADR-002, fitness
 // #5) — "A node-targeted directive is sent to a SINGLE connected peer socket, never
 // broadcast."
@@ -16,11 +17,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { sendDirective, buildDirectiveFrame } from "../../../src/control-stream-server.mjs";
+const sendDirective = _aofApplication.mesh.controlStreamServer.sendDirective;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const sourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 
 // detectFanOut(source) — a directive send site iterating wss.clients (or any
 // "clients" collection) with a .send(...) call inside the loop body is the
@@ -35,7 +37,7 @@ function detectFanOut(source) {
 function usesTargetedLookup(source) {
   const stripped = source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
   // sendDirective must resolve via targets.get(nodeId) — a keyed single-entry lookup.
-  const fn = stripped.match(/export function sendDirective\([^)]*\)\s*\{[\s\S]*?\n\}/);
+  const fn = stripped.match(/function sendDirective\([^)]*\)\s*\{[\s\S]*?\n\}/);
   assert.ok(fn, "sendDirective is defined");
   return /targets\.get\(\s*nodeId\s*\)/.test(fn[0]);
 }

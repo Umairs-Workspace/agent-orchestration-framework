@@ -1,12 +1,14 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // FF-13104 + FF-13105 — AN ANSWER REACHES A SESSION ONLY AS A RESUMED COMMAND, AND A WAITING LANE
 // DOES NOT HALT THE WAVE (milestone 131 / story 06; ARCHITECTURE `## Fitness functions`, ADR-001,
 // ADR-003 §7, ADR-004). Which of this directory's three subjects: the LADDER — what the loop does
 // with a drive that stopped to ask: it waits in the run's owner, resumes the same session with the
 // answer typed, and parks at the bound, while every other lane keeps building.
 //
-// FF-13104, structural. `src/mesh/terminal-input.mjs`, `src/terminal-ws.mjs` and the driver import
-// neither `src/loop/ask-request.mjs` nor `src/loop/ask.mjs` (resolved specifiers, through
-// `test/support/module-family.mjs`), and `src/commands/resume.mjs` imports no terminal-input
+// FF-13104, structural. `packages/core/src/mesh/terminal-input.mjs`, `packages/core/src/terminal-ws.mjs` and the driver import
+// neither `packages/core/src/loop/ask-request.mjs` nor `packages/core/src/loop/ask.mjs` (resolved specifiers, through
+// `test/support/module-family.mjs`), and `packages/core/src/commands/resume.mjs` imports no terminal-input
 // module: the live-PTY wait is not built (ADR-001 §2). The driver has no branch that skips
 // `stopForOutcome` for `needs-input`: it compares no outcome against the word, and every
 // `"needs-input"` it spells outside its transcript mapping (`readTranscriptTerminalOutcome`) is an
@@ -36,8 +38,9 @@ import { Readable } from "node:stream";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { declaredFunctions, ownerOf } from "./acd-lane-records-and-the-declaration.test.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../../support/mesh-worker-terminal-fixture.mjs";
 import {
@@ -54,38 +57,44 @@ import {
   verifyCompleter,
   withLaneRepo,
 } from "../../support/loop/lane-fixture.mjs";
-import { getCommand } from "../../../src/command-core.mjs";
-import { runLoopBody } from "../../../src/commands/loop.mjs";
-import { resolveItemExact } from "../../../src/commands/resolve.mjs";
-import { transitionRunStart } from "../../../src/effects/run-transitions.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../../src/loop/ask-request.mjs";
-import { meshDispatchWorktreePath } from "../../../src/mesh/worktree.mjs";
-import { readRuns, recordSessionId } from "../../../src/run-store.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
-import { resolveRefInWorktree } from "../../../src/work/dispatch.mjs";
-import { LOOP_STOPS } from "../../../src/work/loop.mjs";
-import { resolveWorkspaceId } from "../../../src/workspace-identity.mjs";
+const getCommand = _aofApplication.getCommand;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const resolveRefInWorktree = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
+import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-const ASK_HOME = "src/loop/ask-request.mjs";
-const ASK = "src/loop/ask.mjs";
-const DRIVER = "src/agent-session-driver.mjs";
-const RESUME = "src/commands/resume.mjs";
-const TERMINAL_FACES = Object.freeze(["src/mesh/terminal-input.mjs", "src/terminal-ws.mjs", DRIVER]);
+const ASK_HOME = "packages/work-loop/src/ask-request.mjs";
+const ASK = "packages/work-loop/src/ask.mjs";
+const DRIVER = "packages/execution/src/session-driver.mjs";
+const RESUME = "packages/core/src/application/bindings/commands/resume.mjs";
+const TERMINAL_FACES = Object.freeze(["packages/mesh/src/terminal-input.mjs", "packages/server/src/terminal-ws.mjs", DRIVER]);
 const TERMINAL_INPUT_RE = /(?:^|\/)terminal-input(?:[-.][^/]*)?\.mjs$/u;
 const TRANSCRIPT_MAPPING = "async function readTranscriptTerminalOutcome(";
 // Task 00 ruling 5: the sites that compose the wait, by file and enclosing top-level function.
 const WAIT_SITES = Object.freeze([
-  { file: "src/commands/loop.mjs", fn: "runLoopBody", what: "the shell" },
-  { file: "src/loop/cycle.mjs", fn: "retryUntilTerminal", what: "cycle.mjs's retry ladder" },
-  { file: "src/loop/cycle.mjs", fn: "settleStoryCycle", what: "cycle.mjs's verify branch" },
-  { file: "src/loop/wave.mjs", fn: "runWaveBuild", what: "wave.mjs's lane branch" },
+  { file: "packages/work-loop/src/commands/loop.mjs", fn: "runLoopBody", what: "the shell" },
+  { file: "packages/work-loop/src/cycle.mjs", fn: "retryUntilTerminal", what: "cycle.mjs's retry ladder" },
+  { file: "packages/work-loop/src/cycle.mjs", fn: "settleStoryCycle", what: "cycle.mjs's verify branch" },
+  { file: "packages/work-loop/src/wave.mjs", fn: "runLane", what: "wave.mjs's lane branch" },
 ]);
-const REENTRY_SITE = Object.freeze({ file: "src/loop/cycle.mjs", fn: "reenterPrimaryAsks", what: "the --resume re-entry" });
+const REENTRY_SITE = Object.freeze({ file: "packages/work-loop/src/cycle.mjs", fn: "reenterPrimaryAsks", what: "the --resume re-entry" });
 const HALT_SPELLING = 'haltDecision("session-needs-input"';
-const PARKED_HALT = "export function parkedHalt(";
+const PARKED_HALT = "function parkedHalt(";
 // The stop set as 130 delivered it — 131 adds none (ADR-004).
 const LOOP_STOPS_AT_130 = Object.freeze([
   "uat-gate", "dependency-blocked", "cap-exhausted", "deadline-exhausted", "progress-exhausted", "no-progress",
@@ -98,16 +107,19 @@ function assertRead(what, count, floor, unit = "file(s)") {
 }
 
 function resolved(fromRel, specifier) {
+  const service = /^(?:@aof\/work-loop\/)(ask-request|stop-request|child-drive)$/.exec(specifier);
+  if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
-  const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  if (/^src\/loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace("packages/core/src/loop/", "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const raw = await readFile(file.path, "utf8");
-    units.push({ rel: `src/${toPosix(file.rel)}`, raw, code: stripComments(raw) });
+    units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }
   return units;
 }
@@ -118,16 +130,11 @@ const unitOf = (units, rel) => {
   return unit;
 };
 
-const resolvedImports = (unit) => importSpecifiers(unit.code).map(({ specifier }) => resolved(unit.rel, specifier));
+const resolvedImports = (unit) => dependencySpecifiers(unit.code).map(({ specifier }) => resolved(unit.rel, specifier));
 
 // The top-level function each index sits in (the last top-level declaration before it).
 function enclosingTopLevel(code, index) {
-  let owner = "<module>";
-  for (const match of code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)) {
-    if (match.index > index) break;
-    owner = match[1];
-  }
-  return owner;
+  return ownerOf(declaredFunctions(code), index)?.name ?? "<module>";
 }
 
 // Every call of `name(` that is not its own declaration: `{ rel, fn, at }`.
@@ -274,14 +281,17 @@ export const archTests = [
       assertRead("the src/** sweep", units.length, 150);
       for (const face of TERMINAL_FACES) {
         const reached = resolvedImports(unitOf(units, face)).filter((target) => target === ASK_HOME || target === ASK);
-        assert.deepEqual(reached, [], `${face} imports neither src/loop/ask-request.mjs nor src/loop/ask.mjs — an answer reaches a session only as a resumed command, never through a live terminal (ADR-001 §2): it imports ${reached.join(", ")}`);
+        assert.deepEqual(reached, [], `${face} imports neither packages/core/src/loop/ask-request.mjs nor packages/core/src/loop/ask.mjs — an answer reaches a session only as a resumed command, never through a live terminal (ADR-001 §2): it imports ${reached.join(", ")}`);
       }
       const resume = unitOf(units, RESUME);
       const imports = resolvedImports(resume);
       assertRead(`the import specifiers of ${RESUME}`, imports.length, 5, "specifier(s)");
       const terminal = imports.filter((target) => TERMINAL_INPUT_RE.test(target));
-      assert.deepEqual(terminal, [], `src/commands/resume.mjs imports no terminal-input module — the verb writes the ask file, it never types into a PTY: ${terminal.join(", ")}`);
-      assert.ok(TERMINAL_INPUT_RE.test("src/mesh/terminal-input.mjs"), "self-check: the terminal-input module is what the needle matches");
+      assert.deepEqual(terminal, [], `packages/core/src/commands/resume.mjs imports no terminal-input module — the verb writes the ask file, it never types into a PTY: ${terminal.join(", ")}`);
+      const implementation = unitOf(units, "packages/work/src/commands/resume.mjs");
+      assert.deepEqual(resolvedImports(implementation).filter(target => TERMINAL_INPUT_RE.test(target)), [], "the package implementation imports no terminal-input module either");
+      assert.match(implementation.code, /await answerAsk\(/u, "the command writes through the supplied ask service");
+      assert.ok(TERMINAL_INPUT_RE.test("packages/mesh/src/terminal-input.mjs"), "self-check: the terminal-input module is what the needle matches");
     },
   },
   {

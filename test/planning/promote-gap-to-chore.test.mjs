@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 39 / story 03 (gap-to-chore), task
 //   wiki/work/39_milestone_delivery-memory-outcome/stories/03_story_gap-to-chore/
 //     tasks/01_promote-gap-to-chore.feature
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
 // wired against the REAL registered command `work:promote-gap`
-// (src/commands/promote-gap-to-chore.mjs — composes over insert-shared.mjs's
+// (packages/core/src/commands/promote-gap-to-chore.mjs — composes over insert-shared.mjs's
 // runInsertTopLevel via the SAME "chore" type work:insert-chore uses),
 // invoked in-process through the command core (mirrors
 // test/work/stream/work-insert-top-level-places.test.mjs), scaffolding into a temp work
@@ -14,8 +16,9 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../src/command-core.mjs";
-import { findWork, validateWork } from "../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
 import { withInsertFixture } from "../support/work-insert-fixture.mjs";
 
 // Extract a heading section's body: everything between the heading line and

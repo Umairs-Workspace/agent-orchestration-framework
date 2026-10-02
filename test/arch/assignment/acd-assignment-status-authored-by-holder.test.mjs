@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Security fitness: acd-assignment-status-authored-by-holder (milestone 35 /
 // SECURITY T6, F5) — "The control writes an assignment's lifecycle ONLY from the
 // connection whose nodeId holds it — a status/lifecycle frame's node is taken from
@@ -19,13 +20,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { applyStreamFrame } from "../../../src/control-stream-server.mjs";
-import { readAssignment } from "../../../src/assignment-record.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+import { readAssignment } from "@aof/mesh/assignment-record";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const sourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 const NOW = "2026-07-09T10:00:00.000Z";
 
 function extractFunctionBody(source, name) {
@@ -94,7 +95,7 @@ export const archTests = [
       const body = extractFunctionBody(source, "applyAssignmentStatusFrame");
       assert.ok(body, "applyAssignmentStatusFrame is defined");
       const seamSource = await readFile(
-        path.join(path.dirname(sourcePath), "effects", "assignment-transitions.mjs"),
+        path.join(repoRoot, "packages", "mesh", "src", "assignment-transitions.mjs"),
         "utf8",
       );
       assert.equal(

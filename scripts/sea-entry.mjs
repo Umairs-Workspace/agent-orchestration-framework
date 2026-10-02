@@ -30,7 +30,7 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-import { run } from "../src/cli.mjs";
+import { run } from "aof/cli";
 
 // Native dynamic import, shielded from esbuild: under --format=cjs esbuild
 // rewrites a bare `import(expr)` into a require()-based shim, which cannot load
@@ -50,7 +50,7 @@ const EMBEDDED_BUILD_ID = typeof __AOF_EMBEDDED_BUILD_ID__ === "string" ? __AOF_
 // replaces src/. The desktop app's 3-second `mesh status` poll landed in that window and ran a
 // two-month-old bundle, whose identity self-heal re-minted the control node's id (16:02:47Z,
 // 4 s after an `install-local`). So when a payload install is on disk (its BUILD_ID.json stamp beside
-// the exe) but src/cli.mjs is missing, this waits for it to come back and, if it never does, FAILS
+// the exe) but packages/core/src/cli.mjs is missing, this waits for it to come back and, if it never does, FAILS
 // LOUDLY. Embedded runs only for a binary with no payload install, or on AOF_SEA_EMBEDDED=1.
 const PAYLOAD_WAIT_MS = 15000;
 const PAYLOAD_POLL_MS = 100;

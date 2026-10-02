@@ -20,14 +20,14 @@ into.
 with three hosts; this milestone gives it a **fourth host** and puts N of them on one page. Every
 colour, type step, glyph, state word and copy string it paints already exists and was read at source —
 [46/DESIGN](../46_milestone_terminal-control-unification/DESIGN.md) and its one palette home
-([palette.mjs](../../../../ui/src/terminal/palette.mjs)) are **in force, not re-opened**. This document
+([palette.mjs](../../../../apps/ui/src/terminal/palette.mjs)) are **in force, not re-opened**. This document
 adds **no colour, no radius, no font, no `@theme` token and no eighth state word.** Where it adds
 copy, every string is listed in one table with its justification (§The copy this milestone adds).
 
 **Six binding rails. Everything below is one of these applied somewhere.**
 
 1. **m46's ONE state vocabulary survives intact.** `idle · connecting · waiting · streaming · ended ·
-   error · unavailable` (+ `unknown`), [state-ramp.mjs:57-68](../../../../ui/src/terminal/state-ramp.mjs#L57).
+   error · unavailable` (+ `unknown`), [state-ramp.mjs:57-68](../../../../apps/ui/src/terminal/state-ramp.mjs#L57).
    **A second vocabulary is the exact defect m46 deleted** and this milestone does not re-create one —
    not for agent state, not for the socket cap, not for a pane nothing feeds.
 2. **A pane never lies about its far end.** Two new ways to lie appear at this scale and both are
@@ -37,8 +37,8 @@ copy, every string is listed in one table with its justification (§The copy thi
    **dot's fill and shape**, **motion on exactly two states**, and the **mandatory cause line**. At
    N panes, signal 3 is the one that breaks (§DG-49-6).
 4. **Geometry is a property of the SOURCE; posture is a property of the HOST.** Unchanged
-   ([geometry.mjs:71-74](../../../../ui/src/terminal/geometry.mjs#L71),
-   [input-policy.mjs:84-95](../../../../ui/src/terminal/input-policy.mjs#L84)). The grid mounts exactly
+   ([geometry.mjs:71-74](../../../../apps/ui/src/terminal/geometry.mjs#L71),
+   [input-policy.mjs:84-95](../../../../apps/ui/src/terminal/input-policy.mjs#L84)). The grid mounts exactly
    one source — `mirror`, scaled, pinned 80×24 — because that is the only row a session-index entry
    can resolve against (RESEARCH §Q1).
 5. **The grid is a picture of the fleet; the expanded pane is where you read and type.** At every
@@ -46,9 +46,9 @@ copy, every string is listed in one table with its justification (§The copy thi
    is readable**, measured below. That is not a defect to fix by shrinking the grid; it is the reason
    expand exists (§DG-49-5).
 6. **The control invents no affordance of its own.** The fourth host declares from the SAME eight
-   affordances [host-model.mjs:56-65](../../../../ui/src/terminal/host-model.mjs#L56) already names, and
+   affordances [host-model.mjs:56-65](../../../../apps/ui/src/terminal/host-model.mjs#L56) already names, and
    every one it does not declare carries **a reason**, in the same `notDeclared` discipline
-   ([host-model.mjs:93-95](../../../../ui/src/terminal/host-model.mjs#L93)).
+   ([host-model.mjs:93-95](../../../../apps/ui/src/terminal/host-model.mjs#L93)).
 
 Three surfaces are in scope, and two of them are hosts of the one control:
 
@@ -112,23 +112,23 @@ Three widths and one height, inherited **unchanged** from
 [45/DESIGN §Render breakpoints](../45_milestone_ui-app-shell-routing/DESIGN.md). This surface lives
 inside that shell and **gets no breakpoint system of its own** — its only reflow rule is the grid's
 own `auto-fill` track floor, which is the house's existing one
-([Fleet.tsx:914](../../../../ui/src/fleet/Fleet.tsx#L914)).
+([Fleet.tsx:914](../../../../apps/ui/src/fleet/Fleet.tsx#L914)).
 
 - **1280** — the primary judgement width.
 - **768** — the desktop-app proxy (the Rust window is **760×520**,
-  [app/desktop/ui/styles.css:50](../../../../app/desktop/ui/styles.css#L50)).
+  [app/desktop/ui/styles.css:50](../../../../apps/desktop/ui/styles.css#L50)).
 - **390** — mobile.
 - **520 tall (binding).** With the shell's 88px steady-state chrome the content box is **432px**
-  ([shell-layout.mjs:163-165](../../../../ui/src/app/shell-layout.mjs#L163) — `CONTENT_FLOOR = 432`).
+  ([shell-layout.mjs:163-165](../../../../apps/ui/src/app/shell-layout.mjs#L163) — `CONTENT_FLOOR = 432`).
 
 **What the grid does at each width — derived, not invented.** The page container is the fleet's own
-(`px-4 py-7 sm:px-8` inside `max-w-[1240px]`, [Fleet.tsx:841-842](../../../../ui/src/fleet/Fleet.tsx#L841))
+(`px-4 py-7 sm:px-8` inside `max-w-[1240px]`, [Fleet.tsx:841-842](../../../../apps/ui/src/fleet/Fleet.tsx#L841))
 and the grid is `repeat(auto-fill, minmax(320px, 1fr))` with `gap-4`
-([Fleet.tsx:914](../../../../ui/src/fleet/Fleet.tsx#L914)). Every number below follows by arithmetic from
+([Fleet.tsx:914](../../../../apps/ui/src/fleet/Fleet.tsx#L914)). Every number below follows by arithmetic from
 those two and from the byte area's own 8px side gutters
-([palette.mjs:74](../../../../ui/src/terminal/palette.mjs#L74) — `mx-2 mb-2`) and the mirror's intrinsic
-**640×408** ([palette.mjs:67-69](../../../../ui/src/terminal/palette.mjs#L67) — 13px/17px over
-[source-table.mjs:48-49](../../../../ui/src/terminal/source-table.mjs#L48)'s 80×24).
+([palette.mjs:74](../../../../apps/ui/src/terminal/palette.mjs#L74) — `mx-2 mb-2`) and the mirror's intrinsic
+**640×408** ([palette.mjs:67-69](../../../../apps/ui/src/terminal/palette.mjs#L67) — 13px/17px over
+[source-table.mjs:48-49](../../../../apps/ui/src/terminal/source-table.mjs#L48)'s 80×24).
 
 | Viewport | Available | Columns | Track | Byte area | Scale | Effective glyph |
 |---|---|---|---|---|---|---|
@@ -139,7 +139,7 @@ those two and from the byte area's own 8px side gutters
 | the grid's **floor track** | — | — | **320px** | 302px | **0.472** | 6.1px |
 
 **Read that last column and then read rail 5.** The smallest type this design system asserts anywhere
-is **10px** (the pills, [palette.mjs:55-56](../../../../ui/src/terminal/palette.mjs#L55)). **At every
+is **10px** (the pills, [palette.mjs:55-56](../../../../apps/ui/src/terminal/palette.mjs#L55)). **At every
 documented width a grid tile's glyphs are smaller than that.** This is arithmetic, not taste, and it
 is the whole justification for §DG-49-5.
 
@@ -172,22 +172,22 @@ Everything in the right column bounds what this surface may do. Facts marked **(
 
 | Fact | Where it lives | Consequence for this design |
 |---|---|---|
-| **The grid is very often EMPTY, and that is ORDINARY.** All three live nodes report `sessions: []` while two of them report non-empty `activeRuns` **(R)** | RESEARCH §Q1; the bundle ships session hooks for **`runtimes: ["codex"]` only** ([bundle.json:12-14](../../../../src/bundle/bundle.json#L12); Claude's only hook member is `claude-artifact-sync`, [:15-16](../../../../src/bundle/bundle.json#L15)) | **§DG-49-1.** The empty state is the state an operator most likely sees FIRST. It gets two variants and it names the producer-side reason. |
+| **The grid is very often EMPTY, and that is ORDINARY.** All three live nodes report `sessions: []` while two of them report non-empty `activeRuns` **(R)** | RESEARCH §Q1; the bundle ships session hooks for **`runtimes: ["codex"]` only** ([bundle.json:12-14](../../../../packages/core/assets/bundle.json#L12); Claude's only hook member is `claude-artifact-sync`, [:15-16](../../../../packages/core/assets/bundle.json#L15)) | **§DG-49-1.** The empty state is the state an operator most likely sees FIRST. It gets two variants and it names the producer-side reason. |
 | **A pane can be addressable and never receive a byte.** Only a worker's assignment execution feeds the relay — two call sites **(R)** | RESEARCH §Q1 (`src/mesh-launcher.mjs:1151`, `:1290`) | **§DG-49-2.** A free session (`workItem: null`) is honestly stuck at `waiting` forever. `waiting for output` forever is a lie. |
 | **Agent state has ONE real producer and it is assignment-scoped**, and the wire drops it at exactly one hop **(R)** | `needs-input` at `src/mesh-worker-execution.mjs:90,1124,1186,1201`, carried on the assignment `code` column (`src/assignment-record.mjs:114-116`), **not copied by `projectAssignment`** (`src/global-mesh-query.mjs:132-148`) | **§DG-49-3.** One mark, one word, present only when asserted. A free session has no signal at all and gets no mark. |
 | **Client-side content-sniffing to infer state is fitness-gated** **(R)** | RESEARCH §Q2; `source-table.mjs:126-137`; `test/arch/acd-fleet-terminal-input-constrained.test.mjs:214-218` | Agent state may only come from a producer-side fact on the wire. **Never from the bytes.** |
-| **The mirror is fixed 80×24 and SCALED, never re-wrapped**; no canvas/webgl renderer | m46/ADR-003; [geometry.mjs:35-57](../../../../ui/src/terminal/geometry.mjs#L35), [source-table.mjs:40-49](../../../../ui/src/terminal/source-table.mjs#L40) | §Fit vs scale at tile size. At tile scale you read **shape**, never words. |
+| **The mirror is fixed 80×24 and SCALED, never re-wrapped**; no canvas/webgl renderer | m46/ADR-003; [geometry.mjs:35-57](../../../../apps/ui/src/terminal/geometry.mjs#L35), [source-table.mjs:40-49](../../../../apps/ui/src/terminal/source-table.mjs#L40) | §Fit vs scale at tile size. At tile scale you read **shape**, never words. |
 | **No socket cap exists anywhere today, and the browser is not the wall** — one Chromium page holds **255** concurrent WebSockets to one origin **(R)** | RESEARCH §Q3; `src/mesh-ui-serve.mjs:672-706` accepts every upgrade with no admission cap and no `bufferedAmount` gate (`:735`) | **§DG-49-4.** The cap is a **product policy**, client-enforced, and it must render as a *state of the grid*, never as an error. |
 | **The mirror LRU-evicts scrollback past 64 tuples** **(R)** | `src/mesh-terminal-mirror.mjs:58-59` | A grid that subscribes to everything degrades another surface's data. Another reason the cap is a design fact, not an implementation detail. |
-| **The session index can ONLY resolve against the `mirror` row** — `MeshSession` carries no `ref`, `provider` or board origin **(R)** | RESEARCH §Q1/§Q4; [api.ts:219-228](../../../../ui/src/fleet/api.ts#L219) | The grid mounts one source. **It therefore cannot produce `unavailable` either** — §DG-49-10. |
-| **Posture is fixed at xterm construction; changing it costs the SESSION** | [host-model.mjs:287](../../../../ui/src/terminal/host-model.mjs#L287) — `SET_POSTURE` … *"UNREACHABLE in m46, named so m49 does not discover it"* | **A tile cannot be read-only inline and interactive expanded.** One posture, both hosts. This is what forces §DG-49-5's shape. |
-| **Expand costs only LAYOUT** — the shell adopts the live node | [host-model.mjs:279-280](../../../../ui/src/terminal/host-model.mjs#L279); [shell-bus.mjs:147-157](../../../../ui/src/app/shell-bus.mjs#L147) | So "take the keyboard → expand" costs nothing: one xterm, one socket, through both transitions. |
-| **An interactive occupant CLAIMS `Escape`** — it is a live keystroke for the far end's TUI | m46/[Build-2]; [host-model.mjs:128-131](../../../../ui/src/terminal/host-model.mjs#L128) | The exit control is **always visible**. On this surface that is now the ORDINARY case, not the exception. |
-| **The state chip carries a per-pane `aria-live="polite"`** | [TerminalIdentity.tsx:117](../../../../ui/src/terminal/TerminalIdentity.tsx#L117) | One pane: good. **N panes: a screen reader narrating the whole fleet, unprompted, every poll.** §DG-49-7. |
-| **The only `prefers-reduced-motion` rule in `ui/` names `.aof-pending` alone**, and `animate-pulse` is emitted bare and applied unconditionally | [index.css:112-116](../../../../ui/src/index.css#L112); [palette.mjs:189-192](../../../../ui/src/terminal/palette.mjs#L189); [TerminalIdentity.tsx:119](../../../../ui/src/terminal/TerminalIdentity.tsx#L119) | **The reduced-motion escape m46 claims does not exist** ([palette.mjs:186](../../../../ui/src/terminal/palette.mjs#L186) says it does). One pulse hid it; N pulses will not. §DG-49-6. |
-| **A terminal with no visible owner is never rendered** (V1) | [pane-identity.mjs:45-47](../../../../ui/src/terminal/pane-identity.mjs#L45), [:80-107](../../../../ui/src/terminal/pane-identity.mjs#L80) | A free session has no work-item ref. **The owner is the repo** — a real field on `MeshSession`, never an invented one. |
-| **The whole payload re-polls every 5s** | [assign-affordance.mjs:54](../../../../ui/src/fleet/assign-affordance.mjs#L54), consumed at [Fleet.tsx:462](../../../../ui/src/fleet/Fleet.tsx#L462) | **Focus must survive a re-render** and tiles must not move. §The focus model. |
-| **A terminal-hosting surface is `content:fixed`** — and m45 already names this surface | [45/DESIGN](../45_milestone_ui-app-shell-routing/DESIGN.md): *"the board, and (m49) the terminals grid"*; today `landing` is `content:page` ([shell-layout.mjs:527](../../../../ui/src/app/shell-layout.mjs#L527)) | The page never scrolls; **the grid owns scroll**. Inherited, not invented. |
+| **The session index can ONLY resolve against the `mirror` row** — `MeshSession` carries no `ref`, `provider` or board origin **(R)** | RESEARCH §Q1/§Q4; [api.ts:219-228](../../../../apps/ui/src/fleet/api.ts#L219) | The grid mounts one source. **It therefore cannot produce `unavailable` either** — §DG-49-10. |
+| **Posture is fixed at xterm construction; changing it costs the SESSION** | [host-model.mjs:287](../../../../apps/ui/src/terminal/host-model.mjs#L287) — `SET_POSTURE` … *"UNREACHABLE in m46, named so m49 does not discover it"* | **A tile cannot be read-only inline and interactive expanded.** One posture, both hosts. This is what forces §DG-49-5's shape. |
+| **Expand costs only LAYOUT** — the shell adopts the live node | [host-model.mjs:279-280](../../../../apps/ui/src/terminal/host-model.mjs#L279); [shell-bus.mjs:147-157](../../../../apps/ui/src/app/shell-bus.mjs#L147) | So "take the keyboard → expand" costs nothing: one xterm, one socket, through both transitions. |
+| **An interactive occupant CLAIMS `Escape`** — it is a live keystroke for the far end's TUI | m46/[Build-2]; [host-model.mjs:128-131](../../../../apps/ui/src/terminal/host-model.mjs#L128) | The exit control is **always visible**. On this surface that is now the ORDINARY case, not the exception. |
+| **The state chip carries a per-pane `aria-live="polite"`** | [TerminalIdentity.tsx:117](../../../../apps/ui/src/terminal/TerminalIdentity.tsx#L117) | One pane: good. **N panes: a screen reader narrating the whole fleet, unprompted, every poll.** §DG-49-7. |
+| **The only `prefers-reduced-motion` rule in `ui/` names `.aof-pending` alone**, and `animate-pulse` is emitted bare and applied unconditionally | [index.css:112-116](../../../../apps/ui/src/index.css#L112); [palette.mjs:189-192](../../../../apps/ui/src/terminal/palette.mjs#L189); [TerminalIdentity.tsx:119](../../../../apps/ui/src/terminal/TerminalIdentity.tsx#L119) | **The reduced-motion escape m46 claims does not exist** ([palette.mjs:186](../../../../apps/ui/src/terminal/palette.mjs#L186) says it does). One pulse hid it; N pulses will not. §DG-49-6. |
+| **A terminal with no visible owner is never rendered** (V1) | [pane-identity.mjs:45-47](../../../../apps/ui/src/terminal/pane-identity.mjs#L45), [:80-107](../../../../apps/ui/src/terminal/pane-identity.mjs#L80) | A free session has no work-item ref. **The owner is the repo** — a real field on `MeshSession`, never an invented one. |
+| **The whole payload re-polls every 5s** | [assign-affordance.mjs:54](../../../../apps/ui/src/fleet/assign-affordance.mjs#L54), consumed at [Fleet.tsx:462](../../../../apps/ui/src/fleet/Fleet.tsx#L462) | **Focus must survive a re-render** and tiles must not move. §The focus model. |
+| **A terminal-hosting surface is `content:fixed`** — and m45 already names this surface | [45/DESIGN](../45_milestone_ui-app-shell-routing/DESIGN.md): *"the board, and (m49) the terminals grid"*; today `landing` is `content:page` ([shell-layout.mjs:527](../../../../apps/ui/src/app/shell-layout.mjs#L527)) | The page never scrolls; **the grid owns scroll**. Inherited, not invented. |
 
 **This design asks for exactly one new field on the wire** — the assignment's `code`, through
 `projectAssignment` — and it is additive, already produced, and named in RESEARCH §Q2 as a closed
@@ -202,7 +202,7 @@ gap. **Everything else it renders is on the payload today.**
 **Measured (R):** every node on the real three-node fleet reports `sessions: []` right now, while two
 of them report a non-empty `activeRuns`. The cause is producer-side and structural: a presence session
 record exists only where the workspace wires the assistant's session hooks, and the shipped bundle
-wires them for **Codex only** ([bundle.json:12-14](../../../../src/bundle/bundle.json#L12)).
+wires them for **Codex only** ([bundle.json:12-14](../../../../packages/core/assets/bundle.json#L12)).
 
 **So an operator opening `/` for the first time will very likely see nothing while agents are
 demonstrably working.** A single `No live sessions.` would be true of the array and false about the
@@ -241,7 +241,7 @@ REJECTED — mono would fork the light shell's type ramp for one string, against
 new value on this surface" rail. The designer reached the same split independently, which is the only
 reason I am overriding half of the operator's own mock rather than all or none of it. -->
 
-([Fleet.tsx:910](../../../../ui/src/fleet/Fleet.tsx#L910)). Never a spinner, never red, never a skeleton.
+([Fleet.tsx:910](../../../../apps/ui/src/fleet/Fleet.tsx#L910)). Never a spinner, never red, never a skeleton.
 
 **Close condition.** A render at 1280 of both E1 and E2 (R-A), each naming what is true. **`@uat`: the
 empty terminals home tells the truth.**
@@ -255,16 +255,16 @@ permanently silent, and `waiting for output` asserts *"bytes are plausibly next"
 the distinction m46 created `waiting` to carry.
 
 **The rule, and it adds NO state word: this is the V10 seam, already built.**
-[state-ramp.mjs:576-584](../../../../ui/src/terminal/state-ramp.mjs#L576) already accepts an injected
+[state-ramp.mjs:576-584](../../../../apps/ui/src/terminal/state-ramp.mjs#L576) already accepts an injected
 `reason` on `waiting` **only**, rewrites the chip to **`no live output`** and puts the injected
 sentence in the pane. The fleet card already injects one
-([terminal-mount.mjs:120-125](../../../../ui/src/fleet/terminal-mount.mjs#L120)). **The grid's mount
+([terminal-mount.mjs:120-125](../../../../apps/ui/src/fleet/terminal-mount.mjs#L120)). **The grid's mount
 injects one for a free session.**
 
-- **Chip:** `no live output` — existing string, [state-ramp.mjs:581](../../../../ui/src/terminal/state-ramp.mjs#L581).
+- **Chip:** `no live output` — existing string, [state-ramp.mjs:581](../../../../apps/ui/src/terminal/state-ramp.mjs#L581).
 - **Pane line (new copy):** **`no live output — no assignment is relaying this session`**, top-left in
   the byte area, `mono text-xs`, no motion, no dimming, nothing red — the empty-by-definition
-  treatment, unchanged ([state-ramp.mjs:616-637](../../../../ui/src/terminal/state-ramp.mjs#L616)).
+  treatment, unchanged ([state-ramp.mjs:616-637](../../../../apps/ui/src/terminal/state-ramp.mjs#L616)).
 - **And it opens NO SOCKET.** Spending one of a scarce, capped set of live sockets to re-discover a
   fact already on the payload is waste, and the socket would prove nothing the wire has not said.
 - **It therefore offers NO worded toggle and NO expand.** A pane with no subscription has nothing to
@@ -313,7 +313,7 @@ the defect m46 deleted, re-created at a new address.
    that matters.
 4. **Its form is a quiet pill carrying its WORD**, in the identity row, immediately after the
    `read-only` pill: the house's existing pill shape
-   ([palette.mjs:55-56](../../../../ui/src/terminal/palette.mjs#L55)) at `text-[10px] font-semibold
+   ([palette.mjs:55-56](../../../../apps/ui/src/terminal/palette.mjs#L55)) at `text-[10px] font-semibold
    uppercase tracking-[0.08em]`, `shrink-0`, never truncated, never dropped. **It never pulses**
    (§DG-49-6 — motion is confined to two connection states and a grid may not add a third), and it
    never re-orders the grid (§The focus model — tiles that move under a cursor are worse than a mark
@@ -361,11 +361,11 @@ nothing is unavailable, and nothing is red.
 
 **The rule: a tile beyond the cap is an UNSUBSCRIBED pane — the fleet card's rest state, in a grid.**
 This adds no vocabulary at all: `subscribed` is already first-class
-([host-model.mjs:211-229](../../../../ui/src/terminal/host-model.mjs#L211)), the fleet card's rest state
+([host-model.mjs:211-229](../../../../apps/ui/src/terminal/host-model.mjs#L211)), the fleet card's rest state
 is already *"no state chip, no socket, no bytes"*
 ([46/DESIGN §S2](../46_milestone_terminal-control-unification/DESIGN.md)), and the control that
 promotes it is already worded and already named — `Watch terminal →` / `Hide terminal`
-([host-model.mjs:84-85](../../../../ui/src/terminal/host-model.mjs#L84)).
+([host-model.mjs:84-85](../../../../apps/ui/src/terminal/host-model.mjs#L84)).
 
 - **The tile keeps its box.** A header-only tile would leave a hole in a uniform grid. The byte area
   stays, at its normal size, and holds one centred line.
@@ -398,7 +398,7 @@ machine.
 
 **And posture cannot be changed on expand.** Making a tile read-only inline and interactive expanded
 would cost the SESSION, not the layout
-([host-model.mjs:287](../../../../ui/src/terminal/host-model.mjs#L287)) — the xterm is rebuilt, the
+([host-model.mjs:287](../../../../apps/ui/src/terminal/host-model.mjs#L287)) — the xterm is rebuilt, the
 socket reopens, and because the mirror is ephemeral the pane comes back **empty**. So the two hosts
 must share one posture.
 
@@ -406,7 +406,7 @@ must share one posture.
 
 1. **A grid tile declares `posture: interactive`** — SPEC's *"panes are typeable from the start"*,
    honoured, with one declaration flipped at one call site exactly as m46 promised
-   ([terminal-mount.mjs:152-157](../../../../ui/src/fleet/terminal-mount.mjs#L152)).
+   ([terminal-mount.mjs:152-157](../../../../apps/ui/src/fleet/terminal-mount.mjs#L152)).
 2. **The inline tile's xterm is never a keyboard focus target** (`tabindex="-1"`). Focus lands on the
    **tile**; nothing is ever typed into a pane the operator cannot read.
 3. **Any attempt to type takes you where you can read.** `Enter` on a focused tile, or a click into
@@ -425,19 +425,19 @@ the exit control visible. **`@uat`: typing into the fleet lands somewhere you ca
 ### DG-49-6 — N pulsing dots, and the reduced-motion escape DOES NOT EXIST
 
 **Measured at source, and it contradicts a claim m46 makes about itself.**
-[palette.mjs:186-188](../../../../ui/src/terminal/palette.mjs#L186) states *"Both pulses honour
+[palette.mjs:186-188](../../../../apps/ui/src/terminal/palette.mjs#L186) states *"Both pulses honour
 `prefers-reduced-motion` through the existing scoping convention in `ui/src/index.css`"*. The only
-`prefers-reduced-motion` rule in `ui/` is [index.css:112-116](../../../../ui/src/index.css#L112) and it
+`prefers-reduced-motion` rule in `ui/` is [index.css:112-116](../../../../apps/ui/src/index.css#L112) and it
 names **`.aof-pending` alone**. `TERMINAL_MOTION_CLASS.pulse` emits a bare `animate-pulse`
-([palette.mjs:189-192](../../../../ui/src/terminal/palette.mjs#L189)) and it is applied unconditionally
-([TerminalIdentity.tsx:119](../../../../ui/src/terminal/TerminalIdentity.tsx#L119)). **There is no
+([palette.mjs:189-192](../../../../apps/ui/src/terminal/palette.mjs#L189)) and it is applied unconditionally
+([TerminalIdentity.tsx:119](../../../../apps/ui/src/terminal/TerminalIdentity.tsx#L119)). **There is no
 `motion-reduce:` variant and no CSS rule that silences it.** One pulsing dot on one card hid this; a
 grid of a dozen will not.
 
 **The rule:**
 
 1. **The pulse must actually honour `prefers-reduced-motion`.** Either the reduce block at
-   [index.css:112-116](../../../../ui/src/index.css#L112) grows to silence `animate-pulse` on this
+   [index.css:112-116](../../../../apps/ui/src/index.css#L112) grows to silence `animate-pulse` on this
    control's dots, or `TERMINAL_MOTION_CLASS.pulse` emits the motion-safe variant. **Which is the
    architect's; that it holds is this document's.**
 2. **With motion reduced, `connecting` and `streaming` remain distinguishable by their WORD and their
@@ -454,7 +454,7 @@ animates, and every state is still distinguishable.** **`@uat`: the terminals ho
 ### DG-49-7 — N per-pane live regions is a screen reader narrating the whole fleet
 
 **Measured:** the state chip's span carries `aria-live="polite"`
-([TerminalIdentity.tsx:117](../../../../ui/src/terminal/TerminalIdentity.tsx#L117)). It was built for one
+([TerminalIdentity.tsx:117](../../../../apps/ui/src/terminal/TerminalIdentity.tsx#L117)). It was built for one
 pane and it is right for one pane. On a grid, a 5s poll plus a dozen sockets means a queue of polite
 announcements from panes the user is not looking at, with no way to tell which tile spoke.
 
@@ -502,7 +502,7 @@ third meaning for close.**
   track of an agent, on the one screen built so they do not.
 - An **`✕` that merely unsubscribes** is a third form for the subscribe/unsubscribe operation, and it
   is the exact form↔cost lie `affordanceFormViolations` refuses
-  ([host-model.mjs:184-189](../../../../ui/src/terminal/host-model.mjs#L184)) — *a worded toggle means
+  ([host-model.mjs:184-189](../../../../apps/ui/src/terminal/host-model.mjs#L184)) — *a worded toggle means
   subscribe/unsubscribe; a chevron means layout only*.
 
 **The rule: `close` resolves as `Hide terminal` — the existing worded toggle, at its existing cost
@@ -542,10 +542,10 @@ as a finding.**
 ## The connection ramp is UNCHANGED — and the two facts it deliberately does not carry
 
 Nothing in the merged ramp moves: not a word, not a dot class, not a label class, not a motion rule.
-[state-ramp.mjs:372-440](../../../../ui/src/terminal/state-ramp.mjs#L372) and
+[state-ramp.mjs:372-440](../../../../apps/ui/src/terminal/state-ramp.mjs#L372) and
 [46/DESIGN §The merged ramp](../46_milestone_terminal-control-unification/DESIGN.md) are the
 authority, including CORRECTION 1's `streaming` word at `hsl(174 58% 52%)`
-([palette.mjs:176](../../../../ui/src/terminal/palette.mjs#L176)).
+([palette.mjs:176](../../../../apps/ui/src/terminal/palette.mjs#L176)).
 
 **Two facts this surface needs are NOT connection facts, and neither becomes a state word:**
 
@@ -558,9 +558,9 @@ authority, including CORRECTION 1's `streaming` word at `hsl(174 58% 52%)`
 
 **The ramp's own reading at tile scale, unchanged and worth restating** so a reviewer does not
 re-litigate it: `waiting` carries **no motion**
-([state-ramp.mjs:391-401](../../../../ui/src/terminal/state-ramp.mjs#L391)), so an honest cold start can
+([state-ramp.mjs:391-401](../../../../apps/ui/src/terminal/state-ramp.mjs#L391)), so an honest cold start can
 never render as a spinner-forever; `ended` and `error` dim the pane and pay for their bar **out of the
-byte area** ([TerminalByteArea.tsx:102-110](../../../../ui/src/terminal/TerminalByteArea.tsx#L102)), so a
+byte area** ([TerminalByteArea.tsx:102-110](../../../../apps/ui/src/terminal/TerminalByteArea.tsx#L102)), so a
 tile's total height never changes when a stream stops; and `unknown` labels itself.
 
 ---
@@ -581,7 +581,7 @@ tile's total height never changes when a stream stops; and `unknown` labels itse
 
 **Why two rows rather than two chips in one row.** The grid tile's header is the narrowest host this
 control has ever had — 294px of usable width at the floor track, against a dock header whose intrinsic
-width is 451px ([palette.mjs:93-95](../../../../ui/src/terminal/palette.mjs#L93)). Putting identity,
+width is 451px ([palette.mjs:93-95](../../../../apps/ui/src/terminal/palette.mjs#L93)). Putting identity,
 posture, agent state, connection state and two controls on one row at that width guarantees a yield
 cascade that eats the identity — the measured defect m46's G4 ruling exists to prevent. **Two declared
 rows is not a wrap and not a fallback: it is the tile's fixed anatomy at every width** (§S2's
@@ -594,14 +594,14 @@ colour travelling alone, which rail 3 forbids.
 **Why `needs input` and not `blocked`.** `needs-input` is the product's own word for the fact
 (`src/mesh-worker-execution.mjs:90`, the assignment `code`); `blocked` is a judgement the producer
 never makes and would collide with the ramp's `READS_BLOCKED` reading, which already means something
-else ([state-ramp.mjs:89](../../../../ui/src/terminal/state-ramp.mjs#L89)).
+else ([state-ramp.mjs:89](../../../../apps/ui/src/terminal/state-ramp.mjs#L89)).
 
 ---
 
 ## Read-only is a posture — on a surface that finally types
 
 m46's rule stands verbatim: **the `read-only` label is mandatory, is TEXT, never yields, and carries
-its explanatory `title`** ([input-policy.mjs:40-42](../../../../ui/src/terminal/input-policy.mjs#L40);
+its explanatory `title`** ([input-policy.mjs:40-42](../../../../apps/ui/src/terminal/input-policy.mjs#L40);
 [46/DESIGN §Read-only is a posture](../46_milestone_terminal-control-unification/DESIGN.md)). What
 changes here is that it is no longer on *every* mirror — so its presence now means something specific.
 
@@ -609,7 +609,7 @@ changes here is that it is no longer on *every* mirror — so its presence now m
 
 | Case | Posture | What renders |
 |---|---|---|
-| the ordinary grid tile | **`interactive`** | no pill; blinking block cursor ([input-policy.mjs:129-132](../../../../ui/src/terminal/input-policy.mjs#L129)); typing is one `Enter` away (§DG-49-5) |
+| the ordinary grid tile | **`interactive`** | no pill; blinking block cursor ([input-policy.mjs:129-132](../../../../apps/ui/src/terminal/input-policy.mjs#L129)); typing is one `Enter` away (§DG-49-5) |
 | **the far end has no input route** | **`read-only`** | the **`read-only` pill**, mandatory, plus the non-blinking underline cursor |
 
 **The read-only fallback is SPEC's requirement and it is not decorative.** When the fleet cannot
@@ -623,10 +623,10 @@ from the mirror's generic one:
 
 1. **The posture is declared from a producer-side fact, at mount, once** — never toggled while a
    session lives, because a posture change costs the SESSION
-   ([host-model.mjs:287](../../../../ui/src/terminal/host-model.mjs#L287)). A tile that learns mid-life
+   ([host-model.mjs:287](../../../../apps/ui/src/terminal/host-model.mjs#L287)). A tile that learns mid-life
    that input is impossible **does not flip**; it is a new pane the next time it binds.
 2. **Read-only means read-only in fact** — `disableStdin: true`, no keystroke sink registered at all,
-   no send path named ([input-policy.mjs:20-30](../../../../ui/src/terminal/input-policy.mjs#L20)). A
+   no send path named ([input-policy.mjs:20-30](../../../../apps/ui/src/terminal/input-policy.mjs#L20)). A
    read-only tile's `Enter` still expands (reading is the point), and the expanded pane carries the
    same pill.
 
@@ -639,7 +639,7 @@ failure the posture exists to prevent.
 ## Fit vs scale at tile size — what an operator is meant to read
 
 **Unchanged rule:** fit ⇔ the source declares a resize control frame; scale otherwise
-([geometry.mjs:71-74](../../../../ui/src/terminal/geometry.mjs#L71)). The grid mounts only `mirror`, so
+([geometry.mjs:71-74](../../../../apps/ui/src/terminal/geometry.mjs#L71)). The grid mounts only `mirror`, so
 **every tile scales, pinned 80×24, aspect preserved, anchored top-left, never cropped, never
 re-wrapped**.
 
@@ -650,7 +650,7 @@ exists.
 
 **The tile's byte area is ASPECT-LOCKED to the screen it holds — `aspect-[640/408]` — so the letterbox
 band is ≈0 by construction.** This changes **no geometry rule**: the scale is still
-`min(box/intrinsic)` ([geometry.mjs:139-143](../../../../ui/src/terminal/geometry.mjs#L139)) and the band
+`min(box/intrinsic)` ([geometry.mjs:139-143](../../../../apps/ui/src/terminal/geometry.mjs#L139)) and the band
 is still whatever that leaves. It is a **host box** decision, which is the host's to make, and in a
 grid it matters: N tiles each paying a band is N wasted rectangles on the one screen built for
 density. **A sub-pixel residual band is expected; a visible one at any documented width is a GAP** —
@@ -662,7 +662,7 @@ no answer from a PNG. An unfalsifiable rule is worse than none — it invites a 
 excuse the same pixels at will. -->
 
 **And the bar is still paid for out of the byte area.** When a tile ends, the bar appears *inside* the
-aspect-locked box ([TerminalByteArea.tsx:102-110](../../../../ui/src/terminal/TerminalByteArea.tsx#L102)),
+aspect-locked box ([TerminalByteArea.tsx:102-110](../../../../apps/ui/src/terminal/TerminalByteArea.tsx#L102)),
 the pane re-scales into the smaller box, and **the tile's total height does not move** — V11, and the
 same `0.47 → 0.40` pair m46's mock derived for the fleet card. **A grid row whose tiles change height
 when one of them ends is a GAP.**
@@ -679,7 +679,7 @@ below 160px wide, it renders the **held** treatment's line instead of a terminal
 
 **The subject.** `fleetCurrentWorkLines` maps every unsubsumed session to its repo, filters blanks,
 sorts, **and does not deduplicate**
-([runs.mjs:99-106](../../../../ui/src/fleet/runs.mjs#L99)), so two live sessions in one repo render
+([runs.mjs:99-106](../../../../apps/ui/src/fleet/runs.mjs#L99)), so two live sessions in one repo render
 `working · demo, demo (session)`. m48 held that deliberately and routed the decision here.
 
 **THE RULE:** *deduplicate the repo names and carry the count where a repo holds more than one
@@ -694,13 +694,13 @@ working · aof, demo (session)          ← unchanged: one session each
 **Precisely enough to implement:**
 
 1. Filter exactly as today — `workspaceHasRun !== true`, strict
-   ([runs.mjs:100](../../../../ui/src/fleet/runs.mjs#L100)). **Unchanged.**
+   ([runs.mjs:100](../../../../apps/ui/src/fleet/runs.mjs#L100)). **Unchanged.**
 2. Map to `repo`, drop non-strings and empties. **Unchanged.**
 3. **Group by the exact repo string and count.** Grouping is on the raw string — no trim, no
    case-folding, no normalisation. Two repos differing by case are two repos.
 4. Sort the **distinct** repos ascending by plain codepoint comparison — the same
    locale-independent comparison the line already uses
-   ([runs.mjs:103](../../../../ui/src/fleet/runs.mjs#L103)), for the same reason (the Rust surface sorts
+   ([runs.mjs:103](../../../../apps/ui/src/fleet/runs.mjs#L103)), for the same reason (the Rust surface sorts
    byte-wise).
 5. Render each part as **`<repo>`** when its count is 1 and **`<repo> ×<count>`** when the count is
    greater than 1. The separator is a space before `×`; the multiplication sign is **U+00D7**, not the
@@ -743,7 +743,7 @@ author meets the rule here and MUST NOT read the shipped wrap as the design. -->
   lie, one surface over.
 - **not one line per session** — the node card's current-work line is a one-line summary in a row
   whose width is already budgeted to a measured floor of **286px**
-  ([assign-affordance.mjs:268](../../../../ui/src/fleet/assign-affordance.mjs#L268)); N lines grows a card
+  ([assign-affordance.mjs:268](../../../../apps/ui/src/fleet/assign-affordance.mjs#L268)); N lines grows a card
   unboundedly with sessions, and cards in an `auto-fill` grid stretch their whole row when one grows.
 - **not repo + assistant (`demo (claude)`)** — it names a *tool* where the operator asked what work
   the machine is doing, and it still duplicates for two Claude sessions in one repo.
@@ -766,7 +766,7 @@ to fail on this change, which is how it forces the decision to be made here rath
 ## The focus model
 
 The grid is **keyboard and mouse both**, N panes deep, re-rendered every 5s
-([Fleet.tsx:462](../../../../ui/src/fleet/Fleet.tsx#L462)). Three properties have to hold at once: a
+([Fleet.tsx:462](../../../../apps/ui/src/fleet/Fleet.tsx#L462)). Three properties have to hold at once: a
 keyboard user must reach any pane without traversing hundreds of stops, focus must survive a poll, and
 **an interactive pane claims `Escape`**.
 
@@ -785,7 +785,7 @@ and `Tab` past the last one leaves the grid entirely. `Shift+Tab` is symmetric. 
 ever a tab stop, inline.**
 
 **5 · The focus indicator is the house ring** — `--color-ring`
-([index.css:23](../../../../ui/src/index.css#L23)) — drawn on the **tile's frame**, unmistakable at a
+([index.css:23](../../../../apps/ui/src/index.css#L23)) — drawn on the **tile's frame**, unmistakable at a
 glance across a grid, and never removed without replacement. The focused tile is additionally the only
 tile whose state changes are announced (§DG-49-7).
 
@@ -802,14 +802,14 @@ contribution to this region survives the mock. -->
 
 **6 · Focus survives the poll, because it is stored as a PANE KEY and not an index.** The pane key is
 the control's own — `terminalPaneKey(source, params)`
-([pane-identity.mjs:55-67](../../../../ui/src/terminal/pane-identity.mjs#L55)) — which is also the tile's
+([pane-identity.mjs:55-67](../../../../apps/ui/src/terminal/pane-identity.mjs#L55)) — which is also the tile's
 render key. A poll that adds, removes or re-orders entries leaves focus **on the same session**.
 Storing an index or a position is the defect this rule exists to prevent: a tile arriving above the
 focused one would silently move focus to a different agent.
 
 **7 · The grid NEVER re-sorts itself.** Order is deterministic and stable — **`nodeId`, then `repo`,
 then `sessionId`, ascending, plain codepoint comparison** (the same comparison
-[runs.mjs:103](../../../../ui/src/fleet/runs.mjs#L103) uses, for the same locale-independence reason).
+[runs.mjs:103](../../../../apps/ui/src/fleet/runs.mjs#L103) uses, for the same locale-independence reason).
 **Order never keys on connection state, on agent state, or on recency** — those change every few
 seconds, and a tile that moves under the cursor while an operator is reaching for it is a worse
 failure than a mark that waits to be noticed. (This is also why `needs input` is a mark plus a count
@@ -823,7 +823,7 @@ nearest surviving tile in grid order and the grid's live region says which sessi
 
 **9 · `Escape` belongs to the far end, and the way out is always visible.** Inside the expanded pane
 `Escape` is a live keystroke for the TUI (m46/[Build-2]), so the exit control is **always visible,
-never hover-revealed, never fading** ([host-model.mjs:128-131](../../../../ui/src/terminal/host-model.mjs#L128)),
+never hover-revealed, never fading** ([host-model.mjs:128-131](../../../../apps/ui/src/terminal/host-model.mjs#L128)),
 and dismissal returns focus **to the opener — the tile**, restoring the roving stop. On the grid
 itself, `Escape` does nothing: no tile is a modal, and a key that sometimes closes a pane and sometimes
 types into one is the ambiguity this clause removes.
@@ -839,13 +839,13 @@ types into one is the ambiguity this clause removes.
 - **Host:** the shell's content region, **`content:fixed`** — inherited, not invented:
   [45/DESIGN](../45_milestone_ui-app-shell-routing/DESIGN.md) names *"the board, and (m49) the
   terminals grid"* and binds *"a surface that hosts a terminal must be `content:fixed`"*. Today
-  `landing` is `content:page` ([shell-layout.mjs:527](../../../../ui/src/app/shell-layout.mjs#L527));
+  `landing` is `content:page` ([shell-layout.mjs:527](../../../../apps/ui/src/app/shell-layout.mjs#L527));
   **that one row changes and the shell does not.**
 - **The page's own chrome is ONE contribution and no bar of its own.** The shell already owns the top
-  bar, the surface bar and the overlay ([shell-layout.mjs:55-61](../../../../ui/src/app/shell-layout.mjs#L55)).
+  bar, the surface bar and the overlay ([shell-layout.mjs:55-61](../../../../apps/ui/src/app/shell-layout.mjs#L55)).
   The page contributes exactly one node to the **surface slot**, which the shell places in the top bar
   at ≥1024 and in the 40px surface bar at ≤1023
-  ([shell-layout.mjs:114-127](../../../../ui/src/app/shell-layout.mjs#L114)). **A second bar is a GAP, not
+  ([shell-layout.mjs:114-127](../../../../apps/ui/src/app/shell-layout.mjs#L114)). **A second bar is a GAP, not
   a variant.**
 
 #### Binding checklist (mandatory — this IS the baseline until `mocks/s1-terminals-home.png` lands)
@@ -909,7 +909,7 @@ types into one is the ambiguity this clause removes.
     `Open the fleet →`.
   - **E2** — runs in flight, nothing reporting: `<N> runs in flight · no session is reporting a
     terminal.` (singular at N = 1: `1 run in flight · …`) / the why-line / `Open the fleet →`.
-  - Both in the house's dashed empty card ([Fleet.tsx:910](../../../../ui/src/fleet/Fleet.tsx#L910)).
+  - Both in the house's dashed empty card ([Fleet.tsx:910](../../../../apps/ui/src/fleet/Fleet.tsx#L910)).
     **Never red, never a spinner, never a skeleton.**
 - **loading ≡ the FIRST fetch only.** A muted centred line, `Loading sessions…`, in the same card.
   **A subsequent poll never re-enters this state** — the grid keeps rendering what it has, because
@@ -956,14 +956,14 @@ the terminal ramp inside each tile. **No token, colour, size or glyph on this su
   [46/mocks/CONFORMANCE.md](../46_milestone_terminal-control-unification/mocks/CONFORMANCE.md), which
   binds every region this host inherits.
 - **Host name:** `grid-pane`, a fourth member of
-  [host-model.mjs:38-41](../../../../ui/src/terminal/host-model.mjs#L38)'s frozen list.
+  [host-model.mjs:38-41](../../../../apps/ui/src/terminal/host-model.mjs#L38)'s frozen list.
 - **Declares:** `posture: interactive` · `source: mirror` (only) · fullscreen **on** · Watch/Hide
   **on**. Everything else **off, with a reason**.
 
 #### The affordance table — and every absence carries its reason
 
 Written in the `notDeclared("…")` discipline
-([host-model.mjs:93-95](../../../../ui/src/terminal/host-model.mjs#L93)) so a reviewer can tell a design
+([host-model.mjs:93-95](../../../../apps/ui/src/terminal/host-model.mjs#L93)) so a reviewer can tell a design
 decision from an omission.
 
 | Affordance | Declared | Form · cost | Reason (verbatim intent for the table) |
@@ -1003,24 +1003,24 @@ one rule, now stated where the affordances are declared. -->
 
 | # | Region | Height | Scroll owner |
 |---|---|---|---|
-| **T0** | **The tile frame** — `rounded-md border border-[#1e2a44] bg-[#0f1629] text-zinc-200`, the control's own non-dock frame ([TerminalControl.tsx:760](../../../../ui/src/terminal/TerminalControl.tsx#L760)), plus the focus ring on the frame | header + byte box | none |
+| **T0** | **The tile frame** — `rounded-md border border-[#1e2a44] bg-[#0f1629] text-zinc-200`, the control's own non-dock frame ([TerminalControl.tsx:760](../../../../apps/ui/src/terminal/TerminalControl.tsx#L760)), plus the focus ring on the frame | header + byte box | none |
 | **C1a** | **Identity row** — `px-3 py-1.5`, **one line, never wraps, never merges with C1b** | content | none |
 | **C1b** | **Status row** — `px-3 pb-1.5`, one line, never wraps | content | none |
-| **C2** | **Byte area** — the aspect-locked box, `aspect-[640/408]`, framed `mx-2 mb-2 rounded` ([palette.mjs:74](../../../../ui/src/terminal/palette.mjs#L74)) | derived from the track width | **xterm's own scrollback, and nothing else** |
+| **C2** | **Byte area** — the aspect-locked box, `aspect-[640/408]`, framed `mx-2 mb-2 rounded` ([palette.mjs:74](../../../../apps/ui/src/terminal/palette.mjs#L74)) | derived from the track width | **xterm's own scrollback, and nothing else** |
 | **C3** | **Non-live bar** — inside C2's box, **paid for out of it** | content (≈29px) | none |
 | **C4** | **The input region: THERE IS NONE**, in either posture | 0 | — |
 
 **Components each region holds:**
 
 - **C1a**, left → right: **`▣`** (the lockup glyph; the word `TERMINAL` is already dropped at this
-  width by the existing container query, [palette.mjs:97](../../../../ui/src/terminal/palette.mjs#L97)) ·
+  width by the existing container query, [palette.mjs:97](../../../../apps/ui/src/terminal/palette.mjs#L97)) ·
   **identity** `<owner> → <nodeId>`, `mono text-[11px] text-zinc-400`, `min-w-0 truncate`, full value
   in `title` · **`read-only` pill** when the posture is read-only, `shrink-0`, with its `title` ·
   **`needs input` pill** when asserted, `shrink-0`. **No controls in this row.**
-- **C1b**, left → right: **the state chip** (dot + word, [palette.mjs:154](../../../../ui/src/terminal/palette.mjs#L154)'s
+- **C1b**, left → right: **the state chip** (dot + word, [palette.mjs:154](../../../../apps/ui/src/terminal/palette.mjs#L154)'s
   7px dot, `text-[11px]`) — **absent entirely when the tile is unsubscribed** · **`·`** · **the repo**,
   `mono text-[11px] text-zinc-500`, **only when the repo is not already the owner** · `ml-auto`
-  **expand `⤢`** (28×28, [TerminalControl.tsx:144](../../../../ui/src/terminal/TerminalControl.tsx#L144)) ·
+  **expand `⤢`** (28×28, [TerminalControl.tsx:144](../../../../apps/ui/src/terminal/TerminalControl.tsx#L144)) ·
   **the worded toggle** (`Watch terminal →` / `Hide terminal`). **Both controls are withheld on a pane
   that cannot honour them** — see the affordance table's per-pane rows.
 - **C2** — exactly one xterm host at 80×24, **scaled**, anchored top-left, `tabindex="-1"`. Or, for a
@@ -1036,7 +1036,7 @@ one rule, now stated where the affordances are declared. -->
 | free (no work item) | **the `repo`** | `nodeId` | `session <id>` | **no — it is already the owner** |
 
 The tail is the **first thing to yield**, dropped whole with its separator, by the existing rule
-([palette.mjs:96](../../../../ui/src/terminal/palette.mjs#L96)); at every grid width it is already
+([palette.mjs:96](../../../../apps/ui/src/terminal/palette.mjs#L96)); at every grid width it is already
 dropped. **The owner ref, both pills, the state chip and the controls never yield.** When the identity
 still cannot fit, **the identity truncates** — authorised here for the same reason m46's G4 ruling
 authorised it for a far-end identity: it is long, variable, and carries its whole value in `title`.
@@ -1055,7 +1055,7 @@ row carries weight above the identity line except the `▣` lockup and the two p
 - **loading ≡ TWO SUB-CASES, and they must look different** (m46, unchanged):
   - `connecting` — pulsing `bg-secondary` dot, `connecting…`, C2 empty, **no line**;
   - `waiting` — `bg-muted-foreground`, **no motion**, chip `waiting for output`, C2's top-left line
-    `connected · waiting for first output` ([state-ramp.mjs:129](../../../../ui/src/terminal/state-ramp.mjs#L129)).
+    `connected · waiting for first output` ([state-ramp.mjs:129](../../../../apps/ui/src/terminal/state-ramp.mjs#L129)).
 - **error ≡ `error`** — `bg-destructive` dot, chip `error`, **the cause line is mandatory** in the C3
   bar, pane dimmed `opacity-60`. Plus **`ended` with a non-zero exit code** (`exited (N)`), on the same
   failure ramp. **`unavailable` is not in this bucket and does not occur here** (§DG-49-10).
@@ -1077,7 +1077,7 @@ row carries weight above the identity line except the `▣` lockup and the two p
   are the baseline**, plus the three deltas below.
 - **Host:** unchanged — the shell's `shell:fullscreen` slot, rung `z-50`, its only occupant, reached
   through `requestFullscreen({ id, label, node, home, opener, claimsEscape, onLayout })`
-  ([shell-bus.mjs:147-157](../../../../ui/src/app/shell-bus.mjs#L147)).
+  ([shell-bus.mjs:147-157](../../../../apps/ui/src/app/shell-bus.mjs#L147)).
 
 **THIS SURFACE IS NOT REDESIGNED.** Its regions, its header composition, its geometry, its in-flow
 bar, its `role="dialog"` + `aria-modal`, its always-visible exit control and its focus return are
@@ -1086,7 +1086,7 @@ one fact:
 
 | # | Delta | Why |
 |---|---|---|
-| **1** | **The occupant is INTERACTIVE, so it CLAIMS `Escape`** — and on this surface that is the ordinary case rather than the exception | the tile's posture is `interactive` (§DG-49-5), and posture is the opener's. Consequence, binding and inherited: **the visible exit control is the ONLY exit and is therefore always visible** ([host-model.mjs:128-131](../../../../ui/src/terminal/host-model.mjs#L128)) |
+| **1** | **The occupant is INTERACTIVE, so it CLAIMS `Escape`** — and on this surface that is the ordinary case rather than the exception | the tile's posture is `interactive` (§DG-49-5), and posture is the opener's. Consequence, binding and inherited: **the visible exit control is the ONLY exit and is therefore always visible** ([host-model.mjs:128-131](../../../../apps/ui/src/terminal/host-model.mjs#L128)) |
 | **2** | **Focus presents INSIDE the terminal**, not on the exit control — and it carries the house ring at `outline-offset: -2px` (§The focus model 5) | the operator opened it *to type* (§DG-49-5 rule 3). A read-only opener (the fleet card, or a read-only tile) still presents focus on the exit control — there is nothing to type into |
 | **3** | **Dismissal returns focus to the TILE**, restoring the grid's roving stop — not to a button inside the tile | the opener on this surface is the tile itself (§The focus model rules 1 and 9), and returning focus to a control the operator never pressed loses their place in the grid |
 
@@ -1116,29 +1116,29 @@ socket at all (§DG-49-2, and the per-pane rows in §S2's affordance table).
 
 | Element | Value | Read at |
 |---|---|---|
-| **Byte viewport** | `#0b0f14` | [palette.mjs:23](../../../../ui/src/terminal/palette.mjs#L23), [:41](../../../../ui/src/terminal/palette.mjs#L41) |
-| **Chrome (tile header + non-live bar)** | `#0f1629` | [palette.mjs:25](../../../../ui/src/terminal/palette.mjs#L25), [:42](../../../../ui/src/terminal/palette.mjs#L42) |
-| **Tile border / dividers / pill outlines** | `#1e2a44` | [palette.mjs:27](../../../../ui/src/terminal/palette.mjs#L27), [:43](../../../../ui/src/terminal/palette.mjs#L43) |
-| **Terminal foreground** | `#d7dde3` | [palette.mjs:31](../../../../ui/src/terminal/palette.mjs#L31) |
-| **Text steps** | `text-zinc-200` body · `text-zinc-300` lockup/resolved · `text-zinc-400` quiet, controls, muted states, **and every cause/recovery line** · `text-zinc-500` field labels **only** · `text-zinc-100` hover only | [palette.mjs:51](../../../../ui/src/terminal/palette.mjs#L51), [:61](../../../../ui/src/terminal/palette.mjs#L61), [:156](../../../../ui/src/terminal/palette.mjs#L156); [TerminalByteArea.tsx:74-77](../../../../ui/src/terminal/TerminalByteArea.tsx#L74) |
-| **State dots** | `bg-muted-foreground` · `bg-secondary` · `bg-primary` · `bg-destructive`, at **7px** | [palette.mjs:140-143](../../../../ui/src/terminal/palette.mjs#L140), [:154](../../../../ui/src/terminal/palette.mjs#L154) |
-| **State words** | `text-zinc-400` · `text-red-400` · `streaming` at **`text-[hsl(174_58%_52%)]`** (m46 CORRECTION 1, a measured AA fix — 9.06:1 on `#0f1629`) | [palette.mjs:156-177](../../../../ui/src/terminal/palette.mjs#L156) |
-| **Pills** (`read-only` **and** `needs input`) | `rounded border border-[#1e2a44] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400` | [palette.mjs:55-56](../../../../ui/src/terminal/palette.mjs#L55) |
-| **Lockup** | `text-[11px] font-semibold tracking-[0.1em] text-zinc-300` | [palette.mjs:61](../../../../ui/src/terminal/palette.mjs#L61) |
-| **Terminal type** | `var(--font-mono, …)` at **13px / 17px line height** → an 8×17px cell → an **exactly 640×408** screen at 80×24 | [palette.mjs:67-70](../../../../ui/src/terminal/palette.mjs#L67); [source-table.mjs:48-49](../../../../ui/src/terminal/source-table.mjs#L48) |
-| **Byte-area frame** | `mx-2 mb-2 rounded` (an 8px gutter, 4px radius) | [palette.mjs:74](../../../../ui/src/terminal/palette.mjs#L74) |
-| **Header yield thresholds** | container queries on the header: tail `@xl` (≥576) · lockup word `@lg` (≥512) · field labels `@md` (≥448) — **all three already engaged at every grid width** | [palette.mjs:96-106](../../../../ui/src/terminal/palette.mjs#L96) |
-| **Control hit target** | `h-7 w-7` = **28px**, ≥24px by padding | [TerminalControl.tsx:144](../../../../ui/src/terminal/TerminalControl.tsx#L144) |
-| **Motion** | `animate-pulse` on `connecting` and `streaming` **only**; every other state emits the **empty string** | [palette.mjs:189-192](../../../../ui/src/terminal/palette.mjs#L189) |
-| **Grid track / gap** | `repeat(auto-fill, minmax(320px, 1fr))`, `gap-4` | [Fleet.tsx:914](../../../../ui/src/fleet/Fleet.tsx#L914) |
-| **Page container** | `px-4 py-7 sm:px-8` inside `mx-auto max-w-[1240px]` | [Fleet.tsx:841-842](../../../../ui/src/fleet/Fleet.tsx#L841) |
-| **Empty-state card** | `rounded-lg border border-dashed border-border bg-card/40 p-6 text-sm text-muted-foreground` | [Fleet.tsx:910](../../../../ui/src/fleet/Fleet.tsx#L910) |
-| **Focus ring** | `--color-ring` = `hsl(174 72% 27%)` = **`rgb(19,118,109)`** = `#13766d`. **2px solid**, `outline-offset: +2px` on a tile frame and **`-2px`** on the expanded byte area (§The focus model 5) | [index.css:23](../../../../ui/src/index.css#L23) |
-| **Radius** | `--radius: 0.5rem` | [index.css:24](../../../../ui/src/index.css#L24) |
-| **Z rungs** | fullscreen `z-50`, alone | [shell-layout.mjs:792-797](../../../../ui/src/app/shell-layout.mjs#L792) |
-| **Chrome height / content floor** | 48 + 40 = 88px; content floor **432px** at 760×520 | [shell-layout.mjs:66-67](../../../../ui/src/app/shell-layout.mjs#L66), [:163-165](../../../../ui/src/app/shell-layout.mjs#L163) |
-| **Poll cadence** | **5000ms**, whole payload | [assign-affordance.mjs:54](../../../../ui/src/fleet/assign-affordance.mjs#L54); [Fleet.tsx:462](../../../../ui/src/fleet/Fleet.tsx#L462) |
-| **Mono advance at 11px** | **6.048px/char** (measured 2026-08-12 against the shipped stylesheet) | [assign-affordance.mjs:272](../../../../ui/src/fleet/assign-affordance.mjs#L272) |
+| **Byte viewport** | `#0b0f14` | [palette.mjs:23](../../../../apps/ui/src/terminal/palette.mjs#L23), [:41](../../../../apps/ui/src/terminal/palette.mjs#L41) |
+| **Chrome (tile header + non-live bar)** | `#0f1629` | [palette.mjs:25](../../../../apps/ui/src/terminal/palette.mjs#L25), [:42](../../../../apps/ui/src/terminal/palette.mjs#L42) |
+| **Tile border / dividers / pill outlines** | `#1e2a44` | [palette.mjs:27](../../../../apps/ui/src/terminal/palette.mjs#L27), [:43](../../../../apps/ui/src/terminal/palette.mjs#L43) |
+| **Terminal foreground** | `#d7dde3` | [palette.mjs:31](../../../../apps/ui/src/terminal/palette.mjs#L31) |
+| **Text steps** | `text-zinc-200` body · `text-zinc-300` lockup/resolved · `text-zinc-400` quiet, controls, muted states, **and every cause/recovery line** · `text-zinc-500` field labels **only** · `text-zinc-100` hover only | [palette.mjs:51](../../../../apps/ui/src/terminal/palette.mjs#L51), [:61](../../../../apps/ui/src/terminal/palette.mjs#L61), [:156](../../../../apps/ui/src/terminal/palette.mjs#L156); [TerminalByteArea.tsx:74-77](../../../../apps/ui/src/terminal/TerminalByteArea.tsx#L74) |
+| **State dots** | `bg-muted-foreground` · `bg-secondary` · `bg-primary` · `bg-destructive`, at **7px** | [palette.mjs:140-143](../../../../apps/ui/src/terminal/palette.mjs#L140), [:154](../../../../apps/ui/src/terminal/palette.mjs#L154) |
+| **State words** | `text-zinc-400` · `text-red-400` · `streaming` at **`text-[hsl(174_58%_52%)]`** (m46 CORRECTION 1, a measured AA fix — 9.06:1 on `#0f1629`) | [palette.mjs:156-177](../../../../apps/ui/src/terminal/palette.mjs#L156) |
+| **Pills** (`read-only` **and** `needs input`) | `rounded border border-[#1e2a44] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-400` | [palette.mjs:55-56](../../../../apps/ui/src/terminal/palette.mjs#L55) |
+| **Lockup** | `text-[11px] font-semibold tracking-[0.1em] text-zinc-300` | [palette.mjs:61](../../../../apps/ui/src/terminal/palette.mjs#L61) |
+| **Terminal type** | `var(--font-mono, …)` at **13px / 17px line height** → an 8×17px cell → an **exactly 640×408** screen at 80×24 | [palette.mjs:67-70](../../../../apps/ui/src/terminal/palette.mjs#L67); [source-table.mjs:48-49](../../../../apps/ui/src/terminal/source-table.mjs#L48) |
+| **Byte-area frame** | `mx-2 mb-2 rounded` (an 8px gutter, 4px radius) | [palette.mjs:74](../../../../apps/ui/src/terminal/palette.mjs#L74) |
+| **Header yield thresholds** | container queries on the header: tail `@xl` (≥576) · lockup word `@lg` (≥512) · field labels `@md` (≥448) — **all three already engaged at every grid width** | [palette.mjs:96-106](../../../../apps/ui/src/terminal/palette.mjs#L96) |
+| **Control hit target** | `h-7 w-7` = **28px**, ≥24px by padding | [TerminalControl.tsx:144](../../../../apps/ui/src/terminal/TerminalControl.tsx#L144) |
+| **Motion** | `animate-pulse` on `connecting` and `streaming` **only**; every other state emits the **empty string** | [palette.mjs:189-192](../../../../apps/ui/src/terminal/palette.mjs#L189) |
+| **Grid track / gap** | `repeat(auto-fill, minmax(320px, 1fr))`, `gap-4` | [Fleet.tsx:914](../../../../apps/ui/src/fleet/Fleet.tsx#L914) |
+| **Page container** | `px-4 py-7 sm:px-8` inside `mx-auto max-w-[1240px]` | [Fleet.tsx:841-842](../../../../apps/ui/src/fleet/Fleet.tsx#L841) |
+| **Empty-state card** | `rounded-lg border border-dashed border-border bg-card/40 p-6 text-sm text-muted-foreground` | [Fleet.tsx:910](../../../../apps/ui/src/fleet/Fleet.tsx#L910) |
+| **Focus ring** | `--color-ring` = `hsl(174 72% 27%)` = **`rgb(19,118,109)`** = `#13766d`. **2px solid**, `outline-offset: +2px` on a tile frame and **`-2px`** on the expanded byte area (§The focus model 5) | [index.css:23](../../../../apps/ui/src/index.css#L23) |
+| **Radius** | `--radius: 0.5rem` | [index.css:24](../../../../apps/ui/src/index.css#L24) |
+| **Z rungs** | fullscreen `z-50`, alone | [shell-layout.mjs:792-797](../../../../apps/ui/src/app/shell-layout.mjs#L792) |
+| **Chrome height / content floor** | 48 + 40 = 88px; content floor **432px** at 760×520 | [shell-layout.mjs:66-67](../../../../apps/ui/src/app/shell-layout.mjs#L66), [:163-165](../../../../apps/ui/src/app/shell-layout.mjs#L163) |
+| **Poll cadence** | **5000ms**, whole payload | [assign-affordance.mjs:54](../../../../apps/ui/src/fleet/assign-affordance.mjs#L54); [Fleet.tsx:462](../../../../apps/ui/src/fleet/Fleet.tsx#L462) |
+| **Mono advance at 11px** | **6.048px/char** (measured 2026-08-12 against the shipped stylesheet) | [assign-affordance.mjs:272](../../../../apps/ui/src/fleet/assign-affordance.mjs#L272) |
 
 **Not one value in this table is new.** The only additions this milestone makes are **copy strings**,
 listed and justified next.
@@ -1218,11 +1218,11 @@ terminals raises three questions one terminal did not, and they are numbers 3, 4
    `Escape`), and focus returned to the opener.
 8. **Target size ≥24×24 CSS px** (SC 2.5.8) for every control, achieved by padding — the shipped
    `h-7 w-7` (28px) already passes
-   ([TerminalControl.tsx:144](../../../../ui/src/terminal/TerminalControl.tsx#L144)). The worded toggle's
+   ([TerminalControl.tsx:144](../../../../apps/ui/src/terminal/TerminalControl.tsx#L144)). The worded toggle's
    `px-2 py-1` around an 11px line must be checked at the tile's width, not the card's.
 9. **The non-live bar is `role="status"`, never `role="alert"`** — a stream ending is information.
    Never clipped, never truncated; it wraps if it must
-   ([TerminalByteArea.tsx:107](../../../../ui/src/terminal/TerminalByteArea.tsx#L107)).
+   ([TerminalByteArea.tsx:107](../../../../apps/ui/src/terminal/TerminalByteArea.tsx#L107)).
 10. **Contrast on the dark chrome, measured in m46 and unchanged here**: `text-zinc-300` 12.18:1,
     `text-zinc-400` 7.02:1, `text-red-400` 6.51:1, `streaming` 9.06:1 — all pass AA on `#0f1629`.
     **`text-zinc-500` (3.72:1) stays confined to field labels** — the repo in C1b is a field-label-class
@@ -1333,7 +1333,7 @@ section is repointed at the authored files in the same change that creates them.
 - **The live-socket cap as an executable contract** — the configured number, which tiles hold sockets,
   what `Watch` does at the cap, and that **nothing is ever demoted automatically**.
 - **The input path extension and the arch-test invariant 4 amendment** — one declaration flipped at one
-  call site ([terminal-mount.mjs:152-157](../../../../ui/src/fleet/terminal-mount.mjs#L152)), with
+  call site ([terminal-mount.mjs:152-157](../../../../apps/ui/src/fleet/terminal-mount.mjs#L152)), with
   invariant 4 **rewritten, never deleted and never quietly broken**.
 - **Focus as scenarios** — a poll does not move focus; arrows traverse the rendered order; `Enter`
   expands with focus inside the terminal; dismissal returns focus to the tile; no xterm is a tab stop

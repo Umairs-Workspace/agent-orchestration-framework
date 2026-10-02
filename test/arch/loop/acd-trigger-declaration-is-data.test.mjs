@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: FF-6302 — THE DECLARATION IS DATA WITH ONE COMPILER AND ONE HOME, AND NO
 // GRAMMAR IS WRITTEN TWICE (63/ADR-002, ADR-010 §4, §4a, §8).
 //
 // Seven legs, each of which fails for a different reason and each of which a cheap conforming
 // edit would otherwise satisfy while holding nothing:
 //
-//   1 · ONE PARSER IN THE FAMILY. Exactly one module under `src/work-trigger/` turns declaration
+//   1 · ONE PARSER IN THE FAMILY. Exactly one module under `packages/core/src/work-trigger/` turns declaration
 //       text into an object. A second reader is how two copies of one file come to disagree.
 //   2 · A BAD MEMBER REFUSES THE WHOLE SET, asserted by PLANTING one bad member among good ones
 //       and requiring the compile to refuse with a code and hand back nothing — 55/ADR-004 §4's
@@ -36,18 +37,32 @@ import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import * as loaderModule from "../../../src/work/loops.mjs";
-import {
-  TRIGGER_SOURCES,
-  TriggerDeclarationError,
-  bundledTriggerDeclaration,
-  compileTriggerDeclaration,
-} from "../../../src/work-trigger/declaration.mjs";
+const loaderModule = Object.freeze({
+  ADMITTED_KEYS: _aofApplication.graph.work.loops.ADMITTED_KEYS,
+  CADENCE_KINDS: _aofApplication.graph.work.loops.CADENCE_KINDS,
+  EDGE_KEYS: _aofApplication.graph.work.loops.EDGE_KEYS,
+  ENDPOINT_SCHEMES: _aofApplication.graph.work.loops.ENDPOINT_SCHEMES,
+  EVENT_TRIGGERS: _aofApplication.graph.work.loops.EVENT_TRIGGERS,
+  FIELD_KINDS: _aofApplication.graph.work.loops.FIELD_KINDS,
+  GROUND_VALUES: _aofApplication.graph.work.loops.GROUND_VALUES,
+  LOADER_FINDING_CODES: _aofApplication.graph.work.loops.LOADER_FINDING_CODES,
+  NODE_KINDS: _aofApplication.graph.work.loops.NODE_KINDS,
+  PERIODIC_UNITS: _aofApplication.graph.work.loops.PERIODIC_UNITS,
+  POINTER_SCHEMES: _aofApplication.graph.work.loops.POINTER_SCHEMES,
+  SENTINEL_TOKENS: _aofApplication.graph.work.loops.SENTINEL_TOKENS,
+  loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  parseCadence: _aofApplication.graph.work.loops.parseCadence,
+  loadLoops: _aofApplication.graph.work.loops.loadLoops,
+});
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+const TriggerDeclarationError = _aofApplication.loop.workTrigger.declaration.TriggerDeclarationError;
+const bundledTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.bundledTriggerDeclaration;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
-const LOADER_PATH = path.join(REPO_ROOT, "src", "work", "loops.mjs");
-const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "src", "bundle", "bundle.json");
+const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");
+const LOADER_PATH = path.join(REPO_ROOT, "packages/work-graph/src/registry.mjs");
+const BUNDLE_DESCRIPTOR = path.join(REPO_ROOT, "packages", "core", "assets", "bundle.json");
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const read = (file) => readFileSync(file, "utf8");
@@ -104,7 +119,7 @@ export const archTests = [
       const parsers = files.filter((file) => /JSON\s*\.\s*parse/.test(codeOnly(read(file))));
       assert.deepEqual(
         parsers.map((file) => path.relative(REPO_ROOT, file).split(path.sep).join("/")),
-        ["src/work-trigger/declaration.mjs"],
+        ["packages/work-loop/src/trigger/declaration.mjs"],
         "exactly one module in the family turns declaration text into an object",
       );
       // Non-vacuity: the sweep sees a parser where one exists.
@@ -141,7 +156,7 @@ export const archTests = [
     name: "FF-6302/3 the cadence grammar is reached by IMPORT and no equivalent literal is authored in the family",
     run: () => {
       const files = familyFiles();
-      const importers = files.filter((file) => /from\s+["'][^"']*work\/loops\.mjs["']/.test(read(file)) && /\bparseCadence\b/.test(read(file)));
+      const importers = [...files, path.join(REPO_ROOT, "packages/core/src/application/bindings/work-trigger/declaration.mjs")].filter((file) => /const\s*\{\s*parseCadence\s*\}\s*= workLoopsServices/.test(read(file)));
       assert.ok(importers.length > 0, "the family reaches the grammar through the imported `parseCadence`");
       assert.equal(typeof loaderModule.parseCadence, "function", "…and it is a real export of the loader");
 
@@ -214,7 +229,7 @@ export const archTests = [
       assert.equal(declared.kind, "asset", "…of the asset kind, which installs its bytes verbatim");
       assert.equal(declared.file, "triggers.jsonc", "…from the bundled source");
 
-      const source = readFileSync(path.join(REPO_ROOT, "src", "bundle", declared.file));
+      const source = readFileSync(path.join(REPO_ROOT, "packages", "core", "assets", declared.file));
       const installed = readFileSync(path.join(REPO_ROOT, ...declared.target.split("/")));
       assert.ok(installed.equals(source), "the installed copy is byte-identical to the bundled source");
       assert.equal(sha256(installed), sha256(source), "…and so is its content address");
@@ -294,14 +309,14 @@ export const archTests = [
         const installed = readFileSync(target);
         assert.equal(installed.includes(0x0d), false, remedy(member.target));
         assert.ok(
-          installed.equals(readFileSync(path.join(REPO_ROOT, "src", "bundle", member.file))),
-          `${member.target} is byte-identical to src/bundle/${member.file}\n${remedy(member.target)}`,
+          installed.equals(readFileSync(path.join(REPO_ROOT, "packages", "core", "assets", member.file))),
+          `${member.target} is byte-identical to packages/core/assets/${member.file}\n${remedy(member.target)}`,
         );
       }
 
       // Non-vacuity: a path the pins do not cover answers `unspecified`, so the assertion above
       // is deciding something rather than matching whatever git happens to print.
-      const unpinned = git(["check-attr", "eol", "--", "src/work-trigger/declaration.mjs"]);
+      const unpinned = git(["check-attr", "eol", "--", "packages/core/src/application/bindings/work-trigger/declaration.mjs"]);
       assert.match(unpinned.stdout.trim(), /: eol: unspecified$/, "an unpinned path is distinguishable from a pinned one");
     },
   },

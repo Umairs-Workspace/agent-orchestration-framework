@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // work-memory-command — story 128 / task 00
 // (`00_the-memory-door-rides-the-route-table.feature`): `aof work memory` rides the route
 // table, and every verb answers what it answered before.
@@ -13,7 +15,7 @@
 //   every verb's --json document is the projection the seam defined — the records ARRAY,
 //        the digest sans `text`, the summary sans `records`, the status object; literal too.
 //   an empty block prints nothing, not a blank line — zero bytes through the real CLI, and
-//        the face's `null`-render rule asserted over `src/spine/face.mjs`.
+//        the face's `null`-render rule asserted over `packages/core/src/spine/face.mjs`.
 //   the adapter keeps the seam's parsing rules — nine argv rows through the command's own
 //        `cli.spec` + `cli.argv`.
 //   an unknown or missing verb is a coded refusal, and exits 1 with the usage.
@@ -27,7 +29,7 @@
 // THE GOLDENS ARE LITERAL, AND WHERE THEY CAME FROM. Until this story the ladder door was
 // `workMemoryCommand` in the seam — `loadWorkspace` → the memory ctx → `runMemory(argv, { …,
 // log: (line) => console.log(line) })`. Its output for each row below was CAPTURED ONCE, at the
-// story's review, by materialising `git show HEAD:src/work/memory.mjs` into a scratch module
+// story's review, by materialising `git show HEAD:packages/core/src/work/memory.mjs` into a scratch module
 // (imports re-pointed at the live tree), spawning it with cwd = THIS fixture, and pinning what
 // it printed. That is what "what the ladder door printed" means here — a string that cannot
 // drift with the seam, not an oracle computed by the seam. (The first cut of this suite used
@@ -45,15 +47,19 @@ import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../src/command-core.mjs";
-import { deriveRouteTable, parseSpecArgv, resolveRoute } from "../../src/spine/face.mjs";
-import { memoryCommand } from "../../src/commands/work/memory.mjs";
-import { memoryUsage, runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+const getCommand = _aofApplication.getCommand;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
+const resolveRoute = _aofApplication.cli.resolveRoute;
+const memoryCommand = _aofApplication.getCommand("work:memory");
+const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 import { parseFeature } from "../integration/support/feature-runner.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const FACE = path.join(repoRoot, "src", "spine", "face.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
+const FACE = path.join(repoRoot, "packages/core/src/application/bindings/spine/face.mjs");
 const FEATURE = path.join(repoRoot, "test", "integration", "features", "work-memory.feature");
 
 // ----------------------------------------------------------- fixtures ----
@@ -362,8 +368,8 @@ export const workMemoryCommandTests = [
       // the render and prints it only when it is not null. Comment-stripped, so a comment
       // describing the rule cannot satisfy it.
       const face = stripComments(await readFile(FACE, "utf8"));
-      const body = functionBody(face, "export async function runCommandFace(");
-      assert.ok(body, "runCommandFace was located in src/spine/face.mjs");
+      const body = functionBody(face, "async function runCommandFace(");
+      assert.ok(body, "runCommandFace was located in packages/core/src/spine/face.mjs");
       assert.match(
         body,
         /const rendered = cli\.render\(result, faceCtx\);\s*if \(rendered !== null\) console\.log\(rendered\);/,

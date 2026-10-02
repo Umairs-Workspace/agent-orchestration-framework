@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 #!/usr/bin/env node
 // scripts/pin-checkout-id.mjs — repin an EXISTING scoped checkout's workspace id
 // (m42 wave (b), TECH_DEBT item 4's migration leg).
@@ -13,9 +15,9 @@
 //
 // Prints the before/after resolution. The daemon owning the checkout must be
 // restarted to publish under the pinned id.
-import { loadWorkspace } from "../src/work.mjs";
-import { resolveWorkspaceId } from "../src/workspace-identity.mjs";
-import { pinWorkspaceIdInCheckout } from "../src/mesh/worker-execution.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
+const pinWorkspaceIdInCheckout = _aofApplication.mesh.worker.pinWorkspaceIdInCheckout;
 
 const [checkoutPath, workspaceId] = process.argv.slice(2);
 if (!checkoutPath || !workspaceId) {

@@ -1,10 +1,10 @@
 // Fitness function FF-B for milestone 18 / ADR-003 + ADR-007 (reader-is-JSON-no-
 // parseFrontmatter + the parser revert):
-//   (a) The descriptor reader (src/integrations/routing.mjs) reads the per-folder
+//   (a) The descriptor reader (packages/core/src/integrations/routing.mjs) reads the per-folder
 //       `.integrations.json` with `JSON.parse` and has NO `parseFrontmatter` import or
 //       usage — routing is a discrete JSON file, never frontmatter (R4 (m18): extending
 //       the shared frontmatter parser is a blast-radius hazard).
-//   (b) src/work.mjs `parseScalarOrCollection` is back to its pre-m18 minimal shape — NO
+//   (b) packages/work/src/records.mjs `parseScalarOrCollection` is back to its pre-m18 minimal shape — NO
 //       inline-flow-map `{}` branch (the `{`-startsWith / `}`-endsWith flow-map branch is
 //       ABSENT). The shared 14-importer god-node parser is de-risked.
 //
@@ -18,8 +18,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROUTING = path.join(repoRoot, "src", "integrations", "routing.mjs");
-const WORK = path.join(repoRoot, "src", "work.mjs");
+const ROUTING = path.join(repoRoot, "packages", "work", "src", "integration-routing.mjs");
+const WORK = path.join(repoRoot, "packages", "work", "src", "records.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -42,12 +42,12 @@ export const archTests = [
     },
   },
   {
-    name: "arch/18 FF-B (b): src/work.mjs parseScalarOrCollection has NO inline-flow-map `{}` branch (ADR-007 revert)",
+    name: "arch/18 FF-B (b): packages/work/src/records.mjs parseScalarOrCollection has NO inline-flow-map `{}` branch (ADR-007 revert)",
     async run() {
       const code = stripComments(await readFile(WORK, "utf8"));
       assert.ok(
         !FLOW_MAP_BRANCH.test(code),
-        "src/work.mjs has no `value.startsWith(\"{\")` flow-map branch — parseScalarOrCollection is back to its pre-m18 minimal shape"
+        "packages/work/src/records.mjs has no `value.startsWith(\"{\")` flow-map branch — parseScalarOrCollection is back to its pre-m18 minimal shape"
       );
       // The minimal reader IS still present (the inline-list branch survives) — this is a
       // revert to minimal, not a deletion of the function.

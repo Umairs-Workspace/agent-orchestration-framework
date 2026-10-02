@@ -4,14 +4,14 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
 // milestone 72 / story 03 - THE COLD BOOT: `aof session ping` fires on every prompt an operator
 // types, and it used to pay the whole command surface to write one small record - 324-351 ms of
-// `src/cli.mjs`'s 363-384 ms was `src/command-core.mjs` alone, which statically imports all 88
+// `packages/core/src/cli.mjs`'s 363-384 ms was `packages/core/src/command-core.mjs` alone, which statically imports all 88
 // command modules. The registry and the generic face leave the CLI entry's STATIC closure (277
 // modules to 25, measured), the session arm hoists to the FIRST statement of `run()` - above the
 // help branch, which is registry-derived - and no lazy path awaits the registry above it, since a
@@ -22,14 +22,12 @@
 import { cliSessionBootClosureTests } from "./cli-session-boot-closure.test.mjs";
 // milestone 08 — CLI command core (story 00: the in-process registry of the six work operations)
 import { commandCoreContractTests } from "./command-core-contract.test.mjs";
+import { applicationAssemblyTests } from "./application-assembly.test.mjs";
 // milestone 08 — CLI command core (story 01: the CLI face; story 02: the board face; story 03: the
 // enforcing fitness functions — the route↔command/command↔CLI bijection + the no-UI-core-import / no-subprocess guards)
 import { cliFaceContractTests } from "./cli-face-contract.test.mjs";
 import { configInspectTests } from "./config-inspect.test.mjs";
-import { configEditorTests } from "./config-editor.test.mjs";
 import { configFaultVisibleTests } from "./config-fault-visible.test.mjs";
-import { dslPrimitiveTests } from "./dsl-primitives.test.mjs";
-import { promptTests } from "./prompt.test.mjs";
 // ── milestone 45 / story 04 — THE ADVERTISED ENTRY POINTS (ADR-002 + ADR-003). Every
 // producer that hands the operator a URL stops minting `?mode=` and mints the path it
 // actually serves: the board / fleet / config-editor launchers (probe AND announce, which
@@ -59,7 +57,7 @@ import { declaredIdTests } from "./declared-id.test.mjs";
 // story 128 — `aof work memory` joins the route table (task 00: the door resolves through
 // `deriveRouteTable`, every verb answers byte-for-byte what the ladder answered, the empty block
 // is zero bytes, the adapter keeps the seam's parsing rules, the refusals are coded). The
-// behavioural half of founding `src/commands/work/`; the structural half is
+// behavioural half of founding `packages/core/src/commands/work/`; the structural half is
 // test/arch/command/acd-work-memory-routed.test.mjs.
 import { workMemoryCommandTests } from "./work-memory-command.test.mjs";
 
@@ -67,12 +65,10 @@ export const tests = [
   // milestone 72 / story 03 - the cold boot (tasks 00-01) plus FF-7205 and FF-7206.
   ...cliSessionBootClosureTests,
   ...commandCoreContractTests,
+  ...applicationAssemblyTests,
   ...cliFaceContractTests,
   ...configInspectTests,
-  ...configEditorTests,
   ...configFaultVisibleTests,
-  ...dslPrimitiveTests,
-  ...promptTests,
   // milestone 45 / story 04 — the advertised entry points (tasks 00–01; 02 is @manual)
   ...advertisedPathsTests,
   // milestone 66 / story 01 — the declaration form (tasks 00–01) + its two fitness functions

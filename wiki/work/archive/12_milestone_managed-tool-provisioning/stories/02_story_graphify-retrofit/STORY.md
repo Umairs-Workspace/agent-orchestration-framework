@@ -31,7 +31,7 @@ so that graphify is an aof-managed, version-pinned dependency — not a hand-ins
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-004** the retrofit + cleanup;
 **ADR-001/002** the resolver + uv lane it consumes). This story **owns**: the re-point of
-`resolveGraphifyBinary` in [graphify.mjs](../../../../../../src/graphify.mjs) to front the store-first
+`resolveGraphifyBinary` in [graphify.mjs](../../../../../../packages/knowledge/src/graphify.mjs) to front the store-first
 resolver (PATH fallback retained), the graphify tool descriptor, and the **closure of the
 ⚠ CLEANUP OBLIGATION** ([STATE](../../STATE.md)) — provision graphify into `~/.aof/tools/graphify/`, then
 `uv tool uninstall graphifyy` (the temp global from 09's verify), then confirm the store copy resolves.

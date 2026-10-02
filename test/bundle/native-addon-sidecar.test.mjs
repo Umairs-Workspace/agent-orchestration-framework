@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 28 / story 00, task 02 —
 // tasks/02_native-addon-sidecar.feature (ADR-002).
 //
 // Two layers:
 //   (a) the LOADER-SELECTION branch, driven directly against
-//       src/terminal-ws.mjs's createTerminalSpawn/defaultSpawn shape with the
+//       packages/core/src/terminal-ws.mjs's createTerminalSpawn/defaultSpawn shape with the
 //       asset-base SEA sentinel flipped in-process (no built binary, no real
 //       node-pty) — asserts createRequire(process.execPath) is chosen under a
 //       SEA and the dynamic import("node-pty") in dev.
@@ -16,10 +17,11 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { createTerminalSpawn, loadNodePty } from "../../src/terminal-ws.mjs";
-import { setSeaSentinelForTest, isPackaged } from "../../src/asset-base.mjs";
-import { run as runCli } from "../../src/cli.mjs";
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const createTerminalSpawn = _aofApplication.server.terminalWs.createTerminalSpawn;
+const loadNodePty = _aofApplication.server.terminalWs.loadNodePty;
+import { setSeaSentinelForTest, isPackaged } from "../../packages/core/src/asset-base.mjs";
+import { run as runCli } from "../../packages/core/src/cli.mjs";
 
 // --- fixtures ----------------------------------------------------------------
 

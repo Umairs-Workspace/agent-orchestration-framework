@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // graph:build failure propagation, driven END-TO-END through the REAL resolver
 // and the REAL spawn — no injected seams. A fake graphify binary is planted in a
 // temp managed store (the AOF_GLOBAL_HOME seam), so these scenarios exercise the
@@ -22,9 +24,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, chmod } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { PINNED_GRAPHIFY_VERSION } from "../../src/graphify.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const PINNED_GRAPHIFY_VERSION = _aofApplication.knowledge.graphify.PINNED_GRAPHIFY_VERSION;
 
 const POSIX = process.platform !== "win32";
 

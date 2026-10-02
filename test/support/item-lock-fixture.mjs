@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/item-lock-fixture.mjs — the shared fixture for milestone 43 / story 01
 // (the exclusive item lock).
 //
@@ -17,8 +19,9 @@ import { mkdtemp, mkdir, realpath, rm, writeFile, cp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
 import { seedAssignment, seedTargetNode, readAssignmentRows } from "./mesh-assign-fixture.mjs";
 
 export { seedAssignment, seedTargetNode, readAssignmentRows };
@@ -90,7 +93,7 @@ export async function withItemLockFixture(body, { stream = LOCK_STREAM, mesh = t
   } finally {
     if (priorHome === undefined) delete process.env.AOF_GLOBAL_HOME;
     else process.env.AOF_GLOBAL_HOME = priorHome;
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -211,7 +214,7 @@ export async function refuse(run) {
 // validate expectation, with ONE home for all three suites that make it.
 //
 // WHY THIS IS NOT `deepEqual(findings, [])` ANY MORE. `work:insert-story` scaffolds a
-// STORY.md carrying `reads: []` + `files: []`, and `src/commands/validate.mjs` reports
+// STORY.md carrying `reads: []` + `files: []`, and `packages/core/src/commands/validate.mjs` reports
 // exactly that signature as an unauthored contract — deliberately, so an untouched
 // scaffold cannot pass `aof:continue`'s missing-reads stop while declaring nothing. The
 // three call sites were written before that rule existed and were asserting structural

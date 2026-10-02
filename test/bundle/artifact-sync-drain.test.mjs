@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // milestone 43 / story 03 — task 01: the DRAIN
 // (`tasks/01_daemon-drains-queue-into-one-batched-frame.feature`, AC5, ADR-001).
 //
@@ -27,10 +29,10 @@ import { existsSync } from "node:fs";
 import { readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { withArtifactSyncFixture, writeArtifact, enqueueLine, WORKER_ID, ITEM_REF, ASSIGNMENT_WORKSPACE_ID, RECORD_DOCS } from "../support/artifact-sync-fixture.mjs";
-import { artifactSyncBatchPath, drainArtifactQueue } from "../../src/artifact-sync.mjs";
-import { readWorkspaceContentRecords } from "../../src/work/content-read.mjs";
-import { buildWorktreeContentFrame } from "../../src/worker-stream-client.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { artifactSyncBatchPath, drainArtifactQueue } from "@aof/mesh/artifact-sync";
+const readWorkspaceContentRecords = _aofApplication.work.contentRead.readWorkspaceContentRecords;
+const buildWorktreeContentFrame = _aofApplication.mesh.workerStreamClient.buildWorktreeContentFrame;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 // prime(fx) — the Background's "a control node that already holds this item's
 // PREVIOUSLY STREAMED artifact rows". One real tick delivers everything the worktree
@@ -152,7 +154,7 @@ export const artifactSyncDrainTests = [
             const p = path.join(fx.itemDir, "STORY.md");
             const items = [{ ref: ITEM_REF, dir: fx.itemDir }];
             const entries = [{ tool: "Write", path: p.replaceAll("\\", "/") }, { tool: "Write", path: p.replaceAll("/", "\\") }];
-            const { resolveDrainedArtifacts } = await import("../../src/artifact-sync.mjs");
+            const { resolveDrainedArtifacts } = await import("@aof/mesh/artifact-sync");
             const resolved = resolveDrainedArtifacts(entries, { items });
             assert.deepEqual(resolved.named.map((entry) => entry.docKey), ["STORY"], "the same file is named ONCE despite the two path separators");
           },
@@ -428,7 +430,7 @@ export const artifactSyncDrainTests = [
     // case-different segment — all the same file on Windows and three different strings
     // here. Dropping them silently is how an artifact stops being streamed with nobody
     // learning why. The report is bounded by the MANIFEST — a path that NAMES an
-    // artifact is reported, `src/foo.mjs` is not — so the channel cannot become spam.
+    // artifact is reported, `packages/core/src/foo.mjs` is not — so the channel cannot become spam.
     name: "artifact-sync/01 a path that names an artifact but cannot be attributed is reported, coded — and an ordinary source file is not",
     run: async () => withArtifactSyncFixture(async (fx) => {
       await prime(fx);

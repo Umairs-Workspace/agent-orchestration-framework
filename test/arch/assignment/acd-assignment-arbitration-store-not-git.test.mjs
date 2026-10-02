@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-arbitration-store-not-git (milestone 35 / ADR-003,
 // fitness #9) — "Single-runner arbitration is the store uniqueness check, not a git/
 // lease read."
@@ -17,12 +18,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { assignWork } from "../../../src/mesh/assignment.mjs";
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { withMeshAssignFixture, seedTargetNode, seedAssignment, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const assignSourcePath = path.join(repoRoot, "src", "mesh", "assignment.mjs");
-const recordSourcePath = path.join(repoRoot, "src", "assignment-record.mjs");
+const assignSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
+const recordSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-record.mjs");
 
 function assertStructural(source) {
   const problems = [];

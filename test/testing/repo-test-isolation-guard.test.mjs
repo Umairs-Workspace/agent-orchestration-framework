@@ -21,7 +21,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { evaluate, unisolatedTestInvocation } from "../../.claude/hooks/aof/guard-test-isolation.mjs";
-import { AOF_HOOK_MARKER, applyClaudeSettingsMerge, claudeSettingsPath, isAofEntry } from "../../src/claude-settings.mjs";
+import { AOF_HOOK_MARKER, applyClaudeSettingsMerge, claudeSettingsPath, isAofEntry } from "../../packages/core/src/claude-settings.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SETTINGS = path.join(repoRoot, ".claude", "settings.json");
@@ -156,7 +156,7 @@ export const repoTestIsolationGuardTests = [
       const rows = [
         ["an unisolated invocation of this repository's suite script", "node scripts/test.mjs", true],
         ["an unisolated package-manager test script", "npm test", true],
-        ["an unisolated runner invocation over a single test file", "node --test test/bundle/frozen-set-compiled.test.mjs", true],
+        ["an unisolated runner invocation over a single test file", "node --test packages/core/test/frozen-set-compiled.suite.mjs", true],
         ["a nested shell invocation of the suite, unisolated", 'pwsh -Command "npm test"', true],
         ["the same invocation carrying a throwaway global home", "AOF_GLOBAL_HOME=tmp node scripts/test.mjs", false],
         ["an invocation whose isolation was exported earlier in the command", "export AOF_GLOBAL_HOME=tmp; npm test", false],

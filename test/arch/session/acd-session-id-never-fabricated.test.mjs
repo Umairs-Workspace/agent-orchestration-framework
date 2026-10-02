@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-id-never-fabricated (milestone 48 / ADR-001,
 // fitness #1) — "the routable session id is READ from the assistant, never made."
 //
@@ -18,8 +20,8 @@
 // composition, not an id transformation, and must not be read as one.
 //
 // Proofs:
-//  1. STRUCTURAL — in BOTH files of the id path (src/commands/mesh-session.mjs,
-//     src/mesh/session.mjs), no value assigned to a session id is produced by a
+//  1. STRUCTURAL — in BOTH files of the id path (packages/core/src/commands/mesh-session.mjs,
+//     packages/core/src/mesh/session.mjs), no value assigned to a session id is produced by a
 //     generator (randomUUID / Math.random / createHash(...).digest / randomBytes /
 //     Date.now()) or by a normalisation (toLowerCase / trim / slice / replace / …).
 //  2. STRUCTURAL — the ladder is ORDERED and complete: `--session` is a real member of
@@ -44,18 +46,19 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const commandSourcePath = path.join(repoRoot, "src", "commands", "mesh", "session.mjs");
-const sessionSourcePath = path.join(repoRoot, "src", "mesh", "session.mjs");
+const commandSourcePath = path.join(repoRoot, "packages", "mesh", "src", "commands", "session.mjs");
+const sessionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "session.mjs");
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";
 
-// The tree is CRLF (src/mesh/session.mjs) AND LF (src/commands/mesh-session.mjs) —
+// The tree is CRLF (packages/core/src/mesh/session.mjs) AND LF (packages/core/src/commands/mesh-session.mjs) —
 // every plant below normalises first, so a needle can never miss for an invisible
 // reason.
 function normalise(source) {
@@ -153,8 +156,8 @@ export const archTests = [
     name: "arch/48 ADR-001 (acd-session-id-never-fabricated): STRUCTURAL — no value assigned to a session id, in either file of the id path, is generated or normalised",
     run: async () => {
       const problems = [
-        ...fabricationViolations(await readFile(commandSourcePath, "utf8"), "src/commands/mesh/session.mjs"),
-        ...fabricationViolations(await readFile(sessionSourcePath, "utf8"), "src/mesh/session.mjs"),
+        ...fabricationViolations(await readFile(commandSourcePath, "utf8"), "packages/mesh/src/commands/session.mjs"),
+        ...fabricationViolations(await readFile(sessionSourcePath, "utf8"), "packages/core/src/application/bindings/mesh/session.mjs"),
       ];
       assert.deepEqual(problems, [], `the id must be READ, never made or rewritten:\n  ${problems.join("\n  ")}`);
     },
@@ -178,7 +181,7 @@ export const archTests = [
 
       // Rung 2 beats rung 3, INSIDE resolveSessionIdentity: payload.session_id is
       // evaluated before env.CLAUDE_SESSION_ID, and an unresolved id is null.
-      const resolver = code.slice(code.indexOf("export function resolveSessionIdentity"));
+      const resolver = code.slice(code.indexOf("function resolveSessionIdentity"));
       const body = resolver.slice(0, resolver.indexOf("\n}"));
       const payloadRung = body.indexOf("session_id");
       const envRung = body.indexOf("CLAUDE_SESSION_ID");

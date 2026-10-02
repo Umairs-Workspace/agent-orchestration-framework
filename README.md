@@ -26,21 +26,38 @@ This is a separate, greenfield distribution path from the local dev setup below 
 
 ## Local setup
 
-There is **no published package or installer yet for local development** — the CLI is wired up locally with `npm link`. Requires **Node ≥ 20**.
+Local development uses the checked-in Yarn 4.18.1 executable and a single root `yarn.lock`.
+Requires **Node ≥ 20**; release builds use Node 22.
 
 ```sh
 # from the repo root
-npm install        # install dependencies
-npm link           # register `aof` globally → this repo's ./bin/aof.mjs
+node scripts/prepare-worktree.mjs  # immutable install; lifecycle scripts skipped
 
 # verify
-aof --help
-aof project doctor
+node packages/core/bin/aof.mjs --help
+node packages/core/bin/aof.mjs project doctor
 ```
 
-`npm link` makes the `aof` command available from any directory, always pointing at **this working copy** (`which aof` resolves to the global node bin, which symlinks to `./bin/aof.mjs` here). Because it is a symlink, edits under `src/` take effect immediately — there is no build/rebuild step for the CLI. To use it inside another repo, just run `aof …` there; the same global `aof` resolves. To remove the link later: `npm rm -g aof`.
+CLI source edits take effect immediately. From another repository, invoke
+`node /path/to/aof/packages/core/bin/aof.mjs …` with that repository as the working directory.
+For an installed `aof` executable, use `node scripts/install-local.mjs`.
 
-The setup UI (`aof assets ui`) and the work board (`aof work ui`) serve a built front-end — build it once with `npm run ui:build` (see [Tests](#tests)).
+Use `yarn` through Corepack, or invoke `node .yarn/releases/yarn-4.18.1.cjs` directly.
+Lifecycle scripts are disabled by default; version-pinned exceptions in `package.json` permit the
+reviewed esbuild, node-pty, and fsevents builds. Linux native builds require Python and a C++ toolchain.
+After ordinary preparation on Linux, explicitly build the reviewed native dependency with
+`node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty` when PTY sessions are needed.
+Run `node scripts/supply-chain-audit.mjs` after dependency changes. npm lockfiles are no longer used.
+
+The setup UI (`aof assets ui`) and the work board (`aof work ui`) serve a built front-end — build it once with `yarn ui:build` (see [Tests](#tests)).
+
+Before installing a changed launcher, validate its complete release in temporary locations:
+`node scripts/build-sea.mjs --out <temporary-build-dir>`, then
+`node scripts/release/stage-release-assets.mjs --sea-out <temporary-build-dir> --stage-dir <temporary-stage-dir> --os <windows|macos|linux> --arch <x64|arm64>`, and
+`node scripts/release/verify-distribution.mjs --stage-dir <temporary-stage-dir> --os <windows|macos|linux> --arch <x64|arm64>`.
+Run on the target host; this verifies extracted assets, UI, audit children and real terminal I/O.
+The existing `node-pty-<platform>-<arch>` archive carries all directory sidecars, including the
+unmodified Node runtime used for audit children. It travels with the matching executable and checksum.
 
 ---
 
@@ -139,7 +156,7 @@ aof work doc <ref> <DOC> [--json]    # read a record doc (SPEC / STATE / ARCHITE
 aof work tasks <ref> [--json]        # an item's task list
 aof work feedback <ref> --note "…" [--actor …]   # append an attributed feedback bullet (the only CLI write)
 aof work memory <verb> [args] [--json]           # recall / brief / ingest / reindex / status
-aof work ui [--port 4180]            # serve the local board UI (built ui/dist) — one origin
+aof work ui [--port 4180]            # serve the local board UI (built apps/ui/dist) — one origin
 aof work orchestrator [fable|opus] [--show]      # pick the main-session (orchestrator) model — Fable 5 or Opus 4.8
 aof work delegation [on|off] [--gpt-model <id>] [--show]   # toggle bulk-work delegation (default off), optionally set the model
 aof work delegation-model [<id>] [--show]        # get/set the Codex delegation model (default gpt-5.6-sol)
@@ -266,23 +283,30 @@ aof packages add gsd                  # declare a managed framework pack (e.g. G
 
 ---
 
+## Applications
+
+Two optional applications live under `apps/`; the CLI (`packages/core`, installed as `aof`) works without either.
+
+- **`apps/ui`** (`@aof/ui`) — the React/Vite front-end behind `aof work ui`, `aof mesh ui` and `aof assets ui`: one bundle, the surface chosen by URL path, talking to the backend only over HTTP/WebSocket. `yarn ui:build` builds `apps/ui/dist` (what a source checkout serves; installed payloads and release archives carry it as `ui/dist/` beside the launcher, resolved through the core asset seam); `yarn ui:dev` runs Vite on `127.0.0.1:4177`.
+- **`apps/desktop`** (`@aof/desktop`) — the Tauri mesh desktop supervisor and its pure Rust core. See [apps/desktop/README.md](apps/desktop/README.md) for prerequisites and the `yarn workspace @aof/desktop test | check | build` scripts.
+
 ## Tests
 
 Run the full suite — the canonical entry point:
 
 ```sh
-npm test            # = node ./scripts/test.mjs
+yarn test            # = node ./scripts/test.mjs
 ```
 
-This runs the unit + arch (fitness-function) + BDD-traceability tests, including the `work`, `graph`, and memory suites. `scripts/test-unit.mjs` is an older **partial** subset that omits the graph/work tests, so prefer `npm test`.
+This runs the unit + arch (fitness-function) + BDD-traceability tests, including the `work`, `graph`, and memory suites. `scripts/test-unit.mjs` is an older **partial** subset that omits the graph/work tests, so prefer `yarn test`.
 
 Other entry points:
 
 ```sh
 node ./test/integration/cli.mjs      # BDD feature tests — launch the CLI as an external process
-npm run test:smoke:cli               # focused process-boundary smoke test
-npm run ui:build                     # build the setup UI / board front-end (cross-platform wrapper)
-npm run check                        # full closeout check
+yarn test:smoke:cli               # focused process-boundary smoke test
+yarn ui:build                     # build the setup UI / board front-end (cross-platform wrapper)
+yarn check                        # full closeout check
 ```
 
 Integration feature files live in `test/integration/features/` and are intentionally black-box (reusable if the CLI ever moves off Node). New user-facing functionality should include BDD coverage in the relevant domain feature file.

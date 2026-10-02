@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -102,7 +102,7 @@ import { archTests as acdVerificationTemplateShapeTests } from "./acd-verificati
 import { archTests as acdCensusReportsItsDenominatorTests } from "./acd-census-reports-its-denominator.test.mjs";
 import { archTests as acdAdvisoryLaneNeverGatesTests } from "./acd-advisory-lane-never-gates.test.mjs";
 // milestone 127 / story 01 — one enumerator, three roots: the three controls the story lands.
-// FF-12701: `ITEM_RE`/`BACKLOG_ITEM_RE` have one home and no src module other than `src/work.mjs`
+// FF-12701: `ITEM_RE`/`BACKLOG_ITEM_RE` have one home and no src module other than `packages/core/src/work.mjs`
 // pairs a `readdir` with an item-name match — six keepers allow-listed by path AND reason, a
 // stale keeper its own failure, `local-indexing.mjs` asserted match-free. FF-12702: every
 // `.number` parse in the ten named files is guarded within its enclosing top-level function (or

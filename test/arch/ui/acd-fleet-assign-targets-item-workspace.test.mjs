@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-fleet-assign-targets-item-workspace (milestone 38 /
 // story 04; ARCHITECTURE ADR-012 AMENDMENT 2026-07-24, invariants 5 + 6;
 // BLOCKER F21).
@@ -24,7 +26,7 @@
 // seam exercised only in the configuration where it cannot fail. Hence the
 // behavioural half below stands up TWO published workspaces.
 //
-// STRUCTURAL half: source-analysis over the REAL src/mesh/ui-serve.mjs (comments
+// STRUCTURAL half: source-analysis over the REAL packages/core/src/mesh/ui-serve.mjs (comments
 // discounted, CRLF-normalised — the tree is CRLF; an "\n"-only needle would
 // silently no-op and leave the self-check vacuous). The detector extracts the
 // POST /api/mesh/assign BRANCH BODY by brace-balancing and ASSERTS THE
@@ -43,14 +45,16 @@ import { mkdtemp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { seedTargetNode, readAssignmentRows } from "../../support/mesh-assign-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
-const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
+const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -244,7 +248,7 @@ export function targetResolutionProblems(rawSource) {
 // --- the THIRD structural clause: one cadence, one hold, no second copy ------
 //
 // REVIEW FIX F-D (architect, 2026-07-24). This assertion used to live in
-// test/ui/fleet-assign-acknowledgment.test.mjs (task 06's story acceptance),
+// test/surfaces/fleet-assign-acknowledgment.test.mjs (task 06's story acceptance),
 // driven from a Gherkin scenario. It is a STRUCTURAL assertion about the
 // component's shape — "POLL_MS is ONE value and the component schedules from it,
 // never from a literal of its own" — so in story acceptance it ages with the

@@ -1,3 +1,5 @@
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 10 / ADR-004 (the 09 acd-graph-binary-absent idiom,
 // applied to the memory backend):
 // "With the graphify binary ABSENT (resolveGraphifyBinary stubbed { found:false }, and
@@ -19,11 +21,9 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend, {
-  GRAPH_SIGNAL_UNAVAILABLE,
-  GRAPH_STATE_BINARY_ABSENT,
-} from "../../../src/memory/graphify-backend.mjs";
-import { briefDigest } from "../../../src/work/memory.mjs";
+const GRAPH_SIGNAL_UNAVAILABLE = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE;
+const GRAPH_STATE_BINARY_ABSENT = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT;
+const briefDigest = _aofApplication.knowledge.work.memory.briefDigest;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
@@ -34,7 +34,7 @@ const INSTALL_HINT = "Run `aof project provision graphify` to install graphify i
 // The 09 acd-graph-binary-absent idiom: resolveGraphifyBinary reports a STRUCTURED miss.
 const ABSENT_RESOLVER = () => ({ found: false, hint: INSTALL_HINT });
 // graph:build throws the structured graphify-missing (424) — exactly
-// src/commands/graph-build.mjs's commandError(resolved.hint, "graphify-missing", 424).
+// packages/core/src/commands/graph-build.mjs's commandError(resolved.hint, "graphify-missing", 424).
 function missingBinaryInvoke() {
   return async () => {
     const error = new Error(INSTALL_HINT);

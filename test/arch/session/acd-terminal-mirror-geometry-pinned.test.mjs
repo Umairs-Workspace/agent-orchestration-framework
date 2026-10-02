@@ -7,8 +7,8 @@
 // exists.
 //
 // WHY IT HAD TO BE A FITNESS FUNCTION AND NOT A `.feature` SCENARIO. The tie is a structural
-// assertion ACROSS TWO BUILDS THAT CANNOT IMPORT EACH OTHER: `ui/src/**` is bundled by vite
-// for a browser and `src/**` runs under node in the CLI. There is no runtime at which one
+// assertion ACROSS TWO BUILDS THAT CANNOT IMPORT EACH OTHER: `apps/ui/src/**` is bundled by vite
+// for a browser and `packages/core/src/**` runs under node in the CLI. There is no runtime at which one
 // could read the other's constant, so the only place the pair can be compared is a test that
 // reads BOTH FILES AS TEXT.
 //
@@ -19,7 +19,7 @@
 // into an unreadable scatter. That was a real defect, found and fixed in a live two-machine
 // soak in m38.
 //
-// AND THE PREDECESSOR CLAIMED THIS TIE WAS ALREADY HELD. `ui/src/fleet/terminal-view/geometry.mjs:20-23`
+// AND THE PREDECESSOR CLAIMED THIS TIE WAS ALREADY HELD. `apps/ui/src/fleet/terminal-view/geometry.mjs:20-23`
 // states in terms: "the tie is held by test/fleet-terminal-view-geometry.test.mjs, which reads
 // BOTH files and fails if the numbers drift apart." THAT FILE HAS NEVER EXISTED — confirmed on
 // the codebase graph (geometry.mjs had no test importer at all) and by grep
@@ -32,14 +32,15 @@
 // while the worker still spawns 80x24 — the exact drift that produced the unreadable render in
 // the first place.
 import assert from "node:assert/strict";
+import { dependencySpecifiers, configuredPortSources } from "../../support/workspace/configured-source.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const UI_SOURCE_TABLE = path.join("ui", "src", "terminal", "source-table.mjs");
-const WORKER_EXECUTION = path.join("src", "mesh", "worker-execution.mjs");
+const UI_SOURCE_TABLE = path.join("apps", "ui", "src", "terminal", "source-table.mjs");
+const WORKER_EXECUTION = path.join("packages/core/src/application/bindings/mesh/worker-execution.mjs");
 
 async function read(rel) {
   // A hard-coded path that THROWS when the file moves is the correct behaviour here: the
@@ -56,12 +57,9 @@ async function read(rel) {
 // read alongside it. No second filename is typed here, which is what makes the NEXT
 // extraction followed too rather than merely this one repaired.
 async function workerDriverSource() {
-  const sink = await read(WORKER_EXECUTION);
-  // 119/01 — the specifier is resolved against the SINK's own directory. Joining it onto `src/`
-  // assumed the sink sat at the root, and the driver is one directory up from `src/mesh/`.
-  const reExported = [...sink.matchAll(/export\s*\{[\s\S]*?\}\s*from\s*["'](\.\.?\/[^"']+)["']/g)].map((m) => m[1]);
-  const parts = await Promise.all(reExported.map((spec) => read(path.join(path.dirname(WORKER_EXECUTION), spec))));
-  return [sink, ...parts].join("\n");
+  const source = await configuredPortSources(repoRoot, WORKER_EXECUTION, "agentSessionDriverServices");
+  assert.ok(source.includes("function driveInteractiveClaudeSession("), "the configured worker reaches the driver implementation");
+  return source;
 }
 
 export const archTests = [
@@ -116,10 +114,10 @@ export const archTests = [
     run: async () => {
       // The pair has ONE home. A module that re-typed `cols: 80` beside the descriptor would
       // be a second copy that this gate could not see drift in.
-      const geometry = await read(path.join("ui", "src", "terminal", "geometry.mjs"));
+      const geometry = await read(path.join("apps", "ui", "src", "terminal", "geometry.mjs"));
       assert.ok(
         !/\bcols:\s*80\b/.test(geometry) && !/\brows:\s*24\b/.test(geometry),
-        "ui/src/terminal/geometry.mjs derives the fixed geometry from the descriptor and never re-types the worker's numbers",
+        "apps/ui/src/terminal/geometry.mjs derives the fixed geometry from the descriptor and never re-types the worker's numbers",
       );
       // …and it really does read the descriptor's own field, so the derivation is live.
       assert.match(geometry, /fixedGeometry/, "the geometry plan reads the descriptor's fixedGeometry");

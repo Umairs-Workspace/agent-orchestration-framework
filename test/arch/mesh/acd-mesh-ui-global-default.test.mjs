@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-mesh-ui-global-default (milestone 34 / story 03;
 // ARCHITECTURE ADR-006 — "aof mesh ui reads the global projection by default").
 //
@@ -5,7 +7,7 @@
 //  surface and do NOT invoke the workspace-local `mesh:status` command for the
 //  default global read."
 //
-// Structural half: the registered mesh:ui verb (src/commands/mesh-ui.mjs since
+// Structural half: the registered mesh:ui verb (packages/core/src/commands/mesh-ui.mjs since
 // the m42 wave-(d) launcher-seam migration; formerly cli.mjs's meshUiCommand)
 // computes scope "global" unless --local is present, and passes it straight to
 // serveMeshUi (no silent re-defaulting to "local" anywhere in between) — the
@@ -21,12 +23,13 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CLI_PATH = path.join(repoRoot, "src", "commands", "mesh", "ui.mjs");
+const CLI_PATH = path.join(repoRoot, "packages", "mesh", "src", "commands", "ui.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

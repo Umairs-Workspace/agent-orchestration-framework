@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 61 / story 03 — no executed consumer, no proposal.
 //
 // Covers EVERY @executable scenario and EVERY Examples row in all three task features:
@@ -18,7 +19,7 @@
 //     feature 00 asserts exactly that — a knob declared tunable later is judged by the same
 //     rule, with no case added for it by name.
 //   * The REAL tree and the REAL registry (`loadLoops` over the shipped bundle, every
-//     `src/**/*.mjs` read from disk) answer the scenarios that are about THIS repository as
+//     `packages/core/src/**/*.mjs` read from disk) answer the scenarios that are about THIS repository as
 //     it stands: every declared knob refused today, the count reported, and the declaration
 //     consulted where it actually lives.
 //
@@ -30,7 +31,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ADMITTED_KEYS, EDGE_KEYS, ENDPOINT_SCHEMES, loadLoops } from "../../src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const ENDPOINT_SCHEMES = _aofApplication.graph.work.loops.ENDPOINT_SCHEMES;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   ADMISSIBILITY_RAN_ON_NOTHING,
   DISPOSITIONS,
@@ -47,7 +51,7 @@ import {
   consumptionReport,
   harnessRefusal,
   tunableSet,
-} from "../../src/work-acceptor/admissibility.mjs";
+} from "@aof/work/acceptor/admissibility";
 import { readSrcFiles } from "../support/read-src-files.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -135,7 +139,7 @@ const diagnosticOnly = () => ({
   ].join("\n"),
 });
 
-// A shipped ASSET that would be a consumer if it were running code. It is not: `src/bundle/**`
+// A shipped ASSET that would be a consumer if it were running code. It is not: `packages/core/assets/**`
 // is what gets installed into a project, and an asset naming a bound is not the program.
 const shippedAsset = () => ({
   rel: "bundle/hooks/guard.mjs",
@@ -175,15 +179,15 @@ const declaration = (keys, { nodeId = "arbiter:fixture-trade-off" } = {}) => ({
 // is today: a policy stated in a sentence, with no configuration key in it.
 const prose = () => ({
   kind: HARNESS_KINDS.prompt,
-  document: "src/bundle/commands/continue.md",
+  document: "packages/core/assets/commands/continue.md",
   text: "Review runs once by default. Three rounds is the hard cap; never start a fourth round.\n",
 });
 const namesTheKey = (key = KEY) => ({
   ...prose(),
   text: `${prose().text}Read \`${key}\` and stop when the completed rounds reach it.\n`,
 });
-const readableCodePath = () => ({ kind: HARNESS_KINDS.code, document: "src/commands/loop.mjs" });
-const unreadable = () => ({ kind: HARNESS_KINDS.prompt, document: "src/bundle/commands/continue.md", text: null });
+const readableCodePath = () => ({ kind: HARNESS_KINDS.code, document: "packages/work-loop/src/commands/loop.mjs" });
+const unreadable = () => ({ kind: HARNESS_KINDS.prompt, document: "packages/core/assets/commands/continue.md", text: null });
 
 // The context the outline rows share: the knob IS declared tunable and the harness is one
 // whose decisions can be read, so the only thing that varies is what the program does.
@@ -202,7 +206,7 @@ async function repository() {
       rel: file.rel,
       code: await readFile(file.path, "utf8"),
     })));
-    const model = await loadLoops(path.join(root, "src", "bundle"));
+    const model = await loadLoops(path.join(root, "packages", "core", "assets"));
     const harness = {
       ...HARNESS_OF_RECORD,
       text: await readFile(path.join(root, ...HARNESS_OF_RECORD.document.split("/")), "utf8"),
@@ -397,7 +401,7 @@ export const acceptorAdmissibilityTests = [
 
       // AND THE RULE HAS NO CASES IN IT: the module names no knob, in code, in a string or
       // in a comment. There is nothing in it to add a case to.
-      const source = await readFile(path.join(root, "src", "work-acceptor", "admissibility.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work", "src", "acceptor", "admissibility.mjs"), "utf8");
       for (const key of [KEY, OTHER_KEY, "work.loop", "work.autonomous"]) {
         assert.equal(source.includes(key), false, `the acceptor spells no knob key: ${key}`);
       }

@@ -3,7 +3,7 @@
 //
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/54_milestone_verification-loop/stories/00_story_the-grade-record/tasks/03_a-skipped-case-is-not-evidence.feature
-// against the LOCKED surface: `compileGrade` in ../src/work/grade.mjs.
+// against the LOCKED surface: `compileGrade` in ../packages/core/src/work/grade.mjs.
 //
 // THE DEFECT THIS LANE PINS WAS MEASURED, NOT IMAGINED. Raised at 54/00's structural review
 // and reproduced at 54/00's verify through the shipped compiler: four cases each carrying
@@ -23,7 +23,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileGrade } from "../../src/work/grade.mjs";
+import { compileGrade } from "@aof/work/grade";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "rubric-reports");
 const capture = (name) => readFileSync(path.join(fixturesDir, name), "utf8");

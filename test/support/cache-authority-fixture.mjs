@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/cache-authority-fixture.mjs — the shared fixture for milestone 43 /
 // story 02 (the authority cut: work_items becomes a provenance-stamped, row-upserted
 // FACT).
@@ -24,9 +25,9 @@
 // 43/04 will map onto the wire.
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
-import { readWorkspaceItems } from "../../src/global-work-store.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
 import { withItemLockFixture, seedActive, settle, withStore, seedWorker, refuse } from "./item-lock-fixture.mjs";
 
 export { withItemLockFixture, seedActive, settle, withStore, seedWorker, refuse };
@@ -185,7 +186,7 @@ export async function breakItem(fx, ref, { workDir = fx.workDir } = {}) {
 // removeStream(fx) — the whole work stream disappears from under the publisher (the
 // read FAILS, which is not the same fact as "the stream is empty").
 export async function removeStream(fx, { workDir = fx.workDir } = {}) {
-  await rm(workDir, { recursive: true, force: true });
+  await rm(workDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 }
 
 // workerWorktree(fx, refs) — a SECOND, GENUINELY SEPARATE work dir standing in for the

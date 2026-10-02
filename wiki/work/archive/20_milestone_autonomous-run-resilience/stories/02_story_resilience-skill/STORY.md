@@ -46,7 +46,7 @@ Authored task `.feature`s (all `@manual` — agent-observed: read `autonomous.md
 ## Notes
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md). This story **owns**
-[src/bundle/commands/autonomous.md](../../../../../../src/bundle/commands/autonomous.md) (and its generated copy
+[src/bundle/commands/autonomous.md](../../../../../../packages/core/assets/commands/autonomous.md) (and its generated copy
 under `.claude/commands/aof/`): it wires the loop to CALL story 01's `work:run-retry` (retry-on-infra-failure
 within the existing `maxAttempts` loop), to invoke story 00's reclaim scan at restart, and to apply the
 **anti-loop guidance** — the cascade's multi-agent hand-offs skip self-triggers, using the run lineage /

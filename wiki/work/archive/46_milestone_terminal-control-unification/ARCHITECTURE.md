@@ -24,14 +24,14 @@ doc: architecture
 > - **[45 · ui-app-shell-routing](../45_milestone_ui-app-shell-routing/ARCHITECTURE.md) — shipped
 >   (`14ac6e1`), and its ADR-005 is a CONTRACT written for this milestone.** Every primitive m46
 >   needs already exists on disk and was read here: the three region constants
->   ([shell-layout.mjs:35-41](../../../../ui/src/app/shell-layout.mjs#L35-L41)), the z ladder with
->   `z-30` reserved for this dock ([:611](../../../../ui/src/app/shell-layout.mjs#L611)), the published
->   chrome height ([:274](../../../../ui/src/app/shell-layout.mjs#L274),
->   [:278](../../../../ui/src/app/shell-layout.mjs#L278)), the two content modes with `content:fixed`
->   BINDING for a terminal-hosting surface ([:369-382](../../../../ui/src/app/shell-layout.mjs#L369-L382),
->   [:393](../../../../ui/src/app/shell-layout.mjs#L393)), and the fullscreen door whose whole shape was
+>   ([shell-layout.mjs:35-41](../../../../apps/ui/src/app/shell-layout.mjs#L35-L41)), the z ladder with
+>   `z-30` reserved for this dock ([:611](../../../../apps/ui/src/app/shell-layout.mjs#L611)), the published
+>   chrome height ([:274](../../../../apps/ui/src/app/shell-layout.mjs#L274),
+>   [:278](../../../../apps/ui/src/app/shell-layout.mjs#L278)), the two content modes with `content:fixed`
+>   BINDING for a terminal-hosting surface ([:369-382](../../../../apps/ui/src/app/shell-layout.mjs#L369-L382),
+>   [:393](../../../../apps/ui/src/app/shell-layout.mjs#L393)), and the fullscreen door whose whole shape was
 >   fixed for this milestone's caller
->   ([shell-bus.mjs:115-135](../../../../ui/src/app/shell-bus.mjs#L115-L135)).
+>   ([shell-bus.mjs:115-135](../../../../apps/ui/src/app/shell-bus.mjs#L115-L135)).
 >
 > **Memory recall — run before the first ADR, and it came back NON-empty.**
 > `aof work memory recall "one terminal control extracted, session-source parameterisation, origin
@@ -90,7 +90,7 @@ doc: architecture
 > **Corrections to this milestone's own citations, measured 2026-08-08 at `14ac6e1`.** Recorded here
 > because a stale pointer in a SPEC becomes a wrong edit in a story:
 > - SPEC says the fleet card peek is mounted at `Fleet.tsx:675`. It is at
->   **[Fleet.tsx:759](../../../../ui/src/fleet/Fleet.tsx#L759)**.
+>   **[Fleet.tsx:759](../../../../apps/ui/src/fleet/Fleet.tsx#L759)**.
 > - The spike's `## Outcome / Next` table marks `mirror` "interactive: yes (since m42)". True of the
 >   BOARD dock's remote lane ([TerminalDock.tsx:261-263](../../../../ui/src/board/TerminalDock.tsx#L261-L263));
 >   **false, deliberately, of the FLEET peek**, which is read-only in fact
@@ -155,7 +155,7 @@ the `.tsx` is, by construction, untestable in this repo.
   a `.d.mts` sibling, as every existing helper here does.
 - **The `.mjs` set touches no `window` and no `location`.** It receives them. This is
   `ui/src/app/routes.mjs`'s rule and `ui/src/app/shell-nav.mjs`'s
-  ([:15-21](../../../../ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an INPUT precisely so
+  ([:15-21](../../../../apps/ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an INPUT precisely so
   the module stays headless), and it is what makes ADR-004's origin handling testable at all.
 - **This is an INVARIANT, not a default.** A story that puts a decision in the `.tsx` because it was
   quicker has removed it from the test suite, and no reviewer reliably notices an absence.
@@ -201,7 +201,7 @@ arrive (`directiveTargets` is populated only inside `wss.on("connection")` by ad
 connections, and `meshRole` makes control/worker exclusive, so a control node holds no stream
 connection to itself; measured `{ sent: false, code: "assignment-target-not-connected" }`), and output
 is never produced (a board PTY's `term.onData` goes straight to its own WebSocket,
-[terminal-ws.mjs:290-296](../../../../src/terminal-ws.mjs#L290-L296)). Building it would need a
+[terminal-ws.mjs:290-296](../../../../packages/server/src/terminal-ws.mjs#L290-L296)). Building it would need a
 self-dialling stream client, a self-admission credential path through the boundary whose whole design
 is *admission is the trust boundary*, and a second producer — to replace a socket that already works.
 
@@ -356,8 +356,8 @@ discovery at all:
 
 And the board→fleet case is real even with no fleet running: the mirror affordance is fed by the
 board's OWN work rows (`item.execution.{nodeId, sessionId}`,
-[DetailPanel.tsx:256](../../../../ui/src/board/DetailPanel.tsx#L256) →
-[Board.tsx:368](../../../../ui/src/board/Board.tsx#L368)), which exist whether or not `aof mesh ui` is up.
+[DetailPanel.tsx:256](../../../../apps/ui/src/board/DetailPanel.tsx#L256) →
+[Board.tsx:368](../../../../apps/ui/src/board/Board.tsx#L368)), which exist whether or not `aof mesh ui` is up.
 
 **Decision.**
 
@@ -368,16 +368,16 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
 >
 > **(1) The served route's HOME is `src/setup-ui.mjs`, not `src/board-ui.mjs` — steps 4 and 5 of the
 > decision list are superseded.** It shipped as **`GET /api/fleet-origin`** on `serveSetupUi`'s own
-> router ([setup-ui.mjs](../../../../src/setup-ui.mjs), the route at `:152` and the fact normalised once at
+> router ([setup-ui.mjs](../../../../packages/server/src/setup-ui.mjs), the route at `:152` and the fact normalised once at
 > construction, `FLEET_ORIGIN_SOURCES` `:43` → `fleetOriginFactOf` `:61` → `:92`; line numbers as measured
 > at this amendment, the route name is the stable citation), **beside its true siblings-in-kind
 > `/api/config` and `/api/capabilities`**, which live on that same router. The origin is NOT threaded
 > through `handleWorkApi`: `serveSetupUi` holds the fact and answers the route itself.
 >
 > **The reason, and it is this ADR's own argument one hop further along.**
-> [board-ui.mjs](../../../../src/board-ui.mjs) declares itself in its header a **THIN FACE** over the command
+> [board-ui.mjs](../../../../packages/server/src/board-ui.mjs) declares itself in its header a **THIN FACE** over the command
 > core carrying *"ZERO operation logic of its own"*, and its prefix guard returns `false` for anything
-> outside `/api/work` ([:42](../../../../src/board-ui.mjs#L42)) — so a route there would have to widen the
+> outside `/api/work` ([:42](../../../../packages/server/src/board-ui.mjs#L42)) — so a route there would have to widen the
 > guard that defines the face. The fleet origin is not a command-core operation and **has no workspace**,
 > while every route in that file is a `HTTP → invoke(id, input, { workspace })` adapter. Graph-measured at
 > this amendment (`aof graph build .`, no `--backend`; **8,973 nodes / 21,370 edges, `builtAt`
@@ -396,7 +396,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
 > kickoff rather than by whoever typed first. This records the choice.)
 >
 > **(2) The `source` enum has THREE values — `"launcher" | "default" | "none"`** (PO ruling
-> **F-46.02-1**), frozen at [setup-ui.mjs:43](../../../../src/setup-ui.mjs#L43). `"none"` is carried with an
+> **F-46.02-1**), frozen at [setup-ui.mjs:43](../../../../packages/server/src/setup-ui.mjs#L43). `"none"` is carried with an
 > **explicit `fleetOrigin: null`**, and it names the case the two-value enum could not: a board nobody
 > handed an origin to and whose command layer was never in the picture — which two production callers and
 > at least six existing suites already produce. `null` is explicit rather than `undefined` because
@@ -418,7 +418,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
 
 - **ONE pure builder in the `.mjs` set: `terminalSocketUrl(source, params, { origins })`.** It takes
   the origins as an ARGUMENT and reads no global — the same shape as
-  [shell-nav.mjs:15-21](../../../../ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an input
+  [shell-nav.mjs:15-21](../../../../apps/ui/src/app/shell-nav.mjs#L15-L21), where resolvability is an input
   "precisely so the whole task stays headless". The `.tsx` supplies `window.location` for
   `originRole: "self"`. `wss:` iff the page is `https:`, as both current builders already do.
 - **THE INVARIANT: no terminal surface holds a port literal.** Not a constant, not a template, not a
@@ -432,13 +432,13 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
      `serveBoard({ projectDir, port: 0, repoRoot, recordSessions: false })`
      ([:781-786](../../../../src/mesh-ui-serve.mjs#L781-L786)) and memoises it per workspace, so the
      origin rides that call as one additive option;
-  3. `serveBoard` ([board-serve.mjs:48](../../../../src/board-serve.mjs#L48),
-     [:63](../../../../src/board-serve.mjs#L63)) passes it to `serveSetupUi`;
+  3. `serveBoard` ([board-serve.mjs:48](../../../../packages/server/src/board-serve.mjs#L48),
+     [:63](../../../../packages/server/src/board-serve.mjs#L63)) passes it to `serveSetupUi`;
   4. `serveSetupUi` passes it to `handleWorkApi`
-     ([setup-ui.mjs:133](../../../../src/setup-ui.mjs#L133)), whose signature already takes an options
-     object ([board-ui.mjs:33](../../../../src/board-ui.mjs#L33));
+     ([setup-ui.mjs:133](../../../../packages/server/src/setup-ui.mjs#L133)), whose signature already takes an options
+     object ([board-ui.mjs:33](../../../../packages/server/src/board-ui.mjs#L33));
   5. the browser reads it from a named board route beside the others
-     ([board-ui.mjs:52](../../../../src/board-ui.mjs#L52) and siblings).
+     ([board-ui.mjs:52](../../../../packages/server/src/board-ui.mjs#L52) and siblings).
   **The payload names its own provenance** — `{ fleetOrigin, source: "launcher" | "default" }` — because
   the failure mode of a wrong origin is a pane that never streams and never says why, and "a refusal
   must name its own cause" is this codebase's rule for exactly that.
@@ -454,7 +454,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
   ([mesh-ui-serve.mjs:768-772](../../../../src/mesh-ui-serve.mjs#L768-L772)).
 - **An unreachable origin renders a LABELLED unavailable pane naming its cause and what to run**, never
   a blank one and never a spinner — spike 44 sub-question 5, and the same vocabulary the shell's nav
-  already speaks ([shell-nav.mjs:42-47](../../../../ui/src/app/shell-nav.mjs#L42-L47), where an
+  already speaks ([shell-nav.mjs:42-47](../../../../apps/ui/src/app/shell-nav.mjs#L42-L47), where an
   unreachable destination carries a COMMAND rather than an apology).
 - **Nothing on the fleet face becomes a mutation.** The fleet side of this milestone adds no route and
   no write; m38/ADR-012's single carve-out is untouched (spike sub-question 3).
@@ -464,7 +464,7 @@ board's OWN work rows (`item.execution.{nodeId, sessionId}`,
   `index.html`). Rejected twice over: the SAME `ui/dist` bundle is served from three origins, and
   m45/ADR-002 has just retired `VITE_AOF_UI_MODE` for being a second, baked input to a decision that
   must have one. The static handler
-  ([setup-ui.mjs:152-177](../../../../src/setup-ui.mjs#L152-L177)) also serves `index.html` as the SPA
+  ([setup-ui.mjs:152-177](../../../../packages/server/src/setup-ui.mjs#L152-L177)) also serves `index.html` as the SPA
   fallback; templating it would put string surgery in the security-ordered path m45/ADR-004 just
   finished making boring.
 - **Move `DEFAULT_MESH_UI_PORT` into a new `src/ports.mjs` leaf.** Genuinely attractive — the port map
@@ -557,7 +557,7 @@ output` forever.
 > **The implementation was already correct, and that is what makes this a documentation defect only.**
 > [DESIGN §The merged ramp](DESIGN.md) states *"Seven states plus one fallback"* and tables all eight
 > words; the shipped core agrees exactly —
-> [ui/src/terminal/state-ramp.mjs:47-58](../../../../ui/src/terminal/state-ramp.mjs#L47-L58) freezes
+> [ui/src/terminal/state-ramp.mjs:47-58](../../../../apps/ui/src/terminal/state-ramp.mjs#L47-L58) freezes
 > `TERMINAL_STATES` at those seven members with `TERMINAL_STATE_LIST` derived from it, and keeps
 > `UNKNOWN_STATE = "unknown"` deliberately OUT of the list under its own comment: *"`unknown` is
 > deliberately NOT a member: it is what a state the ramp has not learned resolves TO, never a state a
@@ -660,7 +660,7 @@ deleting it, because a green gate is read as a satisfied contract.
 - **Invariant 4 is RE-EXPRESSED at the same strength, on a subject that still exists after the move.**
   Three assertions replace one sweep:
   1. **The call site.** `ui/src/fleet/Fleet.tsx` mounts the control in its **read-only posture** —
-     asserted at [Fleet.tsx:759](../../../../ui/src/fleet/Fleet.tsx#L759)'s mount, structurally.
+     asserted at [Fleet.tsx:759](../../../../apps/ui/src/fleet/Fleet.tsx#L759)'s mount, structurally.
   2. **The policy.** ADR-002's `inputEnabled = source.canInput && !mount.readOnly` is a pure function
      driven BEHAVIOURALLY over the whole frozen source table × both postures, asserting that a
      read-only mount yields `disableStdin: true` and no `onData` registration. A pure function tested
@@ -710,7 +710,7 @@ narrating comment in `scripts/test.mjs`; and the graph shows every OTHER export 
 streams through `onOutputChunk: (chunk, sessionId) => client.sendTerminalFrame(sessionId,
 String(chunk))` ([mesh-launcher.mjs:1152](../../../../src/mesh-launcher.mjs#L1152),
 [:1291](../../../../src/mesh-launcher.mjs#L1291)) into
-[worker-stream-client.mjs:601-612](../../../../src/worker-stream-client.mjs#L601-L612).
+[worker-stream-client.mjs:601-612](../../../../packages/mesh/src/worker-stream-client.mjs#L601-L612).
 
 Yet [acd-fleet-terminal-input-constrained's detector #4](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L244-L247)
 asserts `wireTerminalBridge` *"does not build its signal from `String(chunk)`"* — a positive assertion
@@ -771,15 +771,15 @@ know this function is dead. Nobody deleted it, and one gate is still aimed at it
 **Date:** 2026-08-08
 
 **Context, measured by spike 44 and re-read at source here.**
-[terminal-ws.mjs](../../../../src/terminal-ws.mjs) accepts the upgrade at
-[:115-131](../../../../src/terminal-ws.mjs#L115-L131) and emits `connection` at
-[:133-140](../../../../src/terminal-ws.mjs#L133-L140), but registers `ws.on("message")` only at
-[:306](../../../../src/terminal-ws.mjs#L306), inside `wireSession`
-([:276](../../../../src/terminal-ws.mjs#L276)), which is called at
-[:270](../../../../src/terminal-ws.mjs#L270) — **after** `loadWorkspace`
-([:181](../../../../src/terminal-ws.mjs#L181)), `await trustCwd`
-([:194](../../../../src/terminal-ws.mjs#L194)) and `await spawn`
-([:237](../../../../src/terminal-ws.mjs#L237)). Frames arriving in that window are dropped on the floor:
+[terminal-ws.mjs](../../../../packages/server/src/terminal-ws.mjs) accepts the upgrade at
+[:115-131](../../../../packages/server/src/terminal-ws.mjs#L115-L131) and emits `connection` at
+[:133-140](../../../../packages/server/src/terminal-ws.mjs#L133-L140), but registers `ws.on("message")` only at
+[:306](../../../../packages/server/src/terminal-ws.mjs#L306), inside `wireSession`
+([:276](../../../../packages/server/src/terminal-ws.mjs#L276)), which is called at
+[:270](../../../../packages/server/src/terminal-ws.mjs#L270) — **after** `loadWorkspace`
+([:181](../../../../packages/server/src/terminal-ws.mjs#L181)), `await trustCwd`
+([:194](../../../../packages/server/src/terminal-ws.mjs#L194)) and `await spawn`
+([:237](../../../../packages/server/src/terminal-ws.mjs#L237)). Frames arriving in that window are dropped on the floor:
 no buffer, no error, no log.
 
 The client hits it on every single session:
@@ -807,9 +807,9 @@ or a 700 ms fallback ([:186-198](../../../../ui/src/board/TerminalDock.tsx#L186-
   named constant in the same spirit as the input lane's `MAX_TERMINAL_INPUT_BYTES`
   ([mesh-ui-serve.mjs:173](../../../../src/mesh-ui-serve.mjs#L173)); over the ceiling the OLDEST
   frames are dropped, not the newest, because the newest resize is the true one.
-- **The error paths are unchanged.** An unknown provider ([:153-157](../../../../src/terminal-ws.mjs#L153-L157)),
-  a missing binary ([:206-214](../../../../src/terminal-ws.mjs#L206-L214)) or a failed spawn
-  ([:244-253](../../../../src/terminal-ws.mjs#L244-L253)) still send the error control-frame and close; the
+- **The error paths are unchanged.** An unknown provider ([:153-157](../../../../packages/server/src/terminal-ws.mjs#L153-L157)),
+  a missing binary ([:206-214](../../../../packages/server/src/terminal-ws.mjs#L206-L214)) or a failed spawn
+  ([:244-253](../../../../packages/server/src/terminal-ws.mjs#L244-L253)) still send the error control-frame and close; the
   queue dies with the socket. m03/ADR-003's honest degrade is untouched.
 - **The client keeps `onopen → sendResize()` exactly as written.** The point of a server-side fix is
   that the obvious client code becomes correct. The `ResizeObserver` stays because it is needed anyway —
@@ -848,16 +848,16 @@ or a 700 ms fallback ([:186-198](../../../../ui/src/board/TerminalDock.tsx#L186-
 
 **Context, read at source in the shipped m45 code.** ADR-005 [Build-3] ruled the dock's region home is
 `overlay` and reserved `z-30` for it, and Shell.tsx renders that row today
-([:316-360](../../../../ui/src/app/Shell.tsx#L316-L360)) with a comment naming *"m46's dock"* as the next
+([:316-360](../../../../apps/ui/src/app/Shell.tsx#L316-L360)) with a comment naming *"m46's dock"* as the next
 occupant. But the surface→shell bus offers only TWO contribution slots — `SLOT_SURFACE` and
-`SLOT_NOTICE` ([shell-bus.mjs:30-31](../../../../ui/src/app/shell-bus.mjs#L30-L31)) — plus the fullscreen
+`SLOT_NOTICE` ([shell-bus.mjs:30-31](../../../../apps/ui/src/app/shell-bus.mjs#L30-L31)) — plus the fullscreen
 door. **There is no channel by which a surface can put a dock in the overlay region.** Meanwhile the
-dock still renders inside the board's own tree ([Board.tsx:561-563](../../../../ui/src/board/Board.tsx#L561-L563)),
+dock still renders inside the board's own tree ([Board.tsx:561-563](../../../../apps/ui/src/board/Board.tsx#L561-L563)),
 hoisted only out of the board's internal conditional
-([:535-539](../../../../ui/src/board/Board.tsx#L535-L539)).
+([:535-539](../../../../apps/ui/src/board/Board.tsx#L535-L539)).
 
 Shell.tsx also warns, in terms, that this is the next collision:
-[:349-358](../../../../ui/src/app/Shell.tsx#L349-L358) explains that the adoption host is childless
+[:349-358](../../../../apps/ui/src/app/Shell.tsx#L349-L358) explains that the adoption host is childless
 *"the moment [Build-3]'s overlay region gains a second React child (m46's dock is the named next
 occupant of this very region)"*.
 
@@ -865,26 +865,26 @@ occupant of this very region)"*.
 promise something the architecture cannot deliver.** [Build-3] argues a `content`-parented dock *"is
 unmounted by every route change, so navigating from `/board` to `/fleet` would kill the PTY"*. The
 CONCLUSION is right; the MECHANISM is not. m45's navigation is real `<a href>` links with no client-side
-interception ([Shell.tsx:395-398](../../../../ui/src/app/Shell.tsx#L395-L398)) and the entry evaluates
+interception ([Shell.tsx:395-398](../../../../apps/ui/src/app/Shell.tsx#L395-L398)) and the entry evaluates
 `routeFor(location.pathname)` exactly once at module load
-([main.tsx:49-61](../../../../ui/src/main.tsx#L49-L61)). **A surface change is a full document load.** The
+([main.tsx:49-61](../../../../apps/ui/src/main.tsx#L49-L61)). **A surface change is a full document load.** The
 PTY dies at the browser, before React gets a say, and no DOM re-parenting can save it.
 
 **Decision.**
 - **The dock is contributed to the shell's `overlay` region through a THIRD slot on the existing bus**
-  (`contribute(...)` is already region-keyed, [shell-bus.mjs:72-84](../../../../ui/src/app/shell-bus.mjs#L72-L84);
+  (`contribute(...)` is already region-keyed, [shell-bus.mjs:72-84](../../../../apps/ui/src/app/shell-bus.mjs#L72-L84);
   this adds the slot constant and the shell's read-back beside
-  [Shell.tsx:131-132](../../../../ui/src/app/Shell.tsx#L131-L132)). It takes `z-30` from the ladder —
+  [Shell.tsx:131-132](../../../../apps/ui/src/app/Shell.tsx#L131-L132)). It takes `z-30` from the ladder —
   imported, never retyped, per `acd-shell-z-ladder-single-home`.
 - **The degraded path is preserved and is the reason the bus is the right seam:** with no shell present
-  the contribution renders IN PLACE ([shell-bus.mjs:18-22](../../../../ui/src/app/shell-bus.mjs#L18-L22)),
+  the contribution renders IN PLACE ([shell-bus.mjs:18-22](../../../../apps/ui/src/app/shell-bus.mjs#L18-L22)),
   so `test/support/board-app-harness.mjs` keeps working untouched.
 - **NO per-surface `fixed inset-0` layer.** That is ADR-005's named prohibition, and
   [FleetTerminalView.tsx:411-412](../../../../ui/src/fleet/terminal-view/FleetTerminalView.tsx#L411-L412)
   is the one live violation — carried by m45 on an explicit shrink-only exemption *because this
   milestone deletes the file*. Re-creating that shape in the extracted control would make the exemption
   permanent under a new name.
-- **Fullscreen goes through `requestFullscreen`** ([shell-bus.mjs:115-135](../../../../ui/src/app/shell-bus.mjs#L115-L135)),
+- **Fullscreen goes through `requestFullscreen`** ([shell-bus.mjs:115-135](../../../../apps/ui/src/app/shell-bus.mjs#L115-L135)),
   handing the LIVE DOM node and its `home`, with `claimsEscape: true` when input is enabled — because
   this control forwards stdin ([TerminalDock.tsx:261-263](../../../../ui/src/board/TerminalDock.tsx#L261-L263))
   and `Esc` is a live keystroke for the `claude` TUI ([Build-2]). The visible exit control remains
@@ -909,11 +909,11 @@ PTY dies at the browser, before React gets a say, and no DOM re-parenting can sa
   measured reason `--aof-shell-chrome-height` was promoted into ADR-005's contract as point 7. The clamp
   becomes a pure function of the content box, using
   `CHROME_HEIGHT_PROPERTY` / `CONTENT_HEIGHT_EXPRESSION`
-  ([shell-layout.mjs:274](../../../../ui/src/app/shell-layout.mjs#L274),
-  [:278](../../../../ui/src/app/shell-layout.mjs#L278)) — the same primitive
-  [Board.tsx:420](../../../../ui/src/board/Board.tsx#L420) already sizes itself with.
+  ([shell-layout.mjs:274](../../../../apps/ui/src/app/shell-layout.mjs#L274),
+  [:278](../../../../apps/ui/src/app/shell-layout.mjs#L278)) — the same primitive
+  [Board.tsx:420](../../../../apps/ui/src/board/Board.tsx#L420) already sizes itself with.
 - **A terminal-hosting surface declares `content:fixed`**, per
-  [shell-layout.mjs:369-393](../../../../ui/src/app/shell-layout.mjs#L369-L393) (binding, and `board`
+  [shell-layout.mjs:369-393](../../../../apps/ui/src/app/shell-layout.mjs#L369-L393) (binding, and `board`
   already does).
 - **STATED PLAINLY, so no story promises it: a session does NOT survive navigation between surfaces, and
   this milestone does not make it.** Navigation is a document load. The reasons to host in `overlay` are
@@ -1035,9 +1035,9 @@ Six findings, each routed.
    and that the remaining work is the ramp/vocabulary layer.
 
 4. **The product's port map has FOUR homes and one live inconsistency.** Measured:
-   [setup-ui.mjs:26](../../../../src/setup-ui.mjs#L26) defaults `4177`;
-   [board-serve.mjs:48](../../../../src/board-serve.mjs#L48) `serveBoard` defaults **`4178`** while
-   [boardUiProbe:33](../../../../src/board-serve.mjs#L33) and `src/commands/work-ui.mjs:25` both say
+   [setup-ui.mjs:26](../../../../packages/server/src/setup-ui.mjs#L26) defaults `4177`;
+   [board-serve.mjs:48](../../../../packages/server/src/board-serve.mjs#L48) `serveBoard` defaults **`4178`** while
+   [boardUiProbe:33](../../../../packages/server/src/board-serve.mjs#L33) and `src/commands/work-ui.mjs:25` both say
    **`4180`**; `src/commands/assets-ui.mjs:22` says `4177` with an api port of `4178`;
    [mesh-ui-serve.mjs:116](../../../../src/mesh-ui-serve.mjs#L116) says `4181` and its comment
    ([:113-115](../../../../src/mesh-ui-serve.mjs#L113-L115)) narrates the whole map from one of its four

@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-record-frozen (milestone 38 / ADR-002, fitness #2 —
 // AMENDED IN PLACE by milestone 48 / ADR-002, fitness #7) — "the session record is
 // EXACTLY its ordered key set [nodeId, workspaceId, repo, assistant, sessionId,
@@ -32,8 +34,10 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { assembleSessionRecord, startSession, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const assembleSessionRecord = _aofHooks.meshSession.assembleSessionRecord;
+const startSession = _aofHooks.meshSession.startSession;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 // m50/ADR-008 decision 8 APPENDED an eighth key, `relaying` — the worker's stated fact
 // that something is bridging this session's PTY output up its stream. An APPEND is the

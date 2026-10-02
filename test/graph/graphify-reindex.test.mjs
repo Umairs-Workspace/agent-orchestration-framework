@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 00 (graphify-backend-module),
 // task 01 — 01_reindex-rebuilds-records-and-graph.feature.
 //
 // Covers every @executable scenario of that feature against the REAL graphify backend
-// module (../src/memory/graphify-backend.mjs) and the REAL 05 parser (`buildRecords`,
+// module (../packages/core/src/memory/graphify-backend.mjs) and the REAL 05 parser (`buildRecords`,
 // via the backend's `reindex`). The graph-build half is driven through an INJECTED
 // `ctx.invoke` (the backend's seam, mirroring local's injectable `ctx.loadIndex`) so
 // the records assertions are HERMETIC: we simulate the CI reality — graphify's binary
@@ -27,9 +28,12 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
-import { graphifyIndexPath, workGraphRoot } from "../../src/memory/graphify-backend.mjs";
-import { reindex as localReindex, memoryIndexPath } from "../../src/memory/local-indexing.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+
+const graphifyIndexPath = _aofApplication.knowledge.memory.graphifyBackend.graphifyIndexPath;
+const workGraphRoot = _aofApplication.knowledge.memory.graphifyBackend.workGraphRoot;
+const localReindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
@@ -90,7 +94,7 @@ async function tempStream(milestones) {
 
 // The INJECTED invoke that simulates the CI reality: graphify's binary is ABSENT, so
 // graph:build throws the structured graphify-missing miss (exactly what
-// src/commands/graph-build.mjs throws via commandError(..., "graphify-missing", 424)).
+// packages/core/src/commands/graph-build.mjs throws via commandError(..., "graphify-missing", 424)).
 // The backend must CATCH it and still rebuild the records (FAIL SOFT, ADR-004).
 function missingBinaryInvoke() {
   const calls = [];
@@ -303,7 +307,7 @@ export const graphifyReindexTests = [
       // A pre-existing CODEBASE graph, exactly where `aof graph build .` leaves one.
       const codeGraphPath = path.join(projectRoot, "graphify-out", "graph.json");
       const codeGraph = `${JSON.stringify({
-        nodes: [{ id: "src_auth", source_file: "src/auth.mjs", file_type: "code" }],
+        nodes: [{ id: "src_auth", source_file: "packages/core/src/auth.mjs", file_type: "code" }],
         links: [],
       })}\n`;
       await mkdir(path.dirname(codeGraphPath), { recursive: true });

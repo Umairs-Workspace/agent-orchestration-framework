@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 49 / story 07
 // tasks/00_the-bundle-wires-claude-session-hooks.feature — "the bundle wires the
 // Claude session lifecycle, so a workspace aof provisioned records Claude sessions
@@ -6,12 +9,12 @@
 // WHY A SUITE OF ITS OWN. The feature's own "WHERE IT LANDS" note sanctions one
 // ("If a NEW suite is created it MUST be registered in scripts/test.mjs"), and it is
 // registered there. `test/mesh/mesh-assistant-hook-wiring.test.mjs` is m38/story-00 task
-// 05's traceability file and stays that; `test/bundle/bundle.test.mjs` keeps the membership
+// 05's traceability file and stays that; `packages/core/test/bundle.suite.mjs` keeps the membership
 // COUNTS. This file owns the eight scenarios of THIS task and nothing else.
 //
 // WHAT IS DRIVEN, NOT ASSERTED AS A STRING. A wiring story whose invocation was never
 // executed ships a typo, so scenarios 5, 7 and 8 read the command string OFF the
-// bundle member and SPAWN it through the real CLI (`src/cli.mjs`) with a hook-shaped
+// bundle member and SPAWN it through the real CLI (`packages/core/src/cli.mjs`) with a hook-shaped
 // payload on stdin — never a hand-typed argv, and never a re-implementation of the
 // verb. Scenarios 1, 3 and 4 drive the REAL co-authored settings merge
 // (`applyClaudeSettingsMerge`) against the REAL bundle descriptor, with a project
@@ -25,6 +28,7 @@
 // explicitly, and scenario 5 asserts the operator's REAL global mesh store never saw
 // the fixture id. No server is started and no port is bound anywhere in this file.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, rm, readFile, writeFile, stat, readdir } from "node:fs/promises";
@@ -32,18 +36,18 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readDescriptor, loadBundle, loadBundleHooks, renderBundleOutputs } from "../../src/work/bundle.mjs";
-import { applyClaudeSettingsMerge, AOF_HOOK_MARKER } from "../../src/claude-settings.mjs";
-import { bundledFrozenSet, compileFrozenSet } from "../../src/frozen-set.mjs";
-import { readSessionRecordsForNode } from "../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../src/mesh/presence.mjs";
-import { buildSessionIndex } from "../../src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { defaultGlobalWorkspaceDir } from "../../src/paths.mjs";
+import { readDescriptor, loadBundle, loadBundleHooks, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
+import { applyClaudeSettingsMerge, AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
+import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/frozen-set.mjs";
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { defaultGlobalWorkspaceDir } from "../../packages/core/src/paths.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "src", "cli.mjs");
-const bundleHooksDir = path.join(repoRoot, "src", "bundle", "hooks");
+const cliPath = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
+const bundleHooksDir = path.join(repoRoot, "packages", "core", "assets", "hooks");
 
 // The three members this story adds, and the codex sibling occupying the same
 // lifecycle POSITION. `mirrorsExactly: false` on the third row is the measured,
@@ -87,7 +91,7 @@ const CLAUDE_SESSION_MEMBER_IDS = MEMBER_ROWS.map((row) => row.id);
 const CODEX_SESSION_MEMBER_IDS = MEMBER_ROWS.map((row) => row.codexSibling);
 
 // The codex members' own bundle files, pinned VERBATIM (scenario 3's "byte-identical
-// to before this story"). `.gitattributes` pins `src/bundle/** text eol=lf`, so this
+// to before this story"). `.gitattributes` pins `packages/core/assets/** text eol=lf`, so this
 // is a true byte pin on every platform. It is shrink-only in effect: any edit to a
 // codex session hook file fails here naming m49/07, which is exactly the guard the
 // scenario asks for — this story does not touch them.
@@ -143,7 +147,7 @@ async function makeWorkspace(label) {
 // Run a declared hook invocation THROUGH THE REAL CLI. The command string is split
 // into argv; `aof` is asserted to be the program (the hook declares a bare
 // executable, never a shell string) and the remaining argv is handed to this repo's
-// own `src/cli.mjs`. Returns { status, stdout }.
+// own `packages/core/src/cli.mjs`. Returns { status, stdout }.
 function runDeclaredInvocation(command, { workspace, payload }) {
   const argv = String(command).trim().split(/\s+/);
   assert.equal(argv[0], "aof", `the declared invocation runs the \`aof\` program: ${command}`);
@@ -198,18 +202,10 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function srcModules(dir = path.join(repoRoot, "src"), acc = []) {
-  for (const name of (await readdir(dir, { withFileTypes: true })).sort((a, b) => (a.name < b.name ? -1 : 1))) {
-    const full = path.join(dir, name.name);
-    if (name.isDirectory()) {
-      if (name.name === "bundle") continue; // shipped assets, not src code
-      await srcModules(full, acc);
-    } else if (name.isFile() && full.endsWith(".mjs")) {
-      acc.push(full);
-    }
-  }
-  return acc;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => file.path);
 }
+
 
 // Claude Code's SessionStart matcher semantics: an ABSENT or EMPTY matcher admits
 // every source; otherwise the matcher is a regular expression over the source token.
@@ -440,7 +436,7 @@ export const bundleClaudeSessionHookTests = [
           assert.equal(
             sha256(actual),
             sha256(expected),
-            `src/bundle/hooks/${file} is byte-identical to before m49/07 — this story adds members, it edits none. If this is red, a codex session hook was changed; that is a separate, unrelated behaviour change and it does not belong in this milestone's last-landing story.`,
+            `packages/core/assets/hooks/${file} is byte-identical to before m49/07 — this story adds members, it edits none. If this is red, a codex session hook was changed; that is a separate, unrelated behaviour change and it does not belong in this milestone's last-landing story.`,
           );
         }
       } finally {
@@ -502,7 +498,7 @@ export const bundleClaudeSessionHookTests = [
         //
         // THE AOF-OWNED TAIL IS DERIVED, NOT TYPED. This scenario is about the OPERATOR's
         // rule surviving in its own position; which rules the frozen-set declaration owns
-        // is the declaration's business and `test/bundle/frozen-set-compiled.test.mjs`'s census.
+        // is the declaration's business and `packages/core/test/frozen-set-compiled.suite.mjs`'s census.
         // Typing them here made this suite go red on 61/ADR-005 §3's sixth member for a
         // reason that has nothing to do with what it tests.
         for (const key of ["sandbox", "enabledPlugins"]) {
@@ -623,7 +619,7 @@ export const bundleClaudeSessionHookTests = [
         }
         assert.deepEqual(
           producers,
-          ["src/mesh/launcher.mjs", "src/mesh/launcher.mjs", "src/mesh/launcher.mjs"],
+          ["packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs"],
           "the relay has exactly three frame producers in mesh-launcher (fresh execution, terminal bridge, and parked-session resume); this hook story adds none",
         );
       } finally {

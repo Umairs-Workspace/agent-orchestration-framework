@@ -1,18 +1,20 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6206 — the distance is read from the acceptor and the counter, never copied.
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { REFUSAL_REMOVALS, RULING_REFUSAL_ORDER } from "../../../src/commands/acceptor.mjs";
-import { NOT_ADMISSIBLE } from "../../../src/work-acceptor/admissibility.mjs";
+const REFUSAL_REMOVALS = _aofApplication.work.commandTools.acceptor.REFUSAL_REMOVALS;
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+import { NOT_ADMISSIBLE } from "@aof/work/acceptor/admissibility";
 import {
   DISTANCE_LIMBS,
   distanceToLive,
-} from "../../../src/work-tune/distance.mjs";
+} from "@aof/work/tune/distance";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const familyDir = path.join(root, "src", "work-tune");
+const familyDir = path.join(root, "packages", "work", "src", "tune");
 
 async function familySources() {
   const names = (await readdir(familyDir)).filter((name) => name.endsWith(".mjs")).sort();
@@ -35,12 +37,12 @@ const attributed = [{
   runs: [{ createdAt: "2026-08-31T11:00:00.000Z", sessionId: "session" }],
 }];
 
-function report(removal, rel = "src/first.mjs") {
+function report(removal, rel = "packages/core/src/first.mjs") {
   const ground = {
     code: NOT_ADMISSIBLE,
     key: proposal.target.key,
     records: ["loop:fixture"],
-    declaringHome: "src/bounds.mjs",
+    declaringHome: "packages/core/src/bounds.mjs",
     sites: [{ rel, line: 1, disposition: "resolved-then-discarded" }],
     inspections: [],
     consumers: [],
@@ -91,12 +93,12 @@ export const archTests = [
   {
     name: "arch/62 FF-6206 acceptor wording and grounds move the distance without a local edit",
     run: () => {
-      const first = distanceToLive(proposal, { acceptorReport: report("first treatment", "src/first.mjs"), roundsItems: attributed });
-      const second = distanceToLive(proposal, { acceptorReport: report("second treatment", "src/second.mjs"), roundsItems: attributed });
+      const first = distanceToLive(proposal, { acceptorReport: report("first treatment", "packages/core/src/first.mjs"), roundsItems: attributed });
+      const second = distanceToLive(proposal, { acceptorReport: report("second treatment", "packages/core/src/second.mjs"), roundsItems: attributed });
       assert.equal(first.standing[0].removal, "first treatment");
       assert.equal(second.standing[0].removal, "second treatment");
-      assert.equal(first.standing[0].measurement.subjects[0].sites[0].rel, "src/first.mjs");
-      assert.equal(second.standing[0].measurement.subjects[0].sites[0].rel, "src/second.mjs");
+      assert.equal(first.standing[0].measurement.subjects[0].sites[0].rel, "packages/core/src/first.mjs");
+      assert.equal(second.standing[0].measurement.subjects[0].sites[0].rel, "packages/core/src/second.mjs");
     },
   },
   {

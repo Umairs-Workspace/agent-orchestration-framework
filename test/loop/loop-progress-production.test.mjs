@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 69 / story 06. The loop command consumes the progress
 // authority after each measurable continue round; these cases cover the command
 // adapters and the pure ordering decision without restating either policy.
@@ -9,17 +10,17 @@ import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 
-import { failingCountFromGrade, recordBuildProgress, runLoopBody } from "../../src/commands/loop.mjs";
-import {
-  decideBuildProgress,
-  evaluateProgressPolicy,
-  progressSample,
-  readProgressSamples,
-  sampleWorktreeProgress,
-} from "../../src/loop-progress.mjs";
-import { readRuns } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { decideLoopProgress, LOOP_STOPS } from "../../src/work/loop.mjs";
+const failingCountFromGrade = _aofApplication.loop.commandTools.loop.failingCountFromGrade;
+const recordBuildProgress = _aofApplication.loop.commandTools.loop.recordBuildProgress;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const decideBuildProgress = _aofApplication.loop.loopProgress.decideBuildProgress;
+const evaluateProgressPolicy = _aofApplication.loop.loopProgress.evaluateProgressPolicy;
+const progressSample = _aofApplication.loop.loopProgress.progressSample;
+const readProgressSamples = _aofApplication.loop.loopProgress.readProgressSamples;
+const sampleWorktreeProgress = _aofApplication.loop.loopProgress.sampleWorktreeProgress;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+import { decideLoopProgress, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
 import { completingDriver, loopFixture } from "./loop-command-probe.test.mjs";
 
 const execFileAsync = promisify(execFile);
@@ -29,7 +30,7 @@ function sample(at, overrides = {}) {
   return progressSample({
     at,
     runId: "run-1",
-    filesTouched: ["src/subject.mjs"],
+    filesTouched: ["packages/core/src/subject.mjs"],
     linesChanged: 4,
     commitsMade: 0,
     failingScenarios: 3,
@@ -235,7 +236,7 @@ export const loopProgressProductionTests = [
         stalls: 2,
         summary: {
           sampleCount: 3,
-          filesTouched: ["src/subject.mjs"],
+          filesTouched: ["packages/core/src/subject.mjs"],
           linesChanged: 4,
           commitsMade: 0,
           failingScenarios: 3,

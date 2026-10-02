@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 05 / ADR-001 + ADR-005 + ADR-007:
 // "A fresh `reindex` from the .md files reproduces the index, and EVERY record's
 //  `source` (path:line) resolves to live text at/after the recorded line in the
@@ -14,7 +15,8 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { reindex, memoryIndexPath } from "../../../src/memory/local-indexing.mjs";
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");

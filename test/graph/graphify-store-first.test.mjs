@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 12 / story 02, task 00 —
 // tasks/00_graphify-store-first.feature.
 //
 // Covers every @executable scenario (Scenario-Outline rows folded into one entry)
-// against the REAL in-process code: src/graphify.mjs's resolveGraphifyBinary, now
+// against the REAL in-process code: packages/core/src/graphify.mjs's resolveGraphifyBinary, now
 // RE-POINTED store-first (milestone-12 ADR-004) to delegate to tool-store.mjs's
 // resolveManagedBinary. One test object per @executable scenario, each name
 // tracing to feature + scenario.
@@ -22,13 +23,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { toolStoreRoot, toolVersionDir } from "../../src/paths.mjs";
-import { exeDirFor, exeNameFor } from "../../src/tool-store.mjs";
-import {
-  resolveGraphifyBinary,
-  GRAPHIFY_BINARY,
-  PINNED_GRAPHIFY_VERSION,
-} from "../../src/graphify.mjs";
+import { toolStoreRoot, toolVersionDir } from "../../packages/core/src/paths.mjs";
+import { exeDirFor, exeNameFor } from "../../packages/core/src/tool-store.mjs";
+const resolveGraphifyBinary = _aofApplication.knowledge.graphify.resolveGraphifyBinary;
+const GRAPHIFY_BINARY = _aofApplication.knowledge.graphify.GRAPHIFY_BINARY;
+const PINNED_GRAPHIFY_VERSION = _aofApplication.knowledge.graphify.PINNED_GRAPHIFY_VERSION;
 
 // --- helpers -----------------------------------------------------------------
 

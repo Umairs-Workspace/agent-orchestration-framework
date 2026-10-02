@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 38 / story 08 (worker-verified-memory-syncback,
 // ADR-016) — tasks/01_control-reingests-own-checkout.feature.
 //
@@ -13,7 +14,7 @@
 // Hermetic + producer-fed (the milestone's own recurring F1/F4 lesson): a REAL local
 // git checkout (test/support/mesh-memory-syncback-fixture.mjs, a real `git merge`) +
 // the REAL `runMemory`/`resolveConfiguredBackend` seam over the REAL `local` backend
-// (src/memory/local-indexing.mjs's `buildRecords`/`parseRetrospective`/
+// (packages/core/src/memory/local-indexing.mjs's `buildRecords`/`parseRetrospective`/
 // `parseArchitecture` — the SAME parsers the graphify backend also reuses, ADR-016's
 // own "RECORDS rebuild is OBSERVABLE with NO graphify binary" framing). The `local`
 // backend never attempts a graph build at all, so this suite is IMMUNE to the KNOWN
@@ -24,8 +25,9 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
-import { resolveRecordSourcePath } from "../../src/memory/local-indexing.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const resolveRecordSourcePath = _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath;
 import { withMeshMemorySyncbackFixture } from "../support/mesh-memory-syncback-fixture.mjs";
 
 const CONFIG = { memory: { backend: "local" } };

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 126 / story 05, tasks 00_one-import-home.feature and
 // 01_the-filter-is-targeted-and-restored.feature.
 //
@@ -18,10 +19,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { promisify } from "node:util";
-import { importSqliteRuntime } from "../../src/sqlite-runtime.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { openEffectsJournal } from "../../src/effects/journal.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 const run = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -303,7 +304,7 @@ export const sqliteRuntimeTests = [
       // A FRESH instance of the module (a cache-busting query), so this asserts the load
       // itself rather than the load this suite already performed.
       const captured = process.emitWarning;
-      const fresh = await import(`../../src/sqlite-runtime.mjs?probe=${Date.now()}`);
+      const fresh = await import(`../../packages/foundation/src/sqlite-runtime.mjs?probe=${Date.now()}`);
       assert.equal(typeof fresh.importSqliteRuntime, "function", "the fresh module loaded");
       assert.equal(process.emitWarning, captured, "loading it, and asking no import of it, changes nothing");
     },
@@ -322,7 +323,7 @@ export const sqliteRuntimeTests = [
 
       // A file:// URL, not a bare path: on Windows the ESM loader refuses `C:…` as an
       // unsupported URL scheme.
-      const leafUrl = JSON.stringify(pathToFileURL(path.join(repoRoot, "src", "sqlite-runtime.mjs")).href);
+      const leafUrl = JSON.stringify(pathToFileURL(path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs")).href);
       const throughLeaf = await run(
         process.execPath,
         ["-e", `const { importSqliteRuntime } = await import(${leafUrl}); const m = await importSqliteRuntime(); process.stdout.write(typeof m.DatabaseSync);`],
@@ -361,7 +362,7 @@ export const sqliteRuntimeTests = [
 
         const { stdout, stderr } = await run(
           process.execPath,
-          [path.join(repoRoot, "bin", "aof.mjs"), "work", "find", "126", "--json"],
+          [path.join(repoRoot, "packages", "core", "bin", "aof.mjs"), "work", "find", "126", "--json"],
           { env, cwd: repoRoot },
         );
 

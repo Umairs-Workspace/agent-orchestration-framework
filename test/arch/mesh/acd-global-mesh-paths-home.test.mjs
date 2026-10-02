@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const globalStorePath = path.join(repoRoot, "src", "global-work-store.mjs");
+const globalStorePath = path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs");
 
 function stripCommentsAndStrings(source) {
   let out = "";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 129 / story 04 — THE PHASES, THE FRESH GATE, THE INTERRUPTS
 // AND THE RECONCILE.
 //
@@ -14,14 +15,23 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 
-import { runLoopBody } from "../../src/commands/loop.mjs";
-import { readRuns, startRun, completeRun, heartbeat, recordSessionId } from "../../src/run-store.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { resolveRefInWorktree } from "../../src/work/dispatch.mjs";
-import { meshDispatchWorktreePath } from "../../src/mesh/worktree.mjs";
-import { appendProgressSample } from "../../src/loop-progress.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const resolveRefInWorktree = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const appendProgressSample = _aofApplication.loop.loopProgress.appendProgressSample;
 import {
   withLaneRepo, fakeLaneChild, stubRubric, emits, passingTap, collector, fakeTimers, fakeSignals,
   primaryDriver, verifyCompleter, laneCtx, statusOf, git, headSha, deferred, scriptedRegistry, laneStoryFile, replaceStatus, realExec,
@@ -299,7 +309,7 @@ export const loopCommandReconcileTests = [
       // A `gate` act arriving with a status other than in-review is still the unexpected act: the
       // engine emits a fresh `gate` only for an in-review head, so the divergence cannot be driven
       // through `work:next`; the shell's guard and the halt that follows it are read at the source.
-      const shell = await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8");
+      const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const gateAt = shell.indexOf('if (act.act === "gate" && next?.status === "in-review") {');
       const unmappedAt = shell.indexOf('act = haltDecision("unmapped-item-type", next?.ref ?? resolved.scope, "unexpected-engine-act");', gateAt);
       assert.ok(gateAt >= 0 && unmappedAt > gateAt, "a gate act is honoured only for an in-review head; any other reaches the unmapped-item-type halt with producer unexpected-engine-act");
@@ -825,3 +835,7 @@ function reentryTests() {
     },
   ];
 }
+
+// Every case here passes alone, in a fresh process (142 Plan 09 measured each position separately), so the sharded run may
+// split this file across workers. Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/arch/assignment/acd-assignment-resolves-to-a-loop-call.test.mjs — FF-6306 (milestone 63,
 // ADR-006, ADR-010 §1/§2/§3, ADR-012 §3).
 //
@@ -14,7 +15,7 @@
 // while the story is unmerged and VACUOUSLY TRUE the moment it merges — precisely when the
 // fence has to keep holding. So the fence is asserted structurally instead, and it is the
 // stronger claim: the module that OWNS the PTY spawn, the output chunking, the completion
-// detection and the NEEDS_INPUT sentinel (`src/agent-session-driver.mjs`) contains none of
+// detection and the NEEDS_INPUT sentinel (`packages/core/src/agent-session-driver.mjs`) contains none of
 // this story's identifiers at all, and inside the mesh worker every one of those concerns
 // is still forwarded as a bare shorthand key that no launch decision can reach. Both fail
 // on a plant; neither goes quiet after the merge.
@@ -23,7 +24,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 import {
   ASSIGNMENT_PHASES,
@@ -34,15 +35,15 @@ import {
   assignmentDirectiveCommand,
   assignmentDirectiveResolution,
   assignmentDirectiveLaunch,
-} from "../../../src/mesh/assignment-directive.mjs";
-import { assembleAssignmentRecord } from "../../../src/assignment-record.mjs";
-import { LOOP_STOPS } from "../../../src/work/loop.mjs";
+} from "@aof/mesh/assignment-directive";
+import { assembleAssignmentRecord } from "@aof/mesh/assignment-record";
+import { LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
 // The launch seam is reached through the door the WORKER itself re-exports, not through the
 // driver's own module. That is the honest door for this leg — the claim is about the
 // caller-side obligation, and the caller reaches the seam here — and it leaves the driver's
 // closed ADR-015 §2 test allowlist untouched.
-import { resolveInteractiveDriverLaunch } from "../../../src/mesh/worker-execution.mjs";
-import { bundledFrozenSet, compileFrozenSet } from "../../../src/frozen-set.mjs";
+const resolveInteractiveDriverLaunch = _aofApplication.mesh.worker.resolveInteractiveDriverLaunch;
+import { bundledFrozenSet, compileFrozenSet } from "../../../packages/core/src/frozen-set.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -50,7 +51,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // asserted over exactly these.
 //
 // 119/04 (item 83's seam 2, ADR-007) WIDENED this census rather than repointing it. The three
-// were 63/03's own write set; the composer has since moved to `src/mesh/worker-launch.mjs`,
+// were 63/03's own write set; the composer has since moved to `packages/core/src/mesh/worker-launch.mjs`,
 // and a census left at three would have gone on sweeping the composer's OLD home and nothing
 // else — a `{ program: "aof", args: [...] }` literal could have been authored in the new one
 // with no control in this tree able to see it. That is ADR-003 §4's vacuity arriving through a
@@ -60,19 +61,19 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // Named rather than derived on purpose (ADR-003 §1): "where a second speller would live" is a
 // decision about this tree, not a fact readable from it.
 const MESH_FILES = Object.freeze([
-  "src/mesh/assignment-directive.mjs",
-  "src/mesh/assignment-reclaim.mjs",
-  "src/mesh/worker-execution.mjs",
-  "src/mesh/worker-launch.mjs",
+  "packages/mesh/src/assignment-directive.mjs",
+  "packages/mesh/src/assignment-reclaim.mjs",
+  "packages/mesh/src/worker-execution.mjs",
+  "packages/mesh/src/worker-launch.mjs",
 ]);
 
 // The file that COMPOSES the launch — the subject of the four positive matches below. Pinned
 // as a name rather than found as "the worker", because after 119/04's split those are two
 // files and the positive legs belong to the one that composes.
-const LAUNCH_COMPOSER = "src/mesh/worker-launch.mjs";
+const LAUNCH_COMPOSER = "packages/mesh/src/worker-launch.mjs";
 
 // The ONE module allowed to author a slash command for an assignment phase.
-const DIRECTIVE_HOME = "mesh/assignment-directive.mjs";
+const DIRECTIVE_HOME = "packages/mesh/src/assignment-directive.mjs";
 
 // The delivered four answers, byte for byte. Retyped ON PURPOSE: this is the one place a
 // literal is the contract rather than a duplication, because the claim IS that the bytes a
@@ -242,7 +243,9 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (acd-assignment-resolves-to-a-loop-call): exactly ONE module in src/ authors a slash command for an assignment phase, and its four answers are byte-unchanged",
     run: async () => {
-      const files = await readSrcFiles(repoRoot);
+      // Assignment phase policy is authored by Node services; UI action labels
+      // are presentation. The separate package boundary gate includes UI source.
+      const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
       const authors = [];
       for (const file of files) {
         const code = stripComments(await readFile(file.path, "utf8"));
@@ -372,8 +375,8 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (ADR-010 §3): the assign verb's refusal ladder is UNEDITED — the same four gates in the same order, and no loop-scope gate stole an earlier gate's answer",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "assignment.mjs"), "utf8"));
-      const body = functionBody(source, "export async function assignWork");
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs"), "utf8"));
+      const body = functionBody(source, "async function assignWork");
       assert.ok(body != null, "the assign verb is structurally readable");
       const codes = [...body.matchAll(/code:\s*"([a-z-]+)"/g)].map((m) => m[1]);
       assert.deepEqual(codes, ["ref-not-found", "assignment-already-active"], "the verb's own coded refusals, in order, are the delivered ones");
@@ -386,14 +389,14 @@ export const archTests = [
   {
     name: "arch/63 FF-6306 (ADR-006 §4): the out-of-scope fence — the module that OWNS the PTY, streaming, completion and NEEDS_INPUT machinery holds none of this story's identifiers, and the worker still forwards each concern as a bare shorthand key",
     run: async () => {
-      const driver = stripComments(await readFile(path.join(repoRoot, "src", "agent-session-driver.mjs"), "utf8"));
+      const driver = stripComments(await readFile(path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs"), "utf8"));
       // Non-vacuity first: the four concerns really do live in that module.
       for (const concern of ["ptySpawn(", "onOutputChunk", "watchTranscriptCompletion", "containsNeedsInputSentinel"]) {
         assert.ok(driver.includes(concern), `the driver is the home of ${concern} — this leg is reading the right file`);
       }
       assert.deepEqual(storyIdentifiersIn(driver), [], "no identifier this story introduced appears in the driver: it edited nothing above the launch");
 
-      const worker = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const worker = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
       const bag = spawnOptionsBag(worker);
       assert.ok(bag != null, "the worker's spawn options bag is structurally readable");
       for (const key of FENCED_FORWARDS) {
@@ -415,8 +418,8 @@ export const archTests = [
 
       // The reclaim POLICY — the half of that module 63/SPEC fences off — is untouched by
       // this story's identifiers too. Only the DISPATCH half of the tick changed.
-      const reclaim = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "assignment-reclaim.mjs"), "utf8"));
-      for (const fn of ["export async function reclaimStaleAssignments", "export function dualStalenessDecision"]) {
+      const reclaim = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs"), "utf8"));
+      for (const fn of ["async function reclaimStaleAssignments", "function dualStalenessDecision"]) {
         const body = functionBody(reclaim, fn);
         assert.ok(body != null, `${fn} is structurally readable`);
         assert.deepEqual(storyIdentifiersIn(body), [], `${fn} reads none of this story's identifiers`);

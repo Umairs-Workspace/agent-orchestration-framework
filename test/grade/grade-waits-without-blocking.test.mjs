@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 81, task `00_the-grade-waits-without-blocking`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,15 +24,17 @@ import { rm, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
+const invoke = _aofApplication.invoke;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import {
   DEFAULT_HEARTBEAT_MS,
   DEFAULT_START_TO_CLOSE_MS,
   gradeDeadlineFromConfig,
-} from "../../src/loop-bounds.mjs";
-import { rubricSpawnOptions, spawnRubricAsync, GRADE_REENTRANCY_ENV } from "../../src/commands/grade.mjs";
-import { readSrcFiles } from "../support/read-src-files.mjs";
+} from "@aof/contracts/loop-bounds";
+const rubricSpawnOptions = _aofApplication.work.commandTools.grade.rubricSpawnOptions;
+const spawnRubricAsync = _aofApplication.work.commandTools.grade.spawnRubricAsync;
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 import { completingDriver, loopFixture, replaceStatus } from "../loop/loop-command-probe.test.mjs";
 import { capturingReport, emitsPassing, gradingCtx, stubRubric } from "../support/loop-grade-fixture.mjs";
@@ -266,11 +269,11 @@ export const gradeWaitsWithoutBlockingTests = [
   {
     name: "81/00 the deadline resolves through 69's one home, and the grade path declares none of its own",
     run: async () => {
-      const code = (await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8"))
+      const code = (await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8"))
         .replace(/\/\/[^\n]*/g, "")
         .replace(/\/\*[\s\S]*?\*\//g, "");
 
-      assert.match(code, /from "\.\.\/loop-bounds\.mjs"/, "it resolves its deadline through src/loop-bounds.mjs");
+      assert.match(code, /from "@aof\/contracts\/loop-bounds"/, "it resolves its deadline through packages/core/src/loop-bounds.mjs");
       // THE GUARD THAT PINNED THE OLD RESOLVER BY NAME NOW PINS THE NEW ONE.
       assert.match(code, /gradeDeadlineFromConfig/, "…by the derived resolver's name");
       assert.ok(!code.includes("startToCloseFromConfig"), "…and no longer by the unclamped one it used to");
@@ -280,7 +283,7 @@ export const gradeWaitsWithoutBlockingTests = [
 
       // NO NEW `work.loop.*` KEY IS DECLARED, so the tuner's declared ranges are unchanged.
       // Asserted over the registries themselves rather than over prose about them.
-      const bounds = await import("../../src/loop-bounds.mjs");
+      const bounds = await import("@aof/contracts/loop-bounds");
       assert.deepEqual(
         [...bounds.LOOP_BOUND_CONFIG_KEYS].sort(),
         [...bounds.LOOP_BOUND_VALUE_KEYS].sort(),
@@ -519,18 +522,18 @@ export const gradeWaitsWithoutBlockingTests = [
     run: async () => {
       const strip = (text) => text.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
       const spawners = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const code = strip(await readFile(file.path, "utf8"));
         const readsTheRubric = /work\?\.rubric|work\.rubric|RUBRIC_CONFIG_KEY/.test(code);
         const spawns = /\bspawnSync\s*\(|\bspawn\w*\s*\(|\bexecFile|\bexec\s*\(/.test(code);
         if (readsTheRubric && spawns) spawners.push(file.rel);
       }
-      assert.deepEqual(spawners, ["commands/grade.mjs"], "exactly one module spawns the declared rubric argv, and it is the registered grade command");
+      assert.deepEqual(spawners, ["packages/work/src/commands/grade.mjs"], "exactly one module spawns the declared rubric argv, and it is the registered grade command");
 
       // THE PURE LEAF IS UNTOUCHED — no child process facility, no clock (FF-5406).
-      const leaf = strip(await readFile(path.join(repoRoot, "src", "work", "grade.mjs"), "utf8"));
+      const leaf = strip(await readFile(path.join(repoRoot, "packages", "work", "src", "grade.mjs"), "utf8"));
       for (const forbidden of ["node:child_process", "spawnSync", "spawn(", "Date.now(", "new Date("]) {
-        assert.ok(!leaf.includes(forbidden), `src/work/grade.mjs imports no child-process facility and reads no clock (found ${forbidden})`);
+        assert.ok(!leaf.includes(forbidden), `packages/core/src/work/grade.mjs imports no child-process facility and reads no clock (found ${forbidden})`);
       }
 
       // THE READ FACE STILL LAUNCHES NOTHING WITHOUT `--run`.

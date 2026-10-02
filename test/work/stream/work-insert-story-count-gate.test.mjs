@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 03 (insert-story), task
 //   wiki/work/41_milestone_work-item-insertion/stories/03_story_insert-story/
 //     tasks/03_count-gated-confirmation-and-yes-override.feature
@@ -10,8 +12,9 @@
 // explicitly in the fixture config so the test is resilient to any future
 // named-default change.
 import assert from "node:assert/strict";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, listItems } from "../../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
 import { withInsertFixture, buildMilestone, writeStoryItem, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 const THRESHOLD_CONFIG = { work: { insert: { confirmThreshold: 5 } } };

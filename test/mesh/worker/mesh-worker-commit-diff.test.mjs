@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/worker/mesh-worker-commit-diff.test.mjs — VERIFICATION F-38.06i (live two-machine soak
 // 2026-07-25). Story 07's push-home (ADR-015) shipped verified against a scripted agent
 // that COMMITTED its own diff (mesh-worker-push-before-remove.test.mjs's
@@ -16,10 +18,16 @@ import { writeFile, mkdir, mkdtemp, readFile, realpath, rm, unlink } from "node:
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler, commitWorktreeChanges, resolveRefInWorktree } from "../../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath, meshItemBranchName, addDispatchWorktree, commitWorktreeChanges as commitWorktreeChangesFromHome } from "../../../src/mesh/worktree.mjs";
-import { resolveRefInWorktree as resolveRefInWorktreeFromHome } from "../../../src/work/dispatch.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const commitWorktreeChanges = _aofApplication.mesh.worker.commitWorktreeChanges;
+const resolveRefInWorktree = _aofApplication.mesh.worker.resolveRefInWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const addDispatchWorktree = _aofApplication.mesh.worktree.addDispatchWorktree;
+const commitWorktreeChangesFromHome = _aofApplication.mesh.worktree.commitWorktreeChanges;
+const resolveRefInWorktreeFromHome = _aofApplication.loop.work.dispatch.resolveRefInWorktree;
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 import { withMeshWorkerPushFixture } from "../../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
@@ -94,7 +102,7 @@ function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
 }
 
-// withMoveFixture(body) — a repo at T0 holding a tracked `src/a.mjs`, `README.md`, a plain
+// withMoveFixture(body) — a repo at T0 holding a tracked `packages/core/src/a.mjs`, `README.md`, a plain
 // `wiki/work/07_m/STATE.md` (the paths-scope subject; `07_m` is not an item dir, so the work
 // scanner skips it), a VALID work stream for `07/01`, a committed `.aof/aof.config.json`, and a
 // dispatch worktree for `07/01` on `aof/mesh/07-01` at T0.
@@ -278,16 +286,19 @@ export const meshWorkerCommitDiffTests = [
   },
 
   // ════════════════════════════════════════════════════════════════════════════
-  // 129/03 task 00 — commitWorktreeChanges moves to src/mesh/worktree.mjs and gains a
-  // paths scope; resolveRefInWorktree moves to src/work/dispatch.mjs; both re-exported
+  // 129/03 task 00 — commitWorktreeChanges moves to packages/core/src/mesh/worktree.mjs and gains a
+  // paths scope; resolveRefInWorktree moves to packages/core/src/work/dispatch.mjs; both re-exported
   // ════════════════════════════════════════════════════════════════════════════
   {
     name: "129/03 task 00 — the definition lives in worktree.mjs and the re-export is the same reference",
     run: async () => {
       assert.strictEqual(commitWorktreeChanges, commitWorktreeChangesFromHome, "both bindings are the same function");
-      const sink = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
+      const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+commitWorktreeChanges\b/u, "worker-execution.mjs contains no `function commitWorktreeChanges` definition");
-      assert.match(sink, /export\s*\{[^}]*\bcommitWorktreeChanges\b[^}]*\}\s*from\s*["']\.\/worktree\.mjs["']/u, "worker-execution.mjs carries commitWorktreeChanges in an `export { … } from \"./worktree.mjs\"` clause");
+      assert.match(adapter, /"commitWorktreeChanges":\s*meshWorktreeServices\.commitWorktreeChanges/u, "the compatibility API returns the supplied worktree operation");
+      assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "meshWorktreeServices" && edge.specifier === "./worktree.mjs"), "the operation comes from the worktree constructor");
     },
   },
   ...DIRT_ROWS.map((row) => ({
@@ -389,7 +400,9 @@ export const meshWorkerCommitDiffTests = [
   {
     name: "129/03 task 00 — the worker's two call sites are unchanged lines",
     run: async () => {
-      const sink = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
+      const sink = adapter + "\n" + implementation;
       const sites = [...sink.matchAll(/\bcommitWorktreeChanges\s*\(/gu)];
       assert.equal(sites.length, 2, "exactly two commitWorktreeChanges( call sites");
       for (const site of sites) {
@@ -454,17 +467,21 @@ export const meshWorkerCommitDiffTests = [
     name: "129/03 task 00 — resolveRefInWorktree is defined in dispatch.mjs and re-exported from the god-node",
     run: async () => {
       assert.strictEqual(resolveRefInWorktree, resolveRefInWorktreeFromHome, "both bindings are the same function");
-      const sink = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worker-execution.mjs"), "utf8"));
+      const implementation = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs"), "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worker-execution.mjs"), "utf8"));
+      const sink = adapter + "\n" + implementation;
       assert.doesNotMatch(sink, /function\s+resolveRefInWorktree\b/u, "worker-execution.mjs contains no `function resolveRefInWorktree` definition");
       assert.doesNotMatch(sink, /function\s+worktreeWorkDir\b/u, "…and no `function worktreeWorkDir` definition");
-      assert.match(sink, /export\s*\{[^}]*\bresolveRefInWorktree\b[^}]*\}\s*from\s*["']\.\.\/work\/dispatch\.mjs["']/u, "…and re-exports resolveRefInWorktree from ../work/dispatch.mjs");
-      const home = stripComments(await readFile(path.join(repoRoot, "src", "work", "dispatch.mjs"), "utf8"));
-      assert.match(home, /export\s+async\s+function\s+resolveRefInWorktree\b/u, "dispatch.mjs defines resolveRefInWorktree");
-      assert.match(home, /export\s+function\s+worktreeWorkDir\b/u, "…and worktreeWorkDir");
+      assert.match(adapter, /"resolveRefInWorktree":\s*workDispatchServices\.resolveRefInWorktree/u, "the compatibility API returns the supplied dispatch resolver");
+      assert.ok(dependencySpecifiers(adapter).some(edge => edge.parameter === "workDispatchServices" && edge.specifier === "../work/dispatch.mjs"), "the resolver comes from the dispatch constructor");
+      const home = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "dispatch.mjs"), "utf8"));
+      assert.match(home, /async\s+function\s+resolveRefInWorktree\b/u, "dispatch.mjs defines resolveRefInWorktree");
+      assert.match(home, /function\s+worktreeWorkDir\b/u, "…and worktreeWorkDir");
       // worktree.mjs GAINS no import of ../work.mjs: its one pre-existing `loadWorkspace` import
       // line is the only one, and it takes no `findWork` — the resolver's edge is dispatch.mjs's.
-      const worktreeSource = stripComments(await readFile(path.join(repoRoot, "src", "mesh", "worktree.mjs"), "utf8"));
-      const workImports = [...worktreeSource.matchAll(/^\s*import\s*\{([^}]*)\}\s*from\s*["']\.\.\/work\.mjs["']/gmu)];
+      const worktreeSource = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/worktree.mjs"), "utf8"));
+      assert.ok(dependencySpecifiers(worktreeSource).some(edge => edge.parameter === "workServices" && edge.specifier === "../work.mjs"), "the worktree constructor receives the work service");
+      const workImports = [...worktreeSource.matchAll(/const\s*\{([^}]*)\}\s*=\s*workServices/gmu)];
       assert.equal(workImports.length, 1, "worktree.mjs carries exactly its one pre-existing ../work.mjs import line");
       assert.deepEqual(workImports[0][1].split(",").map((name) => name.trim()).filter(Boolean), ["loadWorkspace"], "…binding loadWorkspace alone, as before this story");
       assert.doesNotMatch(worktreeSource, /\bfindWork\b/u, "worktree.mjs never reaches findWork");

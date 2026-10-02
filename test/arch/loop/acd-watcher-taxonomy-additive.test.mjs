@@ -1,9 +1,13 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ADMITTED_KEYS, EDGE_KEYS, NODE_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const EDGE_KEYS = _aofApplication.graph.work.loops.EDGE_KEYS;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../../support/registry-fixture.mjs";
 
@@ -81,7 +85,7 @@ export const archTests = [
   {
     name: "arch/57 FF-5701: watcher taxonomy widens additively and admits no actuator",
     run: async () => {
-      const loaderSource = await readFile(path.join(root, "src", "work", "loops.mjs"), "utf8");
+      const loaderSource = await readFile(path.join(root, "packages/work-graph/src/registry.mjs"), "utf8");
       // `watcher` stays where 57 put it, with 58's `arbiter` and 59's `auditor` appended after it —
       // the ORDER is asserted, so a widening that re-sorted the enum would fail here too.
       assert.deepEqual([...NODE_KINDS], [...priorKinds, "watcher", "arbiter", "auditor"]);

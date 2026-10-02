@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -20,19 +20,14 @@
 // while running never (m35/R4).
 import { workLoopsRecordTests } from "./work-loops-record.test.mjs";
 import { workLoopsValueTests } from "./work-loops-value.test.mjs";
-import { workLoopsChecksTests } from "./work-loops-checks.test.mjs";
+
 import { workLoopsCommandsTests } from "./work-loops-commands.test.mjs";
 import { workLoopsRegistryCensusTests } from "./work-loops-registry-census.test.mjs";
 import { workLoopsCoverageLedgerTests } from "./work-loops-coverage-ledger.test.mjs";
 // milestone 53 / story 01 — the pure loop engine's seven executable task suites.
 // Each suite is imported and spread with the module whose decisions it mechanises.
-import { workLoopScopeGuardTests } from "./work-loop-scope-guard.test.mjs";
-import { workLoopLevelLadderTests } from "./work-loop-level-ladder.test.mjs";
 import { workLoopPhaseMapTests } from "./work-loop-phase-map.test.mjs";
-import { workLoopStopSetTests } from "./work-loop-stop-set.test.mjs";
-import { workLoopGateOrderTests } from "./work-loop-gate-order.test.mjs";
 import { workLoopDeclarationTests } from "./work-loop-declaration.test.mjs";
-import { workLoopDeterminismTests } from "./work-loop-determinism.test.mjs";
 // milestone 53 / story 02 — the launcher shell and local phase executors.
 import { driveCommandPhaseDriverTests } from "./drive-command-phase-drivers.test.mjs";
 import { loopCommandProbeTests } from "./loop-command-probe.test.mjs";
@@ -45,7 +40,7 @@ import { loopCommandResumeTests } from "./loop-command-resume.test.mjs";
 // The structural half is `test/arch/loop/acd-loop-narrates-in-flight.test.mjs`.
 import { loopCommandNarrationTests } from "./loop-command-narration.test.mjs";
 // milestone 129 / story 04 — THE WAVE TICK. Two behavioural suites over a REAL git repo: the
-// per-story ladder extracted to `src/loop/cycle.mjs`, the lanes (open → mint → child → settle →
+// per-story ladder extracted to `packages/core/src/loop/cycle.mjs`, the lanes (open → mint → child → settle →
 // ladder → commit → merge → cleanup), the per-base-commit baseline, the milestone-level wave run
 // and its heartbeat, and dispatch's admission (tasks 00, 02, 03, 04, 05); and the three phases of
 // `refine_first`, the fresh gate, the two signals, the parent deadline and the resume
@@ -72,7 +67,7 @@ import { loopReadyJsonKeyTests } from "./loop-ready-json-key.test.mjs";
 import { loopReadyRegistryAbsentTests } from "./loop-ready-registry-absent.test.mjs";
 import { loopReadyComposedTests } from "./loop-ready-composed.test.mjs";
 import { loopReadyBaseChecksTests } from "./loop-ready-base-checks.test.mjs";
-import { loopReadyScoreTests } from "./loop-ready-score.test.mjs";
+
 // milestone 53 / story 04 — the autonomous prompt hands the range to the code-owned
 // shell while retaining its solo/ship wrapper semantics and existing bundle door.
 import { autonomousShellOutPromptTests } from "./autonomous-shell-out-prompt.test.mjs";
@@ -83,7 +78,7 @@ import { groundednessReportTests } from "./groundedness-report.test.mjs";
 import { l3LadderWidensTests } from "./l3-ladder-widens.test.mjs";
 import { l3GateComputedTests } from "./l3-gate-computed.test.mjs";
 import { l3GateRefusalTests } from "./l3-gate-refusal.test.mjs";
-import { l3AnchorCheckScoreTests } from "./l3-anchor-check-score.test.mjs";
+
 // milestone 57 / story 00 — the fourth loop-registry node kind, its frozen
 // declaration vocabulary, the existing outbound monitoring edge, and FF-5701.
 import { watcherNodeTests } from "./watcher-node.test.mjs";
@@ -105,7 +100,6 @@ import { triggerDeclarationTests } from "./trigger-declaration.test.mjs";
 // `work:loop` gates with when it is entered), refused BY NAME with the failing half named, never
 // silently downgraded, and with an ABSENT level and a REFUSED level kept as two different answers
 // — all four @executable task features, plus FF-6304.
-import { triggerLevelCeilingTests } from "./trigger-level-ceiling.test.mjs";
 // milestone 63 / story 04 — the three signals that are NOT the mesh: a cadence, a CI signal and an
 // inbound finding, each answering only WHICH SCOPE and carrying nothing else; a finding-triggered
 // wake that keys on a capture EXISTING and never on what it says (55/ADR-005 holding at its second
@@ -122,7 +116,7 @@ import { triggerSourcesTests } from "./trigger-sources.test.mjs";
 // it resolved before. All four @executable task features, plus FF-6305.
 import { unattendedLaunchEnvelopeTests } from "./unattended-launch-envelope.test.mjs";
 // milestone 63 / story 05 — THE TRIGGER'S FACE: the milestone's one registered surface and its
-// only convergence. `work:trigger` composes the four `src/work-trigger/` leaves, obtains the two
+// only convergence. `work:trigger` composes the four `packages/core/src/work-trigger/` leaves, obtains the two
 // gate readings through the registry exactly as `work:loop` gathers them when it fires, and emits
 // the `work:loop` input each declared trigger resolves to plus the argv that carries it — and
 // LAUNCHES NOTHING, which is structural rather than careful (53/ADR-005 left the loop exactly one
@@ -150,9 +144,8 @@ import { reviewStaysColdTests } from "./review-stays-cold.test.mjs";
 // EXTENDS acd-loop-cap-single-home in its existing registered suite above, and
 // this story's own rows ride the loop-bounds suite that already declares them.
 import { loopBoundsTests, clampTests } from "./loop-bounds.test.mjs";
-// 2026-09-11 — the loop's exit-reason recorder (src/loop-diag.mjs).
+// 2026-09-11 — the loop's exit-reason recorder (packages/core/src/loop-diag.mjs).
 import { loopDiagTests } from "./loop-diag.test.mjs";
-import { workLoopReviewBoundTests } from "./work-loop-review-bound.test.mjs";
 import { workLoopProductionReviewBoundTests } from "./work-loop-production-review-bound.test.mjs";
 import { workLoopsResolvedCeilingsTests } from "./work-loops-resolved-ceilings.test.mjs";
 // milestone 69 / story 03 — deterministic progress samples, append-only ledger,
@@ -166,7 +159,7 @@ import { laneIsLocalSlotTests } from "./lane-is-local-slot.test.mjs";
 //   SHIPPED detectors: part 1 generalised to a surface → posture-home table with PER-SURFACE JSX
 //   floors (a concatenated floor is satisfied by Fleet alone and leaves the home unchecked — this
 //   clause's own recorded failure mode, and the floor plant is what proves it), part 2 untouched,
-//   part 3 untouched plus a `ui/src/home/**` sweep. The last two lanes are the strictly-stronger
+//   part 3 untouched plus a `apps/ui/src/home/**` sweep. The last two lanes are the strictly-stronger
 //   checklist: twelve surviving assertions re-run, eight additions, nothing exempted.
 import { invariant4AmendedTests } from "./invariant-4-amended.test.mjs";
 // milestone 57 / story 01 — computed watcher independence (tasks 00–02) and
@@ -239,7 +232,7 @@ import { loopRecordProjectionTests, loopRecordRegistryShapeTests } from "./loop-
 // loops-graph.mjs byte-unmodified, asked of git rather than of a digest someone re-stamps) and
 // FF-7806 (the four declared-ceiling states are PAIRWISE distinguishable in the rendered bytes,
 // which is the requirement SPEC.md opens with).
-import { loopRecordRenderTests } from "./loop-record-render.test.mjs";
+
 // milestone 78 / story 02 — the record COMMAND: the read face, the writer, and the frozen lists it
 // moves. One behavioural suite over the two task contracts it owns (the read face; the writer's
 // byte-identity and signature preservation), plus the four gates the story's fitness functions name:
@@ -262,18 +255,12 @@ export const tests = [
   // milestone 52 / story 05 — the six behavioural suites and their coverage ledger
   ...workLoopsRecordTests,
   ...workLoopsValueTests,
-  ...workLoopsChecksTests,
   ...workLoopsCommandsTests,
   ...workLoopsRegistryCensusTests,
   ...workLoopsCoverageLedgerTests,
   // milestone 53 / story 01 — scope, level, phase, stops, gate, declaration, determinism
-  ...workLoopScopeGuardTests,
-  ...workLoopLevelLadderTests,
   ...workLoopPhaseMapTests,
-  ...workLoopStopSetTests,
-  ...workLoopGateOrderTests,
   ...workLoopDeclarationTests,
-  ...workLoopDeterminismTests,
   // milestone 53 / story 02 — one code-owned shell and three local executors
   ...driveCommandPhaseDriverTests,
   ...loopCommandProbeTests,
@@ -298,7 +285,6 @@ export const tests = [
   ...loopReadyRegistryAbsentTests,
   ...loopReadyComposedTests,
   ...loopReadyBaseChecksTests,
-  ...loopReadyScoreTests,
   // milestone 53 / story 04 — one prompt-side door, no second prose loop
   ...autonomousShellOutPromptTests,
   // milestone 55 / story 01 — groundedness behavior and the unchanged SCC gate
@@ -307,7 +293,6 @@ export const tests = [
   ...l3LadderWidensTests,
   ...l3GateComputedTests,
   ...l3GateRefusalTests,
-  ...l3AnchorCheckScoreTests,
   // milestone 57 / story 00 — watcher grammar and its additive fitness gate
   ...watcherNodeTests,
   // milestone 58 / story 03 — the supervision face: the layer, the computed reference-setter, and one shape per declared kind
@@ -315,7 +300,6 @@ export const tests = [
   // milestone 63 / story 00 — the trigger declaration (tasks 00–04) plus FF-6302.
   ...triggerDeclarationTests,
   // milestone 63 / story 01 — the level is a ceiling, not an admission (tasks 00–03) plus FF-6304.
-  ...triggerLevelCeilingTests,
   // milestone 63 / story 04 — the signals that are not the mesh (tasks 00–04) plus FF-6307.
   ...triggerSourcesTests,
   // milestone 63 / story 02 — the launch envelope compiles (tasks 00–03) plus FF-6305.
@@ -334,7 +318,6 @@ export const tests = [
   // milestone 61 / story 00 — the clamp (tasks 00, 01, 02). FF-6111 rides the
   // already-spread acdLoopCapSingleHomeTests suite above.
   ...clampTests,
-  ...workLoopReviewBoundTests,
   ...workLoopProductionReviewBoundTests,
   ...workLoopsResolvedCeilingsTests,
   // milestone 69 / story 03 — all three executable tasks + FF-6906.
@@ -369,7 +352,6 @@ export const tests = [
   ...loopRecordProjectionTests,
   ...loopRecordRegistryShapeTests,
   // milestone 78 / story 01 — the renderer's two faces and its two fitness functions.
-  ...loopRecordRenderTests,
   // milestone 78 / story 02 — the record command's two task contracts and its five fitness
   // functions (see the import note).
   ...loopRecordFixtureShapeTests,

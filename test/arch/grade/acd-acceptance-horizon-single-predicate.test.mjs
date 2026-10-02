@@ -1,12 +1,16 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6602 (milestone 66 / ADR-002 + ADR-009) — THE ACCEPTANCE HORIZON HAS ONE HOME
 // AND NEVER GATES AN IMMUTABLE RECORD.
 //
 // "A single exported predicate decides it; every check calls it; no `severity:"error"`
-//  finding is emitted for a path under a `done` item; no code path in `src/` opens an
+//  finding is emitted for a path under a `done` item; no code path in `packages/core/src/` opens an
 //  EXISTING `.feature` for writing (create-only scaffolding is admitted)."
 //
 // MEASURED AT HEAD (ADR-009/A): ONE write site, create-only
-// (`src/commands/migrate-folder.mjs:244-248` — ADR-009/A cited `:225-229`, which is
+// (`packages/work/src/commands/migrate-folder.mjs:251-255` — ADR-009/A cited `:225-229`, which is
 // where it sat before 66/00 declared the flag at that call, and `:231-235` until 119/02's
 // prose sweep moved this module's registry rationale into its header, 11 lines above the
 // call, and `:242-246` until 127/01 retired its private `ITEM_RE` + `nextFreeSlot` onto the one
@@ -24,7 +28,7 @@
 // THE SCAN'S HONEST BOUNDARY. It reaches write calls whose argument text NAMES a
 // `.feature` — the same reading ADR-009/A's measurement was made with. A write whose
 // path is computed entirely at runtime (a member name off a manifest) is outside it;
-// none exists under `src/` today, and saying so here is cheaper than discovering the
+// none exists under `packages/core/src/` today, and saying so here is cheaper than discovering the
 // gap later.
 //
 // ════════════════════════════════════════════════════════════════════════════════════
@@ -46,7 +50,7 @@
 //     predicate passes on every case in this tree and would silently never close an epoch
 //     for a milestone parked in review — which the lifecycle admits and 3 of 4 spikes have
 //     already done.
-//   • No module under `src/work-acceptor/` — nor `src/commands/acceptor.mjs` — spells any
+//   • No module under `packages/core/src/work-acceptor/` — nor `packages/core/src/commands/acceptor.mjs` — spells any
 //     of the five status words, so the acceptor cannot acquire a second opinion about them.
 //   • The criterion-revision window is computed from the two record sources ADR-004 §1b
 //     names and NOT from the set of open milestones. That reading is an off switch and the
@@ -58,13 +62,15 @@
 //     on somebody else's.
 // ════════════════════════════════════════════════════════════════════════════════════
 import assert from "node:assert/strict";
-import { readdir, readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ITEM_STATUS_EDGES, closesEpoch, isOpen, severityFor, VALID_STATUS } from "../../../src/acceptance-horizon.mjs";
-import { validateWork } from "../../../src/work.mjs";
-import { ACCEPTOR_EPOCH_CADENCE, criterionRevisionWindow } from "../../../src/work-acceptor/criterion.mjs";
+import { ITEM_STATUS_EDGES, closesEpoch, isOpen, severityFor, VALID_STATUS } from "@aof/work/lifecycle";
+const validateWork = _aofWorkspace.work.validateWork;
+const ACCEPTOR_EPOCH_CADENCE = _aofApplication.work.acceptor.criterion.ACCEPTOR_EPOCH_CADENCE;
+const criterionRevisionWindow = _aofApplication.work.acceptor.criterion.criterionRevisionWindow;
 // THE ONE HOME for cutting source (milestone 47 / F-47-04-ARCH-2). Its `stripComments`
 // strips LINE COMMENTS FIRST (TECH_DEBT item 24), and its cuts are structural — a
 // second brace balancer written beside it, or a fixed character window, is the exact
@@ -72,19 +78,19 @@ import { ACCEPTOR_EPOCH_CADENCE, criterionRevisionWindow } from "../../../src/wo
 import { stripComments, functionBody, matchedBraceBody, matchedParenSpan, blockOrStatementAfter } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
-const THE_ONE_HOME = "src/acceptance-horizon.mjs";
+const THE_ONE_HOME = "packages/work/src/lifecycle.mjs";
 // 61/FF-6104's subjects. The acceptor's directory, and the face that has not landed yet —
 // named rather than globbed, so the day it arrives it is already inside the sweep.
-const ACCEPTOR_DIR = "src/work-acceptor";
-const ACCEPTOR_FACE = "src/commands/acceptor.mjs";
+const ACCEPTOR_DIR = "packages/work/src/acceptor";
+const ACCEPTOR_FACE = "packages/work/src/commands/acceptor.mjs";
 // The lifecycle's five words, spelled ONCE here so the two 61 legs below and the 66 lane
 // above ask the same question of the tree.
 const THE_FROZEN_FIVE = ["not-started", "in-progress", "blocked", "in-review", "done"];
 // The auditor's own record, read where a workspace carries it (ADR-004 §3 cites `:8`).
 const AUDITOR_RECORD = path.join(repoRoot, ".aof", "loops", "instrument-audit.md");
-const THE_NAMED_WRITE_SITE = "src/commands/migrate-folder.mjs";
+const THE_NAMED_WRITE_SITE = "packages/work/src/commands/migrate-folder.mjs";
 // The line the call sits on — a citation a test can check is a citation that stays true.
 // And it did what it was built to do: 119/02 added no code to this module and still moved this
 // call eleven lines, by putting the registry's rationale into the module's own header. A stored
@@ -93,9 +99,9 @@ const THE_NAMED_WRITE_SITE = "src/commands/migrate-folder.mjs";
 // …and 127/01 moved it two more, to :244 — the module's private `ITEM_RE` copy and its
 // `nextFreeSlot` scan retired onto the one enumerator and the one mint (127/ADR-001 §5), and the
 // import that replaced them carries its rationale above the call.
-const THE_NAMED_WRITE_LINE = 244;
+const THE_NAMED_WRITE_LINE = 251;
 
-// Write-shaped callees: every door under `src/` through which bytes reach a path.
+// Write-shaped callees: every door under `packages/core/src/` through which bytes reach a path.
 const WRITE_CALLS = [
   "writeFile",
   "writeFileSync",
@@ -201,7 +207,7 @@ function featureNamers(code) {
   return names;
 }
 
-// featureWriteSites(sources) → every write call under `src/` whose target NAMES a
+// featureWriteSites(sources) → every write call under `packages/core/src/` whose target NAMES a
 // `.feature` — directly, or through a local helper that does. Records whether the call
 // declares itself create-only AT THE CALL. Pure, so the planted-defect lanes drive the
 // same function the real scan uses.
@@ -231,24 +237,15 @@ export function featureWriteSites(sources) {
 }
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
+  assert.ok(files.some(file => file.rel === THE_ONE_HOME), 'the lifecycle implementation is scanned');
+  return Promise.all(files.map(async file => ({ file: file.rel, text: await readFile(file.path, 'utf8') })));
 }
 
 // The horizon's severity ruling (ADR-002 §2/§3) is IMPORTED from the one home
 // (F-09, closed by 66/02): it was a local copy here and a second one in
 // `test/grade/acceptance-horizon.test.mjs` for as long as no shipped code emitted a
-// severity. 66/02's controls lane emits one, so the decision lives in `src/` and
+// severity. 66/02's controls lane emits one, so the decision lives in `packages/core/src/` and
 // both copies are deleted rather than kept in sync.
 
 const frontmatter = (fields) =>
@@ -300,7 +297,7 @@ export const archTests = [
       const second = sources.filter((entry) => entry.file !== THE_ONE_HOME && HORIZON_NAME.test(entry.body));
       assert.deepEqual(second.map((entry) => entry.file), [], "no second implementation of the same decision exists anywhere under src/");
 
-      // (b) …and no second copy of the vocabulary it closes on. `src/import/recovery.mjs`
+      // (b) …and no second copy of the vocabulary it closes on. `packages/core/src/import/recovery.mjs`
       // WAS that copy — `normalizeStatus` spelled all five words as literals — and it
       // now destructures them out of `VALID_STATUS`, so the copy is gone rather than
       // excused. This lane was green before the stripper fix ONLY because that module's
@@ -323,8 +320,8 @@ export const archTests = [
   {
     name: "arch/FF-6602: every check calls it — validate's lane reaches the decision by import, never by re-deciding it",
     run: async () => {
-      const text = await readFile(path.join(srcDir, "work.mjs"), "utf8");
-      assert.match(text, /import\s*\{[^}]*\bisOpen\b[^}]*\}\s*from\s*"\.\/acceptance-horizon\.mjs"/);
+      const text = await readFile(path.join(repoRoot, "packages/work/src/validation.mjs"), "utf8");
+      assert.match(text, /import\s*\{[^}]*\bisOpen\b[^}]*\}\s*from\s*"\.\/lifecycle\.mjs"/);
       // Cut on the language's structure (the one home), so a moved declaration fails as
       // "not found" rather than as a false claim about the rule.
       const cut = functionBody(stripComments(text), "export async function validateWork");
@@ -395,14 +392,14 @@ export const archTests = [
     run: () => {
       const flagless = featureWriteSites([
         {
-          file: "src/pretend-rewriter.mjs",
+          file: "packages/core/src/pretend-rewriter.mjs",
           text: 'await writeFile(path.join(tasksDir, `${slug}.feature`), render(task), "utf8");\n',
         },
       ]);
-      assert.deepEqual(flagless.map((site) => [site.file, site.createOnly]), [["src/pretend-rewriter.mjs", false]], "a truncating write IS a finding");
+      assert.deepEqual(flagless.map((site) => [site.file, site.createOnly]), [["packages/core/src/pretend-rewriter.mjs", false]], "a truncating write IS a finding");
       const guarded = featureWriteSites([
         {
-          file: "src/pretend-scaffold.mjs",
+          file: "packages/core/src/pretend-scaffold.mjs",
           text: 'await writeFile(path.join(tasksDir, `${slug}.feature`), render(task), { encoding: "utf8", flag: "wx" });\n',
         },
       ]);
@@ -412,7 +409,7 @@ export const archTests = [
       // shape, and a scan reading only the call text reported ZERO sites for it.
       const indirect = featureWriteSites([
         {
-          file: "src/pretend-indirect.mjs",
+          file: "packages/core/src/pretend-indirect.mjs",
           text:
             "function taskFeatureName(task) {\n  return `${task.number}_${task.slug}.feature`;\n}\n" +
             'await writeFile(path.join(tasksDir, taskFeatureName(task)), render(task), "utf8");\n',
@@ -420,13 +417,13 @@ export const archTests = [
       ]);
       assert.deepEqual(
         indirect.map((site) => [site.file, site.createOnly]),
-        [["src/pretend-indirect.mjs", false]],
+        [["packages/core/src/pretend-indirect.mjs", false]],
         "a flagless write through a local name-builder is still detected",
       );
       // A comment is not a write site, and neither is a `.feature` read.
       assert.deepEqual(
         featureWriteSites([
-          { file: "src/pretend-reader.mjs", text: '// writeFile(x, y) would rewrite a .feature\nif (entry.name.endsWith(".feature")) await readFile(entry.path, "utf8");\n' },
+          { file: "packages/core/src/pretend-reader.mjs", text: '// writeFile(x, y) would rewrite a .feature\nif (entry.name.endsWith(".feature")) await readFile(entry.path, "utf8");\n' },
         ]),
         [],
         "reading a `.feature` is not writing one",
@@ -477,7 +474,7 @@ export const archTests = [
       assert.ok(sources.length > 100, `non-vacuity: the scan walked src/ (${sources.length} modules)`);
 
       // (a) ONE HOME. `closesEpoch` is declared in the horizon leaf and nowhere else under
-      // `src/` — every other module reaches the decision by import.
+      // `packages/core/src/` — every other module reaches the decision by import.
       const declares = sources.filter((entry) => /\b(?:function|const|let)\s+closesEpoch\b/.test(entry.body));
       assert.deepEqual(declares.map((entry) => entry.file), [THE_ONE_HOME], "the boundary predicate has exactly one home");
       assert.equal(typeof closesEpoch, "function", "…and it is exported from it");
@@ -501,7 +498,7 @@ export const archTests = [
       assert.equal(closesEpoch.length, 1, "…and it really takes one argument, so a from-state cannot be passed to it");
       // The payload's own object literal, cut on matched braces from the ONE HOME — never
       // an `indexOf("};")` sentinel, which assumes a declaration order nothing pins.
-      const payload = stripComments(await readFile(path.join(srcDir, "effects", "item-transitions.mjs"), "utf8"));
+      const payload = stripComments(await readFile(path.join(srcDir, "../../work/src/item-transitions.mjs"), "utf8"));
       const payloadAt = payload.indexOf("const payload =");
       assert.ok(payloadAt >= 0, "the transition seam still builds a payload");
       const payloadBody = matchedBraceBody(payload, payload.indexOf("{", payloadAt));
@@ -540,7 +537,7 @@ export const archTests = [
       // fact rather than a coincidence.
       const criterion = acceptorSources.find((entry) => entry.file === `${ACCEPTOR_DIR}/criterion.mjs`);
       assert.ok(criterion != null, "the criterion module is in the sweep");
-      assert.match(criterion.body, /import\s*\{[^}]*\bclosesEpoch\b[^}]*\}\s*from\s*"\.\.\/acceptance-horizon\.mjs"/);
+      assert.match(criterion.body, /import\s*\{[^}]*\bclosesEpoch\b[^}]*\}\s*from\s*"\.\.\/lifecycle\.mjs"/);
     },
   },
 
@@ -566,8 +563,8 @@ export const archTests = [
 
       // AND THE OPEN MILESTONES CANNOT REACH THE ANSWER AT ALL: the function takes one
       // options object naming the two record sources, and its body asks nothing else.
-      const acceptor = stripComments(await readFile(path.join(srcDir, "work-acceptor", "criterion.mjs"), "utf8"));
-      const body = functionBody(acceptor, "export function criterionRevisionWindow");
+      const acceptor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/acceptor", "criterion.mjs"), "utf8"));
+      const body = functionBody(acceptor, "function criterionRevisionWindow");
       assert.ok(body != null, "the window's body was found");
       assert.equal(/\bisOpen\b|milestones|VALID_STATUS|ITEM_STATUS_EDGES/.test(body), false, "it derives nothing from the set of open milestones");
       assert.match(body, /rulings/, "it reads the ledger…");
@@ -588,7 +585,7 @@ export const archTests = [
       assert.equal(declared[1], "event:per-milestone", "the auditor's record says what ADR-004 §3 cites");
       assert.equal(ACCEPTOR_EPOCH_CADENCE, declared[1], "and the acceptor's declared epoch equals it");
 
-      const acceptor = await readFile(path.join(srcDir, "work-acceptor", "criterion.mjs"), "utf8");
+      const acceptor = await readFile(path.join(repoRoot, "packages/work/src/acceptor", "criterion.mjs"), "utf8");
       assert.equal(
         /readFile\([^)]*instrument-audit/.test(stripComments(acceptor)),
         false,

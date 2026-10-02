@@ -5,18 +5,18 @@
 // `aof work archive` is a verbatim MOVE: a done driver's folder goes under `archive/`, its number is
 // its identity and stays, and nothing a citation depends on is rewritten. The structural form of
 // that promise (ADR-004 §5) is what this control holds, over BOTH files the story lands — the face
-// `src/commands/archive.mjs` (the register row's subject) and the engine `src/work/archive.mjs`
+// `packages/core/src/commands/archive.mjs` (the register row's subject) and the engine `packages/core/src/work/archive.mjs`
 // (task 03's placement, ratified at refine: the seam imports its fact-writers, and a command
 // cannot be one without a cycle). Five legs:
 //
 //   (a) DIRECT IMPORTS ARE A CLOSED SET. The face's import specifiers resolve to a subset of
-//       { node:*, src/work.mjs, src/effects/stream-transitions.mjs, src/command-error.mjs }; the
-//       engine's to a subset of { node:*, src/work.mjs }. Neither names `src/work/reindex.mjs`,
-//       `src/commands/insert-shared.mjs`, `src/work-promote/promotion.mjs` or any `src/commands/*`.
-//   (b) THE TRANSITIVE PATH IS THE SEAM AND NOTHING ELSE. A breadth-first walk over `src/**` from
+//       { node:*, packages/core/src/work.mjs, packages/core/src/effects/stream-transitions.mjs, packages/core/src/command-error.mjs }; the
+//       engine's to a subset of { node:*, packages/core/src/work.mjs }. Neither names `packages/core/src/work/reindex.mjs`,
+//       `packages/core/src/commands/insert-shared.mjs`, `packages/core/src/work-promote/promotion.mjs` or any `packages/core/src/commands/*`.
+//   (b) THE TRANSITIVE PATH IS THE SEAM AND NOTHING ELSE. A breadth-first walk over `packages/core/src/**` from
 //       each file, following relative import specifiers over comment-stripped source: every path
-//       to `src/work/reindex.mjs` or `src/commands/insert-shared.mjs` passes through
-//       `src/effects/stream-transitions.mjs` — the ONE sanctioned stream-store seam, whose own
+//       to `packages/core/src/work/reindex.mjs` or `packages/core/src/commands/insert-shared.mjs` passes through
+//       `packages/core/src/effects/stream-transitions.mjs` — the ONE sanctioned stream-store seam, whose own
 //       reindex import belongs to the insert cascade (FF-12703's to hold). SOURCE-LEVEL, the
 //       acd-one-mint way, because `graphify-out/` is gitignored (m38/ADR-016) and a control that
 //       read it would be red on every clean checkout. Non-vacuous: the leg must FIND the seam path.
@@ -39,29 +39,29 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { rewriteCrossingLinks, INLINE_LINK_RE } from "../../../src/work/archive.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
+import { rewriteCrossingLinks, INLINE_LINK_RE } from "@aof/work/archive";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const FACE = "src/commands/archive.mjs";
-const ENGINE = "src/work/archive.mjs";
-const SEAM = "src/effects/stream-transitions.mjs";
-const REINDEX = "src/work/reindex.mjs";
-const INSERT_SHARED = "src/commands/insert-shared.mjs";
-const PROMOTION = "src/work-promote/promotion.mjs";
+const FACE = "packages/work/src/commands/archive.mjs";
+const COMPOSITION = "packages/core/src/application/bindings/commands/archive.mjs";
+const ENGINE = "packages/work/src/archive.mjs";
+const SEAM_COMPOSITION = "packages/core/src/application/bindings/effects/stream-transitions.mjs";
+const SEAM = "packages/work/src/stream-transitions.mjs";
+const REINDEX = "packages/work/src/reindex.mjs";
+const INSERT_SHARED = "packages/work/src/insertion/scaffold.mjs";
+const PROMOTION = "packages/work/src/promote/promotion.mjs";
 
-const FACE_ALLOWED = new Set(["src/work.mjs", SEAM, "src/command-error.mjs"]);
-const ENGINE_ALLOWED = new Set(["src/work.mjs"]);
-
-const toPosix = (value) => value.split(path.sep).join("/");
+const FACE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs", "packages/contracts/src/error.mjs"]);
+const ENGINE_ALLOWED = new Set(["packages/work/src/discovery.mjs", "packages/work/src/identity.mjs"]);
 
 // resolveSpecifier(specifier, fromRel) — a relative specifier resolved to a repo-relative posix
 // path, or null for a bare / builtin specifier (which the walk never follows).
 function resolveSpecifier(specifier, fromRel) {
-  if (!specifier.startsWith(".")) return null;
-  return path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  return resolveRuntimeSpecifier(fromRel, specifier);
 }
 
 async function readRel(rel) {
@@ -70,12 +70,12 @@ async function readRel(rel) {
 
 async function srcGraph() {
   const graph = new Map();
-  for (const file of await readSrcFiles(repoRoot)) {
-    const rel = `src/${file.rel}`;
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    const rel = file.rel;
     const code = await readFile(file.path, "utf8");
-    const edges = importSpecifiers(code)
+    const edges = dependencySpecifiers(code)
       .map(({ specifier }) => resolveSpecifier(specifier, rel))
-      .filter((target) => target != null && target.startsWith("src/"));
+      .filter((target) => target != null && /^(src|packages)\//.test(target));
     graph.set(rel, edges);
   }
   return graph;
@@ -128,7 +128,7 @@ function chainThrough(graph, from, target, through) {
 
 function closedSetProblems(rel, code, allowed) {
   const problems = [];
-  for (const { specifier } of importSpecifiers(code)) {
+  for (const { specifier } of dependencySpecifiers(code)) {
     if (specifier.startsWith("node:")) continue;
     const resolved = resolveSpecifier(specifier, rel);
     if (resolved == null || !allowed.has(resolved)) {
@@ -147,16 +147,16 @@ export const archTests = [
     run: async () => {
       const face = stripComments(await readRel(FACE));
       const engine = stripComments(await readRel(ENGINE));
-      const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED)];
+      const problems = [...closedSetProblems(FACE, face, FACE_ALLOWED), ...closedSetProblems(ENGINE, engine, ENGINE_ALLOWED), ...closedSetProblems(COMPOSITION, stripComments(await readRel(COMPOSITION)), new Set([FACE, SEAM_COMPOSITION]))];
       assert.deepEqual(problems, [], problems.join("\n"));
       // Non-vacuous: each file imports something, and the forbidden names are absent by name too.
-      assert.ok(importSpecifiers(face).length >= 3, "the face imports its readers, the seam and the error contract");
-      assert.ok(importSpecifiers(engine).length >= 2, "the engine imports node:* and the readers");
-      for (const [rel, code] of [[FACE, face], [ENGINE, engine]]) {
+      assert.ok(dependencySpecifiers(face).length >= 3, "the face imports its readers, the seam and the error contract");
+      assert.ok(dependencySpecifiers(engine).length >= 2, "the engine imports node:* and the readers");
+      for (const [rel, code] of [[FACE, face], [ENGINE, engine], [COMPOSITION, stripComments(await readRel(COMPOSITION))]]) {
         for (const forbidden of ["reindex.mjs", "insert-shared.mjs", "promotion.mjs"]) {
-          assert.ok(!importSpecifiers(code).some(({ specifier }) => specifier.endsWith(forbidden)), `${rel} does not import ${forbidden}`);
+          assert.ok(!dependencySpecifiers(code).some(({ specifier }) => specifier.endsWith(forbidden)), `${rel} does not import ${forbidden}`);
         }
-        assert.ok(!importSpecifiers(code).some(({ specifier }) => (resolveSpecifier(specifier, rel) ?? "").startsWith("src/commands/")), `${rel} imports no src/commands/* module`);
+        assert.ok(!dependencySpecifiers(code).some(({ specifier }) => (resolveSpecifier(specifier, rel) ?? "").startsWith("packages/core/src/commands/")), `${rel} imports no packages/core/src/commands/* module`);
       }
     },
   },
@@ -169,16 +169,18 @@ export const archTests = [
     run: async () => {
       const graph = await srcGraph();
       assert.ok(graph.has(FACE) && graph.has(ENGINE) && graph.has(SEAM), "the walk read the three files");
+      assert.ok(graph.get(SEAM_COMPOSITION)?.includes(SEAM), "the configured stream seam reaches its implementation");
+      for (const rel of [SEAM, SEAM_COMPOSITION]) assert.match(stripComments(await readRel(rel)), /createStreamTransitions\(\{[^}]*reindexForInsert[^}]*archiveItems/su);
       const targets = new Set([REINDEX, INSERT_SHARED]);
-      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM), ...chainsAvoiding(graph, ENGINE, targets, SEAM)];
+      const offending = [...chainsAvoiding(graph, FACE, targets, SEAM_COMPOSITION), ...chainsAvoiding(graph, ENGINE, targets, SEAM_COMPOSITION), ...chainsAvoiding(graph, COMPOSITION, targets, SEAM_COMPOSITION)];
       assert.deepEqual(
         offending.map((chain) => chain.join(" → ")),
         [],
         `a path reaches the reindex engine or insert-shared without crossing the seam:\n${offending.map((chain) => chain.join(" → ")).join("\n")}`,
       );
       // Non-vacuous: the sanctioned path exists and is the one excluded.
-      const seamPath = chainThrough(graph, FACE, REINDEX, SEAM);
-      assert.deepEqual(seamPath, [FACE, SEAM, REINDEX], `the seam path ${FACE} → ${SEAM} → ${REINDEX} is found and excluded (got ${seamPath?.join(" → ")})`);
+      const seamPath = chainThrough(graph, COMPOSITION, REINDEX, SEAM_COMPOSITION);
+      assert.deepEqual(seamPath, [COMPOSITION, SEAM_COMPOSITION, REINDEX], `the seam and direct public import lead to the package engine (got ${seamPath?.join(" → ")})`);
     },
   },
 
@@ -188,7 +190,7 @@ export const archTests = [
   {
     name: "arch/127 FF-12705 (c): neither file's comment-stripped source contains `number:`, `parseInt(`, `Math.max(` or `appendPosition`",
     run: async () => {
-      for (const rel of [FACE, ENGINE]) {
+      for (const rel of [FACE, ENGINE, COMPOSITION]) {
         const code = stripComments(await readRel(rel));
         for (const token of ["number:", "parseInt(", "Math.max(", "appendPosition"]) {
           assert.ok(!code.includes(token), `${rel} contains \`${token}\` — the archive writes no number (ADR-004 §5)`);
@@ -235,11 +237,13 @@ export const archTests = [
     name: "arch/127 FF-12705 (e): the face calls `transitionStreamArchived(` and never `archiveItems(`, whose src callers are exactly the seam",
     run: async () => {
       const face = stripComments(await readRel(FACE));
+      const composition = stripComments(await readRel(COMPOSITION));
+      assert.match(composition, /createArchiveCommand\(\{ transitionStreamArchived \}\)/, "core supplies the real transition to the package command");
       assert.match(face, /\btransitionStreamArchived\s*\(/, "the face calls the seam");
       assert.doesNotMatch(face, /\barchiveItems\s*\(/, "the face never calls the engine");
       const callers = [];
-      for (const file of await readSrcFiles(repoRoot)) {
-        const rel = `src/${file.rel}`;
+      for (const file of await readRuntimeFiles(repoRoot)) {
+        const rel = file.rel;
         if (rel === ENGINE) continue;
         const code = stripComments(await readFile(file.path, "utf8"));
         if (/\barchiveItems\s*\(/.test(code)) callers.push(rel);

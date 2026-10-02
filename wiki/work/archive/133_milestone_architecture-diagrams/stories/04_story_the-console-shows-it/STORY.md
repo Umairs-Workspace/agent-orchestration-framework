@@ -29,7 +29,7 @@ reads:
   - ui/src/index.css
   - test/arch/work/acd-work-artifact-set-single-home.test.mjs
   - test/bundle/artifact-sync-manifest.test.mjs
-  - test/work/delivered-story-records-reported.test.mjs
+  - packages/work/test/delivered-story-records-reported.suite.mjs
   - test/ui/board-api.test.mjs
   - test/ui/work-ui-board-serves-unchanged.test.mjs
   - test/ui/index.mjs
@@ -48,7 +48,7 @@ files:
   - ui/src/board/diagrams.d.mts
   - test/arch/work/acd-work-artifact-set-single-home.test.mjs
   - test/bundle/artifact-sync-manifest.test.mjs
-  - test/work/delivered-story-records-reported.test.mjs
+  - packages/work/test/delivered-story-records-reported.suite.mjs
   - test/ui/board-api.test.mjs
   - test/ui/board-diagrams.test.mjs
   - test/ui/index.mjs

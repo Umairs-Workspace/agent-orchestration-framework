@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/mesh-clone-credential-mint-fixture.mjs — shared fixture builder for
 // milestone 38 / story 02 (clone-credential-mint) task traceability modules
 // (tasks 01, 02, 04). Mirrors the story-01 support fixtures' shape
@@ -11,7 +12,7 @@
 // test/mesh/clone/mesh-worker-clone-credential-pull.test.mjs keeps.
 import assert from "node:assert/strict";
 import { generateKeyPairSync } from "node:crypto";
-import { applyCloneCredentialRequestFrame } from "../../src/control-stream-server.mjs";
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
 
 // generateThrowawayKeypair() — a LOCAL, test-only RSA keypair (never a real GitHub
 // App's registered key) — genuinely sufficient for the REAL default `node:crypto`

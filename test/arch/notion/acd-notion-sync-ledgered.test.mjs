@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 4 (PRD-command-spine-effects-
 // ledger, "cascade-ports"): the Notion status sync is a LEDGERED CONSEQUENCE,
 // with an APPLICABILITY PREDICATE deciding what is owed at append time.
@@ -34,51 +36,49 @@
 //       scoped, not node-scoped), and the unscoped crash-recovery sweep does not
 //       let a deferred integration backlog consume its fetch window.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readdir, readFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS, applicableReactors } from "../../../src/effects/table.mjs";
-import { transitionRunStart, transitionRunComplete } from "../../../src/effects/run-transitions.mjs";
-import { openEffectsJournal, appendEvent, readEvents, readEventSteps, pendingSteps } from "../../../src/effects/journal.mjs";
-import { drainEffects, reachableLoci, LOCAL_LOCI } from "../../../src/effects/dispatch.mjs";
-import { remoteSteps } from "../../../src/effects/outbox.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const transitionRunComplete = _aofApplication.execution.transitions.transitionRunComplete;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const reachableLoci = _aofApplication.effects.dispatcher.reachableLoci;
+const LOCAL_LOCI = _aofApplication.effects.dispatcher.LOCAL_LOCI;
+const remoteSteps = _aofApplication.effects.outbox.remoteSteps;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 // The one sync body: its definition, and its two sanctioned callers.
-const SYNC_CORE = "src/notion/sync-work.mjs";
-const SYNC_CORE_CALLERS = new Set([SYNC_CORE, "src/commands/notion-sync-work.mjs", "src/effects/table.mjs"]);
+const SYNC_CORE = "packages/integration-notion/src/sync-work.mjs";
+const SYNC_CORE_CALLERS = new Set([SYNC_CORE, "packages/integration-notion/src/notion-sync-work.mjs", "packages/integration-notion/src/effects.mjs"]);
 // The apply layer + the spawn-seam constructor: reachable only from the core
 // (applyPlan's definition lives in sync.mjs; makeNotionSpawn's in notion/cli.mjs).
-const APPLY_CALLERS = new Set(["src/notion/sync.mjs", SYNC_CORE]);
-const SPAWN_SEAM_CALLERS = new Set(["src/notion/cli.mjs", SYNC_CORE]);
+const APPLY_CALLERS = new Set(["packages/integration-notion/src/sync.mjs", SYNC_CORE]);
+const SPAWN_SEAM_CALLERS = new Set(["packages/integration-notion/src/cli.mjs", SYNC_CORE]);
 // Every transition seam resolves reactors through the append-time applicability
 // evaluation — the uniform rule the predicate machinery rides on.
 const TRANSITION_SEAMS = [
-  "src/effects/run-transitions.mjs",
-  "src/effects/doc-transitions.mjs",
-  "src/effects/stream-transitions.mjs",
-  "src/effects/assignment-transitions.mjs",
+  "packages/execution/src/run-transitions.mjs",
+  "packages/work/src/doc-transitions.mjs",
+  "packages/work/src/stream-transitions.mjs",
+  "packages/mesh/src/assignment-transitions.mjs",
 ];
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
-}
 
 function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n\n`;
@@ -172,7 +172,7 @@ export const archTests = [
         "rollback-status is declared before notion-status-sync",
       );
 
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = { core: [], apply: [], spawn: [] };
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
@@ -200,7 +200,7 @@ export const archTests = [
       await withIsolation(async ({ journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture();
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           const opts = { workspace, publisherOptions: publisherBase, journalOptions };
           const started = await transitionRunStart(story, {}, opts);
           const completed = await transitionRunComplete(story, { runId: started.record.runId, outcome: "done" }, opts);
@@ -220,7 +220,7 @@ export const archTests = [
       await withIsolation(async ({ journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture({ notion: NOTION_BLOCK });
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           const { spy, calls } = makeSpy();
           const opts = { workspace, publisherOptions: { ...publisherBase, notionSpawn: spy }, journalOptions };
           const started = await transitionRunStart(story, {}, opts);
@@ -244,7 +244,7 @@ export const archTests = [
       await withIsolation(async ({ env, journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture({ notion: NOTION_BLOCK });
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           const { spy, calls } = makeSpy();
           const opts = { workspace, publisherOptions: { ...publisherBase, notionSpawn: spy }, journalOptions };
           const started = await transitionRunStart(story, {}, opts);
@@ -283,7 +283,7 @@ export const archTests = [
       await withIsolation(async ({ journalOptions, publisherBase }) => {
         const { repo, story } = await buildFixture({ notion: { ...NOTION_BLOCK, autoSync: true } });
         try {
-          const workspace = await loadWorkspace(repo);
+          const workspace = await loadWorkspace(repo, undefined, { env: journalOptions.env });
           assert.deepEqual(
             reachableLoci(workspace),
             [...LOCAL_LOCI, "integration:notion"],

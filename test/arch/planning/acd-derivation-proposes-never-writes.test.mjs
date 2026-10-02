@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-9602 (96/ADR-004) — DERIVATION PROPOSES, READS A GRAPH IT NEVER BUILDS, AND THE PARSER IT
 // SITS BESIDE KEEPS ITS ZERO IMPORTS.
 //
@@ -33,13 +34,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { PROPOSAL_REASONS, deriveStoryContract } from "../../../src/story-contract-derive.mjs";
+const PROPOSAL_REASONS = _aofApplication.work.storyContractDerive.PROPOSAL_REASONS;
+const deriveStoryContract = _aofApplication.work.storyContractDerive.deriveStoryContract;
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const DERIVE = "src/story-contract-derive.mjs";
-const PARSER = "src/story-contract.mjs";
+const DERIVE = "packages/work/src/story-contract-derive.mjs";
+const PARSER = "packages/work/src/story-contract.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 
@@ -83,9 +85,10 @@ export const archTests = [
     name: "arch/96/01 FF-9602 (3) THE GRAPH IS READ, NEVER BUILT — the shipped reader and impact core only, with no second parse, no build and no child process",
     run: async () => {
       const derive = await source(DERIVE);
-      const specifiers = importsOf(derive);
-      assert.ok(specifiers.includes("./graph-normalize.mjs"), "it reaches the artifact through the shipped normaliser");
-      assert.ok(specifiers.includes("./graph-impact.mjs"), "…and the shipped impact reader");
+      const specifiers = importsOf(await source("packages/core/src/application/bindings/story-contract-derive.mjs"));
+      assert.ok(specifiers.includes("@aof/knowledge/graph-normalize"), "it reaches the artifact through the shipped normaliser");
+      assert.ok(specifiers.includes("@aof/knowledge/graph-impact"), "…and the shipped impact reader");
+      assert.match(derive, /createStoryContractDeriver\(\{[^}]*readGraph[^}]*computeImpact/, "the implementation receives the configured readers");
       assert.ok(!derive.includes("JSON.parse"), "it holds no second parse of a graph artifact — readGraph owns that");
       for (const build of ["graph build", "graph:build", "buildGraph", "graphify "]) {
         assert.ok(!derive.includes(build), `it invokes a graph build ("${build}") — a build is minutes, and a proposal that costs minutes is one nobody runs`);
@@ -101,7 +104,7 @@ export const archTests = [
       const derive = await source(DERIVE);
       // A second definition of "what is a suite" is two answers that agree until the day someone
       // changes one — the species 72/FF-7203 already names one module over.
-      assert.ok(importsOf(derive).includes("./work/test-select.mjs"), "suite membership is decided through the shipped path predicate");
+      assert.ok(importsOf(derive).includes("./testing/select.mjs"), "suite membership is decided through the shipped path predicate");
       assert.ok(derive.includes("isSuiteFile("), "…and it is actually called");
       assert.doesNotMatch(derive, /function\s+isSuiteFile\b/, "the derivation holds no second definition of a suite file");
       assert.doesNotMatch(derive, /\.test\.mjs["'`]\s*\)/, "…and no second inline spelling of the suffix as a membership test");

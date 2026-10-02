@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12604 — "One pure decider says which declarations should be running now: it composes the
 // store's verdicts, names none of them, and supervision is a ninth declaration key off by default."
 //
@@ -17,12 +18,14 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../src/work/loop.mjs";
-import { isRunning, isStale, retryReadiness } from "../../../src/run-store.mjs";
+import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../packages/work-loop/src/engine.mjs";
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENGINE = "src/work/loop.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 
@@ -79,7 +82,7 @@ export const archTests = [
       assert.equal(
         raw.split("\n").filter((line) => /^import\b/u.test(line.trim())).length,
         0,
-        "src/work/loop.mjs carries no `import` statement of any kind",
+        "packages/work-loop/src/engine.mjs carries no `import` statement of any kind",
       );
       const engine = stripComments(raw);
       assert.doesNotMatch(engine, /\bimport\s*\(/u, "and no dynamic import either");
@@ -185,7 +188,7 @@ export const archTests = [
   {
     name: "arch/126/02 FF-12604 leg 6: the fresh-mint retry test is not collapsed into the predicate",
     run: async () => {
-      const runStart = await source("src/commands/run-start.mjs");
+      const runStart = await source("packages/work/src/commands/run-start.mjs");
       const engine = await source(ENGINE);
       const body = functionBody(engine, "export function decideSupervisedDeclarations(");
       // Both route their retry classification through the store rather than restating it…

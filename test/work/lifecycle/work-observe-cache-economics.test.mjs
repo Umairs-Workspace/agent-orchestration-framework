@@ -1,11 +1,13 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 70 / story 02 — cache economics per phase.
 //
 // Covers EVERY @executable scenario in the two task features:
 //   tasks/00_ratio-per-phase.feature
 //   tasks/01_target-and-verdict.feature
-// exercising the REAL src/work/observe.mjs pure cache-economics functions
+// exercising the REAL packages/core/src/work/observe.mjs pure cache-economics functions
 // (rollupRunsByPhase, applyCacheTarget, verdictForCacheBucket, cacheTargetIsHonourable)
-// and the REAL registered src/commands/observe.mjs --json door reading the configured
+// and the REAL registered packages/core/src/commands/observe.mjs --json door reading the configured
 // target from the workspace config (work.observability.cacheRatioTarget), against a
 // temp fixture work stream. One test object per @executable scenario (Scenario-Outline
 // rows folded into one entry iterating the rows), each name tracing to feature +
@@ -18,15 +20,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  observeMilestone,
-  rollupRunsByPhase,
-  applyCacheTarget,
-  verdictForCacheBucket,
-  cacheTargetIsHonourable,
-} from "../../../src/work/observe.mjs";
-import { observeCommand } from "../../../src/commands/observe.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const rollupRunsByPhase = _aofSessions.workObserve.rollupRunsByPhase;
+const applyCacheTarget = _aofSessions.workObserve.applyCacheTarget;
+const verdictForCacheBucket = _aofSessions.workObserve.verdictForCacheBucket;
+const cacheTargetIsHonourable = _aofSessions.workObserve.cacheTargetIsHonourable;
+const observeCommand = _aofApplication.getCommand("work:observe");
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
 
 const T0 = Date.parse("2026-08-21T10:00:00.000Z");
 

@@ -9,7 +9,7 @@
 // the same three things: a throwaway `<work.dir>/loops/` directory, records whose frontmatter
 // is authored EXACTLY as a `.feature` line writes it, and a teardown that runs even when an
 // assertion throws. That is all this module does. It deliberately does NOT import
-// `src/work/loops.mjs`: the SUBJECT stays in the suite, so a reader of a test can see the
+// `packages/core/src/work/loops.mjs`: the SUBJECT stays in the suite, so a reader of a test can see the
 // loader being called, and no fixture can quietly become the thing under test
 // (`00_loader-record-suite.feature`: "every subject is the exported `loadLoops`").
 //
@@ -44,7 +44,7 @@ import { spawnSyncHardened } from "./cli-spawn.mjs";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The loader module's absolute path — used for the fresh-process leg, never imported here. */
-export const LOADER_MODULE_PATH = path.join(REPO_ROOT, "src", "work", "loops.mjs");
+export const LOADER_MODULE_PATH = path.join(REPO_ROOT, "packages", "core", "src", "application", "default.mjs");
 
 // The finding-free field blocks, in the schema's own authored order. Exported so a suite can
 // state which value it is overriding and a reader can see what "otherwise valid" means.
@@ -164,7 +164,7 @@ export async function makeLoopRegistry(files, { label = null, parent = "work" } 
       await mkdir(loopsDir, { recursive: true });
       await writeAll(loopsDir, more ?? {});
     },
-    cleanup: () => rm(temp, { recursive: true, force: true }),
+    cleanup: () => rm(temp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 }),
   };
 }
 
@@ -198,7 +198,8 @@ export function reversedFiles(files) {
 export function loadLoopsInFreshProcess(workDir, { expression = "model", env = {} } = {}) {
   const loaderUrl = pathToFileURL(LOADER_MODULE_PATH).href;
   const script =
-    `import { loadLoops } from ${JSON.stringify(loaderUrl)};` +
+    `import { defaultApplication } from ${JSON.stringify(loaderUrl)};` +
+    `const { loadLoops } = defaultApplication.graph.work.loops;` +
     `const model = await loadLoops(${JSON.stringify(workDir)});` +
     `process.stdout.write(JSON.stringify(${expression}));`;
   const result = spawnSyncHardened(process.execPath, ["--input-type=module", "--eval", script], {

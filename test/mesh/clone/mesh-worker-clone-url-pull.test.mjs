@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // test/mesh/clone/mesh-worker-clone-url-pull.test.mjs — traceability for the ADR-010 Gap A
 // EXTENDED fix (review fix, live soak 2026-07-18): a worker assigned to a
 // workspace it has never checked out has no local knowledge of that workspace's
@@ -9,13 +12,13 @@
 // published. This module covers the PULL that actually closes it — the worker
 // asks the control node directly, over the SAME live stream ADR-009's
 // clone-credential PULL already uses, mirroring that mechanism exactly:
-//   - worker side: requestCloneUrl (src/worker-stream-client.mjs), wired into
+//   - worker side: requestCloneUrl (packages/core/src/worker-stream-client.mjs), wired into
 //     createMeshWorkerExecutionHandler's clone-on-miss fallback chain
-//     (src/mesh/worker-execution.mjs).
+//     (packages/core/src/mesh/worker-execution.mjs).
 //   - control side: applyStreamFrame / applyCloneUrlRequestFrame
-//     (src/control-stream-server.mjs) — the REAL authorization + registry-read +
+//     (packages/core/src/control-stream-server.mjs) — the REAL authorization + registry-read +
 //     reply path, never hand-authored by this test.
-//   - production wiring: startLauncher (src/mesh/launcher.mjs) — constructed the
+//   - production wiring: startLauncher (packages/core/src/mesh/launcher.mjs) — constructed the
 //     way `aof mesh serve --serve` does, with NO cloneUrl-shaped test injection
 //     (the SAME F12 discipline ADR-009's own guard already enforces for the
 //     credential — a resolver reachable only through the test-injection spread
@@ -24,22 +27,19 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  createMeshWorkerExecutionHandler,
-  resolveCloneUrl,
-  meshCheckoutPath,
-} from "../../../src/mesh/worker-execution.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import {
-  applyCloneUrlRequestFrame,
-  buildDirectiveFrame,
-  CLONE_URL_NOT_HOLDER,
-  CLONE_URL_WORKSPACE_MISMATCH,
-} from "../../../src/control-stream-server.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const resolveCloneUrl = _aofApplication.mesh.worker.resolveCloneUrl;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const applyCloneUrlRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneUrlRequestFrame;
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const CLONE_URL_NOT_HOLDER = _aofApplication.mesh.controlStreamServer.CLONE_URL_NOT_HOLDER;
+const CLONE_URL_WORKSPACE_MISMATCH = _aofApplication.mesh.controlStreamServer.CLONE_URL_WORKSPACE_MISMATCH;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 import {
   withMeshCloneFixture,
   createStatusRecorder,

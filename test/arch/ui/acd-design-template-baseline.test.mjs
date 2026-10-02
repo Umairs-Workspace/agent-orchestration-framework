@@ -4,14 +4,14 @@
 //  binding-checklist section (regions-in-order / components / states / ramp) per surface; it no
 //  longer presents a remote design-tool link as the SOLE mock reference."
 //
-// Reads src/bundle/templates/milestone/DESIGN.md and asserts the convention markers are present
+// Reads packages/core/assets/templates/milestone/DESIGN.md and asserts the convention markers are present
 // (and the stale remote-link-only-mock shape is gone). Mirrors 02_design-template-baseline.feature.
 // Plain node:fs read + node:assert/strict; case-insensitive substring checks for prose markers.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const TEMPLATE_URL = new URL("../../../src/bundle/templates/milestone/DESIGN.md", import.meta.url);
+const TEMPLATE_URL = new URL("../../../packages/core/assets/templates/milestone/DESIGN.md", import.meta.url);
 const TEMPLATE_PATH = fileURLToPath(TEMPLATE_URL);
 
 function template() {

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-6201 — tune reaches the acceptor through the deferred registry and carries no ruling rule.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -6,19 +8,20 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { RULING_REFUSAL_ORDER } from "../../../src/commands/acceptor.mjs";
-import { findWork } from "../../../src/work.mjs";
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+const findWork = _aofWorkspace.work.findWork;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
-const facePath = fileURLToPath(new URL("../../../src/commands/tune.mjs", import.meta.url));
+const facePath = fileURLToPath(new URL("../../../packages/work/src/commands/tune.mjs", import.meta.url));
 const face = readFileSync(facePath, "utf8");
 const family = [
-  "src/commands/tune.mjs",
-  "src/work-tune/corpus.mjs",
-  "src/work-tune/formation.mjs",
-  "src/work-tune/proposal.mjs",
-  "src/work-tune/provenance.mjs",
-  "src/work-tune/distance.mjs",
+  "packages/work/src/commands/tune.mjs",
+  "packages/core/src/application/bindings/commands/tune.mjs",
+  "packages/work/src/tune/corpus.mjs",
+  "packages/work/src/tune/formation.mjs",
+  "packages/work/src/tune/proposal.mjs",
+  "packages/work/src/tune/provenance.mjs",
+  "packages/work/src/tune/distance.mjs",
 ];
 const familyText = family.map((file) => readFileSync(`${root}/${file}`, "utf8")).join("\n");
 // milestone 127 / ADR-004 §3 — the story this control reads is resolved BY REF at run time, never
@@ -35,7 +38,10 @@ export const archTests = [
     name: "architecture: FF-6201 the acceptor id has one home and the registry edge is deferred",
     run: () => {
       assert.equal((face.match(/work:acceptor/gu) ?? []).length, 1);
-      assert.match(face, /await import\("\.\.\/command-core\.mjs"\)/u);
+      assert.match(face, /return await getRegistry\(\)/u);
+      const composition = readFileSync(path.join(root, "packages/core/src/application/bindings/commands/tune.mjs"), "utf8");
+      assert.match(composition, /const getRegistry = \(\) => provideCommandCore\(\)/u);
+      assert.match(composition, /createTuneCommand\(\{[^}]*getRegistry(?:, readRenameMap)? \}\)/u);
       assert.doesNotMatch(face, /^import .*command-core\.mjs/mu);
       assert.match(face, /resolveCommand/u);
       assert.match(face, /invokeCommand/u);
@@ -55,7 +61,7 @@ export const archTests = [
   {
     name: "architecture: FF-6201 every family member and command-core import cleanly in a fresh process",
     run: () => {
-      for (const file of [...family, "src/command-core.mjs"]) {
+      for (const file of [...family, "packages/core/src/application/bindings/command-core.mjs"]) {
         const url = pathToFileURL(`${root}/${file}`).href;
         const child = spawnSync(process.execPath, ["--input-type=module", "--eval", `await import(${JSON.stringify(url)})`], {
           cwd: root,

@@ -31,7 +31,7 @@ reports it live as `sendAssignmentStatus(assignmentId, "running", { code: "needs
 assignment legitimately stays `running`. It rides the **shared** row mapper in
 `src/assignment-record.mjs`, which every reader already uses.
 
-Then `projectAssignment` ([global-mesh-query.mjs:132-148](../../../../../../src/global-mesh-query.mjs#L132))
+Then `projectAssignment` ([global-mesh-query.mjs:132-148](../../../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L132))
 copies eight fields onto the wire and `code` is not one of them. So a fact the system knows has never
 once reached **the fleet's** browser.
 
@@ -77,12 +77,12 @@ it is there and renders nothing if it is not (see the ruling below). **First, pa
    deriving one.
 2. **Never from bytes.** Inferring agent state by parsing terminal output in the browser is the exact
    shape the mirror lane's content-blind design exists to forbid
-   ([source-table.mjs:126-137](../../../../../../ui/src/terminal/source-table.mjs#L126)), and
+   ([source-table.mjs:126-137](../../../../../../apps/ui/src/terminal/source-table.mjs#L126)), and
    `acd-fleet-terminal-input-constrained` fails CI on a content-branch in that lane. This story adds a
    **field**, not a sniffer.
 
 **"Absent, not false" is the idiom, and this file already speaks it.** `WorkAssignment`
-([api.ts:116-126](../../../../../../ui/src/fleet/api.ts#L116)) makes `sessionId` optional for exactly this
+([api.ts:116-126](../../../../../../apps/ui/src/fleet/api.ts#L116)) makes `sessionId` optional for exactly this
 reason: an assignment whose worker has not captured one **omits the key**. `code` follows that rule —
 absent when there is no refinement, never `null`, never `""`, and never a fabricated `"running"`.
 

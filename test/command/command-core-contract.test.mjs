@@ -1,7 +1,10 @@
+import { runNativeWorkspaceTests } from "../../scripts/test-workspace.mjs";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 08 / story 00 — the command core.
 //
 // Covers EVERY @executable scenario across the four task features, exercising the
-// REAL in-process registry (src/command-core.mjs + src/commands/*) against temp
+// REAL in-process registry (packages/core/src/command-core.mjs + packages/core/src/commands/*) against temp
 // fixture repos — loadWorkspace + invoke, real fs, in-process. One test object
 // per @executable scenario (Scenario-Outline rows folded into one entry), each
 // name tracing to feature + scenario.
@@ -15,12 +18,19 @@
 //   03_feedback-write-command.feature — one bullet/refs/verbatim-heading/
 //        exact-only/milestone+story+uat/missing-fields/raw-ledger+STATE projection
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { importSpecifiers } from "../support/module-family.mjs";
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace, listStream } from "../../src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listStream = _aofWorkspace.work.listStream;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const invoke = _aofApplication.invoke;
 
 // The milestone-08 SIX work operations. Milestone 15 (ADR-001) registers a 7th
 // work command — work:doctor, the health lane — into the SAME registry; it is a
@@ -46,7 +56,7 @@ const SIX_IDS = ["work:list", "work:doc", "work:tasks", "work:validate", "work:n
 // carve-out (BOARD_DEFERRED), same design.
 // Milestone 40 / story 02 (migration registry & `aof upgrade`, ADR-005)
 // registers one more — work:upgrade, the thin face over the NEW
-// src/work/upgrade.mjs registry engine — another sanctioned in-namespace
+// packages/core/src/work/upgrade.mjs registry engine — another sanctioned in-namespace
 // extension, CLI-only by design (same BOARD_DEFERRED carve-out).
 const WORK_IDS = [
   ...SIX_IDS,
@@ -164,14 +174,14 @@ const WORK_IDS = [
   // PRE-EXISTING STALENESS, found at milestone 53's gate and recorded rather than
   // quietly folded in: neither of these is milestone 53's, and the census had already
   // drifted from the registry before this milestone began. `work:resume`
-  // (`src/commands/resume.mjs:99`) is m20/348's auto-resume face — run-retry's
+  // (`packages/core/src/commands/resume.mjs:99`) is m20/348's auto-resume face — run-retry's
   // re-entry, already carried in acd-work-command-route-coverage's BOARD_DEFERRED.
-  // `work:init-config` (`src/commands/init-update.mjs:149`) is the config-scaffold
+  // `work:init-config` (`packages/core/src/commands/init-update.mjs:149`) is the config-scaffold
   // door beside work:init/work:update.
   "work:resume",
   "work:init-config",
   // milestone 131 / story 04 — work:answer, the operator's answer to a waiting session, beside
-  // work:resume in `src/commands/resume.mjs`.
+  // work:resume in `packages/core/src/commands/resume.mjs`.
   "work:answer",
   // milestone 54 / story 01 — work:grade, the declared rubric's ONE impure edge (the
   // milestone's only registering story, 54/ADR-003 §2). Its bare face is a READ (the plan
@@ -197,7 +207,7 @@ const WORK_IDS = [
   // milestone 62 / story 04 — the read-only tuner convergence face.
   "work:tune",
   // milestone 63 / story 05 — the trigger's face, this milestone's ONE registered surface. It
-  // composes the four `src/work-trigger/` leaves, obtains the two gate readings through this
+  // composes the four `packages/core/src/work-trigger/` leaves, obtains the two gate readings through this
   // registry and emits the `work:loop` input each declared trigger resolves to plus the argv that
   // carries it; it declares no `cli.launch`, because 53/ADR-005 left the loop exactly one
   // launcher and this face resolves rather than launches. BOARD_DEFERRED (63/ADR-008 §7) for a
@@ -353,6 +363,68 @@ async function assertRejectsWithCode(fn, code) {
 }
 
 export const commandCoreContractTests = [
+  {
+    name: "command-core/effect registration has no static domain or transition cycle",
+    async run() {
+      const root = fileURLToPath(new URL("../../", import.meta.url));
+      const entry = path.join(root, "packages/core/src/application/bindings/effects/table.mjs");
+      async function closure(planted = false) {
+        const seen = new Set(), visiting = new Set();
+        async function visit(file) {
+          assert.ok(!visiting.has(file), `Static effect registration cycle at ${file}`);
+          if (seen.has(file)) return;
+          visiting.add(file);
+          let source = await readFile(file, "utf8");
+          if (planted && file === entry) source += '\nimport "./table.mjs";';
+          for (const { specifier, dynamic } of importSpecifiers(source)) {
+            if (dynamic || specifier.startsWith("node:")) continue;
+            const target = createRequire(file).resolve(specifier);
+            await visit(target);
+          }
+          visiting.delete(file);
+          seen.add(file);
+        }
+        await visit(entry);
+        return [...seen].map(file => path.relative(root, file).replaceAll("\\", "/"));
+      }
+      const files = await closure();
+      for (const name of ["work", "mesh", "integration-notion"]) {
+        assert.ok(files.includes(`packages/${name}/src/effects.mjs`), `${name}: its contribution is in the startup closure`);
+      }
+      for (const forbidden of ["packages/core/src/application/bindings/work.mjs", "packages/core/src/application/bindings/global-work-store.mjs", "packages/core/src/application/bindings/notion/sync-work.mjs", "packages/mesh/src/assignment-transitions.mjs", "packages/core/src/application/bindings/effects/dispatch.mjs", "packages/core/src/application/bindings/diagnostics/log.mjs"]) {
+        assert.ok(!files.includes(forbidden), `registration must not load ${forbidden}`);
+      }
+      await assert.rejects(closure(true), /Static effect registration cycle/);
+    },
+  },
+  {
+    name: "command-core/effects adapters load from every application entry without eager cyclic initialization",
+    async run() {
+      const root = fileURLToPath(new URL("../../", import.meta.url));
+      for (const entry of ["aof/default-application", "aof/foundation-services", "aof/workspace-services", "aof/session-services", "aof/session-hooks", "aof/cli"]) {
+        const script = `import '${entry}';
+          import assert from 'node:assert/strict';
+          import { defaultApplication } from 'aof/default-application';
+          const {runEffectsEphemeral} = defaultApplication.effects.dispatcher;
+          const {applyEffectAck} = defaultApplication.effects.outbox;
+          assert.deepEqual(await runEffectsEphemeral('empty', {}, {effects:{}}), []);
+          assert.equal(applyEffectAck(null, {}).code, 'effect-ack-invalid');`;
+        const result = spawnSync(process.execPath, ["--input-type=module", "-e", script], { cwd: root, encoding: "utf8", timeout: 30_000 });
+        assert.equal(result.status, 0, `${entry}: ${result.error?.message ?? result.stderr}`);
+      }
+    },
+  },
+  {
+    name: "command-core/workspace packages pass their package-local suites",
+    async run() {
+      const root = fileURLToPath(new URL("../../", import.meta.url));
+      const result = runNativeWorkspaceTests(root);
+      assert.ok(result.files >= 64, "all owned native files were discovered, including Plan 06's public application and citation checks");
+      assert.ok(result.cases >= 246, `executed ${result.cases} native cases`);
+      assert.equal(result.owners.length, 13, "every package has an executed native surface");
+      console.log(`# aggregate bridge: ${result.cases} native cases in ${result.files} files`);
+    },
+  },
   // ════════════════════════ 00_registry-contract.feature ════════════════════
   {
     name: "command-core/00 the registry exposes exactly the known work commands",

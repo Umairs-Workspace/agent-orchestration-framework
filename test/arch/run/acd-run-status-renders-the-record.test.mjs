@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12603 — "`run-status` renders what the record holds: the RENDER moves, the DOCUMENT does not."
 //
 // milestone 126 / story 01, ADR-003 §1-§5 (AMENDED). The STRUCTURAL half plus task 02's document
@@ -15,12 +16,12 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { runStatusCommand } from "../../../src/commands/run-status.mjs";
+const runStatusCommand = _aofApplication.getCommand("work:run-status");
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE = "src/commands/run-status.mjs";
-const FACE = "src/spine/face.mjs";
+const MODULE = "packages/work/src/commands/run-status.mjs";
+const FACE = "packages/core/src/application/bindings/spine/face.mjs";
 const PIN_CONTROL = "test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
@@ -35,10 +36,12 @@ export const archTests = [
       assert.doesNotMatch(module, /\breadFile\b/u, "the render reads no file");
 
       assert.match(
-        module,
-        /import \{ attemptElapsedMs \} from "\.\.\/work\/loop\.mjs"/u,
+        await source("packages/core/src/application/bindings/commands/run-status.mjs"),
+        /import \{ attemptElapsedMs \} from "@aof\/work-loop\/engine"/u,
         "the arithmetic has ONE home and this module imports it",
       );
+      assert.match(await source("packages/core/src/application/bindings/commands/run-status.mjs"), /createRunStatusCommand\(\{[^}]*attemptElapsedMs/u,
+        "core supplies the imported arithmetic to the work command");
       // The second `updatedAt − createdAt` is the defect this leg exists to catch: it would print
       // eleven hours where the clock charges thirty minutes, on the very record this milestone was
       // framed from. This module parses instants for ONE purpose — the heartbeat age, a different
@@ -186,28 +189,30 @@ export const archTests = [
       const control = await read(PIN_CONTROL);
       // The entry is re-pinned, never dropped: an unpinned file is covered by no byte-freeze at
       // all (55/VERIFICATION F-55-02-1).
-      assert.match(control, /\["src\/commands\/run-status\.mjs", "[0-9a-f]{64}"\]/u, "the entry is present");
+      assert.match(control, /\["packages\/work\/src\/commands\/run-status\.mjs", "[0-9a-f]{64}"\]/u, "the entry is present");
       assert.doesNotMatch(control, /a537cec0cf802828d2a8de55d6f87b70c57e9e261742d60860d6cc2e3a5df858/u, "…at a NEW digest");
 
       // The rest of the freeze is untouched by this story.
       // 126/02 re-pins this one for its own additive `isRunning` export, so this leg reads it as
       // "present and re-pinned with a reason" rather than freezing it at a literal this story does
       // not own. The claim 126/01 makes is that IT moved the run-status pin and no other.
-      assert.match(control, /\["src\/run-store\.mjs", "[0-9a-f]{64}"\]/u);
+      assert.match(control, /\["packages\/execution\/src\/runs\.mjs", "[0-9a-f]{64}"\]/u);
       // 127/04 re-pins the board seam for its one `includeArchived` parameter (127/ADR-006 §2), so this
       // entry is read the same way as run-store's: present, re-pinned, and carrying its reason.
-      assert.match(control, /\["src\/board-ui\.mjs", "[0-9a-f]{64}"\]/u);
+      assert.match(control, /\["packages\/server\/src\/board-ui\.mjs", "[0-9a-f]{64}"\]/u);
       // 133/04 re-pins it again for the doc route's `member` param (133/ADR-007 §2), stacking its own
       // reason under 127/04's, so each mover is read within reach of the entry it moved.
       // 131/04 stacks a third (131/ADR-006 §3: one hoisted admission and one route onto
       // `work:answer`), so the two earlier windows widen by its comment's length.
-      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,2000}\["src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
-      assert.match(control, /RE-PINNED by 133\/04[\s\S]{0,1400}\["src\/board-ui\.mjs"/u, "the 133/04 board-ui re-pin carries its reason and names the story that moved it");
-      assert.match(control, /RE-PINNED by 131\/04[\s\S]{0,800}\["src\/board-ui\.mjs"/u, "the latest board-ui re-pin carries its reason and names the story that moved it");
-      assert.equal((control.match(/\["src\/[^"]+", "[0-9a-f]{64}"\]/gu) ?? []).length, 3, "three file entries beside the ui/ tree hash");
+      assert.match(control, /RE-PINNED by 127\/04[\s\S]{0,2000}\["packages\/server\/src\/board-ui\.mjs"/u, "the board-ui re-pin carries its reason and names the story that moved it");
+      // 142 adds the factory-relocation evidence beside the same entry.
+      assert.match(control, /RE-PINNED by 133\/04[\s\S]{0,1700}\["packages\/server\/src\/board-ui\.mjs"/u, "the 133/04 board-ui re-pin carries its reason and names the story that moved it");
+      assert.match(control, /RE-PINNED by 131\/04[\s\S]{0,1100}\["packages\/server\/src\/board-ui\.mjs"/u, "the 131/04 board-ui re-pin carries its reason and names the story that moved it");
+      assert.match(control, /RE-PINNED by 142: transport factory relocation only;[\s\S]{0,300}\["packages\/server\/src\/board-ui\.mjs"/u, "the package move carries its parity evidence");
+      assert.equal((control.match(/\["(?:src|packages)\/[^"]+", "[0-9a-f]{64}"\]/gu) ?? []).length, 3, "three file entries beside the ui/ tree hash");
 
       // The moved pin names this story and why the file moved, as 119/01's re-pin does.
-      const at = control.indexOf(`["src/commands/run-status.mjs"`);
+      const at = control.indexOf(`["packages/work/src/commands/run-status.mjs"`);
       const preamble = control.slice(Math.max(0, at - 1400), at);
       assert.match(preamble, /126\/01/u, "the reason names the story that moved it");
       assert.match(preamble, /RE-PINNED by 126\/01/u);
@@ -215,7 +220,7 @@ export const archTests = [
       // And the pin is non-vacuous: one changed byte breaks it.
       const { createHash } = await import("node:crypto");
       const body = (await read(MODULE)).replace(/\r\n/gu, "\n");
-      const pinned = /\["src\/commands\/run-status\.mjs", "([0-9a-f]{64})"\]/u.exec(control)[1];
+      const pinned = /\["packages\/work\/src\/commands\/run-status\.mjs", "([0-9a-f]{64})"\]/u.exec(control)[1];
       assert.equal(createHash("sha256").update(body).digest("hex"), pinned, "the pin matches the file");
       assert.notEqual(createHash("sha256").update(`${body} `).digest("hex"), pinned, "…and not a file with one byte changed");
     },
@@ -228,7 +233,7 @@ export const archTests = [
       // The board's own pin is asserted by 53/FF-5307 itself; this leg records that 126/01
       // declared neither file and touched neither.
       const control = await read(PIN_CONTROL);
-      const at = control.indexOf(`["src/board-ui.mjs"`);
+      const at = control.indexOf(`["packages/server/src/board-ui.mjs"`);
       assert.ok(at > -1);
       assert.doesNotMatch(control.slice(Math.max(0, at - 200), at), /126\/01/u, "126/01 moved no board pin");
     },

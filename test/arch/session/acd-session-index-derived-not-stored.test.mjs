@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-index-derived-not-stored (milestone 48 / ADR-007, with
 // ADR-009's no-new-sibling clause and ADR-010's R2 miss ruling) — "the index is a
 // projection, not a store, and it is not a second liveness authority".
 //
-// THE INVARIANT. `buildSessionIndex` (src/global-mesh-query.mjs) answers "what live
+// THE INVARIANT. `buildSessionIndex` (packages/core/src/global-mesh-query.mjs) answers "what live
 // sessions exist across the mesh" from the inputs it is handed and from nothing else.
 // It opens no store, writes no file, holds no state and caches nothing, so the same
 // `{ nodes, assignments }` rebuild a content-identical index every time — which is the
@@ -23,14 +24,14 @@
 // inputs; every structural detector is a PURE function over source text, so the real
 // tree and the planted violations run through the IDENTICAL code path):
 //  1. STRUCTURAL — no `CREATE TABLE`/`INSERT INTO`/`UPDATE`/`REPLACE INTO` anywhere in
-//     `src/` names a table that is a session index.
+//     `packages/core/src/` names a table that is a session index.
 //  2. STRUCTURAL — the index path performs no I/O, re-derives no session-level
 //     liveness, gates membership on the ALREADY-DERIVED `freshness`, holds no
 //     module-level cache, composes no `"${nodeId}::${sessionId}"` key, and reaches the
 //     terminal mirror through no import edge.
 //  3. STRUCTURAL — `shapeGlobalStatus`'s return grows by EXACTLY one key: every
 //     pre-existing key keeps its place, `sessions` is the only addition.
-//  4. STRUCTURAL — `ui/src/fleet/api.ts`'s `MeshSession` is the TYPED MIRROR of that
+//  4. STRUCTURAL — `apps/ui/src/fleet/api.ts`'s `MeshSession` is the TYPED MIRROR of that
 //     entry: the same NINE keys, in the same order, with `sessionId: string` (narrowed
 //     to non-null at the index — arithmetic, not divergence) and `workItem` explicitly
 //     nullable; and `GlobalMeshStatus` carries `sessions: MeshSession[]` non-optionally,
@@ -67,16 +68,18 @@
 //     source first (the tree is mixed CRLF/LF, so every mutation is built from lines
 //     split OUT of the real source and rejoined with that source's own line ending).
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { shapeGlobalStatus, buildSessionIndex } from "../../../src/global-mesh-query.mjs";
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 
-const QUERY_FILE = "src/global-mesh-query.mjs";
-const WIRE_TYPE_FILE = "ui/src/fleet/api.ts";
+const QUERY_FILE = "packages/mesh/src/global-query.mjs";
+const WIRE_TYPE_FILE = "apps/ui/src/fleet/api.ts";
 
 // The ADR-007 entry, in its exact order: nodeId, then ADR-005's frozen six verbatim,
 // then the ONE derived field.
@@ -152,7 +155,7 @@ function stripComments(source) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). PROOF 1 sweeps ALL of
-// `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
+// `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
 // the source it was meant to read — item 24's named "silent false GREEN" shape. The
 // anchor is each module's OWN exported symbol names: a name a module `export`s at line
 // start is code by construction, so if it does not survive `stripComments` then the
@@ -166,11 +169,14 @@ function stripComments(source) {
 // path, over the REAL corpus, and show the difference rather than assert it.
 function strippedCorpusViolations(entries, strip = stripComments) {
   const violations = [];
-  const anchors = /^export\s+(?:default\s+)?(?:async\s+)?(?:function\s*\*?|const|let|class)\s+([A-Za-z_$][\w$]*)/gm;
+  // Factory-owned functions are no longer top-level exports. Check declarations
+  // themselves: a returned API name must not conceal a body deleted by the stripper.
+  const anchors = /^[ \t]*(?:export\s+(?:default\s+)?)?(?:async\s+)?function\s*\*?\s+([A-Za-z_$][\w$]*)\s*\(|^export\s+(?:const|let|class)\s+([A-Za-z_$][\w$]*)/gm;
   for (const [file, source] of entries) {
     const stripped = strip(source);
-    for (const [, name] of source.matchAll(anchors)) {
-      if (!new RegExp(`\\b${name}\\b`).test(stripped)) {
+    for (const [declaration, functionName, valueName] of source.matchAll(anchors)) {
+      const name = functionName ?? valueName;
+      if (!stripped.includes(declaration)) {
         violations.push(`${file}: the exported symbol \`${name}\` does NOT survive stripComments() — this whole-src/ absence sweep ruled on code the STRIPPER had already deleted (TECH_DEBT item 24: a \`/*\` inside a line comment opens a phantom block that runs to the next \`*/\`). Fix the stripper, not this assertion.`);
       }
     }
@@ -281,7 +287,11 @@ function indexPathViolations(source) {
   const violations = [];
   const code = stripComments(source);
 
-  if (!/export\s+function\s+buildSessionIndex\s*\(/.test(code)) {
+  const exportedDirectly = /export\s+function\s+buildSessionIndex\s*\(/.test(code);
+  const exportedByFactory = /export function createGlobalMeshQuery\(/.test(code)
+    && /function buildSessionIndex\(/.test(code)
+    && /return \{[^}]*\bbuildSessionIndex\b[^}]*\};/.test(code);
+  if (!exportedDirectly && !exportedByFactory) {
     violations.push(`${QUERY_FILE}: no exported \`buildSessionIndex\` — ADR-007 puts the index in THIS module, as a named export the shaper calls and a caller can reach in-process`);
     return violations;
   }
@@ -530,20 +540,9 @@ function shape(nodes, assignments = [], now = "2026-08-10T12:00:00.000Z") {
 }
 
 async function srcSources() {
-  const entries = [];
-  async function walk(dir, rel) {
-    for (const name of await readdir(dir, { withFileTypes: true })) {
-      const relPath = rel ? `${rel}/${name.name}` : name.name;
-      if (name.isDirectory()) {
-        await walk(path.join(dir, name.name), relPath);
-        continue;
-      }
-      if (!name.name.endsWith(".mjs")) continue;
-      entries.push([`src/${relPath}`, await readFile(path.join(dir, name.name), "utf8")]);
-    }
-  }
-  await walk(path.join(REPO, "src"), "");
-  return entries;
+  const sources = [];
+  for (const { rel, path: file } of await readRuntimeFiles(REPO)) sources.push([rel, await readFile(file, "utf8")]);
+  return sources;
 }
 
 export const archTests = [
@@ -579,7 +578,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/48 ADR-007 (acd-session-index-derived-not-stored): ui/src/fleet/api.ts's MeshSession is the typed mirror of the index entry — same NINE keys (m50/ADR-008 decision 8 appended 'relaying'), same order, `sessionId: string`, `workItem` nullable — and GlobalMeshStatus carries `sessions: MeshSession[]` (structural)",
+    name: "arch/48 ADR-007 (acd-session-index-derived-not-stored): apps/ui/src/fleet/api.ts's MeshSession is the typed mirror of the index entry — same NINE keys (m50/ADR-008 decision 8 appended 'relaying'), same order, `sessionId: string`, `workItem` nullable — and GlobalMeshStatus carries `sessions: MeshSession[]` (structural)",
     run: async () => {
       const violations = wireTypeViolations(await readSource(WIRE_TYPE_FILE));
       assert.deepEqual(violations, [], `the wire's typed mirror has drifted from the index entry:\n${violations.join("\n")}`);
@@ -759,7 +758,7 @@ export const archTests = [
       // ── planted: a PERSISTED index table ────────────────────────────────────
       const sources = await srcSources();
       assert.deepEqual(persistedIndexViolations(sources), [], "the real tree persists no session index");
-      const [victimFile, victimSource] = sources.find(([file]) => file === "src/global-work-store.mjs");
+      const [victimFile, victimSource] = sources.find(([file]) => file === "packages/mesh/src/projection-store.mjs");
       const withTable = `${victimSource}${eolOf(victimSource)}db.exec("CREATE TABLE IF NOT EXISTS global_session_index (node_id TEXT, session_id TEXT, PRIMARY KEY (node_id, session_id))");${eolOf(victimSource)}`;
       assert.notEqual(withTable, victimSource, "the planted TABLE genuinely landed in the source");
       const tableViolations = persistedIndexViolations([[victimFile, withTable]]);
@@ -787,7 +786,7 @@ export const archTests = [
       // The phantom opens in the LINE comment and closes at the next `*/` — which is an
       // unrelated block comment further down the file, so everything BETWEEN them is
       // deleted: the CREATE TABLE the absence rule was looking for, and an export that
-      // proves the deletion happened. This is the literal shape of src/work.mjs.
+      // proves the deletion happened. This is the literal shape of packages/core/src/work.mjs.
       const victim = [
         "export const before = 1;",
         "// a path glob quoted in prose: templates/work/<type>/*.md",
@@ -798,18 +797,18 @@ export const archTests = [
       ].join(eol);
 
       // The SHIPPED order reads the file: the planted table is FLAGGED.
-      const seen = persistedIndexViolations([["src/planted.mjs", victim]]);
+      const seen = persistedIndexViolations([["packages/core/src/planted.mjs", victim]]);
       assert.equal(seen.length, 1, `the shipped (line-first) stripper SEES the planted table (got ${JSON.stringify(seen)})`);
       assert.ok(seen[0].includes("global_session_index"), "…by name");
-      assert.deepEqual(strippedCorpusViolations([["src/planted.mjs", victim]]), [], "…and nothing was blinded");
+      assert.deepEqual(strippedCorpusViolations([["packages/core/src/planted.mjs", victim]]), [], "…and nothing was blinded");
 
       // The BLINDED order deletes it: the same absence rule passes for the WRONG reason.
       assert.deepEqual(
-        persistedIndexViolations([["src/planted.mjs", victim]], blockFirst),
+        persistedIndexViolations([["packages/core/src/planted.mjs", victim]], blockFirst),
         [],
         "the block-first stripper makes the SAME planted table invisible — the absence sweep goes GREEN over source it deleted itself, which is the silent false GREEN this detector exists to catch",
       );
-      const blindedFlags = strippedCorpusViolations([["src/planted.mjs", victim]], blockFirst);
+      const blindedFlags = strippedCorpusViolations([["packages/core/src/planted.mjs", victim]], blockFirst);
       assert.ok(blindedFlags.length >= 1, `…and THAT is what the blinding detector catches (got ${JSON.stringify(blindedFlags)})`);
       assert.ok(blindedFlags.some((violation) => violation.includes("afterwards")), "…naming the exported symbol the stripper deleted");
       assert.ok(blindedFlags.some((violation) => violation.includes("stripComments")), "…and naming the STRIPPER, so the next reader fixes the tool rather than the assertion");
@@ -990,7 +989,7 @@ export const archTests = [
       assert.ok(typeIdIndex > 0 && typeWorkItemIndex > typeIdIndex, "the real declaration has both a sessionId and a trailing workItem line");
       const plantMesh = (lines) => {
         const planted = wireType.replace(meshLiteral, lines.join(typeEol));
-        assert.notEqual(planted, wireType, "the plant genuinely landed in ui/src/fleet/api.ts");
+        assert.notEqual(planted, wireType, "the plant genuinely landed in apps/ui/src/fleet/api.ts");
         return planted;
       };
       const indentOf = (line) => line.match(/^\s*/)[0];
@@ -1030,7 +1029,7 @@ export const archTests = [
       assert.ok(statusSessionsIndex > 0 && statusDiagnosticsIndex > statusSessionsIndex, "the real payload type declares `sessions` ahead of `diagnostics`");
       const plantStatus = (lines) => {
         const planted = wireType.replace(statusLiteral, lines.join(typeEol));
-        assert.notEqual(planted, wireType, "the plant genuinely landed in ui/src/fleet/api.ts");
+        assert.notEqual(planted, wireType, "the plant genuinely landed in apps/ui/src/fleet/api.ts");
         return planted;
       };
 

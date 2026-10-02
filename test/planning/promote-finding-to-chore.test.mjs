@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 71 / story 01 (findings-become-work-items):
 //   tasks/00_the-triage-rule-routes-every-finding.feature
 //   tasks/01_promote-a-finding-to-a-chore.feature
@@ -8,7 +10,7 @@
 //   123 — tasks/00_the-close-creates-nothing.feature
 //
 // Two seams, one story, so one suite:
-//   · the TRIAGE RULE — `routeFinding`/`routeFindings` (`src/work/loop.mjs`), a pure decider, driven
+//   · the TRIAGE RULE — `routeFinding`/`routeFindings` (`packages/core/src/work/loop.mjs`), a pure decider, driven
 //     directly. ADR-009 §B is explicit that a four-question router stated only in prose is a claim no
 //     scenario can drive; these rows are what that decision bought.
 //   · the PROMOTION — the real registered `work:promote-finding`, invoked in-process through the
@@ -20,11 +22,13 @@
 import assert from "node:assert/strict";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../src/command-core.mjs";
-import { findWork, listItems, validateWork } from "../../src/work.mjs";
-import { FINDING_ROUTINGS, routeFinding, routeFindings } from "../../src/work/loop.mjs";
-import { appendPosition } from "../../src/work-promote/promotion.mjs";
-import { promoteGapToChoreCommand } from "../../src/commands/promote-gap-to-chore.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
+const validateWork = _aofWorkspace.work.validateWork;
+import { FINDING_ROUTINGS, routeFinding, routeFindings } from "@aof/work-loop/engine";
+import { appendPosition } from "@aof/work/promote/promotion";
+const promoteGapToChoreCommand = _aofApplication.getCommand("work:promote-gap");
 import { withInsertFixture } from "../support/work-insert-fixture.mjs";
 import { frontmatter, writeMilestoneItem, writeStoryItem, writeUatItem } from "../support/work-reindex-fixture.mjs";
 
@@ -59,7 +63,7 @@ const FINDING = Object.freeze({
   ref: "71/02",
   title: "F-a the resolver is called twice per row",
   remedy: "hoist the resolver call out of the row loop",
-  location: "src/work/loop.mjs:143",
+  location: "packages/core/src/work/loop.mjs:143",
   round: 1,
 });
 

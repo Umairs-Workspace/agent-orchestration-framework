@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 13 / ADR-003:
 // "Index via the existing store + scan extension. Imported knowledge is indexed only
 //  by EXTENDING the existing indexer scan to the import store (the existing parsers,
@@ -32,17 +33,15 @@ import path from "node:path";
 import { mkdtemp, rm, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import {
-  reindex,
-  buildRecords,
-  memoryIndexPath,
-  isImportRecord,
-} from "../../../src/memory/local-indexing.mjs";
-import { materializeImport } from "../../../src/import/materialize.mjs";
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
+const isImportRecord = _aofApplication.knowledge.memory.localIndexing.isImportRecord;
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_IMPORT_DIR = path.join(repoRoot, "src", "import");
-const IMPORT_COMMAND = path.join(repoRoot, "src", "commands", "import-milestone.mjs");
+const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");
+const IMPORT_COMMAND = path.join(repoRoot, "packages", "knowledge", "src", "commands", "import-milestone.mjs");
 
 const INDEX_NAME = "aof.memory.index.json";
 

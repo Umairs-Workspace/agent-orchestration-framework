@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6110 — WHAT MAY BE TUNED AT ALL IS THE REGISTRY'S DECLARATION, NEVER A LIST THIS
 // MACHINERY KEEPS. Milestone 61 / story 03, from 61/ADR-008 §4 and 61/ADR-009 §5.
 //
@@ -22,22 +23,21 @@
 // its own.
 //
 // NOT RESTATED HERE: "no acceptor module is a fifth cap resolver". `capProblems` in
-// `test/arch/loop/acd-loop-cap-single-home.test.mjs` already walks all of `src/` and would report
+// `test/arch/loop/acd-loop-cap-single-home.test.mjs` already walks all of `packages/core/src/` and would report
 // any acceptor module that resolved the cap; duplicating that classifier to reach it from
 // here would be the species this milestone indicts everywhere else.
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   KEY_OUTSIDE_DECLARED_SET,
   TUNING_EDGE,
   assessProposal,
   tunableSet,
-} from "../../../src/work-acceptor/admissibility.mjs";
+} from "@aof/work/acceptor/admissibility";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -48,18 +48,18 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", ".
 // this, so the gate covers both "a key that exists" and "a key that could".
 const FORBIDDEN_FAMILIES = Object.freeze(["work.loop.", "work.autonomous."]);
 
-// The acceptor's own surface: every module under `src/work-acceptor/`, plus the command that
+// The acceptor's own surface: every module under `packages/core/src/work-acceptor/`, plus the command that
 // renders them when it lands. Read from disk rather than listed, so a module added by a
 // later story is swept the day it appears.
 async function acceptorModules() {
-  const dir = path.join(root, "src", "work-acceptor");
+  const dir = path.join(root, "packages", "work", "src", "acceptor");
   const modules = [];
   for (const name of (await readdir(dir)).sort()) {
     if (!name.endsWith(".mjs")) continue;
-    modules.push({ rel: `src/work-acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
+    modules.push({ rel: `packages/work/src/acceptor/${name}`, code: await readFile(path.join(dir, name), "utf8") });
   }
-  const face = path.join(root, "src", "commands", "acceptor.mjs");
-  if (existsSync(face)) modules.push({ rel: "src/commands/acceptor.mjs", code: await readFile(face, "utf8") });
+  const face = path.join(root, "packages", "work", "src", "commands", "acceptor.mjs");
+  modules.push({ rel: "packages/work/src/commands/acceptor.mjs", code: await readFile(face, "utf8") });
   return modules;
 }
 
@@ -84,7 +84,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 no acceptor module spells a tunable knob key in code, and the sweep can see one that does",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const declared = tunableSet(model).keys;
       const modules = await acceptorModules();
       assert.ok(modules.length >= 3, `the acceptor surface was actually read: ${modules.length} modules`);
@@ -96,10 +96,10 @@ export const archTests = [
       // reported; the same key quoted in a message or written in a comment is not — which is
       // exactly the line 69's guard already draws, drawn here by the same stripper.
       const [key] = declared;
-      const holds = [{ rel: "src/work-acceptor/planted.mjs", code: `const KNOBS = ["x"];\nconst tuned = config?.${key};\n` }];
+      const holds = [{ rel: "packages/work/src/acceptor/planted.mjs", code: `const KNOBS = ["x"];\nconst tuned = config?.${key};\n` }];
       assert.equal(spelledKnobKeys(holds, declared).length > 0, true, "a key carried in code is a second home");
       const quotes = [{
-        rel: "src/work-acceptor/planted.mjs",
+        rel: "packages/work/src/acceptor/planted.mjs",
         code: `// tomorrow this file might mention ${key}\nthrow new Error(\`${key} is not admissible\`);\n`,
       }];
       assert.deepEqual(spelledKnobKeys(quotes, declared), [], "a key quoted in a diagnostic is not a claim of membership");
@@ -108,12 +108,12 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 the admitted set is resolved from the arbiter's parameter-tuning edge through loadLoops, and is identical to it",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const declaring = arbiterDeclarations(model);
       // A FLOOR AND A DECLARED CEILING, never a retyped count (FF-11902): the registry was really
       // read (at least one declarer), and ONE declarer is the decision 61/ADR-008 §4 makes — the
       // tunable set has a single home — not a number measured off the tree.
-      assert.ok(declaring.length >= 1, "non-vacuous: at least one record under src/bundle declares what it tunes");
+      assert.ok(declaring.length >= 1, "non-vacuous: at least one record under packages/core/assets declares what it tunes");
       assert.ok(declaring.length <= 1, `ONE record declares what it tunes — a second is a second home for the tunable set: ${declaring.map((node) => node.id).join(", ")}`);
       const [record] = declaring;
       assert.equal(record.kind, "arbiter", "…and it is the arbiter, the node whose job is resolving the trade-off");
@@ -132,7 +132,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 a key outside the declared edge is a CODED refusal, and an empty declaration admits nothing rather than falling back on a built-in set",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const declared = tunableSet(model).keys;
 
       // A real bound the registry does not claim, and a key that names no bound at all.
@@ -162,7 +162,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6110 the set moves with the declaration in BOTH directions, with nothing else edited",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const [record] = arbiterDeclarations(model);
       const added = "work.fixture.roundsAllowed";
       const context = { units: [], harness: null };
@@ -207,8 +207,8 @@ export const archTests = [
       // module that decides membership, so the cleanest form of "the set is not here" is that
       // no knob is spelled in it under any reading. The sweep above stays code-only, because
       // ADR-008 §4 explicitly allows a later story to quote a key inside a diagnostic.
-      const source = await readFile(path.join(root, "src", "work-acceptor", "admissibility.mjs"), "utf8");
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const source = await readFile(path.join(root, "packages", "work", "src", "acceptor", "admissibility.mjs"), "utf8");
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       for (const needle of [...FORBIDDEN_FAMILIES, ...tunableSet(model).keys]) {
         assert.equal(source.includes(needle), false, `the module that decides membership never spells ${needle}`);
       }

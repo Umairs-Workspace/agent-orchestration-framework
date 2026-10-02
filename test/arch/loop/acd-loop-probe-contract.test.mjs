@@ -1,13 +1,20 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
-import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../src/work/loop.mjs";
-import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "../../../src/work/grade.mjs";
-import { gradeRoute, gradeStopCode, gradeStopProducer, runLoopBody } from "../../../src/commands/loop.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
+import { GATE_ORDER, LOOP_REFUSALS, LOOP_STOPS } from "../../../packages/work-loop/src/engine.mjs";
+import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS } from "@aof/work/grade";
+const gradeRoute = _aofApplication.loop.commandTools.loop.gradeRoute;
+const gradeStopCode = _aofApplication.loop.commandTools.loop.gradeStopCode;
+const gradeStopProducer = _aofApplication.loop.commandTools.loop.gradeStopProducer;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const invoke = _aofApplication.invoke;
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
@@ -105,7 +112,7 @@ export const archTests = [
       assert.throws(() => LOOP_STOPS.push("ninth"), TypeError);
       assert.deepEqual([...LOOP_REFUSALS], [...REFUSALS]);
       assert.equal(Object.isFrozen(LOOP_REFUSALS), true);
-      const source = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.match(source, /function\s+haltDecision\s*\(\s*stop\s*,\s*ref\s*,\s*producer\s*\)/u);
       const body = functionBody(source, "function haltDecision(");
       assert.ok(body != null, "haltDecision body was found structurally");
@@ -193,10 +200,10 @@ export const archTests = [
         },
       };
       assert.equal(gradeStopCode(decoy), "report-unreadable", "the code decides; the prose beside it is not read");
-      // 129/04 (ADR-008 §3) — the grade helpers moved with the ladder into `src/loop/cycle.mjs`,
+      // 129/04 (ADR-008 §3) — the grade helpers moved with the ladder into `packages/core/src/loop/cycle.mjs`,
       // so the vocabulary is imported THERE as data, and the rule holds over the FAMILY: no member
       // matches rendered prose or restates an indeterminate code as a literal.
-      const family = await Promise.all(["src/commands/loop.mjs", "src/loop/cycle.mjs", "src/loop/wave.mjs"].map(async (rel) => stripComments(await readFile(path.join(root, rel), "utf8"))));
+      const family = await Promise.all(["packages/work-loop/src/commands/loop.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"].map(async (rel) => stripComments(await readFile(path.join(root, rel), "utf8"))));
       for (const source of family) {
         assert.doesNotMatch(source, /message\s*\.\s*(?:includes|match|indexOf|search|startsWith|endsWith)\s*\(/u, "stop attribution must not match rendered prose");
         assert.doesNotMatch(source, /\.\s*test\s*\(\s*[A-Za-z_$][\w$]*\.message\b/u, "…nor test a pattern against one");

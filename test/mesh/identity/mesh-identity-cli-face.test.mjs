@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 22 / story 01 — the CLI face over mesh:identity /
 // mesh:status.
 //
@@ -18,13 +21,13 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
-import { installHash, sanitizeHostname } from "../../../src/node-identity.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { keyedByOldId } from "../../../src/commands/mesh/identity.mjs";
+const meshDir = _aofHooks.meshStore.meshDir;
+import { installHash, sanitizeHostname } from "@aof/mesh/node-identity";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const keyedByOldId = _aofApplication.mesh.commandTools.mesh.identity.keyedByOldId;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 async function buildFixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-meshcli-"));
@@ -383,8 +386,8 @@ export const runRecordsNodeIdCliTests = [
         assert.equal(result.status, 0, `--name exits 0 (stderr: ${result.stderr})`);
         assert.deepEqual(JSON.parse(result.stdout).invalidated, scanned, "the rename reports exactly what the shared scan finds");
         // …and --reidentify reports through that same scan, not a copy of it.
-        const source = await readFile(path.join(repoRoot, "src", "commands", "mesh", "identity.mjs"), "utf8");
-        const reidentifyBody = source.slice(source.indexOf("async function reidentify("), source.indexOf("export async function keyedByOldId("));
+        const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "commands", "identity.mjs"), "utf8");
+        const reidentifyBody = source.slice(source.indexOf("async function reidentify("), source.indexOf("async function keyedByOldId("));
         assert.match(reidentifyBody, /await keyedByOldId\(ws, config, from\)/, "--reidentify calls the shared scan");
         assert.equal((source.match(/invalidated\.push\(/g) ?? []).length, 4, "the four report entries are pushed in ONE place");
       } finally {

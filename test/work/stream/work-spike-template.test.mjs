@@ -1,13 +1,14 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 37 / story 01
 // tasks/00_spike-template-and-command.feature — "the bundled SPIKE.md template
 // instantiates to a folder that validates clean".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
-// asserted against the REAL shipped template (src/bundle/templates/spike/SPIKE.md)
+// asserted against the REAL shipped template (packages/core/assets/templates/spike/SPIKE.md)
 // — no fixture text is hand-authored here for the instantiated doc's shape.
 // Placeholders are filled by simple string substitution (the same substitution an
 // agent running /aof:add-spike performs), then the folder is validated with the
-// LOCKED engine `validateWork` (../src/work.mjs), mirroring test/work/stream/work-spike-chore-validate.test.mjs.
+// LOCKED engine `validateWork` (../packages/core/src/work.mjs), mirroring test/work/stream/work-spike-chore-validate.test.mjs.
 //
 // The @manual scenario (/aof:add-spike scaffolds a spike folder that validates
 // clean) is agent-work the executable suite can't do — its procedure is recorded
@@ -17,11 +18,12 @@ import { readFile, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { validateWork, WORK_ITEM_SCHEMA_VERSION } from "../../../src/work.mjs";
-import { packageVersionString } from "../../../src/asset-base.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
+import { packageVersionString } from "../../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE_PATH = path.join(repoRoot, "src", "bundle", "templates", "spike", "SPIKE.md");
+const TEMPLATE_PATH = path.join(repoRoot, "packages", "core", "assets", "templates", "spike", "SPIKE.md");
 
 // Fill the template's placeholders exactly the way /aof:add-spike would: a real
 // number/slug/title/owner/dates/timebox, an empty depends list.
@@ -43,7 +45,6 @@ function instantiate(raw, overrides = {}) {
   text = text.replaceAll("<Spike Title>", fields.title); // fill the body H1 too (QA m37/01 minor-1: faithful scaffold)
   text = text.replace("<role>", fields.owner);
   text = text.replaceAll("YYYY-MM-DD", fields.created); // created + updated (both occurrences)
-  text = text.replace("depends: []", "depends: []");
   text = text.replace("<e.g. 1d / 2d>", fields.timebox);
   // milestone 40 born-stamp (ADR-002): fill <schema-version>/<aof-version> the
   // same way insert-shared.mjs's stampVersion does, so the instantiated folder
@@ -59,7 +60,7 @@ async function loadRawTemplate() {
 
 function stripStamp(text) {
   // Mirrors the bundle's TEMPLATE_STAMP prefix a rendered install carries; the
-  // raw src/bundle file carries no stamp, so this is a defensive no-op today,
+  // raw packages/core/assets file carries no stamp, so this is a defensive no-op today,
   // kept so the helper is safe if ever pointed at a rendered copy instead.
   return text.replace(/^<!-- aof-generated: bundle -->\n\n/, "");
 }

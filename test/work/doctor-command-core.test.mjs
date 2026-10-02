@@ -1,8 +1,10 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 15 / story 00 — the doctor command core.
 //
 // Covers EVERY @executable scenario across story-00's four task features,
-// exercising the REAL in-process registry (src/command-core.mjs + the engine in
-// src/work/doctor.mjs) against temp fixture repos — loadWorkspace + invoke, real
+// exercising the REAL in-process registry (packages/core/src/command-core.mjs + the engine in
+// packages/core/src/work/doctor.mjs) against temp fixture repos — loadWorkspace + invoke, real
 // fs, in-process — mirroring command-core-contract.test.mjs's house style. One
 // test object per @executable scenario (Scenario-Outline rows folded into one
 // entry), each name tracing to feature + scenario.
@@ -24,12 +26,13 @@ import { mkdtemp, rm, mkdir, writeFile, utimes } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, invoke } from "../../src/command-core.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // --- fixture builders (mirrors command-core-contract.test.mjs) ---------------
 
@@ -140,7 +143,9 @@ function runCli(root, args) {
 
 let serveSetupUi;
 async function loadBoard() {
-  if (!serveSetupUi) ({ serveSetupUi } = await import("../../src/setup-ui.mjs"));
+  if (!serveSetupUi) ({ serveSetupUi } = await Promise.resolve(Object.freeze({
+  serveSetupUi: _aofApplication.server.setupUi.serveSetupUi,
+})));
   return serveSetupUi;
 }
 

@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -36,7 +36,6 @@ import { meshCloneCredentialMintFailureLoudTests } from "./mesh-clone-credential
 // 01), and the code-enforced default private-key directory (task 02).
 import { meshCloneCredentialAppIdentityPerWorkspaceTests } from "./mesh-clone-credential-app-identity-per-workspace.test.mjs";
 import { meshCloneCredentialCrossOrgIsolationTests } from "./mesh-clone-credential-cross-org-isolation.test.mjs";
-import { meshCloneCredentialAppKeyDefaultDirTests } from "./mesh-clone-credential-app-key-default-dir.test.mjs";
 import { meshCloneCredentialPushMintScopedTests } from "./mesh-clone-credential-push-mint-scoped.test.mjs";
 // m42 wave (b) / item 4 — the clone-time identity pin: a fresh checkout answers the
 // fleet's canonical id on every machine.
@@ -60,7 +59,6 @@ export const tests = [
   // 00-02 traceability modules + the acd-cross-org-key-isolation fitness function)
   ...meshCloneCredentialAppIdentityPerWorkspaceTests,
   ...meshCloneCredentialCrossOrgIsolationTests,
-  ...meshCloneCredentialAppKeyDefaultDirTests,
   ...meshCloneCredentialPushMintScopedTests,
   ...meshCloneIdentityPinTests,
 ];

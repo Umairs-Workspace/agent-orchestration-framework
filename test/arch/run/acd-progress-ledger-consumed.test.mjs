@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // F-69-V7: a declared progress authority is not delivered until the production
 // build loop consumes it. This guard distinguishes a resolvable ceiling pointer
 // from a runtime reader and keeps measurement in loop-progress.mjs.
@@ -13,9 +14,9 @@
 // What the F-69-V8 half does NOT reach, stated so it is not mistaken for cover:
 // it proves the BOUND has a production reader outside its declaring home, which
 // is what the criterion asks. It does not prove that reader is itself reachable
-// from a production entry point — `src/loop-progress.mjs` read
+// from a production entry point — `packages/core/src/loop-progress.mjs` read
 // `work.loop.buildNoProgressRounds` throughout F-69-V7, while nothing called
-// `src/loop-progress.mjs`. Reachability for THIS bound is the first test above;
+// `packages/core/src/loop-progress.mjs`. Reachability for THIS bound is the first test above;
 // the quantified check is the register, not the call graph.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
@@ -25,9 +26,9 @@ import path from "node:path";
 // 54/03 review finding D5 — "is this a usable argv array" is `work:grade`'s own predicate and
 // is read here rather than restated, so the declaration and the command that runs it can
 // never disagree about what usable means.
-import { usableCommand } from "../../../src/commands/grade.mjs";
-import { LOOP_BOUND_CONFIG_RESOLVERS, resolvesLoopBoundConfigKey } from "../../../src/loop-bounds.mjs";
-import { loadLoops } from "../../../src/work/loops.mjs";
+const usableCommand = _aofApplication.work.commandTools.grade.usableCommand;
+import { LOOP_BOUND_CONFIG_RESOLVERS, resolvesLoopBoundConfigKey } from "@aof/contracts/loop-bounds";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 // 61/FF-6109 — the DECISION-SITE half is the acceptor's own predicate, imported rather than
 // restated. Two implementations of "does this bound have a consumer?" would be two answers
 // the first time either changed, which is the species this whole file exists to indict.
@@ -39,8 +40,8 @@ import {
   executedConsumerRefusal,
   harnessRefusal,
   tunableSet,
-} from "../../../src/work-acceptor/admissibility.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+} from "@aof/work/acceptor/admissibility";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { matchedParenSpan } from "../../support/source-slice.mjs";
 
 const root = process.cwd();
@@ -52,7 +53,7 @@ const root = process.cwd();
 const BOUND_DECLARING_HOME = "loop-bounds.mjs";
 const declaringHomeFor = (key) => (resolvesLoopBoundConfigKey(key) ? BOUND_DECLARING_HOME : null);
 
-// `src/bundle/**` is shipped ASSETS — the loop records themselves and the hook
+// `packages/core/assets/**` is shipped ASSETS — the loop records themselves and the hook
 // bodies installed into a project. An asset mentioning a bound is not the
 // running program reading it.
 const isProductionUnit = (rel) => !rel.startsWith("bundle/");
@@ -94,7 +95,7 @@ function readsBound(unit, key) {
   if (new RegExp(`\\b${leaf}FromConfig\\b`, "u").test(code)) return true;
   if (new RegExp(`\\bresolve${capitalised}\\b`, "u").test(code)) return true;
   if (new RegExp(`\\b${parent}\\s*\\??\\.\\s*${leaf}\\b`, "u").test(code)) return true;
-  const importsHome = home !== null && new RegExp(`from\\s+"[^"]*${home}"`, "u").test(unit.code);
+  const importsHome = /from\s+["']@aof\/contracts\/loop-bounds["']/u.test(unit.code) || home !== null && new RegExp(`from\\s+"[^"]*${home}"`, "u").test(unit.code);
   return importsHome && new RegExp(`\\b${leaf}\\b`, "u").test(code);
 }
 
@@ -150,8 +151,8 @@ function withoutReadsOf(code, key) {
 }
 
 async function productionUnits() {
-  const files = await readSrcFiles(root);
-  return Promise.all(files.map(async (file) => ({ rel: file.rel, code: await readFile(file.path, "utf8") })));
+  const files = await readRuntimeFiles(root);
+  return Promise.all(files.map(async (file) => ({ rel: file.rel.replace(/^src\//u, ""), code: await readFile(file.path, "utf8") })));
 }
 
 // ── 61/FF-6109 — THE SECOND PREDICATE, BESIDE THE FIRST (61/ADR-008 §1) ───────────────────
@@ -169,7 +170,7 @@ async function productionUnits() {
 // the same units. That difference, asserted below, IS the control — a change that turns
 // this predicate green by relaxing what counts as consumption has broken it, not fixed it.
 //
-// The analysis itself is the acceptor's (`src/work-acceptor/admissibility.mjs`), imported
+// The analysis itself is the acceptor's (`packages/core/src/work-acceptor/admissibility.mjs`), imported
 // rather than copied, so the gate and the running acceptor cannot disagree about what a
 // consumer is. This predicate adds only the registry's `nodeId` to each finding.
 export function unconsumedAtDecisionSites(ceilings, units, { model = null } = {}) {
@@ -180,7 +181,7 @@ export function unconsumedAtDecisionSites(ceilings, units, { model = null } = {}
 }
 
 // A planted consumer for ONE bound: a production module that resolves it through the
-// declared resolver and lets that value decide. Planted rather than written into `src/`,
+// declared resolver and lets that value decide. Planted rather than written into `packages/core/src/`,
 // because the evidence wanted is "the check can see a consumer appear", not a change to the
 // tree — and a knob given one must DROP OUT, which is what makes this a ratchet pointing at
 // fixing the tree rather than at freezing its defect.
@@ -205,12 +206,12 @@ export const archTests = [
     name: "arch/69 F-69-V7 the loop command reaches the progress producer and decision authority",
     run: async () => {
       // 129/04 (ADR-008 §3) — the per-story ladder, and with it the progress producer and the
-      // rung-3 grade, moved from the shell to `src/loop/cycle.mjs`; the shell reaches both
+      // rung-3 grade, moved from the shell to `packages/core/src/loop/cycle.mjs`; the shell reaches both
       // through `settleStoryCycle` and holds no producer of its own. The reach this control
       // protects is therefore read off the LADDER, and the shell is held to reaching the ladder.
-      const shell = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      const command = await readFile(path.join(root, "src", "loop", "cycle.mjs"), "utf8");
-      const engine = await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8");
+      const shell = await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
+      const command = await readFile(path.join(root, "packages", "work-loop", "src", "cycle.mjs"), "utf8");
+      const engine = await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8");
       assert.match(shell, /settleStoryCycle\(phaseRun, bookkeeping, ctx, \{/u, "the shell reaches the producer through the ladder");
       assert.doesNotMatch(shell, /recordBuildProgress\(/u, "…and holds no producer call of its own");
       assert.match(command, /sampleWorktreeProgress/u);
@@ -246,8 +247,8 @@ export const archTests = [
   {
     name: "arch/69 F-69-V7 the command creates no second progress measurement home",
     run: async () => {
-      const command = await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8");
-      for (const rel of ["src/commands/loop.mjs", "src/loop/cycle.mjs", "src/loop/wave.mjs"]) {
+      const command = await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8");
+      for (const rel of ["packages/work-loop/src/commands/loop.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs"]) {
         const member = await readFile(path.join(root, rel), "utf8");
         assert.doesNotMatch(member, /\["status",\s*"--porcelain"\]/u, `${rel} measures no porcelain of its own`);
         assert.doesNotMatch(member, /\["diff",\s*"--numstat"/u, `${rel} measures no numstat of its own`);
@@ -288,7 +289,7 @@ export const archTests = [
   {
     name: "arch/69 F-69-V8 every framework config ceiling has a production reader outside the module that declares it",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
 
@@ -322,7 +323,7 @@ export const archTests = [
   {
     name: "arch/69 F-69-V8 a ceiling that resolves but is read by nothing names itself unconsumed",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
       const subject = "work.loop.buildNoProgressRounds";
@@ -382,7 +383,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6109 a READER is not a CONSUMER: the same tree that satisfies the reader leg fails the decision-site leg for every declared knob",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
       assert.ok(units.length > 50, `the src tree was actually read: ${units.length} modules`);
@@ -411,7 +412,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6109 a knob given a decision-site consumer DROPS OUT, and the others are untouched — the ratchet points at fixing the tree",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const ceilings = configCeilings(model);
       const units = await productionUnits();
       const before = unconsumedAtDecisionSites(ceilings, units, { model }).map((finding) => finding.key).sort();
@@ -445,7 +446,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6109 the harness switch is EVALUATED over the declared document: it refuses alike every declared knob that document does not name, and has already lifted for the ones it does",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const declared = tunableSet(model).keys;
       assert.ok(declared.length >= 3, `the declaration is non-vacuous: ${declared.length} knobs`);
 

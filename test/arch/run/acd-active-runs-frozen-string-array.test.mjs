@@ -1,11 +1,14 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-active-runs-frozen-string-array
 // (milestone 38 / ADR-004 AS-BUILT AMENDMENT + ADR-008)
 //
 // THE INVARIANT. `presence.activeRuns` on the wire is the FROZEN m23 `string[]` of
 // bare run ids (23/ADR-002) — it carries NO per-run attribution (no `ref`, no
 // `title`, no `workspaceId`). EVERY surface that consumes it — the JS render helper
-// (ui/src/fleet/runs.mjs), the TS type surface (ui/src/fleet/api.ts), the RUST
-// desktop view-model (app/desktop/crates/core/src) — must therefore treat an element
+// (apps/ui/src/fleet/runs.mjs), the TS type surface (apps/ui/src/fleet/api.ts), the RUST
+// desktop view-model (apps/desktop/crates/core/src) — must therefore treat an element
 // as a bare STRING and MUST NOT index it as an object.
 //
 // WHY IT EXISTS. Two of milestone 38's verify findings are the SAME defect in two
@@ -16,7 +19,7 @@
 //                 ADR-004 subsumption off `run.workspaceId`; the producer emits a bare
 //                 `string[]`, so the collapse rule could never have fired in production.
 //                 (Fixed by relocating subsumption upstream into
-//                 `assembleCurrentPresenceRecord`, src/mesh/launcher.mjs.)
+//                 `assembleCurrentPresenceRecord`, packages/core/src/mesh/launcher.mjs.)
 //   - F8 (Rust) — `view_model.rs` read the same key as objects (`.get("ref")` /
 //                 `.get("title")`), so the desktop's current-work cell silently read
 //                 empty against every real payload.
@@ -48,9 +51,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { enclosingParenGroup, blockOrStatementAfter } from "../../support/source-slice.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const startSession = _aofHooks.meshSession.startSession;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
@@ -221,18 +224,18 @@ function elementAccessViolations(file, source) {
 // Every surface that consumes the key: the producer + JS/TS render surfaces + the
 // Rust desktop. (The Rust `target/` build dir is NOT source and is excluded.)
 const CONSUMER_FILES = [
-  "src/mesh/presence.mjs",
-  "src/mesh/launcher.mjs",
-  "src/control-stream-server.mjs",
-  "src/global-node-registry.mjs",
-  "src/commands/mesh/identity.mjs",
-  "src/commands/mesh/heartbeat.mjs",
-  "ui/src/fleet/runs.mjs",
-  "ui/src/fleet/runs.d.mts",
-  "ui/src/fleet/scope.mjs",
-  "ui/src/fleet/api.ts",
-  "app/desktop/crates/core/src/status.rs",
-  "app/desktop/crates/core/src/view_model.rs",
+  "packages/mesh/src/presence.mjs",
+  "packages/mesh/src/launcher.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
+  "packages/mesh/src/global-node-registry.mjs",
+  "packages/mesh/src/commands/identity.mjs",
+  "packages/mesh/src/commands/heartbeat.mjs",
+  "apps/ui/src/fleet/runs.mjs",
+  "apps/ui/src/fleet/runs.d.mts",
+  "apps/ui/src/fleet/scope.mjs",
+  "apps/ui/src/fleet/api.ts",
+  "apps/desktop/crates/core/src/status.rs",
+  "apps/desktop/crates/core/src/view_model.rs",
 ];
 
 async function readConsumers() {
@@ -378,7 +381,7 @@ export const archTests = [
       assert.equal(declarationViolations("planted/api.ts", plantedTsDecl).length, 1, "an attributed-object TS declaration is flagged");
       assert.equal(declarationViolations("planted/status.rs", plantedRustDecl).length, 1, "a Vec<Value> Rust declaration is flagged");
       // …and the REAL declarations pass the SAME detector.
-      assert.deepEqual(declarationViolations("ui/src/fleet/api.ts", "export type P = {\n  activeRuns: string[];\n};\n"), []);
+      assert.deepEqual(declarationViolations("apps/ui/src/fleet/api.ts", "export type P = {\n  activeRuns: string[];\n};\n"), []);
       assert.deepEqual(declarationViolations("status.rs", "pub struct P {\n    pub active_runs: Vec<String>,\n}\n"), []);
 
       // ── planted ELEMENT ACCESS — F1, verbatim in shape (the collapse rule keyed
@@ -402,12 +405,12 @@ export const archTests = [
 
       // ── the CORRECT (real) usages are NOT flagged by the same detector ───────
       assert.deepEqual(
-        elementAccessViolations("ui/src/fleet/runs.mjs", "const activeRuns = presence.activeRuns ?? [];\nlines.push(`running ${activeRuns.length} runs`);\n"),
+        elementAccessViolations("apps/ui/src/fleet/runs.mjs", "const activeRuns = presence.activeRuns ?? [];\nlines.push(`running ${activeRuns.length} runs`);\n"),
         [],
         "counting a bare string array is not a violation",
       );
       assert.deepEqual(
-        elementAccessViolations("src/mesh/launcher.mjs", "const sessions = live.filter((session) => !workspacesWithRuns.has(session.workspaceId));\nconst { activeRuns } = await assemble();\n"),
+        elementAccessViolations("packages/mesh/src/launcher.mjs", "const sessions = live.filter((session) => !workspacesWithRuns.has(session.workspaceId));\nconst { activeRuns } = await assemble();\n"),
         [],
         "reading `workspaceId` off a SESSION (which genuinely carries it) is not a violation — only a run element is forbidden",
       );

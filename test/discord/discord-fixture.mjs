@@ -1,3 +1,6 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/discord/discord-fixture.mjs — the Discord bot's shared fixtures (milestone 131 / story 10;
 // ADR-008). ONE home for the fake gateway (task 01) and the reply background (task 03), shared by the
 // suites in this directory and by `test/arch/loop/acd-loop-ask-answered-from-discord.test.mjs`
@@ -10,11 +13,14 @@
 import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { clearAsk, loopAsksDir, openAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { recordAskMessage } from "../../src/notify/ask-messages.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const clearAsk = _aofApplication.loop.askRequest.clearAsk;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 // A synthetic bot token (131/09 QA ruling 1); its third segment is what a leak check greps for.
 export const TOKEN_SEGMENT = "gatewaySecretSegment0123456";
@@ -188,7 +194,12 @@ export async function withReplyWorld(body, { allow = [ALLOWED] } = {}) {
       posted.push({ url, init });
       return { status: 200, headers: { get: () => "application/json" }, json: async () => ({ id: "990000000000000001" }) };
     };
-    const { invoke } = await import("../../src/command-core.mjs");
+    const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
     const invoked = [];
     const context = {
       request,

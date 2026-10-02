@@ -1,8 +1,8 @@
 // FF-13301 (milestone 133 / ADR-001 §3, ADR-002, ADR-008 §2) — THE GENERATOR IS NAMED ONCE.
 //
-// "In a comment-stripped sweep of `src/**` (including `src/bundle/**`), the literal
-//  `diagram-design` appears only in `src/diagrams/generator-diagram-design.mjs`.
-//  `src/config-inspect.mjs` takes generator ids from `generatorIds()`, and the registry map is
+// "In a comment-stripped sweep of `packages/core/src/**` (including `packages/core/assets/**`), the literal
+//  `diagram-design` appears only in `packages/core/src/diagrams/generator-diagram-design.mjs`.
+//  `packages/core/src/config-inspect.mjs` takes generator ids from `generatorIds()`, and the registry map is
 //  built from adapter `id`s. Every registered adapter carries the six contract keys, and
 //  `readBack` is present."
 //
@@ -12,22 +12,22 @@
 //
 // The needle is ASSEMBLED, so this file is not its own subject. Code files are read through the
 // one home's comment stripper (a comment naming the tool is documentation, not a weld); every other
-// file under `src/` — the bundle's prose — is read raw, because prose has no comments to strip.
+// file under `packages/core/src/` — the bundle's prose — is read raw, because prose has no comments to strip.
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
-import { generatorFor, generatorIds } from "../../../src/diagrams/generators.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
+import { generatorFor, generatorIds } from "../../../packages/core/src/diagrams/generators.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_ONE_HOME = "src/diagrams/generator-diagram-design.mjs";
+const THE_ONE_HOME = "packages/core/src/diagrams/generator-diagram-design.mjs";
 const NEEDLE = ["diagram", "design"].join("-");
 const CODE = new Set([".mjs", ".js", ".cjs", ".ts"]);
 const CONTRACT_KEYS = ["id", "instructions", "locate", "readBack", "sourceExt", "toSvg"];
 
-async function sourceFiles(dir = path.join(repoRoot, "src")) {
+async function sourceFiles(dir = path.join(repoRoot, "packages", "core", "src")) {
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = path.join(dir, entry.name);
@@ -43,7 +43,7 @@ async function sourceFiles(dir = path.join(repoRoot, "src")) {
 // the quoted literal of a specifier that resolves to the home is blanked.
 function withoutImportsOfTheHome(file, code) {
   let out = code;
-  for (const { specifier } of importSpecifiers(code)) {
+  for (const { specifier } of dependencySpecifiers(code)) {
     if (path.posix.join(path.posix.dirname(file), specifier) !== THE_ONE_HOME) continue;
     for (const quote of ['"', "'", "`"]) out = out.split(`${quote}${specifier}${quote}`).join("");
   }
@@ -75,10 +75,10 @@ export const archTests = [
   {
     name: "arch/133 FF-13301: the config validator takes its ids from the registry, and the registry is keyed by each adapter's own id",
     run: async () => {
-      const config = stripComments(await readFile(path.join(repoRoot, "src", "config-inspect.mjs"), "utf8"));
-      assert.match(config, /import\s*\{[^}]*\bgeneratorIds\b[^}]*\}\s*from\s*["']\.\/diagrams\/generators\.mjs["']/);
+      const config = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/config-inspect.mjs"), "utf8"));
+      assert.match(config, /import\s*\{[^}]*\bgeneratorIds\b[^}]*\}\s*from\s*["'](?:\.\.\/)+diagrams\/generators\.mjs["']/);
       assert.match(config, /\bgeneratorIds\(\)/, "the validator calls generatorIds()");
-      const registry = stripComments(await readFile(path.join(repoRoot, "src", "diagrams", "generators.mjs"), "utf8"));
+      const registry = stripComments(await readFile(path.join(repoRoot, "packages", "core", "src", "diagrams", "generators.mjs"), "utf8"));
       assert.match(registry, /\.map\(\(adapter\)\s*=>\s*\[adapter\.id,\s*adapter\]\)/, "the map is built from adapter.id");
       for (const id of generatorIds()) {
         assert.equal(generatorFor(id).id, id, `${id} is keyed by its own id`);
@@ -103,15 +103,15 @@ export const archTests = [
     run: () => {
       const planted = [
         { file: THE_ONE_HOME, text: `export const id = "${NEEDLE}";` },
-        { file: "src/config-inspect.mjs", text: `const legal = ["${NEEDLE}", "off"];` },
-        { file: "src/bundle/agents/aof-architect.md", text: `Draw with the ${NEEDLE} plugin.` },
-        { file: "src/work.mjs", text: `// the ${NEEDLE} plugin draws\nexport const x = 1;` },
-        { file: "src/diagrams/generators.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
-        { file: "src/work/other.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
+        { file: "packages/core/src/application/bindings/config-inspect.mjs", text: `const legal = ["${NEEDLE}", "off"];` },
+        { file: "packages/core/assets/agents/aof-architect.md", text: `Draw with the ${NEEDLE} plugin.` },
+        { file: "packages/core/src/application/bindings/work.mjs", text: `// the ${NEEDLE} plugin draws\nexport const x = 1;` },
+        { file: "packages/core/src/diagrams/generators.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
+        { file: "packages/core/src/work/other.mjs", text: `import { a } from "./generator-${NEEDLE}.mjs";` },
       ];
       assert.deepEqual(
         filesNamingTheGenerator(planted),
-        [THE_ONE_HOME, "src/config-inspect.mjs", "src/bundle/agents/aof-architect.md", "src/work/other.mjs"],
+        [THE_ONE_HOME, "packages/core/src/application/bindings/config-inspect.mjs", "packages/core/assets/agents/aof-architect.md", "packages/core/src/work/other.mjs"],
         "only the registry's import of the adapter file is not a naming",
       );
     },

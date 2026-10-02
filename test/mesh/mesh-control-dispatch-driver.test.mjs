@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 35 / story 01 — task 03
 // (tasks/03_control-dispatch-driver.feature, ADR-008 the control-side dispatch/
 // reclaim driver — the DISPATCH half). Covers every @executable scenario / Scenario
@@ -18,10 +20,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../src/global-work-store.mjs";
-import { assignWork } from "../../src/mesh/assignment.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const assignWork = _aofApplication.mesh.assignments.assignWork;
 import { seedTargetNode } from "../support/mesh-assign-fixture.mjs";
 
 const NODE_ID = "control-a";

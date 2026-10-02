@@ -1,3 +1,6 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/notify/notify-channels.test.mjs — milestone 131 / story 02, tasks 00, 02, 03, 05 and 06
 // (ADR-005 §1-§5), story 09, tasks 01-02 (ADR-007 §3-§4, §6), and story 10, tasks 02 and 04 (ADR-008
 // §4, §7: the ask message indexed at delivery, and `allow` offering the reply). The family's registration (00),
@@ -12,19 +15,26 @@
 // every case that reads the degrade sink resets it first (`setDegradeSinkForTest`).
 import assert from "node:assert/strict";
 import { execFile, spawnSync } from "node:child_process";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { renderDiscord, sendDiscord } from "../../src/notify/discord.mjs";
-import { CHANNELS, EVENTS, NOTIFY_TIMEOUT_MS, buildNotifyEnvelope, notify, resolveNotifyConfig } from "../../src/notify/notify.mjs";
-import { askMessagesDir, readAskMessage, recordAskMessage } from "../../src/notify/ask-messages.mjs";
-import { writeMessagingSecret } from "../../src/notify/secret.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { renderDiscord, sendDiscord } from "@aof/messaging/discord";
+const CHANNELS = _aofApplication.messaging.notify.CHANNELS;
+const EVENTS = _aofApplication.messaging.notify.EVENTS;
+const NOTIFY_TIMEOUT_MS = _aofApplication.messaging.notify.NOTIFY_TIMEOUT_MS;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+const notify = _aofApplication.messaging.notify.notify;
+const resolveNotifyConfig = _aofApplication.messaging.notify.resolveNotifyConfig;
+const askMessagesDir = _aofApplication.messaging.askMessages.askMessagesDir;
+const readAskMessage = _aofApplication.messaging.askMessages.readAskMessage;
+const recordAskMessage = _aofApplication.messaging.askMessages.recordAskMessage;
+const writeMessagingSecret = _aofApplication.messaging.secret.writeMessagingSecret;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 import {
   FLAT_LAYER_THRESHOLD,
   SOURCE_DIRECTORY_BUDGETS,
@@ -32,7 +42,7 @@ import {
   readTreeListing,
   sourceDirectoryBudgetViolations,
 } from "../arch/testing/acd-source-directory-budget.test.mjs";
-import { REGRESSION_DIVIDER, REGRESSION_HEADER, REGRESSION_HEADING } from "../../src/regression-record.mjs";
+import { REGRESSION_DIVIDER, REGRESSION_HEADER, REGRESSION_HEADING } from "@aof/work/regression-record";
 import { stripComments } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -164,12 +174,16 @@ export const notifyChannelsTests = [
   {
     name: "131/02 task00 — src/notify and test/notify are exemptions naming their members, and the live tree's budget holds",
     async run() {
-      const src = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/notify");
-      assert.ok(src, "src/notify is an exemption");
-      for (const member of ["form.mjs", "form.d.mts", "notify.mjs", "discord.mjs", "ADR-005"]) assert.ok(src.why.includes(member), `its why names ${member}`);
+      const src = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/messaging/src");
+      assert.ok(src, "the messaging owner has an exact budget");
+      assert.equal(src.ceiling, 11);
+      assert.equal(src.allowance, 0);
+      for (const member of ["form.mjs", "secret.mjs", "ask-messages.mjs"]) assert.ok(src.why.includes(member), `its why names ${member}`);
+      const members = await readdir(path.join(repoRoot, src.directory));
+      for (const member of ["form.mjs", "form.d.mts", "notify.mjs", "discord.mjs"]) assert.ok(members.includes(member), `the owning directory contains ${member}`);
       assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.some((entry) => entry.directory === "test/notify"), "test/notify is an exemption");
       const listing = await readTreeListing();
-      const named = sourceDirectoryBudgetViolations(listing).filter((v) => /(?:src|test)\/notify/u.test(v.message ?? JSON.stringify(v)));
+      const named = sourceDirectoryBudgetViolations(listing).filter((v) => /packages\/messaging\/src|bindings\/notify|test\/notify/u.test(v.message ?? JSON.stringify(v)));
       assert.deepEqual(named, [], "the budget's own run over the live tree names neither directory");
     },
   },
@@ -203,24 +217,25 @@ export const notifyChannelsTests = [
   {
     name: "131/02 task00 — the exemptions hold only while the family stays small (six rows)",
     async run() {
-      const live = (await readTreeListing()).filter((entry) => !["src/notify", "test/notify"].includes(entry.dir) && !(entry.name === "notify" && ["src", "test"].includes(entry.dir)));
+      const bindingDir = "packages/core/src/application/bindings/notify";
+      const live = (await readTreeListing()).filter((entry) => ![bindingDir, "test/notify"].includes(entry.dir) && !(entry.name === "notify" && [path.posix.dirname(bindingDir), "test"].includes(entry.dir)));
       const withFiles = (dir, n) => [
         ...live,
-        { dir: dir.split("/")[0], name: "notify", kind: "dir" },
+        { dir: path.posix.dirname(dir), name: "notify", kind: "dir" },
         ...Array.from({ length: n }, (_, i) => ({ dir, name: `m${i}.mjs`, kind: "file" })),
       ];
-      const keepOther = (dir) => (dir === "src/notify" ? withFiles("test/notify", 4) : withFiles("src/notify", 4));
+      const keepOther = (dir) => (dir === bindingDir ? withFiles("test/notify", 4) : withFiles(bindingDir, 4));
       const naming = (listing, dir) => sourceDirectoryBudgetViolations(listing, SOURCE_DIRECTORY_BUDGETS, SOURCE_DIRECTORY_EXEMPTIONS).filter((v) => (v.message ?? "").includes(`${dir}/`));
-      for (const [dir, n, count] of [["src/notify", 4, 0], ["src/notify", 8, 0], ["src/notify", 9, 1], ["test/notify", 4, 0], ["test/notify", 9, 1]]) {
-        const other = dir === "src/notify" ? "test/notify" : "src/notify";
-        const listing = [...withFiles(dir, n), ...keepOther(dir).filter((e) => e.dir === other || (e.name === "notify" && e.dir === other.split("/")[0]))];
+      for (const [dir, n, count] of [[bindingDir, 4, 0], [bindingDir, 8, 0], [bindingDir, 9, 1], ["test/notify", 4, 0], ["test/notify", 9, 1]]) {
+        const other = dir === bindingDir ? "test/notify" : bindingDir;
+        const listing = [...withFiles(dir, n), ...keepOther(dir).filter((e) => e.dir === other || (e.name === "notify" && e.dir === path.posix.dirname(other)))];
         const violations = naming(listing, dir);
         assert.equal(violations.length, count, `${dir} with ${n} files: ${JSON.stringify(violations.map((v) => v.message))}`);
         if (count === 1) assert.match(violations[0].message, /owes a ROW/u, "it now owes a row");
       }
       assert.ok(FLAT_LAYER_THRESHOLD === 8, "the threshold these rows are measured against");
       const absent = [...live, { dir: "test", name: "notify", kind: "dir" }, ...Array.from({ length: 4 }, (_, i) => ({ dir: "test/notify", name: `m${i}.mjs`, kind: "file" }))];
-      assert.equal(naming(absent, "src/notify").length, 1, "an absent src/notify is one stale-exemption violation");
+      assert.equal(naming(absent, bindingDir).length, 1, "an absent configured notify directory is one stale-exemption violation");
     },
   },
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 59 / story 01 — the instrument census.
 //
 // Covers every @executable scenario in three task features:
@@ -8,7 +9,7 @@
 // TWO KINDS OF LANE, deliberately, and the difference is the story's own thesis.
 //
 // The RULE lanes drive `registrationDecision()` — the pure decider in
-// `src/work-audit/census.mjs` — over SYNTHETIC populations, because the rule has to be
+// `packages/core/src/work-audit/census.mjs` — over SYNTHETIC populations, because the rule has to be
 // demonstrable on a tree where the answer is known in advance. That is where the retired
 // source-text rule is reconstructed and the two are made to disagree on the same suite.
 //
@@ -28,26 +29,24 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import {
-  AUDIT_FINDING_CODES,
-  CENSUS_SWEEPS,
-  SWEEP_BASES,
-  TEST_ROOTS,
-  UNREGISTERED_BASELINE,
-  assertSweepsDeclared,
-  baselineProblems,
-  readFinding,
-  readRecord,
-  registrationDecision,
-  registrationSources,
-  runCensus,
-  runnerBindings,
-  runnerImportedSuites,
-  runnerSpreadNames,
-  sweepDeclarationProblems,
-  sweepLimits,
-  walkSuiteFiles,
-} from "../../src/work-audit/census.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+const CENSUS_SWEEPS = _aofApplication.work.audit.census.CENSUS_SWEEPS;
+const SWEEP_BASES = _aofApplication.work.audit.census.SWEEP_BASES;
+const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
+const UNREGISTERED_BASELINE = _aofApplication.work.audit.census.UNREGISTERED_BASELINE;
+const assertSweepsDeclared = _aofApplication.work.audit.census.assertSweepsDeclared;
+const baselineProblems = _aofApplication.work.audit.census.baselineProblems;
+const readFinding = _aofApplication.work.audit.census.readFinding;
+const readRecord = _aofApplication.work.audit.census.readRecord;
+const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
+const registrationSources = _aofApplication.work.audit.census.registrationSources;
+const runCensus = _aofApplication.work.audit.census.runCensus;
+const runnerBindings = _aofApplication.work.audit.census.runnerBindings;
+const runnerImportedSuites = _aofApplication.work.audit.census.runnerImportedSuites;
+const runnerSpreadNames = _aofApplication.work.audit.census.runnerSpreadNames;
+const sweepDeclarationProblems = _aofApplication.work.audit.census.sweepDeclarationProblems;
+const sweepLimits = _aofApplication.work.audit.census.sweepLimits;
+const walkSuiteFiles = _aofApplication.work.audit.census.walkSuiteFiles;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const runnerUrl = new URL("../../scripts/test.mjs", import.meta.url).href;
@@ -71,8 +70,8 @@ function spawnAnswering(names, override = {}) {
   return async ({ deadlineMs = 1000 } = {}) => Object.freeze({
     outcome: "exited",
     command: "node",
-    args: ["src/work/audit-probe.mjs", "scripts/test.mjs"],
-    attempted: "node src/work/audit-probe.mjs scripts/test.mjs",
+    args: ["packages/core/src/work/audit-probe.mjs", "scripts/test.mjs"],
+    attempted: "node packages/core/src/work/audit-probe.mjs scripts/test.mjs",
     deadlineMs,
     exitCode: 0,
     signal: null,
@@ -130,35 +129,35 @@ const THE_TWENTY_SIX = Object.freeze([
   "test/arch/mesh/acd-presence-write-scope.test.mjs",
   "test/arch/mesh/acd-mesh-eol-pinned.test.mjs",
   "test/mesh/relay/mesh-relay-broker-fanout.test.mjs",
-  "test/mesh/relay/mesh-relay-envelope-resilience.test.mjs",
-  "test/mesh/relay/mesh-relay-control-node.test.mjs",
-  "test/mesh/presence/mesh-presence-degradation-loop.test.mjs",
+  "packages/mesh/test/mesh-relay-envelope-resilience.suite.mjs",
+  "packages/mesh/test/mesh-relay-control-node.suite.mjs",
+  "packages/mesh/test/mesh-presence-degradation-loop.suite.mjs",
   "test/arch/mesh/acd-enrollment-code-hashed-at-rest.test.mjs",
   "test/arch/mesh/acd-enrollment-code-single-use-constant-time.test.mjs",
   "test/arch/command/acd-registry-write-scope.test.mjs",
   "test/arch/mesh/acd-enroll-endpoint-http-not-ws.test.mjs",
   "test/arch/mesh/acd-enroll-git-argv-no-shell.test.mjs",
-  "test/mesh/registry/mesh-registry-store-seam.test.mjs",
-  "test/mesh/registry/mesh-registry-aggregate-mutations.test.mjs",
-  "test/mesh/registry/mesh-registry-pending-lifecycle.test.mjs",
-  "test/mesh/relay/mesh-relay-auth-gate.test.mjs",
+  "packages/mesh/test/mesh-registry-store-seam.suite.mjs",
+  "packages/mesh/test/mesh-registry-aggregate-mutations.suite.mjs",
+  "packages/mesh/test/mesh-registry-pending-lifecycle.suite.mjs",
+  "packages/mesh/test/mesh-relay-auth-gate.suite.mjs",
   "test/mesh/enrollment/mesh-revoke.test.mjs",
-  "test/run/run-node-partition.test.mjs",
+  "packages/execution/test/run-node-partition.suite.mjs",
   "test/arch/run/acd-run-node-path-single-builder.test.mjs",
   "test/arch/bundle/acd-runs-eol-pinned.test.mjs",
   "test/arch/ui/acd-fleet-reclaim-guarded.test.mjs",
-  "test/mesh/identity/mesh-candidacy-every-return.test.mjs",
+  "packages/work/test/mesh-candidacy-every-return.suite.mjs",
 ]);
 
 // The second population the new instrument found on its first run: suites registered in
 // `scripts/test-unit.mjs` alone, so `npm test` — what CI executes — never assembled them.
 // 66/ADR-004 §(c) measured ONE of these as a curiosity; there are six.
 const THE_FAST_LANE_SIX = Object.freeze([
-  "test/work/work.test.mjs",
-  "test/work/lifecycle/work-resolve.test.mjs",
+  "packages/work/test/work.suite.mjs",
+  "packages/work/test/work-resolve.suite.mjs",
   "test/work/gate/work-validate.test.mjs",
-  "test/work/lifecycle/work-next.test.mjs",
-  "test/bundle/opencode-hooks.test.mjs",
+  "packages/work/test/work-next.suite.mjs",
+  "packages/core/test/opencode-hooks.suite.mjs",
   "test/arch/work/work-content-free-discovery.test.mjs",
 ]);
 

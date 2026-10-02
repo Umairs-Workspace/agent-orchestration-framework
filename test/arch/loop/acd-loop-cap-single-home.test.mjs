@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -5,16 +6,16 @@ import { fileURLToPath } from "node:url";
 import { blockOrStatementAfter, markedRegion, matchedBraceBody, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 // 61/FF-6111 — the leaf whose clamp and whose derived refusal this guard now also keeps.
-import * as loopBounds from "../../../src/loop-bounds.mjs";
+import * as loopBounds from "@aof/contracts/loop-bounds";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const EXPECTED_READERS = Object.freeze([
-  "src/commands/run-retry.mjs",
-  "src/commands/resume.mjs",
-  "src/commands/run-start.mjs",
-  "src/commands/loop.mjs",
+  "packages/work/src/commands/run-retry.mjs",
+  "packages/work/src/commands/resume.mjs",
+  "packages/work/src/commands/run-start.mjs",
+  "packages/work-loop/src/commands/loop.mjs",
 ]);
-const DECLARATION_INSPECTORS = Object.freeze(["src/work/doctor-loop-ready.mjs"]);
+const DECLARATION_INSPECTORS = Object.freeze(["packages/work/src/doctor/loop-ready.mjs"]);
 const SHELL_TOKENS = Object.freeze(["Loop until", "aof work next", "aof work run-start", "run-retry", "maxAttempts", "heartbeatStaleMs", "stop_conditions"]);
 // THE CLOSED COLLECTION OF RANGE DRIVERS (ADR-008 §1; ADR-010 §21; task 05's `CAP-MUT-14`/`15`).
 // The seven-token denylist above names SEVEN LITERALS and can therefore only ever reject the seven
@@ -28,9 +29,9 @@ const SHELL_TOKENS = Object.freeze(["Loop until", "aof work next", "aof work run
 const RANGE_DRIVERS = Object.freeze(["loop"]);
 const PROCESS_OPEN = "<process>";
 const PROCESS_CLOSE = "</process>";
-const AUTONOMOUS = "src/bundle/commands/autonomous.md";
+const AUTONOMOUS = "packages/core/assets/commands/autonomous.md";
 
-async function modules(dir = path.join(root, "src")) {
+async function modules(dir = path.join(root, "packages", "core", "src")) {
   const out = [];
   for (const entry of await readdir(dir, { withFileTypes: true })) {
     const target = path.join(dir, entry.name);
@@ -100,7 +101,7 @@ function capSites(code, rel) {
 
 // PURE — a list of `{ rel, code }` source units in, a list of problems out. `[]` is green.
 //
-// This is the instrument the REAL `src/` tree is measured by AND the one every `CAP-MUT-0x` plant
+// This is the instrument the REAL `packages/core/src/` tree is measured by AND the one every `CAP-MUT-0x` plant
 // below is driven through, so what the plants prove is the reading the tree gets rather than a
 // second, kinder reading written beside it. Before this existed, `CAP-MUT-01`/`02`/`03` were
 // discharged by a real-tree `deepEqual` with no executed mutation at all — which the story's own
@@ -170,7 +171,7 @@ function keyProblems(units) {
   return problems;
 }
 
-const LOOP_BOUND_HOME = "src/loop-bounds.mjs";
+const LOOP_BOUND_HOME = "packages/contracts/src/loop-bounds.mjs";
 const LOOP_BOUND_DEFAULTS = Object.freeze([
   "DEFAULT_START_TO_CLOSE_MS",
   "DEFAULT_HEARTBEAT_MS",
@@ -211,7 +212,7 @@ function loopBoundHomeProblems(units) {
     }
   }
   // ANNEXATION — the home reads no `work.autonomous.maxAttempts` and no POOL bound
-  // (`work?.dispatch?.concurrency`, `src/work/dispatch.mjs`'s key). Its OWN
+  // (`work?.dispatch?.concurrency`, `packages/core/src/work/dispatch.mjs`'s key). Its OWN
   // `work.loop.dispatch.concurrency` (129/07) is read as `loopConfig(workspace)?.dispatch?.concurrency`
   // and is a `work.loop.*` key this home exists to hold, so the pool read is told apart by the
   // object it hangs off (`work?.`), never by the key's last two segments.
@@ -274,7 +275,7 @@ function manifestProblems(commandIds) {
 }
 
 async function sourceUnits() {
-  const files = await modules();
+  const files = (await readRuntimeFiles(root)).map(file => file.path);
   const units = [];
   for (const file of files) {
     units.push({ rel: path.relative(root, file).replaceAll("\\", "/"), code: stripComments(await readFile(file, "utf8")) });
@@ -296,7 +297,7 @@ const replacing = (units, rel, code) => [...without(units, rel), { rel, code }];
 // THE TUNABLE SET IS THE REGISTRY'S, never restated here: the keys are read from
 // the arbiter record's `parameter-tuning:` edge (ADR-008 §4), so a key added to or
 // removed from that record moves this census with it.
-const ARBITER = "src/bundle/loops/speed-thoroughness-autonomy.md";
+const ARBITER = "packages/core/assets/loops/speed-thoroughness-autonomy.md";
 const CAP_KEY = "work.autonomous.maxAttempts";
 
 // The BOUND each cap resolution site actually resolves, keyed by the identifier the
@@ -396,7 +397,7 @@ export const archTests = [
       assert.deepEqual(capProblems(units), [], "the pre-existing maxAttempts reader set is byte-for-byte intact");
 
       const secondHome = [...units, {
-        rel: "src/second-loop-bound-home.mjs",
+        rel: "packages/core/src/second-loop-bound-home.mjs",
         code: "const grace = workspace?.config?.work?.loop?.startupGraceMs ?? 99;\n",
       }];
       assert.match(loopBoundHomeProblems(secondHome).join("\n"), /second-loop-bound-home/u);
@@ -408,11 +409,11 @@ export const archTests = [
       assert.match(loopBoundHomeProblems(annexedPool).join("\n"), /annexes maxAttempts or dispatch concurrency/u);
       assert.match(units.find((unit) => unit.rel === LOOP_BOUND_HOME).code, /loopConfig\(workspace\)\?\.dispatch\?\.concurrency/u, `${LOOP_BOUND_HOME}: NOT FOUND — the home's own lane-bound read is absent (129/07)`);
       assert.doesNotMatch(loopBoundHomeProblems(units).join("\n"), /annexes/u, "the home's own work.loop.dispatch.concurrency read is not an annexation");
-      const duplicate = [...units, { rel: "src/commands/private-loop-bound.mjs", code: "const DEFAULT_HEARTBEAT_MS = 15 * 60 * 1000;\n" }];
+      const duplicate = [...units, { rel: "packages/core/src/commands/private-loop-bound.mjs", code: "const DEFAULT_HEARTBEAT_MS = 15 * 60 * 1000;\n" }];
       const duplicateProblems = loopBoundHomeProblems(duplicate).join("\n");
       assert.match(duplicateProblems, /private-loop-bound.*standalone loop-bound authority DEFAULT_HEARTBEAT_MS/u);
       assert.match(duplicateProblems, /private-loop-bound.*standalone 15-minute heartbeat default/u);
-      const retired = [...units, { rel: "src/commands/legacy-heartbeat.mjs", code: "const stale = config?.work?.autonomous?.heartbeatStaleMs;\n" }];
+      const retired = [...units, { rel: "packages/core/src/commands/legacy-heartbeat.mjs", code: "const stale = config?.work?.autonomous?.heartbeatStaleMs;\n" }];
       assert.match(loopBoundHomeProblems(retired).join("\n"), /retired work\.autonomous\.heartbeatStaleMs/u);
     },
   },
@@ -420,7 +421,7 @@ export const archTests = [
     name: "arch/53 FF-5310 (acd-loop-cap-single-home): four cap resolvers use literal three and one named declaration inspector supplies no default",
     run: async () => {
       const units = await sourceUnits();
-      assert.ok(units.length > 150, `src/**/*.mjs was actually walked: ${units.length} modules`);
+      assert.ok(units.length > 150, `packages/core/src/**/*.mjs was actually walked: ${units.length} modules`);
       assert.deepEqual(capProblems(units), [], "the measured RESOLUTION and DECLARATION-INSPECTION sets are each closed by exact equality, in both directions");
       for (const rel of EXPECTED_READERS) {
         const code = stripComments(await readFile(path.join(root, rel), "utf8"));
@@ -443,8 +444,8 @@ export const archTests = [
       const plants = [
         {
           id: "CAP-MUT-01",
-          units: [...units, { rel: "src/commands/fifth-home.mjs", code: "const cap = ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;\n" }],
-          reports: ["CAP-MUT-01/02", "src/commands/fifth-home.mjs"],
+          units: [...units, { rel: "packages/core/src/commands/fifth-home.mjs", code: "const cap = ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;\n" }],
+          reports: ["CAP-MUT-01/02", "packages/core/src/commands/fifth-home.mjs"],
         },
         {
           id: "CAP-MUT-02",
@@ -453,13 +454,13 @@ export const archTests = [
         },
         {
           id: "CAP-MUT-03",
-          units: [...units, { rel: "src/second-inspector.mjs", code: "const declared = config?.work?.autonomous?.maxAttempts;\n" }],
-          reports: ["CAP-MUT-03", "src/second-inspector.mjs"],
+          units: [...units, { rel: "packages/core/src/second-inspector.mjs", code: "const declared = config?.work?.autonomous?.maxAttempts;\n" }],
+          reports: ["CAP-MUT-03", "packages/core/src/second-inspector.mjs"],
         },
         {
           id: "CAP-MUT-04",
-          units: without(units, "src/commands/run-start.mjs"),
-          reports: ["CAP-MUT-04", "src/commands/run-start.mjs", "may now be REDUCED"],
+          units: without(units, "packages/work/src/commands/run-start.mjs"),
+          reports: ["CAP-MUT-04", "packages/work/src/commands/run-start.mjs", "may now be REDUCED"],
         },
         {
           id: "CAP-MUT-05",
@@ -468,8 +469,8 @@ export const archTests = [
         },
         {
           id: "CAP-MUT-06",
-          units: replacing(units, "src/commands/run-retry.mjs", "const maxAttempts = input.maxAttempts ?? ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 5;\n"),
-          reports: ["CAP-MUT-06", "src/commands/run-retry.mjs", "?? 5"],
+          units: replacing(units, "packages/work/src/commands/run-retry.mjs", "const maxAttempts = input.maxAttempts ?? ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 5;\n"),
+          reports: ["CAP-MUT-06", "packages/work/src/commands/run-retry.mjs", "?? 5"],
         },
       ];
       for (const plant of plants) {
@@ -482,16 +483,16 @@ export const archTests = [
       // CAP-PC-01 — a resolver whose `?? 3` WRAPS onto the next line is still a resolver. No
       // resolver in the tree wraps today, so this control has to be SYNTHETIC or it is vacuous;
       // the shape planted is the one the tree really uses for the sibling key
-      // (`src/commands/loop.mjs:136`, `:375` wrap `heartbeatStaleMs` exactly this way).
+      // (`packages/core/src/commands/loop.mjs:136`, `:375` wrap `heartbeatStaleMs` exactly this way).
       const wrapped = "    const cap = ctx.workspace.config?.work?.autonomous?.maxAttempts\n      ?? 3;\n";
       assert.deepEqual(capSites(wrapped, "synthetic/wrapped.mjs"), [{ kind: "resolver", fallback: "3", line: 1 }], "CAP-PC-01: adjacency spans a wrap placed BEFORE the `??` — it is still a resolver");
-      assert.deepEqual(capProblems(replacing(units, "src/commands/loop.mjs", wrapped)), [], "CAP-PC-01: a wrapped resolver raises no problem at all");
+      assert.deepEqual(capProblems(replacing(units, "packages/work-loop/src/commands/loop.mjs", wrapped)), [], "CAP-PC-01: a wrapped resolver raises no problem at all");
 
       // …and the reach recorded honestly: a wrap placed BETWEEN the `??` and its literal is NOT
       // spanned. It reads as an inspector, which is LOUD on both closed sets rather than silent.
       const wrappedAfter = "    const cap = ctx.workspace.config?.work?.autonomous?.maxAttempts ??\n      3;\n";
       assert.deepEqual(capSites(wrappedAfter, "synthetic/wrapped-after.mjs").map((site) => site.kind), ["inspector"], "measured: a wrap between `??` and its literal is not spanned");
-      const loud = capProblems(replacing(units, "src/commands/loop.mjs", wrappedAfter));
+      const loud = capProblems(replacing(units, "packages/work-loop/src/commands/loop.mjs", wrappedAfter));
       assert.ok(loud.some((problem) => problem.includes("CAP-MUT-03")) && loud.some((problem) => problem.includes("CAP-MUT-04")), `a wrap after the \`??\` fails loudly on BOTH closed sets, never silently:\n${loud.join("\n")}`);
 
       // CAP-PC-02 — an unrelated `??` PRECEDING the cap access is ignored; classification follows
@@ -509,7 +510,7 @@ export const archTests = [
       // …and the one-home cut reports NOT FOUND, naming the MODULE and the line, rather than
       // asserting over a region it could not cut.
       assert.throws(
-        () => capSites("export const cap = config?.work?.autonomous?.maxAttempts", "src/synthetic/no-statement.mjs"),
+        () => capSites("export const cap = config?.work?.autonomous?.maxAttempts", "packages/core/src/synthetic/no-statement.mjs"),
         /src\/synthetic\/no-statement\.mjs:1: NOT FOUND/u,
         "an uncuttable region fails loudly and names the module, not just a bare line number",
       );
@@ -519,17 +520,17 @@ export const archTests = [
     name: "arch/53 FF-5310 (acd-loop-cap-single-home): work.autonomous introduces no second key and loop declares no private cap default",
     run: async () => {
       const units = await sourceUnits();
-      assert.ok(units.length > 150, `src/**/*.mjs was actually walked: ${units.length} modules`);
+      assert.ok(units.length > 150, `packages/core/src/**/*.mjs was actually walked: ${units.length} modules`);
       assert.deepEqual(keyProblems(units), [], "control: work.autonomous retains maxAttempts and no retired heartbeat reader");
-      const loopRel = "src/commands/loop.mjs";
+      const loopRel = "packages/work-loop/src/commands/loop.mjs";
       const loop = units.find((unit) => unit.rel === loopRel);
       assert.ok(loop != null, `${loopRel}: was read`);
       assert.deepEqual(privateDefaultProblems(loopRel, loop.code), [], "control: the loop reads the existing fallback literal");
 
       // CAP-MUT-07 — a third key under work.autonomous.
-      const extra = keyProblems([...units, { rel: "src/commands/greedy.mjs", code: "const n = config?.work?.autonomous?.maxCycles;\n" }]);
+      const extra = keyProblems([...units, { rel: "packages/core/src/commands/greedy.mjs", code: "const n = config?.work?.autonomous?.maxCycles;\n" }]);
       assert.equal(extra.length, 1, `CAP-MUT-07: exactly the new key is reported\n${extra.join("\n")}`);
-      assert.ok(extra[0].includes("CAP-MUT-07") && extra[0].includes("maxCycles") && extra[0].includes("src/commands/greedy.mjs"), extra[0]);
+      assert.ok(extra[0].includes("CAP-MUT-07") && extra[0].includes("maxCycles") && extra[0].includes("packages/core/src/commands/greedy.mjs"), extra[0]);
 
       // CAP-MUT-08 — the remaining member of the closed set disappearing is equally a failure.
       const gone = keyProblems(units.map((unit) => ({ rel: unit.rel, code: unit.code.replaceAll("autonomous?.maxAttempts", "autonomous?.other") })));
@@ -637,7 +638,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5310 (acd-loop-cap-single-home): bundle gains no loop/drive wrapper and retains autonomous",
     run: async () => {
-      const manifest = JSON.parse(await readFile(path.join(root, "src", "bundle", "bundle.json"), "utf8"));
+      const manifest = JSON.parse(await readFile(path.join(root, "packages", "core", "assets", "bundle.json"), "utf8"));
       const members = manifest.members ?? manifest;
       assert.ok(Array.isArray(members) && members.length > 20, `bundle manifest was actually read: ${members.length} members`);
       const commandIds = members.filter((member) => member.kind === "command").map((member) => member.id);
@@ -647,7 +648,7 @@ export const archTests = [
       assert.ok(manifestProblems([...commandIds, "drive-continue"]).some((problem) => problem.includes("drive-continue")), "a /aof:drive-continue member is named");
       assert.ok(manifestProblems(commandIds.filter((id) => id !== "autonomous")).some((problem) => problem.includes("autonomous")), "the removed door is named");
       for (const name of ["refine.md", "continue.md", "verify.md"]) {
-        const text = await readFile(path.join(root, "src", "bundle", "commands", name), "utf8");
+        const text = await readFile(path.join(root, "packages", "core", "assets", "commands", name), "utf8");
         assert.ok(text.length > 500, `${name} was actually read`);
       }
     },
@@ -714,7 +715,7 @@ export const archTests = [
 
       // The leaf is still a leaf: it depends on nothing outside itself, so asking it whether a value
       // is in range cannot read a file, and cannot write one. The unit is the FAMILY (119/ADR-002) —
-      // if the bounds home is ever decomposed into `src/loop-bounds/`, the edges inside it are the
+      // if the bounds home is ever decomposed into `packages/core/src/loop-bounds/`, the edges inside it are the
       // module's own wiring rather than dependencies out of it, while a bare specifier or a node
       // builtin is still a violation.
       await assertFamilyPurity(assert, root, LOOP_BOUND_HOME);
@@ -772,28 +773,28 @@ export const archTests = [
       // site comes to resolve the attempt ceiling like its three siblings, the
       // count falls to one, and the refusal lifts on its own with nothing edited
       // anywhere and no fact about the key's name to remember to delete.
-      const single = resolvedAttemptBounds(replacing(units, "src/commands/loop.mjs", "  const maxAttempts = ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;\n"));
+      const single = resolvedAttemptBounds(replacing(units, "packages/work-loop/src/commands/loop.mjs", "  const maxAttempts = ctx.workspace.config?.work?.autonomous?.maxAttempts ?? 3;\n"));
       assert.deepEqual(single.problems, []);
       assert.equal(single.bounds.length, 1, `CLAMP-MUT-01: one bound remains — ${single.bounds.map((entry) => entry.bound).join(", ")}`);
       assert.equal(loopBounds.compoundStepRefusal({ key: CAP_KEY, bounds: single.bounds.map((entry) => entry.bound) }), null, "CLAMP-MUT-01: and the refusal stops applying, computed from the count rather than recorded against the name");
 
       // CLAMP-MUT-02 — a resolution site whose binder this census cannot classify
       // is reported, never silently counted as a third bound nor silently dropped.
-      const unmapped = resolvedAttemptBounds([...units, { rel: "src/commands/budgeted.mjs", code: "const attemptBudget = config?.work?.autonomous?.maxAttempts ?? 3;\n" }]);
-      assert.ok(unmapped.problems.some((problem) => problem.includes("attemptBudget") && problem.includes("src/commands/budgeted.mjs")), `CLAMP-MUT-02: an unclassifiable binder is reported\n${unmapped.problems.join("\n")}`);
+      const unmapped = resolvedAttemptBounds([...units, { rel: "packages/core/src/commands/budgeted.mjs", code: "const attemptBudget = config?.work?.autonomous?.maxAttempts ?? 3;\n" }]);
+      assert.ok(unmapped.problems.some((problem) => problem.includes("attemptBudget") && problem.includes("packages/core/src/commands/budgeted.mjs")), `CLAMP-MUT-02: an unclassifiable binder is reported\n${unmapped.problems.join("\n")}`);
 
       // CLAMP-MUT-03 — a site bound to nothing at all fails as NOT FOUND, naming
       // the module and the line, rather than being classified by a guess.
-      const uncuttable = resolvedAttemptBounds([...units, { rel: "src/commands/bare.mjs", code: "config?.work?.autonomous?.maxAttempts ?? 3;\n" }]);
-      assert.ok(uncuttable.problems.some((problem) => problem.includes("NOT FOUND") && problem.includes("src/commands/bare.mjs:1")), `CLAMP-MUT-03: an uncuttable binder fails loudly and names the module\n${uncuttable.problems.join("\n")}`);
+      const uncuttable = resolvedAttemptBounds([...units, { rel: "packages/core/src/commands/bare.mjs", code: "config?.work?.autonomous?.maxAttempts ?? 3;\n" }]);
+      assert.ok(uncuttable.problems.some((problem) => problem.includes("NOT FOUND") && problem.includes("packages/core/src/commands/bare.mjs:1")), `CLAMP-MUT-03: an uncuttable binder fails loudly and names the module\n${uncuttable.problems.join("\n")}`);
 
       // CLAMP-MUT-04 — a second home for a range that already exists where the
       // knob is resolved. Two homes for one number become two different numbers.
       const secondHome = rangeTableProblems([...units, {
-        rel: "src/work-acceptor/ranges.mjs",
+        rel: "packages/core/src/work-acceptor/ranges.mjs",
         code: 'export const RANGES = { "work.loop.reviewRounds": { floor: 1, ceiling: 5 } };\n',
       }], tunable);
-      assert.ok(secondHome.some((problem) => problem.includes("src/work-acceptor/ranges.mjs") && problem.includes("work.loop.reviewRounds")), `CLAMP-MUT-04: a declared range table is reported\n${secondHome.join("\n")}`);
+      assert.ok(secondHome.some((problem) => problem.includes("packages/core/src/work-acceptor/ranges.mjs") && problem.includes("work.loop.reviewRounds")), `CLAMP-MUT-04: a declared range table is reported\n${secondHome.join("\n")}`);
 
       // …and the census's own cut, driven directly: the four shapes the tree
       // actually uses each resolve to the binder the language binds them to.

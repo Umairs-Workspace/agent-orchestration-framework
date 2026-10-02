@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { stripHtmlComments } from "@aof/foundation/markdown";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 125 (the loop graph gets a published face),
 // task 00_the-site-has-a-publishing-path.feature + task 01_the-graph-page-is-projected-not-copied.feature.
 //
@@ -36,9 +39,9 @@ import { RECORDS, loop, snapshot, writeRegistry } from "../support/loop-document
 import { computedDynamicImports, importSpecifiers } from "../support/module-family.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 import { normaliseEol, readWorkflowText, stripYamlComments } from "../support/workflow/workflow-lint.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { loopDocumentCommand } from "../../src/commands/loop-document.mjs";
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../src/loop-document.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const loopDocumentCommand = _aofApplication.getCommand("work:loop-document");
+import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
 import {
   BUILD_COMMAND,
   DEFAULT_OUT,
@@ -162,6 +165,12 @@ export function lintPagesWorkflow(rawText) {
 
   const deployBody = deploy ? jobs.get(deploy) : "";
   const gateBody = gate ? jobs.get(gate) : "";
+  for (const [name, body, command] of [[gate, gateBody, "node scripts/test.mjs"], [deploy, deployBody, `node ${BUILDER}`]]) {
+    const install = body.indexOf("run: node scripts/prepare-worktree.mjs");
+    const audit = body.indexOf("run: node scripts/supply-chain-audit.mjs");
+    const execute = body.indexOf(command);
+    if (install < 0 || audit <= install || execute <= audit) problems.push(`job "${name}" must install locked workspaces and audit dependencies before running project code`);
+  }
   const needs = deploy ? needsOf(deployBody) : [];
   if (deploy && gate && !needs.includes(gate)) {
     problems.push(`job "${deploy}" deploys without waiting for the gate: its needs [${needs.join(", ")}] do not include "${gate}"`);
@@ -329,19 +338,34 @@ function gitCheckIgnore(target) {
 
 // The builder's STATIC import closure: every module reached by a literal `import … from`,
 // `import "…"` or `import("…")` from the builder, transitively, through the shared extractor
-// (`test/support/module-family.mjs`). Bare specifiers are collected, not followed; a computed
-// dynamic import is reported, because a closure that cannot be read is not a closure.
+// (`test/support/module-family.mjs`). Public workspace exports are followed through their
+// manifests; external and computed imports are reported rather than silently skipping edges.
 async function staticImportClosure(entry) {
   const seen = new Map();
   const bare = [];
   const computed = [];
+  const workspaces = new Set();
+  const builtins = new Set();
   async function walk(file) {
     if (seen.has(file)) return;
     const code = await readFile(file, "utf8");
     seen.set(file, code);
     for (const expression of computedDynamicImports(code)) computed.push(`${path.relative(repoRoot, file)}: import(${expression})`);
     for (const { specifier } of importSpecifiers(code)) {
-      if (specifier.startsWith("node:")) continue;
+      if (specifier.startsWith("node:")) { builtins.add(specifier); continue; }
+      if (specifier.startsWith("@aof/") || specifier.startsWith("aof/")) {
+        const [scope, name, ...subpath] = specifier.split("/");
+        const core = scope === "aof";
+        const root = path.join(repoRoot, "packages", core ? "core" : name);
+        const manifest = JSON.parse(await readFile(path.join(root, "package.json"), "utf8"));
+        assert.equal(manifest.name, core ? "aof" : `${scope}/${name}`, "workspace identity matches its import");
+        const key = core ? `./${[name, ...subpath].join("/")}` : subpath.length ? `./${subpath.join("/")}` : ".";
+        const target = manifest.exports[key];
+        assert.ok(typeof target === "string" && target.startsWith("./src/") && !target.includes("..", 2), `${specifier}: public workspace source export`);
+        workspaces.add(manifest.name);
+        await walk(path.resolve(root, target));
+        continue;
+      }
       if (!specifier.startsWith(".")) {
         bare.push(`${specifier} <- ${path.relative(repoRoot, file).split(path.sep).join("/")}`);
         continue;
@@ -350,11 +374,11 @@ async function staticImportClosure(entry) {
     }
   }
   await walk(path.resolve(repoRoot, entry));
-  return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed };
+  return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed, workspaces: [...workspaces], builtins: [...builtins] };
 }
 
 // A copy of this repository's runnable tree — everything `scripts/test.mjs` reaches at LOAD (the
-// runner imports every suite before it selects, and suites import `src/`, `ui/src/` and the hook
+// runner imports every suite before it selects, and suites import `packages/core/src/`, `apps/ui/src/` and the hook
 // under `.claude/hooks/` at module scope) — with a FIXTURE registry and its own config, placed
 // INSIDE this repository (under the git-ignored `.aof-test/`) so bare imports resolve up to this
 // tree's `node_modules` without a link or a junction. The gate is then run in it exactly as the
@@ -368,10 +392,11 @@ async function makeGateFixture() {
   // `graphify-reranking`). The fixture's OWN document is written over the copy below, from the
   // fixture's own registry, before the gate is first run. Run records and observability snapshots
   // are left out: nothing loads them, and they are the bulk of the tree.
-  for (const tree of ["src", "test", "scripts", "ui/src", ".claude/hooks", "wiki"]) {
+  // `apps/ui/test` since 142 Plan 09: the runner registers the UI's own suites from `apps/ui/test/index.mjs`.
+  for (const tree of ["packages/core/src", "packages", "test", "scripts", "apps/ui/src", "apps/ui/test", ".claude/hooks", "wiki"]) {
     await cp(path.join(repoRoot, ...tree.split("/")), path.join(root, ...tree.split("/")), {
       recursive: true,
-      filter: (source) => !/[\\/](?:runs|observability)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),
+      filter: (source) => !/[\\/](?:runs|observability|node_modules)(?:[\\/]|$)/.test(path.relative(repoRoot, source)),
     });
   }
   await cp(path.join(repoRoot, "package.json"), path.join(root, "package.json"));
@@ -398,6 +423,7 @@ function runGate(root) {
 // edge removal itself. Every one must produce at least one problem.
 const REACHABILITY_MUTATIONS = [
   { name: "the gate's needs edge removed", apply: (raw) => raw.replace(/^ {4}needs:.*$/m, "") },
+  { name: "the deploy's workspace install removed", apply: (raw) => raw.replace(/(  deploy:[\s\S]*?)run: node scripts\/prepare-worktree\.mjs/, "$1run: node --version") },
   { name: "continue-on-error on the gate job", apply: (raw) => raw.replace(/^( {4})runs-on: ubuntu-latest$/m, (line, pad) => `${line}\n${pad}continue-on-error: true`) },
   { name: "continue-on-error on the gate's check step", apply: (raw) => raw.replace(/^( {6})- name: Run story 79's drift control.*$/m, (line, pad) => `${line}\n${pad}  continue-on-error: true`) },
   { name: "`|| true` appended to the gate's run line", apply: (raw) => raw.replace(/(node scripts\/test\.mjs --only [^\n]*)$/m, "$1 || true") },
@@ -856,19 +882,21 @@ export const siteBuildTests = [
     },
   },
 
-  // ══════ 01 (review round 1, finding 2): the deploy job's no-`npm ci` premise, held ══════
+  // ══════ Workspace migration: follow public exports and install before staging ══════
   {
-    name: "site-build/01 the builder's static import closure holds node built-ins only — no bare specifier and no computed dynamic import anywhere it reaches — which is the premise on which the deploy job stages without `npm ci`",
+    name: "site-build/01 the builder reaches only Node built-ins and public workspace APIs, and deploy installs and audits the locked workspaces before staging",
     run: async () => {
       const closure = await staticImportClosure(BUILDER);
       assert.ok(closure.modules.includes(BUILDER), "the walk started at the builder");
-      assert.ok(closure.modules.length >= 5, `the closure was actually walked (${closure.modules.length} modules): ${closure.modules.join(", ")}`);
-      assert.deepEqual(closure.bare, [], `no module the builder reaches imports a bare specifier — a dependency would need \`npm ci\` in the deploy job:\n  ${closure.bare.join("\n  ")}`);
+      assert.ok(closure.modules.length >= 5 && closure.modules.includes("packages/work-graph/src/document.mjs"), "the builder reaches the public document implementation and workspace service closure");
+      assert.ok(closure.modules.length + closure.builtins.length >= 5, `the real closure was walked: ${closure.modules.join(", ")}; ${closure.builtins.join(", ")}`);
+      assert.ok(closure.workspaces.length > 0, "the closure follows workspace exports, not only relative imports");
+      assert.deepEqual(closure.bare, [], `the builder reaches no unexpected external dependency:\n  ${closure.bare.join("\n  ")}`);
       assert.deepEqual(closure.computed, [], `and no module the builder reaches carries a computed dynamic import, which the walk could not follow:\n  ${closure.computed.join("\n  ")}`);
-      // And the workflow really does stage without installing — the premise this row holds.
+      // Both jobs need the workspace links supplied by the immutable installation.
       const verdict = lintPagesWorkflow(readWorkflow());
-      assert.doesNotMatch(verdict.deployBody, /npm ci|npm install/, "the deploy job runs no package install");
-      assert.match(verdict.deployBody, new RegExp(BUILDER.replace(/[./]/g, "\\$&")), "and it runs the builder");
+      assert.deepEqual(verdict.problems, []);
+      assert.match(verdict.deployBody, new RegExp(BUILDER.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")), "and it runs the builder");
     },
   },
 
@@ -937,7 +965,7 @@ export const siteBuildTests = [
       // Only the executable half of the layout: the file's own HTML comment explains the floating
       // tags it refuses, and the script's comments name the shapes — a lint that read either
       // would red on the explanation.
-      const script = stripComments(layout.replace(/<!--[\s\S]*?-->/g, ""));
+      const script = stripComments(stripHtmlComments(layout));
       const include = /import\(\s*["']([^"']*mermaid[^"']*)["']\s*\)/.exec(script);
       assert.ok(include, "the layout imports Mermaid from a CDN, dynamically");
       assert.match(include[1], /\/mermaid@\d+\.\d+\.\d+\//, `the include names an exact version: ${include[1]}`);

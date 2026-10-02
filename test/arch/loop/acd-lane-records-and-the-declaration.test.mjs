@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-lane-records-and-the-declaration (milestone 129 / story 05; FF-12903 and
 // FF-12907; ADR-004 and ADR-007) —
 //
 //   FF-12903  "The tree that commits the change owns the record."
 //   FF-12907  "Lanes are children of one declaration."
 //
-// FF-12903, STRUCTURAL LEG — in `src/loop/**`, every `transitionRunStart` / `transitionRunComplete`
+// FF-12903, STRUCTURAL LEG — in `packages/core/src/loop/**`, every `transitionRunStart` / `transitionRunComplete`
 // call made by a function that builds a LANE brief (a `runBrief(…, { …, lane: {…} })`) takes an
 // item bound in that same function from a `resolveRefInWorktree(` call — the item AS IT LIVES IN
 // THE LANE, never the primary's copy (`startedHere`'s rule: a control-side write of a status the
@@ -16,7 +17,7 @@
 // each lane's story dir holds exactly one record whose `brief.lane.worktree` is that lane, and
 // after the merge `readRuns(primaryStory)` returns that same run, `done`.
 //
-// FF-12907, STRUCTURAL LEG — `src/loop/**` assigns nothing to `brief.loop.scope` or
+// FF-12907, STRUCTURAL LEG — `packages/core/src/loop/**` assigns nothing to `brief.loop.scope` or
 // `.loopRunId` and passes no `scope:` / `loopRunId:` override into `declarationFor(` or
 // `runBrief(`: the declaration is the shell's, passed in WHOLE, so a lane run is a run of this
 // loop and never a declaration of its own. FIXTURE LEG — over the same wave, every lane run's
@@ -40,8 +41,8 @@ import { fileURLToPath } from "node:url";
 import { matchedBraceBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_DIR = "src/loop";
-const WAVE = "src/loop/wave.mjs";
+const FAMILY_DIR = "packages/work-loop/src";
+const WAVE = "packages/work-loop/src/wave.mjs";
 const WAVE_RUN_MINT = "mintWaveRun";
 
 const TRANSITION_RE = /\btransitionRun(?:Start|Complete)\s*\(/gu;
@@ -172,11 +173,136 @@ async function familyUnits() {
 // ── the fixture leg, shared by both controls: one two-member wave, everything injected ──
 async function driveTwoMemberWave() {
   const fixture = await import("../../support/loop/lane-fixture.mjs");
-  const { runLoopBody } = await import("../../../src/commands/loop.mjs");
-  const { readRuns } = await import("../../../src/run-store.mjs");
-  const { resolveItemExact } = await import("../../../src/commands/resolve.mjs");
-  const { resolveRefInWorktree } = await import("../../../src/work/dispatch.mjs");
-  const { meshDispatchWorktreePath } = await import("../../../src/mesh/worktree.mjs");
+  const { runLoopBody } = await Promise.resolve(Object.freeze({
+  DOCTOR_GATE_CODES: _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES,
+  LOOP_FIX_TRANSPORT_KEYS: _aofApplication.loop.commandTools.loop.LOOP_FIX_TRANSPORT_KEYS,
+  SHELL_LOOP_ID: _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID,
+  admitResumeBuildRun: _aofApplication.loop.commandTools.loop.admitResumeBuildRun,
+  admittedDoctorFindings: _aofApplication.loop.commandTools.loop.admittedDoctorFindings,
+  applyGradeBaseline: _aofApplication.loop.commandTools.loop.applyGradeBaseline,
+  failingCountFromGrade: _aofApplication.loop.commandTools.loop.failingCountFromGrade,
+  fixTransport: _aofApplication.loop.commandTools.loop.fixTransport,
+  gradeFindings: _aofApplication.loop.commandTools.loop.gradeFindings,
+  gradeRoute: _aofApplication.loop.commandTools.loop.gradeRoute,
+  gradeStopCode: _aofApplication.loop.commandTools.loop.gradeStopCode,
+  gradeStopProducer: _aofApplication.loop.commandTools.loop.gradeStopProducer,
+  gradeSummary: _aofApplication.loop.commandTools.loop.gradeSummary,
+  loopCommand: _aofApplication.getCommand("work:loop"),
+  mergeGateFindings: _aofApplication.loop.commandTools.loop.mergeGateFindings,
+  readGradeBaseline: _aofApplication.loop.commandTools.loop.readGradeBaseline,
+  recordBuildProgress: _aofApplication.loop.commandTools.loop.recordBuildProgress,
+  renderLoopState: _aofApplication.loop.commandTools.loop.renderLoopState,
+  runLoopBody: _aofApplication.loop.commandTools.loop.runLoopBody,
+  runLoopLaunch: _aofApplication.loop.commandTools.loop.runLoopLaunch,
+  thinkingNarration: _aofApplication.loop.commandTools.loop.thinkingNarration,
+}));
+  const { readRuns } = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
+  const { resolveItemExact } = await Promise.resolve(Object.freeze({
+  requireLocalCheckout: _aofApplication.work.commandTools.resolve.requireLocalCheckout,
+  resolveDrivenRun: _aofApplication.work.commandTools.resolve.resolveDrivenRun,
+  resolveItem: _aofApplication.work.commandTools.resolve.resolveItem,
+  resolveItemExact: _aofApplication.work.commandTools.resolve.resolveItemExact,
+}));
+  const { resolveRefInWorktree } = await Promise.resolve(Object.freeze({
+  DEFAULT_DISPATCH_CONCURRENCY: _aofApplication.loop.work.dispatch.DEFAULT_DISPATCH_CONCURRENCY,
+  DEFAULT_LANE_QUIET_MS: _aofApplication.loop.work.dispatch.DEFAULT_LANE_QUIET_MS,
+  cleanupDispatchLane: _aofApplication.loop.work.dispatch.cleanupDispatchLane,
+  commitDispatchLane: _aofApplication.loop.work.dispatch.commitDispatchLane,
+  dispatchConcurrencyFromConfig: _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig,
+  dispatchLaneBase: _aofApplication.loop.work.dispatch.dispatchLaneBase,
+  dispatchLaneOccupiesSlot: _aofApplication.loop.work.dispatch.dispatchLaneOccupiesSlot,
+  dispatchReadySet: _aofApplication.loop.work.dispatch.dispatchReadySet,
+  inspectDispatchLaneAdmission: _aofApplication.loop.work.dispatch.inspectDispatchLaneAdmission,
+  inspectDispatchLanes: _aofApplication.loop.work.dispatch.inspectDispatchLanes,
+  laneChanges: _aofApplication.loop.work.dispatch.laneChanges,
+  mergeDispatchLaneHome: _aofApplication.loop.work.dispatch.mergeDispatchLaneHome,
+  narrowDispatchBound: _aofApplication.loop.work.dispatch.narrowDispatchBound,
+  overlappingFiles: _aofApplication.loop.work.dispatch.overlappingFiles,
+  planDispatchLaneAdmissions: _aofApplication.loop.work.dispatch.planDispatchLaneAdmissions,
+  resolveDispatchConcurrency: _aofApplication.loop.work.dispatch.resolveDispatchConcurrency,
+  resolveDispatchLane: _aofApplication.loop.work.dispatch.resolveDispatchLane,
+  resolveRefInWorktree: _aofApplication.loop.work.dispatch.resolveRefInWorktree,
+  sweepDispatchLanes: _aofApplication.loop.work.dispatch.sweepDispatchLanes,
+  withDispatchLaneAdmissionLock: _aofApplication.loop.work.dispatch.withDispatchLaneAdmissionLock,
+  worktreeWorkDir: _aofApplication.loop.work.dispatch.worktreeWorkDir,
+}));
+  const { meshDispatchWorktreePath } = await Promise.resolve(Object.freeze({
+  DEFAULT_WORKTREE_RETENTION_MS: _aofApplication.mesh.worktree.DEFAULT_WORKTREE_RETENTION_MS,
+  WORKTREE_PREPARE_DEADLINE_EXPIRED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_DEADLINE_EXPIRED,
+  WORKTREE_PREPARE_FAILED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_FAILED,
+  WORKTREE_PREPARE_NOT_STARTED: _aofApplication.mesh.worktree.WORKTREE_PREPARE_NOT_STARTED,
+  addDispatchWorktree: _aofApplication.mesh.worktree.addDispatchWorktree,
+  addSessionWorktree: _aofApplication.mesh.worktree.addSessionWorktree,
+  addWorktree: _aofApplication.mesh.worktree.addWorktree,
+  adoptRemoteBranch: _aofApplication.mesh.worktree.adoptRemoteBranch,
+  advanceBranchToBase: _aofApplication.mesh.worktree.advanceBranchToBase,
+  commitWorktreeChanges: _aofApplication.mesh.worktree.commitWorktreeChanges,
+  defaultGitExec: _aofApplication.mesh.worktree.defaultGitExec,
+  dispatchWorktreeSlug: _aofApplication.mesh.worktree.dispatchWorktreeSlug,
+  ensureCommitAvailable: _aofApplication.mesh.worktree.ensureCommitAvailable,
+  findItemWorktree: _aofApplication.mesh.worktree.findItemWorktree,
+  headCommit: _aofApplication.mesh.worktree.headCommit,
+  isInsideMeshWorktree: _aofApplication.mesh.worktree.isInsideMeshWorktree,
+  isUnderMeshDispatchWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshDispatchWorktreesRoot,
+  isUnderMeshSessionWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot,
+  isUnderMeshWorktreesRoot: _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot,
+  listWorktrees: _aofApplication.mesh.worktree.listWorktrees,
+  localBranchExists: _aofApplication.mesh.worktree.localBranchExists,
+  meshDispatchWorktreePath: _aofApplication.mesh.worktree.meshDispatchWorktreePath,
+  meshDispatchWorktreesRoot: _aofApplication.mesh.worktree.meshDispatchWorktreesRoot,
+  meshIdentityArgs: _aofApplication.mesh.worktree.meshIdentityArgs,
+  meshItemBranchName: _aofApplication.mesh.worktree.meshItemBranchName,
+  meshSessionWorktreePath: _aofApplication.mesh.worktree.meshSessionWorktreePath,
+  meshSessionWorktreesRoot: _aofApplication.mesh.worktree.meshSessionWorktreesRoot,
+  meshWorktreePath: _aofApplication.mesh.worktree.meshWorktreePath,
+  meshWorktreesRoot: _aofApplication.mesh.worktree.meshWorktreesRoot,
+  parsePorcelainStatus: _aofApplication.mesh.worktree.parsePorcelainStatus,
+  remoteBranchExists: _aofApplication.mesh.worktree.remoteBranchExists,
+  removeDispatchWorktree: _aofApplication.mesh.worktree.removeDispatchWorktree,
+  removeWorktree: _aofApplication.mesh.worktree.removeWorktree,
+  resolveExec: _aofApplication.mesh.worktree.resolveExec,
+  reuseWorktreeOnBranch: _aofApplication.mesh.worktree.reuseWorktreeOnBranch,
+  sessionWorktreeSlug: _aofApplication.mesh.worktree.sessionWorktreeSlug,
+  sweepRetainedWorktrees: _aofApplication.mesh.worktree.sweepRetainedWorktrees,
+}));
   return await fixture.withLaneRepo(async (fx) => {
     const seenBeforeMerge = new Map();
     // Each child is HELD (`pause`) until the spawn-time inspection has read both trees, so the
@@ -295,8 +421,46 @@ export const archTests = [
   {
     name: "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
     run: async () => {
-      const { decideSupervisedDeclarations } = await import("../../../src/work/loop.mjs");
-      const { isRunning, isStale, retryReadiness } = await import("../../../src/run-store.mjs");
+      const { decideSupervisedDeclarations } = await import("../../../packages/work-loop/src/engine.mjs");
+      const { isRunning, isStale, retryReadiness } = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
       const wave = await driveTwoMemberWave();
       assert.equal(wave.state.state, "done");
       const waveRuns = wave.milestoneRuns.filter((run) => run.brief?.wave != null);

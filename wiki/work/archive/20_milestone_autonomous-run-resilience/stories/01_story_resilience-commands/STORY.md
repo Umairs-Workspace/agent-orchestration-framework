@@ -54,11 +54,11 @@ This story **owns** these fitness-function arch-tests (from [ARCHITECTURE §Fitn
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md). This story **owns**:
 `src/commands/run-retry.mjs` — a thin WRITE wrapper (`resolveItemExact`) over story 00's `retryRun`
-(**ADR-003**), registered into [command-core.mjs](../../../../../../src/command-core.mjs) (one import + one
+(**ADR-003**), registered into [command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs) (one import + one
 `COMMANDS` entry — the additive door) with its CLI `aof work run-retry` dispatch + `--json` face; and the
-new `rollbackItemStatus` writer in [work.mjs](../../../../../../src/work.mjs) (**ADR-005**) — the FIRST
+new `rollbackItemStatus` writer in [work.mjs](../../../../../../packages/core/src/application/bindings/work.mjs) (**ADR-005**) — the FIRST
 programmatic item-frontmatter status mutation in the codebase, bounded `in-progress → not-started | blocked`
-(never `→ done`), status-field-only, via the atomic [fs.mjs](../../../../../../src/fs.mjs)`:writeText` — wired
+(never `→ done`), status-field-only, via the atomic [fs.mjs](../../../../../../packages/foundation/src/fs.mjs)`:writeText` — wired
 into the failed-run (`work:run-complete --outcome failed`) and reclaim (story 00's `reclaimStaleRuns`) paths.
 It also EXTENDS the three registry-derived arch-tests (`19/R1`) + adds `acd-status-rollback-bounded`, all in
 [scripts/test.mjs](../../../../../../scripts/test.mjs).

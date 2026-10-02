@@ -1,16 +1,19 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 40 / story 02 (migration registry &
 // `aof upgrade`), task
 //   wiki/work/40_milestone_work-item-versioning-upgrade/stories/
 //     02_story_migration-registry-and-upgrade/tasks/00_registry-contiguous-chain.feature
 // Every @executable scenario below is wired against the LOCKED registry —
-// `WORK_ITEM_MIGRATIONS` + `WORK_ITEM_SCHEMA_VERSION` (src/work/upgrade.mjs /
-// src/work.mjs) — and the engine's per-item selection (`planUpgrade`), read
+// `WORK_ITEM_MIGRATIONS` + `WORK_ITEM_SCHEMA_VERSION` (packages/core/src/work/upgrade.mjs /
+// packages/core/src/work.mjs) — and the engine's per-item selection (`planUpgrade`), read
 // back from the module's own exported descriptors + a fixture item's on-disk
 // schema. No source read.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { WORK_ITEM_MIGRATIONS, planUpgrade } from "../../../src/work/upgrade.mjs";
-import { WORK_ITEM_SCHEMA_VERSION } from "../../../src/work.mjs";
+const WORK_ITEM_MIGRATIONS = _aofApplication.work.upgrade.WORK_ITEM_MIGRATIONS;
+const planUpgrade = _aofApplication.work.upgrade.planUpgrade;
+const WORK_ITEM_SCHEMA_VERSION = _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION;
 import { withWork, writeItem } from "../../support/work-upgrade-fixture.mjs";
 
 export const workUpgradeRegistryChainTests = [

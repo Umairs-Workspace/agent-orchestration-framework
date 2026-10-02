@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 43 / story 06 (the readers migrate), task
 //   .../06_story_cache-read-surface/tasks/02_control-side-leaves-migrate-independently.feature
 //
@@ -25,12 +27,13 @@ import {
   streamRun, runCommand, writeItem, writeDoc, itemDirOf, seedActive, settle, withStore,
   removeStore, seedStalePresence, seedWorker, CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
-import { loadWorkspace } from "../../src/command-core.mjs";
-import { DEGRADE_CACHE_UNAVAILABLE, DEGRADE_NO_LOCAL_CHECKOUT } from "../../src/work/read.mjs";
-import { reclaimStaleAssignments } from "../../src/mesh/assignment-reclaim.mjs";
-import { assembleActiveRunsAndSubsumedWorkspaces } from "../../src/mesh/launcher.mjs";
-import { listItemsCacheFirst } from "../../src/work/read.mjs";
-import { buildRecords } from "../../src/memory/local-indexing.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const DEGRADE_CACHE_UNAVAILABLE = _aofApplication.work.read.DEGRADE_CACHE_UNAVAILABLE;
+const DEGRADE_NO_LOCAL_CHECKOUT = _aofApplication.work.read.DEGRADE_NO_LOCAL_CHECKOUT;
+const reclaimStaleAssignments = _aofApplication.mesh.assignmentReclaim.reclaimStaleAssignments;
+const assembleActiveRunsAndSubsumedWorkspaces = _aofApplication.mesh.launcher.assembleActiveRunsAndSubsumedWorkspaces;
+const listItemsCacheFirst = _aofApplication.work.read.listItemsCacheFirst;
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
 
 // The Background: the control's own disk holds "05" and "06" it authored itself, plus ONLY
 // the pre-run scaffold for "07"; no folder at all for "07/01".
@@ -324,7 +327,32 @@ export const cacheReadControlLeavesTests = [
     name: "cache-read/02 a disk-known ref's answer is byte-identical before and after the leaves migrate — provenance is added, nothing else changes",
     run: () => withCacheReadFixture(async (fx) => {
       await background(fx);
-      const { findWork, listStream, nextWork } = await import("../../src/work.mjs");
+      const { findWork, listStream, nextWork } = await Promise.resolve(Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+}));
 
       // find 05: exactly the status, type, slug, title and parent the disk holds.
       const disk05 = (await findWork(fx.workDir, "05"))[0];

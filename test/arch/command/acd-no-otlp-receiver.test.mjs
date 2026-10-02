@@ -16,7 +16,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(root, "src");
+const SRC = path.join(root, "packages", "core", "src");
 
 async function modulesUnder(dir) {
   const out = [];

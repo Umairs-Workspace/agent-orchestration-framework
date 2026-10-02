@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 00, task 00 —
 // tasks/00_routing-reader.feature (@executable, every scenario + every Scenario-Outline
 // row). One test object per @executable scenario/row; ADR-001/003.
@@ -12,7 +13,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readRouting, classifyParent } from "../../src/integrations/routing.mjs";
+const readRouting = _aofApplication.work.integrations.routing.readRouting;
+const classifyParent = _aofApplication.work.integrations.routing.classifyParent;
 
 // A fixture work item: a folder on disk plus the listItems()-shaped { dir, type } the
 // reader resolves the descriptor path from (recordDoc semantics — item.dir + the record

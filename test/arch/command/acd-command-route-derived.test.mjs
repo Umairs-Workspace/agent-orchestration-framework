@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness functions for m42 wave (d) leg d1 (PRD-command-spine-effects-ledger):
 // the CLI's route table is DERIVED from the registry — never a hand-kept ladder
 // — and stays coherent as verbs migrate.
@@ -18,11 +20,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable, resolveRoute } from "../../../src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const resolveRoute = _aofApplication.cli.resolveRoute;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

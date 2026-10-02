@@ -4,10 +4,10 @@
 //  records / config, no second projection query) — the m25 single-data-command
 //  discipline, carried forward to the native face."
 //
-// GUARD-IF-PRESENT (refine, pre-build): a clean no-op while `app/desktop/` is absent;
+// GUARD-IF-PRESENT (refine, pre-build): a clean no-op while `apps/desktop/` is absent;
 // a hard assertion the moment the crate lands. Green now, RED-if-violated once built.
 //
-// Proof, over every `app/desktop/**/*.rs` (Rust comments stripped):
+// Proof, over every `apps/desktop/**/*.rs` (Rust comments stripped):
 //  1. The ONLY `aof mesh <verb>` invocation that reads FLEET DATA is `mesh status`.
 //     `mesh serve` (supervised process) and `mesh ui` (supervised process) are process
 //     LIFECYCLE spawns, not data reads — allowed. `mesh identity`/`mesh sync`/any other
@@ -24,7 +24,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const DESKTOP_DIR = path.join(repoRoot, "app", "desktop");
+const DESKTOP_DIR = path.join(repoRoot, "apps", "desktop");
 
 // A SECOND fleet-data read path — either a data-bearing mesh verb other than `status`,
 // or a direct read of aof's on-disk record/config store.
@@ -69,7 +69,7 @@ export const archTests = [
     name: "arch/36 ADR-004 (acd-desktop-single-data-path): fleet data is read ONLY via `aof mesh status` — no second data command, no direct record-store read (guard-if-present)",
     run: async () => {
       if (!(await dirExists(DESKTOP_DIR))) {
-        assert.equal(await dirExists(DESKTOP_DIR), false, "app/desktop/ absent (pre-build); armed at build by story 00");
+        assert.equal(await dirExists(DESKTOP_DIR), false, "apps/desktop/ absent (pre-build); armed at build by story 00");
         return;
       }
       const files = await collectRustFiles(DESKTOP_DIR);

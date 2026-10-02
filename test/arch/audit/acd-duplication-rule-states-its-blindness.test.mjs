@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-duplication-rule-states-its-blindness (milestone 77 / story 00, FF-7702;
 // ADR-004 §1-§4).
 //
@@ -27,7 +28,7 @@
 //   (C) A SECOND SPELLING OF THE INSTALLED LAYER. The corpus is the prompt layer AS INSTALLED,
 //       discovered through the runtime local roots and resource-kind plurals the model already
 //       declares. A path literal here would be a second declaration that drifts from the first —
-//       and it would also quietly re-scope the rule, because `src/bundle/**` exists only in a
+//       and it would also quietly re-scope the rule, because `packages/core/assets/**` exists only in a
 //       framework checkout while what actually runs is what is installed.
 //
 // ── WHAT THE CENSUS DELIBERATELY DOES NOT READ, AND WHY ──────────────────────────────────────
@@ -45,15 +46,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import { RESOURCE_KINDS, RUNTIMES } from "../../../src/model.mjs";
-import {
-  PROMPT_LAYER_SWEEPS,
-  SENTENCE_FLOOR,
-  runPromptLayer,
-} from "../../../src/work-audit/prompt-layer.mjs";
+import { RESOURCE_KINDS, RUNTIMES } from "../../../packages/core/src/model.mjs";
+const PROMPT_LAYER_SWEEPS = _aofApplication.work.audit.promptLayer.PROMPT_LAYER_SWEEPS;
+const SENTENCE_FLOOR = _aofApplication.work.audit.promptLayer.SENTENCE_FLOOR;
+const runPromptLayer = _aofApplication.work.audit.promptLayer.runPromptLayer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE_REL = "src/work-audit/prompt-layer.mjs";
+const MODULE_REL = "packages/work/src/audit/prompt-layer.mjs";
 const moduleSource = () => readFileSync(path.join(repoRoot, MODULE_REL), "utf8");
 
 const SOURCE_FLOOR = 2000;
@@ -108,7 +107,7 @@ function censusableSource() {
   const code = stripComments(moduleSource());
   assert.equal(code.length > SOURCE_FLOOR, true, `${MODULE_REL} was read and stripped to something real (${code.length} chars, floor ${SOURCE_FLOOR})`);
 
-  const at = code.indexOf("export const PROMPT_LAYER_SWEEPS");
+  const at = code.indexOf("const PROMPT_LAYER_SWEEPS");
   assert.notEqual(at, -1, "the sweep registry is declared — a renamed export would make every claim below vacuous");
   const registry = matchedParenSpan(code, at);
   assert.notEqual(registry, null, "the sweep registry was cut by matching parens, never by a byte window");
@@ -143,7 +142,7 @@ export const archTests = [
 
       // The numeral exists ONCE, in its own declaration. 21 groups at 120 / 12 at 200 / 0 at 300 is
       // a gradient steep enough that a second copy would decide the output somewhere unread.
-      const declaration = `export const SENTENCE_FLOOR = ${SENTENCE_FLOOR};`;
+      const declaration = `const SENTENCE_FLOOR = ${SENTENCE_FLOOR};`;
       assert.equal(rest.includes(declaration), true, `${MODULE_REL} declares the floor as \`${declaration}\``);
       const occurrences = rest.split(String(SENTENCE_FLOOR)).length - 1;
       assert.equal(occurrences, 1, `the numeral ${SENTENCE_FLOOR} appears exactly once in the implementation (found ${occurrences})`);
@@ -255,8 +254,9 @@ export const archTests = [
     async run() {
       const { code, rest } = censusableSource();
 
-      assert.match(code, /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "\.\.\/model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
+      assert.match(stripComments(readFileSync(new URL("../../../packages/core/src/application/bindings/work-audit/prompt-layer.mjs", import.meta.url), "utf8")), /import \{[^}]*RESOURCE_KINDS[^}]*RUNTIMES[^}]*\} from "(?:\.\.\/)+model\.mjs"/u, `${MODULE_REL} takes the runtimes and the resource kinds from the model, which is their one home`);
 
+      assert.match(code, /createAuditPromptLayer\(\{ RESOURCE_KINDS, RUNTIMES \}\)/u, "the implementation receives the model vocabulary");
       // NO SECOND SPELLING. The forbidden literals are derived FROM the model rather than typed
       // here, so a fourth runtime or a fifth kind is covered on arrival.
       for (const runtime of Object.values(RUNTIMES)) {
@@ -272,14 +272,14 @@ export const archTests = [
       const shared = sentenceOfBytes(SENTENCE_FLOOR + 40, "juliet");
       const bundleOnly = await laneOver({
         ".claude/commands/one.md": "An installed document sharing nothing.",
-        "src/bundle/commands/one.md": shared,
-        "src/bundle/commands/two.md": shared,
+        "packages/core/assets/commands/one.md": shared,
+        "packages/core/assets/commands/two.md": shared,
       });
-      assert.deepEqual(bundleOnly.pairs, [], "a duplicate that exists only in a `src/bundle` copy is not reported — what runs is what is installed");
+      assert.deepEqual(bundleOnly.pairs, [], "a duplicate that exists only in a `packages/core/assets` copy is not reported — what runs is what is installed");
 
       const installed = await laneOver({ ".claude/commands/one.md": shared, ".claude/rules/two.md": shared });
       assert.equal(installed.pairs.length, 1, "…and the same sentence in two INSTALLED documents is");
-      assert.equal(installed.pairs[0].message.includes("src/bundle"), false, "naming the installed paths, never a bundle copy");
+      assert.equal(installed.pairs[0].message.includes("packages/core/assets"), false, "naming the installed paths, never a bundle copy");
     },
   },
 ];

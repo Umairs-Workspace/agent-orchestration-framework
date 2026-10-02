@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // The `direct` fabric (2026-07-27) — the NO-OVERLAY fabric and the two changes it
 // forced: a registration override for a machine that cannot describe itself, and
 // connection identity by enrollment credential rather than by remote address.
@@ -19,13 +21,13 @@ import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "../../src/mesh/fabric.mjs";
-import { readSidecar } from "../../src/node-identity.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { meshIdentityCommand } from "../../src/commands/mesh/identity.mjs";
-import { startControlStreamServer } from "../../src/control-stream-server.mjs";
-import { verifyCredential } from "../../src/mesh/registry.mjs";
-import { createWorkerWsTransport } from "../../src/worker-stream-client.mjs";
+import { probeFabric, selfAddress, resolvePeers, fabricGuidance } from "@aof/mesh/fabric";
+import { readSidecar } from "@aof/mesh/node-identity";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const meshIdentityCommand = _aofApplication.getCommand("mesh:identity");
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const verifyCredential = _aofApplication.mesh.registry.verifyCredential;
+const createWorkerWsTransport = _aofApplication.mesh.workerStreamClient.createWorkerWsTransport;
 
 const DIRECT = { mesh: { fabric: "direct", nodeId: "control-a" } };
 const IFACES = {

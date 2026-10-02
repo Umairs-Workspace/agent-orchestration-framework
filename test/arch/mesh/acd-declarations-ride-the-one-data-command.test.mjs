@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-12605 — "The argv has ONE home, and the declarations answer rides the ONE data command."
 //
 // milestone 126 / story 02, ADR-005 (tasks 02 and 03). The STRUCTURAL half; the driven halves are
@@ -14,26 +16,23 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "../../../src/loop-argv.mjs";
-import { loopCommand } from "../../../src/commands/loop.mjs";
-import { meshStatusCommand } from "../../../src/commands/mesh/identity.mjs";
-import { listCommands } from "../../../src/command-core.mjs";
+import { LEVEL_FLAG, RESUME_FLAG, argvFor, loopInputOf } from "@aof/work-loop/argv";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const meshStatusCommand = _aofApplication.getCommand("mesh:status");
+const listCommands = _aofApplication.listCommands;
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEAF = "src/loop-argv.mjs";
-const PRODUCER = "src/mesh/declarations.mjs";
+const LEAF = "packages/work-loop/src/argv.mjs";
+const PRODUCER = "packages/mesh/src/declarations.mjs";
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 const ROUTE = Object.freeze(["work", "loop"]);
 const flagKey = (token) => token.replace(/^--/u, "");
 
 async function sourceModules() {
-  const dir = path.join(root, "src");
-  const modules = (await readdir(dir, { recursive: true }))
-    .map((entry) => `src/${String(entry).replaceAll("\\", "/")}`)
-    .filter((rel) => rel.endsWith(".mjs"))
-    .sort();
+  const dir = path.join(root, "packages", "core", "src");
+  const modules = (await readRuntimeFiles(root)).map(file => file.rel).sort();
   assert.ok(modules.length > 0, `the sweep of ${dir} found no .mjs module — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
   return modules;
 }
@@ -74,12 +73,12 @@ export const archTests = [
       assert.equal(
         raw.split("\n").filter((line) => /^import\b/u.test(line.trim())).length,
         0,
-        "src/loop-argv.mjs carries no `import` statement of any kind",
+        "packages/core/src/loop-argv.mjs carries no `import` statement of any kind",
       );
       assert.doesNotMatch(stripComments(raw), /\bimport\s*\(/u, "and no dynamic import — TECH_DEBT 26's ring stays open");
       // It imports cleanly in a fresh process, which is the property that makes it reachable from
       // a registered command module without joining a cycle.
-      const fresh = await import(`../../../src/loop-argv.mjs?fresh=${Date.now()}`);
+      const fresh = await import(`../../../packages/work-loop/src/argv.mjs?fresh=${Date.now()}`);
       assert.equal(typeof fresh.argvFor, "function");
 
       // `--level` and `--resume` are each BOUND TO A CONSTANT in exactly one module: this leaf.
@@ -97,13 +96,13 @@ export const archTests = [
         const body = stripComments(await read(rel));
         if (/\[\s*"work"\s*,\s*"loop"/u.test(body)) spellers.push(rel);
       }
-      assert.deepEqual(spellers, ["src/commands/loop.mjs"], "only the command's own cli.route spells it");
+      assert.deepEqual(spellers, ["packages/work-loop/src/commands/loop.mjs"], "only the command's own cli.route spells it");
 
       // Neither the producer nor the command that carries it spells a flag literal.
       const producer = await source(PRODUCER);
-      const identity = await source("src/commands/mesh/identity.mjs");
+      const identity = await source("packages/mesh/src/commands/identity.mjs");
       assert.doesNotMatch(producer, /"--[a-z]/u, `${PRODUCER} contains no \`--\` flag literal`);
-      assert.doesNotMatch(identity, /"--[a-z]/u, "src/commands/mesh/identity.mjs contains no `--` flag literal");
+      assert.doesNotMatch(identity, /"--[a-z]/u, "packages/core/src/commands/mesh/identity.mjs contains no `--` flag literal");
       assert.match(producer, /argvFor\(/u, "…it asks the leaf instead");
     },
   },
@@ -144,18 +143,18 @@ export const archTests = [
       // `mesh:status` is the only command whose result can carry `declarations`.
       const producers = [];
       for (const rel of await sourceModules()) {
-        if (!rel.startsWith("src/commands/")) continue;
+        if (!rel.startsWith("packages/core/src/commands/") && !/^packages\/[^/]+\/src\/commands\//u.test(rel)) continue;
         const body = stripComments(await read(rel));
         if (/result\.declarations\s*=|declarations:\s*await/u.test(body)) producers.push(rel);
       }
-      assert.deepEqual(producers, ["src/commands/mesh/identity.mjs"], "one producing site");
+      assert.deepEqual(producers, ["packages/mesh/src/commands/identity.mjs"], "one producing site");
       assert.equal(meshStatusCommand.id, "mesh:status");
     },
   },
   {
     name: "arch/126/02 FF-12605 leg 5: the flag gates the WALK, not just the key, and the row carries a cwd",
     run: async () => {
-      const identity = await source("src/commands/mesh/identity.mjs");
+      const identity = await source("packages/mesh/src/commands/identity.mjs");
       // The enumeration sits INSIDE the flag's branch — and so does the MODULE that performs it,
       // loaded by a dynamic import from within that branch. A producer that walked the workspaces
       // and then declined to emit the key would have paid the whole 167 ms the refine measured;
@@ -163,10 +162,13 @@ export const archTests = [
       // (72/FF-7205), which is why the producer lives outside this command's static closure.
       assert.match(
         identity,
-        /if \(input\?\.declarations === true\) \{[\s\S]{0,600}?import\("\.\.\/\.\.\/mesh\/declarations\.mjs"\)[\s\S]{0,200}?supervisedDeclarations\(/u,
+        /if \(input\?\.declarations === true\) \{[\s\S]{0,600}?loadDeclarations\(\)[\s\S]{0,200}?supervisedDeclarations\(/u,
         "the walk, and the module that performs it, are reached only through the flag",
       );
       assert.doesNotMatch(identity, /^import .*declarations\.mjs/mu, "…never statically");
+      const adapter = await source("packages/core/src/application/bindings/commands/mesh/identity.mjs");
+      assert.match(adapter, /loadDeclarations:\s*\(\)\s*=>\s*provideMeshDeclarations\(\)/u, "core supplies the ready declaration callback");
+      assert.match(identity, /function createMeshIdentityCommands\(\{[^}]*\bloadDeclarations\b/u, "the package accepts the loader");
       const producer = await source(PRODUCER);
       assert.match(producer, /resolveNodeWorkspaces\(/u, "the workspace set comes from the resolver");
       assert.match(producer, /readRuns\(/u, "and the records from disk");

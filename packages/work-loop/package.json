@@ -1,0 +1,38 @@
+{
+  "name": "@aof/work-loop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./engine": "./src/engine.mjs",
+    "./ask-request": "./src/ask-request.mjs",
+    "./stop-request": "./src/stop-request.mjs",
+    "./child-drive": "./src/child-drive.mjs",
+    "./progress": "./src/progress.mjs",
+    "./diagnostics": "./src/diagnostics.mjs",
+    "./ask": "./src/ask.mjs",
+    "./stop": "./src/stop.mjs",
+    "./cycle": "./src/cycle.mjs",
+    "./wave": "./src/wave.mjs",
+    "./commands/drive": "./src/commands/drive.mjs",
+    "./commands/loop": "./src/commands/loop.mjs",
+    "./argv": "./src/argv.mjs",
+    "./commands": "./src/commands.mjs",
+    "./trigger/declaration": "./src/trigger/declaration.mjs",
+    "./trigger/level": "./src/trigger/level.mjs",
+    "./trigger/sources": "./src/trigger/sources.mjs",
+    "./commands/trigger": "./src/commands/trigger.mjs",
+    "./dispatch": "./src/dispatch.mjs",
+    "./commands/dispatch": "./src/commands/dispatch.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/work-loop"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/foundation": "workspace:*"
+  }
+}

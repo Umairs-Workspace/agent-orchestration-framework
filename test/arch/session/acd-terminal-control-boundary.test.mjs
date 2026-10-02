@@ -3,13 +3,13 @@
 //
 //   "ALL of the one terminal control's logic is framework-free `.mjs` and the `.tsx` is a thin
 //    consumer, and that split is an INVARIANT rather than a preference. The shared set imports
-//    NOTHING from `ui/src/fleet/` or `ui/src/board/`. There is ONE state vocabulary and ONE
+//    NOTHING from `apps/ui/src/fleet/` or `apps/ui/src/board/`. There is ONE state vocabulary and ONE
 //    palette home. And a call site obtains a session descriptor from the TABLE — never by
 //    assembling one."
 //
 // THE SPLIT IS OVER. 46/03 authored this gate in two halves because only one could be green on
 // arrival; the WHOLE-TREE clauses — neither `DOCK_STATES` nor `TERMINAL_VIEW_STATES` survives
-// anywhere in `ui/src`, and DG-46-2's five hex literals have ONE home — sat in a parked
+// anywhere in `apps/ui/src`, and DG-46-2's five hex literals have ONE home — sat in a parked
 // `acd-terminal-control-boundary.mjs`, off the suite glob, until 46/04 deleted the duplicate.
 // They are MERGED IN below and the parked sibling is gone. One invariant, one file.
 //
@@ -27,8 +27,8 @@
 // The cost of that duck-typing is that a hand-built `{ ...LOCAL_PTY, originRole: "fleet" }` is
 // accepted and produces a perfectly plausible FLEET url for a board PTY. The core cannot refuse
 // it without giving up the property, so the refusal belongs at the CALL SITE: a production
-// module under `ui/src` obtains a descriptor from `sessionSourceFor` / `sessionSourceTable` and
-// WRITES no descriptor field of its own. `ui/src/terminal/source-table.mjs` is the one home, and
+// module under `apps/ui/src` obtains a descriptor from `sessionSourceFor` / `sessionSourceTable` and
+// WRITES no descriptor field of its own. `apps/ui/src/terminal/source-table.mjs` is the one home, and
 // it is the only exemption.
 //
 // WHY THE `.mjs` HALF IS AN INVARIANT AND NOT A STYLE PREFERENCE. This repo has NO React test
@@ -39,11 +39,11 @@
 // …AND "UNTESTABLE HERE" IS NOT A LICENCE, which is the lesson of 2026-08-09: the whole of that
 // day's blocker — a control that rendered correctly and never opened a socket, at both call sites,
 // for both sources — lived in the `.tsx`, under this gate, with 537 tests green.
-// `test/session/terminal-control-opens-its-socket.test.mjs` now MOUNTS the real component (mini-react
+// `apps/ui/test/terminal-control-opens-its-socket.suite.mjs` now MOUNTS the real component (mini-react
 // attaches host nodes to refs on request) and asserts the socket. The split below is unchanged and
 // still right; what changed is that the residue in the `.tsx` is no longer beyond reach.
 //
-// WHY THE FLEET EDGE IS NAMED SPECIFICALLY. `view-state.mjs → ui/src/fleet/assignments.mjs`
+// WHY THE FLEET EDGE IS NAMED SPECIFICALLY. `view-state.mjs → apps/ui/src/fleet/assignments.mjs`
 // was the ONLY outward edge any of the five predecessor helpers had, and it carried
 // fleet-DOMAIN wording (*"no live output — assignment failed · reclaimed"*). That copy is
 // correct and must not be lost — but a shared control importing it would re-couple the two
@@ -64,12 +64,12 @@ import {
   stripComments,
   stripperSelfCheck,
   nonVacuousSource,
-} from "../../support/terminal-gate-detectors.mjs";
+} from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 // The one home of the frozen table, and the ONLY file allowed to write a descriptor's fields.
-const SOURCE_TABLE = "ui/src/terminal/source-table.mjs";
-const CORE_HOME = "ui/src/terminal/";
+const SOURCE_TABLE = "apps/ui/src/terminal/source-table.mjs";
+const CORE_HOME = "apps/ui/src/terminal/";
 
 // The descriptor's own field names. WRITING one of these — as an object-literal key, or as an
 // assignment target — is how a hand-built descriptor comes into existence. READING one
@@ -96,19 +96,19 @@ const DESCRIPTOR_SPREAD_ROUTE = /\{[^{}]*\.\.\.[^{}]*\bpath\s*:\s*["'`]\/ws\/ter
 // board's ACTION vocabulary independently uses the word `mirror` (`primaryAction` returns
 // `{ kind: "mirror" }`, read by DetailPanel) — a different concept that happens to share a
 // string, and forcing it through the session-source table would be wrong. A module that has no
-// edge to `ui/src/terminal/` is not choosing a session source.
+// edge to `apps/ui/src/terminal/` is not choosing a session source.
 const NAMES_A_SOURCE_KIND = /["']local-pty["']|["']mirror["']/;
 const USES_THE_TABLE = /\bsessionSourceFor\s*\(|\bsessionSourceTable\s*\(/;
 const IMPORTS_TERMINAL_CORE = /from\s+["'][^"']*\/terminal\/[^"']+["']/;
 
 // TECH_DEBT 18(a)'s FIRST GATE, three milestones after it was recorded.
 //
-// `ui/src/fleet/` reaching into `ui/src/board/` is the measured defect m45 half-paid and ADR-001
+// `apps/ui/src/fleet/` reaching into `apps/ui/src/board/` is the measured defect m45 half-paid and ADR-001
 // pays the terminal instalment of. Its own Alternatives-rejected names the risk in terms — *"A
 // sixth would be added by the one milestone chartered to reduce coupling"* — and a structural
 // review found exactly that: `terminal-mount.d.mts` importing the mount contract from
 // `../board/dock-mount.mjs`. It was TYPE-ONLY, so `aof graph impact` could not see it, and the
-// sibling clause above sweeps only `ui/src/terminal/**`.
+// sibling clause above sweeps only `apps/ui/src/terminal/**`.
 //
 // SHRINK-ONLY, and `.d.mts` IS SWEPT — the whole point is that the invisible kind counts. Each
 // entry is a SPECIFIER, so re-pointing one at a new board module is a new entry rather than a
@@ -121,10 +121,10 @@ const FLEET_TO_BOARD_BASELINE = Object.freeze([
   "../board/status",
 ]);
 
-// ═══ THE SECOND BASELINE, AND IT IS EMPTY — `ui/src/home/ →` (m49/ADR-001), added by 49/02 ═══════
+// ═══ THE SECOND BASELINE, AND IT IS EMPTY — `apps/ui/src/home/ →` (m49/ADR-001), added by 49/02 ═══════
 //
-// ADR-001 in terms: *"`ui/src/home/` IMPORTS NOTHING FROM `ui/src/fleet/` OR `ui/src/board/`. It
-// imports DOWN into `ui/src/terminal/` and `ui/src/app/`, and nothing sideways."*
+// ADR-001 in terms: *"`apps/ui/src/home/` IMPORTS NOTHING FROM `apps/ui/src/fleet/` OR `apps/ui/src/board/`. It
+// imports DOWN into `apps/ui/src/terminal/` and `apps/ui/src/app/`, and nothing sideways."*
 //
 // AN EMPTY BASELINE IS THE STRONGEST FORM THIS RATCHET HAS, and it is only available ONCE — on the
 // diff that creates the directory. That is why it lands with 49/02 and not later: the fleet's list is
@@ -154,7 +154,7 @@ const HOME_TO_SURFACE_BASELINE = Object.freeze([]);
 // segment, because a detector that cries wolf gets relaxed rather than obeyed (this file's own
 // recorded lesson from the drag clamp).
 //
-// MEASURED BEFORE BROADENING: every `ui/src/fleet/**` specifier reaching the board is spelled
+// MEASURED BEFORE BROADENING: every `apps/ui/src/fleet/**` specifier reaching the board is spelled
 // `../board/…` today, so the five-entry baseline above sees exactly what it saw before.
 function crossSurfaceSpecifiers(text, folders) {
   return importSpecifiers(text).map((entry) => entry.specifier).filter((specifier) => folders.some((folder) => new RegExp(`(^|/)${folder}/`).test(specifier)));
@@ -172,7 +172,7 @@ function descriptorAssemblyProblems(relative, clean) {
   const problems = [];
   if (relative === SOURCE_TABLE) return problems;
 
-  // The FIELD-WRITE clause is aimed at CALL SITES. Inside `ui/src/terminal/` the core builds
+  // The FIELD-WRITE clause is aimed at CALL SITES. Inside `apps/ui/src/terminal/` the core builds
   // results that legitimately carry a descriptor's field names — the URL builder's own refusal
   // shape reports the `originRole` it could not resolve — and that half of the boundary is
   // already held by the framework-free and no-surface-import clauses above plus ADR-003's
@@ -213,7 +213,7 @@ const FORBIDDEN_SPELLINGS = [
 export const archTests = [
   // ══ THE STRIPPER ITSELF, FIRST — TECH_DEBT item 24. Every clause below is an ABSENCE sweep
   //    over comment-stripped source, and a blinded stripper turns every one of them green while
-  //    asserting nothing. The subject here is `ui/src/terminal/**`, whose ADRs REQUIRE prose
+  //    asserting nothing. The subject here is `apps/ui/src/terminal/**`, whose ADRs REQUIRE prose
   //    explaining the defects it guards against, so the fuse is lit in this folder by design.
   {
     name: "arch/46 (acd-terminal-control-boundary) self-check: the shared comment stripper is not blinded — a line comment containing `/*` does not delete the file below it (TECH_DEBT item 24)",
@@ -223,7 +223,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/46 ADR-001 (acd-terminal-control-boundary): the ui/src/terminal/ set imports no React, touches no DOM global, and is loadable by plain node",
+    name: "arch/46 ADR-001 (acd-terminal-control-boundary): the apps/ui/src/terminal/ set imports no React, touches no DOM global, and is loadable by plain node",
     run: async () => {
       // THE TEXT SWEEP READS `.d.mts` TOO. The declaration siblings are part of the shared set
       // and can import a framework as freely as the modules can — `import type { RefObject }
@@ -277,7 +277,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/46 ADR-005 (acd-terminal-control-boundary): the shared set imports NOTHING from ui/src/fleet/ or ui/src/board/",
+    name: "arch/46 ADR-005 (acd-terminal-control-boundary): the shared set imports NOTHING from apps/ui/src/fleet/ or apps/ui/src/board/",
     run: async () => {
       const files = await collect(TERMINAL_DIR, [".mjs", ".d.mts", ".ts", ".tsx"]);
       assert.ok(files.length >= 5, `non-vacuous: ${files.length} files`);
@@ -288,7 +288,7 @@ export const archTests = [
           if (specifier.startsWith(".")) {
             const resolved = path.resolve(path.dirname(file), specifier);
             const relative = rel(resolved);
-            if (relative.startsWith("ui/src/fleet/") || relative.startsWith("ui/src/board/")) {
+            if (relative.startsWith("apps/ui/src/fleet/") || relative.startsWith("apps/ui/src/board/")) {
               offenders.push(`${rel(file)} → ${specifier}`);
             }
           }
@@ -299,7 +299,7 @@ export const archTests = [
       assert.deepEqual(
         offenders,
         [],
-        "a shared control importing `ui/src/fleet/assignments.mjs` would re-couple the two surfaces this milestone exists to decouple, invisibly, from inside a module named for terminals. The fleet's assignment-derived wording is INJECTED as a `reason` string by the call site.",
+        "a shared control importing `apps/ui/src/fleet/assignments.mjs` would re-couple the two surfaces this milestone exists to decouple, invisibly, from inside a module named for terminals. The fleet's assignment-derived wording is INJECTED as a `reason` string by the call site.",
       );
 
       // The clean baseline, asserted positively so the rule reads as a REPLACEMENT rather than
@@ -309,7 +309,7 @@ export const archTests = [
       assert.match(ramp, /\breason\b/, "the shared describer takes the wording it cannot compute as an argument");
       assert.ok(!/assignmentChip|assignments\.mjs/.test(ramp), "…and computes no assignment state of its own");
       const identity = stripComments(await readFile(path.join(TERMINAL_DIR, "pane-identity.mjs"), "utf8"));
-      assert.equal(nonVacuousSource("ui/src/terminal/pane-identity.mjs", identity), null);
+      assert.equal(nonVacuousSource("apps/ui/src/terminal/pane-identity.mjs", identity), null);
       assert.match(identity, /\bfarEnd\b/, "the shared identity model takes the far end's NAME as an argument rather than reaching for a surface's vocabulary");
       assert.ok(!/\bnodeId\b|\bsessionId\b|\btargetNodeId\b/.test(identity), "…and names no source's params, so a third source needs no edit here");
     },
@@ -319,13 +319,13 @@ export const archTests = [
   //    that deleted the duplicate. Body unchanged: it was written against the post-deletion tree.
   //
   //    WHY IT WAS RED UNTIL NOW, which is its non-vacuity proof:
-  //    `ui/src/board/terminal/dock-state.mjs` defined `DOCK_STATES` and
-  //    `ui/src/fleet/terminal-view/view-state.mjs` defined `TERMINAL_VIEW_STATES`.
+  //    `apps/ui/src/board/terminal/dock-state.mjs` defined `DOCK_STATES` and
+  //    `apps/ui/src/fleet/terminal-view/view-state.mjs` defined `TERMINAL_VIEW_STATES`.
   {
-    name: "arch/46 ADR-005 (acd-terminal-control-boundary): ONE state vocabulary — neither DOCK_STATES nor TERMINAL_VIEW_STATES is defined anywhere in ui/src",
+    name: "arch/46 ADR-005 (acd-terminal-control-boundary): ONE state vocabulary — neither DOCK_STATES nor TERMINAL_VIEW_STATES is defined anywhere in apps/ui/src",
     run: async () => {
       const files = await collect(UI_SRC, [".mjs", ".d.mts", ".ts", ".tsx", ".js", ".jsx"]);
-      assert.ok(files.length > 30, `ui/src was actually read (non-vacuous): ${files.length} files`);
+      assert.ok(files.length > 30, `apps/ui/src was actually read (non-vacuous): ${files.length} files`);
 
       const offenders = [];
       for (const file of files) {
@@ -409,10 +409,10 @@ export const archTests = [
 
   // ══ THE CALL-SITE RATCHET (46/04, ADR-002) ══════════════════════════════════════════════════
   {
-    name: "arch/46 ADR-002 (acd-terminal-control-boundary): a production ui/src module obtains a session descriptor from the TABLE — it never assembles or overrides one",
+    name: "arch/46 ADR-002 (acd-terminal-control-boundary): a production apps/ui/src module obtains a session descriptor from the TABLE — it never assembles or overrides one",
     run: async () => {
       const files = await collect(UI_SRC, [".mjs", ".ts", ".tsx", ".js", ".jsx"]);
-      assert.ok(files.length > 30, `ui/src was actually read (non-vacuous): ${files.length} files`);
+      assert.ok(files.length > 30, `apps/ui/src was actually read (non-vacuous): ${files.length} files`);
 
       const offenders = [];
       let callSites = 0;
@@ -433,7 +433,7 @@ export const archTests = [
       // nobody would be satisfied by deleting both call sites, which is precisely the class of
       // green-and-vacuous gate ADR-006 caught in invariant 4's sibling.
       // RAISED 2 → 3 by m49/03, in the diff that lands the third call site
-      // (`ui/src/home/session-mount.mjs`). It is a LIST, not an invariant: the RULE is that a
+      // (`apps/ui/src/home/session-mount.mjs`). It is a LIST, not an invariant: the RULE is that a
       // call site asks the table rather than restating a row, and this number is only its
       // non-vacuity. It rises when a call site lands and never falls to accommodate one.
       assert.ok(callSites >= 3, `all THREE call-site mount modules resolve their source through the table — found ${callSites}`);
@@ -441,7 +441,7 @@ export const archTests = [
       // …and the detector genuinely fires. Hand-written plants, each asserted to LAND before the
       // detector is asserted to trip on it, and a clean baseline that must stay quiet.
       const clean = 'const lookup = sessionSourceFor("mirror");\nconst source = lookup.source;';
-      assert.deepEqual(descriptorAssemblyProblems("ui/src/fleet/plant.mjs", clean), [], "the clean baseline — ask the table for the row — stays quiet");
+      assert.deepEqual(descriptorAssemblyProblems("apps/ui/src/fleet/plant.mjs", clean), [], "the clean baseline — ask the table for the row — stays quiet");
 
       const plants = [
         ["the spread override ADR-002 names", 'const source = { ...LOCAL_PTY, originRole: "fleet" };'],
@@ -457,7 +457,7 @@ export const archTests = [
       for (const [label, plant] of plants) {
         assert.notEqual(plant, clean, `${label}: the plant differs from the clean baseline`);
         assert.ok(
-          descriptorAssemblyProblems("ui/src/board/plant.mjs", plant).length > 0,
+          descriptorAssemblyProblems("apps/ui/src/board/plant.mjs", plant).length > 0,
           `self-check: ${label} trips the ratchet — ${plant}`,
         );
       }
@@ -496,7 +496,7 @@ export const archTests = [
       assert.deepEqual(
         added,
         [],
-        `NEW \`fleet → board\` import(s): ${added.map((s) => `${s} (in ${where.get(s).join(", ")})`).join("; ")}. TECH_DEBT 18(a) is the fleet reaching into the board's folder — measured at SEVEN cross-imports at m43 and at FIVE modules here — and ADR-001 exists to reduce it, not to add to it: "a sixth would be added by the one milestone chartered to reduce coupling". A shared thing belongs in a shared home (\`ui/src/terminal/\`), which both surfaces import DOWN into; a thing only the board needs stays the board's.`,
+        `NEW \`fleet → board\` import(s): ${added.map((s) => `${s} (in ${where.get(s).join(", ")})`).join("; ")}. TECH_DEBT 18(a) is the fleet reaching into the board's folder — measured at SEVEN cross-imports at m43 and at FIVE modules here — and ADR-001 exists to reduce it, not to add to it: "a sixth would be added by the one milestone chartered to reduce coupling". A shared thing belongs in a shared home (\`apps/ui/src/terminal/\`), which both surfaces import DOWN into; a thing only the board needs stays the board's.`,
       );
 
       // SHRINK-ONLY: a baseline entry that no longer fires must be DELETED, or the list rots into
@@ -517,27 +517,27 @@ export const archTests = [
 
   {
     // ═══ m49/ADR-001's INSTALMENT: the `home →` baseline, and it is EMPTY ═════════════════════════
-    // Delivered by story 49/02, in the milestone that creates `ui/src/home/`, because an empty
+    // Delivered by story 49/02, in the milestone that creates `apps/ui/src/home/`, because an empty
     // baseline is a thing a directory has exactly once. Graph-measured at this delivery (project-root
     // build, 9,836 nodes / 23,762 edges, egress none, built 2026-08-13T14:12:15.984Z):
-    // `ui/src/home/feed-axis.mjs → ui/src/home/socket-cap.mjs, ui/src/terminal/host-model.mjs,
-    // ui/src/terminal/state-ramp.mjs` — DOWN into `terminal/` only, and `layout.mjs`/`socket-cap.mjs`
+    // `apps/ui/src/home/feed-axis.mjs → apps/ui/src/home/socket-cap.mjs, apps/ui/src/terminal/host-model.mjs,
+    // apps/ui/src/terminal/state-ramp.mjs` — DOWN into `terminal/` only, and `layout.mjs`/`socket-cap.mjs`
     // are leaves (→ 0). The rule holds today; this pins it so story 03's mount declaration, 04's route
     // and 05's grid cannot reach sideways for "just the one" fleet helper.
-    name: "arch/49 ADR-001 (acd-terminal-control-boundary): the `home → fleet|board` import set is EMPTY and stays empty — the home imports DOWN into ui/src/terminal/ and ui/src/app/, and NOTHING sideways",
+    name: "arch/49 ADR-001 (acd-terminal-control-boundary): the `home → fleet|board` import set is EMPTY and stays empty — the home imports DOWN into apps/ui/src/terminal/ and apps/ui/src/app/, and NOTHING sideways",
     run: async () => {
       const HOME_DIR = path.join(UI_SRC, "home");
       const files = await collect(HOME_DIR, [".mjs", ".d.mts", ".ts", ".tsx"]);
 
       // NON-VACUITY FIRST, AND IT IS NOT DECORATION HERE. `collect()` returns `[]` for a directory
-      // that does not exist — so on a tree where `ui/src/home/` was renamed, moved or not yet
+      // that does not exist — so on a tree where `apps/ui/src/home/` was renamed, moved or not yet
       // created, an empty-baseline check would sweep NOTHING and report a perfect green. An empty
       // answer from a sweep is indistinguishable from a clean tree unless the sweep says how much it
       // saw, which is the shape this repo keeps re-finding (`acd-ui-surface-file-budget`'s
       // `scanned > 50`, and this file's own `files.length >= 8` beside it).
       assert.ok(
         files.length >= 3,
-        `the terminals home was actually read (non-vacuous): found ${files.length} files under ui/src/home/. If this directory moved, RE-AIM this sweep at it — an empty-baseline ratchet pointed at a directory that is not there is the strongest-looking green in the file and asserts nothing.`,
+        `the terminals home was actually read (non-vacuous): found ${files.length} files under apps/ui/src/home/. If this directory moved, RE-AIM this sweep at it — an empty-baseline ratchet pointed at a directory that is not there is the strongest-looking green in the file and asserts nothing.`,
       );
 
       const found = new Set();
@@ -554,7 +554,7 @@ export const archTests = [
       assert.deepEqual(
         added,
         [],
-        `NEW \`home → fleet|board\` import(s): ${added.map((s) => `${s} (in ${where.get(s).join(", ")})`).join("; ")}. The baseline is EMPTY and shrink-only from zero, so there is no such thing as an allowed one (m49/ADR-001). The home reads the same \`/api/mesh/status\` payload the fleet polls and will keep wanting its client, its chips and its empty states — and taking them by import is precisely how \`ui/src/board/\` became the shared library by accident (TECH_DEBT 18(a), still five edges wide in the baseline above). If the home and the fleet genuinely want the same thing, it goes to \`ui/src/components/\` or to \`ui/src/terminal/\`, which both surfaces import DOWN into. Adding an entry to this list is NOT the fix and never will be: it is a five-line refactor recorded as a permission.`,
+        `NEW \`home → fleet|board\` import(s): ${added.map((s) => `${s} (in ${where.get(s).join(", ")})`).join("; ")}. The baseline is EMPTY and shrink-only from zero, so there is no such thing as an allowed one (m49/ADR-001). The home reads the same \`/api/mesh/status\` payload the fleet polls and will keep wanting its client, its chips and its empty states — and taking them by import is precisely how \`apps/ui/src/board/\` became the shared library by accident (TECH_DEBT 18(a), still five edges wide in the baseline above). If the home and the fleet genuinely want the same thing, it goes to \`apps/ui/src/components/\` or to \`apps/ui/src/terminal/\`, which both surfaces import DOWN into. Adding an entry to this list is NOT the fix and never will be: it is a five-line refactor recorded as a permission.`,
       );
 
       // BOTH DIRECTIONS, because a detector that flagged every import would be relaxed inside a
@@ -583,7 +583,7 @@ export const archTests = [
       }
 
       // AND THE RATCHET IS DRIVEN THROUGH THE SAME COMPARISON THE CLAUSE ABOVE USES, over a
-      // synthesized file listing — never by writing a plant into `ui/src/home/`, which would race
+      // synthesized file listing — never by writing a plant into `apps/ui/src/home/`, which would race
       // every other suite reading that tree and would survive a crashed run.
       const plantedFound = new Set(homeToSurfaceSpecifiers('import { fetchMeshStatus } from "../fleet/api";\nimport { StaleBadge } from "../board/StaleBadge";'));
       const plantedAdded = [...plantedFound].filter((specifier) => !HOME_TO_SURFACE_BASELINE.includes(specifier)).sort();
@@ -609,7 +609,7 @@ export const archTests = [
       assert.ok(HOST_LAYOUT_FLAGS.length >= 2, `the layout flags are enumerated (non-vacuity): ${HOST_LAYOUT_FLAGS.join(", ")}`);
 
       const control = stripComments(await readFile(path.join(TERMINAL_DIR, "TerminalControl.tsx"), "utf8")).replace(/\r\n/g, "\n");
-      assert.equal(nonVacuousSource("ui/src/terminal/TerminalControl.tsx", control), null);
+      assert.equal(nonVacuousSource("apps/ui/src/terminal/TerminalControl.tsx", control), null);
 
       // THE SESSION EFFECT IS FOUND BY WHAT IT DOES, not by what it depends on — the one that
       // OPENS THE SOCKET. Picking it by "mentions `sessionKey`" would also catch the LAYOUT
@@ -677,7 +677,7 @@ export const archTests = [
     run: async () => {
       const file = path.join(TERMINAL_DIR, "TerminalControl.tsx");
       const control = stripComments(await readFile(file, "utf8"));
-      assert.equal(nonVacuousSource("ui/src/terminal/TerminalControl.tsx", control), null);
+      assert.equal(nonVacuousSource("apps/ui/src/terminal/TerminalControl.tsx", control), null);
 
       // It reads the property at all (non-vacuity: this clause is about HOW, so it must fail
       // loudly if the read is gone rather than pass because there is nothing to check).
@@ -705,7 +705,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/46 ADR-003 (acd-terminal-control-boundary): no module in ui/src/terminal/ keys a derivation on the KIND, on `isRemote`, on a transport or on an origin — the descriptor's declared FIELDS are the only input",
+    name: "arch/46 ADR-003 (acd-terminal-control-boundary): no module in apps/ui/src/terminal/ keys a derivation on the KIND, on `isRemote`, on a transport or on an origin — the descriptor's declared FIELDS are the only input",
     run: async () => {
       const files = (await collect(TERMINAL_DIR, [".mjs", ".tsx"])).filter((file) => rel(file) !== SOURCE_TABLE);
       assert.ok(files.length >= 8, `the control's own set was actually read (non-vacuous): ${files.length} files`);

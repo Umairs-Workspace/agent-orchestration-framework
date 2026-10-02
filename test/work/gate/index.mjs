@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -33,7 +33,7 @@ import { promptLayerTests } from "./work-audit-prompt-layer.test.mjs";
 // reformatted copy is a copy and a differing `args` is not. The marker key is INJECTED, which keeps
 // the family closure free of the module that declares it, and is proved by one object giving two
 // answers under two keys. Both @executable task features plus FF-7703, a RATCHET green on arrival.
-import { hookWiringTests } from "./work-audit-hook-wiring.test.mjs";
+
 // milestone 77 / story 02 — THE SEAM LIVENESS: an exported module the code graph gives no dependent
 // outside the declared test roots is a bound that exists only in prose, and a command can ask that
 // on every run for the price of reading an artifact something else already built. It READS and never
@@ -44,7 +44,7 @@ import { hookWiringTests } from "./work-audit-hook-wiring.test.mjs";
 // reports absent each yield zero findings plus a limit naming the reason, and the floor is taken over
 // SOURCE ON DISK so an optional tool's absence cannot red a build at error. Both false-positive
 // shapes are DERIVED every run — a zero-export module is a program, and a resolvable relative
-// dynamic-import literal swept over `src/**` is a reference, resolved against its holder and never by
+// dynamic-import literal swept over `packages/core/src/**` is a reference, resolved against its holder and never by
 // basename, which would suppress the repository's only genuine finding. All three @executable task
 // features plus FF-7704.
 import { seamLivenessTests } from "./work-audit-seam-liveness.test.mjs";
@@ -60,7 +60,6 @@ import { contractParsesTests } from "./work-validate-contract-parses.test.mjs";
 import { workRatchetTests } from "./work-ratchet.test.mjs";
 // milestone 57 / story 04 — finding-escape + intervention counters (tasks
 // 00–02), with a read-only observation-boundary/registration fitness suite.
-import { workCountersTests } from "./work-counters.test.mjs";
 
 // story 137 — validate holds an AOF.md record doc to the template (task 02).
 import { workValidateDigestTemplateTests } from "./work-validate-digest-template.test.mjs";
@@ -70,7 +69,6 @@ export const tests = [
   // milestone 77 / story 00 - the prompt layer (tasks 00-02) plus FF-7701 and FF-7702.
   ...promptLayerTests,
   // milestone 77 / story 01 - the hook wiring (tasks 00-01) plus FF-7703.
-  ...hookWiringTests,
   // milestone 77 / story 02 - the seam liveness (tasks 00-02) plus FF-7704.
   ...seamLivenessTests,
   ...declaredBoundsTests,
@@ -80,7 +78,6 @@ export const tests = [
   // milestone 57 / story 03 — contract-integrity ratchet (tasks 00–04) + FF-5705
   ...workRatchetTests,
   // milestone 57 / story 04 — escape/intervention counters (tasks 00–02)
-  ...workCountersTests,
   // story 137 — validate holds an AOF.md record doc to the template (task 02).
   ...workValidateDigestTemplateTests,
 ];

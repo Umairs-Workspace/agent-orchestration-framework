@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // FF-13101 + FF-13102 + FF-13103 — THE ASK HAS ONE HOME, ONE READER READS THE QUESTION, AND A
 // WAITING RUN IS RECORDED RATHER THAN RECLAIMED OR CHARGED (milestone 131 / story 06; ARCHITECTURE
 // `## Fitness functions`, ADR-001 §4, ADR-002, ADR-003). Which of this directory's three subjects:
@@ -5,23 +7,23 @@
 // `asks` key on the run record are the three records a human-in-the-loop leaves behind, and these
 // are the controls on who may spell, read and write them.
 //
-// FF-13101, structural. Over a comment-stripped sweep of `src/**` the segment literal `loop-asks`
-// appears only in `src/loop/ask-request.mjs`; no module joins `meshRoot` with an `ask` literal;
-// `src/loop/ask.mjs`, `src/commands/resume.mjs` and `src/commands/list.mjs` import the home by
+// FF-13101, structural. Over a comment-stripped sweep of `packages/core/src/**` the segment literal `loop-asks`
+// appears only in `packages/core/src/loop/ask-request.mjs`; no module joins `meshRoot` with an `ask` literal;
+// `packages/core/src/loop/ask.mjs`, `packages/core/src/commands/resume.mjs` and `packages/core/src/commands/list.mjs` import the home by
 // RESOLVED specifier (through `test/support/module-family.mjs`, FF-11901's one extractor). The
 // ask-state leg keys on `ASK_STATES` (defined in the home alone) and on an ask record's `state`
 // compared against one of the three words — never on the bare English words, which this tree
 // spells in unrelated vocabularies (`resume.mjs`'s retry row is `parked` too; task 00 ruling 6).
 // The `asks` key is written only inside `openRunAsk`, `parkRunAsk` and `answerRunAsk`: the sweep
-// of `src/run-store.mjs` (the one persister of a run record) allows exactly the mint's `asks: []`
-// and the read-forward normaliser, and no `src/**` module mutates an `asks` array in place.
+// of `packages/core/src/run-store.mjs` (the one persister of a run record) allows exactly the mint's `asks: []`
+// and the read-forward normaliser, and no `packages/core/src/**` module mutates an `asks` array in place.
 // Fixture: `answerAsk` refuses `answer-control-chars`, `answer-empty` and, on a second answer,
 // `ask-already-answered`. NON-VACUOUS: the sweep finds the home and at least three importers.
 //
-// FF-13102, structural then fixture. `readLastAssistantTurn` is defined in `src/work/observe.mjs`
+// FF-13102, structural then fixture. `readLastAssistantTurn` is defined in `packages/core/src/work/observe.mjs`
 // and imported by name by the driver; `ask.mjs` reaches it through `readAskQuestion`, imported
 // from `observe.mjs` by resolved specifier, and walks no transcript itself (task 00 ruling 2). No
-// other `src/**` module both `JSON.parse`s and reads `stop_reason` — the driver's
+// other `packages/core/src/**` module both `JSON.parse`s and reads `stop_reason` — the driver's
 // `defaultSpawnRuntime` is cut out first and named: it parses the headless runtime's ONE stdout
 // document, never transcript lines. The driver's export set stays 17 (`53/FF-5302`), and
 // `NEEDS_INPUT_INSTRUCTION` keeps the sentinel, the four labels and the threshold sentence.
@@ -39,14 +41,20 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
-import { answerAsk, openAsk } from "../../../src/loop/ask-request.mjs";
-import { answerRunAsk, readRuns, runRecordPath, startRun } from "../../../src/run-store.mjs";
-import { transitionStaleRunsReclaimed } from "../../../src/effects/run-transitions.mjs";
-import { attemptElapsedMs } from "../../../src/work/loop.mjs";
-import { claudeProjectsDir, readAskQuestion, NEEDS_INPUT_SENTINEL } from "../../../src/work/observe.mjs";
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const answerRunAsk = _aofApplication.execution.runs.answerRunAsk;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const startRun = _aofApplication.execution.runs.startRun;
+const transitionStaleRunsReclaimed = _aofApplication.execution.transitions.transitionStaleRunsReclaimed;
+import { attemptElapsedMs } from "../../../packages/work-loop/src/engine.mjs";
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const readAskQuestion = _aofSessions.workObserve.readAskQuestion;
+const NEEDS_INPUT_SENTINEL = _aofSessions.workObserve.NEEDS_INPUT_SENTINEL;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const toPosix = (value) => String(value).split(path.sep).join("/");
@@ -54,10 +62,10 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 // THE HOME and the three readers ADR-003 names. The needle is the module's repo-relative path as a
 // resolved specifier lands on it — misspell it and zero importers resolve, which the non-vacuity leg
 // reds on rather than passing over.
-const HOME = "src/loop/ask-request.mjs";
+const HOME = "packages/work-loop/src/ask-request.mjs";
 const SEGMENT = "loop-asks";
-const READERS = Object.freeze(["src/loop/ask.mjs", "src/commands/resume.mjs", "src/commands/list.mjs"]);
-const STORE = "src/run-store.mjs";
+const READERS = Object.freeze(["packages/core/src/application/bindings/loop/ask.mjs", "packages/core/src/application/bindings/commands/resume.mjs", "packages/core/src/application/bindings/commands/list.mjs"]);
+const STORE = "packages/execution/src/runs.mjs";
 const ASK_WRITERS = Object.freeze(["openRunAsk", "parkRunAsk", "answerRunAsk"]);
 // Task 00 ruling 6: the two `asks:` keys that are the record's SHAPE, not a write of an ask.
 const SHAPE_KEYS = Object.freeze([
@@ -68,11 +76,12 @@ const STATE_WORDS = Object.freeze(["waiting", "parked", "answered"]);
 // The calls whose answer is an ask record — a binding of one is an ask record by construction.
 const ASK_READS_RE = /\b(?:const|let)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:await\s+)?(?:readAsk|readAsks|answerAsk|openAsk|parkAsk)\s*\(/gu;
 
-const OBSERVE = "src/work/observe.mjs";
-const DRIVER = "src/agent-session-driver.mjs";
-const ASK = "src/loop/ask.mjs";
+const OBSERVE = "packages/work/src/observe.mjs";
+const OBSERVE_ADAPTER = "packages/core/src/application/bindings/work/observe.mjs";
+const DRIVER = "packages/execution/src/session-driver.mjs";
+const ASK = "packages/core/src/application/bindings/loop/ask.mjs";
 // The driver's one non-transcript parse: the headless runtime's stdout document (a codex run).
-const STDOUT_PARSER = "export function defaultSpawnRuntime(";
+const STDOUT_PARSER = "function defaultSpawnRuntime(";
 const DRIVER_EXPORTS = 17; // 53/FF-5302
 const FOUR_LABELS = Object.freeze(["Decision needed:", "Options:", "I would pick:", "What the answer changes:"]);
 const THRESHOLD = "genuine judgment call";
@@ -84,17 +93,20 @@ function assertRead(what, count, floor, unit = "file(s)") {
 // A specifier resolved against its importer, as a repo-relative posix path; a package or a builtin
 // stays as spelled. `.mjs` is appended when the specifier omits it.
 function resolved(fromRel, specifier) {
+  const service = /^(?:@aof\/work-loop\/)(ask-request|stop-request|child-drive)$/.exec(specifier);
+  if (service) return `packages/work-loop/src/${service[1]}.mjs`;
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
-  const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  if (/^packages\/core\/src\/(?:application\/bindings\/)?loop\/(ask-request|stop-request|child-drive)\.mjs$/.test(joined)) joined = joined.replace(/^packages\/core\/src\/(?:application\/bindings\/)?loop\//, "packages/work-loop/src/");
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
-// ONE read of `src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
+// ONE read of `packages/core/src/**`, comment-stripped: `[{ rel, code, raw }]` with `rel` repo-relative posix.
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
+  for (const file of await readRuntimeFiles(repoRoot)) {
     const raw = await readFile(file.path, "utf8");
-    units.push({ rel: `src/${toPosix(file.rel)}`, raw, code: stripComments(raw) });
+    units.push({ rel: toPosix(file.rel), raw, code: stripComments(raw) });
   }
   return units;
 }
@@ -109,7 +121,7 @@ const unitOf = (units, rel) => {
 // can misspell the needle and watch the answer go to zero.
 export function importersOf(units, target) {
   return units
-    .filter(({ rel, code }) => importSpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === target))
+    .filter(({ rel, code }) => dependencySpecifiers(code).some(({ specifier }) => resolved(rel, specifier) === target))
     .map(({ rel }) => rel);
 }
 
@@ -158,7 +170,7 @@ function lineAt(code, at) {
 
 // Every `asks:` object key in `code`, with the name of the top-level function it sits in.
 function asksKeysByFunction(code) {
-  const functions = [...code.matchAll(/^(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)].map((match) => ({ name: match[1], at: match.index }));
+  const functions = [...code.matchAll(/^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\s*\(/gmu)].map((match) => ({ name: match[1], at: match.index }));
   const keys = [];
   for (const match of code.matchAll(/(?<![\w$.])asks\s*:/gu)) {
     const owner = functions.filter((fn) => fn.at < match.index).at(-1)?.name ?? "<module>";
@@ -217,7 +229,7 @@ export const archTests = [
       assert.ok(home.code.includes(SEGMENT), `NOT FOUND: ${HOME} does not spell ${JSON.stringify(SEGMENT)} — the sweep must find the home before it can claim it is the only one`);
 
       const spellers = units.filter(({ code }) => code.includes(SEGMENT)).map(({ rel }) => rel);
-      assert.deepEqual(spellers, [HOME], `loop-asks appears only in src/loop/ask-request.mjs — spelled by: ${spellers.join(", ")}. A module that composes the ask's path itself is a second home for the ask (ADR-003 §1); read it through loopAsksDir()/askRequestPath()`);
+      assert.deepEqual(spellers, [HOME], `loop-asks appears only in packages/core/src/loop/ask-request.mjs — spelled by: ${spellers.join(", ")}. A module that composes the ask's path itself is a second home for the ask (ADR-003 §1); read it through loopAsksDir()/askRequestPath()`);
 
       const joins = units.flatMap(({ rel, code }) => meshRootAskJoins(code).map((join) => `${rel}: ${join}`));
       assert.deepEqual(joins, [], `no module joins meshRoot with an ask literal — found: ${joins.join(" | ")}. The ask's path has one home (ADR-003 §1): loopAsksDir()`);
@@ -226,8 +238,10 @@ export const archTests = [
 
       const importers = importersOf(units, HOME);
       for (const reader of READERS) {
-        assert.ok(importers.includes(reader), `${reader} imports src/loop/ask-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
+        assert.ok(importers.includes(reader), `${reader} imports packages/core/src/loop/ask-request.mjs by RESOLVED specifier (through module-family.mjs) — importers found: ${importers.join(", ") || "none"}`);
       }
+      assert.match(unitOf(units, "packages/core/src/application/bindings/commands/resume.mjs").code, /createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "core supplies the shared ask API to the work command");
+      assert.match(unitOf(units, "packages/work/src/commands/resume.mjs").code, /function createReentryCommands\(\{[^}]*answerAsk,\s*loopAsksDir/u, "the package receives the shared ask API");
     },
   },
   {
@@ -235,12 +249,19 @@ export const archTests = [
     run: async () => {
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
+      const composition = unitOf(units, OBSERVE_ADAPTER);
+      assert.ok(dependencySpecifiers(composition.code).some(({specifier}) => specifier === "@aof/work/observe"), "the adapter consumes the work observer API");
+      assert.match(composition.code, /createWorkObserver\(\{\s*reportDegrade\s*\}\)/u, "the adapter supplies only reporting policy");
+      assert.match(composition.code, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}/u, "the legacy adapter forwards the shared reader");
       const definers = units.filter(({ code }) => /\bASK_STATES\s*=/u.test(code)).map(({ rel }) => rel);
-      assert.deepEqual(definers, [HOME], `ASK_STATES is defined in src/loop/ask-request.mjs and nowhere else — defined in: ${definers.join(", ") || "nowhere"}`);
+      assert.deepEqual(definers, [HOME], `ASK_STATES is defined in packages/core/src/loop/ask-request.mjs and nowhere else — defined in: ${definers.join(", ") || "nowhere"}`);
 
       const carriers = importersOf(units, HOME).filter((rel) => rel !== HOME);
       assertRead("the modules that carry an ask", carriers.length, READERS.length, "importer(s)");
-      const spelled = carriers.flatMap((rel) => spelledAskStates(unitOf(units, rel).code).map((hit) => `${rel}: ${hit}`));
+      // Include implementations receiving the ask reader through a port as well as direct importers.
+      const implementations = units.filter(({ code }) => /const\s*\{[^}]*\}\s*=\s*askRequests/u.test(code)).map(({ rel }) => rel);
+      assert.ok(implementations.includes("packages/work-loop/src/ask.mjs"), "the package ask reader is included");
+      const spelled = [...new Set([...carriers, ...implementations])].flatMap((rel) => spelledAskStates(unitOf(units, rel).code).map((hit) => `${rel}: ${hit}`));
       assert.deepEqual(spelled, [], `an ask record's state is read through ASK_STATES, never compared against a spelled "waiting"/"parked"/"answered" — found: ${spelled.join(" | ")}`);
       // SELF-CHECK — the detector sees an ask record's spelled state and leaves another vocabulary alone.
       assert.equal(spelledAskStates('const file = await readAsk(dir, id);\nif (file.state === "parked") x();').length, 1, "self-check: a bound ask record's spelled state is seen");
@@ -298,9 +319,9 @@ export const archTests = [
         home != null && importers.length >= READERS.length,
         `the sweep finds the module and at least three importers: ${HOME} ${home == null ? "was NOT found" : "found"}, ${importers.length} importer(s) resolved (${importers.join(", ") || "none"}) — a needle that resolves to nothing is a guard asserting over the empty set, not a clean tree`,
       );
-      const planted = [{ rel: "src/x.mjs", code: 'import { readAsk } from "./loop/ask-requests.mjs";' }];
+      const planted = [{ rel: "packages/core/src/x.mjs", code: 'import { readAsk } from "./loop/ask-requests.mjs";' }];
       assert.equal(importersOf(planted, HOME).length, 0, "self-check: a misspelled specifier resolves to no importer");
-      assert.equal(importersOf([{ rel: "src/x.mjs", code: 'import { readAsk } from "./loop/ask-request.mjs";' }], HOME).length, 1, "self-check: the right specifier resolves");
+      assert.equal(importersOf([{ rel: "packages/core/src/x.mjs", code: 'import { readAsk } from "./loop/ask-request.mjs";' }], HOME).length, 1, "self-check: the right specifier resolves");
     },
   },
   {
@@ -309,19 +330,24 @@ export const archTests = [
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
       const observe = unitOf(units, OBSERVE);
-      assert.match(observe.code, /\bexport\s+async\s+function\s+readLastAssistantTurn\s*\(/u, "readLastAssistantTurn is defined in src/work/observe.mjs");
+      assert.match(observe.code, /\basync\s+function\s+readLastAssistantTurn\s*\(/u, "readLastAssistantTurn is defined in packages/core/src/work/observe.mjs");
       const definers = units.filter(({ code }) => /\bfunction\s+readLastAssistantTurn\s*\(/u.test(code)).map(({ rel }) => rel);
       assert.deepEqual(definers, [OBSERVE], `readLastAssistantTurn is defined once — in: ${definers.join(", ")}`);
 
-      const driver = unitOf(units, DRIVER);
-      assert.ok(importSpecifiers(driver.code).some(({ specifier }) => resolved(DRIVER, specifier) === OBSERVE), "the driver imports src/work/observe.mjs by resolved specifier");
-      assert.match(driver.code, /import\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*from\s*["']\.\/work\/observe\.mjs["']/u, "the driver imports readLastAssistantTurn by name");
+      const adapterPath = "packages/core/src/application/bindings/agent-session-driver.mjs";
+      const driver = unitOf(units, adapterPath);
+      assert.ok(dependencySpecifiers(driver.code).some(({ specifier }) => resolved(adapterPath, specifier) === OBSERVE_ADAPTER), "the adapter imports packages/core/src/work/observe.mjs by resolved specifier");
+      assert.match(driver.code, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*= workObserveServices/u, "the configured reader comes from the observer");
 
       const ask = unitOf(units, ASK);
-      assert.ok(importSpecifiers(ask.code).some(({ specifier }) => resolved(ASK, specifier) === OBSERVE), "src/loop/ask.mjs imports its reader from src/work/observe.mjs by resolved specifier (ruling 2)");
-      assert.match(ask.code, /import\s*\{[^}]*\breadAskQuestion\b[^}]*\}\s*from\s*["']\.\.\/work\/observe\.mjs["']/u, "…and the reader is readAskQuestion");
+      assert.ok(dependencySpecifiers(ask.code).some(({ specifier }) => resolved(ASK, specifier) === OBSERVE_ADAPTER), "packages/core/src/loop/ask.mjs imports its reader from packages/core/src/work/observe.mjs by resolved specifier (ruling 2)");
+      assert.match(ask.code, /const\s*\{[^}]*\breadAskQuestion\b[^}]*\}\s*= workObserveServices/u, "the configured reader comes from the observer");
+      const implementation = unitOf(units, "packages/work-loop/src/ask.mjs");
+      assert.match(ask.code, /transcripts:\s*\{\s*readAskQuestion/u, "the adapter supplies the shared transcript reader");
+      assert.match(implementation.code, /const\s*\{\s*readAskQuestion\s*\}\s*=\s*transcripts/u, "the implementation receives that reader");
       for (const [needle, what] of [[/\bJSON\s*\.\s*parse\s*\(/u, "JSON.parse("], [/stop_reason/u, "stop_reason"], [/\.jsonl\b/u, ".jsonl"], [/\breadFile\s*\(/u, "readFile("]]) {
-        assert.doesNotMatch(ask.code, needle, `src/loop/ask.mjs walks no transcript itself — it spells ${what}`);
+        assert.doesNotMatch(ask.code, needle, `packages/core/src/loop/ask.mjs walks no transcript itself — it spells ${what}`);
+        assert.doesNotMatch(implementation.code, needle, `the ask package walks no transcript itself — it spells ${what}`);
       }
     },
   },
@@ -339,13 +365,31 @@ export const archTests = [
         const body = rel === DRIVER ? code.replace(stdout, "") : code;
         if (/\bJSON\s*\.\s*parse\s*\(/u.test(body) && /stop_reason/u.test(body)) scanners.push(rel);
       }
-      assert.deepEqual(scanners, [], `no other src/** module both JSON.parses transcript lines and reads stop_reason — found in: ${scanners.join(", ")}. The transcript has one reader (ADR-002): readLastAssistantTurn in src/work/observe.mjs`);
+      assert.deepEqual(scanners, [], `no other src/** module both JSON.parses transcript lines and reads stop_reason — found in: ${scanners.join(", ")}. The transcript has one reader (ADR-002): readLastAssistantTurn in packages/core/src/work/observe.mjs`);
     },
   },
   {
     name: "arch/131 FF-13102 (acd-loop-ask-single-home): the driver keeps its seventeen exports, and NEEDS_INPUT_INSTRUCTION embeds the sentinel, asks the four labels and keeps the genuine-judgment-call sentence",
     run: async () => {
-      const driver = await import("../../../src/agent-session-driver.mjs");
+      const driver = await Promise.resolve(Object.freeze({
+  COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.COMPLETION_IDLE_MS,
+  DECLARED_COMPLETION_IDLE_MS: _aofSessions.agentSessionDriver.DECLARED_COMPLETION_IDLE_MS,
+  DIRECTIVE_COMPLETE_INSTRUCTION: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_INSTRUCTION,
+  DIRECTIVE_COMPLETE_SENTINEL: _aofSessions.agentSessionDriver.DIRECTIVE_COMPLETE_SENTINEL,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES,
+  INTERACTIVE_COMMAND_READY_DELAY_MS: _aofSessions.agentSessionDriver.INTERACTIVE_COMMAND_READY_DELAY_MS,
+  NEEDS_INPUT_INSTRUCTION: _aofSessions.agentSessionDriver.NEEDS_INPUT_INSTRUCTION,
+  NEEDS_INPUT_SENTINEL: _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL,
+  WORKER_SESSION_INSTRUCTION: _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION,
+  buildDriverCommand: _aofSessions.agentSessionDriver.buildDriverCommand,
+  defaultPtySpawn: _aofSessions.agentSessionDriver.defaultPtySpawn,
+  defaultSpawnRuntime: _aofSessions.agentSessionDriver.defaultSpawnRuntime,
+  defaultWatchTranscriptCompletion: _aofSessions.agentSessionDriver.defaultWatchTranscriptCompletion,
+  defaultWatchTranscriptSessionId: _aofSessions.agentSessionDriver.defaultWatchTranscriptSessionId,
+  driveInteractiveClaudeSession: _aofSessions.agentSessionDriver.driveInteractiveClaudeSession,
+  ensureWorktreeTrusted: _aofSessions.agentSessionDriver.ensureWorktreeTrusted,
+  resolveInteractiveDriverLaunch: _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch,
+}));
       assert.equal(Object.keys(driver).length, DRIVER_EXPORTS, `the driver's export set stays at 17 (53/FF-5302) — it has ${Object.keys(driver).length}`);
       const text = driver.NEEDS_INPUT_INSTRUCTION;
       assert.equal(typeof text, "string", "NEEDS_INPUT_INSTRUCTION is exported");

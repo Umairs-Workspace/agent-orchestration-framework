@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 09 / story 00 — the graphify command core.
 //
 // Covers the @executable scenarios across the four task features (the @manual
@@ -20,21 +22,23 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, listCommands, invoke } from "../../src/command-core.mjs";
-import {
-  normalizeGraph,
-  graphifyBuildArgs,
-  graphifySpawnOptions,
-  isCodeOnlyWholeRootBuild,
-  runGraphifyBuild,
-  GRAPHIFY_TIMEOUT_ENV,
-  DEFAULT_GRAPHIFY_TIMEOUT_MS,
-} from "../../src/graphify.mjs";
-import { classifyEgress, isNetworkBackend, readBuiltGraph } from "../../src/commands/graph/build.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const invoke = _aofApplication.invoke;
+const normalizeGraph = _aofApplication.knowledge.graphify.normalizeGraph;
+const graphifyBuildArgs = _aofApplication.knowledge.graphify.graphifyBuildArgs;
+const graphifySpawnOptions = _aofApplication.knowledge.graphify.graphifySpawnOptions;
+const isCodeOnlyWholeRootBuild = _aofApplication.knowledge.graphify.isCodeOnlyWholeRootBuild;
+const runGraphifyBuild = _aofApplication.knowledge.graphify.runGraphifyBuild;
+const GRAPHIFY_TIMEOUT_ENV = _aofApplication.knowledge.graphify.GRAPHIFY_TIMEOUT_ENV;
+const DEFAULT_GRAPHIFY_TIMEOUT_MS = _aofApplication.knowledge.graphify.DEFAULT_GRAPHIFY_TIMEOUT_MS;
+const classifyEgress = _aofApplication.knowledge.commandTools.graph.build.classifyEgress;
+const isNetworkBackend = _aofApplication.knowledge.commandTools.graph.build.isNetworkBackend;
+const readBuiltGraph = _aofApplication.knowledge.commandTools.graph.build.readBuiltGraph;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const FIXTURE_GRAPH = path.join(repoRoot, "test", "fixtures", "graph", "graph.json");
 
 const SIX_WORK_IDS = ["work:list", "work:doc", "work:tasks", "work:validate", "work:next", "work:feedback"];

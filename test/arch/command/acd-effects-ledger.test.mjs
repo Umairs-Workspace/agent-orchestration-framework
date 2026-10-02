@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness functions for m42 wave (d) leg d2 (PRD-command-spine-effects-ledger):
 // the effects ledger's structural invariants.
 //
@@ -18,59 +19,63 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS, isKnownLocus } from "../../../src/effects/table.mjs";
-import { openEffectsJournal, pendingSteps, readEventSteps } from "../../../src/effects/journal.mjs";
-import { drainEffects } from "../../../src/effects/dispatch.mjs";
-import { transitionRunComplete } from "../../../src/effects/run-transitions.mjs";
-import { startRun } from "../../../src/run-store.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const isKnownLocus = _aofApplication.effects.reactors.isKnownLocus;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const transitionRunComplete = _aofApplication.execution.transitions.transitionRunComplete;
+const startRun = _aofApplication.execution.runs.startRun;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 // The sanctioned appendEvent CALLERS (repo-relative, forward-slashed): the
 // journal module (the definition) and the transition seam(s) — nothing else in
 // src/ may append events.
 const APPEND_EVENT_ALLOWED = new Set([
-  "src/effects/journal.mjs",
-  "src/effects/run-transitions.mjs",
+  "packages/core/src/application/bindings/effects/journal.mjs",
+  "packages/effects/src/journal.mjs", // extracted definition, never an additional event-raising seam
+  "packages/execution/src/run-transitions.mjs",
   // m42 wave (d) leg d3 — the assignment store's transition seam, the second
   // event-raiser. The set is the LIST OF SEAMS, not an amnesty: a command or a
   // module appending its own event still trips.
-  "src/effects/assignment-transitions.mjs",
+  "packages/mesh/src/assignment-transitions.mjs",
   // m42 wave (d) leg d4 (port 1) — the RECORD-DOC store's transition seam, the
   // third. Same rule, not an amnesty: it owns the one fs write it raises for.
-  "src/effects/doc-transitions.mjs",
+  "packages/work/src/doc-transitions.mjs",
   // m42 wave (d) leg d4 (port 3) — the WORK STREAM's transition seam, the fourth:
   // the slot-open renumber and the `stream.reindexed` that carries its ref remap.
-  "src/effects/stream-transitions.mjs",
+  "packages/work/src/stream-transitions.mjs",
   // 2026-08-16 — the RECORD-DOC FRONTMATTER seam, the fifth: an item's lifecycle status
   // move and the `item-status.changed` it raises. SEPARATE from doc-transitions.mjs (the
   // record doc's BODY) because acd-board-write-isolation pins that module to writing no
   // SPEC/STORY/SESSION and no literal status — the board derives status and never writes
   // it. Same rule, not an amnesty: the fact itself still belongs to work.mjs (the
   // item-frontmatter authority), and this seam adds only the event and its cascade.
-  "src/effects/item-transitions.mjs",
+  "packages/work/src/item-transitions.mjs",
   // m42 wave (d) leg d3 — the BRIDGE fact door. A worker cannot write the control
   // node's store, so it ships the owed step here and this handler appends it into
   // CONTROL's own journal before executing it (the PRD's "apply-handlers reduce to
   // guard + append into control's own journal"). It appends ONLY a reactor the
   // closed vocabulary declares for the named event, and the work itself still runs
   // through a transition seam.
-  "src/control-stream-server.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
   // m42 wave (d) leg d5 — the FILE-STORE RECONCILER: the deliberate second door
   // for a fact whose event a crash ate (write-then-append's documented window).
   // It appends only what a transition WOULD have appended — the record's own
   // evidence, through the same applicability resolution — bounded to each item's
   // latest record at/after the ledger's birth. Not an amnesty: a command
   // appending its own event still trips.
-  "src/effects/reconcile.mjs",
+  "packages/execution/src/reconcile.mjs",
   // milestone 61 / ADR-007 §3 — the HARNESS store's transition seam, the sixth: a
   // ruling on a harness value and the `harness.ruled` it raises. Same rule, not an
-  // amnesty. The fact itself belongs to `src/work-acceptor/store.mjs` (the acceptor's
+  // amnesty. The fact itself belongs to `packages/core/src/work-acceptor/store.mjs` (the acceptor's
   // one I/O home, which owns BOTH the surgical knob write and the ledger append), and
   // this seam adds exactly what a seam adds: the event, and the consequence nobody may
   // forget — the ruling recorded beside the configuration it concerns.
-  "src/effects/harness-transitions.mjs",
+  "packages/work/src/harness-transitions.mjs",
 ]);
 
 // The sanctioned completeRun CALLERS (m42 wave (d) leg d2, THE SWEEP): the store
@@ -78,7 +83,7 @@ const APPEND_EVENT_ALLOWED = new Set([
 // other caller — the 8 sites the PRD measured, 7 of them in
 // mesh-worker-execution.mjs — now settles through transitionRunComplete, so the
 // fact can never again land without its event.
-const COMPLETE_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transitions.mjs"]);
+const COMPLETE_RUN_ALLOWED = new Set(["packages/execution/src/runs.mjs", "packages/execution/src/run-transitions.mjs"]);
 
 // The sanctioned run-MINT callers (m42 wave (d) leg d4, port 1 — the same
 // discipline applied to the second run-store fact). `startRun`/`retryRun` were
@@ -86,7 +91,7 @@ const COMPLETE_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-tran
 // per-call-site import decision; now every mint goes through transitionRunStart,
 // which raises `run.started` and lets the ledger own the consequence. The store
 // itself is exempt (definition + its internal reclaim/retry composition).
-const MINT_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transitions.mjs"]);
+const MINT_RUN_ALLOWED = new Set(["packages/execution/src/runs.mjs", "packages/execution/src/run-transitions.mjs"]);
 
 // The sanctioned RECLAIM callers (m42 wave (d) leg d4, port 2 — the two reclaim
 // halves unified). A reclaim IS a run completion (failed/runtime_offline), but
@@ -96,7 +101,7 @@ const MINT_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transiti
 // `transitionRunReclaimed` the one door to it, so both halves inherit the SAME
 // declared cascade. `reclaimStaleRuns` (the store's own scan over that edge) is
 // listed with it: reachable from the store and the seam, never a command.
-const RECLAIM_RUN_ALLOWED = new Set(["src/run-store.mjs", "src/effects/run-transitions.mjs"]);
+const RECLAIM_RUN_ALLOWED = new Set(["packages/execution/src/runs.mjs", "packages/execution/src/run-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -150,9 +155,11 @@ export const archTests = [
     },
   },
   {
-    name: "arch/m42-d2: appendEvent is called in src/ only by the transition seam (no event append outside transition)",
+    name: "arch/m42-d2: appendEvent is called in runtime source only by the transition seam (no event append outside transition)",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const packageFiles = await listSourceFiles(path.join(repoRoot, "packages/effects/src"));
+      assert.ok(packageFiles.some(file => file.endsWith("journal.mjs")), "extracted storage is scanned");
+      const files = [...await listSourceFiles(SRC_DIR), ...packageFiles];
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
@@ -216,8 +223,8 @@ export const archTests = [
       );
       // …and the edge the seam settles on raises a completion, so the reclaim
       // inherits the declared cascade rather than a per-call-site copy of it.
-      const seam = stripComments(await readFile(path.join(SRC_DIR, "effects", "run-transitions.mjs"), "utf8"));
-      const reclaimDoor = seam.slice(seam.indexOf("export async function transitionRunReclaimed"));
+      const seam = stripComments(await readFile(path.join(SRC_DIR, "../../execution/src/run-transitions.mjs"), "utf8"));
+      const reclaimDoor = seam.slice(seam.indexOf("async function transitionRunReclaimed"));
       assert.ok(reclaimDoor.length > 0, "transitionRunReclaimed is the reclaim door");
       assert.ok(/reclaimRun\s*\(/.test(reclaimDoor.slice(0, 2000)), "…writing the fact through the shared edge");
       assert.ok(/raise\s*\(\s*"run\.completed"/.test(reclaimDoor.slice(0, 2000)), "…and raising run.completed for it");

@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 // Traceability wiring for milestone 39 / story 01
 // tasks/00_outcome-template.feature — "The OUTCOME.md bundle template ships with
 // the pinned Delivered/Assumptions/Gaps grammar" (@executable).
 //
 // Every scenario (and every Scenario Outline Examples row) below is asserted
 // against the REAL shipped templates:
-//   - src/bundle/templates/shared/OUTCOME.md (source, NO marker, NO frontmatter
+//   - packages/core/assets/templates/shared/OUTCOME.md (source, NO marker, NO frontmatter
 //     — ADR-004: OUTCOME.md carries no identity)
 //   - .aof/templates/work/shared/OUTCOME.md (bundled, WITH the leading
 //     `<!-- aof-generated: bundle -->` marker, LF-pinned by .gitattributes)
@@ -15,11 +17,11 @@ import { readFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripBundleMarker } from "../../src/commands/insert-shared.mjs";
-import { TEMPLATE_STAMP } from "../../src/work/bundle.mjs";
+const stripBundleMarker = _aofApplication.work.commandTools.insertShared.stripBundleMarker;
+import { TEMPLATE_STAMP } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SOURCE_PATH = path.join(repoRoot, "src", "bundle", "templates", "shared", "OUTCOME.md");
+const SOURCE_PATH = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
 const BUNDLED_PATH = path.join(repoRoot, ".aof", "templates", "work", "shared", "OUTCOME.md");
 
 // The pinned grammar (SPEC.md `## Stories`): "# NN · <Item Title> — Outcome" —
@@ -56,7 +58,7 @@ function extractSectionBody(text, heading) {
 }
 
 function stripComments(text) {
-  return text.replace(/<!--[\s\S]*?-->/g, "");
+  return stripHtmlComments(text);
 }
 
 export const outcomeTemplateTests = [

@@ -5,7 +5,7 @@
 // returned 31 assertion sites in 20 files at HEAD on 2026-09-06. Keeping only those whose pattern
 // carries no specifier (`from "…/command-core.mjs"`, `node:fs`) and is not scoped to a dynamic
 // `import(` left ELEVEN sites in NINE files. Six of the nine are not the three 119/ADR-002 names,
-// and two of those six guard `src/work-acceptor/rule.mjs` and `src/work-acceptor/ledger.mjs` —
+// and two of those six guard `packages/core/src/work-acceptor/rule.mjs` and `packages/core/src/work-acceptor/ledger.mjs` —
 // modules already inside ONE family directory, with the guard forbidding the edge between them.
 // That is why the claim below is asserted as a CLASS over `test/arch/**` rather than over three
 // named files: a tenth guard written next year with the token ban would otherwise re-open it.
@@ -52,15 +52,15 @@ const STRIPPER_HOME = "test/support/source-slice.mjs";
 // the tree can answer — and the class sweep below is what makes it unnecessary as an oracle: a
 // tenth carrier is caught by the sweep whether or not it is named here.
 const CONVERTED = Object.freeze([
-  ["acd-session-driver-single-home.test.mjs", "src/phase-brief"],
-  ["acd-phase-brief-single-bag.test.mjs", "src/phase-brief"],
-  ["acd-loop-checks-pure.test.mjs", "src/work/loops-checks"],
-  ["acd-acceptor-ledger-accrues-across-epochs.test.mjs", "src/work-acceptor"],
-  ["acd-acceptor-rule-is-one-object.test.mjs", "src/work-acceptor"],
-  ["acd-loop-cap-single-home.test.mjs", "src/loop-bounds"],
-  ["acd-provenance-stamped-at-write.test.mjs", "src/claim-provenance"],
-  ["acd-trial-metric-declared.test.mjs", "src/work/counters"],
-  ["acd-work-counters-read-only.test.mjs", "src/work/counters"],
+  ["acd-session-driver-single-home.test.mjs", "packages/work/src/phase-brief"],
+  ["acd-phase-brief-single-bag.test.mjs", "packages/work/src/phase-brief"],
+  ["acd-loop-checks-pure.test.mjs", "packages/work-graph/src/checks"],
+  ["acd-acceptor-ledger-accrues-across-epochs.test.mjs", "packages/work/src/acceptor"],
+  ["acd-acceptor-rule-is-one-object.test.mjs", "packages/work/src/acceptor"],
+  ["acd-loop-cap-single-home.test.mjs", "packages/contracts/src/loop-bounds"],
+  ["acd-provenance-stamped-at-write.test.mjs", "packages/contracts/src/claim-provenance"],
+  ["acd-trial-metric-declared.test.mjs", "packages/work/src/counters"],
+  ["acd-work-counters-read-only.test.mjs", "packages/work/src/counters"],
 ]);
 
 // ── the class detector ───────────────────────────────────────────────────────────────────────────
@@ -95,9 +95,9 @@ export function classifyImportBan(patternSource) {
 // says exactly the same thing to a reader and nothing at all to a detector that only knows the first.
 // A tenth guard written next year is as likely to reach for one as the other.
 const BAN_FORMS = [
-  /assert\.doesNotMatch\(\s*[^,]+,\s*\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\//gu,
-  /assert\.(?:ok|equal)\(\s*!\s*\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\/[a-z]*\.test\(/gu,
-  /assert\.equal\(\s*\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\])+)\/[a-z]*\.test\([^)]*\)\s*,\s*false/gu,
+  /assert\.doesNotMatch\(\s*[^,]+,\s*\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\//gu,
+  /assert\.(?:ok|equal)\(\s*!\s*\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*\.test\(/gu,
+  /assert\.equal\(\s*\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\[])+)\/[a-z]*\.test\([^)]*\)\s*,\s*false/gu,
 ];
 
 export function importBanSites(source) {
@@ -206,7 +206,7 @@ async function archControls() {
 // caller to need it.
 const archPathOf = async (basename) => (await suitePathByBasename(root, basename, { root: "test/arch" })).replace(/^test\/arch\//u, "");
 
-// A synthetic tree, so every plant below is driven over LITERAL inputs and no module under `src/`
+// A synthetic tree, so every plant below is driven over LITERAL inputs and no module under `packages/core/src/`
 // is edited to prove a guard is armed.
 async function withTempFamily(layout, run) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-family-"));
@@ -223,6 +223,24 @@ async function withTempFamily(layout, run) {
 }
 
 export const archTests = [
+  {
+    name: "arch/142 import declarations ignore quoted CLI vocabulary but retain real static and template-expression imports",
+    run() {
+      const source = [
+        'const route = ["import", "milestone"];',
+        'const verb = preview ? "Would import" : "Imported";',
+        'const prose = "import x from \'fake-package\'";',
+        'import "./side-effect.mjs";',
+        'import {',
+        '  actual',
+        '} from "./actual.mjs";',
+        'export { actual } from "./public.mjs";',
+        'const lazy = `${await import("./lazy.mjs")}`;',
+      ].join('\n');
+      assert.deepEqual(importSpecifiers(source).map(entry => entry.specifier).sort(),
+        ['./actual.mjs', './lazy.mjs', './public.mjs', './side-effect.mjs']);
+    },
+  },
   // ── leg 1: the class ───────────────────────────────────────────────────────────────────────────
   {
     name: "arch/119 FF-11901: NO control under test/arch/ asserts purity by banning an import statement with no specifier",
@@ -261,7 +279,7 @@ export const archTests = [
         tokenBans,
         [],
         "a purity guard constrains a module's EXTERNAL dependencies, never the number of files it occupies (119/ADR-002). "
-          + "These sites ban the TOKEN `import`, which makes `src/<name>/` illegal and is why `src/phase-brief.mjs` grew "
+          + "These sites ban the TOKEN `import`, which makes `packages/core/src/<name>/` illegal and is why `packages/work/src/phase-brief.mjs` grew "
           + `432 -> 1,651 lines under its own guard. Resolve the family through ${ONE_HOME} and classify specifiers instead:\n  - `
           + tokenBans.join("\n  - "),
       );
@@ -319,7 +337,7 @@ export const archTests = [
       // The classifier's home strips comments through the stripper's home, and nowhere else. That
       // is TECH_DEBT item 24's ratchet reaching the new module on arrival rather than after it
       // grows its own.
-      assert.match(home, /import \{ stripComments \} from "\.\/source-slice\.mjs";/u, `${ONE_HOME} strips comments through ${STRIPPER_HOME}`);
+      assert.match(home, /import \{[^}]*\bstripComments\b[^}]*\} from "\.\/source-slice\.mjs";/u, `${ONE_HOME} strips comments through ${STRIPPER_HOME}`);
       assert.doesNotMatch(
         stripComments(home).replace(/import \{ stripComments \}[^\n]*\n/u, ""),
         /function\s+strip\w*Comments|replace\([^)]*\/\\\/\\\//u,
@@ -351,42 +369,42 @@ export const archTests = [
   {
     name: "arch/119 FF-11901: a purity guard's subject is a FAMILY resolved from the tree — the directory wins where it exists",
     run: async () => {
-      await withTempFamily({ "src/phase-brief.mjs": "export const a = 1;\n" }, async (dir) => {
-        const family = await resolveFamily(dir, "src/phase-brief");
-        assert.deepEqual(family.files, ["src/phase-brief.mjs"], "only the file exists — the family is that one file");
+      await withTempFamily({ "packages/work/src/phase-brief.mjs": "export const a = 1;\n" }, async (dir) => {
+        const family = await resolveFamily(dir, "packages/work/src/phase-brief");
+        assert.deepEqual(family.files, ["packages/work/src/phase-brief.mjs"], "only the file exists — the family is that one file");
         assert.equal(family.isDirectory, false);
       });
       await withTempFamily(
-        { "src/phase-brief/a.mjs": "", "src/phase-brief/b.mjs": "", "src/phase-brief/c.mjs": "" },
+        { "packages/work/src/phase-brief/a.mjs": "", "packages/work/src/phase-brief/b.mjs": "", "packages/work/src/phase-brief/c.mjs": "" },
         async (dir) => {
-          const family = await resolveFamily(dir, "src/phase-brief");
-          assert.deepEqual(family.files, ["src/phase-brief/a.mjs", "src/phase-brief/b.mjs", "src/phase-brief/c.mjs"]);
-          assert.equal(family.root, "src/phase-brief");
+          const family = await resolveFamily(dir, "packages/work/src/phase-brief");
+          assert.deepEqual(family.files, ["packages/work/src/phase-brief/a.mjs", "packages/work/src/phase-brief/b.mjs", "packages/work/src/phase-brief/c.mjs"]);
+          assert.equal(family.root, "packages/work/src/phase-brief");
         },
       );
       await withTempFamily(
-        { "src/phase-brief/a.mjs": "", "src/phase-brief/deep/nested/leaf.mjs": "" },
+        { "packages/work/src/phase-brief/a.mjs": "", "packages/work/src/phase-brief/deep/nested/leaf.mjs": "" },
         async (dir) => {
-          const family = await resolveFamily(dir, "src/phase-brief");
-          assert.deepEqual(family.files, ["src/phase-brief/a.mjs", "src/phase-brief/deep/nested/leaf.mjs"], "every .mjs under it, at any depth");
+          const family = await resolveFamily(dir, "packages/work/src/phase-brief");
+          assert.deepEqual(family.files, ["packages/work/src/phase-brief/a.mjs", "packages/work/src/phase-brief/deep/nested/leaf.mjs"], "every .mjs under it, at any depth");
         },
       );
       await withTempFamily(
-        { "src/phase-brief.mjs": "export const stale = 1;\n", "src/phase-brief/a.mjs": "" },
+        { "packages/work/src/phase-brief.mjs": "export const stale = 1;\n", "packages/work/src/phase-brief/a.mjs": "" },
         async (dir) => {
-          const family = await resolveFamily(dir, "src/phase-brief");
-          assert.deepEqual(family.files, ["src/phase-brief/a.mjs"], "the directory wins, and the file is not in the family");
+          const family = await resolveFamily(dir, "packages/work/src/phase-brief");
+          assert.deepEqual(family.files, ["packages/work/src/phase-brief/a.mjs"], "the directory wins, and the file is not in the family");
         },
       );
-      // `src/work-acceptor/` as it stands today: the one family directory this ruling's own case
+      // `packages/core/src/work-acceptor/` as it stands today: the one family directory this ruling's own case
       // lives in. Derived from the tree rather than counted here, with a floor for non-vacuity.
-      const acceptor = await resolveFamily(root, "src/work-acceptor");
-      assert.equal(acceptor.isDirectory, true, "src/work-acceptor/ is a directory family");
-      assert.ok(acceptor.files.length >= 6, `src/work-acceptor/ resolves to its .mjs files (${acceptor.files.length})`);
-      for (const rel of acceptor.files) assert.match(rel, /^src\/work-acceptor\/.+\.mjs$/u, `${rel} is inside the family`);
+      const acceptor = await resolveFamily(root, "packages/work/src/acceptor");
+      assert.equal(acceptor.isDirectory, true, "packages/work/src/acceptor/ is a directory family");
+      assert.ok(acceptor.files.length >= 6, `packages/core/src/work-acceptor/ resolves to its .mjs files (${acceptor.files.length})`);
+      for (const rel of acceptor.files) assert.match(rel, /^packages\/work\/src\/acceptor\/.+\.mjs$/u, `${rel} is inside the family`);
       // Neither the file nor the directory: no members, and the guard FAILS naming the subject.
-      await withTempFamily({ "src/other.mjs": "" }, async (dir) => {
-        const family = await resolveFamily(dir, "src/absent");
+      await withTempFamily({ "packages/core/src/other.mjs": "" }, async (dir) => {
+        const family = await resolveFamily(dir, "packages/core/src/absent");
         assert.deepEqual(family.files, [], "an absent subject resolves to no members");
         const problems = purityProblems({ family, scope: [], scanned: 0, bytesRead: 0, classified: [], reaches: [], computed: [], violations: [] });
         assert.equal(problems.length, 1);
@@ -400,10 +418,10 @@ export const archTests = [
     name: "arch/119 FF-11901: a specifier is admitted only when it resolves inside the family — intra-family is not an import OUT",
     run: async () => {
       await withTempFamily(
-        { "src/thing/a.mjs": "", "src/thing/sibling.mjs": "", "src/thing/nested/leaf.mjs": "" },
+        { "packages/core/src/thing/a.mjs": "", "packages/core/src/thing/sibling.mjs": "", "packages/core/src/thing/nested/leaf.mjs": "" },
         async (dir) => {
-          const family = await resolveFamily(dir, "src/thing");
-          const from = "src/thing/a.mjs";
+          const family = await resolveFamily(dir, "packages/core/src/thing");
+          const from = "packages/core/src/thing/a.mjs";
           const rows = [
             ["./sibling.mjs", "admitted"],
             ["./nested/leaf.mjs", "admitted"],
@@ -418,7 +436,7 @@ export const archTests = [
           }
           // A DYNAMIC import leaving the family is a violation exactly as the static form is.
           await writeFile(path.join(dir, from), 'const m = await import("../x.mjs");\n', "utf8");
-          const report = await familyPurity(dir, "src/thing");
+          const report = await familyPurity(dir, "packages/core/src/thing");
           const outward = report.violations.find((entry) => entry.specifier === "../x.mjs");
           assert.ok(outward != null && outward.dynamic === true, "a dynamic import() leaving the family is a violation");
           const problems = purityProblems(report);
@@ -429,9 +447,9 @@ export const archTests = [
         },
       );
       // A single-file family has no inside: every specifier is still an import OUT of the module.
-      await withTempFamily({ "src/leaf.mjs": "" }, async (dir) => {
-        const family = await resolveFamily(dir, "src/leaf");
-        assert.equal(classifySpecifier("./anything.mjs", "src/leaf.mjs", family), "violation");
+      await withTempFamily({ "packages/core/src/leaf.mjs": "" }, async (dir) => {
+        const family = await resolveFamily(dir, "packages/core/src/leaf");
+        assert.equal(classifySpecifier("./anything.mjs", "packages/core/src/leaf.mjs", family), "violation");
       });
     },
   },
@@ -454,19 +472,19 @@ export const archTests = [
         ['import cp from "child_process";', "node:child_process / child_process"],
       ];
       for (const [line, expected] of reaches) {
-        await withTempFamily({ "src/thing/a.mjs": "", "src/thing/b.mjs": `${line}\n` }, async (dir) => {
-          const report = await familyPurity(dir, "src/thing");
+        await withTempFamily({ "packages/core/src/thing/a.mjs": "", "packages/core/src/thing/b.mjs": `${line}\n` }, async (dir) => {
+          const report = await familyPurity(dir, "packages/core/src/thing");
           assert.ok(report.family.files.length > 1, "the family really has more than one file");
           const problems = purityProblems(report);
           assert.ok(
-            problems.some((problem) => problem.includes("src/thing/b.mjs") && problem.includes(expected)),
+            problems.some((problem) => problem.includes("packages/core/src/thing/b.mjs") && problem.includes(expected)),
             `the guard fails naming the file and the reach (${expected}): ${problems.join(" | ")}`,
           );
         });
       }
       // …and the reach scanner itself is non-vacuous over a clean family.
-      await withTempFamily({ "src/thing/a.mjs": "export const x = 1;\n" }, async (dir) => {
-        assert.deepEqual(purityProblems(await familyPurity(dir, "src/thing")), [], "a clean family carries no problems");
+      await withTempFamily({ "packages/core/src/thing/a.mjs": "export const x = 1;\n" }, async (dir) => {
+        assert.deepEqual(purityProblems(await familyPurity(dir, "packages/core/src/thing")), [], "a clean family carries no problems");
       });
       assert.deepEqual(impureReaches("export const pure = 1;\n"), [], "the scanner reports nothing on pure text");
       assert.ok(impureReaches("// Date.now() in a comment\nexport const x = 1;\n").length === 0, "…and is not fooled by a comment, because it strips through the one home");
@@ -477,27 +495,27 @@ export const archTests = [
   {
     name: "arch/119 FF-11901: the guard cannot pass by finding nothing — a family that resolves to zero files FAILS",
     run: async () => {
-      await withTempFamily({ "src/other.mjs": "" }, async (dir) => {
-        const report = await familyPurity(dir, "src/gone");
+      await withTempFamily({ "packages/core/src/other.mjs": "" }, async (dir) => {
+        const report = await familyPurity(dir, "packages/core/src/gone");
         assert.equal(report.family.files.length, 0);
         const problems = purityProblems(report);
         assert.ok(problems.length > 0, "a zero-file family fails rather than passing over the empty set");
         await assert.rejects(
-          async () => assertFamilyPurity(assert, dir, "src/gone"),
+          async () => assertFamilyPurity(assert, dir, "packages/core/src/gone"),
           /resolved to NO files/u,
           "the shared assertion itself refuses the empty family",
         );
       });
       // A family that resolves but reads as empty text is the same defect one level in.
-      await withTempFamily({ "src/hollow/a.mjs": "" }, async (dir) => {
-        const problems = purityProblems(await familyPurity(dir, "src/hollow"));
+      await withTempFamily({ "packages/core/src/hollow/a.mjs": "" }, async (dir) => {
+        const problems = purityProblems(await familyPurity(dir, "packages/core/src/hollow"));
         assert.ok(problems.some((problem) => problem.includes("empty file")), `an all-empty family fails: ${problems.join(" | ")}`);
       });
       // THE EXTRACTOR IS NON-VACUOUS: at least one specifier is classified over a family that has
       // one. The nine subjects in service carry ZERO specifiers by construction — that is what the
       // guards assert — so the extractor's own non-vacuity is proved here, over a family that does.
-      await withTempFamily({ "src/thing/a.mjs": 'import { b } from "./b.mjs";\n', "src/thing/b.mjs": "" }, async (dir) => {
-        const report = await familyPurity(dir, "src/thing");
+      await withTempFamily({ "packages/core/src/thing/a.mjs": 'import { b } from "./b.mjs";\n', "packages/core/src/thing/b.mjs": "" }, async (dir) => {
+        const report = await familyPurity(dir, "packages/core/src/thing");
         assert.ok(report.classified.length >= 1, "at least one import specifier was classified across the family");
         assert.deepEqual(purityProblems(report), [], "…and the intra-family edge is admitted");
       });
@@ -592,19 +610,19 @@ export const archTests = [
     name: "arch/119 FF-11901: the red probe has two halves — the intra-family import the token ban reported, and the node builtin it must still report",
     run: async () => {
       await withTempFamily(
-        { "src/thing/a.mjs": 'import { b } from "./b.mjs";\n', "src/thing/b.mjs": "export const b = 1;\n" },
+        { "packages/core/src/thing/a.mjs": 'import { b } from "./b.mjs";\n', "packages/core/src/thing/b.mjs": "export const b = 1;\n" },
         async (dir) => {
-          const source = await readFile(path.join(dir, "src/thing/a.mjs"), "utf8");
+          const source = await readFile(path.join(dir, "packages/core/src/thing/a.mjs"), "utf8");
           // HALF ONE: the OLD predicate reported this, and the new one does not. A guard that has
           // been widened must be shown to have actually widened (119/ADR-001's consequence).
           assert.match(source, /^\s*import\s/mu, "the old token ban DID match this intra-family import");
-          assert.deepEqual(purityProblems(await familyPurity(dir, "src/thing")), [], "…and the family classifier reports no violation");
+          assert.deepEqual(purityProblems(await familyPurity(dir, "packages/core/src/thing")), [], "…and the family classifier reports no violation");
 
           // HALF TWO: the old predicate's real claim still holds. A widened unit is not a dropped leg.
-          await writeFile(path.join(dir, "src/thing/a.mjs"), 'import fs from "node:fs";\n', "utf8");
-          const problems = purityProblems(await familyPurity(dir, "src/thing"));
+          await writeFile(path.join(dir, "packages/core/src/thing/a.mjs"), 'import fs from "node:fs";\n', "utf8");
+          const problems = purityProblems(await familyPurity(dir, "packages/core/src/thing"));
           assert.ok(
-            problems.some((problem) => problem.includes("src/thing/a.mjs") && problem.includes("node:fs")),
+            problems.some((problem) => problem.includes("packages/core/src/thing/a.mjs") && problem.includes("node:fs")),
             `the classifier reports a violation naming the file and node:fs: ${problems.join(" | ")}`,
           );
         },
@@ -616,19 +634,19 @@ export const archTests = [
     name: "arch/119 FF-11901: the tree as it stands is green under the widened predicate, and the guarded modules were not edited to make it so",
     run: async () => {
       const subjects = [
-        ["src/phase-brief", null],
-        ["src/work/loops-checks", null],
-        ["src/loop-bounds", null],
-        ["src/claim-provenance", null],
-        ["src/work/counters", null],
-        ["src/work-acceptor", ["src/work-acceptor/rule.mjs", "src/work-acceptor/ledger.mjs"]],
+        ["packages/work/src/phase-brief", null],
+        ["packages/work-graph/src/checks", null],
+        ["packages/contracts/src/loop-bounds", null],
+        ["packages/contracts/src/claim-provenance", null],
+        ["packages/work/src/counters", null],
+        ["packages/work/src/acceptor", ["packages/work/src/acceptor/rule.mjs", "packages/work/src/acceptor/ledger.mjs"]],
       ];
       for (const [subject, members] of subjects) {
         const report = await assertFamilyPurity(assert, root, subject, members == null ? {} : { members });
         // THE MODULES WERE NOT EDITED TO PASS. Each subject carried zero import specifiers under the
         // old token ban and carries zero under the new one — the predicate widened around them,
         // rather than the modules being changed to fit it. (The diff-level claim — no module under
-        // `src/` edited by this task — is evidenced in VERIFICATION.md; this is its observable half.)
+        // `packages/core/src/` edited by this task — is evidenced in VERIFICATION.md; this is its observable half.)
         assert.deepEqual(
           report.classified.map((entry) => `${entry.file}: ${entry.specifier}`),
           [],

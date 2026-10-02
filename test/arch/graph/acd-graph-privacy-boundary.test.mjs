@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 4 (privacy boundary not
 // widened; ADR-001 + ADR-005):
 // "No aof code path ships source code / AST to a backend. aof passes graphify a
@@ -21,21 +22,22 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { graphBuildCommand, classifyEgress } from "../../../src/commands/graph/build.mjs";
+const graphBuildCommand = _aofApplication.getCommand("graph:build");
+const classifyEgress = _aofApplication.knowledge.commandTools.graph.build.classifyEgress;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
-const DRIVER = path.join(srcDir, "graphify.mjs");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
+const DRIVER = path.join(repoRoot, "packages/knowledge/src/graphify.mjs");
 // The pure graph.json read/normalize helpers were extracted to graph-normalize.mjs
 // (10/01, a spawn-free module the graphify memory backend imports without touching
 // the spawn site); graphify.mjs re-exports them. The driver's only file READ
 // (readGraph) lives there now, so the "reads only the graph artifact" guard scans
 // BOTH modules — the egress invariant is unchanged, only the read's home moved.
-const NORMALIZER = path.join(srcDir, "graph-normalize.mjs");
+const NORMALIZER = path.join(repoRoot, "packages/knowledge/src/graph-normalize.mjs");
 const GRAPH_COMMANDS = [
-  path.join(srcDir, "commands", "graph", "build.mjs"),
-  path.join(srcDir, "commands", "graph", "query.mjs"),
-  path.join(srcDir, "commands", "graph", "triage.mjs"),
+  path.join(repoRoot, "packages/knowledge/src/commands/graph-build.mjs"),
+  path.join(repoRoot, "packages/knowledge/src/commands/graph-query.mjs"),
+  path.join(repoRoot, "packages/knowledge/src/commands/graph-triage.mjs"),
 ];
 
 // Strip line + block comments AND string literals (the same call-form-not-comment

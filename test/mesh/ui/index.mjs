@@ -4,13 +4,13 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
 // milestone 25 — mesh-ui (story 02: the read-only fleet web surface — the NEW
-// src/mesh/ui-serve.mjs thin serve-face (a board-serve.mjs sibling) behind the
+// packages/core/src/mesh/ui-serve.mjs thin serve-face (a board-serve.mjs sibling) behind the
 // CLI-only `aof mesh ui` verb; one 127.0.0.1 server on default port 4181 serving
 // ui/dist at the fleet's own path (m45/ADR-002) + the single GET /api/mesh/status route
 // (invoke("mesh:status")). One @executable task feature (00_mesh-ui-serve): the verb

@@ -3,7 +3,7 @@
 // milestone 22, so a mixed-OS / autocrlf=true fleet would see byte-divergent (content-
 // identical) record files (22/R5). Milestone 23 builds presence on the SAME .mesh/ git
 // bus, so the pin lands HERE: .gitattributes must pin the .mesh/** records to LF
-// (text eol=lf), mirroring the existing src/bundle/** text eol=lf pin — so a peer
+// (text eol=lf), mirroring the existing packages/core/assets/** text eol=lf pin — so a peer
 // checks out a presence/<id>.json BYTE-FOR-BYTE as the writer wrote it regardless of
 // core.autocrlf, and the poll-for-durability byte-identity assertions hold across the
 // git seam (the 22/R5 byte-divergence cannot recur).
@@ -32,13 +32,13 @@ export const archTests = [
       const attrs = await readFile(GITATTRIBUTES, "utf8");
       assert.ok(
         MESH_EOL_PIN.test(attrs),
-        "a .gitattributes rule pins .mesh/** to text eol=lf (or -text), mirroring the src/bundle/** pin — the 22/R5 byte-divergence cannot recur"
+        "a .gitattributes rule pins .mesh/** to text eol=lf (or -text), mirroring the packages/core/assets/** pin — the 22/R5 byte-divergence cannot recur"
       );
-      // The pin mirrors the existing src/bundle/** eol pin (the reference precedent in
+      // The pin mirrors the existing packages/core/assets/** eol pin (the reference precedent in
       // the same file) — confirm that precedent is still present (a non-vacuous anchor).
       assert.ok(
-        /^\s*src\/bundle\/\*\*\s+text\s+eol=lf\b/m.test(attrs),
-        "the reference src/bundle/** text eol=lf pin is present (the precedent this rule mirrors)"
+        /^\s*packages\/core\/assets\/\*\*\s+text\s+eol=lf\b/m.test(attrs),
+        "the reference packages/core/assets/** text eol=lf pin is present (the precedent this rule mirrors)"
       );
     },
   },

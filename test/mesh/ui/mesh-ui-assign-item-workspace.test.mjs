@@ -29,7 +29,7 @@ import {
   readAssignmentRows,
   countAllAssignmentRows,
 } from "../../support/mesh-ui-assign-fixture.mjs";
-import { withFleetApp } from "../../support/fleet-app-harness.mjs";
+import { withFleetApp } from "../../../apps/ui/test/support/fleet-app-harness.mjs";
 
 async function statusOf(url) {
   const response = await fetch(new URL("/api/mesh/status", url));
@@ -239,7 +239,7 @@ export const meshUiAssignItemWorkspaceTests = [
   // ══ QA-e — the item's uniqueness gate is PER-WORKSPACE ══
   //
   // REVIEW FIX QA-e (2026-07-24): `findActiveAssignment` keys on
-  // (workspace_id, item_ref) (src/assignment-record.mjs), and on a GLOBAL face
+  // (workspace_id, item_ref) (packages/core/src/assignment-record.mjs), and on a GLOBAL face
   // two cards legitimately carry ref "18". Nothing pinned that, so a future
   // "fix" that globalised the gate — keyed it on item_ref alone — would make the
   // SECOND card silently un-assignable ("already active, held by worker-a") with
@@ -285,7 +285,7 @@ export const meshUiAssignItemWorkspaceTests = [
     // to omit the field (that is the point of the fix). The app-level "a coded
     // refusal surfaces inline in the `destructive` token" leg is task 06's, driven
     // through the REAL mounted <Fleet/> against a REAL verb refusal
-    // (test/ui/fleet-assign-acknowledgment.test.mjs).
+    // (test/surfaces/fleet-assign-acknowledgment.test.mjs).
     async run() {
       await withTwoWorkspaceAssignFixture(async ({ url, home, workspaceIdA, workspaceIdB }) => {
         const response = await postAssign(url, { ref: "18", nodeId: "worker-a", workspaceId: null, origin: "SAME" });

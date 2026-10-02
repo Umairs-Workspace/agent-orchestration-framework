@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-memory-backend-interface (ADR-003).
 //
 // Every registered backend module's default export provides EXACTLY
@@ -6,9 +7,10 @@
 // file directly; the `none` backend is a total no-op.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import localBackend from "../../../src/memory/local-backend.mjs";
-import noneBackend from "../../../src/memory/none-backend.mjs";
-import { runMemory } from "../../../src/work/memory.mjs";
+const localBackend = _aofApplication.knowledge.memory.localBackend.default;
+
+import noneBackend from "@aof/knowledge/memory/none-backend";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 
 const INTERFACE_KEYS = ["name", "recall", "reindex", "status"];
 
@@ -42,7 +44,7 @@ export const archTests = [
   {
     name: "arch/memory-backend-interface: the seam never reads the index file directly (only the backend does)",
     async run() {
-      const seamSource = await readFile(new URL("../../../src/work/memory.mjs", import.meta.url), "utf8");
+      const seamSource = await readFile(new URL("../../../packages/core/src/application/bindings/work/memory.mjs", import.meta.url), "utf8");
       assert.ok(
         !seamSource.includes("aof.memory.index.json"),
         "the seam must not name the index file — the backend owns the store (ADR-003)"

@@ -10,7 +10,7 @@ doc: architecture
 # 37 · Spike & Chore Work-Item Types — Architecture Decisions
 
 The work stream's item vocabulary is a closed enum — `milestone | story | task | uat` — anchored in one
-focal file, [`src/work.mjs`](../../../../src/work.mjs). This milestone adds two lightweight types, `spike`
+focal file, [`src/work.mjs`](../../../../packages/core/src/application/bindings/work.mjs). This milestone adds two lightweight types, `spike`
 and `chore`, **additively**: the existing four are untouched. The three decisions below resolve the forks
 the SPEC left to refine (top-level-vs-nested, record-doc shape, verify path) and pin the structural
 invariants each implies as fitness functions.

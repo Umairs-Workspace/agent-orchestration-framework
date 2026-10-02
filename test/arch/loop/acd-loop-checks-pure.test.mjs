@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
@@ -7,9 +8,9 @@ import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 // 119/ADR-002 — the checks leaf's purity is a claim about its EXTERNAL dependencies, resolved over
-// the family `src/work-loops-checks/` when that directory exists and `src/work/loops-checks.mjs`
+// the family `packages/core/src/work-loops-checks/` when that directory exists and `packages/core/src/work/loops-checks.mjs`
 // when it does not. The old token ban is what made this leaf's decomposition illegal (1,284 lines,
-// 380 when 52/ADR-007 was written) and what forced it to hold a BYTE-COPY of `src/work-audit/`'s
+// 380 when 52/ADR-007 was written) and what forced it to hold a BYTE-COPY of `packages/core/src/work-audit/`'s
 // sweep declarers rather than importing them: a guard whose enforcement produces a duplicated home
 // has stopped protecting the property it names.
 import { assertFamilyPurity } from "../../support/module-family.mjs";
@@ -17,17 +18,19 @@ import {
   CHECK_IDS, UNMOVED_CYCLES, assessAnchorFreshness, assessInstrumentSilence, assessLoopConsultation,
   assessMetricMovement, buildGroundednessReport, checkActuatorArbitration, checkAnchorGrounding,
   checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
-import * as checksModule from "../../../src/work/loops-checks.mjs";
-import { ADMITTED_KEYS, NODE_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+} from "@aof/work-graph/checks";
+import * as checksModule from "@aof/work-graph/checks";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { makeLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const checksPath = path.join(root, "src/work/loops-checks.mjs");
-const loaderPath = path.join(root, "src/work/loops.mjs");
-const commandPath = path.join(root, "src/commands/loops-groundedness.mjs");
+const checksPath = path.join(root, "packages/work-graph/src/checks.mjs");
+const loaderPath = path.join(root, "packages/work-graph/src/registry.mjs");
+const commandPath = path.join(root, "packages/work-graph/src/commands/loops-groundedness.mjs");
 const CHECK_NAMES = Object.freeze({
   grounding: "checkGrounding",
   "anchor-grounding": "checkAnchorGrounding",
@@ -152,7 +155,7 @@ export const archTests = [
     name: "arch/57 FF-5702: watcher independence is model-only and no node may declare independence or its own watcher",
     run: async () => {
       const checksSource = stripComments(await readFile(checksPath, "utf8"));
-      await assertFamilyPurity(assert, root, "src/work/loops-checks");
+      await assertFamilyPurity(assert, root, "packages/work-graph/src/checks");
       assert.doesNotMatch(checksSource, /node:fs|readFile|readdir|access\s*\(|stat\s*\(|process\.cwd|Date\.now|\bfetch\s*\(|\bimport\s*\(/);
       assert.equal(ADMITTED_KEYS.watcher.has("independence"), false, "a watcher cannot assert its own independence");
       assert.equal(ADMITTED_KEYS.loop.has("independence"), false, "a loop cannot assert watcher independence");
@@ -200,7 +203,7 @@ export const archTests = [
     name: "arch/58 FF-5804: supervision is computed rather than self-declared, and the checks leaf still imports nothing",
     run: async () => {
       const checksSource = stripComments(await readFile(checksPath, "utf8"));
-      await assertFamilyPurity(assert, root, "src/work/loops-checks");
+      await assertFamilyPurity(assert, root, "packages/work-graph/src/checks");
       assert.doesNotMatch(checksSource, /node:fs|readFile|readdir|access\s*\(|stat\s*\(|process\.cwd|Date\.now|\bfetch\s*\(|\bimport\s*\(/u);
 
       for (const key of ["supervised-by", "arbitrated-by", "dead-band", "independence", "layer-authority"]) {
@@ -259,7 +262,7 @@ export const archTests = [
     run: async () => {
       const source = await readFile(checksPath, "utf8");
       const checksSource = stripComments(source);
-      await assertFamilyPurity(assert, root, "src/work/loops-checks");
+      await assertFamilyPurity(assert, root, "packages/work-graph/src/checks");
       assert.doesNotMatch(checksSource, /node:fs|readFile|readdir|access\s*\(|stat\s*\(|process\.cwd|\bfetch\s*\(|\bimport\s*\(/u);
 
       // (a) NO DATE AND NO CLOCK, IN ANY SPELLING. `performance.now()` is the one that matters here:
@@ -367,14 +370,14 @@ export const archTests = [
       // (e) THE THRESHOLD'S HOME SURVIVES ITS OWN ESCAPE HATCH. `assessMetricMovement` takes an
       // optional `cycles` so the number can be argued with — that is what makes `UNMOVED_CYCLES` a
       // knob rather than a coincidence, and the behavioural suite drives a lower one. But an argument
-      // nothing gates is a second home reached by another route, so: no module under `src/` supplies
+      // nothing gates is a second home reached by another route, so: no module under `packages/core/src/` supplies
       // one, and the detector is driven against a planted call first.
       assert.match(
         "assessMetricMovement(counters, { root, cycles: 5 })", /assessMetricMovement\s*\([^;]*\bcycles\b/u,
         "the caller detector matches a planted call that supplies its own threshold",
       );
       const supplying = [];
-      for (const file of await sourceFiles(path.join(root, "src"))) {
+      for (const file of await sourceFiles(path.join(root, "packages", "core", "src"))) {
         if (file === checksPath) continue;
         const text = stripComments(await readFile(file, "utf8"));
         if (/assessMetricMovement\s*\([^;]*\bcycles\b/u.test(text)) supplying.push(path.relative(root, file));

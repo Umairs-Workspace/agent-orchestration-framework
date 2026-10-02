@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 59 / story 04 — THE AUDIT FACE, behaviourally.
 //
 // Contracts: `wiki/work/59_milestone_audit-loops/stories/04_story_the-audit-face/tasks/
@@ -19,39 +21,42 @@ import path from "node:path";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { auditCommand, anchorWindowFromConfig, resolveRoleRouting, DEFAULT_ANCHOR_STALE_DAYS } from "../../src/commands/audit.mjs";
-import { AOF_HOOK_MARKER } from "../../src/claude-settings.mjs";
-import { runHookWiring } from "../../src/work-audit/hook-wiring.mjs";
-import { runDeclaredBounds } from "../../src/work-audit/declared-bounds.mjs";
-import { getCommand, listCommands } from "../../src/command-core.mjs";
-import { deriveRouteTable } from "../../src/spine/face.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
-import {
-  AUDITABLE_CODES,
-  AUDIT_ENVELOPE_KEYS,
-  AUDIT_FACE_CODES,
-  ESCALATING_CODES,
-  REPORT_LANES,
-  addresseesFor,
-  auditorsOf,
-  canReceive,
-  escalates,
-  escalationActorOf,
-  instrumentFor,
-  ownersOfInstrument,
-  referenceSettersOf,
-  resolveAddressees,
-  runAudit,
-} from "../../src/work-audit/report.mjs";
-import { CENSUS_SWEEPS, sweepLimits } from "../../src/work-audit/census.mjs";
-import { LIMIT_KEYS, limitRecord } from "../../src/work-audit/reads.mjs";
+const auditCommand = _aofApplication.getCommand("work:audit");
+const anchorWindowFromConfig = _aofApplication.work.commandTools.audit.anchorWindowFromConfig;
+const resolveRoleRouting = _aofApplication.work.commandTools.audit.resolveRoleRouting;
+const DEFAULT_ANCHOR_STALE_DAYS = _aofApplication.work.commandTools.audit.DEFAULT_ANCHOR_STALE_DAYS;
+import { AOF_HOOK_MARKER } from "../../packages/core/src/claude-settings.mjs";
+import { runHookWiring } from "@aof/work/audit/hook-wiring";
+const runDeclaredBounds = _aofApplication.work.audit.declaredBounds.runDeclaredBounds;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const AUDITABLE_CODES = _aofApplication.work.audit.report.AUDITABLE_CODES;
+const AUDIT_ENVELOPE_KEYS = _aofApplication.work.audit.report.AUDIT_ENVELOPE_KEYS;
+const AUDIT_FACE_CODES = _aofApplication.work.audit.report.AUDIT_FACE_CODES;
+const ESCALATING_CODES = _aofApplication.work.audit.report.ESCALATING_CODES;
+const REPORT_LANES = _aofApplication.work.audit.report.REPORT_LANES;
+const addresseesFor = _aofApplication.work.audit.report.addresseesFor;
+const auditorsOf = _aofApplication.work.audit.report.auditorsOf;
+const canReceive = _aofApplication.work.audit.report.canReceive;
+const escalates = _aofApplication.work.audit.report.escalates;
+const escalationActorOf = _aofApplication.work.audit.report.escalationActorOf;
+const instrumentFor = _aofApplication.work.audit.report.instrumentFor;
+const ownersOfInstrument = _aofApplication.work.audit.report.ownersOfInstrument;
+const referenceSettersOf = _aofApplication.work.audit.report.referenceSettersOf;
+const resolveAddressees = _aofApplication.work.audit.report.resolveAddressees;
+const runAudit = _aofApplication.work.audit.report.runAudit;
+const CENSUS_SWEEPS = _aofApplication.work.audit.census.CENSUS_SWEEPS;
+const sweepLimits = _aofApplication.work.audit.census.sweepLimits;
+import { LIMIT_KEYS, limitRecord } from "@aof/work/audit/reads";
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(repoRoot, "src", "bundle");
+const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
 // Named explicitly so FF-5809's sweep SEES this file and classifies it (lane 3 — it loads the
 // registry in place and copies nothing into a temp fixture).
-const SHIPPED_LOOPS = path.join(repoRoot, "src", "bundle", "loops");
+const SHIPPED_LOOPS = path.join(repoRoot, "packages", "core", "assets", "loops");
 const NOW = Date.UTC(2026, 7, 30);
 const WINDOW = 90 * 86_400_000;
 
@@ -374,7 +379,7 @@ export const auditCommandTests = [
       // so the culprit-subtraction was never reached and deleting it left the case green. This
       // instrument is owned by two loops whose reference is set by a third — read off the shipped
       // records here so the pin fails if the registry stops having that shape.
-      const OWNED = "prose:src/bundle/commands/continue.md";
+      const OWNED = "prose:packages/core/assets/commands/continue.md";
       const owners = ownersOfInstrument(OWNED, model);
       assert.ok(owners.length >= 2, `non-vacuous: ${OWNED} is owned by ${owners.length} loops`);
       const audience = resolveAddressees(OWNED, model, escalationActorOf(model));
@@ -393,7 +398,7 @@ export const auditCommandTests = [
           finding("audit-suite-unregistered", "error", "test/arch/a.test.mjs"),
           // A NON-escalating census code, so the addressee set this leg compares is the pure
           // reference-owner resolution and not one the bypass has already widened.
-          finding("audit-baseline-unreasoned", "error", "src/bundle/commands/continue.md"),
+          finding("audit-baseline-unreasoned", "error", "packages/core/assets/commands/continue.md"),
         ]),
         evidence: evidenceLane([]),
       });
@@ -621,7 +626,7 @@ export const auditCommandTests = [
       // own fixture constructor (which is what it did before review, and proved nothing). Every
       // finding the checks leaf raises carries doctor's four keys and no escalation flag, so there
       // is no field at the raising site through which a lane could elect its own bypass.
-      const { assessAnchorFreshness } = await import("../../src/work/loops-checks.mjs");
+      const { assessAnchorFreshness } = await import("@aof/work-graph/checks");
       const stale = assessAnchorFreshness(
         { source: "/probe/loops", present: true, findings: [], nodes: [{
           id: "anchor:probe", kind: "anchor", title: "probe", path: "/probe/loops/probe.md",
@@ -772,7 +777,7 @@ export const auditCommandTests = [
     run: async () => {
       // Measured at review: the first match came out of an unordered `Set`, so a record edit could
       // move a finding's addressee without anything changing about the finding. Two loops naming
-      // two symbols in ONE file is a real shape — `src/run-store.mjs` carries six on the shipped
+      // two symbols in ONE file is a real shape — `packages/core/src/run-store.mjs` carries six on the shipped
       // registry — and choosing one attributes the finding to the owner of a DIFFERENT symbol.
       const ambiguous = {
         ...REGISTRY,
@@ -793,8 +798,8 @@ export const auditCommandTests = [
       await withLoopRegistry(ambiguous, async (fixture) => {
         const model = await loadLoops(fixture.workDir);
         assert.deepEqual(model.findings.filter((f) => f.severity === "error"), [], "the fixture is clean");
-        const about = instrumentFor({ path: path.join(repoRoot, "src", "run-store.mjs") }, { model, repoRoot });
-        assert.equal(about, "file:src/run-store.mjs", "the finding is about the FILE the registry names twice");
+        const about = instrumentFor({ path: path.join(repoRoot, "packages", "execution", "src", "runs.mjs") }, { model, repoRoot });
+        assert.equal(about, "file:packages/execution/src/runs.mjs", "the finding is about the actual owning FILE the registry names twice");
         assert.deepEqual([...ownersOfInstrument(about, model)], [], "…which no loop declares, so it escalates");
         const resolved = resolveAddressees(about, model, escalationActorOf(model));
         assert.equal(resolved.via, "escalation-unowned");
@@ -802,8 +807,8 @@ export const auditCommandTests = [
 
         // …WHILE A FILE THE REGISTRY NAMES ONCE still resolves to that pointer, which is what lets
         // an owner be found at all — the ambiguity rule is a refusal, not a blanket fallback.
-        const single = instrumentFor({ path: path.join(repoRoot, "src", "bundle", "commands", "continue.md") }, { model: await loadLoops(BUNDLE), repoRoot });
-        assert.equal(single, "prose:src/bundle/commands/continue.md");
+        const single = instrumentFor({ path: path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md") }, { model: await loadLoops(BUNDLE), repoRoot });
+        assert.equal(single, "prose:packages/core/assets/commands/continue.md");
       });
     },
   },
@@ -855,7 +860,7 @@ export const auditCommandTests = [
       const model = await loadLoops(BUNDLE);
       const onDisk = (await readdir(SHIPPED_LOOPS)).filter((name) => name.endsWith(".md"));
       assert.ok(onDisk.length > 0, `the sweep of ${SHIPPED_LOOPS} found no .md record — a walk whose subject set empties must FAIL naming the directory (119/ADR-003 §4)`);
-      assert.equal(model.nodes.length, onDisk.length, `non-vacuous: all ${onDisk.length} records in src/bundle/loops/ were loaded`);
+      assert.equal(model.nodes.length, onDisk.length, `non-vacuous: all ${onDisk.length} records in packages/core/assets/loops/ were loaded`);
       const auditors = model.nodes.filter((node) => node.kind === "auditor");
       assert.equal(auditors.length, 1, "exactly one of the shipped records declares the auditor kind");
       assert.equal(auditors[0].id, "auditor:instrument-audit");
@@ -923,7 +928,7 @@ export const auditCommandTests = [
     name: "59/04 03.7: the shipped registry, the auditor included, still produces no gating finding",
     run: async () => {
       const { GATING_CODES, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing, checkReferenceOwnership, checkTimescale } =
-        await import("../../src/work/loops-checks.mjs");
+        await import("@aof/work-graph/checks");
       const model = await loadLoops(BUNDLE);
       const findings = [checkGrounding, checkAnchorGrounding, checkPairing, checkReferenceOwnership, checkActuatorArbitration, checkTimescale]
         .flatMap((check) => check(model));
@@ -935,7 +940,7 @@ export const auditCommandTests = [
   {
     name: "59/04 03.8: the cadence is declared even though nothing schedules it yet, and the audit is runnable on demand",
     run: async () => {
-      const { GATE_ORDER } = await import("../../src/work/loop.mjs");
+      const { GATE_ORDER } = await import("@aof/work-loop/engine");
       const model = await loadLoops(BUNDLE);
       const auditor = model.nodes.find((node) => node.kind === "auditor");
       assert.ok(auditor.fields.cadence != null, "it declares one");
@@ -1223,7 +1228,7 @@ export const auditCommandTests = [
 
       // (b) AN UNCAPPED OR UNKNOWN LOOP CEILING — held at zero by an existing gate over this
       // repository's own registry.
-      const framework = await loadLoops({ aofDir: path.join(repoRoot, "src", "bundle"), projectRoot: repoRoot });
+      const framework = await loadLoops({ aofDir: path.join(repoRoot, "packages", "core", "assets"), projectRoot: repoRoot });
       const bounds = runDeclaredBounds({ model: framework, declaredBounds: {}, now: Date.parse("2026-09-03T00:00:00.000Z") });
       assert.equal(bounds.findings.filter((entry) => entry.severity === "error").length, 0, "no loop declares an uncapped or unknown ceiling here");
       assert.ok(bounds.reads[0].count > 0, `…over a real registry (${bounds.reads[0].count} loops)`);
@@ -1241,7 +1246,7 @@ export const auditCommandTests = [
       const now = Date.parse("2026-09-03T00:00:00.000Z");
       const settings = JSON.parse(await readFile(path.join(repoRoot, ".claude", "settings.json"), "utf8"));
       const first = runHookWiring({ settings, markerKey: AOF_HOOK_MARKER, settingsPath: ".claude/settings.json", now });
-      const framework = await loadLoops({ aofDir: path.join(repoRoot, "src", "bundle"), projectRoot: repoRoot });
+      const framework = await loadLoops({ aofDir: path.join(repoRoot, "packages", "core", "assets"), projectRoot: repoRoot });
       const firstBounds = runDeclaredBounds({ model: framework, declaredBounds: {}, now });
       // Time passes between the two runs, and nothing about the answer may follow it.
       await new Promise((resolve) => { setTimeout(resolve, 5); });

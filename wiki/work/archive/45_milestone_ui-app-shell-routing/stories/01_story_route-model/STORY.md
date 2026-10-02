@@ -28,7 +28,7 @@ so that no URL I already hold quietly stops working, and no surface added later 
 it lives.
 
 The benefit is challengeable and it is not "a router exists". Today the meaning of a URL is six lines
-of ternary at [main.tsx:1261](../../../../../../ui/src/main.tsx#L1261) that no test can reach, and the
+of ternary at [main.tsx:1261](../../../../../../apps/ui/src/main.tsx#L1261) that no test can reach, and the
 answer to "what does `?mode=assets` do" is *read the source*. After this story the answer is a pure
 module that `node:test` interrogates directly, and a URL that stops working is a red test rather than
 a bug report.

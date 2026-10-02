@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/terminal/session-screen-verdicts.test.mjs — milestone 138 / story 00, task 04
 // (04_every-verdict-the-screen-can-give-is-acted-on.feature; 138/ADR-003 §1 §4 §5 §6, ADR-006).
 //
@@ -11,8 +12,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLAUDE_SCREENS } from "../../src/terminal/claude-screens.mjs";
-import { isRetryable } from "../../src/run-store.mjs";
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
+const isRetryable = _aofApplication.execution.runs.isRetryable;
 import { loadFixture } from "./screen-model.test.mjs";
 import { BRIEF, ESC, SUBMIT_KEY, READY_CHUNKS, drive, frame, pasteOf, sleep, waitUntil, withRegistry } from "./session-screen-ready.test.mjs";
 
@@ -175,7 +176,7 @@ export const sessionScreenVerdictsTests = [
     run: async () => {
       assert.equal(isRetryable("blocked_screen"), false);
       for (const reason of ["runtime_offline", "timeout", "session_limit"]) assert.equal(isRetryable(reason), true, reason);
-      const source = await readFile(path.join(repoRoot, "src", "run-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "execution", "src", "runs.mjs"), "utf8");
       const declared = /const RETRYABLE_REASONS = new Set\(\[([^\]]*)\]\);/u.exec(source);
       assert.ok(declared != null, "RETRYABLE_REASONS is declared where it always was");
       assert.deepEqual(declared[1].split(",").map((token) => token.trim().replace(/^"|"$/gu, "")), ["runtime_offline", "timeout", "session_limit"]);

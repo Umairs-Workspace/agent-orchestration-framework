@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 124 / story 00, tasks `02_the-lane-names-each-unwitnessed-edge`
 // and `03_the-lane-reports-its-denominator`.
 //
@@ -27,10 +29,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { classifyDependsEdges, dependsLane, DEPENDS_FINDING_CODES } from "../../src/work/doctor-depends.mjs";
-import { resolveDeclaredSet } from "../../src/story-contract.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { classifyDependsEdges, dependsLane, DEPENDS_FINDING_CODES } from "@aof/work/doctor/depends";
+import { resolveDeclaredSet } from "@aof/work/story-contract";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -91,36 +93,36 @@ const COUNT_FIXTURES = {
   "all four classes present": snapshotOf(
     driver({ number: "00", depends: ["01"] }),           // type
     driver({ number: "01" }),
-    story({ number: "00", files: setOf("src/b.mjs") }),
-    story({ number: "01", depends: ["00"], reads: setOf("src/b.mjs") }),  // witnessed
-    story({ number: "02", depends: ["00"], reads: setOf("src/z.mjs") }),  // unwitnessed
+    story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+    story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/b.mjs") }),  // witnessed
+    story({ number: "02", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }),  // unwitnessed
     story({ number: "03", depends: ["00"], reads: null }),                // undeclared
   ),
   "every edge evaluable": snapshotOf(
-    story({ number: "00", files: setOf("src/b.mjs") }),
-    story({ number: "01", depends: ["00"], reads: setOf("src/b.mjs") }),
-    story({ number: "02", depends: ["00"], reads: setOf("src/z.mjs") }),
+    story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+    story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/b.mjs") }),
+    story({ number: "02", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }),
   ),
   "no edge evaluable at all": snapshotOf(
     driver({ number: "00", depends: ["01", "02"] }),     // two type edges
     driver({ number: "01" }),
     driver({ number: "02" }),
     story({ number: "00", parent: "01", files: null }),
-    story({ number: "01", parent: "01", depends: ["00"], reads: setOf("src/z.mjs") }), // undeclared
+    story({ number: "01", parent: "01", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }), // undeclared
   ),
   "every edge witnessed": snapshotOf(
-    story({ number: "00", files: setOf("src/b.mjs") }),
-    story({ number: "01", depends: ["00"], reads: setOf("src/b.mjs"), files: setOf("src/c.mjs") }),
-    story({ number: "02", depends: ["01"], reads: setOf("src/c.mjs") }),
+    story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+    story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/b.mjs"), files: setOf("packages/core/src/c.mjs") }),
+    story({ number: "02", depends: ["01"], reads: setOf("packages/core/src/c.mjs") }),
   ),
   "nothing witnessed, nothing excluded": snapshotOf(
-    story({ number: "00", files: setOf("src/b.mjs") }),
-    story({ number: "01", depends: ["00"], reads: setOf("src/y.mjs"), files: setOf("src/c.mjs") }),
-    story({ number: "02", depends: ["01"], reads: setOf("src/z.mjs") }),
+    story({ number: "00", files: setOf("packages/core/src/b.mjs") }),
+    story({ number: "01", depends: ["00"], reads: setOf("packages/core/src/y.mjs"), files: setOf("packages/core/src/c.mjs") }),
+    story({ number: "02", depends: ["01"], reads: setOf("packages/core/src/z.mjs") }),
   ),
   "no `depends:` edge in the stream": snapshotOf(
     driver({ number: "00" }),
-    story({ number: "00", reads: setOf("src/a.mjs"), files: setOf("src/b.mjs") }),
+    story({ number: "00", reads: setOf("packages/core/src/a.mjs"), files: setOf("packages/core/src/b.mjs") }),
   ),
 };
 
@@ -186,8 +188,8 @@ export const doctorDependsLaneTests = [
       await withStream([{
         number: "00",
         stories: [
-          { number: "01", files: ["src/b.mjs"], reads: ["src/seed.mjs"] },
-          { number: "02", depends: ["01"], reads: ["src/a.mjs"], files: ["src/c.mjs"] },
+          { number: "01", files: ["packages/core/src/b.mjs"], reads: ["packages/core/src/seed.mjs"] },
+          { number: "02", depends: ["01"], reads: ["packages/core/src/a.mjs"], files: ["packages/core/src/c.mjs"] },
         ],
       }], async ({ ctx }) => {
         const { findings } = await invoke("work:doctor", {}, ctx);
@@ -219,19 +221,19 @@ export const doctorDependsLaneTests = [
     name: "124/00 task 02 a witnessed edge produces nothing at all",
     run() {
       const witnessed = snapshotOf(
-        story({ number: "01", files: setOf("src/b.mjs") }),
-        story({ number: "02", depends: ["01"], reads: setOf("src/b.mjs") }),
+        story({ number: "01", files: setOf("packages/core/src/b.mjs") }),
+        story({ number: "02", depends: ["01"], reads: setOf("packages/core/src/b.mjs") }),
       );
       assert.deepEqual(dependsLane(witnessed), [], "no finding for a witnessed edge, and no coverage notice either");
 
       // A SINGLE SHARED ENTRY IS ENOUGH — the lane asks whether a reason exists, never how much
       // of a set intersects. Nine reads against one written file is still a witnessed edge.
       const barely = snapshotOf(
-        story({ number: "01", files: setOf("src/b.mjs", "src/other.mjs") }),
+        story({ number: "01", files: setOf("packages/core/src/b.mjs", "packages/core/src/other.mjs") }),
         story({
           number: "02",
           depends: ["01"],
-          reads: setOf("src/p.mjs", "src/q.mjs", "src/r.mjs", "src/s.mjs", "src/t.mjs", "src/u.mjs", "src/v.mjs", "src/w.mjs", "src/b.mjs"),
+          reads: setOf("packages/core/src/p.mjs", "packages/core/src/q.mjs", "packages/core/src/r.mjs", "packages/core/src/s.mjs", "packages/core/src/t.mjs", "packages/core/src/u.mjs", "packages/core/src/v.mjs", "packages/core/src/w.mjs", "packages/core/src/b.mjs"),
         }),
       );
       assert.deepEqual(dependsLane(barely), [], "one shared entry out of nine is a witness");
@@ -244,14 +246,14 @@ export const doctorDependsLaneTests = [
       // TWO WORKING DIRECTORIES, byte-identical findings. The lane is handed a LITERAL snapshot
       // as JSON, so the only way the two runs could differ is if it read something outside it.
       const fixture = snapshotOf(
-        story({ number: "01", files: setOf("src/b.mjs") }),
-        story({ number: "02", depends: ["01"], reads: setOf("src/a.mjs") }),
+        story({ number: "01", files: setOf("packages/core/src/b.mjs") }),
+        story({ number: "02", depends: ["01"], reads: setOf("packages/core/src/a.mjs") }),
         driver({ number: "07", depends: ["08"] }),
         driver({ number: "08" }),
       );
       const script = [
         "const [json] = process.argv.slice(1);",
-        `const lane = await import(${JSON.stringify(new URL("../../src/work/doctor-depends.mjs", import.meta.url).href)});`,
+        `const lane = await import(${JSON.stringify(new URL("../../packages/work/src/doctor/depends.mjs", import.meta.url).href)});`,
         "process.stdout.write(JSON.stringify(lane.dependsLane(JSON.parse(json))));",
       ].join("\n");
       const runFrom = (cwd) => execFileSync(
@@ -281,8 +283,8 @@ export const doctorDependsLaneTests = [
       await withStream([
         { number: "00", depends: ["01", "02"], stories: [
           { number: "00" },
-          { number: "01", depends: ["00"], reads: ["src/a.mjs"], files: ["src/b.mjs"] },
-          { number: "02", depends: ["00"], reads: ["src/c.mjs"], files: ["src/d.mjs"] },
+          { number: "01", depends: ["00"], reads: ["packages/core/src/a.mjs"], files: ["packages/core/src/b.mjs"] },
+          { number: "02", depends: ["00"], reads: ["packages/core/src/c.mjs"], files: ["packages/core/src/d.mjs"] },
         ] },
         { number: "01" },
         { number: "02" },
@@ -345,16 +347,16 @@ export const doctorDependsLaneTests = [
       items[0] = driver({ number: "100", depends: items.slice(1).map((item) => item.number) });
       items.push(story({ number: "00", parent: "50", files: null }));
       for (let index = 0; index < 57; index += 1) {
-        items.push(story({ number: String(index + 1).padStart(2, "0"), parent: "50", depends: ["00"], reads: setOf("src/a.mjs") }));
+        items.push(story({ number: String(index + 1).padStart(2, "0"), parent: "50", depends: ["00"], reads: setOf("packages/core/src/a.mjs") }));
       }
       // TWO EVALUABLE EDGES BESIDE THEM, AND THEY ARE LOAD-BEARING RATHER THAN DECORATION. With
       // only the exclusions in the stream, `considered` would ITSELF be 182 — the sum — and the
       // last assertion below could not tell an honest denominator from the merged number it
       // exists to refuse. One witnessed edge and one unwitnessed edge put `considered` at 184, so
       // 182 can only appear in this message if the two reasons were added together.
-      items.push(story({ number: "00", parent: "51", files: setOf("src/b.mjs") }));
-      items.push(story({ number: "01", parent: "51", depends: ["00"], reads: setOf("src/b.mjs") }));
-      items.push(story({ number: "02", parent: "51", depends: ["00"], reads: setOf("src/z.mjs") }));
+      items.push(story({ number: "00", parent: "51", files: setOf("packages/core/src/b.mjs") }));
+      items.push(story({ number: "01", parent: "51", depends: ["00"], reads: setOf("packages/core/src/b.mjs") }));
+      items.push(story({ number: "02", parent: "51", depends: ["00"], reads: setOf("packages/core/src/z.mjs") }));
 
       const census = classifyDependsEdges(snapshotOf(...items));
       assert.equal(census.uncheckedType.length, 125);
@@ -391,12 +393,12 @@ export const doctorDependsLaneTests = [
     async run() {
       await withStream([
         { number: "00", slug: "alpha", stories: [
-          { number: "00", files: ["src/a.mjs"], reads: ["src/seed.mjs"] },
-          { number: "01", depends: ["00"], reads: ["src/nowhere.mjs"], files: ["src/b.mjs"] },
+          { number: "00", files: ["packages/core/src/a.mjs"], reads: ["packages/core/src/seed.mjs"] },
+          { number: "01", depends: ["00"], reads: ["packages/core/src/nowhere.mjs"], files: ["packages/core/src/b.mjs"] },
         ] },
         { number: "01", slug: "beta", depends: ["00"], stories: [
-          { number: "00", files: ["src/c.mjs"], reads: ["src/seed.mjs"] },
-          { number: "01", depends: ["00"], reads: ["src/elsewhere.mjs"], files: ["src/d.mjs"] },
+          { number: "00", files: ["packages/core/src/c.mjs"], reads: ["packages/core/src/seed.mjs"] },
+          { number: "01", depends: ["00"], reads: ["packages/core/src/elsewhere.mjs"], files: ["packages/core/src/d.mjs"] },
         ] },
       ], async ({ ctx, workDir }) => {
         const whole = await invoke("work:doctor", {}, ctx);

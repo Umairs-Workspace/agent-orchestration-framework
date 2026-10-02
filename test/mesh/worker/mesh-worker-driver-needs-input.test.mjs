@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/worker/mesh-worker-driver-needs-input.test.mjs — traceability for milestone 38 /
 // story 05, task 02 (02_needs-input-outcome-and-worktree-retention.feature, ADR-013
 // invariant 4). An explicit `NEEDS_INPUT` sentinel observed in the interactive
@@ -7,9 +9,13 @@
 // force-remove.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, NEEDS_INPUT_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { meshWorktreePath, listWorktrees, removeWorktree } from "../../../src/mesh/worktree.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

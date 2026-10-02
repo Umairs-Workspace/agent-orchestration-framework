@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 70 / story 05 (brief-carries-the-contract) — task 02.
 //
 //   tasks/02_pinned-against-the-real-stream.feature  (@executable)
@@ -19,8 +20,8 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listItems } from "../../src/work.mjs";
-import { compileBriefForItem } from "../../src/phase-brief-read.mjs";
+const listItems = _aofWorkspace.work.listItems;
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
 // The `.feature` parse comes from its ONE home (52/05, F-52-05-D). It is NOT re-derived
 // here, and that is not in tension with `dependsDeclaredIn` below, which DOES re-derive the
 // frontmatter read: that one must be independent because it decides this guard's SUBJECTS,
@@ -39,7 +40,7 @@ import {
   BRIEF_SECTION_SOURCES,
   PHASE_BRIEF_MAX_CHARS,
   PHASE_BRIEF_PHASES,
-} from "../../src/phase-brief.mjs";
+} from "@aof/work/phase-brief";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const WORK_DIR = path.join(REPO_ROOT, "wiki", "work");
@@ -266,7 +267,7 @@ export const briefPinnedToTheStreamTests = [
       assert.equal(contractIsCarried(`${largest.ref}-grown`, grown), null, "the contract invariant holds for the stream's largest story");
       assert.ok(grown.chars <= grown.ceiling, "and its brief is still within the ceiling");
       // growing the contract set itself: four copies of the largest story's contracts.
-      const { compilePhaseBrief } = await import("../../src/phase-brief.mjs");
+      const { compilePhaseBrief } = await import("@aof/work/phase-brief");
       const quadrupled = compilePhaseBrief({
         itemRef: largest.ref,
         phase: "continue",

@@ -4,12 +4,12 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
-// milestone 23 — control-node-relay (story 01: thin relay — src/mesh/relay.mjs is the
+// milestone 23 — control-node-relay (story 01: thin relay — packages/core/src/mesh/relay.mjs is the
 // stateless ws@8 broker shipped as a `relay` mode (serveRelay → { server, url, stop }),
 // carrying the FROZEN, payload-agnostic envelope { kind, nodeId, signal } fanned out to
 // the OTHER peers (no self-echo) in memory only; the never-crash { type:'error' }
@@ -28,19 +28,17 @@
 // stays green — mesh-relay.mjs's serve-unit shape is REUSED by the ADR-003 launcher, only
 // its role as the liveness transport is retired.
 import { meshRelayBrokerFanoutTests } from "./mesh-relay-broker-fanout.test.mjs";
-import { meshRelayEnvelopeResilienceTests } from "./mesh-relay-envelope-resilience.test.mjs";
-import { meshRelayControlNodeTests } from "./mesh-relay-control-node.test.mjs";
 // milestone 24 — device-code group-enrollment (story 02: the enforceable trust boundary —
-// ADR-003/004). src/mesh/registry.mjs gains the PURE credential-verify seam
+// ADR-003/004). packages/core/src/mesh/registry.mjs gains the PURE credential-verify seam
 // verifyCredential(registry, token) (hash the presented relayAuth, constant-time compare
 // against a roster entry's relayAuthHash, AND reject a nodeId in the revocation list — the
-// T6 live-read); src/mesh/relay.mjs's server.on("upgrade") handler gains the ADDITIVE ws
+// T6 live-read); packages/core/src/mesh/relay.mjs's server.on("upgrade") handler gains the ADDITIVE ws
 // auth-gate ABOVE the pathname router — for a GROUP (non-loopback) connection it reads the
 // Authorization-header relayAuth token, verifies it against the LIVE roster/revocation
 // (readRegistry(workspace) → verifyCredential) and socket.destroy()s a missing / invalid /
 // not-in-roster / REVOKED credential upstream of clients.add, while LOOPBACK stays the m23
 // local default (the injectable isGroupConnection seam makes the branch deterministic
-// in-process — the STORY.md build note); src/commands/mesh-revoke.mjs registers mesh:revoke
+// in-process — the STORY.md build note); packages/core/src/commands/mesh-revoke.mjs registers mesh:revoke
 // <node> (control-node-guarded: roster removal + explicit-deny revocation append in ONE
 // atomic writeRegistry + git-remote de-provision via the shell-less
 // spawnSync("git", ["remote","remove",…]) argv idiom). Two @executable task features:
@@ -54,7 +52,6 @@ import { meshRelayControlNodeTests } from "./mesh-relay-control-node.test.mjs";
 // acd-relay-stateless + acd-relay-envelope-neutral + acd-enroll-endpoint-http-not-ws GREEN
 // (the gate is a READ + a decision, never a write); the new verb rides
 // acd-mesh-command-cli-bijection.
-import { meshRelayAuthGateTests } from "./mesh-relay-auth-gate.test.mjs";
 // milestone 33 (story 01) — fabric-native transport + coordination launcher: task 02
 // (02_broker-retirement.feature, dedicated behavioural coverage, review Fix 5) — a
 // node's presence/liveness view fully populated with the broker never started (over
@@ -68,9 +65,6 @@ import { controlStreamServerTests } from "./control-stream-server.test.mjs";
 
 export const tests = [
   ...meshRelayBrokerFanoutTests,
-  ...meshRelayEnvelopeResilienceTests,
-  ...meshRelayControlNodeTests,
-  ...meshRelayAuthGateTests,
   ...meshBrokerRetirementTests,
   ...controlStreamServerTests,
 ];

@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 00 (graphify-backend-module),
 // task 02 — 02_recall-returns-frozen-records.feature.
 //
 // Covers every @executable scenario AND every Scenario-Outline Examples row of that
-// feature against the REAL graphify backend module (../src/memory/graphify-backend.mjs),
+// feature against the REAL graphify backend module (../packages/core/src/memory/graphify-backend.mjs),
 // driven through the REAL seam (`runMemory` for the --json projection) and over a store
 // the backend's own `reindex` populated from a temp work stream. The graph-build half
 // of reindex FAILS SOFT through an injected `ctx.invoke` (binary-absent), so the recall
@@ -20,8 +21,10 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
-import { runMemory, resolveConfiguredBackend } from "../../src/work/memory.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",

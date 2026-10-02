@@ -64,9 +64,9 @@ path-walking restart-time scan that force-fails stale `running` runs (**ADR-004*
 collision-safe mint that gives `19`'s reserved `queued` state its producer and closes the `19/R2b`
 concurrent-`runId` race (**ADR-006**); and routing `persist` through the atomic `src/fs.mjs:writeText`
 seam (**ADR-007**, closing `19/R2a`) — plus the five arch-tests above + their registration in
-[scripts/test.mjs](../../../../../../scripts/test.mjs). It *reads* the existing [work.mjs](../../../../../../src/work.mjs)
+[scripts/test.mjs](../../../../../../scripts/test.mjs). It *reads* the existing [work.mjs](../../../../../../packages/core/src/application/bindings/work.mjs)
 item model (`listItems`/`recordDoc` resolve the `item.dir` the `runs/` dir sits under) and now *imports*
-[fs.mjs](../../../../../../src/fs.mjs) (`writeText`). It does **not** write item frontmatter (the
+[fs.mjs](../../../../../../packages/foundation/src/fs.mjs) (`writeText`). It does **not** write item frontmatter (the
 `rollbackItemStatus` writer is story 01), and does **not** touch `command-core.mjs`, `cli.mjs`, or
 `board-ui.mjs` (story 01 / milestone 21).
 

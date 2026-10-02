@@ -1,5 +1,5 @@
 // test/support/registry-fixture.mjs — the ONE way a test copies SHIPPED registry records
-// (`src/bundle/loops/`) into a temp registry, and the reason it exists is a defect that has now
+// (`packages/core/assets/loops/`) into a temp registry, and the reason it exists is a defect that has now
 // been paid for three times.
 //
 // THE DEFECT (58/ADR-007 §3a). Three suites each carried a HAND-WRITTEN list of record filenames
@@ -19,7 +19,7 @@
 // the shipped registry. A caller asserts against `names.length` — the CLOSED set's size — rather
 // than against a literal, so the day a shipped record grows an edge, the fixture grows with it and
 // the suite's own count follows. `FF-5809` (`test/arch/command/acd-registry-fixture-closed.test.mjs`)
-// ratchets both halves: the closure, and that no other test file reaches `src/bundle/loops/` to
+// ratchets both halves: the closure, and that no other test file reaches `packages/core/assets/loops/` to
 // build a subset fixture by its own route.
 //
 // WHY IT DOES NOT IMPORT THE LOADER. Same rule `loop-registry-fixture.mjs` states in its own
@@ -42,7 +42,7 @@ import { withLoopRegistry } from "./loop-registry-fixture.mjs";
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 /** The shipped registry — the framework's own declaration of how it improves itself. */
-export const SHIPPED_LOOPS_DIR = path.join(REPO_ROOT, "src", "bundle", "loops");
+export const SHIPPED_LOOPS_DIR = path.join(REPO_ROOT, "packages", "core", "assets", "loops");
 
 /** Every `<key>: <value>` line of a record's frontmatter block, values left as authored text. */
 function frontmatterLines(text) {

@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 127 / story 02 — "Promote mints the number".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) of tasks 00, 01 and 02 is
 // asserted here against the REAL registered command `work:promote`
-// (src/commands/promote.mjs), invoked in-process through the command core
-// (src/command-core.mjs) and read back black-box through findWork / listItems / listStream /
+// (packages/core/src/commands/promote.mjs), invoked in-process through the command core
+// (packages/core/src/command-core.mjs) and read back black-box through findWork / listItems / listStream /
 // nextWork / validateWork, plus the real CLI as a child process for the face's own envelope. Task
 // 04's ONE promote-side scenario — the not-found text that explains a stream-intake project —
 // lives here too, because it is a refusal of this verb and the only `intake` read in the verb.
@@ -30,17 +32,23 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { listItems, listStream, findWork, nextWork, validateWork, loadWorkspace } from "../../../src/work.mjs";
-import { appendPosition } from "../../../src/work-promote/promotion.mjs";
-import { openEffectsJournal, readEvents } from "../../../src/effects/journal.mjs";
-import { ITEM_LOCKED_CODE } from "../../../src/item-lock.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+const invoke = _aofApplication.invoke;
+const listItems = _aofWorkspace.work.listItems;
+const listStream = _aofWorkspace.work.listStream;
+const findWork = _aofWorkspace.work.findWork;
+const nextWork = _aofWorkspace.work.nextWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { appendPosition } from "@aof/work/promote/promotion";
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readEvents = _aofApplication.effects.journal.readEvents;
+const ITEM_LOCKED_CODE = _aofApplication.mesh.locks.ITEM_LOCKED_CODE;
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withItemLockFixture, seedActive } from "../../support/item-lock-fixture.mjs";
 import { buildThreeRootFixture } from "./work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const RECORD_DOC = { milestone: "SPEC.md", story: "STORY.md", uat: "SESSION.md", spike: "SPIKE.md", chore: "CHORE.md" };
 const ITEM_RE = /^(\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$/;
@@ -255,7 +263,7 @@ export const workPromoteMintsTheNumberTests = [
       withFixture(async ({ work, workspace }) => {
         const beforeFindings = await validateWork(work, workspace.config);
         // `nextWork` with a FREE-TEXT scope falls through to the whole stream by design (`inRange` in
-        // src/work.mjs — story 86 / TECH_DEBT 49 refuses only story-grained shapes), so it answers
+        // packages/core/src/work.mjs — story 86 / TECH_DEBT 49 refuses only story-grained shapes), so it answers
         // `ready` for `10/00` here. The claim the contract makes is "a backlog row is never proposed":
         // the backlog row is NOWHERE in the answer — not the head, not a ready-set member.
         const beforeNext = await nextWork(work, "delta");
@@ -575,7 +583,7 @@ export const workPromoteMintsTheNumberTests = [
           return;
         }
         assert.equal(outcome.code, refused, `refused ${refused} (got ${outcome.code}: ${outcome.message})`);
-        for (const named of names ?? []) assert.match(outcome.message, new RegExp(named.replace(/\//g, "\\/")), `the message names ${named}`);
+        for (const named of names ?? []) assert.match(outcome.message, new RegExp(named.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")), `the message names ${named}`);
         if ((names ?? []).length === 0 && refused === "promote-not-found") {
           assert.ok(!/Already in the stream/.test(outcome.message), `the message names no candidate: ${outcome.message}`);
         }
@@ -662,19 +670,19 @@ export const workPromoteMintsTheNumberTests = [
     run: async () => {
       const definitions = [];
       const callers = [];
-      for (const file of await readSrcFiles(repoRoot)) {
+      for (const file of await readRuntimeFiles(repoRoot)) {
         const source = (await readFile(file.path, "utf8")).replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-        const relPath = `src/${slash(file.rel)}`;
+        const relPath = slash(file.rel);
         if (/export\s+async\s+function\s+appendPosition\s*\(/.test(source)) definitions.push(relPath);
         if (/(?<!function\s)\bappendPosition\s*\(/.test(source.replace(/export\s+async\s+function\s+appendPosition\s*\([^)]*\)/, ""))) callers.push(relPath);
       }
-      assert.deepEqual(definitions, ["src/work-promote/promotion.mjs"], "appendPosition is defined once, in src/work-promote/promotion.mjs");
+      assert.deepEqual(definitions, ["packages/work/src/promote/promotion.mjs"], "appendPosition is defined once in the work package");
       assert.deepEqual(callers.sort(), [
-        "src/commands/migrate-folder.mjs",
-        "src/commands/promote-finding-to-chore.mjs",
-        "src/commands/promote-gap-to-chore.mjs",
-        "src/commands/promote.mjs",
-      ], `its callers are exactly the promote family plus migrate-folder (got ${JSON.stringify(callers)})`);
+        "packages/work/src/commands/migrate-folder.mjs",
+        "packages/work/src/commands/promote-finding-to-chore.mjs",
+        "packages/work/src/commands/promote-gap-to-chore.mjs",
+        "packages/work/src/commands/promote.mjs",
+      ].sort(), `its callers are exactly the promote family plus migrate-folder (got ${JSON.stringify(callers)})`);
     },
   },
 
@@ -914,7 +922,7 @@ export const workPromoteMintsTheNumberTests = [
         const outcome = await refusal(() => promote(workspace, { slug: "x", ...(at == null ? {} : { at }), yes: true }));
         if (refused) {
           assert.equal(outcome.code, refused, `refused ${refused} (got ${outcome.code}: ${outcome.message})`);
-          for (const named of names) assert.match(outcome.message, new RegExp(named.replace(/\//g, "\\/")), `the message names ${named}`);
+          for (const named of names) assert.match(outcome.message, new RegExp(named.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&")), `the message names ${named}`);
           return;
         }
         assert.equal(outcome.code, null, `it proceeds (refused ${outcome.code}: ${outcome.message})`);

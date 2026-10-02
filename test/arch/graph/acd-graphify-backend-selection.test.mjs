@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 10 / ADR-003 (05/ADR-002):
 // "`graphify` is a registered memory backend — it is the third value in the
 //  `$defs/memory.backend` enum AND carries a loader in `BACKEND_REGISTRY`; an
@@ -12,15 +14,17 @@
 //       export (the frozen { name:"graphify", recall, reindex, status } interface).
 //   (3) the single-read invariant: `config.memory?.backend` is read in exactly ONE
 //       code location across src/**/*.mjs (comments stripped), and it is the seam
-//       (src/work/memory.mjs), inside `selectBackendName`.
+//       (packages/core/src/work/memory.mjs), inside `selectBackendName`.
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { BACKEND_REGISTRY, selectBackendName } from "../../../src/work/memory.mjs";
+const BACKEND_REGISTRY = _aofApplication.knowledge.work.memory.BACKEND_REGISTRY;
+const selectBackendName = _aofApplication.knowledge.work.memory.selectBackendName;
 
+const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SRC_DIR = path.resolve(HERE, "..", "..", "..", "src");
+const SRC_DIR = path.resolve(HERE, "..", "..", "..", "packages", "core", "src");
 const SCHEMA_URL = new URL("../../../schemas/aof.schema.json", import.meta.url);
 
 // Strip line- and block-comments so we test CODE, not the ADR citations of
@@ -116,7 +120,7 @@ export const archTests = [
       // registered backend: registering it must NOT have added a second read of
       // config.memory?.backend anywhere (e.g. the backend module branching on its
       // own selection). Strip comments so the ADR citations do not count as reads.
-      const files = await listFiles(SRC_DIR, (f) => f.endsWith(".mjs"));
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const reads = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
@@ -128,7 +132,7 @@ export const archTests = [
         1,
         `config.memory?.backend is read exactly once (found ${reads.length}: ${reads.map((f) => path.relative(SRC_DIR, f)).join(", ")})`
       );
-      assert.equal(path.relative(SRC_DIR, reads[0]).split(path.sep).join("/"), "work/memory.mjs", "the single read lives in the memory seam (src/work/memory.mjs)");
+      assert.equal(path.relative(repoRoot, reads[0]).split(path.sep).join("/"), "packages/knowledge/src/memory.mjs", "the single read lives in the memory seam (packages/core/src/work/memory.mjs)");
     },
   },
 ];

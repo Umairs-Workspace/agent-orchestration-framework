@@ -3,7 +3,7 @@
 // Every @executable scenario (and every Examples row) of
 //   wiki/work/54_milestone_verification-loop/stories/00_story_the-grade-record/tasks/02_the-report-normalisers.feature
 // against the LOCKED surface: `normaliseReport`, `normaliseTap` and `REPORT_FORMATS` in
-// ../src/work/grade.mjs.
+// ../packages/core/src/work/grade.mjs.
 //
 // `m38/ADR-008` IS THE WHOLE POINT OF THIS FILE: *wherever we do not own the PRODUCER, the
 // contract test MUST be fed a REAL CAPTURED payload from that producer.* Not one assertion
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normaliseReport, normaliseTap, REPORT_FORMATS } from "../../src/work/grade.mjs";
+import { normaliseReport, normaliseTap, REPORT_FORMATS } from "@aof/work/grade";
 
 const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "rubric-reports");
 const capture = (name) => readFileSync(path.join(fixturesDir, name), "utf8");
@@ -117,12 +117,12 @@ export const gradeReportNormalisersTests = [
 
       // The `#`-prefixed lines are not enumerated as cases. This capture carries its
       // provenance line; `scripts/test.mjs`'s own section headers (`# unit` :3815,
-      // `# integration` :3833, `# cargo (app/desktop)` :3848) are the same shape, and are
+      // `# integration` :3833, `# cargo (apps/desktop)` :3848) are the same shape, and are
       // driven directly below beside the real `# tests`/`# suites` summary lines of the
       // node-runner capture. The rule is one rule: a `#` line is never a case.
       assert.ok(text.startsWith("# captured from:"), "non-vacuity: there IS a `#` line in this capture");
       assert.equal(report.cases.some((item) => item.name.startsWith("#")), false);
-      for (const header of ["# unit", "# integration", "# cargo (app/desktop)"]) {
+      for (const header of ["# unit", "# integration", "# cargo (apps/desktop)"]) {
         const withHeader = normaliseTap(`${header}\n${text}`);
         assert.equal(withHeader.cases.length, report.cases.length, `\`${header}\` is not enumerated as a case`);
       }

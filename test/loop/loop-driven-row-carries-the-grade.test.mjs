@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 03, task `01_the-driven-row-carries-the-grade`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -17,8 +18,9 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { GRADE_CODES } from "../../src/work/grade.mjs";
-import { gradeSummary, runLoopBody } from "../../src/commands/loop.mjs";
+import { GRADE_CODES } from "@aof/work/grade";
+const gradeSummary = _aofApplication.loop.commandTools.loop.gradeSummary;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   INDETERMINATE_OUTCOMES, capturingReport, emitsFailing, emitsPassing, gradingCtx,
@@ -246,7 +248,12 @@ export const loopDrivenRowCarriesTheGradeTests = [
       // nothing and therefore drives nothing.
       const fx = await gradingFixture({ cap: 3 });
       try {
-        const { getCommand } = await import("../../src/command-core.mjs");
+        const { getCommand } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
         const probe = await getCommand("work:loop").run({ scope: "03" }, gradingCtx(fx, { driver: completingDriver(fx), spawn: stubRubric(emitsPassing()) }));
         assert.deepEqual(probe.driven, [], "an empty loop still reports an empty driven array");
       } finally {

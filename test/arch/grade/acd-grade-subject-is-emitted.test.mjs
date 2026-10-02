@@ -27,8 +27,8 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { normaliseTap, CASE_STATUSES } from "../../../src/work/grade.mjs";
-import { joinCases, executableScenariosOf } from "../../../src/work/doctor-rubric.mjs";
+import { normaliseTap, CASE_STATUSES } from "@aof/work/grade";
+import { joinCases, executableScenariosOf } from "@aof/work/doctor/rubric";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -38,9 +38,11 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // family it governs) — a classifier added to the command instead of the compiler would
 // otherwise walk straight past.
 const GRADE_PATH = Object.freeze([
-  "src/work/grade.mjs",
-  "src/commands/grade.mjs",
-  "src/work/doctor-rubric.mjs",
+  "packages/work/src/grade.mjs",
+  "packages/core/src/application/bindings/commands/grade.mjs",
+  "packages/work/src/commands/grade.mjs",
+  "packages/execution/src/rubric-process.mjs",
+  "packages/work/src/doctor/rubric.mjs",
 ]);
 
 // Deriving a STATUS from a case's free text. The shapes a classifier actually takes: a
@@ -142,7 +144,7 @@ export const archTests = [
         assert.doesNotMatch(body, /message\.(?:includes|match)\s*\(/u, `${module} attributes nothing by matching rendered prose`);
       }
       // …AND THE SHELL ITSELF STILL HOLDS IT, over the rungs 54/02 added.
-      const shell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      const shell = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.doesNotMatch(shell, /message\.(?:includes|match)\s*\(/u, "the loop shell's own property is unchanged by the new gate rungs");
     },
   },

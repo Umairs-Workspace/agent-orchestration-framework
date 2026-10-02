@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-captured-producer-fixture (milestone 38 / ADR-008)
 //
 // THE INVARIANT (ADR-008). Wherever we do NOT own the producer — a vendor hook
@@ -7,13 +10,13 @@
 // fixture that proves nothing.
 //
 // THIS FILE GUARDS THE CROSS-LANGUAGE SURFACE: the Rust desktop
-// (app/desktop/crates/core/src/view_model.rs) structurally CANNOT import the JS
-// projection (ui/src/fleet/runs.mjs) — the ADR-004 reconciliation rule therefore has
+// (apps/desktop/crates/core/src/view_model.rs) structurally CANNOT import the JS
+// projection (apps/ui/src/fleet/runs.mjs) — the ADR-004 reconciliation rule therefore has
 // TWO implementations (JS `fleetCurrentWorkLines`, Rust `current_work`). The binding
 // discipline that replaces the (false) "both UIs call the same function" guarantee is:
 // BOTH implementations are exercised against the SAME REAL CAPTURED producer payload.
 //
-// The suite DOES run the Rust tests (`cargo test (app/desktop)` — scripts/test.mjs).
+// The suite DOES run the Rust tests (`cargo test (apps/desktop)` — scripts/test.mjs).
 // What cargo CANNOT do is the part that matters here: a Rust test can only check the
 // Rust code against the fixture SITTING NEXT TO IT — it has no way to reach the JS
 // producer, so a fixture that has drifted from what `aof` actually emits stays green
@@ -50,10 +53,10 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const startSession = _aofHooks.meshSession.startSession;
+import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
 // The DECLARED one home for "which sessions survive the run filter, projected to their
 // repo" (test/support/session-line-rule.mjs — the m49 rule module). Imported rather than
 // re-implemented here: a third copy of the survivor projection is a third thing that can
@@ -64,7 +67,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
 // The CROSS-LANGUAGE surface under this rule: the Rust desktop's view-model (the
 // second implementation of ADR-004's reconciliation rule).
-const RUST_VIEW_MODEL = "app/desktop/crates/core/src/view_model.rs";
+const RUST_VIEW_MODEL = "apps/desktop/crates/core/src/view_model.rs";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-12T12:00:00.000Z";

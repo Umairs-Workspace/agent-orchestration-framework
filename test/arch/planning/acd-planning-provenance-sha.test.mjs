@@ -12,7 +12,7 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { initPlanning, planningLockPath } from "../../../src/planning-init.mjs";
+import { initPlanning, planningLockPath } from "../../../packages/core/src/planning-init.mjs";
 
 const SHA_RE = /^[0-9a-f]{40}$/;
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";

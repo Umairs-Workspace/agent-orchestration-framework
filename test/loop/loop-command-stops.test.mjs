@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
@@ -7,7 +10,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
-import { runLoopBody, runLoopLaunch, renderLoopState } from "../../src/commands/loop.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const runLoopLaunch = _aofApplication.loop.commandTools.loop.runLoopLaunch;
+const renderLoopState = _aofApplication.loop.commandTools.loop.renderLoopState;
 import {
   DECLARATION_L1,
   cancellableDriver,
@@ -19,21 +24,41 @@ import {
   runCollected,
   writeDeclarationRun,
 } from "./loop-command-probe.test.mjs";
-import { answerRunAsk, completeRun, openRunAsk, parkRunAsk, readRuns, recordSessionId, retryReadiness } from "../../src/run-store.mjs";
-import { LOOP_STOPS, attemptElapsedMs } from "../../src/work/loop.mjs";
-import { PHASE_WORDS, askBlockLines, awaitAnswer, defaultAskWait, parkedHalt, phaseWord } from "../../src/loop/ask.mjs";
-import { resolveWorkspaceId } from "../../src/workspace-identity.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, readAsk, readAsks } from "../../src/loop/ask-request.mjs";
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
-import { installLoopDiagnostics, loopDiagLogDir } from "../../src/loop-diag.mjs";
-import { createStopSource, loopStopsDir, requestLoopStop, stopRequestPath } from "../../src/loop/stop-request.mjs";
+const answerRunAsk = _aofApplication.execution.runs.answerRunAsk;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const openRunAsk = _aofApplication.execution.runs.openRunAsk;
+const parkRunAsk = _aofApplication.execution.runs.parkRunAsk;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+import { LOOP_STOPS, attemptElapsedMs } from "../../packages/work-loop/src/engine.mjs";
+const PHASE_WORDS = _aofApplication.loop.ask.PHASE_WORDS;
+const askBlockLines = _aofApplication.loop.ask.askBlockLines;
+const awaitAnswer = _aofApplication.loop.ask.awaitAnswer;
+const defaultAskWait = _aofApplication.loop.ask.defaultAskWait;
+const parkedHalt = _aofApplication.loop.ask.parkedHalt;
+const phaseWord = _aofApplication.loop.ask.phaseWord;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const readAsk = _aofApplication.loop.askRequest.readAsk;
+const readAsks = _aofApplication.loop.askRequest.readAsks;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const installLoopDiagnostics = _aofApplication.loop.loopDiag.installLoopDiagnostics;
+const loopDiagLogDir = _aofApplication.loop.loopDiag.loopDiagLogDir;
+const createStopSource = _aofApplication.loop.stopRequest.createStopSource;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
 import { functionBody, stripComments } from "../support/source-slice.mjs";
 import { seedActive, withItemLockFixture } from "../support/item-lock-fixture.mjs";
-import { LANE_CANCEL_GRACE_MS, childDriveOutcome } from "../../src/loop/child-drive.mjs";
-import { drivePhase } from "../../src/loop/cycle.mjs";
+const LANE_CANCEL_GRACE_MS = _aofApplication.loop.childDrive.LANE_CANCEL_GRACE_MS;
+const childDriveOutcome = _aofApplication.loop.childDrive.childDriveOutcome;
+const drivePhase = _aofApplication.loop.cycle.drivePhase;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -759,7 +784,12 @@ aofVersion: 0.1.0
         const dir = loopStopsDir();
         let sampledDuring = null;
         let asks = 0;
-        const { invoke } = await import("../../src/command-core.mjs");
+        const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
         const driver = completingDriver(fx);
         const ctx = {
           ...fx.ctx,
@@ -779,7 +809,7 @@ aofVersion: 0.1.0
         assert.deepEqual(state.act, { act: "halt", stop: "operator-interrupt", ref: "03/01", producer: "stop-request" }, last);
         assert.match(last, new RegExp(`request=${stopRequestPath(dir, "L1").replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}`), "the file was read from loopStopsDir() under the resolved id");
         // The poll interval is ADR-001 §5's default decision, spelled at the one composition site.
-        const shell = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
+        const shell = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8"));
         assert.equal((shell.match(/createStopSource\(/gu) ?? []).length, 1, "one composition site");
         assert.match(shell, /createStopSource\(\{ loopRunId, dir: stopsDir, process, pollMs: 2000 \}\)/u);
         assert.match(shell, /const stopsDir = loopStopsDir\(\);/u);
@@ -897,13 +927,13 @@ aofVersion: 0.1.0
   {
     name: "130/02 task02 the halt's producer is never a message match, the shell holds no listener or flag of its own, and the recorder precedes the source",
     async run() {
-      const shell = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
+      const shell = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8"));
       const interruptHalts = (shell.match(/haltDecision\("operator-interrupt"/gu) ?? []).length;
       assert.ok(interruptHalts >= 1, "the halt is produced");
       assert.equal((shell.match(/haltDecision\("operator-interrupt", [^,]+, source\.producer\(\)\)/gu) ?? []).length, interruptHalts, "every operator-interrupt halt passes a value bound from source.producer() as its third argument");
       assert.doesNotMatch(shell, /process\.once\(/u);
       assert.doesNotMatch(shell, /\binterrupted\b/u);
-      const body = functionBody(shell, "export async function runLoopBody(");
+      const body = functionBody(shell, "async function runLoopBody(");
       assert.ok(body, "runLoopBody's body was found");
       assert.match(body, /signal: source\.signal/u, "the spread is in the body");
       const launchStart = shell.indexOf("launch: (options) =>");
@@ -1045,10 +1075,10 @@ aofVersion: 0.1.0
         assert.equal(run.state, "cancelled");
         assert.deepEqual(Object.keys(run), ["runId", "itemRef", "state", "attempt", "outcome", "sessionId", "brief", "createdAt", "updatedAt", "failureReason", "heartbeatAt", "retryOf", "reclaimedAt", "node", "resumeAfter", "spend", "asks"]);
         const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-        const pin = /\["src\/run-store\.mjs", "([0-9a-f]{64})"\]/u.exec(await readFile(path.join(root, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8"));
+        const pin = /\["packages\/execution\/src\/runs\.mjs", "([0-9a-f]{64})"\]/u.exec(await readFile(path.join(root, "test", "arch", "loop", "acd-loop-state-rides-the-run-record.test.mjs"), "utf8"));
         assert.ok(pin, "FF-5307 pins the store");
-        const digest = createHash("sha256").update((await readFile(path.join(root, "src", "run-store.mjs"), "utf8")).replace(/\r\n/gu, "\n")).digest("hex");
-        assert.equal(digest, pin[1], "src/run-store.mjs is untouched");
+        const digest = createHash("sha256").update((await readFile(path.join(root, "packages", "execution", "src", "runs.mjs"), "utf8")).replace(/\r\n/gu, "\n")).digest("hex");
+        assert.equal(digest, pin[1], "packages/core/src/run-store.mjs is untouched");
       } finally {
         await fx.cleanup();
       }
@@ -1123,7 +1153,7 @@ aofVersion: 0.1.0
   {
     name: "130/02 task03 the early return is gone — every drivePhase binding reaches settleDriven before any return, and a cancel settles cancelled with no reason",
     async run() {
-      const shell = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
+      const shell = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8"));
       const sites = [...shell.matchAll(/(\w+) = await drivePhase\(/gu)];
       assert.ok(sites.length >= 1, "the shell drives");
       for (const site of sites) {
@@ -1133,7 +1163,7 @@ aofVersion: 0.1.0
         assert.ok(settle > -1, `${binding} is settled`);
         assert.doesNotMatch(after.slice(0, settle), /\breturn\b/u, `no return between the drive of ${binding} and its settle`);
       }
-      const cycle = stripComments(await readFile(new URL("../../src/loop/cycle.mjs", import.meta.url), "utf8"));
+      const cycle = stripComments(await readFile(new URL("../../packages/work-loop/src/cycle.mjs", import.meta.url), "utf8"));
       assert.match(cycle, /outcome\.failureReason === "cancelled" \? "cancelled" : "failed"/u, "the terminal word is computed from the driver's cancel");
       assert.match(cycle, /failureReason: terminal === "failed" \? outcome\.failureReason \?\? "agent_error" : null/u, "a cancel carries no reason");
     },
@@ -1227,7 +1257,7 @@ aofVersion: 0.1.0
         assert.deepEqual(childDriveOutcome(childDocument(document)), expected, JSON.stringify(document));
       }
       assert.deepEqual(childDriveOutcome({ outcome: "died" }), { outcome: "failed", failureReason: "runtime_offline" }, "a non-document answer carries no screen");
-      const shell = stripComments(await readFile(new URL("../../src/commands/loop.mjs", import.meta.url), "utf8"));
+      const shell = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8"));
       // 131/03 (task 06, ruling 7) — the launch hands the body to `runLoopLaunch`, which announces a halt.
       assert.match(shell, /return runLoopLaunch\(input, \{[^}]*spawnPhaseDrive: spawnLaneDrive/u,"the foreground launch drives the sequential phases in a child");
     },
@@ -1267,7 +1297,7 @@ aofVersion: 0.1.0
   ...primaryAskTests(),
 ];
 
-// ── milestone 131 / story 03, task 00 — ONE COMPOSER ASKS, WAITS AND ANSWERS (`src/loop/ask.mjs`;
+// ── milestone 131 / story 03, task 00 — ONE COMPOSER ASKS, WAITS AND ANSWERS (`packages/core/src/loop/ask.mjs`;
 // ADR-001 §1, §3-§5, ADR-004 §1, §6). The needs-input stop's own suite (task 00, ruling 18).
 // `awaitAnswer` is driven directly over a real run record in a temporary tree, a real transcript
 // under an isolated `CLAUDE_CONFIG_DIR`, the isolated aof home's ask file, `notify` through an
@@ -1623,7 +1653,7 @@ function composerTests() {
         assert.equal(handle.hasRef(), true, "the production wait's timer is ref'd, so beforeExit cannot fire while the ask stands");
         production.close();
         await pending;
-        const source = stripComments(await readFile(path.join(repoRoot, "src", "loop", "ask.mjs"), "utf8"));
+        const source = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "ask.mjs"), "utf8"));
         assert.doesNotMatch(source, /\bsetInterval\(/u, "ask.mjs arms no interval");
         assert.doesNotMatch(source, /agent-session-driver|terminal-input|\.write\(/u, "ask.mjs writes no PTY and reaches no terminal-input module");
       },

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 126 / story 00, tasks 02 and 03 (ADR-002, AMENDED). FF-12602's DRIVEN
 // half — what actually reaches a collector, in what order, and what `--quiet` does to it. The
 // structural half is `test/arch/loop/acd-loop-narrates-in-flight.test.mjs`.
@@ -7,12 +8,16 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFile } from "node:fs/promises";
 
-import { runLoopBody } from "../../src/commands/loop.mjs";
-import { completeRun, readRuns, startRun } from "../../src/run-store.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { DECLARATION_L1, completingDriver, fakeStopSource, loopFixture, replaceStatus, resetLoopStops, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
-import { loopStopsDir, markStopHonoured, requestLoopStop } from "../../src/loop/stop-request.mjs";
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 
 // 130/02 (ADR-003 §6) — `Cleared` joins the in-flight class: the resume's clear of a standing
 // stop request rides `narrate` by the same role rule, FF-12602's eleventh line.

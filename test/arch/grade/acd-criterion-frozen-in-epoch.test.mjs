@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6105 (milestone 61 / ADR-005) — THE CRITERION IS FROZEN WITHIN THE EPOCH ON THREE
 // LAYERS, AND THE ARITHMETIC LAYER CANNOT BE BYPASSED.
 //
@@ -38,27 +40,25 @@ import {
   compileFrozenSet,
   FROZEN_ENFORCEMENT_POINTS,
   FROZEN_OWNERSHIP_MARKER,
-} from "../../../src/frozen-set.mjs";
-import {
-  CRITERION_FROZEN_IN_EPOCH,
-  CRITERION_RELPATH,
-  FROZEN_CRITERION_KEYS,
-  FROZEN_CRITERION_MEMBERS,
-  LEDGER_RELPATH,
-  accrualReport,
-  criterionDigest,
-  criterionRevisionWindow,
-  defaultCriterion,
-  makeCriterion,
-  rulingsUnderCurrentCriterion,
-  writeCriterion,
-} from "../../../src/work-acceptor/criterion.mjs";
+} from "../../../packages/core/src/frozen-set.mjs";
+const CRITERION_FROZEN_IN_EPOCH = _aofApplication.work.acceptor.criterion.CRITERION_FROZEN_IN_EPOCH;
+const CRITERION_RELPATH = _aofApplication.work.acceptor.criterion.CRITERION_RELPATH;
+const FROZEN_CRITERION_KEYS = _aofApplication.work.acceptor.criterion.FROZEN_CRITERION_KEYS;
+const FROZEN_CRITERION_MEMBERS = _aofApplication.work.acceptor.criterion.FROZEN_CRITERION_MEMBERS;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const accrualReport = _aofApplication.work.acceptor.criterion.accrualReport;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const criterionRevisionWindow = _aofApplication.work.acceptor.criterion.criterionRevisionWindow;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+const rulingsUnderCurrentCriterion = _aofApplication.work.acceptor.criterion.rulingsUnderCurrentCriterion;
+const writeCriterion = _aofApplication.work.acceptor.criterion.writeCriterion;
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
-const THE_SELECTOR_HOME = "src/work-acceptor/criterion.mjs";
+const THE_SELECTOR_HOME = "packages/work/src/acceptor/criterion.mjs";
 const MEMBER_ID = "acceptor-criterion";
 
 // ADR-004 §4's four members, and the quantities the one that matters carries. Spelled here
@@ -69,21 +69,9 @@ const INSEPARABLE = ["alpha", "lambda", "N", "B"];
 // ─── source sweep ──────────────────────────────────────────────────────────────────────
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({
-          file: path.relative(repoRoot, full).replaceAll("\\", "/"),
-          body: stripComments(await readFile(full, "utf8")),
-        });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.length > 0, "runtime census is non-empty");
+  return await Promise.all(files.map(async file => ({ file: file.rel, body: stripComments(await readFile(file.path, "utf8")) })));
 }
 
 // A module SELECTS RULINGS BY DIGEST when it names both — the rulings it is choosing among
@@ -162,7 +150,7 @@ export const archTests = [
         "an enforcement point that lives in another module's file is an enforcement point nobody owns (ADR-005 §1a)",
       );
       const home = sources.find((entry) => entry.file === THE_SELECTOR_HOME);
-      assert.match(home.body, /export function rulingsUnderCurrentCriterion\(/, "…and it is exported from that home");
+      assert.match(home.body, /function rulingsUnderCurrentCriterion\(/, "…and it is exported from that home");
       assert.equal(typeof rulingsUnderCurrentCriterion, "function");
     },
   },
@@ -307,7 +295,7 @@ export const archTests = [
       // remains is frozen-set/00's member FLOOR, which a withdrawal ceremony lowers.
       const declaration = bundledFrozenSet();
       const compiled = compileFrozenSet(declaration);
-      const compiledSource = await readFile(path.join(repoRoot, "test", "bundle", "frozen-set-compiled.test.mjs"), "utf8");
+      const compiledSource = await readFile(path.join(repoRoot, "packages", "core", "test", "frozen-set-compiled.suite.mjs"), "utf8");
       const withdrawalSource = await readFile(path.join(repoRoot, "test", "work", "framework-stops-shipping-guard.test.mjs"), "utf8");
 
       assert.ok(declaration.members.length > 0, "the declaration was read: it carries members");
@@ -375,13 +363,13 @@ export const archTests = [
       // driven over a planted source rather than over the tree, so the probe is repeatable.
       assert.deepEqual(
         digestSelectors([
-          { file: "src/pretend-ledger.mjs", body: "export function totals(rulings, digest) { return rulings.filter((r) => r.digest === digest); }" },
+          { file: "packages/core/src/pretend-ledger.mjs", body: "export function totals(rulings, digest) { return rulings.filter((r) => r.digest === digest); }" },
         ]),
-        ["src/pretend-ledger.mjs"],
+        ["packages/core/src/pretend-ledger.mjs"],
         "a second home for the selection is visible",
       );
       assert.deepEqual(
-        digestSelectors([{ file: "src/pretend-arithmetic.mjs", body: "export function totals(rulings) { return rulings.length; }" }]),
+        digestSelectors([{ file: "packages/core/src/pretend-arithmetic.mjs", body: "export function totals(rulings) { return rulings.length; }" }]),
         [],
         "…and a module that merely sums a list it is handed is not — that leaf is ADR-006 §4a's, and it must not be dragged in here",
       );
@@ -422,8 +410,8 @@ export const archTests = [
 
       // Row 6 — the seam's body really is where the refusal lives, so a caller cannot reach
       // a write that skipped it.
-      const home = stripComments(await readFile(path.join(srcDir, "work-acceptor", "criterion.mjs"), "utf8"));
-      const seam = functionBody(home, "export async function writeCriterion");
+      const home = stripComments(await readFile(path.join(repoRoot, "packages/work/src/acceptor", "criterion.mjs"), "utf8"));
+      const seam = functionBody(home, "async function writeCriterion");
       assert.ok(seam != null, "the seam's body was found");
       assert.match(seam, /reviseCriterion\(/, "every write goes through the refusal");
       assert.ok(seam.indexOf("reviseCriterion(") < seam.indexOf("writeFile("), "…and the refusal is raised before any bytes move");

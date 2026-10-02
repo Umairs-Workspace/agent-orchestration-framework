@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-mesh-ui-single-server (milestone 25 / story 02;
 // ARCHITECTURE 25/ADR-003 decision 2 — the 03/ADR-001 single-server precedent,
 // mirrored onto the fleet face; the mesh-face sibling of acd-board-single-server).
@@ -6,7 +7,7 @@
 //  second server/port; the fleet HTTP routes live under /api/mesh* and NEVER
 //  /api/work*."
 //
-// A structural grep of src/mesh/ui-serve.mjs (comments discounted, the call-form
+// A structural grep of packages/core/src/mesh/ui-serve.mjs (comments discounted, the call-form
 // discipline) PLUS a behavioural stand-up: serveMeshUi answers GET /api/mesh/status
 // as JSON on the same 127.0.0.1 port that serves the static bundle, and a /api/work
 // request is a 404 (the namespaces are disjoint).
@@ -15,10 +16,11 @@ import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

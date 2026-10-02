@@ -1,7 +1,7 @@
 // Fitness function for milestone 10 / ADR-002 (complements 09's acd-graph-no-face-spawn):
 // "The graphify memory backend reaches graphify EXCLUSIVELY through the registered
 //  09 `graph:*` commands via `invoke(...)` — no bespoke second integration. The
-//  backend module (src/memory/graphify-backend.mjs) imports `invoke` from
+//  backend module (packages/core/src/memory/graphify-backend.mjs) imports `invoke` from
 //  command-core.mjs and reaches the graph via `invoke('graph:…')`; it imports NEITHER
 //  `../graphify.mjs` (the SOLE graphify spawn site) NOR `node:child_process`, and has
 //  NO spawn/spawnSync/exec call-form. It reads the on-disk graph.json only through the
@@ -21,10 +21,10 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BACKEND = path.join(repoRoot, "src", "memory", "graphify-backend.mjs");
+const BACKEND = path.join(repoRoot, "packages", "knowledge", "src/memory/graphify-backend.mjs");
 
 // Strip line + block comments AND string/template literals, so a grep sees only live
 // code (the exact scanner the 09 no-face-spawn / privacy-boundary guards use). A
@@ -80,11 +80,11 @@ export const archTests = [
     name: "arch/graphify-backend-via-command: the backend imports `command-core.mjs` (invoke) and the PURE graph-normalize helpers",
     run: async () => {
       const raw = await readFile(BACKEND, "utf8");
-      const specs = importSpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
-      assert.ok(
-        specs.some((s) => /(^|\/)command-core\.mjs$/.test(s)),
-        `the backend imports from command-core.mjs (the only door to graphify); imports: ${specs.join(", ")}`
-      );
+      const specs = dependencySpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
+      assert.match(raw, /function createGraphifyBackend\(\{\s*coreInvoke,\s*loadWorkspace/);
+      const binding = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/memory/graphify-backend.mjs"), "utf8");
+      assert.match(binding, /const\s*\{\s*invoke: coreInvoke\s*\}\s*= commandCoreServices/);
+      assert.match(binding, /createGraphifyBackend\(\{\s*coreInvoke,\s*loadWorkspace/);
       // It reads graph.json through the spawn-free normalizer module, NOT the driver.
       assert.ok(
         specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s)),
@@ -96,8 +96,8 @@ export const archTests = [
     name: "arch/graphify-backend-via-command: the backend imports NEITHER ../graphify.mjs NOR node:child_process (no bespoke second integration)",
     run: async () => {
       const raw = await readFile(BACKEND, "utf8");
-      const specs = importSpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
-      // It must NOT import the SOLE graphify spawn site (src/graphify.mjs) — that would
+      const specs = dependencySpecifiers(stripCommentsOnly(raw)).map((entry) => entry.specifier);
+      // It must NOT import the SOLE graphify spawn site (packages/core/src/graphify.mjs) — that would
       // be the "bespoke second integration" SPEC §Objective forbids (it would bypass the
       // graph:build command's egress/offline/binary-absent guards).
       const importsDriver = specs.some((s) => /(^|\/)graphify\.mjs$/.test(s));

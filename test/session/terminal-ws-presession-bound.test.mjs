@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 46 / story 00, task 01 (ADR-008) —
 // `tasks/01_the-queue-is-bounded-and-degrades-honestly.feature`.
 //
@@ -22,13 +23,11 @@
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import { rm } from "node:fs/promises";
-import {
-  MAX_PRESESSION_FRAMES,
-  MAX_PRESESSION_BYTES,
-  PRESESSION_OVERFLOW_CODE,
-  SOCKET_ERROR_CODE,
-  createConnectionGate,
-} from "../../src/terminal-ws.mjs";
+const MAX_PRESESSION_FRAMES = _aofApplication.server.terminalWs.MAX_PRESESSION_FRAMES;
+const MAX_PRESESSION_BYTES = _aofApplication.server.terminalWs.MAX_PRESESSION_BYTES;
+const PRESESSION_OVERFLOW_CODE = _aofApplication.server.terminalWs.PRESESSION_OVERFLOW_CODE;
+const SOCKET_ERROR_CODE = _aofApplication.server.terminalWs.SOCKET_ERROR_CODE;
+const createConnectionGate = _aofApplication.server.terminalWs.createConnectionGate;
 import {
   makeRepo,
   stubWhich,

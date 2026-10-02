@@ -1,17 +1,19 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { mkdtemp, mkdir, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { LOOP_SCOPE_FORMS } from "../../../src/work/loop.mjs";
-import { loopCommand } from "../../../src/commands/loop.mjs";
-import { nextWork } from "../../../src/work.mjs";
+import { LOOP_SCOPE_FORMS } from "../../../packages/work-loop/src/engine.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const nextWork = _aofWorkspace.work.nextWork;
 import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-command-probe.test.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
-// THE REPO ROOT FROM THIS FILE, never from the process cwd. A `path.resolve("src/work.mjs")` reads
-// whatever `src/` the caller happened to be standing in — measured: run from any other directory it
+// THE REPO ROOT FROM THIS FILE, never from the process cwd. A `path.resolve("packages/core/src/work.mjs")` reads
+// whatever `packages/core/src/` the caller happened to be standing in — measured: run from any other directory it
 // is `ENOENT: …\src\work.mjs`, so the byte-pin below would fail with a message about the god-node
 // when the only thing wrong was the shell's cwd. Every other gate in this milestone's family
 // derives its root this way.
@@ -47,7 +49,7 @@ function story(number, parent, slug, status) {
 // goes red is the day the defect is PAID, not the day the gate broke — and a maintainer meeting a
 // bare `AssertionError: expected ready item outside 02/01` would read it the other way round. The
 // message is therefore part of the contract, and is itself asserted in the leg below it.
-const GOOD_NEWS = "GOOD NEWS \u2014 this red means the fix landed, not that the gate broke: TECH_DEBT item 49 / src/work.mjs:847-860 (`inRange` falling through to `() => true`) has been FIXED, so a story-shaped scope no longer walks out of the milestone the caller named. FOLLOW-ON: widen LOOP_SCOPE_FORMS to whatever the single parser now admits, and retire this necessity leg.";
+const GOOD_NEWS = "GOOD NEWS \u2014 this red means the fix landed, not that the gate broke: TECH_DEBT item 49 / packages/core/src/work.mjs:847-860 (`inRange` falling through to `() => true`) has been FIXED, so a story-shaped scope no longer walks out of the milestone the caller named. FOLLOW-ON: widen LOOP_SCOPE_FORMS to whatever the single parser now admits, and retire this necessity leg.";
 
 // THE CONTRACTED FIXTURE \u2014 two ACTIVE milestones (task 04's SCOPE-* ledger, which SUPERSEDES the
 // earlier done-01 / ready-02 oracle completely; no second acceptable fixture is retained). `02`
@@ -99,7 +101,7 @@ async function recordedStatus(workDir, rel) {
 // outside `02` cannot tell "the story scope leaked" from "there was nothing else to find"; and a
 // DONE `01` is worse than useless, because `nextWork` skips a done driver outright, so the
 // necessity assertion would fail carrying the GOOD-NEWS message and report item 49 as paid when
-// nothing whatever changed in `src/`.
+// nothing whatever changed in `packages/core/src/`.
 async function assertDiscriminating(workDir) {
   const parts = [
     [IN_SCOPE_SPEC, "the caller's active milestone 02"],
@@ -141,7 +143,7 @@ async function assertDiscriminating(workDir) {
 // drive this function over mutated fixtures and require the non-discriminating refusal to arrive
 // BEFORE any claim about scoping. A leg that answered "02/01 scoped correctly" over a fixture with
 // nothing to leak to would be green for no reason at all.
-const SCOPED = "SCOPE-NEC-01 (inverted): a story-shaped scope must resolve to its OWN item. TECH_DEBT item 49 (`inRange` falling through to `() => true`, src/work.mjs:847-860) was paid and this leg now guards the fix rather than the defect — a red here means the unscoped walk has come back.";
+const SCOPED = "SCOPE-NEC-01 (inverted): a story-shaped scope must resolve to its OWN item. TECH_DEBT item 49 (`inRange` falling through to `() => true`, packages/core/src/work.mjs:847-860) was paid and this leg now guards the fix rather than the defect — a red here means the unscoped walk has come back.";
 
 async function necessityLeg(workDir) {
   await assertDiscriminating(workDir);
@@ -194,7 +196,7 @@ export const archTests = [
       try {
         const workDir = await twoActiveMilestones(temp);
         // THE SHIPPED FUNCTION, never a restatement of its regex: `nextWork` is imported from
-        // `src/work.mjs` at the head of this file, and every call in the leg goes through it.
+        // `packages/core/src/work.mjs` at the head of this file, and every call in the leg goes through it.
         assert.equal(typeof nextWork, "function");
         assert.equal(nextWork.name, "nextWork");
         const scoped = await necessityLeg(workDir);
@@ -290,18 +292,18 @@ export const archTests = [
   {
     name: "arch/53 FF-5308 (acd-loop-scope-guard): the god-node scope implementation remains byte-identical to the milestone base, and a widened inRange fails NAMING inRange",
     run: async () => {
-      const source = (await readFile(path.join(root, "src", "work.mjs"), "utf8")).replace(/\r\n/gu, "\n");
-      assert.ok(source.length > 30_000, "src/work.mjs was actually read");
+      const source = (await readFile(path.join(root, "packages", "work", "src", "readiness.mjs"), "utf8")).replace(/\r\n/gu, "\n");
+      assert.ok(source.length > 1_000, "the readiness implementation was actually read");
       // THE FUNCTION PIN IS ASSERTED FIRST, and the ordering is the fix rather than a nicety. The
-      // whole-file sha cannot name a function — it reds as "src/work.mjs changed" — and task 04 :178
-      // (with its Examples row "`inRange` widened in `src/work.mjs`" → "the changed function")
+      // whole-file sha cannot name a function — it reds as "packages/core/src/work.mjs changed" — and task 04 :178
+      // (with its Examples row "`inRange` widened in `packages/core/src/work.mjs`" → "the changed function")
       // contracts that the function IS named. Measured: with the file pin first, a widened `inRange`
       // throws on the file pin and the maintainer never sees `inRange` mentioned at all. So the
       // structural cut of `inRange`'s own body is asserted BEFORE the file, and the file pin then
       // catches every OTHER edit to the god-node. The cut is `functionBody` from the one home, never
       // a byte window; a null cut is reported as NOT FOUND rather than asserted over the wrong region.
       const body = functionBody(stripComments(source), "function inRange(");
-      assert.ok(body != null, "NOT FOUND: `function inRange(` could not be cut out of src/work.mjs — the function this leg pins has been renamed, moved or restructured, and nothing about the scope rule was measured");
+      assert.ok(body != null, "NOT FOUND: `function inRange(` could not be cut out of packages/core/src/work.mjs — the function this leg pins has been renamed, moved or restructured, and nothing about the scope rule was measured");
       // THE TWO DIGESTS THIS LEG USED TO CARRY ARE RETIRED, and the reason is the rule's
       // own wording. It refused "widening it HERE rather than in the milestone that pays
       // item 49" — a prohibition scoped to milestone 53, which is done and accepted. Two

@@ -21,7 +21,7 @@
 // The repository roots a declared path is declared UNDER. A token is path-shaped only when it
 // starts at one of these — so `STORY.md`, `PLAN.md` and a bare identifier are not paths, and
 // nothing in a plan's prose becomes a violation just for carrying a dot.
-const SOURCE_ROOTS = ["src", "test", "tests", "scripts", "ui", "app", "lib", "wiki", "docs"];
+const SOURCE_ROOTS = ["packages/core/src", "test", "tests", "scripts", "ui", "app", "lib", "wiki", "docs"];
 
 // A path-shaped literal: a source root, a separator, and at least one more segment character. The
 // leading guard stops `my/src/x` and `…-src/x` matching, so a violation names a real declared path.

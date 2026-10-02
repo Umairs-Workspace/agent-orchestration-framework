@@ -9,7 +9,7 @@
 // structurally-sound CLI-face / bijection / git-fixture step (the flake first caught in
 // acd-mesh-command-cli-bijection: ~1 in 3 full-suite runs, 0/30 in isolation).
 //
-// We retry ONLY that never-ran case, mirroring src/fs.mjs renameWithRetry (6 attempts,
+// We retry ONLY that never-ran case, mirroring packages/core/src/fs.mjs renameWithRetry (6 attempts,
 // linear 25·n ms backoff). A real exit (ANY numeric status, incl. a non-zero failure)
 // OR a signal-kill (timeout / crash) is a GENUINE outcome and returns immediately — so
 // a true failure keeps its signal and is never masked by a retry.

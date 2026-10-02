@@ -11,9 +11,9 @@ has exactly one code read at [work-memory.mjs:77](src/work-memory.mjs#L77).
 
 ### The mesh timing-race class is fixed, not observed green
 The three lanes that resolved or advanced without waiting for their observer — the resume lane in
-[mesh-terminal-input-path.test.mjs](test/mesh-terminal-input-path.test.mjs), and the premature-done
+[mesh-terminal-input-path.test.mjs](../../../../test/mesh/terminal/mesh-terminal-input-path.test.mjs), and the premature-done
 and session-tree lanes in
-[mesh-worker-completion-detection.test.mjs](test/mesh-worker-completion-detection.test.mjs) — now
+[mesh-worker-completion-detection.test.mjs](../../../../test/mesh/worker/mesh-worker-completion-detection.test.mjs) — now
 settle in every interleaving, and every sibling resolve/lever site in the suite carries the same
 `waitFor` guard.
 

@@ -7,7 +7,7 @@
 //
 // WHY this is structural, not behavioural: a proof that runs `aof work init` writes
 // files; if it forgets `targetDir` it renders the bundle INTO this repo (clobbering
-// the authored src/bundle/ source of truth) or into a global ~/.aof. Isolation is a
+// the authored packages/core/assets/ source of truth) or into a global ~/.aof. Isolation is a
 // load-bearing property of the proof harness, owned in ONE place (ADR-005).
 //
 // EXPECTED RED until the round-trip harness exists: the proof is built downstream

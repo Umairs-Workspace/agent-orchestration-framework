@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 34 / story 04 — review fix P1.7: the launcher
 // integration test the brief calls for ("assemble + unit-test the worker dial").
 // Covers, over INJECTED exec + INJECTED transport (no live tailnet, no real ws
@@ -27,15 +30,16 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { DEFAULT_HEARTBEAT_WINDOW_SECONDS } from "../../../src/control-stream-server.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const DEFAULT_HEARTBEAT_WINDOW_SECONDS = _aofApplication.mesh.controlStreamServer.DEFAULT_HEARTBEAT_WINDOW_SECONDS;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 // VERIFICATION (live worktree streaming, 2026-07-26) — the driver-side registry the
 // stream ticker reads; a test drives it directly (the same module-level seam the real
 // execution handler writes through).
-import { registerActiveWorktree, clearActiveWorktree } from "../../../src/mesh/worker-execution.mjs";
+const registerActiveWorktree = _aofApplication.mesh.worker.registerActiveWorktree;
+const clearActiveWorktree = _aofApplication.mesh.worker.clearActiveWorktree;
 
 const CONTROL_ID = "control-node";
 const WORKER_ID = "worker-node";
@@ -279,7 +283,26 @@ export const meshLauncherStreamRoleTests = [
         const exec = fixturedExec(statusFixtureFor(WORKER_ID, {
           a: { HostName: CONTROL_ID, DNSName: `${CONTROL_ID}.tail1a2b.ts.net.`, TailscaleIPs: ["203.0.113.180"], Online: true },
         }));
-        const { createWorkerStreamClient: realCreateWorkerStreamClient } = await import("../../../src/worker-stream-client.mjs");
+        const { createWorkerStreamClient: realCreateWorkerStreamClient } = await Promise.resolve(Object.freeze({
+  backoffDelaySeconds: _aofApplication.mesh.workerStreamClient.backoffDelaySeconds,
+  buildSnapshotFrame: _aofApplication.mesh.workerStreamClient.buildSnapshotFrame,
+  buildDeltaFrame: _aofApplication.mesh.workerStreamClient.buildDeltaFrame,
+  WORKTREE_CONTENT_FRAME_KIND: _aofApplication.mesh.workerStreamClient.WORKTREE_CONTENT_FRAME_KIND,
+  LOG_ENTRIES_FRAME_KIND: _aofApplication.mesh.workerStreamClient.LOG_ENTRIES_FRAME_KIND,
+  WITHDRAW_KIND: _aofApplication.mesh.workerStreamClient.WITHDRAW_KIND,
+  buildLogEntriesFrame: _aofApplication.mesh.workerStreamClient.buildLogEntriesFrame,
+  buildWorktreeContentFrame: _aofApplication.mesh.workerStreamClient.buildWorktreeContentFrame,
+  buildPresenceFrame: _aofApplication.mesh.workerStreamClient.buildPresenceFrame,
+  buildAssignmentStatusFrame: _aofApplication.mesh.workerStreamClient.buildAssignmentStatusFrame,
+  buildCloneCredentialRequestFrame: _aofApplication.mesh.workerStreamClient.buildCloneCredentialRequestFrame,
+  buildCloneUrlRequestFrame: _aofApplication.mesh.workerStreamClient.buildCloneUrlRequestFrame,
+  buildWriteCredentialRequestFrame: _aofApplication.mesh.workerStreamClient.buildWriteCredentialRequestFrame,
+  DEFAULT_CLONE_CREDENTIAL_TIMEOUT_MS: _aofApplication.mesh.workerStreamClient.DEFAULT_CLONE_CREDENTIAL_TIMEOUT_MS,
+  DEFAULT_CLONE_URL_TIMEOUT_MS: _aofApplication.mesh.workerStreamClient.DEFAULT_CLONE_URL_TIMEOUT_MS,
+  DEFAULT_WRITE_CREDENTIAL_TIMEOUT_MS: _aofApplication.mesh.workerStreamClient.DEFAULT_WRITE_CREDENTIAL_TIMEOUT_MS,
+  createWorkerStreamClient: _aofApplication.mesh.workerStreamClient.createWorkerStreamClient,
+  createWorkerWsTransport: _aofApplication.mesh.workerStreamClient.createWorkerWsTransport,
+}));
         let capturedWorkspaceId;
         const transport = fakeWorkerTransport();
         const handle = await startLauncher(ws, {

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 02 (the authority cut), task
 //   wiki/work/43_milestone_mesh-artifact-authority/stories/02_story_cache-authority/
 //     tasks/00_work-items-is-a-fact-not-a-rebuilt-projection.feature
@@ -19,7 +20,8 @@
 // arch-test's job (acd-work-items-single-writer, armed at this cut; and the amended
 // acd-fact-projection-split), never a scenario's.
 import assert from "node:assert/strict";
-import { wholesaleDelete, readWorkspaceItems } from "../../src/global-work-store.mjs";
+const wholesaleDelete = _aofApplication.mesh.store.wholesaleDelete;
+const readWorkspaceItems = _aofApplication.mesh.store.readWorkspaceItems;
 import {
   withCacheFixture,
   withStore,
@@ -123,7 +125,36 @@ export const cacheAuthorityFactNotProjectionTests = [
       // nothing).
       await tick(fx);
       if (seed === "docs" || seed === "runs") {
-        const { upsertWorkItemContent } = await import("../../src/global-work-store.mjs");
+        const { upsertWorkItemContent } = await Promise.resolve(Object.freeze({
+  GLOBAL_WORK_SCHEMA_VERSION: _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION,
+  globalStoreError: _aofApplication.mesh.store.globalStoreError,
+  workspaceIdFor: _aofApplication.mesh.store.workspaceIdFor,
+  wholesaleDelete: _aofApplication.mesh.store.wholesaleDelete,
+  openGlobalWorkProjectionStore: _aofApplication.mesh.store.openGlobalWorkProjectionStore,
+  remapWorkspaceProjectionRefs: _aofApplication.mesh.store.remapWorkspaceProjectionRefs,
+  remapWorkspaceFactRefs: _aofApplication.mesh.store.remapWorkspaceFactRefs,
+  UPSERT_AUTHORITIES: _aofApplication.mesh.store.UPSERT_AUTHORITIES,
+  upsertWorkItems: _aofApplication.mesh.store.upsertWorkItems,
+  removeWorkspaceFromCache: _aofApplication.mesh.store.removeWorkspaceFromCache,
+  publishWorkspaceSnapshot: _aofApplication.mesh.store.publishWorkspaceSnapshot,
+  recordWorkspaceProjectionError: _aofApplication.mesh.store.recordWorkspaceProjectionError,
+  readWorkspaceProjectionItems: _aofApplication.mesh.store.readWorkspaceProjectionItems,
+  readWorkspaceItems: _aofApplication.mesh.store.readWorkspaceItems,
+  readWorkspaceItemProvenance: _aofApplication.mesh.store.readWorkspaceItemProvenance,
+  upsertWorkItemContent: _aofApplication.mesh.store.upsertWorkItemContent,
+  readWorkItemDoc: _aofApplication.mesh.store.readWorkItemDoc,
+  readWorkItemDocMembers: _aofApplication.mesh.store.readWorkItemDocMembers,
+  readWorkItemRuns: _aofApplication.mesh.store.readWorkItemRuns,
+  NODE_LOG_KEEP: _aofApplication.mesh.store.NODE_LOG_KEEP,
+  appendNodeLogEntries: _aofApplication.mesh.store.appendNodeLogEntries,
+  readNodeLogEntries: _aofApplication.mesh.store.readNodeLogEntries,
+  queryGlobalWorkProjection: _aofApplication.mesh.store.queryGlobalWorkProjection,
+  WORK_ITEM_DOC_FILES: _aofApplication.mesh.store.WORK_ITEM_DOC_FILES,
+  REQUIRED_ITEM_FIELDS: _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS,
+  OPTIONAL_ITEM_FIELDS: _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS,
+  itemRowFault: _aofApplication.mesh.store.itemRowFault,
+  isCompleteItemRow: _aofApplication.mesh.store.isCompleteItemRow,
+}));
         await withStore(fx, (store) => upsertWorkItemContent(store, fx.workspaceId, {
           docs: [{ ref: "43/02", doc: "STORY", body: "# streamed\n" }],
           runs: [{ ref: "43/02", runId: "run-1", record: { runId: "run-1", itemRef: "43/02", state: "running" } }],

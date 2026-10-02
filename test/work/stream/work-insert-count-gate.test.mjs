@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 02 (insert-top-level), task
 //   wiki/work/41_milestone_work-item-insertion/stories/02_story_insert-top-level/
 //     tasks/02_count-gated-confirmation-and-yes-override.feature
@@ -9,8 +11,8 @@
 // documented threshold (5, pinned at this refine) is set explicitly in the fixture
 // config so the test is resilient to any future named-default change.
 import assert from "node:assert/strict";
-import { invoke } from "../../../src/command-core.mjs";
-import { listItems } from "../../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const listItems = _aofWorkspace.work.listItems;
 import { withInsertFixture, buildTopLevelMilestones } from "../../support/work-insert-fixture.mjs";
 
 const THRESHOLD_CONFIG = { work: { insert: { confirmThreshold: 5 } } };
@@ -83,7 +85,9 @@ export const workInsertCountGateTests = [
         // The CLI's --force -> yes:true resolution is asserted directly (unit-level)
         // against the registered command's own argv adapter — the exact alias the
         // scenario names.
-        const { insertMilestoneCommand } = await import("../../../src/commands/insert-milestone.mjs");
+        const { insertMilestoneCommand } = await Promise.resolve(Object.freeze({
+  insertMilestoneCommand: _aofApplication.getCommand("work:insert-milestone"),
+}));
         const input = insertMilestoneCommand.cli.argv(["widget-support"], { at: "2", force: true });
         assert.equal(input.yes, true, "--force resolves to yes:true");
 

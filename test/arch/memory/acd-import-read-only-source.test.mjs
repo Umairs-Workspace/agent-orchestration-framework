@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 13 / ADR-002:
 // "Registered command + read-only source. `import:milestone` is registered in the
 //  frozen Command core ({id,input,run,cli}) with a callable `cli` adapter and is
@@ -32,11 +33,11 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../../src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_IMPORT_DIR = path.join(repoRoot, "src", "import");
-const IMPORT_COMMAND = path.join(repoRoot, "src", "commands", "import-milestone.mjs");
+const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");
+const IMPORT_COMMAND = path.join(repoRoot, "packages", "knowledge", "src", "commands", "import-milestone.mjs");
 
 // Strip line + block comments AND string/template literals so a documented mention of
 // `git commit` in prose, or a "commit" inside an error MESSAGE string, does not trip

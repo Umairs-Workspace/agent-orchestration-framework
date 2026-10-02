@@ -19,12 +19,12 @@
 // rendering the whole mesh underneath a chip saying the view is filtered.
 //
 // THE COMPLETENESS RATCHET IS THE POINT. It reads the collections off the WIRE TYPE
-// (`ui/src/fleet/api.ts`'s `GlobalMeshStatus`) rather than off a list kept here, so it cannot go
+// (`apps/ui/src/fleet/api.ts`'s `GlobalMeshStatus`) rather than off a list kept here, so it cannot go
 // stale: adding `boards: FleetBoard[]` to the payload — which m47/ADR-006 sets the terms for —
 // fails CI on the day the type changes, before any region is written to render it.
 //
 // THE NODE RULE IS PINNED HERE ON PURPOSE, because it DIVERGES from the server's `?scope=local`
-// and the divergence must not be "fixed". `src/global-node-registry.mjs:170-172` says in terms
+// and the divergence must not be "fixed". `packages/core/src/global-node-registry.mjs:170-172` says in terms
 // that the roster "is never workspace-filtered (a workspaceId scopes WORK ITEMS, not the node
 // roster)", and `acd-mesh-ui-local-filter-preserves-status`'s behavioural half pins exactly that.
 // m47/ADR-004 rule 2 rules the opposite for the REPO filter, and states why: under `scope=local`
@@ -36,13 +36,13 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { emptyStateCopy, filterToWorkspace } from "../../../ui/src/fleet/scope.mjs";
+import { emptyStateCopy, filterToWorkspace } from "../../../apps/ui/src/fleet/scope.mjs";
 import { stripComments, matchedBraceBody, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FLEET_API_TS = path.join(repoRoot, "ui", "src", "fleet", "api.ts");
-const SCOPE_MJS = path.join(repoRoot, "ui", "src", "fleet", "scope.mjs");
-const FLEET_TSX = path.join(repoRoot, "ui", "src", "fleet", "Fleet.tsx");
+const FLEET_API_TS = path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts");
+const SCOPE_MJS = path.join(repoRoot, "apps", "ui", "src", "fleet", "scope.mjs");
+const FLEET_TSX = path.join(repoRoot, "apps", "ui", "src", "fleet", "Fleet.tsx");
 
 // THE DECLARATIONS THIS FILE CUTS, by header text — the anchor `functionBody` resolves. Named
 // once, because three assertions cut two of them and a renamed declaration must fail as NOT FOUND
@@ -161,7 +161,7 @@ function fieldsOfType(code, typeName) {
 function wireCollections(source) {
   const code = stripComments(source);
   const top = fieldsOfType(code, "GlobalMeshStatus");
-  assert.ok(top != null, "ui/src/fleet/api.ts declares `export type GlobalMeshStatus` — the fleet's global wire payload");
+  assert.ok(top != null, "apps/ui/src/fleet/api.ts declares `export type GlobalMeshStatus` — the fleet's global wire payload");
 
   const collections = [];
   for (const field of top) {
@@ -201,7 +201,7 @@ export const archTests = [
       const body = functionBody(narrowing, NARROWING_HEADER);
       assert.ok(
         body != null,
-        `ui/src/fleet/scope.mjs defines \`${NARROWING_HEADER}\` — the ONE narrowing (m47/ADR-002). NOT FOUND is what this says, never a claim about which collections are narrowed: [F-47-04-ARCH-2] this cut used to run from the declaration to the next \`\\nexport \`, which is a claim about the ORDER of declarations in a file that nothing pins.`,
+        `apps/ui/src/fleet/scope.mjs defines \`${NARROWING_HEADER}\` — the ONE narrowing (m47/ADR-002). NOT FOUND is what this says, never a claim about which collections are narrowed: [F-47-04-ARCH-2] this cut used to run from the declaration to the next \`\\nexport \`, which is a claim about the ORDER of declarations in a file that nothing pins.`,
       );
 
       const unnarrowed = collections
@@ -270,7 +270,7 @@ export const archTests = [
       // The slice is GUARDED BEFORE IT IS TAKEN — the discipline that made TECH_DEBT item 24 fail
       // loudly in this milestone instead of silently reading green over a stripped file.
       const start = code.indexOf("function asGlobalStatus");
-      assert.ok(start >= 0, "ui/src/fleet/Fleet.tsx defines `asGlobalStatus` — the ONE shape coercion the narrowing seam's consumers read (F-47-01-ARCH-F1's header note)");
+      assert.ok(start >= 0, "apps/ui/src/fleet/Fleet.tsx defines `asGlobalStatus` — the ONE shape coercion the narrowing seam's consumers read (F-47-01-ARCH-F1's header note)");
       const body = matchedBraceBody(code, start);
       assert.ok(body != null && body.length > 200, `asGlobalStatus's body was sliced by MATCHING BRACES (got ${body == null ? "null" : `${body.length} chars`}) — never a fixed character window, which is the defect species F-47-03-ARCH-4 records for three of this milestone's five bad gates`);
 
@@ -423,7 +423,7 @@ export const archTests = [
       assert.deepEqual(
         keptNodes,
         ["only-alpha", "both"],
-        "a node is IN the filtered repo iff it is a member of it (m47/ADR-004 rule 2). This DIVERGES from ?scope=local, where the roster deliberately stays machine-wide (src/global-node-registry.mjs:170-172, pinned by acd-mesh-ui-local-filter-preserves-status) — because \"local\" asks about the DAEMON's workspace and a roster is a machine fact, while a repo filter asks \"which machines are working on this repo\". Both behaviours are correct and neither should be changed to match the other.",
+        "a node is IN the filtered repo iff it is a member of it (m47/ADR-004 rule 2). This DIVERGES from ?scope=local, where the roster deliberately stays machine-wide (packages/core/src/global-node-registry.mjs:170-172, pinned by acd-mesh-ui-local-filter-preserves-status) — because \"local\" asks about the DAEMON's workspace and a roster is a machine fact, while a repo filter asks \"which machines are working on this repo\". Both behaviours are correct and neither should be changed to match the other.",
       );
 
       // NON-MUTATING, and an absent filter is a total no-op — the two properties every caller of
@@ -460,7 +460,7 @@ export const archTests = [
       const narrowAt = fleetBody.indexOf("filterToWorkspace(");
       assert.ok(
         narrowAt >= 0,
-        "`filterToWorkspace(` is not called inside Fleet() at all. m47/ADR-004: <Fleet> narrows the payload ONCE, before rendering, and hands GlobalScopeView an ALREADY-NARROWED status — so no region receives the raw payload, no region applies a filter of its own, and a region added by a LATER milestone is narrowed on the day it is added without its author knowing this rule exists. That last property is the whole point.\nRED at refine time for a measured reason: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it, test/ui/fleet-scope.test.mjs pins it — and Fleet.tsx's import list (:28-40) does not name it.",
+        "`filterToWorkspace(` is not called inside Fleet() at all. m47/ADR-004: <Fleet> narrows the payload ONCE, before rendering, and hands GlobalScopeView an ALREADY-NARROWED status — so no region receives the raw payload, no region applies a filter of its own, and a region added by a LATER milestone is narrowed on the day it is added without its author knowing this rule exists. That last property is the whole point.\nRED at refine time for a measured reason: scope.mjs:162 exports the narrowing, scope.d.mts:44 types it, test/surfaces/fleet-scope.test.mjs pins it — and Fleet.tsx's import list (:28-40) does not name it.",
       );
 
       const pageStateAt = fleetBody.indexOf("pageState({");
@@ -503,7 +503,7 @@ export const archTests = [
       // rather than about the rule is this milestone's own recurring finding.)
       const source = stripComments(await readFile(SCOPE_MJS, "utf8"));
       const body = functionBody(source, NARROWING_HEADER);
-      assert.ok(body != null, `ui/src/fleet/scope.mjs declares \`${NARROWING_HEADER}\` and its body is sliceable — the second of the two cuts [F-47-04-ARCH-2] converted off the \`\\nexport \` sentinel`);
+      assert.ok(body != null, `apps/ui/src/fleet/scope.mjs declares \`${NARROWING_HEADER}\` and its body is sliceable — the second of the two cuts [F-47-04-ARCH-2] converted off the \`\\nexport \` sentinel`);
       for (const read of ["status.scope", "status.workspaceId"]) {
         assert.ok(
           !body.includes(read),

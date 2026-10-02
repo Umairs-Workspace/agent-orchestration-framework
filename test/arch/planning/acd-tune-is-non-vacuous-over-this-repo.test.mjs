@@ -1,12 +1,15 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-6208 — the integrated face says something real over AOF's tracked corpus.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-import { buildTuneReport } from "../../../src/commands/tune.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { PROPOSAL_CLASSES } from "../../../src/work-tune/proposal.mjs";
+const buildTuneReport = _aofApplication.work.commandTools.tune.buildTuneReport;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const PROPOSAL_CLASSES = _aofApplication.work.tune.proposal.PROPOSAL_CLASSES;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
@@ -35,7 +38,7 @@ export const archTests = [
         assert.ok(proposal.distance != null);
         assert.ok(proposal.distance.standing.length + proposal.distance.unknown.length > 0);
       }
-      const source = await readFile(new URL("../../../src/commands/tune.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../../packages/work/src/commands/tune.mjs", import.meta.url), "utf8");
       assert.doesNotMatch(source, /recordTarget|keyTerms|keyWords/u);
       assert.ok(report.headline.obstacles.length > 0);
     },

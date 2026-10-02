@@ -40,8 +40,8 @@ import { registeredSuitePaths, registrationSurface } from "../support/registrati
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const GATE_FILE = path.join(repoRoot, "test", "arch", "assignment", "acd-worker-driver-no-headless-print.test.mjs");
-const DRIVER_FILE = path.join(repoRoot, "src", "agent-session-driver.mjs");
-const HANDLER_FILE = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const DRIVER_FILE = path.join(repoRoot, "packages", "execution", "src", "session-driver.mjs");
+const HANDLER_FILE = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 
 const lf = (source) => String(source).replace(/\r\n/g, "\n");
 
@@ -54,7 +54,7 @@ const lf = (source) => String(source).replace(/\r\n/g, "\n");
 // weakens nothing: a handler that composed or appended the instruction ITSELF would
 // still be caught.
 function withoutDriverBoundary(code) {
-  // 119/01 — `(?:\.\.?\/)+` rather than a pinned `./`: the sink now sits in `src/mesh/` and reaches
+  // 119/01 — `(?:\.\.?\/)+` rather than a pinned `./`: the sink now sits in `packages/core/src/mesh/` and reaches
   // the driver as `../agent-session-driver.mjs`. A pinned spelling silently stopped cutting the
   // boundary block, which put every re-exported name back into the "body" these aims read.
   return code.replace(/^[ \t]*(?:import|export)\s*\{[\s\S]*?\}\s*from\s*["'](?:\.\.?\/)+agent-session-driver\.mjs["'];?/gm, "");
@@ -116,7 +116,7 @@ const AIM = [
     marker: "invariant 2 — the interactive launch resolves through the terminal-providers seam",
     reads: ["DRIVER_SOURCE"],
     subject: "the resolveProvider import AND a genuine call site",
-    present: (s) => /import\s*\{\s*resolveProvider\s*\}\s*from\s*["']\.\/terminal-providers\.mjs["']/.test(s.driver.raw) && /resolveProvider\s*\(/.test(s.driver.body),
+    present: (s) => /const\s*\{\s*resolveProvider\s*,[^}]*\}\s*=\s*launch/.test(s.driver.raw) && /resolveProvider\s*\(/.test(s.driver.body),
     // COMMENT-STRIPPED on the absence side: the handler's own header still NARRATES the
     // terminal-providers seam in prose, and prose is not an import. That is exactly the
     // distinction the census makes too — a mention is not a dependency.
@@ -139,7 +139,7 @@ const AIM = [
     reads: ["DRIVER_SOURCE", "HANDLER_SOURCE"],
     subject: "the producer half on the driver (claudeProjectsDir + the watch-seam wiring) and the surfacing half on the handler (sessionId on both frames)",
     present: (s) =>
-      /import\s*\{[^}]*\bclaudeProjectsDir\b[^}]*\}\s*from\s*["']\.\/work\/observe\.mjs["']/.test(s.driver.raw)
+      /const\s*\{[^}]*\bclaudeProjectsDir\b[^}]*\}\s*=\s*transcripts/.test(s.driver.raw)
       && /claudeProjectsDir\s*\(/.test(s.driver.body)
       && /options\.watchTranscriptSessionId\s*\?\?\s*defaultWatchTranscriptSessionId/.test(s.driver.body)
       && /(?:sendAssignmentStatus\?\.|reportSettled)\(\s*assignmentId,\s*["']done["'],\s*\{[^}]*sessionId[^}]*\}\s*\)/.test(s.handler.body),
@@ -206,7 +206,7 @@ const AIM = [
 // that silently stopped self-checking. `owner` is the file that must carry it after the
 // move.
 const PLANT_ANCHORS = [
-  { invariant: "invariant 2", owner: "driver", on: "raw", literal: 'import { resolveProvider } from "./terminal-providers.mjs";' },
+  { invariant: "invariant 2", owner: "driver", on: "raw", literal: 'const { resolveProvider,' },
   { invariant: "invariant 3", owner: "driver", on: "stripped", literal: "term.write(`${BRACKETED_PASTE_START}${body}${BRACKETED_PASTE_END}`);" },
   { invariant: "invariant 4 producer", owner: "driver", on: "stripped", literal: "options.watchTranscriptSessionId ?? defaultWatchTranscriptSessionId" },
   { invariant: "invariant 6 (launch append)", owner: "driver", on: "stripped", literal: '"--append-system-prompt", WORKER_SESSION_INSTRUCTION' },
@@ -230,11 +230,11 @@ export const agentSessionDriverGateAimTests = [
     run: async () => {
       const s = await sources();
       const constants = sourceConstants(s.gate.stripped);
-      const sourceSide = constants.filter((c) => c.target.startsWith("src/"));
+      const sourceSide = constants.filter((c) => c.target.startsWith("packages/core/src/") || c.target.startsWith("packages/"));
       assert.equal(sourceSide.length, 2, `exactly two source-path constants: ${constants.map((c) => `${c.name}=${c.target}`).join(", ")}`);
       assert.deepEqual(
         sourceSide.map((c) => [c.name, c.target]).sort(),
-        [["DRIVER_SOURCE", "src/agent-session-driver.mjs"], ["HANDLER_SOURCE", "src/mesh/worker-execution.mjs"]],
+        [["DRIVER_SOURCE", "packages/execution/src/session-driver.mjs"], ["HANDLER_SOURCE", "packages/mesh/src/worker-execution.mjs"]],
         "one names the new module, one names the sink",
       );
       // 119/03 — there is no third constant. The gate declared a runner path because its
@@ -344,7 +344,7 @@ export const agentSessionDriverGateAimTests = [
       const s = await sources();
       const plants = [
         { label: "invariant 1 — the appended headless shape", source: s.driver.stripped, apply: (src) => `${src}\nfunction plantedHeadless() { return { bin: "claude", args: ["-p", prompt, "--output-format", "json"] }; }\n` },
-        { label: "invariant 2 — strip the resolveProvider import", source: s.driver.raw, apply: (src) => src.replace(/import \{ resolveProvider \} from "\.\/terminal-providers\.mjs";\r?\n/, "") },
+        { label: "invariant 2 — remove the resolveProvider port", source: s.driver.raw, apply: (src) => src.replace("resolveProvider, loadNodePty", "missingProvider, loadNodePty") },
         { label: "invariant 2 — rename every call site", source: s.driver.stripped, apply: (src) => src.replace(/resolveProvider\s*\(/g, "notResolveProvider(") },
         { label: "invariant 3 — remove the command write", source: s.driver.stripped, apply: (src) => src.replace(/term\.write\(\s*`\$\{BRACKETED_PASTE_START\}\$\{body\}\$\{BRACKETED_PASTE_END\}`\s*\);/, "/* command intentionally not written */") },
         { label: "invariant 4 — sever the watch-seam wiring", source: s.driver.stripped, apply: (src) => src.replace(/options\.watchTranscriptSessionId\s*\?\?\s*defaultWatchTranscriptSessionId/, "null /* producer removed */") },
@@ -376,10 +376,13 @@ export const agentSessionDriverGateAimTests = [
       // not the gate being re-pointed, and the second leg below is what still says so.
       assert.match(
         s.gate.raw,
-        /import \{ driveInteractiveClaudeSession, NEEDS_INPUT_SENTINEL \} from "(?:\.\.\/)+src\/mesh\/worker-execution\.mjs";/u,
-        "the gate's import line still takes both names FROM THE SINK — the verbatim re-export is what keeps it so",
+        /import \{ defaultApplication as _aofApplication \} from "aof\/default-application";/u,
+        "the behavioural gate obtains the configured worker from the public application",
       );
-      assert.equal(/from "(?:\.\.\/)+src\/agent-session-driver\.mjs"/u.test(s.gate.raw), false, "the gate was NOT re-pointed at the new module for its behavioural legs");
+      for (const name of ["driveInteractiveClaudeSession", "NEEDS_INPUT_SENTINEL"]) {
+        assert.ok(s.gate.raw.includes(`const ${name} = _aofApplication.mesh.worker.${name};`), `${name} still comes from the configured worker sink`);
+      }
+      assert.equal(/from "(?:\.\.\/)+packages\/core\/src\/agent-session-driver\.mjs"/u.test(s.gate.raw), false, "the gate was NOT re-pointed at the new module for its behavioural legs");
       // And the legs themselves resolve their outcomes — the four gate entries carrying a
       // behavioural half are run here as well as by the green lane above.
       const behavioural = workerDriverGateTests.filter((t) => /invariant (?:2b|3|4|5)\b/.test(t.name));

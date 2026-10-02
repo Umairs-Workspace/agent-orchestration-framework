@@ -1,3 +1,5 @@
+// This invariant rules Node services and their core bindings. Browser presentation
+// has a separate boundary census; UI routes and type declarations are not server policy.
 // Fitness function: acd-no-new-silent-catch (milestone 42 wave (a), TECH_DEBT item 3
 // — "silent catch {} is load-bearing").
 //
@@ -16,13 +18,13 @@
 // NOT detected (handled degrades, not silence): `.catch(() => null)` and any catch
 // body with at least one statement — those return a value the caller branches on.
 import assert from "node:assert/strict";
-import { readdirSync, statSync } from "node:fs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
+
 
 // THE SWEEP IS DONE (2026-07-26, same day the ratchet armed): the 2026-07-26
 // baseline of 94 sites across 29 files was swept to coded degrade events
@@ -31,19 +33,19 @@ const srcRoot = path.join(repoRoot, "src");
 // themselves, whose faults have nowhere lower to report. This gate is now an
 // outright ban everywhere else: any new silent catch in src/ fails the build.
 const BASELINE = {
-  "degrade.mjs": 1,
-  "mesh/log.mjs": 1,
+  "packages/foundation/src/degrade.mjs": 1,
+  "packages/foundation/src/log.mjs": 1,
   // m43 / ADR-001 — the SAME sanctioned-floor rationale, in a third file: a fault with
-  // nowhere lower to report. `src/bundle/hooks/artifact-sync-enqueue.mjs` is the
+  // nowhere lower to report. `packages/core/assets/hooks/artifact-sync-enqueue.mjs` is the
   // PostToolUse enqueue hook, and every reporting channel is closed to it BY CONTRACT
-  // and by a second fitness function: it may import nothing from `src/` (so it cannot
+  // and by a second fitness function: it may import nothing from `packages/core/src/` (so it cannot
   // reach `reportDegrade` — `acd-artifact-sync-hook-derivation-free` fails the build if
   // it tries), it must write nothing on stdout, and it must exit 0 because `PostToolUse`
   // cannot block. The ONE site is the queue append; its compensating control is the
   // daemon's reconciliation tick, which converges the artifact anyway. Pinned at 1 and
   // shrink-only, like every other entry — if the hook ever gains a second catch, this
   // gate reds.
-  "bundle/hooks/artifact-sync-enqueue.mjs": 1,
+  "packages/core/assets/hooks/artifact-sync-enqueue.mjs": 1,
   // m69 / story 01 — the SECOND member of that same sanctioned floor, and it belongs
   // here for the identical reason rather than as a convenience. `run-heartbeat-enqueue.mjs`
   // is the PostToolUse liveness hook: every reporting channel is closed to it BY CONTRACT
@@ -59,17 +61,10 @@ const BASELINE = {
   // been red — on a site that meets its own stated exception — and the redness was read as
   // background. Pinned at 1 and shrink-only like every other entry: a second catch in that
   // hook reds this gate.
-  "bundle/hooks/run-heartbeat-enqueue.mjs": 1,
+  "packages/core/assets/hooks/run-heartbeat-enqueue.mjs": 1,
 };
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const p = path.join(dir, name);
-    if (statSync(p).isDirectory()) walk(p, out);
-    else if (name.endsWith(".mjs")) out.push(p);
-  }
-  return out;
-}
+
 
 function stripComments(source) {
   return source.replace(/(^|[^:])\/\/[^\n]*/g, "$1").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -87,8 +82,10 @@ export const archTests = [
     name: "arch/m42-item-3: no NEW silent catch — every src file is at or below its shrink-only baseline, and unlisted files have none",
     async run() {
       const offenders = [];
-      for (const file of walk(srcRoot)) {
-        const rel = path.relative(srcRoot, file).split(path.sep).join("/");
+      const files = await readRuntimeFiles(repoRoot, { runtime: "node" });
+      assert.ok(files.length > 150, 'the runtime scan includes core and packages');
+      for (const rel of Object.keys(BASELINE)) assert.ok(files.some(file => file.rel === rel), rel + ': the sanctioned floor is still scanned');
+      for (const { rel, path: file } of files) {
         const count = countSilentCatches(await readFile(file, "utf8"));
         const allowed = BASELINE[rel] ?? 0;
         if (count > allowed) offenders.push(`${rel}: ${count} silent catch site(s), baseline ${allowed}`);

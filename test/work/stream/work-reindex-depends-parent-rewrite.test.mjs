@@ -1,9 +1,11 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 41 / story 01 (reindex-engine), task
 //   wiki/work/41_milestone_work-item-insertion/stories/01_story_reindex-engine/
 //     tasks/01_depends-and-parent-rewrite-stays-resolvable.feature
 // Every @executable scenario below is wired against the LOCKED engine
-// `reindexForInsert(workDir, { at, space, parent })` (src/work/reindex.mjs).
-// The outcome is read back via `findWork`/`validateWork` (src/work.mjs) and —
+// `reindexForInsert(workDir, { at, space, parent })` (packages/core/src/work/reindex.mjs).
+// The outcome is read back via `findWork`/`validateWork` (packages/core/src/work.mjs) and —
 // for the exact rewritten `depends`/`parent` VALUE, which find/list --json do
 // not expose — by reading the referencing item's record-doc frontmatter line
 // directly, exactly as the feature's own litmus prescribes.
@@ -16,9 +18,11 @@
 import assert from "node:assert/strict";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
-import { findWork, validateWork, loadWorkspace } from "../../../src/work.mjs";
-import { reindexForInsert } from "../../../src/work/reindex.mjs";
-import { invoke } from "../../../src/command-core.mjs";
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { reindexForInsert } from "@aof/work/reindex";
+const invoke = _aofApplication.invoke;
 import { withWork, buildTopLevelStream, writeMilestoneItem, writeStoryItem, writeUatItem, readDocText } from "../../support/work-reindex-fixture.mjs";
 import { buildThreeRootFixture, writeItem } from "./work-backlog-archive-enumerate.test.mjs";
 

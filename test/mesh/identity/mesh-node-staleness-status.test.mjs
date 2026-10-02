@@ -1,10 +1,13 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 23 / story 00 — mesh:status renders each node's
 // presence with a stale flag (tasks/01_node-staleness-and-status.feature).
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
 // tasks/01_node-staleness-and-status.feature, exercising the REAL in-process registry
-// (src/command-core.mjs + the EXTENDED mesh:status in src/commands/mesh-identity.mjs
-// over src/mesh/presence.mjs) against a temp fixture repo — loadWorkspace + invoke,
+// (packages/core/src/command-core.mjs + the EXTENDED mesh:status in packages/core/src/commands/mesh-identity.mjs
+// over packages/core/src/mesh/presence.mjs) against a temp fixture repo — loadWorkspace + invoke,
 // real fs, in-process. `now` and `heartbeatAt` are driven as INJECTED values (white-box
 // over the staleness inputs, never wall-clock — the 22/R2 discipline). One test object
 // per scenario (outline rows folded into one entry iterating the rows). node:assert/strict.
@@ -20,10 +23,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../src/mesh/store.mjs";
-import { DEFAULT_PRESENCE_STALENESS_SECONDS } from "../../../src/mesh/presence.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const DEFAULT_PRESENCE_STALENESS_SECONDS = _aofApplication.mesh.presence.DEFAULT_PRESENCE_STALENESS_SECONDS;
 
 const NOW = "2026-06-30T12:00:00.000Z";
 

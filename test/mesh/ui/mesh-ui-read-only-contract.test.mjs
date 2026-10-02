@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 25 / story 02 — the SERVER-OBSERVABLE
 // @executable scenarios of tasks 03/04/05 (the halves provable against the real
 // serve-face without a browser; the rendered-view @manual halves + the Playwright
@@ -22,11 +25,12 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 async function makeRepo() {

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 01, task `03_the-spawn-is-bounded-and-single`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -18,10 +19,10 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { DEFAULT_HEARTBEAT_MS, DEFAULT_START_TO_CLOSE_MS } from "../../src/loop-bounds.mjs";
-import { GRADE_REENTRANCY_ENV } from "../../src/commands/grade.mjs";
-import { srcFilesContaining } from "../support/read-src-files.mjs";
+const invoke = _aofApplication.invoke;
+import { DEFAULT_HEARTBEAT_MS, DEFAULT_START_TO_CLOSE_MS } from "@aof/contracts/loop-bounds";
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
+import { readRuntimeFiles } from "../support/read-src-files.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -273,8 +274,8 @@ export const gradeSpawnBoundedAndSingleTests = [
         }
         // THAT VALUE WAS RESOLVED FROM THE LOOP-BOUNDS HOME rather than from a literal in
         // the grade path: the grade module declares neither the default nor a resolver.
-        const grade = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
-        assert.ok(grade.includes('from "../loop-bounds.mjs"'), "the grade path resolves the deadline through the loop-bounds home");
+        const grade = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
+        assert.ok(grade.includes('from "@aof/contracts/loop-bounds"'), "the grade path resolves the deadline through the loop-bounds home");
         assert.ok(!/30\s*\*\s*60\s*\*\s*1000|1_?800_?000/.test(grade), "…and declares no default of its own");
         assert.ok(!/DEFAULT_[A-Z_]*(TIMEOUT|DEADLINE|START_TO_CLOSE)/.test(grade), "…nor a second name for one");
       } finally {
@@ -288,21 +289,23 @@ export const gradeSpawnBoundedAndSingleTests = [
     name: "grade/03 no second home for the bound is opened",
     run: async () => {
       // EXACTLY ONE MODULE DECLARES the runner deadline's default and its resolver.
-      const declaringDefault = await srcFilesContaining(repoRoot, "DEFAULT_START_TO_CLOSE_MS =");
+      const runtimeBodies = await Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ rel: file.rel, text: await readFile(file.path, "utf8") })));
+      const containing = needle => runtimeBodies.filter(file => file.text.includes(needle)).map(file => file.rel);
+      const declaringDefault = containing("DEFAULT_START_TO_CLOSE_MS =");
       // ONE HOME, spelled as the floor plus a declared ceiling — never as a one-member census
       // (FF-11902): the module is named AMONG what the sweep found.
       assert.ok(declaringDefault.length >= 1, "the sweep of src/ found no module declaring the runner deadline's default");
       assert.ok(declaringDefault.length <= 1, `exactly one module declares the runner deadline's default — found: ${declaringDefault.join(", ")}`);
-      assert.equal(declaringDefault[0], "loop-bounds.mjs", "…and it is the bounds module");
-      const declaringResolver = await srcFilesContaining(repoRoot, "export const resolveStartToCloseMs");
+      assert.equal(declaringDefault[0], "packages/contracts/src/loop-bounds.mjs", "…and it is the bounds module");
+      const declaringResolver = containing("export const resolveStartToCloseMs");
       assert.ok(declaringResolver.length >= 1, "…the sweep found a module declaring its resolver");
       assert.ok(declaringResolver.length <= 1, `…and exactly one declares its resolver — found: ${declaringResolver.join(", ")}`);
-      assert.equal(declaringResolver[0], "loop-bounds.mjs", "…the same bounds module");
+      assert.equal(declaringResolver[0], "packages/contracts/src/loop-bounds.mjs", "…the same bounds module");
 
       // 54 ENFORCES A BOUND AND CHOOSES NONE. The two neighbouring caps are untouched:
       // `acd-loop-cap-single-home` and `69/ADR-001`'s non-annexation rule remain the
       // authority, and neither key was moved into the grade's path.
-      const grade = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
+      const grade = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
       assert.ok(!grade.includes("work.dispatch.concurrency") && !grade.includes("dispatch?.concurrency"), "work.dispatch.concurrency still resolves from its existing single home");
       assert.ok(!grade.includes("maxAttempts"), "work.autonomous.maxAttempts still resolves from its existing closed reader set");
     },
@@ -356,7 +359,7 @@ export const gradeSpawnBoundedAndSingleTests = [
       // tree without a structural refusal.
       const inner = await writeRunner(repo, "reenter.cjs", `
 const { spawnSync } = require("node:child_process");
-const result = spawnSync(process.argv[0], [${JSON.stringify(path.join(repoRoot, "bin", "aof.mjs"))}, "work", "grade", "03", "--run", "--json"], {
+const result = spawnSync(process.argv[0], [${JSON.stringify(path.join(repoRoot, "packages", "core", "bin", "aof.mjs"))}, "work", "grade", "03", "--run", "--json"], {
   cwd: process.cwd(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"],
   env: { ...process.env, NODE_NO_WARNINGS: "1" },
 });
@@ -443,7 +446,7 @@ process.stdout.write("ok - one\\n");
         }
         // NO RETRY OF THE RUNNER IS ATTEMPTED INSIDE A SINGLE GRADE — asserted structurally
         // too, because a retry loop is the kind of thing a later edit adds without noticing.
-        const grade = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
+        const grade = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
         const spawnCalls = grade.match(/\bspawn\(/g) ?? [];
         assert.equal(spawnCalls.length, 1, "the grade path calls its spawn exactly once, in one place");
       } finally {

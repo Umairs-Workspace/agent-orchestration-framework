@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 63 / story 00 — THE TRIGGER DECLARATION.
 //
 // Every @executable scenario and every Scenario-Outline row of the story's five task features,
@@ -27,24 +28,22 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  TRIGGER_DECLARATION_RELPATH,
-  TRIGGER_PAIRING_REASONS,
-  TRIGGER_PAIRING_STATES,
-  TRIGGER_SOURCES,
-  TriggerDeclarationError,
-  bundledTriggerDeclaration,
-  compileTriggerDeclaration,
-  readTriggerDeclaration,
-  triggerDeclarationPath,
-} from "../../src/work-trigger/declaration.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { updateWork } from "../../src/work/update.mjs";
+const TRIGGER_DECLARATION_RELPATH = _aofApplication.loop.workTrigger.declaration.TRIGGER_DECLARATION_RELPATH;
+const TRIGGER_PAIRING_REASONS = _aofApplication.loop.workTrigger.declaration.TRIGGER_PAIRING_REASONS;
+const TRIGGER_PAIRING_STATES = _aofApplication.loop.workTrigger.declaration.TRIGGER_PAIRING_STATES;
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+const TriggerDeclarationError = _aofApplication.loop.workTrigger.declaration.TriggerDeclarationError;
+const bundledTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.bundledTriggerDeclaration;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
+const readTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.readTriggerDeclaration;
+const triggerDeclarationPath = _aofApplication.loop.workTrigger.declaration.triggerDeclarationPath;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+const initWork = _aofApplication.assets.work.init.initWork;
+import { updateWork } from "../../packages/core/src/work/update.mjs";
 import { makeLoopRegistry, loopRecord } from "../support/loop-registry-fixture.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLED_SOURCE = path.join(REPO_ROOT, "src", "bundle", "triggers.jsonc");
+const BUNDLED_SOURCE = path.join(REPO_ROOT, "packages", "core", "assets", "triggers.jsonc");
 
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 
@@ -1030,7 +1029,7 @@ const SHIPPED_IS_INSTALLED = [
   {
     name: "63/00/04 the declaration is catalogued by the bundle's own manifest",
     run: async () => {
-      const manifest = JSON.parse(await readFile(path.join(REPO_ROOT, "src", "bundle", "manifest.json"), "utf8"));
+      const manifest = JSON.parse(await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "manifest.json"), "utf8"));
       const entries = manifest.entries.filter((entry) => entry.path === TRIGGER_DECLARATION_RELPATH);
       assert.equal(entries.length, 1, "it carries one entry for the trigger declaration, at the target path it installs to");
       const bundled = await bundledBytes();

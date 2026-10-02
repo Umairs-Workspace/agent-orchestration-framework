@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // test/mesh/worker/mesh-worker-completion-detection.test.mjs — VERIFICATION F-38.06h (live
 // two-machine soak, 2026-07-25). An interactive `claude` session NEVER exits when a
 // directive finishes — it returns to its idle prompt and stays alive — so the driver's
@@ -14,11 +16,9 @@ import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  driveInteractiveClaudeSession,
-  defaultWatchTranscriptCompletion,
-} from "../../../src/mesh/worker-execution.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const defaultWatchTranscriptCompletion = _aofApplication.mesh.worker.defaultWatchTranscriptCompletion;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 // A CEILING ON EVERY TERMINAL `await watch` BELOW. Each scenario drives the watch to a

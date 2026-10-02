@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignments-survive-snapshot (milestone 35 / ADR-001,
 // fitness #4) — "A publishGlobalWorkSnapshot / publishWorkspaceSnapshot cycle does
 // not delete or alter any global_assignments row."
@@ -15,11 +16,12 @@ import { mkdtemp, mkdir, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore, publishWorkspaceSnapshot } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishWorkspaceSnapshot = _aofApplication.mesh.store.publishWorkspaceSnapshot;
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const storeSourcePath = path.join(repoRoot, "src", "global-work-store.mjs");
+const storeSourcePath = path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs");
 
 function extractFunctionBody(source, signature, nextSignature) {
   const start = source.indexOf(signature);
@@ -44,7 +46,7 @@ export const archTests = [
       const source = await readFile(storeSourcePath, "utf8");
       const body = extractFunctionBody(
         source,
-        "export async function publishWorkspaceSnapshot",
+        "async function publishWorkspaceSnapshot",
         "\nexport function recordWorkspaceProjectionError",
       );
       assert.ok(body.length > 200, "publishWorkspaceSnapshot body located (non-vacuous)");
@@ -101,7 +103,7 @@ export const archTests = [
       const source = await readFile(storeSourcePath, "utf8");
       const cleanBody = extractFunctionBody(
         source,
-        "export async function publishWorkspaceSnapshot",
+        "async function publishWorkspaceSnapshot",
         "\nexport function recordWorkspaceProjectionError",
       );
       assert.deepEqual(assertNoAssignmentStatement(cleanBody), [], "the real source is clean");

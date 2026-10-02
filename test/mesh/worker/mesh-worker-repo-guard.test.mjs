@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 01 — the worker's repo-availability guard runs BEFORE any worktree: a repo it
 // has proceeds, a repo it lacks streams a coded assignment-repo-unavailable failed and
 // creates no worktree (milestone 35 / story 02, ADR-004, SECURITY T3a/F3). Exercised
@@ -8,9 +10,10 @@
 // recorder, an injected clock, and an injected scripted spawnRuntime (never reached on
 // a guard miss).
 import assert from "node:assert/strict";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler, workerHasRepo } from "../../../src/mesh/worker-execution.mjs";
-import { listWorktrees } from "../../../src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const workerHasRepo = _aofApplication.mesh.worker.workerHasRepo;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-09T10:00:00.000Z";

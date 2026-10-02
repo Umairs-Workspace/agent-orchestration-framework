@@ -5,7 +5,7 @@
 //  across lanes."
 //
 // Two kinds of proof:
-//   (a) SOURCE-GREP src/tool-store.mjs — the uv-lane planner's argv[0] is the
+//   (a) SOURCE-GREP packages/core/src/tool-store.mjs — the uv-lane planner's argv[0] is the
 //       literal "uv" and the uv-lane code contains no `npx` shell; the npx-lane
 //       planner DELEGATES to frameworks.mjs's planFrameworkInstall (whose argv[0]
 //       is "npx") and the npx-lane code contains no `uv` shell. (For the
@@ -20,10 +20,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { planProvision } from "../../../src/tool-store.mjs";
+import { planProvision } from "../../../packages/core/src/tool-store.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 const TOOL_STORE = path.join(srcDir, "tool-store.mjs");
 
 // Strip line + block comments AND string literals (the cross-shell leak check —

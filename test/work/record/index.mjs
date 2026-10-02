@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -36,7 +36,6 @@ import { workStorySpanScopeTests } from "./work-story-span-scope.test.mjs";
 // lane; FF-6607's second half parses THIS milestone's own register with the shipped
 // recogniser, so a row added to it without a file fails immediately (m22/R1).
 import { workDoctorControlsTests } from "./work-doctor-controls.test.mjs";
-import { workDoctorTests } from "./work-doctor.test.mjs";
 
 export const tests = [
   // story 65 — concurrent story dispatch (tasks 00–02; task 02's last scenario is @manual)
@@ -44,5 +43,4 @@ export const tests = [
   ...workStorySpanScopeTests,
   // milestone 66 / story 02 — the controls lane (tasks 00–03) + its three fitness functions
   ...workDoctorControlsTests,
-  ...workDoctorTests,
 ];

@@ -1,5 +1,5 @@
 // Fitness function for milestone 37 / ADR-001 (FF-3701):
-// "`ITEM_RE` — the closed item-type vocabulary in src/work.mjs — admits `spike` and
+// "`ITEM_RE` — the closed item-type vocabulary in packages/core/src/work.mjs — admits `spike` and
 //  `chore`, and STILL admits the original four (milestone|story|task|uat)."
 //
 // Red-until-built: the vocabulary does not exist yet. The "original four still
@@ -13,7 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const workSrc = path.join(repoRoot, "src", "work.mjs");
+const workSrc = path.join(repoRoot, "packages/work/src/identity.mjs");
 
 // Extract the alternation `(milestone|story|task|uat|...)` from the ITEM_RE literal
 // in source. Returns the set of admitted type tokens (or null if ITEM_RE not found).
@@ -35,7 +35,7 @@ export const archTests = [
     name: "arch/spike-chore-vocabulary: ITEM_RE still admits the original four (milestone|story|task|uat) — LIVE, non-vacuous",
     run: async () => {
       const types = await itemTypeAlternation();
-      assert.ok(types, "ITEM_RE alternation is parseable from src/work.mjs");
+      assert.ok(types, "ITEM_RE alternation is parseable from packages/core/src/work.mjs");
       for (const t of ["milestone", "story", "task", "uat"]) {
         assert.ok(types.has(t), `ITEM_RE admits the original type "${t}" (dropping it is a RED regression)`);
       }

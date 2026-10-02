@@ -24,12 +24,12 @@ aofVersion: 0.1.0
 The terminal mirror routes strictly on the `(nodeId, sessionId)` tuple
 ([mesh-terminal-mirror.mjs](../../../../src/mesh-terminal-mirror.mjs)), and the only place a `sessionId`
 reaches the browser today is on an **assignment** record. The presence record's `sessions[]` carries
-`{ workspaceId, repo, assistant, lastPingAt }` ([api.ts](../../../../ui/src/fleet/api.ts)) — no session
+`{ workspaceId, repo, assistant, lastPingAt }` ([api.ts](../../../../apps/ui/src/fleet/api.ts)) — no session
 id, no pid, nothing addressable.
 
 The consequence is exact and it is the reason this milestone is the arc's true foundation: the fleet
 already **knows** a node is working (`working · <repo> (session)`,
-[fleet/runs.mjs](../../../../ui/src/fleet/runs.mjs)) and **cannot open a terminal on it**. A session
+[fleet/runs.mjs](../../../../apps/ui/src/fleet/runs.mjs)) and **cannot open a terminal on it**. A session
 started outside an assignment is invisible to every terminal surface. No grid of live panes is possible
 until session identity is on the wire.
 

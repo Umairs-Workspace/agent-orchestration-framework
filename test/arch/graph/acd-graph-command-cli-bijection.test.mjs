@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 1 (the 08 bijection, extended
 // to graph:*):
 // "`graph:build`/`graph:query`/`graph:triage` are in the SAME `listCommands()`
@@ -23,13 +25,13 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable } from "../../../src/spine/face.mjs";
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 
 // The graph verbs, each backed by a graph:<verb> command. `impact` is the
 // milestone-11/ADR-007 deterministic edge-based coupling command (the running agents'
@@ -83,7 +85,7 @@ function argsFor(verb) {
     case "triage": return ["graph", "triage", "--json"];
     // impact takes a path positional; against the fixture (no built graph) it resolves
     // to the structured no-graph error envelope — which still parses as one JSON doc.
-    case "impact": return ["graph", "impact", "src/cli.mjs", "--json"];
+    case "impact": return ["graph", "impact", "packages/core/src/cli.mjs", "--json"];
     default: throw new Error(`unmapped graph verb ${verb}`);
   }
 }

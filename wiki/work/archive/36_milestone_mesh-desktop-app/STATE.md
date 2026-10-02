@@ -120,7 +120,7 @@ doc: state
     Commit target scaffolded at `mocks/` (`node-work-window.png`, `tray-menu.png`). DESIGN.md references both
     paths as the conformance source of truth AND carries the mandatory binding checklist as the standing
     baseline until they land — so no surface is baseline-less. ✅ **RESOLVED `2026-07-09`:** the user
-    generated the mocks via claude.ai design and exported `mocks/AOF Mesh - standalone.html`; both
+    generated the mocks via claude.ai design and exported `mocks/AOF Mesh - standalone.html` (stored inert since 2026-10-02 as `mocks/AOF Mesh - standalone.html.txt`); both
     `mocks/node-work-window.png` + `mocks/tray-menu.png` are now committed (rendered from the implemented UI,
     which realizes that design 1:1). The design MCP import was blocked (non-interactive session → no
     `/design-login`); imported via the user's standalone export instead.

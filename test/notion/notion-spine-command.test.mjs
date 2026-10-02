@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 17 / story 00 — the registered command + CLI
 // dispatch (ADR-002). One test object per @executable scenario / Scenario-Outline
 // row of `00_command-registered-and-invokable.feature`.
@@ -15,10 +16,10 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand } from "../../src/command-core.mjs";
+const getCommand = _aofApplication.getCommand;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A CONFIGURED fixture project: milestone 17 + two stories, a config WITH a
 // work.integrations.notion block.

@@ -1,0 +1,61 @@
+# @aof/execution
+
+Owns run persistence, lifecycle transitions, transcript spend ingestion, heartbeat queues
+and session attribution, terminal provider resolution and the live terminal-session registry.
+It also owns screen observation, consent recognition and workspace trust updates.
+Core assembles these services and supplies application policy.
+
+- `createRunStore({ reportDegrade, getAnswerTokens, readSessionAnswers })` owns run records
+  and composes its own transcript settlement service. Answer definitions and transcript
+  answer reading remain supplied by the work layer.
+- `createRunSpendIngest({ readRuns, settleRunFromVendor })` exposes transcript settlement
+  for callers that already have a run store.
+- `createRunHeartbeats` queues consumption-driven heartbeat writes using supplied storage
+  and diagnostic functions.
+- `createRunSessionCapture` waits for both session attribution persistence and the caller's
+  capture hook before returning the hook's result.
+- `createTerminalProviders({ reportDegrade })` owns provider metadata, binary lookup and
+  launch arguments/environment, preserving the injectable PATH resolver.
+- `createTerminalSessions({ reportDegrade })` owns live-session records and best-effort
+  pruning. It inspects process liveness without signalling or terminating sessions.
+- `createSessionDriver({ transcripts, launch, reportDegrade })` owns local agent-session
+  execution, transcript watching, completion detection, launch arguments and PTY lifecycle.
+  Core supplies transcript readers, screen observation, attribution, phase-brief and trust policy.
+- `createNodePtyLoader({ isPackaged })` owns lazy native loading: the packaged branch resolves
+  beside the executable, while development uses a dynamic import. `createTerminalSpawn(loader)`
+  is the shared spawn factory used by local sessions and the terminal WebSocket adapter.
+- `createScreenModel({ reportDegrade })` supplies bounded screen models. Lazy headless-terminal
+  loads and failures are cached once per loader across service instances.
+- `createSessionScreens({ createScreen, reportDegrade })` supplies queued screen observation,
+  frozen completion evidence and consent-menu reading; `CLAUDE_SCREENS` supplies recognition rules.
+- `createClaudeTrust({ reportDegrade })` supplies canonical project keys and conservative trust
+  updates, preserving unrelated settings and retaining the injectable home directory.
+- `createWorktreeOperations({ reportDegrade, prepareWorktree, identityArgs, mergeMessage })`
+  supplies commit availability, branch lookup/adoption, materialization, safe branch advancement
+  and worktree listing. Callers supply paths and preparation/merge policy. `defaultGitExec`,
+  `resolveExec` and `parsePorcelainStatus` expose the shared runner and status parser.
+  Existing error codes remain compatible, including the historical assignment-prefixed refusals.
+- `@aof/execution/bounded-process` exports `runBounded`, argument-vector validation,
+  attempted-command formatting and the existing result/outcome constants. It captures both streams,
+  enforces deadlines and preserves stdin cancellation, grace periods and Windows console isolation.
+  Audit, loop and declared-toolchain callers retain their own command and policy decisions.
+
+Factories perform no I/O. The package imports public contracts and foundation APIs, Node
+builtins and its own modules, and lazily loads its pinned `node-pty` and `@xterm/headless`
+dependencies. It imports no
+core, work, mesh, WebSocket transport or command registry code.
+Record shapes, paths, refusal behavior and spending calculations remain unchanged.
+
+Legacy root modules currently compose these services for existing consumers.
+Mesh composes worktree operations with its naming, preparation, commit and retention policies.
+Final application composition will remove the transitional adapters.
+
+Run package checks with `yarn workspace @aof/execution test`.
+
+`run-transitions` exports `createRunTransitions`: run start/retry, completion and reclaim
+combine configured run-store operations with the supplied lock and effect services. The run store
+remains mesh-blind. `reconcile` exports `createRunReconciliation`, which heals the latest
+unreported run fact only when it is no older than the ledger's birth. It receives work-item reads
+as a port and imports no work package. Reconciliation appends owed events; its caller owns draining.
+
+Session model/effort resolution and OTel attribution are public pure modules. `svg-rasterizer` exports browser discovery/argv/size helpers and `createSvgRasterizer({ reportDegrade })`; `journal-queries` owns run-event lookups. `store-metadata` declares the run-record file store.

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 01, task `02_the-read-face-never-executes`.
 //
 // Every @executable scenario of
@@ -21,15 +22,17 @@ import { readFile, rm, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke, getCommand, listCommands } from "../../src/command-core.mjs";
-import { serveSetupUi } from "../../src/setup-ui.mjs";
-import { startRun } from "../../src/run-store.mjs";
-import { resolveItem } from "../../src/commands/resolve.mjs";
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const startRun = _aofApplication.execution.runs.startRun;
+const resolveItem = _aofApplication.work.commandTools.resolve.resolveItem;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A grade record of ADR-005 §4's exact shape, standing in for 54/03's writer.
 const RECORDED = Object.freeze({
@@ -167,7 +170,7 @@ export const gradeReadFaceNeverExecutesTests = [
         assert.deepEqual(command.cli.argv(["03"], { run: true }), { ref: "03", run: true }, "…and only --run sets it");
         // An environment variable cannot open the door either: no read of process.env
         // decides whether to spawn.
-        const source = await readFile(path.join(repoRoot, "src", "commands", "grade.mjs"), "utf8");
+        const source = await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "grade.mjs"), "utf8");
         assert.ok(!/if\s*\([^)]*process\.env[^)]*\)\s*\{[^}]*spawn/s.test(source), "no environment variable gates the spawn");
       } finally {
         await rm(repo, { recursive: true, force: true });
@@ -273,8 +276,8 @@ export const gradeReadFaceNeverExecutesTests = [
         assert.deepEqual(carried[0].codes, ["case-failed"], "…and its codes");
 
         // ZERO BOARD CHANGE. Asserted as a property of the sources rather than as a diff.
-        const boardUi = await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8");
-        assert.ok(!boardUi.includes("work:grade"), "src/board-ui.mjs was not edited to make that true");
+        const boardUi = await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8");
+        assert.ok(!boardUi.includes("work:grade"), "packages/core/src/board-ui.mjs was not edited to make that true");
         assert.ok(!boardUi.includes("/api/work/grade"), "…and it serves no grade route");
 
         const uiFiles = [];
@@ -286,7 +289,7 @@ export const gradeReadFaceNeverExecutesTests = [
             else if (/\.(m?[jt]sx?|vue|svelte)$/.test(entry.name)) uiFiles.push(full);
           }
         };
-        await walk(path.join(repoRoot, "ui"));
+        await walk(path.join(repoRoot, "apps", "ui"));
         for (const file of uiFiles) {
           const text = await readFile(file, "utf8");
           assert.ok(!text.includes("work:grade"), `no file under ui/ was edited to make that true (${path.relative(repoRoot, file)})`);
@@ -303,12 +306,12 @@ export const gradeReadFaceNeverExecutesTests = [
     run: async () => {
       // `53/ADR-008`'s ruling, unchanged: `/aof:continue` and `/aof:verify` ARE the wrappers,
       // and the prompt-layer wording is 71's.
-      const bundleCommands = path.join(repoRoot, "src", "bundle", "commands");
+      const bundleCommands = path.join(repoRoot, "packages", "core", "assets", "commands");
       const files = await readdir(bundleCommands);
       assert.ok(!files.some((name) => /grade/i.test(name)), "no new /aof:* wrapper file exists for the grade verb");
       for (const name of files) {
         const text = await readFile(path.join(bundleCommands, name), "utf8");
-        assert.ok(!text.includes("work:grade"), `no file under src/bundle/commands/ was edited by this story (${name})`);
+        assert.ok(!text.includes("work:grade"), `no file under packages/core/assets/commands/ was edited by this story (${name})`);
         assert.ok(!text.includes("aof work grade"), `…nor spells the verb in prose (${name})`);
       }
     },

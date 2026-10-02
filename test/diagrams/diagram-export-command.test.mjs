@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 133 / story 02 / task 02 — `aof diagram export` writes the SVG first, then the PNG, and
 // hands back the block to paste (ADR-004 §3, ADR-005 §4).
 //
@@ -13,12 +14,14 @@ import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { getCommand, invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { generatorFor, generatorIds } from "../../src/diagrams/generators.mjs";
-import { renderDiagramBlock } from "../../src/diagrams/layout.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+import { generatorFor, generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
+import { renderDiagramBlock } from "@aof/work/diagrams/layout";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const ID = generatorIds()[0];
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 7, 7, 7]);
 const DIR = "wiki/work/07_milestone_m/diagrams";

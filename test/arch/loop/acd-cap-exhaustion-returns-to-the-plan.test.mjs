@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-12404 — "Cap exhaustion asks the engine, returns the EXISTING refine act aimed at a
 // derived plan ref, and is bounded twice by counters that already exist."
 //
@@ -25,8 +27,9 @@ import {
   decideReadySetExhausted,
   loopPlanRef,
   loopScopeIncludes,
-} from "../../../src/work/loop.mjs";
-import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../src/commands/loop.mjs";
+} from "../../../packages/work-loop/src/engine.mjs";
+const LOOP_FIX_TRANSPORT_KEYS = _aofApplication.loop.commandTools.loop.LOOP_FIX_TRANSPORT_KEYS;
+const loopCommand = _aofApplication.getCommand("work:loop");
 // THE COMMENT STRIPPER, FROM ITS ONE HOME (chore 106 / TECH_DEBT item 24). A hand-rolled one is
 // what `acd-comment-stripper-order` exists to refuse: strip block comments first and a line
 // comment containing `/*` blinds every source-reading assertion below it, so an absence sweep
@@ -36,18 +39,13 @@ import { LOOP_FIX_TRANSPORT_KEYS, loopCommand } from "../../../src/commands/loop
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ENGINE = "src/work/loop.mjs";
-const SHELL = "src/commands/loop.mjs";
-const DRIVER = "src/commands/drive.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
+const DRIVER = "packages/work-loop/src/commands/drive.mjs";
 
-/** Every `.mjs` under `src/`, relative and forward-slashed. */
+/** Every `.mjs` under `packages/core/src/`, relative and forward-slashed. */
 async function sourceModules() {
-  const dir = path.join(root, "src");
-  const entries = await readdir(dir, { recursive: true });
-  return entries
-    .map((entry) => `src/${String(entry).replaceAll("\\", "/")}`)
-    .filter((rel) => rel.endsWith(".mjs"))
-    .sort();
+  return (await readRuntimeFiles(root)).map(file => file.rel).sort();
 }
 
 const read = async (rel) => await readFile(path.join(root, rel), "utf8");
@@ -127,7 +125,7 @@ export const archTests = [
       }
 
       // AND THE SHELL SUPPLIES NO AUTHORED KEY: its one call site passes what `work:next`
-      // answered, and `ready()` (`src/work.mjs:1301-1308`) carries no `parent` at all.
+      // answered, and `ready()` (`packages/core/src/work.mjs:1301-1308`) carries no `parent` at all.
       assert.equal(body.includes("input?.parent"), true, "a caller-supplied parent is still honoured, which is what makes the out-of-scope guard reachable");
     },
   },
@@ -249,7 +247,7 @@ export const archTests = [
       }
 
       // THE SEVENTH ENTRY IS NOT `nextDecision` AND DOES PASS ONE — the direct `decideLoop` call
-      // that keeps `src/work/loop.mjs:910` LIVE. 124/ADR-006's "four dead branches" is three, and
+      // that keeps `packages/work-loop/src/engine.mjs:910` LIVE. 124/ADR-006's "four dead branches" is three, and
       // this story must not assert otherwise: `test/loop/loop-only-fail-redrives.test.mjs` drives
       // that branch green today.
       const direct = /requireDecision\(decideLoop\(\{[\s\S]*?\}\)\);/gu;
@@ -305,7 +303,7 @@ export const archTests = [
       // (Eleven when 124 wrote this; 129/01 appended three lane stops, which end the range the
       // same way — 129/ADR-002 §3's "a lane that cannot be merged home is a named stop".)
       const shell = stripComments(await read(SHELL));
-      const walk = /for \(;;\) \{[\s\S]*?\n {2}\} finally \{/u.exec(shell)?.[0];
+      const walk = /for \(;;\) \{[\s\S]*?\n +\} finally \{/u.exec(shell)?.[0];
       assert.ok(walk != null, "guard: the walk's body was found");
 
       // THE ONE SITE. Every stop the engine raises arrives as `act.act === "halt"` and is

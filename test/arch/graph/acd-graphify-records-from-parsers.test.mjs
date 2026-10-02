@@ -1,3 +1,5 @@
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 10 / ADR-001:
 // "The graphify backend's `recall` returns records produced by the 05 markdown
 //  parsers (each a frozen `MemoryRecord` with a resolving `source:line`), NEVER
@@ -25,8 +27,8 @@ import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import graphifyBackend, { rerank } from "../../../src/memory/graphify-backend.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+const rerank = _aofApplication.knowledge.memory.graphifyBackend.rerank;
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE_DIR = path.join(

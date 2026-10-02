@@ -2,10 +2,10 @@
 // tasks/04_fleet-session-render.feature — "the fleet NodeCard renders the
 // live-session state, with the run winning the primary line".
 //
-// REVIEW FIX (F1): this render helper (ui/src/fleet/runs.mjs's fleetCurrentWorkLines)
+// REVIEW FIX (F1): this render helper (apps/ui/src/fleet/runs.mjs's fleetCurrentWorkLines)
 // is fed the REAL production wire shape — `activeRuns: string[]` (bare run ids,
 // 23/ADR-002; no workspace attribution) and a `sessions[]` that is ALREADY
-// pre-subsumed by the assembler (src/mesh/launcher.mjs's
+// pre-subsumed by the assembler (packages/core/src/mesh/launcher.mjs's
 // assembleCurrentPresenceRecord — see test/mesh/presence/mesh-presence-aggregate-workspaces.test.mjs
 // for the "run AND session on the SAME workspace ⇒ the session is dropped before
 // publish" assertion, which is where that reconciliation genuinely happens). This
@@ -14,7 +14,7 @@
 // `sessions[]` contributes to ONE shared `working · <repo>[, <repo>…] (session)`
 // fallback line; neither ⇒ `idle`. node:assert/strict.
 import assert from "node:assert/strict";
-import { fleetCurrentWorkLines } from "../../../ui/src/fleet/runs.mjs";
+import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
 
 function session(workspaceId, repo) {
   return { workspaceId, repo, assistant: "claude-code", lastPingAt: "2026-07-10T12:00:00.000Z" };

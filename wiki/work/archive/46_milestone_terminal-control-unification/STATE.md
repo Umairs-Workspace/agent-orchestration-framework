@@ -128,7 +128,7 @@ in that file. Three needed a decision:
 - **The `waiting` pane line gets its own descriptor field.** The mock's pane reads `connected · waiting for
   first output`, distinct from the chip's `waiting for output`. Routing it through `reason` would have been
   the obvious move and is a **trap**: `describeTerminalState` honours `reason` on `waiting` *and also
-  rewrites the chip to `no live output`* ([state-ramp.mjs:461-469](../../../../ui/src/terminal/state-ramp.mjs#L461)),
+  rewrites the chip to `no live output`* ([state-ramp.mjs:461-469](../../../../apps/ui/src/terminal/state-ramp.mjs#L461)),
   so it would silently assert a V10 assignment fact that is not true here.
 - **Restart appears on `ended` (including `exited (0)`) and on `error`**, interactive host only — the mock's
   reading. Contracted at `04/04.feature:119` (presence) and `04/01.feature:84` (behaviour, `error` only);
@@ -174,7 +174,7 @@ that reads green while asserting nothing is exactly what ADR-006 predicted, and 
 
 **The scale is genuinely derived, but "the literals appear nowhere in source" — recorded here first on the
 build's own report — was WRONG, and QA measured it.** All four appear in comments
-([TerminalControl.tsx:431](../../../../ui/src/terminal/TerminalControl.tsx#L431) and `:625`), and
+([TerminalControl.tsx:431](../../../../apps/ui/src/terminal/TerminalControl.tsx#L431) and `:625`), and
 `terminal-control-both-sources.test.mjs:386-395` asserts `toFixed(2) === "0.47"` and `"0.40"` directly. The
 substance holds — every scale runs through `terminalFitScale` and three geometry mutants confirm it — but
 the claim as first written would have failed a literal-grep gate, and `:625` asserts in prose that the code

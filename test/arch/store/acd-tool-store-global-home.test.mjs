@@ -2,8 +2,8 @@
 // no hardcoded homedir; ADR-001):
 // "The store root derives from defaultGlobalWorkspaceDir (so AOF_GLOBAL_HOME
 //  relocates the WHOLE store); no os.homedir() call and no `.aof` string literal
-//  appears in the store/provision code (src/tool-store.mjs +
-//  src/commands/project-provision.mjs)."
+//  appears in the store/provision code (packages/core/src/tool-store.mjs +
+//  packages/core/src/commands/project-provision.mjs)."
 //
 // paths.mjs legitimately uses os.homedir() in defaultGlobalWorkspaceDir — that is
 // the ONE expression the relocation flows through, so the guard is SCOPED to the
@@ -22,10 +22,10 @@ import { readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { toolStoreRoot, toolVersionDir } from "../../../src/paths.mjs";
+import { toolStoreRoot, toolVersionDir } from "../../../packages/core/src/paths.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
 // The TWO files ADR-005 inv. 2 scopes the guard to (the store + provision code).
 const TOOL_STORE = path.join(srcDir, "tool-store.mjs");

@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-mesh-partition-write (milestone 22, ADR-002 / fitness #1).
 //
 // Partition discipline: every mesh record path is built by the SINGLE seam
@@ -11,7 +13,7 @@ import os from "node:os";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
 
-const MESH_STORE = new URL("../../../src/mesh/store.mjs", import.meta.url);
+const MESH_STORE = new URL("../../../packages/mesh/src/store.mjs", import.meta.url);
 
 export const archTests = [
   {
@@ -52,7 +54,18 @@ export const archTests = [
   {
     name: "arch/mesh-partition-write: publishing N distinct ids produces N discrete files under nodes/ with no aggregate",
     async run() {
-      const { publishNodeRecord, meshDir } = await import("../../../src/mesh/store.mjs");
+      const { publishNodeRecord, meshDir } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-partition-arch-"));
       try {
         const workspace = { workDir: path.join(repo, "wiki", "work"), globalMeshRoot: path.join(repo, "global", "mesh") };

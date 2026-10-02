@@ -1,17 +1,18 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 37 / story 00
 // tasks/02_record-doc-and-structural-validate.feature — "a spike/chore folder
 // validates on its native shape with no behavioural contract".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
 // asserted against the LOCKED engine `validateWork(workDir, config, scopeRef)` in
-// ../src/work.mjs — the same engine `aof work validate --json` is a thin face
+// ../packages/core/src/work.mjs — the same engine `aof work validate --json` is a thin face
 // over. We assert on `finding.problem` VERBATIM strings the feature pins — we
 // never change the engine or the contract. Mirrors test/work/gate/work-validate.test.mjs.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { validateWork } from "../../../src/work.mjs";
+const validateWork = _aofWorkspace.work.validateWork;
 
 function frontmatter(fields) {
   const body = Object.entries(fields)

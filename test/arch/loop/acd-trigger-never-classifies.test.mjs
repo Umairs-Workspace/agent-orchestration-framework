@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 // Fitness function: FF-6307 — A TRIGGERED WAKE NEVER CLASSIFIES, AND NEVER INVENTS A SCOPE
 // (63/ADR-007, ADR-010 §9, §10).
 //
@@ -5,7 +6,7 @@
 // otherwise satisfy while holding nothing:
 //
 //   1 · NO FEEDBACK RECORD'S BODY IS READ — RAW CAPTURE AND LATER TRIAGE CLASSIFICATION ALIKE.
-//       Both vocabularies are READ FROM `src/feedback-records.mjs` rather than retyped here, so a
+//       Both vocabularies are READ FROM `packages/core/src/feedback-records.mjs` rather than retyped here, so a
 //       vocabulary that grows is covered with no edit to this file, and every key of both is
 //       planted on a capture and required to reach nothing. Branching on triage's verdict is the
 //       same classification wearing someone else's answer, which is why the classification record
@@ -15,7 +16,7 @@
 //       it with captures that THROW on any access.
 //   2 · THE FAMILY HOLDS NO CLASSIFICATION VOCABULARY OF ITS OWN, and does not re-declare or
 //       branch on the refusal capture already raises (`feedback-classification-deferred`, read out
-//       of `src/commands/feedback.mjs` rather than spelled here).
+//       of `packages/core/src/commands/feedback.mjs` rather than spelled here).
 //   3 · THE BODY-BLINDNESS IS DRIVEN POSITIVELY AND COMPARATIVELY. Two captures with identical
 //       attribution and wildly different bodies must produce BYTE-IDENTICAL resolutions — the only
 //       assertion that proves content did not reach a decision, because a body-reading source and
@@ -40,12 +41,12 @@
 // TWO THINGS THIS CONTROL DELIBERATELY DOES NOT BAN, AND WHY, BECAUSE AN UNEXPLAINED OMISSION
 // READS AS AN OVERSIGHT:
 //
-//   · `verdict` FAMILY-WIDE. `src/work-trigger/level.mjs` legitimately renders the groundedness
+//   · `verdict` FAMILY-WIDE. `packages/core/src/work-trigger/level.mjs` legitimately renders the groundedness
 //     component verdict the GATE handed it (a different noun from a finding's classification), and
 //     banning the token would either red a delivered file or need a per-file exclusion — the
 //     species TECH_DEBT item 81 names. The finding-side reading is banned where it is real: at
 //     runtime, over every key of both feedback vocabularies.
-//   · PATTERN MACHINERY IN A MODULE THAT READS FILES. `src/work-trigger/declaration.mjs`
+//   · PATTERN MACHINERY IN A MODULE THAT READS FILES. `packages/core/src/work-trigger/declaration.mjs`
 //     legitimately holds one regex — the JSONC banner stripper. So the pattern bans run over a
 //     DERIVED PARTITION: every family module whose whole import closure touches no `node:fs` is a
 //     pure decider over values it was handed, and holds no pattern at all. That covers the next
@@ -73,9 +74,9 @@ import {
   resolveCronSignal,
   resolveFindingSignal,
   resolveTriggerSignals,
-} from "../../../src/work-trigger/sources.mjs";
-import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "../../../src/feedback-records.mjs";
-import { LOOP_SCOPE_FORMS, decideLoopScope } from "../../../src/work/loop.mjs";
+} from "@aof/work-loop/trigger/sources";
+import { RAW_FEEDBACK_KEYS, FEEDBACK_CLASSIFICATION_KEYS } from "@aof/work/feedback-records";
+import { LOOP_SCOPE_FORMS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — TECH_DEBT items 24 and 57. A `//` comment containing `/*`
 // opens a block-comment run for a block-first stripper, and everything to the next `*/` is
 // deleted; the bans below would then sweep a truncated string and report green over a region they
@@ -84,14 +85,14 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_DIR = path.join(REPO_ROOT, "src", "work-trigger");
+const FAMILY_DIR = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger");
 const LEAF_PATH = path.join(FAMILY_DIR, "sources.mjs");
-const FEEDBACK_COMMAND_PATH = path.join(REPO_ROOT, "src", "commands", "feedback.mjs");
-const LOOP_PATH = path.join(REPO_ROOT, "src", "work", "loop.mjs");
+const FEEDBACK_COMMAND_PATH = path.join(REPO_ROOT, "packages", "work", "src", "commands", "feedback.mjs");
+const LOOP_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs");
 
 const read = (file) => readFileSync(file, "utf8");
 
-// THE FAMILY IS DISCOVERED, NEVER LISTED. A module added to `src/work-trigger/` is covered by
+// THE FAMILY IS DISCOVERED, NEVER LISTED. A module added to `packages/core/src/work-trigger/` is covered by
 // every ban below on the day it lands, which is the only version of "no module under
 // src/work-trigger/" that stays true.
 function family() {
@@ -106,7 +107,7 @@ function moduleSpecifiers(code) {
   return [...new Set(importSpecifiers(code).map((entry) => entry.specifier))].sort();
 }
 
-// A MODULE'S CLOSURE WITHIN `src/`, and the builtins it reaches. Relative specifiers are followed
+// A MODULE'S CLOSURE WITHIN `packages/core/src/`, and the builtins it reaches. Relative specifiers are followed
 // transitively; everything else is recorded as a leaf of the walk. The partition leg 4 uses is
 // DERIVED from this — never a list of file names, which in the one control that deliberately
 // DISCOVERS its family would be the exact species (TECH_DEBT item 81 form 1) it exists to refuse.
@@ -120,8 +121,10 @@ function closureOf(file) {
     if (files.has(current)) continue;
     files.add(current);
     for (const specifier of moduleSpecifiers(stripComments(read(current)))) {
-      if (!specifier.startsWith(".")) { builtins.add(specifier); continue; }
-      const resolved = path.resolve(path.dirname(current), specifier);
+      if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) { builtins.add(specifier); continue; }
+      const resolved = specifier.startsWith("@aof/")
+        ? createRequire(current).resolve(specifier)
+        : path.resolve(path.dirname(current), specifier);
       if (existsSync(resolved)) queue.push(resolved);
       else unresolved.push(specifier);
     }
@@ -288,9 +291,9 @@ export const archTests = [
     run: () => {
       // The grammar is reached BY IMPORT, from the module that is the sole home of the forms.
       const [, leaf] = family().find(([name]) => name === "sources.mjs");
-      assert.deepEqual(moduleSpecifiers(leaf), ["../work/loop.mjs"],
+      assert.deepEqual(moduleSpecifiers(leaf), ["../engine.mjs"],
         "the leaf reaches the loop's own decision and nothing else at all, by any import form");
-      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/work\/loop\.mjs["']/.exec(leaf);
+      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/engine\.mjs["']/.exec(leaf);
       assert.ok(named, "…through a NAMED import, so no namespace binding is in scope");
       assert.deepEqual(named[1].split(",").map((token) => token.trim()).filter(Boolean), ["decideLoopScope"],
         "…importing exactly the decision, so nothing else could be re-derived from it");
@@ -324,7 +327,7 @@ export const archTests = [
       }
 
       // NO PATTERN MACHINERY AT ALL — over a DERIVED PARTITION of the family rather than over the
-      // leaf alone. `src/work-trigger/declaration.mjs` legitimately holds one regex (the JSONC
+      // leaf alone. `packages/core/src/work-trigger/declaration.mjs` legitimately holds one regex (the JSONC
       // banner stripper) and reaches `node:fs` to read the declaration; a module whose whole
       // closure touches no filesystem is a pure decider over values it was handed, and such a
       // module has no business owning a pattern. The partition is computed from the closures, so
@@ -351,7 +354,7 @@ export const archTests = [
       // vocabulary from the compiler: its closure is TWO FILES and NO BUILTINS, which is what
       // makes leg 8's "reads no file" a structural equality rather than a runtime spy.
       const leafClosure = closureOf(LEAF_PATH);
-      assert.equal(leafClosure.files.length, 2, "the leaf's closure is two source files (ADR-014)");
+      assert.equal(leafClosure.files.length, 2, "the leaf reaches only the zero-import package engine");
       assert.deepEqual(leafClosure.builtins, [], "…and no builtin at all, node:fs least of all");
 
       const patternBans = [
@@ -532,7 +535,7 @@ export const archTests = [
       // The leaf's whole import closure is one module, and that module imports nothing at all
       // (53's determinism contract), so there is no route from here to a file.
       const leaf = stripComments(read(LEAF_PATH));
-      assert.deepEqual(moduleSpecifiers(leaf), ["../work/loop.mjs"], "the leaf's closure is one module");
+      assert.deepEqual(moduleSpecifiers(leaf), ["../engine.mjs"], "the leaf's closure is one module");
       assert.deepEqual(moduleSpecifiers(stripComments(read(LOOP_PATH))), [], "…and that module imports nothing");
 
       for (const [pattern, what, planted] of [

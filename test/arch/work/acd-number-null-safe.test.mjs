@@ -18,10 +18,10 @@
 // `file:line`.
 //
 // THE SET IS EXACTLY ELEVEN FILES, asserted by set-equality over a comment-stripped sweep of
-// `src/**`: a twelfth file gaining a `.number` parse must be added here consciously, and a
+// `packages/core/src/**`: a twelfth file gaining a `.number` parse must be added here consciously, and a
 // file losing its last site must be removed — either way the control names the drift. The
 // contract named ten (task 04's preamble, measured at 2321dce8); 127/02 added the eleventh,
-// `src/commands/promote.mjs` — the ONE mint (127/ADR-003) reads the stream's width and the
+// `packages/core/src/commands/promote.mjs` — the ONE mint (127/ADR-003) reads the stream's width and the
 // archived-collision set over rows, and every one of its sites is guarded by the rule.
 //
 // Non-vacuous: at least ten sites must be CLASSIFIED by the rule (allow-listed sites do not
@@ -31,7 +31,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { stripComments, classifySites } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -39,34 +39,37 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The ten files, as the contract names them (task 04's preamble, measured at 2321dce8), plus the
 // one 127/02 added.
 export const NUMBER_CONSUMER_FILES = Object.freeze([
-  "src/work.mjs",
-  "src/work/reindex.mjs",
-  "src/commands/migrate-folder.mjs",
-  "src/commands/insert-shared.mjs",
-  "src/work/doctor-depends.mjs",
-  "src/work/doctor-freshness.mjs",
-  "src/work/doctor.mjs",
-  "src/work/doctor-coherence.mjs",
-  "src/memory/local-indexing.mjs",
-  "src/work-promote/promotion.mjs",
+  "packages/work/src/validation.mjs",
+  "packages/work/src/discovery.mjs",
+  "packages/work/src/dependencies.mjs",
+  "packages/work/src/readiness.mjs",
+  "packages/work/src/reindex.mjs",
+  "packages/work/src/commands/migrate-folder.mjs",
+  "packages/work/src/insertion/scaffold.mjs",
+  "packages/work/src/doctor/depends.mjs",
+  "packages/work/src/doctor/freshness.mjs",
+  "packages/work/src/doctor/index.mjs",
+  "packages/work/src/doctor/coherence.mjs",
+  "packages/knowledge/src/memory/local-indexing.mjs",
+  "packages/work/src/promote/promotion.mjs",
   // 127/02 — the eleventh: the one mint (127/ADR-003) reads the stream's width (`streamWidth`)
   // and the archived-collision set (`archivedCollisions`) over rows, and `numbersWritten`
   // filters through `isLiveStreamRow`. All four sites are guarded; none is allow-listed.
-  "src/commands/promote.mjs",
+  "packages/work/src/commands/promote.mjs",
   // 127/03 — the twelfth and thirteenth: the archive face (`selectDoneDrivers`) and the archive
   // engine (`liveDrivers`) each order the root's drivers by number for `--done`, and each site sits
   // behind `.filter(isLiveStreamRow)` over the same rows. Guarded; none is allow-listed.
-  "src/commands/archive.mjs",
-  "src/work/archive.mjs",
+  "packages/work/src/commands/archive.mjs",
+  "packages/work/src/archive.mjs",
 ]);
 
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +
 // enclosing top-level function — never by line.
 export const ALLOWED_UNCLASSIFIED = Object.freeze([
-  { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceStories", reason: "source-scan units (a foreign tree's story folders), not enumerator rows" },
-  { file: "src/commands/migrate-folder.mjs", fn: "recoverSourceTasks", reason: "source-scan units (a foreign tree's task features), not enumerator rows" },
-  { file: "src/work/doctor-freshness.mjs", fn: "roadmapFolderMismatch", reason: "a ROADMAP index entry (`entry?.number`, config data), not a row" },
-  { file: "src/work/reindex.mjs", fn: "reindexForInsert", reason: "its rows are `selectAffected`'s output, filtered through isLiveStreamRow there" },
+  { file: "packages/work/src/commands/migrate-folder.mjs", fn: "recoverSourceStories", reason: "source-scan units (a foreign tree's story folders), not enumerator rows" },
+  { file: "packages/work/src/commands/migrate-folder.mjs", fn: "recoverSourceTasks", reason: "source-scan units (a foreign tree's task features), not enumerator rows" },
+  { file: "packages/work/src/doctor/freshness.mjs", fn: "roadmapFolderMismatch", reason: "a ROADMAP index entry (`entry?.number`, config data), not a row" },
+  { file: "packages/work/src/reindex.mjs", fn: "reindexForInsert", reason: "its rows are `selectAffected`'s output, filtered through isLiveStreamRow there" },
 ]);
 
 // The site shape — the contract's own grep, `parseInt\([^()]*\.number[^()]*\)`, widened at the
@@ -88,8 +91,8 @@ export function classifyNumberSites(source) {
 
 export async function sweepNumberSites() {
   const perFile = new Map();
-  for (const file of await readSrcFiles(repoRoot)) {
-    const rel = `src/${file.rel}`;
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    const rel = file.rel;
     const source = await readFile(file.path, "utf8");
     // A fresh, non-global test: the sweep regex is `g` for matchAll, and `.test` on a `g` regex
     // carries `lastIndex` across calls, which is how a second sweep would silently see nothing.

@@ -1,3 +1,7 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readdir, readFile, rm, utimes, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -6,30 +10,35 @@ import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import {
-  composeFixInput,
-  phaseCommand,
-  PHASE_MODE_FLAGS,
-  continueDriverCommand,
-  refineDriverCommand,
-  verifyDriverCommand,
-} from "../../src/commands/drive.mjs";
+const composeFixInput = _aofApplication.loop.commandTools.drive.composeFixInput;
+const phaseCommand = _aofApplication.loop.commandTools.drive.phaseCommand;
+const PHASE_MODE_FLAGS = _aofApplication.loop.commandTools.drive.PHASE_MODE_FLAGS;
+const continueDriverCommand = _aofApplication.getCommand("work:drive-continue");
+const refineDriverCommand = _aofApplication.getCommand("work:drive-refine");
+const verifyDriverCommand = _aofApplication.getCommand("work:drive-verify");
 // The driver is reached through the SINK, as every loop suite reaches it (53/ADR-015 §2: the set
 // of test files that NAME the driver module is closed; the sink re-exports its bindings by identity).
-import { driveInteractiveClaudeSession } from "../../src/mesh/worker-execution.mjs";
-import { spawnLaneDrive } from "../../src/loop/child-drive.mjs";
-import { setSeaSentinelForTest } from "../../src/asset-base.mjs";
-import { DEFAULT_DEADLINE_MS } from "../../src/work-audit/spawn.mjs";
-import { parseSpecArgv } from "../../src/spine/face.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const spawnLaneDrive = _aofApplication.loop.childDrive.spawnLaneDrive;
+import { setSeaSentinelForTest } from "../../packages/core/src/asset-base.mjs";
+import { DEFAULT_DEADLINE_MS } from "@aof/execution/bounded-process";
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import { transitionRunStart } from "../../src/effects/run-transitions.mjs";
-import { fixTransport } from "../../src/commands/loop.mjs";
+const transitionRunStart = _aofApplication.execution.transitions.transitionRunStart;
+const fixTransport = _aofApplication.loop.commandTools.loop.fixTransport;
 import { SOURCE_DIRECTORY_EXEMPTIONS, FLAT_LAYER_THRESHOLD } from "../arch/testing/acd-source-directory-budget.test.mjs";
-import { continueCommand, refineDoorCommand, verifyDoorCommand } from "../../src/commands/continue.mjs";
-import { completeRun, readRuns, recordSessionId } from "../../src/run-store.mjs";
-import { answerAsk, askRequestPath, loopAsksDir, openAsk } from "../../src/loop/ask-request.mjs";
-import { findWork } from "../../src/work.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
+const continueCommand = _aofApplication.getCommand("work:continue");
+const refineDoorCommand = _aofApplication.getCommand("work:refine");
+const verifyDoorCommand = _aofApplication.getCommand("work:verify");
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordSessionId = _aofApplication.execution.runs.recordSessionId;
+const answerAsk = _aofApplication.loop.askRequest.answerAsk;
+const askRequestPath = _aofApplication.loop.askRequest.askRequestPath;
+const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
+const openAsk = _aofApplication.loop.askRequest.openAsk;
+const findWork = _aofWorkspace.work.findWork;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
@@ -42,7 +51,7 @@ const BRACKETED_PASTE_START = `${ESC}[200~`;
 const BRACKETED_PASTE_END = `${ESC}[201~`;
 // The Enter byte the driver submits with (carriage return, never line feed).
 const SUBMIT_KEY = String.fromCharCode(13);
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
 
 const DECLARED_DONE_TRANSCRIPT_LINE = "AOF_DIRECTIVE_COMPLETE";
 const DECLARED_DONE_IDLE_MS = 10_000;
@@ -251,7 +260,7 @@ const LANE = "C:/lanes/dispatch-127-02";
 // The lane child's spawn option keys: the four of 129/02, plus `detached` on win32 (129/06 F-63 —
 // the child holds its own console so a console-scoped kill inside it never reaches the loop).
 const LANE_CHILD_OPTION_KEYS = Object.freeze(process.platform === "win32" ? ["cwd", "detached", "env", "stdio", "windowsHide"] : ["cwd", "env", "stdio", "windowsHide"]);
-const ENTRY = fileURLToPath(new URL("../../src/cli.mjs", import.meta.url));
+const ENTRY = fileURLToPath(new URL("../../packages/core/src/cli.mjs", import.meta.url));
 const DOC = Object.freeze({
   ref: "127/02",
   phase: "continue",
@@ -1565,15 +1574,15 @@ export const driveCommandPhaseDriverTests = [
   {
     name: "129/02 task03 src/loop is a declared exemption — in SOURCE_DIRECTORY_EXEMPTIONS with a why naming the ninth file or the loop-* root-leaf move, and holding its members under the threshold",
     async run() {
-      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/loop");
-      assert.ok(exemption != null, "src/loop appears in SOURCE_DIRECTORY_EXEMPTIONS");
+      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/application/bindings/loop");
+      assert.ok(exemption != null, "packages/core/src/loop appears in SOURCE_DIRECTORY_EXEMPTIONS");
       assert.match(exemption.why, /ninth file/u, "the why names the ninth file");
       assert.match(exemption.why, /loop-\*.*root-leaf move|root-leaf move/u, "…and the loop-* root-leaf move");
       assert.match(exemption.why, /129\/02/u, "…and the story that bore it");
-      const loopDir = fileURLToPath(new URL("../../src/loop/", import.meta.url));
+      const loopDir = fileURLToPath(new URL("../../packages/core/src/application/bindings/loop/", import.meta.url));
       const members = (await readdir(loopDir, { withFileTypes: true })).filter((entry) => entry.isFile()).map((entry) => entry.name);
-      assert.ok(members.includes("child-drive.mjs"), `src/loop/ holds child-drive.mjs (${members.join(", ")})`);
-      assert.ok(members.length <= FLAT_LAYER_THRESHOLD, `src/loop/ holds ${members.length} members, under FLAT_LAYER_THRESHOLD (${FLAT_LAYER_THRESHOLD}) — the size claim leg 6 re-checks`);
+      assert.ok(members.includes("child-drive.mjs"), `packages/core/src/loop/ holds child-drive.mjs (${members.join(", ")})`);
+      assert.ok(members.length <= FLAT_LAYER_THRESHOLD, `packages/core/src/loop/ holds ${members.length} members, under FLAT_LAYER_THRESHOLD (${FLAT_LAYER_THRESHOLD}) — the size claim leg 6 re-checks`);
     },
   },
   {
@@ -1647,7 +1656,7 @@ export const driveCommandPhaseDriverTests = [
   {
     name: "140/01 the drive spells no mode of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS",
     async run() {
-      const drive = stripComments(await readFile(new URL("../../src/commands/drive.mjs", import.meta.url), "utf8"));
+      const drive = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/drive.mjs", import.meta.url), "utf8"));
       const flagsLine = drive.split(/\r?\n/u).filter((line) => line.includes("PHASE_MODE_FLAGS = Object.freeze("));
       assert.equal(flagsLine.length, 1, "the flag map is declared on one line");
       const outside = drive.split(flagsLine[0]).join("");
@@ -2014,7 +2023,7 @@ function driveAnswerTests() {
             if (file !== "record done") assert.equal(JSON.stringify(await readRuns(item)), before, `${label}: the runs are byte-unchanged`);
           }, { sessionOnRecord: file === "no session on record" ? null : "S1" });
         }
-        const drive = await readFile(fileURLToPath(new URL("../../src/commands/drive.mjs", import.meta.url)), "utf8");
+        const drive = await readFile(fileURLToPath(new URL("../../packages/work-loop/src/commands/drive.mjs", import.meta.url)), "utf8");
         const stripped = drive.replace(/\/\/[^\n]*/gu, "");
         const answerRead = stripped.indexOf("await readAnswerFile(input.answer)");
         assert.ok(answerRead > 0, "the answer is read in run()");

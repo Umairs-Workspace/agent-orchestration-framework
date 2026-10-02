@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 43 / story 06 (the readers migrate), task
 //   .../06_story_cache-read-surface/tasks/03_worker-and-structural-readers-stay-on-disk.feature
 //
@@ -35,11 +37,16 @@ import {
   CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
 import { assertValidateCleanAfterInsert } from "../support/item-lock-fixture.mjs";
-import { loadWorkspace, invoke } from "../../src/command-core.mjs";
-import { listItems, findWork, listStream, nextWork } from "../../src/work.mjs";
-import { readWorkspaceProjectionItems } from "../../src/global-work-store.mjs";
-import { publishGlobalWorkSnapshot } from "../../src/global-work-publisher.mjs";
-import { meshDispatchWorktreePath, meshSessionWorktreePath } from "../../src/mesh/worktree.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const listItems = _aofWorkspace.work.listItems;
+const findWork = _aofWorkspace.work.findWork;
+const listStream = _aofWorkspace.work.listStream;
+const nextWork = _aofWorkspace.work.nextWork;
+const readWorkspaceProjectionItems = _aofApplication.mesh.store.readWorkspaceProjectionItems;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
 
 // The Background stream: this node's disk holds 00 through 05, the control's own work.
 const DISK_STREAM = Array.from({ length: 6 }, (_, i) => ({ number: String(i).padStart(2, "0"), stories: [] }));
@@ -153,11 +160,13 @@ export const cacheReadBoundaryHoldsTests = [
       // NOTE (flagged to the architect, not fixed here): ADR-005 pins "the WORKER-side content
       // read" as `global-work-store:601` and `acd-cache-read-surface-boundary` pins
       // `global-work-store.mjs`'s `listItems` import for it — but `readWorkspaceContentRecords`
-      // has since MOVED to `src/work/content-read.mjs`. The arch test is green on a DIFFERENT
+      // has since MOVED to `packages/core/src/work/content-read.mjs`. The arch test is green on a DIFFERENT
       // `listItems` caller in that file (`readWorkspaceProjectionItems`, the dual-use read
       // ADR-005 says is not a reader that must migrate), so the source-level pin no longer
       // covers the function it was written to protect. This behavioural proof does.
-      const { readWorkspaceContentRecords } = await import("../../src/work/content-read.mjs");
+      const { readWorkspaceContentRecords } = await Promise.resolve(Object.freeze({
+  readWorkspaceContentRecords: _aofApplication.work.contentRead.readWorkspaceContentRecords,
+}));
       const streamed = await readWorkspaceContentRecords(worker.workspace);
       const doc = streamed.docs.find((entry) => entry.ref === "07/01" && entry.doc === "STORY");
       assert.ok(doc != null, "the worker's content read produced its STORY body");
@@ -251,7 +260,21 @@ export const cacheReadBoundaryHoldsTests = [
       // PRECONDITION, asserted: the cache really does know a ref the disk does not, so a
       // structural read that HAD migrated would genuinely see a different set.
       const workspace = await loadWorkspace(fx.root, undefined, { env: fx.env });
-      const { listItemsCacheFirst } = await import("../../src/work/read.mjs");
+      const { listItemsCacheFirst } = await Promise.resolve(Object.freeze({
+  ANSWERING_SIDE_KEYS: _aofApplication.work.read.ANSWERING_SIDE_KEYS,
+  DEGRADE_CACHE_MISS: _aofApplication.work.read.DEGRADE_CACHE_MISS,
+  DEGRADE_CACHE_UNAVAILABLE: _aofApplication.work.read.DEGRADE_CACHE_UNAVAILABLE,
+  DEGRADE_NO_LOCAL_CHECKOUT: _aofApplication.work.read.DEGRADE_NO_LOCAL_CHECKOUT,
+  findWorkCacheFirst: _aofApplication.work.read.findWorkCacheFirst,
+  isMeshWorktree: _aofApplication.work.read.isMeshWorktree,
+  listItemsCacheFirst: _aofApplication.work.read.listItemsCacheFirst,
+  listStreamCacheFirst: _aofApplication.work.read.listStreamCacheFirst,
+  localItemsOnly: _aofApplication.work.read.localItemsOnly,
+  nextWorkCacheFirst: _aofApplication.work.read.nextWorkCacheFirst,
+  reportReachThroughSkips: _aofApplication.work.read.reportReachThroughSkips,
+  reportedElsewhere: _aofApplication.work.read.reportedElsewhere,
+  withoutAnsweringSide: _aofApplication.work.read.withoutAnsweringSide,
+}));
       const seamRefs = (await listItemsCacheFirst(workspace, { globalWorkStoreOptions: { env: fx.env } })).map((row) => row.ref);
       assert.ok(seamRefs.includes("07"), "the CACHE-first view genuinely includes 07 (so a migrated structural read would see 7 top-level items, not 6)");
       assert.ok(!(await listItems(fx.workDir)).some((item) => item.ref === "07"), "…while the DISK view does not");

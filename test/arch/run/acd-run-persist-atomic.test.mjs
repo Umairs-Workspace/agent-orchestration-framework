@@ -1,13 +1,13 @@
 // Fitness function: acd-run-persist-atomic (milestone 20, ADR-007 — closing 19/R2a).
 //
-// Every run-record write in run-store.mjs routes through the atomic src/fs.mjs:writeText
+// Every run-record write in run-store.mjs routes through the atomic packages/core/src/fs.mjs:writeText
 // temp+rename seam; there is NO raw writeFile/appendFile of a runs/<id>.json, and the
 // module imports writeText from ./fs.mjs (the previously-missing edge the graph flagged).
 // Source-analysis (call-form, comments discounted), mirroring acd-run-write-scope.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 
 export const archTests = [
   {
@@ -15,8 +15,8 @@ export const archTests = [
     async run() {
       const code = stripComments(await readFile(RUN_STORE, "utf8"));
       assert.ok(
-        /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*["']\.\/fs\.mjs["']/.test(code),
-        "run-store.mjs imports writeText from ./fs.mjs"
+        /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*["']@aof\/foundation\/fs["']/.test(code),
+        "run-store.mjs imports the public atomic filesystem seam"
       );
     },
   },

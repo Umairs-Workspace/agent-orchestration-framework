@@ -1,22 +1,23 @@
 import assert from "node:assert/strict";
+import { createRequire } from "node:module";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(root, "src");
-const driver = path.join(root, "src", "agent-session-driver.mjs");
-const sink = path.join(root, "src", "mesh", "worker-execution.mjs");
+const srcRoot = path.join(root, "packages", "core", "src");
+const driver = path.join(root, "packages/core/src/application/bindings/agent-session-driver.mjs");
+const sink = path.join(root, "packages/core/src/application/bindings/mesh/worker-execution.mjs");
 const EXPECTED_DIRECT = Object.freeze([
-  "claude-trust.mjs", "degrade.mjs", "terminal-providers.mjs", "terminal-ws.mjs", "work/observe.mjs",
+  "asset-base.mjs", "application/bindings/claude-trust.mjs", "application/bindings/degrade.mjs", "application/bindings/terminal-providers.mjs", "application/bindings/work/observe.mjs",
   // milestone 68/01 added the pure OTel builder (ADR-005 §2); milestone 70/00 adds the pure
   // phase-brief compiler (ADR-002). Both are pure leaves imported WITHOUT re-export — the
   // driver's frozen EXPORT set (FF-5302) is untouched. `otel-attribution.mjs` was landed by
   // 68 but never added here — a pre-existing red this file now records, not causes.
-  "otel-attribution.mjs", "phase-brief.mjs",
+
   // milestone 69/01–69/02 add the declared-bound resolver (69/ADR-001, ADR-002): the driver's
   // liveness idle window and its per-attempt deadline both resolve through the ONE bound home
   // rather than a literal of their own, which is what FF-6901 pins. `loop-bounds.mjs` is a
@@ -24,10 +25,9 @@ const EXPECTED_DIRECT = Object.freeze([
   // the reach — and it is imported WITHOUT re-export, so FF-5302's frozen export set is
   // untouched. Recorded here at `aof:verify 69` (VERIFICATION F-69-V10); the import had been
   // live since 69/01–02 merged with this census unmoved.
-  "loop-bounds.mjs",
   // milestone 138/00 (138/ADR-001 §5 and §7) — THE DOOR: the driver's one way to know what is on
   // claude's screen. Imported WITHOUT re-export, so FF-5302's frozen seventeen are untouched.
-  "terminal/session-screen.mjs",
+  "application/bindings/terminal/session-screen.mjs",
 ]);
 const DENIED_TRANSITIVE = Object.freeze([
   "run-store.mjs", "global-work-store.mjs", "workspace-identity.mjs", "item-lock.mjs",
@@ -41,7 +41,7 @@ const TOKENS = Object.freeze(["assignmentId", "workspaceId", "leaseId", "assignm
 // The STATIC closure — the reach ceilings below are counts of what module init loads, so a deferred
 // `import()` is a door this walk deliberately does not open.
 function specifiers(source) {
-  return importSpecifiers(source).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
+  return dependencySpecifiers(source).filter((entry) => !entry.dynamic).map((entry) => entry.specifier);
 }
 
 async function walkImports(entry) {
@@ -54,8 +54,8 @@ async function walkImports(entry) {
     seen.add(resolved);
     const source = await readFile(resolved, "utf8");
     for (const specifier of specifiers(source)) {
-      if (!specifier.startsWith(".")) continue;
-      const target = path.resolve(path.dirname(resolved), specifier);
+      if (!specifier.startsWith(".") && !specifier.startsWith("@aof/")) continue;
+      const target = createRequire(resolved).resolve(specifier);
       edges.push([resolved, target]);
       if (!paths.has(target)) paths.set(target, [...paths.get(resolved), target]);
       await visit(target);
@@ -73,7 +73,11 @@ function directSourceImports(source) {
 }
 
 function isDeniedTransitive(rel) {
-  if (DENIED_TRANSITIVE.includes(rel)) return true;
+  rel = rel.replace(/^application\/bindings\//, "");
+  if (DENIED_TRANSITIVE.includes(rel) || rel.startsWith("mesh/")) return true;
+  if (/^\.\.\/\.\.\/(?:mesh|effects|integration-notion)\//u.test(rel)) return true;
+  if (/^\.\.\/packages\/execution\/src\/(?:runs|spend|heartbeats|session-capture)\.mjs$/u.test(rel)) return true;
+  if (rel === "../../work/src/effects.mjs") return true;
   if (rel.startsWith("effects/") || rel.startsWith("commands/")) return true;
   return /^board-.*\.mjs$/u.test(rel);
 }
@@ -102,23 +106,40 @@ export const archTests = [
       const graph = await walkImports(driver);
       assert.ok(graph.seen.has(driver), "the import walk visited its root");
       assert.ok(graph.seen.size > 1, `the root-inclusive import walk was non-vacuous: ${graph.seen.size} modules`);
-      // Reach 25 is story 137's `src/work/digest-template.mjs`, reached through `observe.mjs ->
+      // Reach 25 is story 137's `packages/core/src/work/digest-template.mjs`, reached through `observe.mjs ->
       // work.mjs`: validate's digest check imports it statically (FF-5407 forbids work.mjs a
       // deferred import()). It is a pure leaf whose one import, `asset-base.mjs`, the driver already
       // reaches, so the raise adds one module and no mesh chain. Decided by the operator at 130's
       // accept door (2026-09-24) and recorded as 130/VERIFICATION F-16.
-      // Reach 28 is milestone 138/00's `src/terminal/` family (138/ADR-001 §7): the door
+      // Reach 28 is milestone 138/00's `packages/core/src/terminal/` family (138/ADR-001 §7): the door
       // `session-screen.mjs`, the model `screen.mjs` and the registry `claude-screens.mjs`. Their
       // other imports, `degrade.mjs` and `loop-bounds.mjs`, were already in the closure, and
       // `@xterm/headless` is a bare specifier outside the walk. MEASURED with this file's own walker
       // at 138/00's build: 25 before, 28 after.
-      assert.ok(graph.seen.size <= 28, `root-inclusive driver reach ${graph.seen.size} exceeds the ADR-015 §5 ceiling 28; raising it requires an ADR (reach 22 = 68/01's otel-attribution, 23 = 70/00's phase-brief, 24 = 69/01-02's loop-bounds — see 69/ARCHITECTURE.md ADR-002 and VERIFICATION F-69-V10; 25 = 137's digest-template, 130/VERIFICATION F-16; 28 = 138/00's session-screen.mjs, screen.mjs and claude-screens.mjs, 138/ADR-001 §7)`);
+      // 142 splits existing filesystem/reporting/storage implementations into three
+      // foundation modules and replaces mesh/log with core's diagnostic path adapter.
+      // Work records, discovery, readiness and validation extraction add seven reachable
+      // modules net (31 -> 38); direct package imports bypass two old forwards.
+      // Shared loop bounds add one package leaf (38 -> 39), with no execution or mesh edge.
+      // These nodes relocate existing code; the entire mesh family remains denied.
+      // 142 adds the two implementation homes for provider resolution and session records;
+      // the adapters retain their previous imports and no additional domain is reachable.
+      // Screen/trust implementation homes add four nodes; direct package imports bypass
+      // the old screen-registry and bounds forwards, a net increase of two (35 -> 37).
+      // Observation now imports discovery directly: one implementation home replaces
+      // nine nodes previously reached through the core work facade (37 -> 29).
+      // Plan 02 adds the explicit per-application path policy, which imports the existing workspace paths.
+      // Plan 03 adds the pure core manifest locator, with only builtin imports.
+      assert.ok(graph.seen.size <= 31, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 assembly census of 31`);
+      assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
+      const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
-      const terminalWs = path.join(srcRoot, "terminal-ws.mjs");
-      const work = path.join(srcRoot, "work.mjs");
-      const degrade = path.join(srcRoot, "degrade.mjs");
-      const meshLog = path.join(srcRoot, "mesh/log.mjs");
+      const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
+      const work = path.join(srcRoot, "application/bindings/work.mjs");
+      const degrade = path.join(srcRoot, "application/bindings/degrade.mjs");
+      const applicationLog = path.join(srcRoot, "application/bindings/diagnostics/log.mjs");
       const workspace = path.join(srcRoot, "workspace.mjs");
       // milestone 127/01 (127/ADR-001 §5) adds a SECOND route into work.mjs: `work/observe.mjs`
       // was an eighth work-root scanner (three functions `readdir`-ing `<cwd>/wiki/work` with a
@@ -128,13 +149,16 @@ export const archTests = [
       // is unchanged and no denied subtree is entered; only the set of edges into an admitted
       // module grows by one. Recorded here at 127/01's build (FF-12701 is the control that
       // holds observe.mjs to the enumerator), for `aof:verify 127` to ratify.
-      assert.deepEqual(incoming(graph, work), ["terminal-ws.mjs", "work/observe.mjs"], "the admitted work.mjs routes are exactly terminal-ws.mjs -> work.mjs and work/observe.mjs -> work.mjs (127/01)");
-      assert.deepEqual(incoming(graph, meshLog), ["degrade.mjs"], "the admitted mesh-log.mjs route is exactly degrade.mjs -> mesh-log.mjs");
-      assert.deepEqual(incoming(graph, workspace), ["mesh/log.mjs", "work.mjs"], "workspace.mjs is reached only through the two named admitted subtrees");
-      assert.ok(graph.edges.some(([from, to]) => from === terminalWs && to === work), "the terminal-ws admission still has a subject");
-      assert.ok(graph.edges.some(([from, to]) => from === degrade && to === meshLog), "the degrade admission still has a subject");
+      assert.deepEqual(incoming(graph, work), [], "the transcript service no longer reaches the core work facade");
+      assert.ok(!graph.seen.has(work), "core work composition is absent from the driver closure");
+      assert.deepEqual(incoming(graph, path.join(root, "packages/work/src/discovery.mjs")), ["../../work/src/observe.mjs"], "only the work observer reaches disk discovery");
+      assert.deepEqual(incoming(graph, applicationLog), ["application/bindings/degrade.mjs"], "diagnostic path policy is reached only through the reporter adapter");
+      assert.deepEqual(incoming(graph, workspace), ["application/paths.mjs"], "workspace.mjs is reached only through diagnostic path policy");
+      assert.ok(!graph.seen.has(terminalWs), "local session execution never imports the WebSocket transport");
+      assert.ok(graph.edges.some(([from, to]) => from === degrade && to === applicationLog), "the degrade admission still has a subject");
 
       const sinkGraph = await walkImports(sink);
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/mesh/src/worker-execution.mjs")), "the configured sink reaches its implementation");
       // Architect-approved milestone-70 integration extension: m68's run-session-capture
       // contribution and m70's phase-brief-read + phase-brief path made the exact reach 59.
       // Milestone 69 adds THREE more, all zero- or shallow-dependency leaves reached only
@@ -207,7 +231,7 @@ export const archTests = [
       // the driver's reach (unchanged) with the sink's (this line), and the number is written down
       // rather than absorbed.
       //
-      // MILESTONE 127/04 ADDS ONE: `src/work/item-row.mjs`, the cache ROW's screen at the store
+      // MILESTONE 127/04 ADDS ONE: `packages/core/src/work/item-row.mjs`, the cache ROW's screen at the store
       // boundary (127/ADR-006 §1). `global-work-store.mjs` sits at its 1,280-line ratchet (43/ADR-012/B4,
       // whose escape hatch is "the next block in its own module"), so the row screen — the two new
       // location shapes, `backlog` and `archived`, and the `true → 1` bind mapping — moved into a leaf
@@ -216,7 +240,7 @@ export const archTests = [
       // nothing behind it, enters no DENIED_TRANSITIVE subtree and relaxes no lifecycle denylist. The
       // DRIVER's reach is untouched (24). MEASURED with this file's own walker at aof:verify 127: 74.
       //
-      // MILESTONE 130/03 ADDS ONE: `src/loop/stop-request.mjs`, the stop request's ONE home
+      // MILESTONE 130/03 ADDS ONE: `packages/core/src/loop/stop-request.mjs`, the stop request's ONE home
       // (130/ADR-001), reached because the presence read (`mesh/presence.mjs`, long in this closure)
       // now reads each live loop's standing request through it for the additive `loops` key
       // (130/ADR-005 §1). The leaf imports `workspace.mjs`, `fs.mjs` and `degrade.mjs` — all three
@@ -225,16 +249,40 @@ export const archTests = [
       // denylist is relaxed. The DRIVER's reach is untouched (24). MEASURED with this file's own
       // walker at 130/03's build: 75.
       //
-      // STORY 137 ADDS ONE: `src/work/digest-template.mjs`, reached through `work.mjs` (validate's
+      // STORY 137 ADDS ONE: `packages/core/src/work/digest-template.mjs`, reached through `work.mjs` (validate's
       // digest check imports it statically). It is a leaf whose one import, `asset-base.mjs`, is
       // already here, so it reaches nothing behind it. The same module raises the DRIVER's ceiling
       // to 25 above (130/VERIFICATION F-16). MEASURED with this file's own walker at 130's accept: 76.
       //
       // MILESTONE 138/00 ADDS THREE, all behind the DRIVER, which this sink re-exports: the
-      // `src/terminal/` family (138/ADR-001 §7), the same three modules that raise the driver's
+      // `packages/core/src/terminal/` family (138/ADR-001 §7), the same three modules that raise the driver's
       // ceiling to 28 above. Their other imports were already here, so they reach nothing behind
       // them. MEASURED with this file's own walker at 138/00's build: 79.
-      assert.equal(sinkGraph.seen.size, 79, "the assignment sink reach is exactly 79: 119/04's split adds its two extracted siblings, 126/05 adds the one zero-import runtime home both stores now share, 129/03's re-export of the moved ref resolver adds work/dispatch.mjs and its launcher-lock leaf, 127/04 adds the store's row-screen leaf work/item-row.mjs, 130/03 adds the stop request's one home loop/stop-request.mjs behind the presence read, 137 adds the digest template's reader work/digest-template.mjs behind work.mjs, 138/00 adds the driver's terminal family (session-screen, screen, claude-screens), and none reaches anything new behind it");
+      // 142 moves registration to inert package contributions. Count local workspace
+      // imports too: the static sink closure was 73, including all seven package
+      // modules. Deferred domain-service imports are deliberately outside this census.
+      // The read extraction adds three implementation homes behind existing forwards:
+      // item-row, artifacts and content-read. The other 91 nodes are unchanged.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/work-loop/src/dispatch.mjs")), "the sink reaches dispatch's implementation through its core binding");
+      // Mesh persistence adds five implementation homes behind existing composition adapters.
+      // The registry is not in this sink's static closure; the six-module extraction
+      // therefore increases this census by five, without widening the driver's imports.
+      for (const name of ["store", "session", "launcher-lock", "fabric", "repo-marker"]) {
+        assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)), name);
+      }
+      for (const name of ["presence", "assignment-record", "projection-store"]) {
+        assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)), name);
+      }
+      // 142: +worker execution/admission/launch implementations, -loop-bounds/repo-marker forwards.
+      for (const name of ["worker-execution", "worker-repo-admission", "worker-launch"]) assert.ok(sinkGraph.seen.has(path.join(root, `packages/mesh/src/${name}.mjs`)));
+      // Domain transitions add two implementation homes and remove the assignment-record forward.
+      for (const file of ["packages/execution/src/run-transitions.mjs", "packages/mesh/src/assignment-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)));
+      // Plan 01 splits cache/brief/journal services and domain store declarations; direct public imports remove forwards.
+      // The static closure grows 108 -> 117; the driver isolation and denylist above remain unchanged.
+      // 142 security fixes add two leaf helpers, MEASURED by diffing this walker's closure per commit:
+      // @aof/foundation/git-args (via execution/worktrees, d0b83a39) and @aof/foundation/text (via mesh
+      // node-identity, 5a677e4e). Both import nothing; the driver isolation is unchanged.
+      assert.equal(sinkGraph.seen.size, 121, "Plans 02/03 add the application path policy and pure core manifest locator to the 117-module worker closure; 142 adds git-args and text");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },
@@ -262,7 +310,7 @@ export const archTests = [
   {
     name: "arch/53 FF-5301 (acd-session-driver-mesh-blind): the comment-stripped identity-token proxy is explicit about both its catches and its jobId false negative",
     run: async () => {
-      const source = stripComments(await readFile(driver, "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages/execution/src/session-driver.mjs"), "utf8"));
       for (const token of TOKENS) assert.doesNotMatch(source, new RegExp(`\\b${token}\\b`, "u"), `${token} is mesh identity, not session driving`);
       const proxy = (text) => TOKENS.filter((token) => new RegExp(`\\b${token}\\b`, "u").test(stripComments(text)));
       assert.deepEqual(proxy("const assignmentId = 1; const workspaceId = 2; const leaseId = 3; const assignment = 4;"), TOKENS);

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 63 / story 05 — the trigger's face.
 //
 // One test object per @executable scenario across the five task features (Scenario-Outline rows
@@ -22,16 +24,22 @@ import { fileURLToPath } from "node:url";
 
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { cleanL3Gate } from "../support/l3-gate-fixture.mjs";
-import { getCommand, invoke, listCommands } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS, LOOP_INPUT_KEYS as LOOP_INPUT_KEYS_UNDER_TEST } from "../../src/commands/trigger.mjs";
-import { TRIGGER_SOURCES, compileTriggerDeclaration } from "../../src/work-trigger/declaration.mjs";
-import { resolveTriggerLevel } from "../../src/work-trigger/level.mjs";
-import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../src/work/loop.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const buildTriggerReport = _aofApplication.loop.commandTools.trigger.buildTriggerReport;
+const triggerCommand = _aofApplication.getCommand("work:trigger");
+const RESOLVED_TRIGGER_KEYS = _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS;
+const LOOP_INPUT_KEYS_UNDER_TEST = _aofApplication.loop.commandTools.trigger.LOOP_INPUT_KEYS;
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
+import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
+import { LOOP_LEVELS, LOOP_REFUSALS, decideLoopScope } from "../../packages/work-loop/src/engine.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const BUNDLED_DECLARATION = path.join(repoRoot, "src", "bundle", "triggers.jsonc");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
+const BUNDLED_DECLARATION = path.join(repoRoot, "packages", "core", "assets", "triggers.jsonc");
 
 const LOOP_ID = "work:loop";
 const DOCTOR_ID = "work:doctor";
@@ -1235,7 +1243,7 @@ export const triggerCommandTests = [
       // the `work:insert-*` family, so `work:trigger` is outside its domain by construction
       // rather than by a carve-out list this story had to edit. Pinned here so the claim the
       // command-core comment makes is one a test would notice breaking.
-      const { readDescriptor } = await import("../../src/work/bundle.mjs");
+      const { readDescriptor } = await import("../../packages/core/src/work/bundle.mjs");
       assert.equal("work:trigger".startsWith("work:insert-"), false, "work:trigger is not a member of the insert family the parity guard covers");
       const commandMembers = readDescriptor().members.filter((entry) => entry.kind === "command").map((entry) => entry.id);
       assert.equal(commandMembers.includes("trigger"), false, "and it ships no /aof:trigger bundle command");

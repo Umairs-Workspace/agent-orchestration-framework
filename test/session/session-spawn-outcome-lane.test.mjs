@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 50 / story 04 — task 00
 // (tasks/00_spawn-outcome-and-producer-fact.feature, @executable), LANES A and B.
 //
@@ -32,9 +35,13 @@ import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
 import { suitePathByBasename } from "../support/registration/registration-surface.mjs";
 
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { startControlStreamServer, applyStreamFrame, applyPresenceFrame, sendDirective } from "../../src/control-stream-server.mjs";
-import { createTerminalInputRouter } from "../../src/mesh/terminal-input.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const applyPresenceFrame = _aofApplication.mesh.controlStreamServer.applyPresenceFrame;
+const sendDirective = _aofApplication.mesh.controlStreamServer.sendDirective;
+const createTerminalInputRouter = _aofApplication.mesh.terminalInput.createTerminalInputRouter;
 import {
   SESSION_SPAWN_KIND,
   SESSION_SPAWN_ACK_KIND,
@@ -42,26 +49,31 @@ import {
   buildSessionSpawnAckFrame,
   buildSessionSpawnEnvelope,
   buildSessionSpawnAckEnvelope,
-} from "../../src/mesh/session-spawn-directive.mjs";
+} from "@aof/mesh/session-spawn-directive";
 import {
   createSpawnOutcomeRegistry,
   MAX_SPAWN_OUTCOMES,
   SPAWN_OUTCOME_RETENTION_MS,
-} from "../../src/mesh/session-spawn-outcome.mjs";
-import { startSession, pingSession, endSession, readSessionRecord, assembleSessionRecord } from "../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../src/mesh/presence.mjs";
-import { buildSessionIndex } from "../../src/global-mesh-query.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerSessionSpawnHandler } from "../../src/mesh/session-spawn-handler.mjs";
-import { workerHasRepo, meshCheckoutPath } from "../../src/mesh/worker-execution.mjs";
+} from "@aof/mesh/session-spawn-outcome";
+const startSession = _aofHooks.meshSession.startSession;
+const pingSession = _aofHooks.meshSession.pingSession;
+const endSession = _aofHooks.meshSession.endSession;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const assembleSessionRecord = _aofHooks.meshSession.assembleSessionRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerSessionSpawnHandler = _aofApplication.mesh.sessionSpawnHandler.createMeshWorkerSessionSpawnHandler;
+const workerHasRepo = _aofApplication.mesh.worker.workerHasRepo;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
   seedNodeWorkspaceMembership,
 } from "../support/mesh-worker-exec-fixture.mjs";
-import { homeGridRows, dialableTiles } from "../../ui/src/home/grid.mjs";
-import { homeSessionMount } from "../../ui/src/home/session-mount.mjs";
-import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER, FEED_AXIS_VALUES } from "../../ui/src/home/feed-axis.mjs";
+import { homeGridRows, dialableTiles } from "../../apps/ui/src/home/grid.mjs";
+import { homeSessionMount } from "../../apps/ui/src/home/session-mount.mjs";
+import { feedAxisFor, FEED_PRODUCER_KNOWN, FEED_NO_PRODUCER, FEED_AXIS_VALUES } from "../../apps/ui/src/home/feed-axis.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const NODE_ID = "worker-a";
@@ -591,7 +603,7 @@ export const sessionSpawnOutcomeLaneTests = [
 
       // NO fs, NO STORE, NO NETWORK — read off the module's own import list rather than
       // trusted. One import, and it is the wire kind's home.
-      const source = (await readFile(path.join(repoRoot, "src", "mesh", "session-spawn-outcome.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const source = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "session-spawn-outcome.mjs"), "utf8")).replace(/\r\n/g, "\n");
       const imports = [...source.matchAll(/^import\s[^\n]*from\s+["']([^"']+)["'];/gm)].map((match) => match[1]);
       assert.deepEqual(imports, ["./session-spawn-directive.mjs"], "the registry imports exactly ONE module — the lane's contract home — and no fs, store or network module");
       assert.ok(!/setInterval|setTimeout/.test(source), "…and holds no interval or timer handle: pruning happens inside apply/read");
@@ -690,7 +702,7 @@ export const sessionSpawnOutcomeLaneTests = [
     // that was never taught the new name is a detector whose green means nothing.
     name: "50/04 task 00 lane A: the fleet face gains a READ route and its write allowlist does not grow with it (two at 50/04; three by name since 130/03's loop-stop)",
     async run() {
-      const face = (await readFile(path.join(repoRoot, "src", "mesh", "ui-serve.mjs"), "utf8"))
+      const face = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs"), "utf8"))
         .replace(/\r\n/g, "\n")
         .replace(/\/\/[^\n]*/g, "")
         .replace(/\/\*[\s\S]*?\*\//g, "");
@@ -793,12 +805,12 @@ export const sessionSpawnOutcomeLaneTests = [
         // NOTHING IN THE CONTROL'S PROCESS WRITES, DERIVES OR INFERS THIS FIELD FOR ANOTHER
         // NODE. Read off the control-side modules: the wire hop passes it through, the index
         // reads it, and neither MINTS it.
-        for (const file of ["control-stream-server.mjs", "global-mesh-query.mjs", "mesh/ui-serve.mjs"]) {
-          const source = (await readFile(path.join(repoRoot, "src", file), "utf8"))
+        for (const file of ["control-stream-server.mjs", "global-query.mjs", "ui-serve.mjs"]) {
+          const source = (await readFile(path.join(repoRoot, "packages", "mesh", "src", file), "utf8"))
             .replace(/\r\n/g, "\n")
             .replace(/\/\/[^\n]*/g, "")
             .replace(/\/\*[\s\S]*?\*\//g, "");
-          assert.ok(!/relaying\s*:\s*true/.test(source), `src/${file} never SETS relaying: true — the fact is stated where it is known (the worker that owns the bridge), never derived where it is read`);
+          assert.ok(!/relaying\s*:\s*true/.test(source), `packages/core/src/${file} never SETS relaying: true — the fact is stated where it is known (the worker that owns the bridge), never derived where it is read`);
         }
         startCalls.push("checked");
         pingCalls.push("checked");
@@ -1062,7 +1074,7 @@ export const sessionSpawnOutcomeLaneTests = [
       assert.match(gate, /SANCTIONED_OUTPUT_CHUNK_ARROW\s*=\s*\/\^\\\(\\s\*chunk/, "…and whose first member is m46's arrow, untouched");
 
       // The THIRD SITE, named, at the shape the ADR sanctions.
-      const launcher = (await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const launcher = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8")).replace(/\r\n/g, "\n");
       assert.match(
         launcher,
         /sendTerminalFrame: \(sessionId, bytes\) => client\.sendTerminalFrame\(sessionId, bytes\),/,
@@ -1070,13 +1082,13 @@ export const sessionSpawnOutcomeLaneTests = [
       );
 
       // `feedAxisFor` STILL TAKES NO BYTE PARAMETER, optional or otherwise.
-      const axis = (await readFile(path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const axis = (await readFile(path.join(repoRoot, "apps", "ui", "src", "home", "feed-axis.mjs"), "utf8")).replace(/\r\n/g, "\n");
       const signature = /export function feedAxisFor\(([^)]*)\)/.exec(axis);
       assert.ok(signature != null, "feedAxisFor is still exported as a function");
       assert.equal(signature[1].trim(), "row, context", "…taking exactly (row, context) — no byte parameter, optional or otherwise");
 
       // …and the handler passes the fact to BOTH write verbs.
-      const handler = (await readFile(path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs"), "utf8")).replace(/\r\n/g, "\n");
+      const handler = (await readFile(path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs"), "utf8")).replace(/\r\n/g, "\n");
       assert.match(handler, /startSession\(ws, \{ \.\.\.sessionKey, repo, relaying: true, now: resolveNow\(\) \}\)/, "mesh-session-spawn-handler passes relaying: true to startSession(");
       assert.match(handler, /pingSession\(ws, \{ \.\.\.sessionKey, repo, relaying: true, now: resolveNow\(\) \}\)/, "…and to pingSession(");
 

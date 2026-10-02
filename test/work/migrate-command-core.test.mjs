@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 29 / migrate-command — the migrate:folder command
 // (convert a source folder INTO a managed milestone) + its source-shape tolerance +
 // its already-done reconciliation.
@@ -40,12 +42,13 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { getCommand, invoke } from "../../src/command-core.mjs";
-import { importStoreRoot } from "../../src/import/store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const importStoreRoot = _aofApplication.knowledge.import.store.importStoreRoot;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A deterministic migratedAt for unit-level runs (the produced frontmatter's
 // created/updated), so SPEC.md is byte-stable across runs.
@@ -1135,7 +1138,7 @@ export const migrateCommandCoreTests = [
     // future refactor that drops the cleanup is caught.
     name: "migrate-core/03 the scaffold's rollback path is present: a single try/catch around the mkdir+writes that rm's the freshly-created milestone dir and rethrows",
     async run() {
-      const moduleUrl = new URL("../../src/commands/migrate-folder.mjs", import.meta.url);
+      const moduleUrl = new URL("../../packages/work/src/commands/migrate-folder.mjs", import.meta.url);
       const code = await readFile(moduleUrl, "utf8");
       // The scaffold runs under a try whose catch rm's the freshly-created milestoneDir
       // and rethrows (all-or-nothing). Assert the shape rather than re-deriving it.

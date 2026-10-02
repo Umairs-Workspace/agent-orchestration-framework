@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function FF-7103 for milestone 71 / ADR-003 (amended by ADR-009 §1):
 // "The loop's item-creation authority is one type, one placement, and zero shifts."
 //
@@ -32,21 +33,21 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { markedRegion, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
-import { promoteFindingToChoreCommand } from "../../../src/commands/promote-finding-to-chore.mjs";
-import { PROMOTED_TYPE } from "../../../src/work-promote/promotion.mjs";
-import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../src/work/loop.mjs";
+const promoteFindingToChoreCommand = _aofApplication.getCommand("work:promote-finding");
+import { PROMOTED_TYPE } from "@aof/work/promote/promotion";
+import { FINDING_ROUTINGS, LOOP_CREATED_ITEM_TYPE } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const INSERT_ENGINE = "src/commands/insert-shared.mjs";
-const GAP_FACE = "src/commands/promote-gap-to-chore.mjs";
-const FINDING_FACE = "src/commands/promote-finding-to-chore.mjs";
+const INSERT_ENGINE = "packages/work/src/insertion/scaffold.mjs";
+const GAP_FACE = "packages/work/src/commands/promote-gap-to-chore.mjs";
+const FINDING_FACE = "packages/work/src/commands/promote-finding-to-chore.mjs";
 const PROMOTION_PATH = Object.freeze([
-  "src/work-promote/chore-seed.mjs",
-  "src/work-promote/promotion.mjs",
+  "packages/work/src/promote/chore-seed.mjs",
+  "packages/work/src/promote/promotion.mjs",
   GAP_FACE,
   FINDING_FACE,
 ]);
-const CONTINUE = "src/bundle/commands/continue.md";
+const CONTINUE = "packages/core/assets/commands/continue.md";
 // The cost question (118/00) and the depth bound (118/01), located in the block by the claims they
 // make rather than by question NUMBER — the numbers shift whenever a question is inserted, and a
 // control keyed to them would red on a renumber that changed no rule.
@@ -274,7 +275,7 @@ export const archTests = [
       );
       assert.deepEqual(depthRefusalProblems(findingFace), [], "leg (c), 118/01 — the loop's face refuses a chore's own review, before the idempotence scan");
 
-      // THE JOIN 118/01's write set could not make with an import. `src/work/loop.mjs` imports
+      // THE JOIN 118/01's write set could not make with an import. `packages/work-loop/src/engine.mjs` imports
       // nothing (53/ADR `work-loop-determinism`), so the decider spells the type it may create — and
       // may not be promoted FROM — in its own module. Two spellings of one fact is the drift FF-7103
       // exists to refuse, so the two are pinned HERE, where both are readable.
@@ -366,7 +367,10 @@ export const archTests = [
 
       // THE SEPARATION PROOF: the OPERATOR's face still ships `--at <P>`, and that leaves this
       // control green — the leg binds the loop's seam, not every promotion in the tree.
-      const { promoteGapToChoreCommand } = await import("../../../src/commands/promote-gap-to-chore.mjs");
+      const { promoteGapToChoreCommand } = await Promise.resolve(Object.freeze({
+  promoteGapToChoreCommand: _aofApplication.getCommand("work:promote-gap"),
+  runPromoteGapToChore: _aofApplication.work.commandTools.promoteGapToChore.runPromoteGapToChore,
+}));
       assert.ok("at" in promoteGapToChoreCommand.input.properties, "work:promote-gap still ships its delivered --at flag");
       assert.deepEqual(loopAppendOnlyProblems(promoteFindingToChoreCommand, findingSource), [], "…and the finding face is still green beside it");
     },
@@ -481,7 +485,7 @@ export const archTests = [
       // milestone and a story and the bound answered correctly for all three. The claim that holds
       // is not "the loop creates one type" — it is "the loop creates nothing" — and that one is
       // provable over the whole input space rather than over the rows someone thought to write.
-      const { routeFinding, routeFindings, FINDING_SEVERITIES } = await import("../../../src/work/loop.mjs");
+      const { routeFinding, routeFindings, FINDING_SEVERITIES } = await import("../../../packages/work-loop/src/engine.mjs");
 
       // Every declared input of the decider, at every value that changes its answer. `reviewedType`
       // carries the stream's item types plus `undefined` — the no-context default every existing
@@ -503,7 +507,7 @@ export const archTests = [
                     for (const reviewedType of reviewedTypes) {
                       combinations += 1;
                       const finding = {
-                        title: "F", location: "src/x.mjs:1",
+                        title: "F", location: "packages/core/src/x.mjs:1",
                         severity, lockedContract, cheaperThanDriver, checklistDischargeable,
                         needsNewCriteria, reproduced, outstanding,
                       };

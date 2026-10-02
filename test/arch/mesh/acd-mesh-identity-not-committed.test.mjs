@@ -3,7 +3,7 @@
 //
 //   "F-3203 root cause: config.mesh.nodeId + mesh.salt live in the COMMITTED
 //    .aof/aof.config.json, and deriveNodeId honours a pinned id VERBATIM
-//    (src/node-identity.mjs:74). So a clone INHERITS the origin machine's identity —
+//    (packages/core/src/node-identity.mjs:74). So a clone INHERITS the origin machine's identity —
 //    two machines share a nodeId and both own nodes/<id>.json at the same path,
 //    violating the m22 one-node-per-path partition invariant (acd-mesh-partition-write).
 //    The same rationale that git-ignores mesh/ applies to mesh.nodeId / mesh.salt:
@@ -25,7 +25,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const COMMITTED_CONFIG = path.join(repoRoot, ".aof", "aof.config.json");
-const CONFIG_SCHEMA = path.join(repoRoot, "src", "aof.schema.json");
+const CONFIG_SCHEMA = path.join(repoRoot, "packages", "core", "src", "aof.schema.json");
 
 // The per-install identity keys that must NEVER be in committed config (ADR-004).
 const PER_INSTALL_IDENTITY_KEYS = ["nodeId", "salt"];

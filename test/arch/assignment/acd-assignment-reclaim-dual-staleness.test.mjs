@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-assignment-reclaim-dual-staleness (milestone 35 / ADR-005,
 // fitness #10) — "an assignment is reclaimed ONLY under DUAL staleness (presence
 // stale AND run-heartbeat stale), strict >; fresh presence and no-presence-record are
@@ -18,16 +20,27 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { startRun, heartbeat } from "../../../src/run-store.mjs";
-import { findWork } from "../../../src/work.mjs";
-import { reclaimStaleAssignments, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../src/mesh/assignment-reclaim.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const findWork = _aofWorkspace.work.findWork;
+const reclaimStaleAssignments = _aofApplication.mesh.assignmentReclaim.reclaimStaleAssignments;
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const reclaimSourcePath = path.join(repoRoot, "src", "mesh", "assignment-reclaim.mjs");
+const reclaimSourcePath = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
+async function reclaimSource() {
+  const implementation = stripComments(await readFile(reclaimSourcePath, "utf8"));
+  const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/assignment-reclaim.mjs"), "utf8"));
+  for (const symbol of ["isNodeStale", "isStale"]) {
+    assert.match(implementation, new RegExp('function createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
+    assert.match(adapter, new RegExp('createAssignmentReclaim\\(\\{[^}]*\\b' + symbol + '\\b'));
+  }
+  return implementation + '\n' + adapter;
+}
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -35,10 +48,10 @@ function stripComments(source) {
 
 function assertStructural(code) {
   const problems = [];
-  if (!/import\s*\{[^}]*\bisNodeStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+presence\.mjs["']/.test(code)) {
+  if (!/const\s*\{[^}]*\bisNodeStale\b[^}]*\}\s*=\s*meshPresenceServices/.test(code)) {
     problems.push("isNodeStale is not imported from ./mesh/presence.mjs");
   }
-  if (!/import\s*\{[^}]*\bisStale\b[^}]*\}\s*from\s*["'](?:\.\.?\/)+run-store\.mjs["']/.test(code)) {
+  if (!/const\s*\{[^}]*\bisStale\b[^}]*\}\s*=\s*runStoreServices/.test(code)) {
     problems.push("isStale is not imported from ./run-store.mjs");
   }
   // The decision must be a CONJUNCTION: presenceStale is checked and, only when true,
@@ -91,7 +104,7 @@ export const archTests = [
   {
     name: "arch/35 ADR-005 (acd-assignment-reclaim-dual-staleness): the reclaim decision ANDs isNodeStale (imported from mesh-presence) with isStale (imported from run-store) — both predicates imported, never re-derived (structural)",
     run: async () => {
-      const code = stripComments(await readFile(reclaimSourcePath, "utf8"));
+      const code = await reclaimSource();
       const problems = assertStructural(code);
       assert.deepEqual(problems, [], `structural problems: ${JSON.stringify(problems)}`);
     },
@@ -127,7 +140,7 @@ export const archTests = [
   {
     name: "arch/35 ADR-005 (acd-assignment-reclaim-dual-staleness): self-check — a planted single-predicate (heartbeat-only) reclaim, and a missing-presence-as-stale flip, both trip the detector",
     run: async () => {
-      const code = stripComments(await readFile(reclaimSourcePath, "utf8"));
+      const code = await reclaimSource();
       assert.deepEqual(assertStructural(code), [], "the real source is clean");
 
       const plantedSinglePredicate = code.replace(

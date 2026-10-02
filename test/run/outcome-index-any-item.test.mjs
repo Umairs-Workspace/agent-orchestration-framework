@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 80 /
 // tasks/02_the-index-reads-an-outcome-from-any-item.feature (@executable, every
 // scenario and every Examples row).
@@ -20,8 +21,10 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildRecords, INDEX_VERSION } from "../../src/memory/local-indexing.mjs";
-import { applyScope, MEMORY_RECORD_FIELDS, recall } from "../../src/memory/local-retrieval.mjs";
+const buildRecords = _aofApplication.knowledge.memory.localIndexing.buildRecords;
+const INDEX_VERSION = _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION;
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
+import { applyScope, MEMORY_RECORD_FIELDS, recall } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DELIVERY = new Set(["capability", "gap"]);
@@ -311,20 +314,35 @@ export const outcomeIndexAnyItemTests = [
     name: "80/02 seam: no source parser lives in a backend, graphify's record source is the imported buildRecords, and INDEX_VERSION === GRAPHIFY_INDEX_VERSION, unchanged at 1",
     run: async () => {
       const parserDef = /(?:function|const)\s+(parse(?:Outcome|Architecture|Retrospective|Aof)\b)/g;
-      for (const rel of ["src/memory/local-backend.mjs", "src/memory/graphify-backend.mjs"]) {
+      for (const rel of ["packages/core/src/application/bindings/memory/local-backend.mjs", "packages/core/src/application/bindings/memory/graphify-backend.mjs", "packages/knowledge/src/memory/local-backend.mjs", "packages/knowledge/src/memory/graphify-backend.mjs"]) {
         const src = await readFile(path.join(repoRoot, rel), "utf8");
         const defs = [...src.matchAll(parserDef)].map((m) => m[1]);
         assert.deepEqual(defs, [], `${rel} defines no source parser (found: ${defs.join(", ") || "none"})`);
       }
 
-      const graphify = await readFile(path.join(repoRoot, "src", "memory", "graphify-backend.mjs"), "utf8");
+      const graphify = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/memory/graphify-backend.mjs"), "utf8");
       assert.match(
         graphify,
-        /import\s*\{[^}]*\bbuildRecords\b[^}]*\}\s*from\s*["']\.\/local-indexing\.mjs["']/,
-        "the graphify backend's record source is the imported buildRecords",
+        /const\s*\{[^}]*\bbuildRecords\b[^}]*\}\s*=\s*memoryLocalIndexingServices/,
+        "the graphify backend's record source is the supplied buildRecords",
       );
+      assert.ok(dependencySpecifiers(graphify).some(edge => edge.parameter === "memoryLocalIndexingServices" && edge.specifier === "./local-indexing.mjs"), "the supplied builder comes from the shared indexing constructor");
 
-      const { GRAPHIFY_INDEX_VERSION } = await import("../../src/memory/graphify-backend.mjs");
+      const { GRAPHIFY_INDEX_VERSION } = await Promise.resolve(Object.freeze({
+  GRAPHIFY_INDEX_VERSION: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_INDEX_VERSION,
+  workGraphRoot: _aofApplication.knowledge.memory.graphifyBackend.workGraphRoot,
+  GRAPHIFY_EXTRACTION_BACKEND: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_BACKEND,
+  GRAPHIFY_EXTRACTION_EGRESS: _aofApplication.knowledge.memory.graphifyBackend.GRAPHIFY_EXTRACTION_EGRESS,
+  graphifyIndexPath: _aofApplication.knowledge.memory.graphifyBackend.graphifyIndexPath,
+  GRAPH_SIGNAL_RANKED: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_RANKED,
+  GRAPH_SIGNAL_UNAVAILABLE: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE,
+  GRAPH_STATE_BUILT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BUILT,
+  GRAPH_STATE_BINARY_ABSENT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT,
+  GRAPH_STATE_NOT_BUILT: _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_NOT_BUILT,
+  rerank: _aofApplication.knowledge.memory.graphifyBackend.rerank,
+  applyScope: _aofApplication.knowledge.memory.graphifyBackend.applyScope,
+  default: _aofApplication.knowledge.memory.graphifyBackend.default,
+}));
       assert.equal(INDEX_VERSION, GRAPHIFY_INDEX_VERSION, "INDEX_VERSION and GRAPHIFY_INDEX_VERSION are equal");
       assert.equal(INDEX_VERSION, 1, "…and unchanged — this story alters no record shape");
     },
@@ -389,13 +407,26 @@ export const outcomeIndexAnyItemTests = [
   // leaf and `work-doctor.mjs`'s `inScope` + `validateWork`'s closure now delegate
   // to it — so the refactor is asserted BEHAVIOUR-PRESERVING against the rule as it
   // was written, held here as a local constant (a test is code; the no-second-copy
-  // invariant is scoped to `src/`).
+  // invariant is scoped to `packages/core/src/`).
   // ==================================================================
   {
     name: "80/02 scope-rule: itemInScope is byte-for-byte the pre-story `inScope` over every ref/scope shape, and doctor's inScope now delegates to it",
     run: async () => {
-      const { itemInScope, refInScope } = await import("../../src/work/ref-scope.mjs");
-      const { inScope } = await import("../../src/work/doctor.mjs");
+      const { itemInScope, refInScope } = await import("@aof/work/ref-scope");
+      const { inScope } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
 
       // The rule AS IT WAS, before the re-home (work-doctor.mjs, pre-story 80).
       const before = (item, scopeRef) => {
@@ -462,7 +493,7 @@ export const outcomeIndexAnyItemTests = [
       try {
         // The REAL shipped template, marker-stripped exactly as a scaffold would
         // instantiate it — not a hand-written stand-in that could drift from it.
-        const shipped = await readFile(path.join(repoRoot, "src", "bundle", "templates", "shared", "OUTCOME.md"), "utf8");
+        const shipped = await readFile(path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md"), "utf8");
         const dir = path.join(workDir, `${number}_${type}_${slug}`);
         await mkdir(dir, { recursive: true });
         await writeFile(path.join(dir, "OUTCOME.md"), shipped, "utf8");

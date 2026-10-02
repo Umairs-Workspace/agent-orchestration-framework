@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-control-dispatch-reclaim-driver-wired (milestone 35 / ADR-008,
 // fitness #13) — "startLauncher wires ONE control-side periodic tick (a sibling of the
 // existing propagationTicker/peerPollTicker, over the SAME injected-ticker seam) that,
@@ -28,16 +30,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore, workspaceIdFor } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment } from "../../../src/assignment-record.mjs";
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+import { assembleAssignmentRecord, insertAssignment, readAssignment } from "@aof/mesh/assignment-record";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LAUNCHER_SOURCE = path.join(repoRoot, "src", "mesh", "launcher.mjs");
-const RECLAIM_DRIVER_SOURCE = path.join(repoRoot, "src", "mesh", "assignment-reclaim.mjs");
-const ASSIGN_SOURCE = path.join(repoRoot, "src", "mesh", "assignment.mjs");
+const LAUNCHER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
+const RECLAIM_DRIVER_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "assignment-reclaim.mjs");
+const ASSIGN_SOURCE = path.join(repoRoot, "packages", "mesh", "src", "assignment.mjs");
 const TEST_SUITE = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripComments(source) {
@@ -127,7 +130,7 @@ function assertAssignVerbDoesNotDispatch(code) {
   // Isolate the assignWork function body specifically (a planted dispatch call
   // ELSEWHERE in the file — e.g. in withdrawWork or a comment — must not falsely
   // pass; but equally a call anywhere in assignWork's own body must fail it).
-  const fnMatch = /export\s+async\s+function\s+assignWork\s*\([^)]*\)\s*\{/.exec(code);
+  const fnMatch = /(?:export\s+)?async\s+function\s+assignWork\s*\([^)]*\)\s*\{/.exec(code);
   if (fnMatch == null) {
     problems.push("assignWork function not found");
     return problems;

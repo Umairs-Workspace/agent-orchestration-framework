@@ -7,27 +7,27 @@
 //    the wrong abstraction for a mesh VPN — on that fabric every node has a stable,
 //    directly-dialable address the fabric already knows (tailscale status --json →
 //    Self/Peer TailscaleIPs). ADR-001/002 pin the fabric behind ONE module
-//    (src/mesh/fabric.mjs) that owns probeFabric/selfAddress/resolvePeers. The invariant:
+//    (packages/core/src/mesh/fabric.mjs) that owns probeFabric/selfAddress/resolvePeers. The invariant:
 //    the `tailscale` CLI spawn and the peer-dial-address resolution appear ONLY in that
 //    seam — no other src module spawns `tailscale`, and reachability does NOT depend on a
 //    committed/hand-derived config ws:// URL. This is the structural half of 'nodes are
 //    directly addressable on the fabric; presence + issuance ride that.'"
 //
 // ============================ UN-SKIPPED (milestone 33 / story 01) ====================
-// src/mesh/fabric.mjs now exists as the SOLE tailscale-spawn + peer-address seam
+// packages/core/src/mesh/fabric.mjs now exists as the SOLE tailscale-spawn + peer-address seam
 // (ADR-001/ADR-002), and the broker's liveness path (mesh-presence-subscriber.mjs /
 // mesh-presence-cache.mjs) is retired — the real assertion below is GREEN.
 // =====================================================================================
 import assert from "node:assert/strict";
-import { readdir, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 // The single fabric seam ADR-001 mandates (built by the fabric-native transport story).
-const FABRIC_SEAM_BASENAME = "mesh/fabric.mjs";
+const FABRIC_SEAM_BASENAME = "packages/mesh/src/fabric.mjs";
 
 // Comment-stripped (strings RETAINED) — for the argv[0] string-literal spawn matcher
 // (a spawn's "tailscale" literal is a STRING, so it must survive the strip; this is the
@@ -77,30 +77,19 @@ const TAILSCALE_SPAWN = /\b(?:spawnSync|spawn|execFileSync|execFile|execSync|exe
 // lives ONLY in it — no OTHER src module spawns the fabric CLI (a second spawn site is the
 // "the transport re-derives reachability instead of asking the fabric seam" hole).
 export async function assertFabricSingleSeam() {
-  // 119/01 — the seam moved into `src/mesh/`, so a flat `readdir(SRC_DIR)` membership test stopped
+  // 119/01 — the seam moved into `packages/core/src/mesh/`, so a flat `readdir(SRC_DIR)` membership test stopped
   // being able to see it at all. Existence is asked of the path itself, which is the claim.
   assert.ok(
-    existsSync(path.join(SRC_DIR, FABRIC_SEAM_BASENAME)),
-    `src/${FABRIC_SEAM_BASENAME} exists — the single fabric-assumption seam (ADR-001)`
+    existsSync(path.join(repoRoot, FABRIC_SEAM_BASENAME)),
+    `packages/core/src/${FABRIC_SEAM_BASENAME} exists — the single fabric-assumption seam (ADR-001)`
   );
 
-  // 119/01 — a RECURSIVE walk, reporting src-relative paths. The flat `readdir` this replaced
-  // could not see `src/mesh/` (where the seam now is) and had never been able to see
-  // `src/commands/` either, so a second spawn site one directory in was outside the claim.
-  const walk = async (dir, prefix = "") => {
-    const out = [];
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) out.push(...(await walk(path.join(dir, entry.name), rel)));
-      else if (entry.name.endsWith(".mjs")) out.push(rel);
-    }
-    return out;
-  };
-  const members = await walk(SRC_DIR);
+  // Include every workspace implementation, so extraction cannot hide a second spawn site.
+  const members = await readRuntimeFiles(repoRoot);
   assert.ok(members.length > 100, `non-vacuity: the sweep walked ${members.length} modules under src/`);
   const spawnSites = [];
-  for (const rel of members) {
-    const live = stripCommentsOnly(await readFile(path.join(SRC_DIR, rel), "utf8"));
+  for (const { rel, path: file } of members) {
+    const live = stripCommentsOnly(await readFile(file, "utf8"));
     if (TAILSCALE_SPAWN.test(live)) spawnSites.push(rel);
   }
   assert.deepEqual(

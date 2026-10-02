@@ -1,9 +1,11 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 80 / tasks/00_the-template-has-one-home.feature —
 // "The OUTCOME.md template ships once, filed under no type, and the milestone copy
 // is deleted on update" (@executable).
 //
 // THE BOUNDARY WAS THE FILING, AND NOTHING ELSE. `templateOutputPath`
-// (src/work/bundle.mjs) renders every template file to
+// (packages/core/src/work/bundle.mjs) renders every template file to
 // `.aof/templates/work/<member-id>/<file>`, so the member id IS the scope. The
 // member's id therefore names the PROPERTY — `shared`, type-agnostic — not a type,
 // and the grammar the single `parseOutcome` reads is asserted byte-identical across
@@ -23,15 +25,15 @@ import {
   renderBundleTemplateOutputs,
   bundleRoot,
   TEMPLATE_STAMP,
-} from "../../src/work/bundle.mjs";
-import { readShippedManifest, generateBundleManifest, serializeBundleManifest, manifestPath } from "../../src/work/bundle-manifest.mjs";
-import { planApplyActions, executeApplyActions, createLockManifest } from "../../src/render-plan.mjs";
-import { synthesizeBundleConfig } from "../../src/work/bundle-synthesis.mjs";
-import { updateWork, workLockPath } from "../../src/work/update.mjs";
-import { writeLock } from "../../src/lock.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { budgetGroup, budgetKeyFor } from "../../src/work/doctor-budget.mjs";
+} from "../../packages/core/src/work/bundle.mjs";
+import { readShippedManifest, generateBundleManifest, serializeBundleManifest, manifestPath } from "../../packages/core/src/work/bundle-manifest.mjs";
+import { planApplyActions, executeApplyActions, createLockManifest } from "../../packages/core/src/render-plan.mjs";
+import { synthesizeBundleConfig } from "../../packages/core/src/work/bundle-synthesis.mjs";
+import { updateWork, workLockPath } from "../../packages/core/src/work/update.mjs";
+import { writeLock } from "../../packages/core/src/lock.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+import { budgetGroup, budgetKeyFor } from "@aof/work/doctor/budget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -39,7 +41,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // scopes its files to that type — which is exactly what OUTCOME.md must NOT be.
 const WORK_ITEM_TYPES = ["milestone", "story", "task", "uat", "spike", "chore"];
 
-const SHARED_SOURCE = path.join(repoRoot, "src", "bundle", "templates", "shared", "OUTCOME.md");
+const SHARED_SOURCE = path.join(repoRoot, "packages", "core", "assets", "templates", "shared", "OUTCOME.md");
 const NEW_RENDER_PATH = ".aof/templates/work/shared/OUTCOME.md";
 const OLD_RENDER_PATH = ".aof/templates/work/milestone/OUTCOME.md";
 
@@ -218,7 +220,7 @@ export const outcomeTemplateSharedHomeTests = [
         // member renders to `.aof/templates/work/<member-id>/<file>`, so the SAME source
         // file under member id "milestone" IS the old install and under "shared" IS the
         // new one. Nothing here hand-rolls a lock or a drift decision: the base install
-        // and the update both run the engine (`test/work/work-update.test.mjs`'s own rule — a
+        // and the update both run the engine (`packages/core/test/work-update.suite.mjs`'s own rule — a
         // second install engine in a test is the second home the bundle exists to refuse).
         const outcomeMember = (id) => ({
           resources: [],

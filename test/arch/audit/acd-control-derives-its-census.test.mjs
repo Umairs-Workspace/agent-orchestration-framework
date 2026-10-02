@@ -15,7 +15,7 @@
 //     `startsWith("work-doctor")` filter is backed by `assert.ok(edges >= 1, …)`, so a move REDS it.
 //   · SILENT — the assertion goes vacuous. `test/arch/mesh/acd-mesh-ui-single-data-command.test.mjs` set
 //     `files = []` inside a `catch` and then asserted `joiners.length <= 1`, so once
-//     `src/commands/mesh-*.mjs` moves the claim is asserted over the empty set forever, with no
+//     `packages/core/src/commands/mesh-*.mjs` moves the claim is asserted over the empty set forever, with no
 //     message anywhere. This story de-silences it; the sweep below is what stops the next one.
 //   · UNFIXABLE — loud, but its subject is an immutable delivered document. FF-11903 is that class.
 //
@@ -24,7 +24,7 @@
 // `readdir`, or a locally declared helper that reaches one, rooted at this repository's own
 // directory by the statement, by the helper's declaration, or by the call sites of the helper it
 // sits in), or from a READ handed a root-derived path as its first positional argument
-// (`readFile(path.join(root, …))`, `loadLoops(path.join(root, "src", "bundle"))`), and then through
+// (`readFile(path.join(root, …))`, `loadLoops(path.join(root, "packages", "core", "assets"))`), and then through
 // PURE SET-NARROWING and nothing else — `filter`, `map`, `sort`, `flat`, `slice`, a spread, `new Set`.
 // A CALL is not a narrowing: `check([...files, planted])` may add a plant, and the ~50 red probes
 // that assert "exactly one offender" over the real tree plus a plant are exact for good reason. A
@@ -89,8 +89,10 @@
 // which is the one shape the plant-probe rule cannot tell from a probe, and which a reviewer reads
 // as the evasion it is.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile, readdir, mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
+import { readMeshCommandModules } from "../mesh/acd-mesh-ui-single-data-command.test.mjs";
 import { fileURLToPath } from "node:url";
 
 import {
@@ -767,10 +769,10 @@ export const archTests = [
       assert.match(clean, /no dependent is counted in two classes/u, "…and disjointly, which the arithmetic never said");
       // 129/02 (2026-09-13): the door's SUITE_FLOOR / CENSUS_FLOOR ratcheted 48 -> 49 / 54 -> 55 with the
       // census (see the no-headroom probe below), so the literals kept here move with them.
-      for (const floor of ["SUITE_FLOOR = 49", "FIXTURE_FLOOR = 2", "SOURCE_SIDE_FLOOR = 4", "CENSUS_FLOOR = 55"]) {
+      for (const floor of ["SUITE_FLOOR = 52", "FIXTURE_FLOOR = 2", "SOURCE_SIDE_FLOOR = 2", "CENSUS_FLOOR = 56"]) {
         assert.ok(clean.includes(floor), `the non-vacuity floor ${floor} is kept — a floor is a declared bound, and stays stored`);
       }
-      for (const floor of [/zeroMention\.length >= 44/u, /importable\.length >= 53/u, /suites\.length >= 49/u]) {
+      for (const floor of [/zeroMention\.length >= 44/u, /importable\.length >= 52/u, /suites\.length >= 49/u]) {
         assert.match(clean, floor, `${floor} — the floor the equality was standing in for is kept`);
       }
     },
@@ -788,7 +790,11 @@ export const archTests = [
       // `driveInteractiveClaudeSession` through the sink (the closed naming allowlist forbids the
       // driver's own path), so the door's census gained one dependent and the no-headroom floors
       // below ratchet with it — in step with the door's own SUITE_FLOOR / CENSUS_FLOOR.
-      const floors = { suites: 49, fixtures: 2, sourceSide: 4, preExisting: 55 };
+      // 142 moves the two URL-only consumers to the pure repo-admission API.
+      // Plan 02 adds the two-application assembly suite as a worker-state consumer.
+      // 142/06 counts scoped public service reads, including the existing assembly
+      // and session-driver guards; a constructor import alone is not an operation consumer.
+      const floors = { suites: 52, fixtures: 2, sourceSide: 2, preExisting: 56 };
       const live = { suites: suites.length, fixtures: fixtures.length, sourceSide: sourceSide.length, preExisting: preExisting.length };
       for (const [name, floor] of Object.entries(floors)) {
         // A NEW dependent needs no edit to the control…
@@ -813,17 +819,25 @@ export const archTests = [
       assert.deepEqual(unguardedPredicateFilters(source), [], `${MESH_UI}'s walk carries a non-vacuity leg`);
       assert.match(clean, /assert\.ok\(\s*\n?\s*files\.length > 0/u, "it asserts its swept set is non-empty BEFORE asserting anything over it");
       assert.match(clean, /found no mesh command module/u, "…and the failure message names the directory that was walked");
-      assert.match(clean, /entry\.isDirectory\(\)/u, "the walk is recursive, so 119/02's `src/commands/mesh/` interior does not empty it");
-      assert.match(clean, /startsWith\("mesh\/"\)/u, "…and the family's directory spelling resolves to the same subject as the flat one");
+      assert.match(clean, /entry\.isDirectory\(\)/u, "the walk is recursive, so 119/02's `packages/core/src/commands/mesh/` interior does not empty it");
+      assert.match(clean, /const COMMANDS_DIR = path\.join\(repoRoot, "packages", "mesh", "src", "commands"\)/u, "the walk starts in the mesh-owned commands");
+      const fixture = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-command-walk-"));
+      try {
+        await mkdir(path.join(fixture, "nested"));
+        await writeFile(path.join(fixture, "identity.mjs"), "export const fixture = true;");
+        await writeFile(path.join(fixture, "nested/assign.mjs"), "export const fixture = true;");
+        assert.deepEqual((await readMeshCommandModules(fixture)).sort(), ["identity.mjs", "nested/assign.mjs"], "the actual walker includes flat and nested owned commands");
+        await assert.rejects(() => readMeshCommandModules(path.join(fixture, "missing")), /ENOENT/u, "a missing owner remains loud");
+      } finally { await rm(fixture, { recursive: true, force: true }); }
     },
   },
 
   {
     name: "arch/119 FF-11902: a move REDS a control — the four ways a sweep goes quiet each fail naming the subject",
     run: async () => {
-      const DIR = "src/commands";
+      const DIR = "packages/core/src/commands";
       // (1) the directory it walks is renamed — the walk THROWS rather than returning [].
-      await assert.rejects(async () => readdir(path.join(root, "src", "no-such-directory")), /ENOENT/u, "a renamed directory throws; a catch substituting [] is what hides it");
+      await assert.rejects(async () => readdir(path.join(root, "packages", "core", "src", "no-such-directory")), /ENOENT/u, "a renamed directory throws; a catch substituting [] is what hides it");
       // (2) every member matching the filename predicate moves into a subdirectory — the shape the
       //     detector refuses, driven over a plant with no floor.
       assert.equal(unguardedPredicateFilters(NAKED_PREFIX_FILTER).length, 1, "a predicate-narrowed walk with no floor is caught");

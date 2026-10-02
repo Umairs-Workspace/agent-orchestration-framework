@@ -1,8 +1,8 @@
 // Fitness function: the CLI entry-point contract.
 //
-// `src/cli.mjs` EXPORTS `run(argv)` and is the module imported by both the
+// `packages/core/src/cli.mjs` EXPORTS `run(argv)` and is the module imported by both the
 // canonical bin (`bin/aof.mjs`) and the in-process test harness. It also carries
-// a main-module guard so that executing the file DIRECTLY (`node src/cli.mjs …`)
+// a main-module guard so that executing the file DIRECTLY (`node packages/core/src/cli.mjs …`)
 // dispatches through `run` exactly like the bin. Without that guard, a direct run
 // loads the module, defines `run`, and exits 0 having done NOTHING — a silent
 // success that defeats `… || fallback` guards (the bad command "succeeds", so the
@@ -19,8 +19,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcCli = path.join(repoRoot, "src", "cli.mjs");
-const binCli = path.join(repoRoot, "bin", "aof.mjs");
+const srcCli = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
+const binCli = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 function runNode(args) {
   const result = spawnCliSync(process.execPath, ["--no-warnings", ...args], {
@@ -40,7 +40,7 @@ export const archTests = [
       assert.match(
         result.stdout,
         /aof - Agent Orchestration Framework/,
-        "a direct `node src/cli.mjs --help` must print the help banner — if this is empty, the main-module guard is missing and the file is a silent no-op"
+        "a direct `node packages/core/src/cli.mjs --help` must print the help banner — if this is empty, the main-module guard is missing and the file is a silent no-op"
       );
     },
   },

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 81, task `02_a-resumed-redrive-declares-its-grade`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -23,15 +24,17 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { writeFileSync } from "node:fs";
 
-import { invoke } from "../../src/command-core.mjs";
-import { LOOP_STOPS } from "../../src/work/loop.mjs";
-import { runLoopBody, SHELL_LOOP_ID } from "../../src/commands/loop.mjs";
-import { resolveItemExact } from "../../src/commands/resolve.mjs";
-import { startRun, completeRun } from "../../src/run-store.mjs";
+const invoke = _aofApplication.invoke;
+import { LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+const SHELL_LOOP_ID = _aofApplication.loop.commandTools.loop.SHELL_LOOP_ID;
+const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
 // A seeded `brief.grade` is a CLAIM, and the run store refuses an unstamped one
 // (`assertStampedClaim`, 55/ADR-003) — so the fixture stamps it through the same pure
 // compiler the grade command uses rather than hand-rolling a four-key object.
-import { compileProvenance } from "../../src/claim-provenance.mjs";
+import { compileProvenance } from "@aof/contracts/claim-provenance";
 import { completingDriver, loopFixture, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   capturingReport, emitsPassing, gradingCtx, gradingFixture, stubRubric,

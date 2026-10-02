@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 5 (result derived from
 // graph.json, not stdout; ADR-001 + ADR-003, amended 2026-06-21):
 // "Where a `graph:*` result carries graph-derived structured data it is normalized
@@ -9,15 +10,16 @@
 //
 // Fixture-driven (RESEARCH §A1/A2 @executable): feed the real committed
 // test/fixtures/graph/graph.json (+ a captured markdown stdout) through the
-// normalizer (normalizeGraph/readGraph from src/graphify.mjs) and assert the
+// normalizer (normalizeGraph/readGraph from packages/core/src/graphify.mjs) and assert the
 // structural facts hold against the LANDED code.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeGraph, readGraph } from "../../../src/graphify.mjs";
-import { graphQueryCommand } from "../../../src/commands/graph/query.mjs";
-import { graphTriageCommand } from "../../../src/commands/graph/triage.mjs";
+const normalizeGraph = _aofApplication.knowledge.graphify.normalizeGraph;
+const readGraph = _aofApplication.knowledge.graphify.readGraph;
+const graphQueryCommand = _aofApplication.getCommand("graph:query");
+const graphTriageCommand = _aofApplication.getCommand("graph:triage");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE = path.join(repoRoot, "test", "fixtures", "graph", "graph.json");
@@ -166,13 +168,13 @@ export const archTests = [
       // assert structurally on the command source that the returned object names
       // only the opaque + path handles (no nodes/edges/hyperedges/prs key).
       for (const [label, command] of [["graph:query", graphQueryCommand], ["graph:triage", graphTriageCommand]]) {
-        // 119/02 — the id's two halves are the DIRECTORY and the LEAF now that `src/commands/` has
+        // 119/02 — the id's two halves are the DIRECTORY and the LEAF now that `packages/core/src/commands/` has
         // an interior: `graph:query` is `commands/graph/query.mjs`, where it was `graph-query.mjs`.
         // Still derived from the id rather than typed, so the mapping moves with the family; the
         // separator it derives across is what changed, and a `-` left here opened a file that is
         // no longer there.
         const [family, verb] = label.split(":");
-        const src = await readFile(path.join(repoRoot, "src", "commands", family, `${verb}.mjs`), "utf8");
+        const src = await readFile(path.join(repoRoot, "packages", "knowledge", "src", "commands", `${family}-${verb}.mjs`), "utf8");
         // The return object must NOT introduce a graph-derived structured field.
         // Grep the source for a returned `nodes:`/`edges:`/`hyperedges:`/`prs:`
         // key — there must be none (the answer is the opaque stdout).

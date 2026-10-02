@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 05 / story 01 (local-backend-indexing).
 //
 // Every @executable scenario AND every Scenario-Outline Examples row across the
 // story's five executable task features (00-04) is covered here, exercised
-// against the REAL indexing module (`src/memory/local-indexing.mjs`) directly —
+// against the REAL indexing module (`packages/core/src/memory/local-indexing.mjs`) directly —
 // the CLI-phrased "I run aof work memory reindex" scenarios bind to direct
 // `reindex(only, ctx)` calls (the CLI/seam is story 00, not under test here).
 //
@@ -17,15 +18,13 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  parseRetrospective,
-  parseArchitecture,
-  parseAof,
-  reindex,
-  status,
-  memoryIndexPath,
-  INDEX_VERSION,
-} from "../../src/memory/local-indexing.mjs";
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseAof = _aofApplication.knowledge.memory.localIndexing.parseAof;
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const status = _aofApplication.knowledge.memory.localIndexing.status;
+const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
+const INDEX_VERSION = _aofApplication.knowledge.memory.localIndexing.INDEX_VERSION;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..");

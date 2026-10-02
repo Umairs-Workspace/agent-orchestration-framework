@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 1 (PRD-command-spine-effects-
 // ledger, "cascade-ports"): publish-on-mutate is a LEDGERED CONSEQUENCE, not a
 // per-command import decision.
@@ -8,7 +10,7 @@
 // every other mutation did not, and nothing said so. That is wave (d)'s disease
 // exactly — the consequence living at whichever call site needed it first — and
 // the cure is the same as run-completion's: DECLARE it. `publish-projection` is
-// now one reactor in src/effects/table.mjs, hung off the events the transition
+// now one reactor in packages/core/src/effects/table.mjs, hung off the events the transition
 // seams raise, and a command can neither forget it nor opt itself out.
 //
 //   (1) THE WRAPPER IS GONE. `withGlobalWorkPropagation` exists nowhere in src/
@@ -30,32 +32,33 @@
 //       retired wrapper made it. Proven end-to-end through invoke() for BOTH
 //       ported verbs, with the publish injected to fail.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readdir, readFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { openEffectsJournal, readUnsettledSteps } from "../../../src/effects/journal.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { settleLaneProjectionEffects } from "../../../src/commands/dispatch.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const readUnsettledSteps = _aofApplication.effects.journal.readUnsettledSteps;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const settleLaneProjectionEffects = _aofApplication.loop.commandTools.dispatch.settleLaneProjectionEffects;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 // The sanctioned publishGlobalWorkSnapshot callers (repo-relative, forward-slashed).
 const PUBLISH_ALLOWED = new Set([
   // The definition.
-  "src/global-work-publisher.mjs",
+  "packages/mesh/src/publisher.mjs",
   // The LEDGER's reactor — the one door for publish-as-a-consequence.
-  "src/effects/table.mjs",
+  "packages/mesh/src/effects.mjs",
   // `aof mesh repo publish`: publishing IS this verb's deliverable (it writes the
   // repo marker and publishes the snapshot that marker unlocks), not a cascade it
   // remembers after some other mutation.
-  "src/commands/mesh/repo.mjs",
+  "packages/mesh/src/commands/repo.mjs",
   // The launcher's periodic propagation tick + its startup snapshot: time-driven
   // convergence, not a mutation's consequence.
-  "src/mesh/launcher.mjs",
+  "packages/mesh/src/launcher.mjs",
 ]);
 
 // The events whose facts propagate. Each must carry the publish reactor.
@@ -65,16 +68,6 @@ function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
-}
 
 function frontmatter(fields) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n\n`;
@@ -111,7 +104,7 @@ export const archTests = [
   {
     name: "arch/m42-d4-port1: withGlobalWorkPropagation is gone from src/ — publishing is not a per-command wrapper (ratchet)",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = [];
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
@@ -125,7 +118,7 @@ export const archTests = [
   {
     name: "arch/m42-d4-port1: publishGlobalWorkSnapshot is reachable only from the ledger's reactor + the two sanctioned non-cascade publishers",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

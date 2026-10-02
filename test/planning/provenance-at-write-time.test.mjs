@@ -1,12 +1,16 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, readdir, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { compileProvenance, PROVENANCE_KEYS } from "../../src/claim-provenance.mjs";
-import { compileGrade } from "../../src/work/grade.mjs";
-import { readRuns, recordAnchorReading, runRecordPath, startRun } from "../../src/run-store.mjs";
-import { gradeCommand } from "../../src/commands/grade.mjs";
+import { compileProvenance, PROVENANCE_KEYS } from "@aof/contracts/claim-provenance";
+import { compileGrade } from "@aof/work/grade";
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordAnchorReading = _aofApplication.execution.runs.recordAnchorReading;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const startRun = _aofApplication.execution.runs.startRun;
+const gradeCommand = _aofApplication.getCommand("work:grade");
 import { makeGradeRepo, rubricFor, writeRunner, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 const AT = "2026-08-26T14:00:00.000Z";

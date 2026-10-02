@@ -17,10 +17,10 @@ import { fileURLToPath } from "node:url";
 import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SEAM = "src/effects/run-transitions.mjs";
+const SEAM = "packages/execution/src/run-transitions.mjs";
 const DRIVEN = [
-  ["src/loop/cycle.mjs", "export async function settleDriven("],
-  ["src/commands/drive.mjs", null],
+  ["packages/work-loop/src/cycle.mjs", "async function settleDriven("],
+  ["packages/work-loop/src/commands/drive.mjs", null],
 ];
 
 const source = async (file) => stripComments(await readFile(path.join(repoRoot, file), "utf8"));
@@ -28,7 +28,7 @@ const source = async (file) => stripComments(await readFile(path.join(repoRoot, 
 // What, in the seam's (comment-stripped) code, breaks the rule. Empty when it holds.
 function seamFindings(code) {
   const findings = [];
-  const complete = functionBody(code, "export async function transitionRunComplete(");
+  const complete = functionBody(code, "async function transitionRunComplete(");
   if (complete == null) return ["transitionRunComplete is not found"];
   // The event payload names the workspace root as data; that is not a transcript read.
   const reads = complete.replace(/workspaceRoot\s*:\s*workspace\s*\?\.\s*projectRoot\s*\?\?\s*null/g, "");
@@ -76,7 +76,9 @@ export const archTests = [
     run: async () => {
       const code = await source(SEAM);
       assert.deepEqual(seamFindings(code), []);
-      assert.match(code, /import\s*\{\s*claudeProjectsDir\s*\}\s*from\s*["']\.\.\/work\/observe\.mjs["']/, "the resolution is the one home's");
+      const adapter = await source("packages/core/src/application/bindings/effects/run-transitions.mjs");
+      for (const text of [code, adapter]) assert.match(text, /createRunTransitions\(\{[^}]*claudeProjectsDir/su);
+      assert.match(adapter, /const\s*\{\s*claudeProjectsDir\s*\}\s*= workObserveServices/, "the resolution is the one home's");
     },
   },
   {

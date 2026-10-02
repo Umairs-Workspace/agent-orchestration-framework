@@ -32,7 +32,7 @@ Read `.aof/aof.config.json` → `work.agents` and `work.codeReview.autoComplete`
 
 The argument hint and both admitted range forms remain unchanged.
 
-The shell also honours `work.loop.concurrency`, a mode whose one home is `src/loop-bounds.mjs`:
+The shell also honours `work.loop.concurrency`, a mode whose one home is `packages/contracts/src/loop-bounds.mjs`:
 `sequential` (the default, and what an unset key means) drives one act per tick in the primary
 checkout, while `refine_first` refines every story in the range first, then builds the ready
 waves in worktree lanes, then runs the verify phase. It is read from `.aof/aof.config.json` and

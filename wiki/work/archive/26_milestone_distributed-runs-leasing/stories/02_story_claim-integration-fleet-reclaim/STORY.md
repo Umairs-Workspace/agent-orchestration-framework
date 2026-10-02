@@ -72,7 +72,7 @@ greppable in one file instead of smeared across modules.
      Implementation guidance surfaced here; no ADR change. -->
 
 **Verdict:** FEASIBLE. The injection route already exists verbatim: `invoke(id, input, ctx)` hands `ctx`
-untouched to `command.run(input, ctx)` ([command-core.mjs:189–194](../../../../../../src/command-core.mjs#L189)),
+untouched to `command.run(input, ctx)` ([command-core.mjs:189–194](../../../../../../packages/core/src/application/bindings/command-core.mjs#L189)),
 and `mesh:heartbeat` already does `ctx?.relayClient !== undefined ? ctx.relayClient : createRelayClient(config)`
 ([mesh-heartbeat.mjs:113](../../../../../../src/commands/mesh-heartbeat.mjs#L113)) — injected `null` models
 unconfigured (`pushPresenceSignal`'s null guard returns `{ pushed:false, skipped:true }`,
@@ -95,8 +95,8 @@ synchronously — the interleave is deterministic, no second OS process).
   `buildLeaseView`. "No git sync produced the skip" holds by construction (fixture has no remote) + a
   partition-root byte snapshot.
 - **(task 03) inject-the-clock:** both predicates are pure over passed instants — `reclaimStaleRuns({ now,
-  stalenessThreshold })` ([run-store.mjs:407](../../../../../../src/run-store.mjs#L407), threshold already
-  config-resolved at [run-start.mjs:49](../../../../../../src/commands/run-start.mjs#L49); today omits `now` at
+  stalenessThreshold })` ([run-store.mjs:407](../../../../../../packages/core/src/application/bindings/run-store.mjs#L407), threshold already
+  config-resolved at [run-start.mjs:49](../../../../../../packages/work/src/commands/run-start.mjs#L49); today omits `now` at
   :50 — the build threads `input.now`) and `isNodeStale(presence, nowMs, thresholdMs)`
   ([mesh-presence.mjs:176](../../../../../../src/mesh-presence.mjs#L176), 90s default via
   `resolveStalenessSeconds`). The at-threshold row is deterministic (strict `>`, "exactly AT is still live").
@@ -108,9 +108,9 @@ synchronously — the interleave is deterministic, no second OS process).
   planted-violation self-check.
 
 **`src/commands/run-start.mjs` — the frozen claim sequence (the mesh branch; unconfigured ⇒ the whole
-branch skipped, [:49–62](../../../../../../src/commands/run-start.mjs#L49) byte-identical):**
+branch skipped, [:49–62](../../../../../../packages/work/src/commands/run-start.mjs#L49) byte-identical):**
 - **(0) fleet-reclaim prefilter** — replaces/widens today's `[item]` scan block
-  ([:49–57](../../../../../../src/commands/run-start.mjs#L49)): construct the eligible item set (the story-00
+  ([:49–57](../../../../../../packages/work/src/commands/run-start.mjs#L49)): construct the eligible item set (the story-00
   union read + `node` key; exclude fresh-presence peers via `isNodeStale`; own/`null` runs only for the
   started item — presence is never consulted for oneself, satisfying the fresh-own-presence row), call the
   UNCHANGED `reclaimStaleRuns(set, { now, stalenessThreshold })`, keep the `rollbackItemStatus` loop verbatim
@@ -130,13 +130,13 @@ branch skipped, [:49–62](../../../../../../src/commands/run-start.mjs#L49) byt
 - Add optional `now` to the input schema.
 
 **`src/commands/run-complete.mjs`:** after `completeRun`
-([:58](../../../../../../src/commands/run-complete.mjs#L58)), under the `config.mesh?.nodeId` gate,
+([:58](../../../../../../packages/work/src/commands/run-complete.mjs#L58)), under the `config.mesh?.nodeId` gate,
 `releaseLease` on the holder's OWN claim for that run's `runId` — on ALL three terminal outcomes; the
-rollback block ([:64–70](../../../../../../src/commands/run-complete.mjs#L64)) untouched. Add optional white-box
+rollback block ([:64–70](../../../../../../packages/work/src/commands/run-complete.mjs#L64)) untouched. Add optional white-box
 `now` for timestamp-deterministic assertions.
 
 **`src/commands/run-retry.mjs`:** pass `node: config.mesh?.nodeId` into `retryRun`
-([:47](../../../../../../src/commands/run-retry.mjs#L47)) so the lineage mint lands under the same partition;
+([:47](../../../../../../packages/work/src/commands/run-retry.mjs#L47)) so the lineage mint lands under the same partition;
 nothing else. Add optional `now`.
 
 **`src/mesh-relay-client.mjs` — the second wire kind (additive, on the graph's 0-dependency leaf):**

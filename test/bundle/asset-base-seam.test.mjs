@@ -1,7 +1,7 @@
 // Traceability wiring for milestone 28 / story 00, task 00 —
 // tasks/00_asset-base-seam.feature (ADR-003).
 //
-// Covers every @executable scenario against the REAL src/asset-base.mjs, driven
+// Covers every @executable scenario against the REAL packages/core/src/asset-base.mjs, driven
 // in-process by flipping the injectable "in a SEA?" sentinel + sidecar anchor
 // (no built binary needed — the Build notes' developer-seat guidance).
 import assert from "node:assert/strict";
@@ -18,18 +18,18 @@ import {
   setSeaSentinelForTest,
   setSidecarAnchorForTest,
   packageVersionString,
-} from "../../src/asset-base.mjs";
+} from "../../packages/core/src/asset-base.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 // Build a packaged-layout fixture: <tmp>/<execDirName>/{bundle/**, ui/dist/**, package.json}
-// mirroring the real src/bundle + ui/dist trees + a trimmed package.json, so the
+// mirroring the real packages/core/assets + ui/dist trees + a trimmed package.json, so the
 // SEA branch reads real bytes without a built binary.
 async function makePackagedFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-sea-fixture-"));
-  await cp(path.join(repoRoot, "src", "bundle"), path.join(tmp, "bundle"), { recursive: true });
+  await cp(path.join(repoRoot, "packages", "core", "assets"), path.join(tmp, "bundle"), { recursive: true });
   await mkdir(path.join(tmp, "ui"), { recursive: true });
-  await cp(path.join(repoRoot, "ui", "dist"), path.join(tmp, "ui", "dist"), { recursive: true });
+  await cp(path.join(repoRoot, "apps", "ui", "dist"), path.join(tmp, "ui", "dist"), { recursive: true });
   await writeFile(path.join(tmp, "package.json"), JSON.stringify({ version: "9.9.9-fixture" }, null, 2), "utf8");
   return tmp;
 }
@@ -47,12 +47,12 @@ export const assetBaseSeamTests = [
       try {
         setSeaSentinelForTest(false);
         const resolved = assetBase("bundle");
-        const expected = path.join(repoRoot, "src", "bundle");
+        const expected = path.join(repoRoot, "packages", "core", "assets");
         assert.equal(resolved, expected, "the resolved base equals the pre-seam import.meta.url-derived bundle root exactly");
 
         const throughSeam = readAssetText("bundle", "bundle.json");
         const direct = readFileSync(path.join(expected, "bundle.json"), "utf8");
-        assert.equal(throughSeam, direct, "reading src/bundle/bundle.json through the seam returns the same bytes as reading it directly");
+        assert.equal(throughSeam, direct, "reading packages/core/assets/bundle.json through the seam returns the same bytes as reading it directly");
 
         assert.equal(isPackaged(), false, "no SEA API is called on the dev path (isPackaged reports false with no throw)");
       } finally {
@@ -210,7 +210,7 @@ export const assetBaseSeamTests = [
           readAssetText("bundle", "commands/does-not-exist.md");
           assert.fail("expected a throw");
         } catch (error) {
-          assert.ok(!error.message.includes(path.join(repoRoot, "src", "bundle")), "the error does not reference a src/-tree fallback path");
+          assert.ok(!error.message.includes(path.join(repoRoot, "packages", "core", "assets")), "the error does not reference a src/-tree fallback path");
         }
       } finally {
         resetSeam();

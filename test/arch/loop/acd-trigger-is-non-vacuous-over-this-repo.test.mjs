@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-6308 — the pass over THIS REPOSITORY'S OWN declaration says something, and says it
 // completely (63/ADR-001 §4, ADR-009 §3).
 //
@@ -24,12 +26,19 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 
-import { getCommand, invoke, listCommands } from "../../../src/command-core.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { buildTriggerReport, triggerCommand, RESOLVED_TRIGGER_KEYS } from "../../../src/commands/trigger.mjs";
-import { TRIGGER_SOURCES, bundledTriggerDeclaration, readTriggerDeclaration, triggerDeclarationPath } from "../../../src/work-trigger/declaration.mjs";
-import { resolveTriggerLevel } from "../../../src/work-trigger/level.mjs";
-import { LOOP_LEVELS, decideLoopScope } from "../../../src/work/loop.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const buildTriggerReport = _aofApplication.loop.commandTools.trigger.buildTriggerReport;
+const triggerCommand = _aofApplication.getCommand("work:trigger");
+const RESOLVED_TRIGGER_KEYS = _aofApplication.loop.commandTools.trigger.RESOLVED_TRIGGER_KEYS;
+const TRIGGER_SOURCES = _aofApplication.loop.workTrigger.declaration.TRIGGER_SOURCES;
+const bundledTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.bundledTriggerDeclaration;
+const readTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.readTriggerDeclaration;
+const triggerDeclarationPath = _aofApplication.loop.workTrigger.declaration.triggerDeclarationPath;
+import { resolveTriggerLevel } from "@aof/work-loop/trigger/level";
+import { LOOP_LEVELS, decideLoopScope } from "../../../packages/work-loop/src/engine.mjs";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const LOOP_ID = "work:loop";

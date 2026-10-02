@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-seam-liveness-unknown-is-a-limit (milestone 77 / story 02, FF-7704;
 // ADR-006 §1, §1a, §2, §3, §4).
 //
@@ -46,13 +47,14 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { graphJsonPath } from "../../../src/graph-normalize.mjs";
-import { TEST_ROOTS } from "../../../src/work-audit/census.mjs";
-import { readFinding } from "../../../src/work-audit/reads.mjs";
-import { SEAM_LIVENESS_SWEEPS, runSeamLiveness } from "../../../src/work-audit/seam-liveness.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
+const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
+import { readFinding } from "@aof/work/audit/reads";
+const SEAM_LIVENESS_SWEEPS = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_SWEEPS;
+const runSeamLiveness = _aofApplication.work.audit.seamLiveness.runSeamLiveness;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MODULE_REL = "src/work-audit/seam-liveness.mjs";
+const MODULE_REL = "packages/work/src/audit/seam-liveness.mjs";
 const moduleSource = () => readFileSync(path.join(repoRoot, MODULE_REL), "utf8");
 const SOURCE_FLOOR = 2000;
 
@@ -124,7 +126,7 @@ export const archTests = [
       assert.deepEqual(graphRoutes(MODULE_REL, code), [], `${MODULE_REL} holds no route to a graph other than the shipped read`);
 
       // The POSITIVE half: it reaches the artifact through the shipped reader, and by import.
-      assert.match(code, /import \{[^}]*normalizeGraph[^}]*\} from "\.\.\/graph-normalize\.mjs"/u, "it imports the shipped normalizer from its one home");
+      assert.match(stripComments(readFileSync(new URL("../../../packages/core/src/application/bindings/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /import \{[^}]*normalizeGraph[^}]*\} from "@aof\/knowledge\/graph-normalize"/u, "it imports the shipped normalizer from its one home");
       assert.match(code, /\breadGraph\b/u, "…and the shipped read");
       assert.match(code, /\bgraphJsonPath\b/u, "…and the shipped path resolver, rather than assembling an artifact path of its own");
 
@@ -280,7 +282,7 @@ export const archTests = [
     async run() {
       assert.equal(TEST_ROOTS.length >= 3, true, `the declared test roots are non-vacuous: ${TEST_ROOTS.join(", ")}`);
       const code = stripComments(moduleSource());
-      assert.match(code, /import \{[^}]*TEST_ROOTS[^}]*\} from "\.\/census\.mjs"/u, "the lane takes the test roots from their one home rather than spelling a second copy");
+      assert.match(stripComments(readFileSync(new URL("../../../packages/core/src/application/bindings/work-audit/seam-liveness.mjs", import.meta.url), "utf8")), /const \{[^}]*TEST_ROOTS[^}]*\} = workAuditCensusServices/u, "the lane takes the test roots from their one home rather than spelling a second copy");
       for (const root of TEST_ROOTS) {
         assert.equal(new RegExp(`["']${root}["']`, "u").test(code), false, `…and the lane spells no literal for the \`${root}\` root`);
       }

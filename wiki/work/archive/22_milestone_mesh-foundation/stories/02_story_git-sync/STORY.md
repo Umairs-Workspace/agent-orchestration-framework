@@ -46,8 +46,8 @@ transport on a tunable cadence; structured AS `mesh:sync` with the loop a thin f
 record; add-only merges safe **because of** ADR-002's partitioning). This story **owns**:
 `src/mesh-sync.mjs` (the git transport) + `src/commands/mesh-sync.mjs` (`mesh:sync`) + the background-loop
 runner + the cadence config (`mesh.sync.cadenceSeconds`), their registration in
-[command-core.mjs](../../../../../../src/command-core.mjs) (one import + one `COMMANDS` entry), the `aof mesh
-sync` dispatch branch + `argsFor` case in [cli.mjs](../../../../../../src/cli.mjs)'s `meshCommand`, and the
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs) (one import + one `COMMANDS` entry), the `aof mesh
+sync` dispatch branch + `argsFor` case in [cli.mjs](../../../../../../packages/core/src/cli.mjs)'s `meshCommand`, and the
 arch-test above + its registration in [scripts/test.mjs](../../../../../../scripts/test.mjs).
 
 **Depends on story 00's partition convention** (the add-only-merge safety the transport rests on) — but on

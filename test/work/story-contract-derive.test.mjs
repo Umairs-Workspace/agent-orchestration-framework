@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 01 — the sets are derived, not recalled.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -22,8 +23,9 @@ import os from "node:os";
 import path from "node:path";
 
 import { stripComments } from "../support/source-slice.mjs";
-import { PROPOSAL_REASONS, deriveStoryContract } from "../../src/story-contract-derive.mjs";
-import { partitionReadySetByDeclaredFiles } from "../../src/ready-wave.mjs";
+const PROPOSAL_REASONS = _aofApplication.work.storyContractDerive.PROPOSAL_REASONS;
+const deriveStoryContract = _aofApplication.work.storyContractDerive.deriveStoryContract;
+import { partitionReadySetByDeclaredFiles } from "@aof/work/ready-wave";
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -355,7 +357,7 @@ export const storyContractDeriveTests = [
       // …and the module holds no refusal path of its own: no throw, no exit, no error code. Asserted
       // over the CODE, with the header's prose stripped — a module whose comment says "refuses" is
       // not a module that refuses.
-      const code = stripComments(await readFile(new URL("../../src/story-contract-derive.mjs", import.meta.url), "utf8"));
+      const code = stripComments(await readFile(new URL("../../packages/work/src/story-contract-derive.mjs", import.meta.url), "utf8"));
       assert.doesNotMatch(code, /\bthrow\b/, "the derivation throws nothing, so it can block no read");
       assert.doesNotMatch(code, /process\.exit/, "…and exits nothing");
       assert.doesNotMatch(code, /\.code\s*=\s*["'`]/, "…and raises no coded refusal");
@@ -364,7 +366,7 @@ export const storyContractDeriveTests = [
   {
     name: "96/01/02 the refine command asks for a proposal and never for an application",
     run: async () => {
-      const refine = await readFile(new URL("../../src/bundle/commands/refine.md", import.meta.url), "utf8");
+      const refine = await readFile(new URL("../../packages/core/assets/commands/refine.md", import.meta.url), "utf8");
       assert.match(refine, /derive/i, "the break-down instructions tell the author to derive a proposal");
       assert.match(refine, /subtract/i, "…and to subtract from it");
       // No instruction anywhere to apply, write or overwrite a declaration with a derived set.

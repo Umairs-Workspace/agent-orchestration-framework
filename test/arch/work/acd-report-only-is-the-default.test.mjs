@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
 import { functionBody } from "../../support/source-slice.mjs";
-import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "../../../src/work-acceptor/admissibility.mjs";
-import { defaultCriterion, makeCriterion } from "../../../src/work-acceptor/criterion.mjs";
-import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "../../../src/work-acceptor/ledger.mjs";
+import { NOT_ADMISSIBLE, HARNESS_NOT_INTROSPECTABLE, KEY_OUTSIDE_DECLARED_SET } from "@aof/work/acceptor/admissibility";
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+import { BUDGET_EXHAUSTED, EVIDENCE_SHORT } from "@aof/work/acceptor/ledger";
 import {
   METRIC_UNMEASURABLE,
   NOT_AN_ORDINAL_KNOB,
@@ -12,9 +14,12 @@ import {
   STEP_IS_MORE_THAN_ONE_NOTCH,
   TRIAL_UNAFFORDABLE,
   TRIAL_UNIT_UNDECLARED,
-} from "../../../src/work-acceptor/rule.mjs";
-import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "../../../src/loop-bounds.mjs";
-import { RULING_REFUSAL_ORDER, YIELD_BOUND, acceptorCommand, buildAcceptorReport } from "../../../src/commands/acceptor.mjs";
+} from "@aof/work/acceptor/rule";
+import { NO_DECLARED_RANGE, OUTSIDE_DECLARED_RANGE, STEP_WOULD_BE_COMPOUND, compoundStepRefusal } from "@aof/contracts/loop-bounds";
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+const YIELD_BOUND = _aofApplication.work.commandTools.acceptor.YIELD_BOUND;
+const acceptorCommand = _aofApplication.getCommand("work:acceptor");
+const buildAcceptorReport = _aofApplication.work.commandTools.acceptor.buildAcceptorReport;
 
 const KEY = "config.fixture.knob";
 const census = Object.freeze({ populations: Object.freeze([]), findings: Object.freeze([]) });
@@ -96,7 +101,7 @@ export const archTests = [
         "basket", "metric", "admissibility", "refusals", "constructionRefusals",
       ], "each proposal has one stable machine shape");
 
-      const source = await readFile(new URL("../../../src/commands/acceptor.mjs", import.meta.url), "utf8");
+      const source = await readFile(new URL("../../../packages/work/src/commands/acceptor.mjs", import.meta.url), "utf8");
       assert.ok(source.includes("commitRequiresExplicitRequest: true"));
       assert.ok(source.includes("if (typeof requested === \"string\" && requested.length > 0)"), "the transition is behind the explicit request branch");
       assert.ok(!/flags\s*:\s*\{[^}]*strict/us.test(source), "the face declares no strictness option");

@@ -20,7 +20,7 @@
 #
 # $1 = this repo, as a distro-visible path (/mnt/c/…)   $2 = distro-side repo dir
 # $3 = the deploy-stamp filename (holds the sha256 of the lockfile last installed from)
-set -uo pipefail
+set -euo pipefail
 
 export NVM_DIR="$HOME/.nvm"
 # nvm defines `node`/`npm` as shell FUNCTIONS from ~/.bashrc, which a non-login shell
@@ -39,19 +39,30 @@ case "$DST" in
 esac
 STAMP="$DST/$3"
 
-[ -d "$SRC/src" ] || { echo "no src/ at $SRC (path translation failed?)" >&2; exit 1; }
+[ -d "$SRC/packages/core/src" ] || { echo "no core source at $SRC (path translation failed?)" >&2; exit 1; }
 [ -d "$DST/.git" ] || { echo "no aof clone at $DST — provision the distro first" >&2; exit 1; }
 
-# 1. the source tree. src/bundle rides inside src/, so this covers the asset sidecars.
+# 1. the source tree. Core's source and assets travel together in packages/core/.
 #    node_modules is NEVER copied — it is the Windows tree.
-rm -rf "$DST/src"
-cp -r "$SRC/src" "$DST/src"
+mkdir -p "$DST/bin"
+cp "$SRC/bin/aof.mjs" "$DST/bin/aof.mjs"
 cp "$SRC/package.json" "$DST/package.json"
-# The lock travels WITH the manifest: `npm ci` refuses a package.json its lock does not
-# match, so syncing one without the other fails the reinstall on the first new dependency
-# (measured 2026-09-27, 138/02: `Missing: @xterm/headless@6.0.0 from lock file`).
-cp "$SRC/package-lock.json" "$DST/package-lock.json"
-echo "  synced src/ ($(find "$DST/src" -name '*.mjs' | wc -l) modules)"
+# Focus still resolves the complete workspace graph. Follow locked owners,
+# including relocated apps, and remove retired source files on updates. rsync
+# keeps the distro's own nested dependencies and Rust build outputs untouched.
+command -v rsync >/dev/null || { echo "rsync is required for workspace synchronization" >&2; exit 1; }
+WORKSPACES="$(node "$SRC/scripts/workspace-paths.mjs" --list)"
+while IFS= read -r workspace; do
+  [ -n "$workspace" ] || continue
+  mkdir -p "$DST/$workspace"
+  rsync -a --delete --exclude=node_modules --exclude=target --exclude=.git "$SRC/$workspace/" "$DST/$workspace/"
+done <<< "$WORKSPACES"
+mkdir -p "$DST/.yarn/releases" "$DST/scripts"
+cp "$SRC/yarn.lock" "$SRC/.yarnrc.yml" "$DST/"
+cp "$SRC/.yarn/releases/yarn-4.18.1.cjs" "$DST/.yarn/releases/"
+cp "$SRC/scripts/prepare-worktree.mjs" "$SRC/scripts/yarn.mjs" "$DST/scripts/"
+rm -f "$DST/package-lock.json"
+echo "  synced workspaces ($(find "$DST/packages/core/src" -name '*.mjs' | wc -l) core modules)"
 
 # The WORKSPACE config travels too. It is machine-neutral (no paths), and it carries
 # `mesh.workspaceId` — the DURABLE CROSS-MACHINE workspace anchor. Without it both ends
@@ -69,24 +80,31 @@ fi
 # 2. dependency drift. A src-only sync is fast and almost always right, but a lockfile
 #    change needs a native reinstall + node-pty rebuild — skipping that silently leaves
 #    a stale native binary that fails at daemon start, far from its cause.
-LOCK="$SRC/package-lock.json"
-HASH="$(sha256sum "$LOCK" 2>/dev/null | cut -d' ' -f1)"
+HASH="$(
+  {
+    cat "$SRC/yarn.lock" "$SRC/package.json" "$SRC/.yarnrc.yml" "$SRC/.yarn/releases/yarn-4.18.1.cjs"
+    while IFS= read -r workspace; do cat "$SRC/$workspace/package.json"; done <<< "$WORKSPACES"
+  } | sha256sum | cut -d' ' -f1
+)"
 PREV="$(cat "$STAMP" 2>/dev/null || echo none)"
-PTY="$DST/node_modules/node-pty/build/Release/pty.node"
+# Resolve from execution's actual install, not an assumed root-hoisted copy.
+PTY_DIR="$(cd "$DST" && node -e "const {createRequire}=require('node:module'); const path=require('node:path'); try { console.log(path.dirname(createRequire(path.resolve('packages/execution/package.json')).resolve('node-pty/package.json'))); } catch {}")"
+PTY="$PTY_DIR/build/Release/pty.node"
 if [ "$HASH" != "$PREV" ] || [ ! -f "$PTY" ]; then
   echo "  lockfile changed (or node-pty absent) — reinstalling natively"
   cd "$DST" || exit 1
-  # --workspaces=false: the worker needs the ROOT runtime closure only; the ui workspace
-  # is build-time frontend tooling a worker never uses (~200 MB avoided).
+  # Install only core's runtime closure; the worker does not need UI build tools.
   # A failed install writes NO stamp: stamping it would report "lockfile unchanged" on every
   # later deploy, over a tree that never received the new dependency.
-  if ! npm ci --omit=dev --workspaces=false 2>&1 | tail -3; then
-    echo "  npm ci failed — the stamp is left as it was, so the next deploy retries" >&2
+  if ! YARN_ENABLE_SCRIPTS=false YARN_ENABLE_IMMUTABLE_INSTALLS=true node .yarn/releases/yarn-4.18.1.cjs workspaces focus aof --production 2>&1 | tail -3; then
+    echo "  Yarn install failed — the stamp is left as it was, so the next deploy retries" >&2
     exit 1
   fi
+  PTY_DIR="$(node -e "const {createRequire}=require('node:module'); const path=require('node:path'); console.log(path.dirname(createRequire(path.resolve('packages/execution/package.json')).resolve('node-pty/package.json')))")"
+  PTY="$PTY_DIR/build/Release/pty.node"
   if [ ! -f "$PTY" ]; then
     echo "  building node-pty from source (no linux-x64 prebuild ships)"
-    ( cd node_modules/node-pty && npx --yes node-gyp rebuild 2>&1 | tail -3 )
+    node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
   fi
   [ -f "$PTY" ] || { echo "  node-pty did not build — the worker cannot run PTY sessions" >&2; exit 1; }
   printf '%s' "$HASH" > "$STAMP"
@@ -96,8 +114,8 @@ fi
 
 # 3. report what the distro ACTUALLY runs now, read from the distro itself.
 cd "$DST" || exit 1
-echo "  node-pty : $(node -e "require('node-pty'); process.stdout.write('loads OK')" 2>&1 | tail -1)"
-echo "  aof      : $(command -v aof || echo "NOT LINKED — run 'npm link' in $DST")"
-echo "  version  : $(aof --version 2>&1 | head -1)"
+echo "  node-pty : $(node -e "require('node:module').createRequire(require('node:path').resolve('packages/execution/package.json'))('node-pty'); process.stdout.write('loads OK')" 2>&1 | tail -1)"
+echo "  aof      : $(command -v aof || echo "NOT LINKED — link the aof package in $DST/packages/core")"
+echo "  version  : $(node packages/core/bin/aof.mjs --version 2>&1 | head -1)"
 echo
 echo "  NOTE: a running worker daemon keeps its in-memory module graph — restart it to pick this up."

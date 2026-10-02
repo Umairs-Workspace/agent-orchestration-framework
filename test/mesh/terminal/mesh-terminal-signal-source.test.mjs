@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/terminal/mesh-terminal-signal-source.test.mjs — traceability for milestone 46 / story 01,
 // task 00 (tasks/00_the-signal-gate-follows-the-real-producer.feature, ADR-007).
 //
@@ -17,7 +19,7 @@
 // a headless run forever — handing chunks through the SAME arrow production wires into
 // the REAL `createWorkerStreamClient` over a fake transport that records every envelope.
 // `test/mesh/worker/mesh-worker-driver-output-chunk.test.mjs` drives the first link and
-// `test/work/worker-stream-client.test.mjs` the second; this joins them, so the property is
+// `packages/mesh/test/worker-stream-client.suite.mjs` the second; this joins them, so the property is
 // asserted ACROSS the seam rather than on either side of it. No real PTY, no second
 // machine, no relay socket, no `~/.aof` write.
 //
@@ -31,12 +33,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession, createMeshWorkerTerminalResumeHandler } from "../../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath } from "../../../src/mesh/worktree.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { TERMINAL_FRAME_KIND } from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { findWork, loadWorkspace } from "../../../src/work.mjs";
-import { startRun } from "../../../src/run-store.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const createMeshWorkerTerminalResumeHandler = _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
+const findWork = _aofWorkspace.work.findWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
 import { createFakeWhich, createScriptedPty, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 import { withMeshWorkerExecFixture, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 

@@ -13,7 +13,7 @@
 // relevance, plus an OFF-SCOPE record that would out-score the survivors if scope
 // were a soft signal rather than a hard pre-filter.
 import assert from "node:assert/strict";
-import { recall, rankRecords } from "../../../src/memory/local-retrieval.mjs";
+import { recall, rankRecords } from "@aof/knowledge/memory/local-retrieval";
 
 function record(partial) {
   return {

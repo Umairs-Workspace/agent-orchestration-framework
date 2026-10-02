@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 12 / ADR-005 inv. 1 (store-first resolution;
 // ADR-001 + ADR-004):
 // "A managed tool resolves the store binary
@@ -18,15 +19,13 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { toolStoreRoot, toolVersionDir } from "../../../src/paths.mjs";
-import { resolveManagedBinary, exeDirFor, exeNameFor } from "../../../src/tool-store.mjs";
-import {
-  resolveGraphifyBinary,
-  GRAPHIFY_BINARY,
-  PINNED_GRAPHIFY_VERSION,
-} from "../../../src/graphify.mjs";
-import { resolveHeadroomBinary } from "../../../src/headroom.mjs";
-import { HEADROOM_DESCRIPTOR } from "../../../src/tool-store.mjs";
+import { toolStoreRoot, toolVersionDir } from "../../../packages/core/src/paths.mjs";
+import { resolveManagedBinary, exeDirFor, exeNameFor } from "../../../packages/core/src/tool-store.mjs";
+const resolveGraphifyBinary = _aofApplication.knowledge.graphify.resolveGraphifyBinary;
+const GRAPHIFY_BINARY = _aofApplication.knowledge.graphify.GRAPHIFY_BINARY;
+const PINNED_GRAPHIFY_VERSION = _aofApplication.knowledge.graphify.PINNED_GRAPHIFY_VERSION;
+import { resolveHeadroomBinary } from "../../../packages/core/src/headroom.mjs";
+import { HEADROOM_DESCRIPTOR } from "../../../packages/core/src/tool-store.mjs";
 
 // The injected version probe — the store/PATH fixtures are inert files, so no live
 // binary is spawned; the probe returns a deterministic stub version.

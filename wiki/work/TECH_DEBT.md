@@ -870,9 +870,9 @@ Five servers, four homes for the numbers, and they do not agree:
 
 | home | says |
 |---|---|
-| [src/setup-ui.mjs:26](../../src/setup-ui.mjs#L26) | `4177` |
-| [src/board-serve.mjs:60](../../src/board-serve.mjs#L60) — `serveBoard` | **`4178`** |
-| [src/board-serve.mjs:33](../../src/board-serve.mjs#L33) — `boardUiProbe`, and `src/commands/work-ui.mjs:25` | **`4180`** |
+| [src/setup-ui.mjs:26](../../packages/server/src/setup-ui.mjs#L26) | `4177` |
+| [src/board-serve.mjs:60](../../packages/server/src/board-serve.mjs#L60) — `serveBoard` | **`4178`** |
+| [src/board-serve.mjs:33](../../packages/server/src/board-serve.mjs#L33) — `boardUiProbe`, and `src/commands/work-ui.mjs:25` | **`4180`** |
 | `src/commands/assets-ui.mjs:22` | `4177`, api port `4178` |
 | [src/mesh-ui-serve.mjs:154](../../src/mesh-ui-serve.mjs#L154) | `4181`, with a comment at [:113-115](../../src/mesh-ui-serve.mjs#L113) narrating the whole map from one of its four homes |
 
@@ -1057,7 +1057,7 @@ rather than against the working tree:
 
 | `test/bundle.test.mjs` — **6 of 18** exported `bundleTests` assertions | `eacbd57` (m43) | found 2026-08-13 at milestone 49's refine, by QA authoring story 07's contract and confirmed independently by the PO. Measured on the unmodified tree: `bundleTests total=18 pass=12 fail=6`. Failing: the source-tree ACD-set count, the descriptor's valid-kind check (`member artifact-sync-enqueue has a valid kind`), three loader clauses (member count vs descriptor, cwd-independence ×2), and one manifest content-address. Root cause read at source: m43 landed `claude-artifact-sync` + `artifact-sync-enqueue` **without moving** `HOOK_IDS`, the `byKind("hook") === 3` count, or the valid-kind list, and `src/bundle/manifest.json`'s hashes have drifted since |
 
-| `test/fleet-terminal-view-surface.test.mjs` ×2 — the `task04/38-06 (V10)` and `(V11)` lanes | `7400664` (m46's OWN merge) | found 2026-08-13 at story 49/00's structural review, by importing the exported array on a tree whose `ui/` is byte-identical to HEAD (`git status` clean for every file the two lanes read). V10 dies on `the header STATE chip renders descriptor.text`; V11 on `exactly ONE bar site … Found 0`. Root cause read at source: **m46 extracted the byte area into [`ui/src/terminal/TerminalByteArea.tsx`](../../ui/src/terminal/TerminalByteArea.tsx) and both lanes still read `TERMINAL_CONTROL`** (`ui/src/terminal/TerminalControl.tsx`), which carries **zero** occurrences of `{descriptor.text}`, `{descriptor.paneLine}`, `role="status"` or `byteArea(` — measured at `7400664`, `0e2688f` and `69d9087` alike (`git show <c>:… \| grep -c`). The tokens now live in `TerminalByteArea.tsx` (`{descriptor.paneLine}` ×3, `role="status"` ×1) |
+| `test/fleet-terminal-view-surface.test.mjs` ×2 — the `task04/38-06 (V10)` and `(V11)` lanes | `7400664` (m46's OWN merge) | found 2026-08-13 at story 49/00's structural review, by importing the exported array on a tree whose `ui/` is byte-identical to HEAD (`git status` clean for every file the two lanes read). V10 dies on `the header STATE chip renders descriptor.text`; V11 on `exactly ONE bar site … Found 0`. Root cause read at source: **m46 extracted the byte area into [`ui/src/terminal/TerminalByteArea.tsx`](../../apps/ui/src/terminal/TerminalByteArea.tsx) and both lanes still read `TERMINAL_CONTROL`** (`ui/src/terminal/TerminalControl.tsx`), which carries **zero** occurrences of `{descriptor.text}`, `{descriptor.paneLine}`, `role="status"` or `byteArea(` — measured at `7400664`, `0e2688f` and `69d9087` alike (`git show <c>:… \| grep -c`). The tokens now live in `TerminalByteArea.tsx` (`{descriptor.paneLine}` ×3, `role="status"` ×1) |
 
 | `test/arch/acd-memory-backend-selection.test.mjs` **and** `test/arch/acd-graphify-backend-selection.test.mjs` — both assert *"`config.memory?.backend` is read in exactly one code location (the seam)"*; the detector reports **seven** (`src/work-init.mjs` ×5, `src/commands/init-update.mjs`, `src/work-memory.mjs`) | `20b69cb` (**chore 51**) | found 2026-08-13 at `aof:verify 49`'s acceptance sweep, which ran the whole `test/arch/**` set rather than any milestone's subset. Attributed by counting the same reads at `20b69cb^`: **one**, in `src/work-memory.mjs` alone — green before the chore. Chore 51's `initConfig` consults the backend five times in `src/work-init.mjs` and once in `src/commands/init-update.mjs` to decide what a scaffolded config should carry |
 | `test/memory-integration.test.mjs:79-82` — *"status (real backend) agrees with the reindex it just built"*, `the lesson/adr split sums to the record count: 600 !== 727` | **m39**, and named by **m40/R3** at the time | found 2026-08-15/16 at milestone 66/01's structural and behavioural reviews, independently and by three methods: a HEAD baseline capture before any edit, a `git stash --include-untracked` re-run, and a detached-HEAD worktree at `24fc181` with its own `node_modules` — identical numbers, identical line, every time. Root cause measured, not inferred: `buildRecords` over the real `wiki/work` returns `{adr:342, lesson:258, capability:76, gap:49, summary:2}` = **727**, while memory's `status` buckets only `lesson`+`adr` = **600**. The missing **127** are exactly m39's `capability`/`gap` and m13/m05's `summary` records |
@@ -1297,7 +1297,7 @@ into a silent corruption, and spends the next hour of debugging pointing away fr
 Could not load the work stream: Mesh API route not found.
 ```
 
-**Why.** m45's [`ui/src/app/routes.mjs`](../../ui/src/app/routes.mjs) declares ONE route table — `/`, `/fleet`, `/board`, `/config` — and the shell renders that nav on every origin. But there are **two kinds of server** behind it and they do not have the same API surface:
+**Why.** m45's [`ui/src/app/routes.mjs`](../../apps/ui/src/app/routes.mjs) declares ONE route table — `/`, `/fleet`, `/board`, `/config` — and the shell renders that nav on every origin. But there are **two kinds of server** behind it and they do not have the same API surface:
 
 - a **board server** is per-workspace, on an EPHEMERAL port (`aof` → `:58633`, `aof-test-repo` → `:51171`, `pilot-app-portal` → `:51173`, `lark-guard-portal` → `:58836` — measured), and it serves exactly one project's work stream;
 - the **fleet server** (`mesh-ui-serve`, fixed `:4181`) is the cross-workspace index. It has `/api/mesh/*` and **no board API at all**, because a board is meaningless without a workspace.
@@ -1324,7 +1324,7 @@ The panel compresses, and it looks it.
 header and **no dock open at all**, the board was shrunk from 900px to 440px of viewport height: the
 action strip never escaped its panel and every control stayed reachable at every step. So this is not
 pre-existing board debt that milestone 46 exposed — **the dock's claim on half the content box is the
-cause**, which is why the reachability half was fixed inside m46 ([`DetailPanel.tsx`](../../ui/src/board/DetailPanel.tsx),
+cause**, which is why the reachability half was fixed inside m46 ([`DetailPanel.tsx`](../../apps/ui/src/board/DetailPanel.tsx),
 guarded by `shell-dock-inset/DG-46-1`).
 
 **What is fixed and what is not.** DG-46-1's binding claim — *an open dock covers nothing the operator
@@ -1508,7 +1508,9 @@ worth buying for a path no measured producer can reach.
 
 **Status:** open (raised 2026-08-13 during story 49/00's structural review, which watched it happen to
 the story it was reviewing). **Severity:** silent destruction of uncommitted work, followed by a green
-test report over a tree that cannot build the UI at all.
+test report over a tree that cannot build the UI at all. **142 (2026-10-01):** the workspace is
+`apps/ui/` now (the `node_modules/@aof/ui` link is unchanged and still crosses into it), and it holds
+the UI's own tests since Plan 09 — a destroyed `apps/ui/` takes `@aof/ui`'s 776-case suite with it.
 
 > **UPDATE 2026-08-13, ~17:05 — IT HAPPENED A SECOND TIME, four hours later, and `npm` was not
 > involved.** The title above originally read *"A root-level `npm ci` can DELETE…"*. That framing is
@@ -1989,7 +1991,7 @@ claim that admission alone carries revocation. It is a pre-existing, mesh-wide g
 introduced nor worsened it — so it is recorded rather than charged to that story.)*
 
 **What's wrong, read at source.**
-[control-stream-server.mjs:959-963](../../src/control-stream-server.mjs#L959) is the composed dispatch
+[control-stream-server.mjs:959-963](../../packages/mesh/src/control-stream-server.mjs#L959) is the composed dispatch
 entry point, and its T2 half is:
 
 ```js
@@ -2001,7 +2003,7 @@ if (directive?.issuer != null && isRevokedLocal(getMeshRegistry(), directive.iss
 `grep -rn issuer src/` finds the field in `assignment-record.mjs`, `global-work-store.mjs`,
 `global-mesh-query.mjs`, `mesh-assignment.mjs` and `mesh-ui-serve.mjs` — **the record and the verb**.
 It appears in **no frame builder**: not `buildDirectiveFrame`
-([control-stream-server.mjs:874](../../src/control-stream-server.mjs#L874), the assignment down-frame),
+([control-stream-server.mjs:874](../../packages/mesh/src/control-stream-server.mjs#L874), the assignment down-frame),
 not the terminal-input/resume frames the router mints
 ([mesh-terminal-input.mjs:85,155](../../src/mesh-terminal-input.mjs#L85)), not
 `buildSessionSpawnFrame`. So `directive.issuer` is `undefined` on **every** directive this control
@@ -2009,12 +2011,12 @@ dispatches, the guard short-circuits, and the branch has never executed in produ
 
 **How it bites.** The comment three lines above it states the control it does not perform — *"a
 directive whose `issuer` is revoked never routes, even over an admitted stream"* — and
-[:1051-1055](../../src/control-stream-server.mjs#L1051) repeats it as the reason `getMeshRegistry` is
+[:1051-1055](../../packages/mesh/src/control-stream-server.mjs#L1051) repeats it as the reason `getMeshRegistry` is
 read per-decision. Revocation is therefore enforced **only at admission**
-([:1145-1163](../../src/control-stream-server.mjs#L1145), where the enrollment credential is verified
+([:1145-1163](../../packages/mesh/src/control-stream-server.mjs#L1145), where the enrollment credential is verified
 against the roster). Nothing closes an already-open socket when a node is revoked, and
 `directiveTargets` is cleared only on that socket's own close
-([:1273-1278](../../src/control-stream-server.mjs#L1273)) — so **a peer revoked after it connected keeps
+([:1273-1278](../../packages/mesh/src/control-stream-server.mjs#L1273)) — so **a peer revoked after it connected keeps
 receiving every directive until it disconnects for some unrelated reason**. The dormant guard is what
 makes that invisible: three separate texts (the code comment, the per-decision-read rationale, and
 50/ADR-006 decision 4's *"a revoked or unadmitted control↔worker pair has no target entry"*) assert a
@@ -2105,7 +2107,7 @@ stranded entries the launcher would report failed/daemon-restarted: ["session-50
 ```
 
 **How it bites.** Bounded today — `updateAssignmentState` returns `null` for an unknown id
-([assignment-record.mjs:174-175](../../src/assignment-record.mjs#L174)), so no phantom row is written,
+([assignment-record.mjs:174-175](../../packages/mesh/src/assignment-record.mjs#L174)), so no phantom row is written,
 and the refused step is acked and settled rather than retried forever. What survives is per-restart,
 per-directory, forever: a false `startup-reclaim` warning naming an assignment that never existed, a
 durable journal step for it, and a full `listItems` + `readRuns` sweep of the checkout looking for its
@@ -3105,7 +3107,8 @@ admission (`src/mesh/worker-repo-admission.mjs`), taking the file **2,462 -> 1,9
 and 4 — worktree lifecycle and run bracketing — did NOT, so the entry stays open with its remaining
 scope narrowed to those two. The measurements below are the pre-split ones and are kept as the
 baseline the split is measured against; the file's path also changed at `119/01` (`src/` gained an
-interior), which is why the heading now spells it `src/mesh/`.
+interior), which is why the heading now spells it `src/mesh/`. **142 (2026-10-01):** `@aof/mesh` owns it now —
+`packages/mesh/src/worker-execution.mjs`, 1,871 lines; seams 3 and 4 are unchanged and still open.
 **2026-09-13 (`129/03` accept, 129/ADR-008 §4):** one verb of seam 3 paid the way seams 1 and 2 were —
 `commitWorktreeChanges` moved to `src/mesh/worktree.mjs` (absent definition, present re-export) and
 `resolveRefInWorktree` / `worktreeWorkDir` to `src/work/dispatch.mjs`, the two worker call sites
@@ -3377,9 +3380,9 @@ module-private** — none exports its resolver:
 
 | module | notes |
 | --- | --- |
-| [`src/terminal-providers.mjs:33`](../../src/terminal-providers.mjs#L33) | the **only** one that handles `PATHEXT` correctly |
-| [`src/tool-store.mjs:143`](../../src/tool-store.mjs#L143) | |
-| [`src/config-inspect.mjs:567`](../../src/config-inspect.mjs#L567) | |
+| [`src/terminal-providers.mjs:33`](../../packages/core/src/application/bindings/terminal-providers.mjs#L33) | the **only** one that handles `PATHEXT` correctly |
+| [`src/tool-store.mjs:143`](../../packages/core/src/tool-store.mjs#L143) | |
+| [`src/config-inspect.mjs:567`](../../packages/core/src/application/bindings/config-inspect.mjs#L567) | |
 
 Milestone 72/ADR-001 §5b adds a fourth in `src/work-toolchain.mjs`, knowingly. It has to: the seam it
 guards (`runBounded`) refuses a shell string but passes a bare name through to the OS

@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-day-one-audit-complete (milestone 59 / story 04, FF-5910;
 // ADR-001, ADR-006, ADR-007 §1).
 //
@@ -29,11 +31,13 @@ import assert from "node:assert/strict";
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { moduleCitationTarget, declaresServiceSymbol } from "../../support/workspace/module-citation.mjs";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { deriveRouteTable } from "../../../src/spine/face.mjs";
-import { GATE_ORDER } from "../../../src/work/loop.mjs";
-import { loadLoops } from "../../../src/work/loops.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const deriveRouteTable = _aofApplication.cli.deriveRouteTable;
+import { GATE_ORDER } from "../../../packages/work-loop/src/engine.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   GATING_CODES,
   checkActuatorArbitration,
@@ -42,10 +46,10 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUNDLE = path.join(root, "src", "bundle");
+const BUNDLE = path.join(root, "packages", "core", "assets");
 const LOOPS_DIR = path.join(BUNDLE, "loops");
 
 const CHECKS = Object.freeze([
@@ -96,7 +100,7 @@ export const archTests = [
     name: "arch/59 FF-5910: the framework ships exactly one auditor, and the whole registry still loads with no error",
     run: async () => {
       const names = (await readdir(LOOPS_DIR)).filter((name) => name.endsWith(".md"));
-      assert.ok(names.length >= 16, `non-vacuous: ${names.length} records ship in src/bundle/loops/`);
+      assert.ok(names.length >= 16, `non-vacuous: ${names.length} records ship in packages/core/assets/loops/`);
 
       const { model, auditor } = await theAuditor();
       assert.equal(model.nodes.length, names.length, "every shipped record parsed into a node");
@@ -132,9 +136,9 @@ export const archTests = [
         assert.equal(raw.startsWith("prose:"), false, `${raw}: a paragraph is not an instrument`);
         if (raw.startsWith("module:")) {
           const { file, symbol } = moduleParts(raw);
-          await access(path.join(root, file));
-          const source = await readFile(path.join(root, file), "utf8");
-          assert.equal(exportsSymbol(source, symbol), true, `${raw}: ${file} really exports ${symbol}`);
+          const target = await moduleCitationTarget(root, file);
+          await access(target);
+          assert.equal(await declaresServiceSymbol(target, symbol), true, `${raw}: the actual public module or constructed service exposes ${symbol}`);
           files += 1;
         } else if (raw.startsWith("command:")) {
           const id = raw.slice("command:".length);

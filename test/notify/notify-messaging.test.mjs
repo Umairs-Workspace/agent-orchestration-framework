@@ -1,3 +1,5 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/notify/notify-messaging.test.mjs — milestone 131 / story 08, tasks 00 to 05 (ADR-005 §1, as
 // amended at 131/08), and story 09, tasks 00 to 03 (ADR-007). `aof messaging`: the family's
 // registration and budget (08/00), the machine-wide owner-only store (08/01), `init`'s
@@ -20,12 +22,20 @@ import os from "node:os";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { invoke, listCommands } from "../../src/command-core.mjs";
-import * as discordModule from "../../src/notify/discord.mjs";
-import { CHANNELS, buildNotifyEnvelope, notify, sendTestMessage } from "../../src/notify/notify.mjs";
-import { messagingSecretPath, messagingSecretPresent, readMessagingSecret, writeMessagingSecret } from "../../src/notify/secret.mjs";
-import { messagingInitCommand, messagingStatusCommand } from "../../src/commands/messaging/messaging.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const invoke = _aofApplication.invoke;
+const listCommands = _aofApplication.listCommands;
+import * as discordModule from "@aof/messaging/discord";
+const CHANNELS = _aofApplication.messaging.notify.CHANNELS;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+const notify = _aofApplication.messaging.notify.notify;
+const sendTestMessage = _aofApplication.messaging.notify.sendTestMessage;
+const messagingSecretPath = _aofApplication.messaging.secret.messagingSecretPath;
+const messagingSecretPresent = _aofApplication.messaging.secret.messagingSecretPresent;
+const readMessagingSecret = _aofApplication.messaging.secret.readMessagingSecret;
+const writeMessagingSecret = _aofApplication.messaging.secret.writeMessagingSecret;
+const messagingInitCommand = _aofApplication.getCommand("messaging:init");
+const messagingStatusCommand = _aofApplication.getCommand("messaging:status");
 import {
   SOURCE_DIRECTORY_BUDGETS,
   SOURCE_DIRECTORY_EXEMPTIONS,
@@ -36,7 +46,7 @@ import { stripComments } from "../support/source-slice.mjs";
 
 const { isDiscordBotToken } = discordModule;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BIN = path.join(repoRoot, "bin", "aof.mjs");
+const BIN = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 // The fixture token (09 QA ruling 1): base64url("123456789012345678"), `.AbCdEf.`, 27 base64url
 // characters. Its third segment is what a leak check greps for.
 const SEG_A = "a1B2c3D4e5F6g7H8i9J0k1L2m3N";
@@ -197,17 +207,17 @@ export const notifyMessagingTests = [
   {
     name: "131/08 task00 — the new directories are budgeted: src/commands/messaging an exemption naming 131/08, the src/commands row still 69, and the live tree green",
     async run() {
-      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "src/commands/messaging");
-      assert.ok(exemption, "src/commands/messaging is an exemption");
-      assert.ok(exemption.why.includes("131/08") && exemption.why.includes("messaging.mjs"), "its why names 131/08 and its member");
-      const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "src/commands");
-      assert.equal(row.ceiling, 69, "the src/commands row is still 69");
+      const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "packages/core/src/application/bindings/commands/messaging");
+      assert.ok(exemption, "core's messaging composition has an exemption");
+      assert.ok((await readdir(path.join(repoRoot, exemption.directory))).includes("messaging.mjs"), "the configured command binding exists");
+      const row = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/core/src/application/bindings/commands");
+      assert.equal(row.ceiling, 62, "the command composition ceiling shrank with the removal");
       assert.equal(row.allowance, 0);
-      for (const [dir, member] of [["src/notify", "secret.mjs"], ["test/notify", "notify-messaging"]]) {
-        assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === dir).why.includes(member), `${dir}'s why names ${member}`);
-      }
+      const owner = SOURCE_DIRECTORY_BUDGETS.find((entry) => entry.directory === "packages/messaging/src");
+      assert.ok(owner.why.includes("secret.mjs"), "messaging owns the secret store");
+      assert.ok(SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === "test/notify").why.includes("notify-messaging"), "the suite exemption names notify-messaging");
       const named = sourceDirectoryBudgetViolations(await readTreeListing())
-        .filter((v) => /src\/commands|(?:src|test)\/notify/u.test(v.message ?? JSON.stringify(v)));
+        .filter((v) => /bindings\/commands|packages\/messaging\/src|bindings\/notify|test\/notify/u.test(v.message ?? JSON.stringify(v)));
       assert.deepEqual(named, [], "the budget's own run over the live tree names none of them");
     },
   },
@@ -341,7 +351,7 @@ export const notifyMessagingTests = [
           const result = await invoke("messaging:init", input, {});
           assert.equal(await readMessagingSecret("discord"), TOKEN_A);
           await assertNothingLeaked([messagingInitCommand.cli.render(result), JSON.stringify(messagingInitCommand.cli.json(result)), JSON.stringify(events)]);
-          const source = stripComments(await readFile(path.join(repoRoot, "src", "commands", "messaging", "messaging.mjs"), "utf8"));
+          const source = stripComments(await readFile(path.join(repoRoot, "packages", "messaging", "src", "commands.mjs"), "utf8"));
           assert.match(source, /const\s*\{\s*password\s*\}\s*=\s*await\s+import\("@inquirer\/prompts"\)/u, "the default seam is @inquirer/prompts' password");
           assert.doesNotMatch(source, /\bmask\s*:/u, "and it sets no mask, so nothing is echoed");
         } finally {

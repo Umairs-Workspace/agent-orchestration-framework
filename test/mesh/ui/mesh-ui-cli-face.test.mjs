@@ -1,6 +1,6 @@
 // Spawn-level coverage for the `aof mesh ui` CLI verb — milestone 25 / story 02
 // (QA F1/F2); the verb is the registered mesh:ui launcher-seam command since m42
-// wave (d) leg d1's wave-3 tail (src/commands/mesh-ui.mjs — the launch body, the
+// wave (d) leg d1's wave-3 tail (packages/core/src/commands/mesh-ui.mjs — the launch body, the
 // retired cli.mjs meshUiCommand's bytes). The in-process serveMeshUi tests
 // (mesh-ui-serve.test.mjs) exercise the SERVER; this file exercises the VERB FACE the
 // module tests can't reach: the human announce line, the documented default-port
@@ -18,7 +18,7 @@
 //
 // NOTE on ui-build-missing: NOT asserted at the verb level. The launch body calls
 // serveMeshUi({ projectDir, port, scope, … }) WITHOUT repoRoot, so the guard keys on the
-// REAL repo's ui/dist (present after `npm --prefix ui run build`), NOT on the fixture /
+// REAL repo's ui/dist (present after `yarn ui:build`), NOT on the fixture /
 // --target. It is not cleanly triggerable here without an artificial hack, so it stays
 // covered at the module boundary in mesh-ui-serve.test.mjs ("a missing ui/dist build is
 // a friendly ui-build-missing refusal").
@@ -31,7 +31,7 @@ import { fileURLToPath } from "node:url";
 import { spawnCliAsync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A temp repo whose .aof/aof.config.json points work.dir at wiki/work, with a minimal
 // planted .mesh (one live node + registered board) so the mesh:status aggregate is
@@ -204,7 +204,7 @@ export const meshUiCliFaceTests = [
         assert.ok(url, "the launch announces a fleet URL");
         // m45 / story 04 (ADR-002) — the announced URL names the fleet's PATH, with the
         // started scope as a REAL query parameter on it. Parsed, never substring-matched:
-        // the announce is composed in `src/commands/mesh-ui.mjs`, which used to glue
+        // the announce is composed in `packages/core/src/commands/mesh-ui.mjs`, which used to glue
         // `&scope=…` onto this string with a hard-coded `&`, and `…/fleet&scope=global`
         // parses as a pathname with no `scope` parameter at all while satisfying every
         // `includes` a reader would reach for.

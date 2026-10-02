@@ -2,7 +2,7 @@
 // the @executable contract of tasks/00_doctor-after-validate.feature.
 //
 // The story pins entirely STATIC TEXT in a shipped doc: after this build, the
-// body of src/bundle/commands/validate.md must carry an `aof work doctor
+// body of packages/core/assets/commands/validate.md must carry an `aof work doctor
 // $ARGUMENTS` invocation positioned AFTER its existing `aof work validate
 // $ARGUMENTS` step, with the lane-grouped + advisory + added-not-substituted
 // framing, AND must retain the pre-existing structural keystone and the
@@ -21,7 +21,7 @@ import { fileURLToPath } from "node:url";
 import { registeredSuitePaths } from "../../support/registration/registration-surface.mjs";
 
 const root = new URL("../../../", import.meta.url);
-const SKILL = "src/bundle/commands/validate.md";
+const SKILL = "packages/core/assets/commands/validate.md";
 const read = (rel) => readFileSync(fileURLToPath(new URL(rel, root)), "utf8");
 
 // The two CLI invocations the wiring pins (exact tokens — same $ARGUMENTS scope).

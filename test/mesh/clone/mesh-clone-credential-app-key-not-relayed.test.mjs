@@ -1,24 +1,23 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-app-key-not-relayed.test.mjs — traceability for
 // milestone 38 / story 02, task 02 (02_app-key-not-relayed.feature, ADR-010 §6.2 /
 // SECURITY T8/T11/F5). Every @executable scenario driven against the REAL producer
-// chain: createGithubAppMintProvider (src/mesh/clone-credential-provider.mjs) mints
-// through the REAL applyCloneCredentialRequestFrame (src/control-stream-server.mjs),
+// chain: createGithubAppMintProvider (packages/core/src/mesh/clone-credential-provider.mjs) mints
+// through the REAL applyCloneCredentialRequestFrame (packages/core/src/control-stream-server.mjs),
 // and — for the "not left at rest" scenario — the REAL cloneRepoForWorkspace
-// (src/mesh/worker-execution.mjs) against a REAL local bare git repo. A THROWAWAY
+// (packages/core/src/mesh/worker-execution.mjs) against a REAL local bare git repo. A THROWAWAY
 // (test-generated, never a real GitHub App's) RSA private key stands in for the App
 // key throughout — its exact string value is asserted absent from every frame, log
 // line, and ambient process.env snapshot.
 import assert from "node:assert/strict";
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import {
-  applyCloneCredentialRequestFrame,
-  CLONE_CREDENTIAL_MINT_FAILED,
-} from "../../../src/control-stream-server.mjs";
-import { createGithubAppMintProvider } from "../../../src/mesh/clone-credential-provider.mjs";
-import { cloneRepoForWorkspace } from "../../../src/mesh/worker-execution.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const CLONE_CREDENTIAL_MINT_FAILED = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_MINT_FAILED;
+const createGithubAppMintProvider = _aofApplication.mesh.cloneCredentialProvider.createGithubAppMintProvider;
+const cloneRepoForWorkspace = _aofApplication.mesh.worker.cloneRepoForWorkspace;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { createDirectiveChannelFixture, createFakeWorkerTransport } from "../../support/mesh-directive-channel-fixture.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 import { withMeshCloneFixture } from "../../support/mesh-worker-clone-fixture.mjs";

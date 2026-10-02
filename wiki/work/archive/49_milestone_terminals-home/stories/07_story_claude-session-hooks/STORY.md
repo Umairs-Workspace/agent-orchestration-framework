@@ -42,7 +42,7 @@ sequencing rule in the milestone and it is ARCHITECTURE's bad cut 1.
   (`.aof/terminal-sessions.json`) that no index reads.
 - That verb fires only from a `SessionStart`/`UserPromptSubmit`/`SessionEnd` hook in the **cwd's own**
   hook config — so **hook wiring, not process origin, decides whether a session is ever recorded.**
-- [bundle.json:12-16](../../../../../../src/bundle/bundle.json#L12) wires those three hooks for
+- [bundle.json:12-16](../../../../../../packages/core/assets/bundle.json#L12) wires those three hooks for
   **`runtimes: ["codex"]` only**. The sole claude-runtime bundle member is `claude-artifact-sync`, which
   is unrelated.
 - This repo has Claude session records purely because its **hand-authored** `.claude/settings.json`

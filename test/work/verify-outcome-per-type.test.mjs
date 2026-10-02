@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for story 80 /
 // tasks/01_verify-authors-one-per-delivering-type.feature — ONLY the @executable
 // scenarios. The @manual ones (Accept authors one per delivering type; a milestone's
@@ -15,12 +17,13 @@ import { readFile, readdir, mkdtemp, mkdir, writeFile, rm, stat } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc, validateWork } from "../../src/work.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { parseOutcome } from "../../src/memory/local-indexing.mjs";
+const recordDoc = _aofWorkspace.work.recordDoc;
+const validateWork = _aofWorkspace.work.validateWork;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const parseOutcome = _aofApplication.knowledge.memory.localIndexing.parseOutcome;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const BUNDLE = path.join(repoRoot, "src", "bundle");
+const BUNDLE = path.join(repoRoot, "packages", "core", "assets");
 const VERIFY_PROMPT = path.join(BUNDLE, "commands", "verify.md");
 const DEVELOPER_AGENT = path.join(BUNDLE, "agents", "aof-developer.md");
 

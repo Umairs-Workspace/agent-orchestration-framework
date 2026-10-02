@@ -1,10 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: FF-6304 — A DECLARED LEVEL IS A CEILING REQUEST, AND ADMISSION STAYS IN ONE
 // HOME (63/ADR-004, ADR-010 §7, §11).
 //
 // Nine legs. Each fails for a different reason, and each is one a cheap conforming edit would
 // otherwise satisfy while holding nothing:
 //
-//   1 · THE LEAF HOLDS NO GATE. `src/work-trigger/level.mjs` contains no score threshold, no
+//   1 · THE LEAF HOLDS NO GATE. `packages/core/src/work-trigger/level.mjs` contains no score threshold, no
 //       `100`, no groundedness predicate, no component-state literal and NO LEVEL LITERAL AT ALL —
 //       not even the one an `if (level === the gated rung)` branch would have needed, because the
 //       leaf asks the GATE whether a rung is gated instead of knowing. Asserted over the source
@@ -12,7 +13,7 @@
 //       to name what it forbids.
 //   2 · THE ONE HOME IS REACHED BY IMPORT, AND IT IS THE SAME HOME THE LOOP GATES WITH.
 //       `resolveLoopLevel` and `resolveLoopLevelGate` are the leaf's ONLY imports, and
-//       `src/commands/loop.mjs` gates at fire time through that same `resolveLoopLevelGate` — so
+//       `packages/core/src/commands/loop.mjs` gates at fire time through that same `resolveLoopLevelGate` — so
 //       "the loop's own gate" and "the pre-flight's gate" are provably one function rather than
 //       two that happen to agree today.
 //   3 · THE FACTS ARE HANDED IN. No filesystem read, no `invoke`, no clock and no cwd anywhere in
@@ -60,14 +61,15 @@ import {
   TRIGGER_LEVEL_FACTS_NOT_SUPPLIED,
   resolveTriggerLevel,
   resolveTriggerLevels,
-} from "../../../src/work-trigger/level.mjs";
-import { bundledTriggerDeclaration, compileTriggerDeclaration } from "../../../src/work-trigger/declaration.mjs";
-import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../src/work/loop.mjs";
+} from "@aof/work-loop/trigger/level";
+const bundledTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.bundledTriggerDeclaration;
+const compileTriggerDeclaration = _aofApplication.loop.workTrigger.declaration.compileTriggerDeclaration;
+import { L3_SCORE_THRESHOLD, LOOP_LEVELS, resolveLoopLevelGate } from "../../../packages/work-loop/src/engine.mjs";
 // LINE COMMENTS FIRST, THEN BLOCKS — and that ORDER is the whole reason this is imported rather
 // than written here. The first cut of this control cloned the three-line function with the two
 // passes INVERTED, which is TECH_DEBT item 24's measured defect: a `//` comment containing `/*`
 // opens a block-comment run for a block-first stripper, and everything to the next `*/` is
-// deleted — 9,192 characters of `src/mesh/ui-serve.mjs`, including its whole route table. Leg 1
+// deleted — 9,192 characters of `packages/core/src/mesh/ui-serve.mjs`, including its whole route table. Leg 1
 // sweeps the REMAINDER, so that deletion makes every ban below report green over a region it
 // never read, with all three of leg 1's own non-vacuity guards still passing. The one home is
 // `test/support/source-slice.mjs`; 52 gates already read it from there and this is the 53rd.
@@ -75,8 +77,8 @@ import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEAF_PATH = path.join(REPO_ROOT, "src", "work-trigger", "level.mjs");
-const LOOP_COMMAND_PATH = path.join(REPO_ROOT, "src", "commands", "loop.mjs");
+const LEAF_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "trigger", "level.mjs");
+const LOOP_COMMAND_PATH = path.join(REPO_ROOT, "packages", "work-loop", "src", "commands", "loop.mjs");
 
 const read = (file) => readFileSync(file, "utf8");
 
@@ -150,7 +152,7 @@ export const archTests = [
 
       const bans = [
         [/\b100\b/, "a bare score threshold", "if (score >= 100) return true;"],
-        [/L3_SCORE_THRESHOLD/, "the threshold constant", "import { L3_SCORE_THRESHOLD } from '../work/loop.mjs';"],
+        [/L3_SCORE_THRESHOLD/, "the threshold constant", "import { L3_SCORE_THRESHOLD } from '../engine.mjs';"],
         // Relational comparison of a score, or ANY comparison of one against a number — the two
         // shapes a copied threshold has. A nullish check on a reading the gate already refused is
         // neither, and is what rendering a refusal the gate produced actually needs.
@@ -177,7 +179,7 @@ export const archTests = [
         [/Date\.now\(|new Date\(|process\.(cwd|env)/, "a clock or an ambient reading", "const now = Date.now();"],
       ];
       for (const [pattern, what, planted] of bans) {
-        assert.equal(pattern.test(code), false, `src/work-trigger/level.mjs contains ${what}`);
+        assert.equal(pattern.test(code), false, `packages/core/src/work-trigger/level.mjs contains ${what}`);
         for (const sample of [].concat(planted)) {
           assert.equal(pattern.test(sample), true, `the ban on ${what} would catch a planted \`${sample}\``);
         }
@@ -192,10 +194,10 @@ export const archTests = [
 
       // The closure, parsed in EVERY form — this is the list the "no file is read" argument rests
       // on, so a form it cannot see is a hole in the argument rather than a gap in the sweep.
-      assert.deepEqual(moduleSpecifiers(code), ["../work/loop.mjs"],
+      assert.deepEqual(moduleSpecifiers(code), ["../engine.mjs"],
         "the leaf reaches the one gate home and nothing else at all, by any import form");
 
-      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/work\/loop\.mjs["']/.exec(code);
+      const named = /\bimport\s*\{([^}]*)\}\s*from\s*["']\.\.\/engine\.mjs["']/.exec(code);
       assert.ok(named, "…and it reaches it through a NAMED import, so no namespace binding is in scope");
       assert.deepEqual(
         named[1].split(",").map((name) => name.trim()).filter(Boolean).sort(),
@@ -225,26 +227,26 @@ export const archTests = [
         ['const fs = require("node:fs");', "node:fs"],
         ['export { readFile } from "node:fs/promises";', "node:fs/promises"],
         ['import "node:fs";', "node:fs"],
-        ['import { resolveLoopLevel } from "../work/loop.mjs";', "../work/loop.mjs"],
+        ['import { resolveLoopLevel } from "../engine.mjs";', "../engine.mjs"],
       ]) {
         assert.ok(moduleSpecifiers(planted).includes(expected), `a planted \`${planted}\` is seen`);
       }
 
-      // The SAME function is what `src/commands/loop.mjs` gates with when the loop is entered, so
+      // The SAME function is what `packages/core/src/commands/loop.mjs` gates with when the loop is entered, so
       // the pre-flight and the fire-time gate cannot be two implementations that agree today.
       const loopCommand = read(LOOP_COMMAND_PATH);
       assert.match(loopCommand, /^\s*resolveLoopLevelGate,\s*$/m, "the loop command imports the same gate");
       assert.match(loopCommand, /requireDecision\(resolveLoopLevelGate\(/, "…and gates the level through it at fire time");
 
-      // THE WHOLE IMPORT CLOSURE, not just the leaf's own line. `src/work/loop.mjs` imports
+      // THE WHOLE IMPORT CLOSURE, not just the leaf's own line. `packages/work-loop/src/engine.mjs` imports
       // nothing at all — its own contract, pinned by `acd-loop-module-import-boundary` — so the
       // closure is two files and NEITHER can reach a filesystem, a registry or a clock. That is
       // "no file is read" proven statically and completely rather than spot-checked.
-      const engine = stripComments(read(path.join(REPO_ROOT, "src", "work", "loop.mjs")));
+      const engine = stripComments(read(path.join(REPO_ROOT, "packages", "work-loop", "src", "engine.mjs")));
       // PURITY IS EXTERNAL (119/ADR-002): the closure ends here because the gate home depends on
       // nothing outside itself, which is a claim about its specifiers rather than about its file
       // count. Splitting the gate home stays legal; reaching out of it does not.
-      await assertFamilyPurity(assert, REPO_ROOT, "src/work/loop");
+      await assertFamilyPurity(assert, REPO_ROOT, "packages/work-loop/src/engine.mjs");
       assert.match(engine, /export function resolveLoopLevelGate\(/, "…and it really is the gate home");
     },
   },
@@ -280,7 +282,7 @@ export const archTests = [
         "preflight", "requestedLevel", "code", "failingHalves", "missing", "gate", "loopReady", "groundedness",
       ];
       const sets = [compileTriggerDeclaration({ version: 1, members: [member(), member({ id: "t-1", level: "L1" })] })];
-      if (existsSync(path.join(REPO_ROOT, "src", "bundle", "triggers.jsonc"))) {
+      if (existsSync(path.join(REPO_ROOT, "packages", "core", "assets", "triggers.jsonc"))) {
         sets.push(compileTriggerDeclaration(bundledTriggerDeclaration()));
       }
       let compiledCount = 0;

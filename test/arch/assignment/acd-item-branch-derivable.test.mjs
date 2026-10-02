@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness functions for the m42 brittleness cure (2026-07-31; STATE §Residual
 // defects — "THE structural debt"): ONE DERIVABLE BRANCH PER ITEM.
 //
@@ -25,18 +26,20 @@
 //   (5) THE DERIVATION IS PURE AND STABLE: same ref → same valid `aof/mesh/`
 //       ref, no assignment id anywhere in it.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { meshItemBranchName } from "../../../src/mesh/worktree.mjs";
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 const MINT_ALLOWED = new Set([
-  "src/mesh/worktree.mjs",
-  "src/mesh/worker-execution.mjs",
-  "src/mesh/recovery-push.mjs",
+  "packages/core/src/application/bindings/mesh/worktree.mjs",
+  "packages/mesh/src/worktrees.mjs",
+  "packages/mesh/src/worker-execution.mjs",
+  "packages/mesh/src/recovery-push.mjs",
   // story 65 / task 02 — THE LOCAL DISPATCH LANE, and it is here for exactly the reason
   // this ratchet exists rather than in spite of it. A third lane that builds a story
   // concurrently needs a branch per lane; minting its OWN namespace (`aof/dispatch/<ref>`,
@@ -45,45 +48,38 @@ const MINT_ALLOWED = new Set([
   // ONE derivation instead means a locally-dispatched build, a mesh assignment and an
   // operator's session all converge on the item's own line, and `findItemWorktree` locates
   // that line for all three without a lookup.
-  "src/work/dispatch.mjs",
+  "packages/work-loop/src/dispatch.mjs",
 ]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
-}
-
 export const archTests = [
   {
     name: "arch/m42-branch-cure: the per-assignment mint is retired (ratchet) and the one derivable mint has exactly its known callers",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 0, "runtime source census is non-empty");
       const retired = [];
       const minters = [];
+      const definitions = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");
         const code = stripComments(await readFile(file, "utf8"));
+        if (/\bfunction\s+meshItemBranchName\s*\(/.test(code)) definitions.push(rel);
         if (/meshWorkerBranchName/.test(code)) retired.push(rel);
         if (/\bmeshItemBranchName\s*\(/.test(code) && !MINT_ALLOWED.has(rel)) minters.push(rel);
       }
       assert.deepEqual(retired, [], `the per-assignment mint exists nowhere in src/ (offenders: ${retired.join(", ")})`);
+      assert.deepEqual(definitions, ["packages/mesh/src/worktrees.mjs"], "the branch derivation has exactly one implementation");
       assert.deepEqual(minters, [], `meshItemBranchName is called only by its known callers (offenders: ${minters.join(", ")})`);
     },
   },
   {
     name: "arch/m42-branch-cure: the worker's fallback converges — baseBranch ?? derivation, with the existence check ahead of the worktree add (reuse, never a fork)",
     run: async () => {
-      const code = stripComments(await readFile(path.join(SRC_DIR, "mesh/worker-execution.mjs"), "utf8"));
+      const code = stripComments(await readFile(path.join(SRC_DIR, "../../mesh/src/worker-execution.mjs"), "utf8"));
       assert.ok(
         /const branch = baseBranch \?\? meshItemBranchName\(itemRef\)/.test(code),
         "the dispatch branch is the cache-resolved base, else the item's own derivable name",
@@ -100,13 +96,13 @@ export const archTests = [
       // The control dispatch tick must NOT derive: a derived-but-never-pushed
       // baseBranch would fail the worker's reuse door. Cache miss ⇒ no baseBranch
       // ⇒ the worker's own converging fallback.
-      const reclaim = stripComments(await readFile(path.join(SRC_DIR, "mesh/assignment-reclaim.mjs"), "utf8"));
+      const reclaim = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"));
       assert.ok(/readItemBranch\s*\(/.test(reclaim), "the dispatch tick consults the cache");
       assert.ok(!/meshItemBranchName/.test(reclaim), "…and NEVER derives (the worker owns the fallback)");
 
       // The recovery-push tick derives ONLY behind a cache miss — a pre-cure
       // stranded worktree sits on a suffixed name only the cache still knows.
-      const recovery = stripComments(await readFile(path.join(SRC_DIR, "mesh/recovery-push.mjs"), "utf8"));
+      const recovery = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/recovery-push.mjs"), "utf8"));
       assert.ok(
         /readItemBranch\(store, request\.workspaceId, request\.itemRef\) \?\? meshItemBranchName\(request\.itemRef\)/.test(recovery),
         "the recovery dispatch resolves cache-first, derivation as the fallback",
@@ -119,10 +115,10 @@ export const archTests = [
       // The control side: the tick resolves the assigning checkout's HEAD (the
       // injectable seam defaults to the real headCommit) and the frame builder
       // carries it conditionally — never a fabricated value.
-      const reclaim = stripComments(await readFile(path.join(SRC_DIR, "mesh/assignment-reclaim.mjs"), "utf8"));
+      const reclaim = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/assignment-reclaim.mjs"), "utf8"));
       assert.ok(/resolveDispatchCommit/.test(reclaim), "the tick resolves the assigning commit through its injectable seam");
       assert.ok(/headCommit\s*\(/.test(reclaim), "…defaulting to the checkout's real HEAD");
-      const server = stripComments(await readFile(path.join(SRC_DIR, "control-stream-server.mjs"), "utf8"));
+      const server = stripComments(await readFile(path.join(SRC_DIR, "../../mesh/src/control-stream-server.mjs"), "utf8"));
       assert.ok(
         /if \(typeof commit === "string" && commit\.length > 0\) frame\.commit = commit;/.test(server),
         "the directive frame carries the commit conditionally",
@@ -131,7 +127,7 @@ export const archTests = [
       // The worker side: availability is verified (fetch-once-on-miss) BEFORE the
       // worktree add, and the miss is the coded refusal — never a silent build
       // from this clone's stale HEAD.
-      const worker = stripComments(await readFile(path.join(SRC_DIR, "mesh/worker-execution.mjs"), "utf8"));
+      const worker = stripComments(await readFile(path.join(SRC_DIR, "../../mesh/src/worker-execution.mjs"), "utf8"));
       const ensure = worker.indexOf("ensureCommitAvailable(ws.projectRoot, directive.commit");
       const add = worker.indexOf("await addWorktree(ws.projectRoot, assignmentId");
       assert.ok(ensure !== -1 && add !== -1, "the availability check and the add both exist");

@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -22,10 +22,9 @@
 // (`work-content-free-discovery`) as a curiosity; there are six, carrying 122 test entries.
 // They are registered here rather than carried in the baseline, because "it runs in the other
 // lane" is exactly the reasoning this story exists to make unavailable.
-import { workTests } from "./work.test.mjs";
 // milestone 72 / story 00 — THE DECLARED TOOLCHAIN: the test runner aof launches is something the
 // PROJECT declares (`work.test`), compiled by ONE module with no program name spelled anywhere in
-// `src/` in an executable position, resolved through a PATH lookup that sits in FRONT of the
+// `packages/core/src/` in an executable position, resolved through a PATH lookup that sits in FRONT of the
 // bounded seam's door rather than relaxing it, expanded into an argv by the ONE `{file}` rule, and
 // launched through `runBounded` with the declaration's own deadline — where an expiry or a failure
 // to start is reported as itself and never folded into a pass. Both @executable task features,
@@ -36,7 +35,6 @@ import { workToolchainDeclarationTests } from "./work-toolchain-declaration.test
 // predicate as its own hand-owned, unmarked hook with its cases re-homed (task 02).
 // Task 01's re-aim of FF-5505 lands in acd-frozen-set-compiled.test.mjs, already imported.
 import { frameworkStopsShippingGuardTests } from "./framework-stops-shipping-guard.test.mjs";
-import { workInitTests } from "./work-init.test.mjs";
 // chore 51 — the config half of init (`aof work init-config`, the second call
 // `/aof:init` makes once it has analysed the repo).
 import { workInitConfigTests } from "./work-init-config.test.mjs";
@@ -45,7 +43,6 @@ import { workInitConfigTests } from "./work-init-config.test.mjs";
 // answering the same under either setting and when the key is absent (ADR-005 §2). The WRITE half
 // rides chore 51's suite directly above.
 import { workIntakeWriteSideTests } from "./work-intake-write-side.test.mjs";
-import { workUpdateTests } from "./work-update.test.mjs";
 // milestone 04 — round-trip proof (story 00: the frozen harness)
 import { roundtripHarnessTests } from "./roundtrip-harness.test.mjs";
 // milestone 04 — round-trip proof (story 01: install-proof, story 02: loop-proof)
@@ -80,7 +77,7 @@ import { doctorFreshnessStructuralTests } from "./doctor-freshness-structural.te
 // over-budget FILE; @executable traceability across both task features + the two new
 // fitness functions — finding-envelope conformance and config-sourced/no-baked-literal)
 import { doctorContextBudgetTests } from "./doctor-context-budget.test.mjs";
-// milestone 70 / story 00 — phase-brief: the pure leaf compiler (`src/phase-brief.mjs`,
+// milestone 70 / story 00 — phase-brief: the pure leaf compiler (`packages/work/src/phase-brief.mjs`,
 // ADR-001/002/003) traced by test/work/phase-brief-compile.test.mjs (tasks 00+01) and the two
 // spawn seams traced by test/work/phase-brief-seams.test.mjs (task 02); the story's three
 // fitness functions FF-7001/FF-7002/FF-7003 (the last an EXTENSION of the m53 single-home
@@ -107,10 +104,9 @@ import { briefPinnedToTheStreamTests } from "./brief-pinned-to-the-stream.test.m
 import { fourDeadlinesTests } from "./four-deadlines.test.mjs";
 import { loadworkspaceHydrationTests } from "./loadworkspace-hydration.test.mjs";
 import { backcompatMigrateDoctorTests } from "./backcompat-migrate-doctor.test.mjs";
-import { workDelegationTests } from "./work-delegation.test.mjs";
 // story 31 — migrate-claude-command (the /aof:migrate BUNDLE BODY — the inference
 // ceiling over the story-29 mechanical CLI). Task 00's @executable content pins over
-// the AUTHORED src/bundle/commands/migrate.md (grep-able marker facts + offset
+// the AUTHORED packages/core/assets/commands/migrate.md (grep-able marker facts + offset
 // ordering, the acd-doctor-validate-keystone idiom) + task 03's distribution matrix
 // (descriptor member, derived-manifest byte-for-byte regeneration (ADR-002), work
 // update/init landing, never-inited refusal, idempotent skip, dry-run preview,
@@ -121,8 +117,6 @@ import { migrateClaudeCommandTests } from "./migrate-claude-command.test.mjs";
 // discovery walks UP to the enclosing project (so work.dir is cwd-independent), and a
 // scan that finds ZERO items refuses instead of printing a clean line.
 import { doctorCwdIndependenceTests } from "./doctor-cwd-independence.test.mjs";
-import { frameworkTests } from "./frameworks.test.mjs";
-import { workspaceTests } from "./workspace.test.mjs";
 // milestone 34 / story 04 — worker live-state stream to control node (ADR-007): the
 // worker-role/control-address resolution, the persistent worker stream client
 // (snapshot-first-then-deltas, reconnect+backoff, failure isolation), the always-on
@@ -130,17 +124,11 @@ import { workspaceTests } from "./workspace.test.mjs";
 // the stream retry/reconciliation/freshness lanes, plus the story's 4 fitness
 // units. Tasks 00–03 are @executable; task 04 (the real two-machine soak) is @manual
 // and deliberately has no test file here.
-import { workerRoleAddressTests } from "./worker-role-address.test.mjs";
-import { workerStreamClientTests } from "./worker-stream-client.test.mjs";
-import { pathTests } from "./paths.test.mjs";
+
 import { singleEntryTwoModeTests } from "./single-entry-two-mode.test.mjs";
-import { verifyAuthorsOutcomeTests } from "./verify-authors-outcome.test.mjs";
 import { danglingDeclarationFfTests } from "./dangling-declaration-ff.test.mjs";
 // story 03 — gaps are schedulable debt: the `--status` recall filter (gap lifecycle)
 // + promote-gap-to-chore over the reused chore insert seam.
-import { gapCarriesDischargeTests } from "./gap-carries-discharge.test.mjs";
-// review fix — pin the deliberate SCOPE_FLAGS/SCOPE_FIELDS seam-split as coverage.
-import { scopeFlagsFieldsAgreeTests } from "./scope-flags-fields-agree.test.mjs";
 // milestone 40 / story 01 — version stamp & reader (ADR-001/002/003/004): the
 // reader (schema-int/aofVersion-string, schema-0 baseline, task 00), new items
 // born-stamped at scaffold (task 01), and the ADR-004 transform-scoped
@@ -159,8 +147,6 @@ import { workItemStatusLifecycleTests } from "./work-item-status-lifecycle.test.
 // finding F-73-G).
 import { workItemStatusIfApplicableTests } from "./work-item-status-if-applicable.test.mjs";
 import { verifyOutcomePerTypeTests } from "./verify-outcome-per-type.test.mjs";
-import { recordsFollowTheStoryTests } from "./records-follow-the-story.test.mjs";
-import { deliveredStoryRecordsTests } from "./delivered-story-records-reported.test.mjs";
 // milestone 43 / story 01 — THE EXCLUSIVE ITEM LOCK (ADR-003 + ADR-010's R1.1/R1.3/
 // R1.4/R1.5). Task 00: the scope rule moves down into the leaf and every face answers
 // byte-identically. Task 01: the predicate is SYMMETRIC over the execution scope. Task
@@ -178,11 +164,11 @@ import { itemLockNextSkipsHeldTests } from "./item-lock-next-skips-held.test.mjs
 import { itemLockOperatorVsAutomaticTests } from "./item-lock-operator-vs-automatic.test.mjs";
 // milestone 66 / story 00 — CONTRACT PARSES. ACD defines the contract artifact and has
 // never parsed it: in the investigated downstream milestone 33 of 37 authored `.feature`
-// files did not parse. Task 00: `src/feature-parse.mjs` becomes the ONE Gherkin reader
-// under `src/` (the 37-line scanner in `work.mjs`'s `checkFeatureTags` is deleted, not
+// files did not parse. Task 00: `packages/core/src/feature-parse.mjs` becomes the ONE Gherkin reader
+// under `packages/core/src/` (the 37-line scanner in `work.mjs`'s `checkFeatureTags` is deleted, not
 // copied), gaining structural findings under a NEW key — the accept/reject matrix is
 // drawn from the corpus and its reject rows cite REAL files at REAL lines. Task 01: one
-// exported predicate (`src/acceptance-horizon.mjs`, a zero-import leaf carrying
+// exported predicate (`packages/core/src/acceptance-horizon.mjs`, a zero-import leaf carrying
 // `VALID_STATUS`) decides whether an item's record is still editable, so no gate ever
 // fires on a delivered contract nobody may edit. Task 02: `aof work validate` refuses an
 // unparseable contract inside the horizon — run over this repo it reports exactly ONE
@@ -191,12 +177,11 @@ import { itemLockOperatorVsAutomaticTests } from "./item-lock-operator-vs-automa
 import { featureParseStrictTests } from "./feature-parse-strict.test.mjs";
 // milestone 57 / story 02 — additive Examples metadata on the one feature parser
 // (tasks 00–01) + FF-5704's whole-corpus compatibility differential.
-import { featureParseExamplesTests } from "./feature-parse-examples.test.mjs";
 // milestone 57 / story 05 — the day-one pairing table (tasks 00–01): the three
 // shipped watcher records + FF-5707 (counter resolution) and FF-5708 (table complete).
 import { pairingTableTests } from "./pairing-table.test.mjs";
 // milestone 66 / story 03 — THE ASK (ADR-005, ADR-006, ADR-007 §1/§2, ADR-009/H+I, ADR-011/E).
-// A check with no ask is a trap: ACD's gates are met by agents reading `src/bundle/`, so every
+// A check with no ask is a trap: ACD's gates are met by agents reading `packages/core/assets/`, so every
 // refusal 66/02 can raise ships its ask in the same milestone. Task 00 lands the
 // `VERIFICATION.md` template ACD has never had — four frozen headings and the fitness register
 // whose `red probe` cell records what was changed to make a control fail and the message
@@ -206,7 +191,7 @@ import { pairingTableTests } from "./pairing-table.test.mjs";
 // reports UNNUMBERED, the single writer allocates on landing, because a stale read looks exactly
 // like a fresh one. FF-6608 is the story's own fitness function (ADR-007 §1) and the literal
 // discharge of the finding's measured zero — eight falsifiability terms, 0 files each across
-// `src/bundle/` at HEAD; it holds the red-probe placeholder byte-equal across the JS/markdown
+// `packages/core/assets/` at HEAD; it holds the red-probe placeholder byte-equal across the JS/markdown
 // boundary, which no import can do, and carries its own planted-defect lane per (ask, file).
 import { verificationTemplateTests } from "./verification-template.test.mjs";
 import { doctorLoopRecordLaneTests } from "./doctor-loop-record-lane.test.mjs";
@@ -236,16 +221,13 @@ import { doctorDiagramsLaneTests } from "./doctor-diagrams-lane.test.mjs";
 
 export const tests = [
   // milestone 59 / story 01 — the fast-lane-only six, now in what CI executes
-  ...workTests,
   // milestone 72 / story 00 — the declared toolchain (tasks 00–01) plus FF-7201.
   ...workToolchainDeclarationTests,
   // story 87 — repo-specific lab hygiene leaves the bundle, and stays here hand-owned
   ...frameworkStopsShippingGuardTests,
-  ...workInitTests,
   ...workInitConfigTests,
   // milestone 127 / story 02 task 04 — the phase door and the mode-less read side
   ...workIntakeWriteSideTests,
-  ...workUpdateTests,
   ...roundtripHarnessTests,
   ...installProofTests,
   ...loopProofTests,
@@ -271,22 +253,13 @@ export const tests = [
   ...fourDeadlinesTests,
   ...loadworkspaceHydrationTests,
   ...backcompatMigrateDoctorTests,
-  ...workDelegationTests,
   // story 31 — migrate-claude-command (the /aof:migrate bundle body + distribution)
   ...migrateClaudeCommandTests,
   ...doctorCwdIndependenceTests,
-  ...frameworkTests,
-  ...workspaceTests,
   // milestone 34 — global mesh work store (story 04: worker live-state stream to
   // control node, ADR-007)
-  ...workerRoleAddressTests,
-  ...workerStreamClientTests,
-  ...pathTests,
   ...singleEntryTwoModeTests,
-  ...verifyAuthorsOutcomeTests,
   ...danglingDeclarationFfTests,
-  ...gapCarriesDischargeTests,
-  ...scopeFlagsFieldsAgreeTests,
   // milestone 40 / story 01 — version stamp & reader task traceability
   ...workVersionReaderTests,
   // 2026-08-16 — the item status lifecycle (writer, run mint, door, phase door)
@@ -294,8 +267,6 @@ export const tests = [
   // story 74 — the expected refusal as data (--if-applicable) + record-doc-unusable
   ...workItemStatusIfApplicableTests,
   ...verifyOutcomePerTypeTests,
-  ...recordsFollowTheStoryTests,
-  ...deliveredStoryRecordsTests,
   // milestone 43 / story 01 — the exclusive item lock (tasks 00–05; 06 is @manual)
   ...itemLockScopeOneHomeTests,
   ...itemLockSymmetricScopeTests,
@@ -306,7 +277,6 @@ export const tests = [
   // milestone 66 / story 00 — contract parses (tasks 00–02) + its two fitness functions
   ...featureParseStrictTests,
   // milestone 57 / story 02 — additive Examples metadata (tasks 00–01) + FF-5704
-  ...featureParseExamplesTests,
   // milestone 57 / story 05 — the day-one pairing table (tasks 00–01) + FF-5707/FF-5708
   ...pairingTableTests,
   // milestone 66 / story 03 — the ask (tasks 00–02) + its one fitness function

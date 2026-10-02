@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // task 04 — a non-terminal assignment is reclaimed ONLY under DUAL staleness (worker
 // presence stale AND run heartbeat stale, both strict), and reclaim force-fails the
 // linked run runtime_offline, retryable, so the item is re-assignable (milestone 35 /
@@ -7,12 +9,17 @@
 // `now` that feeds BOTH predicates. Mined from
 // reference/retired-dispatch-tests/fleet-orphan-reclaim.mjs.
 import assert from "node:assert/strict";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { assembleAssignmentRecord, insertAssignment, readAssignment, findActiveAssignment } from "../../../src/assignment-record.mjs";
-import { publishPresenceRecord } from "../../../src/mesh/presence.mjs";
-import { startRun, heartbeat, readRuns, isRetryable } from "../../../src/run-store.mjs";
-import { findWork } from "../../../src/work.mjs";
-import { reclaimStaleAssignments, dualStalenessDecision, DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS } from "../../../src/mesh/assignment-reclaim.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+import { assembleAssignmentRecord, insertAssignment, readAssignment, findActiveAssignment } from "@aof/mesh/assignment-record";
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const startRun = _aofApplication.execution.runs.startRun;
+const heartbeat = _aofApplication.execution.runs.heartbeat;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const isRetryable = _aofApplication.execution.runs.isRetryable;
+const findWork = _aofWorkspace.work.findWork;
+const reclaimStaleAssignments = _aofApplication.mesh.assignmentReclaim.reclaimStaleAssignments;
+const dualStalenessDecision = _aofApplication.mesh.assignmentReclaim.dualStalenessDecision;
+const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
 import { withMeshWorkerExecFixture } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const NOW = "2026-07-09T12:00:00.000Z";
@@ -144,7 +151,45 @@ export const meshAssignmentReclaimTests = [
     run: async () => {
       // Row 1: an operator-reported (not reclaimed) failed run never carries reclaimedAt.
       await withMeshWorkerExecFixture(async (fx) => {
-        const { completeRun } = await import("../../../src/run-store.mjs");
+        const { completeRun } = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
         const matches = await findWork(fx.workDir, fx.itemRef);
         const item = matches[0];
         const runRecord = await startRun(item, { now: secondsBefore(NOW, 600), node: TARGET_NODE });
@@ -191,7 +236,36 @@ export const meshAssignmentReclaimTests = [
   {
     name: "assignment-reclaim/m42-7.3 a CROSS-MACHINE run (no local record) reclaims from the STREAMED work_item_runs record — and never touches local run files",
     run: async () => {
-      const { upsertWorkItemContent } = await import("../../../src/global-work-store.mjs");
+      const { upsertWorkItemContent } = await Promise.resolve(Object.freeze({
+  GLOBAL_WORK_SCHEMA_VERSION: _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION,
+  globalStoreError: _aofApplication.mesh.store.globalStoreError,
+  workspaceIdFor: _aofApplication.mesh.store.workspaceIdFor,
+  wholesaleDelete: _aofApplication.mesh.store.wholesaleDelete,
+  openGlobalWorkProjectionStore: _aofApplication.mesh.store.openGlobalWorkProjectionStore,
+  remapWorkspaceProjectionRefs: _aofApplication.mesh.store.remapWorkspaceProjectionRefs,
+  remapWorkspaceFactRefs: _aofApplication.mesh.store.remapWorkspaceFactRefs,
+  UPSERT_AUTHORITIES: _aofApplication.mesh.store.UPSERT_AUTHORITIES,
+  upsertWorkItems: _aofApplication.mesh.store.upsertWorkItems,
+  removeWorkspaceFromCache: _aofApplication.mesh.store.removeWorkspaceFromCache,
+  publishWorkspaceSnapshot: _aofApplication.mesh.store.publishWorkspaceSnapshot,
+  recordWorkspaceProjectionError: _aofApplication.mesh.store.recordWorkspaceProjectionError,
+  readWorkspaceProjectionItems: _aofApplication.mesh.store.readWorkspaceProjectionItems,
+  readWorkspaceItems: _aofApplication.mesh.store.readWorkspaceItems,
+  readWorkspaceItemProvenance: _aofApplication.mesh.store.readWorkspaceItemProvenance,
+  upsertWorkItemContent: _aofApplication.mesh.store.upsertWorkItemContent,
+  readWorkItemDoc: _aofApplication.mesh.store.readWorkItemDoc,
+  readWorkItemDocMembers: _aofApplication.mesh.store.readWorkItemDocMembers,
+  readWorkItemRuns: _aofApplication.mesh.store.readWorkItemRuns,
+  NODE_LOG_KEEP: _aofApplication.mesh.store.NODE_LOG_KEEP,
+  appendNodeLogEntries: _aofApplication.mesh.store.appendNodeLogEntries,
+  readNodeLogEntries: _aofApplication.mesh.store.readNodeLogEntries,
+  queryGlobalWorkProjection: _aofApplication.mesh.store.queryGlobalWorkProjection,
+  WORK_ITEM_DOC_FILES: _aofApplication.mesh.store.WORK_ITEM_DOC_FILES,
+  REQUIRED_ITEM_FIELDS: _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS,
+  OPTIONAL_ITEM_FIELDS: _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS,
+  itemRowFault: _aofApplication.mesh.store.itemRowFault,
+  isCompleteItemRow: _aofApplication.mesh.store.isCompleteItemRow,
+}));
       await withMeshWorkerExecFixture(async (fx) => {
         const store = await openGlobalWorkProjectionStore({ env: fx.env });
         try {

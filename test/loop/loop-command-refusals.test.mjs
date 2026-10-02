@@ -1,6 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { loopCommand, runLoopBody } from "../../src/commands/loop.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, loopFixture, treeFiles } from "./loop-command-probe.test.mjs";
 
 async function refusal(fn, code) {

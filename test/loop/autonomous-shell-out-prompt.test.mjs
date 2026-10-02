@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Milestone 53 / story 04 — executable evidence for the autonomous prompt hand-off.
 // The human soak in task 01 is deliberately absent: it is @uat and belongs to verify.
 import assert from "node:assert/strict";
@@ -7,20 +8,20 @@ import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { loadBundle, readDescriptor, renderBundleOutputs } from "../../src/work/bundle.mjs";
+import { loadBundle, readDescriptor, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 import {
   generateBundleManifest,
   manifestPath,
   readShippedManifest,
   serializeBundleManifest,
-} from "../../src/work/bundle-manifest.mjs";
-import { hashContent } from "../../src/lock.mjs";
-import { executeApplyActions, planApplyActions } from "../../src/render-plan.mjs";
-import { readRuns } from "../../src/run-store.mjs";
+} from "../../packages/core/src/work/bundle-manifest.mjs";
+import { hashContent } from "../../packages/core/src/lock.mjs";
+import { executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
+const readRuns = _aofApplication.execution.runs.readRuns;
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
-const cliPath = fileURLToPath(new URL("../../bin/aof.mjs", import.meta.url));
-const promptPath = path.join(repoRoot, "src", "bundle", "commands", "autonomous.md");
+const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
+const promptPath = path.join(repoRoot, "packages", "core", "assets", "commands", "autonomous.md");
 const renderedPath = ".claude/commands/aof/autonomous.md";
 const mappedSkillPath = ".codex/skills/aof-autonomous/SKILL.md";
 const autonomousPreStoryHashes = new Map([
@@ -49,12 +50,12 @@ const commandIdsBeforeStory = [
   // was not updated with it, so the leg has been red on this branch since. It surfaced here
   // because 119/03 is the run that had to get the whole tree green, not because 119 touched it.
   // `promote` ADDED AT 127/02, WITH the diff that lands it — the one verb that mints a number
-  // (127/ADR-003 §1) ships `src/bundle/commands/promote.md` as a `/aof:promote` wrapper, so the
+  // (127/ADR-003 §1) ships `packages/core/assets/commands/promote.md` as a `/aof:promote` wrapper, so the
   // pre-existing member set this leg calls COMPLETE grew by one. Recorded here the same way
   // `pay-debt` had to be, and for the same reason the residue pins above were retired: a literal
   // census only tells the truth if the diff that moves the tree moves it too.
   // `archive` ADDED AT 127/03, in the descriptor's own order (after `promote`), at the milestone door:
-  // `src/bundle/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
+  // `packages/core/assets/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
   // and it landed outside the story's declared write set — the same species as `promote`, repaired
   // at `aof:verify 127`.
   "observe", "pay-debt", "promote", "archive", "recent", "refine", "retrospective", "shatter", "validate", "verify",
@@ -576,7 +577,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(config, /`--orchestrated` OVERRIDES a solo config to orchestrated for this run/u);
       assert.match(config, /The two together are contradictory: STOP before any role runs/u);
       assert.match(config, new RegExp(`work\\.loop\\.agents\\.${prompt}\\.mode`, "u"), "the loop key the drive composes the flag from is named");
-      assert.match(config, /src\/loop-bounds\.mjs/u, "…and its home");
+      assert.match(config, /packages\/contracts\/src\/loop-bounds\.mjs/u, "…and its home");
       for (const runtime of ["claude", "codex", "opencode"]) {
         const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
         assert.ok(rendered, `${prompt} renders for ${runtime}`);
@@ -634,7 +635,7 @@ export const autonomousShellOutPromptTests = [
       assert.match(config, new RegExp(`The loop composes a flag on every ${prompt} it drives: \`work\\.loop\\.agents\\.${prompt}\\.mode\` when set, \`--solo\` when unset`, "u"));
       assert.match(config, new RegExp(`A loop-driven ${prompt} therefore never reads \`work\\.agents\\.mode\``, "u"));
       assert.doesNotMatch(config, /composes nothing when it is unset/u);
-      assert.match(config, /the loop's own default, whose home is `src\/loop-bounds\.mjs`/u);
+      assert.match(config, /the loop's own default, whose home is `packages\/contracts\/src\/loop-bounds\.mjs`/u);
     },
   })),
   {

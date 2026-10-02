@@ -1,9 +1,11 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 00
 // tasks/00_the-id-ladder.feature — "the routable session id is READ from the
 // assistant through one ordered ladder, and never invented".
 //
 // Every @executable scenario (and every Scenario Outline Examples row) below is
-// asserted against the REAL CLI face (src/commands/mesh-session.mjs's
+// asserted against the REAL CLI face (packages/core/src/commands/mesh-session.mjs's
 // meshSessionCommand) over a hermetic fixture repo + a fixture AOF_GLOBAL_HOME (no
 // real machine state touched) — real fs, in-process, with the ctx seams the module
 // already exposes (env / stdinText / now / loadWorkspace / nodeId / cwd). No
@@ -19,9 +21,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";
@@ -205,7 +209,7 @@ export const meshSessionIdLadderTests = [
             // is NOT STORED: never shortened, never hashed, never half-written.
             //
             // MEASURED (2026-08-10, re-derived independently in ADR-011 with the
-            // arithmetic agreeing exactly): `writeText` (src/fs.mjs:22) composes its
+            // arithmetic agreeing exactly): `writeText` (packages/core/src/fs.mjs:22) composes its
             // atomic temp as `.tmp-<basename>-<pid>-<Date.now()>-<randomUUID()>` —
             // a constant 62 characters ahead of the real basename — and every
             // filesystem in this fleet (NTFS, ext4, APFS) caps ONE path component at
@@ -216,7 +220,7 @@ export const meshSessionIdLadderTests = [
             //
             // R7: the unbounded temp basename is a REAL defect (it silently converts
             // "your target name is legal" into "your name plus 62 must be legal"),
-            // it lives in TWO homes (src/fs.mjs:22 and src/lock.mjs:55), and it is
+            // it lives in TWO homes (packages/core/src/fs.mjs:22 and packages/core/src/lock.mjs:55), and it is
             // OUT OF SCOPE for m48 — 52 dependents on the atomic write path, mid-
             // build, owned by no story. It is TECH_DEBT item 34, with its invariant
             // and both homes written down there. (ADR-011's paste-ready block says
@@ -256,7 +260,7 @@ export const meshSessionIdLadderTests = [
             }
 
             // ADR-011 R8 / TIGHTENING 3 — the outcome was ATOMIC. `writeText`
-            // reclaims its temp on the failure path (src/fs.mjs:32); without this,
+            // reclaims its temp on the failure path (packages/core/src/fs.mjs:32); without this,
             // "wrote no record" and "left a 200-character orphan that nothing sweeps
             // for an hour" are indistinguishable, and the second is m38-F26 returning
             // through the very door this row opens. It binds hardest in world B and

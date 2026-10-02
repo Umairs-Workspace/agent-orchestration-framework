@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function FF-12607 (milestone 126 / ADR-007) — "Autostart is ONE injected
 // runner, idempotent, and never a silent no-op off Windows."
 //
@@ -18,15 +19,16 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
-import { listCommands, getCommand } from "../../../src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
+const getCommand = _aofApplication.getCommand;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const DESKTOP_MODULE = path.join(repoRoot, "src", "commands", "mesh", "desktop.mjs");
+const DESKTOP_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop.mjs");
 // 126/06's post-hoc review moved the preflight out of the command module into its own.
 // This control follows it: the sweeps below run over BOTH files, which is strictly wider
 // than what they swept before and is what makes the preflight's "writes nothing" claim a
 // statement about a whole file rather than about a hand-maintained list of headers.
-const PREFLIGHT_MODULE = path.join(repoRoot, "src", "commands", "mesh", "desktop-preflight.mjs");
+const PREFLIGHT_MODULE = path.join(repoRoot, "packages", "mesh", "src", "commands", "desktop-preflight.mjs");
 
 // The child-process APIs that cannot be injected — a call site using one of these is
 // unreachable from a test, whatever the module's seams say.
@@ -66,7 +68,7 @@ export const archTests = [
       // Neither carries `reg`.
       const directSpawns = [...source.matchAll(/(?<![.\w])spawn\s*\(/g), ...preflight.matchAll(/(?<![.\w])spawn\s*\(/g)];
       assert.equal(directSpawns.length, 1, `exactly one direct spawn( call site across both modules, found ${directSpawns.length}`);
-      const runnerBody = functionBody(preflight, "export function defaultRunner");
+      const runnerBody = functionBody(preflight, "function defaultRunner");
       assert.ok(runnerBody != null, "and it is defaultRunner's — the region was found");
       assert.match(runnerBody, /spawn\(file, args/, "defaultRunner spawns whatever file it is handed");
       assert.doesNotMatch(runnerBody, /["']reg["']/, "and names no verb of its own");
@@ -75,7 +77,7 @@ export const archTests = [
       // in this module; an un-injectable call site is not.
       const regUses = [...source.matchAll(/["']reg["']/g)];
       assert.ok(regUses.length > 0, "the module does name `reg` (non-vacuous)");
-      const applyBody = functionBody(source, "export async function applyAutostart");
+      const applyBody = functionBody(source, "async function applyAutostart");
       assert.ok(applyBody != null, "the autostart act's region was found");
       assert.match(applyBody, /await run\("reg", argv\)/, "the write and the delete each call that one runner");
       assert.equal(
@@ -119,7 +121,7 @@ export const archTests = [
       assert.doesNotMatch(admit, /process\.platform/, "no `process.platform` is read inside the act itself");
       assert.match(admit, /platform === "win32"/, "admission is exact and never case-folded");
 
-      const applyBody = functionBody(source, "export async function applyAutostart");
+      const applyBody = functionBody(source, "async function applyAutostart");
       assert.doesNotMatch(applyBody, /process\.platform/, "nor inside the act it guards");
       assert.match(applyBody, /admitAutostartPlatform\(options\.platform\)/, "the act is handed the platform it was given");
 
@@ -150,7 +152,7 @@ export const archTests = [
       // different subject that happens to share a value. Counting file-wide would make
       // this control assert a coincidence — so what is asserted is that the act references
       // the exported constant and never re-spells the literal.
-      const applyBody = functionBody(source, "export async function applyAutostart");
+      const applyBody = functionBody(source, "async function applyAutostart");
       assert.notEqual(applyBody, null, "the act's region was found");
 
       assert.match(source, /export const AUTOSTART_VALUE_NAME = "aof-mesh-desktop"/, "the value name is an exported constant");
@@ -166,7 +168,7 @@ export const archTests = [
 
       // `--dry-run` returns before the placement AND before the registry act, so a probe
       // never performs the act it names.
-      const installBody = functionBody(source, "export async function installDesktopApp");
+      const installBody = functionBody(source, "async function installDesktopApp");
       assert.ok(installBody != null, "the install's region was found");
       const dryRunAt = installBody.indexOf("options.dryRun === true");
       const stageAt = installBody.indexOf("mkdtemp(");
@@ -235,14 +237,20 @@ export const archTests = [
 
       // NOTHING IS RE-SPELLED THAT HAS A HOME (ADR-008 §1, and 126/06's own violation of
       // it three times over). The settings path, the ownership marker and the hook's own
-      // declaration are imported from `src/claude-settings.mjs`, not written out again —
+      // declaration are imported from `packages/core/src/claude-settings.mjs`, not written out again —
       // a rename of `FROZEN_OWNERSHIP_MARKER` used to break this check in silence, and the
       // hook FILE used to be a constant here rather than read from the registration found.
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/commands/mesh/desktop-preflight.mjs"), "utf8"));
       assert.match(
-        preflightRegion,
-        /import \{[^}]*AOF_HOOK_MARKER[^}]*CLAUDE_SETTINGS_RELPATH[^}]*claudeHookDeclarations[^}]*claudeSettingsPath[^}]*\} from "\.\.\/\.\.\/claude-settings\.mjs"/,
+        composition,
+        /import \{[^}]*AOF_HOOK_MARKER[^}]*CLAUDE_SETTINGS_RELPATH[^}]*claudeHookDeclarations[^}]*claudeSettingsPath[^}]*\} from "(?:\.\.\/)+claude-settings\.mjs"/,
         "the four facts with one home are imported from it",
       );
+      for (const binding of ["AOF_HOOK_MARKER", "CLAUDE_SETTINGS_RELPATH", "claudeHookDeclarations", "claudeSettingsPath"]) {
+        const port = new RegExp('createMeshDesktopPreflightCommands\\(\\{[^}]*\\b' + binding + '\\b');
+        assert.match(preflightRegion, port, "the package accepts the shared fact");
+        assert.match(composition, port, "core supplies the shared fact");
+      }
       assert.doesNotMatch(preflightRegion, /"aofManaged"|\.aofManaged\b/, "the ownership marker is never re-spelled as a literal or a property");
       assert.doesNotMatch(preflightRegion, /settings\.json/, "nor is the settings path, which arrives as CLAUDE_SETTINGS_RELPATH");
       assert.doesNotMatch(preflightRegion, /run-heartbeat-enqueue/, "nor the hook file, which is read from the registration the check found");
@@ -281,7 +289,7 @@ export const archTests = [
       // IT FAILS CLOSED AT THE VERB, not one call wide. `126/06` wrapped exactly one call,
       // so a throw from anywhere else escaped into the face — and on `mesh:desktop-run`
       // that lands AFTER the app has been spawned detached.
-      const runBody = functionBody(preflightRegion, "export async function runPreflight");
+      const runBody = functionBody(preflightRegion, "async function runPreflight");
       assert.ok(runBody != null, "runPreflight's region was found");
       const guardedCalls = [...runBody.matchAll(/await guarded\("([a-z-]+)"/g)].map((match) => match[1]);
       assert.deepEqual(

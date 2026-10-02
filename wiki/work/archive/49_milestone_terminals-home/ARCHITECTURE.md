@@ -30,7 +30,7 @@ doc: architecture
 >   invariants-not-file-lists rule, and ADR-009's shell-owned fullscreen are all honoured below and
 >   none is departed from. Where m46 named a thing for this milestone to find rather than discover —
 >   `SET_POSTURE`'s *"stdin is fixed at xterm construction — UNREACHABLE in m46, named so m49 does not
->   discover it"* ([host-model.mjs:287](../../../../ui/src/terminal/host-model.mjs#L287)) — the naming
+>   discover it"* ([host-model.mjs:287](../../../../apps/ui/src/terminal/host-model.mjs#L287)) — the naming
 >   worked, and ADR-007 answers it.
 > - **[48 · fleet-session-identity](../48_milestone_fleet-session-identity/OUTCOME.md) — shipped, in
 >   the working tree.** Two of its four open Gaps discharge here: *"A UI surface that addresses a
@@ -117,21 +117,21 @@ doc: architecture
 > 2. **`GET /api/mesh/board-url` still answers three fields.**
 >    [mesh-ui-serve.mjs:358](../../../../src/mesh-ui-serve.mjs#L358) —
 >    `sendJson(response, 200, { url, workspaceId, ref: ref || null })`; `BoardUrlResponse`
->    ([api.ts:263-267](../../../../ui/src/fleet/api.ts#L263)) types exactly those three. RESEARCH §Q4
+>    ([api.ts:263-267](../../../../apps/ui/src/fleet/api.ts#L263)) types exactly those three. RESEARCH §Q4
 >    confirmed this against m46/ADR-004's stale step 5, and it holds. The `workspace-not-local` guard
 >    DID ship ([:348-351](../../../../src/mesh-ui-serve.mjs#L348), m47/ADR-011).
 > 3. **m46/DESIGN's DG-46-3 predicted this milestone would be `unavailable`'s producer. It is not.**
 >    ADR-002 rules `local-pty` panes out of m49, and the home is served from the fleet origin, so
 >    `origins.fleet` always resolves. `unavailable`
->    ([state-ramp.mjs:429-439](../../../../ui/src/terminal/state-ramp.mjs#L429)) and its three frozen
->    causes ([:105-113](../../../../ui/src/terminal/state-ramp.mjs#L105)) still have **no production
+>    ([state-ramp.mjs:429-439](../../../../apps/ui/src/terminal/state-ramp.mjs#L429)) and its three frozen
+>    causes ([:105-113](../../../../apps/ui/src/terminal/state-ramp.mjs#L105)) still have **no production
 >    producer after m49**. Routed in §Codebase health finding 4.
 > 4. **RESEARCH's §Q1 conclusion is right and one clause of SPEC's framing follows from it that
 >    nobody has written down.** "The grid's population is producer-bound" is measured
 >    (`startSession`/`pingSession` have exactly one production caller,
 >    [commands/mesh-session.mjs:318,323](../../../../src/commands/mesh-session.mjs#L318); the bundle
 >    wires session hooks for `runtimes: ["codex"]` only,
->    [bundle.json:12-16](../../../../src/bundle/bundle.json#L12)) — but its CONSEQUENCE for the grid's
+>    [bundle.json:12-16](../../../../packages/core/assets/bundle.json#L12)) — but its CONSEQUENCE for the grid's
 >    row set is sharper than RESEARCH states, and ADR-002 is where it lands: **an assignment with a
 >    captured `sessionId` and no presence record renders a live terminal on its milestone CARD and no
 >    row in the terminals home.** That inconsistency is the reason ADR-005 exists.
@@ -246,7 +246,7 @@ doc: architecture
 >   never reads it — so the "closed vocabulary" (B)'s whole argument rests on is closed by prose in
 >   the one milestone that opened it. Two lines inside the SHIPPED detector, owed by the story that
 >   next touches `host-model.mjs`. **DISCHARGED 2026-08-13 by 49/05's tree**
->   ([host-model.mjs](../../../../ui/src/terminal/host-model.mjs)'s `affordanceFormViolations`, the two
+>   ([host-model.mjs](../../../../apps/ui/src/terminal/host-model.mjs)'s `affordanceFormViolations`, the two
 >   `AFFORDANCE_FORMS.includes` clauses) — verified at source at the seventh batch below.
 >
 > **SEVENTH BATCH, same day (49/05's STRUCTURAL REVIEW of the delivered, COMMITTED diff `69a8060`) —
@@ -262,7 +262,7 @@ doc: architecture
 >   `SessionGrid.tsx`: sixteen subscribed tiles at `MAX_LIVE_PANES = 16`, then ONE poll in which four
 >   tuples leave the index and four arrive → **20 open sockets**. A tile RETAINED past its row's
 >   departure keeps its socket and is excluded from the arbiter's input
->   ([SessionGrid.tsx](../../../../ui/src/home/SessionGrid.tsx)'s `dialableTiles(tiles)` argument, which
+>   ([SessionGrid.tsx](../../../../apps/ui/src/home/SessionGrid.tsx)'s `dialableTiles(tiles)` argument, which
 >   filters to `FEED_PRODUCER_KNOWN`), so the arbiter frees the vacated slot, refills it, and the
 >   retained socket is spent off the books. **I1 (`|result| ≤ limit`) still holds of the ARBITER and
 >   is now false of the PRODUCT** — and I1 is the obligation the mirror's 256 KiB replay burst and its
@@ -279,7 +279,7 @@ doc: architecture
 >   it is not cosmetic:** a retained tile stays `POSTURE_INTERACTIVE` and therefore typeable into a
 >   session the mesh no longer lists — precisely the two-hop silent drop ADR-007 exists to prevent —
 >   and `READ_ONLY_CAUSE_REASON[FEED_ROSTER_GONE]`
->   ([session-mount.mjs](../../../../ui/src/home/session-mount.mjs)'s exported map) becomes a mapping
+>   ([session-mount.mjs](../../../../apps/ui/src/home/session-mount.mjs)'s exported map) becomes a mapping
 >   **no production caller can reach**, which is this log's own finding-4 species arriving inside the
 >   milestone that named it. **The compensating obligation: a RETAINED tile does not PRESENT.** The
 >   fullscreen door is the only typing path on this surface by DG-49-5's own ruling (*taking the
@@ -330,7 +330,7 @@ doc: architecture
 > - **ADR-006 AMENDMENT (5d) — *"the last branch of a cause chain is the one that cannot absorb an
 >   unclassified case"* — is EXTENDED from the arbiter's causes to the SURFACE's defaults, because
 >   the same author reproduced it one layer up.** `decision == null ? true : decision.subscribed`
->   ([SessionGrid.tsx](../../../../ui/src/home/SessionGrid.tsx)'s `isSubscribed`) is a fall-through that
+>   ([SessionGrid.tsx](../../../../apps/ui/src/home/SessionGrid.tsx)'s `isSubscribed`) is a fall-through that
 >   absorbs two populations with opposite needs into one answer: a `no-producer` tile (never dialable,
 >   holds nothing, and whose toggle is therefore theatre) and a `roster-gone` tile (dialable, DIALED,
 >   holding an open socket the operator now has no way to close). **A tile the arbiter was not asked
@@ -366,8 +366,8 @@ doc: architecture
 *Where does the code live?* The candidates are a new top-level `ui/src/home/` or absorption into
 `ui/src/fleet/`. Absorption is superficially attractive — the home reads the same
 `/api/mesh/status` payload the fleet already polls
-([assign-affordance.mjs:54](../../../../ui/src/fleet/assign-affordance.mjs#L54)'s `POLL_MS = 5000`,
-consumed at [Fleet.tsx:462](../../../../ui/src/fleet/Fleet.tsx#L462)) and would reuse its API client.
+([assign-affordance.mjs:54](../../../../apps/ui/src/fleet/assign-affordance.mjs#L54)'s `POLL_MS = 5000`,
+consumed at [Fleet.tsx:462](../../../../apps/ui/src/fleet/Fleet.tsx#L462)) and would reuse its API client.
 It is also exactly TECH_DEBT 18(a)'s shape: `ui/src/board/` became the shared library by being the
 folder that happened to have the thing first, and the graph still measures **five**
 `Fleet.tsx → ui/src/board/` edges. m46/ADR-001 made the opposite call for the same reason and named
@@ -382,14 +382,14 @@ already answered on disk — by m45, in a comment, wrongly. `ui/src/main.tsx:42-
 itself, and milestone 49 replaces what `/` renders without touching this map."* Measured, that
 prediction is wrong in the one way that matters. Today `Shell.tsx` renders the landing **INLINE**, in
 the `<main id={CONTENT_REGION_ID}>` ternary — `routeId === "landing" ? <Landing … /> : …`
-([Shell.tsx:345-346](../../../../ui/src/app/Shell.tsx#L345) *as measured 2026-08-13; cite the ternary,
+([Shell.tsx:345-346](../../../../apps/ui/src/app/Shell.tsx#L345) *as measured 2026-08-13; cite the ternary,
 not the line — see §Codebase health finding 7*) — and `entry.mjs`'s `SHELL_RENDERED_ROUTES` freezes
-`["landing", "not-found"]` ([:126](../../../../ui/src/app/entry.mjs#L126)), which `surfaceMountFor`
-([:139-152](../../../../ui/src/app/entry.mjs#L139)) reads to decide that "no surface component for this
+`["landing", "not-found"]` ([:126](../../../../apps/ui/src/app/entry.mjs#L126)), which `surfaceMountFor`
+([:139-152](../../../../apps/ui/src/app/entry.mjs#L139)) reads to decide that "no surface component for this
 id" is NORMAL rather than a defect. A terminals home rendered through that branch would be a
 data-fetching, socket-opening, 16-pane surface living inside the shell's own tree, **outside
 `SurfaceBoundary`** — the `key={routeId}` boundary in the same ternary's final arm
-([Shell.tsx:349-361](../../../../ui/src/app/Shell.tsx#L349)), whose own comment states the scope in
+([Shell.tsx:349-361](../../../../apps/ui/src/app/Shell.tsx#L349)), whose own comment states the scope in
 terms: *"It wraps ONLY the mounted surface — not the nav, not the bars, not the not-found or landing
 states the shell renders itself."* A throw in it would take the chrome down with it, which is
 precisely the failure m45's containment finding F-45-M-1 exists to prevent — and that comment's next
@@ -409,9 +409,9 @@ shell."* Half of that survives; the other half is what this ADR corrects.
   DOMAIN folder: the grid, the pane's mount declaration, the feed axis, the subscription arbiter and
   the layout composer. Nothing else lands in it.
 - **`/` becomes a ROUTED SURFACE.** `landing` gains an entry in `main.tsx`'s `SURFACES` map;
-  `SHELL_RENDERED_ROUTES` ([entry.mjs:126](../../../../ui/src/app/entry.mjs#L126)) **shrinks to
+  `SHELL_RENDERED_ROUTES` ([entry.mjs:126](../../../../apps/ui/src/app/entry.mjs#L126)) **shrinks to
   `["not-found"]`**; `Shell.tsx`'s `routeId === "landing"` branch and its `Landing` import
-  ([:68](../../../../ui/src/app/Shell.tsx#L68)) are **removed**; `ui/src/app/Landing.tsx` is **deleted**.
+  ([:68](../../../../apps/ui/src/app/Shell.tsx#L68)) are **removed**; `ui/src/app/Landing.tsx` is **deleted**.
   The route TABLE is untouched — `routes.mjs`'s `landing` id survives verbatim, exactly as m45
   promised, and `acd-ui-single-route-table` stays green.
 - **The surface therefore inherits, for free and by construction:** `SurfaceSlot`'s crash
@@ -426,8 +426,8 @@ shell."* Half of that survives; the other half is what this ADR corrects.
   panes, which are subscribed, which posture, which state, what is persisted — lives in a `.mjs`
   plain `node` can import.
 - **The `.mjs` set touches NO global.** Not `window`, not `location`, not `localStorage`. It receives
-  them ([socket-url.mjs:15-19](../../../../ui/src/terminal/socket-url.mjs#L15) is the shape;
-  [shell-nav.mjs:15-21](../../../../ui/src/app/shell-nav.mjs#L15) is the precedent).
+  them ([socket-url.mjs:15-19](../../../../apps/ui/src/terminal/socket-url.mjs#L15) is the shape;
+  [shell-nav.mjs:15-21](../../../../apps/ui/src/app/shell-nav.mjs#L15) is the precedent).
 - **`ui/src/home/` IMPORTS NOTHING FROM `ui/src/fleet/` OR `ui/src/board/`.** It imports DOWN into
   `ui/src/terminal/` and `ui/src/app/`, and nothing sideways. If the home and the fleet turn out to
   want the same empty-state or chip primitive, it goes to `ui/src/components/` (7 files, 165 lines —
@@ -476,7 +476,7 @@ shell."* Half of that survives; the other half is what this ADR corrects.
   −1 net (ADR-007's amendment turning the `{subscribed ? … : null}` guard into a table lookup) ⇒ the
   file lands near **927 on the gate's count**. **If a story finds itself ADDING to `Shell.tsx`, the pressure valve is
   named here rather than improvised: extract `MountPlaceholder` and `SurfaceFailed`
-  ([Shell.tsx:593-598](../../../../ui/src/app/Shell.tsx#L593) and its sibling) into an `ui/src/app/`
+  ([Shell.tsx:593-598](../../../../apps/ui/src/app/Shell.tsx#L593) and its sibling) into an `ui/src/app/`
   component** — small, self-contained, a real prop boundary, and exactly the remedy
   `acd-ui-surface-file-budget`'s own failure message prescribes. **Trimming a comment to fit is
   forbidden (ADR-014/E3), and it is the one thing time pressure will argue for.** One budget
@@ -541,8 +541,8 @@ shell."* Half of that survives; the other half is what this ADR corrects.
 **Context.** Two producers of a mount declaration already ship, with an identical frozen return shape
 and a comment saying so in terms: *"One shape, two producers: that is what makes 'the only thing that
 differs between the two surfaces is what they declare' checkable"*
-([terminal-mount.mjs:148-150](../../../../ui/src/fleet/terminal-mount.mjs#L148);
-[dock-mount.mjs:58-72](../../../../ui/src/board/dock-mount.mjs#L58)). Each returns a deeply frozen
+([terminal-mount.mjs:148-150](../../../../apps/ui/src/fleet/terminal-mount.mjs#L148);
+[dock-mount.mjs:58-72](../../../../apps/ui/src/board/dock-mount.mjs#L58)). Each returns a deeply frozen
 `{ bound, rendersPanel, source, params, posture, ref, farEnd, detail, command, reason, spawnedHere,
 unavailable }`, resolves its source through `sessionSourceFor` rather than assembling one, and is
 imported by its surface's `.tsx` as a BARE call. `acd-terminal-control-boundary` already gates the
@@ -555,12 +555,12 @@ guarantees, and nothing has ever written down that they are two:
 
 | path | address from | who produces it | is it fed? |
 |---|---|---|---|
-| **assignment-derived** (today's fleet card peek) | `assignment.targetNodeId` + `assignment.sessionId` ([api.ts:117-126](../../../../ui/src/fleet/api.ts#L117)) | the worker captures its own session id (m38/ADR-013); **no hook needed** | **YES** — it IS the assignment execution, and `sendTerminalFrame` fires for it ([mesh-launcher.mjs:1151](../../../../src/mesh-launcher.mjs#L1151), [:1290](../../../../src/mesh-launcher.mjs#L1290)) |
-| **index-derived** (m48's `sessions[]`) | `MeshSession.nodeId` + `.sessionId` ([api.ts:219-228](../../../../ui/src/fleet/api.ts#L219)) | `aof session start\|ping` only, i.e. a hook in the cwd's own config ([commands/mesh-session.mjs:318,323](../../../../src/commands/mesh-session.mjs#L318)) | **ONLY IF** the same tuple is also a worker execution |
+| **assignment-derived** (today's fleet card peek) | `assignment.targetNodeId` + `assignment.sessionId` ([api.ts:117-126](../../../../apps/ui/src/fleet/api.ts#L117)) | the worker captures its own session id (m38/ADR-013); **no hook needed** | **YES** — it IS the assignment execution, and `sendTerminalFrame` fires for it ([mesh-launcher.mjs:1151](../../../../src/mesh-launcher.mjs#L1151), [:1290](../../../../src/mesh-launcher.mjs#L1290)) |
+| **index-derived** (m48's `sessions[]`) | `MeshSession.nodeId` + `.sessionId` ([api.ts:219-228](../../../../apps/ui/src/fleet/api.ts#L219)) | `aof session start\|ping` only, i.e. a hook in the cwd's own config ([commands/mesh-session.mjs:318,323](../../../../src/commands/mesh-session.mjs#L318)) | **ONLY IF** the same tuple is also a worker execution |
 
 `MeshSession` carries **nothing addressing-shaped beyond the tuple** — no `ref`, no `provider`, no
 board origin — so it can only ever resolve against the frozen table's `mirror` row
-([source-table.mjs:75-85](../../../../ui/src/terminal/source-table.mjs#L75)), never `local-pty`.
+([source-table.mjs:75-85](../../../../apps/ui/src/terminal/source-table.mjs#L75)), never `local-pty`.
 
 **Decision.**
 - **ONE producer module, `ui/src/home/session-mount.mjs`**, exporting one function that takes a
@@ -570,7 +570,7 @@ board origin — so it can only ever resolve against the frozen table's `mirror`
   there is exactly one per surface and why `acd-terminal-control-boundary`'s call-site floor rises
   from 2 to 3.
 - **THE GRID ENUMERATES FROM `status.sessions[]` AND FROM NOTHING ELSE.** m48/ADR-003 and ADR-007
-  made `buildSessionIndex` ([global-mesh-query.mjs:197](../../../../src/global-mesh-query.mjs#L197)) the
+  made `buildSessionIndex` ([global-mesh-query.mjs:197](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L197)) the
   one authority over "what live sessions exist across the mesh", a pure projection that performs no
   I/O, reads no clock and stores nothing. **An assignment is not a session.** No module under
   `ui/src/home/` may read `status.items[]` or an `assignment` row to produce a ROW; it may join them
@@ -596,12 +596,12 @@ board origin — so it can only ever resolve against the frozen table's `mirror`
   m47/ADR-011). **The reversal condition, named:** the first pane opened from a `ref` rather than
   from an index row is the change that earns the field.
 - **A ROW THAT CANNOT BE ADDRESSED IS NOT A PANE.** `MeshSession.sessionId` is a non-empty string by
-  the index's own construction ([global-mesh-query.mjs:280](../../../../src/global-mesh-query.mjs#L280)
+  the index's own construction ([global-mesh-query.mjs:280](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L280)
   skips anonymous sessions), so a half-tuple should be unreachable — and the mount module still
   returns the `noPanel` shape for one, exactly as `fleetTerminalMount` does
-  ([:130-146](../../../../ui/src/fleet/terminal-mount.mjs#L130)). "No stream" is a first-class honest
+  ([:130-146](../../../../apps/ui/src/fleet/terminal-mount.mjs#L130)). "No stream" is a first-class honest
   outcome; it is NOT `unavailable`, and the two must not be confused (that file says so at
-  [:28-34](../../../../ui/src/fleet/terminal-mount.mjs#L28), and this is exactly the milestone where
+  [:28-34](../../../../apps/ui/src/fleet/terminal-mount.mjs#L28), and this is exactly the milestone where
   they would be confused by accident).
 
 **Alternatives rejected.**
@@ -652,7 +652,7 @@ in `TerminalByteArea.tsx`. See the seventh batch in the preamble.
 
 **Context.** m46/ADR-005 froze ONE connection-state vocabulary — `idle · connecting · waiting ·
 streaming · ended · error · unavailable` plus the `unknown` fallback
-([state-ramp.mjs:57-68](../../../../ui/src/terminal/state-ramp.mjs#L57)) — and it spent a whole
+([state-ramp.mjs:57-68](../../../../apps/ui/src/terminal/state-ramp.mjs#L57)) — and it spent a whole
 milestone deleting a second one. **A second vocabulary is the exact defect m46 removed, so the first
 question this milestone must answer is whether the new facts are states at all.** Measured, none of
 them is:
@@ -660,11 +660,11 @@ them is:
 | the fact SPEC names | is it a transport state? | what it actually is |
 |---|---|---|
 | **no live sessions at all** | no — there is no pane | a GRID-level empty state |
-| **a node unreachable** | no — the pane never exists | `buildSessionIndex` gates on `node.freshness !== "live"` ([global-mesh-query.mjs:261](../../../../src/global-mesh-query.mjs#L261)), so a stale node contributes ZERO sessions. **SPEC lists this as a degraded pane state; measured, it cannot be one** — the row simply leaves the index |
+| **a node unreachable** | no — the pane never exists | `buildSessionIndex` gates on `node.freshness !== "live"` ([global-mesh-query.mjs:261](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L261)), so a stale node contributes ZERO sessions. **SPEC lists this as a degraded pane state; measured, it cannot be one** — the row simply leaves the index |
 | **a session that ended mid-view** | **YES — already produced** | the ramp's `ended`. The worker's end-of-stream closes the browser socket ([mesh-ui-serve.mjs:726-733](../../../../src/mesh-ui-serve.mjs#L726)) and, since F-38.06g, a late subscriber replaying an ended tail gets the end too ([mesh-terminal-mirror.mjs:202-208](../../../../src/mesh-terminal-mirror.mjs#L202)). **No new word.** |
 | **origin unresolvable** | **YES — already exists** | the ramp's `unavailable` with three frozen causes. Unreachable in m49 (ADR-002) |
 | **addressable but never fed** | **NO** | transport-wise it is EXACTLY `waiting`: the socket is open and nothing has been said. What is new is a statement about whether a PRODUCER exists |
-| **a pane the cap refused** | **NO** | nothing was opened. It is m46's existing `subscribed` flag ([host-model.mjs:227](../../../../ui/src/terminal/host-model.mjs#L227), `HIDE`/`WATCH`, `COST_SUBSCRIPTION`) |
+| **a pane the cap refused** | **NO** | nothing was opened. It is m46's existing `subscribed` flag ([host-model.mjs:227](../../../../apps/ui/src/terminal/host-model.mjs#L227), `HIDE`/`WATCH`, `COST_SUBSCRIPTION`) |
 
 And the derivation for "never fed" is **arithmetic, not a heuristic**: `sendTerminalFrame` — the only
 feeder of `createTerminalMirror` — has exactly two call sites, both in `src/mesh-launcher.mjs`'s
@@ -682,11 +682,11 @@ call site anywhere in `src/` will ever feed this tuple**.
 > **The defect, measured.** DG-49-2 requires both halves at once: a `no-producer` pane says
 > `no live output` **and** opens no socket. This ADR routed the wording through
 > `describeTerminalState`'s injected `reason`, which is honoured **on `waiting` only**
-> ([state-ramp.mjs:576-584](../../../../ui/src/terminal/state-ramp.mjs#L576)). But `waiting` is reachable
+> ([state-ramp.mjs:576-584](../../../../apps/ui/src/terminal/state-ramp.mjs#L576)). But `waiting` is reachable
 > from exactly one place — `applyTerminalEvent`'s `SOCKET_OPEN` case, and only from `connecting`
-> ([:287-290](../../../../ui/src/terminal/state-ramp.mjs#L287)) — and `terminalEntryState` derives
+> ([:287-290](../../../../apps/ui/src/terminal/state-ramp.mjs#L287)) — and `terminalEntryState` derives
 > `connecting` for anything the caller declares `bindable`
-> ([:221-224](../../../../ui/src/terminal/state-ramp.mjs#L221)). **So the wording cannot be reached
+> ([:221-224](../../../../apps/ui/src/terminal/state-ramp.mjs#L221)). **So the wording cannot be reached
 > without opening the socket the rule forbids.** Left alone, a bindable-but-unfed pane sits on
 > `connecting…` forever.
 >
@@ -699,7 +699,7 @@ call site anywhere in `src/` will ever feed this tuple**.
 > **THE RULING: the pane is not `waiting` — it is NOT BOUND, and the ramp already has that word.**
 > `idle` means *"no source bound"*; its pane treatment is `PANE_EMPTY_HOST`, which
 > `TerminalByteArea` already renders as **a box with one centred line and no terminal**
-> ([TerminalByteArea.tsx](../../../../ui/src/terminal/TerminalByteArea.tsx), the `PANE_EMPTY_HOST`
+> ([TerminalByteArea.tsx](../../../../apps/ui/src/terminal/TerminalByteArea.tsx), the `PANE_EMPTY_HOST`
 > branch) — which is *exactly* the shape DG-49-2 asks for, and, not coincidentally, exactly the shape
 > DG-49-4 asks for the held tile (ADR-007's amendment). **No socket opens because nothing binds.**
 > Both halves are satisfied with no new word, no new treatment and no new component.
@@ -707,14 +707,14 @@ call site anywhere in `src/` will ever feed this tuple**.
 > **`bindable` IS THE SEAM, AND IT IS ALREADY AN ARGUMENT.** `terminalEntryState(current, { bindable })`
 > takes it from the caller, and its own header states the discipline this ruling relies on: it is
 > one-way, it speaks only for `idle`, and *"an observed fact outranks a derivation"*
-> ([:217-220](../../../../ui/src/terminal/state-ramp.mjs#L217)). So the home computes `bindable` in its
+> ([:217-220](../../../../apps/ui/src/terminal/state-ramp.mjs#L217)). So the home computes `bindable` in its
 > `.mjs` set from the two axes this ADR already defines — **bindable iff `producer-known` AND
 > subscribed** — and the axes compose into the ramp's ENTRY rather than into its vocabulary, which is
 > what this ADR asked for in the first place.
 >
 > **ONE SHARED-CORE CHANGE, and it is the correction of a latent m46 defect rather than a new
 > capability.** `IDLE_PANE_LINE = "No session. Press Run agent on an item."`
-> ([:134](../../../../ui/src/terminal/state-ramp.mjs#L134)) is a hard-coded sentence naming **one host's
+> ([:134](../../../../apps/ui/src/terminal/state-ramp.mjs#L134)) is a hard-coded sentence naming **one host's
 > affordance** on a control with three hosts and now four — "Run agent" is a board control that does
 > not exist on the fleet card or the grid. It should have been per-call-site from the start, for the
 > identical reason `reason` and `readOnlyLabel` already are. So:
@@ -724,7 +724,7 @@ call site anywhere in `src/` will ever feed this tuple**.
 > - **`IDLE_PANE_LINE` survives as the default** when nothing is injected, so the dock and the board
 >   are byte-identical;
 > - **`idle` gains `opensSocket: false`** on its descriptor, which today only `unavailable` carries
->   ([:573](../../../../ui/src/terminal/state-ramp.mjs#L573)). The property is the structural half of "no
+>   ([:573](../../../../apps/ui/src/terminal/state-ramp.mjs#L573)). The property is the structural half of "no
 >   socket is opened" and it should be a VALUE both no-socket states carry rather than one stated and
 >   one implied — one derivation, two readers, which is this control's own rule.
 >
@@ -749,7 +749,7 @@ call site anywhere in `src/` will ever feed this tuple**.
     about a session the mesh no longer lists.
 - **DERIVED IN THE BROWSER, FROM THE WIRE — NEVER FROM BYTES, AND NEVER AS A NEW WIRE FIELD.**
   Client-side content-sniffing of terminal output to infer agent or feed state is forbidden
-  ([source-table.mjs:126-137](../../../../ui/src/terminal/source-table.mjs#L126);
+  ([source-table.mjs:126-137](../../../../apps/ui/src/terminal/source-table.mjs#L126);
   [mesh-ui-serve.mjs:718-722](../../../../src/mesh-ui-serve.mjs#L718);
   [acd-fleet-terminal-input-constrained.test.mjs:214-218](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L214)) —
   *"the browser writes these bytes STRAIGHT into xterm, so sniffing control content out of terminal
@@ -771,7 +771,7 @@ call site anywhere in `src/` will ever feed this tuple**.
   and the reason is structural rather than a preference.**) A stale node's presence file is frozen on
   disk **with its `activeRuns` inside it**, so a non-live node reports runs forever; that is the exact
   hazard `buildSessionIndex` gates on when it drops every session from a node whose `freshness !==
-  "live"` ([global-mesh-query.mjs:261](../../../../src/global-mesh-query.mjs#L261)), and m48's own
+  "live"` ([global-mesh-query.mjs:261](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L261)), and m48's own
   Assumption states it — *"the index's freshness gate is node-level"*. **If the empty state counted a
   stale node, its claim would derive from a DIFFERENT liveness rule than the row set it is explaining**
   — two authorities over liveness on one screen, which is m48/ADR-003 one layer up, and the pane it
@@ -780,9 +780,9 @@ call site anywhere in `src/` will ever feed this tuple**.
   nodes the index itself would accept, from the same `freshness` field, read and never re-derived.
 - **AXIS 3 — SUBSCRIPTION — IS m46's, REUSED, NOT REBUILT.** A pane over the cap, or one the operator
   hid, is simply `subscribed: false`; `terminalSessionIdentity` already returns `null` for it
-  ([host-model.mjs:246](../../../../ui/src/terminal/host-model.mjs#L246)) and the worded Watch/Hide
+  ([host-model.mjs:246](../../../../apps/ui/src/terminal/host-model.mjs#L246)) and the worded Watch/Hide
   toggle already declares `COST_SUBSCRIPTION` with the honest statement that a re-watch starts empty
-  ([:281-282](../../../../ui/src/terminal/host-model.mjs#L281)). ADR-006 arbitrates who is subscribed;
+  ([:281-282](../../../../apps/ui/src/terminal/host-model.mjs#L281)). ADR-006 arbitrates who is subscribed;
   the vocabulary for saying so already exists.
 - **THE COMPOSITION PRECEDENCE, FIXED HERE BECAUSE ONE PANE HAS ONE HEADER AND ONE PANE LINE:**
   1. **Not subscribed wins outright.** There is no socket, therefore no transport fact to report.
@@ -791,7 +791,7 @@ call site anywhere in `src/` will ever feed this tuple**.
      ONLY, the feed axis supplies the pane's `reason`. That is not a new mechanism — it is the
      seam m46 already built and the fleet already uses:
      `describeTerminalState(state, { reason })` honours an injected reason **on `waiting` alone**
-     ([state-ramp.mjs:576-584](../../../../ui/src/terminal/state-ramp.mjs#L576)), because *"a pane that
+     ([state-ramp.mjs:576-584](../../../../apps/ui/src/terminal/state-ramp.mjs#L576)), because *"a pane that
      actually received bytes keeps its own, stronger, observed fact whatever an assignment says"*.
      The home is the third injector through that seam and the shared set does not change.
   3. **`roster-gone` ANNOTATES, never replaces.** A stale node's worker can genuinely keep relaying,
@@ -799,7 +799,7 @@ call site anywhere in `src/` will ever feed this tuple**.
   4. **The home's mount module decides the injected `reason` in ONE place**, including for a
      `producer-known` row that also carries a terminal assignment state — there is one `reason` field
      and one author for it, exactly as `fleetTerminalMount` owns the fleet's
-     ([:120-125](../../../../ui/src/fleet/terminal-mount.mjs#L120)).
+     ([:120-125](../../../../apps/ui/src/fleet/terminal-mount.mjs#L120)).
 
 **Alternatives rejected.**
 - **Add `unfed` (or `silent`, or `orphaned`) as an eighth ramp state.** Rejected, and this is the
@@ -846,16 +846,16 @@ stays `running`**, as `sendAssignmentStatus(assignmentId, "running", { code: "ne
 [:2702](../../../../src/mesh-worker-execution.mjs#L2702),
 [:3158](../../../../src/mesh-worker-execution.mjs#L3158)). It is persisted on the assignment record's
 `code` column and rides the SHARED row mapper
-([assignment-record.mjs:114-116](../../../../src/assignment-record.mjs#L114)), which every reader uses.
+([assignment-record.mjs:114-116](../../../../packages/mesh/src/assignment-record.mjs#L114)), which every reader uses.
 
 **And the fleet's wire projection drops it at exactly one hop.** `projectAssignment`
-([global-mesh-query.mjs:132-148](../../../../src/global-mesh-query.mjs#L132)) copies eight fields plus an
+([global-mesh-query.mjs:132-148](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L132)) copies eight fields plus an
 optional `sessionId`; `code` is not among them. `grep -rn "needs-input" ui/src` returns nothing, and
-`WorkAssignment` ([api.ts:117-126](../../../../ui/src/fleet/api.ts#L117)) has no `code`. The fact is
+`WorkAssignment` ([api.ts:117-126](../../../../apps/ui/src/fleet/api.ts#L117)) has no `code`. The fact is
 produced, captured, persisted and mapped — and has never reached a browser.
 
 For a **free** session there is nothing at all. `assignmentChip` reads `.state`/`.reclaimedAt` off an
-assignment row ([assignments.mjs:68-69](../../../../ui/src/fleet/assignments.mjs#L68)); a free session
+assignment row ([assignments.mjs:68-69](../../../../apps/ui/src/fleet/assignments.mjs#L68)); a free session
 has no row. None of the frozen six presence fields carries a behavioural fact. This is not "derive
 it" — it is "there is nothing to derive it from".
 
@@ -863,7 +863,7 @@ it" — it is "there is nothing to derive it from".
 - **(a) THE HOP: `code` joins `projectAssignment`'s copied set and `WorkAssignment`'s type.** One
   field, one function, one type — additive, "absent, not false" (an assignment with no code omits the
   key entirely, the same house rule `sessionId` already follows at
-  [:145-147](../../../../src/global-mesh-query.mjs#L145)). Nothing else moves: no new column, no new
+  [:145-147](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L145)). Nothing else moves: no new column, no new
   producer, no second vocabulary, and **no change to `src/assignment-record.mjs`** — the graph reports
   it at **38 dependents**, a genuine god-node, and the mapper already carries the field.
 - **(b) `needs-input` IS THE WHOLE AGENT-STATE VOCABULARY OF THIS MILESTONE, and it composes as a
@@ -871,7 +871,7 @@ it" — it is "there is nothing to derive it from".
   one) and not a feed value (a producer exists; it is waiting for a human). SPEC's
   *blocked / working / done* maps as: **blocked** = `code === "needs-input"`; **done** = the
   assignment chip's own terminal reading, which already exists and already owns the words
-  ([terminal-mount.mjs:105-125](../../../../ui/src/fleet/terminal-mount.mjs#L105) derives terminal-ness
+  ([terminal-mount.mjs:105-125](../../../../apps/ui/src/fleet/terminal-mount.mjs#L105) derives terminal-ness
   from `assignmentChip` precisely so a hand-maintained state set cannot drift — and it drifted once,
   leaking `withdrawn` and `stale`); **working** is the absence of both. **No new set of state strings
   is defined anywhere.**
@@ -925,9 +925,9 @@ boundary is correct and it has a cost, and the cost is measurable at source.
 ([commands/mesh-session.mjs:318,323](../../../../src/commands/mesh-session.mjs#L318)), which fires only
 from a `SessionStart`/`UserPromptSubmit`/`SessionEnd` hook in the **cwd's own** hook config. The
 distributed bundle ships that triple for `runtimes: ["codex"]` only
-([bundle.json:12-14](../../../../src/bundle/bundle.json#L12)); the sole `runtimes: ["claude"]` hook
+([bundle.json:12-14](../../../../packages/core/assets/bundle.json#L12)); the sole `runtimes: ["claude"]` hook
 member is `claude-artifact-sync`, which is `PostToolUse` and unrelated
-([:15-16](../../../../src/bundle/bundle.json#L15)). This repo gets Claude session records because its
+([:15-16](../../../../packages/core/assets/bundle.json#L15)). This repo gets Claude session records because its
 own `.claude/settings.json` was hand-authored on the first mesh commit — a **dogfooding artefact**,
 not something `aof work init`/`update` gives anyone.
 
@@ -1059,9 +1059,9 @@ The three constraints that ARE binding:
    that this grid's own churn cannot cause it.
 3. **MAIN-THREAD CONTENTION.** xterm.js is main-thread bound, and m46/ADR-003 **forbids** a
    canvas/webgl addon for this control because `scale` depends on the DOM renderer scaling crisply
-   ([geometry.mjs](../../../../ui/src/terminal/geometry.mjs); the project's own canvas migration measured
+   ([geometry.mjs](../../../../apps/ui/src/terminal/geometry.mjs); the project's own canvas migration measured
    5×–45× over the DOM renderer). Every pane is committed to the slower renderer by an already-shipped
-   decision, at a fixed 1,920 cells (80×24, [source-table.mjs:48-49](../../../../ui/src/terminal/source-table.mjs#L48))
+   decision, at a fixed 1,920 cells (80×24, [source-table.mjs:48-49](../../../../apps/ui/src/terminal/source-table.mjs#L48))
    that does not shrink with tile size.
 
 **Decision.**
@@ -1114,7 +1114,7 @@ The three constraints that ARE binding:
 > slot explicitly is one extra, fully legible click, and DESIGN has already made the state that asks
 > for it calm and non-erroneous. It is also the only reading consistent with `HIDE`'s own declared
 > `COST_SUBSCRIPTION` and its stated *"a fresh subscribe opens ONE new socket onto an EMPTY pane"*
-> ([host-model.mjs:281-282](../../../../ui/src/terminal/host-model.mjs#L281)) — a cost the control
+> ([host-model.mjs:281-282](../../../../apps/ui/src/terminal/host-model.mjs#L281)) — a cost the control
 > already says only an operator may spend.
 >
 > **The UI consequence, so no story re-derives it:** at the cap there is no "watch this" affordance
@@ -1125,7 +1125,7 @@ The three constraints that ARE binding:
 > **(3) THE GRID'S DISPLAY ORDER IS `(nodeId, repo, sessionId)` — `DESIGN §focus model` rule 7 WINS,
 > and this ADR's "the index's own deterministic order" is superseded AS A DISPLAY ORDER.** The two
 > documents disagreed in writing: the index sorts `(nodeId, sessionId)`
-> ([global-mesh-query.mjs:331-335](../../../../src/global-mesh-query.mjs#L331)) and DESIGN wants `repo`
+> ([global-mesh-query.mjs:331-335](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L331)) and DESIGN wants `repo`
 > between them. **DESIGN wins, on m46/ADR-005's own precedent** — *"the state words are what the
 > operator reads, DESIGN owns that surface"* — and grid order is read by the operator on every glance:
 > scanning a machine's panes by project is the whole reason a fleet grid groups rather than lists.
@@ -1153,7 +1153,7 @@ The three constraints that ARE binding:
 >
 > **(4) A STALE `why` THIS ADR LEANS ON, corrected where it lives.** `HOST_CHANGES.WATCH`'s catalogue
 > entry reads *"a fresh subscribe opens ONE new socket onto an empty pane"*
-> ([host-model.mjs:282](../../../../ui/src/terminal/host-model.mjs#L282)). That predates F-38.06g: the
+> ([host-model.mjs:282](../../../../apps/ui/src/terminal/host-model.mjs#L282)). That predates F-38.06g: the
 > mirror **replays a bounded tail on subscribe**
 > ([mesh-terminal-mirror.mjs:193-208](../../../../src/mesh-terminal-mirror.mjs#L193)), so a re-watch may
 > repaint the last screen. **The COST is unchanged and correct — `COST_SUBSCRIPTION`, a socket, the
@@ -1182,7 +1182,7 @@ The three constraints that ARE binding:
 > ```
 >
 > Twelve live, un-hidden incumbents lose their socket. `demoted` — whose stated purpose at
-> [socket-cap.mjs:222](../../../../ui/src/home/socket-cap.mjs#L222) is *"so the no-auto-demote rule is a
+> [socket-cap.mjs:222](../../../../apps/ui/src/home/socket-cap.mjs#L222) is *"so the no-auto-demote rule is a
 > value a test reads rather than a property it infers: it is empty on every input, **by
 > construction**"* — stays empty **while the demotion happens**, in the same returned object. And
 > each of the twelve is labelled `cause: "hidden"`, which tells the surface **the operator hid a pane
@@ -1264,7 +1264,7 @@ The three constraints that ARE binding:
 > Both of QA's story-02 attribution defects are one shape: `a ? x : b ? y : z`, where `z` is *whatever
 > is left* rather than a case with a precondition. It fabricated `hidden` for twelve capped-out
 > incumbents here, and `at-cap` for a row that carries no address at all
-> ([socket-cap.mjs:206](../../../../ui/src/home/socket-cap.mjs#L206)). **The arbiter states a cause only
+> ([socket-cap.mjs:206](../../../../apps/ui/src/home/socket-cap.mjs#L206)). **The arbiter states a cause only
 > where it can name the input that produced it; every cause it can return has a biconditional
 > precondition assertable from its own arguments; and the last branch of a cause chain is the one that
 > cannot absorb an unclassified case.** A cause is a CLAIM ABOUT AN ACTOR — the operator, the mesh, the
@@ -1394,7 +1394,7 @@ The three constraints that ARE binding:
   is still cheap and still required.
 - **AMENDMENT (1) makes the arbiter stateful in its INPUTS and still pure in its BODY.** The caller
   holds the previous answer and passes it back in — the same shape `applyHostChange(state, change)`
-  already uses ([host-model.mjs:294](../../../../ui/src/terminal/host-model.mjs#L294)) and for the same
+  already uses ([host-model.mjs:294](../../../../apps/ui/src/terminal/host-model.mjs#L294)) and for the same
   reason: a decision that depends on what came before is testable only if what came before is an
   argument. No module-scope `Set`, no `useRef` holding the truth in the `.tsx`.
 
@@ -1427,7 +1427,7 @@ next reader to overwrite `form`, and it must not.** (B) says the grid pane decla
 no gate would catch it, because `affordanceFormViolations`' three clauses police the declared-vs-
 dispatched COST pairing and never the form's identity. **The shipped and PO-ratified spelling is
 `form: FORM_ICON_CONTROL` with the second door BESIDE it as `activation: FORM_PANE_ACTIVATION`**
-([host-model.mjs](../../../../ui/src/terminal/host-model.mjs)'s `GRID_PANE_AFFORDANCES`), which is what
+([host-model.mjs](../../../../apps/ui/src/terminal/host-model.mjs)'s `GRID_PANE_AFFORDANCES`), which is what
 task 00's locked Examples fix and what (B)'s own *"in addition to the icon control … the icon control
 stays"* requires. **Wherever (B) says "form", read: a new VALUE in the closed form vocabulary,
 carried on the entry's `activation` field.** The closure of that vocabulary is at present asserted by
@@ -1448,15 +1448,15 @@ a RETAINED tile does not PRESENT, since the fullscreen door is this surface's on
 **Context.** m46 left this as one word to change. `fleetTerminalMount` says so in terms:
 *"THE POSTURE IS `read-only` AND THERE IS NO PATH TO ANYTHING ELSE IN THIS MILESTONE … Milestone 49
 changes THIS ONE WORD, at THIS ONE CALL SITE, and the control does not change at all"*
-([terminal-mount.mjs:152-157](../../../../ui/src/fleet/terminal-mount.mjs#L152)). And m46 named the
+([terminal-mount.mjs:152-157](../../../../apps/ui/src/fleet/terminal-mount.mjs#L152)). And m46 named the
 thing this milestone would otherwise discover: `SET_POSTURE`'s catalogue entry reads *"stdin is fixed
 at xterm construction — UNREACHABLE in m46, named so m49 does not discover it"*
-([host-model.mjs:287](../../../../ui/src/terminal/host-model.mjs#L287)).
+([host-model.mjs:287](../../../../apps/ui/src/terminal/host-model.mjs#L287)).
 
 **SPEC's read-only fallback is the interesting part, because taken naively it is vacuous.**
 `inputPolicyFor` gives `inputEnabled = source.canInput && !readOnly`
-([input-policy.mjs:84-95](../../../../ui/src/terminal/input-policy.mjs#L84)), and `mirror.canInput` is
-`true` ([source-table.mjs:83](../../../../ui/src/terminal/source-table.mjs#L83)). Under the frozen table
+([input-policy.mjs:84-95](../../../../apps/ui/src/terminal/input-policy.mjs#L84)), and `mirror.canInput` is
+`true` ([source-table.mjs:83](../../../../apps/ui/src/terminal/source-table.mjs#L83)). Under the frozen table
 an interactive mount is ALWAYS typeable — so "a session that cannot accept input" would never occur
 and the fallback would be a branch no test could reach.
 
@@ -1465,9 +1465,9 @@ and the fallback would be a branch no test could reach.
 sessionId, bytes)` → `terminalInputPush` → `createTerminalInputRouter` →
 `dispatchDirective({ to: nodeId })`, which resolves against `directiveTargets` — populated
 **exclusively** by admitted *worker* stream connections
-([control-stream-server.mjs:1177](../../../../src/control-stream-server.mjs#L1177), inside
-`wss.on("connection")` at [:1170](../../../../src/control-stream-server.mjs#L1170), with the
-exclusivity stated at [:944](../../../../src/control-stream-server.mjs#L944)). *(Spike 44 cites `:957`
+([control-stream-server.mjs:1177](../../../../packages/mesh/src/control-stream-server.mjs#L1177), inside
+`wss.on("connection")` at [:1170](../../../../packages/mesh/src/control-stream-server.mjs#L1170), with the
+exclusivity stated at [:944](../../../../packages/mesh/src/control-stream-server.mjs#L944)). *(Spike 44 cites `:957`
 for this; the line has drifted since 2026-08-06 — the fact is unchanged and the pointer is not.)*
 Two outcomes, both silent: on a worker node the directive arrives and the handler's `liveSessionInputs.get(sessionId)`
 returns `undefined` and **drops**
@@ -1477,7 +1477,7 @@ pins that this is a drop and never a redirect); on the control node's own sessio
 
 **So a keystroke into a free session is swallowed at one of two hops, with no error anywhere.** That
 is precisely the failure the posture exists to prevent — *"an operator believing a keystroke reached
-a worker"* ([input-policy.mjs:28-30](../../../../ui/src/terminal/input-policy.mjs#L28)) — and it is
+a worker"* ([input-policy.mjs:28-30](../../../../apps/ui/src/terminal/input-policy.mjs#L28)) — and it is
 exactly SPEC's read-only fallback, made reachable.
 
 **Decision.**
@@ -1520,13 +1520,13 @@ exactly SPEC's read-only fallback, made reachable.
 >
 > **(B) THE PRESENTATION SEAM — a HOST does not ask; the trigger is an additional FORM of an
 > affordance the host already declares.** Measured: the control's props are exactly
-> `{ host, mount, onClose, origins }` ([:172-181](../../../../ui/src/terminal/TerminalControl.tsx#L172))
+> `{ host, mount, onClose, origins }` ([:172-181](../../../../apps/ui/src/terminal/TerminalControl.tsx#L172))
 > and fullscreen is dispatched by the control's own expand button
-> ([TerminalControls.tsx:71-77](../../../../ui/src/terminal/TerminalControls.tsx#L71)), while DG-49-5
+> ([TerminalControls.tsx:71-77](../../../../apps/ui/src/terminal/TerminalControls.tsx#L71)), while DG-49-5
 > rule 3 requires `Enter` on a focused tile and a click into the byte area to present.
 >
 > **A host CANNOT be given the ability to present, and that is not a style objection.** The request
-> carries the **live DOM node** and its `home` ([:625-640](../../../../ui/src/terminal/TerminalControl.tsx#L625));
+> carries the **live DOM node** and its `home` ([:625-640](../../../../apps/ui/src/terminal/TerminalControl.tsx#L625));
 > the shell adopts that exact node and returns it (m46/ADR-009). A host holding the node is the one
 > thing the adoption design forbids. So the trigger stays inside the control — and both of DG-49-5's
 > triggers already are inside it: the byte area is the control's own child, and the tile is the
@@ -1553,8 +1553,8 @@ exactly SPEC's read-only fallback, made reachable.
 > a visible control implies this surface can act is not relaxed by adding a second way in.
 >
 > **(C) `opener` KEEPS ITS NAME; THE CONTROL STOPS LYING ABOUT IT.** Measured: the request is built
-> with `opener: openerRef.current` ([:633](../../../../ui/src/terminal/TerminalControl.tsx#L633)), which
-> is the expand BUTTON ([TerminalControls.tsx:73](../../../../ui/src/terminal/TerminalControls.tsx#L73)),
+> with `opener: openerRef.current` ([:633](../../../../apps/ui/src/terminal/TerminalControl.tsx#L633)), which
+> is the expand BUTTON ([TerminalControls.tsx:73](../../../../apps/ui/src/terminal/TerminalControls.tsx#L73)),
 > while DESIGN §S3 delta 3 requires focus to return to the TILE.
 >
 > **`opener` is exactly the right word and the field is not the bug** — the bug is that the control
@@ -1568,7 +1568,7 @@ exactly SPEC's read-only fallback, made reachable.
 >
 > **AND THE REQUEST GAINS EXACTLY ONE FIELD: where focus lands ON PRESENT** (DESIGN §S3 delta 2), which
 > `terminalFullscreenRequest` carries no equivalent of today
-> ([fullscreen-request.mjs:68-82](../../../../ui/src/terminal/fullscreen-request.mjs#L68)). It is a
+> ([fullscreen-request.mjs:68-82](../../../../apps/ui/src/terminal/fullscreen-request.mjs#L68)). It is a
 > REQUEST field rather than a shell default because **only the request knows whether the occupant
 > claims the keyboard** — `claimsEscape` is already computed right there from `model.inputEnabled`, and
 > the answer follows it: an interactive occupant wants focus in the pane it is about to type into; a
@@ -1578,18 +1578,18 @@ exactly SPEC's read-only fallback, made reachable.
 - **A FOURTH HOST: `export const HOST_GRID_PANE = "grid-pane";`** — the constant NAME and its VALUE
   are the same pairing, because both m46 hosts already are
   (`HOST_BOARD_DOCK = "board-dock"`, `HOST_FLEET_CARD = "fleet-card"`,
-  [host-model.mjs:38-40](../../../../ui/src/terminal/host-model.mjs#L38)) and because DESIGN §S2 fixes
+  [host-model.mjs:38-40](../../../../apps/ui/src/terminal/host-model.mjs#L38)) and because DESIGN §S2 fixes
   the operator-facing name as `grid-pane`. **This corrects a draft name in this ADR's first writing**
   (2026-08-13, raised by the PO; the dead spelling is struck at the `Corrected:` line above and
   nowhere else): the DIRECTORY is `ui/src/home/` and the HOST is
   `grid-pane`, and those are two different things — the folder is where the code lives, the host is
   what the control is told. **Nothing should "fix" the directory to match.** The pairing is worth
   spelling out rather than leaving to a builder because `hostAffordances(host)` **fails closed for an
-  unrecognised host** ([:144-152](../../../../ui/src/terminal/host-model.mjs#L144)): a one-character
+  unrecognised host** ([:144-152](../../../../apps/ui/src/terminal/host-model.mjs#L144)): a one-character
   mismatch between the constant and the string a call site passes produces a pane with **no controls
   at all**, which reads as a rendering bug rather than as a typo, and is one of the few defects in
   this control that no gate would name. It is added to `TERMINAL_HOSTS`
-  ([host-model.mjs:38-41](../../../../ui/src/terminal/host-model.mjs#L38)) with its own affordance
+  ([host-model.mjs:38-41](../../../../apps/ui/src/terminal/host-model.mjs#L38)) with its own affordance
   table. Its eight declarations happen to COINCIDE with the fleet card's today (collapse ✗, close ✗,
   drag-resize ✗, watch/hide ✓, fullscreen ✓, exit-fullscreen ✗, restart ✗, provider-picker ✗) — and
   it is still a fourth host, for a reason that is not the table's contents: because the lookup fails
@@ -1597,7 +1597,7 @@ exactly SPEC's read-only fallback, made reachable.
   is a lie the model would then report onward to `TerminalIdentity`/`TerminalControls`, and the
   *reasons* differ in substance even where the verdicts agree — the fleet card refuses drag-resize
   because *"the panel's total height is a constant 192px"*
-  ([:114](../../../../ui/src/terminal/host-model.mjs#L114)), which is false about a grid tile. **The
+  ([:114](../../../../apps/ui/src/terminal/host-model.mjs#L114)), which is false about a grid tile. **The
   coincidence is PINNED by a fitness function**, so a future divergence is deliberate rather than
   accidental.
 - **THE POSTURE IS INTERACTIVE, AND IT IS A LITERAL AT ONE CALL SITE** —
@@ -1616,7 +1616,7 @@ exactly SPEC's read-only fallback, made reachable.
 - **READ-ONLY MEANS READ-ONLY IN FACT AND IT TRAVELS AS A LABEL.** `disableStdin: true`, NO keystroke
   sink registered at all, no send path named, the `read-only` label mandatory and the cursor
   non-blinking — all of it already computed by `mountModelFor`
-  ([input-policy.mjs:114-141](../../../../ui/src/terminal/input-policy.mjs#L114)). The home consumes it;
+  ([input-policy.mjs:114-141](../../../../apps/ui/src/terminal/input-policy.mjs#L114)). The home consumes it;
   it does not re-derive it. **A half-disabled widget that swallows keystrokes silently is a worse lie
   than no terminal**, and it is the specific lie the two silent-drop hops above would otherwise
   produce.
@@ -1625,7 +1625,7 @@ exactly SPEC's read-only fallback, made reachable.
   hard-coded `openerRef` with the presenting form's own element. Both are decisions moving OUT of the
   `.tsx`, so the file is net-negative and this clause's actual intent is served better than a literal
   reading would have served it.)* No new prop, no new branch, no `SET_POSTURE` dispatch. `posture`
-  is part of the session's identity ([host-model.mjs:233](../../../../ui/src/terminal/host-model.mjs#L233)),
+  is part of the session's identity ([host-model.mjs:233](../../../../apps/ui/src/terminal/host-model.mjs#L233)),
   so a row whose feed axis changes mid-view produces a NEW identity string and the `.tsx`'s existing
   effect re-binds — which is correct and is the mechanism m46 built. `SET_POSTURE` stays unreachable
   from any host; it is not this milestone's door.
@@ -1645,7 +1645,7 @@ exactly SPEC's read-only fallback, made reachable.
   posture exists to prevent, and it is invisible — the operator types an answer into a blocked agent
   and watches nothing happen.
 - **Give `mirror` a per-row `canInput`.** Rejected twice over: `canInput` is a CAPABILITY of the
-  SOURCE and is never a permission ([source-table.mjs:25-28](../../../../ui/src/terminal/source-table.mjs#L25)),
+  SOURCE and is never a permission ([source-table.mjs:25-28](../../../../apps/ui/src/terminal/source-table.mjs#L25)),
   and the frozen table's rows are whole and shared — a per-row override is descriptor assembly, which
   `acd-terminal-control-boundary` fails CI on.
 - **Ask the server whether this tuple is typeable.** Rejected: it is a handshake the frozen envelope
@@ -1743,24 +1743,24 @@ unconstrained.
 >
 > | clause | scope | why |
 > |---|---|---|
-> | `INTERACTIVE_DECLARATION` — *names no interactive posture at all* ([:308](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L308)) | **`ui/src/fleet/**` ONLY** | It is the READ-ONLY surface's clause and it means "this surface has nothing to flip". Generalising it fails **immediately**: `ui/src/board/dock-mount.mjs` names `POSTURE_INTERACTIVE` today ([:27](../../../../ui/src/board/dock-mount.mjs#L27), [:48](../../../../ui/src/board/dock-mount.mjs#L48), [:99](../../../../ui/src/board/dock-mount.mjs#L99)) and `ui/src/home/session-mount.mjs` must too. A clause that forbids the interactive surfaces from naming the interactive posture forbids the milestone. |
+> | `INTERACTIVE_DECLARATION` — *names no interactive posture at all* ([:308](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L308)) | **`ui/src/fleet/**` ONLY** | It is the READ-ONLY surface's clause and it means "this surface has nothing to flip". Generalising it fails **immediately**: `ui/src/board/dock-mount.mjs` names `POSTURE_INTERACTIVE` today ([:27](../../../../apps/ui/src/board/dock-mount.mjs#L27), [:48](../../../../apps/ui/src/board/dock-mount.mjs#L48), [:99](../../../../apps/ui/src/board/dock-mount.mjs#L99)) and `ui/src/home/session-mount.mjs` must too. A clause that forbids the interactive surfaces from naming the interactive posture forbids the milestone. |
 > | **AUTHORSHIP** — `posture:` has ONE author per surface ([:327-328](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L327), [:559-561](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L559)) | **all THREE surface directories** | It is posture-value-blind: it constrains WHO writes the key, not WHICH value. That is exactly why it generalises where the other cannot, and why m46 wrote it — *"the rule is about WHO MAY WRITE THE FIELD, not about which word they write"* ([:323-326](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs#L323)). |
 >
 > **AND THE AUTHORSHIP CLAUSE MUST NOT REACH `ui/src/terminal/**`.** *(Undercounted in this
 > amendment's first writing and corrected 2026-08-13 at the developer's feasibility pass — the case is
 > stronger than I stated, not weaker.)* The core writes a `posture:` key at **seven sites across
 > THREE modules**, not the two in one file I named:
-> - **`input-policy.mjs`** — three ([:48](../../../../ui/src/terminal/input-policy.mjs#L48),
->   [:91](../../../../ui/src/terminal/input-policy.mjs#L91),
->   [:119](../../../../ui/src/terminal/input-policy.mjs#L119)). This is the module that **DEFINES the
+> - **`input-policy.mjs`** — three ([:48](../../../../apps/ui/src/terminal/input-policy.mjs#L48),
+>   [:91](../../../../apps/ui/src/terminal/input-policy.mjs#L91),
+>   [:119](../../../../apps/ui/src/terminal/input-policy.mjs#L119)). This is the module that **DEFINES the
 >   posture vocabulary and computes the policy** — `mountPosture`, `inputPolicyFor`, `mountModelFor`.
 >   It is the last module in the tree that should be forbidden from naming the field.
-> - **`host-model.mjs`** — two ([:215](../../../../ui/src/terminal/host-model.mjs#L215),
->   [:328](../../../../ui/src/terminal/host-model.mjs#L328)): the control-state constructor, and
+> - **`host-model.mjs`** — two ([:215](../../../../apps/ui/src/terminal/host-model.mjs#L215),
+>   [:328](../../../../apps/ui/src/terminal/host-model.mjs#L328)): the control-state constructor, and
 >   `SET_POSTURE`'s transform — the change m46 deliberately left unreachable and named so this
 >   milestone would not discover it.
-> - **`TerminalControl.tsx`** — two ([:284](../../../../ui/src/terminal/TerminalControl.tsx#L284),
->   [:628](../../../../ui/src/terminal/TerminalControl.tsx#L628)), both `posture: mount.posture`, i.e.
+> - **`TerminalControl.tsx`** — two ([:284](../../../../apps/ui/src/terminal/TerminalControl.tsx#L284),
+>   [:628](../../../../apps/ui/src/terminal/TerminalControl.tsx#L628)), both `posture: mount.posture`, i.e.
 >   **read-throughs of a value the mount already decided**.
 >
 > Every one of the seven either DEFINES the vocabulary, transforms state within it, or passes a
@@ -1933,11 +1933,11 @@ the mechanism has a hole in it that a story would otherwise discover at review.
 
 Measured at source:
 
-- **The JS seam** is `fleetCurrentWorkLines` ([runs.mjs:99-107](../../../../ui/src/fleet/runs.mjs#L99)) —
+- **The JS seam** is `fleetCurrentWorkLines` ([runs.mjs:99-107](../../../../apps/ui/src/fleet/runs.mjs#L99)) —
   filter on `workspaceHasRun !== true`, map to `repo`, filter blanks, sort, join. **No dedupe**, by
   m48/ADR-010 R4's explicit HOLD.
 - **The Rust seam** is `session_repos()`
-  ([status.rs:118-128](../../../../app/desktop/crates/core/src/status.rs#L118)) — the same shape,
+  ([status.rs:118-128](../../../../apps/desktop/crates/core/src/status.rs#L118)) — the same shape,
   `repos.sort(); repos`, with a comment stating byte-for-byte agreement with the JS as the
   requirement.
 - **The tie** is `crossSurfaceDriftViolations`
@@ -1946,7 +1946,7 @@ Measured at source:
   it as a quoted literal (escaping `·` as `\u{b7}`, [:170-172](../../../../test/arch/acd-captured-producer-fixture.test.mjs#L170)).
 - **And none of the four fixtures carries two sessions in the SAME repo.** `LIVE_SESSION`,
   `TWO_SESSIONS` (`aof`+`beta`), `TWO_SESSIONS_NON_ALPHA` (`pilot-app-portal`+`aof`),
-  `SESSION_WITH_RUN` ([view_model.rs:506, 636, 784, 846](../../../../app/desktop/crates/core/src/view_model.rs#L506)).
+  `SESSION_WITH_RUN` ([view_model.rs:506, 636, 784, 846](../../../../apps/desktop/crates/core/src/view_model.rs#L506)).
   **So the cross-language gate cannot see a dedupe divergence today.** The gate that WOULD trip,
   deterministically, on a JS-only change is the plain JS pin
   ([mesh-fleet-session-subsumption-render.test.mjs:124-126](../../../../test/mesh-fleet-session-subsumption-render.test.mjs#L124))
@@ -1977,7 +1977,7 @@ Measured at source:
   fixture then fails CI instead of silently returning the gate to toothlessness.
 - **ONE PRE-EXISTING DIVERGENCE IS EXPLICITLY EXCLUDED FROM THIS STORY, named so it is not
   discovered.** `current_work` short-circuits to `Running{...}` when `activeRuns` is non-empty and
-  **never reads sessions at all** ([view_model.rs:200-205](../../../../app/desktop/crates/core/src/view_model.rs#L200)),
+  **never reads sessions at all** ([view_model.rs:200-205](../../../../apps/desktop/crates/core/src/view_model.rs#L200)),
   whereas the JS renders BOTH the `running N runs` line and the `(session)` line. That is a real,
   documented, pre-existing behavioural difference, it is **not** the dedupe question, and fixing it
   inside a dedupe commit puts a behaviour change where nobody is reviewing for one. **Route:
@@ -2034,7 +2034,7 @@ own shipped detector rather than to a new file: THE FORM VOCABULARY MUST BE CLOS
 ADR-007 AMENDMENT (B) rests its entire "no prop, no new mechanism" argument on the sixth form being
 *"one new value in the existing CLOSED `form` vocabulary … policed by a detector that already
 exists"*. Measured at delivery: `AFFORDANCE_FORMS` ships exported from
-[host-model.mjs](../../../../ui/src/terminal/host-model.mjs) and is referenced by **nothing** in the
+[host-model.mjs](../../../../apps/ui/src/terminal/host-model.mjs) and is referenced by **nothing** in the
 tree — not `affordanceFormViolations`, not a suite, not a component — and the detector's three
 clauses key on `FORM_CHEVRON`/`FORM_WORDED_TOGGLE` and on declared-vs-dispatched cost, so
 `{ form: "double-click", activation: "hold-meta" }` yields **zero violations**. The vocabulary is
@@ -2056,12 +2056,12 @@ the closure is a review obligation, and that is exactly the state this section e
 | [`acd-captured-producer-fixture`](../../../../test/arch/acd-captured-producer-fixture.test.mjs) *(amended)* | **ADR-010** — a non-vacuity clause: **at least one captured fixture carries two live sessions in one repo**, so `crossSurfaceDriftViolations` has teeth on the dedupe rule at all | **RED at refine** — no such fixture exists today, which is the finding |
 | **`acd-ui-directory-budget`** *(new)* | **§Codebase health finding 1** — TECH_DEBT 28 fix (b) / 33 fix (b): a NAMED, explicit list of `ui/src/*` top-level directories (a 9th is a decision, not a diff) plus a per-directory FILE-COUNT ceiling set just above delivered, in the same table shape `acd-ui-surface-file-budget`'s `BUDGETS` uses. Six per-file ceilings cannot see a tree that grows by adding files, and three consecutive milestones have grown it that way | **RED on arrival by design** — it is authored against the delivered tree, so it is green the moment its table is filled in, and it is what makes the 9th directory a conversation |
 
-| **`acd-motion-has-an-escape`** *(new, the NINTH — added 2026-08-13 at the PO's story-06 ruling)* | **DG-49-6** — **every `animate-*` utility EMITTED anywhere under `ui/src/**` is named in `ui/src/index.css`'s `@media (prefers-reduced-motion: reduce)` block.** A set-containment assertion, not a word search, and the source is **comment-stripped LINE-FIRST** (TECH_DEBT 24) because that is what makes it honest here specifically — see the trap below | **RED at refine.** Measured: the escape block names `.aof-pending` alone ([index.css:112-116](../../../../ui/src/index.css#L112)) against **twelve** emitted `animate-pulse` sites, so the gate is red on arrival and its redness is the finding |
+| **`acd-motion-has-an-escape`** *(new, the NINTH — added 2026-08-13 at the PO's story-06 ruling)* | **DG-49-6** — **every `animate-*` utility EMITTED anywhere under `ui/src/**` is named in `ui/src/index.css`'s `@media (prefers-reduced-motion: reduce)` block.** A set-containment assertion, not a word search, and the source is **comment-stripped LINE-FIRST** (TECH_DEBT 24) because that is what makes it honest here specifically — see the trap below | **RED at refine.** Measured: the escape block names `.aof-pending` alone ([index.css:112-116](../../../../apps/ui/src/index.css#L112)) against **twelve** emitted `animate-pulse` sites, so the gate is red on arrival and its redness is the finding |
 
 **THE TRAP THIS NINTH GATE EXISTS TO WALK PAST, measured by QA and worth stating because it inverts
 the obvious design.** A naive `prefers-reduced-motion` sweep of `ui/src/terminal/palette.mjs` is
 **GREEN today** — the string is present, in a **comment that is false**:
-[palette.mjs:186](../../../../ui/src/terminal/palette.mjs#L186) claims *"Both pulses honour
+[palette.mjs:186](../../../../apps/ui/src/terminal/palette.mjs#L186) claims *"Both pulses honour
 `prefers-reduced-motion` through the existing scoping convention in `ui/src/index.css`"*, and
 `index.css`'s only such rule names `.aof-pending`. So the naive gate would certify the exact defect
 it was written for, out of a sentence. Two consequences, both binding: **the detector reads
@@ -2104,7 +2104,7 @@ before asserting the detector fires, and each detector is also shown QUIET on a 
 detector only ever shown to stay quiet is one mutation from asserting nothing** — m46 found exactly
 that in `affordanceFormViolations`, where the one plant was fed to a locally re-implemented copy so
 the SHIPPED detector was never once driven to a violation
-([host-model.mjs:168-174](../../../../ui/src/terminal/host-model.mjs#L168)). Every plant below is fed to
+([host-model.mjs:168-174](../../../../apps/ui/src/terminal/host-model.mjs#L168)). Every plant below is fed to
 the SHIPPED function.
 
 - **invariant 4 (amended)** — a home module writing `posture:` at a render site;
@@ -2147,7 +2147,7 @@ the SHIPPED function.
   reduced-motion block names only `animate-pulse`. **NOT a missing-word plant:** the companion plant
   is a file whose ONLY occurrence of `prefers-reduced-motion` is inside a comment, which must NOT
   satisfy the gate — that is the live defect at
-  [palette.mjs:186](../../../../ui/src/terminal/palette.mjs#L186) and the reason the detector strips
+  [palette.mjs:186](../../../../apps/ui/src/terminal/palette.mjs#L186) and the reason the detector strips
   comments line-first. Both plants are required; the second is the one that proves the gate is
   measuring the mechanism rather than the prose.
 
@@ -2251,8 +2251,8 @@ Seven findings, each routed.
    m49 would be it.** DG-46-3 ruled the state *"built in m46 with no producer until m49"*; ADR-002
    rules `local-pty` out, and the home is served from the fleet origin, so `origins.fleet` always
    resolves. The state, its three frozen causes
-   ([state-ramp.mjs:105-113](../../../../ui/src/terminal/state-ramp.mjs#L105)), its copy table
-   ([:458-482](../../../../ui/src/terminal/state-ramp.mjs#L458)), its `UNAVAILABLE_UNNAMED` fallback and
+   ([state-ramp.mjs:105-113](../../../../apps/ui/src/terminal/state-ramp.mjs#L105)), its copy table
+   ([:458-482](../../../../apps/ui/src/terminal/state-ramp.mjs#L458)), its `UNAVAILABLE_UNNAMED` fallback and
    its whole `PANE_UNAVAILABLE_BLOCK` treatment are a rendering path nothing in production can reach.
    That is m46/ADR-007's own diagnosis one layer over — *"a fitness function whose subject has no
    production caller is not a weak gate, it is a FALSE one"* — applied to a UI state rather than to a
@@ -2278,8 +2278,8 @@ Seven findings, each routed.
 
 5. **The JS and Rust current-work implementations diverge on a branch the cross-surface gate cannot
    see.** `current_work` short-circuits to `Running{...}` on non-empty `activeRuns` and never reads
-   sessions ([view_model.rs:200-205](../../../../app/desktop/crates/core/src/view_model.rs#L200));
-   `fleetCurrentWorkLines` renders BOTH lines ([runs.mjs:80-107](../../../../ui/src/fleet/runs.mjs#L80)).
+   sessions ([view_model.rs:200-205](../../../../apps/desktop/crates/core/src/view_model.rs#L200));
+   `fleetCurrentWorkLines` renders BOTH lines ([runs.mjs:80-107](../../../../apps/ui/src/fleet/runs.mjs#L80)).
    And `crossSurfaceDriftViolations` asserts the Rust **source text** contains the JS-rendered
    literal, not that the Rust **function returns** it — so a source file that merely mentions a string
    satisfies it. **Route: TECH_DEBT (new entry), paste-ready:**
@@ -2304,12 +2304,12 @@ Seven findings, each routed.
    is the useful part.** QA raised that making `/` a routed surface makes the shell's mounting
    shimmer reachable at `/` for the first time. **Measured, it does not: `STATE_MOUNTING` is
    unreachable in production TODAY, at every route.** `contentStateFor` enters it only when
-   `surfaceLoaded === false` ([shell-layout.mjs:690-697](../../../../ui/src/app/shell-layout.mjs#L690));
+   `surfaceLoaded === false` ([shell-layout.mjs:690-697](../../../../apps/ui/src/app/shell-layout.mjs#L690));
    `surfaceLoaded` is a `Shell` prop defaulting to `true`
-   ([Shell.tsx:125](../../../../ui/src/app/Shell.tsx#L125)); and `ui/src/main.tsx` **never passes it**,
+   ([Shell.tsx:125](../../../../apps/ui/src/app/Shell.tsx#L125)); and `ui/src/main.tsx` **never passes it**,
    because every surface is imported eagerly and mounted synchronously — there is no `lazy`, no
    code-split chunk, nothing that can be un-loaded. So `MountPlaceholder`
-   ([Shell.tsx:593-598](../../../../ui/src/app/Shell.tsx#L593)) and its two `animate-pulse` skeletons are
+   ([Shell.tsx:593-598](../../../../apps/ui/src/app/Shell.tsx#L593)) and its two `animate-pulse` skeletons are
    reachable only from a harness that passes `surfaceLoaded: false`. **ADR-001 does not change that**
    — adding `landing` to `SURFACES` makes the route *eligible* for a state nothing can enter.
    **Route: two parts, deliberately split.** (a) **Ruled here, structurally:** the shimmer's
@@ -2502,7 +2502,7 @@ its own component, the two mount modules and their tests.
   dangerous.
 - **The fourth host + the pane's posture derivation** (ADR-007). A host with no mount is an
   unreachable table; a mount naming an unknown host **fails closed to no affordances**
-  ([host-model.mjs:144-152](../../../../ui/src/terminal/host-model.mjs#L144)) — a pane with no controls
+  ([host-model.mjs:144-152](../../../../apps/ui/src/terminal/host-model.mjs#L144)) — a pane with no controls
   at all, which reads as a rendering bug rather than as a missing table.
 
 **The one cross-story dependency to watch:** everything in `ui/src/home/` waits on the home's `.mjs`

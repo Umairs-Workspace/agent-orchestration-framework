@@ -19,7 +19,7 @@ reads:
   - src/mesh/worker-execution.mjs
   - src/workspace.mjs
   - src/fs.mjs
-  - test/run/run-node-partition.test.mjs
+  - packages/execution/test/run-node-partition.suite.mjs
   - test/arch/work/acd-no-internal-project-names.test.mjs
   - .claude/rules/build-deploy-restart.md
 files:

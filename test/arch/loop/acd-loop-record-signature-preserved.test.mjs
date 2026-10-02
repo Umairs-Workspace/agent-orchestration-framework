@@ -1,3 +1,5 @@
+import * as _aofPublic_aof_work_graph_commands_loop_record from "@aof/work-graph/commands/loop-record";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7804 (78/ADR-002) — A SIGNED SIGN-OFF ROW SURVIVES REGENERATION VERBATIM; EVERY OTHER LINE IS
 // RE-DERIVED.
 //
@@ -22,15 +24,13 @@
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 
-import {
-  SIGNOFF_DIVIDER,
-  SIGNOFF_HEADER,
-  SIGNOFF_HEADING,
-  SIGNOFF_PLACEHOLDER,
-  composeSignoffBlock,
-  loopRecordCommand,
-  parseSignoffRows,
-} from "../../../src/commands/loop-record.mjs";
+const SIGNOFF_DIVIDER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_DIVIDER;
+const SIGNOFF_HEADER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_HEADER;
+const SIGNOFF_HEADING = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_HEADING;
+const SIGNOFF_PLACEHOLDER = _aofPublic_aof_work_graph_commands_loop_record.SIGNOFF_PLACEHOLDER;
+const composeSignoffBlock = _aofPublic_aof_work_graph_commands_loop_record.composeSignoffBlock;
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
+const parseSignoffRows = _aofPublic_aof_work_graph_commands_loop_record.parseSignoffRows;
 import {
   ENGAGED_RUNS,
   ITEM_REF,

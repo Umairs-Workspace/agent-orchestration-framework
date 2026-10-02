@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # One job per OS/arch leg. Each: checkout -> Node 22 -> npm ci -> build ui ->
+  # One job per OS/arch leg. Each: checkout -> Node 22 -> Yarn immutable install -> build ui ->
   # Story 00's build-sea.mjs (esbuild -> blob -> POSTJECT INJECT) -> stage the
   # PINNED asset/sidecar names -> sign (per-OS) -> upload the leg's artifacts.
   # ---------------------------------------------------------------------------
@@ -70,17 +70,23 @@ jobs:
         with:
           node-version: "22"
 
-      - name: npm ci
-        run: npm ci
+      - name: Yarn immutable install
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: build ui
-        run: npm run ui:build
+        run: node scripts/ui-build.mjs
 
       - name: Build self-contained binary (Story 00 recipe — includes postject injection)
         run: node scripts/build-sea.mjs --out dist-sea
 
       - name: Stage pinned asset + sidecar names
         run: node scripts/release/stage-release-assets.mjs --sea-out dist-sea --stage-dir stage --os macos --arch ${{ matrix.arch }}
+
+      - name: Verify extracted release (assets, UI, audit children and real PTY)
+        run: node scripts/release/verify-distribution.mjs --stage-dir stage --os macos --arch ${{ matrix.arch }}
 
       # --- Sign runs AFTER the build step above (postject already ran) ---
       - name: Sign (codesign --options runtime --timestamp -> notarytool submit --wait -> stapler staple)
@@ -135,17 +141,23 @@ jobs:
         with:
           node-version: "22"
 
-      - name: npm ci
-        run: npm ci
+      - name: Yarn immutable install
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: build ui
-        run: npm run ui:build
+        run: node scripts/ui-build.mjs
 
       - name: Build self-contained binary (Story 00 recipe)
         run: node scripts/build-sea.mjs --out dist-sea
 
       - name: Stage pinned asset + sidecar names
         run: node scripts/release/stage-release-assets.mjs --sea-out dist-sea --stage-dir stage --os windows --arch ${{ matrix.arch }}
+
+      - name: Verify extracted release (assets, UI, audit children and real PTY)
+        run: node scripts/release/verify-distribution.mjs --stage-dir stage --os windows --arch ${{ matrix.arch }}
 
       - name: Sign (AzureSignTool — HSM/cloud OV/EV cert, CA/B June-2023 rule; no file .pfx)
         env:
@@ -190,9 +202,8 @@ jobs:
         with:
           node-version: "22"
 
-      # No linux-* node-pty prebuild is shipped (RESEARCH §2) — a plain
-      # `npm ci` falls through node-pty's own install script to `node-gyp
-      # rebuild`, compiling the .node from source on THIS runner. A C++
+      # No linux-* node-pty prebuild is shipped. Preparation skips lifecycle
+      # scripts; the reviewed explicit rebuild below compiles on THIS runner. A C++
       # toolchain (build-essential/python3) ships on ubuntu-latest /
       # ubuntu-24.04-arm images by default; make it explicit rather than
       # relying on an unstated image default.
@@ -201,11 +212,17 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential python3
 
-      - name: npm ci (compiles node-pty from source — no linux-* prebuild is shipped)
-        run: npm ci
+      - name: Yarn immutable install (lifecycle scripts skipped)
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Build reviewed native dependency (ordinary preparation skips lifecycle scripts)
+        run: node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
+
+      - name: Audit dependencies
+        run: node scripts/supply-chain-audit.mjs
 
       - name: build ui
-        run: npm run ui:build
+        run: node scripts/ui-build.mjs
 
       # Stage the freshly-compiled .node into the prebuilds/linux-<arch>/
       # shape Story 00's build-sea.mjs expects (it does not itself compile —
@@ -232,6 +249,9 @@ jobs:
 
       - name: Stage pinned asset + sidecar names
         run: node scripts/release/stage-release-assets.mjs --sea-out dist-sea --stage-dir stage --os linux --arch ${{ matrix.arch }}
+
+      - name: Verify extracted release (assets, UI, audit children and real PTY)
+        run: node scripts/release/verify-distribution.mjs --stage-dir stage --os linux --arch ${{ matrix.arch }}
 
       - uses: actions/upload-artifact@v4
         with:

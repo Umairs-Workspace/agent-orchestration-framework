@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-leaf-per-session (milestone 48 / ADR-002 + ADR-010 R1,
 // fitness #2) — "one live session, one record; an `end` cannot kill a sibling."
 //
@@ -24,7 +27,7 @@
 //  1. STRUCTURAL — the leaf composition carries FOUR `~`-joined segments and routes
 //     the fourth through the escaping `sessionSegment`; an anonymous key composes the
 //     trailing-`~` empty segment.
-//  2. STRUCTURAL — the key travels as ONE object: every `src/` call site of
+//  2. STRUCTURAL — the key travels as ONE object: every `packages/core/src/` call site of
 //     sessionRecordPath / readSessionRecord / startSession / pingSession / endSession
 //     passes the key as an object literal or identifier in the SECOND position, never
 //     as a spread of positional components.
@@ -42,18 +45,21 @@
 //  trip the SAME assertion the real code passes.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, unlink, stat } from "node:fs/promises";
-import { readdirSync, statSync } from "node:fs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startSession, endSession, readSessionRecord, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const startSession = _aofHooks.meshSession.startSession;
+const endSession = _aofHooks.meshSession.endSession;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
-const sessionSourcePath = path.join(srcRoot, "mesh/session.mjs");
-const commandSourcePath = path.join(srcRoot, "commands", "mesh", "session.mjs");
+const srcRoot = path.join(repoRoot, "packages", "core", "src");
+const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
+const commandSourcePath = path.join(repoRoot, "packages/mesh/src/commands/session.mjs");
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";
@@ -139,7 +145,7 @@ function callArgumentLists(code, fnName) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). Proof 2 sweeps ALL of
-// `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
+// `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
 // the source it was meant to read — item 24's named "silent false GREEN" shape. The
 // anchor is each module's OWN exported symbol names: a name a module `export`s at line
 // start is code by construction, so if it does not survive `stripComments` then the
@@ -188,14 +194,6 @@ function keyAsOneObjectViolations(code, label) {
   return problems;
 }
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const entry = path.join(dir, name);
-    if (statSync(entry).isDirectory()) walk(entry, out);
-    else if (name.endsWith(".mjs")) out.push(entry);
-  }
-  return out;
-}
 
 async function makeFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-acd-session-leaf-per-session-"));
@@ -233,7 +231,7 @@ export const archTests = [
     name: "arch/48 ADR-002 (acd-session-leaf-per-session): STRUCTURAL — every src/ call site passes the key as ONE object, never as positional components (and the sweep says how many sites it ruled on)",
     run: async () => {
       const corpus = [];
-      for (const file of walk(srcRoot)) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         corpus.push([path.relative(repoRoot, file).split(path.sep).join("/"), normalise(await readFile(file, "utf8"))]);
       }
       assert.ok(corpus.length > 50, `the scan really walked src/ (found ${corpus.length} modules)`);
@@ -363,7 +361,7 @@ export const archTests = [
       // the SAME per-file path the sweep uses — a hand-typed string would only prove
       // that the regex fires, not that the walk reads the tree.
       const realCaller = await readFile(commandSourcePath, "utf8");
-      assert.deepEqual(keyAsOneObjectViolations(normalise(realCaller), "src/commands/mesh/session.mjs"), [], "the real caller passes the one-object detector");
+      assert.deepEqual(keyAsOneObjectViolations(normalise(realCaller), "packages/mesh/src/commands/session.mjs"), [], "the real caller passes the one-object detector");
       const callerSites = keyedCallSitesByVerb(normalise(realCaller));
       assert.ok(
         Object.values(callerSites).some((count) => count > 0),
@@ -375,7 +373,7 @@ export const archTests = [
         "const record = await startSession(ws, { nodeId, workspaceId, repo, assistant, sessionId, now });",
         "const record = await startSession(ws, nodeId, workspaceId, assistant, sessionId);",
       );
-      const positional = keyAsOneObjectViolations(plantedCall, "src/commands/mesh/session.mjs");
+      const positional = keyAsOneObjectViolations(plantedCall, "packages/mesh/src/commands/session.mjs");
       assert.ok(positional.length > 0, `a 5-positional call site planted into the REAL caller trips the one-object detector (got ${JSON.stringify(positional)})`);
       assert.ok(positional.some((problem) => problem.includes("ONE object")), "…naming the rule it breaks");
 
@@ -386,7 +384,7 @@ export const archTests = [
         'await endSession(ws, "node-a", workspaceId, assistant, sessionId);',
       );
       assert.ok(
-        keyAsOneObjectViolations(plantedString, "src/commands/mesh/session.mjs").some((problem) => problem.includes("positional key component")),
+        keyAsOneObjectViolations(plantedString, "packages/mesh/src/commands/session.mjs").some((problem) => problem.includes("positional key component")),
         "a positional STRING key component planted into the real caller trips the detector too",
       );
 

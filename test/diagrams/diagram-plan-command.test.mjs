@@ -9,10 +9,10 @@ import { mkdir, mkdtemp, readdir, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { generatorIds } from "../../src/diagrams/generators.mjs";
+import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const ID = generatorIds()[0];
 
 const ARCHITECTURE = [

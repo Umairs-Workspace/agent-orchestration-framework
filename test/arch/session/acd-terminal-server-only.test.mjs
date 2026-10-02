@@ -1,14 +1,14 @@
 // Fitness function for milestone 03 / ADR-003:
 // "The PTY/terminal native stack is confined to the SERVER — node-pty (and ws)
-//  are dependencies of the ROOT package.json (never ui/package.json), and no
-//  import/require of node-pty appears under ui/src/; the browser terminal imports
+//  are dependencies of the ROOT package.json (never apps/ui/package.json), and no
+//  import/require of node-pty appears under apps/ui/src/; the browser terminal imports
 //  only @xterm/*."
 //
 // AMENDED BY MILESTONE 46 / STORY 04 (ADR-001 + ADR-006): the third clause STOPS HARD-CODING A
-// PATH AND DISCOVERS ONE. It used to read `ui/src/board/TerminalDock.tsx` by name — which was
+// PATH AND DISCOVERS ONE. It used to read `apps/ui/src/board/TerminalDock.tsx` by name — which was
 // two things at once, a file list to maintain and, once a SECOND `new Terminal(` site appeared
-// in `ui/src/fleet/terminal-view/`, a rule that policed one of them and said nothing about the
-// other. It now sweeps `ui/src` for construction sites, asserts there is EXACTLY ONE, and
+// in `apps/ui/src/fleet/terminal-view/`, a rule that policed one of them and said nothing about the
+// other. It now sweeps `apps/ui/src` for construction sites, asserts there is EXACTLY ONE, and
 // applies the `@xterm/*`-only rule to the site it FINDS.
 //
 // THAT SINGLE-SITE CLAUSE IS THIS MILESTONE'S HEADLINE, EXPRESSED STRUCTURALLY, and it cannot be
@@ -20,7 +20,7 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments, stripperSelfCheck } from "../../support/terminal-gate-detectors.mjs";
+import { stripComments, stripperSelfCheck } from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -50,24 +50,24 @@ async function collectFiles(dir, exts) {
 
 export const archTests = [
   {
-    name: "arch/ADR-003: node-pty and ws are ROOT dependencies, not ui/ dependencies",
+    name: "arch/ADR-003: native terminal and WebSocket dependencies belong to runtime owners",
     run: async () => {
-      const root = await readJson("package.json");
-      const ui = await readJson("ui/package.json");
-      const rootDeps = { ...root.dependencies, ...root.devDependencies };
+      const execution = await readJson("packages/execution/package.json");
+      const server = await readJson("packages/server/package.json");
+      const ui = await readJson("apps/ui/package.json");
       const uiDeps = { ...ui.dependencies, ...ui.devDependencies };
 
-      assert.ok(rootDeps["node-pty"], "root package.json depends on node-pty");
-      assert.ok(rootDeps["ws"], "root package.json depends on ws");
-      assert.ok(!uiDeps["node-pty"], "ui/package.json does NOT depend on node-pty");
-      assert.ok(!uiDeps["ws"], "ui/package.json does NOT depend on ws");
+      assert.ok(execution.dependencies["node-pty"], "execution owns the native terminal runtime");
+      assert.ok(server.dependencies["ws"], "server owns the WebSocket runtime");
+      assert.ok(!uiDeps["node-pty"], "apps/ui/package.json does NOT depend on node-pty");
+      assert.ok(!uiDeps["ws"], "apps/ui/package.json does NOT depend on ws");
     },
   },
   {
-    name: "arch/ADR-003: no node-pty import/require anywhere under ui/src",
+    name: "arch/ADR-003: no node-pty import/require anywhere under apps/ui/src",
     run: async () => {
-      const files = await collectFiles(path.join(repoRoot, "ui", "src"), [".ts", ".tsx", ".js", ".jsx", ".mjs"]);
-      assert.ok(files.length > 0, "found ui/src source files to scan");
+      const files = await collectFiles(path.join(repoRoot, "apps", "ui", "src"), [".ts", ".tsx", ".js", ".jsx", ".mjs"]);
+      assert.ok(files.length > 0, "found apps/ui/src source files to scan");
       const offenders = [];
       for (const file of files) {
         const text = await readFile(file, "utf8");
@@ -75,17 +75,17 @@ export const archTests = [
           offenders.push(path.relative(repoRoot, file));
         }
       }
-      assert.deepEqual(offenders, [], "no ui/src file references node-pty");
+      assert.deepEqual(offenders, [], "no apps/ui/src file references node-pty");
     },
   },
   {
-    name: "arch/03 ADR-003 + 46 ADR-001 (acd-terminal-server-only): EXACTLY ONE `new Terminal(` construction site exists under ui/src, and it is DISCOVERED rather than named — the browser terminal imports only @xterm/* for the terminal engine",
+    name: "arch/03 ADR-003 + 46 ADR-001 (acd-terminal-server-only): EXACTLY ONE `new Terminal(` construction site exists under apps/ui/src, and it is DISCOVERED rather than named — the browser terminal imports only @xterm/* for the terminal engine",
     run: async () => {
       // The stripper first: this clause is a COUNT, and a blinded stripper would count zero and
       // report the browser terminal missing rather than report a second one (TECH_DEBT item 24).
       assert.deepEqual(stripperSelfCheck(), [], "the shared stripper is line-comments-first — the other order eats the file and this sweep would find no site at all");
-      const files = await collectFiles(path.join(repoRoot, "ui", "src"), [".ts", ".tsx", ".js", ".jsx", ".mjs"]);
-      assert.ok(files.length > 30, `ui/src was actually read (non-vacuous): ${files.length} files`);
+      const files = await collectFiles(path.join(repoRoot, "apps", "ui", "src"), [".ts", ".tsx", ".js", ".jsx", ".mjs"]);
+      assert.ok(files.length > 30, `apps/ui/src was actually read (non-vacuous): ${files.length} files`);
 
       // The sweep. `new Terminal(` is the construction site; nothing else in this tree spells it.
       //
@@ -102,7 +102,7 @@ export const archTests = [
       assert.deepEqual(
         sites.length,
         1,
-        `EXACTLY ONE terminal is constructed under ui/src; found ${sites.length}: ${sites.join(", ") || "(none)"}. Two construction sites is two implementations behind one name — and the two this milestone deleted had ALREADY drifted by one addon (the board dock loaded WebLinksAddon and the fleet peek did not), which is what drift looks like before anyone notices. ZERO is not a pass either: the browser terminal must still exist.`,
+        `EXACTLY ONE terminal is constructed under apps/ui/src; found ${sites.length}: ${sites.join(", ") || "(none)"}. Two construction sites is two implementations behind one name — and the two this milestone deleted had ALREADY drifted by one addon (the board dock loaded WebLinksAddon and the fleet peek did not), which is what drift looks like before anyone notices. ZERO is not a pass either: the browser terminal must still exist.`,
       );
 
       // The `@xterm/*`-only rule now applies to the site the sweep FOUND.

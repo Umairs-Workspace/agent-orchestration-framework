@@ -34,7 +34,7 @@ so that I get the token savings the plugin promises without the terminal ever br
 ## Notes
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md). This story **owns**: the single new
-call site in `handleConnection` ([src/terminal-ws.mjs](../../../../../../src/terminal-ws.mjs)) — between
+call site in `handleConnection` ([src/terminal-ws.mjs](../../../../../../packages/server/src/terminal-ws.mjs)) — between
 the provider's `buildArgs()` / `resolveBinaryPath()` and `spawn(...)` — passing `config.work?.headroom`
 (config is already in scope there via `loadWorkspace(projectDir)`). It builds `resolveHeadroomLaunch`'s
 caller; the resolver itself is story 00's.

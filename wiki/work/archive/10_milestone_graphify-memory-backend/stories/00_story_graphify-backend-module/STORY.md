@@ -53,7 +53,7 @@ git-ignored `graphify-out/`, **ADR-006** work-stream-only scope). This story **o
 `graphify` line in `$defs/memory.backend` ([schemas/aof.schema.json](../../../../../../schemas/aof.schema.json))
 and in `BACKEND_REGISTRY` ([src/work-memory.mjs](../../../../../../src/work-memory.mjs)); `reindex`
 rebuilding the 05 records (REUSING `buildRecords`/`parseRetrospective`/`parseArchitecture` from
-[src/memory/local-indexing.mjs](../../../../../../src/memory/local-indexing.mjs)) **and** (re)building the
+[src/memory/local-indexing.mjs](../../../../../../packages/knowledge/src/memory/local-indexing.mjs)) **and** (re)building the
 graph via `invoke("graph:build", { path: workDir, backend }, { workspace })` over the work stream
 (ADR-002/006); the **seam-bridge** that constructs the `{workspace}` ctx from the memory
 `ctx = {workDir, projectRoot, configMemory}`; and the git-ignored `graphify-out/` discipline (ADR-005). It

@@ -285,8 +285,8 @@ DIFFERENCE is the binding fact**: 0.07 × 408 = 28.6px ≈ the bar's height — 
 ## 3 · The state table — all seven states plus `unknown`, three ways
 
 Cross-checked against the mock's `renderVals()` `S` table, [DESIGN §The merged ramp](../DESIGN.md), and
-the shipped [`ui/src/terminal/state-ramp.mjs`](../../../../../ui/src/terminal/state-ramp.mjs) +
-[`palette.mjs`](../../../../../ui/src/terminal/palette.mjs).
+the shipped [`ui/src/terminal/state-ramp.mjs`](../../../../../apps/ui/src/terminal/state-ramp.mjs) +
+[`palette.mjs`](../../../../../apps/ui/src/terminal/palette.mjs).
 
 | State | Chip label | Dot fill / border | Word colour | Motion | Pane |
 |---|---|---|---|---|---|
@@ -354,7 +354,7 @@ distinction `connecting` vs `waiting` was created to carry.
 **The trap this ruling avoided, recorded because it is the kind that ships silently.**
 `describeTerminalState` honours an injected `reason` **only on `waiting`** — and when it does, it *also*
 rewrites the chip word to `no live output`
-([`state-ramp.mjs:461-469`](../../../../../ui/src/terminal/state-ramp.mjs#L461)):
+([`state-ramp.mjs:461-469`](../../../../../apps/ui/src/terminal/state-ramp.mjs#L461)):
 
 ```js
 if (descriptor.state === TERMINAL_STATES.WAITING) {
@@ -467,7 +467,7 @@ render is correct against the mock; the question is whether the mock's value sho
 
 ### 4b · `geometry.mjs` CAN already express it — derive, never hard-code
 
-**Yes.** [`terminalFitScale`](../../../../../ui/src/terminal/geometry.mjs#L118) is a **pure function of the
+**Yes.** [`terminalFitScale`](../../../../../apps/ui/src/terminal/geometry.mjs#L118) is a **pure function of the
 measured box**:
 
 ```js
@@ -475,7 +475,7 @@ terminalFitScale({ intrinsicWidth, intrinsicHeight, boxWidth, boxHeight })
   // → Math.min(boxWidth / intrinsicWidth, boxHeight / intrinsicHeight)
 ```
 
-and [`geometryPlanFor(source, box)`](../../../../../ui/src/terminal/geometry.mjs#L137) passes
+and [`geometryPlanFor(source, box)`](../../../../../apps/ui/src/terminal/geometry.mjs#L137) passes
 `box.boxWidth` / `box.boxHeight` straight through to it. **No new function is needed and no module change
 is required.** The module's own header already states the contract that makes this work: *"The module
 invents no intrinsic size of its own — the caller measures and hands it in."*

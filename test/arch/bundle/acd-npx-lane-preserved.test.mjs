@@ -6,13 +6,13 @@
 //  [`npx`, pkg, runtimeFlag, scopeFlag]."
 //
 // This is GREEN NOW (frameworks.mjs is intact) and must STAY green — the registry
-// re-homes the npx lane, it does NOT rewrite it. The existing test/work/frameworks.test.mjs
+// re-homes the npx lane, it does NOT rewrite it. The existing packages/core/test/frameworks.suite.mjs
 // is the byte-for-byte net (noted below); this adds a focused structural +
 // behavioural guard so a frameworks.mjs edit that drops an export or changes the
 // argv shape fails HERE too.
 //
 // Two proofs:
-//   (a) SOURCE-GREP src/frameworks.mjs (comments discounted): planFrameworkInstall,
+//   (a) SOURCE-GREP packages/core/src/frameworks.mjs (comments discounted): planFrameworkInstall,
 //       executeFrameworkInstallPlan, frameworkPlanFromLock, SAFE_NPM_EXEC_ENV are
 //       still present/exported, and the npx argv shape `argv = ["npx", ...]` is
 //       intact (the `["npx",` literal present, with runtimeFlag + scopeFlag).
@@ -28,10 +28,10 @@ import {
   planFrameworkInstall,
   executeFrameworkInstallPlan,
   frameworkPlanFromLock,
-} from "../../../src/frameworks.mjs";
+} from "../../../packages/core/src/frameworks.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FRAMEWORKS = path.join(repoRoot, "src", "frameworks.mjs");
+const FRAMEWORKS = path.join(repoRoot, "packages", "core", "src", "frameworks.mjs");
 
 // Strip ONLY comments (keep string literals) — the `export`/argv-literal/SAFE env
 // key tokens we assert are live code or string literals we WANT to see.
@@ -124,7 +124,7 @@ export const archTests = [
 
       // executeFrameworkInstallPlan is the spawner the lane delegates to — assert
       // it is a function (its byte-for-byte behaviour is covered by the existing
-      // test/work/frameworks.test.mjs net; here we confirm the symbol is intact).
+      // packages/core/test/frameworks.suite.mjs net; here we confirm the symbol is intact).
       assert.equal(typeof executeFrameworkInstallPlan, "function", "executeFrameworkInstallPlan is exported and callable");
     },
   },

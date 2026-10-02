@@ -6,7 +6,7 @@
 //    build boundary, and it is not justified by a browser limit."
 //
 // ── THE CROSS-BUILD TIE, AND WHY IT IS A GATE RATHER THAN AN IMPORT ──────────────────────
-// `ui/src/**` is bundled by vite for a browser and `src/**` runs under node; there is no
+// `apps/ui/src/**` is bundled by vite for a browser and `packages/core/src/**` runs under node; there is no
 // runtime at which one reads the other's constant. The only place the pair can be compared is a
 // test that reads BOTH FILES AS TEXT — the technique `acd-terminal-mirror-geometry-pinned`
 // invented for exactly this class of pair (extract each side's literal, assert the consumer
@@ -34,13 +34,13 @@
 // The VALUE 16 and its argument are ADR-006's; this gate pins that the number is an argument,
 // lives in one place, and is tied to `MAX_TAIL_KEYS`. It does not re-argue the number. The
 // arbiter's BEHAVIOUR — the no-demote invariant, the fail-closed cap, the two held frames — is
-// driven exhaustively in `test/ui/home-socket-cap-arbiter.test.mjs` against this same module.
+// driven exhaustively in `test/surfaces/home-socket-cap-arbiter.test.mjs` against this same module.
 //
 // AND ITS SECOND-COPY SWEEP HAS A DECLARED LIMIT, stated so a reader meets the boundary rather
 // than assumes there is none: it catches the number re-typed as a SLICE BOUND (`.slice(0, 16)`)
 // or a LENGTH COMPARISON (`.length > 16`) — the two spellings the contract's Trap 4 names — and
 // it does NOT catch a bare re-declaration in a component (`const VISIBLE = 16`, `gridRows: 4`,
-// a CSS `repeat(4, …)`). Widening it to every `16` in `ui/src/home/**` would trip on tile
+// a CSS `repeat(4, …)`). Widening it to every `16` in `apps/ui/src/home/**` would trip on tile
 // geometry and legend counts, so the clause that actually holds that line is the ONE-DECLARING-
 // MODULE clause plus the call-site clause below: a component that types its own ceiling still
 // has to get the rows from somewhere, and every call site must feed `MAX_LIVE_PANES`.
@@ -54,13 +54,13 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments } from "../../support/terminal-gate-detectors.mjs";
-import { isUiSourceFile } from "../../support/ui-source-files.mjs";
+import { stripComments } from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
+import { isUiSourceFile } from "../../../apps/ui/test/support/ui-source-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-export const HOME_DIR = "ui/src/home";
-export const MIRROR_FILE = "src/mesh/terminal-mirror.mjs";
+export const HOME_DIR = "apps/ui/src/home";
+export const MIRROR_FILE = "packages/mesh/src/terminal-mirror.mjs";
 export const ARBITER_NAME = "subscribedPaneSet";
 
 const CLIENT_CAP_DECLARATION = /\bexport\s+const\s+MAX_LIVE_PANES\s*=\s*(\d+)\s*;/;
@@ -105,7 +105,7 @@ async function collectFiles(relative) {
 
 export async function readSocketCapPair() {
   return {
-    files: await collectFiles("ui/src"),
+    files: await collectFiles("apps/ui/src"),
     mirror: await readFile(path.join(repoRoot, MIRROR_FILE), "utf8"),
   };
 }
@@ -305,10 +305,10 @@ export const archTests = [
         `the CLIENT half was really read: MAX_LIVE_PANES = ${report.clientCap}`,
       );
       assert.ok(report.clientCap <= report.mirrorTailKeys, `${report.clientCap} <= ${report.mirrorTailKeys}`);
-      assert.deepEqual(report.declaringFiles, ["ui/src/home/socket-cap.mjs"], "declared in exactly one module");
+      assert.deepEqual(report.declaringFiles, ["apps/ui/src/home/socket-cap.mjs"], "declared in exactly one module");
       assert.deepEqual(
         report.arbiterFiles,
-        ["ui/src/home/socket-cap.mjs"],
+        ["apps/ui/src/home/socket-cap.mjs"],
         "the ARBITER was really found, in exactly one module — the clauses that read its parameter list are scoped by finding it, so an unfound arbiter is a vacated amendment rather than a clean tree",
       );
       assert.equal(report.capFedFromConstant, true, "every call site that supplies a cap supplies the declared constant");

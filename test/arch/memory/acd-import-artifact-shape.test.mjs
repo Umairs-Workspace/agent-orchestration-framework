@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function for milestone 13 / ADR-001:
 // "Reuse the 05 doc shapes; NO new parser, NO new record shape. Every record an
 //  import contributes is produced by the EXISTING parseArchitecture/parseRetrospective
@@ -14,12 +16,12 @@
 //       MemoryRecord field set, with the absent-type fields present-as-"".
 //   (b) SPEC-NOT-INDEXED: the materialized SPEC.md, run through BOTH parsers, yields
 //       ZERO records (it has no ## ADR-NNN / ## R<n> headings — it is legible intent).
-//   (c) NO-NEW-PARSER: the import modules (src/import/*.mjs + src/commands/import-
+//   (c) NO-NEW-PARSER: the import modules (src/import/*.mjs + packages/core/src/commands/import-
 //       milestone.mjs) IMPORT the parsers from nowhere AND define no `parseArchitecture`
 //       / `parseRetrospective` of their own (no second parser); they are PRODUCERS of
 //       `.md`, never parser owners (ADR-001).
 //   (d) ONE-PARSER-OWNER: parseArchitecture/parseRetrospective are exported by exactly
-//       ONE module on disk (src/memory/local-indexing.mjs) — there is no rival parser
+//       ONE module on disk (packages/core/src/memory/local-indexing.mjs) — there is no rival parser
 //       module that emits a record shape.
 //
 // Non-vacuous: (a) would go RED if materialize emitted a heading shape the existing
@@ -33,17 +35,18 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, rm, mkdir, readFile, readdir } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
-import {
-  parseArchitecture,
-  parseRetrospective,
-} from "../../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
-import { materializeImport, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, SPEC_FILE } from "../../../src/import/materialize.mjs";
+const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
+const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const ARCHITECTURE_FILE = _aofApplication.knowledge.import.materialize.ARCHITECTURE_FILE;
+const RETROSPECTIVE_FILE = _aofApplication.knowledge.import.materialize.RETROSPECTIVE_FILE;
+const SPEC_FILE = _aofApplication.knowledge.import.materialize.SPEC_FILE;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_IMPORT_DIR = path.join(repoRoot, "src", "import");
-const IMPORT_COMMAND = path.join(repoRoot, "src", "commands", "import-milestone.mjs");
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_IMPORT_DIR = path.join(repoRoot, "packages", "knowledge", "src", "import");
+const IMPORT_COMMAND = path.join(repoRoot, "packages", "knowledge", "src", "commands", "import-milestone.mjs");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 // The FIXED recovery input — a recovered intent (→ SPEC.md, never indexed), two
 // decisions (→ two adr records), one outcome (→ one lesson record). Distinct topic
@@ -191,18 +194,19 @@ export const archTests = [
   {
     name: "arch/import-artifact-shape: parseArchitecture/parseRetrospective are EXPORTED by exactly ONE module on disk (no rival record-shape parser)",
     run: async () => {
-      const files = await allSrcFiles();
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 100, "runtime source census is nonempty");
       const owners = { parseArchitecture: [], parseRetrospective: [] };
       const rel = (file) => path.relative(repoRoot, file).split(path.sep).join("/");
       for (const file of files) {
         const code = stripComments(await readFile(file, "utf8"));
-        if (/\bexport\s+function\s+parseArchitecture\b/.test(code)) owners.parseArchitecture.push(rel(file));
-        if (/\bexport\s+function\s+parseRetrospective\b/.test(code)) owners.parseRetrospective.push(rel(file));
+        if (/\bfunction\s+parseArchitecture\b/.test(code)) owners.parseArchitecture.push(rel(file));
+        if (/\bfunction\s+parseRetrospective\b/.test(code)) owners.parseRetrospective.push(rel(file));
       }
-      // Exactly one owner each, and it is src/memory/local-indexing.mjs — so no second
+      // Exactly one owner each, and it is packages/core/src/memory/local-indexing.mjs — so no second
       // module emits a record shape (ADR-001: the import reuses the ONE parser set).
-      assert.deepEqual(owners.parseArchitecture, ["src/memory/local-indexing.mjs"], `parseArchitecture exported by exactly local-indexing.mjs (got: ${owners.parseArchitecture.join(", ")})`);
-      assert.deepEqual(owners.parseRetrospective, ["src/memory/local-indexing.mjs"], `parseRetrospective exported by exactly local-indexing.mjs (got: ${owners.parseRetrospective.join(", ")})`);
+      assert.deepEqual(owners.parseArchitecture, ["packages/knowledge/src/memory/local-indexing.mjs"], `parseArchitecture exported by exactly local-indexing.mjs (got: ${owners.parseArchitecture.join(", ")})`);
+      assert.deepEqual(owners.parseRetrospective, ["packages/knowledge/src/memory/local-indexing.mjs"], `parseRetrospective exported by exactly local-indexing.mjs (got: ${owners.parseRetrospective.join(", ")})`);
     },
   },
 ];

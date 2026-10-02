@@ -1,16 +1,16 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import {
-  meshGlobalPropagationDecision,
-  publishGlobalWorkSnapshot,
-  renderWithPropagationWarnings,
-  threadPropagationWarnings,
-} from "../../src/global-work-publisher.mjs";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const meshGlobalPropagationDecision = _aofApplication.mesh.globalWorkPublisher.meshGlobalPropagationDecision;
+const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
+const renderWithPropagationWarnings = _aofApplication.mesh.globalWorkPublisher.renderWithPropagationWarnings;
+const threadPropagationWarnings = _aofApplication.mesh.globalWorkPublisher.threadPropagationWarnings;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 
 const NOW = "2026-07-05T10:00:00.000Z";
 const NODE_ID = "node-a";

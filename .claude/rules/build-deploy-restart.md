@@ -4,17 +4,17 @@
 from `~/.aof/bin/src/cli.mjs` when present and only falls back to its embedded bundle
 (`AOF_SEA_EMBEDDED=1`, or a release single-file install). The program is the payload, not the binary.
 
-## The deploy loop (any `src/` or `ui/` change)
+## The deploy loop (any `packages/` or `apps/ui/` change)
 
 ```
 node scripts/install-local.mjs        # payload file-copy — NO SEA build (~seconds)
 # then restart the desktop app (see below)
 ```
 
-- `--skip-ui` when `ui/` didn't change.
+- `--skip-ui` when `apps/ui/` didn't change.
 - `--sea` ONLY when `scripts/sea-entry.mjs` (the launcher bootstrap) changed or for a release
   artefact — this is the 88 MB SEA rebuild; it is never needed for ordinary `src/` changes.
-- `--desktop` ONLY when the Rust app (`app/desktop/`) changed (cargo build, Windows only).
+- `--desktop` ONLY when the Rust app (`apps/desktop/`) changed (cargo build, Windows only).
 - `--wsl` to ALSO push the tree to the WSL worker node (below).
 - The installer stamps `BUILD_ID.json`, prunes `.bak` binaries to the newest 3, and tolerates a
   locked `node-pty` under a running daemon (skip-with-warning; stop the daemon to update it).

@@ -1,9 +1,12 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 23 / story 00 — mesh:heartbeat assembles and
 // publishes this node's presence record (tasks/00_presence-record.feature).
 //
 // Covers EVERY @executable scenario in tasks/00_presence-record.feature, exercising
-// the REAL in-process registry (src/command-core.mjs + src/commands/mesh-heartbeat.mjs
-// over src/mesh/presence.mjs + the m22 src/mesh/store.mjs presence seam) against a temp
+// the REAL in-process registry (packages/core/src/command-core.mjs + packages/core/src/commands/mesh-heartbeat.mjs
+// over packages/core/src/mesh/presence.mjs + the m22 packages/core/src/mesh/store.mjs presence seam) against a temp
 // fixture repo — loadWorkspace + invoke, real fs, in-process. One test object per
 // @executable scenario, each name tracing to feature + scenario. node:assert/strict.
 //
@@ -25,13 +28,24 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace, listItems } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, presenceRecordPath, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { assemblePresenceRecord, publishPresenceRecord, readActiveLoops, readActiveRuns } from "../../../src/mesh/presence.mjs";
-import { loopStopsDir, markStopHonoured, readStopRequest, requestLoopStop, stopRequestPath } from "../../../src/loop/stop-request.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore, queryGlobalRegistry } from "../../../src/global-node-registry.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listItems = _aofWorkspace.work.listItems;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const assemblePresenceRecord = _aofApplication.mesh.presence.assemblePresenceRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const readActiveLoops = _aofApplication.mesh.presence.readActiveLoops;
+const readActiveRuns = _aofApplication.mesh.presence.readActiveRuns;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const readStopRequest = _aofApplication.loop.stopRequest.readStopRequest;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const queryGlobalRegistry = _aofApplication.mesh.globalNodeRegistry.queryGlobalRegistry;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -473,7 +487,7 @@ export const meshPresenceRecordTests = [
   {
     name: "presence-carries-the-loops/00 the desktop's parser tolerates the new key — the Presence struct carries no deny_unknown_fields, so `loops` parses and active_runs reads as before",
     async run() {
-      const source = await readFile(path.join(repoRoot, "app", "desktop", "crates", "core", "src", "status.rs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "apps", "desktop", "crates", "core", "src", "status.rs"), "utf8");
       const at = source.indexOf("pub struct Presence {");
       assert.ok(at > 0, "the Presence struct is where the desktop parses a presence record");
       const attributes = source.slice(source.lastIndexOf("\n\n", at), at);

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 77 / story 03 — the declared bounds.
 //
 //   tasks/01_a-declared-bound-is-joined-against-the-reference.feature
@@ -17,19 +18,17 @@ import { writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { loopRecord, makeLoopRegistry, withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
-import { readFinding } from "../../../src/work-audit/reads.mjs";
-import {
-  BOUND_CONFIG_KEYS,
-  DECLARED_BOUNDS_FINDING_CODES,
-  DECLARED_BOUNDS_SWEEPS,
-  DEFAULT_REFERENCE_STALE_WINDOW_MS,
-  boundConfigKeyProblems,
-  boundRange,
-  declaredBoundValues,
-  runDeclaredBounds,
-} from "../../../src/work-audit/declared-bounds.mjs";
+import { readFinding } from "@aof/work/audit/reads";
+const BOUND_CONFIG_KEYS = _aofApplication.work.audit.declaredBounds.BOUND_CONFIG_KEYS;
+const DECLARED_BOUNDS_FINDING_CODES = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_FINDING_CODES;
+const DECLARED_BOUNDS_SWEEPS = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_SWEEPS;
+const DEFAULT_REFERENCE_STALE_WINDOW_MS = _aofApplication.work.audit.declaredBounds.DEFAULT_REFERENCE_STALE_WINDOW_MS;
+const boundConfigKeyProblems = _aofApplication.work.audit.declaredBounds.boundConfigKeyProblems;
+const boundRange = _aofApplication.work.audit.declaredBounds.boundRange;
+const declaredBoundValues = _aofApplication.work.audit.declaredBounds.declaredBoundValues;
+const runDeclaredBounds = _aofApplication.work.audit.declaredBounds.runDeclaredBounds;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -233,7 +232,7 @@ export const declaredBoundsTests = [
 
       // THE REPOSITORY THAT IS ALREADY IN IT: two of its ceiling pointers name
       // `work.autonomous.maxAttempts`, which the bounds home does not hold.
-      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "src", "bundle"), projectRoot: repoRoot });
+      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "packages", "core", "assets"), projectRoot: repoRoot });
       const own = lane({ model: shipped });
       assert.equal(own.findings.filter((finding) => finding.severity === "error").length, 0, "this repository's own registry returns nothing at error");
       const limit = own.limits.find((entry) => entry.sweep === DECLARED_BOUNDS_SWEEPS[0].id);

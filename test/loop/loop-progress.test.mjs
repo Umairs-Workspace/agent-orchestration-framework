@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 69 / story 03. The ledger records deterministic samples,
 // appends them beside a run, and bounds stalls without asking a model for a verdict.
 import assert from "node:assert/strict";
@@ -5,18 +6,17 @@ import { access, appendFile, mkdtemp, mkdir, readFile, rm } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 
-import {
-  appendProgressSample,
-  decideBuildProgress,
-  evaluateProgressPolicy,
-  madeProgress,
-  progressLedgerPath,
-  progressPolicyFromConfig,
-  progressSample,
-  readProgressSamples,
-  sampleWorktreeProgress,
-} from "../../src/loop-progress.mjs";
-import { readRuns, startRun } from "../../src/run-store.mjs";
+const appendProgressSample = _aofApplication.loop.loopProgress.appendProgressSample;
+const decideBuildProgress = _aofApplication.loop.loopProgress.decideBuildProgress;
+const evaluateProgressPolicy = _aofApplication.loop.loopProgress.evaluateProgressPolicy;
+const madeProgress = _aofApplication.loop.loopProgress.madeProgress;
+const progressLedgerPath = _aofApplication.loop.loopProgress.progressLedgerPath;
+const progressPolicyFromConfig = _aofApplication.loop.loopProgress.progressPolicyFromConfig;
+const progressSample = _aofApplication.loop.loopProgress.progressSample;
+const readProgressSamples = _aofApplication.loop.loopProgress.readProgressSamples;
+const sampleWorktreeProgress = _aofApplication.loop.loopProgress.sampleWorktreeProgress;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
 
 const AT = "2026-08-23T10:00:00.000Z";
 
@@ -199,7 +199,7 @@ export const loopProgressTests = [
   {
     name: "69/03 task02 the framework build loop points at the progress authority, not a numeric round count",
     run: async () => {
-      const record = await readFile(path.join(process.cwd(), "src", "bundle", "loops", "build-to-green.md"), "utf8");
+      const record = await readFile(path.join(process.cwd(), "packages", "core", "assets", "loops", "build-to-green.md"), "utf8");
       assert.match(record, /ceiling:\s*\[config:work\.loop\.buildNoProgressRounds\]/u);
       assert.doesNotMatch(record, /ceiling:\s*\[?\d/u);
     },

@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Milestone observability engine — unit tests over the pure transcript analysers.
 // No aof config / global-home touched: this exercises analyzeTranscript / unionMs /
 // projectSlug / resolveMilestoneFolder against fixtures + a temp dir only.
@@ -6,25 +7,23 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  analyzeTranscript,
-  unionMs,
-  mergeIntervals,
-  overlapMs,
-  projectSlug,
-  claudeProjectsDir,
-  resolveMilestoneFolder,
-  observeMilestone,
-  observabilityEnabled,
-  analyzeSessionThread,
-  clusterInfraKills,
-  humanTurnText,
-  analyzeWaves,
-  tokenSplit,
-  classifyToolCallResult,
-  buildSessionItemIndex,
-  collectMilestoneAgents,
-} from "../../../src/work/observe.mjs";
+const analyzeTranscript = _aofSessions.workObserve.analyzeTranscript;
+const unionMs = _aofSessions.workObserve.unionMs;
+const mergeIntervals = _aofSessions.workObserve.mergeIntervals;
+const overlapMs = _aofSessions.workObserve.overlapMs;
+const projectSlug = _aofSessions.workObserve.projectSlug;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const resolveMilestoneFolder = _aofSessions.workObserve.resolveMilestoneFolder;
+const observeMilestone = _aofSessions.workObserve.observeMilestone;
+const observabilityEnabled = _aofSessions.workObserve.observabilityEnabled;
+const analyzeSessionThread = _aofSessions.workObserve.analyzeSessionThread;
+const clusterInfraKills = _aofSessions.workObserve.clusterInfraKills;
+const humanTurnText = _aofSessions.workObserve.humanTurnText;
+const analyzeWaves = _aofSessions.workObserve.analyzeWaves;
+const tokenSplit = _aofSessions.workObserve.tokenSplit;
+const classifyToolCallResult = _aofSessions.workObserve.classifyToolCallResult;
+const buildSessionItemIndex = _aofSessions.workObserve.buildSessionItemIndex;
+const collectMilestoneAgents = _aofSessions.workObserve.collectMilestoneAgents;
 
 const T0 = Date.parse("2026-07-19T01:00:00.000Z");
 const iso = (offsetMs) => new Date(T0 + offsetMs).toISOString();

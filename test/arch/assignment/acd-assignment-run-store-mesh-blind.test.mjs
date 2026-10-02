@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-run-store-mesh-blind (milestone 35 / ADR-004,
 // fitness #12) — "the run-store stays mesh-blind — the assignment execution reuses
 // startRun/completeRun/heartbeat with the node id passed as DATA; the store imports
@@ -15,7 +17,7 @@
 // bindings across milestones 22-26 (verified by diffing every imported binding
 // against every `...binding` spread in the array). Running it standalone shows 3 of
 // its 4 proofs pass; the 4th ("the run-complete lease release sits inside the
-// config.mesh-gated branch") is now STALE — `src/commands/run-complete.mjs` no
+// config.mesh-gated branch") is now STALE — `packages/core/src/commands/run-complete.mjs` no
 // longer imports `releaseLease`/`meshNodeIdOf` at all (the whole git-bus lease
 // mechanism it asserts was retired by the m33/m34 "global mesh only" correction /
 // ADR-003's no-git-bus-return). Registering that file as-is would land a KNOWN-RED,
@@ -27,7 +29,7 @@
 // Proofs:
 //  1. Re-arm — acd-run-store-mesh-free is registered in the suite (its own
 //     assertions already prove run-store.mjs imports no mesh-* module).
-//  2. Structural — src/mesh/worker-execution.mjs calls startRun(item, { ...,
+//  2. Structural — packages/core/src/mesh/worker-execution.mjs calls startRun(item, { ...,
 //     node: nodeId, ... }) — the node id travels as a DATA option, never a run-store
 //     rewrite (no new positional parameter, no mesh import added to run-store.mjs).
 //  3. Behavioural — a driven assignment's minted run carries the worker's node id
@@ -38,16 +40,17 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace, findWork } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
-import { readRuns } from "../../../src/run-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const findWork = _aofWorkspace.work.findWork;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const readRuns = _aofApplication.execution.runs.readRuns;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { registeredSuitePaths, registrationSurface } from "../../support/registration/registration-surface.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const runStoreSourcePath = path.join(repoRoot, "src", "run-store.mjs");
-const executionSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
+const runStoreSourcePath = path.join(repoRoot, "packages", "execution", "src", "runs.mjs");
+const executionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
 const testSuitePath = path.join(repoRoot, "scripts", "test.mjs");
 
 function stripCommentsAndStrings(source) {

@@ -1,4 +1,7 @@
-// Traceability wiring for milestone 34 / story 03 — src/global-mesh-query.mjs, the
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+// Traceability wiring for milestone 34 / story 03 — packages/core/src/global-mesh-query.mjs, the
 // ONE composition seam the fleet serve-face reaches for its GLOBAL
 // `/api/mesh/status` read (ARCHITECTURE ADR-006). Covers the shaping contract
 // tasks/01_mesh-ui-api-scope-switch.feature's global scenario needs at the module
@@ -9,13 +12,13 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { publishPresenceRecord } from "../../src/mesh/presence.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-global-mesh-query-"));

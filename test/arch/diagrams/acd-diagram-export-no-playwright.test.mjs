@@ -1,7 +1,7 @@
 // FF-13303 (milestone 133 / ADR-005 §3, §5) — EXPORT NEEDS NO PLAYWRIGHT AND FORMS ONE ARGV.
 //
-// "`src/diagrams/**` and `src/commands/diagram/**` import no `playwright` and spawn no `npx` or
-//  `python`. `src/diagrams/rasterize.mjs` has exactly ONE function that returns a browser argv, and
+// "`packages/core/src/diagrams/**` and `packages/core/src/commands/diagram/**` import no `playwright` and spawn no `npx` or
+//  `python`. `packages/execution/src/svg-rasterizer.mjs` has exactly ONE function that returns a browser argv, and
 //  every spawn in the file uses it. No rung of the ladder downloads anything."
 //
 // Why it matters: the plugin's own PNG path needs Python Playwright, which is policy-blocked on this
@@ -15,12 +15,12 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILIES = ["src/diagrams", "src/commands/diagram"];
-const RASTERIZE = "src/diagrams/rasterize.mjs";
+const FAMILIES = ["packages/core/src/diagrams", "packages/core/src/commands/diagram", "packages/work/src/diagrams", "packages/work/src/commands/diagram"];
+const RASTERIZE = "packages/execution/src/svg-rasterizer.mjs";
 const PACKAGE_RUNNERS = ["npx", "python", "python3", "py", "pip", "npm"];
 
 async function familyFiles() {
-  const out = [];
+  const out = [RASTERIZE];
   for (const family of FAMILIES) {
     const dir = path.join(repoRoot, family);
     if (!existsSync(dir)) continue;

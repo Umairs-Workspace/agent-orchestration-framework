@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6108 (milestone 61 / ADR-007) — `harness.ruled` is a declared event; the harness
 // write has ONE home; and an undeclared name is now refused instead of resolving to zero
 // reactors.
@@ -21,49 +22,61 @@
 //       performs a write against it.
 //   (3) The knob write is SURGICAL — planted, as a property of a pure string transform:
 //       every other key, its order and the file's own formatting survive.
-//   (4) No module in `src/` writes at a DECLARED TUNABLE KNOB PATH in code. Resolved from
+//   (4) No module in `packages/core/src/` writes at a DECLARED TUNABLE KNOB PATH in code. Resolved from
 //       the registry's `parameter-tuning:` edge, never spelled here.
 //   (5) The store is reached only from the seam and its reactor.
 //   (6) Re-appending the same ruling identity yields a byte-identical ledger.
 //   (7) `applicableReactors` refuses an undeclared name with a CODE, disjoint from the
 //       journal's storage faults and from the ruling refusal vocabulary.
-//   (8) Every `appendEvent` call site in `src/` is in the admitted seam set, which gained
+//   (8) Every `appendEvent` call site in `packages/core/src/` is in the admitted seam set, which gained
 //       exactly the new seam; and `journal.mjs` still imports no vocabulary.
 //   (9) The ledger path is ABSENT from `AOF_GITIGNORE_ENTRIES` — it is not derived and not
 //       regenerable, and being tracked is what makes `git revert` carry the evidence with
 //       the change.
 //
 // ONE LEG IS NARROWER THAN FF-6108'S WORDING, DELIBERATELY, AND THE REASON IS MEASURED.
-// The register says the store is "the only module in `src/` that writes ... the `work.*`
+// The register says the store is "the only module in `packages/core/src/` that writes ... the `work.*`
 // section of `.aof/aof.config.json`". That is FALSE at HEAD and was false before this
-// story: `src/work/headroom.mjs` writes `work.headroom`, `src/work/delegation.mjs` writes
-// `work.agents.delegation` and `work.agents.delegationModel`, and `src/work/orchestrator.mjs`
+// story: `packages/core/src/work/headroom.mjs` writes `work.headroom`, `packages/core/src/work/delegation.mjs` writes
+// `work.agents.delegation` and `work.agents.delegationModel`, and `packages/core/src/work/orchestrator.mjs`
 // writes `work.agents.models` — three operator-INTENT writers that predate the acceptor and
 // that this story may not edit. ADR-007 §2a's actual subject is narrower and correct:
-// nothing in `src/` writes a HARNESS KNOB VALUE, and `config-editor.mjs` preserves `work`
+// nothing in `packages/core/src/` writes a HARNESS KNOB VALUE, and `config-editor.mjs` preserves `work`
 // verbatim rather than being a path to one. Leg 4 enforces that, from the registry's own
 // declaration of which keys are knobs, so it stays true as the tunable set moves.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { matchedParenSpan } from "../../support/source-slice.mjs";
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
-import { AOF_GITIGNORE_ENTRIES } from "../../../src/aof-gitignore.mjs";
-import { loadLoops } from "../../../src/work/loops.mjs";
-import { tunableSet } from "../../../src/work-acceptor/admissibility.mjs";
-import { EFFECTS, EVENT_NOT_DECLARED, applicableReactors, isKnownLocus, knownEvents } from "../../../src/effects/table.mjs";
-import { appendEvent, openEffectsJournal } from "../../../src/effects/journal.mjs";
-import { HARNESS_RULED, STAMP_EVIDENCE } from "../../../src/effects/harness-transitions.mjs";
-import { LEDGER_RELPATH, criterionDigest, defaultCriterion } from "../../../src/work-acceptor/criterion.mjs";
-import { STORE_REFUSALS, appendRuling, readLedger, setKnobValue } from "../../../src/work-acceptor/store.mjs";
-import { PAIR_OUTCOMES } from "../../../src/work-acceptor/rule.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { AOF_GITIGNORE_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
+import { tunableSet } from "@aof/work/acceptor/admissibility";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const EVENT_NOT_DECLARED = _aofApplication.effects.reactors.EVENT_NOT_DECLARED;
+const applicableReactors = _aofApplication.effects.reactors.applicableReactors;
+const isKnownLocus = _aofApplication.effects.reactors.isKnownLocus;
+const knownEvents = _aofApplication.effects.reactors.knownEvents;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const HARNESS_RULED = _aofApplication.work.harness.HARNESS_RULED;
+const STAMP_EVIDENCE = _aofApplication.work.harness.STAMP_EVIDENCE;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const STORE_REFUSALS = _aofApplication.work.acceptor.store.STORE_REFUSALS;
+const appendRuling = _aofApplication.work.acceptor.store.appendRuling;
+const readLedger = _aofApplication.work.acceptor.store.readLedger;
+const setKnobValue = _aofApplication.work.acceptor.store.setKnobValue;
+import { PAIR_OUTCOMES } from "@aof/work/acceptor/rule";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(root, "src");
+const SRC_DIR = path.join(root, "packages", "core", "src");
 
 // The eight names that were the whole vocabulary before this story, with what each owed.
 // A census rather than a count: "no tenth" is cheap to satisfy by deleting one.
@@ -87,14 +100,14 @@ const THE_EIGHT = Object.freeze({
 // the harness seam. `control-stream-server.mjs` is the d3 bridge fact door and
 // `reconcile.mjs` the d5 file-store reconciler; both append only what a transition would.
 const APPEND_EVENT_SEAMS = Object.freeze([
-  "src/control-stream-server.mjs",
-  "src/effects/assignment-transitions.mjs",
-  "src/effects/doc-transitions.mjs",
-  "src/effects/harness-transitions.mjs",
-  "src/effects/item-transitions.mjs",
-  "src/effects/reconcile.mjs",
-  "src/effects/run-transitions.mjs",
-  "src/effects/stream-transitions.mjs",
+  "packages/mesh/src/control-stream-server.mjs",
+  "packages/mesh/src/assignment-transitions.mjs",
+  "packages/work/src/doc-transitions.mjs",
+  "packages/work/src/harness-transitions.mjs",
+  "packages/work/src/item-transitions.mjs",
+  "packages/execution/src/reconcile.mjs",
+  "packages/execution/src/run-transitions.mjs",
+  "packages/work/src/stream-transitions.mjs",
 ]);
 
 // ADR-010 §2's frozen RULING vocabulary — the codes that may reach a `refusals` array.
@@ -112,22 +125,13 @@ const THE_SEVEN = Object.freeze([
   "step-would-be-compound",
 ]);
 
-// Every door under `src/` through which bytes reach a path.
+// Every door under `packages/core/src/` through which bytes reach a path.
 const WRITE_CALLS = Object.freeze(["writeFile", "writeFileSync", "appendFile", "appendFileSync", "writeText", "createWriteStream", "copyFile", "cp", "rename"]);
 
 async function srcModules() {
-  const modules = [];
-  const walk = async (dir) => {
-    for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        modules.push({ rel: path.relative(root, full).replaceAll("\\", "/"), code: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(SRC_DIR);
-  return modules;
+  return await Promise.all((await readRuntimeFiles(root)).map(async file => ({
+    rel: file.rel, code: await readFile(file.path, "utf8"),
+  })));
 }
 
 // ── PURE DETECTORS ───────────────────────────────────────────────────────────────────
@@ -142,7 +146,7 @@ async function srcModules() {
  * `indexOf` sentinel.
  *
  * IT IS NOT A GLOBAL CLASSIFIER, and the sweep proved why on its first run: `ledger` is
- * not a unique word in this tree. `src/loop-progress.mjs` appends to 69/03's PROGRESS
+ * not a unique word in this tree. `packages/core/src/loop-progress.mjs` appends to 69/03's PROGRESS
  * ledger through an identifier of its own also called `ledgerPath` — a different ledger,
  * legitimately written by its own owner. So this runs over the modules that can REACH the
  * acceptor's ledger (the import leg decides that set), and answers "does the one module
@@ -196,7 +200,12 @@ export function importersOf(modules, suffix, binding = null) {
     ? new RegExp(`import\\s*\\{[^}]*\\b${escape(binding)}\\b[^}]*\\}\\s*from\\s*["'][^"']*${escape(suffix)}["']`, "u")
     : new RegExp(`from\\s*["'][^"']*${escape(suffix)}["']`, "u");
   return modules
-    .filter(({ code }) => pattern.test(withoutComments(code)))
+    .filter(({ code }) => dependencySpecifiers(code).some(({ specifier, injected, parameter }) => {
+      if (!specifier.endsWith(suffix)) return false;
+      if (!binding) return true;
+      if (!injected) return pattern.test(withoutComments(code));
+      return new RegExp(`const\\s*\\{[^}]*\\b${escape(binding)}\\b[^}]*\\}\\s*=\\s*${parameter}\\b`, "u").test(withoutComments(code));
+    }))
     .map(({ rel }) => rel)
     .sort();
 }
@@ -295,30 +304,32 @@ export const archTests = [
       // never as a one-member census (FF-11902): the module is named AMONG what the sweep found.
       assert.ok(spells.length >= 1, "the sweep of src/ found no module spelling the ledger path");
       assert.ok(spells.length <= 1, `the ledger path is spelled in exactly one module — found: ${spells.join(", ")}`);
-      assert.equal(spells[0], "src/work-acceptor/criterion.mjs", "…and it is the acceptor's criterion module");
+      assert.equal(spells[0], "packages/work/src/acceptor/criterion.mjs", "…and it is the acceptor's criterion module");
 
       // (b) AND EXACTLY ONE MODULE REACHES IT. Knowing where the ledger is, is what it
-      // takes to write it — so with (a) this closes the set: no other module in `src/` can
+      // takes to write it — so with (a) this closes the set: no other module in `packages/core/src/` can
       // name the acceptor's ledger at all, by literal or by import.
       const reachers = importersOf(modules, "criterion.mjs", "LEDGER_RELPATH");
-      assert.deepEqual(reachers, ["src/work-acceptor/store.mjs"], "exactly one module reaches the ledger's path");
+      assert.deepEqual(reachers, ["packages/core/src/application/bindings/work-acceptor/store.mjs"], "only the composition adapter imports the declared ledger path");
+      const adapter = modules.find(({ rel }) => rel === reachers[0]);
+      assert.match(adapter.code, /createAcceptorStore\(\{ LEDGER_RELPATH \}\)/u, "the adapter supplies that path to the work-owned writer");
 
       // (c) AND THAT MODULE IS THE ONE THAT WRITES IT — the claim made positively, so the
       // chain is "one home, one reacher, and the reacher really does the write" rather than
       // an absence nobody checked.
-      const sites = ledgerWriteSites(modules.filter(({ rel }) => reachers.includes(rel) || rel === spells[0]));
+      const sites = ledgerWriteSites(modules.filter(({ code }) => /\bLEDGER_RELPATH\b/u.test(withoutComments(code))));
       assert.deepEqual(
         [...new Set(sites.map((site) => site.rel))],
-        ["src/work-acceptor/store.mjs"],
+        ["packages/work/src/acceptor/store.mjs"],
         `the ledger is written from one place only, and the module that DECLARES its path does not write it (found: ${JSON.stringify(sites)})`,
       );
       assert.ok(sites.length >= 1, "…and the sweep really found the write it is about");
 
       // NON-VACUITY, PLANTED BOTH WAYS: the detector sees a second writer, and does not
       // report a write that targets something else.
-      assert.equal(ledgerWriteSites([{ rel: "src/planted.mjs", code: "await appendFile(ledgerFile, line);\n" }]).length, 1, "a second ledger writer is reported");
-      assert.deepEqual(ledgerWriteSites([{ rel: "src/planted.mjs", code: "await writeFile(configFile, next);\n" }]), [], "…and a write to something else is not");
-      assert.deepEqual(ledgerWriteSites([{ rel: "src/planted.mjs", code: "// await appendFile(ledgerFile, line);\n" }]), [], "…nor is a write that exists only in a comment");
+      assert.equal(ledgerWriteSites([{ rel: "packages/core/src/planted.mjs", code: "await appendFile(ledgerFile, line);\n" }]).length, 1, "a second ledger writer is reported");
+      assert.deepEqual(ledgerWriteSites([{ rel: "packages/core/src/planted.mjs", code: "await writeFile(configFile, next);\n" }]), [], "…and a write to something else is not");
+      assert.deepEqual(ledgerWriteSites([{ rel: "packages/core/src/planted.mjs", code: "// await appendFile(ledgerFile, line);\n" }]), [], "…nor is a write that exists only in a comment");
     },
   },
 
@@ -371,7 +382,7 @@ export const archTests = [
   {
     name: "arch/61 FF-6108: no module in src/ assigns at a DECLARED TUNABLE KNOB path — the set comes from the registry's parameter-tuning edge, and the sweep can see one that does",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       const declared = tunableSet(model).keys;
       assert.ok(declared.length >= 3, `the registry supplied the declared keys: ${declared.join(", ")}`);
 
@@ -382,14 +393,14 @@ export const archTests = [
       // is not (69's guard already tracks readers, and this leg is about writes), and
       // neither is a key quoted in a diagnostic or written in a comment.
       const [key] = declared;
-      assert.equal(knobPathWriters([{ rel: "src/planted.mjs", code: `config.${key} = 4;\n` }], declared).length, 1, "an assignment at a declared knob is reported");
-      assert.deepEqual(knobPathWriters([{ rel: "src/planted.mjs", code: `const n = config?.${key} ?? 3;\n` }], declared), [], "a read is not a write");
-      assert.deepEqual(knobPathWriters([{ rel: "src/planted.mjs", code: `throw new Error("${key} is frozen");\n` }], declared), [], "a key quoted in a diagnostic is not a write");
-      assert.deepEqual(knobPathWriters([{ rel: "src/planted.mjs", code: `// config.${key} = 4;\n` }], declared), [], "nor is one that exists only in a comment");
+      assert.equal(knobPathWriters([{ rel: "packages/core/src/planted.mjs", code: `config.${key} = 4;\n` }], declared).length, 1, "an assignment at a declared knob is reported");
+      assert.deepEqual(knobPathWriters([{ rel: "packages/core/src/planted.mjs", code: `const n = config?.${key} ?? 3;\n` }], declared), [], "a read is not a write");
+      assert.deepEqual(knobPathWriters([{ rel: "packages/core/src/planted.mjs", code: `throw new Error("${key} is frozen");\n` }], declared), [], "a key quoted in a diagnostic is not a write");
+      assert.deepEqual(knobPathWriters([{ rel: "packages/core/src/planted.mjs", code: `// config.${key} = 4;\n` }], declared), [], "nor is one that exists only in a comment");
 
       // …and the module named as NOT being the writer still is not one: `config-editor.mjs`
       // preserves `work` verbatim rather than offering a path into it (ADR-007 §2a).
-      const editor = codeOnly(await readFile(path.join(SRC_DIR, "config-editor.mjs"), "utf8"));
+      const editor = codeOnly(await readFile(path.join(SRC_DIR, "application/bindings/config-editor.mjs"), "utf8"));
       assert.ok(/existing\.work\s*\?\s*\{\s*work:\s*existing\.work\s*\}/u.test(editor), "config-editor still carries `work` through verbatim");
     },
   },
@@ -401,10 +412,13 @@ export const archTests = [
       const importers = importersOf(modules, "work-acceptor/store.mjs");
       assert.deepEqual(
         importers,
-        ["src/effects/harness-transitions.mjs", "src/effects/table.mjs"],
+        ["packages/core/src/application/assemble.mjs", "packages/core/src/application/bindings/effects/harness-transitions.mjs", "packages/core/src/application/bindings/effects/table.mjs"],
         "the seam holds the knob write and the reactor holds the ledger append — nothing else reaches either",
       );
-      assert.deepEqual(importers.filter((rel) => rel.startsWith("src/commands/")), [], "and no command reaches it: a knob movable from a surface is a knob movable without a ruling");
+      const seam = codeOnly(await readFile(path.join(root, "packages/work/src/harness-transitions.mjs"), "utf8"));
+      const adapter = codeOnly(await readFile(path.join(root, "packages/core/src/application/bindings/effects/harness-transitions.mjs"), "utf8"));
+      for (const code of [seam, adapter]) assert.match(code, /createHarnessTransitions\(\{[^}]*writeKnobValue/su);
+      assert.deepEqual(importers.filter((rel) => rel.startsWith("packages/core/src/commands/")), [], "and no command reaches it: a knob movable from a surface is a knob movable without a ruling");
     },
   },
 
@@ -458,10 +472,12 @@ export const archTests = [
 
       // AND THE COMMENT IS NOW TRUE. The false sentence is gone, and the module says where
       // the door actually is.
-      const table = await readFile(path.join(SRC_DIR, "effects", "table.mjs"), "utf8");
+      const table = await readFile(path.join(SRC_DIR, "application/bindings/effects", "table.mjs"), "utf8");
       assert.equal(/appendEvent refuses a name not declared here/u.test(table), false, "the claim that `appendEvent` does the refusing is retired — it never did");
       assert.ok(/refused by `applicableReactors`|REFUSED — by `applicableReactors`/u.test(table), "…and the vocabulary's own file names the door that does");
-      assert.ok(/throw new UndeclaredEventError/u.test(codeOnly(table)), "…which is executable, not prose");
+      const registry = await readFile(path.join(root, "packages/effects/src/registry.mjs"), "utf8");
+      assert.ok(/registry\.applicableReactors/u.test(codeOnly(table)), "the application delegates to the extracted registry");
+      assert.ok(/throw new UndeclaredEventError/u.test(codeOnly(registry)), "the refusal is executable in the registry implementation");
 
       // DISJOINT FROM THE STORAGE FAULTS. "Nobody knows that name" and "the event could not
       // be stored" are different answers and a caller must be able to branch on which.
@@ -502,19 +518,19 @@ export const archTests = [
     run: async () => {
       const modules = await srcModules();
       const callers = modules
-        .filter(({ rel, code }) => rel !== "src/effects/journal.mjs" && /\bappendEvent\s*\(/u.test(codeOnly(code)))
+        .filter(({ rel, code }) => !["packages/core/src/application/bindings/effects/journal.mjs", "packages/effects/src/journal.mjs"].includes(rel) && /\bappendEvent\s*\(/u.test(codeOnly(code)))
         .map(({ rel }) => rel)
         .sort();
-      assert.deepEqual(callers, [...APPEND_EVENT_SEAMS], "the appending seams are the admitted set, and it gained exactly the harness seam");
-      assert.ok(callers.includes("src/effects/harness-transitions.mjs"), "…which is in it");
+      assert.deepEqual(callers, [...APPEND_EVENT_SEAMS].sort(), "the appending seams are the admitted set, and it gained exactly the harness seam");
+      assert.ok(callers.includes("packages/work/src/harness-transitions.mjs"), "…which is in it");
 
       // THE LAYERING IS UNCHANGED: dumb storage never learned the vocabulary. This is the
       // reason the undeclared-name refusal went where it did.
-      const journal = await readFile(path.join(SRC_DIR, "effects", "journal.mjs"), "utf8");
+      const journal = await readFile(path.join(SRC_DIR, "application/bindings/effects", "journal.mjs"), "utf8");
       assert.equal(/from\s+["'][^"']*table\.mjs["']/u.test(journal), false, "journal.mjs imports no vocabulary");
       assert.equal(/\bEFFECTS\b/u.test(codeOnly(journal)), false, "…and names none");
       assert.deepEqual(
-        importSpecifiers(journal).map((entry) => entry.specifier).sort(),
+        dependencySpecifiers(journal).map((entry) => entry.specifier).sort(),
         // `../sqlite-runtime.mjs` admitted by milestone 126 / story 05 (ADR-008 §1). The
         // CLAIM this list defends is the two lines above it — dumb storage never learned the
         // vocabulary — and a runtime-import leaf is not vocabulary: it holds no reactor name,
@@ -524,9 +540,12 @@ export const archTests = [
         // collapsed onto one home, so the ExperimentalWarning could be filtered there instead
         // of suppressed by a blanket `--no-warnings` nobody could scope. The list stays exact
         // — this is an admission, not a loosening.
-        ["../degrade.mjs", "../sqlite-runtime.mjs", "../workspace.mjs", "node:crypto", "node:fs/promises", "node:path"],
-        "its imports are exactly what they were, plus the one runtime-import home 126/05 admitted",
+        ["../../paths.mjs","../degrade.mjs","@aof/effects/journal","@aof/effects/journal","@aof/effects/journal-open","@aof/execution/journal-queries","@aof/foundation/sqlite-runtime","@aof/mesh/journal-queries","node:path"],
+        "the application adapter configures generic storage and forwards domain-specific queries",
       );
+      const storage = await readFile(path.join(root, "packages/effects/src/journal.mjs"), "utf8");
+      assert.ok(/function appendEvent\(/u.test(storage), "the extracted implementation is included in the check");
+      assert.deepEqual(dependencySpecifiers(storage), [], "generic journal storage imports no application vocabulary or providers");
     },
   },
 

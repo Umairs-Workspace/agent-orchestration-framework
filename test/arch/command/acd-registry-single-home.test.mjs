@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5312 — the production registry has one home: <workspace.aofDir>/loops.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -7,10 +8,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourceDir = path.join(root, "src", "bundle", "loops");
+const sourceDir = path.join(root, "packages", "core", "assets", "loops");
 const installedDir = path.join(root, ".aof", "loops");
 
 async function sourceModules(dir) {
@@ -60,14 +62,14 @@ export const archTests = [
     run: async () => {
       const commandFiles = ["loops-show.mjs", "loops-graph.mjs", "loops-validate.mjs"];
       for (const name of commandFiles) {
-        const source = await readFile(path.join(root, "src", "commands", name), "utf8");
+        const source = await readFile(path.join(root, "packages/work-graph/src/commands", name), "utf8");
         assert.match(source, /loadLoops\(ctx\.workspace\)/, `${name}: passes the workspace object`);
         assert.doesNotMatch(source, /loadLoops\(ctx\.workspace\.workDir\)/, `${name}: no old string call`);
         assert.doesNotMatch(source, /path\.(?:join|resolve)\([^\n]*["']loops["']/, `${name}: does not build the home`);
       }
-      const modules = await sourceModules(path.join(root, "src"));
+      const modules = (await readRuntimeFiles(root)).map(file => file.path);
       for (const file of modules) {
-        if (file === path.join(root, "src", "work", "loops.mjs")) continue;
+        if (file === path.join(root, "packages/core/src/application/bindings/work/loops.mjs")) continue;
         const source = await readFile(file, "utf8");
         assert.doesNotMatch(source, /loadLoops\(\s*(?:["'`]|ctx\.workspace\.workDir)/, `${path.relative(root, file)}: no production string door`);
       }

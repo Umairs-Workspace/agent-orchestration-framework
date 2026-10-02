@@ -1,6 +1,7 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Regression test for review fix 3 (milestone 41 as-built review, 2026-07-16):
 // "The mandatory `number:` bump silently no-ops, committing a folder<->frontmatter
-// mismatch." `reindexForInsert` (src/work/reindex.mjs) used to rename a shifted
+// mismatch." `reindexForInsert` (packages/core/src/work/reindex.mjs) used to rename a shifted
 // item's folder UNCONDITIONALLY, then guard the frontmatter `number:` write on
 // `if (bumped !== text)` — so a shifted item whose record doc was malformed (no
 // `---` frontmatter block at byte 0, or no `number:` line inside it) had its
@@ -17,8 +18,8 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { findWork } from "../../../src/work.mjs";
-import { reindexForInsert } from "../../../src/work/reindex.mjs";
+const findWork = _aofWorkspace.work.findWork;
+import { reindexForInsert } from "@aof/work/reindex";
 import { withWork, buildTopLevelStream, folderNames } from "../../support/work-reindex-fixture.mjs";
 
 export const workReindexNumberBumpGuardTests = [

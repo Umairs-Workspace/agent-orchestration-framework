@@ -43,9 +43,9 @@ face policy · ADR-003 engine/clock · ADR-005 registry-derived bijection). This
 `src/commands/doctor.mjs` (registers `work:doctor`, the CLI face) and the `doctorWork` engine + the
 check-group registry (whether it lives in `doctor.mjs` or a `src/work-doctor.mjs` sibling of `work.mjs`
 is the developer's call); it adds the `work:doctor` entry to the `COMMANDS` array in
-[command-core.mjs](../../../../../../src/command-core.mjs), the `subcommand === "doctor"` branch in
-`workCommand` ([cli.mjs](../../../../../../src/cli.mjs)), and the `/api/work/doctor` route in
-[board-ui.mjs](../../../../../../src/board-ui.mjs). It **reuses** `work.mjs`'s `listItems` / `readMeta` /
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs), the `subcommand === "doctor"` branch in
+`workCommand` ([cli.mjs](../../../../../../packages/core/src/cli.mjs)), and the `/api/work/doctor` route in
+[board-ui.mjs](../../../../../../packages/server/src/board-ui.mjs). It **reuses** `work.mjs`'s `listItems` / `readMeta` /
 `parseFrontmatter` / `isDriver` / `recordDoc` / `ITEM_RE` — it adds NO new identity parsing and does
 **not** duplicate `validateWork`'s per-file checks. It lands the four cross-cutting **fitness functions**
 (envelope contract, engine determinism, the two generalised bijection arch-tests, `--strict` exit) — the

@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 03 / task 01 —
 // `tasks/01_attribution-and-the-free-session.feature`: a session says what it is
 // working on, or says plainly that it is working on nothing — and the payload carries
@@ -27,16 +30,21 @@ import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus, shapeGlobalStatus, buildSessionIndex, workspaceIdForProjectRoot } from "../../../src/global-mesh-query.mjs";
-import { publishPresenceRecord, readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { startSession } from "../../../src/mesh/session.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../../src/global-node-registry.mjs";
-import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "../../../src/assignment-record.mjs";
-import { serveMeshUi, meshUiDist } from "../../../src/mesh/ui-serve.mjs";
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+const shapeGlobalStatus = _aofApplication.mesh.globalMeshQuery.shapeGlobalStatus;
+const buildSessionIndex = _aofApplication.mesh.globalMeshQuery.buildSessionIndex;
+const workspaceIdForProjectRoot = _aofApplication.mesh.globalMeshQuery.workspaceIdForProjectRoot;
+const publishPresenceRecord = _aofApplication.mesh.presence.publishPresenceRecord;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const startSession = _aofHooks.meshSession.startSession;
+const meshDir = _aofHooks.meshStore.meshDir;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+import { assembleAssignmentRecord, insertAssignment, updateAssignmentState } from "@aof/mesh/assignment-record";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -53,7 +61,7 @@ const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "
 // feature". The real `shapeGlobalStatus` has also carried `stalenessSeconds` since
 // milestone 43 / story 04 (the cache-freshness window, stated once per response) — it
 // predates this story, which neither adds it, moves it, nor reads it. The feature's
-// six match `ui/src/fleet/api.ts`'s `GlobalMeshStatus` declaration, which deliberately
+// six match `apps/ui/src/fleet/api.ts`'s `GlobalMeshStatus` declaration, which deliberately
 // does not spell that key (its ONE ui-side reader is `../board/freshness.mjs`). The
 // binding clause — "the same set, with the same values, that the same fixture produces
 // without this feature" — is asserted here against what the shaper really produces, so

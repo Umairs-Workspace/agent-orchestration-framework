@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 17 / story 01 — --dry-run zero-calls
 // (02_dry-run-zero-calls.feature, @executable; ADR-003). One test object per
 // @executable scenario.
@@ -13,13 +15,13 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { readMapping } from "../../src/notion/mapping.mjs";
-import { projectMilestone } from "../../src/notion/projection.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const DATA_SOURCE_ID = "ds-fixture";
 

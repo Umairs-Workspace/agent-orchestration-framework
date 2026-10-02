@@ -1,3 +1,7 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Executable wiring for milestone 69 / story 05 review fixes (ADR-006/007):
 // parking is exit-confirmed and durable; resume admission is bounded and deduped.
 import assert from "node:assert/strict";
@@ -5,25 +9,33 @@ import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeProjectsDir } from "../../src/work/observe.mjs";
-import { readWorkerAsk } from "../../src/mesh/park-resume.mjs";
-import {
-  createMeshWorkerExecutionHandler,
-  createMeshWorkerTerminalResumeHandler,
-  driveInteractiveClaudeSession,
-} from "../../src/mesh/worker-execution.mjs";
-import { isLegalTransition, readRuns, runNodeRecordPath, runRecordPath } from "../../src/run-store.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { assignmentOccupiesDispatchSlot } from "../../src/mesh/assignment-reclaim.mjs";
-import { transitionRunComplete } from "../../src/effects/run-transitions.mjs";
-import { appendEvent, latestAppliedAssignmentParkEventId, openEffectsJournal, pendingSteps } from "../../src/effects/journal.mjs";
-import { drainOutbox, applyEffectAck, EFFECT_STEP_FRAME_KIND } from "../../src/effects/outbox.mjs";
-import { reportAssignmentSettled, reportTerminalResumeRefused } from "../../src/effects/assignment-transitions.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { readAssignment, reserveParkedAssignmentResume } from "../../src/assignment-record.mjs";
-import { meshWorktreePath } from "../../src/mesh/worktree.mjs";
-import { findWork, loadWorkspace } from "../../src/work.mjs";
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const readWorkerAsk = _aofApplication.mesh.parkResume.readWorkerAsk;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const createMeshWorkerTerminalResumeHandler = _aofApplication.mesh.worker.createMeshWorkerTerminalResumeHandler;
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const isLegalTransition = _aofApplication.execution.runs.isLegalTransition;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const runNodeRecordPath = _aofApplication.execution.runs.runNodeRecordPath;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const assignmentOccupiesDispatchSlot = _aofApplication.mesh.assignmentReclaim.assignmentOccupiesDispatchSlot;
+const transitionRunComplete = _aofApplication.execution.transitions.transitionRunComplete;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const latestAppliedAssignmentParkEventId = _aofApplication.effects.journal.latestAppliedAssignmentParkEventId;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const drainOutbox = _aofApplication.effects.outbox.drainOutbox;
+const applyEffectAck = _aofApplication.effects.outbox.applyEffectAck;
+const EFFECT_STEP_FRAME_KIND = _aofApplication.effects.outbox.EFFECT_STEP_FRAME_KIND;
+const reportAssignmentSettled = _aofApplication.mesh.transitions.reportAssignmentSettled;
+const reportTerminalResumeRefused = _aofApplication.mesh.transitions.reportTerminalResumeRefused;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+import { readAssignment, reserveParkedAssignmentResume } from "@aof/mesh/assignment-record";
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const findWork = _aofWorkspace.work.findWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import {
   createStatusRecorder,
   markRepoPublished,
@@ -1312,11 +1324,16 @@ function workerAskTests() {
       },
     },
     {
-      name: "131/12 task00 — the sink file does not grow: src/mesh/worker-execution.mjs is 1,914 lines",
+      name: "131/12 task00 — the sink file does not grow: mesh worker execution remains below its pre-migration 1,914-line ceiling",
       run: async () => {
-        const text = await readFile(new URL("../../src/mesh/worker-execution.mjs", import.meta.url), "utf8");
-        assert.equal(text.split(/\r?\n/u).length - (text.endsWith("\n") ? 1 : 0), 1914);
+        const text = await readFile(new URL("../../packages/mesh/src/worker-execution.mjs", import.meta.url), "utf8");
+        const count = text.split(/\r?\n/u).length - (text.endsWith("\n") ? 1 : 0);
+        assert.ok(count > 1500 && count <= 1914, `the implementation was read and did not grow: ${count}`);
       },
     },
   ];
 }
+
+// Every case here passes alone, in a fresh process (142 Plan 09 measured each position separately), so the sharded run may
+// split this file across workers. Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;

@@ -48,11 +48,11 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-001** the
 bijection gate; **ADR-002** the partition seam; **ADR-003** the frozen node-record schema). This story
 **owns**: `src/mesh-store.mjs` — the partition path seam `meshDir(workspace)` / `nodeRecordPath(workspace,
 id)` (**ADR-002**), the frozen node-record JSON schema's persist/read (**ADR-003**), atomic per-node writes
-through [fs.mjs](../../../../../../src/fs.mjs) `writeText` (**19/R2**) — plus the `aof mesh` top-level CLI
+through [fs.mjs](../../../../../../packages/foundation/src/fs.mjs) `writeText` (**19/R2**) — plus the `aof mesh` top-level CLI
 dispatcher **skeleton** (`meshCommand` + the `if (command === "mesh")` case in
-[cli.mjs](../../../../../../src/cli.mjs)) and the three arch-tests above + their registration in
+[cli.mjs](../../../../../../packages/core/src/cli.mjs)) and the three arch-tests above + their registration in
 [scripts/test.mjs](../../../../../../scripts/test.mjs). It *reads* the existing
-[work.mjs](../../../../../../src/work.mjs) workspace model (`workDir` resolves where `meshDir` sits) — it does
+[work.mjs](../../../../../../packages/core/src/application/bindings/work.mjs) workspace model (`workDir` resolves where `meshDir` sits) — it does
 **not** rewrite it, and it does **not** author node-id derivation (story 01), the sync transport (story 02),
 or any board face (milestone 25).
 
@@ -73,7 +73,7 @@ deliverable, shipped with the spine so stories 01/02 stay fully independent para
 modelled near-byte-for-byte on `run-store.mjs` (the one-join-site path seam + atomic `writeText` +
 absence-tolerant `try/catch → absent` read), and a `meshCommand` dispatcher modelled on `workCommand` /
 `graphCommand` in `cli.mjs`. `meshDir(workspace)` roots cleanly: `ctx.workspace` (from `loadWorkspace`,
-[work.mjs:42](../../../../../../src/work.mjs)) carries `workDir`, so `join(workspace.workDir, ".mesh")` →
+[work.mjs:42](../../../../../../packages/core/src/application/bindings/work.mjs)) carries `workDir`, so `join(workspace.workDir, ".mesh")` →
 `wiki/work/.mesh/nodes/<id>.json` is reachable from what every command receives. The bijection arch-test is a
 mechanical `mesh:`-filtered copy of `acd-work-command-cli-bijection`; **RED-until-commands is correct** (an
 empty derived sub set passes the three sub-loops vacuously). **19/R1 no-regression confirmed:** the existing
@@ -87,11 +87,11 @@ allow-list widening; `acd-command-namespace` (bundle members) is untripped.
 
 - **Mirror `run-store.mjs` directly:** `meshDir`/`nodeRecordPath` ↔ `runsDir`/`runRecordPath`; persist =
   `mkdir(recursive) → writeText(JSON.stringify(record, null, 2))` (the `writeText` temp+rename in
-  [fs.mjs](../../../../../../src/fs.mjs) carries the Windows `renameWithRetry` — load-bearing on this platform);
+  [fs.mjs](../../../../../../packages/foundation/src/fs.mjs) carries the Windows `renameWithRetry` — load-bearing on this platform);
   read = the `readdir`/`readFile` + `try/catch` absence discipline.
 - **`meshCommand` skeleton:** model on `graphCommand` — it already does the `console.error(usage);
   process.exitCode = 1` unknown-sub path and the single-`{ ok:false, error, code }` `--json` envelope via the
-  `runVerbCli` idiom ([cli.mjs](../../../../../../src/cli.mjs)). Add `if (command === "mesh") { await
+  `runVerbCli` idiom ([cli.mjs](../../../../../../packages/core/src/cli.mjs)). Add `if (command === "mesh") { await
   meshCommand(rest); return; }` to the top-level dispatch.
 - **The `.mesh` leaf is the seam's own choice** — the contract pins only "node-id-keyed, under `workDir`,
   git-tracked, not `.aof/`"; the literal leaf is renameable without a contract change.

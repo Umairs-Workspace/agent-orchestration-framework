@@ -4,13 +4,13 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
 // milestone 72 / story 02 - THE TEST COMMAND'S FACE: one registered command (`aof test`, the ONE
-// this milestone adds to `src/commands/`) that composes 72/00's declaration and bounded launch
+// this milestone adds to `packages/core/src/commands/`) that composes 72/00's declaration and bounded launch
 // with 72/01's selection and adds only the face - three closed scope forms with no fourth and no
 // default, a failures-only report derived from BOTH streams and the exit code, and one result
 // object both the human face and `--json` project. It REPORTS and never decides: `gate: false` on
@@ -40,7 +40,6 @@ import { installerVerifyTests } from "./installer-verify.test.mjs";
 import { installerPlaceTests } from "./installer-place.test.mjs";
 // m42 wave (a) / m38-F26 — atomic-write temp hygiene (failed rename reclaims its
 // temp; the startup sweep reclaims aged orphans only).
-import { fsTempHygieneTests } from "./fs-temp-hygiene.test.mjs";
 // milestone 28 — console-app (story 00: craft-review hardening on the SEA build
 // recipe — F14 (scripts/build-sea.mjs's assertSafeOutDir refuses an --out that
 // resolves to the repo root/cwd/a workspace-marked dir, so `--out .` can never
@@ -61,6 +60,5 @@ export const tests = [
   ...installerDetectTests,
   ...installerVerifyTests,
   ...installerPlaceTests,
-  ...fsTempHygieneTests,
   ...buildSeaRecipeGuardsTests,
 ];

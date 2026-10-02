@@ -12,10 +12,10 @@
 //       fixtures into the real `~/.aof` (config AND mesh stores) and pollute the live soak."
 //       `scripts/test.mjs` rotates a per-test home for its UNIT lane, but its INTEGRATION
 //       lane runs on the ambient one, and a module-level singleton bound at import time
-//       (e.g. `src/degrade.mjs`'s sink) binds before any rotation happens.
+//       (e.g. `packages/core/src/degrade.mjs`'s sink) binds before any rotation happens.
 //   (2) "Never run the full suite on this machine — `global-work-propagation.test.mjs` binds
 //       `:4182`, which the live control daemon holds." Confirmed at source: that suite calls
-//       `startLauncher` (`src/mesh/launcher.mjs`), whose `DEFAULT_CONTROL_SERVICE_PORT` is
+//       `startLauncher` (`packages/core/src/mesh/launcher.mjs`), whose `DEFAULT_CONTROL_SERVICE_PORT` is
 //       4182. Fifteen registered suites start the launcher, so a name deny-list would drift
 //       the moment a sixteenth arrives.
 //
@@ -31,7 +31,7 @@
 // that runs on the ambient global home, and the milestone gate is where the whole suite
 // belongs.
 //
-// TAP is emitted because `work.rubric.report.format` declares `tap` and `src/work/grade.mjs`
+// TAP is emitted because `work.rubric.report.format` declares `tap` and `packages/core/src/work/grade.mjs`
 // normalises it. Nothing is emitted as `# SKIP`: a skipped case is not evidence
 // (`54/ADR-005` §2c as amended), and a lane this runner does not run is not a case it
 // observed — so it is ABSENT from the report rather than reported as a skip it did not take.

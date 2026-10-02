@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for the AOF.md digest source (05/ADR-007 "add a source = a
 // localised additive change, gated by the SAME derived-index invariant"):
 // "Every `summary` record a digest contributes carries the frozen MemoryRecord
@@ -14,8 +15,8 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { reindex } from "../../../src/memory/local-indexing.mjs";
-import { MEMORY_RECORD_FIELDS } from "../../../src/memory/local-retrieval.mjs";
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 
 // A digest with three `## ` sections + an h3 subsection (which must NOT be a record
 // root) — the same shape an aof digest takes for a milestone with no ADR/retro docs.

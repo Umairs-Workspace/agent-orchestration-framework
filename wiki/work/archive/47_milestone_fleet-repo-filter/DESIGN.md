@@ -51,10 +51,10 @@ them**. The SPEC's two blunt sentences are the design brief:
   silently fall back to "all repos". This is m45 binding rail 3 applied to a query parameter instead
   of a path, and for the same reason.
 - **No new design system, no new token, no new ramp.** Every mark below is an existing one reused:
-  the milestone-switcher disclosure ([BoardLanes.tsx:352-368](../../../../ui/src/board/BoardLanes.tsx#L352)),
-  the identity-chip form ([Fleet.tsx:289](../../../../ui/src/fleet/Fleet.tsx#L289)), the legend's popover
-  ([Fleet.tsx:379](../../../../ui/src/fleet/Fleet.tsx#L379)), the house dashed absent/not-yet primitive,
-  and the fixed theme ramp at [ui/src/index.css:3-25](../../../../ui/src/index.css#L3).
+  the milestone-switcher disclosure ([BoardLanes.tsx:352-368](../../../../apps/ui/src/board/BoardLanes.tsx#L352)),
+  the identity-chip form ([Fleet.tsx:289](../../../../apps/ui/src/fleet/Fleet.tsx#L289)), the legend's popover
+  ([Fleet.tsx:379](../../../../apps/ui/src/fleet/Fleet.tsx#L379)), the house dashed absent/not-yet primitive,
+  and the fixed theme ramp at [ui/src/index.css:3-25](../../../../apps/ui/src/index.css#L3).
 
 ---
 
@@ -205,24 +205,24 @@ may do.
 
 | Fact | Where it lives today | Consequence for this design |
 |---|---|---|
-| The fleet's bar contribution is `<SurfaceSlot>` holding **scope control → legend → refresh**, published to the shell and rendered in place when no shell hosts it | [Fleet.tsx:280-334](../../../../ui/src/fleet/Fleet.tsx#L280), [SurfaceSlot.tsx:57-63](../../../../ui/src/app/SurfaceSlot.tsx#L57) | The filter joins **this list**, in the fleet's own order. m47 "inherits a slot, not a negotiation" (45/DESIGN §The scope-control ruling). **No shell change.** |
-| `<TopBar>` renders **above** the loading/error/empty/populated ternary, which is what makes the scope control present in every state — pinned by [`acd-mesh-ui-scope-visible`](../../../../test/arch/acd-mesh-ui-scope-visible.test.mjs) | [Fleet.tsx:220-249](../../../../ui/src/fleet/Fleet.tsx#L220) | The filter control inherits that position and that invariant **unchanged**. The filter **banner** must take the same hoist — see DG-47-1. |
-| The filter key already exists on every record: `workspaceId`, `name`, `projectRoot` on workspaces; `workspaceId` on items; `workspaceIds[]` on nodes | [scope.mjs:162-170](../../../../ui/src/fleet/scope.mjs#L162) | **This design asks for no new data.** The option set is `status.workspaces`; the node region narrows by *membership*, which is a different relation and must be said out loud (§Surface 2, Region 3). |
-| `"Filtered to workspace <id>"` renders **inside `GlobalScopeView`**, i.e. only in the populated branch | [Fleet.tsx:442-446](../../../../ui/src/fleet/Fleet.tsx#L442) | **DG-47-1.** The one sentence that explains an empty filtered page is swapped out by the empty state. |
-| `pageState()` yields exactly `loading \| error \| empty \| populated`, and `isEmptyStatus()` is scope- and filter-agnostic | [scope.mjs:65-98](../../../../ui/src/fleet/scope.mjs#L65) | A naive `filterToWorkspace` + `isEmptyStatus` composition renders an unknown filter as an **idle mesh** — the SPEC's forbidden outcome. **DG-47-3.** |
-| `emptyStateCopy(scope)` carries exactly two strings, both about an **unfiltered** mesh ("No mesh-enabled workspaces have published yet…" / "No nodes in the group yet…") | [scope.mjs:104-109](../../../../ui/src/fleet/scope.mjs#L104) | Neither is true of a filtered view. The filtered states need their **own** copy; the two existing strings are **unchanged**. |
-| Region 5's yield order is settled across DG-13…DG-22 and **fitness-locked** — the name is dropped WHOLE on a fit budget (`REGION5_NAME_BUDGET_CH = 8`), the tail drops whole, the drill-in gives up its words, the target yields last, and **no two elements may occupy the same pixels** | [Fleet.tsx:696-743](../../../../ui/src/fleet/Fleet.tsx#L696), [assign-affordance.mjs:198-220](../../../../ui/src/fleet/assign-affordance.mjs#L198), [fleet-assign-row-geometry.test.mjs:570-700](../../../../test/fleet-assign-row-geometry.test.mjs#L570) | The relief SPEC offers is real, and it is **the existing `nameDropped` geometry made unconditional** — not a new layout. **DG-47-2**, and it is a deliberate, test-updating decision. **Everything DG-47-5 adds to that row must fit this same ladder.** **AMENDED 2026-08-12 (ADR-014, F-47-04-QA-8):** that ladder was written for a TWO-child cluster and the cluster has THREE whenever the card carries an assignment AND either work in review or a done milestone (`assignment && (inReview > 0 \|\| isDone)`). It gains **one rung, inserted at position 3** — the secondary token gives up its WORDS, keeping its pinned glyph and any count with it — which pushes the target's rung to 4; and every threshold is re-derived from the grid's own floor row (286px), not from the 360.66px row at 1280. |
-| The milestone card's drill-in has exactly **three** renders, and two of them break the ladder: at rest `Open board →`; in flight `Opening board...`; on failure the plain words `Open failed` with `title="Open failed"` — and in **both** non-rest states the pinned `→` is dropped while the abbreviation gate is INVERTED (`abbreviateDrillIn && !opening && !openError`), so the words render at every width | [Fleet.tsx:729-741](../../../../ui/src/fleet/Fleet.tsx#L729) | **DG-47-5.** The failure is the WIDEST state of the most width-constrained element on the row, and the mark DG-19 pins is the one thing it drops. |
-| The milestone-switcher disclosure already exists: `flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 text-sm font-medium`, `▾`, `aria-haspopup`, `aria-expanded`, a `z-20` listbox whose **first row is `All milestones`** above a separator, active row `bg-primary/10 text-foreground` | [BoardLanes.tsx:352-393](../../../../ui/src/board/BoardLanes.tsx#L352), [:398-420](../../../../ui/src/board/BoardLanes.tsx#L398) | The repo picker is **this component's shape**, reused — including its "All …" first row. m45 already reuses it for the 390 nav disclosure, so it is the product's settled answer to "pick one from a data-derived list". |
-| The identity chip's width lesson (m45 GAP-4): `min-w-[7ch]` is a **border-box** minimum, so it reserved 4.26 characters, not 7; fixed by reserving the CONTENT box in **one** literal constant both the element and its placeholder consume | [shell-layout.mjs:198-228](../../../../ui/src/app/shell-layout.mjs#L198) | The filter trigger reserves its width the same way, in one constant, spelled as a **literal** Tailwind's scanner can see. Repeating the mistake is not permitted twice in the same bar. |
-| The z ladder is closed: `popover` is **`z-20`** and legends/disclosures/listboxes live there | [shell-layout.mjs:771-798](../../../../ui/src/app/shell-layout.mjs#L771), DG-45-2 | The picker's popover takes `z-20`. It is not a dialog, not a toast, and never `z-50`. |
-| The page root is clamped `overflow-x: clip` as D1's backstop, and every fleet card carries `min-w-0` because `truncate` cannot clip until a flex/grid item may shrink below its content | [index.css:27-45](../../../../ui/src/index.css#L27), [Fleet.tsx:465-474](../../../../ui/src/fleet/Fleet.tsx#L465) | A long repo name may never widen the page. Every new box below declares its own `min-w-0` / max-width. |
-| `GlobalScopeView` renders **Workspaces → Milestones → Nodes → Diagnostics** — **four** regions, and no Boards region. ADR-006 **DELETES** the unreachable local-shape branch in this milestone: `BoardsRegion`, `BoardTile`, `boardRunState`, `BoardDrillIn` and the `NodesRegion`/`NodeCard` pair beside it (≈250 lines), plus the wire types that lose their last reader | [Fleet.tsx:439-453](../../../../ui/src/fleet/Fleet.tsx#L439), [ARCHITECTURE.md ADR-006](ARCHITECTURE.md) | **The page's regions are R0–R4 and Boards is not one of them.** A render with no boards region **CONFORMS** — logging it as a GAP would be judging the build against a region the record removed on purpose. See §Surface 2's dated removal note for the terms on which one returns. |
-| The **production** node region is `GlobalNodePanel`, whose summary is `<N> nodes` and nothing more; the `· N live · N stale · N offline` tail belongs to the deleted local-shape `NodesRegion` | [Fleet.tsx:973-977](../../../../ui/src/fleet/Fleet.tsx#L973) vs [:1065-1069](../../../../ui/src/fleet/Fleet.tsx#L1065) | R3's filtered summary carries **no** liveness tail. A checklist that asked for one would GAP a correct build. |
-| Diagnostics is a **COMPOUND**: `projectedAt` / `databasePath` / `descriptorErrors[]` describe the projection's own health and carry no workspace, while `skippedWorkspaces[]` and `projectionErrors[]` carry `workspaceId` | [scope.mjs:265-273](../../../../ui/src/fleet/scope.mjs#L265), [Fleet.tsx:1045-1061](../../../../ui/src/fleet/Fleet.tsx#L1045), ADR-004 | It is **partly** exempt, not wholly: ADR-004 rules the workspace-carrying rows **case 1 (narrowed)** and the rest **case 3(a) — machine-wide and DECLARED**. The region states **which of its numbers are filtered**. A blanket *"not narrowed by the filter"* would be false about half its own strip. See §Surface 2, Region 4. |
-| `emptyStateCopy(narrowings)` returns `{ heading, body }` and branches on the payload's `scope` scalar, the raw `repo`, the three-valued `resolved` and (per ADR-010) the served `workspaceId` — so it can produce far more than the four cases ADR-007 names | [scope.mjs:275-323](../../../../ui/src/fleet/scope.mjs#L275), 47/02 task 02, ADR-010 clause 5 | **Every combination it can reach is pinned** in §Surface 2's *E1–E7* table, and the combinations it may **never** produce are listed beside it. A checklist that pinned only the four cases left the developer authoring product copy at build — which is what happened, and what `F-47-02-QA-F3` found. |
-| **The server NEVER narrows the node roster** — not under `?scope=local`, not ever — so a repo filter is the **first** narrowing that roster receives | [global-node-registry.mjs:170-172](../../../../src/global-node-registry.mjs#L170), [mesh-ui-serve.mjs:552-554](../../../../src/mesh-ui-serve.mjs#L552), `acd-mesh-ui-local-filter-preserves-status` (green), **ADR-010** | `?scope=local&repo=<another repo>` renders **that repo's member machines with no work above them** — a `populated` page, not an empty one. It needs the **partial-intersection notice** (§Surface 2, **R0-N**), and it is why the composed nothing-state is **OUT-OF-SCOPE (E5)** and never *unknown*. |
-| The payload carries `workspaceId` — *the workspace the SERVER narrowed to*, `null` when it did not narrow | [global-mesh-query.mjs:271](../../../../src/global-mesh-query.mjs#L271), [api.ts:210](../../../../ui/src/fleet/api.ts#L210), ADR-010 clause 5 | It is the discriminator that keeps a scope-narrowed view from accusing a repo of being unknown. **A view served one workspace may never make a claim about the mesh** — E5's copy exists for exactly that, and E4's copy is structurally unavailable there. |
+| The fleet's bar contribution is `<SurfaceSlot>` holding **scope control → legend → refresh**, published to the shell and rendered in place when no shell hosts it | [Fleet.tsx:280-334](../../../../apps/ui/src/fleet/Fleet.tsx#L280), [SurfaceSlot.tsx:57-63](../../../../apps/ui/src/app/SurfaceSlot.tsx#L57) | The filter joins **this list**, in the fleet's own order. m47 "inherits a slot, not a negotiation" (45/DESIGN §The scope-control ruling). **No shell change.** |
+| `<TopBar>` renders **above** the loading/error/empty/populated ternary, which is what makes the scope control present in every state — pinned by [`acd-mesh-ui-scope-visible`](../../../../test/arch/acd-mesh-ui-scope-visible.test.mjs) | [Fleet.tsx:220-249](../../../../apps/ui/src/fleet/Fleet.tsx#L220) | The filter control inherits that position and that invariant **unchanged**. The filter **banner** must take the same hoist — see DG-47-1. |
+| The filter key already exists on every record: `workspaceId`, `name`, `projectRoot` on workspaces; `workspaceId` on items; `workspaceIds[]` on nodes | [scope.mjs:162-170](../../../../apps/ui/src/fleet/scope.mjs#L162) | **This design asks for no new data.** The option set is `status.workspaces`; the node region narrows by *membership*, which is a different relation and must be said out loud (§Surface 2, Region 3). |
+| `"Filtered to workspace <id>"` renders **inside `GlobalScopeView`**, i.e. only in the populated branch | [Fleet.tsx:442-446](../../../../apps/ui/src/fleet/Fleet.tsx#L442) | **DG-47-1.** The one sentence that explains an empty filtered page is swapped out by the empty state. |
+| `pageState()` yields exactly `loading \| error \| empty \| populated`, and `isEmptyStatus()` is scope- and filter-agnostic | [scope.mjs:65-98](../../../../apps/ui/src/fleet/scope.mjs#L65) | A naive `filterToWorkspace` + `isEmptyStatus` composition renders an unknown filter as an **idle mesh** — the SPEC's forbidden outcome. **DG-47-3.** |
+| `emptyStateCopy(scope)` carries exactly two strings, both about an **unfiltered** mesh ("No mesh-enabled workspaces have published yet…" / "No nodes in the group yet…") | [scope.mjs:104-109](../../../../apps/ui/src/fleet/scope.mjs#L104) | Neither is true of a filtered view. The filtered states need their **own** copy; the two existing strings are **unchanged**. |
+| Region 5's yield order is settled across DG-13…DG-22 and **fitness-locked** — the name is dropped WHOLE on a fit budget (`REGION5_NAME_BUDGET_CH = 8`), the tail drops whole, the drill-in gives up its words, the target yields last, and **no two elements may occupy the same pixels** | [Fleet.tsx:696-743](../../../../apps/ui/src/fleet/Fleet.tsx#L696), [assign-affordance.mjs:198-220](../../../../apps/ui/src/fleet/assign-affordance.mjs#L198), [fleet-assign-row-geometry.test.mjs:570-700](../../../../test/fleet-assign-row-geometry.test.mjs#L570) | The relief SPEC offers is real, and it is **the existing `nameDropped` geometry made unconditional** — not a new layout. **DG-47-2**, and it is a deliberate, test-updating decision. **Everything DG-47-5 adds to that row must fit this same ladder.** **AMENDED 2026-08-12 (ADR-014, F-47-04-QA-8):** that ladder was written for a TWO-child cluster and the cluster has THREE whenever the card carries an assignment AND either work in review or a done milestone (`assignment && (inReview > 0 \|\| isDone)`). It gains **one rung, inserted at position 3** — the secondary token gives up its WORDS, keeping its pinned glyph and any count with it — which pushes the target's rung to 4; and every threshold is re-derived from the grid's own floor row (286px), not from the 360.66px row at 1280. |
+| The milestone card's drill-in has exactly **three** renders, and two of them break the ladder: at rest `Open board →`; in flight `Opening board...`; on failure the plain words `Open failed` with `title="Open failed"` — and in **both** non-rest states the pinned `→` is dropped while the abbreviation gate is INVERTED (`abbreviateDrillIn && !opening && !openError`), so the words render at every width | [Fleet.tsx:729-741](../../../../apps/ui/src/fleet/Fleet.tsx#L729) | **DG-47-5.** The failure is the WIDEST state of the most width-constrained element on the row, and the mark DG-19 pins is the one thing it drops. |
+| The milestone-switcher disclosure already exists: `flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 text-sm font-medium`, `▾`, `aria-haspopup`, `aria-expanded`, a `z-20` listbox whose **first row is `All milestones`** above a separator, active row `bg-primary/10 text-foreground` | [BoardLanes.tsx:352-393](../../../../apps/ui/src/board/BoardLanes.tsx#L352), [:398-420](../../../../apps/ui/src/board/BoardLanes.tsx#L398) | The repo picker is **this component's shape**, reused — including its "All …" first row. m45 already reuses it for the 390 nav disclosure, so it is the product's settled answer to "pick one from a data-derived list". |
+| The identity chip's width lesson (m45 GAP-4): `min-w-[7ch]` is a **border-box** minimum, so it reserved 4.26 characters, not 7; fixed by reserving the CONTENT box in **one** literal constant both the element and its placeholder consume | [shell-layout.mjs:198-228](../../../../apps/ui/src/app/shell-layout.mjs#L198) | The filter trigger reserves its width the same way, in one constant, spelled as a **literal** Tailwind's scanner can see. Repeating the mistake is not permitted twice in the same bar. |
+| The z ladder is closed: `popover` is **`z-20`** and legends/disclosures/listboxes live there | [shell-layout.mjs:771-798](../../../../apps/ui/src/app/shell-layout.mjs#L771), DG-45-2 | The picker's popover takes `z-20`. It is not a dialog, not a toast, and never `z-50`. |
+| The page root is clamped `overflow-x: clip` as D1's backstop, and every fleet card carries `min-w-0` because `truncate` cannot clip until a flex/grid item may shrink below its content | [index.css:27-45](../../../../apps/ui/src/index.css#L27), [Fleet.tsx:465-474](../../../../apps/ui/src/fleet/Fleet.tsx#L465) | A long repo name may never widen the page. Every new box below declares its own `min-w-0` / max-width. |
+| `GlobalScopeView` renders **Workspaces → Milestones → Nodes → Diagnostics** — **four** regions, and no Boards region. ADR-006 **DELETES** the unreachable local-shape branch in this milestone: `BoardsRegion`, `BoardTile`, `boardRunState`, `BoardDrillIn` and the `NodesRegion`/`NodeCard` pair beside it (≈250 lines), plus the wire types that lose their last reader | [Fleet.tsx:439-453](../../../../apps/ui/src/fleet/Fleet.tsx#L439), [ARCHITECTURE.md ADR-006](ARCHITECTURE.md) | **The page's regions are R0–R4 and Boards is not one of them.** A render with no boards region **CONFORMS** — logging it as a GAP would be judging the build against a region the record removed on purpose. See §Surface 2's dated removal note for the terms on which one returns. |
+| The **production** node region is `GlobalNodePanel`, whose summary is `<N> nodes` and nothing more; the `· N live · N stale · N offline` tail belongs to the deleted local-shape `NodesRegion` | [Fleet.tsx:973-977](../../../../apps/ui/src/fleet/Fleet.tsx#L973) vs [:1065-1069](../../../../apps/ui/src/fleet/Fleet.tsx#L1065) | R3's filtered summary carries **no** liveness tail. A checklist that asked for one would GAP a correct build. |
+| Diagnostics is a **COMPOUND**: `projectedAt` / `databasePath` / `descriptorErrors[]` describe the projection's own health and carry no workspace, while `skippedWorkspaces[]` and `projectionErrors[]` carry `workspaceId` | [scope.mjs:265-273](../../../../apps/ui/src/fleet/scope.mjs#L265), [Fleet.tsx:1045-1061](../../../../apps/ui/src/fleet/Fleet.tsx#L1045), ADR-004 | It is **partly** exempt, not wholly: ADR-004 rules the workspace-carrying rows **case 1 (narrowed)** and the rest **case 3(a) — machine-wide and DECLARED**. The region states **which of its numbers are filtered**. A blanket *"not narrowed by the filter"* would be false about half its own strip. See §Surface 2, Region 4. |
+| `emptyStateCopy(narrowings)` returns `{ heading, body }` and branches on the payload's `scope` scalar, the raw `repo`, the three-valued `resolved` and (per ADR-010) the served `workspaceId` — so it can produce far more than the four cases ADR-007 names | [scope.mjs:275-323](../../../../apps/ui/src/fleet/scope.mjs#L275), 47/02 task 02, ADR-010 clause 5 | **Every combination it can reach is pinned** in §Surface 2's *E1–E7* table, and the combinations it may **never** produce are listed beside it. A checklist that pinned only the four cases left the developer authoring product copy at build — which is what happened, and what `F-47-02-QA-F3` found. |
+| **The server NEVER narrows the node roster** — not under `?scope=local`, not ever — so a repo filter is the **first** narrowing that roster receives | [global-node-registry.mjs:170-172](../../../../packages/mesh/src/global-node-registry.mjs#L170), [mesh-ui-serve.mjs:552-554](../../../../src/mesh-ui-serve.mjs#L552), `acd-mesh-ui-local-filter-preserves-status` (green), **ADR-010** | `?scope=local&repo=<another repo>` renders **that repo's member machines with no work above them** — a `populated` page, not an empty one. It needs the **partial-intersection notice** (§Surface 2, **R0-N**), and it is why the composed nothing-state is **OUT-OF-SCOPE (E5)** and never *unknown*. |
+| The payload carries `workspaceId` — *the workspace the SERVER narrowed to*, `null` when it did not narrow | [global-mesh-query.mjs:271](../../../../packages/core/src/application/bindings/global-mesh-query.mjs#L271), [api.ts:210](../../../../apps/ui/src/fleet/api.ts#L210), ADR-010 clause 5 | It is the discriminator that keeps a scope-narrowed view from accusing a repo of being unknown. **A view served one workspace may never make a claim about the mesh** — E5's copy exists for exactly that, and E4's copy is structurally unavailable there. |
 
 ---
 
@@ -234,7 +234,7 @@ alone.
 ### DG-47-1 — the "filtered by" statement lives inside the populated branch
 
 **What is true today.** `"Filtered to workspace <id>"` is the first child of `GlobalScopeView`
-([Fleet.tsx:442-446](../../../../ui/src/fleet/Fleet.tsx#L442)), which is one of four mutually exclusive
+([Fleet.tsx:442-446](../../../../apps/ui/src/fleet/Fleet.tsx#L442)), which is one of four mutually exclusive
 branches. In `loading`, `error` and — decisively — **`empty`**, the page renders a different subtree
 and the sentence is gone.
 
@@ -267,7 +267,7 @@ carries it in full"*) — now true for every card at once rather than one card a
 `REGION5_NAME_BUDGET_CH` is **not consulted**, and DG-22's alignment consequence applies to every
 card — the attention cluster becomes the row's leading group and is left-aligned, only the drill-in
 is pushed right. **This is byte-identical to today's `nameDropped === true` geometry**
-([Fleet.tsx:711-714](../../../../ui/src/fleet/Fleet.tsx#L711)). No new layout is invented; a branch that
+([Fleet.tsx:711-714](../../../../apps/ui/src/fleet/Fleet.tsx#L711)). No new layout is invented; a branch that
 already exists becomes reachable by a second, page-level condition.
 
 **Why DG-20's covert-signal objection does not bite here, stated so it is not re-argued.** DG-20
@@ -313,7 +313,7 @@ an element that is already on the row, in a state that already renders — not w
 
 **What breaks.** `pageState()` names four states and `isEmptyStatus()` reads the payload's own
 collections — `workspaces`, `items`, `nodes`
-([scope.mjs:65-98](../../../../ui/src/fleet/scope.mjs#L65)). Filter a populated payload down to a
+([scope.mjs:65-98](../../../../apps/ui/src/fleet/scope.mjs#L65)). Filter a populated payload down to a
 workspace it does not carry and every one of them is empty — so the page renders **`empty`**, whose
 copy says *"No mesh-enabled workspaces have published yet"*. That is a **false statement about the
 mesh**, produced by the operator's own filter, and it is exactly the SPEC's forbidden outcome.
@@ -477,7 +477,7 @@ question does not disappear with it: after the deletion **the milestone card's d
 drill-in the fleet has**, and it is the one an operator meets.
 
 **What is true today, read at source at `d71d508`
-([Fleet.tsx:729-741](../../../../ui/src/fleet/Fleet.tsx#L729)):**
+([Fleet.tsx:729-741](../../../../apps/ui/src/fleet/Fleet.tsx#L729)):**
 
 | | Expected (the rules already in force) | Observed |
 |---|---|---|
@@ -493,7 +493,7 @@ legibility defect at once, and it is reachable on any card (DG-47-6).
 **A record correction, so the next reader does not inherit it.** This document previously said the
 peer-board branch *"already ships the honest-locality affordance the rule wants — dashed,
 `aria-disabled`, `title` naming the command"*. Read at source
-([Fleet.tsx:1438-1447](../../../../ui/src/fleet/Fleet.tsx#L1438)) it shipped **neither** of the first
+([Fleet.tsx:1438-1447](../../../../apps/ui/src/fleet/Fleet.tsx#L1438)) it shipped **neither** of the first
 two: it was a `text-primary font-semibold` button that copied `aof work ui` to the clipboard, with
 the command in `title`. **Its `title` was its one good property**, and that property is inherited
 below rather than lost with the branch.
@@ -645,7 +645,7 @@ and clickable, and its accessible name naming the command. Judged against §Surf
 
 **What is true today, and it is ordinary rather than exotic.** The global projection is machine-wide
 and **cross-machine**: it carries workspace rows published by *other* nodes, whose `projectRoot`
-names a path this machine has never had ([api.ts:93-101](../../../../ui/src/fleet/api.ts#L93) — a
+names a path this machine has never had ([api.ts:93-101](../../../../apps/ui/src/fleet/api.ts#L93) — a
 workspace row carries `projectRoot`, `workDir` and `controlNode`, every one of them a fact about
 another machine's disk). Every milestone card on such a workspace renders `Open board →` in the
 live-action token, and **none of them can ever open**: the resolver calls `serveBoard({ projectDir })`
@@ -744,7 +744,7 @@ ruling.**
   nowhere else on the card — unlike the workspace name (R0's chip and R1's card) or the drill-in's
   words (`aria-label` + `title`, DG-47-5 clause 5). Recovery is the chip's own `title`, which already
   carries the whole string unconditionally
-  ([AssignmentChip.tsx](../../../../ui/src/fleet/AssignmentChip.tsx); `assign-affordance.mjs` says it in
+  ([AssignmentChip.tsx](../../../../apps/ui/src/fleet/AssignmentChip.tsx); `assign-affordance.mjs` says it in
   terms — *"the `title` still carries all of it"*). **No new mechanism is asked for.**
 - **By keeping it:** nothing is gained on screen, because it cannot render; and the row's grammar
   becomes data-dependent for a reason no operator can read — two cards side by side in the same state
@@ -872,7 +872,7 @@ this document used to point at.
 
 - **DG-45-5** — the nav's *unavailable* treatment has no producer; 45 names *"the origin probe
   milestone 47 owns"* as the closer. This document previously closed it by pointing at the peer-board
-  branch ([Fleet.tsx:1438-1447](../../../../ui/src/fleet/Fleet.tsx#L1438)) as already shipping the
+  branch ([Fleet.tsx:1438-1447](../../../../apps/ui/src/fleet/Fleet.tsx#L1438)) as already shipping the
   wanted treatment. **ADR-006 deletes that branch**, and the description was wrong besides (it was
   never dashed and never `aria-disabled` — see DG-47-5's record correction). **The ruling is
   therefore SPLIT, and both halves have a home:**
@@ -897,7 +897,7 @@ binds only what makes two narrowings legible while both exist.**
 
 1. **Different shapes, and the difference is load-bearing.** `Global | Local` is a **segmented
    control** — a closed set of exactly two, both always visible, the active one filled
-   `bg-primary text-primary-foreground` ([Fleet.tsx:342-362](../../../../ui/src/fleet/Fleet.tsx#L342)).
+   `bg-primary text-primary-foreground` ([Fleet.tsx:342-362](../../../../apps/ui/src/fleet/Fleet.tsx#L342)).
    The repo filter is a **disclosure** — an open, data-derived set, one bordered trigger with a `▾`.
    A second segmented control would read as one setting with four values.
 2. **One filled teal block per bar, and it is already spoken for.** m45 refused the segmented pill
@@ -943,13 +943,13 @@ carries. A segmented control can only express a closed set (and would collide wi
 vocabulary); a text input would ask the operator to type an id they can only get by reading the page,
 and would invite a value nothing matches on every keystroke. A disclosure over the real roster is the
 product's settled answer to this exact question — it is what the milestone switcher is
-([BoardLanes.tsx:352](../../../../ui/src/board/BoardLanes.tsx#L352)) and what m45's 390 nav collapse is
+([BoardLanes.tsx:352](../../../../apps/ui/src/board/BoardLanes.tsx#L352)) and what m45's 390 nav collapse is
 — and it makes an unknown filter reachable only by a hand-edited URL rather than by ordinary use.
 
 **Why the option set is the payload's workspaces and nothing else.** A repo the mesh has never heard
 of cannot be filtered to usefully, and a picker offering one would be inventing a target — the same
 refusal `assignableNodeOptions` already makes for the node picker
-([scope.mjs:252-256](../../../../ui/src/fleet/scope.mjs#L252)): *no invented placeholder target*.
+([scope.mjs:252-256](../../../../apps/ui/src/fleet/scope.mjs#L252)): *no invented placeholder target*.
 
 **What it shows at rest.** **`▾ All repos`** — never blank, never a bare funnel glyph, never absent.
 "No filter" is a value the control states, not a state it expresses by silence.
@@ -980,7 +980,7 @@ a filter stands:**
    It is a real `<button>` whose accessible name says what it clears (`Clear repo filter
    (lark-guard)`), never a bare glyph.
 2. **`All repos` as the picker's first row**, above a separator — the switcher's own `All milestones`
-   precedent ([BoardLanes.tsx:378-383](../../../../ui/src/board/BoardLanes.tsx#L378)).
+   precedent ([BoardLanes.tsx:378-383](../../../../apps/ui/src/board/BoardLanes.tsx#L378)).
 
 **A filter that can only be cleared from inside a closed menu is a hidden affordance**, and the
 operator's recovery from it is reloading the page — which is why door 1 is mandatory and why the
@@ -1049,7 +1049,7 @@ would be a second scope control. The repo's clear lives inside a closed popover,
 - **The menu row is two lines:** the name (truncating within the popover's fixed width) over the
   `projectRoot` in `mono` at `text-[11px]`, truncating, with the full path in `title` — the exact
   form the Workspaces card already uses
-  ([Fleet.tsx:472-474](../../../../ui/src/fleet/Fleet.tsx#L472)).
+  ([Fleet.tsx:472-474](../../../../apps/ui/src/fleet/Fleet.tsx#L472)).
 
 **A filter naming a workspace the payload does not carry** takes the house's **absent/not-yet**
 primitive — dashed, muted — in **both** places at once, so the bar and the page never disagree:
@@ -1195,7 +1195,7 @@ No screenshot can assert a `title`, so this clause is pinned by an `@executable`
 review.
 
 **Design ramp** — every token named from
-[index.css:3-25](../../../../ui/src/index.css#L3); **no new token, no hex, no new palette:**
+[index.css:3-25](../../../../apps/ui/src/index.css#L3); **no new token, no hex, no new palette:**
 
 | Element | Ramp |
 |---|---|
@@ -1203,12 +1203,12 @@ review.
 | **Trigger, filtered** | Identical, plus the label at `font-semibold text-foreground`. **No fill, no teal** — see §The two-narrowings ruling 2. |
 | **Trigger, unknown filter (E4 only)** | `border-dashed border-muted-foreground/40 text-muted-foreground`, label in `mono`. The house absent/not-yet primitive. Never `accent`, never `destructive`. **Not used for E3 or E5.** |
 | **Trigger, disabled (empty roster)** | `text-muted-foreground/60`, `aria-disabled="true"`, `title` naming why. **Focusable** — an item the keyboard skips hides its explanation from exactly the users who need it (45/a11y 4). |
-| **Popover** | `z-20 w-72 max-h-[60vh] overflow-y-auto rounded-md border border-border bg-popover p-1 text-xs text-popover-foreground shadow-md` — the legend's popover ramp ([Fleet.tsx:379](../../../../ui/src/fleet/Fleet.tsx#L379)) at the switcher's listbox width behaviour. |
-| **Row, rest / hover** | `flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition hover:bg-muted` — `SwitchRow` verbatim ([BoardLanes.tsx:413-415](../../../../ui/src/board/BoardLanes.tsx#L413)). |
+| **Popover** | `z-20 w-72 max-h-[60vh] overflow-y-auto rounded-md border border-border bg-popover p-1 text-xs text-popover-foreground shadow-md` — the legend's popover ramp ([Fleet.tsx:379](../../../../apps/ui/src/fleet/Fleet.tsx#L379)) at the switcher's listbox width behaviour. |
+| **Row, rest / hover** | `flex w-full items-center gap-2 rounded px-2 py-1.5 text-left transition hover:bg-muted` — `SwitchRow` verbatim ([BoardLanes.tsx:413-415](../../../../apps/ui/src/board/BoardLanes.tsx#L413)). |
 | **Row, selected** | `bg-primary/10 text-foreground` + `✓` + `font-semibold` + `aria-selected="true"`. |
 | **Row, second line** | `mono truncate text-[11px] text-muted-foreground`, `title` = the full `projectRoot` — the Workspaces card's own path ramp. |
-| **Mesh-enabled dot in a row** | `h-1.5 w-1.5 rounded-full bg-primary` when enabled, `border border-muted-foreground/50` when not — [Fleet.tsx:476](../../../../ui/src/fleet/Fleet.tsx#L476) verbatim. |
-| **Type** | Inter for labels, `.mono` ([index.css:79-83](../../../../ui/src/index.css#L79)) for every id and path. Hierarchy in the slot: **scope = filter > legend = refresh**. |
+| **Mesh-enabled dot in a row** | `h-1.5 w-1.5 rounded-full bg-primary` when enabled, `border border-muted-foreground/50` when not — [Fleet.tsx:476](../../../../apps/ui/src/fleet/Fleet.tsx#L476) verbatim. |
+| **Type** | Inter for labels, `.mono` ([index.css:79-83](../../../../apps/ui/src/index.css#L79)) for every id and path. Hierarchy in the slot: **scope = filter > legend = refresh**. |
 | **Motion** | **None.** No open/close animation, no fade, no slide. The only motion on this surface remains the `animate-pulse` that already exists on load placeholders elsewhere (and, per DG-47-5, on the drill-in's in-flight state — an addition, not an inheritance: F-47-04-QA-4). |
 
 ---
@@ -1291,7 +1291,7 @@ the statement of a narrowing, and the narrowings are stated unconditionally one 
 
 **"Narrowed consistently" — what it means per region, and the one PARTIAL exemption.** The narrowing
 key is `workspaceId` for workspaces and items, and **membership** (`workspaceIds` includes) for nodes
-([scope.mjs:162-170](../../../../ui/src/fleet/scope.mjs#L162)). Membership is a *different relation* and
+([scope.mjs:162-170](../../../../apps/ui/src/fleet/scope.mjs#L162)). Membership is a *different relation* and
 a shrunken node roster reads as *machines went away* unless the page says otherwise — so:
 
 **Every narrowed region's header summary states the narrowing's effect on that region**, in the form
@@ -1322,8 +1322,8 @@ home.
 
 **R3 carries no liveness tail, and the checklist says so because the old one did.** The production
 region is `GlobalNodePanel`, whose summary is `${nodes.length} nodes`
-([Fleet.tsx:974](../../../../ui/src/fleet/Fleet.tsx#L974)). The `· N live · N stale · N offline` tail
-belongs to the local-shape `NodesRegion` ([:1065-1069](../../../../ui/src/fleet/Fleet.tsx#L1065)) that
+([Fleet.tsx:974](../../../../apps/ui/src/fleet/Fleet.tsx#L974)). The `· N live · N stale · N offline` tail
+belongs to the local-shape `NodesRegion` ([:1065-1069](../../../../apps/ui/src/fleet/Fleet.tsx#L1065)) that
 ADR-006 deletes. A checklist that asked for the tail would GAP a correct build.
 
 **R4's strip, fact by fact (ADR-004's completeness rule applied to the one compound region):**
@@ -1354,7 +1354,7 @@ relief honest.
 
 **There is no Boards region** (ADR-006) — and the arithmetic check for it is already in the tree: the
 loading state reserves exactly **four** `RegionPlaceholder`s
-([Fleet.tsx:1459-1479](../../../../ui/src/fleet/Fleet.tsx#L1459)), matching R1–R4. Before this
+([Fleet.tsx:1459-1479](../../../../apps/ui/src/fleet/Fleet.tsx#L1459)), matching R1–R4. Before this
 amendment the checklist listed five regions against four placeholders, which is what a
 region-by-region review is for. **R0-N adds no placeholder** — it is not a region and it never
 renders in the loading state (there is no payload to have a partial intersection over).
@@ -1415,28 +1415,28 @@ The content mode is **`content:page`**, unchanged — the page owns scroll, no r
   - **It never becomes a rail, a banner, a toast or a second bar** (Documented default 13). One line,
     wrapping to two at 390, inside the content rail.
 - **R1–R3** — exactly the components that render today
-  ([Fleet.tsx:465-485](../../../../ui/src/fleet/Fleet.tsx#L465), [:491-518](../../../../ui/src/fleet/Fleet.tsx#L491),
-  [:973-1040](../../../../ui/src/fleet/Fleet.tsx#L973)), with **two** changes, both on the milestone
+  ([Fleet.tsx:465-485](../../../../apps/ui/src/fleet/Fleet.tsx#L465), [:491-518](../../../../apps/ui/src/fleet/Fleet.tsx#L491),
+  [:973-1040](../../../../apps/ui/src/fleet/Fleet.tsx#L973)), with **two** changes, both on the milestone
   card's footer row: its **region 5 drops the workspace name** under a filter (DG-47-2, with the
   exact yield order tabled there), and its **drill-in takes DG-47-5's treatment in the in-flight and
   failed states**. Card content is otherwise untouched — same status ring, same `StaleBadge`, same
   `StatusChip`, same progress track, same story dots, same assign affordance, same terminal control.
 - **R4** — `DiagnosticsRegion` verbatim, plus the exemption in its `RegionHeader` summary (which is
-  `""` today, [Fleet.tsx:1049](../../../../ui/src/fleet/Fleet.tsx#L1049)) and the `<n> of <N>` form on
+  `""` today, [Fleet.tsx:1049](../../../../apps/ui/src/fleet/Fleet.tsx#L1049)) and the `<n> of <N>` form on
   the skipped-workspace count **only**.
 
 **States (empty / loading / error / populated) — spelled out for THIS surface:**
 
 - **loading (filtered)** — **R0 renders in full** (the filter is known from the URL before any data
   is), above the four existing `RegionPlaceholder`s
-  ([Fleet.tsx:1459-1479](../../../../ui/src/fleet/Fleet.tsx#L1459)), which are **unchanged**. The banner
+  ([Fleet.tsx:1459-1479](../../../../apps/ui/src/fleet/Fleet.tsx#L1459)), which are **unchanged**. The banner
   **never pulses**; the repo chip shows the raw value in `mono` in its **neutral** form until the
   name resolves, then swaps. That swap changes the chip's width and **moves nothing** — the banner is
   a full-width row with nothing downstream of it, which is exactly why the width discipline lives on
   the bar's trigger and not here. **R0-N is absent** — there is no payload to have a partial
   intersection over.
 - **error (filtered)** — **R0 stays**, above the existing `ErrorState`
-  ([Fleet.tsx:1489-1510](../../../../ui/src/fleet/Fleet.tsx#L1489)), unchanged: the `accent` pill with
+  ([Fleet.tsx:1489-1510](../../../../apps/ui/src/fleet/Fleet.tsx#L1489)), unchanged: the `accent` pill with
   its `!` mark, the mesh path, and `⟳ Retry <Scope>`. The narrowing survives an error because *"why
   am I looking at nothing"* applies to a failed load too, and because Retry must re-attempt **with
   the filter in force** — never silently clearing it, exactly as Retry never silently reverts the
@@ -1444,7 +1444,7 @@ The content mode is **`content:page`**, unchanged — the page owns scroll, no r
   state — it never flips the page, and its own treatment is DG-47-5.)*
 - **empty — FIVE distinguishable conditions (DG-47-3), all in the `EmptyFleet` card primitive
   verbatim** (`rounded-xl border border-dashed border-border bg-card/50 px-8 py-9 text-center`, the
-  dashed `✦` tile, [Fleet.tsx:1517-1540](../../../../ui/src/fleet/Fleet.tsx#L1517)) — same shape, five
+  dashed `✦` tile, [Fleet.tsx:1517-1540](../../../../apps/ui/src/fleet/Fleet.tsx#L1517)) — same shape, five
   different true sentences, and **every combination the copy function can produce is pinned below**:
 
   **THE STRINGS — one row per combination the module can reach, nothing left for a build to
@@ -1567,7 +1567,7 @@ The content mode is **`content:page`**, unchanged — the page owns scroll, no r
   > ### (a) `F-47-02-QA-F3` — MEDIUM, design-gap: four producible combinations were unpinned
   >
   > QA's behavioural review of story 47/02 found that `emptyStateCopy(narrowings)`
-  > ([scope.mjs:275-323](../../../../ui/src/fleet/scope.mjs#L275)) necessarily produces **eight**
+  > ([scope.mjs:275-323](../../../../apps/ui/src/fleet/scope.mjs#L275)) necessarily produces **eight**
   > heading/body combinations — four cases, each composed with `scope=local` or not, because ADR-007
   > requires the heading to name every narrowing in force — and this table pinned **four**. The
   > developer therefore authored the other four at build. That is not the developer's error: **it is
@@ -1692,17 +1692,17 @@ The content mode is **`content:page`**, unchanged — the page owns scroll, no r
   `max-w-[1240px]`.
 
 **Design ramp each region uses** — every token named from
-[index.css:3-25](../../../../ui/src/index.css#L3):
+[index.css:3-25](../../../../apps/ui/src/index.css#L3):
 
 | Region | Ramp |
 |---|---|
 | **R0 label** | `text-xs text-muted-foreground` — quiet; the chips carry the emphasis. |
-| **R0 chip** | The identity-chip form verbatim: `mono rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground` ([Fleet.tsx:289](../../../../ui/src/fleet/Fleet.tsx#L289)), with the load-bearing value at `font-semibold text-foreground` (the treatment today's `Filtered to workspace <id>` line already gives the id, [Fleet.tsx:444](../../../../ui/src/fleet/Fleet.tsx#L444)). |
+| **R0 chip** | The identity-chip form verbatim: `mono rounded-md border border-border bg-muted px-2 py-0.5 text-xs text-muted-foreground` ([Fleet.tsx:289](../../../../apps/ui/src/fleet/Fleet.tsx#L289)), with the load-bearing value at `font-semibold text-foreground` (the treatment today's `Filtered to workspace <id>` line already gives the id, [Fleet.tsx:444](../../../../apps/ui/src/fleet/Fleet.tsx#L444)). |
 | **R0 chip, unknown filter (E4)** | The same box with `border-dashed border-muted-foreground/40`; the value in `mono` at **`font-semibold text-foreground`**. The house absent/not-yet primitive (the `not-started` ring, the no-presence dot, `StaleBadge`'s dashed pill) carries the absence **in the BOX**; the value stays at full contrast. *(Amended 2026-08-11 (verify), F-47-V-7 — the committed mock puts it at `font-weight:600; color:#101828` and outranks this row, and a11y 8 agrees with the mock: "the word that carries the meaning is at full contrast even where the frame around it is quiet." The superseded text read `value stays mono text-muted-foreground`.)* |
 | **R0 chip, not yet resolved / out of scope (E3, E5, and loading)** | The **rest** box, unchanged and **never dashed**; the raw value in `mono` at **`font-semibold text-foreground`**, by the same clause. The dashed form is a claim about a payload that saw the mesh, and neither of these did — but the *value* is load-bearing in every form. |
 | **R0-N, the notice** | `mt-1 text-xs text-muted-foreground` — R0's own label ramp, on its own line. **No border, no background, no glyph, no fill, no `accent`, no `destructive`.** It is the quietest thing in the banner on purpose: the chips state the narrowings, the notice explains their combination, and an explanation that shouted would compete with the facts it explains. |
 | **R0 clear `✕`** | `text-xs font-semibold text-primary hover:underline` — the product's link/action token, the same one `Open board →` and the landing's destination row use. |
-| **`Show all repos`** (E4–E7) | `inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20` — the existing recovery-button ramp, `⟳ Retry`'s own ([Fleet.tsx:1500-1506](../../../../ui/src/fleet/Fleet.tsx#L1500)). **Absent in E1–E3**, each for its own stated reason. |
+| **`Show all repos`** (E4–E7) | `inline-flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-4 py-1.5 text-xs font-semibold text-primary transition hover:bg-primary/20` — the existing recovery-button ramp, `⟳ Retry`'s own ([Fleet.tsx:1500-1506](../../../../apps/ui/src/fleet/Fleet.tsx#L1500)). **Absent in E1–E3**, each for its own stated reason. |
 | **R1–R4 region headers** | `RegionHeader` unchanged: `text-[11px] font-bold uppercase tracking-[0.09em] text-muted-foreground` + `text-xs text-muted-foreground` summary. Only the summary's **words** change — including its `0 of <N>` form, which takes no different treatment from any other count. |
 | **R1–R3 cards** | Unchanged — `rounded-lg border border-border bg-card shadow-sm`, the `status.tsx` ring/chip/dot ramp, `StaleBadge`'s dashed muted pill, the assignment chip's `runChipClasses` tone map. **No fleet-local chip system**, ever. |
 | **Milestone card drill-in, at rest / in flight** | `font-semibold text-primary group-hover:underline` with the pinned `→` — unchanged at rest; in flight the same tokens plus `animate-pulse`, which DG-47-5 ADDS to this element — it has never carried motion (F-47-04-QA-4). |
@@ -1730,7 +1730,7 @@ region landmark**; if it ever needs a name it takes `aria-live`, never `role="re
 1. **The picker is a real disclosure over a real listbox** — `aria-haspopup="listbox"`,
    `aria-expanded`, `role="listbox"` / `role="option"` / `aria-selected`. `Esc` closes it and
    **returns focus to the trigger**; arrow keys move within it; `Home`/`End` reach the ends. The
-   milestone-switcher pattern, inherited ([BoardLanes.tsx:362-363](../../../../ui/src/board/BoardLanes.tsx#L362)).
+   milestone-switcher pattern, inherited ([BoardLanes.tsx:362-363](../../../../apps/ui/src/board/BoardLanes.tsx#L362)).
 2. **The trigger's accessible name says what it filters and what it is set to** — `Filter by repo,
    All repos` / `Filter by repo, lark-guard`. Never a bare `▾`, never a name that is only the value.
 3. **Every clear affordance names what it clears.** The inline `✕` is a `<button>` with

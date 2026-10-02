@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 40 / ADR-004 — the migration-scoped frontmatter writer
 // touches ONLY the frontmatter block; the authored body prose is byte-identical around
 // the change; and it is a SEPARATE writer, never a widening of `rollbackItemStatus`.
@@ -15,7 +16,32 @@ import { mkdtemp, mkdir, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import * as work from "../../../src/work.mjs";
+const work = Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+});
 
 // Candidate names for the ADR-004 transform-scoped writer (exact name is a story-01
 // decision); the guard probes this set.

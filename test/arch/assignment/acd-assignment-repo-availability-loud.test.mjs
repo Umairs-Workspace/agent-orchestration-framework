@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-repo-availability-loud (milestone 35 / ADR-004 /
 // 34-ADR-008, fitness #7 — WORKER half) — "the worker execution path checks repo
 // availability BEFORE creating a worktree, and on a miss emits a coded
@@ -24,9 +26,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
-import { listWorktrees } from "../../../src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
 import { withMeshWorkerExecFixture, createStatusRecorder, scriptedSpawnRuntime, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -36,8 +38,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // reporting (the refusal's code is settled); the module the admission decision moved to owns the
 // JOIN and the coded miss. Reading only the handler after the split would have left the coded-miss
 // legs sweeping a file that no longer decides a miss.
-const executionSourcePath = path.join(repoRoot, "src", "mesh", "worker-execution.mjs");
-const admissionSourcePath = path.join(repoRoot, "src", "mesh", "worker-repo-admission.mjs");
+const executionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-execution.mjs");
+const admissionSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-repo-admission.mjs");
 
 // The guard call, as the HANDLER now spells it or as it spelled it before the split. Both are
 // admitted on purpose: the planted violations below spell the pre-split form, and a detector whose

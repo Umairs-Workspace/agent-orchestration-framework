@@ -1,0 +1,898 @@
+[
+  {
+    "file": "packages/core/src/application/bindings/commands/assets/ui.mjs",
+    "kind": "child-process",
+    "expression": "spawn(process.execPath, [viteBin, \"--host\", \"127.0.0.1\", \"--port\", String(port), \"--strictPort\"], {\n      cwd: uiDir,\n      stdio: \"inherit\",\n      env: {\n        // `VITE_AOF_UI_MODE: \"assets\"` stood here and is RETIRED with the query selector it\n        // fed (milestone 45 / ADR-002). It was a build-time constant, set only here and read\n        // only by the pre-45 render root's ternary; keeping it would leave the route decision\n        // with two inputs — a URL and a baked env var — which is the two-homes-for-one-fact\n        // shape this milestone exists to remove. The address bar is the one input now, and\n        // the editor is reached at `/config`.\n        ...process.env,\n        VITE_AOF_API_URL: apiUrl,\n        BROWSER: \"none\"\n      }\n    })",
+    "digest": "4a5e3e8877269c615b97a90530f8ddf985c9fe83b2e663fabb28fc2577b22383",
+    "sourceDigest": "3bcf7c44ab3d0c3e1455f3f5deeca1d42885155b23c13eb58650dbf2f963002a",
+    "reason": "The dev-only assets UI launcher lazily imports the declared @aof/ui development dependency through its explicit vite-cli public export. That owner resolves its own Vite executable. Normal CLI startup and packaged built-UI serving never load Vite. UI remains at its Plan 04 location."
+  },
+  {
+    "file": "packages/core/src/application/bindings/commands/assets/ui.mjs",
+    "kind": "dev-tool-import",
+    "expression": "import(\"@aof/ui/vite-cli\")",
+    "digest": "45f793ab3ff59aa74a77d2a103a8e753e59c401433210ec6df23e04807e119ed",
+    "sourceDigest": "3bcf7c44ab3d0c3e1455f3f5deeca1d42885155b23c13eb58650dbf2f963002a",
+    "reason": "The dev-only assets UI launcher lazily imports the declared @aof/ui development dependency through its explicit vite-cli public export. That owner resolves its own Vite executable. Normal CLI startup and packaged built-UI serving never load Vite. UI remains at its Plan 04 location."
+  },
+  {
+    "file": "packages/core/src/application/bindings/config-inspect.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
+    "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
+    "sourceDigest": "cbcba21c85312f9f848e216cee82e72aec0b5c0368c46e580d437523430ab566",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed."
+  },
+  {
+    "file": "packages/core/src/application/bindings/work/loops.mjs",
+    "kind": "computed-require",
+    "expression": "createRequire(path.join(root, \"package.json\")).resolve(factories[0][2])",
+    "digest": "b8763e1936851f2e5f31aac6ac233bb8991533fd93f61bddc2a3c6c9162aca8f",
+    "sourceDigest": "416d45a5601f01cd847b984bd077ed8539eafbbbff6edf19fb7242055905db1c",
+    "reason": "Installed framework records retain their src/... module identifiers. Reads the actual same-name composition binding, verifies its single imported factory is called, and resolves only its explicit @aof public export without executing inspected source. Registry still verifies the named policy export; project records cannot use this resolver."
+  },
+  {
+    "file": "packages/core/src/build-info.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"-C\", dir, \"rev-parse\", \"--short\", \"HEAD\"], { encoding: \"utf8\", timeout: 5000, windowsHide: true })",
+    "digest": "01f3d13572065c8bf8a6d34701eb31ab0f4a152c5fa3aa30c690bfa0cecaa627",
+    "sourceDigest": "101bdc1e15563c1950a19d7daf091222d24130621d54a1e255eaedfed60deb3b",
+    "reason": "Reads Git identity and dirty state for build metadata; arguments contain no JavaScript entry."
+  },
+  {
+    "file": "packages/core/src/build-info.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"-C\", dir, \"status\", \"--porcelain\"], { encoding: \"utf8\", timeout: 5000, windowsHide: true })",
+    "digest": "72808f8aaa44e266ed3ef0084476b0890ccb23964fb9fd72f07fe62916ae46cc",
+    "sourceDigest": "101bdc1e15563c1950a19d7daf091222d24130621d54a1e255eaedfed60deb3b",
+    "reason": "Reads Git identity and dirty state for build metadata; arguments contain no JavaScript entry."
+  },
+  {
+    "file": "packages/core/src/commands/project-provision.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(bin, rest, { stdio: \"inherit\", env })",
+    "digest": "5c52969b57ad5172f4169a99871a849b4413bef9e71e84eaeaf27d0384db28ea",
+    "sourceDigest": "aac4789e7518e0f650a309c6fbe80d8c2cf9f3edfa3c479b0d1335009dea3a10",
+    "reason": "Executes the explicit project provisioning argv selected by the CLI, an operator supplied external command."
+  },
+  {
+    "file": "packages/core/src/frameworks.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(item.argv[0], item.argv.slice(1), {\n        stdio: \"inherit\",\n        shell: process.platform === \"win32\",\n        env: {\n          ...process.env,\n          ...(item.installEnvironment ?? SAFE_NPM_EXEC_ENV)\n        }\n      })",
+    "digest": "0ccf0e1297ef38865efd62abbe6316ecff8ddbe76a717b1207b6d176cb497e40",
+    "sourceDigest": "ee09ce7bbef62cc6fca486195f78295d4e1550ee247c9ae2e1928091ef21e8ef",
+    "reason": "Executes the framework install plan admitted by the supply-chain policy; lifecycle exceptions are declared, not workspace modules."
+  },
+  {
+    "file": "packages/core/src/planning-init.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", [\"ls-remote\", MARKETPLACE_GIT_URL, tagRef], {\n    encoding: \"utf8\",\n    shell: process.platform === \"win32\"\n  })",
+    "digest": "3fa3e349bddb7393b817514c23b378032ac3f17c34a25ac3a2058edb2ef964a8",
+    "sourceDigest": "9829e5b5f1b98e901f2c3b92c6c957191dc2a9540b418e39792120edc4124d07",
+    "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
+  },
+  {
+    "file": "packages/core/src/planning-init.mjs",
+    "kind": "child-process",
+    "expression": "spawn(item.argv[0], item.argv.slice(1), {\n      stdio: \"inherit\",\n      shell: process.platform === \"win32\",\n      env: { ...process.env }\n    })",
+    "digest": "1d2b72e0774d0285f637824937f7257f8a23fae7fe93fce11f801d96db05136c",
+    "sourceDigest": "9829e5b5f1b98e901f2c3b92c6c957191dc2a9540b418e39792120edc4124d07",
+    "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
+  },
+  {
+    "file": "packages/core/src/tool-store.mjs",
+    "kind": "child-process",
+    "expression": "spawn(exeFile, [\"--version\"], toolSpawnOptions())",
+    "digest": "a16a5b7e40c47cc01f6f643904f2bd59345756ffc9a4b15275a87afa67c38a92",
+    "sourceDigest": "f39726f94d17708333346957bc47fa25b03ea5ae9bfb89fa3b603fc7a5790085",
+    "reason": "Locates a tool or runs its version probe; resolved executable is a provisioned tool, not an application source entry."
+  },
+  {
+    "file": "packages/core/src/tool-store.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(locator, [binary], toolSpawnOptions())",
+    "digest": "60a8f6affb30bfaadd37bfd347333856c622f88b1c4ad5d420e135ca51ed6686",
+    "sourceDigest": "f39726f94d17708333346957bc47fa25b03ea5ae9bfb89fa3b603fc7a5790085",
+    "reason": "Locates a tool or runs its version probe; resolved executable is a provisioned tool, not an application source entry."
+  },
+  {
+    "file": "packages/execution/src/rubric-process.mjs",
+    "kind": "child-process",
+    "expression": "spawnChild(program, args, {\n        cwd: options.cwd,\n        env: options.env,\n        stdio: options.stdio,\n        shell: options.shell,\n      })",
+    "digest": "04aae11ee9d879e4215fbbf9190466951ee7f095dfc5cb04cbc5f5fea8081d44",
+    "sourceDigest": "0a3f22047a69533c5456350bd09f8876a4d73280805135ef201c60f5a223e641",
+    "reason": "Bounded process port executes the caller supplied grading program with a deadline and captured output. This is an intentional external program seam."
+  },
+  {
+    "file": "packages/execution/src/session-driver.mjs",
+    "kind": "child-process",
+    "expression": "execFile(bin, args, { cwd: brief.worktreeCwd, windowsHide: true, timeout: options.timeoutMs ?? 10 * 60 * 1000 }, (error, stdout) => {\n        // A non-zero exit or a spawn fault is a `failed` outcome (never an unhandled\n        // rejection out of this seam) — the caller completes the run accordingly.\n        if (error) {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n          return;\n        }\n        try {\n          const parsed = JSON.parse(String(stdout ?? \"\"));\n          const terminal = parsed.terminal_reason ?? parsed.stop_reason ?? null;\n          const ok = terminal === \"completed\" || terminal === \"end_turn\";\n          resolve(ok ? { outcome: \"done\" } : { outcome: \"failed\", failureReason: \"agent_error\" });\n        } catch {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n        }\n      })",
+    "digest": "b87e7b1327e6f3a585d01be5c9cce669c042ebf7d169151724549106d3907589",
+    "sourceDigest": "66d1a85c53ec184619f78cc8650a3779ebe322ec86b1512fe1055d8d6dfbbc25",
+    "reason": "Runs the assistant binary and argv supplied by the declared launch; this package owns session execution and its process limits."
+  },
+  {
+    "file": "packages/execution/src/svg-rasterizer.mjs",
+    "kind": "child-process",
+    "expression": "spawn(\n        browser.path,\n        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, svgPath }),\n        { stdio: [\"ignore\", \"ignore\", \"pipe\"], windowsHide: true },\n      )",
+    "digest": "f639bb4c7351d22cd145978c63ab44fc7c4a6fff5a53ae6cbb9ba080a3423a02",
+    "sourceDigest": "f34a39ac8fde604c6a0e1cf87f2e766736987b1c0c008829f7007462499b2621",
+    "reason": "Runs a located browser executable with the SVG rasterizer argv; browser paths are external tool inputs."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
+    "digest": "76d3407a5c01112e347b23e936d215b61da0f719bfe116495741fd6b82233b99",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: projectRoot })",
+    "digest": "ef928cf85d0dc9e7245e26be6f211753297c98e8a3595c3111d83bf572286481",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"cat-file\", \"-e\", `${commit}^{commit}`], { cwd: projectRoot })",
+    "digest": "442ddd199ea10fc9c6d458e8dfef38cba187428fe9908fcccb5c056e41e44c22",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"fetch\", \"origin\"], { cwd: projectRoot })",
+    "digest": "719be601cf1efe4f7d5dead7c3304c6fef859f0a4e17f062da30c7d2df9c5bf5",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"show-ref\", \"--verify\", \"--quiet\", `refs/heads/${branch}`], { cwd: projectRoot })",
+    "digest": "9e43c2e61779335d8bf83fa45e5438a17f500403d2e6a9a2ea6a6a68dd0a7063",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"show-ref\", \"--verify\", \"--quiet\", `refs/remotes/origin/${branch}`], { cwd: projectRoot })",
+    "digest": "719e74aea7a5c2db3242d53118bcb72ea827270ca1ff0987906574e17f0e2c3b",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"fetch\", \"origin\", \"--\", branch], { cwd: projectRoot })",
+    "digest": "720826f51dcb2590f51149379274fc8817053f09bae1178741de596cc3d20813",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"branch\", branch, `refs/remotes/origin/${branch}`], { cwd: projectRoot })",
+    "digest": "adb307243beb870d7b1e2d22defd73c7b0bd51b222954dc2918aacfca8b13c6d",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: projectRoot })",
+    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: worktreePath })",
+    "digest": "816d6444d908a9c2b0f61e6da58f71886b0d6ddba75aa4de7f5111e59defea57",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"worktree\", \"list\", \"--porcelain\"], { cwd: projectRoot })",
+    "digest": "79e153fde7f3ee1f42362b4fd59b14412198d7918303aa830c9a15be2717c88e",
+    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/integration-notion/src/cli.mjs",
+    "kind": "child-process",
+    "expression": "spawn(node, [launcher, ...argv], { env: spawnEnv, encoding: \"utf8\" })",
+    "digest": "7dc6845271e05d436cf024bff97c8f43ffd9852bd24f8c511d8fbf94f11ba1a8",
+    "sourceDigest": "2b64e72453f100fbb55f67961b386ccbf1862d1e9277f9f6795a52a3adfb0313",
+    "reason": "Launches the configured Notion CLI tool with the selected Node runtime and external launcher; source modules remain package-owned."
+  },
+  {
+    "file": "packages/knowledge/src/graphify.mjs",
+    "kind": "child-process",
+    "expression": "spawn(resolved.path, args, options)",
+    "digest": "cafa2b787777fc12c12154baff452dcfa6be959f2df57f929f24ae2e412d0c28",
+    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
+  },
+  {
+    "file": "packages/knowledge/src/graphify.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(resolved.path, args, options)",
+    "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
+    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
+  },
+  {
+    "file": "packages/knowledge/src/graphify.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(resolved.path, args, options)",
+    "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
+    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
+  },
+  {
+    "file": "packages/knowledge/src/import/recovery.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\n    \"git\",\n    [\"-C\", sourceDir, \"log\", \"--reverse\", \"--no-merges\", \"--format=%s\"],\n    { encoding: \"utf8\" }\n  )",
+    "digest": "682eefaa50f230a40bcc574998814383b5850d48465dee1bde991a146d3c1404",
+    "sourceDigest": "dbaba2b30d3b1dbe2b7722c8c960e3ad40f17ab7a4d0c4b46b53b8595ead93e2",
+    "reason": "Reads commit subjects through Git to recover interrupted imports; no application source entry."
+  },
+  {
+    "file": "packages/knowledge/src/import/source.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", [\"ls-remote\", \"--\", gitPositional(repo, \"the remote source\")], { encoding: \"utf8\" })",
+    "digest": "331cd9903194dd914095aaf2c418afcf968d54d7bdadd75df63443b0fa49a62e",
+    "sourceDigest": "4696bbad06a4fd2a0fccaee27890040e5a086e3c0a147d37718aaa390fb35358",
+    "reason": "Checks an external repository through Git ls-remote; no application source entry."
+  },
+  {
+    "file": "packages/mesh/src/commands/desktop-preflight.mjs",
+    "kind": "child-process",
+    "expression": "spawn(file, args, { windowsHide: true })",
+    "digest": "26f2e89914d3671ebcb5c4b4defb22731afb3fe17bc94139b2c04b40d8e0ffa9",
+    "sourceDigest": "5deeb2fc4610c0f8f4e734215fd06d961e91699bfc22a84fffbdedd8aaa71806",
+    "reason": "Preflight process port probes the desktop executable selected by the desktop resolver. Native app paths remain Plan 04 current layout."
+  },
+  {
+    "file": "packages/mesh/src/fabric.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"tailscale\", args, { timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
+    "digest": "590b82de47350dc801d24b348a58a0d1f880d6a6cd2e5fc416c7cf808d26704f",
+    "sourceDigest": "51cf5f76ade32c9bc2f96176a65fa30b40a98f7210c3c0c77d192864debde827",
+    "reason": "Runs the located Tailscale binary through the fabric exec port; external tool routing is the package contract."
+  },
+  {
+    "file": "packages/mesh/src/fabric.mjs",
+    "kind": "child-process",
+    "expression": "execFile(installPath, args, { timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
+    "digest": "2d032f6aa46d79ced24ad428686aca7b8e1b24b4b25a25866dfb14d5bc7dc62d",
+    "sourceDigest": "51cf5f76ade32c9bc2f96176a65fa30b40a98f7210c3c0c77d192864debde827",
+    "reason": "Runs the located Tailscale binary through the fabric exec port; external tool routing is the package contract."
+  },
+  {
+    "file": "packages/mesh/src/fabric.mjs",
+    "kind": "child-process",
+    "expression": "exec(\"tailscale\", args)",
+    "digest": "3736e25e8177ac44fcbd861f070ad08bf77a672bb714155f57cad7805a07cc5a",
+    "sourceDigest": "51cf5f76ade32c9bc2f96176a65fa30b40a98f7210c3c0c77d192864debde827",
+    "reason": "Runs the located Tailscale binary through the fabric exec port; external tool routing is the package contract."
+  },
+  {
+    "file": "packages/mesh/src/fabric.mjs",
+    "kind": "child-process",
+    "expression": "exec(installPath, args)",
+    "digest": "b687f6d2aabea581c06151da217163626c902a630a8b30ad8c8d34e0f8e875ae",
+    "sourceDigest": "51cf5f76ade32c9bc2f96176a65fa30b40a98f7210c3c0c77d192864debde827",
+    "reason": "Runs the located Tailscale binary through the fabric exec port; external tool routing is the package contract."
+  },
+  {
+    "file": "packages/mesh/src/repo-marker.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"git\", args, { cwd, timeout: 5000, windowsHide: true }, (error, stdout) => {\n      resolve(error ? null : String(stdout ?? \"\").trim());\n    })",
+    "digest": "2972e2d83bfdc291c23c129de3a54884c93c88ed5fa6ff34f306a2629334c534",
+    "sourceDigest": "cff36bdfcb2c9287a0323a866ec8fd0639a08117ec7dd4899bc725e4e5b4b41a",
+    "reason": "Reads repository identity through Git; no JavaScript child entry."
+  },
+  {
+    "file": "packages/mesh/src/worker-execution.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
+    "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
+    "sourceDigest": "309b8c0ef7bb2ef1b63b59ecf93a69074ef7114ac82499e7858cf65deca68090",
+    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
+  },
+  {
+    "file": "packages/mesh/src/worker-execution.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
+    "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
+    "sourceDigest": "309b8c0ef7bb2ef1b63b59ecf93a69074ef7114ac82499e7858cf65deca68090",
+    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
+  },
+  {
+    "file": "packages/mesh/src/worker-repo-admission.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
+    "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
+    "sourceDigest": "7982c392575a035812e8ad78062e98946e0c65fd2755f10949a71852303c8499",
+    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment."
+  },
+  {
+    "file": "packages/mesh/src/worker-repo-admission.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"-c\", \"credential.helper=\", \"clone\", cloneUrl, checkoutPath], { env: cloneEnv })",
+    "digest": "666d14055cc86113bc2184c0cac700b9889b101ac3f115f4cc6f442628b13e8b",
+    "sourceDigest": "7982c392575a035812e8ad78062e98946e0c65fd2755f10949a71852303c8499",
+    "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"worktree\", \"remove\", worktreePath], { cwd: projectRoot })",
+    "digest": "c8d88362cfa72c1d798d3cfd63425371dd015b4a2ed93e5f411b35af858942fa",
+    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"branch\", \"-d\", branch], { cwd: projectRoot })",
+    "digest": "06995bb30dac9aef43eaf1f1c466b3fe2e6b02f5085dd21c1f2379eda57586af",
+    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"worktree\", \"remove\", \"--force\", worktreePath], { cwd: projectRoot })",
+    "digest": "a258c3c4046f7d4e721740187b9a07f510223e1c747afd70e5aa68bc8f73ac24",
+    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: projectRoot })",
+    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
+    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: projectRoot })",
+    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
+    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/server/src/terminal-ws.mjs",
+    "kind": "child-process",
+    "expression": "spawn(launch.bin, launch.args, {\n      name: \"xterm-256color\",\n      cols: 80,\n      rows: 24,\n      cwd,\n      env,\n    })",
+    "digest": "19ce3775ec42a3b4a9640efb74d6e8a9ee14529c71e8e08668a1a713c1da97f0",
+    "sourceDigest": "1321e5f572467e448f272d2a41d78e32e24a6f021d246649a14f649a5c7580c1",
+    "reason": "This is node-pty spawn, using the launch declaration provided by execution services; terminal byte transport does not locate application modules."
+  },
+  {
+    "file": "packages/work-loop/src/commands/loop.mjs",
+    "kind": "child-process",
+    "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
+    "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
+    "sourceDigest": "569c5e82bf3013787cfad4f437099ff139d2ad5435c9ca573a9ab57c6ecbe626",
+    "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
+    "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"check-ignore\", \"--\", ...missing], { cwd: worktree })",
+    "digest": "a9f702f4ad3d700af554a87070689ab08b2b183fafd386e73ba82b72fde5485a",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"status\", \"--porcelain\"], { cwd: worktreePath })",
+    "digest": "8be2ba95885104b4384bcc190e15f937600713418b334c75e20d9d8fd767f3a5",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
+    "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
+    "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
+    "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: primaryRoot })",
+    "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
+    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/progress.mjs",
+    "kind": "child-process",
+    "expression": "execFileAsync(\"git\", args, { cwd: worktreePath, windowsHide: true, encoding: \"utf8\" })",
+    "digest": "d9e1cea848566821da082d4dcfdf75824971a0101504cbd3404f3cf11c1107f8",
+    "sourceDigest": "b43866052db98138df1406b26027df9330abc85a38d05bb15b7098b23ff43fc6",
+    "reason": "Git-only progress snapshot read, bounded by the command edge."
+  },
+  {
+    "file": "packages/work/src/audit/census.mjs",
+    "kind": "child-process",
+    "expression": "spawn({ command: execPath, args: [probe, target], cwd: repoRoot, deadlineMs })",
+    "digest": "159a1145ba46cb74dd73fded47998bda790932b1cd2e00f6b89ca02b16652de0",
+    "sourceDigest": "2caeabdb6074ae34825f94c485b1ed99b6a764acc52461d28dd77aa4d2cc9f49",
+    "reason": "Bounded child invokes the installed audit-probe entry resolved by toolkitProgram; selected target is the governed project runner, intentionally external to AOF."
+  },
+  {
+    "file": "packages/work/src/audit/evidence.mjs",
+    "kind": "child-process",
+    "expression": "spawn({ command: execPath, args: [program, target], cwd: repoRoot, deadlineMs })",
+    "digest": "88b2d7bd5abb0784b4b08a9968e66183dc3894431b6b6f8de8a35bf02cc17460",
+    "sourceDigest": "d19e90c923f8adf9250ce89e589cb5546fcdf29a3a591a2d7c35942098171269",
+    "reason": "Bounded child invokes the installed audit-drive entry resolved by toolkitProgram, with the governed control target as input."
+  },
+  {
+    "file": "packages/work/src/commands/doctor.mjs",
+    "kind": "child-process",
+    "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
+    "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
+    "sourceDigest": "76f3586732a7f18c1ca46440aa78bcf1c55463eaccebc931981f828f5b2b34c1",
+    "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
+  },
+  {
+    "file": "packages/work/src/commands/grade.mjs",
+    "kind": "child-process",
+    "expression": "spawn(program, args, options)",
+    "digest": "e44dba3173b53fa912603543b89018fb62b8d8c231f59cf9f228b47a14e037c6",
+    "sourceDigest": "3db0bb79b576d284b97e60e06bdc1e0f80ada5f4f60086983eb68d7184812697",
+    "reason": "Injected grading process port executes the declared program, an intentional governed-project external boundary."
+  },
+  {
+    "file": "packages/work/src/commands/ratchet.mjs",
+    "kind": "child-process",
+    "expression": "execFileAsync(\"git\", args, {\n    cwd: projectRoot,\n    encoding: \"utf8\",\n    timeout: 15_000,\n    windowsHide: true,\n  })",
+    "digest": "244d055982bc51489a82f947fb274788a3ebc5d7bce1b8db9c8b3919874de893",
+    "sourceDigest": "5718c0cbbecb9bf16701d1d6978d243e9802aa591be6979e509c5bfcecf6c049",
+    "reason": "Bounded Git reader obtains historical comparisons as data."
+  },
+  {
+    "file": "packages/work/src/commands/regression-gate.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
+    "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
+    "sourceDigest": "74456ad63c46f4031f5f5aa4827db0ca08c9d070cc776b36a9b6a97d7b958798",
+    "reason": "Git-only bounded comparison reader; no application module entry."
+  },
+  {
+    "file": "packages/work/src/programs/audit-drive.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(control).href)",
+    "digest": "6778c22736baa1bc7a2194466d323b197300318f373fd5f31b6a1d86f74d9444",
+    "sourceDigest": "45add5e125cd80edcc739c76e14386a442febdb6a8bc1356409339e50be87b2b",
+    "reason": "Intentional isolated child imports the control file passed by the governed project. Parent process never executes that project code."
+  },
+  {
+    "file": "packages/work/src/programs/audit-probe.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(runner).href)",
+    "digest": "e79e40a38a29f89a7d2517d6bfad2c8c831db55d08ca1456916747c19cad7bb8",
+    "sourceDigest": "cb724fabc2b847e6d2e6f89c7942fbfd8b1c7a317eef4017db5b97d3197a5f34",
+    "reason": "Intentional isolated child imports the governed runner to enumerate runtime case names, with the parent enforcing a deadline."
+  },
+  {
+    "file": "scripts/build-sea.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
+    "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
+    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
+  },
+  {
+    "file": "scripts/build-sea.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
+    "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
+    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
+  },
+  {
+    "file": "scripts/build-sea.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(step.cmd, step.args, { stdio: \"inherit\" })",
+    "digest": "e4a5a03d425cc23f4e865152f7ecc7fb9c068bb93e30fb085e553492cf9b5019",
+    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
+  },
+  {
+    "file": "scripts/build-sea.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(process.execPath, [\"--experimental-sea-config\", seaConfigPath], { cwd: outDir, stdio: \"inherit\" })",
+    "digest": "520e9086f520a8a34f8f65e25dad7343342b674a6e2672b58d3a7c6bbc1598b2",
+    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
+  },
+  {
+    "file": "scripts/check.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(process.execPath, [scriptPath], {\n    cwd: repoRoot,\n    stdio: \"inherit\",\n    shell: false\n  })",
+    "digest": "6141a9f5a966e997c7ac090c0ed3a6db12b27f9fa53f8b05962556c54d87f3d9",
+    "sourceDigest": "a8287c8215977d670bd76588aa80d95b4a5db6c5256ea719b9d24f7a1c9358e9",
+    "reason": "Repository verification launcher runs its explicit repository script paths, not package-private production modules."
+  },
+  {
+    "file": "scripts/install-local.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
+    "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+  },
+  {
+    "file": "scripts/install-local.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
+    "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+  },
+  {
+    "file": "scripts/install-local.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
+    "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+  },
+  {
+    "file": "scripts/install-local.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
+    "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
+    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
+  },
+  {
+    "file": "scripts/refresh-harness-reference.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(corpusPath).href)",
+    "digest": "81e77d2936e78bcbe7af4827e3f82d0bb8e0b354658f316745bebfd1c5931405",
+    "sourceDigest": "06b32ea4e8dc5df2514bcb9ead94a015d07d9d54fd888251d324056a879ded94",
+    "reason": "Loads the explicitly selected harness corpus in repository tooling; this is a requested reference refresh, not production module discovery."
+  },
+  {
+    "file": "scripts/release/assert-fingerprint-pin.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(GPG_BIN, [\"--homedir\", toPosixGpgPath(homedir), \"--list-secret-keys\", \"--with-colons\"], { encoding: \"utf8\" })",
+    "digest": "59cf25a5e8db249140a836a8b0f4076ff76578304cdf659c105bd19abf361b11",
+    "sourceDigest": "50a403a0c037ed76c08357d3892e1241ab26562aeb0c52fb83d2c3ac6bad2591",
+    "reason": "Runs GPG for the release fingerprint policy; key material is handled by GPG and never printed by this boundary census."
+  },
+  {
+    "file": "scripts/release/assert-fingerprint-pin.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\n      GPG_BIN,\n      [\"--with-colons\", \"--import-options\", \"show-only\", \"--import\"],\n      { input: armorMatch[0], encoding: \"utf8\" }\n    )",
+    "digest": "2fa27621c8d05be96b954dd4457fc9174267815ab54d1bce9995674a9df0cc04",
+    "sourceDigest": "50a403a0c037ed76c08357d3892e1241ab26562aeb0c52fb83d2c3ac6bad2591",
+    "reason": "Runs GPG for the release fingerprint policy; key material is handled by GPG and never printed by this boundary census."
+  },
+  {
+    "file": "scripts/release/gpg-sign-manifest.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(GPG_BIN, args, { stdio: \"inherit\" })",
+    "digest": "9422465f78ebb503cfaa9e57693e3444b0bf50f32d8af89180f2e93798e061cc",
+    "sourceDigest": "2ccf3fac7600b5c74224ff5477da5b407ec6cb97758681cb520b2c9e10d1da83",
+    "reason": "Runs the explicit GPG release signing command; separate release authorization controls invocation."
+  },
+  {
+    "file": "scripts/release/sign-macos.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\n      \"codesign\",\n      [\"--sign\", identity, \"--options\", \"runtime\", \"--timestamp\", \"--force\", options.file],\n      { stdio: \"inherit\" }\n    )",
+    "digest": "59dfa32a8ea8974f3bc1b3ade277dd29651960b9d8b11be467d9ce1a8292b3c0",
+    "sourceDigest": "0e73154f4cdc138b78ccfb3bc6d080e0b96d45efe74daf4b383a51135be76c7b",
+    "reason": "Runs the explicit codesign/notary/stapler release tool argv; native matrix certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/sign-macos.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"codesign\", [\"--verify\", \"--deep\", \"--strict\", options.file], { stdio: \"inherit\" })",
+    "digest": "a6a1e85868ecff6a698532dbbe4bd5ae6a0f084d1e242251817b791bd27434a5",
+    "sourceDigest": "0e73154f4cdc138b78ccfb3bc6d080e0b96d45efe74daf4b383a51135be76c7b",
+    "reason": "Runs the explicit codesign/notary/stapler release tool argv; native matrix certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/sign-macos.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"ditto\", [\"-c\", \"-k\", \"--keepParent\", options.file, zipPath], { stdio: \"inherit\" })",
+    "digest": "8641193c1e30f6b474b168e8a581aced12e13b06aa3ac3c631b77450bed0efec",
+    "sourceDigest": "0e73154f4cdc138b78ccfb3bc6d080e0b96d45efe74daf4b383a51135be76c7b",
+    "reason": "Runs the explicit codesign/notary/stapler release tool argv; native matrix certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/sign-macos.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\n      \"xcrun\",\n      [\"notarytool\", \"submit\", zipPath, \"--key\", keyPath, \"--key-id\", keyId, \"--issuer\", issuerId, \"--wait\"],\n      { stdio: \"inherit\" }\n    )",
+    "digest": "6ffbdde7f8740d1521860fec703f2f5dbbe4dae4284586382fbffa8266d8ac7d",
+    "sourceDigest": "0e73154f4cdc138b78ccfb3bc6d080e0b96d45efe74daf4b383a51135be76c7b",
+    "reason": "Runs the explicit codesign/notary/stapler release tool argv; native matrix certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/sign-macos.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"xcrun\", [\"stapler\", \"staple\", options.file], { stdio: \"inherit\" })",
+    "digest": "1d2e7712372d7fea7d558c87fcae1c1472765243615d9d6df0f26064b6fd0eef",
+    "sourceDigest": "0e73154f4cdc138b78ccfb3bc6d080e0b96d45efe74daf4b383a51135be76c7b",
+    "reason": "Runs the explicit codesign/notary/stapler release tool argv; native matrix certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/sign-macos.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"xcrun\", [\"stapler\", \"validate\", options.file], { stdio: \"inherit\" })",
+    "digest": "d59f5dbb7bc7e4db2a50e72eea3ad9559c21492775bc49aea0fc3a35681762a8",
+    "sourceDigest": "0e73154f4cdc138b78ccfb3bc6d080e0b96d45efe74daf4b383a51135be76c7b",
+    "reason": "Runs the explicit codesign/notary/stapler release tool argv; native matrix certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/sign-windows.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"AzureSignTool\", args, { stdio: \"inherit\" })",
+    "digest": "94a0fd536f097f0fdd143f5ce1d34300d065bbdb4cbc9910ba6c229685d90404",
+    "sourceDigest": "e4ca3a8da3dffafda1deaf14e4c56b355af6669014c7fb6cd63adad7aa8c281d",
+    "reason": "Runs the explicit AzureSignTool release signer; native signing certification remains Plan 08."
+  },
+  {
+    "file": "scripts/release/stage-linux-node-pty-prebuild.mjs",
+    "kind": "computed-require",
+    "expression": "require(targetPath)",
+    "digest": "459ff3a0427e9b2a6840933c159497131e7cb092ca8e638bd8704c59b6ce2278",
+    "sourceDigest": "173717e7c4d194b586ce0d06917f1d68faa2b323351251af988e5980040d7c54",
+    "reason": "Loads exactly the staged pty.node binary to verify the native ABI, under the dependency-owner staging resolver."
+  },
+  {
+    "file": "scripts/release/stage-release-assets.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"tar\", [\"--version\"], { encoding: \"utf8\" })",
+    "digest": "b495c6a1a07a774c0026e3fa8ef079c54bd1ccbed153b76f3fae4f057d6e97de",
+    "sourceDigest": "c6d4a37fbbed86376a52201a30ce56e92d61b40ccf73a4f2293125144424bd05",
+    "reason": "Runs platform archivers over the owned staged payload; no application source entry is selected dynamically."
+  },
+  {
+    "file": "scripts/release/stage-release-assets.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\n        \"powershell\",\n        [\n          \"-NoProfile\", \"-NonInteractive\", \"-Command\",\n          `Compress-Archive -Path '${path.join(stagingDir, \"*\").replaceAll(\"'\", \"''\")}' -DestinationPath '${zipTempPath.replaceAll(\"'\", \"''\")}' -Force`,\n        ],\n        { stdio: \"inherit\" }\n      )",
+    "digest": "c6adb8365e503e29caae54590356dfe801491b696e0d71d01f9c30abc2323a25",
+    "sourceDigest": "c6d4a37fbbed86376a52201a30ce56e92d61b40ccf73a4f2293125144424bd05",
+    "reason": "Runs platform archivers over the owned staged payload; no application source entry is selected dynamically."
+  },
+  {
+    "file": "scripts/release/stage-release-assets.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\n      \"tar\",\n      [\"-czf\", tarPath(destArchivePath), \"-C\", tarPath(seaOutDir), ...members],\n      { stdio: \"inherit\" }\n    )",
+    "digest": "b62253009d31664b95fe214e189c4ef0cc783e91bea37e954286eb278bb6d660",
+    "sourceDigest": "c6d4a37fbbed86376a52201a30ce56e92d61b40ccf73a4f2293125144424bd05",
+    "reason": "Runs platform archivers over the owned staged payload; no application source entry is selected dynamically."
+  },
+  {
+    "file": "scripts/release/verify-distribution.mjs",
+    "kind": "child-process",
+    "expression": "spawn(exe, ['work', 'ui', '--port', '0', '--target', project], {\n    cwd: project, env: childEnv, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true,\n  })",
+    "digest": "536d5bd6e5acd9fab777cb60e812e51d232229f279ee7a69c2441a112a4c4f8f",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
+    "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
+  },
+  {
+    "file": "scripts/release/verify-distribution.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync('powershell', ['-NoProfile', '-NonInteractive', '-File', installer], { stdio: 'pipe', windowsHide: true })",
+    "digest": "b923c4837e20281d7c63f075f26b69329d4df067cc275f735268aeff22c40136",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
+    "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
+  },
+  {
+    "file": "scripts/release/verify-distribution.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync('sh', ['-c', 'export AOF_INSTALL_TEST=1; . \"$AOF_PROOF_INSTALL_SH\"; aof_install_files \"$AOF_PROOF_STAGE\" \"$AOF_PROOF_BINARY\" \"$AOF_PROOF_SIDECAR\" \"$AOF_PROOF_INSTALLED\"'], {\n        stdio: 'pipe',\n        env: { ...process.env, AOF_PROOF_INSTALL_SH: path.join(repoRoot, 'install.sh'), AOF_PROOF_STAGE: stageDir, AOF_PROOF_BINARY: binary, AOF_PROOF_SIDECAR: sidecar, AOF_PROOF_INSTALLED: installed },\n      })",
+    "digest": "9f4723ba7d5f6261a45b16800b0fada4183af5c26744e64944344da1c72ad41b",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
+    "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
+  },
+  {
+    "file": "scripts/release/verify-distribution.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(exe, args, { cwd: project, env, encoding: 'utf8', timeout: 60_000, windowsHide: true })",
+    "digest": "1f320669d6b7915390fb8867876ea20bb9a7fed57edb5e9a36a496ccdd63639c",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
+    "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
+  },
+  {
+    "file": "scripts/release/verify-distribution.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(process.execPath, [path.join(repoRoot, 'packages/core/bin/aof.mjs'), '--help'], { cwd: project, env: { ...env, NODE_OPTIONS: '' }, encoding: 'utf8' })",
+    "digest": "e077e42f6bb7028650dadbab410344f6e67f2911566f8c85577d2db82b9fd3e0",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
+    "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
+  },
+  {
+    "file": "scripts/release/verify-distribution.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(node, [path.join(installed, 'src/work', child + '.mjs'), runner], { cwd: project, env, encoding: 'utf8', timeout: 60_000, windowsHide: true })",
+    "digest": "bbdd776807c5dac288fafd9807731961bfa98e31bd5b83d0d5bcefb94f2a896e",
+    "sourceDigest": "2fe7aec2ef09ab18b5b19b126129404f80df8c708b8992dda5805728af492d2b",
+    "reason": "Disposable distribution fixtures invoke the staged executable, reviewed installers and stable installed audit child paths; each payload closure is checked independently."
+  },
+  {
+    "file": "scripts/sea-entry.mjs",
+    "kind": "engine-import",
+    "expression": "new Function(\"specifier\", \"return import(specifier)\")",
+    "digest": "c432924f33040a74d71897686f445f7aa977e6fe32ab547abcc3d32d033b39db",
+    "sourceDigest": "869c642b27d595f5a302f30232bba94d10033dc528b32c199756a5c94ff2b360",
+    "reason": "Engine import bridge is required because esbuild require cannot load node:sqlite in SEA; the bridge accepts Node built-ins through the existing SQLite factory seam."
+  },
+  {
+    "file": "scripts/test-rubric.mjs",
+    "kind": "computed-import",
+    "expression": "import(new URL(\"./test.mjs\", import.meta.url).href)",
+    "digest": "4fbe0b9d1f8a3459062fafb4f5d103f2243f7b2f7bcf6e55ec4430ba131b8df7",
+    "sourceDigest": "e93dc4effef8dbaf60ecb62db29fd7704e6d85dca45861f4d28ab7376bd567d8",
+    "reason": "Repository-only harness loads the actual root runner and selected architecture suites; no production package consumes this dynamic path."
+  },
+  {
+    "file": "scripts/test-rubric.mjs",
+    "kind": "computed-import",
+    "expression": "import(new URL(file, archDir).href)",
+    "digest": "6df1aa08324e2926f248ef9504067a0a13348449d6f74500bb270f5d4b6e5086",
+    "sourceDigest": "e93dc4effef8dbaf60ecb62db29fd7704e6d85dca45861f4d28ab7376bd567d8",
+    "reason": "Repository-only harness loads the actual root runner and selected architecture suites; no production package consumes this dynamic path."
+  },
+  {
+    "file": "scripts/test-workspace.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(process.execPath, ['--test', ...files], { cwd: root, encoding: 'utf8', timeout: 90_000,\n      windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
+    "digest": "6a4ea0d5eaedf13accaa8cc6ae5d3b8a455913ac4759e12c30cfc2148fc95c69",
+    "sourceDigest": "ddcde43b7a749307f1b8d5a0d5dc4bcb6207eda15ee2380c13c1c3f6726ba567",
+    "reason": "Loads only the discovered owned .suite.mjs arrays and runs actual native .test.mjs files in an isolated child. Every suite must export executable cases and every native run must report a nonzero case count."
+  },
+  {
+    "file": "scripts/test-workspace.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(file).href)",
+    "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
+    "sourceDigest": "ddcde43b7a749307f1b8d5a0d5dc4bcb6207eda15ee2380c13c1c3f6726ba567",
+    "reason": "Loads only the discovered owned .suite.mjs arrays and runs actual native .test.mjs files in an isolated child. Every suite must export executable cases and every native run must report a nonzero case count."
+  },
+  {
+    "file": "scripts/test.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
+    "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
+    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
+  },
+  {
+    "file": "scripts/test.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
+    "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
+    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
+  },
+  {
+    "file": "scripts/test.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
+    "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
+    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
+  },
+  {
+    "file": "scripts/test.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.resolve(file)).href)",
+    "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
+    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
+  },
+  {
+    "file": "scripts/workspace-paths.mjs",
+    "kind": "computed-require",
+    "expression": "require.resolve(`${name}/package.json`)",
+    "digest": "839f8d5e380e8a05be671f961007955c50394281020843cc770acdc21b944262",
+    "sourceDigest": "717b5159b8f3d978e8fd8419cb181a5e56a5ece92786e1da7ab3385b1ca05000",
+    "reason": "createRequire resolves a declared dependency from its locked owner; manifest ownership is validated before returning a dependency directory."
+  },
+  {
+    "file": "scripts/yarn.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(process.execPath, [yarnPath, ...args], { cwd, stdio: 'inherit', shell: false })",
+    "digest": "859ca70504d4d5f0086a77eee455ffe18bad6afae5245f5c0ea1a76145ef6efe",
+    "sourceDigest": "bb3fa7beb0e5f39ad3708a0f2852c7a01a065aec9bd4b1c97ba5315217e4a810",
+    "reason": "Runs the pinned checked-in Yarn entry, never a globally selected package manager."
+  },
+  {
+    "file": "scripts/test-shard.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.resolve(file)).href)",
+    "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
+    "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
+    "reason": "Repository test tooling: imports the one suite file the sharded run assigned this unit, by path, so the unit never loads the registry. Same rule as `scripts/test.mjs --only`."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
+    "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
+    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(file).href)",
+    "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
+    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "child-process",
+    "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
+    "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
+    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
+  },
+  {
+    "file": "scripts/test-shard.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), \"test.mjs\")).href)",
+    "digest": "21a42fb352806b055fe00b19220e5c034f37c3cfb7aedb55d3a7dc625401743f",
+    "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
+    "reason": "Repository test tooling: a suite that imports the runner itself sits on an import ring with its directory index; the unit enters through `scripts/test.mjs` first, exactly as the whole-tree run does."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
+    "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
+    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
+  }
+]

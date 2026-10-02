@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -13,10 +13,8 @@
 // framework anchors, and FF-5501. Kept outside 52's frozen `acd-loop-*` roster.
 import { anchorTaxonomyTests } from "./anchor-taxonomy.test.mjs";
 import { memoryIndexingTests } from "./memory-indexing.test.mjs";
-import { memoryRetrievalTests } from "./memory-retrieval.test.mjs";
+
 import { memoryIntegrationTests } from "./memory-integration.test.mjs";
-import { memoryRecallBlockTests } from "./memory-recall-block.test.mjs";
-import { memoryHooksInertTests } from "./memory-hooks-inert.test.mjs";
 // milestone 13 — external milestone import (story 00: the spine — the registered
 // import:milestone command + `aof import milestone` dispatch, the read-only
 // source-access seam, and the FROZEN materialize artifact pair + .aof/ import-store
@@ -50,10 +48,7 @@ export const tests = [
   // milestone 55 / story 00 — anchor schema, compatibility, delivery and structural gate
   ...anchorTaxonomyTests,
   ...memoryIndexingTests,
-  ...memoryRetrievalTests,
   ...memoryIntegrationTests,
-  ...memoryRecallBlockTests,
-  ...memoryHooksInertTests,
   ...importCommandCoreTests,
   ...importRecoveryTests,
   ...importIntoMemoryTests,

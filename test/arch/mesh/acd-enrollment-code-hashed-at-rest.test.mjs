@@ -7,13 +7,13 @@
 //    peer. A plaintext 6-digit code in that record would be pushed to the whole fleet
 //    and live forever in git history. Therefore the enrollment authority persists only
 //    a HASH of the code (via node:crypto createHash/scrypt/pbkdf2/hkdf — the same
-//    node:crypto seam src/node-identity.mjs already uses at line 31), and matches a
+//    node:crypto seam packages/core/src/node-identity.mjs already uses at line 31), and matches a
 //    presented code by hashing it and comparing against the stored hash. The raw code
 //    exists ONLY in flight (the operator reads it off `aof mesh invite`, types it into
 //    `aof mesh join`); it is NEVER a field on a durable record."
 //
 // This is the SECURITY.md control for the "code at rest" threat (T3) — grounded in the
-// real seam: src/mesh/store.mjs's presenceRecordPath/nodeRecordPath already prove the
+// real seam: packages/core/src/mesh/store.mjs's presenceRecordPath/nodeRecordPath already prove the
 // `.mesh/` partition is git-TRACKED (line 15 "git IS the bus"); a pending-invite record
 // on that same bus inherits the same commit-and-sync exposure. The invariant this gate
 // enforces is that whatever field name the invite record carries for the code
@@ -43,22 +43,20 @@
 // mesh-registry.mjs / mesh-invite.mjs) is still covered — the guard is keyed by the
 // PRESENCE of the invite surface, not one hard-coded filename.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
-const COMMANDS = path.join(SRC, "commands");
-const MESH_DIR = path.join(SRC, "mesh");
 
-// The enrollment/registry surface: whichever src/mesh-*.mjs (or src/commands/mesh-*.mjs)
+// The enrollment/registry surface: whichever src/mesh-*.mjs (or packages/core/src/commands/mesh-*.mjs)
 // modules carry the device-code invite/join/registry mechanic. Discovered by a source
 // marker so the gate does not depend on one guessed filename — it covers whatever the
 // owning story names its enrollment module (mesh-enrollment / mesh-registry / mesh-invite).
-const ENROLLMENT_MARKER = /\bdeviceCode\b|\binvite\b|\bpendingInvite\b|\benroll(ment)?\b|\bcodeHash\b/i;
+const ENROLLMENT_MARKER = /\bdeviceCode\b|\bpendingInvite\b|\benroll(ment)?\b|\bcodeHash\b|\binvite\s*(?:[.(,;=:)]|$)/i;
 
 function stripCommentsOnly(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -102,29 +100,10 @@ const PLAINTEXT_CODE_FIELD = /\b(?:code|deviceCode|plaintext|plainCode|rawCode)\
 // so it cannot silently pass before the code is written).
 async function enrollmentModules() {
   const found = [];
-  // 119/01 — `src/mesh-*.mjs` became `src/mesh/*.mjs`; `src/commands/mesh-*.mjs` did not move
-  // (that is story 119/02). Each directory is scanned by the rule that is true of it.
-  for (const [dir, pattern] of [[MESH_DIR, /^.*\.mjs$/], [COMMANDS, /^mesh-.*\.mjs$/]]) {
-    let entries = [];
-    try {
-      entries = await readdir(dir);
-    } catch {
-      continue;
-    }
-    for (const name of entries) {
-      if (!pattern.test(name)) continue;
-      const file = path.join(dir, name);
-      let raw;
-      try {
-        raw = await readFile(file, "utf8");
-      } catch {
-        continue;
-      }
-      // Match the marker on comment-AND-string-stripped LIVE code, so a module that only
-      // MENTIONS "invite" in a comment (e.g. mesh-relay.mjs's auth-gate note) is not
-      // mistaken for the enrollment persist surface.
-      if (ENROLLMENT_MARKER.test(stripCommentsAndStrings(raw))) found.push({ file, raw });
-    }
+  for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
+    if (!rel.startsWith("packages/core/src/mesh/") && !rel.startsWith("packages/core/src/commands/mesh/") && !rel.startsWith("packages/mesh/src/")) continue;
+    const raw = await readFile(file, "utf8");
+    if (ENROLLMENT_MARKER.test(stripCommentsAndStrings(raw))) found.push({ file, raw });
   }
   return found;
 }
@@ -133,6 +112,8 @@ export const archTests = [
   {
     name: "arch/enrollment-code-hashed-at-rest: the enrollment/registry surface exists and hashes the device code via node:crypto (a hash seam reduces the code before it is durable)",
     run: async () => {
+      assert.ok(ENROLLMENT_MARKER.test("const invite = input;"));
+      assert.ok(!ENROLLMENT_MARKER.test("const redactedKeys = /(token|invite|hash)/i;"));
       const modules = await enrollmentModules();
       assert.ok(
         modules.length > 0,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-worktree-never-linked (milestone 72 / story 04, FF-7207;
 // ADR-007 §2, §3, TECH_DEBT item 36).
 //
@@ -17,7 +18,7 @@
 //
 // ── IT IS A RATCHET, GREEN ON ARRIVAL, WHICH IS WHY THE PLANTS MATTER MORE THAN THE PASS ─────
 //
-// Measured 2026-09-02: `src/` holds zero link-creating calls and ten recursive deletes, none of them
+// Measured 2026-09-02: `packages/core/src/` holds zero link-creating calls and ten recursive deletes, none of them
 // derived from a worktree. A census that has never been seen red over a tree that never held the
 // defect proves nothing by passing — so every row below is driven against a PLANTED source through
 // the same pure classifier the shipped tree goes through, and the admitted rows are driven too.
@@ -25,7 +26,7 @@
 // ── THE CLASSIFICATION IS BY DERIVATION FROM THE KEYED SEAM, NEVER BY RESOLVING A PATH ───────
 //
 // This is the clause that keeps the census honest, and it is measured rather than fastidious:
-// `src/mesh/worker-execution.mjs:635` recursively deletes an askpass shim directory that, when its
+// `packages/core/src/mesh/worker-execution.mjs:635` recursively deletes an askpass shim directory that, when its
 // `scriptsRoot` is a worktree, lies strictly INSIDE one — correct, shipped code, in a file this
 // story may not edit. A census that resolved paths would red on it. So what is asked of a call is
 // whether its path EXPRESSION comes from the worktree seam: one of the three keyed path producers,
@@ -36,19 +37,18 @@
 // own exported predicates, so a renamed root cannot evade it — which a `.aof/mesh/worktrees` string
 // in this file would let it do the day the rename lands.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { enclosingParenGroup, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
-import {
-  isInsideMeshWorktree,
-  meshDispatchWorktreePath,
-  meshSessionWorktreePath,
-  meshWorktreePath,
-  meshWorktreesRoot,
-  removeWorktree,
-} from "../../../src/mesh/worktree.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const isInsideMeshWorktree = _aofApplication.mesh.worktree.isInsideMeshWorktree;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshWorktreesRoot = _aofApplication.mesh.worktree.meshWorktreesRoot;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const selfPath = fileURLToPath(import.meta.url);
@@ -68,7 +68,7 @@ const WORKTREE_PRODUCERS = Object.freeze(["meshWorktreePath", "meshSessionWorktr
 
 // PURE — does this argument expression name a worktree? By DERIVATION first (the producer that
 // built it), and only then by asking the shared classifier about a literal. Both halves go through
-// `src/mesh/worktree.mjs`; neither spells a path of its own.
+// `packages/core/src/mesh/worktree.mjs`; neither spells a path of its own.
 export function reachesAWorktree(expression, projectRoot = PROBE_ROOT) {
   if (WORKTREE_PRODUCERS.some((producer) => expression.includes(producer))) return true;
   for (const match of expression.matchAll(/["'`]([^"'`]+)["'`]/gu)) {
@@ -93,7 +93,7 @@ function callsOf(code, names) {
 }
 
 // The link-creating forms, in every spelling. `\b` before `link` is load-bearing: without it
-// `unlink(` and `isSymbolicLink()` red across seven shipped `src/` sites, none of which creates
+// `unlink(` and `isSymbolicLink()` red across seven shipped `packages/core/src/` sites, none of which creates
 // anything.
 const LINK_CALLS = Object.freeze(["symlink", "symlinkSync", "link", "linkSync"]);
 
@@ -146,20 +146,14 @@ export function deleteProblems(sources, projectRoot = PROBE_ROOT) {
 
 async function sourceModules() {
   const out = [];
-  const stack = ["src"];
-  while (stack.length > 0) {
-    const rel = stack.pop();
-    for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
-      const child = `${rel}/${entry.name}`;
-      if (entry.isDirectory()) stack.push(child);
-      else if (entry.name.endsWith(".mjs")) out.push({ rel: child, code: await readFile(path.join(repoRoot, child), "utf8") });
-    }
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    out.push({ rel: file.rel, code: await readFile(file.path, "utf8") });
   }
   return out;
 }
 
 // A planted module, built from the DERIVATION so this file spells no worktree path of its own.
-const planted = (code) => [{ rel: "src/planted.mjs", code }];
+const planted = (code) => [{ rel: "packages/core/src/planted.mjs", code }];
 const insideAssignmentTree = meshWorktreePath(PROBE_ROOT, "a1");
 const insideSessionTree = meshSessionWorktreePath(PROBE_ROOT, "72/04");
 const insideDispatchTree = meshDispatchWorktreePath(PROBE_ROOT, "72/04");
@@ -171,7 +165,7 @@ export const archTests = [
     name: "arch/72 FF-7207 (acd-worktree-never-linked): no link is created whose path lies inside a worktree — over the shipped tree, and over every planted form",
     async run() {
       const modules = await sourceModules();
-      assert.ok(modules.length > SOURCE_FLOOR, `src/ was actually walked (non-vacuous): ${modules.length} modules, floor ${SOURCE_FLOOR}`);
+      assert.ok(modules.length > SOURCE_FLOOR, `packages/core/src/ was actually walked (non-vacuous): ${modules.length} modules, floor ${SOURCE_FLOOR}`);
 
       const shipped = linkProblems(modules);
       assert.deepEqual(shipped, [], `aof creates no link into a worktree:\n  ${shipped.join("\n  ")}`);
@@ -189,7 +183,7 @@ export const archTests = [
       for (const row of forms) {
         const caught = linkProblems(planted(row.code));
         assert.equal(caught.length, 1, `${row.form}: reported`);
-        assert.ok(caught[0].startsWith("src/planted.mjs"), `…naming the module (${row.form})`);
+        assert.ok(caught[0].startsWith("packages/core/src/planted.mjs"), `…naming the module (${row.form})`);
       }
 
       // THE TARGET SIDE — a link whose TARGET is inside a tree and whose path is not is still a
@@ -208,7 +202,8 @@ export const archTests = [
     name: "arch/72 FF-7207 (acd-worktree-never-linked): the worktree root is DERIVED, not matched as a literal",
     async run() {
       const own = await readFile(selfPath, "utf8");
-      assert.match(own, /from\s+"(?:\.\.\/)+src\/mesh\/worktree\.mjs"/u, "this control reaches the shared worktree-path derivation by import");
+      assert.match(own, /from\s+"aof\/default-application"/u, "this control imports the public assembled application");
+      assert.match(own, /(?:const\s+isInsideMeshWorktree\s*=|isInsideMeshWorktree:)\s*_aofApplication\.mesh\.worktree\.isInsideMeshWorktree/u, "the predicate comes from the composed worktree service");
       assert.match(own, /\bisInsideMeshWorktree\b/u, "…and classifies through the composed predicate rather than by hand");
 
       // NO WORKTREE PATH LITERAL OF ITS OWN. Every path this file reasons about is produced by the
@@ -281,9 +276,11 @@ export const archTests = [
       // AND NO FILESYSTEM DELETE IS REACHED — asserted over the module's own source rather than
       // over this call, because "this path did not delete anything" is a weaker claim than "there
       // is nothing here that could".
-      const module = await readFile(path.join(repoRoot, "src", "mesh", "worktree.mjs"), "utf8");
-      const deletes = callsOf(stripComments(module), DELETE_CALLS);
-      assert.deepEqual(deletes.map((call) => call.name), [], `the worktree module reaches no filesystem delete at all: ${deletes.map((call) => call.name).join(", ")}`);
+      for (const file of ["packages/core/src/application/bindings/mesh/worktree.mjs", "packages/mesh/src/worktrees.mjs", "packages/execution/src/worktrees.mjs"]) {
+        const module = await readFile(path.join(repoRoot, file), "utf8");
+        const deletes = callsOf(stripComments(module), DELETE_CALLS);
+        assert.deepEqual(deletes.map((call) => call.name), [], `${file} reaches no filesystem delete at all: ${deletes.map((call) => call.name).join(", ")}`);
+      }
     },
   },
 ];

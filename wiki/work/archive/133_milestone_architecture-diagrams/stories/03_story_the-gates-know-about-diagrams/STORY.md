@@ -22,7 +22,7 @@ reads:
   - src/work/doctor-identity.mjs
   - test/work/doctor-depends-lane.test.mjs
   - test/work/index.mjs
-  - test/work/delivered-story-records-reported.test.mjs
+  - packages/work/test/delivered-story-records-reported.suite.mjs
   - test/arch/work/acd-advisory-lane-never-gates.test.mjs
   - test/arch/audit/acd-controls-never-execute.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs

@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // test/session/agent-session-driver-drives.test.mjs — milestone 53 / story 00, task 02
 // (02_the-driver-still-drives.feature; ADR-001 §1 and §3, RESEARCH §Q1 and §Q8).
 //
@@ -33,19 +34,17 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  driveInteractiveClaudeSession,
-  resolveInteractiveDriverLaunch,
-  WORKER_SESSION_INSTRUCTION,
-  NEEDS_INPUT_SENTINEL,
-} from "../../src/agent-session-driver.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const resolveInteractiveDriverLaunch = _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch;
+const WORKER_SESSION_INSTRUCTION = _aofSessions.agentSessionDriver.WORKER_SESSION_INSTRUCTION;
+const NEEDS_INPUT_SENTINEL = _aofSessions.agentSessionDriver.NEEDS_INPUT_SENTINEL;
 import {
   buildOtelResourceAttributes,
   OTEL_RESOURCE_ATTRIBUTES_ENV_KEY,
   OTEL_TELEMETRY_ENV_KEY,
-} from "../../src/otel-attribution.mjs";
+} from "@aof/execution/otel-attribution";
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
-import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
+const openSessionScreen = _aofSessions.terminalSessionScreen.openSessionScreen;
 
 const BRIEF = { itemRef: "53/00", worktreeCwd: "/tmp/wt", task: "the session driver gets a home", command: "/aof:verify 53/00" };
 

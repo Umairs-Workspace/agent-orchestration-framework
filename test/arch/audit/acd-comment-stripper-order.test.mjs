@@ -7,7 +7,7 @@
 // API glob in prose, a path pattern, a regex quoted in English — opens a PHANTOM block that
 // runs to the next block terminator anywhere in the file and deletes everything between.
 //
-// IT WAS NOT HYPOTHETICAL. At the paying pass, `src/mesh/worktree.mjs:89` carried the line
+// IT WAS NOT HYPOTHETICAL. At the paying pass, `packages/core/src/mesh/worktree.mjs:89` carried the line
 // comment `// no control chars/space/~/^/:/?/[*][/][/[\, …`, whose accidental opener ran to a
 // terminator 343 lines below — inside `catch { /[*] best effort [*]/ }` at `:432`. Under the
 // old order `acd-no-new-silent-catch` could not see that catch, and reported the file clean.
@@ -18,7 +18,7 @@
 // WHAT IS ASSERTED. For every module under the scanned roots that removes block comments at
 // all: some LINE-comment removal must come FIRST. Both house spellings of "remove line
 // comments" count — a `.replace(` over a `//` pattern, and the `.filter(`/`.map(` form that
-// drops or blanks `//` lines while walking them (`test/support/terminal-gate-detectors.mjs`,
+// drops or blanks `//` lines while walking them (`apps/ui/test/support/terminal-gate-detectors.mjs`,
 // which was already correct and already carries the self-check this file generalises).
 //
 // THE BASELINE IS NAMED AND SHRINK-ONLY, in `acd-test-suite-registration`'s idiom: four files
@@ -37,7 +37,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROOTS = ["src", "test", "scripts", path.join("ui", "src")];
+const ROOTS = ["packages/core/src", "test", "scripts", path.join("apps", "ui", "src")];
 const SCANNED = new Set([".mjs", ".js", ".ts", ".tsx"]);
 
 // Assembled rather than written, so this module is not its own subject (see the note above).
@@ -48,7 +48,7 @@ const BLOCK_CLOSE = STAR + SLASH; // the escaped closer
 const LINE_MARK = SLASH + SLASH; // the escaped line-comment marker
 
 // A regex literal's source text, as written in a `.replace(` / `.filter(` / `.map(` argument.
-const PATTERN = /\/((?:\\.|\[(?:\\.|[^\]])*\]|[^/\\\n])+)\/[gimsuy]*/g;
+const PATTERN = /\/((?:\\.|\[(?:\\.|[^\]\\])*\]|[^/\\\n[])+)\/[gimsuy]*/g;
 
 // A pattern that removes BLOCK comments names both the opener and the closer.
 const removesBlock = (body) => body.includes(BLOCK_OPEN) && body.includes(BLOCK_CLOSE);

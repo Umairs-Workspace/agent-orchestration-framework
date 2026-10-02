@@ -22,7 +22,7 @@ export async function withWork(body) {
   try {
     return await body(work);
   } finally {
-    await rm(root, { recursive: true, force: true });
+    await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

@@ -1,23 +1,25 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import {
   FEEDBACK_CLASSIFICATION_KEYS,
   RAW_FEEDBACK_KEYS,
   feedbackRecordPath,
   readFeedbackRecords,
   recordFeedbackClassification,
-} from "../../src/feedback-records.mjs";
+} from "@aof/work/feedback-records";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 
 const AT = "2026-08-26T16:00:00.000Z";
 const LATER = "2026-08-26T17:00:00.000Z";
-const cliPath = fileURLToPath(new URL("../../bin/aof.mjs", import.meta.url));
+const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 
 function recordDoc(fields, title) {
   return `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n# ${title}\n`;

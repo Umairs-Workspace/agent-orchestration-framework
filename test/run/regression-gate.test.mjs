@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 04 — the regression gate is mandatory.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -37,8 +39,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 import {
   EMPTY_CELL,
   RECORD_MALFORMED,
@@ -47,9 +49,12 @@ import {
   REGRESSION_HEADING,
   REGRESSION_RECORD_BASENAME,
   parseRegressionRows,
-} from "../../src/regression-record.mjs";
-import { DIRTY_TREE, runRegressionGate } from "../../src/commands/regression-gate.mjs";
-import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../src/commands/item-status.mjs";
+} from "@aof/work/regression-record";
+const DIRTY_TREE = _aofApplication.work.commandTools.regressionGate.DIRTY_TREE;
+const runRegressionGate = _aofApplication.work.commandTools.regressionGate.runRegressionGate;
+const GATE_MISSING = _aofApplication.work.commandTools.itemStatus.GATE_MISSING;
+const GATE_RED = _aofApplication.work.commandTools.itemStatus.GATE_RED;
+const OVERRIDE_REASON_REQUIRED = _aofApplication.work.commandTools.itemStatus.OVERRIDE_REASON_REQUIRED;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -496,7 +501,7 @@ export const regressionGateTests = [
   {
     name: "96/04-02 the shipped verify command document names both paths, prefers the run, and rules out reporting the gate as passed",
     run: async () => {
-      const verify = await readFile(path.join(repoRoot, "src", "bundle", "commands", "verify.md"), "utf8");
+      const verify = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8");
       assert.match(verify, /aof work regression-gate/, "it names the gate command as the ordinary path");
       assert.match(verify, /--gate-override/, "…and the override as the escape");
       assert.match(

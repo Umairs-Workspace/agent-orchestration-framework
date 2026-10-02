@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // chore 103 — `work doctor` reported health over a stream it could not see.
 //
 // THE FAILURE, measured at 78's gate (F-78-K): the same ref, on the same tree, answered
@@ -7,9 +8,9 @@
 // the one instrument the acceptance gate trusts — and it nearly landed an acceptance.
 //
 // THE CAUSE was one directory up from doctor: `findProjectConfig` answered only for the
-// literal directory handed to it, so from `src/` it invented `src/.aof/aof.config.json`,
-// `loadWorkspace` took `src/` as the project root, and `work.dir` resolved to
-// `src/wiki/work` — a directory that does not exist. Every check group then correctly
+// literal directory handed to it, so from `packages/core/src/` it invented `packages/core/src/.aof/aof.config.json`,
+// `loadWorkspace` took `packages/core/src/` as the project root, and `work.dir` resolved to
+// `packages/core/src/wiki/work` — a directory that does not exist. Every check group then correctly
 // produced nothing over zero items. Fixed at that SHARED resolution site, so every reader
 // of a workspace path is cwd-independent, not doctor alone.
 //
@@ -30,11 +31,11 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
-import { findProjectConfig, workspacePaths } from "../../src/workspace.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { findProjectConfig, workspacePaths } from "../../packages/core/src/workspace.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // Three days back — the same relative-date discipline doctor-command-core.test.mjs uses,
 // so the freshness group stays inert instead of aging red a month after this is written.

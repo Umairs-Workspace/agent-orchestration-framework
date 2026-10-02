@@ -45,8 +45,21 @@ const POWERSHELL = (() => {
   return probe.status === 0 ? "pwsh" : "powershell";
 })();
 
+// Values reach bash as environment variables; the script text only names them ("$AOF_SH_n"). A path
+// carrying `$`, a backtick or a quote is then data, never shell syntax. Names are never reused, so a
+// script built before another one ran still finds its values.
+const shellValues = new Map();
+function shellValue(value) {
+  const name = `AOF_SH_${shellValues.size}`;
+  shellValues.set(name, value);
+  return `"$${name}"`;
+}
+function shellEnv() {
+  return { ...process.env, ...Object.fromEntries(shellValues) };
+}
+
 function q(p) {
-  return JSON.stringify(p.split("\\").join("/"));
+  return shellValue(p.split("\\").join("/"));
 }
 
 // qtar: the form to splice into any script that reaches `tar` (create OR
@@ -56,11 +69,11 @@ function q(p) {
 // "/c/..." POSIX form tar accepts, matching how install.sh's own
 // aof_extract_sidecar is exercised in these tests.
 function qtar(p) {
-  return JSON.stringify(toGitBashPosixPath(p));
+  return shellValue(toGitBashPosixPath(p));
 }
 
 function runSh(script) {
-  const result = spawnSync(POSIX_SHELL.bash, ["-c", script], { encoding: "utf8" });
+  const result = spawnSync(POSIX_SHELL.bash, ["-c", script], { encoding: "utf8", env: shellEnv() });
   return { stdout: result.stdout ?? "", stderr: result.stderr ?? "", status: result.status };
 }
 
@@ -92,6 +105,16 @@ function buildSeaOutFixture(baseDir, ptyPlatformArch) {
   const moduleSrc = path.join(seaOut, "node_modules", "node-pty", "lib");
   mkdirSync(sidecarSrc, { recursive: true });
   mkdirSync(moduleSrc, { recursive: true });
+  mkdirSync(path.join(seaOut, 'bundle'), { recursive: true });
+  mkdirSync(path.join(seaOut, 'ui', 'dist'), { recursive: true });
+  writeFileSync(path.join(seaOut, 'bundle', 'bundle.json'), '{}');
+  writeFileSync(path.join(seaOut, 'ui', 'dist', 'index.html'), '<main>installed UI</main>');
+  writeFileSync(path.join(seaOut, 'package.json'), '{"version":"0.1.0"}');
+  mkdirSync(path.join(seaOut, 'src', 'work'), { recursive: true });
+  mkdirSync(path.join(seaOut, 'node-runtime'), { recursive: true });
+  writeFileSync(path.join(seaOut, 'src', 'work', 'audit-probe.mjs'), '// child');
+  writeFileSync(path.join(seaOut, 'src', 'work', 'audit-drive.mjs'), '// child');
+  writeFileSync(path.join(seaOut, 'node-runtime', 'node'), 'fixture node runtime');
   writeFileSync(path.join(sidecarSrc, "pty.node"), "fixture-pty-node-bytes", "utf8");
   writeFileSync(path.join(seaOut, "node_modules", "node-pty", "package.json"), JSON.stringify({ name: "node-pty", version: "1.1.0" }), "utf8");
   writeFileSync(path.join(moduleSrc, "index.js"), "module.exports = {};", "utf8");
@@ -126,7 +149,7 @@ export const installerPlaceTests = [
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_install_files ${qtar(base)} aof-linux-x64 node-pty-linux-x64 ${qtar(installDir)}
         `;
         const r = runSh(script);
@@ -168,7 +191,7 @@ export const installerPlaceTests = [
         runSh(`
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_install_files ${qtar(base)} aof-linux-x64 node-pty-linux-x64 ${qtar(installDir)}
         `);
         assert.ok(existsSync(path.join(installDir, "node-pty-sidecar", "prebuilds", "linux-x64", "pty.node")), "the v1 tree is extracted");
@@ -185,7 +208,7 @@ export const installerPlaceTests = [
         const r2 = runSh(`
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_install_files ${qtar(base)} aof-linux-x64 node-pty-linux-x64 ${qtar(installDir)}
         `);
         assert.equal(r2.status, 0, `re-install (re-extract) succeeds (stderr: ${r2.stderr})`);
@@ -213,7 +236,7 @@ export const installerPlaceTests = [
         runSh(`
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_install_files ${qtar(base)} aof-linux-arm64 node-pty-linux-arm64 ${qtar(installDir)}
         `);
         assert.ok(existsSync(path.join(installDir, "node-pty-sidecar", "prebuilds", "linux-arm64", "pty.node")), "the arm64 tree is extracted");
@@ -226,7 +249,7 @@ export const installerPlaceTests = [
         const r2 = runSh(`
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_install_files ${qtar(base)} aof-linux-x64 node-pty-linux-x64 ${qtar(installDir)}
         `);
         assert.equal(r2.status, 0, `re-install with a differently-named sidecar succeeds (stderr: ${r2.stderr})`);
@@ -267,7 +290,7 @@ export const installerPlaceTests = [
         const r1 = runSh(`
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_install_files ${qtar(base)} aof-linux-x64 node-pty-linux-x64 ${qtar(installDir)}
         `);
         assert.equal(r1.status, 0, `the prior (good) install succeeds (stderr: ${r1.stderr})`);
@@ -289,7 +312,7 @@ export const installerPlaceTests = [
         const r2 = runSh(`
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           set +e
           aof_install_files ${qtar(base)} aof-linux-x64 node-pty-linux-x64 ${qtar(installDir)}
           echo "EXIT:$?"
@@ -652,7 +675,7 @@ Write-Output "DONE"
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_persist_path ${q(installDir)} ${q(profile)}
           aof_persist_path ${q(installDir)} ${q(profile)}
           aof_persist_path ${q(installDir)} ${q(profile)}
@@ -683,7 +706,7 @@ Write-Output "DONE"
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_persist_path ${q(installDir)} ${q(profile)}
         `;
         const r = runSh(script);
@@ -706,7 +729,7 @@ Write-Output "DONE"
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_persist_path ${q(installDir)} ${q(profile)}
           aof_persist_path ${q(installDir)} ${q(profile)}
           aof_persist_path ${q(installDir)} ${q(profile)}
@@ -737,7 +760,7 @@ Write-Output "DONE"
         const script1 = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_persist_path ${q(oldInstallDir)} ${q(profile)}
         `;
         const r1 = runSh(script1);
@@ -751,7 +774,7 @@ Write-Output "DONE"
         const script2 = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           aof_persist_path ${q(newInstallDir)} ${q(profile)}
         `;
         const r2 = runSh(script2);
@@ -966,7 +989,7 @@ Write-Output ("AFTER:" + $after)
       const script = `
         AOF_INSTALL_TEST=1
         export AOF_INSTALL_TEST
-        . "${installSh.split("\\").join("/")}"
+        . ${q(installSh)}
         set +e
         PATH="/nonexistent-empty-dir" aof_require_tool sha256sum
         echo "EXIT:$?"
@@ -996,7 +1019,7 @@ Write-Output ("AFTER:" + $after)
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           set +e
           PATH=${qtar(stubDir)} aof_require_sha256_tool
           echo "PROBE_EXIT:$?"
@@ -1023,7 +1046,7 @@ Write-Output ("AFTER:" + $after)
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           set +e
           PATH=${qtar(stubDir)} aof_require_sha256_tool
           echo "PROBE_EXIT:$?"
@@ -1043,7 +1066,7 @@ Write-Output ("AFTER:" + $after)
       const script = `
         AOF_INSTALL_TEST=1
         export AOF_INSTALL_TEST
-        . "${installSh.split("\\").join("/")}"
+        . ${q(installSh)}
         set +e
         PATH="/nonexistent-empty-dir" aof_require_sha256_tool
         echo "EXIT:$?"
@@ -1059,7 +1082,7 @@ Write-Output ("AFTER:" + $after)
       const script = `
         AOF_INSTALL_TEST=1
         export AOF_INSTALL_TEST
-        . "${installSh.split("\\").join("/")}"
+        . ${q(installSh)}
         set +e
         PATH="/nonexistent-empty-dir" aof_require_tool gpg
         echo "EXIT:$?"
@@ -1075,7 +1098,7 @@ Write-Output ("AFTER:" + $after)
       const script = `
         AOF_INSTALL_TEST=1
         export AOF_INSTALL_TEST
-        . "${installSh.split("\\").join("/")}"
+        . ${q(installSh)}
         set +e
         PATH="/nonexistent-empty-dir" aof_extract_sidecar "/does/not/matter" "/does/not/matter/either"
         echo "EXIT:$?"
@@ -1107,7 +1130,7 @@ Write-Output ("AFTER:" + $after)
         const script = `
           AOF_INSTALL_TEST=1
           export AOF_INSTALL_TEST
-          . "${installSh.split("\\").join("/")}"
+          . ${q(installSh)}
           set +e
           aof_extract_sidecar ${qtar(badArchive)} ${qtar(installDir)}
           echo "EXIT:$?"

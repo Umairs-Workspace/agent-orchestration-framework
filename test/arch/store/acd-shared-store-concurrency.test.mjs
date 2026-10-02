@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness functions for m42 — THE SHARED-STORE CONCURRENCY PRAGMAS.
 //
 // The measured residual (STATE 2026-07-27, "CONTINUOUS `ERR_SQLITE_ERROR:
@@ -32,7 +33,7 @@ import { fork } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -40,8 +41,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // carry the pragmas. Both are opened by multiple processes concurrently on a
 // control node, which is the whole reason the pragmas are not optional.
 const SHARED_STORES = [
-  { file: path.join("src", "global-work-store.mjs"), what: "the global work projection" },
-  { file: path.join("src", "effects", "journal.mjs"), what: "the effects journal" },
+  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), what: "the global work projection" },
+  { file: path.join("packages", "effects", "src", "journal.mjs"), what: "the effects journal" },
 ];
 
 // The holder: opens the db, takes a write transaction, tells the parent it is
@@ -123,7 +124,7 @@ export const archTests = [
       // WAL is required of the PROJECTION specifically: it is the one read by
       // pollers on every tick while a writer holds the file. The journal is
       // written by one drain at a time and needs only the timeout.
-      const projection = await readFile(path.join(repoRoot, "src", "global-work-store.mjs"), "utf8");
+      const projection = await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8");
       assert.ok(
         /PRAGMA\s+journal_mode\s*=\s*WAL/i.test(projection),
         "the global work projection runs in WAL — readers must not block the writer that polls collide with",

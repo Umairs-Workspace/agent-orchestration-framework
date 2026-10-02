@@ -1,17 +1,16 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-worker-clone-scoped-checkout.test.mjs — traceability for milestone 38 /
 // story 01 task 01 (01_clone-into-scoped-checkout.feature). Every @executable scenario
 // + Examples row wired to the real engine surface: meshCheckoutPath /
-// isUnderMeshCheckoutsRoot / cloneRepoForWorkspace (src/mesh/worker-execution.mjs).
+// isUnderMeshCheckoutsRoot / cloneRepoForWorkspace (packages/core/src/mesh/worker-execution.mjs).
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
-import {
-  meshCheckoutPath,
-  meshCheckoutsRoot,
-  isUnderMeshCheckoutsRoot,
-  cloneRepoForWorkspace,
-} from "../../../src/mesh/worker-execution.mjs";
-import { globalMeshPaths } from "../../../src/workspace.mjs";
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
+const meshCheckoutsRoot = _aofApplication.mesh.worker.meshCheckoutsRoot;
+const isUnderMeshCheckoutsRoot = _aofApplication.mesh.worker.isUnderMeshCheckoutsRoot;
+const cloneRepoForWorkspace = _aofApplication.mesh.worker.cloneRepoForWorkspace;
+import { globalMeshPaths } from "../../../packages/core/src/workspace.mjs";
 import { withMeshCloneFixture, createRecordingCloneExec } from "../../support/mesh-worker-clone-fixture.mjs";
 
 export const meshWorkerCloneScopedCheckoutTests = [

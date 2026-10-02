@@ -13,7 +13,7 @@
 // and the file had grown past 950 lines carrying them — the largest of the repo's 254 arch tests.
 //
 // The cost of two subjects under one name is not tidiness, it is READABILITY UNDER FAILURE: a red
-// line reading `arch/42 terminal-input …` about `src/mesh/launcher.mjs`'s output arrow sends the
+// line reading `arch/42 terminal-input …` about `packages/core/src/mesh/launcher.mjs`'s output arrow sends the
 // next reviewer to the fleet page. A gate's name is the first thing anyone reads about it, and it
 // should describe its subject. Nothing about either invariant changed in the split; the detector,
 // its plants and its refusal text are the SAME code, moved.
@@ -23,18 +23,18 @@
 // this detector had been reading green for a month while asserting nothing about the bytes that
 // reach an operator's screen. "A gate guarding dead code is worse than no gate, because green is
 // read as a satisfied contract." So:
-//   - the POSITIVE half reads EVERY `.sendTerminalFrame(` call site found by sweeping `src/`,
+//   - the POSITIVE half reads EVERY `.sendTerminalFrame(` call site found by sweeping `packages/core/src/`,
 //     wherever it lives, and requires each to sit inside exactly
 //     `(chunk, sessionId) => <client>.sendTerminalFrame(sessionId, String(chunk))`;
 //   - ZERO producers is a TRIP, not a pass — the vacuity ADR-007 exists to prevent;
-//   - the NEGATIVE half stays on `src/mesh/terminal-relay-bridge.mjs`, which still builds every
+//   - the NEGATIVE half stays on `packages/core/src/mesh/terminal-relay-bridge.mjs`, which still builds every
 //     terminal envelope in both directions, so "no credential material appears in it" remains a
 //     live, meaningful sweep;
 //   - it grows NO second copy of the live-path credential needle: that one already exists, green,
 //     in `acd-fleet-terminal-frame-connection-identity`, and two homes for one detector is the
 //     shape these ADRs keep refusing.
 //
-// NAMING `src/mesh/launcher.mjs` WAS A MEASURED FALSE NEGATIVE: it is a 1,758-line hub with 37
+// NAMING `packages/core/src/mesh/launcher.mjs` WAS A MEASURED FALSE NEGATIVE: it is a 1,758-line hub with 37
 // outward edges, so splitting it is plausible, and moving the real producers out while leaving
 // any sanctioned-shaped `onOutputChunk:` arrow behind (dead code, a defaults object, a docs
 // example) read GREEN. The sweep starts from the SEND SEAM, not from a path.
@@ -51,16 +51,17 @@
 // each asserts it LANDED (`assert.notEqual(planted, clean)`) before asserting the detector trips
 // on it and stays quiet on the clean baseline.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BRIDGE = path.join(repoRoot, "src", "mesh", "terminal-relay-bridge.mjs");
+const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 // THE REAL PRODUCER, DISCOVERED rather than named. This gate deliberately holds no path to
-// `src/mesh/launcher.mjs` (where both producers live today), so a file split cannot silently
+// `packages/core/src/mesh/launcher.mjs` (where both producers live today), so a file split cannot silently
 // move them out from under it.
-const SRC_DIR = path.join(repoRoot, "src");
+const SRC_DIR = path.join(repoRoot, "packages", "core", "src");
 
 // LINE COMMENTS FIRST, BLOCK COMMENTS SECOND — the order is load-bearing (TECH_DEBT item 24):
 // strip blocks first and a line comment containing `/*` deletes the rest of the file before the
@@ -142,7 +143,7 @@ const SEND_TERMINAL_FRAME_CALL = /\.sendTerminalFrame\s*\(/g;
 //
 // The FLOOR below (m46/ADR-007) says "at least two, or the resume lane went dark". The CEILING says
 // "at most two, or a BROWSER's arithmetic silently became wrong" — and the two are stated against
-// ONE number because there is only one fact here: how many places in `src/` can feed the relay.
+// ONE number because there is only one fact here: how many places in `packages/core/src/` can feed the relay.
 //
 // WHY A THIRD CALL SITE IS A CORRECTNESS BUG AND NOT A STYLE ONE. m49's terminals home derives a
 // pane's FEED AXIS in the browser, from a field already on the wire, by this arithmetic
@@ -156,7 +157,7 @@ const SEND_TERMINAL_FRAME_CALL = /\.sendTerminalFrame\s*\(/g;
 // worker branch, both inside an assignment execution. Add a third outside that branch — a board
 // bridge, a loopback worker, a replay tool — and every pane the home labels `no-producer` becomes a
 // LIE: the operator is told "nothing will ever feed this" about a tuple that is streaming. No test
-// in `ui/` can see that change; no test in `src/` is about it; the browser keeps answering
+// in `ui/` can see that change; no test in `packages/core/src/` is about it; the browser keeps answering
 // confidently from an arithmetic that stopped holding one commit ago. **This gate is the only place
 // the two builds meet.**
 //
@@ -175,11 +176,11 @@ const SEND_TERMINAL_FRAME_CALL = /\.sendTerminalFrame\s*\(/g;
 // ═══ RAISED 2 → 3 BY m50/ADR-008 DECISION 9, AND THE RE-DERIVATION IS THE SUBSTANCE OF THE RAISE ══
 //
 // The clause above reserved this number's increase to "an ADR that re-derives the feed axis". This is
-// that raise, m50/ADR-008 is that ADR, and the re-derivation landed in the SAME diff — `ui/src/home/
+// that raise, m50/ADR-008 is that ADR, and the re-derivation landed in the SAME diff — `apps/ui/src/home/
 // feed-axis.mjs`, this file, and the four wire hops between them are one change. 49/DESIGN §DG-49-2
 // wrote the instruction in words and named milestone 50 as the amender.
 //
-// THE THREE SANCTIONED SITES, BY NAME (all three in `src/mesh/launcher.mjs`'s worker branch today,
+// THE THREE SANCTIONED SITES, BY NAME (all three in `packages/core/src/mesh/launcher.mjs`'s worker branch today,
 // which is an OBSERVATION recorded here and never this detector's input — the sweep finds them
 // wherever they move):
 //   1. the ASSIGNMENT DRIVER's `onOutputChunk` arrow (createMeshWorkerExecutionHandler's wiring);
@@ -240,7 +241,7 @@ function keyArrowRanges(source, key) {
 
 // A refusal names its cause, and "the producer is gone" is only ONE of the causes that produce an
 // empty result. The others are honest re-spellings — shorthand (`onOutputChunk,`, which
-// src/mesh/worker-execution.mjs already uses at three of its own call sites), method shorthand
+// packages/core/src/mesh/worker-execution.mjs already uses at three of its own call sites), method shorthand
 // (`onOutputChunk(chunk, sessionId) { … }`), or a named helper — and telling an engineer the
 // producer vanished when it is right in front of them, spelled differently, is how a gate gets
 // deleted instead of re-aimed.
@@ -268,7 +269,7 @@ function hostFor(rangesByKey, callIndex) {
 }
 
 // outputSignalProblems({ bridgeSource, srcSources }) — `srcSources` is a
-// Map<relativePath, comment-stripped source> covering every `.mjs` under `src/`.
+// Map<relativePath, comment-stripped source> covering every `.mjs` under `packages/core/src/`.
 export function outputSignalProblems({ bridgeSource, srcSources }) {
   const problems = [];
 
@@ -329,8 +330,8 @@ export function outputSignalProblems({ bridgeSource, srcSources }) {
 //       axis has two inputs, "just look at whether bytes arrived" becomes the obvious third, and it
 //       is forbidden: the browser writes those bytes straight into xterm, so a worker's own PTY
 //       output could FORGE its pane's state by printing it (SECURITY T14).
-const SPAWN_HANDLER = path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs");
-const FEED_AXIS = path.join(repoRoot, "ui", "src", "home", "feed-axis.mjs");
+const SPAWN_HANDLER = path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs");
+const FEED_AXIS = path.join(repoRoot, "apps", "ui", "src", "home", "feed-axis.mjs");
 
 // callArgs(source, name) — the paren-balanced ARGUMENT TEXT of every `name(` call, cut on the
 // language's own structure so a nested call, an object literal or an arrow with its own commas
@@ -357,7 +358,7 @@ function callArgs(source, name) {
 
 // producerFactProblems({ handlerSource, feedAxisSource }) — the two clauses above, over
 // comment-stripped sources. Kept OUT of `outputSignalProblems` deliberately: that function's whole
-// input is a `src/` sweep, and folding a two-file assertion into it would make every synthesized
+// input is a `packages/core/src/` sweep, and folding a two-file assertion into it would make every synthesized
 // self-check below carry two unrelated files to stay quiet.
 export function producerFactProblems({ handlerSource, feedAxisSource }) {
   const problems = [];
@@ -379,14 +380,14 @@ export function producerFactProblems({ handlerSource, feedAxisSource }) {
   // The signature, read as a signature: `feedAxisFor(row, context)` and nothing else.
   const signature = /export\s+function\s+feedAxisFor\s*\(([^)]*)\)/.exec(feedAxisSource);
   if (signature == null) {
-    problems.push("ui/src/home/feed-axis.mjs no longer exports a `feedAxisFor(` function this clause can read — re-aim it rather than delete it; the no-byte-parameter invariant is gated, not advisory.");
+    problems.push("apps/ui/src/home/feed-axis.mjs no longer exports a `feedAxisFor(` function this clause can read — re-aim it rather than delete it; the no-byte-parameter invariant is gated, not advisory.");
   } else {
     const params = signature[1].split(",").map((param) => param.trim()).filter((param) => param.length > 0);
     if (params.length > 2) {
-      problems.push(`ui/src/home/feed-axis.mjs: \`feedAxisFor\` takes ${params.length} parameters (${params.join(", ")}) — it takes exactly \`(row, context)\`. A THIRD parameter is how a byte parameter arrives, and there must be none: the browser writes terminal bytes straight into xterm, so a worker's own printed output could FORGE its pane's axis.`);
+      problems.push(`apps/ui/src/home/feed-axis.mjs: \`feedAxisFor\` takes ${params.length} parameters (${params.join(", ")}) — it takes exactly \`(row, context)\`. A THIRD parameter is how a byte parameter arrives, and there must be none: the browser writes terminal bytes straight into xterm, so a worker's own printed output could FORGE its pane's axis.`);
     }
     if (/\b(?:byte|bytes|chunk|chunks|data|output)\b/i.test(signature[1])) {
-      problems.push(`ui/src/home/feed-axis.mjs: \`feedAxisFor\`'s parameter list mentions bytes/chunk/data/output (\`${signature[1].trim()}\`) — the axis is derived from wire FIELDS and roster membership, never from terminal output (SECURITY T14; the invariant is a SIGNATURE rather than a promise).`);
+      problems.push(`apps/ui/src/home/feed-axis.mjs: \`feedAxisFor\`'s parameter list mentions bytes/chunk/data/output (\`${signature[1].trim()}\`) — the axis is derived from wire FIELDS and roster membership, never from terminal output (SECURITY T14; the invariant is a SIGNATURE rather than a promise).`);
     }
   }
   return problems;
@@ -410,7 +411,7 @@ async function listSourceFiles(dir) {
 // gate vacuous (ADR-006).
 async function readSrcSources() {
   const sources = new Map();
-  for (const file of await listSourceFiles(SRC_DIR)) {
+  for (const { path: file } of await readRuntimeFiles(repoRoot)) {
     sources.set(path.relative(repoRoot, file).split(path.sep).join("/"), await realSource(file));
   }
   return sources;
@@ -438,7 +439,7 @@ export const archTests = [
       );
 
       // THE PRODUCER IS REAL AND THERE ARE EXACTLY THREE OF IT — today all three in
-      // src/mesh/launcher.mjs, but that is an OBSERVATION recorded here, never the detector's
+      // packages/core/src/mesh/launcher.mjs, but that is an OBSERVATION recorded here, never the detector's
       // input: the sweep above finds them wherever they move to.
       //
       // EXACTLY, not "at least". The floor is m46/ADR-007's (every lane streams); the ceiling is
@@ -545,7 +546,7 @@ export const archTests = [
     // THE PLANT IS DELIBERATELY SANCTIONED-SHAPED. A malformed third arrow would trip the SHAPE
     // clause and prove nothing about the ceiling — the assertion below therefore requires the
     // ceiling refusal to be the ONLY problem returned, so a green ceiling cannot hide behind a red
-    // shape. It is also planted in a SEPARATE module (`src/mesh-board-terminal-bridge.mjs` — the
+    // shape. It is also planted in a SEPARATE module (`packages/core/src/mesh-board-terminal-bridge.mjs` — the
     // "board bridge" ADR-003 names as the plausible third producer), because a file-local count
     // would be satisfied by moving one arrow.
     name: "arch/49 ADR-003 + 50 ADR-008 (acd-terminal-output-signal-source) self-check: the shrink-only CEILING (now 3) fires on a FOURTH `.sendTerminalFrame(` producer — the change that makes every `no-producer` pane in the terminals home a lie, with no test in either build able to see it — and the m50 BRIDGE-KEY shape is sanctioned by ENUMERATION, not by a relaxed pattern",
@@ -557,7 +558,7 @@ export const archTests = [
 
       const cleanThree = [
         [
-          "src/mesh/launcher.mjs",
+          "packages/mesh/src/launcher.mjs",
           `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });
            const terminalResumeHandler = createMeshWorkerTerminalResumeHandler({ nodeId, ${sanctionedArrow} });
            const sessionSpawnHandler = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`,
@@ -569,18 +570,18 @@ export const archTests = [
       // THE ENUMERATION IS DOING THE WORK, NOT A WIDENED PATTERN. Drive the bridge key on its own:
       // it is sanctioned by its OWN named shape, and a MALFORMED one still trips. If the fix had
       // been "relax the arrow to a pattern", the second assertion here would be green.
-      const bridgeOnly = [["src/mesh/launcher.mjs", `const h = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`]];
+      const bridgeOnly = [["packages/mesh/src/launcher.mjs", `const h = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`]];
       assert.deepEqual(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(bridgeOnly) }).filter((problem) => !/only 1/.test(problem)),
         [],
         "self-check: the m50 bridge key is sanctioned by its own enumerated shape (the FLOOR still objects to it being alone, which is a different clause)",
       );
-      const foldedBridge = [["src/mesh/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes + process.env.ANTHROPIC_API_KEY) });"]];
+      const foldedBridge = [["packages/mesh/src/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes + process.env.ANTHROPIC_API_KEY) });"]];
       assert.ok(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(foldedBridge) }).some((problem) => /not exactly/.test(problem)),
         "self-check: a credential folded into the BRIDGE KEY's bytes trips the SHAPE clause — the second sanctioned spelling is as exact as the first, never a loosened pattern",
       );
-      const respeltBridge = [["src/mesh/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, redact(bytes)) });"]];
+      const respeltBridge = [["packages/mesh/src/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, redact(bytes)) });"]];
       assert.ok(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(respeltBridge) }).some((problem) => /not exactly/.test(problem)),
         "self-check: a sanitiser inside the bridge key trips too — the lane is content-blind by contract on BOTH sanctioned shapes",
@@ -589,7 +590,7 @@ export const archTests = [
       // THE PLANT: a FOURTH producer, perfectly well-formed, in a new module.
       const plantedFour = [
         ...cleanThree,
-        ["src/mesh-board-terminal-bridge.mjs", `const bridge = createBoardTerminalBridge({ nodeId, ${sanctionedArrow} });`],
+        ["packages/core/src/mesh-board-terminal-bridge.mjs", `const bridge = createBoardTerminalBridge({ nodeId, ${sanctionedArrow} });`],
       ];
       assert.notDeepEqual(plantedFour, cleanThree, "the plant actually differs from the clean three-producer sweep");
       assert.equal(plantedFour.length, cleanThree.length + 1, "the plant genuinely adds a FOURTH call site, in a module of its own");
@@ -623,7 +624,7 @@ export const archTests = [
 
       // AND THE TWO REFUSALS ARE DISTINGUISHABLE. Floor and ceiling read the SAME number, so a
       // reviewer who cannot tell which one fired learns nothing from the red line.
-      const oneProducer = [["src/mesh/launcher.mjs", `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });`]];
+      const oneProducer = [["packages/mesh/src/launcher.mjs", `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });`]];
       const floorProblems = outputSignalProblems({ bridgeSource: "", srcSources: asSweep(oneProducer) });
       assert.equal(floorProblems.length, 1, `self-check: one producer still trips the FLOOR. Got: ${JSON.stringify(floorProblems)}`);
       assert.match(floorProblems[0], /production call sites must stream/, "the FLOOR's refusal is m46/ADR-007's — a lane went dark");
@@ -636,7 +637,7 @@ export const archTests = [
       // clauses. Driven so the comparison itself is pinned.
       const plantedFive = [
         ...plantedFour,
-        ["src/mesh-replay-terminal.mjs", `const replay = createReplayer({ nodeId, ${sanctionedArrow} });`],
+        ["packages/core/src/mesh-replay-terminal.mjs", `const replay = createReplayer({ nodeId, ${sanctionedArrow} });`],
       ];
       assert.equal(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(plantedFive) }).length,
@@ -652,7 +653,7 @@ export const archTests = [
       // A clean SYNTHESIZED producer file carrying the sanctioned arrow at both call sites; every
       // plant below is a hand-written mutation of THIS shape, fed to the detector as a one-entry
       // src/ sweep.
-      const asSweep = (source, file = "src/synthesized-producer.mjs") => new Map([[file, stripComments(source)]]);
+      const asSweep = (source, file = "packages/core/src/synthesized-producer.mjs") => new Map([[file, stripComments(source)]]);
       const cleanLauncher = stripComments(`
         const handler = createMeshWorkerExecutionHandler({
           nodeId,
@@ -680,7 +681,7 @@ export const archTests = [
 
       // PLANT — THE FILE MOVE (the measured false negative this hardening closes). The real
       // producers move to a NEW module and one of them folds a credential, while the OLD file
-      // keeps a sanctioned-shaped but DEAD arrow. A detector that named `src/mesh/launcher.mjs`
+      // keeps a sanctioned-shaped but DEAD arrow. A detector that named `packages/core/src/mesh/launcher.mjs`
       // reads GREEN here — it finds the decoy and never looks at the module the bytes actually
       // travel through. The sweep does.
       const movedProducers = stripComments(`
@@ -697,18 +698,18 @@ export const archTests = [
         };
       `);
       const movedSweep = new Map([
-        ["src/mesh/launcher.mjs", decoyLeftBehind],
-        ["src/mesh-worker-producer.mjs", movedProducers],
+        ["packages/mesh/src/launcher.mjs", decoyLeftBehind],
+        ["packages/core/src/mesh-worker-producer.mjs", movedProducers],
       ]);
       assert.notEqual(movedProducers, cleanLauncher, "the plant actually differs from the clean synthesized shape");
       assert.deepEqual(
-        outputSignalProblems({ bridgeSource: "", srcSources: new Map([["src/mesh/launcher.mjs", decoyLeftBehind]]) }).map((p) => p.includes("only 1")),
+        outputSignalProblems({ bridgeSource: "", srcSources: new Map([["packages/mesh/src/launcher.mjs", decoyLeftBehind]]) }).map((p) => p.includes("only 1")),
         [true],
         "control: the decoy ALONE is sanctioned-shaped — a path-named detector would have read it and stopped there",
       );
       const movedProblems = outputSignalProblems({ bridgeSource: "", srcSources: movedSweep });
       assert.ok(
-        movedProblems.some((problem) => problem.startsWith("src/mesh-worker-producer.mjs")),
+        movedProblems.some((problem) => problem.startsWith("packages/core/src/mesh-worker-producer.mjs")),
         `self-check: a producer that MOVED to another module is still swept, and its defect still trips — the gate cannot be broken by a file move (ADR-006). Got: ${JSON.stringify(movedProblems)}`,
       );
 
@@ -783,7 +784,7 @@ export const archTests = [
 
       // PLANT — THE RE-SPELLING ITSELF, which is the likelier of the two causes. The producer is
       // present and correct, but wired by SHORTHAND (`onOutputChunk,` — the spelling
-      // src/mesh/worker-execution.mjs already uses at three of its own call sites), so there is no
+      // packages/core/src/mesh/worker-execution.mjs already uses at three of its own call sites), so there is no
       // `onOutputChunk:` property VALUE to read. The detector must trip (its shape assertion has
       // gone blind) AND must say so honestly, rather than either passing quietly or claiming the
       // producer is gone.

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 09 / ADR-006 inv. 3 (binary-absent clean
 // failure; ADR-002 + ADR-004):
 // "`resolveGraphifyBinary()` returns a structured `{ found:false, hint }` (with
@@ -23,8 +24,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { resolveGraphifyBinary, GRAPHIFY_BINARY } from "../../../src/graphify.mjs";
-import { doctorConfig } from "../../../src/config-inspect.mjs";
+const resolveGraphifyBinary = _aofApplication.knowledge.graphify.resolveGraphifyBinary;
+const GRAPHIFY_BINARY = _aofApplication.knowledge.graphify.GRAPHIFY_BINARY;
+const doctorConfig = _aofApplication.assets.configInspect.doctorConfig;
 
 // A minimal valid project so doctorConfig runs end-to-end (it resolves the same
 // checks[] `aof project doctor` surfaces).

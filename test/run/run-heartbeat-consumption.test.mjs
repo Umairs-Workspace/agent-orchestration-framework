@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: 69/01 tasks 00-01. The real bundled hook appends consumption and
 // the real run-store consumes it through heartbeat before evaluating liveness.
 import assert from "node:assert/strict";
@@ -7,13 +9,15 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../src/agent-session-driver.mjs";
-import { consumeHeartbeatQueue } from "../../src/run-heartbeat-consumption.mjs";
-import { readRuns, startRun } from "../../src/run-store.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const resolveInteractiveDriverLaunch = _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch;
+const consumeHeartbeatQueue = _aofApplication.execution.runHeartbeatConsumption.consumeHeartbeatQueue;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const startRun = _aofApplication.execution.runs.startRun;
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const hook = path.join(root, "src", "bundle", "hooks", "run-heartbeat-enqueue.mjs");
+const hook = path.join(root, "packages", "core", "assets", "hooks", "run-heartbeat-enqueue.mjs");
 
 async function fixture() {
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-heartbeat-consumption-"));

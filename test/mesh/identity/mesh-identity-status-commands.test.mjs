@@ -1,10 +1,13 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 22 / story 01 — the mesh:identity / mesh:status
 // commands.
 //
 // Covers EVERY @executable scenario in tasks/01_mesh-identity-status-commands.feature,
-// exercising the REAL in-process registry (src/command-core.mjs +
-// src/commands/mesh-identity.mjs over story 00's src/mesh/store.mjs + story 01's
-// src/node-identity.mjs) against a temp fixture repo — loadWorkspace + invoke, real fs,
+// exercising the REAL in-process registry (packages/core/src/command-core.mjs +
+// packages/core/src/commands/mesh-identity.mjs over story 00's packages/core/src/mesh/store.mjs + story 01's
+// packages/core/src/node-identity.mjs) against a temp fixture repo — loadWorkspace + invoke, real fs,
 // in-process. One test object per @executable scenario, each name tracing to feature +
 // scenario. node:assert/strict.
 //
@@ -17,9 +20,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { getCommand, invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, publishNodeRecord } from "../../../src/mesh/store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 
 // 34/story 02 (operator directive): `skills` is REMOVED from the descriptor
 // (see assembleDescriptor) — six keys, until 132/02 added a seventh:

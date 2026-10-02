@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // task 00 — the frozen assignment record + the state→producer enum + the additive
 // global_assignments table (v2→v3) + dedicated single-row writers + snapshot survival
 // (milestone 35 / story 00, ADR-001). Hermetic over AOF_GLOBAL_HOME opening a v3 store
@@ -6,11 +7,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  openGlobalWorkProjectionStore,
-  publishWorkspaceSnapshot,
-  GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../../src/global-work-store.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishWorkspaceSnapshot = _aofApplication.mesh.store.publishWorkspaceSnapshot;
+const GLOBAL_WORK_SCHEMA_VERSION = _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION;
 import {
   assembleAssignmentRecord,
   ASSIGNMENT_STATE_PRODUCERS,
@@ -20,7 +19,7 @@ import {
   readAssignment,
   producerFor,
   classificationFor,
-} from "../../../src/assignment-record.mjs";
+} from "@aof/mesh/assignment-record";
 
 async function withTemp(fn) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-assignment-record-"));
@@ -319,7 +318,7 @@ export const meshAssignmentRecordTests = [
       const { readFile } = await import("node:fs/promises");
       const { fileURLToPath } = await import("node:url");
       const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-      const source = await readFile(path.join(repoRoot, "src", "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8");
       const start = source.indexOf("export async function publishWorkspaceSnapshot");
       const nextFn = source.indexOf("\nexport function recordWorkspaceProjectionError");
       const body = source.slice(start, nextFn === -1 ? undefined : nextFn);

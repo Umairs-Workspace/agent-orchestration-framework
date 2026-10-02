@@ -11,7 +11,7 @@ import {
   supportedResourceKinds,
   supportedRuntimes,
   supportedTrustModes
-} from "../../src/model.mjs";
+} from "../../packages/core/src/model.mjs";
 
 export const schemaTests = [
   {

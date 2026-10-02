@@ -1,7 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 59 / story 03 — STALENESS, SILENCE AND THE PRUNE.
 //
 // Mechanises all four `@executable` task features of 59/03 against the four audit lanes exported by
-// `src/work/loops-checks.mjs`:
+// `packages/core/src/work/loops-checks.mjs`:
 //
 //   tasks/00_an-unrefreshed-anchor-is-not-an-anchor.feature → assessAnchorFreshness + buildGroundednessReport
 //   tasks/01_an-instrument-that-has-said-nothing.feature    → assessInstrumentSilence
@@ -32,7 +33,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   ANCHOR_FRESHNESS_VERDICTS,
   AUDIT_LANE_FINDING_CODES,
@@ -42,7 +43,7 @@ import {
   assessLoopConsultation,
   assessMetricMovement,
   buildGroundednessReport,
-} from "../../src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { makeLoopRegistry } from "../support/loop-registry-fixture.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -76,7 +77,7 @@ const model = (nodes) => ({ source: SOURCE, present: true, findings: [], nodes }
 function anchorNode(id, { checkedAt = null, ground = "process-exit", edges = {} } = {}) {
   const fields = {
     ground: { key: "ground", raw: ground, kind: "enum", value: ground },
-    observes: { key: "observes", raw: "module:src/run-store.mjs#attempts", kind: "pointer", pointer: { scheme: "module", operand: "src/run-store.mjs", symbol: "attempts" } },
+    observes: { key: "observes", raw: "module:src/run-store.mjs#attempts", kind: "pointer", pointer: { scheme: "module", operand: "packages/execution/src/runs.mjs", symbol: "attempts" } },
   };
   if (checkedAt !== null) {
     fields.checked = { key: "checked", raw: iso(checkedAt), kind: "date", value: iso(checkedAt), ms: checkedAt };
@@ -174,7 +175,7 @@ const TASK_00 = [
     run: async () => {
       // Both homes: the SOURCE the bundle ships from (53/ADR-012's single source) and the INSTALLED
       // registry this repository runs on. A `checked:` date appearing in either is a real event.
-      for (const home of ["src/bundle", ".aof"]) {
+      for (const home of ["packages/core/assets", ".aof"]) {
         const registry = await loadLoops({ aofDir: path.join(repoRoot, home) });
         assert.equal(registry.present, true, `${home}: the registry is present — the sweep is not over nothing`);
         const anchors = registry.nodes.filter((node) => node.kind === "anchor");
@@ -363,7 +364,7 @@ const TASK_00 = [
       // AND OVER THE REAL REGISTRY, where every anchor is undated: the windowed report is finding-for
       // -finding identical to the windowless one, so the audit cannot disagree with
       // `aof work loops groundedness` about the registry this repository actually ships.
-      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "src/bundle") });
+      const shipped = await loadLoops({ aofDir: path.join(repoRoot, "packages/core/assets") });
       const before = buildGroundednessReport(shipped, {});
       const after = buildGroundednessReport(shipped, {}, freshness());
       assert.deepEqual(after.findings.map(key), before.findings.map(key), "over the shipped registry the two calls report exactly the same findings");

@@ -33,7 +33,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { OPAQUE_NODE_ID_SHAPE } from "../../../src/node-identity.mjs";
+import { OPAQUE_NODE_ID_SHAPE } from "@aof/mesh/node-identity";
 
 const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
 const SIBLING = "test/arch/work/acd-no-internal-project-names.test.mjs";

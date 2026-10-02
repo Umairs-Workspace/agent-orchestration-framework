@@ -31,10 +31,10 @@ truth on a timer*:
 | The mechanic | Where |
 |---|---|
 | The worker streams its worktree state while a run is live | [mesh-launcher.mjs:1448](../../../../src/mesh-launcher.mjs#L1448) |
-| …but only **four** files ride the wire: `SPEC.md`, `STORY.md`, `VERIFICATION.md`, `RETROSPECTIVE.md` | `WORK_ITEM_DOC_FILES`, [global-work-store.mjs:17](../../../../src/global-work-store.mjs#L17) |
-| …and never `tasks/*.feature` — *"the features live in the worker's worktree and are not streamed yet"* | [tasks.mjs:15](../../../../src/commands/tasks.mjs#L15) |
+| …but only **four** files ride the wire: `SPEC.md`, `STORY.md`, `VERIFICATION.md`, `RETROSPECTIVE.md` | `WORK_ITEM_DOC_FILES`, [global-work-store.mjs:17](../../../../packages/core/src/application/bindings/global-work-store.mjs#L17) |
+| …and never `tasks/*.feature` — *"the features live in the worker's worktree and are not streamed yet"* | [tasks.mjs:15](../../../../packages/work/src/commands/tasks.mjs#L15) |
 | The control launcher republishes the workspace on a cadence | [mesh-launcher.mjs:732](../../../../src/mesh-launcher.mjs#L732) |
-| …which **wholesale-deletes `work_items` and rebuilds it from the control's own disk** | [global-work-store.mjs:431](../../../../src/global-work-store.mjs#L431), [:417](../../../../src/global-work-store.mjs#L417) |
+| …which **wholesale-deletes `work_items` and rebuilds it from the control's own disk** | [global-work-store.mjs:431](../../../../packages/core/src/application/bindings/global-work-store.mjs#L431), [:417](../../../../packages/core/src/application/bindings/global-work-store.mjs#L417) |
 | On a successful push the worker deletes its worktree | [mesh-worker-execution.mjs:2664](../../../../src/mesh-worker-execution.mjs#L2664) |
 
 While a run is live the two writers alternate and the last tick wins. After settle the worker
@@ -45,7 +45,7 @@ pre-run scaffold with the work invisible on a branch nothing on the control node
 
 Only five commands consult the worker's view at all (`list`, `doc`, `run-status`, `continue`, and
 `tasks` for existence). `next` is `nextWork(ws.workDir, scope)` — pure disk
-([next.mjs:25](../../../../src/commands/next.mjs#L25)) — as are `validate`, `doctor`, `find`, the
+([next.mjs:25](../../../../packages/work/src/commands/next.mjs#L25)) — as are `validate`, `doctor`, `find`, the
 graph verbs, and `resolve.mjs`, which most read commands sit on.
 
 **The end state:** every reader answers from the cache; every writer — worker *or* control —

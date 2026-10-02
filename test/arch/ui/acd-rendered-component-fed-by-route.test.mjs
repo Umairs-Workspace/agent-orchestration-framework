@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-rendered-component-fed-by-route (milestone 38 / ADR-008)
 //
 // THE INVARIANT (ADR-008, the mounted-component half). A component must be tested
@@ -8,9 +9,9 @@
 // its `nodeCurrentWork` wrapper). No branch of the page may render a node card with no
 // current-work line — and no branch may fork its own collapse rule.
 //
-// WHY IT EXISTS — finding F9 (aof:verify 38, BLOCKER). `ui/src/fleet/Fleet.tsx`
+// WHY IT EXISTS — finding F9 (aof:verify 38, BLOCKER). `apps/ui/src/fleet/Fleet.tsx`
 // branches `isGlobalStatus(status) ? <GlobalScopeView/> : <NodesRegion/>`. Milestone
-// 38's session render went into `NodesRegion → NodeCard`. But `src/mesh/ui-serve.mjs`
+// 38's session render went into `NodesRegion → NodeCard`. But `packages/core/src/mesh/ui-serve.mjs`
 // serves BOTH scopes from `queryGlobalMeshStatus` (its ONE data source), whose payload
 // ALWAYS carries `workspaces` — so `isGlobalStatus` is ALWAYS true and the app ALWAYS
 // mounts `GlobalScopeView → GlobalNodePanel`, which had NO current-work line at all.
@@ -39,19 +40,19 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { queryGlobalMeshStatus } from "../../../src/global-mesh-query.mjs";
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
-const FLEET_TSX = "ui/src/fleet/Fleet.tsx";
-const MESH_UI_SERVE = "src/mesh/ui-serve.mjs";
+const FLEET_TSX = "apps/ui/src/fleet/Fleet.tsx";
+const MESH_UI_SERVE = "packages/mesh/src/ui-serve.mjs";
 
-// The ONE shared current-work projection (ui/src/fleet/runs.mjs) and its thin
-// node-shaped wrapper (ui/src/fleet/scope.mjs) — the only sanctioned derivations.
+// The ONE shared current-work projection (apps/ui/src/fleet/runs.mjs) and its thin
+// node-shaped wrapper (apps/ui/src/fleet/scope.mjs) — the only sanctioned derivations.
 // 130/03 (ADR-005 §5) — `nodeWorkRegion` is the third spelling: the WHOLE current-work region
 // (`{ lines, token, loops }`), which composes `fleetCurrentWorkLines` with the loop lines beside
 // it and is what the production card calls now. It is a wrapper OVER the one projection, never a
-// fork of its collapse rule (test/ui/fleet-scope.test.mjs pins nodeCurrentWork === the projection).
+// fork of its collapse rule (test/surfaces/fleet-scope.test.mjs pins nodeCurrentWork === the projection).
 const PROJECTION_CALL = /\b(?:fleetCurrentWorkLines|nodeCurrentWork|nodeWorkRegion)\s*\(/;
 // A component that renders a per-node card maps over the `nodes` array.
 const PER_NODE_RENDER = /\bnodes\b[^;\n]{0,40}\.map\s*\(/;
@@ -139,7 +140,7 @@ function renderedChildren(block) {
 // that happens to contain the two characters `/*` — an API glob in prose, a path pattern,
 // a regex quoted in English — opens a PHANTOM block comment that runs to the next `*/`
 // anywhere in the file and deletes everything between.
-// Measured, because this is not hypothetical: `src/mesh/ui-serve.mjs:277` gained the line
+// Measured, because this is not hypothetical: `packages/core/src/mesh/ui-serve.mjs:277` gained the line
 // comment `// … //api/* dodges the API guard …` in 45/02 (64d471b). Under the old order
 // the stripper ate 39,000 characters of that file, every `queryGlobalMeshStatus(` call
 // site vanished, and PROOF 3 below started reporting `found []` — a fitness function

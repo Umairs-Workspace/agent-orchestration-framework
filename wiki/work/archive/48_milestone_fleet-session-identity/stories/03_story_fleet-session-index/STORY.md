@@ -61,7 +61,7 @@ because the source of truth is a TTL-expiring disk record. That is a second auth
 (forbidden by the SPEC) and a second staleness rule (forbidden by `acd-session-ttl-reuses-isstale`).
 
 **Node-level gate: yes. Session-level re-filter: no.** Membership reads the `freshness` the registry
-already derived ([global-node-registry.mjs:197](../../../../../../src/global-node-registry.mjs#L197)) —
+already derived ([global-node-registry.mjs:197](../../../../../../packages/mesh/src/global-node-registry.mjs#L197)) —
 not merely the same predicate, the same *fact*, so the index and the fleet's own health dot can never
 disagree. The gate is required, not defensive: a node that stops heartbeating leaves its presence file
 frozen on disk with its sessions inside it, which would otherwise read live forever. Re-evaluating

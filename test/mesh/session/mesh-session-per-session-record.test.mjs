@@ -1,3 +1,6 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 48 / story 00
 // tasks/01_one-session-one-record.feature — "one live session is one record — two
 // sessions in a repo stop being one lying record, and ending one cannot end the
@@ -24,10 +27,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { meshSessionCommand } from "../../../src/commands/mesh/session.mjs";
-import { readSessionRecord, readSessionRecordsForNode, sessionRecordPath } from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const NODE_ID = "node-a";
 const NOW = "2026-08-10T12:00:00.000Z";

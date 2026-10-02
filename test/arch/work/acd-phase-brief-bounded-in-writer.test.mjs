@@ -15,7 +15,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { srcFilesContaining } from "../../support/read-src-files.mjs";
+import { runtimeFilesContaining, readRuntimeFiles } from "../../support/read-src-files.mjs";
 import {
   BRIEF_BOUNDED_CONDENSERS,
   BRIEF_NON_CONDENSABLE_SECTIONS,
@@ -23,10 +23,10 @@ import {
   BRIEF_SECTION_PRIORITY,
   BRIEF_SECTION_SOURCES,
   compilePhaseBrief,
-} from "../../../src/phase-brief.mjs";
+} from "@aof/work/phase-brief";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(root, "src");
+const srcRoot = path.join(root, "packages", "core", "src");
 
 // FF-7009's rival-policy detector: a module OTHER than the compiler that declares a
 // condenser map or a non-condensable set of its own. Keyed on the named constant being
@@ -58,7 +58,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7003 (acd-phase-brief-bounded-in-writer): the ceiling enforcement lives inside the compiler's write path, and no caller applies a size limit or truncation of its own",
     run: async () => {
-      const pb = await readFile(path.join(srcRoot, "phase-brief.mjs"), "utf8");
+      const pb = await readFile(path.join(root, "packages/work/src/phase-brief.mjs"), "utf8");
       // A word boundary rather than a closing paren, so the guard is keyed on WHERE the
       // enforcement lives and not on the arity of the function it lives in: ADR-010 §4 gave
       // `assemble` a second parameter (the reductions performed outside the plan, whose
@@ -67,8 +67,9 @@ export const archTests = [
       assert.match(pb, /function assemble\(sections\b/u, "the ceiling enforcement is IN the compiler's write path (assemble), not a lint/comment/caller");
       assert.match(pb, /PHASE_BRIEF_CEILING_CHARS/u, "the one ceiling constant is applied inside the writer");
       assert.match(pb, /renderCompleteContext\(text, notice\)/u, "the writer bounds the rendered sections together with the truncation notice actually sent");
-      for (const file of ["commands/drive.mjs", "mesh/worker-execution.mjs"]) {
-        const src = await readFile(path.join(srcRoot, file), "utf8");
+      for (const file of ["packages/work-loop/src/commands/drive.mjs", "packages/mesh/src/worker-execution.mjs"]) {
+        const src = await readFile(path.join(root, file), "utf8");
+        assert.match(stripComments(src), /compileBriefForItem\(/u, `${file} actually compiles a brief`);
         assert.doesNotMatch(src, /\.slice\(0,\s*\d+|\.substring\(0,\s*\d+|\.truncate\(|truncation/u, `${file} applies no size limit or truncation of its own`);
       }
     },
@@ -76,7 +77,7 @@ export const archTests = [
   {
     name: "arch/70 FF-7003 (acd-phase-brief-bounded-in-writer): the truncation path names what it dropped",
     run: async () => {
-      const pb = await readFile(path.join(srcRoot, "phase-brief.mjs"), "utf8");
+      const pb = await readFile(path.join(root, "packages/work/src/phase-brief.mjs"), "utf8");
       assert.match(pb, /buildNotice/u, "the truncation path builds a notice");
       assert.match(pb, /Dropped or shortened/u, "the notice names which sections were dropped or shortened");
     },
@@ -86,7 +87,7 @@ export const archTests = [
     run: async () => {
       // The walk comes from its one home (test/support/read-src-files.mjs): the same scan
       // was written out three times across three suites for this one fact.
-      const second = await srcFilesContaining(root, String(8000), { except: ["phase-brief.mjs"] });
+      const second = await runtimeFilesContaining(root, String(8000), { except: ["phase-brief.mjs"] });
       assert.deepEqual(second, [], "no second ceiling literal exists outside the compiler");
     },
   },
@@ -138,15 +139,14 @@ export const archTests = [
   {
     name: "arch/70 FF-7009 (acd-phase-brief-bounded-in-writer): the two declarations are exported from the ONE compiler module, the deleted prefix cut is gone, and the notice names all three dispositions distinguishably beside the retained roll-call",
     run: async () => {
-      const pb = await readFile(path.join(srcRoot, "phase-brief.mjs"), "utf8");
+      const pb = await readFile(path.join(root, "packages/work/src/phase-brief.mjs"), "utf8");
       for (const name of ["BRIEF_SECTION_CONDENSERS", "BRIEF_NON_CONDENSABLE_SECTIONS", "BRIEF_BOUNDED_CONDENSERS"]) {
         assert.match(pb, new RegExp(`export const ${name} = Object\\.freeze\\(`, "u"), `${name} is declared and frozen in the pure compiler`);
       }
       // One home for the policy (ADR-009 §5): no other src module declares a condenser map
       // or a non-condensable set of its own.
-      const { glob } = await import("node:fs/promises");
       let rivals = 0;
-      for await (const file of glob(path.join(srcRoot, "**", "*.mjs"))) {
+      for (const { path: file } of await readRuntimeFiles(root)) {
         if (file.endsWith("phase-brief.mjs")) continue;
         const text = await readFile(file, "utf8");
         if (declaresRivalPolicy(text)) rivals += 1;

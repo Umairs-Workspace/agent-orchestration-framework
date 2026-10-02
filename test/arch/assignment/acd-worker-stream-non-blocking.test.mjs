@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -24,7 +25,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-004/ADR-007: worker-stream-client wraps every transport call in try/catch — a stream fault never propagates",
     async run() {
-      const source = await readFile(path.join(repoRoot, "src", "worker-stream-client.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-stream-client.mjs"), "utf8");
       assert.ok(source.includes("try {") && source.includes("catch (error)"), "the client source contains guarded transport calls");
       // The exported session functions must never be declared to throw a stream fault
       // outward — behaviourally verified below; structurally, onWarning is the ONLY

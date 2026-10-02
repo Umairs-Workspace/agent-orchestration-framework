@@ -33,7 +33,7 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-005** the
 **ADR-001** the frozen `aof graph` verb surface the faces invoke). This story **owns**: the graphify skill
 + MCP face authored as aof's OWN `.aof/` config resources, rendered by the existing `renderConfigOutputs`
 (`renderedResource` for the skill, `renderRuntimeConfigOutputs` → `claudeMcpJson`/`codexConfigToml` for the
-MCP) in [adapters.mjs](../../../../../../src/adapters.mjs) — no new render path. It does **not** author the
+MCP) in [adapters.mjs](../../../../../../packages/core/src/adapters.mjs) — no new render path. It does **not** author the
 `graph:*` commands or the driver (story 00), the doctor check (story 01), or the arch-tests (story 03), and
 it carries **no graphify spawn of its own** (the driver is the sole spawn site, ADR-002).
 
@@ -46,10 +46,10 @@ launches is **story 04** (mcp-server-runtime) — the live agent-reaches-the-gra
 
 **Feasibility (developer amigo seat — confirmed at Contract):** **Buildable as written, after the split.**
 The skill (task 00) is an ordinary `.aof/` skill resource — `renderConfigOutputs` → `renderedResource`
-([adapters.mjs:184](../../../../../../src/adapters.mjs)) already renders skills into `.claude`/`.codex` with
+([adapters.mjs:184](../../../../../../packages/core/src/adapters.mjs)) already renders skills into `.claude`/`.codex` with
 hash/lock/drift tracking; a body instructing `aof graph build/query/triage` (not `/graphify`) needs **no new
 render path**. The MCP config entry (task 01) is equally bounded: `renderRuntimeConfigOutputs`
-([adapters.mjs:85](../../../../../../src/adapters.mjs)) + `claudeMcpJson` → `.mcp.json` and `codexConfigToml` →
+([adapters.mjs:85](../../../../../../packages/core/src/adapters.mjs)) + `claudeMcpJson` → `.mcp.json` and `codexConfigToml` →
 `config.toml`, drift-tracked — the three `@executable` scenarios assert only the *rendered config* (the
 entry exists, points at the aof-fronted server not `python -m graphify.serve`, drifts on edit), never a
 running server.

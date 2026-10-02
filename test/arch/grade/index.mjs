@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -25,7 +25,7 @@ import { archTests as acdAcceptanceHorizonSinglePredicateTests } from "./acd-acc
 import { archTests as acdRatchetPureAndDischargeScopedTests } from "./acd-ratchet-pure-and-discharge-scoped.test.mjs";
 // milestone 57 / MILESTONE GATE — FF-5706 (ADR-006): the oracle is a message, not a count.
 // Registered in its own block rather than a story's: §1 spans 57/03's AND 57/04's new modules
-// and §2 is over 57/05's `src/bundle/loops/`, so no single story could carry it (`F-57-03-4`).
+// and §2 is over 57/05's `packages/core/assets/loops/`, so no single story could carry it (`F-57-03-4`).
 import { archTests as acdOracleIsAMessageNotACountTests } from "./acd-oracle-is-a-message-not-a-count.test.mjs";
 import { archTests as acdRegisterDeclarationFormTests } from "./acd-register-declaration-form.test.mjs";
 import { archTests as acdGradeNeverImportsTheSuiteTests } from "./acd-grade-never-imports-the-suite.test.mjs";

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6103 (milestone 61 / ADR-003) — ONE THRESHOLD, MANY BASKETS, COMPUTED PER KNOB IN
 // INTEGER ARITHMETIC.
 //
@@ -21,7 +22,8 @@ import { fileURLToPath } from "node:url";
 
 import { codeOnly } from "../run/acd-progress-ledger-consumed.test.mjs";
 import { functionBody } from "../../support/source-slice.mjs";
-import { defaultCriterion, makeCriterion } from "../../../src/work-acceptor/criterion.mjs";
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
 import {
   TRIAL_ARMS,
   TRIAL_UNAFFORDABLE,
@@ -32,10 +34,10 @@ import {
   crossingLattice,
   knobReport,
   rawPairsFor,
-} from "../../../src/work-acceptor/rule.mjs";
+} from "@aof/work/acceptor/rule";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const RULE_MODULE = "src/work-acceptor/rule.mjs";
+const RULE_MODULE = "packages/work/src/acceptor/rule.mjs";
 
 const shipped = defaultCriterion();
 const { N: _derived, ...shippedFields } = shipped;

@@ -1,10 +1,13 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 70 / story 00 (phase-brief) — task 02.
 //
 //   tasks/02_passed-at-both-seams.feature  (@executable)
 //
-// Both of the driver's production callers — the local drive command (`src/commands/drive.mjs`)
-// and the mesh worker execution handler (`src/mesh/worker-execution.mjs`) — compile the phase
-// brief through the SHARED pure compiler (`src/phase-brief-read.mjs` -> `src/phase-brief.mjs`)
+// Both of the driver's production callers — the local drive command (`packages/core/src/commands/drive.mjs`)
+// and the mesh worker execution handler (`packages/core/src/mesh/worker-execution.mjs`) — compile the phase
+// brief through the SHARED pure compiler (`packages/work/src/phase-brief-read.mjs` -> `packages/work/src/phase-brief.mjs`)
 // and hand it to the driver BY VALUE on the `brief` bag's additive `context` key. The driver
 // then types the command + the brief into the session's first input. One test object per
 // @executable scenario; Scenario-Outline rows folded into one entry each.
@@ -12,12 +15,14 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
-import { continueDriverCommand, refineDriverCommand, verifyDriverCommand } from "../../src/commands/drive.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const continueDriverCommand = _aofApplication.getCommand("work:drive-continue");
+const refineDriverCommand = _aofApplication.getCommand("work:drive-refine");
+const verifyDriverCommand = _aofApplication.getCommand("work:drive-verify");
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../support/mesh-worker-exec-fixture.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
 
 const NODE_ID = "worker-a";
 

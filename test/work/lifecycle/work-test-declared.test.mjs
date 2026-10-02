@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 03 — the test run matches the story.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -30,8 +31,8 @@ import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { graphJsonPath } from "../../../src/graph-normalize.mjs";
-import { WIDENING_REASONS } from "../../../src/work/test-select.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
+const WIDENING_REASONS = _aofApplication.work.testSelect.WIDENING_REASONS;
 import {
   DECLARED_SET_EMPTY,
   DECLARED_SET_MALFORMED,
@@ -39,16 +40,14 @@ import {
   STORY_REF_NOT_A_STORY,
   STORY_REF_UNRESOLVABLE,
   declaredChangedFiles,
-} from "../../../src/work/test-declared.mjs";
-import {
-  NO_SCOPE,
-  SCOPE_UNRECOGNISED,
-  STORY_AND_SINCE,
-  STORY_OUTSIDE_IMPACTED,
-  TEST_SCOPES,
-  runTest,
-  testCommand,
-} from "../../../src/commands/test.mjs";
+} from "@aof/work/testing/declared";
+const NO_SCOPE = _aofApplication.work.commandTools.test.NO_SCOPE;
+const SCOPE_UNRECOGNISED = _aofApplication.work.commandTools.test.SCOPE_UNRECOGNISED;
+const STORY_AND_SINCE = _aofApplication.work.commandTools.test.STORY_AND_SINCE;
+const STORY_OUTSIDE_IMPACTED = _aofApplication.work.commandTools.test.STORY_OUTSIDE_IMPACTED;
+const TEST_SCOPES = _aofApplication.work.commandTools.test.TEST_SCOPES;
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const testCommand = _aofApplication.getCommand("test");
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -472,7 +471,7 @@ export const workTestDeclaredTests = [
   {
     name: "96/03-02 the build lane asks for the story's scope and names no individual suite files",
     async run() {
-      const doc = await readFile(new URL("../../../src/bundle/commands/continue.md", import.meta.url), "utf8");
+      const doc = await readFile(new URL("../../../packages/core/assets/commands/continue.md", import.meta.url), "utf8");
       const build = doc.slice(doc.indexOf("<build_terminator>"), doc.indexOf("</build_terminator>"));
 
       assert.ok(build.length > 0, "the continue document carries a build terminator");
@@ -483,7 +482,7 @@ export const workTestDeclaredTests = [
   {
     name: "96/03-02 the review lane asks for the story's scope and states that a story-scoped green does not accept a milestone",
     async run() {
-      const doc = await readFile(new URL("../../../src/bundle/commands/continue.md", import.meta.url), "utf8");
+      const doc = await readFile(new URL("../../../packages/core/assets/commands/continue.md", import.meta.url), "utf8");
       const review = doc.slice(doc.indexOf("<review_lanes>"), doc.indexOf("</review_lanes>"));
 
       assert.ok(review.length > 0, "the continue document carries the review lanes");

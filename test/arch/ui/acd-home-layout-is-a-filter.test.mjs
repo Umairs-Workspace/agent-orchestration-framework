@@ -1,7 +1,7 @@
 // Fitness function: acd-home-layout-is-a-filter (m49 / ADR-009, DESIGN DG-49-9) —
 //
 //   "The persisted layout is a FILTER over the live index and never a SOURCE of rows; storage
-//    is an ARGUMENT and no module under `ui/src/home/` reads a browser global; and what is
+//    is an ARGUMENT and no module under `apps/ui/src/home/` reads a browser global; and what is
 //    persisted is tuples and focus, and nothing else."
 //
 // ── THE LOAD-BEARING NEGATIVE ────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@
 // rather than on write — so `typeof localStorage` is not a safe probe either. The textual
 // clause below is the cheap half; the behavioural half (two storages in one process, and
 // poisoned globals that throw on ANY property access) lives in
-// `test/ui/home-layout-filter.test.mjs`, and it catches what a text sweep cannot: a global reached
+// `apps/ui/test/home-layout-filter.suite.mjs`, and it catches what a text sweep cannot: a global reached
 // through a computed property, an aliased binding, or a helper imported from elsewhere.
 //
 // Every plant is fed to the SHIPPED detectors below and asserts it LANDED first.
@@ -27,12 +27,12 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { BROWSER_GLOBALS, stripComments, nonVacuousSource } from "../../support/terminal-gate-detectors.mjs";
-import { isUiSourceFile } from "../../support/ui-source-files.mjs";
-import { composeHomeLayout, saveHomeLayout } from "../../../ui/src/home/layout.mjs";
+import { BROWSER_GLOBALS, stripComments, nonVacuousSource } from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
+import { isUiSourceFile } from "../../../apps/ui/test/support/ui-source-files.mjs";
+import { composeHomeLayout, saveHomeLayout } from "../../../apps/ui/src/home/layout.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-export const HOME_DIR = "ui/src/home";
+export const HOME_DIR = "apps/ui/src/home";
 
 // The persisted payload's WHOLE vocabulary. A key outside this set is a second, stale authority
 // over what the mesh says exists — a persisted `repo` is precisely the field that would still
@@ -63,7 +63,7 @@ export async function readHomeFiles() {
   return files;
 }
 
-/** Textual: no module under `ui/src/home/` READS a browser global; it RECEIVES one. */
+/** Textual: no module under `apps/ui/src/home/` READS a browser global; it RECEIVES one. */
 export function homeStorageGlobalViolations(files) {
   const violations = [];
   const swept = Array.isArray(files) ? files : [];
@@ -142,7 +142,7 @@ const row = (nodeId, sessionId, extra = {}) => ({ nodeId, sessionId, ...extra })
 
 export const archTests = [
   {
-    name: "arch/49 ADR-009 (acd-home-layout-is-a-filter): no module under ui/src/home/ reads a browser global — storage is an ARGUMENT",
+    name: "arch/49 ADR-009 (acd-home-layout-is-a-filter): no module under apps/ui/src/home/ reads a browser global — storage is an ARGUMENT",
     run: async () => {
       const files = await readHomeFiles();
       assert.ok(files.length >= 6, `the home was actually swept: ${files.length} files`);

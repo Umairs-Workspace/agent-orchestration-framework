@@ -22,8 +22,8 @@
 // (an object literal handed to `httpRequest`/`fetch`, never a sink) does NOT trip — a
 // dedicated negative control below pins that.
 //
-// Scanned across the `github-app` provider module, `src/control-stream-server.mjs`,
-// AND — L1 (this review) — `src/mesh/launcher.mjs`, the key's FIRST-materialisation
+// Scanned across the `github-app` provider module, `packages/core/src/control-stream-server.mjs`,
+// AND — L1 (this review) — `packages/core/src/mesh/launcher.mjs`, the key's FIRST-materialisation
 // site (`resolveGithubAppPrivateKey` reads the raw PEM via `readFileSync` and hands it
 // down to the provider) — so a future log/error of the key at the site it is READ, not
 // just where it is USED, also fails CI.
@@ -38,12 +38,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const providerSourcePath = path.join(repoRoot, "src", "mesh", "clone-credential-provider.mjs");
-const controlSourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
+const providerSourcePath = path.join(repoRoot, "packages", "mesh", "src", "clone-credential-provider.mjs");
+const controlSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
 // L1 (this review) — the launcher is the key's FIRST-materialisation site: it reads the
 // raw PEM (`resolveGithubAppPrivateKey` → `readFileSync`) and passes it into the
 // provider. F5 now scans it too, so a leak at the READ site (not only the USE site) trips.
-const launcherSourcePath = path.join(repoRoot, "src", "mesh", "launcher.mjs");
+const launcherSourcePath = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

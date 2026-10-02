@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/support/work-insert-fixture.mjs — shared fixture builder for milestone 41
 // / story 02 (insert-top-level) COMMAND-SURFACE tests (test/work-insert-*.test.mjs).
 //
@@ -17,7 +18,7 @@ import { mkdtemp, mkdir, writeFile, rm, cp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../src/work.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { frontmatter, SLUGS } from "./work-reindex-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -58,7 +59,7 @@ export async function withInsertFixture(body, configOverrides = {}) {
     const workspace = await loadWorkspace(repo);
     return await body({ repo, workDir, workspace });
   } finally {
-    await rm(repo, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

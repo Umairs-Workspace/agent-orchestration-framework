@@ -37,7 +37,7 @@ Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-005** the
 amended to record this runtime; **ADR-001** the frozen `graph:*` verbs the tools wrap; **ADR-006 inv. 2**
 the no-face-spawn guard the server must honour). This story **owns**: the net-new aof MCP server — an
 MCP-SDK dependency, a stdio `Server` whose tool handlers call `invoke("graph:…")`, and the `aof graph serve`
-launch command in [cli.mjs](../../../../../../src/cli.mjs) that the story-02 rendered entry's `command`/`args`
+launch command in [cli.mjs](../../../../../../packages/core/src/cli.mjs) that the story-02 rendered entry's `command`/`args`
 target. The server reaches the graph **only** through the in-process registry (`invoke`) — it carries **no
 graphify spawn of its own** (the driver `src/graphify.mjs` is the sole spawn site, ADR-002/ADR-006 inv. 2).
 

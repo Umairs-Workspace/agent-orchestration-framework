@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12402 (124/ADR-002) — AN ADVISORY DOCTOR LANE CANNOT GATE, AS A CLASS.
 //
 // The mechanism already existed three times before this milestone: a lane is a pure
@@ -13,7 +15,7 @@
 //   is disjoint from `CONTROL_FINDING_CODES`, names no `"error"` severity literal anywhere in its
 //   source, carries its severity as one module constant, and consults no acceptance horizon.*
 //
-// `src/work/doctor-controls.mjs` is the ONE exemption, because its array IS the gate's source — and
+// `packages/core/src/work/doctor-controls.mjs` is the ONE exemption, because its array IS the gate's source — and
 // it is asserted AS A NAMED EXEMPTION rather than as an absence, so a second one cannot arrive
 // silently. The point of the class is not the fourth lane; it is the FIFTH, which cannot
 // re-introduce a gateable code without reding CI.
@@ -36,32 +38,33 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { invoke } from "../../../src/command-core.mjs";
-import { CHECK_GROUPS } from "../../../src/work/doctor.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
-import { DEPENDS_FINDING_CODES, dependsLane } from "../../../src/work/doctor-depends.mjs";
-import { DOCTOR_GATE_CODES, admittedDoctorFindings } from "../../../src/commands/loop.mjs";
-import { ITEM_STATUS_EDGES } from "../../../src/acceptance-horizon.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { resolveDeclaredSet } from "../../../src/story-contract.mjs";
+const invoke = _aofApplication.invoke;
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
+import { DEPENDS_FINDING_CODES, dependsLane } from "@aof/work/doctor/depends";
+const DOCTOR_GATE_CODES = _aofApplication.loop.commandTools.loop.DOCTOR_GATE_CODES;
+const admittedDoctorFindings = _aofApplication.loop.commandTools.loop.admittedDoctorFindings;
+import { ITEM_STATUS_EDGES } from "@aof/work/lifecycle";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+import { resolveDeclaredSet } from "@aof/work/story-contract";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const laneDir = path.join(repoRoot, "src", "work");
+const laneDir = path.join(repoRoot, "packages", "work", "src", "doctor");
 
 // THE ONE NAMED EXEMPTION. Named as a constant rather than skipped inline, because "the module we
 // happen not to check" and "the module we have decided not to check, and why" are different
 // documents to the next reader — and only the second one makes a SECOND exemption visible.
-const GATE_SOURCE_MODULE = "doctor-controls.mjs";
+const GATE_SOURCE_MODULE = "../audit/controls.mjs";
 
 const sourceOf = async (leaf) => stripComments(await readFile(path.join(laneDir, leaf), "utf8"));
 const byCode = (findings, code) => findings.filter((entry) => entry.code === code);
 
-// Every `src/work/doctor-*.mjs`, resolved to { leaf, module, registered, codes }. A lane is matched
+// Every `packages/core/src/work/doctor-*.mjs`, resolved to { leaf, module, registered, codes }. A lane is matched
 // to its module by FUNCTION IDENTITY against the registry — not by name, which would let a rename
 // quietly empty this control instead of reding it.
 async function laneModules() {
-  const leaves = (await readdir(laneDir)).filter((name) => /^doctor-.*\.mjs$/u.test(name));
+  const leaves = [...(await readdir(laneDir)).filter(name => name.endsWith(".mjs") && name !== "index.mjs"), GATE_SOURCE_MODULE];
   const rows = [];
   for (const leaf of leaves) {
     const module = await import(pathToFileURL(path.join(laneDir, leaf)).href);
@@ -158,11 +161,11 @@ const TEN_UNWITNESSED = [
   {
     number: "00",
     stories: [
-      { number: "00", files: ["src/written.mjs"], reads: ["src/out-01.mjs"] },
+      { number: "00", files: ["packages/core/src/written.mjs"], reads: ["packages/core/src/out-01.mjs"] },
       ...Array.from({ length: 10 }, (unused, index) => {
         const mine = String(index + 1).padStart(2, "0");
         const neighbour = String(((index + 1) % 10) + 1).padStart(2, "0");
-        return { number: mine, depends: ["00"], reads: [`src/out-${neighbour}.mjs`], files: [`src/out-${mine}.mjs`] };
+        return { number: mine, depends: ["00"], reads: [`packages/core/src/out-${neighbour}.mjs`], files: [`packages/core/src/out-${mine}.mjs`] };
       }),
     ],
   },
@@ -172,8 +175,8 @@ const TEN_UNWITNESSED = [
 const NO_DEPENDS = [{
   number: "00",
   stories: [
-    { number: "00", files: ["src/written.mjs"], reads: ["src/other.mjs"] },
-    { number: "01", reads: ["src/written.mjs"], files: ["src/other.mjs"] },
+    { number: "00", files: ["packages/core/src/written.mjs"], reads: ["packages/core/src/other.mjs"] },
+    { number: "01", reads: ["packages/core/src/written.mjs"], files: ["packages/core/src/other.mjs"] },
   ],
 }];
 
@@ -195,11 +198,11 @@ const everyCodeAt = (status) => ({
     { ref: "08", dir: path.join(NOWHERE_ROOT, "d08"), type: "milestone", number: "08", parent: null, status, meta: { status }, contract: null },
     {
       ref: "00/00", dir: path.join(NOWHERE_STORY, "00"), type: "story", number: "00", parent: "00", status,
-      meta: { status }, contract: { reads: null, files: setOf("src/b.mjs"), present: { reads: false, files: true }, malformed: { reads: false, files: false } },
+      meta: { status }, contract: { reads: null, files: setOf("packages/core/src/b.mjs"), present: { reads: false, files: true }, malformed: { reads: false, files: false } },
     },
     {
       ref: "00/01", dir: path.join(NOWHERE_STORY, "01"), type: "story", number: "01", parent: "00", status,
-      meta: { status, depends: ["00"] }, contract: { reads: setOf("src/a.mjs"), files: null, present: { reads: true, files: false }, malformed: { reads: false, files: false } },
+      meta: { status, depends: ["00"] }, contract: { reads: setOf("packages/core/src/a.mjs"), files: null, present: { reads: true, files: false }, malformed: { reads: false, files: false } },
     },
   ],
 });
@@ -249,16 +252,16 @@ export const archTests = [
       // claim about a live gate rather than about an empty one.
       assert.ok(advisory.length >= 3, `the class has at least three members (${advisory.map((row) => row.leaf).join(", ")})`);
       assert.equal(exemptions, 1, "exactly one exemption, and it is the named one");
-      assert.ok(advisory.some((row) => row.leaf === "doctor-depends.mjs"), "…and this milestone's lane is one of them");
+      assert.ok(advisory.some((row) => row.leaf === "depends.mjs"), "…and this milestone's lane is one of them");
       assert.ok(DOCTOR_GATE_CODES.length > 0 && CONTROL_FINDING_CODES.length > 0, "the gate ladder admits something");
       assert.ok(DOCTOR_GATE_CODES.every((code) => CONTROL_FINDING_CODES.includes(code)), "and its set is derived from the controls' by filter");
 
       // RED PROBE (a) — the census lane given one `"error"` finding.
-      const laneSource = await sourceOf("doctor-depends.mjs");
+      const laneSource = await sourceOf("depends.mjs");
       const withError = laneSource.replace('const ADVISORY_SEVERITY = "warn"', 'const ADVISORY_SEVERITY = "warn";\nconst HARD = "error"');
       assert.notEqual(withError, laneSource, "the probe really did change the source it plants into");
       assert.ok(
-        advisoryFaults({ leaf: "doctor-depends.mjs", source: withError, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES })
+        advisoryFaults({ leaf: "depends.mjs", source: withError, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES })
           .some((fault) => fault.includes('names an "error" severity literal')),
         "the class check reds on a planted error severity",
       );
@@ -267,7 +270,7 @@ export const archTests = [
       // derived-by-filter set silently gains a member.
       assert.ok(
         advisoryFaults({
-          leaf: "doctor-depends.mjs",
+          leaf: "depends.mjs",
           source: laneSource,
           codes: DEPENDS_FINDING_CODES,
           controlCodes: [...CONTROL_FINDING_CODES, "depends-edge-unwitnessed"],
@@ -301,7 +304,7 @@ export const archTests = [
       // THE RUNG, NOT A RE-IMPLEMENTATION OF IT. `invokeGateLadder` is module-private, and its
       // doctor rung is exactly `admittedDoctorFindings(doctor?.findings)` — pinned below — so the
       // honest drive is the real doctor run through the real filter.
-      const shell = stripComments(await readFile(path.join(repoRoot, "src", "commands", "loop.mjs"), "utf8"));
+      const shell = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       assert.match(shell, /const admitted = admittedDoctorFindings\(doctor\?\.findings\);/u, "the doctor rung filters through the exported predicate");
 
       const measure = async (stories) => withStream(stories, async ({ ctx }) => {
@@ -329,7 +332,7 @@ export const archTests = [
       assert.deepEqual(loud.validateFindings, [], "…both green, so the ladder crosses to the next step");
 
       // AND NO HALT NAMES A DEPENDS CODE. The shell mints the halts; the decider names the stops.
-      const decider = stripComments(await readFile(path.join(repoRoot, "src", "work", "loop.mjs"), "utf8"));
+      const decider = stripComments(await readFile(path.join(repoRoot, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       for (const code of DEPENDS_FINDING_CODES) {
         assert.equal(shell.includes(code), false, `the loop shell names no ${code}`);
         assert.equal(decider.includes(code), false, `and neither does the decider`);
@@ -340,7 +343,7 @@ export const archTests = [
     name: "arch/124/00 FF-12402 (task 04): acceptance runs one named group, and this is not it",
     run: async () => {
       // THE PREFLIGHT, PINNED AT ITS SOURCE: one named group, one refusing code, one severity.
-      const door = stripComments(await readFile(path.join(repoRoot, "src", "commands", "item-status.mjs"), "utf8"));
+      const door = stripComments(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "item-status.mjs"), "utf8"));
       assert.match(door, /groups: \[budgetGroup\]/u, "the acceptance preflight runs the budget group and no other");
       assert.match(door, /finding\.code === "doc-over-budget" && finding\.severity === "error"/u, "…and only `doc-over-budget` at `error` can refuse the transition");
       const groupsPassed = door.match(/groups: \[[^\]]*\]/gu) ?? [];
@@ -392,9 +395,9 @@ export const archTests = [
       assert.equal(new Set(rendered.values()).size, 1, "the lane's answer does not move with the item's status");
 
       // …and structurally: ONE severity constant, no `error` literal, no horizon.
-      const source = await sourceOf("doctor-depends.mjs");
+      const source = await sourceOf("depends.mjs");
       assert.deepEqual(
-        advisoryFaults({ leaf: "doctor-depends.mjs", source, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES }),
+        advisoryFaults({ leaf: "depends.mjs", source, codes: DEPENDS_FINDING_CODES, controlCodes: CONTROL_FINDING_CODES }),
         [],
       );
       assert.equal((source.match(/ADVISORY_SEVERITY/gu) ?? []).length >= 2, true, "the constant is declared once and used, never passed in");

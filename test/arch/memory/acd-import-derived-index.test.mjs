@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 13 / ADR-001 + ADR-005:
 // "Derived-index invariant for imports (+ no fabrication, clean snapshot). A fresh
 //  re-import + reindex reproduces the IDENTICAL imported record set; every imported
@@ -29,13 +30,12 @@ import path from "node:path";
 import { mkdtemp, rm, mkdir, readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import {
-  reindex,
-  resolveRecordSourcePath,
-  isImportRecord,
-} from "../../../src/memory/local-indexing.mjs";
-import { materializeImport } from "../../../src/import/materialize.mjs";
-import { importStoreRoot, importMilestoneDir } from "../../../src/import/store.mjs";
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+const resolveRecordSourcePath = _aofApplication.knowledge.memory.localIndexing.resolveRecordSourcePath;
+const isImportRecord = _aofApplication.knowledge.memory.localIndexing.isImportRecord;
+const materializeImport = _aofApplication.knowledge.import.materialize.materializeImport;
+const importStoreRoot = _aofApplication.knowledge.import.store.importStoreRoot;
+const importMilestoneDir = _aofApplication.knowledge.import.store.importMilestoneDir;
 
 const SOURCE_SLUG = "fixture-src";
 const MILESTONE_REF = "00";

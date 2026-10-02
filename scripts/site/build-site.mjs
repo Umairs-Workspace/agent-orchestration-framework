@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // scripts/site/build-site.mjs — the STAGING step for the published site (story 125).
 //
 // WHAT IT IS, AND WHAT IT IS NOT. It assembles ONE git-ignored directory that Jekyll builds from:
@@ -45,8 +46,8 @@ import { cp, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } fr
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { loopDocumentPath, REGENERATE_COMMAND } from "../../src/loop-document.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+import { loopDocumentPath, REGENERATE_COMMAND } from "@aof/work-graph/document";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -192,7 +193,14 @@ function deliveredSectionOf(text) {
   if (!start) return null;
   const rest = text.slice(start.index + start[0].length);
   const next = /^## /m.exec(rest);
-  return (next ? rest.slice(0, next.index) : rest).replace(/<!--[\s\S]*?-->/g, "").trim();
+  // Strip HTML comments to a fixed point: one pass can leave a joined `<!--` behind, and `--!>` also closes one.
+  let section = next ? rest.slice(0, next.index) : rest;
+  let previous;
+  do {
+    previous = section;
+    section = htmlCommentsOnce(section);
+  } while (section !== previous);
+  return section.trim();
 }
 
 function titleOfOutcome(text, fallback) {
@@ -410,5 +418,24 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   } catch (error) {
     console.error(error instanceof SiteBuildError ? error.message : error.stack ?? String(error));
     process.exitCode = 1;
+  }
+}
+
+// One linear pass removing `<!-- … -->` / `<!-- … --!>` spans — exactly what `/<!--[\s\S]*?--!?>/g` removes,
+// without the regex's quadratic rescans when many `<!--` have no end.
+function htmlCommentsOnce(text) {
+  let out = "";
+  let at = 0;
+  for (;;) {
+    const open = text.indexOf("<!--", at);
+    if (open < 0) return out + text.slice(at);
+    let end = -1;
+    for (let dash = text.indexOf("--", open + 4); dash >= 0; dash = text.indexOf("--", dash + 1)) {
+      if (text[dash + 2] === ">") { end = dash + 3; break; }
+      if (text[dash + 2] === "!" && text[dash + 3] === ">") { end = dash + 4; break; }
+    }
+    if (end < 0) return out + text.slice(at);
+    out += text.slice(at, open);
+    at = end;
   }
 }

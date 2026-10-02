@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness functions for m42 wave (d) leg d4, PORT 3 (PRD-command-spine-effects-
 // ledger: "insert/reindex emits `stream.reindexed` (run-record refs, Notion
 // sidecar, projection remap) — the silent page mis-binding dies").
@@ -30,37 +32,30 @@
 //       second time. A ref remap is not idempotent, so this is the reactor
 //       contract's other sanctioned option and it must actually hold.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { LOCAL_LOCI } from "../../../src/effects/dispatch.mjs";
-import { reindexForInsert } from "../../../src/work/reindex.mjs";
-import { transitionStreamReindexed } from "../../../src/effects/stream-transitions.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startRun, readRuns } from "../../../src/run-store.mjs";
-import { recordPageId, readMapping, resolvePageId, remapMappingRefs } from "../../../src/notion/mapping.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+const LOCAL_LOCI = _aofApplication.effects.dispatcher.LOCAL_LOCI;
+import { reindexForInsert } from "@aof/work/reindex";
+const transitionStreamReindexed = _aofApplication.work.streams.transitionStreamReindexed;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startRun = _aofApplication.execution.runs.startRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordPageId = _aofApplication.integrations.notion.mapping.recordPageId;
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const remapMappingRefs = _aofApplication.integrations.notion.mapping.remapMappingRefs;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_DIR = path.join(repoRoot, "src");
 
 // The reindex engine's write door: reachable from its own module and the seam only.
-const REINDEX_ALLOWED = new Set(["src/work/reindex.mjs", "src/effects/stream-transitions.mjs"]);
+const REINDEX_ALLOWED = new Set(["packages/work/src/reindex.mjs", "packages/work/src/stream-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-}
-
-async function listSourceFiles(dir) {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...(await listSourceFiles(full)));
-    else if (entry.isFile() && entry.name.endsWith(".mjs")) files.push(full);
-  }
-  return files;
 }
 
 function fm(fields) {
@@ -114,7 +109,8 @@ export const archTests = [
   {
     name: "arch/m42-d4-port3: the renumber is reachable only through the transition seam, and every declared remap sits at a locus an ordinary CLI process reaches",
     run: async () => {
-      const files = await listSourceFiles(SRC_DIR);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.some(file => file.endsWith(path.join("packages", "work", "src", "reindex.mjs"))), "the scan includes the mutation implementation");
       const offenders = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file).replaceAll("\\", "/");

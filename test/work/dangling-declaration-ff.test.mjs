@@ -11,7 +11,7 @@ import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { MEMORY_RECORD_FIELDS } from "../../src/memory/local-retrieval.mjs";
+import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
 import {
   archTests as declaredFieldHasProducerArchTests,
   findDanglingFields,

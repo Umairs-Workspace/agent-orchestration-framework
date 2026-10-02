@@ -85,7 +85,7 @@ import {
   qualifiedRefsIn,
   registerDeclarations,
   registerEntries,
-} from "../../../src/declared-id.mjs";
+} from "@aof/work/declared-id";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const workDir = path.join(repoRoot, "wiki", "work");

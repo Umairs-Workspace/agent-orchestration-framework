@@ -336,7 +336,7 @@ change ripples through the chrome; operator's call).
 
 ## The blocker is CLOSED on the running system — 2026-08-09, driven in a real browser
 
-The fix (`terminalEntryState`, [state-ramp.mjs:221](../../../../ui/src/terminal/state-ramp.mjs#L221)) was
+The fix (`terminalEntryState`, [state-ramp.mjs:221](../../../../apps/ui/src/terminal/state-ramp.mjs#L221)) was
 green in a suite but had never been seen alive. It has now been driven end-to-end against the deployed
 payload, board dock, `local-pty`, at `http://127.0.0.1:58633`:
 
@@ -380,7 +380,7 @@ carries one now, and the live 1280 fullscreen render shows the full identity (`�
 **The ratchet fired on this pass too, and the ceiling was not raised.** `acd-ui-surface-file-budget` tripped
 at `TerminalControl.tsx` 863 vs its 840 ceiling — the file was sitting exactly at its limit. Following
 46/05's own precedent, the author extracted: C1's identity fragment became
-[`TerminalIdentity.tsx`](../../../../ui/src/terminal/TerminalIdentity.tsx) (a real seam — it already had two
+[`TerminalIdentity.tsx`](../../../../apps/ui/src/terminal/TerminalIdentity.tsx) (a real seam — it already had two
 consumers, the inline header and the fullscreen occupant, and was already being passed as a value), leaving
 the control at **814**. No explanation was deleted to fit under a number (ADR-014/E3).
 
@@ -450,8 +450,8 @@ about its own subject and the gap was between two subjects nobody owned.
 
 **The ratchet fired twice more in this pass and the ceiling was never raised.** `TerminalControl.tsx`
 hit 863 and then 853 against its 840 limit; C1's identity fragment became
-[`TerminalIdentity.tsx`](../../../../ui/src/terminal/TerminalIdentity.tsx) and the control cluster became
-[`TerminalControls.tsx`](../../../../ui/src/terminal/TerminalControls.tsx). Both are real seams — the
+[`TerminalIdentity.tsx`](../../../../apps/ui/src/terminal/TerminalIdentity.tsx) and the control cluster became
+[`TerminalControls.tsx`](../../../../apps/ui/src/terminal/TerminalControls.tsx). Both are real seams — the
 identity already had two consumers, and the cluster is the one place the host's affordance table is
 asked. The control sits at **823**.
 
@@ -580,7 +580,7 @@ At 760px wide the item's title wraps to four lines, so a `shrink-0` header consu
 panel and shoved everything after it out of the box. The scroll body was already doing its job at 32px.
 **Nothing in the terminal, the dock, the inset or the clamp was wrong.**
 
-**Fixed at [`DetailPanel.tsx:191`](../../../../ui/src/board/DetailPanel.tsx#L191):** the header block is no
+**Fixed at [`DetailPanel.tsx:191`](../../../../apps/ui/src/board/DetailPanel.tsx#L191):** the header block is no
 longer `shrink-0` — it shrinks and scrolls its own overflow, so the item's CONTEXT yields when the
 window is small and the ACTIONS survive. That order is not a preference; it is DG-46-1's entire claim.
 
@@ -641,7 +641,7 @@ the far end are different acts. Fixed by making the fit unconditional and gating
 **rows 15 → 13, and the pane now ends 2px above the bar.**
 
 **Three triggers, one rule, and only one of them ever worked.** The rule now lives in one place —
-[`geometry.mjs`](../../../../ui/src/terminal/geometry.mjs)'s header, where fit-vs-scale is decided, rather
+[`geometry.mjs`](../../../../apps/ui/src/terminal/geometry.mjs)'s header, where fit-vs-scale is decided, rather
 than in the React file that happens to call it: (1) the dock is dragged — the ResizeObserver, always
 worked; (2) fullscreen presents — the box is the *overlay's*, which that observer cannot see; (3) the
 bar appears — which *is* the session ending. Lanes 07 and 08 of

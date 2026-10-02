@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 36 / story 03, task
 // 00_verb-dispatch.feature — `aof mesh desktop install` / `aof mesh desktop run`
 // dispatch. REWORKED with m42 wave (d) leg d1's wave-3 tail: the verbs are the
@@ -17,11 +18,11 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 function runCli(args) {
   const result = spawnCliSync(process.execPath, [cliPath, ...args], {

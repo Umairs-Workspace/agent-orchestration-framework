@@ -1,3 +1,6 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 34 / story 06 (ADR-010) — `aof mesh repo publish` core: the explicit
 // per-repo publish verb writes a local published marker AND lands a snapshot in the
 // machine-wide global store, opting a repo in without any prior `mesh join`/global
@@ -6,11 +9,11 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { readJson } from "../../src/fs.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { publishRepoToMesh } from "../../src/commands/mesh/repo.mjs";
-import { queryGlobalMeshStatus } from "../../src/global-mesh-query.mjs";
-import { workspaceIdFor } from "../../src/global-work-store.mjs";
+const readJson = _aofFoundation.fs.readJson;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const publishRepoToMesh = _aofApplication.mesh.commandTools.mesh.repo.publishRepoToMesh;
+const queryGlobalMeshStatus = _aofApplication.mesh.globalMeshQuery.queryGlobalMeshStatus;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
 
 async function makeRepo(root, name, mesh) {
   const milestoneDir = path.join(root, "wiki", "work", "40_milestone_demo");

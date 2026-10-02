@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-audit-travels-two-roots (milestone 77 / story 04, FF-7706;
 // ADR-002 §1, §2, §2a, §3; ADR-007 §1; TECH_DEBT 70, 72).
 //
@@ -39,29 +40,38 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { withControlFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 import { spawnRouteProblems } from "./acd-audit-never-imports-project-code.test.mjs";
-import { DEFAULT_DEADLINE_MS, runBounded } from "../../../src/work-audit/spawn.mjs";
-import { TOOLKIT_PROGRAM_DIR, isToolkitRoot, toolkitProgram, toolkitProgramProblems, toolkitRoot } from "../../../src/work-audit/toolkit.mjs";
-import { AUDIT_FINDING_CODES, LEDGER_PROJECT, PROBE_PROGRAM, UNREGISTERED_BASELINE, assembledSuite, ledgerApplies, runCensus } from "../../../src/work-audit/census.mjs";
-import { DRIVE_PROGRAM, EVIDENCE_FINDING_CODES, driveControl, runEvidence } from "../../../src/work-audit/evidence.mjs";
-import { PROMPT_LAYER_FINDING_CODES } from "../../../src/work-audit/prompt-layer.mjs";
-import { HOOK_WIRING_FINDING_CODES } from "../../../src/work-audit/hook-wiring.mjs";
-import { SEAM_LIVENESS_FINDING_CODES } from "../../../src/work-audit/seam-liveness.mjs";
-import { DECLARED_BOUNDS_FINDING_CODES } from "../../../src/work-audit/declared-bounds.mjs";
+import { DEFAULT_DEADLINE_MS, runBounded } from "@aof/execution/bounded-process";
+import { TOOLKIT_PROGRAM_DIR, isToolkitRoot, toolkitProgram, toolkitProgramProblems, toolkitRoot } from "../../../packages/core/src/work-audit/toolkit.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+const LEDGER_PROJECT = _aofApplication.work.audit.census.LEDGER_PROJECT;
+const PROBE_PROGRAM = _aofApplication.work.audit.census.PROBE_PROGRAM;
+const UNREGISTERED_BASELINE = _aofApplication.work.audit.census.UNREGISTERED_BASELINE;
+const assembledSuite = _aofApplication.work.audit.census.assembledSuite;
+const ledgerApplies = _aofApplication.work.audit.census.ledgerApplies;
+const runCensus = _aofApplication.work.audit.census.runCensus;
+const DRIVE_PROGRAM = _aofApplication.work.audit.evidence.DRIVE_PROGRAM;
+const EVIDENCE_FINDING_CODES = _aofApplication.work.audit.evidence.EVIDENCE_FINDING_CODES;
+const driveControl = _aofApplication.work.audit.evidence.driveControl;
+const runEvidence = _aofApplication.work.audit.evidence.runEvidence;
+const PROMPT_LAYER_FINDING_CODES = _aofApplication.work.audit.promptLayer.PROMPT_LAYER_FINDING_CODES;
+import { HOOK_WIRING_FINDING_CODES } from "@aof/work/audit/hook-wiring";
+const SEAM_LIVENESS_FINDING_CODES = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_FINDING_CODES;
+const DECLARED_BOUNDS_FINDING_CODES = _aofApplication.work.audit.declaredBounds.DECLARED_BOUNDS_FINDING_CODES;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // The modules milestone 77 ADDS. The vocabulary leg's subject, and the reason it is a list rather
 // than a directory sweep: `census.mjs` and `evidence.mjs` are 59's and legitimately spell the word.
 const MILESTONE_MODULES = Object.freeze([
-  "src/work-audit/prompt-layer.mjs",
-  "src/work-audit/hook-wiring.mjs",
-  "src/work-audit/seam-liveness.mjs",
-  "src/work-audit/declared-bounds.mjs",
-  "src/work-audit/toolkit.mjs",
-  "src/harness-reference.mjs",
+  "packages/work/src/audit/prompt-layer.mjs",
+  "packages/work/src/audit/hook-wiring.mjs",
+  "packages/work/src/audit/seam-liveness.mjs",
+  "packages/work/src/audit/declared-bounds.mjs",
+  "packages/core/src/work-audit/toolkit.mjs",
+  "packages/core/src/harness-reference.mjs",
 ]);
 
 // Every finding code milestone 77 adds, from the lanes' own frozen sets — never from a literal list
@@ -294,7 +304,7 @@ export const archTests = [
         assert.equal(await ledgerApplies(toolkitRoot()), true, "…while it does apply to the install it describes");
 
         // THE PAYLOAD ARRANGEMENT, which is why the question is about the PROJECT and not about the
-        // DIRECTORY. Under a payload install the toolkit root is `~/.aof/bin` — a copy of `src/` with
+        // DIRECTORY. Under a payload install the toolkit root is `~/.aof/bin` — a copy of `packages/core/src/` with
         // no `test/` at all — so a bare subject↔toolkit root comparison would withhold these
         // exemptions from aof's OWN repository whenever a deployed binary audits it, reddening aof's
         // own audit for two suites that are on the subject's disk with their reasons intact. A subject
@@ -352,28 +362,28 @@ export const archTests = [
   {
     name: "arch/77 FF-7706: the toolkit root has ONE derivation and ONE home, and a second is reported",
     async run() {
-      const files = await readSrcFiles(repoRoot);
-      assert.equal(files.length > 50, true, `src/** was walked (${files.length} modules)`);
+      const files = await readRuntimeFiles(repoRoot);
+      assert.equal(files.length > 50, true, `packages/core/src/** was walked (${files.length} modules)`);
       const derivations = [];
       for (const file of files) {
-        const rel = `src/${file.rel}`;
-        if (rel === "src/work-audit/toolkit.mjs") continue;
+        const rel = file.rel;
+        if (rel === "packages/core/src/work-audit/toolkit.mjs") continue;
         const code = stripComments(await readFile(file.path, "utf8"));
         // Only the audit family is in scope: other families derive their own roots for their own
         // purposes, and a census over every module would be a census about the word `..`.
-        if (!rel.startsWith("src/work-audit")) continue;
+        if (!rel.startsWith("packages/core/src/work-audit/") && !rel.startsWith("packages/work/src/audit/")) continue;
         derivations.push(...toolkitDerivations(rel, code));
       }
       assert.deepEqual(derivations, [], "no module of the family derives a toolkit root of its own");
 
-      const home = stripComments(read("src/work-audit/toolkit.mjs"));
-      assert.equal(toolkitDerivations("src/work-audit/toolkit.mjs", home).length > 0, true, "…and the ONE home does derive one, so the detector is reading something real");
-      assert.equal((home.match(/import\.meta\.url/gu) ?? []).length, 1, "…exactly once");
+      const home = stripComments(read("packages/core/src/work-audit/toolkit.mjs"));
+      assert.match(home, /return coreRoot\(\)/u, "the one toolkit home delegates to the source/copied/SEA installation seam");
+      assert.equal((home.match(/import\.meta\.url/gu) ?? []).length, 0, "the toolkit adds no module-depth root derivation");
 
       const plants = [
-        ["src/work-audit/other.mjs", 'const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");', "a second module deriving a root from its own module URL"],
-        ["src/work-audit/census.mjs", 'const program = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "work/audit-probe.mjs");', "a family module computing the toolkit root inline"],
-        ["src/work-audit/evidence.mjs", "export const toolkitRoot = () => 1;", "a second exported name for the same root"],
+        ["packages/core/src/work-audit/other.mjs", 'const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");', "a second module deriving a root from its own module URL"],
+        ["packages/work/src/audit/census.mjs", 'const program = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "work/audit-probe.mjs");', "a family module computing the toolkit root inline"],
+        ["packages/work/src/audit/evidence.mjs", "export const toolkitRoot = () => 1;", "a second exported name for the same root"],
       ];
       for (const [rel, planted, what] of plants) {
         assert.equal(toolkitDerivations(rel, planted).length > 0, true, `${what} is reported by the file that holds it`);
@@ -383,26 +393,26 @@ export const archTests = [
   {
     name: "arch/77 FF-7706: no module in the family joins a program path onto the subject root",
     async run() {
-      const files = (await readSrcFiles(repoRoot)).filter((file) => `src/${file.rel}`.startsWith("src/work-audit"));
+      const files = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("packages/core/src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       assert.equal(files.length >= 6, true, `the family was walked (${files.length} modules)`);
       const joins = [];
       for (const file of files) {
-        joins.push(...subjectRootProgramJoins(`src/${file.rel}`, stripComments(await readFile(file.path, "utf8"))));
+        joins.push(...subjectRootProgramJoins(file.rel, stripComments(await readFile(file.path, "utf8"))));
       }
       assert.deepEqual(joins, [], "no program path is joined onto the subject root");
 
       // …AND THE POSITIVE HALF: each lane names the toolkit resolver at the site that used to join.
-      assert.match(stripComments(read("src/work-audit/census.mjs")), /toolkitProgram\(PROBE_PROGRAM\)/u, "the census resolves its probe through the one home");
-      assert.match(stripComments(read("src/work-audit/evidence.mjs")), /toolkitProgram\(driveProgram\)/u, "the evidence lane resolves its driver through the one home");
+      assert.match(stripComments(read("packages/work/src/audit/census.mjs")), /toolkitProgram\(PROBE_PROGRAM\)/u, "the census resolves its probe through the one home");
+      assert.match(stripComments(read("packages/work/src/audit/evidence.mjs")), /toolkitProgram\(driveProgram\)/u, "the evidence lane resolves its driver through the one home");
 
       const plants = [
-        ['const probe = path.join(repoRoot, "src", "work", "audit-probe.mjs");', "a join of the suite probe's path onto the subject root"],
+        ['const probe = path.join(repoRoot, "packages", "core", "src", "work", "audit-probe.mjs");', "a join of the suite probe's path onto the subject root"],
         ['const program = path.resolve(repoRoot, "src/work/audit-drive.mjs");', "a join of the control driver's path onto the subject root"],
         ['const program = path.resolve(repoRoot ?? ".", driveProgram);', "a resolve of a program path against the subject root defaulting to the cwd"],
         ['const third = path.join(repoRoot, THIRD_PROGRAM);', "a join of a third program's path onto the subject root"],
       ];
       for (const [planted, what] of plants) {
-        assert.equal(subjectRootProgramJoins("src/work-audit/census.mjs", planted).length > 0, true, `${what} is reported by the file that holds it`);
+        assert.equal(subjectRootProgramJoins("packages/work/src/audit/census.mjs", planted).length > 0, true, `${what} is reported by the file that holds it`);
       }
     },
   },
@@ -413,12 +423,12 @@ export const archTests = [
     run() {
       const installer = read("scripts/install-local.mjs");
       const copied = [...installer.matchAll(/cpSync\(path\.join\(repoRoot,\s*"([^"]+)"\)/gu)].map((match) => match[1]);
-      assert.equal(copied.includes(TOOLKIT_PROGRAM_DIR), true, `the payload carries ${TOOLKIT_PROGRAM_DIR}/ (copies: ${copied.join(", ") || "none"})`);
+      assert.equal(/cpSync\(path\.join\(repoRoot,\s*"packages",\s*"core",\s*"src"\)/u.test(installer), true, `the payload carries ${TOOLKIT_PROGRAM_DIR}/ (copies: ${copied.join(", ") || "none"})`);
       assert.equal(copied.includes("scripts"), false, "…and carries no scripts/ directory at all");
 
       for (const { rel, what } of THE_PROGRAMS) {
         assert.equal(rel.startsWith(`${TOOLKIT_PROGRAM_DIR}/`), true, `${what} resolves under ${TOOLKIT_PROGRAM_DIR}/ (${rel})`);
-        assert.equal(existsSync(path.join(repoRoot, rel)), true, `…and is on disk`);
+        assert.equal(existsSync(path.join(toolkitRoot(), rel)), true, `…and is on disk`);
         assert.equal(toolkitProgram(rel), path.join(toolkitRoot(), ...rel.split("/")), "…and resolves from the toolkit root");
       }
 
@@ -426,7 +436,7 @@ export const archTests = [
       // owns it rather than restated here.
       const ledger = read("test/arch/audit/acd-audit-never-imports-project-code.test.mjs");
       for (const { rel } of THE_PROGRAMS) {
-        assert.match(ledger, new RegExp(`rel: "${rel.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}"`, "u"), `${rel} is named in SPAWNED_PROGRAMS`);
+        assert.match(ledger, new RegExp(`rel: "packages/core/${rel.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}"`, "u"), `${rel} is named in SPAWNED_PROGRAMS`);
       }
       assert.equal(existsSync(path.join(repoRoot, "scripts", "drive-control.mjs")), false, "and the driver's old home under scripts/ is gone, so nothing can resolve it there");
     },
@@ -437,7 +447,7 @@ export const archTests = [
       const rows = [
         ["src/work/audit-drive.mjs", 0, "under src/, carried by the payload"],
         ["scripts/drive-control.mjs", 1, "under scripts/, which the payload does not carry"],
-        [path.join(repoRoot, "src", "work", "audit-drive.mjs"), 1, "outside the toolkit root entirely (an absolute path)"],
+        [path.join(repoRoot, "packages", "core", "src", "work", "audit-drive.mjs"), 1, "outside the toolkit root entirely (an absolute path)"],
         ["../elsewhere/drive.mjs", 2, "reaching outside the toolkit root"],
         ["", 1, "named at nothing at all"],
       ];
@@ -451,7 +461,7 @@ export const archTests = [
         if (count > 0) assert.throws(() => toolkitProgram(target), /work-audit\/toolkit/u, `${what}: never silently attempted`);
       }
 
-      // UNDER `src/` BUT ABSENT FROM DISK is a different answer: the target is admissible, and the
+      // UNDER `packages/core/src/` BUT ABSENT FROM DISK is a different answer: the target is admissible, and the
       // child that does not start says what it attempted.
       assert.deepEqual(toolkitProgramProblems("src/work-audit-no-such-program.mjs"), [], "a program under src/ that is absent from disk is admissible to name");
     },
@@ -459,15 +469,15 @@ export const archTests = [
   {
     name: "arch/77 FF-7706: the change opens no second route to a child process, and the one seam always arms a deadline",
     async run() {
-      const files = (await readSrcFiles(repoRoot)).filter((file) => `src/${file.rel}`.startsWith("src/work-audit"));
+      const files = (await readRuntimeFiles(repoRoot)).filter((file) => (file.rel.startsWith("packages/core/src/work-audit/") || file.rel.startsWith("packages/work/src/audit/")));
       const modules = [];
-      for (const file of files) modules.push({ rel: `src/${file.rel}`, code: stripComments(await readFile(file.path, "utf8")) });
+      for (const file of files) modules.push({ rel: file.rel, code: stripComments(await readFile(file.path, "utf8")) });
       assert.deepEqual(spawnRouteProblems(modules), [], "every child the family starts comes from the one bounded seam");
 
       const plants = [
-        [{ rel: "src/work-audit/toolkit.mjs", code: 'spawnSync(command, args);' }, "a second call to the platform's process-starting API"],
-        [{ rel: "src/work-audit/toolkit.mjs", code: 'import { spawn } from "node:child_process";' }, "an import of the process module by a family module other than the seam"],
-        [{ rel: "src/work-audit/toolkit.mjs", code: 'const out = execSync("node x");' }, "a synchronous child-starting call in the family's closure"],
+        [{ rel: "packages/core/src/work-audit/toolkit.mjs", code: 'spawnSync(command, args);' }, "a second call to the platform's process-starting API"],
+        [{ rel: "packages/core/src/work-audit/toolkit.mjs", code: 'import { spawn } from "node:child_process";' }, "an import of the process module by a family module other than the seam"],
+        [{ rel: "packages/core/src/work-audit/toolkit.mjs", code: 'const out = execSync("node x");' }, "a synchronous child-starting call in the family's closure"],
       ];
       for (const [planted, what] of plants) {
         assert.equal(spawnRouteProblems([planted]).length > 0, true, `${what} is reported by the file that holds it`);
@@ -509,8 +519,8 @@ export const archTests = [
       assert.equal(EVIDENCE_FINDING_CODES.every((code) => !/baseline/iu.test(code)), true, "and the evidence lane's codes never carried it");
 
       // THE RED PROBE — the ratchet is armed.
-      assert.equal(baselineUses("src/work-audit/toolkit.mjs", "export const REFERENCE_BASELINE = 1;").length > 0, true, "a planted second meaning is reported");
-      assert.equal(baselineUses("src/work-audit/toolkit.mjs", "export const A = 1;").length, 0, "…and nothing planted reports nothing");
+      assert.equal(baselineUses("packages/core/src/work-audit/toolkit.mjs", "export const REFERENCE_BASELINE = 1;").length > 0, true, "a planted second meaning is reported");
+      assert.equal(baselineUses("packages/core/src/work-audit/toolkit.mjs", "export const A = 1;").length, 0, "…and nothing planted reports nothing");
     },
   },
 ];

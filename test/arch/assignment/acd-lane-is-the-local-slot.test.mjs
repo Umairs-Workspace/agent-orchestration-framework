@@ -1,3 +1,4 @@
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-6910 / ADR-006 (2026-08-22 amendment) — local occupancy is git's
 // dispatch-lane set, read before the pool/opener, with per-member coded refusal.
 import assert from "node:assert/strict";
@@ -7,9 +8,9 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const sourceRoot = path.join(root, "src");
-const commandPath = path.join(root, "src", "commands", "dispatch.mjs");
-const policyPath = path.join(root, "src", "work", "dispatch.mjs");
+const sourceRoot = path.join(root, "packages", "core", "src");
+const commandPath = path.join(root, "packages/work-loop/src/commands/dispatch.mjs");
+const policyPath = path.join(root, "packages/work-loop/src/dispatch.mjs");
 
 async function listSourceFiles(dir = sourceRoot) {
   const files = [];
@@ -100,7 +101,7 @@ export const archTests = [
   {
     name: "arch/69 FF-6910 (acd-lane-is-the-local-slot): git-reported working and quiet lanes are the only source-wide local slot registry and are counted before pool and opener",
     run: async () => {
-      const files = await listSourceFiles();
+      const files = (await readRuntimeFiles(root)).map(file => file.path);
       assert.ok(files.length >= 100, `the source-wide persisted-occupancy sweep is non-vacuous (${files.length} src/**/*.mjs files)`);
       assert.ok(files.includes(commandPath) && files.includes(policyPath), "the source-wide sweep includes both local dispatch homes");
       const sources = await Promise.all(files.map(async (file) => ({
@@ -129,19 +130,19 @@ export const archTests = [
       // The persistence leg is contextual, not a keyword grep: persistence without lane-registry
       // semantics, or lane/cache vocabulary without a persistence sink, remains clean.
       assert.deepEqual(persistedLaneOccupancyProblems([
-        { file: "src/in-memory.mjs", source: "const occupiedLaneCount = lanes.filter(Boolean).length;" },
-        { file: "src/settings.mjs", source: 'await writeFile(configPath, JSON.stringify({ theme: "dark" }));' },
-        { file: "src/users.mjs", source: "await writeFile(userRegistryPath, JSON.stringify(users));" },
-        { file: "src/report.mjs", source: "await writeFile(dispatchLaneReportPath, JSON.stringify(lanes));" },
-        { file: "src/ephemeral.mjs", source: "const dispatchLaneCache = new Map();" },
+        { file: "packages/core/src/in-memory.mjs", source: "const occupiedLaneCount = lanes.filter(Boolean).length;" },
+        { file: "packages/core/src/settings.mjs", source: 'await writeFile(configPath, JSON.stringify({ theme: "dark" }));' },
+        { file: "packages/core/src/users.mjs", source: "await writeFile(userRegistryPath, JSON.stringify(users));" },
+        { file: "packages/core/src/report.mjs", source: "await writeFile(dispatchLaneReportPath, JSON.stringify(lanes));" },
+        { file: "packages/core/src/ephemeral.mjs", source: "const dispatchLaneCache = new Map();" },
       ]), []);
       const planted = persistedLaneOccupancyProblems([
-        { file: "src/planted-lane-registry.mjs", source: "await writeFile(dispatchLaneRegistryPath, JSON.stringify(lanes));" },
-        { file: "src/planted-lane-cache.mjs", source: "await writeText(dispatchLaneCachePath, JSON.stringify(lanes));" },
+        { file: "packages/core/src/planted-lane-registry.mjs", source: "await writeFile(dispatchLaneRegistryPath, JSON.stringify(lanes));" },
+        { file: "packages/core/src/planted-lane-cache.mjs", source: "await writeText(dispatchLaneCachePath, JSON.stringify(lanes));" },
       ]);
       assert.equal(planted.length, 2, `the planted persisted lane registry and cache are each reported once\n${planted.join("\n")}`);
-      assert.ok(planted.some((problem) => problem.includes("src/planted-lane-registry.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
-      assert.ok(planted.some((problem) => problem.includes("src/planted-lane-cache.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
+      assert.ok(planted.some((problem) => problem.includes("packages/core/src/planted-lane-registry.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
+      assert.ok(planted.some((problem) => problem.includes("packages/core/src/planted-lane-cache.mjs:1") && problem.includes("file-backed registry/cache/counter")), planted.join("\n"));
     },
   },
 ];

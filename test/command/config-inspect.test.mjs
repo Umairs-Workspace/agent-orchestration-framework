@@ -1,10 +1,16 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
-import { doctorConfig, inspectConfig, inspectGlobalConfig, resolveWorkDiagrams, validateConfig, validateGlobalConfig } from "../../src/config-inspect.mjs";
-import { generatorIds } from "../../src/diagrams/generators.mjs";
+const doctorConfig = _aofApplication.assets.configInspect.doctorConfig;
+const inspectConfig = _aofApplication.assets.configInspect.inspectConfig;
+const inspectGlobalConfig = _aofApplication.assets.configInspect.inspectGlobalConfig;
+const resolveWorkDiagrams = _aofApplication.assets.configInspect.resolveWorkDiagrams;
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
+const validateGlobalConfig = _aofApplication.assets.configInspect.validateGlobalConfig;
+import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 export const configInspectTests = [
   {

@@ -1,3 +1,5 @@
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/mesh-effects-outbox.test.mjs — m42 wave (d) leg d3: FACTS OVER THE BRIDGE.
 //
 // The defect these lanes exist for is measured, not theoretical (STATE 2026-07-27):
@@ -11,16 +13,25 @@
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
 import path from "node:path";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { readExecutionOverlay } from "../../src/board-mesh-execution.mjs";
-import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
-import { openEffectsJournal, appendEvent, readEventSteps, pendingSteps } from "../../src/effects/journal.mjs";
-import { drainEffects, LOCAL_LOCI, CONTROL_LOCI } from "../../src/effects/dispatch.mjs";
-import { drainOutbox, remoteSteps, applyEffectAck, EFFECT_STEP_FRAME_KIND, EFFECT_ACK_FRAME_KIND } from "../../src/effects/outbox.mjs";
-import { reportAssignmentSettled } from "../../src/effects/assignment-transitions.mjs";
-import { applyStreamFrame } from "../../src/control-stream-server.mjs";
-import { readAssignment } from "../../src/assignment-record.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const readExecutionOverlay = _aofApplication.mesh.boardMeshExecution.readExecutionOverlay;
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+const appendEvent = _aofApplication.effects.journal.appendEvent;
+const readEventSteps = _aofApplication.effects.journal.readEventSteps;
+const pendingSteps = _aofApplication.effects.journal.pendingSteps;
+const drainEffects = _aofApplication.effects.dispatcher.drainEffects;
+const LOCAL_LOCI = _aofApplication.effects.dispatcher.LOCAL_LOCI;
+const CONTROL_LOCI = _aofApplication.effects.dispatcher.CONTROL_LOCI;
+const drainOutbox = _aofApplication.effects.outbox.drainOutbox;
+const remoteSteps = _aofApplication.effects.outbox.remoteSteps;
+const applyEffectAck = _aofApplication.effects.outbox.applyEffectAck;
+const EFFECT_STEP_FRAME_KIND = _aofApplication.effects.outbox.EFFECT_STEP_FRAME_KIND;
+const EFFECT_ACK_FRAME_KIND = _aofApplication.effects.outbox.EFFECT_ACK_FRAME_KIND;
+const reportAssignmentSettled = _aofApplication.mesh.transitions.reportAssignmentSettled;
+const applyStreamFrame = _aofApplication.mesh.controlStreamServer.applyStreamFrame;
+import { readAssignment } from "@aof/mesh/assignment-record";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { withMeshAssignFixture, seedAssignment } from "../support/mesh-assign-fixture.mjs";
 
 const NOW = "2026-07-31T10:00:00.000Z";
@@ -367,11 +378,11 @@ export const meshEffectsOutboxTests = [
       const { readFile } = await import("node:fs/promises");
       const url = await import("node:url");
       const path = await import("node:path");
-      const src = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..", "src");
+      const src = path.resolve(path.dirname(url.fileURLToPath(import.meta.url)), "..", "..", "packages", "core", "src");
       for (const file of ["worker-stream-client.mjs", "control-stream-server.mjs"]) {
-        const source = await readFile(path.join(src, file), "utf8");
+        const source = await readFile(path.join(src, "application/bindings", file), "utf8");
         assert.ok(
-          /from\s+["']\.\/effects\/outbox\.mjs["']/.test(source),
+          /from\s+["']@aof\/mesh\/effect-frames["']/.test(source),
           `${file} imports the frame kinds from their one home`,
         );
       }
@@ -583,7 +594,12 @@ function workerAskControlTests() {
         for (const [label, withAsk] of [["the column set", true], ["absent", false]]) {
           await withWorkerAskWorld(async ({ apply, workspace, env }) => {
             await apply(withAsk ? { ...PARK, ask: ASK } : { ...PARK });
-            const { invoke } = await import("../../src/command-core.mjs");
+            const { invoke } = await Promise.resolve(Object.freeze({
+  loadWorkspace: _aofApplication.loadWorkspace,
+  getCommand: _aofApplication.getCommand,
+  listCommands: _aofApplication.listCommands,
+  invoke: _aofApplication.invoke,
+}));
             const rows = await invoke("work:list", { mesh: true }, { workspace, globalWorkStoreOptions: { env } });
             const ask = rows.find((row) => row.ref === "35/00")?.ask;
             assert.ok(ask != null, `${label}: the row carries an ask`);

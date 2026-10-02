@@ -1,7 +1,9 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 22 / story 00 — the path-partition convention.
 //
 // Covers EVERY @executable scenario in tasks/01_path-partition-convention.feature,
-// exercising the REAL src/mesh/store.mjs path seam in-process. One test object per
+// exercising the REAL packages/core/src/mesh/store.mjs path seam in-process. One test object per
 // @executable scenario (the Scenario-Outline folded into one entry looping the
 // Examples). node:assert/strict.
 //
@@ -33,7 +35,18 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the node-record path is the single node-id-keyed seam under the partition root",
     async run() {
-      const { meshDir, nodeRecordPath } = await import("../../../src/mesh/store.mjs");
+      const { meshDir, nodeRecordPath } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
       const p = nodeRecordPath(workspace, "build-server");
 
       // the path ends with nodes/build-server.json
@@ -49,7 +62,18 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the node id is one flat filename segment directly under nodes/, never a sub-path (Scenario Outline)",
     async run() {
-      const { meshDir, nodeRecordPath } = await import("../../../src/mesh/store.mjs");
+      const { meshDir, nodeRecordPath } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
       const nodesDir = path.join(meshDir(workspace), "nodes");
 
       // Examples from the feature. The two SAFE ids match their literal expected-leaf
@@ -87,7 +111,18 @@ export const meshPartitionConventionTests = [
       try {
         const ws = { workDir: path.join(repo, "wiki", "work"), globalMeshRoot: path.join(repo, "global", "mesh") };
         await mkdir(ws.workDir, { recursive: true });
-        const { publishNodeRecord, meshDir } = await import("../../../src/mesh/store.mjs");
+        const { publishNodeRecord, meshDir } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
 
         await publishNodeRecord(ws, "umami-desktop", { nodeId: "umami-desktop" });
         await publishNodeRecord(ws, "umami-mbp", { nodeId: "umami-mbp" });
@@ -123,10 +158,59 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the run-dimension convention is the additive <node>/ delta on milestone 19's runRecordPath shape",
     async run() {
-      const { runNodeRecordPath, runsDir, runRecordPath } = await import("../../../src/mesh/store.mjs");
+      const { runNodeRecordPath, runsDir, runRecordPath } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
       // import 19's seam DIRECTLY too, to prove the convention adopts the SAME
       // reference (not a divergent run-path builder).
-      const runStore = await import("../../../src/run-store.mjs");
+      const runStore = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
       assert.equal(runsDir, runStore.runsDir, "the convention re-exports milestone 19's frozen runsDir seam (same reference)");
       assert.equal(runRecordPath, runStore.runRecordPath, "the convention re-exports milestone 19's frozen runRecordPath seam (same reference)");
 
@@ -160,7 +244,18 @@ export const meshPartitionConventionTests = [
   {
     name: "mesh-store/01 the presence dimension is named as a reserved shape but not built here",
     async run() {
-      const { presenceRecordPath, meshDir, publishNodeRecord } = await import("../../../src/mesh/store.mjs");
+      const { presenceRecordPath, meshDir, publishNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-presence-"));
       try {
         const ws = { workDir: path.join(repo, "wiki", "work"), globalMeshRoot: path.join(repo, "global", "mesh") };

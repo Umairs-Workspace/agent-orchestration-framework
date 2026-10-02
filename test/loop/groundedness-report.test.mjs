@@ -1,12 +1,14 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { getCommand } from "../../src/command-core.mjs";
-import { createLoopsGroundednessCommand, resolveAnchorAuthorities } from "../../src/commands/loops-groundedness.mjs";
-import { GROUND_VERDICTS, buildGroundednessReport } from "../../src/work/loops-checks.mjs";
-import { loadLoops } from "../../src/work/loops.mjs";
+const getCommand = _aofApplication.getCommand;
+const createLoopsGroundednessCommand = _aofApplication.graph.commandTools.loopsGroundedness.createLoopsGroundednessCommand;
+const resolveAnchorAuthorities = _aofApplication.graph.commandTools.loopsGroundedness.resolveAnchorAuthorities;
+import { GROUND_VERDICTS, buildGroundednessReport } from "@aof/work-graph/checks";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const endpoint = (raw) => ({ raw, scheme: raw.slice(0, raw.indexOf(":")), operand: raw.slice(raw.indexOf(":") + 1), resolved: true });
 const source = path.resolve("test-fixtures", "loops");

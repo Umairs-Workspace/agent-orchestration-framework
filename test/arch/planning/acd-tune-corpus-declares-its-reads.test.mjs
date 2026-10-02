@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 62 / story 00 — FF-6205.
 // The corpus declares every read against a floor and reaches each source through
 // the reader which already owns it. Scope likewise has one home.
@@ -5,18 +6,18 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 
-import * as reads from "../../../src/work-audit/reads.mjs";
-import {
-  CORPUS_LANES,
-  assembleCorpus,
-  assertCorpusLanesDeclared,
-  corpusFinding,
-} from "../../../src/work-tune/corpus.mjs";
+import * as reads from "@aof/work/audit/reads";
+const CORPUS_LANES = _aofApplication.work.tune.corpus.CORPUS_LANES;
+const assembleCorpus = _aofApplication.work.tune.corpus.assembleCorpus;
+const assertCorpusLanesDeclared = _aofApplication.work.tune.corpus.assertCorpusLanesDeclared;
+const corpusFinding = _aofApplication.work.tune.corpus.corpusFinding;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const modulePath = path.join(root, "src", "work-tune", "corpus.mjs");
+const modulePath = path.join(root, "packages", "work", "src", "tune", "corpus.mjs");
+const compositionPath = path.join(root, "packages/core/src/application/bindings/work-tune/corpus.mjs");
 
 const codeLines = (source) => source.split(/\r?\n/u)
   .filter((line) => {
@@ -70,7 +71,7 @@ export const archTests = [
       const source = codeLines(await readFile(modulePath, "utf8"));
       assert.match(
         source,
-        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/work-audit\/reads\.mjs"/u,
+        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/audit\/reads\.mjs"/u,
       );
       for (const symbol of ["readRecord", "sweepDeclarationProblems", "SWEEP_BASES"]) {
         assert.equal(new RegExp(`(?:function|const|let|class)\\s+${symbol}\\b`, "u").test(source), false, `${symbol}: no local copy`);
@@ -93,11 +94,14 @@ export const archTests = [
     name: "arch/62 FF-6205: each source reader and the stream scope rule are imported, with no raw run or snapshot path grammar",
     run: async () => {
       const source = codeLines(await readFile(modulePath, "utf8"));
-      assert.match(source, /import \{ parseRetrospective \} from "\.\.\/memory\/local-indexing\.mjs"/u);
-      assert.match(source, /import \{ readRuns, runNodeRecordPath, runRecordPath \} from "\.\.\/run-store\.mjs"/u);
+      const composition = codeLines(await readFile(compositionPath, "utf8"));
+      assert.match(source, /createTuneCorpus\(\{ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn \}\)/u);
+      assert.match(composition, /createTuneCorpus\(\{ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn \}\)/u);
+      assert.match(composition, /const \{ parseRetrospective \} = memoryLocalIndexingServices/u);
+      for (const name of ['readRuns', 'runNodeRecordPath', 'runRecordPath']) assert.match(composition, new RegExp('const \\{ '+name+' \\} = runStoreServices', 'u'));
       assert.match(source, /run\.node == null\s*\? runRecordPath\(item, run\.runId\)\s*: runNodeRecordPath\(item, run\.node, run\.runId\)/u);
-      assert.match(source, /import \{ readLatestSnapshot \} from "\.\.\/work\/observe\.mjs"/u);
-      assert.match(source, /import \{ itemInScope \} from "\.\.\/work\/ref-scope\.mjs"/u);
+      assert.match(composition, /const \{ readLatestSnapshot \} = workObserveServices/u);
+      assert.match(source, /import \{ itemInScope \} from "\.\.\/ref-scope\.mjs"/u);
       assert.doesNotMatch(source, /agents\.json|snapshots[\\/]|runs[\\/].*\.json/iu);
       assert.doesNotMatch(source, /new RegExp|\/\^\\d/u, "the tune family authors no scope grammar");
       assert.doesNotMatch(source, /##\\s+R|R\\d/u, "the retrospective heading grammar is not restated");
@@ -108,12 +112,12 @@ export const archTests = [
     run: async () => {
       const temp = await mkdtemp(path.join(os.tmpdir(), "aof-tune-scope-copy-"));
       try {
-        await cp(path.join(root, "src"), path.join(temp, "src"), { recursive: true });
+        copyWorkRuntime(root, temp);
         const workDir = path.join(temp, "wiki", "work");
         await mkdir(path.join(workDir, "01_milestone_one"), { recursive: true });
         await mkdir(path.join(workDir, "02_milestone_two"), { recursive: true });
 
-        const copiedScope = path.join(temp, "src", "work", "ref-scope.mjs");
+        const copiedScope = path.join(temp, "packages", "work", "src", "ref-scope.mjs");
         const before = await readFile(copiedScope, "utf8");
         const needle = "  const byRef = refInScope(item.ref, scope);";
         assert.ok(before.includes(needle), "the copied scope seam has the expected insertion anchor");
@@ -127,11 +131,19 @@ export const archTests = [
         ].join("\n"));
         await writeFile(copiedScope, widened, "utf8");
 
-        const copied = await import(`${pathToFileURL(path.join(temp, "src", "work-tune", "corpus.mjs")).href}?copy=${Date.now()}`);
-        const result = await copied.assembleCorpus({ cwd: temp, scope: "01-02" });
+        const copied = await import(`${pathToFileURL(path.join(temp, "packages", "work", "src", "tune", "corpus.mjs")).href}?copy=${Date.now()}`);
+        const service = copied.createTuneCorpus({
+          parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+          readRuns: _aofApplication.execution.runs.readRuns,
+          runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+          runRecordPath: _aofApplication.execution.runs.runRecordPath,
+          readLatestSnapshot: _aofApplication.work.observe.readLatestSnapshot,
+          loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+        });
+        const result = await service.assembleCorpus({ cwd: temp, scope: "01-02" });
         assert.equal(result.matched, true);
         assert.deepEqual(result.items, ["01", "02"], "the copied corpus inherits whatever the copied shared rule admits");
-        assert.equal(await readFile(path.join(root, "src", "work", "ref-scope.mjs"), "utf8") === before, true, "the working tree's rule was not edited");
+        assert.equal(await readFile(path.join(root, "packages", "work", "src", "ref-scope.mjs"), "utf8") === before, true, "the working tree's rule was not edited");
       } finally {
         await rm(temp, { recursive: true, force: true });
       }

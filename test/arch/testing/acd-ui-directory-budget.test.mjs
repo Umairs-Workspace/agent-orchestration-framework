@@ -4,11 +4,11 @@
 //   "Six per-file ceilings cannot see a tree that grows by ADDING FILES. A ninth top-level
 //    directory is a DECISION, and it needs a table entry rather than a diff."
 //
-// IT LANDS WITH THE DIFF THAT CREATES `ui/src/home/`, because a ratchet authored after the
+// IT LANDS WITH THE DIFF THAT CREATES `apps/ui/src/home/`, because a ratchet authored after the
 // growth it was meant to question is a ratchet that RATIFIES it (49/ARCHITECTURE bad cut 4).
 //
 // ── THE MEASUREMENT THAT BUYS IT, and it is the whole argument ────────────────────────────
-// `ui/src` went 54 -> 71 -> 91 -> 99 files across four milestones (+83%) and 10,887 -> 20,228
+// `apps/ui/src` went 54 -> 71 -> 91 -> 99 files across four milestones (+83%) and 10,887 -> 20,228
 // lines (+86%), with EVERY per-file gate green throughout: m46 +17 files, m47 +8, m48 +0, m49
 // ~+9 and an 8th top-level directory. The tree grows by ADDING FILES, which is the one shape a
 // per-file ceiling is structurally blind to — and worse, it is the shape the per-file ceiling
@@ -22,15 +22,15 @@
 // longer on disk makes the ratchet guard a number that is not true"); a BOTH-DIRECTIONS sweep,
 // because a table naming seven of eight directories passes silently on the eighth — the same
 // vacuity `BUDGET_REQUIRED_ABOVE` was added to close for files; and a non-vacuity clause that
-// the sweep really swept, because a rename of `ui/src` would otherwise empty the loop and leave
+// the sweep really swept, because a rename of `apps/ui/src` would otherwise empty the loop and leave
 // a guard that guards nothing.
 //
 // ── THE ROOT IS BUDGETED TOO, and that clause is QA's ────────────────────────────────────
-// ARCHITECTURE specifies "a NAMED, explicit list of `ui/src/*` top-level directories ... plus a
+// ARCHITECTURE specifies "a NAMED, explicit list of `apps/ui/src/*` top-level directories ... plus a
 // per-directory FILE-COUNT ceiling" and says nothing about the root. Driven, that leaves the
-// cheapest possible route past the gate wide open: nine new files in `ui/src` itself breach
-// nothing. The `src/` half of this codebase already meters exactly that — ARCHITECTURE's own
-// health table records "`src/` root-level `.mjs` 109 — flat — item 10's ratchet is holding",
+// cheapest possible route past the gate wide open: nine new files in `apps/ui/src` itself breach
+// nothing. The `packages/core/src/` half of this codebase already meters exactly that — ARCHITECTURE's own
+// health table records "`packages/core/src/` root-level `.mjs` 109 — flat — item 10's ratchet is holding",
 // which is the strongest available evidence that a root counter works. One extra table row is
 // the whole cost.
 //
@@ -44,7 +44,7 @@
 // participates in that habit equally.
 //
 // ── PLANTS NEVER TOUCH THE REAL TREE ─────────────────────────────────────────────────────
-// No lane may `mkdir ui/src/<plant>`: it races every other suite reading the same tree, and a
+// No lane may `mkdir apps/ui/src/<plant>`: it races every other suite reading the same tree, and a
 // crashed run leaves the plant behind so every subsequent run is red for the wrong reason.
 // Plants are SYNTHESIZED LISTINGS handed to the shipped detector — never a copy of it (m46's
 // mutation review found a plant fed to a locally re-implemented `affordanceFormViolations`, so
@@ -54,11 +54,11 @@ import assert from "node:assert/strict";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isUiSourceFile } from "../../support/ui-source-files.mjs";
+import { isUiSourceFile } from "../../../apps/ui/test/support/ui-source-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-export const UI_SRC_ROOT = "ui/src";
+export const UI_SRC_ROOT = "apps/ui/src";
 
 // The root's own entry, kept beside the directories rather than inside them so the arithmetic
 // (`total = per-directory + root`) reads as the sum it is.
@@ -66,7 +66,7 @@ export const UI_ROOT_BUDGET = Object.freeze({
   directory: UI_SRC_ROOT,
   ceiling: 2,
   allowance: 0,
-  why: "the two files that BOOTSTRAP the tree — `main.tsx` and `vite-env.d.ts`. Nothing else belongs at the root: a third root module is the cheapest route past every per-directory ceiling below, and the next bootstrap concern belongs in `ui/src/app/` with the rest of the host set.",
+  why: "the two files that BOOTSTRAP the tree — `main.tsx` and `vite-env.d.ts`. Nothing else belongs at the root: a third root module is the cheapest route past every per-directory ceiling below, and the next bootstrap concern belongs in `apps/ui/src/app/` with the rest of the host set.",
 });
 
 // THE NAMED TABLE. Eight top-level directories, measured 2026-08-13 in the working tree by the
@@ -82,7 +82,7 @@ export const UI_DIRECTORY_BUDGETS = Object.freeze([
     directory: "board",
     ceiling: 25,
     allowance: 0,
-    why: "the board surface — and TECH_DEBT 18(a)'s accidental shared library, which the fleet still reaches into five times. Its next growth should be a MOVE: the shared parts out to `ui/src/components/` or `ui/src/terminal/`, which both other surfaces already import DOWN into. A new sibling here deepens the coupling this directory is already the measured instance of. RAISED 21 -> 22 on 2026-09-15 for `ArchivedPill.tsx` (127/04), and the choice is STATED rather than taken quietly: 127/DESIGN §\"The archived mark\" names the file and its home — a sibling of `StaleBadge.tsx`, because the mark is a new READ-ONLY vocabulary of the BOARD and not a sixth status — and the fleet deliberately paints no pill (the fleet partitions the backlog and leaves the archive to its status filter, unmarked), so this is not a shared part the fleet reaches into and not the coupling this row meters. The MOVE this row is right to want is unchanged and still owed: the parts the fleet imports from here. RAISED 22 -> 24 by 133/04 (ADR-007 §5) for `diagrams.mjs` and its `.d.mts`, the pure pair holding the ARCHITECTURE tab's figure logic (which images are diagrams, the data URI, the four figure states and the renderer). `DetailPanel.tsx` stood at 993 of its 1,000-line ceiling, so the logic could not be a region of it, and a pure headless module is what lets the figure's markup and the trust boundary (FF-13304) be tested without React. It is BOARD-ONLY vocabulary — the fleet renders no ARCHITECTURE tab — so it is not a shared part the fleet reaches into, and it deepens nothing this row meters. RAISED 24 -> 25 by 131/05 (ADR-006 §4) for `AskCard.tsx`, the ask card: a question waiting on the operator and the reply that answers it. It is BOARD-ONLY vocabulary — the fleet renders no ask (131/DESIGN §2); `DetailPanel.tsx` at 995 of its 1,000-line ceiling could take only the mount; and it deepens nothing TECH_DEBT 18(a) meters, because nothing outside `ui/src/board/` imports it.",
+    why: "the board surface — and TECH_DEBT 18(a)'s accidental shared library, which the fleet still reaches into five times. Its next growth should be a MOVE: the shared parts out to `apps/ui/src/components/` or `apps/ui/src/terminal/`, which both other surfaces already import DOWN into. A new sibling here deepens the coupling this directory is already the measured instance of. RAISED 21 -> 22 on 2026-09-15 for `ArchivedPill.tsx` (127/04), and the choice is STATED rather than taken quietly: 127/DESIGN §\"The archived mark\" names the file and its home — a sibling of `StaleBadge.tsx`, because the mark is a new READ-ONLY vocabulary of the BOARD and not a sixth status — and the fleet deliberately paints no pill (the fleet partitions the backlog and leaves the archive to its status filter, unmarked), so this is not a shared part the fleet reaches into and not the coupling this row meters. The MOVE this row is right to want is unchanged and still owed: the parts the fleet imports from here. RAISED 22 -> 24 by 133/04 (ADR-007 §5) for `diagrams.mjs` and its `.d.mts`, the pure pair holding the ARCHITECTURE tab's figure logic (which images are diagrams, the data URI, the four figure states and the renderer). `DetailPanel.tsx` stood at 993 of its 1,000-line ceiling, so the logic could not be a region of it, and a pure headless module is what lets the figure's markup and the trust boundary (FF-13304) be tested without React. It is BOARD-ONLY vocabulary — the fleet renders no ARCHITECTURE tab — so it is not a shared part the fleet reaches into, and it deepens nothing this row meters. RAISED 24 -> 25 by 131/05 (ADR-006 §4) for `AskCard.tsx`, the ask card: a question waiting on the operator and the reply that answers it. It is BOARD-ONLY vocabulary — the fleet renders no ask (131/DESIGN §2); `DetailPanel.tsx` at 995 of its 1,000-line ceiling could take only the mount; and it deepens nothing TECH_DEBT 18(a) meters, because nothing outside `apps/ui/src/board/` imports it.",
   }),
   Object.freeze({
     directory: "components",
@@ -100,13 +100,13 @@ export const UI_DIRECTORY_BUDGETS = Object.freeze([
     directory: "fleet",
     ceiling: 20,
     allowance: 0,
-    why: "the fleet surface — 12 -> 20 files in milestone 47 alone (+67%), the second-largest directory and the fastest-growing. Its next cut belongs INSIDE its existing modules (`Fleet.tsx`'s regions are already separate components in one file), or in `ui/src/components/` if a second surface wants it. A ninth new sibling here is the m47 curve continuing.",
+    why: "the fleet surface — 12 -> 20 files in milestone 47 alone (+67%), the second-largest directory and the fastest-growing. Its next cut belongs INSIDE its existing modules (`Fleet.tsx`'s regions are already separate components in one file), or in `apps/ui/src/components/` if a second surface wants it. A ninth new sibling here is the m47 curve continuing.",
   }),
   Object.freeze({
     directory: "home",
     ceiling: 18,
     allowance: 0,
-    why: "the terminals home, created by milestone 49. RAISED 6 -> 12 across two stories, and the raise is the conversation this ratchet exists to force rather than a re-fit: 49/02 delivered the three decision modules with their `.d.mts` siblings (6), 49/04 the page and its state module (9), and 49/03 the pane's mount declaration, its `.d.mts` and the ONE component that mounts the control (12). EVERY ONE OF THOSE THREE IS LOAD-BEARING AND NONE IS A CONVENIENCE: `session-mount.mjs` is the surface's single posture author, which invariant 4's amended part 1 names by path; its `.d.mts` is ADR-001's split, not optional; and `SessionPane.tsx` is the mount SITE that same amendment's per-surface floor requires to exist, without which the gate is either red or vacuous about the one interactive surface this milestone adds. THE NEXT RAISE IS 49/05's AND IT SHOULD BE ARGUED HARDER THAN THIS ONE: the grid, the roving focus and the live region are the LAST additions this directory has a reason for, and each of them should ask whether it is a new file or a region of `Home.tsx`/`SessionPane.tsx` — the whole point of a domain folder is that its members are the domain's nouns, and by 05 they will all have been named. A member added after that is a decision to split a noun, and it belongs in `ui/src/components/` or `ui/src/terminal/` if a second surface wants it. RAISED 12 -> 15 BY 49/05, AND THE ARGUMENT IS THE ONE THE ENTRY ABOVE DEMANDED. Three files, and each was measured against the two alternatives that clause names — a region of `Home.tsx`, or a region of `SessionPane.tsx`: (1) `grid.mjs` IS the noun ADR-001 enumerates by name (\"the grid, the pane's mount declaration, the feed axis, the subscription arbiter and the layout composer\") and it holds ONE noun's answers to one question — which rows, in what order, which holds the keyboard, what the live region says — because all four read the same two inputs and splitting them would be three modules importing one another and a fourth chance to disagree about what a tile IS; (2) its `.d.mts` is ADR-001's split, which is not optional; (3) `SessionGrid.tsx` cannot be either alternative — `SessionPane.tsx` is ONE tile and invariant 4's per-surface floor requires that it stay the surface's only mount site, while putting the grid's five pieces of cross-tile state (the intents, the previous arbitration, the roving stop, the painted set, the announcement) into `Home.tsx` would put the page's fetch and the grid's arbitration in one component and hand story 04's file a second author. THE DIRECTORY IS NOW COMPLETE: every noun the domain has is named, and the next member is a decision to SPLIT one — which belongs in `ui/src/components/` or `ui/src/terminal/` if a second surface wants it, and needs an ADR either way. RAISED 15 -> 18 BY 50/04, AND IT IS THE ADR THE CLAUSE ABOVE DEMANDED (50/ADR-008 decision 10, argued BEFORE the files existed — the first raise in this tree that was): the launcher is NOT a split of an existing noun, it is the domain's first WRITER, where all fifteen existing members are readers. Three files, each measured against the alternatives that clause names: (1) `session-launcher.mjs` must be a module, not a region of `Home.tsx` — this repo has no React test harness and \"a rule that can only be exercised through a component is a rule with no test\" (`feed-axis.mjs:6-9`), while the thing being ruled is DESIGN's eight-state machine, its two deadlines and a fourteen-row code->language map; (2) its `.d.mts` is 49/ADR-001's split, which is not optional; (3) `SessionLauncher.tsx` is the ONE component (trigger + panel) and cannot be either alternative — `Home.tsx` already owns the page's fetch and its five page states, and this entry's own words warn against handing it a second author, while `ui/src/components/` is for what a SECOND surface imports and nothing else launches sessions (the accidental-shared-library shape TECH_DEBT 18(a) records). `ui/src/fleet/` is forbidden outright: `ui/src/home/` may import nothing from it (49/ADR-001, gated). THE NEXT MEMBER IS STILL A SPLIT, and this raise does not reopen that: the domain now has a reader set and one writer, and a SECOND writer would be the conversation to have.",
+    why: "the terminals home, created by milestone 49. RAISED 6 -> 12 across two stories, and the raise is the conversation this ratchet exists to force rather than a re-fit: 49/02 delivered the three decision modules with their `.d.mts` siblings (6), 49/04 the page and its state module (9), and 49/03 the pane's mount declaration, its `.d.mts` and the ONE component that mounts the control (12). EVERY ONE OF THOSE THREE IS LOAD-BEARING AND NONE IS A CONVENIENCE: `session-mount.mjs` is the surface's single posture author, which invariant 4's amended part 1 names by path; its `.d.mts` is ADR-001's split, not optional; and `SessionPane.tsx` is the mount SITE that same amendment's per-surface floor requires to exist, without which the gate is either red or vacuous about the one interactive surface this milestone adds. THE NEXT RAISE IS 49/05's AND IT SHOULD BE ARGUED HARDER THAN THIS ONE: the grid, the roving focus and the live region are the LAST additions this directory has a reason for, and each of them should ask whether it is a new file or a region of `Home.tsx`/`SessionPane.tsx` — the whole point of a domain folder is that its members are the domain's nouns, and by 05 they will all have been named. A member added after that is a decision to split a noun, and it belongs in `apps/ui/src/components/` or `apps/ui/src/terminal/` if a second surface wants it. RAISED 12 -> 15 BY 49/05, AND THE ARGUMENT IS THE ONE THE ENTRY ABOVE DEMANDED. Three files, and each was measured against the two alternatives that clause names — a region of `Home.tsx`, or a region of `SessionPane.tsx`: (1) `grid.mjs` IS the noun ADR-001 enumerates by name (\"the grid, the pane's mount declaration, the feed axis, the subscription arbiter and the layout composer\") and it holds ONE noun's answers to one question — which rows, in what order, which holds the keyboard, what the live region says — because all four read the same two inputs and splitting them would be three modules importing one another and a fourth chance to disagree about what a tile IS; (2) its `.d.mts` is ADR-001's split, which is not optional; (3) `SessionGrid.tsx` cannot be either alternative — `SessionPane.tsx` is ONE tile and invariant 4's per-surface floor requires that it stay the surface's only mount site, while putting the grid's five pieces of cross-tile state (the intents, the previous arbitration, the roving stop, the painted set, the announcement) into `Home.tsx` would put the page's fetch and the grid's arbitration in one component and hand story 04's file a second author. THE DIRECTORY IS NOW COMPLETE: every noun the domain has is named, and the next member is a decision to SPLIT one — which belongs in `apps/ui/src/components/` or `apps/ui/src/terminal/` if a second surface wants it, and needs an ADR either way. RAISED 15 -> 18 BY 50/04, AND IT IS THE ADR THE CLAUSE ABOVE DEMANDED (50/ADR-008 decision 10, argued BEFORE the files existed — the first raise in this tree that was): the launcher is NOT a split of an existing noun, it is the domain's first WRITER, where all fifteen existing members are readers. Three files, each measured against the alternatives that clause names: (1) `session-launcher.mjs` must be a module, not a region of `Home.tsx` — this repo has no React test harness and \"a rule that can only be exercised through a component is a rule with no test\" (`feed-axis.mjs:6-9`), while the thing being ruled is DESIGN's eight-state machine, its two deadlines and a fourteen-row code->language map; (2) its `.d.mts` is 49/ADR-001's split, which is not optional; (3) `SessionLauncher.tsx` is the ONE component (trigger + panel) and cannot be either alternative — `Home.tsx` already owns the page's fetch and its five page states, and this entry's own words warn against handing it a second author, while `apps/ui/src/components/` is for what a SECOND surface imports and nothing else launches sessions (the accidental-shared-library shape TECH_DEBT 18(a) records). `apps/ui/src/fleet/` is forbidden outright: `apps/ui/src/home/` may import nothing from it (49/ADR-001, gated). THE NEXT MEMBER IS STILL A SPLIT, and this raise does not reopen that: the domain now has a reader set and one writer, and a SECOND writer would be the conversation to have.",
   }),
   Object.freeze({
     directory: "lib",
@@ -154,7 +154,7 @@ export async function readUiTreeListing(root = UI_SRC_ROOT) {
     await walk(root);
   } catch (error) {
     throw new Error(
-      `acd-ui-directory-budget could not read \`${root}\` (${error?.code ?? error?.message}). A sweep that cannot see the tree must FAIL: an empty violations array from a walk that never walked is indistinguishable from a clean tree, and a rename of \`ui/src\` would otherwise leave a guard that guards nothing.`,
+      `acd-ui-directory-budget could not read \`${root}\` (${error?.code ?? error?.message}). A sweep that cannot see the tree must FAIL: an empty violations array from a walk that never walked is indistinguishable from a clean tree, and a rename of \`apps/ui/src\` would otherwise leave a guard that guards nothing.`,
     );
   }
   return listing;
@@ -168,7 +168,7 @@ function tally(listing) {
   }
   if (listing.length === 0) {
     throw new Error(
-      "acd-ui-directory-budget was handed an EMPTY listing: no directories and no files at all. `ui/src` is never empty, so this is a sweep that did not see the tree, not a clean tree.",
+      "acd-ui-directory-budget was handed an EMPTY listing: no directories and no files at all. `apps/ui/src` is never empty, so this is a sweep that did not see the tree, not a clean tree.",
     );
   }
 
@@ -196,7 +196,7 @@ function tally(listing) {
 
   if (counts.size === 0) {
     throw new Error(
-      "acd-ui-directory-budget saw NO top-level directories under `ui/src`. Every directory vanishing is a sweep that did not see the tree, and it must fail rather than report a clean run.",
+      "acd-ui-directory-budget saw NO top-level directories under `apps/ui/src`. Every directory vanishing is a sweep that did not see the tree, and it must fail rather than report a clean run.",
     );
   }
   return { counts, rootFiles, scannedFiles };
@@ -309,19 +309,19 @@ export function uiDirectoryBudgetViolations(listing, table = UI_DIRECTORY_BUDGET
 
 export const archTests = [
   {
-    name: "arch/49 ADR-001 (acd-ui-directory-budget): the real ui/src tree is inside every declared ceiling, and the table and the tree agree in BOTH directions",
+    name: "arch/49 ADR-001 (acd-ui-directory-budget): the real apps/ui/src tree is inside every declared ceiling, and the table and the tree agree in BOTH directions",
     run: async () => {
       const listing = await readUiTreeListing();
       const { violations, report } = uiDirectoryBudget(listing);
       assert.deepEqual(
         violations.map((violation) => violation.message),
         [],
-        "the ui/src tree is over a declared directory budget (see the message for the directory, the count and the ceiling)",
+        "the apps/ui/src tree is over a declared directory budget (see the message for the directory, the count and the ceiling)",
       );
 
-      // NON-VACUOUS: the walk really walked. A rename of `ui/src` would otherwise empty the
+      // NON-VACUOUS: the walk really walked. A rename of `apps/ui/src` would otherwise empty the
       // loop and leave a guard that guards nothing — the exact shape m46 keeps finding.
-      assert.ok(report.scannedFiles > 50, `ui/src was actually walked: ${report.scannedFiles} source files`);
+      assert.ok(report.scannedFiles > 50, `apps/ui/src was actually walked: ${report.scannedFiles} source files`);
       assert.ok(report.directories.length >= 8, `…across ${report.directories.length} top-level directories`);
       assert.equal(report.totalFiles, report.directoryFiles + report.rootFiles, "the gate's own arithmetic closes");
       for (const entry of report.directories) {
@@ -332,7 +332,7 @@ export const archTests = [
   },
 
   {
-    name: "arch/49 ADR-001 (acd-ui-directory-budget): the delivered numbers are the DELIVERED TREE and not a headroom allowance — every entry declares its allowance, carries a `why`, and ui/src/home/ is budgeted in the diff that creates it",
+    name: "arch/49 ADR-001 (acd-ui-directory-budget): the delivered numbers are the DELIVERED TREE and not a headroom allowance — every entry declares its allowance, carries a `why`, and apps/ui/src/home/ is budgeted in the diff that creates it",
     run: async () => {
       const listing = await readUiTreeListing();
       const { report } = uiDirectoryBudget(listing);
@@ -366,8 +366,8 @@ export const archTests = [
       );
 
       const home = UI_DIRECTORY_BUDGETS.find((budget) => budget.directory === "home");
-      assert.ok(home != null, "`ui/src/home/`'s own entry is present in the SAME diff that creates the directory");
-      assert.equal(measured.get("ui/src/home/"), home.ceiling, "…and it is set AT the delivered count, not above it");
+      assert.ok(home != null, "`apps/ui/src/home/`'s own entry is present in the SAME diff that creates the directory");
+      assert.equal(measured.get("apps/ui/src/home/"), home.ceiling, "…and it is set AT the delivered count, not above it");
     },
   },
 
@@ -381,8 +381,8 @@ export const archTests = [
       const violations = uiDirectoryBudgetViolations(planted);
       assert.ok(violations.length >= 1, "a 9th top-level directory fires the shipped detector");
       assert.ok(
-        violations.some((violation) => violation.directory === "ui/src/panels/" && /DECISION and needs a table entry/.test(violation.message)),
-        `the refusal names ui/src/panels/ and says a new top-level directory is a decision, not a diff: ${JSON.stringify(violations)}`,
+        violations.some((violation) => violation.directory === "apps/ui/src/panels/" && /DECISION and needs a table entry/.test(violation.message)),
+        `the refusal names apps/ui/src/panels/ and says a new top-level directory is a decision, not a diff: ${JSON.stringify(violations)}`,
       );
       assert.deepEqual(uiDirectoryBudgetViolations(clean), [], "…and the CLEAN listing, in this same lane, returns none");
     },
@@ -398,9 +398,9 @@ export const archTests = [
       assert.equal(board.allowance, 0, "…with no headroom");
       assert.match(board.why, /RAISED 24 -> 25 by 131\/05 \(ADR-006 §4\) for `AskCard\.tsx`/u, "…and carries the 131/05 sentence");
       const clean = await readUiTreeListing();
-      assert.equal(clean.filter((entry) => entry.kind === "file" && entry.path.startsWith("board/")).length, 25, "ui/src/board/ holds 25 files");
+      assert.equal(clean.filter((entry) => entry.kind === "file" && entry.path.startsWith("board/")).length, 25, "apps/ui/src/board/ holds 25 files");
       const planted = uiDirectoryBudgetViolations([...clean, { path: "board/Planted.tsx", kind: "file" }]);
-      assert.ok(planted.some((violation) => violation.directory === "ui/src/board/"), `a 26th file names ui/src/board/: ${JSON.stringify(planted)}`);
+      assert.ok(planted.some((violation) => violation.directory === "apps/ui/src/board/"), `a 26th file names apps/ui/src/board/: ${JSON.stringify(planted)}`);
       assert.deepEqual(uiDirectoryBudgetViolations(clean), [], "…and the clean listing returns none");
     },
   },

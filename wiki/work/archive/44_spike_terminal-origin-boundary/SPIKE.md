@@ -36,9 +36,9 @@ Getting it wrong is a rewrite of the one terminal control, not a tweak.
 
 The concrete shape of the unknown, as the tree stands on 2026-08-02:
 
-- The read-write PTY route (`/ws/terminal?ref=&provider=`, [terminal-ws.mjs](../../../../src/terminal-ws.mjs))
+- The read-write PTY route (`/ws/terminal?ref=&provider=`, [terminal-ws.mjs](../../../../packages/server/src/terminal-ws.mjs))
   lives **only** on a board server — one per workspace, on an **ephemeral** port
-  ([board-serve.mjs](../../../../src/board-serve.mjs)).
+  ([board-serve.mjs](../../../../packages/server/src/board-serve.mjs)).
 - The mirror route (`/ws/terminal-view?nodeId=&sessionId=`) lives **only** on the fleet server, on the
   **fixed** `:4181`, and its input path is already fitness-locked to a tuple-bound seam
   ([acd-fleet-terminal-input-constrained.test.mjs](../../../../test/arch/acd-fleet-terminal-input-constrained.test.mjs)).
@@ -115,8 +115,8 @@ Three things fell out of that one run:
 
 The FIRST resize, sent **immediately on `open`** (111×11), never reached the PTY. Only the one sent
 400 ms later did — see `ptyResizeApplied` above holding exactly one entry. Cause:
-[terminal-ws.mjs](../../../../src/terminal-ws.mjs) registers `ws.on("message")` at
-[:306](../../../../src/terminal-ws.mjs#L306), inside `wireSession`, which runs only **after**
+[terminal-ws.mjs](../../../../packages/server/src/terminal-ws.mjs) registers `ws.on("message")` at
+[:306](../../../../packages/server/src/terminal-ws.mjs#L306), inside `wireSession`, which runs only **after**
 `loadWorkspace` + `trustCwd` + `await spawn(...)`. Frames that arrive before that are dropped on the
 floor — no buffer, no error.
 
@@ -191,7 +191,7 @@ building a loopback worker.
 `dispatchDirective({ to: nodeId })` ([mesh-terminal-input.mjs:94](../../../../src/mesh-terminal-input.mjs#L94)),
 which resolves against `directiveTargets` — a map populated **exclusively** inside
 `wss.on("connection")`, i.e. only by admitted *worker* stream connections
-([control-stream-server.mjs:957](../../../../src/control-stream-server.mjs#L957)). And roles are
+([control-stream-server.mjs:957](../../../../packages/mesh/src/control-stream-server.mjs#L957)). And roles are
 **exclusive**: `meshRole` returns `control | worker | standalone`
 ([mesh-role.mjs:29-33](../../../../src/mesh-role.mjs#L29-L33)), and the launcher's control branch
 ([mesh-launcher.mjs:862](../../../../src/mesh-launcher.mjs#L862)) is `else if`-ed against the worker
@@ -200,9 +200,9 @@ holds no stream connection to itself.** Measured: `{ sent: false, code:
 "assignment-target-not-connected" }`. Not a crash — a *silent drop*, which is worse.
 
 **Output direction — is never produced.** `onTerminalFrame` fires only when an admitted worker socket
-sends a `terminal-frame` ([control-stream-server.mjs:1219](../../../../src/control-stream-server.mjs#L1219)).
+sends a `terminal-frame` ([control-stream-server.mjs:1219](../../../../packages/mesh/src/control-stream-server.mjs#L1219)).
 A board PTY spawned by `terminal-ws.mjs` emits nothing onto the mesh at all: its `term.onData` goes
-straight to its own WebSocket ([terminal-ws.mjs](../../../../src/terminal-ws.mjs)), and — see
+straight to its own WebSocket ([terminal-ws.mjs](../../../../packages/server/src/terminal-ws.mjs)), and — see
 Investigation — `wireTerminalBridge` has **no production caller anywhere**.
 
 So "uniformity" would cost: a self-dialling stream client on the control node, a self-admission
@@ -265,7 +265,7 @@ Direct-dial makes "can this pane's origin be reached" a real per-pane question. 
    ([mesh-ui-serve.mjs:423](../../../../src/mesh-ui-serve.mjs#L423)), with a comment stating the rule
    outright: *"A refusal must name its own cause."* **`/api/mesh/board-url` has no such guard.** It
    calls `serveBoard` on a `projectRoot` that may not exist here; `serveBoard` only checks that
-   `ui/dist/index.html` exists ([board-serve.mjs:48](../../../../src/board-serve.mjs#L48)), so it
+   `ui/dist/index.html` exists ([board-serve.mjs:48](../../../../packages/server/src/board-serve.mjs#L48)), so it
    *succeeds* — handing back a live board URL for a directory that isn't there, whose every
    `/api/work` read then fails. **49 must copy assign's guard onto `board-url` before rendering a pane
    from it.** This is the concrete gap this sub-question was asking about.
@@ -316,7 +316,7 @@ session-source table, not a rewrite of the terminal control.
   2. Encode geometry as **fit ⇔ the source declares a resize control frame**, on the source
      descriptor — never on transport, never on an `isRemote` boolean.
   3. **Fix the dropped-first-frame race** found here (Investigation): `terminal-ws.mjs` registers
-     `ws.on("message")` at [:306](../../../../src/terminal-ws.mjs#L306) only after `loadWorkspace` +
+     `ws.on("message")` at [:306](../../../../packages/server/src/terminal-ws.mjs#L306) only after `loadWorkspace` +
      `trustCwd` + `spawn`, so `TerminalDock`'s `socket.onopen -> sendResize()`
      ([:214-215](../../../../ui/src/board/TerminalDock.tsx#L214-L215)) is silently discarded. Measured:
      an on-open `resize(111,11)` never reached the PTY; the same frame 400 ms later did. Buffer

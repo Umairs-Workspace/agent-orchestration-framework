@@ -3,7 +3,7 @@
 // Two places minted a top-level number before this milestone: the `aof:add-*` prompts' "next number
 // = max across work.dir + 1" (agent arithmetic over a directory listing — 41/ADR-002 named it the
 // thing the deterministic CLI exists to replace) and `appendPosition`
-// (`src/work-promote/promotion.mjs`), reached by the two `promote-*-to-chore` faces and, since
+// (`packages/work/src/promote/promotion.mjs`), reached by the two `promote-*-to-chore` faces and, since
 // 127/01, `migrate-folder.mjs`. `insert-*` opened its own slot through the re-index engine. After
 // story 02 the only minting CODE PATH is `aof work promote`, and every other minter is a caller of
 // the SAME `appendPosition`.
@@ -12,12 +12,12 @@
 // beat), each with a NON-VACUITY leg beside it because every one of them is a sweep that would pass
 // on an empty answer:
 //
-//   (a) `appendPosition` is DEFINED in `src/work-promote/promotion.mjs` only, and its src callers are
+//   (a) `appendPosition` is DEFINED in the work-owned promotion engine only, and its runtime callers are
 //       exactly `promote.mjs`, `promote-finding-to-chore.mjs`, `promote-gap-to-chore.mjs` and
 //       `migrate-folder.mjs` — the register's "promote family", read as that set (127/01 made the
 //       last one a caller). Non-vacuous: the sweep finds FOUR callers.
 //   (b) the TOP-LEVEL slot-open (`transitionStreamReindexed` with `space: "top-level"`) is called
-//       from `src/commands/promote.mjs` and nowhere else under `src/commands/`, and
+//       from `packages/core/src/commands/promote.mjs` and nowhere else under `packages/core/src/commands/`, and
 //       `runInsertTopLevel` is DEFINED there (the other import direction would be a cycle, so the
 //       engine moved to the verb rather than the verb to the engine). Non-vacuous: the sweep finds
 //       the ONE call.
@@ -25,12 +25,12 @@
 //       `Math.max` or a `number:` write. The mechanics module keeps `parsePosition` and the nested
 //       axis's own parses — this leg is about the FACES. Non-vacuous: the same three patterns are
 //       shown to match where they legitimately live.
-//   (d) `src/work/reindex.mjs`'s src importers, read from IMPORT SPECIFIERS over comment-stripped
-//       source, are `{ src/commands/insert-shared.mjs, src/effects/stream-transitions.mjs }` or a
+//   (d) `packages/core/src/work/reindex.mjs`'s src importers, read from IMPORT SPECIFIERS over comment-stripped
+//       source, are `{ packages/core/src/commands/insert-shared.mjs, packages/core/src/effects/stream-transitions.mjs }` or a
 //       strict subset. Four comment-only mentions of the path exist in the tree, which is exactly
 //       why this is a specifier sweep and not a grep. Non-vacuous: the resolver finds importers at
 //       all (today it finds the two).
-//   (e) no `src/bundle/commands/add-*.md` computes a number. Non-vacuous: it reads the five
+//   (e) no `packages/core/assets/commands/add-*.md` computes a number. Non-vacuous: it reads the five
 //       scaffolding prompts (six files match the glob today — `add-task` is swept too, and the floor
 //       is a floor rather than a census).
 //
@@ -48,29 +48,29 @@ import assert from "node:assert/strict";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { resolveSpecifier as resolveRuntimeSpecifier } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const toPosix = (value) => String(value).split(path.sep).join("/");
-
-const HOME = "src/work-promote/promotion.mjs";
+const HOME = "packages/work/src/promote/promotion.mjs";
 // The promote FAMILY — `appendPosition`'s callers, as the register reads them.
 const APPEND_CALLERS = Object.freeze([
-  "src/commands/migrate-folder.mjs",
-  "src/commands/promote-finding-to-chore.mjs",
-  "src/commands/promote-gap-to-chore.mjs",
-  "src/commands/promote.mjs",
+  "packages/work/src/commands/migrate-folder.mjs",
+  "packages/work/src/commands/promote-finding-to-chore.mjs",
+  "packages/work/src/commands/promote-gap-to-chore.mjs",
+  "packages/work/src/commands/promote.mjs",
 ]);
-const VERB = "src/commands/promote.mjs";
+const VERB = "packages/work/src/commands/promote.mjs";
 const INSERT_FACES = Object.freeze([
-  "src/commands/insert-chore.mjs",
-  "src/commands/insert-milestone.mjs",
-  "src/commands/insert-story.mjs",
-  "src/commands/insert-uat.mjs",
+  "packages/work/src/commands/insert-chore.mjs",
+  "packages/work/src/commands/insert-milestone.mjs",
+  "packages/work/src/commands/insert-story.mjs",
+  "packages/work/src/commands/insert-uat.mjs",
 ]);
-const ENGINE = "src/work/reindex.mjs";
-const ENGINE_IMPORTERS = Object.freeze(["src/commands/insert-shared.mjs", "src/effects/stream-transitions.mjs"]);
+const ENGINE = "packages/work/src/reindex.mjs";
+const ENGINE_IMPORTERS = Object.freeze(["packages/work/src/insertion/scaffold.mjs", "packages/core/src/application/bindings/effects/stream-transitions.mjs", "packages/work/src/reindex.mjs"]);
 // The five the prompts' rewrite names (task 05). The glob is the SUBJECT; these are the floor, so a
 // renamed prompt fails as missing rather than quietly shrinking the sweep.
 const NAMED_ADD_PROMPTS = Object.freeze([
@@ -81,20 +81,10 @@ const NAMED_ADD_PROMPTS = Object.freeze([
   "add-uat.md",
 ]);
 
-// Every `.mjs` under a directory, repo-relative and forward-slashed.
-async function walkMjs(rel, out = []) {
-  for (const entry of await readdir(path.join(repoRoot, rel), { withFileTypes: true })) {
-    const child = `${rel}/${entry.name}`;
-    if (entry.isDirectory()) await walkMjs(child, out);
-    else if (entry.name.endsWith(".mjs")) out.push(child);
-  }
-  return out;
-}
-
 // rel → comment-stripped source, for every module in the sweep. Read once per leg, so a leg's
 // answer is a fact about one snapshot of the tree.
-async function strippedSources(rel = "src") {
-  const files = (await walkMjs(rel)).sort();
+async function strippedSources() {
+  const files = (await readRuntimeFiles(repoRoot)).map(file => file.rel).sort();
   const sources = new Map();
   for (const file of files) sources.set(file, stripComments(await readFile(path.join(repoRoot, file), "utf8")));
   return sources;
@@ -121,10 +111,10 @@ function definesName(code, name) {
 }
 
 // Does `specifier`, resolved from `fromRel`, name `targetRel`? Relative specifiers only — a bare or
-// `node:` specifier can never name a file under `src/`.
+// `node:` specifier can never name a file under `packages/core/src/`.
 function resolvesTo(specifier, fromRel, targetRel) {
-  if (!specifier.startsWith(".")) return false;
-  return toPosix(path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier))) === targetRel;
+  const resolved = resolveRuntimeSpecifier(fromRel, specifier);
+  return resolved === targetRel || (targetRel === ENGINE && resolved === "packages/work/src/reindex.mjs");
 }
 
 export const archTests = [
@@ -162,7 +152,7 @@ export const archTests = [
   {
     name: "arch/FF-12703 (acd-one-mint): the top-level slot-open is called from src/commands/promote.mjs and nowhere else under src/commands, and runInsertTopLevel is defined there",
     run: async () => {
-      const sources = await strippedSources("src/commands");
+      const sources = await strippedSources();
       assert.ok(sources.size > 20, `non-vacuity: the src/commands sweep read ${sources.size} modules`);
 
       let topLevelCalls = 0;
@@ -208,7 +198,7 @@ export const archTests = [
       // anchor is the VERB (`stampNumber` in promote.mjs writes `number: ${padded}`), not the
       // append home — `promotion.mjs` writes no `number:` line at all; its one match was the
       // ternary `? number : max`, which is not a write and would have anchored nothing (127/02).
-      const mechanics = stripComments(await readFile(path.join(repoRoot, "src/commands/insert-shared.mjs"), "utf8"));
+      const mechanics = stripComments(await readFile(path.join(repoRoot, "packages/work/src/insertion/scaffold.mjs"), "utf8"));
       const verb = stripComments(await readFile(path.join(repoRoot, VERB), "utf8"));
       assert.match(mechanics, patterns[0][1], "non-vacuity: the parseInt pattern matches the mechanics module, which legitimately parses");
       assert.match(verb, /\bnumber\s*:/u, "non-vacuity: the `number:` pattern matches where a number IS written — promote.mjs's stampNumber");
@@ -236,7 +226,7 @@ export const archTests = [
     run: async () => {
       const sources = await strippedSources();
       const importers = [...sources]
-        .filter(([rel, code]) => rel !== ENGINE && importSpecifiers(code).some(({ specifier }) => resolvesTo(specifier, rel, ENGINE)))
+        .filter(([rel, code]) => rel !== ENGINE && dependencySpecifiers(code).some(({ specifier }) => resolvesTo(specifier, rel, ENGINE)))
         .map(([rel]) => rel)
         .sort();
 
@@ -263,7 +253,7 @@ export const archTests = [
   {
     name: "arch/FF-12703 (acd-one-mint): no src/bundle/commands/add-*.md computes a top-level number",
     run: async () => {
-      const dir = path.join(repoRoot, "src", "bundle", "commands");
+      const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
       const prompts = (await readdir(dir)).filter((name) => name.startsWith("add-") && name.endsWith(".md")).sort();
       assert.ok(
         prompts.length >= NAMED_ADD_PROMPTS.length,

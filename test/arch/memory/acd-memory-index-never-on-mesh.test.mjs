@@ -32,11 +32,11 @@ import { readFile, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ensureGraphifyOutGitignore, GRAPHIFY_OUT_DIR, GRAPHIFY_OUT_GITIGNORE } from "../../../src/aof-gitignore.mjs";
+import { ensureGraphifyOutGitignore, GRAPHIFY_OUT_DIR, GRAPHIFY_OUT_GITIGNORE } from "../../../packages/core/src/aof-gitignore.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-// lf(source) — the tree is CRLF (measured: src/control-stream-server.mjs etc.); every
+// lf(source) — the tree is CRLF (measured: packages/core/src/control-stream-server.mjs etc.); every
 // synthesized plant below is built with explicit "\n" joins so it is IMMUNE to that
 // convention (mirrors acd-write-token-scoped-to-push.test.mjs's own lf() discipline).
 function lf(source) {
@@ -100,18 +100,18 @@ function indexLeakProblems(label, source) {
 // full (not scoped to a single function), so a leak hidden in connection/dispatch code
 // OUTSIDE a named "builder" is caught too.
 const MESH_TRANSPORT_FILES = [
-  "src/control-stream-server.mjs",
-  "src/worker-stream-client.mjs",
-  "src/mesh/relay.mjs",
-  "src/mesh/relay-client.mjs",
-  "src/mesh/terminal-relay-bridge.mjs", // story 06 — the NEW terminal-frame kind
-  "src/mesh/terminal-mirror.mjs",
-  "src/mesh/session-spawn-directive.mjs", // milestone 50 — session-spawn down/up frame builders
+  "packages/mesh/src/control-stream-server.mjs",
+  "packages/mesh/src/worker-stream-client.mjs",
+  "packages/mesh/src/relay.mjs",
+  "packages/mesh/src/relay-client.mjs",
+  "packages/mesh/src/terminal-relay-bridge.mjs", // story 06 — the NEW terminal-frame kind
+  "packages/mesh/src/terminal-mirror.mjs",
+  "packages/mesh/src/session-spawn-directive.mjs", // milestone 50 — session-spawn down/up frame builders
 ];
 
 // (b) PER-BUILDER scan — the EXHAUSTIVE real frame-builder enumeration (grepped from
 // the real tree: `grep -rnE "kind:|type:|buildDirectiveFrame|Envelope|Frame"
-// src/*stream*.mjs src/mesh/relay.mjs src/mesh-terminal-*.mjs`). Every function that
+// src/*stream*.mjs packages/core/src/mesh/relay.mjs src/mesh-terminal-*.mjs`). Every function that
 // BUILDS a frame object placed onto ANY mesh transport — the down-frames
 // (control-stream-server.mjs), the up-frames (worker-stream-client.mjs), the relay
 // envelope (mesh-relay-client.mjs), story 06's NEW terminal-frame
@@ -120,28 +120,28 @@ const MESH_TRANSPORT_FILES = [
 // buildTerminalFrameEnvelope (story 06, built moments before this story) — a stale/
 // incomplete enumeration is exactly this milestone's own recurring F1/F4 failure class.
 const FRAME_BUILDER_SITES = [
-  { file: "src/control-stream-server.mjs", fn: "buildDirectiveFrame" },
-  { file: "src/control-stream-server.mjs", fn: "buildCloneCredentialFrame" },
-  { file: "src/control-stream-server.mjs", fn: "buildCloneUrlFrame" },
-  { file: "src/control-stream-server.mjs", fn: "buildWriteCredentialFrame" }, // story 07
-  { file: "src/worker-stream-client.mjs", fn: "buildSnapshotFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildDeltaFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildPresenceFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildAssignmentStatusFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildCloneCredentialRequestFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildCloneUrlRequestFrame" },
-  { file: "src/worker-stream-client.mjs", fn: "buildWriteCredentialRequestFrame" }, // story 07
-  { file: "src/mesh/relay-client.mjs", fn: "relayEnvelope" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildDirectiveFrame" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildCloneCredentialFrame" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildCloneUrlFrame" },
+  { file: "packages/mesh/src/control-stream-server.mjs", fn: "buildWriteCredentialFrame" }, // story 07
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildSnapshotFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildDeltaFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildPresenceFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildAssignmentStatusFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildCloneCredentialRequestFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildCloneUrlRequestFrame" },
+  { file: "packages/mesh/src/worker-stream-client.mjs", fn: "buildWriteCredentialRequestFrame" }, // story 07
+  { file: "packages/mesh/src/relay-client.mjs", fn: "relayEnvelope" },
   // leaseRelayEnvelope DELETED (m42 item 0 — the lease era's dead wire kind).
-  { file: "src/mesh/terminal-relay-bridge.mjs", fn: "buildTerminalFrameEnvelope" }, // story 06
-  { file: "src/mesh/session-spawn-directive.mjs", fn: "buildSessionSpawnFrame" }, // milestone 50
-  { file: "src/mesh/session-spawn-directive.mjs", fn: "buildSessionSpawnAckFrame" }, // milestone 50
+  { file: "packages/mesh/src/terminal-relay-bridge.mjs", fn: "buildTerminalFrameEnvelope" }, // story 06
+  { file: "packages/mesh/src/session-spawn-directive.mjs", fn: "buildSessionSpawnFrame" }, // milestone 50
+  { file: "packages/mesh/src/session-spawn-directive.mjs", fn: "buildSessionSpawnAckFrame" }, // milestone 50
   // milestone 50 / story 02 (ADR-006) — the session-spawn lane's RELAY envelope, the
   // third rider on the loopback bridge. Enumerated here for the same reason story 01's
   // two were: a builder that places an object onto a mesh transport and is NOT on this
   // list is the stale-enumeration failure class this gate is named for.
-  { file: "src/mesh/session-spawn-directive.mjs", fn: "buildSessionSpawnEnvelope" }, // milestone 50 / story 02
-  { file: "src/mesh/relay.mjs", fn: "sendControl" },
+  { file: "packages/mesh/src/session-spawn-directive.mjs", fn: "buildSessionSpawnEnvelope" }, // milestone 50 / story 02
+  { file: "packages/mesh/src/relay.mjs", fn: "sendControl" },
 ];
 
 // ---------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ function remoteFetchProblems(source) {
     : [];
 }
 
-const MEMORY_INGEST_FILES = ["src/memory/local-indexing.mjs", "src/memory/graphify-backend.mjs"];
+const MEMORY_INGEST_FILES = ["packages/knowledge/src/memory/local-indexing.mjs", "packages/knowledge/src/memory/graphify-backend.mjs"];
 
 // ---------------------------------------------------------------------------------
 // Synthesized plants (self-check) — the THREE attacks ADR-016's own fitness-fn text
@@ -270,11 +270,11 @@ export const archTests = [
     name: "arch/38 ADR-016 (acd-memory-index-never-on-mesh): self-check — an index payload on a mesh frame builder, a de-gitignored index, and a remote-index fetch EACH trip their detector; the real source stays clean under every one",
     run: async () => {
       // Sanity — the real tree is clean under every detector first.
-      const directiveSource = lf(await readFile(path.join(repoRoot, "src/control-stream-server.mjs"), "utf8"));
+      const directiveSource = lf(await readFile(path.join(repoRoot, "packages/mesh/src/control-stream-server.mjs"), "utf8"));
       assert.deepEqual(indexLeakProblems("buildDirectiveFrame", functionBodyByName(directiveSource, "buildDirectiveFrame")), [], "sanity: the real buildDirectiveFrame is clean");
       const rootIgnore = await readFile(path.join(repoRoot, ".gitignore"), "utf8");
       assert.deepEqual(gitignoreMissingProblems(rootIgnore), [], "sanity: the real root .gitignore is clean");
-      const localIndexingSource = lf(await readFile(path.join(repoRoot, "src/memory/local-indexing.mjs"), "utf8"));
+      const localIndexingSource = lf(await readFile(path.join(repoRoot, "packages/knowledge/src/memory/local-indexing.mjs"), "utf8"));
       assert.deepEqual(remoteFetchProblems(localIndexingSource), [], "sanity: the real local-indexing.mjs is clean");
 
       // PLANT 1 — an index payload on a mesh frame builder.

@@ -44,6 +44,25 @@ function readScript(name) {
 
 export const releaseWorkflowLintTests = [
   {
+    name: 'release-workflow-lint/extracted runtime and real PTY gate runs before each leg signs or uploads',
+    async run() {
+      const text = stripYamlComments(readWorkflow());
+      for (const os of ['macos', 'windows', 'linux']) {
+        const job = text.match(new RegExp(`  build-${os}:[\\s\\S]*?(?=\\n  [a-z][a-z-]*:|$)`))?.[0];
+        assert.ok(job, os);
+        const prepare = job.indexOf('node scripts/prepare-worktree.mjs');
+        const build = job.indexOf('node scripts/build-sea.mjs');
+        const stage = job.indexOf('node scripts/release/stage-release-assets.mjs');
+        const gate = job.indexOf('node scripts/release/verify-distribution.mjs');
+        const upload = job.indexOf('actions/upload-artifact@');
+        assert.ok(prepare < build && build < stage && stage < gate && gate < upload, os + ': prepare, build, stage, execute, upload');
+        const sign = job.search(/node scripts\/release\/sign-/u);
+        if (sign !== -1) assert.ok(gate < sign, os + ': execute before signing');
+        if (os === 'linux') assert.ok(job.indexOf('rebuild node-pty') > prepare && job.indexOf('rebuild node-pty') < build);
+      }
+    },
+  },
+  {
     name: "release-workflow-lint/00 the workflow file exists and is non-empty",
     run: async () => {
       const text = readWorkflow();
@@ -81,13 +100,13 @@ export const releaseWorkflowLintTests = [
 
   // ══════ 00_ci-build-matrix.feature: "the Linux runner compiles the node-pty .node from source; mac/win use the shipped prebuilts" ══════
   {
-    name: "release-workflow-lint/04 the Linux leg compiles node-pty from source (npm ci, no prebuild) and stages + verifies the compiled .node",
+    name: "release-workflow-lint/04 the Linux leg compiles node-pty from source (Yarn immutable install, no prebuild) and stages + verifies the compiled .node",
     run: async () => {
       const text = stripYamlComments(readWorkflow());
       const linuxJobMatch = text.match(/build-linux:[\s\S]*?(?=\n {2}\S|\Z)/);
       assert.ok(linuxJobMatch, "a build-linux job is declared");
       const linuxJob = linuxJobMatch[0];
-      assert.ok(/npm ci/.test(linuxJob), "the Linux job runs npm ci (which compiles node-pty from source — no linux-* prebuild is shipped)");
+      assert.ok(/run: node scripts\/prepare-worktree\.mjs/.test(linuxJob), "the Linux job runs Yarn immutable install (which compiles node-pty from source — no linux-* prebuild is shipped)");
       assert.ok(/stage-linux-node-pty-prebuild\.mjs/.test(linuxJob), "the Linux job stages the compiled .node into the prebuilds/linux-<arch>/ shape build-sea.mjs expects");
     },
   },

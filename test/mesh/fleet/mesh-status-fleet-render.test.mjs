@@ -1,3 +1,4 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 25 / story 01 — the `aof mesh status` render
 // (tasks/01_mesh-status-render.feature).
 //
@@ -18,10 +19,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { meshDir } from "../../../src/mesh/store.mjs";
+const meshDir = _aofHooks.meshStore.meshDir;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 async function buildFixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-fleet-render-"));

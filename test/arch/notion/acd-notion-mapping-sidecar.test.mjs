@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 17 / ADR-001 (inv. 1):
 //   "Mapping-sidecar-only. The aof↔Notion mapping lives ONLY in the git-ignored
 //    `.aof/` sidecar keyed by aof ref; no code writes an aof-identity property onto a
@@ -23,15 +24,19 @@
 //       property write — the only page-property writes name title / status / relation.
 //       Self-checked non-vacuous: the forbidden-form matchers fire on a planted form.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { readMapping, resolvePageId, recordPageId, NOTION_WORK_MAP_FILE } from "../../../src/notion/mapping.mjs";
-import { AOF_GITIGNORE_ENTRIES } from "../../../src/aof-gitignore.mjs";
+const readMapping = _aofApplication.integrations.notion.mapping.readMapping;
+const resolvePageId = _aofApplication.integrations.notion.mapping.resolvePageId;
+const recordPageId = _aofApplication.integrations.notion.mapping.recordPageId;
+const NOTION_WORK_MAP_FILE = _aofApplication.integrations.notion.mapping.NOTION_WORK_MAP_FILE;
+import { AOF_GITIGNORE_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC_NOTION_DIR = path.join(repoRoot, "src", "notion");
+const SRC_NOTION_DIR = path.join(repoRoot, "packages", "integration-notion", "src");
 
 // Strip line + block comments AND string/template literals so a documented mention
 // (a `filter` in prose, or a token name inside an error MESSAGE) does not trip a
@@ -74,11 +79,10 @@ function stripCommentsOnly(source) {
 const RESOLVE_BY_QUERY = /\bfilter\s*:\s*\{[^}]*\bproperty\s*:/;
 
 async function notionSourceFiles() {
-  const files = [];
-  for (const entry of await readdir(SRC_NOTION_DIR)) {
-    if (entry.endsWith(".mjs")) files.push(path.join(SRC_NOTION_DIR, entry));
-  }
-  return files;
+  const files = await readRuntimeFiles(repoRoot);
+  const selected = files.filter(({ rel }) => rel.startsWith('packages/integration-notion/src/') || rel.startsWith('packages/core/src/notion/') || rel.startsWith('packages/core/src/commands/notion-')).map(file => file.path);
+  assert.ok(selected.length > 0, 'the Notion runtime source sweep is non-empty');
+  return selected;
 }
 
 export const archTests = [

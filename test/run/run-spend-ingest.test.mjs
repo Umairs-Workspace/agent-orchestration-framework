@@ -1,10 +1,12 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // Traceability wiring for milestone 68 / story 02 — spend-ingest-at-settle.
 //
 // Covers EVERY @executable scenario in the two task features:
 //   tasks/00_transcript-to-spend.feature
 //   tasks/01_settle-once-and-degrade.feature
-// exercising the REAL src/run-spend-ingest.mjs (the new producer) against the REAL
-// writer seam (src/run-store.mjs's settleRun), in-process, on a temp fixture repo
+// exercising the REAL packages/core/src/run-spend-ingest.mjs (the new producer) against the REAL
+// writer seam (packages/core/src/run-store.mjs's settleRun), in-process, on a temp fixture repo
 // and a temp transcript tree. One test object per @executable scenario
 // (Scenario-Outline rows folded into one entry iterating the rows), each name
 // tracing to feature + scenario. node:assert/strict.
@@ -19,10 +21,99 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-const { readRuns, startRun, completeRun, settleRun, PRICE_TABLE_VERSION } = await import("../../src/run-store.mjs");
-const { settleSpendFromTranscript, readTranscriptTree } = await import("../../src/run-spend-ingest.mjs");
-const { transitionRunComplete } = await import("../../src/effects/run-transitions.mjs");
-const { projectSlug } = await import("../../src/work/observe.mjs");
+const { readRuns, startRun, completeRun, settleRun, PRICE_TABLE_VERSION } = await Promise.resolve(Object.freeze({
+  COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,
+  DEFAULT_PARK_MINUTES: _aofApplication.execution.runs.DEFAULT_PARK_MINUTES,
+  EXIT_REASONS: _aofApplication.execution.runs.EXIT_REASONS,
+  PRICE_TABLE_VERSION: _aofApplication.execution.runs.PRICE_TABLE_VERSION,
+  SPEND_ENVELOPE_KEYS: _aofApplication.execution.runs.SPEND_ENVELOPE_KEYS,
+  TOKEN_BUCKET_KEYS: _aofApplication.execution.runs.TOKEN_BUCKET_KEYS,
+  answerRunAsk: _aofApplication.execution.runs.answerRunAsk,
+  applyTransition: _aofApplication.execution.runs.applyTransition,
+  completeRun: _aofApplication.execution.runs.completeRun,
+  heartbeat: _aofApplication.execution.runs.heartbeat,
+  isLegalTransition: _aofApplication.execution.runs.isLegalTransition,
+  isRetryable: _aofApplication.execution.runs.isRetryable,
+  isRunning: _aofApplication.execution.runs.isRunning,
+  isStale: _aofApplication.execution.runs.isStale,
+  mapVendorTokensToBuckets: _aofApplication.execution.runs.mapVendorTokensToBuckets,
+  openRunAsk: _aofApplication.execution.runs.openRunAsk,
+  parkRunAsk: _aofApplication.execution.runs.parkRunAsk,
+  parseResumeAfter: _aofApplication.execution.runs.parseResumeAfter,
+  priceVendorTokens: _aofApplication.execution.runs.priceVendorTokens,
+  pruneRun: _aofApplication.execution.runs.pruneRun,
+  readRuns: _aofApplication.execution.runs.readRuns,
+  reclaimRun: _aofApplication.execution.runs.reclaimRun,
+  reclaimStaleRuns: _aofApplication.execution.runs.reclaimStaleRuns,
+  recordAnchorReading: _aofApplication.execution.runs.recordAnchorReading,
+  recordAnswers: _aofApplication.execution.runs.recordAnswers,
+  recordSessionId: _aofApplication.execution.runs.recordSessionId,
+  retryReadiness: _aofApplication.execution.runs.retryReadiness,
+  retryRun: _aofApplication.execution.runs.retryRun,
+  rewriteRunItemRef: _aofApplication.execution.runs.rewriteRunItemRef,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  settleRun: _aofApplication.execution.runs.settleRun,
+  settleRunFromVendor: _aofApplication.execution.runs.settleRunFromVendor,
+  staleRunningRuns: _aofApplication.execution.runs.staleRunningRuns,
+  startRun: _aofApplication.execution.runs.startRun,
+  shouldRetry: _aofApplication.execution.runs.shouldRetry,
+}));
+const { settleSpendFromTranscript, readTranscriptTree } = await Promise.resolve(Object.freeze({
+  readTranscriptTree: _aofApplication.execution.runSpendIngest.readTranscriptTree,
+  settleSpendFromTranscript: _aofApplication.execution.runSpendIngest.settleSpendFromTranscript,
+  snapshotTranscriptTree: _aofApplication.execution.runSpendIngest.snapshotTranscriptTree,
+}));
+const { transitionRunComplete } = await Promise.resolve(Object.freeze({
+  transitionRunStart: _aofApplication.execution.transitions.transitionRunStart,
+  transitionRunComplete: _aofApplication.execution.transitions.transitionRunComplete,
+  transitionRunReclaimed: _aofApplication.execution.transitions.transitionRunReclaimed,
+  transitionStaleRunsReclaimed: _aofApplication.execution.transitions.transitionStaleRunsReclaimed,
+}));
+const { projectSlug } = await Promise.resolve(Object.freeze({
+  BUILD_ROLES: _aofSessions.workObserve.BUILD_ROLES,
+  DEFAULT_HUMAN_WAIT_MS: _aofSessions.workObserve.DEFAULT_HUMAN_WAIT_MS,
+  DEFAULT_STALL_MS: _aofSessions.workObserve.DEFAULT_STALL_MS,
+  HUMAN_INPUT_TOOL_NAMES: _aofSessions.workObserve.HUMAN_INPUT_TOOL_NAMES,
+  NEEDS_INPUT_SENTINEL: _aofSessions.workObserve.NEEDS_INPUT_SENTINEL,
+  PRE68_DERIVATION_MARKER: _aofSessions.workObserve.PRE68_DERIVATION_MARKER,
+  PRE68_JSON_KEY: _aofSessions.workObserve.PRE68_JSON_KEY,
+  PRE68_MINER: _aofSessions.workObserve.PRE68_MINER,
+  analyzeSessionThread: _aofSessions.workObserve.analyzeSessionThread,
+  analyzeTranscript: _aofSessions.workObserve.analyzeTranscript,
+  analyzeWaves: _aofSessions.workObserve.analyzeWaves,
+  applyCacheTarget: _aofSessions.workObserve.applyCacheTarget,
+  askQuestionFromTurn: _aofSessions.workObserve.askQuestionFromTurn,
+  buildSessionItemIndex: _aofSessions.workObserve.buildSessionItemIndex,
+  cacheTargetIsHonourable: _aofSessions.workObserve.cacheTargetIsHonourable,
+  classifyToolCallResult: _aofSessions.workObserve.classifyToolCallResult,
+  claudeProjectsDir: _aofSessions.workObserve.claudeProjectsDir,
+  clusterInfraKills: _aofSessions.workObserve.clusterInfraKills,
+  collectMilestoneAgents: _aofSessions.workObserve.collectMilestoneAgents,
+  collectSessionSignals: _aofSessions.workObserve.collectSessionSignals,
+  fmtDur: _aofSessions.workObserve.fmtDur,
+  humanTurnText: _aofSessions.workObserve.humanTurnText,
+  markLegacySnapshot: _aofSessions.workObserve.markLegacySnapshot,
+  markLegacySnapshots: _aofSessions.workObserve.markLegacySnapshots,
+  mergeIntervals: _aofSessions.workObserve.mergeIntervals,
+  observabilityEnabled: _aofSessions.workObserve.observabilityEnabled,
+  observeMilestone: _aofSessions.workObserve.observeMilestone,
+  overlapMs: _aofSessions.workObserve.overlapMs,
+  pre68DerivationHeader: _aofSessions.workObserve.pre68DerivationHeader,
+  pre68JsonHeader: _aofSessions.workObserve.pre68JsonHeader,
+  projectSlug: _aofSessions.workObserve.projectSlug,
+  readAskQuestion: _aofSessions.workObserve.readAskQuestion,
+  readLastAssistantTurn: _aofSessions.workObserve.readLastAssistantTurn,
+  readLatestSnapshot: _aofSessions.workObserve.readLatestSnapshot,
+  renderReportMarkdown: _aofSessions.workObserve.renderReportMarkdown,
+  resolveMilestoneFolder: _aofSessions.workObserve.resolveMilestoneFolder,
+  rollupRunsByPhase: _aofSessions.workObserve.rollupRunsByPhase,
+  snapshotTimestamp: _aofSessions.workObserve.snapshotTimestamp,
+  tokenSplit: _aofSessions.workObserve.tokenSplit,
+  unionMs: _aofSessions.workObserve.unionMs,
+  verdictForCacheBucket: _aofSessions.workObserve.verdictForCacheBucket,
+}));
 
 async function makeItem() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-ingest-"));

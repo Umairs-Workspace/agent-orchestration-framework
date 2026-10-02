@@ -1,18 +1,17 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Milestone 62 / story 01 — executable traceability for all five task features.
 import assert from "node:assert/strict";
 
-import {
-  ABSENT,
-  ABSENT_READING,
-  PROPOSAL_CLASSES,
-  PROPOSAL_LANES,
-  PROPOSAL_REASONS,
-  computeProposalLane,
-  emitProposal,
-  emitProposals,
-  laneProposals,
-  proposalClassForTarget,
-} from "../../src/work-tune/proposal.mjs";
+const ABSENT = _aofApplication.work.tune.proposal.ABSENT;
+const ABSENT_READING = _aofApplication.work.tune.proposal.ABSENT_READING;
+const PROPOSAL_CLASSES = _aofApplication.work.tune.proposal.PROPOSAL_CLASSES;
+const PROPOSAL_LANES = _aofApplication.work.tune.proposal.PROPOSAL_LANES;
+const PROPOSAL_REASONS = _aofApplication.work.tune.proposal.PROPOSAL_REASONS;
+const computeProposalLane = _aofApplication.work.tune.proposal.computeProposalLane;
+const emitProposal = _aofApplication.work.tune.proposal.emitProposal;
+const emitProposals = _aofApplication.work.tune.proposal.emitProposals;
+const laneProposals = _aofApplication.work.tune.proposal.laneProposals;
+const proposalClassForTarget = _aofApplication.work.tune.proposal.proposalClassForTarget;
 
 const KEY = "work.fixture.rounds";
 const OTHER = "work.fixture.other";

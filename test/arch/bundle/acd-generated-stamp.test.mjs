@@ -7,7 +7,7 @@
 // recognised by the frozen detection contract AND carries the form-correct
 // marker; assert an unstamped fixture is detected as not-managed.
 import assert from "node:assert/strict";
-import { loadBundle, renderBundleOutputs, TEMPLATE_STAMP } from "../../../src/work/bundle.mjs";
+import { loadBundle, renderBundleOutputs, TEMPLATE_STAMP } from "../../../packages/core/src/work/bundle.mjs";
 
 // The frozen detection contract (ADR-005): a file is aof-managed iff it carries
 // the `aof-generated` marker in EITHER canonical form —

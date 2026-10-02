@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 18 / story 02, task 01 —
 // tasks/01_legacy-mechanism-removed.feature (@executable, every scenario + both
 // Scenario-Outline Examples groups). One test object per @executable scenario/row;
@@ -24,8 +25,8 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { resolveNotionRouting } from "../../src/integrations/routing.mjs";
-import { projectMilestone } from "../../src/notion/projection.mjs";
+const resolveNotionRouting = _aofApplication.work.integrations.routing.resolveNotionRouting;
+import { projectMilestone } from "@aof/integration-notion/projection";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SCHEMA_URL = path.join(repoRoot, "schemas", "aof.schema.json");

@@ -1,0 +1,32 @@
+{
+  "name": "@aof/work-graph",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./registry": "./src/registry.mjs",
+    "./checks": "./src/checks.mjs",
+    "./record": "./src/record.mjs",
+    "./record-render": "./src/record-render.mjs",
+    "./document": "./src/document.mjs",
+    "./shapes": "./src/shapes.mjs",
+    "./commands/loops-show": "./src/commands/loops-show.mjs",
+    "./commands/loops-graph": "./src/commands/loops-graph.mjs",
+    "./commands/loops-validate": "./src/commands/loops-validate.mjs",
+    "./commands/loop-document": "./src/commands/loop-document.mjs",
+    "./commands/loop-record": "./src/commands/loop-record.mjs",
+    "./commands/loops-groundedness": "./src/commands/loops-groundedness.mjs",
+    "./commands": "./src/commands.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/work-graph"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/foundation": "workspace:*",
+    "@aof/work": "workspace:*"
+  }
+}

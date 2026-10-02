@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ADMITTED_KEYS, loadLoops } from "../../src/work/loops.mjs";
+const ADMITTED_KEYS = _aofApplication.graph.work.loops.ADMITTED_KEYS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import { withLoopRegistry } from "../support/loop-registry-fixture.mjs";
 import { withShippedRegistry } from "../support/registry-fixture.mjs";
 

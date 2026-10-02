@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/discord/discord-gateway.test.mjs — milestone 131 / story 10, task 01
 // (01_the-gateway-resumes-rather-than-re-identifies.feature; ADR-008 §2). The gateway connection
 // over a fake socket factory and a fake clock: no real socket and no real timer runs (QA ruling 1),
 // and the token rides only the IDENTIFY and RESUME frames (QA ruling 2).
 import assert from "node:assert/strict";
-import { GATEWAY_INTENTS, startGateway } from "../../src/discord/gateway.mjs";
+const GATEWAY_INTENTS = _aofApplication.messaging.discord.gateway.GATEWAY_INTENTS;
+const startGateway = _aofApplication.messaging.discord.gateway.startGateway;
 import { TOKEN, TOKEN_SEGMENT, degradeSink, fakeClock, fakeGateway, flush, ready, releaseDegradeSink } from "./discord-fixture.mjs";
 
 const HALF = () => 0.5;

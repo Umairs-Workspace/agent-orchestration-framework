@@ -1,30 +1,31 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/clone/mesh-clone-credential-provider-config.test.mjs — traceability for milestone 38
 // / story 02, task 00 (00_provider-config-driven.feature, ADR-010 §6.1). Every
 // @executable scenario / Scenario Outline row wired to the REAL production surface:
-//   - the SELECTOR: resolveCloneCredentialProvider (src/mesh/clone-credential-provider.mjs).
+//   - the SELECTOR: resolveCloneCredentialProvider (packages/core/src/mesh/clone-credential-provider.mjs).
 //   - the PRODUCTION WIRING: startLauncher's control-role `startServer({...})` call
-//     site (src/mesh/launcher.mjs) — driven with NO controlStreamServerOptions
+//     site (packages/core/src/mesh/launcher.mjs) — driven with NO controlStreamServerOptions
 //     credential-shaped override (the ADR-009 F12 discipline this story re-arms for
 //     the provider): a test that only proved the seam via the test-injection spread
 //     would prove nothing about production.
 //   - the UNCHANGED authorization gates: applyCloneCredentialRequestFrame
-//     (src/control-stream-server.mjs) — reused verbatim from story 01, never
+//     (packages/core/src/control-stream-server.mjs) — reused verbatim from story 01, never
 //     hand-authored here.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import {
-  defaultMintCloneCredential,
-  applyCloneCredentialRequestFrame,
-  CLONE_CREDENTIAL_NOT_HOLDER,
-  CLONE_CREDENTIAL_WORKSPACE_MISMATCH,
-  CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE,
-} from "../../../src/control-stream-server.mjs";
-import { resolveCloneCredentialProvider, CLONE_CREDENTIAL_PROVIDER_UNKNOWN } from "../../../src/mesh/clone-credential-provider.mjs";
-import { openGlobalWorkProjectionStore } from "../../../src/global-work-store.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const defaultMintCloneCredential = _aofApplication.mesh.controlStreamServer.defaultMintCloneCredential;
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const CLONE_CREDENTIAL_NOT_HOLDER = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_NOT_HOLDER;
+const CLONE_CREDENTIAL_WORKSPACE_MISMATCH = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_WORKSPACE_MISMATCH;
+const CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE = _aofApplication.mesh.controlStreamServer.CLONE_CREDENTIAL_ASSIGNMENT_INACTIVE;
+const resolveCloneCredentialProvider = _aofApplication.mesh.cloneCredentialProvider.resolveCloneCredentialProvider;
+const CLONE_CREDENTIAL_PROVIDER_UNKNOWN = _aofApplication.mesh.cloneCredentialProvider.CLONE_CREDENTIAL_PROVIDER_UNKNOWN;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 import { createDirectiveChannelFixture } from "../../support/mesh-directive-channel-fixture.mjs";
 import { withMeshAssignFixture, seedAssignment } from "../../support/mesh-assign-fixture.mjs";
 

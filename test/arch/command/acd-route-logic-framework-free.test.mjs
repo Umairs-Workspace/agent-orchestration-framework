@@ -5,14 +5,14 @@
 //    router is a PATH router: it reads exactly one query parameter (`mode`, only to delete
 //    it) and carries every other parameter and the fragment through untouched."
 //
-// EXPECTED RED until milestone 45's stories land: `ui/src/app/routes.mjs` does not exist.
+// EXPECTED RED until milestone 45's stories land: `apps/ui/src/app/routes.mjs` does not exist.
 //
 // WHY PURITY IS THE STRUCTURAL RULE AND NOT A STYLE PREFERENCE. There is NO React test
 // harness in this repo — no vitest, no testing-library. Every UI surface keeps its
 // decisions in framework-free `.mjs` beside the component so node:test drives them
-// headlessly: ui/src/fleet/scope.mjs (whose own header states the rule), ui/src/board/
-// {runs,action,freshness,resync}.mjs, ui/src/board/terminal/*.mjs. The canonical shape is
-// test/ui/fleet-scope.test.mjs. If the route table were JSX/hook-shaped — a router library's
+// headlessly: apps/ui/src/fleet/scope.mjs (whose own header states the rule), apps/ui/src/board/
+// {runs,action,freshness,resync}.mjs, apps/ui/src/board/terminal/*.mjs. The canonical shape is
+// test/surfaces/fleet-scope.test.mjs. If the route table were JSX/hook-shaped — a router library's
 // <Routes>/<Navigate>/loader config — the URL-to-surface mapping would be the one thing in
 // this milestone that CANNOT be tested here. That, and not bundle size, is why m45/ADR-001
 // rejects react-router-dom for a four-route surface. `scope.mjs`'s discipline is copied
@@ -21,12 +21,12 @@
 //
 // WHY THE PASSTHROUGH IS AN INVARIANT AND NOT A NICETY. `?scope=` is a live deep-link
 // contract with server-side consumers (mesh-ui-serve.mjs:143 advertises it,
-// queryGlobalMeshStatus honours it, ui/src/fleet/api.ts:279 sends it), and milestone 47 adds
+// queryGlobalMeshStatus honours it, apps/ui/src/fleet/api.ts:279 sends it), and milestone 47 adds
 // a repo filter beside it. The failure mode is banal and common: a router that "normalises"
 // the query string and quietly drops what it does not recognise, so a deep link works right
 // up until the moment it is redirected. ADR-006's rule is therefore COPY-AND-DELETE
 // (preserve by default), never build-from-a-known-list (drop by default) — and the router
-// never imports ui/src/fleet/scope.mjs, because the router not knowing that `scope` exists
+// never imports apps/ui/src/fleet/scope.mjs, because the router not knowing that `scope` exists
 // is exactly what makes milestone 47's change local to the fleet.
 //
 // THE FRAGMENT IS PART OF THE CONTRACT. `/api/mesh/board-url` returns
@@ -42,7 +42,7 @@ import { fileURLToPath } from "node:url";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const ROUTE_MODULE = "ui/src/app/routes.mjs";
+const ROUTE_MODULE = "apps/ui/src/app/routes.mjs";
 
 function stripComments(source) {
   return source.replace(/(^|[^:])\/\/[^\n]*/g, "$1").replace(/\/\*[\s\S]*?\*\//g, " ");
@@ -53,7 +53,7 @@ async function loadRoutes() {
     return await import(new URL(`../../../${ROUTE_MODULE}`, import.meta.url).href);
   } catch (error) {
     assert.fail(
-      `${ROUTE_MODULE} is not loadable by plain node (${error.code ?? error.message}). m45/ADR-001: the route table is a framework-free .mjs module, drivable by node:test with no bundler and no DOM — the house pattern (ui/src/fleet/scope.mjs, ui/src/board/*.mjs), which is not optional because this repo has no React test harness at all.`,
+      `${ROUTE_MODULE} is not loadable by plain node (${error.code ?? error.message}). m45/ADR-001: the route table is a framework-free .mjs module, drivable by node:test with no bundler and no DOM — the house pattern (apps/ui/src/fleet/scope.mjs, apps/ui/src/board/*.mjs), which is not optional because this repo has no React test harness at all.`,
     );
   }
 }
@@ -81,13 +81,13 @@ export const archTests = [
       // what keeps milestone 47's repo filter local to the fleet.
       assert.ok(
         !imports.some((spec) => /scope\.mjs$/.test(spec)),
-        `${ROUTE_MODULE} imports the scope helper — ADR-006: the router carries EVERY unrecognised parameter through untouched and knows about none of them by name; ui/src/fleet/scope.mjs stays the sole owner of \`scope\``,
+        `${ROUTE_MODULE} imports the scope helper — ADR-006: the router carries EVERY unrecognised parameter through untouched and knows about none of them by name; apps/ui/src/fleet/scope.mjs stays the sole owner of \`scope\``,
       );
 
       for (const global of ["window", "document", "location", "navigator", "history"]) {
         assert.ok(
           !new RegExp(`(^|[^.\\w])${global}\\s*\\.`).test(code),
-          `${ROUTE_MODULE} reaches for the \`${global}\` global — the caller passes the URL parts IN and wires the result to history, exactly as ui/src/fleet/scope.mjs:42-54 does. A module with a DOM global in it is not headless-testable.`,
+          `${ROUTE_MODULE} reaches for the \`${global}\` global — the caller passes the URL parts IN and wires the result to history, exactly as apps/ui/src/fleet/scope.mjs:42-54 does. A module with a DOM global in it is not headless-testable.`,
         );
       }
     },

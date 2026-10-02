@@ -2,7 +2,7 @@
 //
 //   "The repo filter is READ-SIDE ONLY, and it is CLIENT-SIDE. It reaches no wire: the status
 //    route's accepted input stays exactly one parameter, the fleet client mints no filter
-//    parameter, and `src/` grows no home for the filter at all."
+//    parameter, and `packages/core/src/` grows no home for the filter at all."
 //
 // EXPECTED, at refine time (2026-08-10): **3 GREEN on arrival.** This is a RATCHET, not a
 // forecast — it pins a property the current tree already has, so the accident that would break it
@@ -24,7 +24,7 @@
 //       validation branch, its own refusal code, and a decision about what an unknown workspace
 //       means over the wire;
 //   (3) THE DECIDING ONE — the server's narrowing DOES NOT FILTER THE NODE ROSTER, on purpose
-//       (`src/global-node-registry.mjs:170-172`, pinned behaviourally by
+//       (`packages/core/src/global-node-registry.mjs:170-172`, pinned behaviourally by
 //       `acd-mesh-ui-local-filter-preserves-status`). A server-side repo filter would therefore
 //       return every node in the mesh under a repo filter — precisely "a filter that narrows one
 //       region and not another", which SPEC says is worse than no filter.
@@ -41,9 +41,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MESH_UI_SERVE = path.join(repoRoot, "src", "mesh", "ui-serve.mjs");
-const GLOBAL_MESH_QUERY = path.join(repoRoot, "src", "global-mesh-query.mjs");
-const FLEET_API_TS = path.join(repoRoot, "ui", "src", "fleet", "api.ts");
+const MESH_UI_SERVE = path.join(repoRoot, "packages", "mesh", "src", "ui-serve.mjs");
+const GLOBAL_MESH_QUERY = path.join(repoRoot, "packages", "mesh", "src", "global-query.mjs");
+const FLEET_API_TS = path.join(repoRoot, "apps", "ui", "src", "fleet", "api.ts");
 
 // The status route's ENTIRE accepted input, today and after m47 (ADR-002). One key.
 const STATUS_ROUTE_QUERY_KEYS = ["scope"];
@@ -57,7 +57,7 @@ const FILTER_QUERY_KEYS = ["repo", "repoFilter", "workspaceFilter"];
 // Strip comments LINE-FIRST, then blocks — and the ORDER is the whole point. TECH_DEBT item 24
 // ("twenty-FIVE source-reading fitness functions can be BLINDED by a comment") bites THIS FILE'S
 // subject harder than any other in the repo, and it was measured here rather than feared:
-// `src/mesh/ui-serve.mjs:297-299` carries a LINE comment containing `//api/*`. Under the usual
+// `packages/core/src/mesh/ui-serve.mjs:297-299` carries a LINE comment containing `//api/*`. Under the usual
 // block-first order that `/*` opens a block-comment run for the block stripper, which then eats
 // everything up to the next `*/` — **9,192 characters of real code, INCLUDING THE ENTIRE ROUTE
 // TABLE** (53,188 raw → 10,458 block-first → 19,650 line-first, measured 2026-08-10). A route-key
@@ -75,7 +75,7 @@ function stripComments(source) {
 // `pathname.startsWith("/api/")` guard (mesh-ui-serve.mjs:583).
 function statusRouteSlice(source) {
   const start = source.indexOf('pathname === "/api/mesh/status"');
-  assert.ok(start >= 0, "src/mesh/ui-serve.mjs declares the GET /api/mesh/status route");
+  assert.ok(start >= 0, "packages/core/src/mesh/ui-serve.mjs declares the GET /api/mesh/status route");
   const end = source.indexOf('pathname.startsWith("/api/")', start);
   assert.ok(end > start, "the status route is followed by the catch-all /api/* guard — the slice is bounded");
   return source.slice(start, end);
@@ -97,7 +97,7 @@ export const archTests = [
         keys,
         [...STATUS_ROUTE_QUERY_KEYS].sort(),
         `the /api/mesh/status route reads the query key(s) ${JSON.stringify(keys)} — m47/ADR-002 says its accepted input stays exactly ${JSON.stringify(STATUS_ROUTE_QUERY_KEYS)}.\n`
-          + "A repo parameter here would need its own validation branch, its own refusal code (the route 400s an unrecognised ?scope=, mesh-ui-serve.mjs:543-547) and a decision about what an unknown workspace id means over the wire — every one of them inherited by a route 26 modules depend on. And it would inherit the server's node semantics, which deliberately DO NOT filter the roster (src/global-node-registry.mjs:170-172), i.e. it would return every node in the mesh under a repo filter: exactly the \"narrows one region and not another\" SPEC calls worse than none.\n"
+          + "A repo parameter here would need its own validation branch, its own refusal code (the route 400s an unrecognised ?scope=, mesh-ui-serve.mjs:543-547) and a decision about what an unknown workspace id means over the wire — every one of them inherited by a route 26 modules depend on. And it would inherit the server's node semantics, which deliberately DO NOT filter the roster (packages/core/src/global-node-registry.mjs:170-172), i.e. it would return every node in the mesh under a repo filter: exactly the \"narrows one region and not another\" SPEC calls worse than none.\n"
           + "If the payload ever genuinely outgrows the client, ADR-002's overturn clause says the parameter goes on as an EXTENSION of the `workspaceId` option queryGlobalMeshStatus already takes — never a second option beside it — and this ADR is superseded rather than quietly widened.",
       );
 
@@ -146,7 +146,7 @@ export const archTests = [
       assert.deepEqual(
         hits,
         [],
-        `ui/src/fleet/api.ts mints a request carrying the filter (${hits.join(", ")}). The filter is CLIENT-SIDE (m47/ADR-002): no new fetch, no re-poll, no request parameter — which is also what keeps the filter switch synchronous with the click instead of one round trip and one keep-last-good poll behind it (Fleet.tsx:127-159).`,
+        `apps/ui/src/fleet/api.ts mints a request carrying the filter (${hits.join(", ")}). The filter is CLIENT-SIDE (m47/ADR-002): no new fetch, no re-poll, no request parameter — which is also what keeps the filter switch synchronous with the click instead of one round trip and one keep-last-good poll behind it (Fleet.tsx:127-159).`,
       );
 
       // Non-vacuity: the detector reads THIS file's real request-building, and fires on a plant.
@@ -178,7 +178,7 @@ export const archTests = [
         assert.deepEqual(
           named,
           [],
-          `${rel} names the filter vocabulary ${named.join(", ")}. m47/ADR-002 states it as an INVARIANT OF THE MILESTONE, not an expectation: \`src/\` is not edited by the filter at all. That is what makes SPEC's "the filter is read-side only; mesh-ui-read-only-contract.test.mjs stays green untouched" a CHECKABLE claim rather than a hope — nothing those suites watch is touched, so they cannot regress.`,
+          `${rel} names the filter vocabulary ${named.join(", ")}. m47/ADR-002 states it as an INVARIANT OF THE MILESTONE, not an expectation: \`packages/core/src/\` is not edited by the filter at all. That is what makes SPEC's "the filter is read-side only; mesh-ui-read-only-contract.test.mjs stays green untouched" a CHECKABLE claim rather than a hope — nothing those suites watch is touched, so they cannot regress.`,
         );
       }
 

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 133 / story 03 — the diagrams doctor lane (ADR-006): tasks 00 and 01.
 //
 // The lane is asked over LITERAL snapshots whose item dirs name directories that do not exist, so a
@@ -10,13 +11,16 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke, loadWorkspace } from "../../src/command-core.mjs";
-import { renderDiagramBlock } from "../../src/diagrams/layout.mjs";
-import { CHECK_GROUPS } from "../../src/work/doctor.mjs";
-import { DIAGRAM_LANE_CODES, diagramsGroup } from "../../src/work/doctor-diagrams.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofApplication.loadWorkspace;
+import { renderDiagramBlock } from "@aof/work/diagrams/layout";
+const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
+const DIAGRAM_LANE_CODES = _aofApplication.work.doctorDiagrams.DIAGRAM_LANE_CODES;
+const diagramsGroup = _aofApplication.work.doctorDiagrams.diagramsGroup;
+import { dependencySpecifiers } from "../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const GHOST = path.join(os.tmpdir(), "aof-diagrams-lane-no-such-dir", "07_milestone_m");
 const ON = (formats = ["svg", "png"]) => ({ work: { diagrams: { generator: "diagram-design", formats } } });
 const BLOCK = renderDiagramBlock({ adrId: "ADR-002", title: "seam", stem: "ADR-002-seam", sourceExt: ".html", formats: ["svg", "png"] });
@@ -182,14 +186,14 @@ export const doctorDiagramsLaneTests = [
     name: "133/03 task 01: the lane is registered where the roster says lanes are registered, and its codes are its own",
     run: async () => {
       assert.equal(CHECK_GROUPS.at(-1), diagramsGroup, "diagramsGroup is the registry's last entry");
-      const spine = await readFile(path.join(repoRoot, "src", "work", "doctor.mjs"), "utf8");
-      assert.match(spine, /from\s*["']\.\/doctor-diagrams\.mjs["']/);
+      const spine = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8");
+      assert.ok(dependencySpecifiers(spine).some(edge => edge.parameter === "workDoctorDiagramsServices" && edge.specifier === "./doctor-diagrams.mjs"), "the doctor receives its configured diagrams lane");
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");
-      assert.match(roster, /"\.\/doctor-diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane");
-      const others = (await readdir(path.join(repoRoot, "src", "work"))).filter((name) => /^doctor(-.*)?\.mjs$/.test(name) && name !== "doctor-diagrams.mjs");
+      assert.match(roster, /"\.\/diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane implementation");
+      const others = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).filter((name) => name.endsWith(".mjs") && name !== "diagrams.mjs");
       assert.ok(others.length >= 8, "the other lanes and the spine are swept");
       for (const name of others) {
-        const source = await readFile(path.join(repoRoot, "src", "work", name), "utf8");
+        const source = await readFile(path.join(repoRoot, "packages", "work", "src", "doctor", name), "utf8");
         for (const code of DIAGRAM_LANE_CODES) assert.equal(source.includes(`"${code}"`), false, `${name} emits ${code}`);
       }
     },

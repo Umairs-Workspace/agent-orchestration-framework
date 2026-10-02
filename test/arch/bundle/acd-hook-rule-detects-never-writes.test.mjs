@@ -1,3 +1,4 @@
+import { applicationConstructionGraph } from "../../support/workspace/assembly-graph.mjs";
 // Fitness function: acd-hook-rule-detects-never-writes (milestone 77 / story 01, FF-7703;
 // ADR-005 §1, §2, §3).
 //
@@ -27,7 +28,7 @@
 // ── THE SUBJECT IS THE FAMILY, DERIVED — NEVER A LIST OF THIS STORY'S FILES ──────────────────
 //
 // The settings-write, merge-import and marker-import legs are asserted over EVERY module under
-// `src/work-audit/**`, walked recursively. That claim is true of the modules that were already
+// `packages/core/src/work-audit/**`, walked recursively. That claim is true of the modules that were already
 // there and is strictly stronger than a claim about the two this milestone has added so far — and,
 // unlike a ledger of story files, a module 77/03, 77/04 or 77/05 adds is covered on arrival rather
 // than needing this file edited to see it.
@@ -39,22 +40,23 @@
 // instead is prove the DETECTOR has teeth on a planted child process, which is the half a control
 // asserting an absence can never get from the absence itself.
 import assert from "node:assert/strict";
+import { importClosure } from "../audit/acd-audit-never-imports-project-code.test.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
-import { resolvedInvocation, runHookWiring } from "../../../src/work-audit/hook-wiring.mjs";
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { resolvedInvocation, runHookWiring } from "@aof/work/audit/hook-wiring";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY_ROOT = "src/work-audit";
+const FAMILY_ROOT = "packages/core/src/application/bindings/work-audit";
 const FAMILY_FLOOR = 6;
 
 // The one child-process seam the family is allowed, named by PATH rather than by basename so a
 // nested `lanes/spawn.mjs` could not inherit the exemption. Its own boundedness is 59/FF-5904's
 // claim and is not restated here.
-const SPAWN_SEAM = "src/work-audit/spawn.mjs";
+const SPAWN_SEAM = "packages/execution/src/bounded-process.mjs";
 
 // Spelled locally rather than imported — a control that imported the module it asserts the family
 // does not reach would be proving the isolation through a dependency. That second spelling is the
@@ -96,7 +98,12 @@ async function familyModules() {
     }
   }
   await walk(path.join(repoRoot, FAMILY_ROOT), FAMILY_ROOT);
-  return out;
+  const { closure, unresolved } = await importClosure(out.map(module => module.rel), async rel => {
+    try { return stripComments(await readFile(path.join(repoRoot, rel), "utf8")); }
+    catch { return null; }
+  }, await applicationConstructionGraph(repoRoot));
+  assert.deepEqual(unresolved, [], "the audit implementation closure resolves in full");
+  return [...closure].map(([rel, code]) => ({ rel, code }));
 }
 
 // ── FIXTURES ─────────────────────────────────────────────────────────────────────────────────
@@ -126,13 +133,13 @@ export const archTests = [
       const modules = await familyModules();
       assert.equal(modules.length >= FAMILY_FLOOR, true, `the family was walked recursively and is non-vacuous: ${modules.length} module(s) under ${FAMILY_ROOT}, floor ${FAMILY_FLOOR}`);
       for (const module of modules) {
-        assert.equal(module.code.length > 200, true, `${module.rel} was read and stripped to something real (${module.code.length} chars) — a stripper that ate the file would make every claim below vacuous`);
+        assert.equal(module.code.trim().length > 0, true, `${module.rel} was read and stripped to nonempty code, including forwarding modules`);
       }
-      assert.equal(modules.some((module) => module.rel === "src/work-audit/hook-wiring.mjs"), true, "…and the module this story adds is among them");
+      assert.equal(modules.some((module) => module.rel === "packages/work/src/audit/hook-wiring.mjs"), true, "…and the module this story adds is among them");
 
       // BY IMPORT SHAPE: no static import in the family resolves to either module.
       for (const module of modules) {
-        for (const { specifier } of importSpecifiers(module.code)) {
+        for (const { specifier } of dependencySpecifiers(module.code)) {
           assert.equal(/claude-settings|frozen-set/u.test(specifier), false, `${module.rel} imports \`${specifier}\` — the family reaches neither the merge nor the module that declares the marker`);
         }
       }
@@ -158,18 +165,18 @@ export const archTests = [
         ['import { execFile } from "node:child_process";', "a child process of any kind"],
       ];
       for (const [source, why] of plants) {
-        const reported = settingsWriteRoutes("src/work-audit/planted.mjs", source);
+        const reported = settingsWriteRoutes("packages/core/src/work-audit/planted.mjs", source);
         assert.equal(reported.length > 0, true, `${why}: the planted route is reported`);
-        assert.equal(reported.every((problem) => problem.startsWith("src/work-audit/planted.mjs")), true, `${why}: …by the file that holds it`);
+        assert.equal(reported.every((problem) => problem.startsWith("packages/core/src/work-audit/planted.mjs")), true, `${why}: …by the file that holds it`);
       }
 
       const clean = 'import { limitRecord, readRecord } from "./reads.mjs";\nexport function run() { return { findings: [] }; }';
-      assert.deepEqual(settingsWriteRoutes("src/work-audit/clean.mjs", clean), [], "and with nothing planted no route is found");
+      assert.deepEqual(settingsWriteRoutes("packages/core/src/work-audit/clean.mjs", clean), [], "and with nothing planted no route is found");
 
       // …and the one shape that must NOT be read as a child process, because the family really does
       // use it: a regular expression consuming its own subject.
       assert.deepEqual(
-        settingsWriteRoutes("src/work-audit/regex.mjs", "const match = LEADING_RESULT.exec(String(text));"),
+        settingsWriteRoutes("packages/core/src/work-audit/regex.mjs", "const match = LEADING_RESULT.exec(String(text));"),
         [],
         "a RegExp.prototype.exec call is not a child process — the false positive this detector was measured to have on its first run",
       );

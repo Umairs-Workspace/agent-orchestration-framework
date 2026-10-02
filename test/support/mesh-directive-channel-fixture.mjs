@@ -1,7 +1,7 @@
 // Shared NET-NEW test infrastructure for milestone 35 / story 01 (the control→worker
 // command channel): a PERSISTENT, BIDIRECTIONAL fake channel extending the 34/story-04
 // one-way fakes (test/mesh/relay/control-stream-server.test.mjs's admission/apply units,
-// test/work/worker-stream-client.test.mjs's fakeTransport). Budgeted by STORY.md as "the
+// packages/mesh/test/worker-stream-client.suite.mjs's fakeTransport). Budgeted by STORY.md as "the
 // milestone's biggest harness piece" — used across all three task-01 feature files.
 //
 // WHY NET-NEW: the 34/story-04 fakes are ONE-WAY (worker -> control only, a single

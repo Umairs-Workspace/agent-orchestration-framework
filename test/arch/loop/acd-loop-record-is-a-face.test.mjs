@@ -1,3 +1,9 @@
+import * as _aofPublic_aof_work_graph_commands_loop_record from "@aof/work-graph/commands/loop-record";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { createRequire } from "node:module";
+import { existsSync } from "node:fs";
+import { moduleReferences } from "../../../scripts/workspace-boundaries.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-7805 (78/ADR-002) — THE RECORD IS A FACE, NEVER A SECOND TRUTH.
 //
 // `SPEC.md` binds this record to the milestone-08 spine: it is derived from a registered `work:*`
@@ -12,7 +18,7 @@
 // is the one part that must come back off disk. Nothing else may.
 //
 // Asserted three ways, because each catches a different way of getting this wrong:
-//   1. STRUCTURALLY — the basename appears in `src/` in exactly one module, and in that module the
+//   1. STRUCTURALLY — the basename appears in `packages/core/src/` in exactly one module, and in that module the
 //      only thing parsed out of the text is the sign-off table.
 //   2. BY THE DEPENDENCY DIRECTION — the execution model is COMPUTED (`projectExecution`) by every
 //      consumer that has one, and the renderer is only ever written to, never parsed.
@@ -24,7 +30,8 @@ import { readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { EXECUTION_RECORD_BASENAME, loopRecordCommand } from "../../../src/commands/loop-record.mjs";
+const EXECUTION_RECORD_BASENAME = _aofPublic_aof_work_graph_commands_loop_record.EXECUTION_RECORD_BASENAME;
+const loopRecordCommand = _aofApplication.getCommand("work:loop-record");
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 import { ITEM_REF, ctxFor, withRepo } from "../../loop/loop-record-command.test.mjs";
 
@@ -40,7 +47,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 //     never report the writer changing it, and importing that module would drag `run-store`,
 //     `work-loops` and `fs` into the import closure of a lane whose contract is purity (52/FF-5202
 //     forbids the second outright). FF-7809 holds the two copies byte-equal.
-// Doctor's ENGINE (`src/work/doctor.mjs`) performs the snapshot read at its one impure edge and is
+// Doctor's ENGINE (`packages/core/src/work/doctor.mjs`) performs the snapshot read at its one impure edge and is
 // deliberately NOT here: it names the checker's exported constant rather than the literal, so the
 // basename still has two homes and not three. FF-7808 holds the other half of that — the engine reads
 // the record and renders no verdict about it.
@@ -49,8 +56,8 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // SIGN-OFF, and it may not recover an execution FACT from the document. That is why widening this
 // list is safe only alongside the per-module assertion in the next entry — the list is not the claim.
 const ALLOWED_READERS = [
-  "src/commands/loop-record.mjs",
-  "src/work/doctor-loop-record.mjs",
+  "packages/work-graph/src/commands/loop-record.mjs",
+  "packages/work/src/doctor/loop-record.mjs",
 ];
 
 // The derived section headings the renderer emits. A module that named one of them would be locating
@@ -71,11 +78,11 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7805 only the writer and the checker name the record, and neither reads a fact out of it",
     run: async () => {
-      const files = await sourceFiles(path.join(repoRoot, "src"));
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 100, "the src/ sweep is non-vacuous");
       const naming = [];
       for (const file of files) {
-        if (stripComments(await readFile(file, "utf8")).includes(EXECUTION_RECORD_BASENAME)) {
+        if (stripComments(await readFile(file, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "").includes(EXECUTION_RECORD_BASENAME)) {
           naming.push(path.relative(repoRoot, file).split(path.sep).join("/"));
         }
       }
@@ -95,7 +102,7 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7805 the writer parses the sign-off and nothing else out of the document",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src/commands/loop-record.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work-graph/src/commands/loop-record.mjs"), "utf8"));
 
       // ONE read of the file, and its result goes straight into the sign-off parse. A second
       // `readFile` of the record, or a use of `existing` for anything but the parse and the
@@ -122,17 +129,25 @@ export const archTests = [
   {
     name: "arch/78/02 FF-7805 every consumer of an execution fact computes the model; the renderer is written to, never parsed",
     run: async () => {
-      const files = await sourceFiles(path.join(repoRoot, "src"));
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const importers = { projection: [], renderer: [] };
       for (const file of files) {
         const rel = path.relative(repoRoot, file).split(path.sep).join("/");
-        const source = stripComments(await readFile(file, "utf8"));
+        const source = stripComments(await readFile(file, "utf8")).replace(/export\s*\{[^}]*\}\s*from\s*["'][^"']+["'];?/g, "");
         // The SPECIFIERS, resolved against the importing file, so `./commands/loop-record.mjs` (the
         // command core's import of the COMMAND) is never mistaken for an import of the projection.
-        const specifiers = [...source.matchAll(/from\s+["'](\.[^"']+)["']/g)]
-          .map((match) => path.relative(repoRoot, path.resolve(path.dirname(file), match[1])).split(path.sep).join("/"));
-        if (specifiers.includes("src/loop-record.mjs")) importers.projection.push(rel);
-        if (specifiers.includes("src/loop-record-render.mjs")) importers.renderer.push(rel);
+        const specifiers = moduleReferences(source, file).references.filter(entry => !entry.typeOnly && entry.specifier && /^(?:\.|@aof\/)/u.test(entry.specifier))
+          .map(({ specifier }) => {
+            let target;
+            if (specifier.startsWith(".")) {
+              const base = path.resolve(path.dirname(file), specifier);
+              target = [base, ...[".mjs", ".js", ".ts", ".tsx", "/index.ts", "/index.tsx"].map(suffix => base + suffix)].find(existsSync);
+              assert.ok(target, `${rel}: local source import resolves (${specifier})`);
+            } else target = createRequire(file).resolve(specifier);
+            return path.relative(repoRoot, target).split(path.sep).join("/");
+          });
+        if (specifiers.includes("packages/work-graph/src/record.mjs") || specifiers.includes("packages/work-graph/src/record.mjs")) importers.projection.push(rel);
+        if (specifiers.includes("packages/work-graph/src/record-render.mjs") || specifiers.includes("packages/work-graph/src/record-render.mjs")) importers.renderer.push(rel);
       }
       // THE DEPENDENCY DIRECTION IS THE CLAIM. Both consumers of an execution fact COMPUTE it through
       // 78/00's projection, from the run records — neither reads it back out of the document:
@@ -143,12 +158,16 @@ export const archTests = [
       // the authority on what ran. It projects instead.
       assert.deepEqual(
         importers.projection.sort(),
-        ["src/commands/loop-record.mjs", "src/work/doctor.mjs"],
+        ["packages/work-graph/src/commands/loop-record.mjs", "packages/core/src/application/bindings/work/doctor.mjs"].sort(),
         "the execution model is COMPUTED from the run records by every consumer that has one",
       );
+      const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8"));
+      assert.match(composition, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
+      const doctor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
+      assert.match(doctor, /projectExecution\(/u, "the injected projection is called by the snapshot reader");
       // The RENDERER has exactly one consumer, and it only ever composes bytes — nothing imports it to
       // parse a document back into facts.
-      assert.deepEqual(importers.renderer, ["src/commands/loop-record.mjs"], "and the renderer's bytes are composed in one place");
+      assert.deepEqual(importers.renderer, ["packages/work-graph/src/commands/loop-record.mjs"], "and the renderer's bytes are composed in one place");
 
       // The stable contract is the command's `--json`, so the model reaches a consumer through the
       // registry. Asserted on the command itself rather than on prose about it.

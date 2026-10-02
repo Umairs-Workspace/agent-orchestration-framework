@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Shared fixture builder for the milestone 38 / story 04 fleet-face
 // POST /api/mesh/assign suite (tasks 00-02) — the REAL serveMeshUi stood up on a
 // loopback port over an isolated global-store seam (a temp AOF_GLOBAL_HOME v3
@@ -13,12 +16,15 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { serveMeshUi, meshUiDist } from "../../src/mesh/ui-serve.mjs";
-import { workspaceIdFor, openGlobalWorkProjectionStore, removeWorkspaceFromCache } from "../../src/global-work-store.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { updateAssignmentState } from "../../src/assignment-record.mjs";
+const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
+const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
+const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const removeWorkspaceFromCache = _aofApplication.mesh.store.removeWorkspaceFromCache;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+import { updateAssignmentState } from "@aof/mesh/assignment-record";
 
 export {
   seedTargetNode,
@@ -60,7 +66,7 @@ export async function advanceAssignmentState({ home }, assignmentId, state, opti
 // (read back from the store — never a path this fixture rebuilds itself).
 //
 // This is the codebase's own documented asymmetry, not an invented one:
-// `queryGlobalRegistry` (src/global-node-registry.mjs) silently SKIPS a
+// `queryGlobalRegistry` (packages/core/src/global-node-registry.mjs) silently SKIPS a
 // `global_nodes` row whose descriptor does not resolve, so the node vanishes
 // from GET /api/mesh/status.nodes — the roster the picker is fed — while
 // `assignWork`'s node-known gate reads `global_nodes` DIRECTLY and still accepts
@@ -140,7 +146,7 @@ async function writeDist(dir) {
 // IT IS THE PRODUCER F-47-04-QA-9 SAYS NO FIXTURE HAD. `Fleet.tsx` renders a
 // secondary token beside the chip whenever `inReview > 0 || isDone`, and
 // `inReview` is a TALLY OF STORIES in the `in-review` status
-// (`ui/src/fleet/scope.mjs`'s `milestoneCardModels`) — so with the shipped
+// (`apps/ui/src/fleet/scope.mjs`'s `milestoneCardModels`) — so with the shipped
 // `not-started` story every mounted card on this fixture was a TWO-child cluster
 // and the three-child row that ADR-014 measures could not be rendered at all.
 // `storyStatus: "in-review"` publishes the same story in that status through the
@@ -238,7 +244,7 @@ export async function withAssignRouteFixture(fn, { scope = "global" } = {}) {
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -327,7 +333,7 @@ export async function withPublishedAssignFixture(fn, { nodes = [], scope = "glob
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -589,7 +595,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
 
     // The vanished workspace's projection row survives its checkout; the path
     // does not — `workspace-not-local`'s producer, never a hand-built row.
-    await rm(rootGone, { recursive: true, force: true });
+    await rm(rootGone, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 
     // The RE-KEYED checkout: its projection row still carries the path-derived
     // id it was published under, but the checkout now declares an explicit
@@ -622,7 +628,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
@@ -633,7 +639,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
 // that answers `/api/mesh/status` with the coded 503 the global store mints when it is
 // unavailable: the error state's own producer.
 //
-// Both are lifted here from `test/ui/fleet-boards-branch-deleted.test.mjs`, where 47/01 wrote them
+// Both are lifted here from `test/surfaces/fleet-boards-branch-deleted.test.mjs`, where 47/01 wrote them
 // as file-local helpers, because m47/03's four task features need the same two faces in four
 // more files and a fifth copy of "what an empty mesh looks like" is how two lanes start
 // disagreeing about it. That suite's own copies are left untouched — this is an addition, not a
@@ -643,7 +649,7 @@ export async function withTwoWorkspaceAssignFixture(fn, { scope = "global", quie
 // duplicate as harmless if nobody migrates it, and by the time the review read this file BOTH
 // remaining copies of the refusal face had already drifted from this one on the same row — the
 // 503's `path`. m47/03's own copy is deleted (its lane now calls `withRefusingFace` with the
-// options below); 47/01's pair in `test/ui/fleet-boards-branch-deleted.test.mjs:129-169` is NOT
+// options below); 47/01's pair in `test/surfaces/fleet-boards-branch-deleted.test.mjs:129-169` is NOT
 // touched here, because that file is another story's and 47/04 is editing its neighbours in
 // parallel. It is the outstanding half of this finding and is reported as such, not silently
 // tolerated: its `withRefusingFace` still mints a body with no `path`, so its error-state lanes
@@ -673,20 +679,20 @@ export async function withEmptyFleetFace(fn) {
       await new Promise((resolve) => server.close(resolve));
     }
   } finally {
-    await rm(tmp, { recursive: true, force: true });
+    await rm(tmp, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 
 // THE REFUSAL BODY, MINTED ONCE (F-47-03-ARCH-3, must-fix, closed here). It is `sendApiError`'s
 // shape for a global-store-unavailable read — INCLUDING the `path` row, which is not decoration:
-// `errorPathFor` (`ui/src/fleet/scope.mjs`) prefers the thrown error's own `path` because a
+// `errorPathFor` (`apps/ui/src/fleet/scope.mjs`) prefers the thrown error's own `path` because a
 // FIRST-LOAD failure leaves `status` null, so it is the only source for the error state's
 // `Global mesh store: <path>` line. A body without it renders a strictly less honest page.
 //
-// It is a constant because it had already drifted twice: `test/ui/fleet-filter-address.test.mjs` and
-// `test/ui/fleet-boards-branch-deleted.test.mjs` each re-typed this object inline and BOTH dropped
+// It is a constant because it had already drifted twice: `test/surfaces/fleet-filter-address.test.mjs` and
+// `test/surfaces/fleet-boards-branch-deleted.test.mjs` each re-typed this object inline and BOTH dropped
 // `path`, so two lanes were asserting the error state over a payload the producer does not send.
-// `test/ui/fleet-empty-states.test.mjs`'s "no way of arriving at nothing is dressed as a failure"
+// `test/surfaces/fleet-empty-states.test.mjs`'s "no way of arriving at nothing is dressed as a failure"
 // lane is the behavioural pin on the row (it asserts `Global mesh store: ` is rendered), and it
 // only holds for faces that read from HERE.
 const GLOBAL_STORE_UNAVAILABLE_503 = {
@@ -696,6 +702,16 @@ const GLOBAL_STORE_UNAVAILABLE_503 = {
   path: "/tmp/aof/global-mesh.sqlite",
 };
 
+// A test proxy forwards only the PATH it received, onto its own upstream origin: an absolute or
+// protocol-relative request target (`http://elsewhere/`, `//elsewhere/`) can never move the fetch to another host.
+function upstreamUrl(rawTarget, upstream) {
+  const { pathname, search } = new URL(rawTarget ?? "/", "http://proxy.invalid");
+  // Built from the upstream, then only the path and query are set: the host cannot change.
+  const url = new URL(upstream);
+  url.pathname = pathname;
+  url.search = search;
+  return url;
+}
 // withRefusingFace(fn, { refusals, proxyTo }) — the error state's own producer.
 //
 // By default it refuses EVERY request, which is what a face standing in for an unreachable global
@@ -719,7 +735,7 @@ export async function withRefusingFace(fn, { refusals = Infinity, proxyTo = null
       response.end(JSON.stringify(GLOBAL_STORE_UNAVAILABLE_503));
       return;
     }
-    const upstream = await fetch(new URL(request.url, proxyTo));
+    const upstream = await fetch(upstreamUrl(request.url, proxyTo));
     const body = await upstream.text();
     response.writeHead(upstream.status, { "content-type": upstream.headers.get("content-type") ?? "application/json" });
     response.end(body);

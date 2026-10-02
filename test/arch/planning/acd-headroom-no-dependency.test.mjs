@@ -1,12 +1,13 @@
+import { readYarnPackages } from '../../../scripts/dependency-inventory.mjs';
 // Fitness function for milestone 06 / ADR-005:
 // "aof never references headroom as a dependency or installs it — headroom is a
 //  PATH-detected external tool. It appears nowhere in package.json deps/devDeps nor
-//  as a package node in package-lock.json, and the plugin source never imports a
+//  as a package node in yarn.lock, and the plugin source never imports a
 //  headroom package nor invokes an installer (npm/pip/cargo install …)."
 //
-// State now: the MANIFEST asserts (package.json / package-lock.json) are GREEN
+// State now: the MANIFEST asserts (package.json / yarn.lock) are GREEN
 // immediately — headroom is not, and must never become, a dependency. The SOURCE-
-// import assert is CONDITIONAL: it is skipped until src/headroom.mjs exists, then
+// import assert is CONDITIONAL: it is skipped until packages/core/src/headroom.mjs exists, then
 // enforced. That keeps this test honest at every stage (no false red for a file
 // that isn't built yet, no false green once it is) — the no-install guarantee is
 // purely structural, so this is arch-tests only, NOT a build story (mirrors the
@@ -19,13 +20,13 @@ import path from "node:path";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const pkgPath = path.join(repoRoot, "package.json");
-const lockPath = path.join(repoRoot, "package-lock.json");
-// ADR-005 names "the plugin source (src/headroom.mjs AND any sibling)". The plugin's
+const lockPath = path.join(repoRoot, "yarn.lock");
+// ADR-005 names "the plugin source (packages/core/src/headroom.mjs AND any sibling)". The plugin's
 // source surface is the resolver runtime + the enable/disable surface; both must
 // reference headroom only as the PATH binary name, never an import or installer.
 const pluginSourcePaths = [
-  path.join(repoRoot, "src", "headroom.mjs"),
-  path.join(repoRoot, "src", "work", "headroom.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "headroom.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "work", "headroom.mjs"),
 ];
 
 function stripComments(source) {
@@ -50,16 +51,11 @@ export const archTests = [
     }
   },
   {
-    name: "arch/ADR-005: headroom is absent from package-lock.json package nodes",
+    name: "arch/ADR-005: headroom is absent from yarn.lock package nodes",
     run: async () => {
-      if (!existsSync(lockPath)) {
-        // No lock to audit (e.g. a fresh checkout pre-install): the package.json
-        // assert above already enforces the surface; nothing to do here.
-        return;
-      }
-      const lock = JSON.parse(await readFile(lockPath, "utf8"));
-      const packages = lock.packages && typeof lock.packages === "object" ? lock.packages : {};
-      const offenders = Object.keys(packages).filter((p) => /(^|\/)headroom(@|$|\/)/i.test(p) || /node_modules\/headroom/i.test(p));
+      const packages = readYarnPackages(await readFile(lockPath, 'utf8'));
+      assert.ok(packages.length > 0, 'the resolved Yarn dependency graph was actually read');
+      const offenders = packages.filter(pkg => /headroom/i.test(pkg.name)).map(pkg => pkg.name);
       assert.deepEqual(offenders, [], `no headroom package node in the lock: ${offenders.join(", ")}`);
     }
   },

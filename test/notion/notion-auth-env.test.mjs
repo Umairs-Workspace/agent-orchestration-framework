@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 17 / story 02, task 02 —
 // tasks/02_auth-env-reference.feature (@executable rows; the @manual live `ntn api`
 // row is deferred to verify).
@@ -10,7 +11,9 @@
 // spawn seam is injected (resolveBinary + spawn) so each row captures the constructed
 // env + argv hermetically — no live binary, no live token.
 import assert from "node:assert/strict";
-import { makeNotionSpawn, resolveNotionAuth, buildSpawnEnv } from "../../src/notion/cli.mjs";
+const makeNotionSpawn = _aofApplication.integrations.notion.cli.makeNotionSpawn;
+const resolveNotionAuth = _aofApplication.integrations.notion.cli.resolveNotionAuth;
+const buildSpawnEnv = _aofApplication.integrations.notion.cli.buildSpawnEnv;
 
 const FIXTURE_TOKEN = "ntn_fixture_secret_value_123";
 

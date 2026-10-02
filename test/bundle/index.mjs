@@ -4,31 +4,24 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
 // milestone 55 / story 04 â€” declaration compilation, surgical permissions,
 // coded tamper, and the human ownership-marker escape hatch (FF-5505/FF-5506).
-import { frozenSetCompiledTests } from "./frozen-set-compiled.test.mjs";
-import { opencodeHookTests } from "./opencode-hooks.test.mjs";
-import { adapterWarningTests } from "./adapter-warnings.test.mjs";
-import { packageTests } from "./packages.test.mjs";
-import { bundleTests } from "./bundle.test.mjs";
-import { toolProviderRegistryTests } from "./tool-provider-registry.test.mjs";
+import { yarnInstallationTests } from "./yarn-installation.test.mjs";
+import { coreWorkspaceTests } from "./core-workspace.test.mjs";
 // milestone 12 — managed tool provisioning (story 01: the lifecycle surface —
 // the project:provision command + CLI dispatch, ADR-003 task 00; the three
 // store-aware doctorConfig checks superseding graphify-binary, ADR-003 task 01;
 // @executable traceability)
 import { toolProvisionCommandTests } from "./tool-provision-command.test.mjs";
-import { toolDoctorChecksTests } from "./tool-doctor-checks.test.mjs";
 // milestone 27 fleet issue/assign write-route tests are retired with the removed fleet write surface.
 // story 30 — per-agent model selection (task 01: bundle default map; task 02:
 // per-project config override wins + validation; task 03: solo-mode inert map)
-import { bundleModelMapTests } from "./bundle-model-map.test.mjs";
 import { adapterTests } from "./adapters.test.mjs";
-import { cleanTests } from "./clean.test.mjs";
 import { schemaTests } from "./schema.test.mjs";
 // milestone 49 / story 07 — the DISTRIBUTED bundle wires the same three lifecycle
 // events m38 hand-wired in this one repo, so a workspace `aof work update` provisions
@@ -36,7 +29,7 @@ import { schemaTests } from "./schema.test.mjs";
 // here.
 import { bundleClaudeSessionHookTests } from "./bundle-claude-session-hooks.test.mjs";
 // milestone 28 — console-app (story 00: self-contained-binary — ADR-001/002/003/004).
-// src/asset-base.mjs is the ONE SEA-safe asset-base seam (assetBase/readAssetText/
+// packages/core/src/asset-base.mjs is the ONE SEA-safe asset-base seam (assetBase/readAssetText/
 // listAssetMembers/packageVersionString, an injectable isPackaged sentinel +
 // sidecar anchor mirroring terminal-ws.mjs's injected spawn); all 7 import.meta.url
 // sites (work-bundle.mjs's bundleRoot + its readdir/readFile walkers, board-serve.mjs,
@@ -59,11 +52,10 @@ import { bundleClaudeSessionHookTests } from "./bundle-claude-session-hooks.test
 // bundle-asset-manifest-complete (#4, a set-equality over the real trees vs the
 // generator's output). acd-bundle-location is CO-TOUCHED (bundleRoot() now routes
 // through assetBase(); the import.meta.url resolution assert re-points at
-// src/asset-base.mjs; the cwd-independence asserts stay green).
+// packages/core/src/asset-base.mjs; the cwd-independence asserts stay green).
 import { assetBaseSeamTests } from "./asset-base-seam.test.mjs";
 // TECH_DEBT item 1 — the launcher decouple: build-info (source/payload/embedded
 // + the BUILD_ID.json stamp behind --version and the daemons' "Build:" line).
-import { buildInfoTests } from "./build-info.test.mjs";
 import { nativeAddonSidecarTests } from "./native-addon-sidecar.test.mjs";
 import { bundleAssetManifestCompleteTests } from "./bundle-asset-manifest-complete.test.mjs";
 // milestone 28 — console-app (story 01: signing-notarization). The
@@ -92,8 +84,7 @@ import { releaseSidecarArchiveRoundtripTests } from "./release-sidecar-archive-r
 // self-inconsistent, CI-key-mismatch) plus a check that the real, checked-in
 // install.sh is self-consistent today.
 import { releaseFingerprintPinTests } from "./release-fingerprint-pin.test.mjs";
-import { bundleSpikeChoreMembershipTests } from "./bundle-spike-chore-membership.test.mjs";
-import { capabilityRecallSurfacesTests } from "./capability-recall-surfaces.test.mjs";
+
 // milestone 43 / story 03 — WRITE-TRIGGERED ARTIFACT SYNC (ADR-001/002/007 + ADR-013).
 // REGISTERED 2026-08-03 by 43/04's structural review (ADR-014/E7): these four were imported
 // by NEITHER runner, so an ACCEPTED story's behavioural proof had never once run in CI —
@@ -124,23 +115,13 @@ import { digestTemplateShipsTests } from "./digest-template-ships.test.mjs";
 
 export const tests = [
   // milestone 55 / story 04 â€” frozen rules reach their declared boundaries or refuse
-  ...frozenSetCompiledTests,
-  ...opencodeHookTests,
-  ...adapterWarningTests,
-  ...packageTests,
-  ...bundleTests,
-  ...toolProviderRegistryTests,
   ...toolProvisionCommandTests,
-  ...toolDoctorChecksTests,
   // story 30 — per-agent model selection
-  ...bundleModelMapTests,
   ...adapterTests,
-  ...cleanTests,
   ...schemaTests,
   ...bundleClaudeSessionHookTests,
   // milestone 28 — console-app (story 00: self-contained-binary)
   ...assetBaseSeamTests,
-  ...buildInfoTests,
   ...nativeAddonSidecarTests,
   ...bundleAssetManifestCompleteTests,
   // milestone 28 — console-app (story 01: signing-notarization)
@@ -148,8 +129,7 @@ export const tests = [
   ...releaseWorkflowLintTests,
   ...releaseSidecarArchiveRoundtripTests,
   ...releaseFingerprintPinTests,
-  ...bundleSpikeChoreMembershipTests,
-  ...capabilityRecallSurfacesTests,
+
   // milestone 43 / story 03 — write-triggered artifact sync (registered by ADR-014/E7)
   ...artifactSyncEnqueueHookTests,
   ...artifactSyncDrainTests,
@@ -163,4 +143,6 @@ export const tests = [
   ...bundleArchitectDrawsTests,
   // story 137 — the AOF.md digest template ships with the record-doc set (task 00).
   ...digestTemplateShipsTests,
+  ...yarnInstallationTests,
+  ...coreWorkspaceTests,
 ];

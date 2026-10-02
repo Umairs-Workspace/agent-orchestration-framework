@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 03, task `03_only-fail-redrives`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -30,10 +31,11 @@
 import assert from "node:assert/strict";
 import path from "node:path";
 
-import { GRADE_CODES } from "../../src/work/grade.mjs";
-import { LOOP_REFUSALS, LOOP_STOPS } from "../../src/work/loop.mjs";
-import { getCommand, invoke } from "../../src/command-core.mjs";
-import { runLoopBody } from "../../src/commands/loop.mjs";
+import { GRADE_CODES } from "@aof/work/grade";
+import { LOOP_REFUSALS, LOOP_STOPS } from "../../packages/work-loop/src/engine.mjs";
+const getCommand = _aofApplication.getCommand;
+const invoke = _aofApplication.invoke;
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { completingDriver, replaceStatus } from "./loop-command-probe.test.mjs";
 import {
   INDETERMINATE_OUTCOMES, capturingReport, emits, emitsFailing, emitsPassing, findingsFrom,

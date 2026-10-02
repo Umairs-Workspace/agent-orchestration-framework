@@ -34,8 +34,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const controlSourcePath = path.join(repoRoot, "src", "control-stream-server.mjs");
-const clientSourcePath = path.join(repoRoot, "src", "worker-stream-client.mjs");
+const controlSourcePath = path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs");
+const clientSourcePath = path.join(repoRoot, "packages", "mesh", "src", "worker-stream-client.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

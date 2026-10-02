@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -30,11 +30,11 @@ import { meshWorktreePrepareTests } from "./mesh-worktree-prepare.test.mjs";
 // rendering, 03_empty-error-and-health-states. Three fitness units:
 // acd-mesh-ui-global-default, acd-mesh-ui-local-filter-preserves-status,
 // acd-mesh-ui-scope-visible. The React fleet surface's scope/region/state/
-// credential-guard logic lives in the pure ui/src/fleet/scope.mjs helper (no
+// credential-guard logic lives in the pure apps/ui/src/fleet/scope.mjs helper (no
 // React test harness in this repo), exercised headlessly by fleet-scope.test.mjs.
 import { globalMeshQueryTests } from "./global-mesh-query.test.mjs";
 // milestone 33 (story 01) — fabric-native transport + coordination launcher. task 00
-// (00_fabric-seam.feature): src/mesh/fabric.mjs's probeFabric/selfAddress/resolvePeers
+// (00_fabric-seam.feature): packages/core/src/mesh/fabric.mjs's probeFabric/selfAddress/resolvePeers
 // over an injected fabric-exec closure — the two-stage refusal-reason matrix, the Windows
 // install-path fallback, the HostName/DNSName join matrix, the non-tailscale/undeclared
 // clean refusals. task 01 (01_fabric-liveness-cutover.feature): mergePresence reconciling
@@ -42,7 +42,7 @@ import { globalMeshQueryTests } from "./global-mesh-query.test.mjs";
 // candidate off the fabric Online pre-filter via INJECTED ctx.fabricPeers, the
 // Online-≠-dialable handled outcomes (resolvePeerReachability, an injected dial closure),
 // the presence record assembly/read staying byte-unchanged, the unconfigured-mesh floor.
-import { meshFabricSeamTests } from "./mesh-fabric-seam.test.mjs";
+
 import { meshDirectFabricTests } from "./mesh-direct-fabric.test.mjs";
 import { meshFabricLivenessCutoverTests } from "./mesh-fabric-liveness-cutover.test.mjs";
 import { meshOperatorGuidanceTests } from "./mesh-operator-guidance.test.mjs";
@@ -117,7 +117,6 @@ export const tests = [
   // milestone 34 — global mesh work store (story 03: mesh UI global scope, ADR-006)
   ...globalMeshQueryTests,
   // milestone 33 (story 01) — fabric-native transport + coordination launcher: tasks 00–04
-  ...meshFabricSeamTests,
   ...meshDirectFabricTests,
   ...meshFabricLivenessCutoverTests,
   ...meshOperatorGuidanceTests,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 59 / story 03 — FF-5908.
 //
 // EVERY SWEEP DECLARES WHAT IT READ, AND A SWEEP THAT READ NOTHING IS A FINDING RATHER THAN A PASS.
@@ -20,11 +21,11 @@
 // A report naming its own sweep `undefined` is §1 failing while wearing the clothes of compliance,
 // and the three shapes looked substitutable while two of them were not. So this gate's bound
 // population is now all THREE: the census's, the checks leaf's and the evidence lane's — each
-// keyed `sweep`, each put through the SAME floor comparison, and the two `src/work-audit/` lanes
-// sharing ONE definition (`src/work-audit/reads.mjs`) rather than a copy apiece.
+// keyed `sweep`, each put through the SAME floor comparison, and the two `packages/core/src/work-audit/` lanes
+// sharing ONE definition (`packages/core/src/work-audit/reads.mjs`) rather than a copy apiece.
 //
 // THIS GATE HOLDS THE CHECKS MODULE'S FOUR LANES TO THAT CONTRACT, AND BINDS THEM TO THE CENSUS'S.
-// `src/work/loops-checks.mjs` cannot import `src/work-audit/census.mjs` — importing anything is the
+// `packages/core/src/work/loops-checks.mjs` cannot import `packages/core/src/work-audit/census.mjs` — importing anything is the
 // one thing 52/ADR-007's purity invariant forbids of that leaf — so the read/floor rule necessarily
 // exists there as a second mechanical copy. That is the same bind 58/FF-5807 made for the two copies
 // of `CHECK_IDS` a module boundary forced apart, and the response is the same: where one home is
@@ -44,18 +45,17 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  AUDIT_FINDING_CODES,
-  SWEEP_BASES,
-  readFinding as censusReadFinding,
-  readRecord as censusReadRecord,
-  sweepDeclarationProblems,
-} from "../../../src/work-audit/census.mjs";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+const SWEEP_BASES = _aofApplication.work.audit.census.SWEEP_BASES;
+const censusReadFinding = _aofApplication.work.audit.census.readFinding;
+const censusReadRecord = _aofApplication.work.audit.census.readRecord;
+const sweepDeclarationProblems = _aofApplication.work.audit.census.sweepDeclarationProblems;
 // THE ONE DEFINITION, and the evidence lane that now shares it (59/ADR-004 §1a).
 import { readFile } from "node:fs/promises";
 
-import * as reads from "../../../src/work-audit/reads.mjs";
-import { EVIDENCE_SWEEP, runEvidence } from "../../../src/work-audit/evidence.mjs";
+import * as reads from "@aof/work/audit/reads";
+const EVIDENCE_SWEEP = _aofApplication.work.audit.evidence.EVIDENCE_SWEEP;
+const runEvidence = _aofApplication.work.audit.evidence.runEvidence;
 import {
   AUDIT_LANES,
   AUDIT_LANE_FINDING_CODES,
@@ -65,8 +65,8 @@ import {
   assessInstrumentSilence,
   assessLoopConsultation,
   assessMetricMovement,
-} from "../../../src/work/loops-checks.mjs";
-import * as checksModule from "../../../src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
+import * as checksModule from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SOURCE = path.join(root, "audit-lane-fixture-not-on-disk", "loops");
@@ -265,11 +265,11 @@ export const archTests = [
       assert.equal(censusReadFinding, reads.readFinding, "the census's readFinding IS the shared one");
       assert.equal(censusReadRecord, reads.readRecord, "…and so is its readRecord");
       assert.equal(sweepDeclarationProblems, reads.sweepDeclarationProblems, "…and its sweep-declaration validator");
-      const evidenceSource = await readFile(path.join(root, "src", "work-audit", "evidence.mjs"), "utf8");
+      const evidenceSource = await readFile(path.join(root, "packages", "work", "src", "audit", "evidence.mjs"), "utf8");
       assert.match(evidenceSource, /from "\.\/reads\.mjs"/u, "the evidence lane imports the one definition");
       assert.equal(
         /^\s*(?:export\s+)?function\s+read(?:Record|Finding)\s*\(/mu.test(evidenceSource), false,
-        "…and defines no second copy of either — a second copy inside src/work-audit/ is the duplication ADR-002 §2 already refuses",
+        "…and defines no second copy of either — a second copy inside packages/core/src/work-audit/ is the duplication ADR-002 §2 already refuses",
       );
       assert.equal(
         /\{\s*\.\.\.EVIDENCE_SWEEP\s*,/u.test(evidenceSource), false,
@@ -292,12 +292,94 @@ export const archTests = [
       // A green `@executable` suite did not catch it because every fixture lane in
       // `test/audit/audit-command.test.mjs` declared `limits: []`. So the bind here is not "the shapes
       // match" — it is RENDERER KEYS ⊆ DECLARED KEYS, driven over the limits the lanes really ship.
-      const { CENSUS_SWEEPS, sweepLimits } = await import("../../../src/work-audit/census.mjs");
-      const { REGISTRATION_LIMIT } = await import("../../../src/work-audit/evidence.mjs");
+      const { CENSUS_SWEEPS, sweepLimits } = await Promise.resolve(Object.freeze({
+  AUDIT_FINDING_CODES: _aofApplication.work.audit.census.AUDIT_FINDING_CODES,
+  CENSUS_SWEEPS: _aofApplication.work.audit.census.CENSUS_SWEEPS,
+  LEDGER_PROJECT: _aofApplication.work.audit.census.LEDGER_PROJECT,
+  LIMIT_KEYS: _aofApplication.work.audit.census.LIMIT_KEYS,
+  PROBE_PROGRAM: _aofApplication.work.audit.census.PROBE_PROGRAM,
+  SWEEP_BASES: _aofApplication.work.audit.census.SWEEP_BASES,
+  TEST_ROOTS: _aofApplication.work.audit.census.TEST_ROOTS,
+  UNREGISTERED_BASELINE: _aofApplication.work.audit.census.UNREGISTERED_BASELINE,
+  assembledSuite: _aofApplication.work.audit.census.assembledSuite,
+  assertSweepsDeclared: _aofApplication.work.audit.census.assertSweepsDeclared,
+  baselineProblems: _aofApplication.work.audit.census.baselineProblems,
+  ledgerApplies: _aofApplication.work.audit.census.ledgerApplies,
+  limitDeclarationProblems: _aofApplication.work.audit.census.limitDeclarationProblems,
+  limitRecord: _aofApplication.work.audit.census.limitRecord,
+  readFinding: _aofApplication.work.audit.census.readFinding,
+  readRecord: _aofApplication.work.audit.census.readRecord,
+  readRegistrationIndexes: _aofApplication.work.audit.census.readRegistrationIndexes,
+  registrationDecision: _aofApplication.work.audit.census.registrationDecision,
+  registrationSources: _aofApplication.work.audit.census.registrationSources,
+  runCensus: _aofApplication.work.audit.census.runCensus,
+  runnerBindings: _aofApplication.work.audit.census.runnerBindings,
+  runnerImportedSuites: _aofApplication.work.audit.census.runnerImportedSuites,
+  runnerSpreadNames: _aofApplication.work.audit.census.runnerSpreadNames,
+  spreadClaimLimit: _aofApplication.work.audit.census.spreadClaimLimit,
+  sweepDeclarationProblems: _aofApplication.work.audit.census.sweepDeclarationProblems,
+  sweepLimits: _aofApplication.work.audit.census.sweepLimits,
+  walkSuiteFiles: _aofApplication.work.audit.census.walkSuiteFiles,
+}));
+      const { REGISTRATION_LIMIT } = await Promise.resolve(Object.freeze({
+  DRIVE_PROGRAM: _aofApplication.work.audit.evidence.DRIVE_PROGRAM,
+  DRIVE_RESULT_SENTINEL: _aofApplication.work.audit.evidence.DRIVE_RESULT_SENTINEL,
+  EVIDENCE_FINDING_CODES: _aofApplication.work.audit.evidence.EVIDENCE_FINDING_CODES,
+  EVIDENCE_SWEEP: _aofApplication.work.audit.evidence.EVIDENCE_SWEEP,
+  EVIDENCE_VERDICTS: _aofApplication.work.audit.evidence.EVIDENCE_VERDICTS,
+  MESSAGE_NORMALISATIONS: _aofApplication.work.audit.evidence.MESSAGE_NORMALISATIONS,
+  REGISTRATION_LIMIT: _aofApplication.work.audit.evidence.REGISTRATION_LIMIT,
+  REPRODUCED_VERDICTS: _aofApplication.work.audit.evidence.REPRODUCED_VERDICTS,
+  SIZE_KINDS: _aofApplication.work.audit.evidence.SIZE_KINDS,
+  cellUnder: _aofApplication.work.audit.evidence.cellUnder,
+  dispositionOf: _aofApplication.work.audit.evidence.dispositionOf,
+  driveControl: _aofApplication.work.audit.evidence.driveControl,
+  findingsForRow: _aofApplication.work.audit.evidence.findingsForRow,
+  messagesAgree: _aofApplication.work.audit.evidence.messagesAgree,
+  normalizeMessage: _aofApplication.work.audit.evidence.normalizeMessage,
+  observeControl: _aofApplication.work.audit.evidence.observeControl,
+  observedMessage: _aofApplication.work.audit.evidence.observedMessage,
+  parseDriveOutput: _aofApplication.work.audit.evidence.parseDriveOutput,
+  recordedCasesIn: _aofApplication.work.audit.evidence.recordedCasesIn,
+  recordedMessageIn: _aofApplication.work.audit.evidence.recordedMessageIn,
+  recordedResultIn: _aofApplication.work.audit.evidence.recordedResultIn,
+  recordedRowsFor: _aofApplication.work.audit.evidence.recordedRowsFor,
+  runEvidence: _aofApplication.work.audit.evidence.runEvidence,
+  sizeFor: _aofApplication.work.audit.evidence.sizeFor,
+  verdictFor: _aofApplication.work.audit.evidence.verdictFor,
+}));
 
       // (1) ONE DEFINITION, by identity rather than by deep-equality — two copies would be two
       // function objects, exactly as the read record's leg above argues.
-      const census = await import("../../../src/work-audit/census.mjs");
+      const census = await Promise.resolve(Object.freeze({
+  AUDIT_FINDING_CODES: _aofApplication.work.audit.census.AUDIT_FINDING_CODES,
+  CENSUS_SWEEPS: _aofApplication.work.audit.census.CENSUS_SWEEPS,
+  LEDGER_PROJECT: _aofApplication.work.audit.census.LEDGER_PROJECT,
+  LIMIT_KEYS: _aofApplication.work.audit.census.LIMIT_KEYS,
+  PROBE_PROGRAM: _aofApplication.work.audit.census.PROBE_PROGRAM,
+  SWEEP_BASES: _aofApplication.work.audit.census.SWEEP_BASES,
+  TEST_ROOTS: _aofApplication.work.audit.census.TEST_ROOTS,
+  UNREGISTERED_BASELINE: _aofApplication.work.audit.census.UNREGISTERED_BASELINE,
+  assembledSuite: _aofApplication.work.audit.census.assembledSuite,
+  assertSweepsDeclared: _aofApplication.work.audit.census.assertSweepsDeclared,
+  baselineProblems: _aofApplication.work.audit.census.baselineProblems,
+  ledgerApplies: _aofApplication.work.audit.census.ledgerApplies,
+  limitDeclarationProblems: _aofApplication.work.audit.census.limitDeclarationProblems,
+  limitRecord: _aofApplication.work.audit.census.limitRecord,
+  readFinding: _aofApplication.work.audit.census.readFinding,
+  readRecord: _aofApplication.work.audit.census.readRecord,
+  readRegistrationIndexes: _aofApplication.work.audit.census.readRegistrationIndexes,
+  registrationDecision: _aofApplication.work.audit.census.registrationDecision,
+  registrationSources: _aofApplication.work.audit.census.registrationSources,
+  runCensus: _aofApplication.work.audit.census.runCensus,
+  runnerBindings: _aofApplication.work.audit.census.runnerBindings,
+  runnerImportedSuites: _aofApplication.work.audit.census.runnerImportedSuites,
+  runnerSpreadNames: _aofApplication.work.audit.census.runnerSpreadNames,
+  spreadClaimLimit: _aofApplication.work.audit.census.spreadClaimLimit,
+  sweepDeclarationProblems: _aofApplication.work.audit.census.sweepDeclarationProblems,
+  sweepLimits: _aofApplication.work.audit.census.sweepLimits,
+  walkSuiteFiles: _aofApplication.work.audit.census.walkSuiteFiles,
+}));
       assert.equal(census.limitRecord, reads.limitRecord, "the census's limitRecord IS the shared one");
       assert.equal(census.limitDeclarationProblems, reads.limitDeclarationProblems, "…and so is its validator");
       assert.equal(census.LIMIT_KEYS, reads.LIMIT_KEYS, "…and its key set");
@@ -317,7 +399,7 @@ export const archTests = [
       // (3) THE BIND THAT CATCHES D-59-3. Every `limit.<key>` the human face reads is a key every
       // declared limit above carries. Before the fix `question` and `consequence` were read here
       // and absent from the census's two, which is precisely how a real limit rendered blank.
-      const face = await readFile(path.join(root, "src", "commands", "audit.mjs"), "utf8");
+      const face = await readFile(path.join(root, "packages", "work", "src", "commands", "audit.mjs"), "utf8");
       const renderedKeys = [...new Set([...face.matchAll(/\blimit\.([A-Za-z_$][\w$]*)/gu)].map((match) => match[1]))];
       assert.ok(renderedKeys.length >= 2, `non-vacuity: the face reads ${renderedKeys.length} keys off a limit`);
       const rendersLane = renderedKeys.includes("lane");
@@ -333,7 +415,7 @@ export const archTests = [
 
       // (4) NO SECOND VOCABULARY SURVIVES. The pre-fix cell names are gone from both lanes.
       for (const file of ["census.mjs", "evidence.mjs"]) {
-        const source = await readFile(path.join(root, "src", "work-audit", file), "utf8");
+        const source = await readFile(path.join(root, "packages", "work", "src", "audit", file), "utf8");
         assert.equal(/^\s*claim:/mu.test(source), false, `${file}: the \`claim:\` cell is gone — the claim is the read record's \`what\``);
         assert.equal(/^\s*limit:/mu.test(source), false, `${file}: and the \`limit:\` cell is gone — what follows from a limit is \`consequence\``);
       }
@@ -376,7 +458,7 @@ export const archTests = [
       // ASSERTED rather than derived (58/FF-5807's move), and the byte-identity leg above is that
       // assertion. What this leg adds is the REASON: the leaf really does import nothing, so a
       // shared import was never available to it.
-      const source = await readFile(path.join(root, "src", "work", "loops-checks.mjs"), "utf8");
+      const source = await readFile(path.join(root, "packages", "work-graph", "src", "checks.mjs"), "utf8");
       assert.ok(source.length > 0, "the checks leaf was read");
       const imports = source.split(/\r?\n/).filter((line) => /^\s*import[\s{"']/u.test(line));
       assert.deepEqual(imports, [], "the checks leaf imports nothing — which is why its read record is a copy and not a call");

@@ -1,3 +1,6 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 134 / story 03 — the answer is read from the harness.
 //
 // Covers EVERY @executable scenario in three task features, except the two noted:
@@ -19,19 +22,18 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { HUMAN_INPUT_TOOL_NAMES } from "../../src/agent-session-driver.mjs";
-import { setDegradeSinkForTest } from "../../src/degrade.mjs";
-import { transitionRunComplete } from "../../src/effects/run-transitions.mjs";
-import {
-  completeRun,
-  readRuns,
-  recordAnswers,
-  retryRun,
-  runRecordPath,
-  startRun,
-} from "../../src/run-store.mjs";
-import { collectAnswers, readAnswers } from "../../src/work-examples/answers.mjs";
-import { projectSlug } from "../../src/work/observe.mjs";
+const HUMAN_INPUT_TOOL_NAMES = _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const transitionRunComplete = _aofApplication.execution.transitions.transitionRunComplete;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const recordAnswers = _aofApplication.execution.runs.recordAnswers;
+const retryRun = _aofApplication.execution.runs.retryRun;
+const runRecordPath = _aofApplication.execution.runs.runRecordPath;
+const startRun = _aofApplication.execution.runs.startRun;
+const collectAnswers = _aofApplication.work.examples.answers.collectAnswers;
+const readAnswers = _aofApplication.work.examples.answers.readAnswers;
+const projectSlug = _aofSessions.workObserve.projectSlug;
 
 // ── transcript fixtures ─────────────────────────────────────────────────────
 

@@ -1,3 +1,5 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 38 / story 00
 // tasks/05_assistant-hook-wiring.feature — "the assistant hook seam wires Claude
 // Code lifecycle events to `aof session start|ping|end`".
@@ -5,7 +7,7 @@
 // Scenarios 1/3 (the settings.json mapping + the single-unchained-invocation
 // invariant) are asserted by reading the REAL repo `.claude/settings.json`.
 // Scenarios 2/4 (identity resolution from stdin JSON / CLAUDE_SESSION_ID env) are
-// asserted against the real src/commands/mesh-session.mjs's resolveSessionIdentity —
+// asserted against the real packages/core/src/commands/mesh-session.mjs's resolveSessionIdentity —
 // a pure function, no fs. Scenario 5 (ping cadence < TTL) is asserted against the
 // real DEFAULT_SESSION_TTL_SECONDS constant. node:assert/strict.
 import assert from "node:assert/strict";
@@ -13,10 +15,11 @@ import { readFile, mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { meshSessionCommand, resolveSessionIdentity } from "../../src/commands/mesh/session.mjs";
-import { DEFAULT_SESSION_TTL_SECONDS } from "../../src/mesh/session.mjs";
-import { readSessionRecordsForNode } from "../../src/mesh/session.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
+const resolveSessionIdentity = _aofHooks.commandsMeshSession.resolveSessionIdentity;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const settingsPath = path.join(repoRoot, ".claude", "settings.json");

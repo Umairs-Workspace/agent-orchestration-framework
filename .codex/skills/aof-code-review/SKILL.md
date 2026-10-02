@@ -92,7 +92,7 @@ default = the whole branch) and the **`--auto-complete`** flag.
    count is equal to or higher than round N-1's, stop immediately, name each outstanding finding as
    `file:line` plus input → state → outcome, and offer: force-proceed to the gate · provide guidance ·
    abandon. **Three rounds is the hard cap; never start a fourth** — the `MAX_REVIEW_ROUNDS` clamp on
-   `work.loop.reviewRounds`, whose one home is `src/loop-bounds.mjs`. At the cap, stop with the same
+   `work.loop.reviewRounds`, whose one home is `packages/contracts/src/loop-bounds.mjs`. At the cap, stop with the same
    outstanding-finding report and operator choices.
 
 6. **Complete (gated).** **Only if auto-complete is ON:** wait for CI (`gh pr checks --watch`) and

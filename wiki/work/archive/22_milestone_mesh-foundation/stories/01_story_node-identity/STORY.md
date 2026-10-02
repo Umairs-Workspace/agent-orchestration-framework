@@ -45,9 +45,9 @@ capability-descriptor schema, git-tracked + derived/rebuildable + additive-frien
 departure to git-tracked records). This story **owns**: `src/node-identity.mjs` (deterministic id derivation +
 descriptor assembly) + `src/commands/mesh-identity.mjs` (the `mesh:identity` + `mesh:status` commands, thin
 over story 00's `mesh-store.mjs`), their registration in
-[command-core.mjs](../../../../../../src/command-core.mjs) (one import + one `COMMANDS` entry each — the additive
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs) (one import + one `COMMANDS` entry each — the additive
 08 move), the `aof mesh identity` / `aof mesh status` dispatch branches + `argsFor` cases in
-[cli.mjs](../../../../../../src/cli.mjs)'s `meshCommand` (the skeleton story 00 ships), and a config read of
+[cli.mjs](../../../../../../packages/core/src/cli.mjs)'s `meshCommand` (the skeleton story 00 ships), and a config read of
 `mesh.nodeId` / `config.runtimes`.
 
 **Depends on story 00's frozen contract** (the partition seam + the node-record schema + the `meshCommand`
@@ -71,7 +71,7 @@ idiom.
 
 - **Persist `mesh.nodeId` via the headroom read-merge-write idiom** ([work-headroom.mjs](../../../../../../src/work-headroom.mjs):
   `readJson(configPath) → mutate only the one subtree → writeText(2-space + trailing \n)`). **Do NOT** route
-  through [config-editor.mjs](../../../../../../src/config-editor.mjs)'s `baseConfig()`/`saveEditableSections` —
+  through [config-editor.mjs](../../../../../../packages/core/src/application/bindings/config-editor.mjs)'s `baseConfig()`/`saveEditableSections` —
   that is a deliberate whitelist that would **drop an unknown `mesh` block** on rewrite. (Same seam serves the
   per-install salt persistence for the collision suffix.)
 - **Inject hostname + salt** into the derivation function (white-box) so the sanitization matrix + the

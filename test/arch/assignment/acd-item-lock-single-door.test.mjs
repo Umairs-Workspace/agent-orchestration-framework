@@ -28,7 +28,7 @@
 //  1. GREEN — `executionScopeRef` is DEFINED in exactly one module in src/ (today
 //     board-mesh-execution.mjs; after the story, assignment-record.mjs). A second copy
 //     is the "one fact, many derivations" disease (TECH_DEBT item 0).
-//  2. GREEN — src/run-store.mjs imports no assignment/lock/mesh module: the lock must not
+//  2. GREEN — packages/core/src/run-store.mjs imports no assignment/lock/mesh module: the lock must not
 //     leak into the mesh-blind store (re-arms acd-run-store-mesh-free's subject from this
 //     milestone's angle; its own assertions are not duplicated here).
 //  3. ARMED — once the lock predicate module exists, `effects/run-transitions.mjs` imports
@@ -43,18 +43,19 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import { dependencySpecifiers as importSpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
-const RUN_STORE = path.join(repoRoot, "src", "run-store.mjs");
-const MINT_SEAM = path.join(repoRoot, "src", "effects", "run-transitions.mjs");
-const COMMANDS = path.join(repoRoot, "src", "commands");
+const SRC = path.join(repoRoot, "packages", "core", "src");
+const RUN_STORE = path.join(repoRoot, "packages", "execution", "src", "runs.mjs");
+const MINT_SEAM = path.join(repoRoot, "packages", "execution", "src", "run-transitions.mjs");
+const COMMANDS = path.join(repoRoot, "packages", "core", "src", "commands");
 
 // Candidate homes for the ADR-003 lock predicate (a near-leaf beside the record).
 const LOCK_MODULE_CANDIDATES = [
-  path.join(repoRoot, "src", "item-lock.mjs"),
-  path.join(repoRoot, "src", "assignment-item-lock.mjs"),
+  path.join(repoRoot, "packages", "mesh", "src/item-lock.mjs"),
+  path.join(repoRoot, "packages", "core", "src", "assignment-item-lock.mjs"),
 ];
 
 function stripComments(source) {
@@ -81,7 +82,7 @@ export const archTests = [
   {
     name: "arch/43 ADR-003 (acd-item-lock-single-door): `executionScopeRef` is DEFINED in exactly ONE module in src/ — one scope rule, never a second derivation",
     run: async () => {
-      const files = await mjsFilesUnder(SRC);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const definers = [];
       for (const file of files) {
         if (DEFINITION.test(stripComments(await readFile(file, "utf8")))) definers.push(path.relative(repoRoot, file));
@@ -99,7 +100,7 @@ export const archTests = [
       const specs = importSpecifiers(stripComments(await readFile(RUN_STORE, "utf8"))).map((entry) => entry.specifier);
       assert.ok(specs.length > 0, `${RUN_STORE} was read and has imports — an empty import list would pass the absence claim below over nothing (FF-11902)`);
       const leaked = specs.filter((s) => FORBIDDEN_IN_RUN_STORE.test(s));
-      assert.deepEqual(leaked, [], `src/run-store.mjs must stay mesh-blind (m26/ADR-001) — leaked imports: ${leaked.join(", ")}`);
+      assert.deepEqual(leaked, [], `packages/core/src/run-store.mjs must stay mesh-blind (m26/ADR-001) — leaked imports: ${leaked.join(", ")}`);
     },
   },
   {
@@ -109,10 +110,13 @@ export const archTests = [
       if (lockModule == null) return; // not-yet-built: a clean skip that arms the moment the lock lands
 
       const base = path.basename(lockModule);
-      const seamSpecs = importSpecifiers(stripComments(await readFile(MINT_SEAM, "utf8"))).map((entry) => entry.specifier);
+      const seam = stripComments(await readFile(MINT_SEAM, "utf8"));
+      const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/effects/run-transitions.mjs"), "utf8"));
+      for (const source of [seam, adapter]) assert.match(source, /createRunTransitions\(\{[^}]*guardItemLock/su);
+      const seamSpecs = importSpecifiers(adapter).map((entry) => entry.specifier);
       assert.ok(
         seamSpecs.some((s) => s.endsWith(`/${base}`) || s.endsWith(base)),
-        `src/effects/run-transitions.mjs must import ${base} — the ONE lock door sits inside the mint seam, not at its five call sites (imports: ${seamSpecs.join(", ")})`,
+        `packages/core/src/effects/run-transitions.mjs must import ${base} — the ONE lock door sits inside the mint seam, not at its five call sites (imports: ${seamSpecs.join(", ")})`,
       );
 
       // ADR-010/R1.1 narrows this clause. The EXACT-REF primitive stays sanctioned where
@@ -138,7 +142,7 @@ export const archTests = [
   },
   {
     // ADDED at 43/02, exactly as ADR-011/A1 armed it: "once the upsert seam lands,
-    // `acd-item-lock-single-door` gains the clause — src/global-work-store.mjs's publish
+    // `acd-item-lock-single-door` gains the clause — packages/core/src/global-work-store.mjs's publish
     // path reads no `global_assignments` state". It was left uncommitted at 43/01
     // because it would have been red against that story's interim carry, which read
     // `activeScopeHolders` inside the shared row-writer.
@@ -155,7 +159,7 @@ export const archTests = [
     // owns the file), which is not reading whose scope is held.
     name: "arch/43 ADR-003 + ADR-011/A1 (acd-item-lock-single-door): the global work store's publish path reads NO global_assignments state — the lock's answer arrives as data, never as a query inside the shared row-writer",
     run: async () => {
-      const store = stripComments(await readFile(path.join(SRC, "global-work-store.mjs"), "utf8"));
+      const store = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8"));
 
       const reads = [...store.matchAll(/FROM\s+global_assignments\b/gi)].map((match) => match[0]);
       assert.deepEqual(reads, [], `the row-writer must not query global_assignments (found: ${reads.join(", ")})`);

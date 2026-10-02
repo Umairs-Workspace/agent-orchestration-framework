@@ -71,10 +71,10 @@ gate live here, since the command shape carries `configured`).
 
 This story **owns**: `src/commands/notion-sync-work.mjs` (the registration + the frozen envelope + the
 `configured:false` no-op gate); the `notion:sync-work` entry in
-[command-core.mjs](../../../../../../src/command-core.mjs)'s `COMMANDS`; the new `integrations` sub-noun branch
-in `workCommand` ([cli.mjs](../../../../../../src/cli.mjs)) routing through `invoke`; `src/notion/mapping.mjs`
+[command-core.mjs](../../../../../../packages/core/src/application/bindings/command-core.mjs)'s `COMMANDS`; the new `integrations` sub-noun branch
+in `workCommand` ([cli.mjs](../../../../../../packages/core/src/cli.mjs)) routing through `invoke`; `src/notion/mapping.mjs`
 (the sidecar store) + the `.aof/notion.work-map.json` baseline entry in
-[aof-gitignore.mjs](../../../../../../src/aof-gitignore.mjs). It **reuses** `work.mjs`'s
+[aof-gitignore.mjs](../../../../../../packages/core/src/aof-gitignore.mjs). It **reuses** `work.mjs`'s
 `listItems`/`readMeta`/`parseFrontmatter` to walk the milestone + its stories — NO new traversal.
 
 **Independent because** it consumes only already-shipped contracts — the milestone-08 command core

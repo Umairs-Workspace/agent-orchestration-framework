@@ -1,0 +1,21 @@
+{
+  "name": "@aof/foundation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./fs": "./src/fs.mjs",
+    "./degrade": "./src/degrade.mjs",
+    "./log": "./src/log.mjs",
+    "./sqlite-runtime": "./src/sqlite-runtime.mjs",
+    "./git-args": "./src/git-args.mjs",
+    "./markdown": "./src/markdown.mjs",
+    "./text": "./src/text.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/foundation"
+  }
+}

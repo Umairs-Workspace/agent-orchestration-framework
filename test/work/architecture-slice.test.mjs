@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 70 / story 03 — every @executable scenario and
 // every Examples row across tasks 00/01/02. The declaration/extractor/compiler checks
 // are pure; doctor/status checks use hermetic work-stream fixtures.
@@ -13,13 +15,13 @@ import {
   extractFitnessRegister,
   normalizeAdrDeclaration,
   PHASE_BRIEF_CEILING_CHARS,
-} from "../../src/phase-brief.mjs";
-import { compileBriefForItem } from "../../src/phase-brief-read.mjs";
-import { budgetGroup } from "../../src/work/doctor-budget.mjs";
-import { doctorWork } from "../../src/work/doctor.mjs";
-import { validateWork } from "../../src/commands/validate.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
+} from "@aof/work/phase-brief";
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
+import { budgetGroup } from "@aof/work/doctor/budget";
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+const validateWork = _aofApplication.work.commandTools.validate.validateWork;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
 import { seedGreenRegressionGate } from "../support/regression-gate-fixture.mjs";
 
 const ARCHITECTURE = [

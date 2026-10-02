@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 02 (extraction-posture-and-fallback),
 // task 01 — 01_binary-absent-degrades-gracefully.feature.
 //
 // Covers EVERY @executable scenario AND every Scenario-Outline Examples row of that
-// feature against the REAL graphify backend module (../src/memory/graphify-backend.mjs)
+// feature against the REAL graphify backend module (../packages/core/src/memory/graphify-backend.mjs)
 // driven through the REAL seam (`runMemory` for the --json projections). The Background
 // is the 09 acd-graph-binary-absent idiom, HERMETIC (no live binary):
 //   - resolveGraphifyBinary reports { found:false, hint } — injected on ctx as the
@@ -20,11 +21,12 @@ import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import graphifyBackend, {
-  GRAPH_SIGNAL_UNAVAILABLE,
-  GRAPH_STATE_BINARY_ABSENT,
-} from "../../src/memory/graphify-backend.mjs";
-import { runMemory, resolveConfiguredBackend, briefDigest } from "../../src/work/memory.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+const GRAPH_SIGNAL_UNAVAILABLE = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE;
+const GRAPH_STATE_BINARY_ABSENT = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT;
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const briefDigest = _aofApplication.knowledge.work.memory.briefDigest;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
@@ -85,7 +87,7 @@ async function tempStream(milestones) {
 }
 
 // The INJECTED invoke that simulates the binary-absent reality: graph:build throws the
-// structured graphify-missing (424) — exactly src/commands/graph-build.mjs's
+// structured graphify-missing (424) — exactly packages/core/src/commands/graph-build.mjs's
 // commandError(resolved.hint, "graphify-missing", 424). The hint IS the install hint.
 function missingBinaryInvoke() {
   return async () => {
@@ -98,7 +100,7 @@ function missingBinaryInvoke() {
 
 // The INJECTED invoke that simulates a PRESENT-but-BLOCKING binary: graph:build's spawn
 // outran the wall-clock guard and was force-killed, so it throws the structured
-// `graphify-timeout` (the exact code src/graphify.mjs raises on ETIMEDOUT). This is the
+// `graphify-timeout` (the exact code packages/core/src/graphify.mjs raises on ETIMEDOUT). This is the
 // case the original hang lived in — an unbounded spawnSync blocked `ingest`/`reindex`
 // forever. reindex must CATCH it and still rebuild the records (TERMINATE, not block).
 function timeoutInvoke() {

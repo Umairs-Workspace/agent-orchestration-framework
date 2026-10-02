@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/worker/mesh-worker-push-before-remove.test.mjs — traceability for milestone 38 /
 // story 07, task 01 (01_push-before-worktree-removed.feature, ADR-015 decisions 2/3,
 // invariants 3/4; @round-trip). Exercised over a REAL LOCAL BARE repo as the push
@@ -13,9 +15,10 @@ import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../../src/mesh/worker-execution.mjs";
-import { meshWorktreePath, meshItemBranchName } from "../../../src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
 import { markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder } from "../../support/mesh-worker-exec-fixture.mjs";
 import { withMeshWorkerPushFixture, createRecordingGitExec, makeOriginBranchDivergent, breakOriginUnreachable, installPreReceiveRefusal } from "../../support/mesh-worker-push-fixture.mjs";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";

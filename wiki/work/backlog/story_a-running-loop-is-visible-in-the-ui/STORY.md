@@ -10,8 +10,19 @@ updated: 2026-09-27
 schema: 1
 aofVersion: 0.1.0
 tags: [bug, loop, ui]
-reads: []
-files: []
+reads:
+  - packages/mesh/src/launcher.mjs
+  - packages/mesh/src/terminal-relay-bridge.mjs
+  - packages/work-loop/src/child-drive.mjs
+  - packages/work-loop/src/progress.mjs
+  - apps/ui/src/home/feed-axis.mjs
+  - apps/ui/src/fleet/Fleet.tsx
+files:
+  - packages/work-loop/src/child-drive.mjs
+  - packages/work-loop/src/progress.mjs
+  - packages/mesh/src/terminal-relay-bridge.mjs
+  - apps/ui/src/home/feed-axis.mjs
+  - apps/ui/src/fleet/Fleet.tsx
 ---
 # A running loop is visible in the UI
 

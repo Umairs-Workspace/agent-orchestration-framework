@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -113,7 +113,7 @@ import { archTests as acdFleetFaceSingleMutationRouteTests } from "./acd-fleet-f
 import { archTests as acdFleetAssignTargetsItemWorkspaceTests } from "./acd-fleet-assign-targets-item-workspace.test.mjs";
 // milestone 36 / mesh desktop app — the native Windows supervisor's STRUCTURAL
 // invariants (ADR-003/ADR-004), authored at refine as GUARD-IF-PRESENT arch-tests:
-// each asserts its invariant when its target (the greenfield app/desktop/ Rust subtree,
+// each asserts its invariant when its target (the greenfield apps/desktop/ Rust subtree,
 // or the new CLI-only nested verbs in meshCommand) exists, and is a deliberate no-op
 // while absent — so the suite stays GREEN now and each guard converts to a hard
 // assertion the moment the code lands. no-mesh-logic + single-data-path + read-only +
@@ -137,10 +137,10 @@ import { rosterTests as acdDesktopSpawnRosterTests } from "./acd-desktop-read-on
 //   ADR-001/002 — ONE route table; the render root selects through it and by nothing else;
 //                 the application entry imports surfaces and defines none.
 import { archTests as acdUiSingleRouteTableTests } from "./acd-ui-single-route-table.test.mjs";
-//   ADR-002/003 — no `?mode=` surface URL is minted anywhere in src/ · ui/src/ · app/desktop/;
+//   ADR-002/003 — no `?mode=` surface URL is minted anywhere in src/ · apps/ui/src/ · apps/desktop/;
 //                 the legacy vocabulary is read-only and only the translator reads it.
 import { archTests as acdNoSurfaceModeUrlLiteralTests } from "./acd-no-surface-mode-url-literal.test.mjs";
-//   ADR-004     — ONE shared static-serving module (src/static-serve.mjs) for BOTH servers:
+//   ADR-004     — ONE shared static-serving module (packages/core/src/static-serve.mjs) for BOTH servers:
 //                 the history fallback never shadows /api/* and never masks a missing asset
 //                 (driven against the REAL serveSetupUi handler, not a copy of its logic),
 //                 and the byte-identical, twice-defined safeStaticPath traversal guard
@@ -151,7 +151,7 @@ import { archTests as acdSpaFallbackNeverMasksTests } from "./acd-spa-fallback-n
 // (m43/ADR-014 E7) — including a RED one nobody can see. Two are EXPECTED RED until 47's stories
 // land and two are GREEN ON ARRIVAL, and the distinction is kept explicit: a ratchet written at
 // refine forecasts a contract; a ratchet green on arrival PRESERVES one that already holds.
-//   ADR-001/003 — the repo filter has ONE home (`ui/src/fleet/scope.mjs`): no sibling filter
+//   ADR-001/003 — the repo filter has ONE home (`apps/ui/src/fleet/scope.mjs`): no sibling filter
 //                 module, no module outside that home naming the `repo` query key (the route
 //                 module and the shell nav included — m45/ADR-006's passthrough and
 //                 shell-nav.mjs's positional href rule are both properties of NOT KNOWING the
@@ -165,11 +165,11 @@ import { archTests as acdFleetFilterSingleHomeTests } from "./acd-fleet-filter-s
 //                 behaviour gets "unified" into the other by a later reader.
 import { archTests as acdFleetFilterEveryRegionTests } from "./acd-fleet-filter-every-region.test.mjs";
 //   ADR-002     — the filter is READ-SIDE and CLIENT-SIDE: `/api/mesh/status`'s accepted input
-//                 stays exactly `scope`, the fleet client mints no filter parameter, and `src/`
+//                 stays exactly `scope`, the fleet client mints no filter parameter, and `packages/core/src/`
 //                 grows no home for the filter at all. That last clause is what makes SPEC's "the
 //                 read-only contract stays green UNTOUCHED" checkable rather than remembered.
 import { archTests as acdFleetFilterReadOnlyTests } from "./acd-fleet-filter-read-only.test.mjs";
-//   ADR-006a    — no hard-coded board address anywhere in `ui/src/fleet/`; every drill-in resolves
+//   ADR-006a    — no hard-coded board address anywhere in `apps/ui/src/fleet/`; every drill-in resolves
 //                 through `GET /api/mesh/board-url`, the ONE thing that knows a board's ephemeral
 //                 per-workspace port. RED today at the inherited defect (m45/STATE F-45-04-1(a),
 //                 `Fleet.tsx:1427`'s relative `href="/board"`), and written against the RULE rather
@@ -184,7 +184,7 @@ import { archTests as acdFleetBoardLinkResolvedTests } from "./acd-fleet-board-l
 //   sessions in one repo with no run, plus ADR-010's non-vacuity clause — before it, no
 //   fixture exercised the case, so the cross-language gate could not see this change at all.
 // ── milestone 49 / story 02 — THE HOME'S PURE CORE (ADR-003 the feed axis, ADR-006 the socket
-// cap, ADR-009 layout, ADR-001's directory ratchet). It creates `ui/src/home/` as framework-free
+// cap, ADR-009 layout, ADR-001's directory ratchet). It creates `apps/ui/src/home/` as framework-free
 // `.mjs` with `.d.mts` siblings, RENDERS NOTHING and is imported by no component — the shape m45
 // and m46 both used, because this repo has NO React test harness and a rule that can only be
 // exercised through a component is a rule with no test. Every module is driven EXHAUSTIVELY (the
@@ -201,7 +201,7 @@ import { archTests as acdHomePaneTruthTests } from "./acd-home-pane-truth.test.m
 //       for 80x24 — its second instance). Also textual: the number may NOT be justified by a
 //       browser limit, because RESEARCH's first pass did exactly that and produced a 6-pane grid.
 import { archTests as acdHomeSocketCapSingleArbiterTests } from "./acd-home-socket-cap-single-arbiter.test.mjs";
-//     · acd-home-layout-is-a-filter — no browser global anywhere under `ui/src/home/**`, the
+//     · acd-home-layout-is-a-filter — no browser global anywhere under `apps/ui/src/home/**`, the
 //       persisted shape is tuples and focus and nothing else, and the composer's output is a
 //       SUBSET of the live rows BY IDENTITY (a composer that rebuilds a row from a stored tuple
 //       passes every deep-equal check ever written against it).

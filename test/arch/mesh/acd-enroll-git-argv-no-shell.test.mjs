@@ -7,8 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const JOIN_COMMAND = path.join(repoRoot, "src", "commands", "mesh", "join.mjs");
-const REVOKE_COMMAND = path.join(repoRoot, "src", "commands", "mesh", "revoke.mjs");
+const JOIN_COMMAND = path.join(repoRoot, "packages", "mesh", "src", "commands", "join.mjs");
+const REVOKE_COMMAND = path.join(repoRoot, "packages", "mesh", "src", "commands", "revoke.mjs");
 const ENROLLMENT_SOURCES = [JOIN_COMMAND, REVOKE_COMMAND];
 
 function stripCommentsOnly(source) {

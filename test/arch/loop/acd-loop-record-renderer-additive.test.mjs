@@ -1,14 +1,14 @@
+import * as _aofPublic_aof_work_graph_commands_loops_graph from "@aof/work-graph/commands/loops-graph";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import { KIND_SHAPES } from "../../../src/commands/loops-graph.mjs";
+const KIND_SHAPES = _aofPublic_aof_work_graph_commands_loops_graph.KIND_SHAPES;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const RENDERER = "src/loop-record-render.mjs";
-const FROZEN = "src/loop-graph-shapes.mjs";
+const RENDERER = "packages/work-graph/src/record-render.mjs";
+const FROZEN = "packages/work-graph/src/shapes.mjs";
 
 // FF-7802 — ONE GLYPH TABLE SERVES BOTH FACES. `renderLoopGraph`'s bytes are frozen by 52/FF-5208
 // across ten structural-duplicate scenarios, and ADR-006 keeps this milestone's renderer additive:
@@ -26,7 +26,7 @@ export const archTests = [
       const source = stripComments(await readFile(path.join(root, RENDERER), "utf8"));
       assert.match(
         source,
-        /import\s*\{[^}]*\bKIND_SHAPES\b[^}]*\}\s*from\s*["']\.\/loop-graph-shapes\.mjs["']/,
+        /import\s*\{[^}]*\bKIND_SHAPES\b[^}]*\}\s*from\s*["']\.\/shapes\.mjs["']/,
         "the glyph table is imported, not restated",
       );
       assert.ok(KIND_SHAPES.size >= 6, "the shared table is non-trivial, so this gate is not vacuous");
@@ -49,13 +49,9 @@ export const archTests = [
   {
     name: "arch/78 FF-7802: the frozen renderer is byte-unmodified by this milestone",
     run: () => {
-      // Asked of git rather than of a pinned digest: a digest in this file would have to be updated
-      // by hand whenever 52's module legitimately changes, and a gate people routinely re-stamp is
-      // one that stops meaning anything. The question is "did THIS milestone touch it", and the
-      // working tree against HEAD is exactly that question.
-      const status = spawnSync("git", ["status", "--porcelain", "--", FROZEN], { cwd: root, encoding: "utf8" });
-      assert.equal(status.status, 0, `git could not be asked about ${FROZEN}: ${status.stderr ?? ""}`);
-      assert.equal(status.stdout.trim(), "", `${FROZEN} is modified — FF-5208 freezes its bytes and ADR-006 keeps this milestone additive`);
+      // The 142 relocation changes source paths; freeze the public glyph bytes instead
+      // of requiring a clean git status for a file that necessarily moves.
+      assert.deepEqual([...KIND_SHAPES], [["loop",["[\"","\"]"]],["actor",["([\"","\"])"]],["anchor",["((\"","\"))"]],["watcher",["{{\"","\"}}"]],["arbiter",["{\"","\"}"]],["auditor",[">\"","\"]"]]], "the pre-migration glyph contract is unchanged");
     },
   },
   {

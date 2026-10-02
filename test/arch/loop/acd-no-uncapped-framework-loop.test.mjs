@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6902: framework ceilings are declarations backed by real authorities.
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
@@ -5,8 +6,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { LOOP_BOUND_CONFIG_RESOLVERS } from "../../../src/loop-bounds.mjs";
-import { loadLoops } from "../../../src/work/loops.mjs";
+import { LOOP_BOUND_CONFIG_RESOLVERS } from "@aof/contracts/loop-bounds";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 function ceilingProblems(model) {
@@ -54,7 +55,7 @@ export const archTests = [
   {
     name: "arch/69 FF-6902 (acd-no-uncapped-framework-loop): every framework ceiling is none or a pointer to a real authority",
     run: async () => {
-      const model = await loadLoops(path.join(root, "src", "bundle"));
+      const model = await loadLoops(path.join(root, "packages", "core", "assets"));
       assert.ok(model.nodes.filter((node) => node.kind === "loop").length >= 7);
       const configCeilings = loopBoundConfigPointers(model);
       assert.ok(configCeilings.length > 0, "the real registry supplied a nonzero floor of kind:pointer config ceilings");

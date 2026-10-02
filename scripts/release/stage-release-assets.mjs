@@ -20,6 +20,9 @@
 // 02's installer extracting the archive straight into the install dir next
 // to the placed binary reproduces build-sea.mjs's own beside-the-exe shape —
 // sufficient for createRequire(process.execPath)("node-pty") (ADR-002).
+// Plan 05 also includes bundle/, ui/, package.json, the two bundled audit
+// children and their Node runtime. The archive name and checksum contract stay
+// unchanged; installers place the additional entries beside the executable.
 // Content is a gzip'd tar on darwin/linux legs, a zip on win32 legs (both
 // built to reproduce the SAME root-entry set — verified by the
 // archive-round-trip test, test/bundle/release-sidecar-archive-roundtrip.test.mjs).
@@ -131,7 +134,8 @@ export function sidecarArchiveName(ciOs, arch) {
 // Packs build-sea.mjs's sidecar directory tree (<seaOutDir>/node-pty-sidecar/**
 // + <seaOutDir>/node_modules/node-pty/**) into ONE archive at destArchivePath
 // (no extension implied by this function — the caller names the file) whose
-// ROOT ENTRIES are exactly "node-pty-sidecar/**" and "node_modules/node-pty/**"
+// MEMBERS include native, asset and audit-runtime sidecars, preserving their
+// paths beside the executable.
 // — i.e. extracting the archive at a directory reproduces build-sea.mjs's
 // own beside-the-exe layout byte-for-byte in shape.
 //
@@ -145,6 +149,14 @@ export function sidecarArchiveName(ciOs, arch) {
 //                       carry a real tar) using `-C seaOutDir member member`,
 //                       which naturally produces the correct two root entries.
 export function packSidecarArchive(seaOutDir, destArchivePath, { isWindows } = {}) {
+  // The existing extensionless archive name now carries ALL directory sidecars.
+  // Node SEA does not embed directory assets, so PTY-only archives cannot run
+  // init, work init, version or the UI after download.
+  const members = ['node-pty-sidecar', 'node_modules/node-pty', 'bundle', 'ui', 'package.json',
+    'src/work/audit-probe.mjs', 'src/work/audit-drive.mjs', 'node-runtime'];
+  for (const member of members) {
+    if (!existsSync(path.join(seaOutDir, member))) throw new Error(`Required release sidecar missing: ${member}`);
+  }
   const sidecarSrcDir = path.join(seaOutDir, "node-pty-sidecar");
   const moduleSrcDir = path.join(seaOutDir, "node_modules", "node-pty");
   if (!existsSync(sidecarSrcDir)) {
@@ -163,9 +175,10 @@ export function packSidecarArchive(seaOutDir, destArchivePath, { isWindows } = {
     // losing the node_modules/ parent — confirmed empirically at build).
     const stagingDir = mkdtempSync(path.join(os.tmpdir(), "aof-sidecar-zip-"));
     try {
-      cpSync(sidecarSrcDir, path.join(stagingDir, "node-pty-sidecar"), { recursive: true });
-      mkdirSync(path.join(stagingDir, "node_modules"), { recursive: true });
-      cpSync(moduleSrcDir, path.join(stagingDir, "node_modules", "node-pty"), { recursive: true });
+      for (const member of members) {
+        mkdirSync(path.dirname(path.join(stagingDir, member)), { recursive: true });
+        cpSync(path.join(seaOutDir, member), path.join(stagingDir, member), { recursive: true });
+      }
 
       if (existsSync(destArchivePath)) rmSync(destArchivePath);
       // Compress-Archive SILENTLY appends ".zip" to a DestinationPath that
@@ -180,7 +193,7 @@ export function packSidecarArchive(seaOutDir, destArchivePath, { isWindows } = {
         "powershell",
         [
           "-NoProfile", "-NonInteractive", "-Command",
-          `Compress-Archive -Path '${path.join(stagingDir, "*")}' -DestinationPath '${zipTempPath}' -Force`,
+          `Compress-Archive -Path '${path.join(stagingDir, "*").replaceAll("'", "''")}' -DestinationPath '${zipTempPath.replaceAll("'", "''")}' -Force`,
         ],
         { stdio: "inherit" }
       );
@@ -198,7 +211,7 @@ export function packSidecarArchive(seaOutDir, destArchivePath, { isWindows } = {
     // as a relative archive-internal path).
     execFileSync(
       "tar",
-      ["-czf", tarPath(destArchivePath), "-C", tarPath(seaOutDir), "node-pty-sidecar", "node_modules/node-pty"],
+      ["-czf", tarPath(destArchivePath), "-C", tarPath(seaOutDir), ...members],
       { stdio: "inherit" }
     );
   }

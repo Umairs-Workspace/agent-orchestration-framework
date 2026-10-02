@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 39 / ADR-004:
 // "OUTCOME.md is an ADDITIONAL per-item artifact, never the `recordDoc` PRIMARY
 //  record doc (recordDoc feeds validate/rollback across a graph-verified 38
@@ -15,12 +16,12 @@ import { readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { recordDoc } from "../../../src/work.mjs";
+const recordDoc = _aofWorkspace.work.recordDoc;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TEMPLATE_ROOT = path.join(repoRoot, "src", "bundle", "templates");
-const VERIFY_PROMPT = path.join(repoRoot, "src", "bundle", "commands", "verify.md");
-const DEVELOPER_AGENT = path.join(repoRoot, "src", "bundle", "agents", "aof-developer.md");
+const TEMPLATE_ROOT = path.join(repoRoot, "packages", "core", "assets", "templates");
+const VERIFY_PROMPT = path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md");
+const DEVELOPER_AGENT = path.join(repoRoot, "packages", "core", "assets", "agents", "aof-developer.md");
 
 // Does any bundle template dir ship an OUTCOME.md (story 01's scaffold)?
 async function outcomeTemplateExists() {

@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // test/terminal/session-screen-ready.test.mjs — milestone 138 / story 00, task 03
 // (03_the-directive-is-typed-on-the-input-box.feature; 138/ADR-002).
 //
@@ -11,10 +12,10 @@
 // This file also exports the driven-PTY double and the frame builder the verdict and evidence suites
 // share, so one double drives every screen case.
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../src/agent-session-driver.mjs";
-import { openSessionScreen } from "../../src/terminal/session-screen.mjs";
-import { CLAUDE_SCREENS } from "../../src/terminal/claude-screens.mjs";
-import { createScreen } from "../../src/terminal/screen.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const openSessionScreen = _aofSessions.terminalSessionScreen.openSessionScreen;
+import { CLAUDE_SCREENS } from "@aof/execution/terminal/claude-screens";
+const createScreen = _aofSessions.terminalScreen.createScreen;
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 import { captureDegrades, loadFixture, replay } from "./screen-model.test.mjs";
 

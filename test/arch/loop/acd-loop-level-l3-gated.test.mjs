@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -9,8 +10,8 @@ import {
   LOCKED_LOOP_LEVELS,
   LOOP_LEVELS,
   resolveLoopLevelGate,
-} from "../../../src/work/loop.mjs";
-import { loopCommand } from "../../../src/commands/loop.mjs";
+} from "../../../packages/work-loop/src/engine.mjs";
+const loopCommand = _aofApplication.getCommand("work:loop");
 import { loopFixture } from "../../loop/loop-command-probe.test.mjs";
 import { cleanL3Gate, makeQualifiedL3Repo } from "../../support/l3-gate-fixture.mjs";
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
@@ -33,7 +34,7 @@ export const archTests = [
   {
     name: "arch/55 FF-5508 extension (acd-loop-level-l3-gated): admission reads only injected score and groundedness facts",
     run: async () => {
-      const engine = stripComments(await readFile(path.join(root, "src", "work", "loop.mjs"), "utf8"));
+      const engine = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "engine.mjs"), "utf8"));
       const gateBody = functionBody(engine, "resolveLoopLevelGate");
       assert.ok(gateBody.length > 200, "the real gate body was read");
       assert.doesNotMatch(gateBody, /\bconfig\b|process\.env|\benv\b|\bflag\b/u);
@@ -46,7 +47,7 @@ export const archTests = [
   {
     name: "arch/55 FF-5508 extension (acd-loop-level-l3-gated): the command gathers both halves through registered commands before any drive",
     run: async () => {
-      const source = stripComments(await readFile(path.join(root, "src", "commands", "loop.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(root, "packages", "work-loop", "src", "commands", "loop.mjs"), "utf8"));
       const body = functionBody(source, "resolveInvocation");
       assert.match(body, /invokeRegistered\(\s*["']work:doctor["']/u);
       assert.match(body, /invokeRegistered\(\s*["']work:loops-groundedness["']/u);

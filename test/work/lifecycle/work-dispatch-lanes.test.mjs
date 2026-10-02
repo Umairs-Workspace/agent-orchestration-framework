@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 65, task 02 —
 // `wiki/work/65_story_concurrent-story-dispatch/tasks/02_concurrent-dispatch-into-worktrees.feature`
 // (@executable). One exported entry per @executable Scenario, one per Scenario-Outline ROW.
@@ -18,34 +20,30 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, mkdir, stat, unlink } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  resolveDispatchLane,
-  dispatchReadySet,
-  inspectDispatchLanes,
-  sweepDispatchLanes,
-  cleanupDispatchLane,
-  overlappingFiles,
-  laneChanges,
-  dispatchConcurrencyFromConfig,
-  narrowDispatchBound,
-  resolveDispatchConcurrency,
-  DEFAULT_DISPATCH_CONCURRENCY,
-  dispatchLaneBase,
-  commitDispatchLane,
-  mergeDispatchLaneHome,
-} from "../../../src/work/dispatch.mjs";
-import {
-  meshDispatchWorktreePath,
-  meshDispatchWorktreesRoot,
-  isUnderMeshDispatchWorktreesRoot,
-  isUnderMeshWorktreesRoot,
-  isUnderMeshSessionWorktreesRoot,
-  meshItemBranchName,
-  listWorktrees,
-} from "../../../src/mesh/worktree.mjs";
+const resolveDispatchLane = _aofApplication.loop.work.dispatch.resolveDispatchLane;
+const dispatchReadySet = _aofApplication.loop.work.dispatch.dispatchReadySet;
+const inspectDispatchLanes = _aofApplication.loop.work.dispatch.inspectDispatchLanes;
+const sweepDispatchLanes = _aofApplication.loop.work.dispatch.sweepDispatchLanes;
+const cleanupDispatchLane = _aofApplication.loop.work.dispatch.cleanupDispatchLane;
+const overlappingFiles = _aofApplication.loop.work.dispatch.overlappingFiles;
+const laneChanges = _aofApplication.loop.work.dispatch.laneChanges;
+const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
+const narrowDispatchBound = _aofApplication.loop.work.dispatch.narrowDispatchBound;
+const resolveDispatchConcurrency = _aofApplication.loop.work.dispatch.resolveDispatchConcurrency;
+const DEFAULT_DISPATCH_CONCURRENCY = _aofApplication.loop.work.dispatch.DEFAULT_DISPATCH_CONCURRENCY;
+const dispatchLaneBase = _aofApplication.loop.work.dispatch.dispatchLaneBase;
+const commitDispatchLane = _aofApplication.loop.work.dispatch.commitDispatchLane;
+const mergeDispatchLaneHome = _aofApplication.loop.work.dispatch.mergeDispatchLaneHome;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshDispatchWorktreesRoot = _aofApplication.mesh.worktree.meshDispatchWorktreesRoot;
+const isUnderMeshDispatchWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshDispatchWorktreesRoot;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
+const isUnderMeshSessionWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
 import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
-import { dispatchCommand } from "../../../src/commands/dispatch.mjs";
-import { findWork } from "../../../src/work.mjs";
+const dispatchCommand = _aofApplication.getCommand("work:dispatch");
+const findWork = _aofWorkspace.work.findWork;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SHARED = "src/sandbox/provisionSandboxAgent.ts";
@@ -692,7 +690,7 @@ export const workDispatchLaneTests = [
   {
     name: "dispatch/02 the prompt fans out over the ready set instead of taking its head — continue.md asks for the ready set, dispatches its members together up to the bound, and no longer says the loop is one-at-a-time",
     run: async () => {
-      const prompt = await readFile(path.join(repoRoot, "src", "bundle", "commands", "continue.md"), "utf8");
+      const prompt = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "continue.md"), "utf8");
 
       // (a) It ASKS for the ready set, by the key the command actually answers with.
       assert.match(prompt, /aof work next[^\n]*--json/, "it asks `aof work next --json`");
@@ -1170,8 +1168,12 @@ export const workDispatchLaneTests = [
       for (const line of mergeLines) assert.equal(line, UNION_LINE, `only the union line carries merge= — found ${line}`);
       for (const line of lines) {
         if (line === "wiki/work/**/STATE.md merge=union") continue;
-        const [, ...attrs] = line.split(/\s+/u);
+        const [pattern, ...attrs] = line.split(/\s+/u);
         assert.ok(attrs.length > 0, `${line} names an attribute`);
+        if (pattern === ".yarn/releases/*.cjs") {
+          assert.deepEqual(attrs, ["-text", "-diff"], "the pinned Yarn executable stays byte-preserved and acquires no merge driver");
+          continue;
+        }
         for (const attr of attrs) assert.match(attr, /^-?text$|^eol=/u, `${line}: "${attr}" is a text/eol attribute, as before this story`);
       }
     },
@@ -1262,3 +1264,7 @@ export const workDispatchLaneTests = [
     },
   },
 ];
+
+// Every case here passes alone, in a fresh process (142 Plan 09 measured each position separately), so the sharded run may
+// split this file across workers. Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;

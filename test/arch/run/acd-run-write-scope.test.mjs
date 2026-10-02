@@ -5,12 +5,12 @@
 // doc (SPEC.md/STORY.md/STATE.md/SESSION.md) or its frontmatter — status rollback is
 // milestone 20, not here. The path builder is the single write seam.
 //
-// Source-analysis (call-form, comments discounted) of src/run-store.mjs — mirroring
+// Source-analysis (call-form, comments discounted) of packages/core/src/run-store.mjs — mirroring
 // the style of acd-board-write-isolation.test.mjs (the stripComments helper, etc.).
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const RUN_STORE = new URL("../../../src/run-store.mjs", import.meta.url);
+const RUN_STORE = new URL("../../../packages/execution/src/runs.mjs", import.meta.url);
 const RECORD_DOCS = ["SPEC.md", "STORY.md", "STATE.md", "SESSION.md"];
 const WRITE_VERBS = ["writeFile", "appendFile", "mkdir"];
 
@@ -26,7 +26,7 @@ export const archTests = [
       for (const doc of RECORD_DOCS) {
         assert.ok(
           !code.includes(doc),
-          `src/run-store.mjs references no record-doc filename "${doc}" (record-doc resolution is not the store's job)`
+          `packages/core/src/run-store.mjs references no record-doc filename "${doc}" (record-doc resolution is not the store's job)`
         );
       }
 

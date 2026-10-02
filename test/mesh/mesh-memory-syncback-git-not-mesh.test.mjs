@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 38 / story 08 (worker-verified-memory-syncback,
 // ADR-016) — tasks/00_knowledge-rides-git-not-mesh.feature.
 //
@@ -29,11 +30,14 @@ import { WebSocket } from "ws";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { withMeshMemorySyncbackFixture } from "../support/mesh-memory-syncback-fixture.mjs";
 import { seedAssignment } from "../support/mesh-assign-fixture.mjs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
-import { buildDirectiveFrame, applyCloneCredentialRequestFrame, applyCloneUrlRequestFrame } from "../../src/control-stream-server.mjs";
-import { relayEnvelope } from "../../src/mesh/relay-client.mjs";
-import { serveRelay } from "../../src/mesh/relay.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+
+const buildDirectiveFrame = _aofApplication.mesh.controlStreamServer.buildDirectiveFrame;
+const applyCloneCredentialRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneCredentialRequestFrame;
+const applyCloneUrlRequestFrame = _aofApplication.mesh.controlStreamServer.applyCloneUrlRequestFrame;
+const relayEnvelope = _aofApplication.mesh.relayClient.relayEnvelope;
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 
 // ------------------------------------------------------------ graphify ctx ----
 
@@ -170,7 +174,7 @@ function produceUpEnvelope() {
 
 // The REAL { type:'joined' } and { type:'error' } control-frames, driven from a REAL
 // ephemeral serveRelay + a REAL ws client (mirrors
-// test/mesh/relay/mesh-relay-envelope-resilience.test.mjs's own connect idiom).
+// packages/mesh/test/mesh-relay-envelope-resilience.suite.mjs's own connect idiom).
 async function produceControlFrames() {
   const relay = await serveRelay({ port: 0 });
   try {
@@ -253,7 +257,7 @@ export const meshMemorySyncbackGitNotMeshTests = [
         await writeFile(path.join(fx.root, "graphify-out", "graph.json"), "{\"nodes\":[],\"edges\":[]}\n", "utf8");
 
         const ignoreCheck = spawnSyncHardened("git", ["check-ignore", "-q", "graphify-out/graph.json"], { cwd: fx.root });
-        assert.equal(ignoreCheck.status, 0, "graphify-out/graph.json is recognised as git-ignored (.gitignore:4 graphify-out/, enforced by src/aof-gitignore.mjs)");
+        assert.equal(ignoreCheck.status, 0, "graphify-out/graph.json is recognised as git-ignored (.gitignore:4 graphify-out/, enforced by packages/core/src/aof-gitignore.mjs)");
         const tracked = fx.git(["ls-files"]).stdout.split(/\r?\n/).filter(Boolean).map((f) => f.replace(/\\/g, "/"));
         assert.ok(!tracked.some((f) => f.includes("graphify-out")), "graphify-out/graph.json is untracked");
 

@@ -1,3 +1,5 @@
+
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-launcher-seam (m42 wave (d) leg d1, wave-3 tail part 2 —
 // the successor of acd-desktop-verbs-outside-bijection, REWORKED twice as its
 // subject migrated). The original gate kept launcher verbs OUT of the registry so
@@ -16,7 +18,7 @@
 //     probe IS the verb's --json face. (That the probe returns without blocking
 //     is proven behaviourally by the bijection gates' spawn probes.) Armed
 //     non-vacuously: mesh:ui and mesh:serve ride the seam today.
-//  C. THE PROBE RULE IS FACE POLICY: src/spine/face.mjs consults cli.launch ONLY
+//  C. THE PROBE RULE IS FACE POLICY: packages/core/src/spine/face.mjs consults cli.launch ONLY
 //     when --json was not asked for — `--json` can never launch, so a bijection
 //     spawn probe can never hang on a serve BY CONSTRUCTION, not per-command
 //     care. Self-checked with a synthetic unguarded face body.
@@ -24,11 +26,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { listCommands } from "../../../src/command-core.mjs";
+const listCommands = _aofApplication.listCommands;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CLI_MJS = path.join(repoRoot, "src", "cli.mjs");
-const FACE_MJS = path.join(repoRoot, "src", "spine", "face.mjs");
+const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
+const FACE_MJS = path.join(repoRoot, "packages/core/src/application/bindings/spine/face.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -125,7 +127,13 @@ export const archTests = [
     // Behavioural, through the real face.
     name: "arch/m42-launcher-seam (D): an uncoded fault escaping a launcher body carries its origin frames in the message the entries print; a contract refusal passes untouched",
     run: async () => {
-      const { runCommandFace } = await import("../../../src/spine/face.mjs");
+      const { runCommandFace } = await Promise.resolve(Object.freeze({
+  BASE_FLAGS: _aofApplication.cli.BASE_FLAGS,
+  parseSpecArgv: _aofApplication.cli.parseSpecArgv,
+  deriveRouteTable: _aofApplication.cli.deriveRouteTable,
+  resolveRoute: _aofApplication.cli.resolveRoute,
+  runCommandFace: _aofApplication.cli.runCommandFace,
+}));
       const launcher = (body) => ({
         id: "mesh:synthetic-launcher",
         run: async () => ({ probe: true }),

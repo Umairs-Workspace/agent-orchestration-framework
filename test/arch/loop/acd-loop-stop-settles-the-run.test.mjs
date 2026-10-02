@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-13002 + FF-13004 — THE INTERRUPT PATH ALWAYS SETTLES, AND A HONOURED DECLARATION YIELDS NO
 // ROW (milestone 130 / story 05; ARCHITECTURE `## Fitness functions`, ADR-003 and ADR-004 §4).
 // Which of this directory's three subjects: the LADDER — what the shell does after a drive returns
@@ -6,9 +8,9 @@
 // FF-13002, structural. For every drive site the binding it assigns reaches a `settleDriven(` call
 // before any `return` in the enclosing function — the enclosing-function textual rule FF-12702
 // uses, through `classifySites` — and there are EXACTLY THREE drive sites, counted as FF-12602
-// counts them: the main site in `src/commands/loop.mjs`, the in-process retry and the cross to
-// verify in `src/loop/cycle.mjs` (129/04 moved the ladder there after the register was written on
-// 2026-09-13; the register's "in `src/commands/loop.mjs`" is enforced over the family the cited
+// counts them: the main site in `packages/core/src/commands/loop.mjs`, the in-process retry and the cross to
+// verify in `packages/core/src/loop/cycle.mjs` (129/04 moved the ladder there after the register was written on
+// 2026-09-13; the register's "in `packages/core/src/commands/loop.mjs`" is enforced over the family the cited
 // control sweeps, so the count it states can hold). Every `haltDecision("operator-interrupt"` in
 // the shell receives a producer bound from `source.producer()` — the third argument, cut by
 // matching parens and split at depth-0 commas, never a message match.
@@ -25,11 +27,11 @@
 // FF-13004, engine fixture. `decideSupervisedDeclarations` over one supervised lineage whose
 // latest run is `failed/timeout` (retryable) answers one row; the same input plus `stopped: new
 // Set([loopRunId])` answers none; `stopped: new Set()` and no `stopped` at all answer deep-equal
-// rows (the DEFAULT-ABSENT discipline); `src/work/loop.mjs` has zero import statements (cited:
+// rows (the DEFAULT-ABSENT discipline); `packages/work-loop/src/engine.mjs` has zero import statements (cited:
 // `acd-clock-counts-attempts`). Producer fixture: `supervisedDeclarations` over a fixture home
 // holding a `honoured` request for that `loopRunId` answers no row, and a `requested` one still
-// answers the row. Structural: `src/mesh/declarations.mjs` imports `readStopRequest` from
-// `src/loop/stop-request.mjs` (resolved, through module-family.mjs) and passes `stopped` to the
+// answers the row. Structural: `packages/core/src/mesh/declarations.mjs` imports `readStopRequest` from
+// `packages/core/src/loop/stop-request.mjs` (resolved, through module-family.mjs) and passes `stopped` to the
 // engine — the argument the register's red probe drops.
 //
 // The fixture legs ride the loop fixture and the stop-source double `test/loop/loop-command-probe`
@@ -42,19 +44,22 @@ import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runLoopBody } from "../../../src/commands/loop.mjs";
-import { decideSupervisedDeclarations } from "../../../src/work/loop.mjs";
-import { supervisedDeclarations } from "../../../src/mesh/declarations.mjs";
-import { isRunning, isStale, readRuns, retryReadiness } from "../../../src/run-store.mjs";
-import { loadWorkspace, listItems } from "../../../src/work.mjs";
-import {
-  clearStopRequest,
-  loopStopsDir,
-  markStopHonoured,
-  requestLoopStop,
-  stopRequestPath,
-} from "../../../src/loop/stop-request.mjs";
-import { importSpecifiers, computedDynamicImports } from "../../support/module-family.mjs";
+const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
+import { decideSupervisedDeclarations } from "../../../packages/work-loop/src/engine.mjs";
+const supervisedDeclarations = _aofApplication.mesh.declarations.supervisedDeclarations;
+const isRunning = _aofApplication.execution.runs.isRunning;
+const isStale = _aofApplication.execution.runs.isStale;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const retryReadiness = _aofApplication.execution.runs.retryReadiness;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const listItems = _aofWorkspace.work.listItems;
+const clearStopRequest = _aofApplication.loop.stopRequest.clearStopRequest;
+const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
+const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
+const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
+const stopRequestPath = _aofApplication.loop.stopRequest.stopRequestPath;
+import { computedDynamicImports } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 import { NESTED_FUNCTION_DECLARATION_RE, classifySites, functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 import {
   DECLARATION_L1,
@@ -68,11 +73,11 @@ import {
 } from "../../loop/loop-command-probe.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SHELL = "src/commands/loop.mjs";
-const LADDER = "src/loop/cycle.mjs";
-const ENGINE = "src/work/loop.mjs";
-const PRODUCER = "src/mesh/declarations.mjs";
-const HOME = "src/loop/stop-request.mjs";
+const SHELL = "packages/work-loop/src/commands/loop.mjs";
+const LADDER = "packages/work-loop/src/cycle.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
+const PRODUCER = "packages/mesh/src/declarations.mjs";
+const HOME = "packages/work-loop/src/stop-request.mjs";
 // THE DRIVE SITES, as FF-12602 counts them: `await drivePhase(` in either file, and the ladder's
 // `await drive(retried.record)` seam (the shell hands it `drivePhase`, the wave a child spawn).
 // The binding each assigns is what must reach `settleDriven(`.
@@ -89,8 +94,10 @@ function assertRead(what, count, floor, unit = "file(s)") {
 }
 
 function resolved(fromRel, specifier) {
+  if (specifier === "@aof/work-loop/stop-request") return "packages/work-loop/src/stop-request.mjs";
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return specifier;
-  const joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  let joined = path.posix.normalize(path.posix.join(path.posix.dirname(fromRel), specifier));
+  if (joined === "packages/core/src/application/bindings/loop/stop-request.mjs") joined = "packages/work-loop/src/stop-request.mjs";
   return joined.endsWith(".mjs") ? joined : `${joined}.mjs`;
 }
 
@@ -384,9 +391,13 @@ export const archTests = [
     name: "arch/130 FF-13004 (acd-loop-stop-settles-the-run): structural — the producer imports readStopRequest from the one home by resolved specifier and passes stopped to the engine, and the engine imports nothing",
     run: async () => {
       const producer = await source(PRODUCER);
-      const imports = importSpecifiers(producer);
+      const adapterPath = "packages/core/src/application/bindings/mesh/declarations.mjs";
+      const adapter = await source(adapterPath);
+      const imports = dependencySpecifiers(adapter);
       assertRead("the producer's import clauses", imports.length, 3, "specifier(s)");
-      assert.ok(imports.some(({ specifier }) => resolved(PRODUCER, specifier) === HOME), `src/mesh/declarations.mjs imports readStopRequest from src/loop/stop-request.mjs (resolved) — specifiers: ${imports.map((entry) => entry.specifier).join(", ")}`);
+      assert.ok(imports.some(({ specifier }) => resolved(adapterPath, specifier) === HOME), `core imports the shared stop-request reader — specifiers: ${imports.map((entry) => entry.specifier).join(", ")}`);
+      assert.match(adapter, /createSupervisedDeclarations\(\{[^}]*\breadStopRequest\b/u, "core supplies the shared reader");
+      assert.match(producer, /function createSupervisedDeclarations\(\{[^}]*\breadStopRequest\b/u, "the package accepts the shared reader");
       assert.match(producer, /\breadStopRequest\s*\(/u, "…and calls it");
       const callAt = producer.indexOf("decideSupervisedDeclarations(");
       assert.ok(callAt >= 0, `NOT FOUND: ${PRODUCER} — the engine call`);
@@ -398,7 +409,7 @@ export const archTests = [
       // THE ENGINE IMPORTS NOTHING (cited: acd-clock-counts-attempts keeps its zero).
       const engine = await source(ENGINE);
       assertRead("the engine", engine.length, 10_000, "bytes");
-      assert.deepEqual(importSpecifiers(engine), [], "src/work/loop.mjs has zero import statements — Set is a global, and the stopped input adds no dependency");
+      assert.deepEqual(dependencySpecifiers(engine), [], "packages/work-loop/src/engine.mjs has zero import statements — Set is a global, and the stopped input adds no dependency");
       assert.deepEqual(computedDynamicImports(engine), [], "…and no computed dynamic import either");
       assert.match(engine, /stopped instanceof Set \? stopped : EMPTY_STOPPED/u, "the default-absent discipline is spelled once: an absent or ill-typed input drops nothing");
     },

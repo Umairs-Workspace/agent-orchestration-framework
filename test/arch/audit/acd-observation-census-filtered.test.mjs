@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-6107 — COUNTING OFF THE EFFECTS JOURNAL IS FILTERED AND COLLAPSED IN ONE HOME, AND THE
 // READ RECORD IS IMPORTED RATHER THAN RESTATED.
 //
@@ -12,11 +13,11 @@
 // So this gate binds SIX things, and each of them is a way that number could quietly stop
 // being what it claims:
 //
-//   (a) the classification has ONE home — no module outside `src/work-acceptor/observations.mjs`
+//   (a) the classification has ONE home — no module outside `packages/core/src/work-acceptor/observations.mjs`
 //       decides that an `itemDir` is a fixture or that a path is a dispatch worktree;
-//   (b) the dispatch case is DERIVED from `src/mesh/worktree.mjs`'s exported predicate and
-//       slug, and `dispatch-worktrees` remains that module's only occurrence in `src/`;
-//   (c) the read record and the floor discipline are IMPORTED from `src/work-audit/reads.mjs`
+//   (b) the dispatch case is DERIVED from `packages/core/src/mesh/worktree.mjs`'s exported predicate and
+//       slug, and `dispatch-worktrees` remains that module's only occurrence in `packages/core/src/`;
+//   (c) the read record and the floor discipline are IMPORTED from `packages/core/src/work-audit/reads.mjs`
 //       (`readRecord`, `sweepDeclarationProblems`, `SWEEP_BASES`), with no second copy here, so
 //       the shape has one home and cannot drift (59/FF-5908's ratchet, paid rather than re-opened);
 //   (d) `readFinding` is deliberately NOT imported — its code is the auditor's — and the
@@ -33,21 +34,40 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { srcFilesContaining } from "../../support/read-src-files.mjs";
-import * as reads from "../../../src/work-audit/reads.mjs";
-import {
-  dispatchWorktreeSlug,
-  meshDispatchWorktreePath,
-} from "../../../src/mesh/worktree.mjs";
-import * as observations from "../../../src/work-acceptor/observations.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+import * as reads from "@aof/work/audit/reads";
+const dispatchWorktreeSlug = _aofApplication.mesh.worktree.dispatchWorktreeSlug;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const observations = Object.freeze({
+  CENSUS_EVENT_LIMIT: _aofApplication.work.acceptor.observations.CENSUS_EVENT_LIMIT,
+  FLOOR_DIVISOR: _aofApplication.work.acceptor.observations.FLOOR_DIVISOR,
+  JOURNAL_ROOT_PLACEHOLDER: _aofApplication.work.acceptor.observations.JOURNAL_ROOT_PLACEHOLDER,
+  OBSERVATION_DISPOSITIONS: _aofApplication.work.acceptor.observations.OBSERVATION_DISPOSITIONS,
+  OBSERVATION_FINDING_CODES: _aofApplication.work.acceptor.observations.OBSERVATION_FINDING_CODES,
+  OBSERVATION_LOCATION_FIELDS: _aofApplication.work.acceptor.observations.OBSERVATION_LOCATION_FIELDS,
+  OBSERVATION_SWEEPS: _aofApplication.work.acceptor.observations.OBSERVATION_SWEEPS,
+  OBSERVATION_WORKSPACE_FIELD: _aofApplication.work.acceptor.observations.OBSERVATION_WORKSPACE_FIELD,
+  assertObservationSweepsDeclared: _aofApplication.work.acceptor.observations.assertObservationSweepsDeclared,
+  classifyObservation: _aofApplication.work.acceptor.observations.classifyObservation,
+  countPopulation: _aofApplication.work.acceptor.observations.countPopulation,
+  fixtureRoots: _aofApplication.work.acceptor.observations.fixtureRoots,
+  floorFromMeasured: _aofApplication.work.acceptor.observations.floorFromMeasured,
+  foldDispatchWorktree: _aofApplication.work.acceptor.observations.foldDispatchWorktree,
+  isFixtureLocation: _aofApplication.work.acceptor.observations.isFixtureLocation,
+  observationCensus: _aofApplication.work.acceptor.observations.observationCensus,
+  observationFinding: _aofApplication.work.acceptor.observations.observationFinding,
+  readObservationCensus: _aofApplication.work.acceptor.observations.readObservationCensus,
+  unfilteredFinding: _aofApplication.work.acceptor.observations.unfilteredFinding,
+  workspaceKey: _aofApplication.work.acceptor.observations.workspaceKey,
+});
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const CENSUS_MODULE = "work-acceptor/observations.mjs";
-const CENSUS_PATH = path.join(repoRoot, "src", "work-acceptor", "observations.mjs");
+const CENSUS_MODULE = "packages/work/src/acceptor/observations.mjs";
+const CENSUS_PATH = path.join(repoRoot, "packages", "work", "src", "acceptor", "observations.mjs");
 const WORKSPACE = path.resolve("/aof-ff6107-workspace");
 
 // EVERY SCAN BELOW MEASURES CODE, NOT PROSE, and that is a decision rather than a
-// convenience. `src/mesh/worker-execution.mjs` carries two comments reading "NEVER
+// convenience. `packages/core/src/mesh/worker-execution.mjs` carries two comments reading "NEVER
 // os.tmpdir()" — a rule ABOUT the call, not the call — and this census's own header explains
 // at length why `dispatch-worktrees` is not spelled here and why `readFinding` is not
 // imported. A text scan that could not tell those apart would report violations that do not
@@ -64,13 +84,14 @@ const censusSource = async () => codeLines(await readFile(CENSUS_PATH, "utf8"));
 
 // `srcFilesContaining` reads every src file once, shared with the other guards that need the
 // same walk; this narrows its hits to the ones whose CODE carries the needle.
-async function codeFilesContaining(needle, options = {}) {
-  const hits = await srcFilesContaining(repoRoot, needle, options);
-  const out = [];
-  for (const file of hits) {
-    if (codeLines(await readFile(path.join(repoRoot, "src", file), "utf8")).includes(needle)) out.push(file);
+async function codeFilesContaining(needle) {
+  const files = await readRuntimeFiles(repoRoot);
+  assert.ok(files.length > 0, "runtime source census is non-empty");
+  const hits = [];
+  for (const file of files) {
+    if (codeLines(await readFile(file.path, "utf8")).includes(needle)) hits.push(file.rel);
   }
-  return out;
+  return hits;
 }
 
 const event = (workspaceRoot, itemDir = workspaceRoot) => ({ payload: { workspaceRoot, itemDir } });
@@ -79,19 +100,19 @@ export const archTests = [
   {
     name: "arch/61 FF-6107: the fixture and dispatch classification has exactly one home in src/",
     run: async () => {
-      // (b) THE DISPATCH LITERAL. `mesh-worktree.mjs` is the only module in `src/` that spells
+      // (b) THE DISPATCH LITERAL. `mesh-worktree.mjs` is the only module in `packages/core/src/` that spells
       // the convention, and this milestone does not make it two.
       const spellsIt = await codeFilesContaining("dispatch-worktrees");
-      assert.deepEqual(spellsIt, ["mesh/worktree.mjs"], "`dispatch-worktrees` is spelled in exactly one module under src/");
+      assert.deepEqual(spellsIt, ["packages/mesh/src/worktrees.mjs"], "`dispatch-worktrees` is spelled in exactly one runtime module");
 
       // (a) THE FIXTURE DECISION. A module that derives the machine's temp roots AND reads an
       // event payload's `itemDir` is classifying an observation as a fixture. Exactly one does.
-      const tempDerivers = await srcFilesContaining(repoRoot, "tmpdir(");
-      const itemDirReaders = new Set(await srcFilesContaining(repoRoot, "itemDir"));
+      const tempDerivers = await codeFilesContaining("tmpdir(");
+      const itemDirReaders = new Set(await codeFilesContaining("itemDir"));
       const classifiers = [];
       for (const file of tempDerivers) {
         if (!itemDirReaders.has(file)) continue;
-        const source = codeLines(await readFile(path.join(repoRoot, "src", file), "utf8"));
+        const source = codeLines(await readFile(path.join(repoRoot, file), "utf8"));
         if (source.includes("tmpdir(") && source.includes("itemDir")) classifiers.push(file);
       }
       assert.deepEqual(classifiers, [CENSUS_MODULE], "exactly one module under src/ decides that an observation's itemDir is a fixture");
@@ -110,8 +131,11 @@ export const archTests = [
       // TEXTUAL: it does not spell the literal, and it takes BOTH the predicate and the slug
       // from the module that owns the convention.
       assert.equal(source.includes("dispatch-worktrees"), false, "the census spells no dispatch-worktrees literal of its own");
-      assert.match(source, /import \{[^}]*isUnderMeshDispatchWorktreesRoot[^}]*\} from "\.\.\/mesh\/worktree\.mjs"/su, "it imports the lane's own predicate");
-      assert.match(source, /import \{[^}]*dispatchWorktreeSlug[^}]*\} from "\.\.\/mesh\/worktree\.mjs"/su, "…and the lane's own slug");
+      const adapter = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work-acceptor/observations.mjs"), "utf8");
+      assert.match(adapter, /const\s*\{[^}]*isUnderMeshDispatchWorktreesRoot[^}]*\}\s*= meshWorktreeServices/su, "composition supplies the lane's own predicate");
+      assert.match(adapter, /const\s*\{[^}]*dispatchWorktreeSlug[^}]*\}\s*= meshWorktreeServices/su, "…and the lane's own slug");
+      assert.match(adapter, /createAcceptorObservations\(\{ dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot, readEvents \}\)/u, "composition supplies the actual lane services");
+      assert.match(source, /createAcceptorObservations\(\{ dispatchWorktreeSlug, isUnderMeshDispatchWorktreesRoot, meshDispatchWorktreesRoot, readEvents \}\)/u, "the implementation receives these explicit ports");
 
       // BEHAVIOURAL, because a textual import proves only that the name is present: a path
       // composed by the framework's OWN dispatch seam folds into its parent, and the fold names
@@ -153,7 +177,7 @@ export const archTests = [
       const source = await censusSource();
       assert.match(
         source,
-        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/work-audit\/reads\.mjs"/u,
+        /import \{ SWEEP_BASES, readRecord, sweepDeclarationProblems \} from "\.\.\/audit\/reads\.mjs"/u,
         "the three shape-owning exports are imported from their one home",
       );
       // NO SECOND COPY. A local definition of any of the three would re-open exactly the

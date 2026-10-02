@@ -1,19 +1,22 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 03 (insert-story), task
 //   wiki/work/41_milestone_work-item-insertion/stories/03_story_insert-story/
 //     tasks/00_insert-story-places-and-scaffolds.feature
 // Every @executable scenario (and each Scenario Outline row) below is wired
 // against the REAL registered command `work:insert-story`
-// (src/commands/insert-story.mjs, a thin wrapper over story 01's engine via
-// src/commands/insert-shared.mjs's `runInsertStory`), invoked in-process
-// through the command core (src/command-core.mjs), and read back black-box via
-// findWork/validateWork (src/work.mjs) — mirroring the feature's own LITMUS
+// (packages/core/src/commands/insert-story.mjs, a thin wrapper over story 01's engine via
+// packages/core/src/commands/insert-shared.mjs's `runInsertStory`), invoked in-process
+// through the command core (packages/core/src/command-core.mjs), and read back black-box via
+// findWork/validateWork (packages/core/src/work.mjs) — mirroring the feature's own LITMUS
 // note: every Then is confirmable from the command's result envelope plus a
 // FRESH find/validate read, no source read.
 import assert from "node:assert/strict";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, validateWork } from "../../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const validateWork = _aofWorkspace.work.validateWork;
 import { withInsertFixture, buildMilestone, writeStoryItem, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 // The Background every scenario shares: milestone "05" with nested stories

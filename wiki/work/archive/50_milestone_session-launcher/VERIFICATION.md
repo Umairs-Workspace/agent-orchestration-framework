@@ -158,7 +158,7 @@ GET  /api/mesh/session-outcome?nodeId=win-host-a&sessionId=d6168b10-…
 **Why no session started, and why that is not a defect.** The only presence-`live` node on this fleet
 is `win-host-a`, which is the **control** node; the control node is never a connected worker, so it
 has no `directiveTargets` entry and the router synthesised the refusal. That is **deliberate and
-documented** at [session-launcher.mjs:235-237](../../../../ui/src/home/session-launcher.mjs#L235):
+documented** at [session-launcher.mjs:235-237](../../../../apps/ui/src/home/session-launcher.mjs#L235):
 *"The control node stays an option deliberately: a spawn aimed at it answers
 `session-target-not-connected`, and a stated refusal is a better answer than a picker that silently
 drops a machine the operator can see in the fleet."* The picker annotates; the route refuses.

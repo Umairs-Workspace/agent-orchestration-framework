@@ -6,8 +6,8 @@ import {
   buildLoopDeclaration,
   readLoopDeclaration,
   resolveLoopResume,
-} from "../../src/work/loop.mjs";
-import { workLoopStoryFixturesFor } from "../support/work-loop-story-fixtures.mjs";
+} from "../../packages/work-loop/src/engine.mjs";
+import { workLoopStoryFixturesFor } from "../../packages/work-loop/test/support/work-loop-story-fixtures.mjs";
 
 const loop = (overrides = {}) => ({
   loopRunId: "lr-7",
@@ -111,7 +111,7 @@ export const workLoopDeclarationTests = [
       // COMMENTS STRIPPED FIRST. The claim is about what the engine DOES, and the comment above
       // `resolveLoopId` names `.aof/loops/` while explaining why the engine never opens it - a
       // check that read the prose would fail on its own explanation.
-      const source = stripComments(readFileSync(new URL("../../src/work/loop.mjs", import.meta.url), "utf8"));
+      const source = stripComments(readFileSync(new URL("../../packages/work-loop/src/engine.mjs", import.meta.url), "utf8"));
       assert.equal(/^\s*import\s/mu.test(source), false, "the engine imports nothing");
       assert.equal(source.includes(".aof/loops"), false, "the engine names no registry path");
       assert.equal(/node:fs|readFile|loadLoops/u.test(source), false, "the engine opens no file");

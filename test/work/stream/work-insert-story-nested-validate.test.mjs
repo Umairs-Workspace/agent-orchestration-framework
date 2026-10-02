@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 41 / story 03 (insert-story), task
 //   wiki/work/41_milestone_work-item-insertion/stories/03_story_insert-story/
 //     tasks/01_nested-shift-preserves-parent-and-validate-green.feature
@@ -7,8 +9,10 @@
 // read (mirrors the feature's own LITMUS note).
 import assert from "node:assert/strict";
 import { writeFile } from "node:fs/promises";
-import { invoke } from "../../../src/command-core.mjs";
-import { findWork, listItems, validateWork } from "../../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const findWork = _aofWorkspace.work.findWork;
+const listItems = _aofWorkspace.work.listItems;
+const validateWork = _aofWorkspace.work.validateWork;
 import { withInsertFixture, buildTopLevelMilestones, writeStoryItem, frontmatter, SLUGS } from "../../support/work-insert-fixture.mjs";
 
 // The Background: milestone "05" with nested stories "05/00" (alpha), "05/01"

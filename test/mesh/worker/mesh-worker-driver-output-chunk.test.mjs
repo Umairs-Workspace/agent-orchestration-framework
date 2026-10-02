@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/mesh/worker/mesh-worker-driver-output-chunk.test.mjs — traceability for milestone 38 /
 // story 06 (ADR-014 AMENDMENT 2026-07-19). The FIRST producer link of the
 // cross-machine terminal stream: the REAL interactive driver's
@@ -16,7 +17,7 @@
 // an unresolvable frame is dropped downstream, never delivered to the wrong card) is
 // exercised deterministically.
 import assert from "node:assert/strict";
-import { driveInteractiveClaudeSession } from "../../../src/mesh/worker-execution.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
 import { createFakeWhich, createScriptedPty } from "../../support/mesh-worker-terminal-fixture.mjs";
 
 const sleep = (ms = 5) => new Promise((resolve) => setTimeout(resolve, ms));

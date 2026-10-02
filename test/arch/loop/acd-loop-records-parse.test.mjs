@@ -1,21 +1,39 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { createRequire } from "node:module";
+const require = createRequire(import.meta.url);
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { moduleCitationTarget, declaresServiceSymbol } from "../../support/workspace/module-citation.mjs";
 
-import { listCommands } from "../../../src/command-core.mjs";
-import { FIELD_KINDS, loadLoops } from "../../../src/work/loops.mjs";
+const listCommands = _aofApplication.listCommands;
+const FIELD_KINDS = _aofApplication.graph.work.loops.FIELD_KINDS;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const escape = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 function declaredHere(source, symbol) {
+  const destructured = [...source.matchAll(/export\s+(?:const|let)\s*\{([^}]+)\}\s*=/g)];
+  if (destructured.some(match => match[1].split(",").some(part => part.trim() === symbol))) return true;
   const name = escape(symbol);
   if (new RegExp(`export\\s+(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`).test(source)) return true;
   const declaration = new RegExp(`(?:async\\s+)?(?:function|const|let|class)\\s+${name}\\b`).test(source);
   if (!declaration) return false;
   return [...source.matchAll(/export\s*\{([^}]*)\}\s*;/g)].some((match) =>
     match[1].split(",").some((part) => part.trim().split(/\s+as\s+/).at(-1) === symbol));
+}
+
+// A migration forward may name a public package export. Follow that explicit API
+// without executing the target; ordinary imported bindings still are not declarations.
+async function declaresPublicSymbol(source, symbol) {
+  if (declaredHere(source, symbol)) return true;
+  for (const match of source.matchAll(/export\s*\{([^}]*)\}\s*from\s*["'](@aof\/[^"']+)["']/g)) {
+    const entry = match[1].split(",").map(part => part.trim().split(/\s+as\s+/)).find(parts => (parts[1] ?? parts[0]) === symbol);
+    if (entry && declaredHere(await readFile(require.resolve(match[2]), "utf8"), entry[0])) return true;
+  }
+  return false;
 }
 
 function fieldEntries(node) {
@@ -85,14 +103,14 @@ export const archTests = [
         pointers += 1;
         if (entry.pointer.scheme === "command") assert.ok(commands.has(entry.pointer.operand), entry.raw);
         if (entry.pointer.scheme === "module") {
-          const source = await readFile(path.join(root, entry.pointer.operand), "utf8");
-          assert.ok(declaredHere(source, entry.pointer.symbol), `${entry.raw}: target declares symbol`);
+          const target = await moduleCitationTarget(root, entry.pointer.operand);
+          assert.ok(await declaresServiceSymbol(target, entry.pointer.symbol), `${entry.raw}: actual source declares the public service symbol`);
         }
       }
       assert.ok(pointers > 10, "real pointer sweep is non-vacuous");
-      assert.equal(declaredHere(await readFile(path.join(root, "src/terminal-providers.mjs"), "utf8"), "CliProvider"), true);
-      assert.equal(declaredHere(await readFile(path.join(root, "src/command-core.mjs"), "utf8"), "loadWorkspace"), false);
-      assert.equal(declaredHere(await readFile(path.join(root, "src/graphify.mjs"), "utf8"), "readGraph"), false);
+      assert.equal(await declaresServiceSymbol(path.join(root, "packages/core/src/application/bindings/terminal-providers.mjs"), "CliProvider"), true);
+      assert.equal(declaredHere(await readFile(path.join(root, "packages/core/src/application/bindings/command-core.mjs"), "utf8"), "loadWorkspace"), false);
+      assert.equal(declaredHere(await readFile(path.join(root, "packages/knowledge/src/graphify.mjs"), "utf8"), "readGraph"), false);
     },
   },
 ];

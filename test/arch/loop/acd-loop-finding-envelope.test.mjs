@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
@@ -7,12 +8,13 @@ import path from "node:path";
 import { promisify } from "node:util";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { LOADER_FINDING_CODES, loadLoops } from "../../../src/work/loops.mjs";
+const LOADER_FINDING_CODES = _aofApplication.graph.work.loops.LOADER_FINDING_CODES;
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   CHECK_FINDING_CODES, CHECK_IDS, GATING_CODES, checkActuatorArbitration, checkAnchorGrounding, checkGrounding, checkPairing,
   checkReferenceOwnership, checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
-import { loopsValidateCommand } from "../../../src/commands/loops-validate.mjs";
+} from "@aof/work-graph/checks";
+const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
 
 const runFile = promisify(execFile);
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -355,7 +357,7 @@ export const archTests = [
         // and not about the product: `04_finding-envelope.feature:110-126` says the findings are
         // concatenated "the way the command concatenates them", and that "an unordered
         // concatenation fails the gate even when the finding SET is right". Measured on this tree,
-        // making `src/commands/loops-validate.mjs` iterate `[...CHECK_IDS].reverse()`, or emit the
+        // making `packages/core/src/commands/loops-validate.mjs` iterate `[...CHECK_IDS].reverse()`, or emit the
         // check lane before the loader lane, left all nineteen gates green. So the real command is
         // driven over the SAME fixture and its `findings` compared with the frozen concatenation.
         const commandResult = await loopsValidateCommand.run({}, { workspace: { workDir: temp, aofDir: temp } });
@@ -385,8 +387,8 @@ export const archTests = [
         assert.notDeepEqual([...fixtureCheckLane, ...model.findings], commandResult.findings, "the fixture DISTINGUISHES a check-lane-first emission — loader-lane-first is measured, not assumed");
         assert.ok(fixtureCheckLane.length > 0 && new Set(fixtureCheckLane.map((f) => f.code)).size > 1, "more than one check fired over the fixture, which is what makes their ORDER observable at all");
 
-        const loaderUrl = pathToFileURL(path.join(root, "src/work/loops.mjs")).href;
-        const checksUrl = pathToFileURL(path.join(root, "src/work/loops-checks.mjs")).href;
+        const loaderUrl = pathToFileURL(path.join(root, "packages/work-graph/src/registry.mjs")).href;
+        const checksUrl = pathToFileURL(path.join(root, "packages/work-graph/src/checks.mjs")).href;
         const script = `import {loadLoops} from ${JSON.stringify(loaderUrl)}; import * as c from ${JSON.stringify(checksUrl)}; const models=${JSON.stringify(checkModels)}; const ids=${JSON.stringify(CHECK_IDS)}; const names=${JSON.stringify(CHECK_NAMES)}; const m=await loadLoops(${JSON.stringify(temp)}); console.log(JSON.stringify([...m.findings,...ids.flatMap(id=>c[names[id]](models[id]))]));`;
         const { stdout } = await runFile(process.execPath, ["--input-type=module", "--eval", script]);
         assert.equal(stdout.trim(), JSON.stringify(combined), "fresh-process bytes match the CHECK_IDS-ordered oracle");
@@ -431,8 +433,8 @@ export const archTests = [
         assert.equal(severity, GATING_CODES.has(code) ? "error" : "warn", `${code}: severity is derived only from frozen membership`);
       }
 
-      const checksSource = await readFile(path.join(root, "src/work/loops-checks.mjs"), "utf8");
-      const commandSource = await readFile(path.join(root, "src/commands/loops-validate.mjs"), "utf8");
+      const checksSource = await readFile(path.join(root, "packages/work-graph/src/checks.mjs"), "utf8");
+      const commandSource = await readFile(path.join(root, "packages/work-graph/src/commands/loops-validate.mjs"), "utf8");
       assert.match(checksSource, /severity:\s*GATING_CODES\.has\(code\)\s*\?\s*"error"\s*:\s*"warn"/u);
       assert.doesNotMatch(checksSource, /function finding\([^)]*\)\s*\{\s*return \{ code, severity: "warn"/u,
         "the finding constructor no longer hardcodes one severity");
@@ -462,7 +464,7 @@ export const archTests = [
         // different creation/mtime order, yields the same findings once the path prefix is removed
         // — so no finding, and no position, is a function of the directory it was loaded from.
         assert.deepEqual(normalize(second.findings), normalize(first.findings), "a second registry, materialised under a different root in a different creation order, yields identical findings modulo its path prefix");
-        const loaderUrl = pathToFileURL(path.join(root, "src/work/loops.mjs")).href;
+        const loaderUrl = pathToFileURL(path.join(root, "packages/work-graph/src/registry.mjs")).href;
         const script = `import {loadLoops} from ${JSON.stringify(loaderUrl)}; console.log(JSON.stringify((await loadLoops(${JSON.stringify(firstTemp)})).findings));`;
         const { stdout } = await runFile(process.execPath, ["--input-type=module", "--eval", script]);
         assert.equal(stdout.trim(), JSON.stringify(orderOracle(firstDir)), "fresh-process loader bytes equal the literal total-order oracle");

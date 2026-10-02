@@ -1,3 +1,4 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // 63/02 — THE LAUNCH ENVELOPE COMPILES. The four task features of "the launch envelope
 // compiles", driven over the real compiler and the real launch seam:
 //
@@ -30,10 +31,11 @@ import {
   FROZEN_ENFORCEMENT_POINTS,
   FROZEN_SET_RELPATH,
   FrozenSetError,
-} from "../../src/frozen-set.mjs";
-import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../src/agent-session-driver.mjs";
-import { PROVIDER_IDS } from "../../src/terminal-providers.mjs";
-import { loadBundle } from "../../src/work/bundle.mjs";
+} from "../../packages/core/src/frozen-set.mjs";
+const driveInteractiveClaudeSession = _aofSessions.agentSessionDriver.driveInteractiveClaudeSession;
+const resolveInteractiveDriverLaunch = _aofSessions.agentSessionDriver.resolveInteractiveDriverLaunch;
+const PROVIDER_IDS = _aofSessions.terminalProviders.PROVIDER_IDS;
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const ENVELOPE_POINT = "the worker launch envelope";
@@ -937,7 +939,7 @@ export const unattendedLaunchEnvelopeTests = [
     run: async () => {
       const [installed, shipped] = await Promise.all([
         readFile(path.join(repoRoot, ...FROZEN_SET_RELPATH.split("/"))),
-        readFile(path.join(repoRoot, "src", "bundle", "frozen-set.jsonc")),
+        readFile(path.join(repoRoot, "packages", "core", "assets", "frozen-set.jsonc")),
       ]);
       assert.deepEqual(installed, shipped, "the two are identical as bytes, line endings included");
 

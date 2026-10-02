@@ -1,19 +1,20 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 
-import {
-  RULING_REFUSAL_ORDER,
-  acceptorCommand,
-  buildAcceptorReport,
-  reversionDecision,
-  withdrawalOnHarm,
-} from "../../src/commands/acceptor.mjs";
-import { criterionDigest, defaultCriterion, makeCriterion } from "../../src/work-acceptor/criterion.mjs";
-import { PAIR_OUTCOMES } from "../../src/work-acceptor/ledger.mjs";
-import { tunableSet } from "../../src/work-acceptor/admissibility.mjs";
-import { compoundStepRefusal } from "../../src/loop-bounds.mjs";
+const RULING_REFUSAL_ORDER = _aofApplication.work.commandTools.acceptor.RULING_REFUSAL_ORDER;
+const acceptorCommand = _aofApplication.getCommand("work:acceptor");
+const buildAcceptorReport = _aofApplication.work.commandTools.acceptor.buildAcceptorReport;
+const reversionDecision = _aofApplication.work.commandTools.acceptor.reversionDecision;
+const withdrawalOnHarm = _aofApplication.work.commandTools.acceptor.withdrawalOnHarm;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+import { PAIR_OUTCOMES } from "@aof/work/acceptor/ledger";
+import { tunableSet } from "@aof/work/acceptor/admissibility";
+import { compoundStepRefusal } from "@aof/contracts/loop-bounds";
 
 const KEY = "work.loop.reviewRounds";
 const W = PAIR_OUTCOMES.FAVOURABLE;
@@ -44,8 +45,8 @@ function model(keys = [KEY], dwell = "cycles:2") {
 function consumerUnits(key = KEY) {
   const leaf = key.split(".").at(-1);
   return [
-    { rel: "src/bounds.mjs", code: `export function ${leaf}FromConfig(workspace) { return workspace.config.value ?? 1; }` },
-    { rel: "src/consumer.mjs", code: `function decide(workspace) { const value = ${leaf}FromConfig(workspace); if (value > 0) return true; return false; }` },
+    { rel: "packages/core/src/bounds.mjs", code: `export function ${leaf}FromConfig(workspace) { return workspace.config.value ?? 1; }` },
+    { rel: "packages/core/src/consumer.mjs", code: `function decide(workspace) { const value = ${leaf}FromConfig(workspace); if (value > 0) return true; return false; }` },
   ];
 }
 

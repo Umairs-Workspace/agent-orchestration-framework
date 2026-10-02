@@ -1,11 +1,13 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { RAW_FEEDBACK_KEYS } from "../../../src/feedback-records.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+import { RAW_FEEDBACK_KEYS } from "@aof/work/feedback-records";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { markedRegion, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -27,7 +29,7 @@ export const archTests = [
       }
       assert.match(command.cli.spec.unknownFlagMessage, /classification belongs to later triage/i);
 
-      const bundle = await readFile(path.join(root, "src", "bundle", "commands", "feedback.md"), "utf8");
+      const bundle = await readFile(path.join(root, "packages", "core", "assets", "commands", "feedback.md"), "utf8");
       // The YAML frontmatter block, cut through the ONE home (milestone 47's ledger, and
       // VERIFICATION F-55-M-4 which caught this file adding a new instance). The tempting cut
       // — `bundle.slice(0, bundle.indexOf("---", 4) + 3)` — is the SENTINEL_END shape: with the
@@ -48,11 +50,11 @@ export const archTests = [
     async run() {
       assert.ok(Object.isFrozen(RAW_FEEDBACK_KEYS));
       assert.deepEqual([...RAW_FEEDBACK_KEYS], ["kind", "id", "text", "actor", "refs", "at"]);
-      const store = stripComments(await readFile(path.join(root, "src", "feedback-records.mjs"), "utf8"));
+      const store = stripComments(await readFile(path.join(root, "packages", "work", "src", "feedback-records.mjs"), "utf8"));
       assert.match(store, /appendFile\(feedbackRecordPath\(item\)/, "records use the append-only filesystem primitive");
       assert.doesNotMatch(store, /\bwriteFile\b|\brename\b|\btruncate\b/, "the raw ledger has no rewrite primitive");
 
-      const transition = stripComments(await readFile(path.join(root, "src", "effects", "doc-transitions.mjs"), "utf8"));
+      const transition = stripComments(await readFile(path.join(root, "packages", "work", "src", "doc-transitions.mjs"), "utf8"));
       const rawAt = transition.indexOf("await appendRawFeedback(item, raw)");
       const projectionAt = transition.indexOf("await appendFeedbackBullet(statePath, bullet)");
       assert.ok(rawAt >= 0 && projectionAt > rawAt, "the raw append is structurally before the human projection");
@@ -62,13 +64,13 @@ export const archTests = [
     name: "arch/FF-5507 every production raw writer goes through the one capture transition",
     async run() {
       const callers = [];
-      for (const file of await readSrcFiles(root)) {
+      for (const file of await readRuntimeFiles(root)) {
         const source = stripComments(await readFile(file.path, "utf8"));
         if (/\bappendRawFeedback\s*\(/.test(source)) callers.push(file.rel.replaceAll("\\", "/"));
       }
-      assert.deepEqual(callers.sort(), ["effects/doc-transitions.mjs", "feedback-records.mjs"]);
+      assert.deepEqual(callers.sort(), ["packages/work/src/doc-transitions.mjs", "packages/work/src/feedback-records.mjs"]);
 
-      const command = stripComments(await readFile(path.join(root, "src", "commands", "feedback.mjs"), "utf8"));
+      const command = stripComments(await readFile(path.join(root, "packages", "work", "src", "commands", "feedback.mjs"), "utf8"));
       const refusalAt = command.indexOf("feedback-classification-deferred");
       const resolveAt = command.indexOf("await resolveItemExact");
       const writeAt = command.indexOf("await transitionFeedbackAppended");

@@ -53,13 +53,13 @@ regression than the one this milestone fixes.
 
 | Producer | Site | Emits today |
 |---|---|---|
-| board server | [board-serve.mjs:41](../../../../../../src/board-serve.mjs#L41), [:62](../../../../../../src/board-serve.mjs#L62) | `http://127.0.0.1:PORT/?mode=board` |
+| board server | [board-serve.mjs:41](../../../../../../packages/server/src/board-serve.mjs#L41), [:62](../../../../../../packages/server/src/board-serve.mjs#L62) | `http://127.0.0.1:PORT/?mode=board` |
 | fleet server | [mesh-ui-serve.mjs:143](../../../../../../src/mesh-ui-serve.mjs#L143), [:736](../../../../../../src/mesh-ui-serve.mjs#L736) | `...?mode=fleet&scope=<scope>` |
 | assets UI | [assets-ui.mjs:45](../../../../../../src/commands/assets-ui.mjs#L45), [:117](../../../../../../src/commands/assets-ui.mjs#L117) | `...?mode=assets` |
-| board-url route | [mesh-ui-serve.mjs:278](../../../../../../src/mesh-ui-serve.mjs#L278), consumed at [fleet/api.ts:286](../../../../../../ui/src/fleet/api.ts#L286) | a page URL with `#ref` |
-| desktop app | [supervisor.rs:44](../../../../../../app/desktop/crates/app/src/supervisor.rs#L44) | `MESH_UI_URL` const, `?mode=fleet&scope=global` |
-| board → fleet | [Board.tsx:416](../../../../../../ui/src/board/Board.tsx#L416), [DetailPanel.tsx:270](../../../../../../ui/src/board/DetailPanel.tsx#L270) | `http://127.0.0.1:4181/?mode=fleet...` |
-| fleet → board | [Fleet.tsx:1398](../../../../../../ui/src/fleet/Fleet.tsx#L1398) | `/?mode=board` |
+| board-url route | [mesh-ui-serve.mjs:278](../../../../../../src/mesh-ui-serve.mjs#L278), consumed at [fleet/api.ts:286](../../../../../../apps/ui/src/fleet/api.ts#L286) | a page URL with `#ref` |
+| desktop app | [supervisor.rs:44](../../../../../../apps/desktop/crates/app/src/supervisor.rs#L44) | `MESH_UI_URL` const, `?mode=fleet&scope=global` |
+| board → fleet | [Board.tsx:416](../../../../../../apps/ui/src/board/Board.tsx#L416), [DetailPanel.tsx:270](../../../../../../apps/ui/src/board/DetailPanel.tsx#L270) | `http://127.0.0.1:4181/?mode=fleet...` |
+| fleet → board | [Fleet.tsx:1398](../../../../../../apps/ui/src/fleet/Fleet.tsx#L1398) | `/?mode=board` |
 
 **`?scope=` and `#ref` are carried, not dropped.** The fleet URL keeps its scope parameter and the
 board-url keeps its fragment — they move to the path form, they do not lose their payload.

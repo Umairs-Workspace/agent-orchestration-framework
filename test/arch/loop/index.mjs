@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -31,7 +31,7 @@ import { archTests as acdLoopSuiteRegistrationTests } from "./acd-loop-suite-reg
 import { archTests as acdWatcherTaxonomyAdditiveTests } from "./acd-watcher-taxonomy-additive.test.mjs";
 // milestone 58 / story 00 — the FIFTH node kind and the timescale-layer axis: the arbiter's
 // frozen declaration vocabulary (FF-5801), and the endpoint-closed registry fixture every
-// subset copy of `src/bundle/loops/` now goes through (FF-5809). The story's behavioural
+// subset copy of `packages/core/assets/loops/` now goes through (FF-5809). The story's behavioural
 // scenarios extend the loader's own record/value suites, already registered by milestone 52's
 // story-05 block above — 58/00 adds no behavioural suite of its own.
 import { archTests as acdArbiterTaxonomyAdditiveTests } from "./acd-arbiter-taxonomy-additive.test.mjs";
@@ -58,14 +58,14 @@ import { archTests as acdTriggerIsNonVacuousOverThisRepoTests } from "./acd-trig
 import { archTests as acdDwellGatesReversionOnlyTests } from "./acd-dwell-gates-reversion-only.test.mjs";
 import { archTests as acdNoUncappedFrameworkLoopTests } from "./acd-no-uncapped-framework-loop.test.mjs";
 // ── milestone 49 / story 06 — THE PULSE HONOURS REDUCED MOTION (DESIGN DG-49-6). Not a gap: a
-// SHIPPED defect whose own code comment claimed the opposite. `ui/src/terminal/palette.mjs` said
-// both pulses honoured `prefers-reduced-motion` through a convention in `ui/src/index.css`; the
+// SHIPPED defect whose own code comment claimed the opposite. `apps/ui/src/terminal/palette.mjs` said
+// both pulses honoured `prefers-reduced-motion` through a convention in `apps/ui/src/index.css`; the
 // only such rule in the whole of `ui/` named `.aof-pending` — a different class over a different
 // animation — so the `connecting…` and `streaming` dots kept pulsing for every operator whose
 // system had asked them to stop (measured in a real browser at refine: `pulse`, 2s, with reduce
 // FORCED). One pulsing dot on one card hid it; milestone 49's grid of a dozen is what exposed it.
 //   THE FIX IS ONE CSS RULE, and that is ARCHITECTURE's ruling rather than a shortcut: twelve
-//   `animate-pulse` sites exist across `ui/src` and twelve per-site escapes would be twelve edits
+//   `animate-pulse` sites exist across `apps/ui/src` and twelve per-site escapes would be twelve edits
 //   with a thirteenth site one diff away, while widening the stylesheet's ONE reduced-motion block
 //   covers the site nobody has written yet. Because the block IS the mechanism, the source gate
 //   below is a COMPLETE proof of the invariant — which is why the browser lane was DECLINED and
@@ -108,7 +108,7 @@ import { archTests as acdLoopNarratesInFlightTests } from "./acd-loop-narrates-i
 // now: it composes the store-s verdicts and names none of them.
 import { archTests as acdDeclarationPredicateIsComposedTests } from "./acd-declaration-predicate-is-composed.test.mjs";
 // story 125 / task 01 — the PLACEMENT control on the loop document's readership: the site builder
-// (`scripts/site/build-site.mjs`) reaches `loopDocumentPath` from outside the `src/` walk story 79's
+// (`scripts/site/build-site.mjs`) reaches `loopDocumentPath` from outside the `packages/core/src/` walk story 79's
 // drift check (`acd-loop-document-current`) asserts over, spells no basename and composes nothing,
 // and nothing under `docs/` is a copy of the graph document. It lives HERE, beside the reader-set
 // control whose predicate it shares, because 124/02's FF-12405 leg 10 freezes `test/arch/bundle/`

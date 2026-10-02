@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 04 (staleness, never eviction), task
 //   .../04_story_staleness-and-resync/tasks/00_schema-v8-provenance-columns.feature
 //
@@ -32,12 +33,10 @@ import { existsSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import {
-  openGlobalWorkProjectionStore,
-  upsertWorkItems,
-  GLOBAL_WORK_SCHEMA_VERSION,
-} from "../../src/global-work-store.mjs";
-import { globalMeshPaths } from "../../src/workspace.mjs";
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const upsertWorkItems = _aofApplication.mesh.store.upsertWorkItems;
+const GLOBAL_WORK_SCHEMA_VERSION = _aofApplication.mesh.store.GLOBAL_WORK_SCHEMA_VERSION;
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 const WS = "ws-preexisting";
 const OTHER_WS = "ws-second";

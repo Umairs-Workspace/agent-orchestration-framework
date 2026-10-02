@@ -1,9 +1,10 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadLoops } from "../../../src/work/loops.mjs";
+const loadLoops = _aofApplication.graph.work.loops.loadLoops;
 import {
   GATING_CODES,
   checkActuatorArbitration,
@@ -12,11 +13,11 @@ import {
   checkPairing,
   checkReferenceOwnership,
   checkTimescale,
-} from "../../../src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 import { withLoopRegistry } from "../../support/loop-registry-fixture.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const loopsDir = path.join(root, "src", "bundle", "loops");
+const loopsDir = path.join(root, "packages", "core", "assets", "loops");
 const CHECKS = Object.freeze([
   checkGrounding,
   checkAnchorGrounding,

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5405 (milestone 54 / ADR-003) — THE READ FACE NEVER EXECUTES, AND A GRADE NEVER
 // RE-ENTERS ITSELF.
 //
@@ -22,10 +23,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { getCommand, listCommands } from "../../../src/command-core.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { serveSetupUi } from "../../../src/setup-ui.mjs";
-import { GRADE_REENTRANCY_ENV } from "../../../src/commands/grade.mjs";
+const getCommand = _aofApplication.getCommand;
+const listCommands = _aofApplication.listCommands;
+const invoke = _aofApplication.invoke;
+const serveSetupUi = _aofApplication.server.setupUi.serveSetupUi;
+const GRADE_REENTRANCY_ENV = _aofApplication.work.commandTools.grade.GRADE_REENTRANCY_ENV;
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../../support/grade-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -97,8 +99,8 @@ export const archTests = [
         await new Promise((resolve) => server.close(resolve));
       }
 
-      const boardUi = await readFile(path.join(repoRoot, "src", "board-ui.mjs"), "utf8");
-      assert.ok(!boardUi.includes("work:grade"), "src/board-ui.mjs never reaches the grade command");
+      const boardUi = await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8");
+      assert.ok(!boardUi.includes("work:grade"), "packages/core/src/board-ui.mjs never reaches the grade command");
     },
   },
 

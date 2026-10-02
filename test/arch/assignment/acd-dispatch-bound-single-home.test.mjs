@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // Fitness function: acd-dispatch-bound-single-home (story 65 / task 02) —
 //
 //   "the concurrency bound is READ, never invented: ONE configured key, ONE default, ONE
@@ -23,24 +25,22 @@
 // and everything else matching /concurren|parallel/ is prose. So this is not a second home
 // beside an existing one; it is the first, and this gate is what keeps it the only one.
 //
-// The scan is source-shape over `src/`, comments stripped, so a comment naming the key (this
+// The scan is source-shape over `packages/core/src/`, comments stripped, so a comment naming the key (this
 // file's own subject matter, and the module header's) is never counted as a reader.
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import {
-  DEFAULT_DISPATCH_CONCURRENCY,
-  resolveDispatchConcurrency,
-  dispatchConcurrencyFromConfig,
-} from "../../../src/work/dispatch.mjs";
+const DEFAULT_DISPATCH_CONCURRENCY = _aofApplication.loop.work.dispatch.DEFAULT_DISPATCH_CONCURRENCY;
+const resolveDispatchConcurrency = _aofApplication.loop.work.dispatch.resolveDispatchConcurrency;
+const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 // THE ONE HOME. Named, so the gate reports WHICH file may hold the bound rather than only
 // that some file holds it twice.
-const BOUND_HOME = "src/work/dispatch.mjs";
+const BOUND_HOME = "packages/work-loop/src/dispatch.mjs";
 
 // The three shapes a second site takes, each keyed on what it would actually look like:
 //   · reading the configured key directly (`config.work.dispatch.concurrency`);
@@ -48,7 +48,7 @@ const BOUND_HOME = "src/work/dispatch.mjs";
 //   · re-implementing the resolver.
 const CONFIG_KEY = /\bdispatch\s*(?:\?\.|\.)\s*concurrency\b/;
 // 129/07 — the LOOP's own `work.loop.dispatch.concurrency` is a different key with a different
-// home (`src/loop-bounds.mjs`, where it is read as `loopConfig(workspace)?.dispatch?.concurrency`
+// home (`packages/core/src/loop-bounds.mjs`, where it is read as `loopConfig(workspace)?.dispatch?.concurrency`
 // and spelled as a map entry `"work.loop.dispatch.concurrency"`). Those two forms are erased
 // before the pool key's pattern is asked, so the bounds home is not a second site of THIS key,
 // while a `work?.dispatch?.concurrency` read anywhere but the home still is.
@@ -79,19 +79,7 @@ export function boundSiteOffenders(listing, home = BOUND_HOME) {
 }
 
 async function readSrcListing() {
-  const dir = path.join(repoRoot, "src");
-  const listing = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.name.endsWith(".mjs")) {
-        listing.push({ path: path.relative(repoRoot, full).split(path.sep).join("/"), source: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(dir);
-  return listing;
+  return Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ path: file.rel, source: await readFile(file.path, "utf8") })));
 }
 
 export const archTests = [
@@ -99,7 +87,7 @@ export const archTests = [
     name: "arch/65 (acd-dispatch-bound-single-home): the concurrency bound has exactly ONE resolution site in src/ — one configured key, one default constant, one resolver",
     run: async () => {
       const listing = await readSrcListing();
-      assert.ok(listing.length > 100, `src/ was actually swept (non-vacuous): ${listing.length} modules`);
+      assert.ok(listing.length > 100, `packages/core/src/ was actually swept (non-vacuous): ${listing.length} modules`);
       const offenders = boundSiteOffenders(listing);
       assert.deepEqual(offenders, [], `dispatch-bound offenders:\n  ${offenders.join("\n  ")}`);
     },
@@ -110,13 +98,13 @@ export const archTests = [
     run: async () => {
       const home = { path: BOUND_HOME, source: "export const DEFAULT_DISPATCH_CONCURRENCY = 3;\nexport function dispatchConcurrencyFromConfig(ws) { return resolveDispatchConcurrency(ws?.config?.work?.dispatch?.concurrency); }" };
       // A CONSUMER, done correctly: it imports the resolver and never names the key.
-      const consumer = { path: "src/commands/dispatch.mjs", source: 'import { dispatchConcurrencyFromConfig } from "../work/dispatch.mjs";\nconst bound = dispatchConcurrencyFromConfig(ws);' };
+      const consumer = { path: "packages/work-loop/src/commands/dispatch.mjs", source: 'import { dispatchConcurrencyFromConfig } from "../work/dispatch.mjs";\nconst bound = dispatchConcurrencyFromConfig(ws);' };
       assert.deepEqual(boundSiteOffenders([home, consumer]), [], "a consumer that imports the resolver is not a second site");
 
       for (const [label, planted] of [
-        ["a second reader of the configured key", { path: "src/mesh/launcher.mjs", source: "const bound = config?.work?.dispatch?.concurrency ?? 3;" }],
-        ["a second default constant", { path: "src/work/loops.mjs", source: "const DEFAULT_DISPATCH_CONCURRENCY = 6;" }],
-        ["a second resolver", { path: "src/board-ui.mjs", source: "function resolveDispatchConcurrency(value) { return value ?? 3; }" }],
+        ["a second reader of the configured key", { path: "packages/mesh/src/launcher.mjs", source: "const bound = config?.work?.dispatch?.concurrency ?? 3;" }],
+        ["a second default constant", { path: "packages/core/src/application/bindings/work/loops.mjs", source: "const DEFAULT_DISPATCH_CONCURRENCY = 6;" }],
+        ["a second resolver", { path: "packages/server/src/board-ui.mjs", source: "function resolveDispatchConcurrency(value) { return value ?? 3; }" }],
       ]) {
         const offenders = boundSiteOffenders([home, consumer, planted]);
         assert.equal(offenders.length, 1, `self-check: ${label} is reported exactly once (got ${JSON.stringify(offenders)})`);
@@ -125,16 +113,16 @@ export const archTests = [
 
       // 129/07 — the bounds home reading ITS OWN `work.loop.dispatch.concurrency` (and spelling it as
       // a map entry) is not a second site of the pool key; the same file reading the pool key is.
-      const loopHome = { path: "src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
+      const loopHome = { path: "packages/contracts/src/loop-bounds.mjs", source: 'const loopConfig = (w) => w?.config?.work?.loop;\nexport function loopDispatchConcurrencyFromConfig(workspace) { return positiveInteger(loopConfig(workspace)?.dispatch?.concurrency, null); }\nexport const M = { "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig };' };
       assert.deepEqual(boundSiteOffenders([home, consumer, loopHome]), [], "self-check: the loop key's own home is not a second site of the pool key");
-      const annexing = { path: "src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
+      const annexing = { path: "packages/contracts/src/loop-bounds.mjs", source: `${loopHome.source}\nconst pool = workspace?.config?.work?.dispatch?.concurrency;` };
       const annexed = boundSiteOffenders([home, consumer, annexing]);
       assert.equal(annexed.length, 1, `self-check: the same file reading the pool key is reported (got ${JSON.stringify(annexed)})`);
 
       // …and a COMMENT naming the key is history, not an instance of it — otherwise the
       // module that documents the rule would be the first to break it.
       assert.deepEqual(
-        boundSiteOffenders([home, { path: "src/prose.mjs", source: "// the bound comes from config.work.dispatch.concurrency, resolved in work-dispatch.mjs\n" }]),
+        boundSiteOffenders([home, { path: "packages/core/src/prose.mjs", source: "// the bound comes from config.work.dispatch.concurrency, resolved in work-dispatch.mjs\n" }]),
         [],
         "self-check: a comment naming the key is not a reader of it",
       );

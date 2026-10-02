@@ -35,10 +35,10 @@ so that aof owns a version-pinned dependency store in a relocatable home, an aof
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md) (**ADR-001** the store + resolver,
 **ADR-002** the provider registry + frozen tool descriptor). This story **owns**: the store path helpers in
-[paths.mjs](../../../../../../src/paths.mjs) (`toolStoreRoot`/`toolVersionDir`), a new `src/tool-store.mjs`
+[paths.mjs](../../../../../../packages/core/src/paths.mjs) (`toolStoreRoot`/`toolVersionDir`), a new `src/tool-store.mjs`
 (the store-first `resolveManagedBinary` + the cross-platform exe rule + the `PACKAGE_BINARIES` map), and
 the provider registry (the `uv` lane + the `npx` lane re-homed behind the registry, **delegating** to the
-existing [frameworks.mjs](../../../../../../src/frameworks.mjs) planner — not rewriting it) + the frozen tool
+existing [frameworks.mjs](../../../../../../packages/core/src/frameworks.mjs) planner — not rewriting it) + the frozen tool
 descriptor + the dry-run plan. It does **not** add the `aof project provision` command or doctor checks
 (story 01), re-point any tool driver (02/03), or author `test/arch/*` (04).
 

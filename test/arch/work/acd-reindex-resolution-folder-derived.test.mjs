@@ -1,3 +1,4 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 41 / ADR-003 (foundation) — honours 00/ADR-001
 // ("the folder name is the index; content reads never identify an item").
 //
@@ -17,7 +18,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rename, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { listItems, findWork } from "../../../src/work.mjs";
+const listItems = _aofWorkspace.work.listItems;
+const findWork = _aofWorkspace.work.findWork;
 
 function frontmatter(fields) {
   const lines = Object.entries(fields).map(([key, value]) => `${key}: ${value}`);

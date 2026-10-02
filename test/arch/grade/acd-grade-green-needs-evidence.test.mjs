@@ -1,6 +1,6 @@
 // FF-5402 (milestone 54 / ADR-005) — GREEN IS POSITIVE EVIDENCE, NEVER AN EXIT CODE.
 //
-// "No path in `src/**` yields `verdict: "pass"` without a parsed report, and the evidence
+// "No path in `packages/core/src/**` yields `verdict: "pass"` without a parsed report, and the evidence
 //  measured against the floor is the cases that RAN — `total - skipped > 0` and `>= floor`
 //  (ADR-005 §2(c) AS AMENDED 2026-08-22, finding F-54-00-2); the exit status is checked
 //  before the report is read; `GRADE_VERDICTS` is a frozen exported triple."
@@ -23,11 +23,12 @@
 // it without evidence. So lane (d) drives the real compiler over the FULL CROSS PRODUCT of
 // the four pieces and asserts that `pass` is unreachable while any one of them is missing —
 // `m47/R8`'s rule that a gate's non-vacuity proof must be self-contained and reachable.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compileGrade, evidenceFloor, GRADE_VERDICTS } from "../../../src/work/grade.mjs";
+import { compileGrade, evidenceFloor, GRADE_VERDICTS } from "@aof/work/grade";
 // THE ONE HOME for cutting source (TECH_DEBT item 24 — its `stripComments` strips LINE
 // comments FIRST, so a `//` comment containing `/*` cannot open a phantom block that blinds
 // every sweep below). A second brace balancer written beside it is the species this repo has
@@ -35,23 +36,12 @@ import { compileGrade, evidenceFloor, GRADE_VERDICTS } from "../../../src/work/g
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
 
-const THE_ONE_HOME = "src/work/grade.mjs";
+const THE_ONE_HOME = "packages/work/src/grade.mjs";
 
 async function readSources() {
-  const sources = [];
-  const walk = async (dir) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.isFile() && entry.name.endsWith(".mjs")) {
-        sources.push({ file: path.relative(repoRoot, full).replaceAll("\\", "/"), text: await readFile(full, "utf8") });
-      }
-    }
-  };
-  await walk(srcDir);
-  return sources;
+  return Promise.all((await readRuntimeFiles(repoRoot)).map(async file => ({ file: file.rel, text: await readFile(file.path, "utf8") })));
 }
 
 // Every sweep reads bodies stripped through the ONE HOME, and refuses a body that carries
@@ -254,17 +244,17 @@ export const archTests = [
     name: "arch/FF-5402: NON-VACUITY — a planted `verdict: \"pass\"` in a second module IS detected, and a comparison is NOT",
     run: () => {
       const planted = passVerdictSites([
-        { file: "src/pretend-grader.mjs", body: 'return { ref, verdict: "pass", codes: [] };\n' },
+        { file: "packages/core/src/pretend-grader.mjs", body: 'return { ref, verdict: "pass", codes: [] };\n' },
       ]);
-      assert.deepEqual(planted.map((site) => site.file), ["src/pretend-grader.mjs"], "a second producer of a pass verdict IS a finding");
+      assert.deepEqual(planted.map((site) => site.file), ["packages/core/src/pretend-grader.mjs"], "a second producer of a pass verdict IS a finding");
       assert.deepEqual(
-        passVerdictSites([{ file: "src/pretend-reader.mjs", body: 'if (grade.verdict === "pass") advance();\nconst passed = record.verdict == "pass";\n' }]),
+        passVerdictSites([{ file: "packages/core/src/pretend-reader.mjs", body: 'if (grade.verdict === "pass") advance();\nconst passed = record.verdict == "pass";\n' }]),
         [],
         "…and READING the verdict is not producing one — 54/02 and 54/03 must be able to branch on it",
       );
       // The assignment form is caught however it is spelled.
       for (const spelling of ['verdict: "pass"', "verdict: 'pass'", 'verdict = "pass"', "verdict:  `pass`"]) {
-        assert.equal(passVerdictSites([{ file: "src/x.mjs", body: `${spelling};\n` }]).length, 1, `\`${spelling}\` is detected`);
+        assert.equal(passVerdictSites([{ file: "packages/core/src/x.mjs", body: `${spelling};\n` }]).length, 1, `\`${spelling}\` is detected`);
       }
     },
   },

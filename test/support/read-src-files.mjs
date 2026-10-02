@@ -3,12 +3,23 @@
 // consumers — never two implementations of the same scan.
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
+import { sourceFiles, workspaceSourceRoots } from "../../scripts/source-inventory.mjs";
 
 // readSrcFiles(repoRoot) — every src/**/*.mjs file as `{ rel, path }`, where `rel` is
 // the slash-joined path relative to src/. Used to assert that a forbidden argv shape
 // (a `--system-prompt` replacement, a second claude launch builder) exists nowhere.
-export async function readSrcFiles(repoRoot) {
-  const srcDir = path.join(repoRoot, "src");
+function runtimeFiles(files, runtime) {
+  if (!["all", "node", "browser"].includes(runtime)) throw Error(`Unknown source runtime: ${runtime}`);
+  return files.filter(file => runtime === "all" || (file.owner === "@aof/ui") === (runtime === "browser"));
+}
+
+export async function readSrcFiles(repoRoot, { runtime = "all" } = {}) {
+  return runtimeFiles(sourceFiles(repoRoot), runtime).map(file => ({ ...file,
+    rel: file.rel.startsWith("packages/core/src/") ? file.rel.slice("packages/core/src/".length) : file.rel,
+  }));
+}
+
+async function readSourceDirectory(srcDir) {
   const out = [];
   async function walk(dir, relPrefix) {
     for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -25,6 +36,26 @@ export async function readSrcFiles(repoRoot) {
   return out;
 }
 
+// Runtime ownership now spans src/ and packages/*/src/. Keep package tests and
+// node_modules outside the scan; paths here are relative to the repository.
+export async function readRuntimeFiles(repoRoot, { runtime = "all" } = {}) {
+  const files = runtimeFiles(sourceFiles(repoRoot, workspaceSourceRoots(repoRoot)), runtime);
+  if (runtime === "browser") return files;
+  for (const file of await readSourceDirectory(path.join(repoRoot, "packages", "core", "assets"))) {
+    files.push({ ...file, rel: `packages/core/assets/${file.rel}` });
+  }
+  return files;
+}
+
+export async function runtimeFilesContaining(repoRoot, needle, { except = [], runtime = "all" } = {}) {
+  const hits = [];
+  for (const { rel, path: file } of await readRuntimeFiles(repoRoot, { runtime })) {
+    if (except.some(tail => rel === tail || rel.endsWith(`/${tail}`))) continue;
+    if ((await readFile(file, "utf8")).includes(needle)) hits.push(rel);
+  }
+  return hits;
+}
+
 // ONE READ OF src/**, SHARED (milestone 70 / story 05). Three suites assert the same fact —
 // "no second ceiling literal exists outside the compiler" — and each was globbing and
 // reading every src file to do it, ~113 ms a copy. The invariant is FF-7003's; the WALK is
@@ -32,20 +63,22 @@ export async function readSrcFiles(repoRoot) {
 // walk, and the bodies are read once per process because they cannot change under a running
 // suite. (A cache in a TEST SUPPORT module, not in the pure compiler — the leaf stays
 // stateless, which is what makes its output a function of its inputs.)
-let bodyCache = null;
+const bodyCache = new Map();
 
 async function srcBodies(repoRoot) {
-  if (bodyCache == null) {
-    bodyCache = new Map();
+  const key = path.resolve(repoRoot);
+  if (!bodyCache.has(key)) {
+    const bodies = new Map();
     for (const file of await readSrcFiles(repoRoot)) {
-      bodyCache.set(file.rel, await readFile(file.path, "utf8"));
+      bodies.set(file.rel, await readFile(file.path, "utf8"));
     }
+    bodyCache.set(key, bodies);
   }
-  return bodyCache;
+  return bodyCache.get(key);
 }
 
 /**
- * Every `src/**` file whose text contains `needle`, as slash-joined paths relative to src/,
+ * Every `packages/core/src/**` file whose text contains `needle`, as slash-joined paths relative to src/,
  * excluding any whose relative path ends with one of `except`. Returns the paths rather
  * than a count so a failure names WHICH file broke the invariant.
  */

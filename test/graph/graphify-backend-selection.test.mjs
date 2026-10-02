@@ -1,12 +1,13 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 10 / story 00 (graphify-backend-module),
 // task 00 — 00_backend-registered-and-selectable.feature.
 //
 // Every @executable scenario AND every Scenario-Outline Examples row of that
 // feature is covered here, exercised against the REAL seam (`runMemory` /
 // `selectBackendName` / `resolveConfiguredBackend` / `BACKEND_REGISTRY` in
-// ../src/work/memory.mjs), the REAL `$defs/memory` schema (the same ajv-2020 engine
+// ../packages/core/src/work/memory.mjs), the REAL `$defs/memory` schema (the same ajv-2020 engine
 // the codebase ships), and the REAL graphify backend module's default export
-// (../src/memory/graphify-backend.mjs). One test object per scenario; Scenario-Outline
+// (../packages/core/src/memory/graphify-backend.mjs). One test object per scenario; Scenario-Outline
 // rows folded one-per-row, each name tracing to feature + scenario.
 //
 //   00_backend-registered-and-selectable.feature
@@ -20,13 +21,12 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { readFile, mkdtemp, mkdir } from "node:fs/promises";
-import {
-  runMemory,
-  selectBackendName,
-  resolveConfiguredBackend,
-  BACKEND_REGISTRY,
-} from "../../src/work/memory.mjs";
-import graphifyBackend from "../../src/memory/graphify-backend.mjs";
+const runMemory = _aofApplication.knowledge.work.memory.runMemory;
+const selectBackendName = _aofApplication.knowledge.work.memory.selectBackendName;
+const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
+const BACKEND_REGISTRY = _aofApplication.knowledge.work.memory.BACKEND_REGISTRY;
+const graphifyBackend = _aofApplication.knowledge.memory.graphifyBackend.default;
+
 
 // Schema loading + ajv-2020 compile mirrors test/work/lifecycle/work-memory-seam.test.mjs (the same
 // engine the codebase ships in node_modules; the draft this schema declares).

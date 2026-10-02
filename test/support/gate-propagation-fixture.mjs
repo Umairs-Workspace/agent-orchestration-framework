@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/support/gate-propagation-fixture.mjs — the shared REAL-GIT fixture family for
 // milestone 43 / story 05 (gate-time propagation, ADR-008). Wraps the existing
 // `withMeshWorkerExecFixture` / `withMeshWorkerPushFixture` real-local-repo builders and
@@ -25,9 +27,9 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { spawnSyncHardened } from "./cli-spawn.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
-import { createMeshWorkerExecutionHandler } from "../../src/mesh/worker-execution.mjs";
-import { meshItemBranchName } from "../../src/mesh/worktree.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -167,7 +169,7 @@ export async function buildItemLine(fx, { cutFrom = "C1", workerCommits = 2, con
     } finally {
       git(fx.root, ["worktree", "remove", scratch]);
       git(fx.root, ["worktree", "prune"]);
-      await rm(scratch, { recursive: true, force: true });
+      await rm(scratch, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
     }
   }
   [shape.W1, shape.W2] = shape.workerCommits;
@@ -193,7 +195,7 @@ export async function seedOriginOnlyCommit(fx, { onto = "control", file = GATE_E
   gitOk(scratch, ["commit", "-q", "-m", "c2-gate-edit-origin-only"]);
   const hash = revParse(scratch, "HEAD");
   gitOk(scratch, ["push", "-q", "origin", `HEAD:refs/heads/${onto}`]);
-  await rm(scratch, { recursive: true, force: true });
+  await rm(scratch, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   return hash;
 }
 

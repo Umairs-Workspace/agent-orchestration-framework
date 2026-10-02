@@ -1,8 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 // FF-9605 (96/ADR-008 §3, §4, §5) — THE GATE DOOR LIVES IN THE COMMAND LAYER, AND THE ACCEPTANCE
 // HORIZON STILL IMPORTS NOTHING.
 //
 // The tempting home for a lifecycle predicate is the module that owns the lifecycle. Here that
-// module is `src/acceptance-horizon.mjs`, and putting the gate there would be ILLEGAL rather than
+// module is `packages/core/src/acceptance-horizon.mjs`, and putting the gate there would be ILLEGAL rather than
 // merely untidy: it imports nothing by 66/ARCHITECTURE ROUND 3/3, and 66/02's FF-6605 forbids the
 // controls lane reaching `node:fs` through its direct imports — so a predicate that reads a
 // recorded result cannot live there and stay legal. The refusal would fail 66/02 on arrival, and
@@ -14,7 +17,7 @@
 //      call. Asserted over the MODULE rather than assumed from the graph, because that is the
 //      property ADR-008 §3 exists to preserve and the one a future "move it closer to the
 //      lifecycle" edit would take away.
-//   2. THE TWO CODES ARE RAISED IN THE ITEM-STATUS COMMAND, and nowhere else in `src/`. A second
+//   2. THE TWO CODES ARE RAISED IN THE ITEM-STATUS COMMAND, and nowhere else in `packages/core/src/`. A second
 //      raiser is a second door, and a door nobody knows about is one nobody can override.
 //   3. THEY ARE DISJOINT FROM THE VOCABULARIES ALREADY IN SERVICE — doctor's control codes and the
 //      audit's own set. A shared code lets one command's severity table decide the other's meaning,
@@ -34,7 +37,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile, realpath } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile, realpath } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -42,27 +45,24 @@ import { fileURLToPath } from "node:url";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import { CONTROL_FINDING_CODES } from "../../../src/work/doctor-controls.mjs";
-import { AUDIT_FINDING_CODES } from "../../../src/work-audit/census.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "../../../src/regression-record.mjs";
-import { GATE_MISSING, GATE_RED, OVERRIDE_REASON_REQUIRED } from "../../../src/commands/item-status.mjs";
+import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
+const AUDIT_FINDING_CODES = _aofApplication.work.audit.census.AUDIT_FINDING_CODES;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+import { REGRESSION_RECORD_BASENAME, parseRegressionRows } from "@aof/work/regression-record";
+const GATE_MISSING = _aofApplication.work.commandTools.itemStatus.GATE_MISSING;
+const GATE_RED = _aofApplication.work.commandTools.itemStatus.GATE_RED;
+const OVERRIDE_REASON_REQUIRED = _aofApplication.work.commandTools.itemStatus.OVERRIDE_REASON_REQUIRED;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const HORIZON = "src/acceptance-horizon.mjs";
-const DOOR = "src/commands/item-status.mjs";
+const HORIZON = "packages/work/src/lifecycle.mjs";
+const DOOR = "packages/work/src/commands/item-status.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 
-async function srcModules(dir = path.join(repoRoot, "src"), found = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) await srcModules(full, found);
-    else if (entry.name.endsWith(".mjs")) found.push(path.relative(repoRoot, full).split(path.sep).join("/"));
-  }
-  return found;
+async function srcModules() {
+  return (await readRuntimeFiles(repoRoot)).map(file => path.relative(repoRoot, file.path).split(path.sep).join("/"));
 }
 
 // ── the driven fixture (claims 4 and 5) ──────────────────────────────────────
@@ -139,7 +139,7 @@ export const archTests = [
       // itself — 66/02's FF-6605 forbids the controls lane reaching `node:fs` through its direct
       // imports, which is why the gate door is in the command layer — and that claim is about its
       // DEPENDENCIES, not about how many files it occupies. The unit is the family, so
-      // `src/acceptance-horizon/` stays a legal decomposition while every external specifier is
+      // `packages/core/src/acceptance-horizon/` stays a legal decomposition while every external specifier is
       // still a violation naming the file and the specifier.
       await assertFamilyPurity(assert, repoRoot, HORIZON);
       assert.equal(/\brequire\s*\(/.test(text), false, "…and no CommonJS require either");
@@ -226,7 +226,7 @@ export const archTests = [
       // (a) THE DECIDING FUNCTION'S OWN BODY. Read with comments stripped, so a header that PROMISES
       // there is no bypass cannot satisfy a claim about whether one exists.
       const body = functionBody(await source(DOOR), "async function admitThroughRegressionGate(");
-      assert.ok(body.length > 0, "the deciding function was located");
+      assert.ok(body != null && body.length > 0, "the deciding function was located");
       assert.equal(/process\.env/.test(body), false, "no environment variable reaches the decision");
       assert.equal(/\bconfig\b/.test(body), false, "no configuration key reaches the decision");
       assert.equal(/\bargv\b|\boptions\./.test(body), false, "and no second CLI surface either");

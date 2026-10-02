@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 66 / story 00, task
 // `02_a-contract-that-does-not-parse-is-refused`.
 //
@@ -15,9 +17,10 @@ import { mkdtemp, mkdir, writeFile, readFile, readdir, rm } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseFeature } from "../../../src/feature-parse.mjs";
-import { validateWork, parseFrontmatter } from "../../../src/work.mjs";
-import { validateCommand } from "../../../src/commands/validate.mjs";
+import { parseFeature } from "@aof/work/feature-parse";
+const validateWork = _aofWorkspace.work.validateWork;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const validateCommand = _aofApplication.getCommand("work:validate");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const realWorkDir = path.join(repoRoot, "wiki", "work");
@@ -252,7 +255,9 @@ export const contractParsesTests = [
   {
     name: "66/00 refuse: over the whole real stream the ONLY new finding is the one live file, and no file that parses gains one",
     run: async () => {
-      const { findings, files, unparseable } = await realStream();
+      const { findings: allFindings, files, unparseable } = await realStream();
+      // This corpus gate concerns parser findings; plain project notes need no AOF metadata.
+      const findings = allFindings.filter(isStructural);
       assert.ok(files.length > 600, `non-vacuity: the real corpus was walked (${files.length} .feature files)`);
       // RE-MEASURED 2026-08-28. The one live file was REPAIRED, which is the outcome
       // this gate was built to produce, so the stream now reports NOTHING: every

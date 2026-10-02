@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { isTailnetPeer } from "../../../src/control-stream-server.mjs";
+const isTailnetPeer = _aofApplication.mesh.controlStreamServer.isTailnetPeer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -31,7 +32,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-007 (amended): control-stream-server stays generic — it never imports the credential/enrollment surface itself",
     async run() {
-      const raw = await readFile(path.join(repoRoot, "src", "control-stream-server.mjs"), "utf8");
+      const raw = await readFile(path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs"), "utf8");
       const codeOnly = raw.replace(/\/\/[^\n]*/g, "");
       assert.ok(!/from\s+["']\.\/mesh\/registry\.mjs["']/.test(codeOnly), "control-stream-server.mjs does not import the credential/enrollment registry — the resolver is INJECTED, not imported");
       assert.ok(!/\bverifyCredential\s*\(/.test(codeOnly), "the server never verifies a credential itself — it consumes an already-resolved origin");
@@ -43,7 +44,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-007 (amended): the credential resolver is wired at the PRODUCTION call site, not only through a test seam",
     async run() {
-      const launcher = await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8");
+      const launcher = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
       // The F12/F-38.05 discipline: a provider reachable ONLY through the
       // controlStreamServerOptions test spread would be production-dead. The literal
       // key must appear, and must precede that spread.
@@ -54,14 +55,14 @@ export const archTests = [
         assert.ok(literalAt < spreadAt, "the literal resolveOrigin precedes the test-injection spread, so a test may still override it but production can never be credential-less");
       }
       // …and the worker must actually present one, or admission could never succeed.
-      const worker = await readFile(path.join(repoRoot, "src", "worker-stream-client.mjs"), "utf8");
+      const worker = await readFile(path.join(repoRoot, "packages", "mesh", "src", "worker-stream-client.mjs"), "utf8");
       assert.ok(/Authorization/.test(worker), "the worker transport presents its credential on the ws upgrade");
     },
   },
   {
     name: "arch/34 ADR-007 (amended): a credential-resolved origin is fail-closed — a failed verification is a REFUSAL, never a fall-through to the address join",
     async run() {
-      const raw = await readFile(path.join(repoRoot, "src", "control-stream-server.mjs"), "utf8");
+      const raw = await readFile(path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs"), "utf8");
       // An authoritative resolver returning a null nodeId must be refused. If the gate
       // ever fell back to isTailnetPeer on a failed credential, an un-credentialed peer
       // could be admitted purely by virtue of its IP — the hole this cutover closes.
@@ -74,7 +75,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-005: control-stream-server redacts BEFORE any store-apply call, on both the snapshot and delta paths",
     async run() {
-      const source = await readFile(path.join(repoRoot, "src", "control-stream-server.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs"), "utf8");
       assert.ok(source.includes("redactDescriptor"), "control-stream-server.mjs imports the shared redaction seam (global-node-registry.mjs)");
       assert.ok(source.includes("global-node-registry.mjs"), "redaction is the ONE shared seam, not a re-implementation");
 
@@ -96,7 +97,7 @@ export const archTests = [
       // applyStreamFrame six doors later (ADR-012's review note): a wider slice would
       // let an unrelated function's redactDescriptor/store-write pair satisfy the
       // ordering below while the body under test had neither.
-      const applyBody = source.slice(source.indexOf("async function applyReportedRows"), source.indexOf("export async function applySnapshotFrame"));
+      const applyBody = source.slice(source.indexOf("async function applyReportedRows"), source.indexOf("async function applySnapshotFrame"));
       assert.ok(applyBody.length > 200, "the row-frame apply body was located (non-vacuous)");
       const redactAt = applyBody.indexOf("redactDescriptor");
       const writeAt = firstStoreWrite(applyBody);
@@ -107,7 +108,7 @@ export const archTests = [
       // Both exported doors must route through that one body — the ordering above is
       // only worth anything if neither door can write to the store on its own.
       for (const door of ["applySnapshotFrame", "applyDeltaFrame"]) {
-        const body = source.slice(source.indexOf(`export async function ${door}`), source.indexOf(`export async function ${door}`) + 400);
+        const body = source.slice(source.indexOf(`async function ${door}`), source.indexOf(`async function ${door}`) + 400);
         assert.ok(/applyReportedRows\(/.test(body), `${door} routes through the shared, redacting apply body`);
         assert.equal(firstStoreWrite(body.slice(0, body.indexOf("\n}"))), -1, `${door} performs no store write of its own`);
       }
@@ -128,7 +129,13 @@ export const archTests = [
       // store) is covered functionally by control-stream-server.test.mjs; this unit
       // cross-checks the redaction primitive itself against a representative
       // secret-shaped item, the same seam applySnapshotFrame/applyDeltaFrame call.
-      const { redactDescriptor } = await import("../../../src/global-node-registry.mjs");
+      const { redactDescriptor } = await Promise.resolve(Object.freeze({
+  publishGlobalRegistryDescriptorsToStore: _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore,
+  assembleGlobalRegistrySnapshot: _aofApplication.mesh.globalNodeRegistry.assembleGlobalRegistrySnapshot,
+  queryGlobalRegistry: _aofApplication.mesh.globalNodeRegistry.queryGlobalRegistry,
+  upsertGlobalRegistryRows: _aofApplication.mesh.globalNodeRegistry.upsertGlobalRegistryRows,
+  redactDescriptor: _aofApplication.mesh.globalNodeRegistry.redactDescriptor,
+}));
       const redacted = redactDescriptor([{ ref: "34/04/00", relayAuthToken: "top-secret" }]);
       assert.equal("relayAuthToken" in redacted[0], false);
     },

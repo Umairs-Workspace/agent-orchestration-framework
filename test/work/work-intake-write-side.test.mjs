@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 127 / story 02 / task 04 —
 //   wiki/work/127_milestone_backlog-and-archive/stories/02_story_promote-mints-the-number/
 //     tasks/04_intake-is-the-write-side-default.feature
@@ -29,13 +31,13 @@ import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { invoke } from "../../src/command-core.mjs";
-import { loadWorkspace } from "../../src/work.mjs";
+const invoke = _aofApplication.invoke;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { buildThreeRootFixture, withThreeRoots } from "./stream/work-backlog-archive-enumerate.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const DOOR_CODE = "phase-backlog-ref";
 // A ref no root has ever held — the CONTROL for "answers exactly as before this story". The door's

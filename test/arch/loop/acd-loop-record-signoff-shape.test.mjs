@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-7809 (78/ADR-001, m66/ADR-001) — THE SIGN-OFF BLOCK IS FROZEN: the `h2`, the table header row,
 // and the id ALONE in the first cell.
 //
@@ -7,8 +8,8 @@
 // and a drifted sign-off row is a human signature that no check can find.
 //
 // THE THREE COPIES, AND WHY THEY ARE THREE. The literals live in the WRITER
-// (`src/commands/loop-record.mjs`, 78/02) because that is what emits them; in the CHECKER
-// (`src/work/doctor-loop-record.mjs`, 78/03) because an instrument that imported the writer's opinion
+// (`packages/core/src/commands/loop-record.mjs`, 78/02) because that is what emits them; in the CHECKER
+// (`packages/core/src/work/doctor-loop-record.mjs`, 78/03) because an instrument that imported the writer's opinion
 // of the shape could never report the writer changing it — and because 52/FF-5202 forbids a
 // `work-doctor*` module from dragging the registry loader and the filesystem into its import closure,
 // which importing the writer would do. This gate holds a THIRD, independent copy and asserts all
@@ -24,8 +25,11 @@ import { fileURLToPath } from "node:url";
 
 import { stripComments } from "../../support/source-slice.mjs";
 
-import * as writer from "../../../src/commands/loop-record.mjs";
-import * as checker from "../../../src/work/doctor-loop-record.mjs";
+const writer = Object.freeze({
+  ..._aofApplication.graph.commandTools.loopRecord,
+  loopRecordCommand: _aofApplication.getCommand("work:loop-record"),
+});
+import * as checker from "@aof/work/doctor/loop-record";
 import { ITEM_REF, ctxFor, signInPlace, signedRow, withRepo } from "../../loop/loop-record-command.test.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
@@ -130,11 +134,11 @@ export const archTests = [
   {
     name: "arch/78/02+03 FF-7809 the block is not a register block, and this milestone declares no new id form",
     run: async () => {
-      // `REGISTER_BLOCKS` (`src/declared-id.mjs`) is a four-entry list over three files, and
+      // `REGISTER_BLOCKS` (`packages/core/src/declared-id.mjs`) is a four-entry list over three files, and
       // 78/ADR-001 answered the "invisible to every register check" objection BY SCOPE rather than by
       // widening it: adding `EXECUTION.md` would make every item owe the document, and only items that
       // ran loops owe one. So the frozen set must be untouched, and this gate is where that is held.
-      const { REGISTER_BLOCKS, ID_FORMS } = await import("../../../src/declared-id.mjs");
+      const { REGISTER_BLOCKS, ID_FORMS } = await import("@aof/work/declared-id");
       assert.ok(!REGISTER_BLOCKS.some((entry) => entry.file === FROZEN.basename), "EXECUTION.md is not a register file");
       assert.ok(!REGISTER_BLOCKS.some((entry) => entry.heading === "sign-off"), "and `## Sign-off` is not a register block");
       assert.equal(REGISTER_BLOCKS.length, 4, "the frozen set is still the four entries m66 froze");
@@ -149,7 +153,7 @@ export const archTests = [
   {
     name: "arch/78/02+03 FF-7809 the checker holds its own copy and imports neither the writer nor the registry family",
     run: async () => {
-      const source = stripComments(await readFile(path.join(repoRoot, "src/work/doctor-loop-record.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/loop-record.mjs"), "utf8"));
 
       // THE INDEPENDENCE IS STRUCTURAL, not a comment: the checker imports `node:path` and nothing
       // else. An import of the writer would put the writer's opinion of the shape into the instrument

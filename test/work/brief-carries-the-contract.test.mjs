@@ -4,7 +4,7 @@
 //   tasks/00_the-contract-reaches-the-phase.feature  (@executable)
 //   tasks/01_the-budget-is-spent.feature             (@executable)
 //
-// Both tasks exercise the PURE COMPILER (`src/phase-brief.mjs`) and its addressing helpers
+// Both tasks exercise the PURE COMPILER (`packages/work/src/phase-brief.mjs`) and its addressing helpers
 // directly — no PTY, no worktree, no `claude` binary — which is exactly what ADR-002's
 // purity buys. Task 02 is the REAL-STREAM half and lives in
 // test/work/brief-pinned-to-the-stream.test.mjs, because a guard that only ever sees data shaped
@@ -36,13 +36,13 @@ import {
   PHASE_BRIEF_CEILING_TOKENS,
   PHASE_BRIEF_CHARS_PER_TOKEN,
   PHASE_BRIEF_MAX_CHARS,
-} from "../../src/phase-brief.mjs";
-import { compileBriefForItem } from "../../src/phase-brief-read.mjs";
+} from "@aof/work/phase-brief";
+import { compileBriefForItem } from "@aof/work/phase-brief-read";
 // The `.feature` parse has ONE home (52/05, F-52-05-D — three copies that disagreed),
 // and reading a compiled brief has one too. Neither is re-derived here.
 import { scenarioTitles } from "../support/feature-parse.mjs";
 import { dispositionOf, sectionOf } from "../support/phase-brief-view.mjs";
-import { srcFilesContaining } from "../support/read-src-files.mjs";
+import { runtimeFilesContaining } from "../support/read-src-files.mjs";
 
 // ── fixtures shaped like the stream, then SIZED deliberately ────────────────────────────
 //
@@ -759,7 +759,7 @@ export const briefCarriesTheContractTests = [
       // written out three times across three suites (~113 ms a copy) for one fact, so it
       // now comes from the one home the milestone already built for scanning src/**, which
       // reads the tree once per process.
-      const second = await srcFilesContaining(REPO_ROOT, String(PHASE_BRIEF_MAX_CHARS), { except: ["phase-brief.mjs"] });
+      const second = await runtimeFilesContaining(REPO_ROOT, String(PHASE_BRIEF_MAX_CHARS), { except: ["phase-brief.mjs"] });
       assert.deepEqual(second, [], "no second ceiling literal exists outside it");
     },
   },

@@ -36,7 +36,7 @@ so that turning the plugin on or off is a one-command, reversible, config-only a
 
 Inherits the milestone [ARCHITECTURE.md](../../ARCHITECTURE.md). This story **owns**: the
 read-merge-write helper (`useHeadroom` / `unuseHeadroom`) in `src/work-headroom.mjs` (ADR-004), the
-`use-headroom` / `unuse-headroom` dispatch arms in `workCommand` ([src/cli.mjs](../../../../../../src/cli.mjs)),
+`use-headroom` / `unuse-headroom` dispatch arms in `workCommand` ([src/cli.mjs](../../../../../../packages/core/src/cli.mjs)),
 and the `--with-headroom` thread through `initWork` ([src/work-init.mjs](../../../../../../src/work-init.mjs)).
 
 **Independent because** it couples to story 00 only through the frozen `work.headroom` shape (ADR-001);

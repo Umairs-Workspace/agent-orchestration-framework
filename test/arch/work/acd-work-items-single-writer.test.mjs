@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-work-items-single-writer (milestone 43 / ADR-004) —
 //
 //   "`work_items` stops being a disk-rebuilt projection and becomes a
@@ -35,16 +36,19 @@
 //  Self-check (m03 non-vacuous): a planted second writer module and a planted sweep call
 //  trip the SAME detectors.
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 // The screen's OWN field lists and predicate — read from the module under test, never
 // re-spelled here (a second copy would make the coverage ratchet agree with itself).
-import { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault } from "../../../src/global-work-store.mjs";
+const REQUIRED_ITEM_FIELDS = _aofApplication.mesh.store.REQUIRED_ITEM_FIELDS;
+const OPTIONAL_ITEM_FIELDS = _aofApplication.mesh.store.OPTIONAL_ITEM_FIELDS;
+const itemRowFault = _aofApplication.mesh.store.itemRowFault;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
-const STORES = path.join(repoRoot, "src", "effects", "stores.mjs");
+const SRC = path.join(repoRoot, "packages", "core", "src");
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const STORES = path.join(repoRoot, "packages", "mesh", "src", "store-metadata.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -55,15 +59,6 @@ function stripComments(source) {
 const WORK_ITEMS_DML = /\b(?:INSERT\s+(?:OR\s+\w+\s+)?INTO|UPDATE|DELETE\s+FROM)\s+work_items\b/i;
 const WHOLESALE_WORK_ITEMS = /wholesaleDelete\s*\([^)]*["']work_items["']/;
 
-async function mjsFilesUnder(dir) {
-  const out = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...(await mjsFilesUnder(full)));
-    else if (entry.name.endsWith(".mjs")) out.push(full);
-  }
-  return out;
-}
 
 // The live classification, read from the registry rather than assumed.
 function classOf(storesSource, table) {
@@ -76,7 +71,7 @@ export const archTests = [
     name: "arch/43 ADR-004 (acd-work-items-single-writer): every work_items INSERT/UPDATE/DELETE in src/ lives in exactly ONE module — the shared upsert seam has one implementation, two callers",
     run: async () => {
       const writers = [];
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         if (WORK_ITEMS_DML.test(stripComments(await readFile(file, "utf8")))) writers.push(path.relative(repoRoot, file));
       }
       assert.equal(
@@ -108,7 +103,7 @@ export const archTests = [
       if (cls !== "fact") return; // pre-cut: a clean skip that arms the moment ADR-004's reclassification lands
 
       const sweepers = [];
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         if (WHOLESALE_WORK_ITEMS.test(stripComments(await readFile(file, "utf8")))) sweepers.push(path.relative(repoRoot, file));
       }
       assert.deepEqual(
@@ -122,9 +117,9 @@ export const archTests = [
     // ADDED at 43/02's structural review (ADR-012/B4) — the RATCHET the codebase-health
     // rule owes after the second consecutive measurement of the same shape.
     //
-    // MEASURED. `src/global-work-store.mjs` is the single declared writer of four fact
+    // MEASURED. `packages/core/src/global-work-store.mjs` is the single declared writer of four fact
     // tables and a 17-dependent fan-in node (`aof graph impact`, 2026-08-02: 17 in, 8
-    // out — the third-widest blast radius in `src/`). It went 885 -> 1,233 lines in ONE
+    // out — the third-widest blast radius in `packages/core/src/`). It went 885 -> 1,233 lines in ONE
     // story (+39%), and ADR-009 routes MORE into it: 43/04's storage->wire mapper, the
     // staleness predicate and the Resync door all read this table. Left alone it is the
     // next `mesh-worker-execution.mjs` (TECH_DEBT item 10), which grew 47% the same way,
@@ -134,17 +129,17 @@ export const archTests = [
     // milestone on everyone else's files is exactly what ADR's health section rejected).
     // It is scoped to the ONE module this milestone keeps enlarging, set just above its
     // post-43/02 size, and its escape hatch is the outcome we want: put the next block in
-    // its own module (ADR-005 already creates `src/work/read.mjs` for precisely the read
+    // its own module (ADR-005 already creates `packages/core/src/work/read.mjs` for precisely the read
     // seam 43/04 needs) and call it from here. Raising this number is a decision that
     // needs an ADR, not a diff.
     name: "arch/43 ADR-012/B4 (acd-work-items-single-writer): the single-writer module does not become the next god-file — src/global-work-store.mjs stays under its ratchet",
     run: async () => {
       const CEILING = 1280;
-      const source = await readFile(path.join(SRC, "global-work-store.mjs"), "utf8");
+      const source = await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8");
       const lines = source.split(/\r?\n/).length;
       assert.ok(
         lines <= CEILING,
-        `src/global-work-store.mjs is ${lines} lines, over the ${CEILING}-line ratchet (ADR-012/B4). It is the declared single writer of four fact tables and a 17-dependent node; the next block belongs in its own module (e.g. ADR-005's src/work/read.mjs), called from here. Raising the ceiling needs an ADR.`,
+        `packages/core/src/global-work-store.mjs is ${lines} lines, over the ${CEILING}-line ratchet (ADR-012/B4). It is the declared single writer of four fact tables and a 17-dependent node; the next block belongs in its own module (e.g. ADR-005's packages/core/src/work/read.mjs), called from here. Raising the ceiling needs an ADR.`,
       );
       // Non-vacuous: the file exists and is substantial, so a rename/move cannot turn
       // this into a silent pass on an empty read.
@@ -165,7 +160,7 @@ export const archTests = [
     // value passed with the screen disabled.
     name: "arch/43 ADR-012/B5 (acd-work-items-single-writer): every row-derived value the work_items upsert BINDS is covered by the row screen — the next column cannot ship unscreened",
     run: async () => {
-      const source = stripComments(await readFile(path.join(SRC, "global-work-store.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8"));
       const call = source.slice(source.indexOf("upsert.run("), source.indexOf(");", source.indexOf("upsert.run(")));
       assert.ok(call.length > 40, "the upsert's bind list was located (non-vacuous)");
 
@@ -207,9 +202,9 @@ export const archTests = [
     // widened surface with no named caller set is how a one-off becomes a habit.
     name: "arch/43 ADR-012/B3 (acd-work-items-single-writer): the newly-exported wholesaleDelete keeps a NAMED caller set in src/ — the projection sweep is not an open door",
     run: async () => {
-      const SANCTIONED = ["src/global-work-store.mjs"];
+      const SANCTIONED = ["packages/mesh/src/projection-store.mjs"];
       const callers = [];
-      for (const file of await mjsFilesUnder(SRC)) {
+      for (const file of (await readRuntimeFiles(repoRoot)).map(file => file.path)) {
         const code = stripComments(await readFile(file, "utf8"));
         // The call form, not the export/import lines that merely name it.
         if (/wholesaleDelete\s*\(\s*\w/.test(code)) callers.push(path.relative(repoRoot, file).replace(/\\/g, "/"));

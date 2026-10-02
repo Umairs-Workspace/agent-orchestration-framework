@@ -1,9 +1,11 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
 // Traceability wiring for story 137 / tasks/00_the-digest-template-ships-with-the-set.feature —
 // "the AOF.md digest template ships with the record-doc set" (@executable).
 //
 // Follows the OUTCOME precedent (test/run/outcome-template-shared-home.test.mjs): the REAL
 // descriptor, the REAL bundle root and the REAL shipped manifest. The template's frontmatter and
-// headings are read line by line HERE, independently of `src/work/digest-template.mjs`, so a
+// headings are read line by line HERE, independently of `packages/core/src/work/digest-template.mjs`, so a
 // defect in the contract module cannot also hide the defect in the file it reads. The @manual
 // `aof work update` scenario is not wired here.
 import assert from "node:assert/strict";
@@ -11,13 +13,13 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadBundle, renderBundleTemplateOutputs, TEMPLATE_STAMP } from "../../src/work/bundle.mjs";
-import { readShippedManifest } from "../../src/work/bundle-manifest.mjs";
-import { scaffoldBacklogDriver } from "../../src/commands/insert-shared.mjs";
-import { BACKLOG_ROOT } from "../../src/work.mjs";
+import { loadBundle, renderBundleTemplateOutputs, TEMPLATE_STAMP } from "../../packages/core/src/work/bundle.mjs";
+import { readShippedManifest } from "../../packages/core/src/work/bundle-manifest.mjs";
+const scaffoldBacklogDriver = _aofApplication.work.commandTools.insertShared.scaffoldBacklogDriver;
+const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const SOURCE = path.join(repoRoot, "src", "bundle", "templates", "milestone", "AOF.md");
+const SOURCE = path.join(repoRoot, "packages", "core", "assets", "templates", "milestone", "AOF.md");
 const RENDER_PATH = ".aof/templates/work/milestone/AOF.md";
 
 const normalize = (p) => String(p).replaceAll("\\", "/");

@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/notify/notify-form.test.mjs — milestone 131 / story 02, task 01
 // (01_one-form-for-every-face.feature; ADR-006 §1, DESIGN "The one shape").
 //
@@ -9,10 +10,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { accountLine, cost, eventPhrase, formatElapsed, headline, oneLineAsk } from "../../src/notify/form.mjs";
-import * as formModule from "../../src/notify/form.mjs";
-import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
-import { renderDiscord } from "../../src/notify/discord.mjs";
+import { accountLine, cost, eventPhrase, formatElapsed, headline, oneLineAsk } from "@aof/messaging/form";
+import * as formModule from "@aof/messaging/form";
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
+import { renderDiscord } from "@aof/messaging/discord";
 import { stripComments } from "../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -28,12 +29,12 @@ export const notifyFormTests = [
   {
     name: "131/02 task01 — form.mjs imports nothing and exports the six; form.d.mts types exactly those six",
     async run() {
-      const source = stripComments(await readFile(path.join(repoRoot, "src", "notify", "form.mjs"), "utf8"));
+      const source = stripComments(await readFile(path.join(repoRoot, "packages", "messaging", "src", "form.mjs"), "utf8"));
       assert.doesNotMatch(source, /^\s*import\s/mu, "no import statement");
       assert.doesNotMatch(source, /\bimport\s*\(/u, "no import( call");
       assert.doesNotMatch(source, /\brequire\s*\(/u, "no require( call");
       assert.deepEqual(Object.keys(formModule).sort(), SIX);
-      const types = await readFile(path.join(repoRoot, "src", "notify", "form.d.mts"), "utf8");
+      const types = await readFile(path.join(repoRoot, "packages", "messaging", "src", "form.d.mts"), "utf8");
       const declared = [...types.matchAll(/^export\s+declare\s+function\s+(\w+)/gmu)].map((m) => m[1]).sort();
       assert.deepEqual(declared, SIX, "one exported function declaration for each of the six");
       assert.deepEqual([...types.matchAll(/^export\s/gmu)].length, SIX.length, "and nothing else is exported");

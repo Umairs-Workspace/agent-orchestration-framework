@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 24 / story 01 — task 02
 // (tasks/02_mesh-join-and-provision.feature). aof mesh join <code> presents the code to
 // the control node's endpoint, stores the issued credential in config.mesh.credential
@@ -13,18 +16,20 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { serveRelay, sha256Hex } from "../../../src/mesh/relay.mjs";
-import { writeRegistry } from "../../../src/mesh/registry.mjs";
-import { readNodeRecord, publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { globalWorkspacePaths } from "../../../src/workspace.mjs";
-import { meshJoinCommand } from "../../../src/commands/mesh/join.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const serveRelay = _aofApplication.mesh.relay.serveRelay;
+const sha256Hex = _aofApplication.mesh.relay.sha256Hex;
+const writeRegistry = _aofApplication.mesh.registry.writeRegistry;
+const readNodeRecord = _aofHooks.meshStore.readNodeRecord;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+import { globalWorkspacePaths } from "../../../packages/core/src/workspace.mjs";
+const meshJoinCommand = _aofApplication.getCommand("mesh:join");
 import { spawnCliAsync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
-const MESH_JOIN_SRC = path.join(repoRoot, "src", "commands", "mesh", "join.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
+const MESH_JOIN_SRC = path.join(repoRoot, "packages", "mesh", "src", "commands", "join.mjs");
 
 const CONTROL_ID = "control-node-a";
 const JOINER_ID = "joiner-node";

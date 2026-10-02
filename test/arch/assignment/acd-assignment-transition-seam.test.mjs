@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-assignment-transition-seam (milestone 42 wave (d) leg d3;
 // PRD-command-spine-effects-ledger: "the apply-seam guards (holder,
 // terminal-never-regresses) move inside the shared transition so ALL writers
@@ -24,45 +25,33 @@
 //       closed vocabulary with its `control-store` reactor, so the branch record
 //       that used to be an inline line at the apply seam is now a ledger entry.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { guardAssignmentTransition } from "../../../src/effects/assignment-transitions.mjs";
-import { EFFECTS } from "../../../src/effects/table.mjs";
-import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "../../../src/assignment-record.mjs";
+const guardAssignmentTransition = _aofApplication.mesh.transitions.guardAssignmentTransition;
+const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
+import { ACTIVE_ASSIGNMENT_STATES, TERMINAL_ASSIGNMENT_STATES } from "@aof/mesh/assignment-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SRC = path.join(repoRoot, "src");
+const SRC = path.join(repoRoot, "packages", "core", "src");
 
 // The ONLY modules that may name the guard-free store writer.
-const SANCTIONED_WRITERS = new Set(["assignment-record.mjs", "effects/assignment-transitions.mjs"]);
+const SANCTIONED_WRITERS = new Set(["packages/mesh/src/assignment-record.mjs", "packages/mesh/src/assignment-transitions.mjs"]);
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
 }
 
-async function sourcesUnderSrc() {
-  const { readdir } = await import("node:fs/promises");
-  const out = [];
-  const walk = async (dir, prefix) => {
-    for (const entry of await readdir(dir, { withFileTypes: true })) {
-      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) await walk(path.join(dir, entry.name), rel);
-      else if (entry.name.endsWith(".mjs")) out.push(rel);
-    }
-  };
-  await walk(SRC, "");
-  return out;
-}
 
 export const archTests = [
   {
     name: "arch/42 wave (d) d3 (acd-assignment-transition-seam): updateAssignmentState( is called only from its own store module and the transition seam",
     run: async () => {
       const offenders = [];
-      for (const rel of await sourcesUnderSrc()) {
+      for (const { rel, path: file } of await readRuntimeFiles(repoRoot)) {
         if (SANCTIONED_WRITERS.has(rel)) continue;
-        const source = stripComments(await readFile(path.join(SRC, rel), "utf8"));
+        const source = stripComments(await readFile(file, "utf8"));
         if (/\bupdateAssignmentState\s*\(/.test(source)) offenders.push(rel);
       }
       assert.deepEqual(
@@ -80,10 +69,10 @@ export const archTests = [
   {
     name: "arch/42 wave (d) d3: applyAssignmentStatusFrame decides neither invariant itself — it hands the edge to the transition",
     run: async () => {
-      const source = stripComments(await readFile(path.join(SRC, "control-stream-server.mjs"), "utf8"));
-      const start = source.indexOf("export async function applyAssignmentStatusFrame");
+      const source = stripComments(await readFile(path.join(SRC, "../../mesh/src/control-stream-server.mjs"), "utf8"));
+      const start = source.indexOf("async function applyAssignmentStatusFrame");
       assert.ok(start > -1, "applyAssignmentStatusFrame is still the frame door");
-      const body = source.slice(start, source.indexOf("\nexport ", start + 10));
+      const body = source.slice(start, source.indexOf("\nasync function ", start + 10));
 
       assert.ok(
         /transitionAssignmentState\s*\(/.test(body),

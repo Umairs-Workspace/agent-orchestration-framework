@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import * as _aofPublic_aof_work_identity from "@aof/work/identity";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 127 / story 05 — "This tree holds what is live".
 //
 //   tasks/00_the-repository-sets-intake-to-backlog.feature          (@executable)
@@ -44,18 +47,22 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
-import { bundleSurface } from "../../support/react-app-harness.mjs";
-import { handleWorkApi } from "../../../src/board-ui.mjs";
-import { ITEM_RE, ARCHIVE_ROOT, BACKLOG_ROOT, parseFrontmatter, recordDoc } from "../../../src/work.mjs";
+import { bundleSurface } from "../../../apps/ui/test/support/react-app-harness.mjs";
+const handleWorkApi = _aofApplication.server.board.handleWorkApi;
+const ITEM_RE = _aofPublic_aof_work_identity.ITEM_RE;
+const ARCHIVE_ROOT = _aofPublic_aof_work_identity.ARCHIVE_ROOT;
+const BACKLOG_ROOT = _aofPublic_aof_work_identity.BACKLOG_ROOT;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const recordDoc = _aofWorkspace.work.recordDoc;
 import { archTests as intakeWriteSideTests } from "../../arch/work/acd-intake-write-side-only.test.mjs";
 import { archTests as tuneReaderTests } from "../../arch/planning/acd-tune-carries-no-second-rule.test.mjs";
 import { archTests as spellerReaderTests } from "../../arch/command/acd-declared-program-single-speller.test.mjs";
 import { censusItemPathMentions } from "./work-archive-is-a-move.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const workRoot = path.join(repoRoot, "wiki", "work");
-const MODEL_TS = path.join(repoRoot, "ui", "src", "board", "model.ts");
+const MODEL_TS = path.join(repoRoot, "apps", "ui", "src", "board", "model.ts");
 const THIS_SUITE = "test/work/stream/work-this-tree-holds-what-is-live.test.mjs";
 
 const slash = (value) => String(value).replaceAll("\\", "/");
@@ -82,11 +89,11 @@ const refsOf = (rows) => rows.map((row) => row.ref);
 export const LINKS_BEFORE = Object.freeze({ total: 3067, resolving: 2317, measuredAt: "2026-09-22", commit: "f820ae9" });
 export const LINKS_IN_MOVED_BEFORE = Object.freeze({ total: 2810, resolving: 2121 });
 // Of the 1,156 links that targeted a folder the move would archive, 48 did not resolve BEFORE it —
-// bare `src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
+// bare `packages/core/src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
 // where no such file ever was. "Every link into archive/ resolves" is therefore held as the same
 // ratchet: no more broken links into the archive than were broken into those folders before.
 // 2026-09-22 (129's gate, F-76): 48 → 51 when 127 itself was archived — its own three bare
-// `src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
+// `packages/core/src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
 // folder, broken after inside the archived one; "into archive/" is where they now resolve). Every
 // later archive of a folder carrying such citations moves this number the same way.
 // 2026-09-24 (130's door, F-23): 51 → 52 when 129 was archived. Its VERIFICATION.md:572 carries a
@@ -159,7 +166,7 @@ async function faceList(projectDir, home, { includeArchived = false } = {}) {
 }
 
 // The board's read model, bundled from the REAL `model.ts` through the same esbuild instrument
-// the mounted lanes use (test/ui/board-backlog-and-archive), so `deriveBoard` is the production
+// the mounted lanes use (test/surfaces/board-backlog-and-archive), so `deriveBoard` is the production
 // derivation and not a re-spelling.
 let model = null;
 async function loadModel() {
@@ -213,17 +220,17 @@ export async function buildShapeCopy() {
 // The `aof:add-milestone` prompt's write under `"backlog"` (02/05): `SPEC.md` + `STATE.md`,
 // frontmatter with `type`, `slug`, `title`, `status: not-started`, `depends: []` and NO `number:`.
 const ADDED_SLUG = "search-across-the-fleet";
-const ADDED_SPEC = [
+const addedSpec = (today) => [
   "---",
   "type: milestone",
   `slug: ${ADDED_SLUG}`,
   'title: "Search across the fleet"',
   "status: not-started",
   "owner: product-owner",
-  // Today's date, as `aof:add-milestone` writes it: a fixed date reds doctor's `mtime-ahead-of-updated`
-  // lane the morning after (measured 2026-09-17 at aof:verify 127).
-  `created: ${new Date().toISOString().slice(0, 10)}`,
-  `updated: ${new Date().toISOString().slice(0, 10)}`,
+  // Capture the date when writing the fixture, not when loading this suite: a long
+  // run can cross midnight before reaching the add/promote cases.
+  `created: ${today}`,
+  `updated: ${today}`,
   "depends: []",
   "schema: 1",
   "aofVersion: 0.1.0",
@@ -244,7 +251,7 @@ const ADDED_STATE = "---\ndoc: state\n---\n# Search across the fleet — State\n
 async function addToBacklog(work) {
   const leaf = path.join(work, BACKLOG_ROOT, `milestone_${ADDED_SLUG}`);
   await mkdir(leaf, { recursive: true });
-  await writeFile(path.join(leaf, "SPEC.md"), ADDED_SPEC, "utf8");
+  await writeFile(path.join(leaf, "SPEC.md"), addedSpec(new Date().toISOString().slice(0, 10)), "utf8");
   await writeFile(path.join(leaf, "STATE.md"), ADDED_STATE, "utf8");
   return leaf;
 }
@@ -532,7 +539,7 @@ export const workThisTreeHoldsWhatIsLiveTests = [
             assert.equal(slash(row.dir), slash(real[index].dir).replace(slash(workRoot), slash(work)), `${row.ref}: dir differs only by the copy's root prefix`);
           });
 
-          // validate: the copy has no `src/`, `test/` or git history, so its `reads:` lane cannot
+          // validate: the copy has no `packages/core/src/`, `test/` or git history, so its `reads:` lane cannot
           // resolve what the real tree's resolves — that class is set aside on both sides and the
           // structural lanes (folder/frontmatter, tags, depends, numbering) must agree exactly.
           const copyFindings = json(root, ["validate"], home);
@@ -736,7 +743,7 @@ export const workThisTreeHoldsWhatIsLiveTests = [
 
         // `aof:recent` is a prompt over `work:list`'s default (127/01) — there is no `read` or
         // `recent` verb, so it sees no archived row either.
-        const recent = await readFile(path.join(repoRoot, "src", "bundle", "commands", "recent.md"), "utf8");
+        const recent = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "recent.md"), "utf8");
         assert.match(recent, /aof work list --json/, "the recent prompt reads through work list");
         assert.match(recent, /`--all` only when the operator asks for the archive/, "…and adds --all only on request");
       }),

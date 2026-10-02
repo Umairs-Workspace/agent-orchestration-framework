@@ -5,23 +5,24 @@
 // `work:promote-gap` already did 90% of a promotion: reuse the chore insert seam, seed the DoD from
 // a close criterion, append a `## Notes` back-reference. Copying that into a finding promoter would
 // have been two chore-seeding writers — the duplication this whole register exists to refuse. So the
-// mechanics moved into `src/work-promote/` and both faces reach them by import.
+// mechanics now live in `packages/work/src/promote/` and both faces reach them by import.
 //
 // FOUR LEGS:
 //   1. each mechanic — the DoD seed, the back-reference author, the append-position resolver, the
-//      idempotence scan — has EXACTLY ONE definition site anywhere in `src/`;
+//      idempotence scan — has EXACTLY ONE definition site anywhere in `packages/core/src/`;
 //   2. both faces reach them BY IMPORT and contain no copy of any of them;
 //   3. a tree-wide sweep for a RIVAL promoter, matched by a PROMOTION SIGNATURE rather than a bare
 //      shape (ADR-009 §2), reports nothing outside the family;
-//   4. the family is a LEAF: no file under `src/work-promote/` imports from `../commands/`.
+//   4. the family is a LEAF: no file under the promotion family imports from `../commands/`.
 //
 // WHY THE SIGNATURE IS A CONJUNCTION, and this is the measured part. The tempting sweep — "a
 // `## Notes` heading matcher" or "a section-range walk" — reds on two live, unrelated homes:
-// `src/phase-brief.mjs` (`extractH2Block(text, (title) => /^notes$/i.test(title))`) and
-// `src/memory/local-indexing.mjs`'s `splitSections`. Neither has anything to do with promotion. A
+// `packages/work/src/phase-brief.mjs` (`extractH2Block(text, (title) => /^notes$/i.test(title))`) and
+// `packages/core/src/memory/local-indexing.mjs`'s `splitSections`. Neither has anything to do with promotion. A
 // module qualifies as a rival only if it BOTH seeds a Definition of Done AND writes a chore record
 // doc, and leg 3 asserts those two files are NOT reported — which is the assertion that proves the
 // signature is doing the narrowing rather than the luck.
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -29,12 +30,12 @@ import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILY = "src/work-promote";
-const SEED = "src/work-promote/chore-seed.mjs";
-const ENGINE = "src/work-promote/promotion.mjs";
-const FACES = Object.freeze(["src/commands/promote-gap-to-chore.mjs", "src/commands/promote-finding-to-chore.mjs"]);
+const FAMILY = "packages/work/src/promote";
+const SEED = "packages/work/src/promote/chore-seed.mjs";
+const ENGINE = "packages/work/src/promote/promotion.mjs";
+const FACES = Object.freeze(["packages/work/src/commands/promote-gap-to-chore.mjs", "packages/work/src/commands/promote-finding-to-chore.mjs"]);
 // The two live homes the bare-shape sweep reported, kept as named non-subjects (ADR-009 §2).
-const NOT_PROMOTERS = Object.freeze(["src/phase-brief.mjs", "src/memory/local-indexing.mjs"]);
+const NOT_PROMOTERS = Object.freeze(["packages/work/src/phase-brief.mjs", "packages/knowledge/src/memory/local-indexing.mjs"]);
 
 // The four mechanics, each as the source signature that identifies its DEFINITION — never a name a
 // caller could also mention, so an importing face does not read as a second home.
@@ -49,16 +50,8 @@ const MECHANICS = Object.freeze([
   { name: "the idempotence scan", home: ENGINE, signature: /function findPromotedChore\s*\(/u },
 ]);
 
-async function sourceUnits(dir = path.join(root, "src"), prefix = "src") {
-  const units = [];
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const rel = `${prefix}/${entry.name}`;
-    if (entry.isDirectory()) units.push(...await sourceUnits(path.join(dir, entry.name), rel));
-    else if (entry.name.endsWith(".mjs")) {
-      units.push({ rel, code: stripComments(await readFile(path.join(dir, entry.name), "utf8")) });
-    }
-  }
-  return units;
+async function sourceUnits() {
+  return Promise.all((await readRuntimeFiles(root)).map(async file => ({ rel: file.rel, code: stripComments(await readFile(file.path, "utf8")) })));
 }
 
 // Leg 1 + 2 — one home each, and the faces hold no copy.
@@ -76,7 +69,7 @@ export function singleHomeProblems(units) {
       problems.push(`${rel}: NOT FOUND — a promotion face is missing`);
       continue;
     }
-    if (!new RegExp(`from "\\.\\./work-promote/`, "u").test(face.code)) {
+    if (!new RegExp(`from "\\.\\./promote/`, "u").test(face.code)) {
       problems.push(`${rel}: reaches no ${FAMILY} module by import — a face that imports nothing is carrying its own copy`);
     }
   }
@@ -92,8 +85,8 @@ export function rivalPromoterProblems(units) {
     .map((unit) => `${unit.rel}: matches the promotion signature (seeds a Definition of Done AND writes a chore record doc) outside ${FAMILY}`);
 }
 
-// Leg 4 — the family is a leaf, exactly as `src/work-tune/`, `src/work-audit/` and
-// `src/work-acceptor/` are. The FACES call `runInsertTopLevel`; the engine never reaches up to them.
+// Leg 4 — the family is a leaf, exactly as `packages/core/src/work-tune/`, `packages/core/src/work-audit/` and
+// `packages/core/src/work-acceptor/` are. The FACES call `runInsertTopLevel`; the engine never reaches up to them.
 export function layeringProblems(units) {
   return units
     .filter((unit) => unit.rel.startsWith(`${FAMILY}/`))
@@ -119,7 +112,7 @@ export const archTests = [
 
       // The three in-tree siblings this family is modelled on carry the same layering property, so
       // the leg is a house rule rather than a rule invented for one directory.
-      for (const family of ["src/work-tune/", "src/work-audit/", "src/work-acceptor/"]) {
+      for (const family of ["packages/work/src/tune/", "packages/work/src/audit/", "packages/work/src/acceptor/"]) {
         const siblings = units.filter((unit) => unit.rel.startsWith(family));
         assert.ok(siblings.length > 0, `${family} exists`);
         for (const sibling of siblings) {
@@ -141,11 +134,11 @@ export const archTests = [
         );
       }
 
-      // A THIRD module anywhere in `src/` that both seeds a DoD and writes a chore doc is a second
-      // promoter, and the sweep runs over all of `src/` so it is caught wherever it lands.
-      const rival = [...units, { rel: "src/some-new-thing.mjs", code: 'const h = "## Definition of Done"; await write("CHORE.md", h);' }];
+      // A THIRD module anywhere in `packages/core/src/` that both seeds a DoD and writes a chore doc is a second
+      // promoter, and the sweep runs over all of `packages/core/src/` so it is caught wherever it lands.
+      const rival = [...units, { rel: "packages/core/src/some-new-thing.mjs", code: 'const h = "## Definition of Done"; await write("CHORE.md", h);' }];
       assert.ok(
-        rivalPromoterProblems(rival).some((problem) => problem.includes("src/some-new-thing.mjs")),
+        rivalPromoterProblems(rival).some((problem) => problem.includes("packages/core/src/some-new-thing.mjs")),
         "a third promoter landing anywhere in src/ is reported",
       );
 
@@ -165,9 +158,9 @@ export const archTests = [
       // both really do carry the bare shape the rejected sweep matched.
       const shapes = {
         // `extractH2Block(text, (title) => /^notes$/i.test(title))` — the `## Notes` heading matcher.
-        "src/phase-brief.mjs": /\^notes\$/iu,
+        "packages/work/src/phase-brief.mjs": /\^notes\$/iu,
         // `splitSections` — the section-range walk.
-        "src/memory/local-indexing.mjs": /splitSections/u,
+        "packages/knowledge/src/memory/local-indexing.mjs": /splitSections/u,
       };
       for (const rel of NOT_PROMOTERS) {
         const unit = units.find((row) => row.rel === rel);

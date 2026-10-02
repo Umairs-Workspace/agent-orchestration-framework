@@ -1,3 +1,5 @@
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 70 / story 06 — "the saving is a number, not a
 // claim", task 00 ("a real phase is measured").
 //
@@ -34,10 +36,12 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { claudeProjectKey, ensureWorktreeTrusted } from "../../src/claude-trust.mjs";
-import { driveInteractiveClaudeSession, resolveInteractiveDriverLaunch } from "../../src/mesh/worker-execution.mjs";
+const claudeProjectKey = _aofSessions.claudeTrust.claudeProjectKey;
+const ensureWorktreeTrusted = _aofSessions.claudeTrust.ensureWorktreeTrusted;
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const resolveInteractiveDriverLaunch = _aofApplication.mesh.worker.resolveInteractiveDriverLaunch;
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
-import { PHASE_BRIEF_MAX_CHARS } from "../../src/phase-brief.mjs";
+import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 
 // Built from char codes so the bytes under test are unambiguous in the source.
 const SUBMIT_KEY = String.fromCharCode(13); // carriage return — the Enter key

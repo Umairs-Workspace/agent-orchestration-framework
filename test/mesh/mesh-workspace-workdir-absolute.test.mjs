@@ -1,3 +1,6 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 38 / story 00
 // tasks/10_bug-workspace-workdir-absolute.feature — FINDING F11 (aof:verify 38,
 // BLOCKER): "A registered workspace's work dir is resolvable from ANY cwd, so
@@ -22,14 +25,14 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { startLauncher } from "../../src/mesh/launcher.mjs";
-import { resolveNodeWorkspaces } from "../../src/mesh/presence.mjs";
-import { startSession } from "../../src/mesh/session.mjs";
-import { openGlobalWorkProjectionStore } from "../../src/global-work-store.mjs";
-import { publishGlobalRegistryDescriptorsToStore } from "../../src/global-node-registry.mjs";
-import { publishNodeRecord } from "../../src/mesh/store.mjs";
-import { meshCheckoutPath } from "../../src/mesh/worker-execution.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const resolveNodeWorkspaces = _aofApplication.mesh.presence.resolveNodeWorkspaces;
+const startSession = _aofHooks.meshSession.startSession;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-12T09:00:00.000Z";
@@ -146,7 +149,18 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
             aofVersion: "1.2.3", publishedAt: NOW,
           });
           await publishGlobalRegistryDescriptorsToStore(store, ws, { now: NOW });
-          const { readNodeRecord } = await import("../../src/mesh/store.mjs");
+          const { readNodeRecord } = await Promise.resolve(Object.freeze({
+  aofHome: _aofHooks.meshStore.aofHome,
+  meshDir: _aofHooks.meshStore.meshDir,
+  nodeRecordPath: _aofHooks.meshStore.nodeRecordPath,
+  presenceRecordPath: _aofHooks.meshStore.presenceRecordPath,
+  publishNodeRecord: _aofHooks.meshStore.publishNodeRecord,
+  readNodeRecord: _aofHooks.meshStore.readNodeRecord,
+  readNodeRecords: _aofHooks.meshStore.readNodeRecords,
+  runsDir: _aofApplication.execution.runs.runsDir,
+  runRecordPath: _aofApplication.execution.runs.runRecordPath,
+  runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+}));
           const rewritten = await readNodeRecord(ws, NODE_ID);
           assert.equal(rewritten.hostname, "Desk-Host", "the rewritten descriptor still carries the machine name");
           assert.equal(rewritten.host, "192.0.2.10", "beside the dial address, not in place of it");

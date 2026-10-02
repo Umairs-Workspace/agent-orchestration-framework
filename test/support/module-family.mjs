@@ -4,13 +4,13 @@
 // the TOKEN `import` in its text (eleven assertion sites, measured at HEAD 2026-09-06 with
 // `grep -rn 'doesNotMatch(.*import' test/arch/*.test.mjs`, keeping only the sites whose pattern
 // carries no specifier and is not scoped to a dynamic `import(`). A token ban forbids the only
-// decomposition that would fix the module it guards: `src/phase-brief.mjs` is 1,651 lines (432 when
-// its guard was written) and `src/work/loops-checks.mjs` is 1,284 (380). Two of the nine guard
-// `src/work-acceptor/rule.mjs` and `src/work-acceptor/ledger.mjs` — modules ALREADY inside one
+// decomposition that would fix the module it guards: `packages/work/src/phase-brief.mjs` is 1,651 lines (432 when
+// its guard was written) and `packages/core/src/work/loops-checks.mjs` is 1,284 (380). Two of the nine guard
+// `packages/core/src/work-acceptor/rule.mjs` and `packages/core/src/work-acceptor/ledger.mjs` — modules ALREADY inside one
 // family directory, with the guard forbidding the edge between them.
 //
 // THE UNIT MOVES; NOTHING ELSE DOES. A purity guard constrains a module's EXTERNAL dependency set.
-// A module is a FAMILY: `src/<name>/` when the directory exists, else `src/<name>.mjs`. A specifier
+// A module is a FAMILY: `packages/core/src/<name>/` when the directory exists, else `packages/core/src/<name>.mjs`. A specifier
 // resolving INSIDE the family is not an import OUT of the module. Every other leg — no `node:fs`,
 // no `readFile`/`readdir`/`stat`/`access`, no `process.cwd`, no clock, no `fetch`, no
 // `child_process`, no dynamic `import()` leaving the family — is re-asserted per file over the
@@ -25,11 +25,11 @@
 import path from "node:path";
 import { readFile, readdir, stat } from "node:fs/promises";
 
-import { stripComments } from "./source-slice.mjs";
+import { blankStringLiterals, stripComments } from "./source-slice.mjs";
 
 const toPosix = (value) => String(value).split(path.sep).join("/");
 
-// `src/phase-brief.mjs`, `src/phase-brief` and `src/phase-brief/` all name ONE subject. The
+// `packages/work/src/phase-brief.mjs`, `packages/core/src/phase-brief` and `packages/core/src/phase-brief/` all name ONE subject. The
 // extension is dropped so the two spellings of the same module cannot resolve to two families.
 export function normalizeSubject(subject) {
   return toPosix(subject).replace(/\/+$/u, "").replace(/\.mjs$/u, "");
@@ -45,7 +45,7 @@ async function walkMjs(dir, repoRoot, out = []) {
 }
 
 // THE FAMILY, RESOLVED FROM THE TREE RATHER THAN NAMED AS A FILE. The directory wins where it
-// exists — that is the whole point: a module that has been decomposed into `src/<name>/` is still
+// exists — that is the whole point: a module that has been decomposed into `packages/core/src/<name>/` is still
 // ONE module — and `files` is every `.mjs` beneath it at any depth. `root` is the containment
 // boundary a specifier is tested against; for a single-file family it is that file, so no relative
 // specifier can be inside it and every import is still an import OUT.
@@ -103,10 +103,15 @@ const isLiteralSpecifier = (text) => !text.includes("${");
 
 export function importSpecifiers(code) {
   const clean = stripComments(code);
+  // Static declarations cannot occur inside literals. Keep their specifier text from
+  // clean, but require the keyword itself to survive the shared literal masker.
+  // Dynamic imports remain scanned separately, including template substitutions.
+  const staticCode = blankStringLiterals(code);
+  const isDeclaration = (match) => /^(?:import|export)\b/u.test(staticCode.slice(match.index));
   const found = [];
   const push = (specifier, dynamic) => found.push({ specifier, dynamic });
-  for (const match of clean.matchAll(/\b(?:import|export)\b[^;()]*?\bfrom\s*["']([^"']+)["']/gu)) push(match[1], false);
-  for (const match of clean.matchAll(/\bimport\s*["']([^"']+)["']/gu)) push(match[1], false);
+  for (const match of clean.matchAll(/\b(?:import|export)\b[^;()]*?\bfrom\s*["']([^"']+)["']/gu)) if (isDeclaration(match)) push(match[1], false);
+  for (const match of clean.matchAll(/\bimport\s*["']([^"']+)["']/gu)) if (isDeclaration(match)) push(match[1], false);
   for (const match of clean.matchAll(/\brequire\s*\(\s*(["'`])([^"'`]+)\1/gu)) if (isLiteralSpecifier(match[2])) push(match[2], false);
   for (const match of clean.matchAll(/\bimport\s*\(\s*(["'`])([^"'`]+)\1/gu)) if (isLiteralSpecifier(match[2])) push(match[2], true);
   return found;
@@ -128,7 +133,7 @@ export function computedDynamicImports(code) {
 }
 
 // ADMITTED ONLY WHEN IT RESOLVES INSIDE THE FAMILY. A bare specifier and a node builtin are
-// violations by construction — neither can name a path under `src/<name>/`.
+// violations by construction — neither can name a path under `packages/core/src/<name>/`.
 export function classifySpecifier(specifier, fromRel, family) {
   if (family?.root == null || !family.isDirectory) return "violation";
   if (specifier.startsWith("node:") || !specifier.startsWith(".")) return "violation";
@@ -163,14 +168,14 @@ export function impureReaches(code) {
 // THE WHOLE REPORT, so a caller asserts on findings rather than re-deriving them.
 //
 // `members` narrows the files the OTHER legs are asserted over WITHOUT narrowing the containment
-// boundary — the case `src/work-acceptor/` makes live in this tree: `rule.mjs` and `ledger.mjs` are
+// boundary — the case `packages/core/src/work-acceptor/` makes live in this tree: `rule.mjs` and `ledger.mjs` are
 // two pure leaves inside a family whose other four members legitimately open files, so the edge
 // between the two is admitted (that is ADR-002's own case) while the four are not dragged into a
 // purity claim no ADR ever made about them. Omitted, every family member is in scope.
 export async function familyPurity(repoRoot, subject, { members = null } = {}) {
   const family = await resolveFamily(repoRoot, subject);
   const scope = members == null ? family.files : members.map(toPosix);
-  // A NARROWING MAY ONLY NARROW TO MEMBERS THAT EXIST. Without this, `{ members: ["src/x/a.mjs"] }`
+  // A NARROWING MAY ONLY NARROW TO MEMBERS THAT EXIST. Without this, `{ members: ["packages/core/src/x/a.mjs"] }`
   // over a family that has since been split silently scopes the claim to a file that is not in it —
   // one file scanned, `bytesRead > 0`, every non-vacuity leg satisfied, and the family's other
   // members free to import `node:fs` while both guards stay green. The escape hatch that lets the

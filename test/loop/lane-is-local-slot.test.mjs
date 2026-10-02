@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for 69/04 task 02: the local slot is git's dispatch lane.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
@@ -5,17 +6,16 @@ import { mkdir, readFile, writeFile, rm } from "node:fs/promises";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { dispatchCommand } from "../../src/commands/dispatch.mjs";
-import {
-  cleanupDispatchLane,
-  dispatchLaneOccupiesSlot,
-  inspectDispatchLaneAdmission,
-  inspectDispatchLanes,
-  resolveDispatchLane,
-  sweepDispatchLanes,
-} from "../../src/work/dispatch.mjs";
-import { meshDispatchWorktreePath, meshWorktreePath } from "../../src/mesh/worktree.mjs";
-import { acquireMeshLauncherLock } from "../../src/mesh/launcher-lock.mjs";
+const dispatchCommand = _aofApplication.getCommand("work:dispatch");
+const cleanupDispatchLane = _aofApplication.loop.work.dispatch.cleanupDispatchLane;
+const dispatchLaneOccupiesSlot = _aofApplication.loop.work.dispatch.dispatchLaneOccupiesSlot;
+const inspectDispatchLaneAdmission = _aofApplication.loop.work.dispatch.inspectDispatchLaneAdmission;
+const inspectDispatchLanes = _aofApplication.loop.work.dispatch.inspectDispatchLanes;
+const resolveDispatchLane = _aofApplication.loop.work.dispatch.resolveDispatchLane;
+const sweepDispatchLanes = _aofApplication.loop.work.dispatch.sweepDispatchLanes;
+const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const acquireMeshLauncherLock = _aofApplication.mesh.launcherLock.acquireMeshLauncherLock;
 import { withDispatchRepo, git } from "../support/dispatch-lane-fixture.mjs";
 
 const ws = (root, bound) => ({ projectRoot: root, config: { work: { dispatch: { concurrency: bound } } } });
@@ -29,8 +29,9 @@ function spawnDispatchProcess(root, refs, bound, { marker = "", delayMs = 0 } = 
     import { pathToFileURL } from "node:url";
     const root = process.env.AOF_TEST_PROJECT_ROOT;
     const code = process.env.AOF_TEST_CODE_ROOT;
-    const { dispatchCommand } = await import(pathToFileURL(path.join(code, "src", "commands", "dispatch.mjs")));
-    const { resolveDispatchLane } = await import(pathToFileURL(path.join(code, "src", "work", "dispatch.mjs")));
+    const { defaultApplication } = await import(pathToFileURL(path.join(code, "packages", "core", "src", "application", "default.mjs")));
+    const dispatchCommand = defaultApplication.getCommand("work:dispatch");
+    const { resolveDispatchLane } = defaultApplication.loop.work.dispatch;
     let opened = 0;
     const result = await dispatchCommand.run({ refs: JSON.parse(process.env.AOF_TEST_REFS) }, {
       workspace: { projectRoot: root, config: { work: { dispatch: { concurrency: Number(process.env.AOF_TEST_BOUND) } } } },
@@ -360,3 +361,7 @@ export const laneIsLocalSlotTests = [
     }),
   },
 ];
+
+// Every case here passes alone, in a fresh process (142 Plan 09 measured each position separately), so the sharded run may
+// split this file across workers. Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;

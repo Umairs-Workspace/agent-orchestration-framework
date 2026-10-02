@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Behavioural evidence for milestone 77 / story 02 — the seam liveness.
 //
 //   tasks/00_a-seam-with-no-production-caller-is-named.feature
@@ -19,15 +20,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { graphJsonPath } from "../../../src/graph-normalize.mjs";
-import { TEST_ROOTS } from "../../../src/work-audit/census.mjs";
-import { readFinding } from "../../../src/work-audit/reads.mjs";
-import {
-  SEAM_LIVENESS_FINDING_CODES,
-  dependentsIndex,
-  exportedNames,
-  runSeamLiveness,
-} from "../../../src/work-audit/seam-liveness.mjs";
+import { graphJsonPath } from "@aof/knowledge/graph-normalize";
+const TEST_ROOTS = _aofApplication.work.audit.census.TEST_ROOTS;
+import { readFinding } from "@aof/work/audit/reads";
+const SEAM_LIVENESS_FINDING_CODES = _aofApplication.work.audit.seamLiveness.SEAM_LIVENESS_FINDING_CODES;
+const dependentsIndex = _aofApplication.work.audit.seamLiveness.dependentsIndex;
+const exportedNames = _aofApplication.work.audit.seamLiveness.exportedNames;
+const runSeamLiveness = _aofApplication.work.audit.seamLiveness.runSeamLiveness;
 
 // ── FIXTURES ─────────────────────────────────────────────────────────────────────────────────
 
@@ -413,6 +412,7 @@ export const seamLivenessTests = [
         ["../src/scaffold.mjs", "test/holder.test.mjs", true, "a file under test/"],
       ];
       for (const [literal, holder, expectNamed, why] of rows) {
+        assert.equal(path.posix.normalize(path.posix.join(path.posix.dirname(holder), literal)), "src/scaffold.mjs", "the synthetic reference resolves to the supplied fixture module");
         const { findings } = await laneOver(
           { "src/scaffold.mjs": EXPORTS_ONE, [holder]: `export async function go() { await import("${literal}"); }\n` },
           { files: ["src/scaffold.mjs", holder], edges: [] },

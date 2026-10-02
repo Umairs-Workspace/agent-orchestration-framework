@@ -1,3 +1,7 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function: acd-session-orphan-reaped (milestone 48 / ADR-006 + ADR-010 R5,
 // fitness #3) — "a TTL-expired session record is REMOVED, by the owning node, at the
 // write seam, under the shared liveness predicate."
@@ -27,7 +31,7 @@
 //     `${safeSegment(nodeId)}~` prefix.
 //  3. STRUCTURAL — `startSession` AND `pingSession` invoke it (the write seam).
 //  4. STRUCTURAL (ADR-010 R5) — the `unlink` seam DEFAULTS to the module's real
-//     `unlink`, and NO `src/` call site supplies `options.unlink` IN EITHER SPELLING —
+//     `unlink`, and NO `packages/core/src/` call site supplies `options.unlink` IN EITHER SPELLING —
 //     neither `{ unlink: fn }` nor the object SHORTHAND `{ unlink }`, which is the one a
 //     production caller would actually write: a test seam may never become a production
 //     door. `endSession` does not take the seam at all.
@@ -43,26 +47,24 @@
 //  out of the write, each trip the SAME assertions the real code passes.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
-import { readdirSync, statSync } from "node:fs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  pingSession,
-  startSession,
-  reapExpiredSessions,
-  sessionRecordPath,
-  isSessionLive,
-  DEFAULT_SESSION_TTL_SECONDS,
-} from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { setDegradeSinkForTest } from "../../../src/degrade.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const pingSession = _aofHooks.meshSession.pingSession;
+const startSession = _aofHooks.meshSession.startSession;
+const reapExpiredSessions = _aofHooks.meshSession.reapExpiredSessions;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const isSessionLive = _aofHooks.meshSession.isSessionLive;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcRoot = path.join(repoRoot, "src");
-const sessionSourcePath = path.join(srcRoot, "mesh/session.mjs");
-const commandSourcePath = path.join(srcRoot, "commands", "mesh", "session.mjs");
+const srcRoot = path.join(repoRoot, "packages", "core", "src");
+const sessionSourcePath = path.join(repoRoot, "packages/mesh/src/session.mjs");
+const commandSourcePath = path.join(repoRoot, "packages/mesh/src/commands/session.mjs");
 
 const NODE_ID = "node-a";
 const PEER_NODE_ID = "node-b";
@@ -92,7 +94,7 @@ function plant(source, needle, replacement) {
 }
 
 // NON-VACUITY OF THE STRIP ITSELF (TECH_DEBT item 24, fix (b)). Proof 4 sweeps ALL of
-// `src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
+// `packages/core/src/` for an ABSENCE, and an absence-sweep is silently GREEN if the stripper deleted
 // the source it was meant to read — item 24's named "silent false GREEN" shape. The
 // anchor is each module's OWN exported symbol names: a name a module `export`s at line
 // start is code by construction, so if it does not survive `stripComments` then the
@@ -119,7 +121,7 @@ function strippedCorpusViolations(entries, strip = stripComments) {
 // code, opens the identical door, and `\bunlink\s*:` does not see it at all.
 //
 // An IMPORT/EXPORT clause is spelled identically (`import { readdir, unlink } from
-// "node:fs/promises"`, which src/mesh/session.mjs, src/run-store.mjs and src/fs.mjs all
+// "node:fs/promises"`, which packages/core/src/mesh/session.mjs, packages/core/src/run-store.mjs and packages/core/src/fs.mjs all
 // carry) and is NOT a supply: that import is precisely what ADR-010 R5's DEFAULT is
 // built ON. Module clauses are therefore removed before the scan rather than
 // special-cased inside it, so the rule stays "no object property named `unlink`".
@@ -137,7 +139,7 @@ function suppliedUnlinkSites(code) {
 // declaration to its closing brace, plus the window helper it delegates its clock to.
 function reapPath(code) {
   const source = stripComments(normalise(code));
-  const start = source.indexOf("export async function reapExpiredSessions(");
+  const start = source.indexOf("async function reapExpiredSessions(");
   if (start < 0) return null;
   const body = source.slice(start, source.indexOf("\n}", start));
   const windowStart = source.indexOf("function resolveReapWindow(");
@@ -168,27 +170,19 @@ function reapStructuralViolations(code) {
 
   // The write seam invokes it.
   for (const verb of ["startSession", "pingSession"]) {
-    const start = reap.source.indexOf(`export async function ${verb}(`);
+    const start = reap.source.indexOf(`async function ${verb}(`);
     const body = start < 0 ? "" : reap.source.slice(start, reap.source.indexOf("\n}", start));
     if (!/reapExpiredSessions\s*\(/.test(body)) problems.push(`${verb} does not invoke reapExpiredSessions — ADR-006 puts the sweep at the WRITE seam`);
   }
 
   // ADR-010 R5: the injected deleter defaults to the module's real unlink.
   if (!/options\.unlink\s*\?\?\s*unlink/.test(reap.body)) problems.push("the reap's deleter does not default to the module's real unlink (ADR-010 R5)");
-  const endStart = reap.source.indexOf("export async function endSession(");
+  const endStart = reap.source.indexOf("async function endSession(");
   const endBody = endStart < 0 ? "" : reap.source.slice(endStart, reap.source.indexOf("\n}", endStart));
   if (/options\.unlink/.test(endBody)) problems.push("endSession took the reaper's unlink seam — it is not the reaper (ADR-010 R5)");
   return problems;
 }
 
-function walk(dir, out = []) {
-  for (const name of readdirSync(dir)) {
-    const entry = path.join(dir, name);
-    if (statSync(entry).isDirectory()) walk(entry, out);
-    else if (name.endsWith(".mjs")) out.push(entry);
-  }
-  return out;
-}
 
 async function makeFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-acd-session-orphan-reaped-"));
@@ -235,7 +229,7 @@ export const archTests = [
     name: "arch/48 ADR-010 R5 (acd-session-orphan-reaped): STRUCTURAL — NO src/ call site supplies options.unlink in EITHER spelling (`{ unlink: fn }` or the shorthand `{ unlink }`); a test seam never becomes a production door",
     run: async () => {
       const corpus = [];
-      for (const file of walk(srcRoot)) {
+      for (const { path: file } of await readRuntimeFiles(repoRoot)) {
         corpus.push([path.relative(repoRoot, file).split(path.sep).join("/"), normalise(await readFile(file, "utf8"))]);
       }
       assert.ok(corpus.length > 50, `the scan really walked src/ (found ${corpus.length} modules)`);

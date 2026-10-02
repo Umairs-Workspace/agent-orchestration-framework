@@ -443,6 +443,17 @@ aof_install_files() {
   mv "$staging_dir/node-pty-sidecar" "$install_target_dir/node-pty-sidecar"
   mkdir -p "$install_target_dir/node_modules"
   mv "$staging_dir/node_modules/node-pty" "$install_target_dir/node_modules/node-pty"
+  # Older PTY-only archives remain installable. New archives also ship SEA
+  # directory assets; replace each tree so deleted assets do not survive updates.
+  for member in bundle ui package.json src node-runtime; do
+    if [ -e "$staging_dir/$member" ]; then
+      rm -rf "$install_target_dir/$member"
+      mv "$staging_dir/$member" "$install_target_dir/$member"
+    fi
+  done
+  if [ -d "$install_target_dir/node-runtime" ] && [ ! -f "$install_target_dir/src/cli.mjs" ]; then
+    rm -f "$install_target_dir/BUILD_ID.json"
+  fi
 
   rm -rf "$staging_dir"
 }

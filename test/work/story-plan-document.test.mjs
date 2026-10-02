@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 96 / story 02 — the plan document.
 //
 // Covers EVERY @executable scenario in the three task features:
@@ -16,7 +18,7 @@
 //
 // The scenarios this file does not drive are the three that are properties of the TREE rather than
 // of a behaviour — the budget number living only in the defaults, the doc-budget vocabulary being
-// unchanged by this milestone, and the gate having no reader in `src/` outside its validator.
+// unchanged by this milestone, and the gate having no reader in `packages/core/src/` outside its validator.
 // Those are FF-9603's, in test/arch/planning/acd-plan-restates-no-declared-path.test.mjs.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
@@ -26,15 +28,18 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { restatementViolations } from "../support/plan-restatement-ban.mjs";
-import { loadWorkspace, parseFrontmatter } from "../../src/work.mjs";
-import { budgetsFromConfig, doctorWork } from "../../src/work/doctor.mjs";
-import { budgetGroup, PLAN_BASENAME } from "../../src/work/doctor-budget.mjs";
-import { planEnabledFromConfig, validateConfig } from "../../src/config-inspect.mjs";
-import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const parseFrontmatter = _aofWorkspace.work.parseFrontmatter;
+const budgetsFromConfig = _aofApplication.work.doctor.budgetsFromConfig;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+import { budgetGroup, PLAN_BASENAME } from "@aof/work/doctor/budget";
+const planEnabledFromConfig = _aofApplication.assets.configInspect.planEnabledFromConfig;
+const validateConfig = _aofApplication.assets.configInspect.validateConfig;
+import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const TEMPLATE = path.join(repoRoot, "src", "bundle", "templates", "story", "PLAN.md");
+const TEMPLATE = path.join(repoRoot, "packages", "core", "assets", "templates", "story", "PLAN.md");
 const TEMPLATE_INSTALL_PATH = ".aof/templates/work/story/PLAN.md";
 const WORK_DIR = path.join(repoRoot, "wiki", "work");
 
@@ -137,12 +142,12 @@ const BAN_ROWS = [
   {
     content: "a `files:` key",
     outcome: "refused",
-    text: "# 96 · a plan\n\n## Mechanism\n\nfiles:\n  - src/work/doctor.mjs\n",
+    text: "# 96 · a plan\n\n## Mechanism\n\nfiles:\n  - packages/core/src/work/doctor.mjs\n",
   },
   {
     content: "a `reads:` key",
     outcome: "refused",
-    text: "# 96 · a plan\n\n## Mechanism\n\nreads:\n  - src/work/doctor.mjs\n",
+    text: "# 96 · a plan\n\n## Mechanism\n\nreads:\n  - packages/core/src/work/doctor.mjs\n",
   },
   {
     content: "a markdown table whose header names a file column",
@@ -152,12 +157,12 @@ const BAN_ROWS = [
   {
     content: "a bullet list of paths under a source root",
     outcome: "refused",
-    text: "# 96 · a plan\n\n## Mechanism\n\n- src/work/doctor.mjs — the defaults\n- src/config-inspect.mjs — the gate\n",
+    text: "# 96 · a plan\n\n## Mechanism\n\n- packages/core/src/work/doctor.mjs — the defaults\n- packages/core/src/config-inspect.mjs — the gate\n",
   },
   {
     content: "a single inline reference to one module inside a sentence about the seam",
     outcome: "admitted",
-    text: "# 96 · a plan\n\n## Mechanism\n\nThe change hangs off the budget group in src/work/doctor-budget.mjs, which already\nresolves a filename to a kind; the new kind rides that resolution rather than a check of its own.\n",
+    text: "# 96 · a plan\n\n## Mechanism\n\nThe change hangs off the budget group in packages/core/src/work/doctor-budget.mjs, which already\nresolves a filename to a kind; the new kind rides that resolution rather than a check of its own.\n",
   },
   {
     content: "a reference to the story's own frontmatter as the file table",
@@ -251,7 +256,7 @@ export const storyPlanDocumentTests = [
   {
     name: "96/02-00 the story plan template is a declared member of the installed bundle, at its declared path and matching the shipped source",
     async run() {
-      const manifest = JSON.parse(await read(path.join("src", "bundle", "manifest.json")));
+      const manifest = JSON.parse(await read(path.join("packages", "core", "assets", "manifest.json")));
       const entry = manifest.entries.find((row) => row.path === TEMPLATE_INSTALL_PATH);
       assert.ok(entry, `the bundle manifest declares no entry at ${TEMPLATE_INSTALL_PATH}`);
       assert.equal(entry.resource.kind, "template");
@@ -387,7 +392,7 @@ export const storyPlanDocumentTests = [
   {
     name: "96/02-02 the developer's brief names the plan as an input, states it is advisory, and states that a plan found wrong is reported and the build continues",
     async run() {
-      const brief = await read(path.join("src", "bundle", "agents", "aof-developer.md"));
+      const brief = await read(path.join("packages", "core", "assets", "agents", "aof-developer.md"));
 
       assert.match(brief, /PLAN\.md/, "the developer's brief must name the plan document");
       assert.match(brief, /advisory/i, "the developer's brief must state that the plan is advisory");
@@ -403,7 +408,7 @@ export const storyPlanDocumentTests = [
     name: "96/02-02 the reviewer briefs do not instruct their role to read a plan document (Examples: the two review lanes the read contract made cheap)",
     async run() {
       for (const role of ["qa", "architect"]) {
-        const brief = await read(path.join("src", "bundle", "agents", `aof-${role}.md`));
+        const brief = await read(path.join("packages", "core", "assets", "agents", `aof-${role}.md`));
         assert.doesNotMatch(
           brief,
           /PLAN\.md/,
@@ -416,7 +421,7 @@ export const storyPlanDocumentTests = [
     name: "96/02-02 a deviation from the plan is not a finding, and the task feature is the contract",
     async run() {
       for (const role of ["qa", "architect"]) {
-        const brief = await read(path.join("src", "bundle", "agents", `aof-${role}.md`));
+        const brief = await read(path.join("packages", "core", "assets", "agents", `aof-${role}.md`));
         assert.match(
           brief,
           /A deviation from the story's build plan is not a finding/,
@@ -436,7 +441,7 @@ export const storyPlanDocumentTests = [
       // Half one — the authoring instruction is CONDITIONAL on the gate, and the gate is off by
       // default. A refine brief that authored the document unconditionally would spend the budget
       // before story 00's measurement exists to justify it.
-      const refine = await read(path.join("src", "bundle", "commands", "refine.md"));
+      const refine = await read(path.join("packages", "core", "assets", "commands", "refine.md"));
       assert.match(refine, /work\.plan\.enabled/, "the refine brief must read the gate");
       assert.match(
         refine,

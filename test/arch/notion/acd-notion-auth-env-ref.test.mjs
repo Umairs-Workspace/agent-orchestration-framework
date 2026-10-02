@@ -7,7 +7,7 @@
 //   (a) SCHEMA: `work.integrations.notion` accepts `tokenEnv` (a string property) and
 //       has NO `token`/secret property, and is CLOSED (additionalProperties:false) so a
 //       `token` field is rejected. Proven against the JSON schema directly.
-//   (b) SOURCE-GREP src/notion/cli.mjs (the auth read): the sync reads the secret from
+//   (b) SOURCE-GREP packages/core/src/notion/cli.mjs (the auth read): the sync reads the secret from
 //       the NAMED env var (`env[<tokenEnv>]`), and no Notion token LITERAL nor a
 //       `token:` CONFIG read appears (the config holds `tokenEnv`, never `token`).
 //       Self-checked non-vacuous: the secret-config-read matcher fires on a planted
@@ -19,7 +19,7 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SCHEMA = path.join(repoRoot, "schemas", "aof.schema.json");
-const CLI = path.join(repoRoot, "src", "notion", "cli.mjs");
+const CLI = path.join(repoRoot, "packages", "integration-notion", "src", "cli.mjs");
 
 function stripCommentsAndStrings(source) {
   let out = "";

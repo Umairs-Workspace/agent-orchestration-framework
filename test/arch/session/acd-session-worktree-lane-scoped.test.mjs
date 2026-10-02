@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function: acd-session-worktree-lane-scoped (milestone 50 / story 03; TECH_DEBT
 // item 47) — "the bare-session lane is a SIBLING of the assignment lane, never a squatter
 // in its module or its keyspace."
@@ -11,7 +12,7 @@
 // where the feature is tested is a claim nobody checks when the NEXT lane arrives.
 //
 // ── INVARIANT 1: THE HANDLER IS A SIBLING MODULE ────────────────────────────────────────
-// src/mesh/session-spawn-handler.mjs does not import src/mesh/worker-execution.mjs (the
+// packages/core/src/mesh/session-spawn-handler.mjs does not import packages/core/src/mesh/worker-execution.mjs (the
 // widest hub in src/, 47+ dependents, entangled with the ASSIGNMENT lifecycle — worktree,
 // run record, state machine, terminal reports; a bare session has none of that). Nor does
 // it import terminal-providers.mjs or call `resolveProvider`: ADR-007 rules that a
@@ -29,7 +30,7 @@
 //     stranded entries the launcher would report failed/daemon-restarted: ["session-50"]
 //
 // TECH_DEBT 47's prescribed ratchet, implemented here: "widen the scan set from one
-// hard-coded path to EVERY `src/` module that calls `meshWorktreePath`/`meshWorktreesRoot`,
+// hard-coded path to EVERY `packages/core/src/` module that calls `meshWorktreePath`/`meshWorktreesRoot`,
 // so the next lane to compose a path there fails CI instead of needing a reviewer." The
 // allowlist below is that scan, as an ALLOWLIST rather than a count — a number would say
 // a new caller appeared; a named list says WHICH ONE and WHY THE OTHERS ARE THERE.
@@ -41,17 +42,16 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
-import {
-  meshWorktreesRoot,
-  meshSessionWorktreesRoot,
-  meshSessionWorktreePath,
-  sessionWorktreeSlug,
-  isUnderMeshSessionWorktreesRoot,
-  isUnderMeshWorktreesRoot,
-} from "../../../src/mesh/worktree.mjs";
+const meshWorktreesRoot = _aofApplication.mesh.worktree.meshWorktreesRoot;
+const meshSessionWorktreesRoot = _aofApplication.mesh.worktree.meshSessionWorktreesRoot;
+const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
+const sessionWorktreeSlug = _aofApplication.mesh.worktree.sessionWorktreeSlug;
+const isUnderMeshSessionWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SPAWN_HANDLER = path.join(repoRoot, "src", "mesh", "session-spawn-handler.mjs");
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
+const SPAWN_HANDLER = path.join(repoRoot, "packages", "mesh", "src", "session-spawn-handler.mjs");
 const GITIGNORE = path.join(repoRoot, ".gitignore");
 
 // lf(source) — normalise CRLF -> LF before every regex probe (this repo's tree is checked
@@ -61,7 +61,11 @@ function lf(source) {
 }
 
 async function realSource(file) {
-  return lf(stripComments(await readFile(file, "utf8")));
+  const source = lf(stripComments(await readFile(file, "utf8")));
+  if (file !== SPAWN_HANDLER) return source;
+  const adapter = lf(stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/session-spawn-handler.mjs"), "utf8")));
+  for (const text of [source, adapter]) assert.match(text, /createSessionSpawnServices\(\{[^}]*createTerminalSpawn[^}]*loadNodePty/su);
+  return adapter + "\n" + source;
 }
 
 // ── DETECTOR 1 — the sibling-module boundary ───────────────────────────────────────────
@@ -76,7 +80,7 @@ export function siblingBoundaryProblems(code) {
   if (/resolveProvider\s*\(/.test(code)) {
     problems.push("mesh-session-spawn-handler.mjs calls resolveProvider(...) — ADR-007: `assistant` is a LABEL (which lane of the grid this renders in), never a spawn instruction");
   }
-  if (!/from\s*["'](?:\.\.?\/)+terminal-ws\.mjs["']/.test(code) || !/createTerminalSpawn\s*\(\s*loadNodePty\s*\)/.test(code)) {
+  if (!(/from\s*["'](?:\.\.?\/)+terminal-ws\.mjs["']/.test(code) || (/const\s*\{\s*createTerminalSpawn\s*\}\s*= terminalWsServices/u.test(code) && /const\s*\{\s*loadNodePty\s*\}\s*= terminalWsServices/u.test(code))) || !/createTerminalSpawn\s*\(\s*loadNodePty\s*\)/.test(code)) {
     problems.push("mesh-session-spawn-handler.mjs does not open its PTY through createTerminalSpawn(loadNodePty) from ./terminal-ws.mjs — the ONE spawn factory the rest of the tree uses (a second spawn path is a second set of native-addon failure modes)");
   }
   return problems;
@@ -84,21 +88,31 @@ export function siblingBoundaryProblems(code) {
 
 // ── DETECTOR 2 — the assignment lane's keyspace has a NAMED set of callers ─────────────
 //
-// Every `src/` module that names `meshWorktreePath` / `meshWorktreesRoot` /
+// Every `packages/core/src/` module that names `meshWorktreePath` / `meshWorktreesRoot` /
 // `isUnderMeshWorktreesRoot` must be on this list. It is deliberately an allowlist with
 // reasons, not a count: TECH_DEBT 47's whole finding is that the SECOND writer into this
 // root cost a review to notice.
 export const ASSIGNMENT_KEYSPACE_CALLERS = Object.freeze([
+  Object.freeze({ file: "packages/core/src/application/bindings/mesh/worktree.mjs", why: "Compatibility exports of the same configured lane services; no path construction." }),
+  Object.freeze({ file: "packages/core/src/application/bindings/mesh/worker-execution.mjs", why: "COMPOSITION — supplies the assignment lane path services to the mesh-owned worker." }),
   Object.freeze({
-    file: "src/mesh/worktree.mjs",
-    why: "THE HOME — it defines the root and the seam. The session lane's own root (meshSessionWorktreesRoot) is defined here too, as a deliberate SIBLING of it.",
+    file: "packages/core/src/application/bindings/mesh/worktree.mjs",
+    why: "TRANSITIONAL COMPOSITION — forwards the mesh-owned lane services without defining paths.",
   }),
   Object.freeze({
-    file: "src/mesh/worker-execution.mjs",
+    file: "packages/mesh/src/worktrees.mjs",
+    why: "THE HOME — defines the assignment, session and dispatch path seams and their policies.",
+  }),
+  Object.freeze({
+    file: "packages/mesh/src/worker-execution.mjs",
     why: "THE ASSIGNMENT LANE — the one legitimate materializer, and the module whose startup scan trusts every directory name in the root. KNOWN DEBT, recorded rather than hidden: pushWorktreeBranch also builds its one-shot askpass shim at `<worktreesRoot>/.askpass/<uuid>`, so a crash mid-push leaves a `.askpass` directory that the same scan will report as a stranded assignment. Same species as TECH_DEBT 47; a separate fix, in a file milestone 50 does not touch.",
   }),
   Object.freeze({
-    file: "src/work/read.mjs",
+    file: "packages/core/src/application/bindings/work/read.mjs",
+    why: "TRANSITIONAL COMPOSITION — supplies mesh boundary predicates to the work reader.",
+  }),
+  Object.freeze({
+    file: "packages/work/src/read.mjs",
     why: "READ-SIDE ONLY — `isUnderMeshWorktreesRoot` as a boundary PREDICATE (is this checkout a mesh worktree?). It composes no path and materializes nothing.",
   }),
 ]);
@@ -148,22 +162,11 @@ export function sessionLaneProblems(code) {
 }
 
 async function readSrcListing() {
-  const { readdir } = await import("node:fs/promises");
-  const dir = path.join(repoRoot, "src");
   const listing = [];
-  const walk = async (current) => {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const full = path.join(current, entry.name);
-      if (entry.isDirectory()) await walk(full);
-      else if (entry.name.endsWith(".mjs")) {
-        listing.push({
-          path: path.relative(repoRoot, full).split(path.sep).join("/"),
-          source: await readFile(full, "utf8"),
-        });
-      }
-    }
-  };
-  await walk(dir);
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    listing.push({ path: file.rel, source: await readFile(file.path, "utf8") });
+  }
+  assert.ok(listing.length > 0, "runtime source census is non-empty");
   return listing;
 }
 
@@ -210,7 +213,7 @@ export const archTests = [
     name: "arch/50 (acd-session-worktree-lane-scoped): TECH_DEBT 47's ratchet — every src/ module that names the ASSIGNMENT lane's worktree seam is on the allowlist, with a reason (the next lane to compose a path in that root fails CI instead of needing a reviewer)",
     run: async () => {
       const listing = await readSrcListing();
-      assert.ok(listing.length > 100, `src/ was actually swept (non-vacuous): ${listing.length} modules`);
+      assert.ok(listing.length > 100, `packages/core/src/ was actually swept (non-vacuous): ${listing.length} modules`);
       const offenders = keyspaceCallerOffenders(listing);
       assert.deepEqual(offenders, [], `assignment-keyspace offenders:\n  ${offenders.join("\n  ")}`);
     },
@@ -261,19 +264,23 @@ export const archTests = [
       // …and the sweep: a NEW module naming the assignment seam is an offender until it
       // is allowlisted with a reason.
       const planted = [
-        { path: "src/mesh/worktree.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
-        { path: "src/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
-        { path: "src/work/read.mjs", source: "import { isUnderMeshWorktreesRoot } from './worktree.mjs';" },
-        { path: "src/mesh-brand-new-lane.mjs", source: "import { meshWorktreePath } from './worktree.mjs';\nconst p = meshWorktreePath(root, `preview-${ref}`);" },
+        { path: "packages/core/src/application/bindings/mesh/worktree.mjs", source: "export const { meshWorktreePath, meshWorktreesRoot } = meshWorktree;" },
+        { path: "packages/core/src/application/bindings/mesh/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
+        { path: "packages/core/src/application/bindings/mesh/worktree.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
+        { path: "packages/mesh/src/worktrees.mjs", source: "export function meshWorktreePath() {} export function meshWorktreesRoot() {}" },
+        { path: "packages/mesh/src/worker-execution.mjs", source: "import { meshWorktreePath } from './worktree.mjs';" },
+        { path: "packages/work/src/read.mjs", source: "export function createWorkReader({ isUnderMeshWorktreesRoot }) {}" },
+        { path: "packages/core/src/application/bindings/work/read.mjs", source: "import { isUnderMeshWorktreesRoot } from './worktree.mjs';" },
+        { path: "packages/core/src/mesh-brand-new-lane.mjs", source: "import { meshWorktreePath } from './worktree.mjs';\nconst p = meshWorktreePath(root, `preview-${ref}`);" },
       ];
       const offenders = keyspaceCallerOffenders(planted);
       assert.equal(offenders.length, 1, `self-check: exactly the new lane is reported (got ${JSON.stringify(offenders)})`);
-      assert.ok(offenders[0].includes("src/mesh-brand-new-lane.mjs"), "self-check: …and it is named");
+      assert.ok(offenders[0].includes("packages/core/src/mesh-brand-new-lane.mjs"), "self-check: …and it is named");
 
       // …and a stale allowlist entry is reported too (a permission with no subject).
-      const stale = keyspaceCallerOffenders(planted.filter((f) => f.path !== "src/work/read.mjs"));
+      const stale = keyspaceCallerOffenders(planted.filter((f) => f.path !== "packages/core/src/application/bindings/work/read.mjs"));
       assert.ok(
-        stale.some((problem) => problem.includes("src/work/read.mjs") && problem.includes("re-aim")),
+        stale.some((problem) => problem.includes("packages/core/src/application/bindings/work/read.mjs") && problem.includes("re-aim")),
         `self-check: an allowlisted file missing from the sweep is reported (got ${JSON.stringify(stale)})`,
       );
     },

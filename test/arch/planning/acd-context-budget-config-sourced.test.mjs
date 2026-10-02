@@ -1,5 +1,7 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 16 / ADR-005 (config-sourced budget / NO baked-in
-// literal). (a) The budgetGroup body in src/work/doctor-budget.mjs holds NO
+// literal). (a) The budgetGroup body in packages/core/src/work/doctor-budget.mjs holds NO
 // budget-magnitude integer literal — defaults live ONLY in the budgetsFromConfig
 // resolver (source-grep the group module, comments stripped per the house
 // strip-comments discipline). (b) BEHAVIOURALLY, the SAME over-length artifact flips
@@ -10,12 +12,12 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { doctorWork } from "../../../src/work/doctor.mjs";
-import { budgetGroup } from "../../../src/work/doctor-budget.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+import { budgetGroup } from "@aof/work/doctor/budget";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BUDGET_MODULE = path.join(repoRoot, "src", "work", "doctor-budget.mjs");
+const BUDGET_MODULE = path.join(repoRoot, "packages", "work", "src", "doctor", "budget.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");

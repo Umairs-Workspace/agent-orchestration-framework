@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionDriver as _aofSessions } from "aof/session-services";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/worker/mesh-worker-driver-session-id.test.mjs — traceability for milestone 38 /
 // story 05, task 03 (03_session-id-captured-and-surfaced.feature, ADR-013
 // invariant 3) — REWRITTEN under the ADR-013 AMENDMENT (F-38.05, 2026-07-19). The
@@ -23,11 +26,14 @@ import assert from "node:assert/strict";
 import { mkdir, writeFile, rm, mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { driveInteractiveClaudeSession, createMeshWorkerExecutionHandler, defaultWatchTranscriptSessionId, NEEDS_INPUT_SENTINEL } from "../../../src/mesh/worker-execution.mjs";
-import { claudeProjectsDir } from "../../../src/work/observe.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { readRuns } from "../../../src/run-store.mjs";
-import { removeWorktree } from "../../../src/mesh/worktree.mjs";
+const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
+const createMeshWorkerExecutionHandler = _aofApplication.mesh.worker.createMeshWorkerExecutionHandler;
+const defaultWatchTranscriptSessionId = _aofApplication.mesh.worker.defaultWatchTranscriptSessionId;
+const NEEDS_INPUT_SENTINEL = _aofApplication.mesh.worker.NEEDS_INPUT_SENTINEL;
+const claudeProjectsDir = _aofSessions.workObserve.claudeProjectsDir;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const removeWorktree = _aofApplication.mesh.worktree.removeWorktree;
 import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../support/mesh-worker-exec-fixture.mjs";
 import { createFakeWhich, createFakePtySpawn } from "../../support/mesh-worker-terminal-fixture.mjs";
 

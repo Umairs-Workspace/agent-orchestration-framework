@@ -28,10 +28,10 @@ so that opening a terminal never puts my work item's action buttons underneath i
 
 Milestone 45 ruled the dock's region home is the shell's `overlay` — out of flow, a sibling of
 `content` ([45/ADR-005 [Build-3]](../../../45_milestone_ui-app-shell-routing/ARCHITECTURE.md)) — and
-[Shell.tsx:316-360](../../../../../../ui/src/app/Shell.tsx#L316-L360) already renders that row with a
+[Shell.tsx:316-360](../../../../../../apps/ui/src/app/Shell.tsx#L316-L360) already renders that row with a
 comment naming *"m46's dock"* as its next occupant. But there is **no channel** by which a surface can
 put a dock there: the bus offers only `SLOT_SURFACE` and `SLOT_NOTICE`
-([shell-bus.mjs:30-31](../../../../../../ui/src/app/shell-bus.mjs#L30-L31)) plus the fullscreen door. This
+([shell-bus.mjs:30-31](../../../../../../apps/ui/src/app/shell-bus.mjs#L30-L31)) plus the fullscreen door. This
 story builds the channel — and the inset that stops the move from costing the operator their buttons.
 
 ## Tasks
@@ -62,7 +62,7 @@ file*. Re-creating that shape under a new name would make the exemption permanen
 
 **DG-46-1 — this story's reason to exist** ([DESIGN](../../DESIGN.md)). Today the dock is an in-flow flex
 child of the board's `h-dvh overflow-hidden` column
-([Board.tsx:561-563](../../../../../../ui/src/board/Board.tsx#L561-L563)), so opening it **shrinks** the
+([Board.tsx:561-563](../../../../../../apps/ui/src/board/Board.tsx#L561-L563)), so opening it **shrinks** the
 lanes and the detail panel and everything stays reachable. An overlaying dock at the default 280px covers
 the bottom 280px of the detail panel — which is exactly where its action strip lives. **An extraction
 that takes the operator's buttons away is not an extraction.** m45 named the escape hatch in advance: a
@@ -73,9 +73,9 @@ which the content region pads its bottom against. Per m45's own clause this **am
 **The drag clamp moves off the viewport.** [TerminalDock.tsx:120](../../../../../../ui/src/board/TerminalDock.tsx#L120)
 clamps to `Math.round(window.innerHeight / 2)` — wrong by exactly the chrome height under a shell. It
 becomes a pure function of the content box using `CHROME_HEIGHT_PROPERTY` / `CONTENT_HEIGHT_EXPRESSION`
-([shell-layout.mjs:274](../../../../../../ui/src/app/shell-layout.mjs#L274),
-[:278](../../../../../../ui/src/app/shell-layout.mjs#L278)), the same primitive
-[Board.tsx:420](../../../../../../ui/src/board/Board.tsx#L420) already sizes itself with.
+([shell-layout.mjs:274](../../../../../../apps/ui/src/app/shell-layout.mjs#L274),
+[:278](../../../../../../apps/ui/src/app/shell-layout.mjs#L278)), the same primitive
+[Board.tsx:420](../../../../../../apps/ui/src/board/Board.tsx#L420) already sizes itself with.
 
 **This story owns the behavioural proof m45 deferred to it.**
 [test/shell-not-found-and-fullscreen.test.mjs:528-535](../../../../../../test/shell-not-found-and-fullscreen.test.mjs#L528-L535)
@@ -85,8 +85,8 @@ the **same** socket and the **same** scrollback are still there.
 
 **Stated so no task promises it: a session does NOT survive navigation between surfaces, and this
 milestone does not make it.** m45's nav is real `<a href>` with no client-side interception
-([Shell.tsx:395-398](../../../../../../ui/src/app/Shell.tsx#L395-L398)) and the entry evaluates its route
-once at module load ([main.tsx:49-61](../../../../../../ui/src/main.tsx#L49-L61)) — a surface change is a
+([Shell.tsx:395-398](../../../../../../apps/ui/src/app/Shell.tsx#L395-L398)) and the entry evaluates its route
+once at module load ([main.tsx:49-61](../../../../../../apps/ui/src/main.tsx#L49-L61)) — a surface change is a
 **full document load**, so the PTY dies at the browser before React gets a say. [Build-3]'s conclusion
 is right; its stated mechanism is not, and ADR-009 corrects it. The reasons to host in `overlay` are
 stacking, one home for out-of-flow layers, and a clean adoption boundary — **not** session persistence.

@@ -1,3 +1,5 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Fitness function for milestone 40 / ADR-005 — `aof upgrade` is idempotent: running
 // it twice is a no-op the second time, and a stamped-current item is left untouched.
 //
@@ -9,15 +11,40 @@
 // data level (API-independent, durable) — the behavioural "run twice = no-op" is the
 // concern of story 02's .feature over the real engine.
 //
-// GUARD-IF-PRESENT: a clean no-op until src/work/upgrade.mjs exists; arms on build.
+// GUARD-IF-PRESENT: a clean no-op until packages/core/src/work/upgrade.mjs exists; arms on build.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import * as work from "../../../src/work.mjs";
+const work = Object.freeze({
+  recordDoc: _aofWorkspace.work.recordDoc,
+  typeHasRecordDoc: _aofWorkspace.work.typeHasRecordDoc,
+  parseFrontmatter: _aofWorkspace.work.parseFrontmatter,
+  WORK_ITEM_SCHEMA_VERSION: _aofWorkspace.work.WORK_ITEM_SCHEMA_VERSION,
+  readItemSchema: _aofWorkspace.work.readItemSchema,
+  readItemVersion: _aofWorkspace.work.readItemVersion,
+  rollbackItemStatus: _aofWorkspace.work.rollbackItemStatus,
+  setItemStatus: _aofWorkspace.work.setItemStatus,
+  applyItemFrontmatter: _aofWorkspace.work.applyItemFrontmatter,
+  parseStorySpan: _aofWorkspace.work.parseStorySpan,
+  listItems: _aofWorkspace.work.listItems,
+  isLiveStreamRow: _aofWorkspace.work.isLiveStreamRow,
+  findWork: _aofWorkspace.work.findWork,
+  listStream: _aofWorkspace.work.listStream,
+  isDependTarget: _aofWorkspace.work.isDependTarget,
+  siblingDependencyNumber: _aofWorkspace.work.siblingDependencyNumber,
+  siblingGate: _aofWorkspace.work.siblingGate,
+  isDependNumber: _aofWorkspace.work.isDependNumber,
+  rewriteRefEntry: _aofWorkspace.work.rewriteRefEntry,
+  rewriteDependsEntries: _aofWorkspace.work.rewriteDependsEntries,
+  nextWork: _aofWorkspace.work.nextWork,
+  validateWork: _aofWorkspace.work.validateWork,
+  loadWorkspace: _aofWorkspace.work.loadWorkspace,
+  healIdentitySidecar: _aofWorkspace.work.healIdentitySidecar,
+});
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const UPGRADE_MODULE = path.join(repoRoot, "src", "work", "upgrade.mjs");
+const UPGRADE_MODULE = path.join(repoRoot, "packages", "work", "src", "upgrade.mjs");
 
 function endpointOf(descriptor, kind) {
   const candidates = kind === "from"
@@ -29,7 +56,7 @@ function endpointOf(descriptor, kind) {
 
 async function loadModule() {
   assert.ok(existsSync(UPGRADE_MODULE), `the upgrade engine must be readable at ${UPGRADE_MODULE} — a subject a control cannot find is a FAILURE, never a skip (119/01, ADR-003 §4): this gate returned green having asserted nothing, so a move of its subject was undetectable at review`);
-  return import(pathToFileURL(UPGRADE_MODULE).href);
+  return _aofApplication.work.upgrade;
 }
 
 // A registry-selection function, if the engine exposes one under a plausible name.

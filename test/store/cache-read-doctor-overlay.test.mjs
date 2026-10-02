@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 43 / story 06 (the readers migrate), task
 //   .../06_story_cache-read-surface/tasks/04_doctor-one-snapshot-with-cache-status-overlay.feature
 //
@@ -25,7 +26,8 @@ import {
   withCacheReadFixture, plantCacheRow, streamDoc, runCommand, writeItem, writeDoc, workerTree,
   CONTROL_NODE, WORKER_NODE, SYNCED_AT,
 } from "../support/cache-read-fixture.mjs";
-import { loadWorkspace, invoke } from "../../src/command-core.mjs";
+const loadWorkspace = _aofApplication.loadWorkspace;
+const invoke = _aofApplication.invoke;
 
 // The Background: the control's work directory holds milestones 05, 06 and 07. "07" is the
 // pre-run SCAFFOLD — an empty stories/, no VERIFICATION.md, no RETROSPECTIVE.md — with
@@ -66,7 +68,20 @@ export const cacheReadDoctorOverlayTests = [
       await background(fx);
       // NON-VACUITY: without the overlay this fixture DOES fire the finding. Proven by
       // running the same doctor against a snapshot with no cache — the mechanism removed.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const withoutOverlay = await doctorWork(fx.workDir, {}, undefined, { now: Date.parse(SYNCED_AT) });
       assert.ok(
         has(withoutOverlay, "depends-blocked-in-progress", "07_milestone"),
@@ -100,7 +115,20 @@ export const cacheReadDoctorOverlayTests = [
 
       // NON-VACUITY: a HALF-applied overlay is exactly what manufactures these. Overlaying
       // the PARENT alone (the naive implementation) fires lying-parent immediately.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const halfApplied = await doctorWork(fx.workDir, {}, undefined, {
         now: Date.parse(SYNCED_AT),
         selfNode: CONTROL_NODE,
@@ -250,7 +278,20 @@ export const cacheReadDoctorOverlayTests = [
       // comparison, so the SAME engine call is made twice against the SAME committed-config
       // input, differing ONLY in whether the cache overlay is supplied. Comparing against a
       // run with a different `rawCommittedMesh` would be comparing two different questions.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const identityArgs = {
         now: Date.parse(SYNCED_AT),
         rawCommittedMesh: { nodeId: CONTROL_NODE },
@@ -326,7 +367,20 @@ export const cacheReadDoctorOverlayTests = [
 
       // THE CONTROL, and it is what makes the assertion above a statement about the GATE
       // rather than about the window: the SAME fixture with no cache at all agrees.
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       assert.deepEqual(
         staleFor07(await doctorWork(fx.workDir, {}, undefined, { now: Date.now() })),
         [],
@@ -373,7 +427,20 @@ export const cacheReadDoctorOverlayTests = [
       assert.ok(!codes.includes("started-story-no-tasks"), "…and no started-story-no-tasks off an OVERLAID status the worktree's own disk contradicts");
 
       // NON-VACUITY: the cache genuinely holds the disagreeing rows this read stepped over.
-      const { readCachedWorkFacts } = await import("../../src/cache-read.mjs");
+      const { readCachedWorkFacts } = await Promise.resolve(Object.freeze({
+  sharedProjectionStore: _aofApplication.mesh.cacheRead.sharedProjectionStore,
+  readStreamedItemRow: _aofApplication.mesh.cacheRead.readStreamedItemRow,
+  readWorkerDoc: _aofApplication.mesh.cacheRead.readWorkerDoc,
+  readWorkerDocMembers: _aofApplication.mesh.cacheRead.readWorkerDocMembers,
+  readWorkerRuns: _aofApplication.mesh.cacheRead.readWorkerRuns,
+  readWorkerItems: _aofApplication.mesh.cacheRead.readWorkerItems,
+  readCachedProvenance: _aofApplication.mesh.cacheRead.readCachedProvenance,
+  readCachedWorkFacts: _aofApplication.mesh.cacheRead.readCachedWorkFacts,
+  readCachedActiveRunIds: _aofApplication.mesh.cacheRead.readCachedActiveRunIds,
+  readCachedItemRows: _aofApplication.mesh.cacheRead.readCachedItemRows,
+  applyCachedProvenance: _aofApplication.mesh.cacheRead.applyCachedProvenance,
+  mergeWorkerItems: _aofApplication.mesh.cacheRead.mergeWorkerItems,
+}));
       const raw = await readCachedWorkFacts(worker.workspace, { docNames: ["VERIFICATION.md"] }, { globalWorkStoreOptions: { env: fx.env } });
       assert.equal(raw?.rows?.get("07")?.status, "in-progress", "the unguarded read DOES see the cache's in-progress for 07 (the precondition)");
       assert.equal(raw?.rows?.get("07/01")?.status, "in-progress", "…and for 07/01");
@@ -437,7 +504,20 @@ export const cacheReadDoctorOverlayTests = [
       await background(fx);
       await plantCacheRow(fx, "07/00", { status: "done", slug: "s07-00", parent: "07", node: WORKER_NODE, at: SYNCED_AT });
 
-      const { doctorWork } = await import("../../src/work/doctor.mjs");
+      const { doctorWork } = await Promise.resolve(Object.freeze({
+  CHECK_GROUPS: _aofApplication.work.doctor.CHECK_GROUPS,
+  CONVENTION_DOCS: _aofApplication.work.doctor.CONVENTION_DOCS,
+  budgetsFromConfig: _aofApplication.work.doctor.budgetsFromConfig,
+  buildSnapshot: _aofApplication.work.doctor.buildSnapshot,
+  doctorWork: _aofApplication.work.doctor.doctorWork,
+  duplicateDriverNumberGroup: _aofApplication.work.doctor.duplicateDriverNumberGroup,
+  inScope: _aofApplication.work.doctor.inScope,
+  isDependTarget: _aofApplication.work.doctor.isDependTarget,
+  isDriver: _aofApplication.work.doctor.isDriver,
+  orphanFolderGroup: _aofApplication.work.doctor.orphanFolderGroup,
+  siblingDependencyNumber: _aofApplication.work.doctor.siblingDependencyNumber,
+  staleWindowFromConfig: _aofApplication.work.doctor.staleWindowFromConfig,
+}));
       const options = {
         now: Date.parse(SYNCED_AT),
         selfNode: CONTROL_NODE,

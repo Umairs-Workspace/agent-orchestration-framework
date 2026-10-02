@@ -1,3 +1,6 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for milestone 50 / story 03 — the worker-side spawn handler.
 // Covers every @executable scenario (and every Examples row) of:
 //   tasks/00_spawn-handler-module.feature
@@ -30,37 +33,34 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
-import {
-  createMeshWorkerSessionSpawnHandler,
-  resolveDefaultShell,
-  SESSION_PING_INTERVAL_MS,
-} from "../../../src/mesh/session-spawn-handler.mjs";
-import { createTerminalSpawn } from "../../../src/terminal-ws.mjs";
-import { workerHasRepo, meshCheckoutPath } from "../../../src/mesh/worker-execution.mjs";
-import {
-  addWorktree,
-  meshItemBranchName,
-  meshWorktreePath,
-  meshWorktreesRoot,
-  isUnderMeshWorktreesRoot,
-  meshSessionWorktreePath,
-  meshSessionWorktreesRoot,
-  isUnderMeshSessionWorktreesRoot,
-} from "../../../src/mesh/worktree.mjs";
-import {
-  readSessionRecord,
-  reapExpiredSessions,
-  sessionRecordPath,
-  DEFAULT_SESSION_TTL_SECONDS,
-} from "../../../src/mesh/session.mjs";
-import { readLiveSessions } from "../../../src/mesh/presence.mjs";
-import { createWorkerStreamClient } from "../../../src/worker-stream-client.mjs";
-import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "../../../src/mesh/session-spawn-directive.mjs";
-import { TERMINAL_FRAME_KIND, TERMINAL_INPUT_KIND } from "../../../src/mesh/terminal-relay-bridge.mjs";
-import { startLauncher } from "../../../src/mesh/launcher.mjs";
-import { publishNodeRecord } from "../../../src/mesh/store.mjs";
-import { loadWorkspace } from "../../../src/work.mjs";
+const createMeshWorkerSessionSpawnHandler = _aofApplication.mesh.sessionSpawnHandler.createMeshWorkerSessionSpawnHandler;
+const resolveDefaultShell = _aofApplication.mesh.sessionSpawnHandler.resolveDefaultShell;
+const SESSION_PING_INTERVAL_MS = _aofApplication.mesh.sessionSpawnHandler.SESSION_PING_INTERVAL_MS;
+const createTerminalSpawn = _aofApplication.server.terminalWs.createTerminalSpawn;
+const workerHasRepo = _aofApplication.mesh.worker.workerHasRepo;
+const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const meshWorktreesRoot = _aofApplication.mesh.worktree.meshWorktreesRoot;
+const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktreesRoot;
+const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
+const meshSessionWorktreesRoot = _aofApplication.mesh.worktree.meshSessionWorktreesRoot;
+const isUnderMeshSessionWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot;
+const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
+const reapExpiredSessions = _aofHooks.meshSession.reapExpiredSessions;
+const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
+const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
+const createWorkerStreamClient = _aofApplication.mesh.workerStreamClient.createWorkerStreamClient;
+import { buildSessionSpawnFrame, SESSION_SPAWN_ACK_KIND } from "@aof/mesh/session-spawn-directive";
+const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
+const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
+const startLauncher = _aofApplication.mesh.launcher.startLauncher;
+const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 import {
   withMeshWorkerExecFixture,
   markRepoPublished,
@@ -448,10 +448,14 @@ export const meshSessionSpawnHandlerTests = [
     run: async () => withSpawnFixture(async (fixture) => {
       // (a) the structural half — the registration exists, on the real lane, with the
       //     handler built by the real factory from the real sibling module.
-      const launcherSource = await readFile(path.join(repoRoot, "src", "mesh", "launcher.mjs"), "utf8");
+      const implementation = await readFile(path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs"), "utf8");
+      const adapter = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/launcher.mjs"), "utf8");
+      for (const text of [implementation, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*createMeshWorkerSessionSpawnHandler/su);
+      const launcherSource = adapter + "\n" + implementation;
       assert.ok(
-        /import\s*\{[^}]*createMeshWorkerSessionSpawnHandler[^}]*\}\s*from\s*["'](?:\.\.?\/)+session-spawn-handler\.mjs["']/.test(launcherSource),
-        "mesh-launcher.mjs imports createMeshWorkerSessionSpawnHandler from ./mesh/session-spawn-handler.mjs",
+        /const\s*\{[^}]*createMeshWorkerSessionSpawnHandler[^}]*\}\s*=\s*meshSessionSpawnHandlerServices/.test(adapter)
+          && dependencySpecifiers(adapter).some(edge => edge.parameter === "meshSessionSpawnHandlerServices" && edge.specifier === "./session-spawn-handler.mjs"),
+        "mesh-launcher.mjs receives createMeshWorkerSessionSpawnHandler from its configured sibling",
       );
       assert.ok(/client\.onSessionSpawn\s*\??\.?\(/.test(launcherSource), "mesh-launcher.mjs calls client.onSessionSpawn(...)");
       assert.ok(
@@ -564,7 +568,7 @@ export const meshSessionSpawnHandlerTests = [
       assert.deepEqual(
         Object.keys(record),
         // …plus m50/ADR-008 decision 8's APPENDED eighth. This handler is the THIRD
-        // `.sendTerminalFrame(` producer in `src/`, so it is exactly the module that must
+        // `.sendTerminalFrame(` producer in `packages/core/src/`, so it is exactly the module that must
         // state `relaying: true`: story 03's locked scenario says the record "contains" the
         // seven, and an additive eighth satisfies it as written.
         ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"],

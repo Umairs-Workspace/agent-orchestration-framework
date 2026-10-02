@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 54 / story 01, task `00_the-rubric-is-declared`.
 //
 // Every @executable scenario (and every Examples row) of
@@ -14,7 +15,8 @@ import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
 
-import { invoke, getCommand } from "../../src/command-core.mjs";
+const invoke = _aofApplication.invoke;
+const getCommand = _aofApplication.getCommand;
 import { makeGradeRepo, writeRunner, rubricFor, ctxFor, countingSpawn } from "../support/grade-fixture.mjs";
 
 // A runner that reports its own argv and environment as TAP, so "what actually reached the

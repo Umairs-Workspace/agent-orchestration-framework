@@ -1,7 +1,8 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // FF-12403 (124/ADR-003) — ONE HOME FOR THE CONTRACT SET, DIRECTORY INTENT IS AUTHORED, AND THE
 // WAVE CHECK ONLY EVER TIGHTENS.
 //
-// Three claims that are one claim. `src/story-contract.mjs` is a pure leaf — `node:path` and
+// Three claims that are one claim. `packages/core/src/story-contract.mjs` is a pure leaf — `node:path` and
 // nothing else — and that purity is load-bearing rather than tidy: the moment the coverage
 // predicate reaches for `stat` to ask whether a declared entry is a directory, the answer starts
 // depending on whether the path exists YET, which is precisely when a write-set collision matters
@@ -11,10 +12,10 @@
 // a real on-disk directory — so the lexical rule reproduces a disk-probing reading of this stream
 // EXACTLY, for no filesystem access at all.
 //
-// `src/ready-wave.mjs` then ADOPTS that predicate, and the adoption is a bug fix wearing a
+// `packages/work/src/ready-wave.mjs` then ADOPTS that predicate, and the adoption is a bug fix wearing a
 // refactor's clothes: its collision test was exact-string, and `path.relative` had already stripped
-// the authored slash, so a story declaring `files: [src/commands/]` and a sibling declaring
-// `src/commands/test.mjs` were read as disjoint and dispatched into ONE wave, where they collide on
+// the authored slash, so a story declaring `files: [packages/core/src/commands/]` and a sibling declaring
+// `packages/core/src/commands/test.mjs` were read as disjoint and dispatched into ONE wave, where they collide on
 // disk. The trap in fixing it is DIRECTION. A parallelism gate that quietly WIDENED would be
 // invisible until two builders write the same file, so the tightening is asserted as a superset
 // over a generated corpus rather than argued from the shape of the code.
@@ -34,7 +35,7 @@
 //
 // RED PROBES (recorded in VERIFICATION.md): author a second `covers` helper inside
 // `ready-wave.mjs` and leg 2 fails naming it; make coverage a `startsWith` without the authored
-// slash and leg 3 fails on `src/commands-old.mjs`. Both are DRIVEN below rather than described,
+// slash and leg 3 fails on `packages/core/src/commands-old.mjs`. Both are DRIVEN below rather than described,
 // because a red probe nobody ran is a claim about a control's behaviour with no witness.
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
@@ -46,15 +47,15 @@ import {
   declaresDirectory,
   resolveDeclaredSet,
   resolveStoryContractPath,
-} from "../../../src/story-contract.mjs";
-import { listItems } from "../../../src/work.mjs";
+} from "@aof/work/story-contract";
+const listItems = _aofWorkspace.work.listItems;
 import { stripComments } from "../../support/source-slice.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
-const LEAF = "src/story-contract.mjs";
-const CONSUMER = "src/ready-wave.mjs";
+const LEAF = "packages/work/src/story-contract.mjs";
+const CONSUMER = "packages/work/src/ready-wave.mjs";
 
 // Comment-stripped, always. Every leg below is a claim about what the module DOES, and a comment
 // naming the thing it refuses would otherwise fail it — which is how a control teaches the next
@@ -122,16 +123,16 @@ function secondRuleFaults(source) {
 // unwitnessed and a directory-aware one witnesses. Their authored strings are asserted against the
 // stream itself further down, so this table is a measurement rather than a story about one.
 const COVERAGE_TABLE = Object.freeze([
-  { declared: "src/commands/test.mjs", probed: "src/commands/test.mjs", covers: true, why: "equal — coverage's first leg, and what makes the adoption a tightening" },
-  { declared: "src/commands/", probed: "src/commands", covers: true, why: "equal once resolved; `path.relative` returns no trailing separator" },
-  { declared: "src/commands/", probed: "src/commands/test.mjs", covers: true, why: "authored directory, probed path beneath it" },
-  { declared: "src/commands/", probed: "src/commands/mesh/gate.mjs", covers: true, why: "beneath it at any depth" },
-  { declared: "src/commands", probed: "src/commands/test.mjs", covers: false, why: "no authored slash, so one path was claimed and not a subtree" },
-  { declared: "src/commands/", probed: "src/commands-old.mjs", covers: false, why: "THE BOUNDARY — a shared prefix is not containment, and the separator is what enforces it" },
-  { declared: "src/commands/test.mjs", probed: "src/commands", covers: false, why: "a file covers no directory, and no stat decides that" },
+  { declared: "packages/core/src/commands/test.mjs", probed: "packages/core/src/commands/test.mjs", covers: true, why: "equal — coverage's first leg, and what makes the adoption a tightening" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands", covers: true, why: "equal once resolved; `path.relative` returns no trailing separator" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands/test.mjs", covers: true, why: "authored directory, probed path beneath it" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands/mesh/gate.mjs", covers: true, why: "beneath it at any depth" },
+  { declared: "packages/core/src/commands", probed: "packages/core/src/commands/test.mjs", covers: false, why: "no authored slash, so one path was claimed and not a subtree" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands-old.mjs", covers: false, why: "THE BOUNDARY — a shared prefix is not containment, and the separator is what enforces it" },
+  { declared: "packages/core/src/commands/test.mjs", probed: "packages/core/src/commands", covers: false, why: "a file covers no directory, and no stat decides that" },
   // …the four real 119 edges, by the entries their two STORY.md documents actually declare.
-  { declared: "src/commands/", probed: "src/commands/test.mjs", covers: true, why: "119/03 → 119/02" },
-  { declared: "src/", probed: "src/mesh-launcher.mjs", covers: true, why: "119/04 → 119/01" },
+  { declared: "packages/core/src/commands/", probed: "packages/core/src/commands/test.mjs", covers: true, why: "119/03 → 119/02" },
+  { declared: "packages/core/src/", probed: "packages/core/src/mesh-launcher.mjs", covers: true, why: "119/04 → 119/01" },
   { declared: "test/", probed: "test/arch/acd-assignment-repo-availability-loud.test.mjs", covers: true, why: "119/04 → 119/02" },
   { declared: "test/", probed: "test/agent-session-driver-door.test.mjs", covers: true, why: "119/04 → 119/03" },
 ]);
@@ -149,7 +150,7 @@ function lexicalFailures(covers) {
 
 // THE RED PROBE'S PREDICATE: containment by bare prefix, with the authored slash thrown away. It is
 // the single most plausible wrong implementation of this rule, and the row it breaks is the one
-// that looks like a corner case until `src/commands-old.mjs` exists.
+// that looks like a corner case until `packages/core/src/commands-old.mjs` exists.
 const startsWithWithoutTheSlash = (set, entry) => {
   const probed = typeof entry === "string" ? entry : entry?.path;
   return (set ?? []).some((member) => probed === member.path || probed.startsWith(member.path));
@@ -161,7 +162,7 @@ const startsWithWithoutTheSlash = (set, entry) => {
 // directory above a file, a directory above a directory, a shared prefix that is NOT containment,
 // and two entries with nothing in common.
 const ALPHABET = Object.freeze([
-  "src/", "src/a.mjs", "src/nested/", "src/nested/b.mjs", "srcx.mjs", "test/", "test/c.mjs", "docs/d.md",
+  "packages/core/src/", "packages/core/src/a.mjs", "packages/core/src/nested/", "packages/core/src/nested/b.mjs", "srcx.mjs", "test/", "test/c.mjs", "docs/d.md",
 ]);
 
 // Every non-empty declared set of size 1 or 2 over the alphabet. Two is enough: coverage is decided
@@ -199,9 +200,9 @@ export const archTests = [
       assert.ok(leafReachFaults(planted).length > 0, "the sweep reports a planted filesystem reach rather than passing over it");
 
       // …and the predicate really is decided without a disk: NOWHERE_ROOT exists nowhere, so
-      // `src/commands/` is a directory on no machine and `src/commands-old.mjs` is a file on none.
-      assert.equal(contractSetCovers(setOf("src/commands/"), resolvedPath("src/commands/test.mjs")), true);
-      assert.equal(contractSetCovers(setOf("src/commands/"), resolvedPath("src/commands-old.mjs")), false);
+      // `packages/core/src/commands/` is a directory on no machine and `packages/core/src/commands-old.mjs` is a file on none.
+      assert.equal(contractSetCovers(setOf("packages/core/src/commands/"), resolvedPath("packages/core/src/commands/test.mjs")), true);
+      assert.equal(contractSetCovers(setOf("packages/core/src/commands/"), resolvedPath("packages/core/src/commands-old.mjs")), false);
     },
   },
   {
@@ -239,21 +240,21 @@ export const archTests = [
 
       // Directory intent is read off the RAW entry and can be read nowhere else: the resolver
       // returns `projectPath` through `path.relative`, which never carries a trailing separator.
-      assert.equal(declaresDirectory("src/commands/"), true);
-      assert.equal(declaresDirectory("src/commands"), false);
-      assert.equal(declaresDirectory(resolvedPath("src/commands/")), false, "the resolved path cannot answer it");
+      assert.equal(declaresDirectory("packages/core/src/commands/"), true);
+      assert.equal(declaresDirectory("packages/core/src/commands"), false);
+      assert.equal(declaresDirectory(resolvedPath("packages/core/src/commands/")), false, "the resolved path cannot answer it");
 
       // RED PROBE (b) — coverage as a bare `startsWith`, with the authored slash thrown away. The
-      // leg fails, and it fails ON THE BOUNDARY ROW: `src/commands/` swallowing `src/commands-old.mjs`.
+      // leg fails, and it fails ON THE BOUNDARY ROW: `packages/core/src/commands/` swallowing `packages/core/src/commands-old.mjs`.
       const failures = lexicalFailures(startsWithWithoutTheSlash);
       assert.ok(failures.length > 0, "a prefix rule without the separator does not pass this table");
       assert.ok(
-        failures.some((row) => row.includes("src/commands-old.mjs")),
+        failures.some((row) => row.includes("packages/core/src/commands-old.mjs")),
         `the boundary row is the one that reds; got ${JSON.stringify(failures)}`,
       );
       // …and the row that catches it is a row the correct rule passes, so the probe measures the
       // rule rather than the table's difficulty.
-      assert.equal(contractSetCovers(setOf("src/commands/"), resolvedPath("src/commands-old.mjs")), false);
+      assert.equal(contractSetCovers(setOf("packages/core/src/commands/"), resolvedPath("packages/core/src/commands-old.mjs")), false);
     },
   },
   {

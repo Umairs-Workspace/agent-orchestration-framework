@@ -1,12 +1,14 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { validateWork } from "../../src/commands/validate.mjs";
-import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "../../src/loop-bounds.mjs";
-import { partitionReadySetByDeclaredFiles } from "../../src/ready-wave.mjs";
+const validateWork = _aofApplication.work.commandTools.validate.validateWork;
+import { MAX_REVIEW_ROUNDS, reviewRoundsFromConfig } from "@aof/contracts/loop-bounds";
+import { partitionReadySetByDeclaredFiles } from "@aof/work/ready-wave";
 import {
   contractSetCovers,
   declaresDirectory,
@@ -15,12 +17,12 @@ import {
   resolveStoryContractPath,
   storyAnchorResolves,
   storyContractList,
-} from "../../src/story-contract.mjs";
+} from "@aof/work/story-contract";
 // milestone 124 / story 00 — the census is asked the SAME coverage question the wave is asked, on
 // the one input where equality and coverage disagree. Importing the lane here is the point of
 // task 01's last scenario: two surfaces, one predicate.
-import { classifyDependsEdges } from "../../src/work/doctor-depends.mjs";
-import { listItems } from "../../src/work.mjs";
+import { classifyDependsEdges } from "@aof/work/doctor/depends";
+const listItems = _aofWorkspace.work.listItems;
 import {
   decideExecutionMode,
   decideReviewGate,
@@ -28,7 +30,7 @@ import {
   EXECUTION_MODES,
   REVIEW_BLOCKER_CLASSES,
   reviewBlockerClaim,
-} from "../../src/work/loop.mjs";
+} from "@aof/work-loop/engine";
 // 71/00 — the marked regions of `continue.md` are cut structurally, so a renumbered step does not
 // move what these assertions read.
 // 124/00 — `stripComments`, for the one structural clause task 01 states in terms of the module's
@@ -45,7 +47,7 @@ const region = (text, open, close) => {
 };
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const bundle = path.join(root, "src", "bundle");
+const bundle = path.join(root, "packages", "core", "assets");
 const fm = (fields) => `---\n${Object.entries(fields).map(([key, value]) => `${key}: ${value}`).join("\n")}\n---\n`;
 
 async function withStory({ reads = "[]", files = "[]" } = {}, body) {
@@ -221,7 +223,7 @@ const WAVE_ROWS = [
   { earlier: "src/commands/", later: "src/commands-old.mjs", verdict: "waved", why: "a shared prefix is not containment" },
   { earlier: "src/Commands/", later: "src/commands/test.mjs", verdict: "held", why: "the collision key case-folds, and still does" },
   { earlier: "test/", later: "test/arch/work/index.mjs", verdict: "held", why: "119/02's real declaration against 119/03's" },
-  { earlier: "src/story-contract.mjs", later: "src/ready-wave.mjs", verdict: "waved", why: "genuinely disjoint, exactly as today" },
+  { earlier: "src/story-contract.mjs", later: "packages/work/src/ready-wave.mjs", verdict: "waved", why: "genuinely disjoint, exactly as today" },
 ];
 
 // THE EXACT-STRING RULE THIS STORY REPLACES, re-implemented here so the adoption is measured as a
@@ -1184,23 +1186,26 @@ export const storyContextContractTests = [
       assert.equal(census.witnessed.length, 1, "…and the census witnesses it through the same predicate");
       assert.equal(census.unwitnessed.length, 0);
 
-      // AND `src/ready-wave.mjs` HOLDS NO SECOND COVERAGE RULE AND NO `Set` INTERSECTION OVER RAW
+      // AND `packages/work/src/ready-wave.mjs` HOLDS NO SECOND COVERAGE RULE AND NO `Set` INTERSECTION OVER RAW
       // DECLARED STRINGS. A claim about what a module does not contain is read off its source,
       // comment-stripped — the prose above `collisionKey` names both of the things it refuses.
-      const wave = stripComments(await readFile(path.join(root, "src", "ready-wave.mjs"), "utf8"));
+      const wave = stripComments(await readFile(path.join(root, "packages", "work", "src", "ready-wave.mjs"), "utf8"));
       assert.match(wave, /import \{[^}]*\bcontractSetCovers\b[^}]*\} from "\.\/story-contract\.mjs"/u, "the predicate comes from its one home");
       assert.ok((wave.match(/\bcontractSetCovers\(/gu) ?? []).length >= 2, "and the collision test is that predicate, asked both ways");
       assert.doesNotMatch(wave, /new Set\(/u, "no Set intersection over raw declared strings");
       assert.doesNotMatch(wave, /\.startsWith\(|\.includes\(/u, "no re-implemented containment rule");
       assert.doesNotMatch(wave, /function\s+\w*[Cc]overs|\w*[Cc]overs\s*=\s*(?:\(|function)/u, "and no second coverage helper");
       // The census's side of the same claim: it imports the predicate rather than re-deriving one.
-      const lane = stripComments(await readFile(path.join(root, "src", "work", "doctor-depends.mjs"), "utf8"));
+      const lane = stripComments(await readFile(path.join(root, "packages", "work", "src", "doctor", "depends.mjs"), "utf8"));
       assert.match(lane, /import \{[^}]*\bcontractSetCovers\b[^}]*\} from "\.\.\/story-contract\.mjs"/u, "one home, two consumers");
       assert.doesNotMatch(lane, /\.startsWith\(/u, "and the lane holds no containment rule of its own");
       // `work:next` projects the wave off THIS partition, so the rows above are that command's answer.
-      const next = stripComments(await readFile(path.join(root, "src", "commands", "next.mjs"), "utf8"));
+      const next = stripComments(await readFile(path.join(root, "packages/work/src/commands/next.mjs"), "utf8"));
       assert.match(next, /partitionReadySetByDeclaredFiles\(/u, "`aof work next --json` partitions the ready set through this function");
       assert.match(next, /wave: wave\.map|wave,/u, "…and returns its wave");
+      const composition = stripComments(await readFile(path.join(root, "packages/core/src/application/bindings/commands/next.mjs"), "utf8"));
+      assert.match(composition, /import \{ partitionReadySetByDeclaredFiles \} from "@aof\/work\/ready-wave"/u, "the partition is imported from its one public home in the work package");
+      assert.match(composition, /createNextCommand\(\{[^}]*\bpartitionReadySetByDeclaredFiles\b/u, "core supplies the shared partition service");
     },
   },
 ];

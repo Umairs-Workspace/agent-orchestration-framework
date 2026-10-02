@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability: milestone 61 / story 01 — the epoch and the frozen criterion.
 //
 //   tasks/00_an-epoch-closes-on-the-way-into-done.feature
@@ -17,36 +19,34 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { ITEM_STATUS_EDGES, closesEpoch, isOpen } from "../../src/acceptance-horizon.mjs";
-import { setItemStatus } from "../../src/work.mjs";
-import { bundledFrozenSet, compileFrozenSet, readFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../src/frozen-set.mjs";
-import { initWork } from "../../src/work/init.mjs";
-import { updateWork } from "../../src/work/update.mjs";
-import {
-  ACCEPTOR_EPOCH_CADENCE,
-  ACCEPTOR_EPOCH_SPAN,
-  CRITERION_BUDGET_BELOW_PAIR_COUNT,
-  CRITERION_FROZEN_IN_EPOCH,
-  CRITERION_PAIR_COUNT_DERIVED,
-  CRITERION_RELPATH,
-  CRITERION_REVISION_NOT_OPERATOR,
-  EPOCH_SPAN_NOT_REQUESTABLE,
-  FROZEN_CRITERION_KEYS,
-  FROZEN_CRITERION_MEMBERS,
-  LEDGER_RELPATH,
-  REVISING_ACTOR,
-  accrualReport,
-  criterionDigest,
-  criterionRevisionWindow,
-  defaultCriterion,
-  epochFor,
-  makeCriterion,
-  pairCountFor,
-  readCriterion,
-  reviseCriterion,
-  rulingsUnderCurrentCriterion,
-  writeCriterion,
-} from "../../src/work-acceptor/criterion.mjs";
+import { ITEM_STATUS_EDGES, closesEpoch, isOpen } from "@aof/work/lifecycle";
+const setItemStatus = _aofWorkspace.work.setItemStatus;
+import { bundledFrozenSet, compileFrozenSet, readFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../packages/core/src/frozen-set.mjs";
+const initWork = _aofApplication.assets.work.init.initWork;
+import { updateWork } from "../../packages/core/src/work/update.mjs";
+const ACCEPTOR_EPOCH_CADENCE = _aofApplication.work.acceptor.criterion.ACCEPTOR_EPOCH_CADENCE;
+const ACCEPTOR_EPOCH_SPAN = _aofApplication.work.acceptor.criterion.ACCEPTOR_EPOCH_SPAN;
+const CRITERION_BUDGET_BELOW_PAIR_COUNT = _aofApplication.work.acceptor.criterion.CRITERION_BUDGET_BELOW_PAIR_COUNT;
+const CRITERION_FROZEN_IN_EPOCH = _aofApplication.work.acceptor.criterion.CRITERION_FROZEN_IN_EPOCH;
+const CRITERION_PAIR_COUNT_DERIVED = _aofApplication.work.acceptor.criterion.CRITERION_PAIR_COUNT_DERIVED;
+const CRITERION_RELPATH = _aofApplication.work.acceptor.criterion.CRITERION_RELPATH;
+const CRITERION_REVISION_NOT_OPERATOR = _aofApplication.work.acceptor.criterion.CRITERION_REVISION_NOT_OPERATOR;
+const EPOCH_SPAN_NOT_REQUESTABLE = _aofApplication.work.acceptor.criterion.EPOCH_SPAN_NOT_REQUESTABLE;
+const FROZEN_CRITERION_KEYS = _aofApplication.work.acceptor.criterion.FROZEN_CRITERION_KEYS;
+const FROZEN_CRITERION_MEMBERS = _aofApplication.work.acceptor.criterion.FROZEN_CRITERION_MEMBERS;
+const LEDGER_RELPATH = _aofApplication.work.acceptor.criterion.LEDGER_RELPATH;
+const REVISING_ACTOR = _aofApplication.work.acceptor.criterion.REVISING_ACTOR;
+const accrualReport = _aofApplication.work.acceptor.criterion.accrualReport;
+const criterionDigest = _aofApplication.work.acceptor.criterion.criterionDigest;
+const criterionRevisionWindow = _aofApplication.work.acceptor.criterion.criterionRevisionWindow;
+const defaultCriterion = _aofApplication.work.acceptor.criterion.defaultCriterion;
+const epochFor = _aofApplication.work.acceptor.criterion.epochFor;
+const makeCriterion = _aofApplication.work.acceptor.criterion.makeCriterion;
+const pairCountFor = _aofApplication.work.acceptor.criterion.pairCountFor;
+const readCriterion = _aofApplication.work.acceptor.criterion.readCriterion;
+const reviseCriterion = _aofApplication.work.acceptor.criterion.reviseCriterion;
+const rulingsUnderCurrentCriterion = _aofApplication.work.acceptor.criterion.rulingsUnderCurrentCriterion;
+const writeCriterion = _aofApplication.work.acceptor.criterion.writeCriterion;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 // The auditor's own record, read where a workspace carries it. Its `cadence:` is the other
@@ -83,7 +83,7 @@ async function milestoneAt(root, ref, status) {
 }
 
 // The move the framework actually makes, then the boundary asked about its RESULT. The
-// payload the seam raises carries `status` and `from` (`src/effects/item-transitions.mjs`),
+// payload the seam raises carries `status` and `from` (`packages/core/src/effects/item-transitions.mjs`),
 // and this returns exactly that pair so the predicate is asked the payload's own question.
 async function makeTheMove(root, ref, from, to) {
   const item = await milestoneAt(root, ref, from);
@@ -295,7 +295,7 @@ export const acceptorCriterionTests = [
       assert.ok(declared != null, "the auditor record declares a cadence");
       assert.equal(declared[1], ACCEPTOR_EPOCH_CADENCE, "the two agree");
 
-      const acceptorSource = await readFile(path.join(repoRoot, "src", "work-acceptor", "criterion.mjs"), "utf8");
+      const acceptorSource = await readFile(path.join(repoRoot, "packages", "work", "src", "acceptor", "criterion.mjs"), "utf8");
       assert.equal(
         /readFile\([^)]*instrument-audit/.test(acceptorSource) || acceptorSource.includes("loops/instrument-audit.md\""),
         false,
@@ -504,7 +504,7 @@ export const acceptorCriterionTests = [
       // Nothing had to be installed for that to be true: the record is absent from the
       // project, and absent from the bundle that installs into it.
       await assert.rejects(readFile(path.join(dir, ...CRITERION_RELPATH.split("/")), "utf8"), { code: "ENOENT" });
-      const descriptor = JSON.parse(await readFile(path.join(repoRoot, "src", "bundle", "bundle.json"), "utf8"));
+      const descriptor = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "bundle.json"), "utf8"));
       assert.equal(
         descriptor.members.some((member) => String(member?.target ?? "").replaceAll("\\", "/") === CRITERION_RELPATH),
         false,

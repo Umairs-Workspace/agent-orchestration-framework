@@ -1,6 +1,8 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // chore 51 — `Init writes a config`. Traceability wiring for the chore's
 // ## Definition of Done, exercised against the REAL engine (`initConfig` in
-// ../src/work/init.mjs), which is the ONE writer `/aof:init` calls after
+// ../packages/core/src/work/init.mjs), which is the ONE writer `/aof:init` calls after
 // `aof work init` has rendered the bundle and the agent step has analysed the repo.
 //
 // A chore carries no .feature (acd-chore-no-feature), so these are the DoD boxes
@@ -19,12 +21,12 @@ import { mkdtemp, rm, mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { initConfig } from "../../src/work/init.mjs";
-import { validateWork } from "../../src/work.mjs";
+const initConfig = _aofApplication.assets.work.init.initConfig;
+const validateWork = _aofWorkspace.work.validateWork;
 // milestone 127 / story 02 task 04 — the face whose `--json` projection must carry the new
 // envelope key (ADR-005 §1). Asserted through the command's own projection rather than a
 // re-spelling of it, so a key that lands on the engine and not on the face is still red.
-import { workInitConfigCommand } from "../../src/commands/init-update.mjs";
+const workInitConfigCommand = _aofApplication.getCommand("work:init-config");
 
 async function repoFixture() {
   const repo = await mkdtemp(path.join(os.tmpdir(), "aof-init-config-"));

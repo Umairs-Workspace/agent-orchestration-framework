@@ -4,7 +4,7 @@
 // is unchanged by its arrival.
 //
 // Membership is IMPORTED AND SPREAD, never derived: no `readdir` decides what belongs here.
-// `registrationDecision` (`src/work-audit/census.mjs`) stays the single decider of which file
+// `registrationDecision` (`packages/core/src/work-audit/census.mjs`) stays the single decider of which file
 // contributed which entries, and this file is one of its inputs rather than a second answer.
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
@@ -41,7 +41,7 @@ import { archTests as acdImportDigestRecallableTests } from "./acd-import-digest
 import { archTests as acdMemoryIndexNeverOnMeshTests } from "./acd-memory-index-never-on-mesh.test.mjs";
 // milestone 124 / story 02 — FF-12405: the learning edge reaches every CUT-MAKING command.
 // Four claims: shatter carries one PO recall keyed to the seam before the cut; every verb and flag
-// a recall block spells resolves in `src/work/memory.mjs`'s own parse surface (never `--help`,
+// a recall block spells resolves in `packages/core/src/work/memory.mjs`'s own parse surface (never `--help`,
 // never the registry, which has no entry to find); the cut roster is asserted in BOTH directions so
 // a third cutter cannot arrive without one; and all three tracked renders of the edited member
 // match a fresh re-render.

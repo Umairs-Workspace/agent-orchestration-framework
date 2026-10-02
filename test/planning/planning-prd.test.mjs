@@ -2,7 +2,7 @@
 //
 // These tests prove every @executable scenario/row of the story's task features
 // resolves against the LOCKED helpers (`discoverPrd` / `readSeam` in
-// ../src/planning-prd.mjs). They author no engine code: each discovery row
+// ../packages/core/src/planning-prd.mjs). They author no engine code: each discovery row
 // builds a temp-dir workspace whose root contents match the feature's Given
 // EXACTLY (seeded from the committed fixtures), then asserts the discovery /
 // read-out contract.
@@ -21,9 +21,9 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { discoverPrd, readSeam } from "../../src/planning-prd.mjs";
-import { loadBundle, renderBundleOutputs } from "../../src/work/bundle.mjs";
-import { hashContent } from "../../src/lock.mjs";
+import { discoverPrd, readSeam } from "../../packages/core/src/planning-prd.mjs";
+import { loadBundle, renderBundleOutputs } from "../../packages/core/src/work/bundle.mjs";
+import { hashContent } from "../../packages/core/src/lock.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.resolve(
@@ -489,7 +489,7 @@ export const planningPrdTests = [
       assert.equal(
         hashContent(onDisk.replace(/\r\n/gu, "\n")),
         hashContent(String(rendered.content).replace(/\r\n/gu, "\n")),
-        `${rel} matches its re-render from src/bundle/commands/promote.md`,
+        `${rel} matches its re-render from packages/core/assets/commands/promote.md`,
       );
     },
   })),
@@ -497,7 +497,7 @@ export const planningPrdTests = [
 
 // ── 139/03 helpers ───────────────────────────────────────────────────────────────────────────
 const REPO_ROOT = path.resolve(here, "..", "..");
-const readPrompt = (name) => readFile(path.join(REPO_ROOT, "src", "bundle", "commands", name), "utf8");
+const readPrompt = (name) => readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", name), "utf8");
 // Markdown wraps prose mid-phrase, so a clause is read over the lines joined.
 const joined = (text) => text.replace(/\r?\n\s*/gu, " ");
 

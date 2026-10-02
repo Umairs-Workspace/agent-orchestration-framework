@@ -1,7 +1,7 @@
 // Fitness function FF-12606 (milestone 126 / ADR-006) — "The supervised set is SUPPLIED,
 // not matched, and Rust learns no completion semantics."
 //
-// Seven claims, over `app/desktop/**/*.rs` with Rust comments stripped:
+// Seven claims, over `apps/desktop/**/*.rs` with Rust comments stripped:
 //
 //   1. No `match`/`if` on `is_control_node` selects a supervised SET. The role latch's
 //      single server start remains, asserted as THE ONE NAMED EXEMPTION — so a second
@@ -16,7 +16,7 @@
 //      through ONE map — and the six `main.rs` consumers still resolve.
 //   4. The reconcile is a PURE function in `crates/core` with its `#[cfg(test)]` beside
 //      `supervision.rs`'s existing tests. `scripts/test.mjs` runs `cargo test` over
-//      `app/desktop/Cargo.toml`, whose workspace EXCLUDES `crates/app`, so a decision
+//      `apps/desktop/Cargo.toml`, whose workspace EXCLUDES `crates/app`, so a decision
 //      written beside the spawning code would never run — asserted off the manifest, not
 //      remembered. The reconcile reads no clock, spawns nothing and opens no file, and
 //      the shell holds no reconcile decision of its own.
@@ -41,7 +41,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const DESKTOP_DIR = path.join(repoRoot, "app", "desktop");
+const DESKTOP_DIR = path.join(repoRoot, "apps", "desktop");
 const CORE_SUPERVISION = path.join(DESKTOP_DIR, "crates", "core", "src", "supervision.rs");
 const SHELL_SUPERVISOR = path.join(DESKTOP_DIR, "crates", "app", "src", "supervisor.rs");
 const SHELL_MAIN = path.join(DESKTOP_DIR, "crates", "app", "src", "main.rs");
@@ -145,7 +145,7 @@ export const archTests = [
     name: "arch/126 FF-12606: the supervised set is COMPOSED, not matched — `supervision_set` is gone, the set-composing module names no role, and the role latch's single server start is the ONE named exemption",
     run: async () => {
       if (!(await dirExists(DESKTOP_DIR))) {
-        assert.equal(await dirExists(DESKTOP_DIR), false, "app/desktop/ absent (pre-build)");
+        assert.equal(await dirExists(DESKTOP_DIR), false, "apps/desktop/ absent (pre-build)");
         return;
       }
       const sources = await rustSources();
@@ -221,7 +221,7 @@ export const archTests = [
       // `scope` is DISPLAY-ONLY on the wire and the supervisor interprets none of it —
       // so it is never read out of a row at all, which is stronger than "never branched
       // on". The gate reads exactly the four keys a row must have to be spawnable.
-      const status = sources.get(path.join("app", "desktop", "crates", "core", "src", "status.rs"));
+      const status = sources.get(path.join("apps", "desktop", "crates", "core", "src", "status.rs"));
       assert.ok(status, "the status module was scanned");
       const gate = functionBody(status, "declaration_child");
       assert.ok(gate.length > 0, "the parse's one gate is a named function");
@@ -241,7 +241,7 @@ export const archTests = [
       const readers = [...sources].filter(([file, s]) => s.includes("DECLARATION_ARGV_PREFIX") && file !== declaringFiles[0][0]);
       assert.deepEqual(
         readers.map(([file]) => file),
-        [path.join("app", "desktop", "crates", "core", "src", "status.rs")],
+        [path.join("apps", "desktop", "crates", "core", "src", "status.rs")],
         "the parse is its only reader — nothing downstream re-tests a row"
       );
     },
@@ -437,7 +437,7 @@ export const archTests = [
     run: async () => {
       if (!(await dirExists(DESKTOP_DIR))) return;
       const sources = await rustSources();
-      const status = sources.get(path.join("app", "desktop", "crates", "core", "src", "status.rs"));
+      const status = sources.get(path.join("apps", "desktop", "crates", "core", "src", "status.rs"));
       const supervisor = sources.get(path.relative(repoRoot, SHELL_SUPERVISOR));
 
       // `ok` is READ, not merely carried — `{ ok: false, rows: [] }` and

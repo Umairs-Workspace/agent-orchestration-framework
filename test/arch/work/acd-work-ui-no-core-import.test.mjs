@@ -1,11 +1,11 @@
 // Fitness function for milestone 08 / ADR-004 inv. 3 (the registry is the only
-// door): "The board surface (`src/board-ui.mjs`) imports NO work-core/operation
+// door): "The board surface (`packages/core/src/board-ui.mjs`) imports NO work-core/operation
 //  module except the command registry (`./command-core.mjs`), and performs no
 //  work-operation filesystem call itself. The bespoke `handleDoc`/`handleTasks`/
 //  `handleFeedback` logic and its direct `work.mjs`/`feature-parse.mjs` imports
 //  moved INTO the commands (story 00); story 02 strips them from the face."
 //
-// Source-grep `src/board-ui.mjs` (the import-boundary idiom of
+// Source-grep `packages/core/src/board-ui.mjs` (the import-boundary idiom of
 // acd-terminal-server-only, with comments discounted via the call-form discipline
 // of acd-board-write-isolation):
 //   - the ONLY operation-bearing import is `./command-core.mjs`;
@@ -20,11 +20,11 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOARD_UI = path.join(repoRoot, "src", "board-ui.mjs");
-const SETUP_UI = path.join(repoRoot, "src", "setup-ui.mjs");
+const BOARD_UI = path.join(repoRoot, "packages", "server", "src/board-ui.mjs");
+const SETUP_UI = path.join(repoRoot, "packages", "server", "src/setup-ui.mjs");
 
 // Discount `// …` and `/* … */` so a comment naming a verb/module is not a match.
 function stripComments(source) {
@@ -36,7 +36,7 @@ export const archTests = [
     name: "arch/ADR-004 inv.3: board-ui.mjs does NOT import work-operation core from ./work.mjs",
     run: async () => {
       const source = stripComments(await readFile(BOARD_UI, "utf8"));
-      const workImports = importSpecifiers(source).filter((i) => i.specifier === "./work.mjs");
+      const workImports = dependencySpecifiers(source).filter((i) => i.specifier === "./work.mjs");
       assert.deepEqual(
         workImports.map((i) => i.specifier),
         [],
@@ -53,7 +53,7 @@ export const archTests = [
     name: "arch/ADR-004 inv.3: board-ui.mjs does NOT import parseFeature from ./feature-parse.mjs",
     run: async () => {
       const source = stripComments(await readFile(BOARD_UI, "utf8"));
-      const featureImports = importSpecifiers(source).filter((i) => i.specifier === "./feature-parse.mjs");
+      const featureImports = dependencySpecifiers(source).filter((i) => i.specifier === "./feature-parse.mjs");
       assert.deepEqual(
         featureImports.map((i) => i.specifier),
         [],
@@ -69,7 +69,11 @@ export const archTests = [
     name: "arch/ADR-004 inv.3: the command registry (./command-core.mjs) is the ONLY operation-bearing import",
     run: async () => {
       const source = stripComments(await readFile(BOARD_UI, "utf8"));
-      const specifiers = importSpecifiers(source).map((i) => i.specifier);
+      const binding = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/board-ui.mjs"), "utf8"));
+      const specifiers = dependencySpecifiers(binding).map((i) => i.specifier);
+      assert.match(source, /export function createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/);
+      assert.match(binding, /createBoardApi\(\{[^}]*\binvoke\b[^}]*\bloadWorkspace\b/);
+      assert.deepEqual(dependencySpecifiers(source).map(i => i.specifier).sort(), ["./static-serve.mjs", "node:path"], "the transport imports only presentation helpers and receives command execution through ports");
       // The registry IS imported — the door is present (positive assertion the
       // ADR notes a deny-list lint could not make).
       assert.ok(
@@ -80,7 +84,7 @@ export const archTests = [
       // is the registry plus the pure local presentation/IO helpers a thin HTTP
       // adapter legitimately needs (none of which carry a work operation). Any
       // direct command-body import (./commands/*) or work-core module is a breach.
-      const operationBearing = importSpecifiers(source).filter((i) => {
+      const operationBearing = dependencySpecifiers(source).filter((i) => {
         const spec = i.specifier;
         if (!spec.startsWith(".")) return false; // node:* / package deps are not work-core
         if (spec === "./command-core.mjs") return false; // the door
@@ -117,7 +121,7 @@ export const archTests = [
     name: "arch/ADR-004 inv.3: setup-ui.mjs imports no work-core/operation module — it reaches the work surface only via board-ui's handleWorkApi",
     run: async () => {
       const source = stripComments(await readFile(SETUP_UI, "utf8"));
-      const operationBearing = importSpecifiers(source).filter((i) => {
+      const operationBearing = dependencySpecifiers(source).filter((i) => {
         const spec = i.specifier;
         if (!spec.startsWith(".")) return false;
         return /\.\/(work|feature-parse|command-core)\.mjs$/.test(spec) || spec.startsWith("./commands/");
@@ -128,10 +132,11 @@ export const archTests = [
         "setup-ui.mjs imports no ./work.mjs, ./feature-parse.mjs, ./command-core.mjs, or ./commands/* directly"
       );
       // The one work door it DOES hold is handleWorkApi from ./board-ui.mjs.
-      assert.ok(
-        /import\s*\{[^}]*\bhandleWorkApi\b[^}]*\}\s*from\s*["']\.\/board-ui\.mjs["']/.test(source),
-        "setup-ui.mjs reaches the work surface via handleWorkApi from ./board-ui.mjs"
-      );
+      const binding = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/setup-ui.mjs"), "utf8"));
+      assert.match(binding, /const\s*\{[^}]*\bhandleWorkApi\b[^}]*\}\s*= boardUiServices/);
+      assert.match(binding, /createSetupServer\(\{[^}]*\bhandleWorkApi\b/);
+      assert.match(source, /export function createSetupServer\(\{[^}]*\bhandleWorkApi\b/);
+      assert.match(source, /await handleWorkApi\(/, "the supplied route is actually called");
     },
   },
 ];

@@ -23,7 +23,7 @@
 // run offline is honest (skip), not a false pass.
 import assert from "node:assert/strict";
 import { spawnSyncHardened } from "../../support/cli-spawn.mjs";
-import { planPlanningInstall, MARKETPLACE_GIT_URL } from "../../../src/planning-init.mjs";
+import { planPlanningInstall, MARKETPLACE_GIT_URL } from "../../../packages/core/src/planning-init.mjs";
 
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 

@@ -1,0 +1,41 @@
+{
+  "name": "@aof/knowledge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./graph-normalize": "./src/graph-normalize.mjs",
+    "./graph-impact": "./src/graph-impact.mjs",
+    "./graphify": "./src/graphify.mjs",
+    "./memory/none-backend": "./src/memory/none-backend.mjs",
+    "./memory/local-retrieval": "./src/memory/local-retrieval.mjs",
+    "./memory/local-indexing": "./src/memory/local-indexing.mjs",
+    "./memory/local-backend": "./src/memory/local-backend.mjs",
+    "./memory/graphify-backend": "./src/memory/graphify-backend.mjs",
+    "./memory": "./src/memory.mjs",
+    "./commands/shared": "./src/commands/shared.mjs",
+    "./commands/graph-impact": "./src/commands/graph-impact.mjs",
+    "./commands/graph-build": "./src/commands/graph-build.mjs",
+    "./commands/graph-query": "./src/commands/graph-query.mjs",
+    "./commands/graph-triage": "./src/commands/graph-triage.mjs",
+    "./commands/graph-serve": "./src/commands/graph-serve.mjs",
+    "./commands/memory": "./src/commands/memory.mjs",
+    "./commands": "./src/commands.mjs",
+    "./import/source": "./src/import/source.mjs",
+    "./import/store": "./src/import/store.mjs",
+    "./import/recovery": "./src/import/recovery.mjs",
+    "./import/materialize": "./src/import/materialize.mjs",
+    "./commands/import-milestone": "./src/commands/import-milestone.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/knowledge"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/foundation": "workspace:*",
+    "@aof/work": "workspace:*"
+  }
+}

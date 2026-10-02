@@ -3,7 +3,7 @@
 //
 // Three claims:
 //
-//   1. `import("node:sqlite")` occurs in EXACTLY ONE module under `src/`, and both callers
+//   1. `import("node:sqlite")` occurs in EXACTLY ONE module under `packages/core/src/`, and both callers
 //      reach it by import — asserted by import, not by absence.
 //   2. The leaf installs its `emitWarning` wrap, restores the original in a `finally`, and
 //      swallows only a warning whose type is `ExperimentalWarning` AND whose message names
@@ -12,8 +12,8 @@
 //      no `finally` leaves the filter installed for the life of the process after a throwing
 //      import, and nothing else would notice.)
 //   3. NO BLANKET SUPPRESSION, TREE-WIDE: no `--no-warnings`, no `NODE_NO_WARNINGS`, no
-//      `--disable-warning` and no `NODE_OPTIONS` warning flag under `src/`, `bin/`,
-//      `scripts/`, `src/bundle/` or `package.json`.
+//      `--disable-warning` and no `NODE_OPTIONS` warning flag under `packages/core/src/`, `bin/`,
+//      `scripts/`, `packages/core/assets/` or `package.json`.
 //
 // WHY `test/` IS DELIBERATELY EXCLUDED. Sixty files there already set `NODE_NO_WARNINGS` on
 // a CLI child's env, and three also pass `--no-warnings` — a harness suppressing its own
@@ -29,16 +29,17 @@
 // ONLY. Prose outside every fence is not swept, which is what lets a bundled command
 // FORBID a flag in words without becoming an offender for naming it.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments, functionBody } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const LEAF = path.join(repoRoot, "src", "sqlite-runtime.mjs");
+const LEAF = path.join(repoRoot, "packages", "foundation", "src", "sqlite-runtime.mjs");
 
 // The roots a blanket suppression may not appear in. `test/` is NOT among them, by decision.
-const SWEPT_ROOTS = ["src", "bin", "scripts"];
+const SWEPT_ROOTS = ["packages/core/src", "packages/core/bin", "packages/core/assets", "bin", "scripts"];
 const SWEPT_FILES = ["package.json"];
 
 // Every form of the blanket, including the env-var twin a flag-only sweep would miss.
@@ -99,8 +100,8 @@ export const archTests = [
   {
     name: "arch/126 FF-12608: `node:sqlite` is imported in EXACTLY ONE module under src/, and both callers reach it BY IMPORT rather than by absence",
     run: async () => {
-      const files = await sourceFilesUnder(path.join(repoRoot, "src"));
-      assert.ok(files.length > 0, "src/ was scanned (non-vacuous)");
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
+      assert.ok(files.length > 0, "packages/core/src/ was scanned (non-vacuous)");
 
       const importers = [];
       for (const file of files) {
@@ -117,16 +118,26 @@ export const archTests = [
 
       // BY IMPORT, not by absence: both callers actually reach the leaf. A third caller that
       // stopped importing it and re-rolled its own body would satisfy an absence check.
-      for (const caller of ["src/effects/journal.mjs", "src/global-work-store.mjs"]) {
+      for (const caller of ["packages/core/src/application/bindings/effects/journal.mjs", "packages/core/src/application/bindings/global-work-store.mjs"]) {
         const source = stripComments(await readFile(path.join(repoRoot, caller), "utf8"));
-        assert.match(source, /import \{ importSqliteRuntime \} from "[^"]*sqlite-runtime\.mjs"/, `${caller} imports the leaf`);
-        assert.match(source, /await importSqliteRuntime\(options\)/, `${caller} resolves the runtime through it, forwarding the options it was handed`);
+        assert.match(source, /import \{ importSqliteRuntime \} from "@aof\/foundation\/sqlite-runtime"/, `${caller} imports the leaf`);
+        const implementation = caller === "packages/core/src/application/bindings/global-work-store.mjs"
+          ? stripComments(await readFile(path.join(repoRoot, "packages/mesh/src/projection-store.mjs"), "utf8")) : stripComments(await readFile(path.join(repoRoot, "packages/effects/src/journal-open.mjs"), "utf8"));
+        if (caller === "packages/core/src/application/bindings/global-work-store.mjs") {
+          assert.match(source, /createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
+          assert.match(implementation, /function createGlobalWorkProjectionStore\(\{[^}]*importSqliteRuntime/);
+        }
+        if (caller === "packages/core/src/application/bindings/effects/journal.mjs") {
+          assert.match(source, /createJournalOpener\(\{[^}]*importSqliteRuntime/);
+          assert.match(implementation, /function createJournalOpener\(\{[^}]*importSqliteRuntime/);
+        }
+        assert.match(implementation, /await importSqliteRuntime\(options\)/, `${caller} resolves the runtime through it, forwarding the options it was handed`);
       }
 
       // Each caller keeps its OWN refusal and its OWN DatabaseSync check — the leaf decides
       // no policy, so neither caller's behaviour moves (ADR-008 §2).
-      const store = stripComments(await readFile(path.join(repoRoot, "src", "global-work-store.mjs"), "utf8"));
-      const journal = stripComments(await readFile(path.join(repoRoot, "src", "effects", "journal.mjs"), "utf8"));
+      const store = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "projection-store.mjs"), "utf8"));
+      const journal = stripComments(await readFile(path.join(repoRoot, "packages", "effects", "src", "journal-open.mjs"), "utf8"));
       for (const [name, source] of [["global-work-store", store], ["journal", journal]]) {
         const body = functionBody(source, "async function resolveSqlite");
         assert.notEqual(body, null, `${name}'s resolveSqlite region was found`);
@@ -202,11 +213,11 @@ export const archTests = [
         { text: 'const argv = ["--disable-warning=ExperimentalWarning"];', file: "bin/x.mjs", offender: true },
         { text: 'const argv = ["--disable-warning", "DeprecationWarning"];', file: "bin/x.mjs", offender: true },
         { text: '{ "scripts": { "t": "NODE_OPTIONS=--no-warnings node x.mjs" } }', file: "package.json", offender: true },
-        { text: 'env.NODE_NO_WARNINGS = "1";', file: "src/x.mjs", offender: true },
+        { text: 'env.NODE_NO_WARNINGS = "1";', file: "packages/core/src/x.mjs", offender: true },
         { text: 'env.NODE_OPTIONS = "--max-old-space-size=4096";', file: "scripts/x.mjs", offender: false },
-        { text: '// never pass --no-warnings here\nconst x = 1;', file: "src/x.mjs", offender: false },
-        { text: "Run it:\n\n```sh\nnode --no-warnings x.mjs\n```\n", file: "src/bundle/commands/x.md", offender: true },
-        { text: "Never add --no-warnings to this command; it hides deprecations.\n", file: "src/bundle/commands/x.md", offender: false },
+        { text: '// never pass --no-warnings here\nconst x = 1;', file: "packages/core/src/x.mjs", offender: false },
+        { text: "Run it:\n\n```sh\nnode --no-warnings x.mjs\n```\n", file: "packages/core/assets/commands/x.md", offender: true },
+        { text: "Never add --no-warnings to this command; it hides deprecations.\n", file: "packages/core/assets/commands/x.md", offender: false },
       ];
 
       for (const row of rows) {

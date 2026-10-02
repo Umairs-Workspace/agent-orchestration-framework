@@ -7,9 +7,9 @@ import { fileURLToPath } from "node:url";
 import { assertFamilyPurity } from "../../support/module-family.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const engineUrl = new URL("../../../src/work/counters.mjs", import.meta.url);
-const commandUrl = new URL("../../../src/commands/counters.mjs", import.meta.url);
-const coreUrl = new URL("../../../src/command-core.mjs", import.meta.url);
+const engineUrl = new URL("../../../packages/work/src/counters.mjs", import.meta.url);
+const commandUrl = new URL("../../../packages/work/src/commands/counters.mjs", import.meta.url);
+const coreUrl = new URL("../../../packages/core/src/application/bindings/command-core.mjs", import.meta.url);
 
 export const archTests = [
   {
@@ -18,7 +18,7 @@ export const archTests = [
       const [engine, command] = await Promise.all([readFile(engineUrl, "utf8"), readFile(commandUrl, "utf8")]);
       // The arithmetic leaf depends on nothing outside itself, asserted over its FAMILY
       // (119/ADR-002) — the unit is the module, not the file, so splitting the leaf stays legal.
-      await assertFamilyPurity(assert, root, "src/work/counters");
+      await assertFamilyPurity(assert, root, "packages/work/src/counters");
       assert.doesNotMatch(engine, /\b(?:readFile|writeFile|appendFile|execFile|spawn|process\.|Date\.now)\b/u);
       assert.match(command, /import\s*\{\s*readFile\s*\}\s*from\s*"node:fs\/promises"/u);
       assert.doesNotMatch(command, /\b(?:writeFile|appendFile|unlink|rename|mkdir|execFile|spawn)\b/u);
@@ -39,7 +39,7 @@ export const archTests = [
       assert.match(engine, /export function countInterventions/u);
       assert.match(command, /id:\s*"work:counters"/u);
       assert.match(command, /route:\s*\["work",\s*"counters"\]/u);
-      assert.equal((core.match(/import\s*\{\s*countersCommand\s*\}/gu) ?? []).length, 1);
+      assert.equal((core.match(/const\s*\{\s*countersCommand\s*\}\s*= commandsCountersServices/gu) ?? []).length, 1);
       assert.equal((core.match(/^\s*countersCommand,\s*$/gmu) ?? []).length, 1);
     },
   },

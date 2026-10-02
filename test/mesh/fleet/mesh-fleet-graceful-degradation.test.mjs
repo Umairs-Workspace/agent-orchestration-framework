@@ -1,9 +1,12 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 25 / story 01 — the fleet aggregate degrades
 // gracefully (tasks/02_graceful-degradation.feature).
 //
 // Covers EVERY @executable scenario / Scenario-Outline row in
 // tasks/02_graceful-degradation.feature, exercising the REAL in-process registry
-// (src/command-core.mjs + the EXTENDED mesh:status in src/commands/mesh-identity.mjs)
+// (packages/core/src/command-core.mjs + the EXTENDED mesh:status in packages/core/src/commands/mesh-identity.mjs)
 // against a temp fixture repo — loadWorkspace + invoke, real fs, in-process — plus one
 // CLI-spawn scenario (the stale node still renders). `now` is INJECTED for the invoke
 // scenarios. node:assert/strict.
@@ -20,14 +23,17 @@ import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { invoke } from "../../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../../src/mesh/store.mjs";
-import { registryPath, registryDir } from "../../../src/mesh/registry.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const registryPath = _aofApplication.mesh.registry.registryPath;
+const registryDir = _aofApplication.mesh.registry.registryDir;
 import { spawnCliSync } from "../../support/cli-spawn.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 const NOW = "2026-07-01T12:00:00.000Z";
 

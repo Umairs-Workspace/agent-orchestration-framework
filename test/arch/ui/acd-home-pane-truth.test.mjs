@@ -9,7 +9,7 @@
 // `TERMINAL_VIEW_STATES`, two sets of words for one fact — and a second vocabulary grows ONE
 // WORD AT A TIME, which is exactly what review attention is worst at catching. `unfed`,
 // `silent`, `orphaned` each read cleanly at a render site. The behavioural half is in
-// `test/ui/home-feed-axis.test.mjs` (the union of every word the composition can return, computed
+// `apps/ui/test/home-feed-axis.suite.mjs` (the union of every word the composition can return, computed
 // from the compositions that file actually drives, is a subset of the eight strings m46 froze);
 // this is the structural half, and NEITHER IS SUFFICIENT ALONE — a behavioural union only
 // constrains the paths a test drives, and a text sweep only constrains the spellings it knows.
@@ -20,7 +20,7 @@
 // 04's `page-state.mjs` names the PAGE's five states, one of which its own locked task feature
 // and DESIGN §S1 both fix as `error` (*the payload failed*) — a fact on a completely different
 // axis from a pane's TRANSPORT state, and one the fleet's own `pageState` already spells the
-// same way in `ui/src/fleet/scope.mjs`. The gate was wrong, not the code.
+// same way in `apps/ui/src/fleet/scope.mjs`. The gate was wrong, not the code.
 //
 // THE PRECEDENT IS THIS FILE'S OWN, one paragraph down: the BYTE clause is already aimed "at the
 // module that declares the axis rather than at the whole directory, because … a directory-wide
@@ -52,7 +52,7 @@
 // ── ADR-007'S POSTURE CLAUSE, ADDED HERE BY 49/03 IN THE DIFF THAT LANDS ITS SUBJECT ─────
 // ~~What this gate does not yet assert~~ — DELIVERED. `producer-known` -> interactive,
 // everything else -> a LABELLED read-only, failing closed for every row shape, driven through
-// the SHIPPED `ui/src/home/session-mount.mjs`. It lands HERE rather than in a new file beside
+// the SHIPPED `apps/ui/src/home/session-mount.mjs`. It lands HERE rather than in a new file beside
 // this one, and that is a ruling rather than a preference: this gate's subject is *the home's
 // structural truth about a pane*, and the posture is that truth's sharpest instance. Two gates
 // over one subject is a duplicated derivation wearing a fitness function's clothes — the day one
@@ -67,16 +67,16 @@ import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { stripComments, nonVacuousSource } from "../../support/terminal-gate-detectors.mjs";
+import { stripComments, nonVacuousSource } from "../../../apps/ui/test/support/terminal-gate-detectors.mjs";
 import { importSpecifiers } from "../../support/module-family.mjs";
-import { isUiSourceFile } from "../../support/ui-source-files.mjs";
-import { TERMINAL_STATE_LIST, UNKNOWN_STATE } from "../../../ui/src/terminal/state-ramp.mjs";
-import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY, inputPolicyFor, mountModelFor } from "../../../ui/src/terminal/input-policy.mjs";
-import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../../ui/src/home/feed-axis.mjs";
-import { homeSessionMount } from "../../../ui/src/home/session-mount.mjs";
+import { isUiSourceFile } from "../../../apps/ui/test/support/ui-source-files.mjs";
+import { TERMINAL_STATE_LIST, UNKNOWN_STATE } from "../../../apps/ui/src/terminal/state-ramp.mjs";
+import { POSTURE_INTERACTIVE, POSTURE_READ_ONLY, inputPolicyFor, mountModelFor } from "../../../apps/ui/src/terminal/input-policy.mjs";
+import { FEED_NO_PRODUCER, FEED_PRODUCER_KNOWN, FEED_ROSTER_GONE } from "../../../apps/ui/src/home/feed-axis.mjs";
+import { homeSessionMount } from "../../../apps/ui/src/home/session-mount.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-export const HOME_DIR = "ui/src/home";
+export const HOME_DIR = "apps/ui/src/home";
 
 // The marker that says "this module declares the feed axis". Keyed on the exported CLOSED SET
 // rather than on a filename, so renaming the file cannot silently un-scope the byte clauses.
@@ -172,7 +172,7 @@ export function homePaneTruthViolations(files) {
     if (STATE_TABLE_DECLARATION.test(clean)) {
       violations.push(
         `${file.path}: declares a *_STATES table. The home defines NO state word of its own — m46 spent a milestone deleting `
-          + "`DOCK_STATES`/`TERMINAL_VIEW_STATES`, and a second vocabulary grows one word at a time. Import `TERMINAL_STATES` from `ui/src/terminal/state-ramp.mjs`.",
+          + "`DOCK_STATES`/`TERMINAL_VIEW_STATES`, and a second vocabulary grows one word at a time. Import `TERMINAL_STATES` from `apps/ui/src/terminal/state-ramp.mjs`.",
       );
     }
     // SCOPED (see the header's NARROWED note): a module that talks about a PANE's connection

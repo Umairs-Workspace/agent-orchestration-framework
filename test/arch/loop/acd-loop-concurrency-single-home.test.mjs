@@ -4,7 +4,7 @@
 //   "The mode has one home and no concurrency number exists."
 //
 // LEG 1 — THE MAPS. `work.loop.concurrency` is a key of BOTH resolver maps in
-// `src/loop-bounds.mjs`, mapping to the leaf's own `resolveLoopConcurrency` /
+// `packages/core/src/loop-bounds.mjs`, mapping to the leaf's own `resolveLoopConcurrency` /
 // `loopConcurrencyFromConfig` by identity, and the key SET of each map is pinned: the eight
 // FF-6901 numeric keys, this one, and (129/07) the loop's own three — `work.loop.dispatch.concurrency`,
 // `work.loop.agents.refine.mode`, `work.loop.agents.continue.mode` — and nothing else. A
@@ -14,34 +14,34 @@
 // what makes that refusal a red build. `rangeProbe` admits exactly the two modes and
 // `stepProbe` refuses a notch on a string.
 //
-// LEG 2 — THE SWEEP. Over a comment-stripped read of `src/**`: the literals `"refine_first"` /
-// `"sequential"` live in exactly two modules — the bounds home and the engine (`src/work/loop.mjs`,
+// LEG 2 — THE SWEEP. Over a comment-stripped read of `packages/core/src/**`: the literals `"refine_first"` /
+// `"sequential"` live in exactly two modules — the bounds home and the engine (`packages/work-loop/src/engine.mjs`,
 // whose `decideLoopPhase` branches on the mode it is HANDED, ADR-001 §4) — so a third spelling
-// (a `"refine_first"` in `src/loop/wave.mjs`) is a second home wearing a branch's shape; the
-// pool bound `work.dispatch.concurrency` is read by `src/work/dispatch.mjs` and by nothing else;
+// (a `"refine_first"` in `packages/core/src/loop/wave.mjs`) is a second home wearing a branch's shape; the
+// pool bound `work.dispatch.concurrency` is read by `packages/core/src/work/dispatch.mjs` and by nothing else;
 // the loop's OWN `work.loop.dispatch.concurrency` (129/07) is read by the bounds home — as
 // `loopConfig(workspace)?.dispatch?.concurrency` — and by nothing else, so the two readers are
 // told apart by the object the read hangs off, never by the key's last two segments; and the
-// loop family (`src/loop/**`, `src/commands/loop.mjs`) reads no dispatch bound of either kind
+// loop family (`packages/core/src/loop/**`, `packages/core/src/commands/loop.mjs`) reads no dispatch bound of either kind
 // and names no `work.loop.<x>` key the maps do not carry. NON-VACUOUS: the sweep must FIND the
 // engine's branch and both single reads before it asserts anything about them — an emptied sweep
 // is a red naming the file it could not find, never a silent green.
 //
 // Red probes (VERIFICATION.md's register): add `"work.loop.lanes": resolveLanes` to the value map
 // (leg 1, and FF-6111's two-way equality goes red beside it as collateral); spell `"refine_first"`
-// in a branch of `src/loop/wave.mjs` (leg 2); 129/07: read `loopConfig(ws)?.dispatch?.concurrency`
-// from `src/loop/wave.mjs` (leg 2 names the loop key's second reader).
+// in a branch of `packages/core/src/loop/wave.mjs` (leg 2); 129/07: read `loopConfig(ws)?.dispatch?.concurrency`
+// from `packages/core/src/loop/wave.mjs` (leg 2 names the loop key's second reader).
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
-import { readSrcFiles } from "../../support/read-src-files.mjs";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const BOUNDS_HOME = "src/loop-bounds.mjs";
-const ENGINE = "src/work/loop.mjs";
-const DISPATCH_HOME = "src/work/dispatch.mjs";
+const BOUNDS_HOME = "packages/contracts/src/loop-bounds.mjs";
+const ENGINE = "packages/work-loop/src/engine.mjs";
+const DISPATCH_HOME = "packages/work-loop/src/dispatch.mjs";
 const KEY = "work.loop.concurrency";
 
 // THE EIGHT FF-6901 KEYS, spelled here so the pin is a pin: a ninth number appended to the leaf
@@ -142,12 +142,13 @@ export function sweepFamilyKeys(units) {
   const problems = [];
   const pinned = new Set(PINNED_LOOP_KEYS);
   for (const { rel, code } of units) {
-    if (!(rel.startsWith("src/loop/") || rel === "src/commands/loop.mjs")) continue;
+    if (!((rel.startsWith("packages/core/src/loop/") || rel.startsWith("packages/work-loop/src/")) || rel === "packages/work-loop/src/commands/loop.mjs")) continue;
     for (const match of code.matchAll(WORK_LOOP_KEY_RE)) {
       const key = match[0];
-      if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through src/loop-bounds.mjs's twelve keys and holds no number of its own`);
+      if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through packages/core/src/loop-bounds.mjs's twelve keys and holds no number of its own`);
     }
-    if ([...code.matchAll(DISPATCH_BOUND_READ_RE)].length > 0) {
+    // Dispatch now shares this package; its one pool-bound read is checked by sweepDispatchBoundReads.
+    if (rel !== DISPATCH_HOME && [...code.matchAll(DISPATCH_BOUND_READ_RE)].length > 0) {
       problems.push(`${rel} reads \`dispatch.concurrency\` — the family never reads the dispatch bound (129/ADR-006)`);
     }
   }
@@ -156,8 +157,8 @@ export function sweepFamilyKeys(units) {
 
 async function srcUnits() {
   const units = [];
-  for (const file of await readSrcFiles(repoRoot)) {
-    units.push({ rel: `src/${toPosix(file.rel)}`, code: stripComments(await readFile(file.path, "utf8")) });
+  for (const file of await readRuntimeFiles(repoRoot)) {
+    units.push({ rel: file.rel, code: stripComments(await readFile(file.path, "utf8")) });
   }
   return units;
 }
@@ -168,7 +169,7 @@ export const archTests = [
     run: async () => {
       // Lazily — the harness's entry-key sweep (FF-5311) imports every arch file, and a leaf
       // imported at module scope is a leaf whose absence takes the whole index down.
-      const loopBounds = await import("../../../src/loop-bounds.mjs");
+      const loopBounds = await import("@aof/contracts/loop-bounds");
       assert.equal(typeof loopBounds.resolveLoopConcurrency, "function", `${BOUNDS_HOME}: NOT FOUND — resolveLoopConcurrency is not exported`);
       assert.equal(typeof loopBounds.loopConcurrencyFromConfig, "function", `${BOUNDS_HOME}: NOT FOUND — loopConcurrencyFromConfig is not exported`);
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[KEY], loopBounds.resolveLoopConcurrency, `LOOP_BOUND_VALUE_RESOLVERS["${KEY}"] is resolveLoopConcurrency by identity`);
@@ -194,7 +195,7 @@ export const archTests = [
         assert.ok(declaredAt >= 0, `${BOUNDS_HOME}: NOT FOUND — ${mapName} is not declared`);
         const literal = matchedBraceBody(home, declaredAt);
         assert.ok(literal != null, `${BOUNDS_HOME}: NOT FOUND — ${mapName}'s object literal could not be cut`);
-        const entry = new RegExp(`"${KEY.replace(/\./gu, "\\.")}"\\s*:\\s*([^,\\n]+)`, "u").exec(literal);
+        const entry = new RegExp(`"${KEY.replace(/[.*+?^${}()|[\]\\/]/gu, "\\$&")}"\\s*:\\s*([^,\\n]+)`, "u").exec(literal);
         assert.ok(entry != null, `${BOUNDS_HOME}: NOT FOUND — ${mapName} has no entry for ${KEY}`);
         assert.match(entry[1].trim(), /^[A-Za-z_$][\w$]*$/u, `${mapName}'s ${KEY} entry is a bare identifier`);
       }
@@ -234,7 +235,7 @@ export const archTests = [
     name: "arch/129/05 FF-12901: leg 2 (the sweep) — the mode literals live in the bounds home and the engine's branch only, work.dispatch.concurrency is read by src/work/dispatch.mjs alone and work.loop.dispatch.concurrency by src/loop-bounds.mjs alone, and the loop family holds no bound of its own",
     run: async () => {
       const units = await srcUnits();
-      assert.ok(units.length > 100, `src/** was actually read: ${units.length} modules`);
+      assert.ok(units.length > 100, `packages/core/src/** was actually read: ${units.length} modules`);
 
       const literals = sweepModeLiterals(units);
       // NON-VACUOUS — the sweep found what it sweeps for before anything is asserted about it.
@@ -251,7 +252,7 @@ export const archTests = [
       assert.deepEqual(reads.problems, [], `each dispatch bound has one reader:\n${reads.problems.join("\n")}`);
 
       const family = sweepFamilyKeys(units);
-      assert.ok(units.some((unit) => unit.rel.startsWith("src/loop/")) && units.some((unit) => unit.rel === "src/commands/loop.mjs"), "the family was read");
+      assert.ok(units.some((unit) => (unit.rel.startsWith("packages/core/src/loop/") || unit.rel.startsWith("packages/work-loop/src/"))) && units.some((unit) => unit.rel === "packages/work-loop/src/commands/loop.mjs"), "the family was read");
       assert.deepEqual(family, [], `the loop family names no key the maps do not carry and no dispatch bound:\n${family.join("\n")}`);
     },
   },
@@ -262,11 +263,11 @@ export const archTests = [
       const planted = (rel, mutate) => units.map((unit) => (unit.rel === rel ? { ...unit, code: mutate(unit.code) } : unit));
 
       // A third spelling, in code.
-      const wave = sweepModeLiterals(planted("src/loop/wave.mjs", (code) => `${code}\nexport function plant(mode) { return mode === "refine_first"; }\n`));
-      assert.ok(wave.problems.some((problem) => problem.includes("src/loop/wave.mjs") && problem.includes("refine_first")), `a spelling in wave.mjs is named:\n${wave.problems.join("\n")}`);
+      const wave = sweepModeLiterals(planted("packages/work-loop/src/wave.mjs", (code) => `${code}\nexport function plant(mode) { return mode === "refine_first"; }\n`));
+      assert.ok(wave.problems.some((problem) => problem.includes("packages/work-loop/src/wave.mjs") && problem.includes("refine_first")), `a spelling in wave.mjs is named:\n${wave.problems.join("\n")}`);
       // …and the same spelling inside a comment is not a spelling: the sweep reads through the
       // one stripper, so the plant is applied to the RAW source and stripped as the real read is.
-      const commented = sweepModeLiterals(units.map((unit) => (unit.rel === "src/loop/wave.mjs" ? { ...unit, code: stripComments(`${unit.code}\n// the mode is "refine_first" here\n`) } : unit)));
+      const commented = sweepModeLiterals(units.map((unit) => (unit.rel === "packages/work-loop/src/wave.mjs" ? { ...unit, code: stripComments(`${unit.code}\n// the mode is "refine_first" here\n`) } : unit)));
       assert.deepEqual(commented.problems, [], "a literal inside a // comment leaves the sweep green");
 
       // The engine's branch removed: NOT FOUND, never a green.
@@ -278,25 +279,25 @@ export const archTests = [
       // The one dispatch read removed: NOT FOUND; a second reader: named.
       const noRead = sweepDispatchBoundReads(planted(DISPATCH_HOME, (code) => code.replace(DISPATCH_BOUND_READ_RE, "dispatch?.lanes")));
       assert.equal(noRead.found, 0, "with the read removed the sweep finds nothing");
-      const secondReader = sweepDispatchBoundReads(planted("src/loop/wave.mjs", (code) => `${code}\nexport const plant = (w) => w.config.work.dispatch.concurrency;\n`));
-      assert.ok(secondReader.problems.some((problem) => problem.includes("src/loop/wave.mjs")), "a second reader is named");
+      const secondReader = sweepDispatchBoundReads(planted("packages/work-loop/src/wave.mjs", (code) => `${code}\nexport const plant = (w) => w.config.work.dispatch.concurrency;\n`));
+      assert.ok(secondReader.problems.some((problem) => problem.includes("packages/work-loop/src/wave.mjs")), "a second reader is named");
       // 129/07 — the loop's own key read outside the home is named as the LOOP key's second
       // reader; the home's own read is the one found; a spelled key string in the family is a read.
-      const loopReader = sweepDispatchBoundReads(planted("src/loop/wave.mjs", (code) => `${code}\nexport const plant = (ws) => loopConfig(ws)?.dispatch?.concurrency;\n`));
-      assert.ok(loopReader.problems.some((problem) => problem.includes("src/loop/wave.mjs") && problem.includes("work.loop.dispatch.concurrency")), `a loop-key read outside the home is named:\n${loopReader.problems.join("\n")}`);
+      const loopReader = sweepDispatchBoundReads(planted("packages/work-loop/src/wave.mjs", (code) => `${code}\nexport const plant = (ws) => loopConfig(ws)?.dispatch?.concurrency;\n`));
+      assert.ok(loopReader.problems.some((problem) => problem.includes("packages/work-loop/src/wave.mjs") && problem.includes("work.loop.dispatch.concurrency")), `a loop-key read outside the home is named:\n${loopReader.problems.join("\n")}`);
       assert.equal(loopReader.loopFound, 1, "…and the home's own read is still the one found");
       const noLoopRead = sweepDispatchBoundReads(planted(BOUNDS_HOME, (code) => code.replace(LOOP_DISPATCH_BOUND_READ_RE, "loopConfig(workspace)?.dispatch?.lanes")));
       assert.equal(noLoopRead.loopFound, 0, "with the home's read removed the sweep finds no loop read");
-      const spelled = sweepFamilyKeys(planted("src/loop/wave.mjs", (code) => `${code}\nexport const plant = "work.loop.dispatch.concurrency";\n`));
-      assert.ok(spelled.some((problem) => problem.includes("src/loop/wave.mjs") && problem.includes("dispatch.concurrency")), "the family spelling the loop key is a read, and is named");
-      const dotted = sweepFamilyKeys(planted("src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.agents.refine.wrong";\n`));
+      const spelled = sweepFamilyKeys(planted("packages/work-loop/src/wave.mjs", (code) => `${code}\nexport const plant = "work.loop.dispatch.concurrency";\n`));
+      assert.ok(spelled.some((problem) => problem.includes("packages/work-loop/src/wave.mjs") && problem.includes("dispatch.concurrency")), "the family spelling the loop key is a read, and is named");
+      const dotted = sweepFamilyKeys(planted("packages/work-loop/src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.agents.refine.wrong";\n`));
       assert.ok(dotted.some((problem) => problem.includes("work.loop.agents.refine.wrong")), `a dotted key is read whole and named whole:\n${dotted.join("\n")}`);
-      const dottedOk = sweepFamilyKeys(planted("src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.agents.refine.mode";\n`));
+      const dottedOk = sweepFamilyKeys(planted("packages/work-loop/src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.agents.refine.mode";\n`));
       assert.deepEqual(dottedOk.filter((problem) => problem.includes("agents.refine.mode")), [], "a pinned dotted key spelled whole is admitted");
 
       // A tenth key named by the family.
-      const tenth = sweepFamilyKeys(planted("src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.lanes";\n`));
-      assert.ok(tenth.some((problem) => problem.includes("work.loop.lanes") && problem.includes("src/commands/loop.mjs")), "a key outside the twelve, named by the family, is reported");
+      const tenth = sweepFamilyKeys(planted("packages/work-loop/src/commands/loop.mjs", (code) => `${code}\nexport const plant = "work.loop.lanes";\n`));
+      assert.ok(tenth.some((problem) => problem.includes("work.loop.lanes") && problem.includes("packages/work-loop/src/commands/loop.mjs")), "a key outside the twelve, named by the family, is reported");
     },
   },
 ];

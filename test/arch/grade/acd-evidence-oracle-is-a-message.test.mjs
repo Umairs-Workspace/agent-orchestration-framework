@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-5906 (milestone 59 / ADR-002 §3, ADR-004 §3) — EVIDENCE IS RE-RUN, NEVER RE-READ,
 // AND THE ORACLE IS THE MESSAGE.
 //
@@ -39,27 +40,25 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
-import {
-  DRIVE_PROGRAM,
-  DRIVE_RESULT_SENTINEL,
-  EVIDENCE_FINDING_CODES,
-  EVIDENCE_VERDICTS,
-  MESSAGE_NORMALISATIONS,
-  REPRODUCED_VERDICTS,
-  SIZE_KINDS,
-  dispositionOf,
-  messagesAgree,
-  findingsForRow,
-  runEvidence,
-  sizeFor,
-  verdictFor,
-} from "../../../src/work-audit/evidence.mjs";
+const DRIVE_PROGRAM = _aofApplication.work.audit.evidence.DRIVE_PROGRAM;
+const DRIVE_RESULT_SENTINEL = _aofApplication.work.audit.evidence.DRIVE_RESULT_SENTINEL;
+const EVIDENCE_FINDING_CODES = _aofApplication.work.audit.evidence.EVIDENCE_FINDING_CODES;
+const EVIDENCE_VERDICTS = _aofApplication.work.audit.evidence.EVIDENCE_VERDICTS;
+const MESSAGE_NORMALISATIONS = _aofApplication.work.audit.evidence.MESSAGE_NORMALISATIONS;
+const REPRODUCED_VERDICTS = _aofApplication.work.audit.evidence.REPRODUCED_VERDICTS;
+const SIZE_KINDS = _aofApplication.work.audit.evidence.SIZE_KINDS;
+const dispositionOf = _aofApplication.work.audit.evidence.dispositionOf;
+const messagesAgree = _aofApplication.work.audit.evidence.messagesAgree;
+const findingsForRow = _aofApplication.work.audit.evidence.findingsForRow;
+const runEvidence = _aofApplication.work.audit.evidence.runEvidence;
+const sizeFor = _aofApplication.work.audit.evidence.sizeFor;
+const verdictFor = _aofApplication.work.audit.evidence.verdictFor;
 // THE ONE HOME for the control corpus (see that module's header for why it is not written twice).
 import { EXECUTED_CASES, withControlFixtureRepo as withFixtureRepo } from "../../support/evidence-control-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_LANE = "src/work-audit/evidence.mjs";
-const THE_DRIVER = DRIVE_PROGRAM;
+const THE_LANE = "packages/work/src/audit/evidence.mjs";
+const THE_DRIVER = "packages/work/src/programs/audit-drive.mjs";
 
 // ── THE COUNT-ORACLE DETECTORS ───────────────────────────────────────────────────────────────
 //
@@ -135,7 +134,7 @@ const ITEM = {
 const observationWith = (fields) => ({
   control: "test/arch/red.test.mjs",
   status: "ran",
-  attempted: "node src/work/audit-drive.mjs test/arch/red.test.mjs",
+  attempted: "node packages/core/src/work/audit-drive.mjs test/arch/red.test.mjs",
   deadlineMs: 60_000,
   message: null,
   cases: 2,
@@ -288,7 +287,7 @@ export const archTests = [
       const body = strippedBody(THE_LANE, raw);
 
       // The single route: the seam, imported by name, and no second door.
-      assert.match(body, /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"\.\/spawn\.mjs"/u, "execution comes from 59/01's bounded seam");
+      assert.match(stripComments(await read("packages/core/src/application/bindings/work-audit/evidence.mjs")), /import\s*\{[^}]*\brunBounded\b[^}]*\}\s*from\s*"@aof\/execution\/bounded-process"/u, "execution comes from 59/01's bounded seam");
       assert.doesNotMatch(body, /node:child_process/u, "…and not from a second import of the spawn door");
       assert.doesNotMatch(body, /\bimport\s*\(/u, "…nor from a dynamic import(), which would execute a cited module's scope inside this process (66/ADR-004 §2)");
       for (const door of ["execSync", "execFileSync", "spawnSync", "fork("]) {
@@ -304,7 +303,7 @@ export const archTests = [
       // THE CUT IS THE LANGUAGE'S OWN, from the one home (`test/support/source-slice.mjs`). An
       // `indexOf` sentinel end would assume a declaration order nothing pins, and F-47-04-ARCH-2
       // records six instruments in this repo made confidently wrong about the tree that way.
-      const verdictSource = functionBody(body, "export function verdictFor");
+      const verdictSource = functionBody(body, "function verdictFor");
       assert.ok(verdictSource != null && verdictSource.length > 200, "the verdict function's body was cut and read");
       assert.doesNotMatch(verdictSource, /exitCode/u, "the VERDICT never reads an exit code — 'it ran' and 'it passed' are two questions");
       assert.doesNotMatch(verdictSource, /\.cases\b/u, "…and never a case count");
@@ -457,17 +456,17 @@ export const archTests = [
     name: "arch/59 FF-5906: the driver is a PROGRAM this family spawns, its stdout sentinel is byte-identical on both sides of the seam, and it never reaches for `node --test`",
     run: async () => {
       // The two literals are physically separate BY THE RULE that keeps them apart: FF-5904
-      // refuses a static import of a path outside `src/`, so `src/work-audit/evidence.mjs` cannot
+      // refuses a static import of a path outside `packages/core/src/`, so `packages/core/src/work-audit/evidence.mjs` cannot
       // import the driver's constant. 66/F-42 recorded exactly this shape for the red-probe
       // placeholder across the JS/markdown seam, and its answer was an assertion that reads both.
       const driverSource = await read(THE_DRIVER);
       const laneSource = await read(THE_LANE);
-      // The DRIVER's copy need not be exported and, since 77/04 moved the program under `src/`,
+      // The DRIVER's copy need not be exported and, since 77/04 moved the program under `packages/core/src/`,
       // must not be: nothing can import it (the family may not, and a test that did would execute
       // the program), and an unimportable export is the one shape 77/02's seam rule would report as
       // a stranded seam. The claim here is the BYTES, not the syntax, and it is unweakened.
       const driverLiteral = /(?:export )?const DRIVE_RESULT_SENTINEL = "([^"]*)";/u.exec(driverSource);
-      const laneLiteral = /export const DRIVE_RESULT_SENTINEL = "([^"]*)";/u.exec(laneSource);
+      const laneLiteral = /(?:export )?const DRIVE_RESULT_SENTINEL = "([^"]*)";/u.exec(laneSource);
       assert.ok(driverLiteral != null && laneLiteral != null, "both sides declare the sentinel");
       assert.equal(driverLiteral[1], laneLiteral[1], "the two copies are byte-identical — nothing else can hold them equal across a boundary neither may import");
       assert.equal(DRIVE_RESULT_SENTINEL, driverLiteral[1].replaceAll("\\\\", "\\"));
@@ -512,7 +511,7 @@ export const archTests = [
       }
       // …AND THE COMPARISON IS NOT SIMPLY TRUE. A genuinely different message still differs.
       assert.equal(messagesAgree("the set may shrink, never grow", "the set may grow, never shrink"), false);
-      assert.equal(messagesAgree("src/a.mjs is not registered", "src/b.mjs is not registered"), false);
+      assert.equal(messagesAgree("packages/core/src/a.mjs is not registered", "packages/core/src/b.mjs is not registered"), false);
       // THE NUMERIC CONVERSE, WHICH LOCKS `transient-digits` TO ITS NARROW FORM. The normalisation
       // is only allowed to blur a RUN-SCOPED digit run — a pid, a port, a temp-dir suffix, all of
       // which follow a `-` or `_` or `/`. Widened to every number it would still leave every other
@@ -534,10 +533,10 @@ export const archTests = [
     run: async () => {
       // Structural: `sizeFor` and `verdictFor` are two functions and neither calls the other.
       const body = strippedBody(THE_LANE, await read(THE_LANE));
-      const sizeSource = functionBody(body, "export function sizeFor");
+      const sizeSource = functionBody(body, "function sizeFor");
       assert.ok(sizeSource != null && sizeSource.length > 200, "the size function's body was cut and read");
       assert.doesNotMatch(sizeSource, /verdictFor|dispositionOf|messagesAgree/u, "the size claim does not reach the verdict");
-      const verdictSource = functionBody(body, "export function verdictFor");
+      const verdictSource = functionBody(body, "function verdictFor");
       assert.ok(verdictSource != null, "the verdict function's body was cut and read");
       assert.doesNotMatch(verdictSource, /sizeFor|\.cases\b/u, "…and the verdict does not reach the size");
 

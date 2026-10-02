@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness: control-stream-server's admission binds to the CONNECTION's remote
 // address (never a self-declared header) and the server never binds all
 // interfaces (milestone 34 / story 04, ADR-007 / 33-ADR-002 "the fabric IS the
@@ -17,7 +18,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { WebSocket } from "ws";
-import { startControlStreamServer } from "../../../src/control-stream-server.mjs";
+const startControlStreamServer = _aofApplication.mesh.controlStreamServer.startControlStreamServer;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -120,7 +121,7 @@ export const archTests = [
   {
     name: "arch/34 ADR-007/P1.6 (structural): startControlStreamServer never passes \"0.0.0.0\" as a literal bind address in LIVE code, and defaultResolveOrigin reads request.socket.remoteAddress",
     async run() {
-      const raw = await readFile(path.join(repoRoot, "src", "control-stream-server.mjs"), "utf8");
+      const raw = await readFile(path.join(repoRoot, "packages", "mesh", "src", "control-stream-server.mjs"), "utf8");
       // Strip // line comments first (the docstrings legitimately DISCUSS "0.0.0.0"
       // in prose — a naive .includes() on raw source would false-positive there).
       const codeOnly = raw.replace(/\/\/[^\n]*/g, "");

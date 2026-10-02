@@ -79,7 +79,7 @@ two clones, the add-only merge already green).
 - **(task 00) "byte-identical to today"** — wire as parsed-record assertions (placement at `runRecordPath`,
   the thirteen legacy values verbatim, `node: null`), NOT a raw-byte file compare: key ORDER is fitness #2's
   seam. (values verbatim) ∧ (fitness #2's order freeze) ∧ (the unchanged `JSON.stringify(record, null, 2)`
-  persist, [run-store.mjs:145](../../../../../../src/run-store.mjs#L145)) jointly equal byte-identity.
+  persist, [run-store.mjs:145](../../../../../../packages/core/src/application/bindings/run-store.mjs#L145)) jointly equal byte-identity.
 - **(task 01) pull-failed rows** — `git remote set-url origin <tmp>/does-not-exist.git` (the fetch-url
   sibling of `breakPushRemote`'s `set-url --push`): `hasRemote` stays true
   ([mesh-sync.mjs:72](../../../../../../src/mesh-sync.mjs#L72)), the pull fails offline + deterministically, and
@@ -93,22 +93,22 @@ two clones, the add-only merge already green).
 
 **`src/run-store.mjs` — the node dimension (all additive on existing seams):**
 - **Builder:** define `runNodeRecordPath(item, node, runId)` = `join(runsDir(item), node, runId + ".json")`
-  beside `runRecordPath` ([:59](../../../../../../src/run-store.mjs#L59)) — byte-identical to the m22-frozen
+  beside `runRecordPath` ([:59](../../../../../../packages/core/src/application/bindings/run-store.mjs#L59)) — byte-identical to the m22-frozen
   shape at [mesh-store.mjs:85](../../../../../../src/mesh-store.mjs#L85); no `flatLeaf` here (fitness #1 asserts
   shape-equality).
-- **`buildRecord`** ([:155](../../../../../../src/run-store.mjs#L155)) — `node = null` in the options; append
+- **`buildRecord`** ([:155](../../../../../../packages/core/src/application/bindings/run-store.mjs#L155)) — `node = null` in the options; append
   `node` as the FOURTEENTH key after `reclaimedAt`. **`normalizeRecord`**
-  ([:177](../../../../../../src/run-store.mjs#L177)) — append `node: raw.node ?? null`.
-- **`persist`** ([:143](../../../../../../src/run-store.mjs#L143)) — record-driven placement:
+  ([:177](../../../../../../packages/core/src/application/bindings/run-store.mjs#L177)) — append `node: raw.node ?? null`.
+- **`persist`** ([:143](../../../../../../packages/core/src/application/bindings/run-store.mjs#L143)) — record-driven placement:
   `record.node ? runNodeRecordPath(item, record.node, record.runId) : runRecordPath(item, record.runId)`.
   This one edit gives completion / heartbeat / reclaim their persist-back-at-node-path for free (all route
   through `persist` via `applyTransition`).
 - **Union resolver (new private `findRunPath`):** check flat `runRecordPath`, else scan one level of subdirs
   for `<sub>/<runId>.json` (ENOENT-tolerant). Consumers: `readRun`
-  ([:266](../../../../../../src/run-store.mjs#L266)) and the mint write-if-absent probe
-  ([:219](../../../../../../src/run-store.mjs#L219), exists-anywhere-in-union).
-- **`countRunFiles`** ([:128](../../../../../../src/run-store.mjs#L128)) + **`readRuns`**
-  ([:240](../../../../../../src/run-store.mjs#L240)) — `readdir(..., { withFileTypes: true })`: files → flat,
+  ([:266](../../../../../../packages/core/src/application/bindings/run-store.mjs#L266)) and the mint write-if-absent probe
+  ([:219](../../../../../../packages/core/src/application/bindings/run-store.mjs#L219), exists-anywhere-in-union).
+- **`countRunFiles`** ([:128](../../../../../../packages/core/src/application/bindings/run-store.mjs#L128)) + **`readRuns`**
+  ([:240](../../../../../../packages/core/src/application/bindings/run-store.mjs#L240)) — `readdir(..., { withFileTypes: true })`: files → flat,
   directories → one-level `*.json` read; per-file torn-skip stays per entry; the existing runId sort already
   yields the union ordering. `retryRun`'s node-threading is story 02's command business — NOT here.
 - **LOAD-BEARING existing-test ripple:** five files freeze the thirteen-key list and WILL go red on the

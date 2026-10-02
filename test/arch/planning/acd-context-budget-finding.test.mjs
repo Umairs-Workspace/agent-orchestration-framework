@@ -1,3 +1,5 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Fitness function for milestone 16 / ADR-004 (+ inherited m15/ADR-001 envelope). The
 // `doc-over-budget` finding is exactly { code, severity, path, message }:
 // code === "doc-over-budget", severity === "warn" (the ONLY value this group emits —
@@ -13,9 +15,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../../src/work.mjs";
-import { doctorWork } from "../../../src/work/doctor.mjs";
-import { budgetGroup } from "../../../src/work/doctor-budget.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const doctorWork = _aofApplication.work.doctor.doctorWork;
+import { budgetGroup } from "@aof/work/doctor/budget";
 
 // Text whose splitLines count is exactly n (the milestone-16 convention).
 function linesText(n) {

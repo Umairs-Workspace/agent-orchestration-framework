@@ -1,3 +1,4 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/notify/notify-discord.test.mjs — milestone 131 / story 02, task 04
 // (04_the-discord-message-keeps-its-headline-command-and-link.feature; ADR-005 §2, DESIGN §3), and
 // story 09 task 03 (ADR-007 §5): the render is the bot's own, with no `username`, and every
@@ -9,8 +10,8 @@
 // one. The truncation rows are measured to the unit: line 1 is 50 units, the action line 36 and the
 // link 27, so the body's room is 1,884 with the link and 1,912 without.
 import assert from "node:assert/strict";
-import { renderDiscord } from "../../src/notify/discord.mjs";
-import { buildNotifyEnvelope } from "../../src/notify/notify.mjs";
+import { renderDiscord } from "@aof/messaging/discord";
+const buildNotifyEnvelope = _aofApplication.messaging.notify.buildNotifyEnvelope;
 
 const NOW = () => new Date("2026-09-23T17:00:00.000Z");
 const LINK = "https://example.test/{ref}";

@@ -9,7 +9,7 @@
 //
 // This EXTENDS the 09 acd-graph-no-face-spawn idiom for 11. Two halves:
 //   (a) REGRESSION GUARD (GREEN now, must STAY green): the only `graphify`-binary
-//       spawn in src/ remains src/graphify.mjs (the 09 sole-spawn-site assertion,
+//       spawn in src/ remains packages/core/src/graphify.mjs (the 09 sole-spawn-site assertion,
 //       re-run here so an 11-area diff that adds a second spawn fails this test too);
 //       and no NEW src/ module reaches the graph by any path other than the 09
 //       commands / the MCP face / the pure reads (11 adds no module — the graph-
@@ -20,16 +20,17 @@
 //       binary spawn — the seams reach the graph via the command, never a second
 //       integration.
 import assert from "node:assert/strict";
+import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { importSpecifiers } from "../../support/module-family.mjs";
+import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const srcDir = path.join(repoRoot, "src");
-const bundleDir = path.join(srcDir, "bundle");
-const DRIVER_REL = path.join("src", "graphify.mjs");
+const srcDir = path.join(repoRoot, "packages", "core", "src");
+const bundleDir = path.join(srcDir, "..", "assets");
+const DRIVER_REL = path.join("packages", "knowledge", "src/graphify.mjs");
 
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),
@@ -44,26 +45,36 @@ const SEAMS = {
 // graph-mcp-server.mjs reaches the graph via invoke("graph:…"), not by import — it is
 // covered by the no-face-spawn guard, not by this import-grep. Neither is listed.)
 const GRAPH_REACHING_ALLOWLIST = new Set([
-  path.join("src", "graphify.mjs"),                 // imports the normalizer
-  path.join("src", "commands", "graph", "build.mjs"),  // imports the driver
-  path.join("src", "commands", "graph", "query.mjs"),  // imports the driver
-  path.join("src", "commands", "graph", "triage.mjs"), // imports the driver
-  path.join("src", "commands", "graph", "impact.mjs"), // imports the normalizer (11/ADR-007): the
+  path.join("packages/core/src/application/assemble.mjs"), // Core constructs the sole graph service.
+  // Transitional core adapters supply the configured graph services.
+  path.join("packages/core/src/application/bindings/graphify.mjs"),
+  // Plan 06 removes the pure public forward. The owned normalizer defines the
+  // API itself and therefore is not an importer of that API.
+  path.join("packages/core/src/application/bindings/commands/graph/build.mjs"),
+  path.join("packages/core/src/application/bindings/commands/graph/query.mjs"),
+  path.join("packages/core/src/application/bindings/commands/graph/triage.mjs"),
+  path.join("packages", "knowledge", "src/graphify.mjs"),                 // imports the normalizer
+  path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),  // imports the driver
+  path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),  // imports the driver
+  path.join("packages", "knowledge", "src", "commands", "graph-triage.mjs"), // imports the driver
+  path.join("packages", "knowledge", "src", "commands", "graph-impact.mjs"), // imports the normalizer (11/ADR-007): the
                                                     // deterministic edge-based coupling command — reaches
                                                     // the graph via the pure read (NOT a spawn), exactly
                                                     // as 10's backend does.
-  path.join("src", "work", "test-select.mjs"),           // imports the normalizer (72/ADR-002 §1): test selection
+  path.join("packages/core/src/application/bindings/work/test-select.mjs"),           // imports the normalizer (72/ADR-002 §1): test selection
                                                       // reaches the graph by the pure read — never a build and
                                                       // never a spawn. A build is minutes even when nothing
                                                       // changed, and an inner-loop tool that might cost minutes
                                                       // before it costs seconds is not one.
-  path.join("src", "memory", "graphify-backend.mjs"), // imports the normalizer (10)
-  path.join("src", "story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
+  path.join("packages", "knowledge", "src/memory/graphify-backend.mjs"), // imports the normalizer (10)
+  path.join("packages/core/src/application/bindings/story-contract-derive.mjs"), // configured knowledge ports
+  path.join("packages", "work", "src/story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
                                                       // derivation reaches the graph by the pure read — never a
                                                       // build and never a spawn, for 72/ADR-002 §1's reasons
                                                       // carried over intact. Its own control (FF-9602) asserts
                                                       // the absence of the build and the spawn directly.
-  path.join("src", "work-audit", "seam-liveness.mjs"), // imports the normalizer (77/ADR-006 §1): the seam-liveness
+  path.join("packages/core/src/application/bindings/work-audit/seam-liveness.mjs"), // Core supplies the existing graph adapter.
+  path.join("packages", "work", "src", "audit", "seam-liveness.mjs"), // imports the normalizer (77/ADR-006 §1): the seam-liveness
                                                        // audit lane reaches the graph by the pure read — never a
                                                        // build and never a spawn, for 72/ADR-002 §1's reasons
                                                        // carried over intact.
@@ -136,7 +147,7 @@ export const archTests = [
   {
     name: "arch/codebase-grounding-via-commands: the ONLY graphify-binary spawn in src/ remains src/graphify.mjs (11 adds no new spawn site — the 09 regression guard, re-asserted)",
     run: async () => {
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       assert.ok(files.length > 0, "found src/*.mjs files to scan");
       const offenders = [];
       let driverHasSpawn = false;
@@ -156,9 +167,9 @@ export const archTests = [
       assert.deepEqual(
         [...new Set(offenders)],
         [],
-        `only src/graphify.mjs may spawn the graphify binary; 11 introduced no new spawn site; offenders: ${offenders.join(", ")}`
+        `only packages/core/src/graphify.mjs may spawn the graphify binary; 11 introduced no new spawn site; offenders: ${offenders.join(", ")}`
       );
-      assert.ok(driverHasSpawn, "src/graphify.mjs IS the sole graphify spawn site (the 09 driver seam)");
+      assert.ok(driverHasSpawn, "packages/core/src/graphify.mjs IS the sole graphify spawn site (the 09 driver seam)");
 
       // Self-check (non-vacuous): the spawn guards WOULD catch an injected violation.
       assert.ok(GRAPHIFY_SPAWN.test("spawnSync(resolved.path, args)"), "the resolved-handle spawn guard is live");
@@ -173,14 +184,29 @@ export const archTests = [
       // modules must be the frozen allow-list — 11 adds none. (The bundle seams are
       // PROMPT text, not modules; they reach the graph by instructing the agent to run
       // the CLI command, which is not a module-level import.)
-      const files = await collectMjs(srcDir);
+      const files = (await readRuntimeFiles(repoRoot)).map(file => file.path);
       const reachers = [];
       for (const file of files) {
         const rel = path.relative(repoRoot, file);
-        const specs = importSpecifiers(stripCommentsOnly(await readFile(file, "utf8"))).map((entry) => entry.specifier);
-        const importsDriver = specs.some((s) => /(^|\/)graphify\.mjs$/.test(s));
-        const importsNormalizer = specs.some((s) => /(^|\/)graph-normalize\.mjs$/.test(s));
-        if (importsDriver || importsNormalizer) reachers.push(rel);
+        const source = stripCommentsOnly(await readFile(file, "utf8"));
+        const specs = dependencySpecifiers(source).map((entry) => entry.specifier);
+        const importsDriver = specs.some((s) => /(^|\/)graphify(?:\.mjs)?$/.test(s));
+        const importsNormalizer = specs.some((s) => /(^|\/)graph-normalize(?:\.mjs)?$/.test(s));
+        const suppliedKnowledge = rel.startsWith(path.join("packages", "knowledge", "src") + path.sep)
+          && /\b(?:runGraphifyBuild|runGraphifyQuery|runGraphifyTriage)\s*\(/u.test(source)
+          && /function createGraph(?:Build|Query|Triage)Command\(\{[^}]*\brunGraphify(?:Build|Query|Triage)\b/u.test(source);
+        const suppliedReader = rel === path.join("packages", "work", "src", "audit", "seam-liveness.mjs");
+        if (suppliedReader) {
+          assert.match(source, /createAuditSeamLiveness\(\{[^}]*normalizeGraph[^}]*readGraph/u, "the moved reader receives the existing graph services");
+          assert.match(source, /normalizeGraph\(readGraph\(artifact\)\)/u, "and it still uses the supplied reader");
+        }
+        const suppliedDeriver = rel === path.join("packages", "work", "src/story-contract-derive.mjs");
+        if (suppliedDeriver) {
+          assert.match(source, /createStoryContractDeriver\(\{[^}]*normalizeGraph[^}]*readGraph/u);
+          assert.match(source, /raw = readGraph\(artifact\)/u);
+          assert.match(source, /normalizeGraph\(raw\)/u);
+        }
+        if (importsDriver || importsNormalizer || suppliedReader || suppliedKnowledge || suppliedDeriver) reachers.push(rel);
       }
       const offenders = reachers.filter((rel) => !GRAPH_REACHING_ALLOWLIST.has(rel));
       assert.deepEqual(

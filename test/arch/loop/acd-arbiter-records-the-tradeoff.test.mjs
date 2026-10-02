@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 58 / story 02 — FF-5805.
 //
 // THE ARBITER RECORDS THE TRADE-OFF AND CANNOT ACT, and the membership that makes any of it
 // reachable. Four legs, and the fourth is the one the other three sit on: `isGraphNode`
-// (`src/work/loops-checks.mjs`) is a hand-written disjunction, not the loader's vocabulary, so a
+// (`packages/core/src/work/loops-checks.mjs`) is a hand-written disjunction, not the loader's vocabulary, so a
 // kind the registry admits and this list omits is filtered out of EVERY traversal — invisible to
 // the grounding decomposition, to the anchor lane, to the ownership lane as an edge source, and to
 // arbitration. The parity leg is therefore driven over `NODE_KINDS` rather than over the one kind
@@ -13,7 +14,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { NODE_KINDS } from "../../../src/work/loops.mjs";
+const NODE_KINDS = _aofApplication.graph.work.loops.NODE_KINDS;
 import {
   checkActuatorArbitration,
   checkAnchorGrounding,
@@ -22,7 +23,7 @@ import {
   checkReferenceOwnership,
   checkTimescale,
   decomposeLoopGraph,
-} from "../../../src/work/loops-checks.mjs";
+} from "@aof/work-graph/checks";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const SOURCE = path.join(root, "arbiter-fixture-not-on-disk", "loops");

@@ -1,8 +1,11 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // The PRODUCER-FED `mesh:status` boards payload, served verbatim to the REAL
 // `<Fleet/>` — extracted here for milestone 47 / story 01 (ADR-006(b)).
 //
 // WHERE IT CAME FROM, and why it moved. It was written inside
-// `test/ui/in-app-cross-links.test.mjs` (m45/04/01) as `withFleetBoards`, and it is the
+// `test/surfaces/in-app-cross-links.test.mjs` (m45/04/01) as `withFleetBoards`, and it is the
 // exact instrument that PROVED the fleet's local-shape branch unreachable — m45 QA's
 // F-45-04-QA-3. m47/01 task 01 is the change that deletes that branch, and its lanes
 // need the same instrument to prove the branch is gone. Two copies of a fixture whose
@@ -33,11 +36,17 @@ import http from "node:http";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { loadWorkspace } from "../../src/work.mjs";
-import { invoke } from "../../src/command-core.mjs";
-import { meshDir, nodeRecordPath, presenceRecordPath } from "../../src/mesh/store.mjs";
-import { registryPath, registryDir, emptyRegistry, admitNode, registerBoard } from "../../src/mesh/registry.mjs";
-import { withFleetApp } from "./fleet-app-harness.mjs";
+const loadWorkspace = _aofWorkspace.work.loadWorkspace;
+const invoke = _aofApplication.invoke;
+const meshDir = _aofHooks.meshStore.meshDir;
+const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
+const presenceRecordPath = _aofHooks.meshStore.presenceRecordPath;
+const registryPath = _aofApplication.mesh.registry.registryPath;
+const registryDir = _aofApplication.mesh.registry.registryDir;
+const emptyRegistry = _aofApplication.mesh.registry.emptyRegistry;
+const admitNode = _aofApplication.mesh.registry.admitNode;
+const registerBoard = _aofApplication.mesh.registry.registerBoard;
+import { withFleetApp } from "../../apps/ui/test/support/fleet-app-harness.mjs";
 
 export const BOARDS_FIXTURE_NOW = "2026-07-01T12:00:00.000Z";
 export const BOARDS_FIXTURE_LOCAL_NODE = "aof-control";
@@ -127,7 +136,7 @@ export async function withMeshStatusBoards({ local = null, peer = null, nodes = 
   } finally {
     if (previousHome === undefined) delete process.env.AOF_GLOBAL_HOME;
     else process.env.AOF_GLOBAL_HOME = previousHome;
-    await rm(repo, { recursive: true, force: true });
+    await rm(repo, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
 

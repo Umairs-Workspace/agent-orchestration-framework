@@ -1,3 +1,4 @@
+import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Fitness function: acd-session-ttl-self-expires (milestone 38 / ADR-002, fitness #4)
 // — "a session past the TTL is not live (self-expires); one AT the TTL still is
 // (strict >)."
@@ -17,7 +18,9 @@
 //  Self-check (m03 non-vacuous): a hand-rolled >= comparator disagrees with the real
 //  predicate exactly AT the threshold — proving the assertion is not vacuously true.
 import assert from "node:assert/strict";
-import { isSessionLive, resolveSessionTtlSeconds, DEFAULT_SESSION_TTL_SECONDS } from "../../../src/mesh/session.mjs";
+const isSessionLive = _aofHooks.meshSession.isSessionLive;
+const resolveSessionTtlSeconds = _aofHooks.meshSession.resolveSessionTtlSeconds;
+const DEFAULT_SESSION_TTL_SECONDS = _aofHooks.meshSession.DEFAULT_SESSION_TTL_SECONDS;
 
 const NOW_ISO = "2026-07-10T12:00:00.000Z";
 const NOW_MS = Date.parse(NOW_ISO);

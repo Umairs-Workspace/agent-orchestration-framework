@@ -1,8 +1,9 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 72 / story 04 —
 // tasks/00_a-worktree-is-prepared-through-the-declared-program.feature.
 //
 // One test object per @executable scenario (Scenario-Outline rows folded into one entry), driven
-// against the REAL doors in `src/mesh/worktree.mjs` with the module's own two seams injected: the
+// against the REAL doors in `packages/core/src/mesh/worktree.mjs` with the module's own two seams injected: the
 // `options.exec` git seam it already had, and the bounded-launch seam the prepare step goes through.
 // No git binary, no network, no real install — and the SAME code path production takes.
 //
@@ -14,16 +15,14 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  WORKTREE_PREPARE_DEADLINE_EXPIRED,
-  WORKTREE_PREPARE_FAILED,
-  WORKTREE_PREPARE_NOT_STARTED,
-  addDispatchWorktree,
-  addSessionWorktree,
-  addWorktree,
-  meshWorktreePath,
-  reuseWorktreeOnBranch,
-} from "../../src/mesh/worktree.mjs";
+const WORKTREE_PREPARE_DEADLINE_EXPIRED = _aofApplication.mesh.worktree.WORKTREE_PREPARE_DEADLINE_EXPIRED;
+const WORKTREE_PREPARE_FAILED = _aofApplication.mesh.worktree.WORKTREE_PREPARE_FAILED;
+const WORKTREE_PREPARE_NOT_STARTED = _aofApplication.mesh.worktree.WORKTREE_PREPARE_NOT_STARTED;
+const addDispatchWorktree = _aofApplication.mesh.worktree.addDispatchWorktree;
+const addSessionWorktree = _aofApplication.mesh.worktree.addSessionWorktree;
+const addWorktree = _aofApplication.mesh.worktree.addWorktree;
+const meshWorktreePath = _aofApplication.mesh.worktree.meshWorktreePath;
+const reuseWorktreeOnBranch = _aofApplication.mesh.worktree.reuseWorktreeOnBranch;
 
 // A declaration that compiles: `node` resolves on every machine this suite runs on, which is what
 // makes the "command resolving nowhere" row below a real contrast rather than a stub's opinion.

@@ -21,8 +21,8 @@
 //
 // 129/ADR-002 (FF-12904) — MERGE-HOME NEVER DISCARDS. The loop merges each lane home in the
 // PRIMARY through the same verb (`advanceBranchToBase`), and three more modules now run git
-// against a branch that carries commits: `src/work/dispatch.mjs` (the composed lane verbs),
-// `src/loop/wave.mjs` and `src/loop/cycle.mjs`. They JOIN `BRANCH_PATH_MODULES` — an extension
+// against a branch that carries commits: `packages/work-loop/src/dispatch.mjs` (the composed lane verbs),
+// `packages/core/src/loop/wave.mjs` and `packages/core/src/loop/cycle.mjs`. They JOIN `BRANCH_PATH_MODULES` — an extension
 // of this control, never a twin, so the ONE detector (`discardingOps`) judges all six; the
 // sanctioned forms stay sanctioned (`worktree remove --force`, the path-scoped `reset -q -- .aof`
 // that moved into `worktree.mjs` with `commitWorktreeChanges`, the two `merge` doors, the plain
@@ -51,15 +51,17 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // The modules that may run git against the item branch — posix, repo-relative, so a finding
 // names the module the way the register does.
 export const BRANCH_PATH_MODULES = Object.freeze([
-  "src/mesh/worktree.mjs",
-  "src/mesh/worker-execution.mjs",
-  "src/mesh/recovery-push.mjs",
+  "packages/core/src/application/bindings/mesh/worktree.mjs",
+  "packages/mesh/src/worktrees.mjs",
+  "packages/execution/src/worktrees.mjs",
+  "packages/mesh/src/worker-execution.mjs",
+  "packages/mesh/src/recovery-push.mjs",
   // 129/ADR-002 — the merge-home path.
-  "src/work/dispatch.mjs",
-  "src/loop/wave.mjs",
-  "src/loop/cycle.mjs",
+  "packages/work-loop/src/dispatch.mjs",
+  "packages/work-loop/src/wave.mjs",
+  "packages/work-loop/src/cycle.mjs",
 ]);
-const WORKTREE = "src/mesh/worktree.mjs";
+const WORKTREE = "packages/execution/src/worktrees.mjs";
 export const DIRTY_POLICIES = Object.freeze(["strict", "touched-paths"]);
 
 // THE DEFAULT LOADER reads with `readFile` and nothing else — a member absent from disk REJECTS
@@ -70,7 +72,11 @@ const readModule = (rel) => readFile(path.join(repoRoot, ...rel.split("/")), "ut
 // string — mesh-worktree.mjs's own rule), flattened to a scannable token list.
 export function gitArgvTokens(code) {
   const groups = [];
-  const re = /\[\s*((?:"[^"]*"|'[^']*'|`[^`]*`|[^[\]])*?)\s*\]/g;
+  // Each element is a quoted token, ONE nested `[…]` (a conditional spread such as
+  // `...(force ? ["--force"] : [])` belongs to the argv around it), or a plain char that is none of
+  // those openers — the alternatives are disjoint, so the scan is linear and a quote inside a
+  // comment can no longer stretch one group across the module.
+  const re = /\[\s*((?:"[^"]*"|'[^']*'|`[^`]*`|\[[^\]]*\]|[^[\]"'`])*?)\s*\]/g;
   let m;
   while ((m = re.exec(code)) !== null) {
     const tokens = [...m[1].matchAll(/["'`]([^"'`]*)["'`]/g)].map((t) => t[1]);
@@ -176,19 +182,19 @@ export const archTests = [
       const worktree = stripComments(await readModule(WORKTREE));
       assert.ok(
         /refs\/remotes\/[^"'`\s]*\$\{branch\}|refs\/remotes\/origin\//.test(worktree),
-        "src/mesh/worktree.mjs never verifies a ref under refs/remotes/ — the branch-existence question is local-only, so a worker whose checkout has fetched the item's line but has no local head for it will take the create door and orphan the previous phase's commits (VERIFICATION F-05.3)",
+        "packages/core/src/mesh/worktree.mjs never verifies a ref under refs/remotes/ — the branch-existence question is local-only, so a worker whose checkout has fetched the item's line but has no local head for it will take the create door and orphan the previous phase's commits (VERIFICATION F-05.3)",
       );
 
-      const execution = stripComments(await readModule("src/mesh/worker-execution.mjs"));
+      const execution = stripComments(await readModule("packages/mesh/src/worker-execution.mjs"));
       // The reuse/create decision must be fed by BOTH halves. Keyed on the predicates the
       // decision consumes rather than on the variable's name.
       assert.ok(
         /localBranchExists\s*\(/.test(execution) && /remoteBranchExists\s*\(/.test(execution),
-        "src/mesh/worker-execution.mjs decides the reuse door without asking whether the branch exists on the remote — the item's line can then be forked (VERIFICATION F-05.3)",
+        "packages/core/src/mesh/worker-execution.mjs decides the reuse door without asking whether the branch exists on the remote — the item's line can then be forked (VERIFICATION F-05.3)",
       );
       assert.ok(
         /adoptRemoteBranch\s*\(/.test(execution),
-        "src/mesh/worker-execution.mjs finds a remote-only line but never adopts it as a local head, so the reuse door (and its advance) cannot apply to it (VERIFICATION F-05.3)",
+        "packages/core/src/mesh/worker-execution.mjs finds a remote-only line but never adopts it as a local head, so the reuse door (and its advance) cannot apply to it (VERIFICATION F-05.3)",
       );
     },
   },
@@ -214,12 +220,12 @@ export const archTests = [
       const aborts = groups.filter((tokens) => tokens.includes("merge") && tokens.includes("--abort"));
       assert.ok(
         aborts.length > 0,
-        "src/mesh/worktree.mjs performs a merge with no `git merge --abort` path — a conflicting advance must abort cleanly and refuse (assignment-gate-propagation-conflict), never leave a half-merged tree for an agent to start a phase on",
+        "packages/core/src/mesh/worktree.mjs performs a merge with no `git merge --abort` path — a conflicting advance must abort cleanly and refuse (assignment-gate-propagation-conflict), never leave a half-merged tree for an agent to start a phase on",
       );
       // The advance must also be able to take the cheap door when it exists.
       assert.ok(
         groups.some((tokens) => tokens.includes("--ff-only")) || /ff-only/.test(code),
-        "src/mesh/worktree.mjs merges without ever attempting --ff-only — the fast-forward case must not create a merge commit it does not need",
+        "packages/core/src/mesh/worktree.mjs merges without ever attempting --ff-only — the fast-forward case must not create a merge commit it does not need",
       );
     },
   },
@@ -261,13 +267,13 @@ export const archTests = [
     run: async () => {
       assert.deepEqual(
         [...BRANCH_PATH_MODULES].sort(),
-        ["src/loop/cycle.mjs", "src/loop/wave.mjs", "src/mesh/recovery-push.mjs", "src/mesh/worker-execution.mjs", "src/mesh/worktree.mjs", "src/work/dispatch.mjs"],
+        ["packages/execution/src/worktrees.mjs", "packages/mesh/src/worktrees.mjs", "packages/work-loop/src/cycle.mjs", "packages/work-loop/src/wave.mjs", "packages/mesh/src/recovery-push.mjs", "packages/mesh/src/worker-execution.mjs", "packages/core/src/application/bindings/mesh/worktree.mjs", "packages/work-loop/src/dispatch.mjs"].sort(),
         "BRANCH_PATH_MODULES as a set",
       );
       for (const rel of BRANCH_PATH_MODULES) assert.ok((await readModule(rel)).length > 0, `${rel} was read`);
       // A member absent from disk rejects the sweep with ENOENT naming its path.
       await assert.rejects(
-        forbiddenFormOffenders(readModule, [...BRANCH_PATH_MODULES, "src/loop/absent.mjs"]),
+        forbiddenFormOffenders(readModule, [...BRANCH_PATH_MODULES, "packages/core/src/loop/absent.mjs"]),
         (error) => error?.code === "ENOENT" && String(error?.message).includes("absent.mjs"),
         "an absent member fails the sweep with ENOENT naming its path",
       );
@@ -279,7 +285,7 @@ export const archTests = [
       const { problems, armed } = await armedMergeProblems();
       assert.ok(armed.includes(WORKTREE), `${WORKTREE}: NOT FOUND — the one merge verb's home holds no merge argv; the armed leg is reading the wrong tree`);
       assert.deepEqual(problems, [], `every merge is armed in its own module:\n${problems.join("\n")}`);
-      assert.equal(armed.includes("src/work/dispatch.mjs"), false, "dispatch.mjs spells no merge argv of its own — it composes the verb (129/03)");
+      assert.equal(armed.includes("packages/work-loop/src/dispatch.mjs"), false, "dispatch.mjs spells no merge argv of its own — it composes the verb (129/03)");
     },
   },
   {
@@ -296,38 +302,38 @@ export const archTests = [
     run: async () => {
       const plant = (rel, argv) => plantedLoader(rel, (source) => `${source}\nexport const plant = (exec) => exec([${argv}]);\n`);
       const rows = [
-        ["src/work/dispatch.mjs", '"reset", "--hard", base', "src/work/dispatch.mjs — reset --hard: reset --hard"],
-        ["src/work/dispatch.mjs", '"checkout", "-B", branch, base', "src/work/dispatch.mjs — checkout -B: checkout -B"],
-        ["src/work/dispatch.mjs", '"push", "-f", "origin", branch', "src/work/dispatch.mjs — force push: push -f origin"],
-        ["src/loop/wave.mjs", '"rebase", "main"', "src/loop/wave.mjs — rebase: rebase main"],
-        ["src/loop/wave.mjs", '"branch", "-f", branch, tip', "src/loop/wave.mjs — branch -f: branch -f"],
-        ["src/loop/wave.mjs", '"update-ref", "refs/heads/main", tip', "src/loop/wave.mjs — update-ref: update-ref refs/heads/main"],
-        ["src/loop/cycle.mjs", '"push", "--force-with-lease", "origin"', "src/loop/cycle.mjs — force push: push --force-with-lease origin"],
-        ["src/loop/cycle.mjs", '"push", "--force", "origin", branch', "src/loop/cycle.mjs — force push: push --force origin"],
-        ["src/loop/cycle.mjs", '"branch", "--force", branch, tip', "src/loop/cycle.mjs — branch -f: branch --force"],
+        ["packages/work-loop/src/dispatch.mjs", '"reset", "--hard", base', "packages/work-loop/src/dispatch.mjs — reset --hard: reset --hard"],
+        ["packages/work-loop/src/dispatch.mjs", '"checkout", "-B", branch, base', "packages/work-loop/src/dispatch.mjs — checkout -B: checkout -B"],
+        ["packages/work-loop/src/dispatch.mjs", '"push", "-f", "origin", branch', "packages/work-loop/src/dispatch.mjs — force push: push -f origin"],
+        ["packages/work-loop/src/wave.mjs", '"rebase", "main"', "packages/work-loop/src/wave.mjs — rebase: rebase main"],
+        ["packages/work-loop/src/wave.mjs", '"branch", "-f", branch, tip', "packages/work-loop/src/wave.mjs — branch -f: branch -f"],
+        ["packages/work-loop/src/wave.mjs", '"update-ref", "refs/heads/main", tip', "packages/work-loop/src/wave.mjs — update-ref: update-ref refs/heads/main"],
+        ["packages/work-loop/src/cycle.mjs", '"push", "--force-with-lease", "origin"', "packages/work-loop/src/cycle.mjs — force push: push --force-with-lease origin"],
+        ["packages/work-loop/src/cycle.mjs", '"push", "--force", "origin", branch', "packages/work-loop/src/cycle.mjs — force push: push --force origin"],
+        ["packages/work-loop/src/cycle.mjs", '"branch", "--force", branch, tip', "packages/work-loop/src/cycle.mjs — branch -f: branch --force"],
       ];
       for (const [rel, argv, expected] of rows) {
         const offenders = await forbiddenFormOffenders(plant(rel, argv));
         assert.deepEqual(offenders, [expected], `[${argv}] in ${rel} is the one offender`);
       }
       for (const [rel, argv] of [
-        ["src/work/dispatch.mjs", '"worktree", "remove", "--force", lanePath'],
-        ["src/work/dispatch.mjs", '"reset", "-q", "--", ".aof"'],
-        ["src/work/dispatch.mjs", '"add", "--", milestoneDir'],
-        ["src/work/dispatch.mjs", '"commit", "--no-verify", "-m", message'],
-        ["src/mesh/worker-execution.mjs", '"-c", "credential.helper=", "push", "origin", branch'],
+        ["packages/work-loop/src/dispatch.mjs", '"worktree", "remove", "--force", lanePath'],
+        ["packages/work-loop/src/dispatch.mjs", '"reset", "-q", "--", ".aof"'],
+        ["packages/work-loop/src/dispatch.mjs", '"add", "--", milestoneDir'],
+        ["packages/work-loop/src/dispatch.mjs", '"commit", "--no-verify", "-m", message'],
+        ["packages/mesh/src/worker-execution.mjs", '"-c", "credential.helper=", "push", "origin", branch'],
       ]) {
         assert.deepEqual(await forbiddenFormOffenders(plant(rel, argv)), [], `[${argv}] in ${rel} is sanctioned`);
       }
 
       // ARMED, per module: a merge in dispatch.mjs with no abort of its own — even while
       // worktree.mjs holds one — is named; an abort removed from worktree.mjs is named.
-      const unarmed = await armedMergeProblems(plant("src/work/dispatch.mjs", '"merge", "--no-ff", tip'));
-      assert.ok(unarmed.armed.includes("src/work/dispatch.mjs"), "the planted merge was found");
-      assert.ok(unarmed.problems.some((problem) => problem.includes("src/work/dispatch.mjs") && problem.includes("--abort")), `an unarmed merge in dispatch.mjs is named:\n${unarmed.problems.join("\n")}`);
+      const unarmed = await armedMergeProblems(plant("packages/work-loop/src/dispatch.mjs", '"merge", "--no-ff", tip'));
+      assert.ok(unarmed.armed.includes("packages/work-loop/src/dispatch.mjs"), "the planted merge was found");
+      assert.ok(unarmed.problems.some((problem) => problem.includes("packages/work-loop/src/dispatch.mjs") && problem.includes("--abort")), `an unarmed merge in dispatch.mjs is named:\n${unarmed.problems.join("\n")}`);
       const disarmed = await armedMergeProblems(plantedLoader(WORKTREE, (source) => source.replace('["merge", "--abort"]', '["merge-base", "HEAD"]')));
       assert.ok(disarmed.problems.some((problem) => problem.includes(WORKTREE) && problem.includes("--abort")), `worktree.mjs with its abort removed is named:\n${disarmed.problems.join("\n")}`);
-      const armedBoth = await armedMergeProblems(plant("src/work/dispatch.mjs", '"merge", "--no-ff", tip], ["merge", "--abort"'));
+      const armedBoth = await armedMergeProblems(plant("packages/work-loop/src/dispatch.mjs", '"merge", "--no-ff", tip], ["merge", "--abort"'));
       assert.deepEqual(armedBoth.problems, [], "a merge with an abort beside it in the same module is armed");
 
       // PINNED: a third comparison is named; no comparison is NOT FOUND.

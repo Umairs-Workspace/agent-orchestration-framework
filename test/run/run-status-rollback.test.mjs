@@ -1,8 +1,10 @@
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
+import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 20 / story 01 — rollbackItemStatus, the first
 // item-frontmatter writer (ADR-005).
 //
 // Covers EVERY @executable scenario in tasks/02_status-rollback.feature. A mix of
-// DIRECT rollbackItemStatus calls (imported from ../src/work.mjs) over a controlled
+// DIRECT rollbackItemStatus calls (imported from ../packages/core/src/work.mjs) over a controlled
 // fixture, and the CLI / restart-reclaim wiring scenarios driven through the real
 // CLI. One test object per @executable scenario (Scenario-Outline rows folded into
 // one entry iterating the rows), each name tracing to feature + scenario.
@@ -19,13 +21,13 @@ import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { rollbackItemStatus } from "../../src/work.mjs";
+const rollbackItemStatus = _aofWorkspace.work.rollbackItemStatus;
 // The reclaim SCAN this feature's reclaim scenario names — driven directly, so what the
 // reclaim does is not confounded by a fresh mint's own status move (see that lane).
-import { transitionStaleRunsReclaimed } from "../../src/effects/run-transitions.mjs";
+const transitionStaleRunsReclaimed = _aofApplication.execution.transitions.transitionStaleRunsReclaimed;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const cliPath = path.join(repoRoot, "bin", "aof.mjs");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
 // A multi-line, multi-key milestone record doc (status NOT the first nor last key,
 // so the "only the status line changes" claim is exercised against neighbours).

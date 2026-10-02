@@ -23,13 +23,19 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { bundledFrozenSet, compileFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../../src/frozen-set.mjs";
-import { loadBundle } from "../../../src/work/bundle.mjs";
+import { bundledFrozenSet, compileFrozenSet, FROZEN_OWNERSHIP_MARKER } from "../../../packages/core/src/frozen-set.mjs";
+import { loadBundle } from "../../../packages/core/src/work/bundle.mjs";
+
+// A value embedded as a string literal in generated JavaScript: JSON.stringify, plus the characters JSON
+// leaves raw that still mean something in a script context (`<`, `>`, `/`, U+2028, U+2029) as \uXXXX.
+function jsLiteral(value) {
+  return JSON.stringify(value).replace(/[<>/\u2028\u2029]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, "0")}`);
+}
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const SETTINGS_SOURCE = path.join(repoRoot, "src", "claude-settings.mjs");
-const BUNDLE_DESCRIPTOR = path.join(repoRoot, "src", "bundle", "bundle.json");
-const MEMBER_CENSUS_SOURCE = path.join(repoRoot, "test", "bundle", "frozen-set-compiled.test.mjs");
+const SETTINGS_SOURCE = path.join(repoRoot, "packages", "core", "src", "claude-settings.mjs");
+const BUNDLE_DESCRIPTOR = path.join(repoRoot, "packages", "core", "assets", "bundle.json");
+const MEMBER_CENSUS_SOURCE = path.join(repoRoot, "packages", "core", "test", "frozen-set-compiled.suite.mjs");
 const TREE_CENSUS_SOURCE = path.join(repoRoot, "test", "bundle", "bundle-asset-manifest-complete.test.mjs");
 
 // The FOUR compiled enforcement points and where each one's output lands, with the field that
@@ -213,7 +219,7 @@ export const archTests = [
       // AMENDED (TECH_DEBT item 80, `c1c5e4bd`). This read a hand-typed COUNT literal —
       // `assert.equal(direct.length, 87, …)` — and that literal was red at HEAD for the tenth
       // time, because a number nobody's diff necessarily touches goes stale every time a bundle
-      // file is added. The census now compares the tree against `git ls-files src/bundle`: a
+      // file is added. The census now compares the tree against `git ls-files packages/core/assets`: a
       // reader independent of the walker, which the author of a new bundle file necessarily
       // updates by committing it. That is a STRONGER census than the count — a set equality
       // catches a swap the count cannot see — so the leg is amended to assert the census that
@@ -281,7 +287,7 @@ export const archTests = [
       const memberSource = await readFile(MEMBER_CENSUS_SOURCE, "utf8");
       assert.equal(censusForm(memberSource)?.form, "derived", "guard: the shipped member census is derived from the declaration");
       const extra = { ...declaration, members: [...declaration.members, structuredClone(HOOK_MEMBER)] };
-      const retyped = `assert.deepEqual(declaration.members.map((member) => member.id), ${JSON.stringify(declaration.members.map((member) => member.id))});`;
+      const retyped = `assert.deepEqual(declaration.members.map((member) => member.id), ${jsLiteral(declaration.members.map((member) => member.id))});`;
       assert.ok(censusProblems(extra, retyped).some((problem) => problem.includes("the census literal disagrees with the declaration")));
       assert.deepEqual(censusProblems(declaration, retyped), [], "…and a literal that agrees passes");
       assert.ok(censusProblems(declaration, "no census here").some((problem) => problem.includes("could be read in neither form")), "…and an absent census is named, never passed");
