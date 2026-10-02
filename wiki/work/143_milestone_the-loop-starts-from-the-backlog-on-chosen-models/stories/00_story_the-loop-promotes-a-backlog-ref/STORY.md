@@ -4,7 +4,7 @@ number: 00
 slug: the-loop-promotes-a-backlog-ref
 title: "The loop promotes a backlog ref — through the one promote door, recorded, then run at the minted number"
 parent: 143
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-02
@@ -26,11 +26,13 @@ reads:
 files:
   - packages/work-loop/src/commands/loop.mjs
   - packages/work-loop/src/engine.mjs
-  - test/loop/loop-command-backlog-scope.test.mjs
+  - test/loop/loop-command-refusals.test.mjs
   - test/loop/index.mjs
   - test/loop/work-loop-declaration.test.mjs
-  - test/arch/loop/acd-loop-promotes-through-the-one-door.test.mjs
-  - test/arch/loop/index.mjs
+  - test/loop/work-loop-declarations.test.mjs
+  - test/loop/loop-command-resume.test.mjs
+  - packages/work-loop/test/support/work-loop-story-fixtures.mjs
+  - test/arch/loop/acd-loop-scope-guard.test.mjs
   - test/fixtures/application/command-inventory.json
   - docs/acd.md
 ---
@@ -51,8 +53,8 @@ is the loop's refusal.
 
 ## Tasks
 
-- [ ] 00 [a backlog slug is promoted, then looped at its number](tasks/00_a-backlog-slug-is-promoted-then-looped-at-its-number.feature)
-- [ ] 01 [the read-only doors never promote](tasks/01_the-read-only-doors-never-promote.feature)
+- [x] 00 [a backlog slug is promoted, then looped at its number](tasks/00_a-backlog-slug-is-promoted-then-looped-at-its-number.feature)
+- [x] 01 [the read-only doors never promote](tasks/01_the-read-only-doors-never-promote.feature)
 
 ## Notes
 

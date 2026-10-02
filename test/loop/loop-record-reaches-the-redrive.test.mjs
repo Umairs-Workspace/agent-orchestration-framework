@@ -158,7 +158,7 @@ export const loopRecordReachesTheRedriveTests = [
         // the loop id last), carrying this loop's own run id and the cycle it re-drove.
         assert.deepEqual(
           Object.keys(redriven.brief.loop),
-          ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"],
+          ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom"],
           "brief.loop's seven original keys are untouched and the loop id is appended last",
         );
         assert.equal(redriven.brief.loop.phase, "continue");

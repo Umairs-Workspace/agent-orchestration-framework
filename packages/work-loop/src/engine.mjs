@@ -1424,10 +1424,16 @@ export function buildLoopDeclaration(input = {}) {
     // run thinks at, as the caller's already-canonical `--thinking` level (this module imports
     // nothing, so the vocabulary is applied before the value arrives), or `null` for no override.
     thinking: declaredThinking(input.thinking),
+    // THE ELEVENTH KEY, APPENDED LAST (143/00, ADR-001 §3), by the same discipline. The backlog slug
+    // the operator typed when the loop promoted it, beside `scope` holding the number it minted, or
+    // `null` when the scope was a number. A caller that passes nothing (the mesh assignment directive,
+    // the trigger declaration) declares `null`.
+    promotedFrom: declaredString(input.promotedFrom),
   };
 }
 
-const declaredThinking = (value) => (typeof value === "string" && value.length > 0 ? value : null);
+const declaredString = (value) => (typeof value === "string" && value.length > 0 ? value : null);
+const declaredThinking = declaredString;
 
 function usableDeclaration(loop) {
   if (loop === null || typeof loop !== "object") return false;
@@ -1461,6 +1467,9 @@ function recoverableDeclaration(loop) {
     // THE SEVENTH PROJECTED KEY (141), for the same reason. A declaration written before 141 has no
     // `thinking` and stays usable at five keys; its absence reads as no override.
     thinking: declaredThinking(loop.thinking),
+    // THE EIGHTH PROJECTED KEY (143/00), for the same reason. A declaration written before 143 has
+    // no `promotedFrom` and stays usable at five keys; its absence reads as `null`.
+    promotedFrom: declaredString(loop.promotedFrom),
   };
 }
 
@@ -1640,6 +1649,9 @@ export function resolveLoopResume(input = {}) {
     resumed: recovered !== null && recovered !== undefined,
     supervised,
     thinking,
+    // 143/00 (ADR-001 §4) — a resume carries the slug the loop was promoted from. It is a fact about
+    // the lineage, never a flag: nothing overrides it, and nothing promotes again.
+    promotedFrom: declaredString(recovered?.promotedFrom),
     loopRunId: copyPlain(recovered?.loopRunId ?? null),
     scope: scope.scope,
     priorScope: copyPlain(recovered?.scope ?? null),

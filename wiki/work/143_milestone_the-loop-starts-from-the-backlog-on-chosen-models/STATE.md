@@ -8,6 +8,30 @@ doc: state
 - Captured 2026-10-02 from the operator.
 - Refined 2026-10-02 (`aof:refine 143 --autonomous`, solo): ADR-001…005 in `ARCHITECTURE.md`, four
   stories, every contract authored. Next: `aof:continue 143`.
+- Continued 2026-10-02 (`aof:continue 143`, hybrid at the operator's choice: each story is built
+  inline, then reviewed by one independent agent). Built in the sibling worktree `aof-143` on branch
+  `143-loop-from-backlog-on-chosen-models` off `main`, because the primary checkout sits on 134's branch.
+
+## Feedback (for retro)
+
+- **143/00: the declared write set named two new files in directories already at their budget
+  ceiling** (`test/loop` 63/63 and `test/arch/loop` 66/66, `acd-source-directory-budget`). The cases
+  were folded into the suites whose subject they share: the backlog-scope cases into
+  `loop-command-refusals.test.mjs`, and FF-14301 into `acd-loop-scope-guard.test.mjs`. `files:` and the
+  FF table were corrected. Stories 01 and 03 declare the same kind of new file. Refine should check
+  budget rows before declaring a new file.
+- **143/00: the contract says `aof work loop <slug> --json` launches, but `--json` never launches.**
+  Face policy (`spine/face.mjs`) makes `--json` the read-only probe. So through the CLI, `--json` with
+  a backlog slug answers `wouldPromote` like `--dry-run`, and the promotion happens on the foreground
+  launch. The scenarios are exercised through `runLoopBody`, as every launch-path loop suite is.
+- **143/00: ADR-005 says the mesh assignment directive and the trigger declaration build loop
+  declarations. They don't.** Both import only `decideLoopScope` and hand the loop a numeric scope,
+  so the declaration is always built by the loop shell. The `null` default still covers them.
+- **143/00 decision: an L1 report on a backlog slug answers `wouldPromote` and writes nothing,**
+  because L1 is read-only (`acd-loop-l1-read-only`). ADR-001 §4 did not name L1.
+- **143/00 known edge:** an `--level L3` launch on a backlog slug promotes before the L3 gate is
+  computed. The gate reads the promoted number's doctor, so a refused gate leaves the item promoted
+  and the loop not started — no worse than promoting by hand, then being refused.
 
 ## Notes & decisions in flight
 

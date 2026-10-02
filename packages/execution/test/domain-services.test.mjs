@@ -10,7 +10,7 @@ import { buildRunAttribution, buildOtelResourceAttributes } from "@aof/execution
 test("session launch precedence and run attribution preserve absent facts", () => {
   assert.equal(normalizeEffort("extra-high"), "xhigh");
   assert.equal(normalizeEffort("Extra-High"), null);
-  assert.deepEqual(resolveSessionLaunch({ work: { agents: { session: { models: { verify: "model" }, effort: { verify: "low" } } } } }, "verify", { thinking: "max" }), { model: "model", effort: "max", effortSource: "--thinking" });
+  assert.deepEqual(resolveSessionLaunch({ work: { agents: { session: { models: { verify: "model" }, effort: { verify: "low" } } } } }, "verify", { thinking: "max" }), { model: "model", effort: "max", effortSource: "--thinking", modelSource: "config" });
   assert.deepEqual(resolveSessionLaunch({}, "unknown"), { effort: "high", effortSource: "default" });
   assert.equal(buildOtelResourceAttributes(buildRunAttribution({ ref: "12/01", type: "story" }, { runId: "run", phase: "verify" })), "run.id=run,story.id=12/01,milestone.id=12,phase=verify");
   assert.equal(buildOtelResourceAttributes(buildRunAttribution(null)), "");

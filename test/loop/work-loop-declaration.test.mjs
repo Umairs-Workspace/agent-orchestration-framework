@@ -45,20 +45,22 @@ export const workLoopDeclarationTests = [
     // before it keep their names, order and values, which is what the slice below still asserts.
     // 141 — SUPERSEDED IN ITS COUNT AGAIN: the tenth key, `thinking`, appended last. The nine before
     // it keep their names, order and values.
-    name: "loop declaration — envelope has exactly ten ordered input-owned keys, thinking last",
+    name: "loop declaration — envelope has exactly eleven ordered input-owned keys, promotedFrom last",
     run() {
       const input = { ...loop(), ref: "53/01", path: "x", cursor: 2, index: 4, lastRef: "52" };
       const result = buildLoopDeclaration(input);
-      assert.deepEqual(Object.keys(result), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
+      assert.deepEqual(Object.keys(result), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom"]);
       // The original seven, in their original order and holding their original values - read off
       // THIS result rather than restated, so a reorder or a value change is what fails.
       assert.deepEqual(Object.keys(result).slice(0, 7), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt"]);
-      assert.deepEqual(result, { ...loop(), supervised: false, thinking: null });
+      assert.deepEqual(result, { ...loop(), supervised: false, thinking: null, promotedFrom: null });
       assert.deepEqual(Object.keys(result).slice(0, 8), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id"]);
       assert.deepEqual(Object.keys(result).slice(0, 9), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised"]);
-      assert.equal(Object.keys(result).at(-1), "thinking");
-      // No ELEVENTH key for any input, including inputs the engine is handed and must ignore.
-      assert.equal(Object.keys(result).length, 10);
+      // 143/00 — the ELEVENTH key, `promotedFrom`, appended last by the same discipline; `thinking` stays tenth.
+      assert.equal(Object.keys(result)[9], "thinking");
+      assert.equal(Object.keys(result).at(-1), "promotedFrom");
+      // No TWELFTH key for any input, including inputs the engine is handed and must ignore.
+      assert.equal(Object.keys(result).length, 11);
       for (const key of ["ref", "path", "cursor", "index", "lastRef"]) assert.equal(key in result, false);
       assert.equal(buildLoopDeclaration({ ...input, scope: "53/02" }).code, "loop-scope-unsupported");
       assert.equal(buildLoopDeclaration({ ...input, level: "L3" }).code, "loop-level-gate");
@@ -75,7 +77,7 @@ export const workLoopDeclarationTests = [
       const first = JSON.stringify(buildLoopDeclaration(loop()));
       const second = JSON.stringify(buildLoopDeclaration(loop()));
       assert.equal(first, second);
-      assert.equal(first.endsWith('"id":"loop:autonomous-cascade","supervised":false,"thinking":null}'), true, first);
+      assert.equal(first.endsWith('"id":"loop:autonomous-cascade","supervised":false,"thinking":null,"promotedFrom":null}'), true, first);
     },
   },
   {
@@ -155,7 +157,7 @@ export const workLoopDeclarationTests = [
     name: "loop declaration — resume recovers the same seven keys from a nine-key and a legacy seven-key record",
     run() {
       const eight = readLoopDeclaration([run("run-a", "2026-08-15T01:00:00.000Z", loop())]);
-      assert.deepEqual(Object.keys(eight), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"]);
+      assert.deepEqual(Object.keys(eight), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom"]);
       assert.equal(eight.thinking, null, "a record that names no thinking recovers as no override");
       assert.equal(eight.supervised, false, "a record that names no supervision recovers as unsupervised");
       assert.equal("id" in eight, false, "the recovered declaration carries no id");
@@ -185,7 +187,7 @@ export const workLoopDeclarationTests = [
         run("run-b", "2026-08-15T03:00:00.000Z", loop({ loopRunId: "lr-b" })),
       ];
       assert.deepEqual(readLoopDeclaration(runs), {
-        loopRunId: "lr-b", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false, thinking: null,
+        loopRunId: "lr-b", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false, thinking: null, promotedFrom: null,
       });
       assert.deepEqual(readLoopDeclaration([...runs].reverse()), readLoopDeclaration(runs));
     },
@@ -205,7 +207,7 @@ export const workLoopDeclarationTests = [
       ];
       assert.equal(readLoopDeclaration(fragments), null);
       assert.deepEqual(readLoopDeclaration([complete, partial, malformed]), {
-        loopRunId: "lr-7", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false, thinking: null,
+        loopRunId: "lr-7", scope: "53", level: "L2", cap: 3, startedAt: "2026-08-15T00:52:42.569Z", supervised: false, thinking: null, promotedFrom: null,
       });
     },
   },
@@ -239,6 +241,7 @@ export const workLoopDeclarationTests = [
         // with nothing to inherit from it is the default, which is off.
         supervised: false,
         thinking: null,
+        promotedFrom: null,
         loopRunId: null,
         scope: "53",
         priorScope: null,

@@ -146,13 +146,15 @@ export const archTests = [
       // cross-to-verify act line and the grade rung; `wave.mjs` narrates every lane step. None is
       // on `report`. 130/02 — eleven in the shell: the resume's `Cleared stop request` line. 131/11 —
       // twelve: the resume's `Cleared the resume request` line beside it. 141 — thirteen: the
-      // `Thinking:` line that says what effort the loop drives at, before its first drive.
+      // `Thinking:` line that says what effort the loop drives at, before its first drive. 143/00 —
+      // fourteen: the `Promoted` line a backlog slug's launch prints before anything is driven.
       const inFlight = calls.filter((call) => call.seam === "narrate");
       assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
-      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 13, "thirteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request and the Thinking line");
+      assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 14, "fourteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request, the Thinking line and the Promoted line");
+      assert.equal(seamOf("Promoted ${resolved.promotedFrom}"), "narrate", "the Promoted line is in flight (143/00)");
       assert.equal(seamOf("thinkingNarration(resolved.thinking"), "narrate", "the Thinking line is in flight (141)");
       assert.equal(printCalls(await source("packages/work-loop/src/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
-      assert.ok(inFlight.length >= 17, `the family narrates at least the seventeen the shell and the ladder hold (${inFlight.length})`);
+      assert.ok(inFlight.length >= 18, `the family narrates at least the eighteen the shell and the ladder hold (${inFlight.length})`);
     },
   },
   {

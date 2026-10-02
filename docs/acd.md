@@ -98,7 +98,9 @@ Since milestone 53 the lifecycle runs as declared **control loops** – build-to
 → re-review, verify → triage → accept, the autonomous cascade – each a registry record naming its
 reference, measurement, actuator, cadence and ceiling. `aof work loop <ref|NN-MM>` drives an item or
 a range through them in code, with the gates, retries and stop conditions enforced by the shell
-rather than by prompt discipline. [The loop graph]({{ '/loops/' | relative_url }}) is that registry,
+rather than by prompt discipline. Pointed at a backlog slug, `aof work loop <backlog-slug>` promotes
+the item first – through `aof work promote`, appended to the stream – and then loops at the number it
+was given; a later `--resume` names that number, not the slug. [The loop graph]({{ '/loops/' | relative_url }}) is that registry,
 rendered.
 
 ## Starting

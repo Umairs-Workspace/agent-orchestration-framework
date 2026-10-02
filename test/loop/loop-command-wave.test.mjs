@@ -48,7 +48,7 @@ import {
 } from "../support/loop/lane-fixture.mjs";
 
 const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom"]);
 const NOW = "2026-09-14T12:00:00.000Z";
 // A grade record as `compileGrade` writes one — the provenance stamp is what the store's writer
 // demands of every claim a brief carries.

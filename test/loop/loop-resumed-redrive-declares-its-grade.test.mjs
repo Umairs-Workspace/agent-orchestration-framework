@@ -75,6 +75,8 @@ const declarationFor = (cap) => ({
   supervised: false,
   // 141 — the tenth key, seeded for the same reason.
   thinking: null,
+  // 143/00 — the eleventh, likewise.
+  promotedFrom: null,
 });
 
 /** A clean baseline of this rule's era: measured before the story's first drive, nothing inherited. */

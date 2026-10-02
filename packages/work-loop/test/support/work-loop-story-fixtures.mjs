@@ -158,6 +158,8 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       id: "loop:autonomous-cascade",
       supervised: false,
       thinking: null,
+      // 143/00 — and the ELEVENTH, `promotedFrom`, `null` when the scope was a number.
+      promotedFrom: null,
     },
   },
   {
@@ -169,6 +171,7 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       resumed: false,
       supervised: false,
       thinking: null,
+      promotedFrom: null,
       loopRunId: null,
       scope: "53",
       priorScope: null,

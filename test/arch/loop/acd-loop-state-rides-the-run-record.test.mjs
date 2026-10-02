@@ -20,7 +20,7 @@ const RECORD_KEYS = Object.freeze(["runId", "itemRef", "state", "attempt", "outc
 // discipline 102/00 used for the eighth (`id`). The eight before it keep their names, order and
 // meanings; 126/01's contract anticipated this move and left it to this story.
 // 141 appended the tenth, `thinking`, by the same additive discipline.
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom"]);
 const STATES = Object.freeze(["queued", "running", "done", "failed", "cancelled"]);
 const EDGES = Object.freeze(["queued>running", "queued>cancelled", "running>done", "running>failed", "running>cancelled"]);
 

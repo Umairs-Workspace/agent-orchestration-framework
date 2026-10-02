@@ -336,7 +336,8 @@ export const workLoopDeclarationsTests = [
       for (const [input, value] of [[undefined, false], [true, true], [false, false], [null, false], ["true", false], [1, false]]) {
         const built = buildLoopDeclaration(input === undefined ? base : { ...base, supervised: input });
         // 141 appended a tenth, `thinking`, after it; `supervised` stays ninth.
-        assert.equal(Object.keys(built).length, 10, `${String(input)}: ten keys`);
+        // 143/00 appended an eleventh, `promotedFrom`, after that.
+        assert.equal(Object.keys(built).length, 11, `${String(input)}: eleven keys`);
         assert.deepEqual(Object.keys(built).slice(0, 8), ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id"]);
         assert.equal(Object.keys(built)[8], "supervised");
         assert.equal(built.supervised, value, `${String(input)}: the opt-in fails closed`);
@@ -352,19 +353,19 @@ export const workLoopDeclarationsTests = [
       const rec = (over) => readLoopDeclaration([{ runId: "r", createdAt: "2026-09-08T11:00:00.000Z", brief: { loop: over } }]);
 
       const supervised = rec(nine);
-      assert.deepEqual(Object.keys(supervised), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"], "seven projected keys, supervision sixth (141 appended thinking)");
+      assert.deepEqual(Object.keys(supervised), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom"], "eight projected keys, supervision sixth (141 appended thinking, 143/00 promotedFrom)");
       assert.equal(supervised.supervised, true);
       assert.equal(rec({ ...nine, supervised: false }).supervised, false);
       // The eight keys shipped today, with no `supervised` at all — every record already on disk.
       const { supervised: _dropped, ...eight } = nine;
       assert.equal(rec(eight).supervised, false);
-      assert.deepEqual(Object.keys(rec(eight)), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"]);
+      assert.deepEqual(Object.keys(rec(eight)), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom"]);
       // The projection fails closed too.
       assert.equal(rec({ ...nine, supervised: "true" }).supervised, false);
       // Exactly the five required keys, and the five plus an unknown tenth.
       const five = { loopRunId: "lr-7", scope: "53", level: "L2", cap: 3, startedAt: "2026-09-08T10:00:00.000Z" };
       assert.equal(rec(five).supervised, false);
-      assert.deepEqual(Object.keys(rec({ ...five, wibble: 1 })), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking"], "an unknown key is not projected");
+      assert.deepEqual(Object.keys(rec({ ...five, wibble: 1 })), ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom"], "an unknown key is not projected");
       // Unusable shapes recover nothing.
       assert.equal(rec({ ...nine, cap: undefined }), null);
       assert.equal(rec(undefined), null);
