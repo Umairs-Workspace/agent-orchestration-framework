@@ -22,7 +22,6 @@
 // (`work-content-free-discovery`) as a curiosity; there are six, carrying 122 test entries.
 // They are registered here rather than carried in the baseline, because "it runs in the other
 // lane" is exactly the reasoning this story exists to make unavailable.
-import { workTests } from "./work.test.mjs";
 // milestone 72 / story 00 — THE DECLARED TOOLCHAIN: the test runner aof launches is something the
 // PROJECT declares (`work.test`), compiled by ONE module with no program name spelled anywhere in
 // `packages/core/src/` in an executable position, resolved through a PATH lookup that sits in FRONT of the
@@ -126,13 +125,10 @@ import { doctorCwdIndependenceTests } from "./doctor-cwd-independence.test.mjs";
 // units. Tasks 00–03 are @executable; task 04 (the real two-machine soak) is @manual
 // and deliberately has no test file here.
 
-import { workerStreamClientTests } from "./worker-stream-client.test.mjs";
 import { singleEntryTwoModeTests } from "./single-entry-two-mode.test.mjs";
-import { verifyAuthorsOutcomeTests } from "./verify-authors-outcome.test.mjs";
 import { danglingDeclarationFfTests } from "./dangling-declaration-ff.test.mjs";
 // story 03 — gaps are schedulable debt: the `--status` recall filter (gap lifecycle)
 // + promote-gap-to-chore over the reused chore insert seam.
-import { gapCarriesDischargeTests } from "./gap-carries-discharge.test.mjs";
 // milestone 40 / story 01 — version stamp & reader (ADR-001/002/003/004): the
 // reader (schema-int/aofVersion-string, schema-0 baseline, task 00), new items
 // born-stamped at scaffold (task 01), and the ADR-004 transform-scoped
@@ -151,7 +147,6 @@ import { workItemStatusLifecycleTests } from "./work-item-status-lifecycle.test.
 // finding F-73-G).
 import { workItemStatusIfApplicableTests } from "./work-item-status-if-applicable.test.mjs";
 import { verifyOutcomePerTypeTests } from "./verify-outcome-per-type.test.mjs";
-import { deliveredStoryRecordsTests } from "./delivered-story-records-reported.test.mjs";
 // milestone 43 / story 01 — THE EXCLUSIVE ITEM LOCK (ADR-003 + ADR-010's R1.1/R1.3/
 // R1.4/R1.5). Task 00: the scope rule moves down into the leaf and every face answers
 // byte-identically. Task 01: the predicate is SYMMETRIC over the execution scope. Task
@@ -226,7 +221,6 @@ import { doctorDiagramsLaneTests } from "./doctor-diagrams-lane.test.mjs";
 
 export const tests = [
   // milestone 59 / story 01 — the fast-lane-only six, now in what CI executes
-  ...workTests,
   // milestone 72 / story 00 — the declared toolchain (tasks 00–01) plus FF-7201.
   ...workToolchainDeclarationTests,
   // story 87 — repo-specific lab hygiene leaves the bundle, and stays here hand-owned
@@ -264,11 +258,8 @@ export const tests = [
   ...doctorCwdIndependenceTests,
   // milestone 34 — global mesh work store (story 04: worker live-state stream to
   // control node, ADR-007)
-  ...workerStreamClientTests,
   ...singleEntryTwoModeTests,
-  ...verifyAuthorsOutcomeTests,
   ...danglingDeclarationFfTests,
-  ...gapCarriesDischargeTests,
   // milestone 40 / story 01 — version stamp & reader task traceability
   ...workVersionReaderTests,
   // 2026-08-16 — the item status lifecycle (writer, run mint, door, phase door)
@@ -276,7 +267,6 @@ export const tests = [
   // story 74 — the expected refusal as data (--if-applicable) + record-doc-unusable
   ...workItemStatusIfApplicableTests,
   ...verifyOutcomePerTypeTests,
-  ...deliveredStoryRecordsTests,
   // milestone 43 / story 01 — the exclusive item lock (tasks 00–05; 06 is @manual)
   ...itemLockScopeOneHomeTests,
   ...itemLockSymmetricScopeTests,

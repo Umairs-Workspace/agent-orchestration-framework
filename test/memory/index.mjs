@@ -15,8 +15,6 @@ import { anchorTaxonomyTests } from "./anchor-taxonomy.test.mjs";
 import { memoryIndexingTests } from "./memory-indexing.test.mjs";
 
 import { memoryIntegrationTests } from "./memory-integration.test.mjs";
-import { memoryRecallBlockTests } from "./memory-recall-block.test.mjs";
-import { memoryHooksInertTests } from "./memory-hooks-inert.test.mjs";
 // milestone 13 — external milestone import (story 00: the spine — the registered
 // import:milestone command + `aof import milestone` dispatch, the read-only
 // source-access seam, and the FROZEN materialize artifact pair + .aof/ import-store
@@ -51,8 +49,6 @@ export const tests = [
   ...anchorTaxonomyTests,
   ...memoryIndexingTests,
   ...memoryIntegrationTests,
-  ...memoryRecallBlockTests,
-  ...memoryHooksInertTests,
   ...importCommandCoreTests,
   ...importRecoveryTests,
   ...importIntoMemoryTests,

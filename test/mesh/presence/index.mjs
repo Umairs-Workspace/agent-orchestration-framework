@@ -48,22 +48,16 @@ import { meshPresenceRecordTests } from "./mesh-presence-record.test.mjs";
 // TRIMMED to its cadence-loop-only scenarios (the relay-down/relay-restored rows retired
 // alongside the push).
 
-import { meshPresenceAdditiveSessionsTests } from "./mesh-presence-additive-sessions.test.mjs";
 import { meshPresenceAggregateWorkspacesTests } from "./mesh-presence-aggregate-workspaces.test.mjs";
 //   task 00 — the PROJECTION, the one place on the whole path where a session field was
 //   actually lost: every Then reads a value off a real call to the real readLiveSessions.
-import { meshPresenceSessionEntryTests } from "./mesh-presence-session-entry.test.mjs";
 //   task 01 — the FABRIC half: a producer-made entry crosses the real control-side path
 //   (applyStreamFrame → applyPresenceFrame → publishPresenceRecord → queryGlobalRegistry →
 //   the one HTTP route) WHOLE, an unknown key included, with the entry-level guard's
 //   rejections and the presence record's own frozen shape unmoved.
-import { meshPresenceSessionWireTests } from "./mesh-presence-session-wire.test.mjs";
 
 export const tests = [
   ...meshPresenceRecordTests,
-  ...meshPresenceAdditiveSessionsTests,
   ...meshPresenceAggregateWorkspacesTests,
   // …and its two @executable task features (00 the projection, 01 the fabric crossing).
-  ...meshPresenceSessionEntryTests,
-  ...meshPresenceSessionWireTests,
 ];

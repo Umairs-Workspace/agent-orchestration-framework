@@ -40,7 +40,6 @@ import { installerVerifyTests } from "./installer-verify.test.mjs";
 import { installerPlaceTests } from "./installer-place.test.mjs";
 // m42 wave (a) / m38-F26 — atomic-write temp hygiene (failed rename reclaims its
 // temp; the startup sweep reclaims aged orphans only).
-import { fsTempHygieneTests } from "./fs-temp-hygiene.test.mjs";
 // milestone 28 — console-app (story 00: craft-review hardening on the SEA build
 // recipe — F14 (scripts/build-sea.mjs's assertSafeOutDir refuses an --out that
 // resolves to the repo root/cwd/a workspace-marked dir, so `--out .` can never
@@ -61,6 +60,5 @@ export const tests = [
   ...installerDetectTests,
   ...installerVerifyTests,
   ...installerPlaceTests,
-  ...fsTempHygieneTests,
   ...buildSeaRecipeGuardsTests,
 ];

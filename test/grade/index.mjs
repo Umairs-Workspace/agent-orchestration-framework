@@ -58,8 +58,6 @@ import { acceptorAdmissibilityTests } from "./acceptor-admissibility.test.mjs";
 // across epochs) + FF-6101, FF-6102, FF-6103, FF-6106. The trial metric `roundsToAccept`
 // lands in the deterministic-counter leaf it is paired with, so its rows ride the
 // work-counters suite already registered below.
-import { acceptorRuleTests } from "./acceptor-rule.test.mjs";
-import { acceptorLedgerTests } from "./acceptor-ledger.test.mjs";
 // milestone 61 / story 05 — the event a ruling raises: all four @executable tasks (a ruling
 // raising exactly one declared event whose consequence appends the record beside the
 // configuration it concerns; the twelve things that travel with the change and the refusal
@@ -165,8 +163,6 @@ export const tests = [
   // milestone 61 / story 04 — the rule and the ledger (tasks 00–05) + FF-6101, FF-6102,
   // FF-6103, FF-6106. `roundsToAccept`'s own rows ride the already-spread
   // workCountersTests suite below, beside the counter-metric it is paired with.
-  ...acceptorRuleTests,
-  ...acceptorLedgerTests,
   // milestone 61 / story 05 — the event a ruling raises (tasks 00–03) + FF-6108. The
   // seam's entry in the admitted append-event set rides the already-spread
   // acdEffectsLedgerTests suite.

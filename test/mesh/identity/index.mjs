@@ -45,7 +45,6 @@ import { meshNodeStalenessStatusTests } from "./mesh-node-staleness-status.test.
 // (acd-targeting-matcher-descriptor-pure — no node-identity.mjs import + the
 // matcher reads only nodeId/runtimes/skills, m03 planted-violation self-check).
 // milestone 27 routing-era candidacy compatibility tests retained where they do not depend on retired write surfaces.
-import { meshCandidacyEveryReturnTests } from "./mesh-candidacy-every-return.test.mjs";
 import { meshHookIdentityFromCwdTests } from "./mesh-hook-identity-from-cwd.test.mjs";
 import { globalNodeIdentityTests } from "./global-node-identity.test.mjs";
 // milestone 126 / story 02, task 03 — the declarations answer riding mesh:status behind a flag:
@@ -60,7 +59,6 @@ export const tests = [
   ...meshIdentityStatusCommandsTests,
   ...meshIdentityCliFaceTests,
   ...meshNodeStalenessStatusTests,
-  ...meshCandidacyEveryReturnTests,
   ...meshHookIdentityFromCwdTests,
   ...globalNodeIdentityTests,
   ...meshStatusDeclarationsTests,

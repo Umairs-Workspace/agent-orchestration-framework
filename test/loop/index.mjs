@@ -100,7 +100,6 @@ import { triggerDeclarationTests } from "./trigger-declaration.test.mjs";
 // `work:loop` gates with when it is entered), refused BY NAME with the failing half named, never
 // silently downgraded, and with an ABSENT level and a REFUSED level kept as two different answers
 // — all four @executable task features, plus FF-6304.
-import { triggerLevelCeilingTests } from "./trigger-level-ceiling.test.mjs";
 // milestone 63 / story 04 — the three signals that are NOT the mesh: a cadence, a CI signal and an
 // inbound finding, each answering only WHICH SCOPE and carrying nothing else; a finding-triggered
 // wake that keys on a capture EXISTING and never on what it says (55/ADR-005 holding at its second
@@ -301,7 +300,6 @@ export const tests = [
   // milestone 63 / story 00 — the trigger declaration (tasks 00–04) plus FF-6302.
   ...triggerDeclarationTests,
   // milestone 63 / story 01 — the level is a ceiling, not an admission (tasks 00–03) plus FF-6304.
-  ...triggerLevelCeilingTests,
   // milestone 63 / story 04 — the signals that are not the mesh (tasks 00–04) plus FF-6307.
   ...triggerSourcesTests,
   // milestone 63 / story 02 — the launch envelope compiles (tasks 00–03) plus FF-6305.

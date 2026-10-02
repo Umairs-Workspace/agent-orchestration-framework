@@ -24,7 +24,6 @@ import { blockedRunParkingTests } from "./blocked-run-parking.test.mjs";
 // re-arms the m34 read-only serve-face posture over the extended shape
 // (fitness #11, acd-mesh-ui-read-only). Independent of stories 01/02 — renders
 // whatever assignment rows Story 00 wrote.
-import { assignmentFleetStatusShapeTests } from "./assignment-fleet-status-shape.test.mjs";
 
 export const tests = [
   // milestone 69 / story 04 — all four @executable tasks + FF-6907/6908/6910/6911.
@@ -34,5 +33,4 @@ export const tests = [
   // milestone 69 / story 05 — blocked runs release capacity and resume the same run.
   ...blockedRunParkingTests,
   // milestone 35 / story 03 — assignment lifecycle in the fleet UI (read-only)
-  ...assignmentFleetStatusShapeTests,
 ];

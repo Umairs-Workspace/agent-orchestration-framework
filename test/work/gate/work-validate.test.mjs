@@ -15,7 +15,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // delivered stays true on every file that parses inside the horizon, and its feature
 // file stays byte-intact. What changed here is fixture status words (see `writeStory`).
 //
-// Mirrors the temp-dir fixture style of test/work/work.test.mjs.
+// Mirrors the temp-dir fixture style of packages/work/test/work.suite.mjs.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";

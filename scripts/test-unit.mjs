@@ -15,14 +15,14 @@ import { setupUiTests } from "../test/surfaces/setup-ui.test.mjs";
 import { schemaTests } from "../test/bundle/schema.test.mjs";
 import { adapterWarningTests } from "../packages/core/test/adapter-warnings.suite.mjs";
 import { packageTests } from "../packages/core/test/packages.suite.mjs";
-import { workTests } from "../test/work/work.test.mjs";
+import { workTests } from "../packages/work/test/work.suite.mjs";
 import { globalWorkStoreTests } from "../test/store/global-work-store.test.mjs";
 import { globalWorkPropagationTests } from "../test/store/global-work-propagation.test.mjs";
 import { meshRepoPublishTests } from "../test/mesh/mesh-repo-publish.test.mjs";
-import { globalNodeRegistryTests } from "../test/mesh/registry/global-node-registry.test.mjs";
-import { resolveItemsTests } from "../test/work/lifecycle/work-resolve.test.mjs";
+import { globalNodeRegistryTests } from "../packages/mesh/test/global-node-registry.suite.mjs";
+import { resolveItemsTests } from "../packages/work/test/work-resolve.suite.mjs";
 import { validateStreamTests } from "../test/work/gate/work-validate.test.mjs";
-import { orderWorkTests } from "../test/work/lifecycle/work-next.test.mjs";
+import { orderWorkTests } from "../packages/work/test/work-next.suite.mjs";
 import { archTests as workContentFreeDiscoveryTests } from "../test/arch/work/work-content-free-discovery.test.mjs";
 import { archTests as acdGlobalMeshPathsHomeTests } from "../test/arch/mesh/acd-global-mesh-paths-home.test.mjs";
 import { archTests as acdGlobalStoreNoNativeDepTests } from "../test/arch/store/acd-global-store-no-native-dep.test.mjs";
@@ -47,7 +47,7 @@ import { archTests as acdMeshUiScopeVisibleTests } from "../test/arch/mesh/acd-m
 // units. Tasks 00–03 are @executable; task 04 (the real two-machine soak) is @manual
 // and deliberately has no test file here.
 import { workerRoleAddressTests } from "../packages/mesh/test/worker-role-address.suite.mjs";
-import { workerStreamClientTests } from "../test/work/worker-stream-client.test.mjs";
+import { workerStreamClientTests } from "../packages/mesh/test/worker-stream-client.suite.mjs";
 import { controlStreamServerTests } from "../test/mesh/relay/control-stream-server.test.mjs";
 import { meshLauncherStreamRoleTests } from "../test/mesh/launcher/mesh-launcher-stream-role.test.mjs";
 import { meshLauncherLockTests } from "../packages/mesh/test/mesh-launcher-lock.suite.mjs";
@@ -88,8 +88,8 @@ import { archTests as acdMemoryRankingTests } from "../test/arch/memory/acd-memo
 import { archTests as acdMemoryBackendInterfaceTests } from "../test/arch/memory/acd-memory-backend-interface.test.mjs";
 import { archTests as acdMemoryRecallContractTests } from "../test/arch/memory/acd-memory-recall-contract.test.mjs";
 import { memoryIntegrationTests } from "../test/memory/memory-integration.test.mjs";
-import { memoryRecallBlockTests } from "../test/memory/memory-recall-block.test.mjs";
-import { memoryHooksInertTests } from "../test/memory/memory-hooks-inert.test.mjs";
+import { memoryRecallBlockTests } from "../packages/knowledge/test/memory-recall-block.suite.mjs";
+import { memoryHooksInertTests } from "../packages/knowledge/test/memory-hooks-inert.suite.mjs";
 // milestone 03 — work board UI
 import { workListTests } from "../test/work/lifecycle/work-list.test.mjs";
 import { archTests as acdWorkListContractTests } from "../test/arch/work/acd-work-list-contract.test.mjs";

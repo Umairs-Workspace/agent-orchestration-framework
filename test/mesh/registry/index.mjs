@@ -25,7 +25,6 @@
 // single-use consumedAt + the strict-> expiresAt boundary). The @manual
 // 03_registry-over-git feature gets NO executable test (verified at aof:verify).
 // Fitness acd-registry-write-scope (imported above) turns GREEN with this story.
-import { meshRegistryStoreSeamTests } from "./mesh-registry-store-seam.test.mjs";
 // milestone 22 — mesh-foundation (story 00: mesh-store spine + face skeleton — the
 // SPINE packages/core/src/mesh/store.mjs: the partition path seam meshDir/nodeRecordPath (ADR-002),
 // the frozen node-record schema's OPAQUE per-node persist/read (ADR-003) through the
@@ -34,9 +33,7 @@ import { meshRegistryStoreSeamTests } from "./mesh-registry-store-seam.test.mjs"
 // / 01_path-partition-convention / 02_aof-mesh-face-skeleton) + the three fitness
 // arch-tests — partition-write (FF#1), write-scope guard (FF#2), and the NEW
 // registry-derived mesh-namespace bijection gate (FF#3, RED-until-commands, vacuous now).
-import { meshRecordStoreTests } from "./mesh-record-store.test.mjs";
 import { meshPartitionConventionTests } from "./mesh-partition-convention.test.mjs";
-import { globalNodeRegistryTests } from "./global-node-registry.test.mjs";
 // …and the story's Resync TRANSPORT (ADR-010/R4.2 + ADR-014/E2/E6), the node→node "push me
 // your state" request the UI's one door calls. Modelled on mesh-recovery-push: a lazily
 // created additive table (no schema bump), a control tick that dispatches to a connected
@@ -46,11 +43,8 @@ import { globalNodeRegistryTests } from "./global-node-registry.test.mjs";
 import { meshResyncTests } from "./mesh-resync.test.mjs";
 
 export const tests = [
-  ...meshRegistryStoreSeamTests,
   // milestone 22 — mesh-foundation (story 00: mesh-store spine + face skeleton)
-  ...meshRecordStoreTests,
   ...meshPartitionConventionTests,
-  ...globalNodeRegistryTests,
   // …and the Resync transport the UI's one door calls (ADR-014/E6)
   ...meshResyncTests,
 ];

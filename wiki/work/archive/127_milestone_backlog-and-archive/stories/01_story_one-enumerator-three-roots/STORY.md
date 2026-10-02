@@ -41,7 +41,7 @@ reads:
   - test/arch/work/acd-work-list-contract.test.mjs
   - test/arch/store/acd-cache-read-surface-boundary.test.mjs
   - test/arch/planning/acd-proposal-provenance-resolves.test.mjs
-  - test/work/stream/work-spike-chore-enumerate.test.mjs
+  - packages/work/test/work-spike-chore-enumerate.suite.mjs
   - wiki/work/127_milestone_backlog-and-archive/DESIGN.md
 files:
   - src/work.mjs
@@ -59,13 +59,13 @@ files:
   - src/work/doctor-depends.mjs
   - src/work/doctor-coherence.mjs
   - src/bundle/commands/recent.md
-  - test/work/work.test.mjs
+  - packages/work/test/work.suite.mjs
   - test/work/lifecycle/work-list.test.mjs
-  - test/work/lifecycle/work-next.test.mjs
+  - packages/work/test/work-next.suite.mjs
   - test/work/lifecycle/work-observe.test.mjs
   - test/work/lifecycle/work-observe-scope.test.mjs
-  - test/work/lifecycle/work-observe-attribution.test.mjs
-  - test/work/record/work-doctor.test.mjs
+  - packages/work/test/work-observe-attribution.suite.mjs
+  - packages/work/test/work-doctor.suite.mjs
   - test/work/doctor-freshness-structural.test.mjs
   - test/work/doctor-depends-lane.test.mjs
   - test/work/doctor-coherence-completeness.test.mjs

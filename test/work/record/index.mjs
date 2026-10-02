@@ -36,7 +36,6 @@ import { workStorySpanScopeTests } from "./work-story-span-scope.test.mjs";
 // lane; FF-6607's second half parses THIS milestone's own register with the shipped
 // recogniser, so a row added to it without a file fails immediately (m22/R1).
 import { workDoctorControlsTests } from "./work-doctor-controls.test.mjs";
-import { workDoctorTests } from "./work-doctor.test.mjs";
 
 export const tests = [
   // story 65 — concurrent story dispatch (tasks 00–02; task 02's last scenario is @manual)
@@ -44,5 +43,4 @@ export const tests = [
   ...workStorySpanScopeTests,
   // milestone 66 / story 02 — the controls lane (tasks 00–03) + its three fitness functions
   ...workDoctorControlsTests,
-  ...workDoctorTests,
 ];

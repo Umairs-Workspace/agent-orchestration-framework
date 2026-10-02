@@ -4,6 +4,7 @@ import { workLoopLevelLadderTests } from "./work-loop-level-ladder.suite.mjs";
 import { workLoopReviewBoundTests } from "./work-loop-review-bound.suite.mjs";
 import { workLoopScopeGuardTests } from "./work-loop-scope-guard.suite.mjs";
 import { workLoopStopSetTests } from "./work-loop-stop-set.suite.mjs";
+import { triggerLevelCeilingTests } from "./trigger-level-ceiling.suite.mjs";
 
 export const tests = [
   ...workLoopDeterminismTests,
@@ -12,4 +13,5 @@ export const tests = [
   ...workLoopReviewBoundTests,
   ...workLoopScopeGuardTests,
   ...workLoopStopSetTests,
+  ...triggerLevelCeilingTests,
 ];

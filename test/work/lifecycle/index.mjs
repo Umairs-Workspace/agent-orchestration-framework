@@ -9,8 +9,6 @@
 // Every binding the registry spread for a suite is spread here — including both of the two
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
-import { resolveItemsTests } from "./work-resolve.test.mjs";
-import { orderWorkTests } from "./work-next.test.mjs";
 // milestone 72 / story 01 — THE SELECTION: changed files reach suite files through the code graph
 // the repo already builds, READ and never built; an UNKNOWN widens the selection to the whole suite
 // and is NAMED with one of four exhaustive reasons, presence outranking the union so a test file
@@ -36,15 +34,13 @@ import { workObserveScopeTests } from "./work-observe-scope.test.mjs";
 // milestone 68 / story 05 — append-only snapshots: an observe run NEVER truncates or
 // rewrites an existing snapshot; each writes a new timestamped artefact and the legacy
 // pre-68 in-place files are marked, never migrated (ADR-007). The two @executable task
-// features trace to test/work/lifecycle/work-observe-snapshots.test.mjs; FF-6807 is enforced by
+// features trace to packages/work/test/work-observe-snapshots.suite.mjs; FF-6807 is enforced by
 // acd-observe-snapshots-append-only (registered below).
-import { workObserveSnapshotsTests } from "./work-observe-snapshots.test.mjs";
 // milestone 68 / story 03 — attribution-by-join: the two @executable task features
 // (the sessionId join replacing the retired text matcher, and the content-based
 // classifier replacing the retired command-name regex) trace to
-// test/work/lifecycle/work-observe-attribution.test.mjs; FF-6805 + FF-6806 are enforced by
+// packages/work/test/work-observe-attribution.suite.mjs; FF-6805 + FF-6806 are enforced by
 // acd-observe-attribution-by-join (registered below).
-import { workObserveAttributionTests } from "./work-observe-attribution.test.mjs";
 // milestone 70 / story 02 — cache-economics: `cacheRead ÷ cacheCreate` reported per
 // phase from 68's spend buckets, plus a stated target turning the ratio into a
 // met/missed verdict (ADR-008 — records, never enforces). The two @executable task
@@ -61,8 +57,6 @@ import { workDispatchLaneTests } from "./work-dispatch-lanes.test.mjs";
 import { workTestDeclaredTests } from "./work-test-declared.test.mjs";
 
 export const tests = [
-  ...resolveItemsTests,
-  ...orderWorkTests,
   // milestone 72 / story 01 — the selection (tasks 00–01) plus FF-7202 and FF-7203.
   ...workTestSelectTests,
   ...workMemorySeamTests,
@@ -72,10 +66,8 @@ export const tests = [
   ...workObserveScopeTests,
   // milestone 68 / story 05 — append-only snapshots: the two @executable task features
   // + FF-6807 (acd-observe-snapshots-append-only).
-  ...workObserveSnapshotsTests,
   // milestone 68 / story 03 — attribution-by-join: the two @executable task features
   // + FF-6805 + FF-6806 (acd-observe-attribution-by-join).
-  ...workObserveAttributionTests,
   // milestone 70 / story 02 — cache-economics (the two @executable task features;
   // no fitness function of its own).
   ...workObserveCacheEconomicsTests,

@@ -198,7 +198,7 @@ export const doctorCoherenceCompletenessTests = [
   // `driverStatusByNumber.get(79)` was `undefined`, `undefined !== "done"` scored an
   // already-satisfied edge as unmet, and a `done` dependency was reported as an ordering
   // violation at severity `error`. `validate` and the readiness walk had both been widened for
-  // this exact pair (`test/work/lifecycle/work-next.test.mjs` carries the twin); this lane was the THIRD reader
+  // this exact pair (`packages/work/test/work-next.suite.mjs` carries the twin); this lane was the THIRD reader
   // of one question and was missed. Both halves are pinned, exactly as the walk's twin pins them:
   // widening WHAT a number may name must not make an UNFINISHED one read as met.
   {

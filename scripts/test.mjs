@@ -7,6 +7,7 @@ import { tests as ownedUiTests } from "../apps/ui/test/index.mjs";
 import { tests as ownedWorkLoopTests } from "../packages/work-loop/test/index.mjs";
 import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
 import { tests as ownedKnowledgeTests } from "../packages/knowledge/test/index.mjs";
+import { tests as ownedFoundationTests } from "../packages/foundation/test/index.mjs";
 import { runCases, runnerShapedExports } from "./test-harness.mjs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -99,6 +100,7 @@ export const tests = [
   ...ownedWorkLoopTests,
   ...ownedWorkTests,
   ...ownedKnowledgeTests,
+  ...ownedFoundationTests,
   ...archAssignmentTests,
   ...archAuditTests,
   ...archBundleTests,

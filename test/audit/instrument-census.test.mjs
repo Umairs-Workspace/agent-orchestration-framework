@@ -137,7 +137,7 @@ const THE_TWENTY_SIX = Object.freeze([
   "test/arch/command/acd-registry-write-scope.test.mjs",
   "test/arch/mesh/acd-enroll-endpoint-http-not-ws.test.mjs",
   "test/arch/mesh/acd-enroll-git-argv-no-shell.test.mjs",
-  "test/mesh/registry/mesh-registry-store-seam.test.mjs",
+  "packages/mesh/test/mesh-registry-store-seam.suite.mjs",
   "packages/mesh/test/mesh-registry-aggregate-mutations.suite.mjs",
   "packages/mesh/test/mesh-registry-pending-lifecycle.suite.mjs",
   "packages/mesh/test/mesh-relay-auth-gate.suite.mjs",
@@ -146,17 +146,17 @@ const THE_TWENTY_SIX = Object.freeze([
   "test/arch/run/acd-run-node-path-single-builder.test.mjs",
   "test/arch/bundle/acd-runs-eol-pinned.test.mjs",
   "test/arch/ui/acd-fleet-reclaim-guarded.test.mjs",
-  "test/mesh/identity/mesh-candidacy-every-return.test.mjs",
+  "packages/work/test/mesh-candidacy-every-return.suite.mjs",
 ]);
 
 // The second population the new instrument found on its first run: suites registered in
 // `scripts/test-unit.mjs` alone, so `npm test` — what CI executes — never assembled them.
 // 66/ADR-004 §(c) measured ONE of these as a curiosity; there are six.
 const THE_FAST_LANE_SIX = Object.freeze([
-  "test/work/work.test.mjs",
-  "test/work/lifecycle/work-resolve.test.mjs",
+  "packages/work/test/work.suite.mjs",
+  "packages/work/test/work-resolve.suite.mjs",
   "test/work/gate/work-validate.test.mjs",
-  "test/work/lifecycle/work-next.test.mjs",
+  "packages/work/test/work-next.suite.mjs",
   "packages/core/test/opencode-hooks.suite.mjs",
   "test/arch/work/work-content-free-discovery.test.mjs",
 ]);

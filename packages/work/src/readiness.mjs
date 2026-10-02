@@ -351,7 +351,7 @@ export async function nextWork(workDir, scopeRef, { candidacyView, view, through
   // before m65/01; `readySet`/`skipped` arrive beside them. `blocked` carries an EMPTY
   // set, so "blocked" can never be misread as "one thing is ready". `done` keeps its bare
   // `{ state: "done" }` shape verbatim — it is deep-equalled by m27's candidacy contract
-  // (test/mesh/identity/mesh-candidacy-every-return.test.mjs), and there is nothing to act on anyway;
+  // (packages/work/test/mesh-candidacy-every-return.suite.mjs), and there is nothing to act on anyway;
   // the command face normalises the two keys onto every state it emits.
   if (readySet.length > 0) return { ...readySet[0], readySet, skipped };
   if (blocked) return { ...blocked, readySet: [], skipped };

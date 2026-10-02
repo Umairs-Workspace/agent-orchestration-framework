@@ -19,7 +19,7 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // a headless run forever — handing chunks through the SAME arrow production wires into
 // the REAL `createWorkerStreamClient` over a fake transport that records every envelope.
 // `test/mesh/worker/mesh-worker-driver-output-chunk.test.mjs` drives the first link and
-// `test/work/worker-stream-client.test.mjs` the second; this joins them, so the property is
+// `packages/mesh/test/worker-stream-client.suite.mjs` the second; this joins them, so the property is
 // asserted ACROSS the seam rather than on either side of it. No real PTY, no second
 // machine, no relay socket, no `~/.aof` write.
 //

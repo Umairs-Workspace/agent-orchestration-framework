@@ -42,7 +42,6 @@ import { graphifyRerankingTests } from "./graphify-reranking.test.mjs";
 // KNOWLEDGE) + the surfaced extraction backend (ADR-003), and the binary-absent degrade
 // across recall/brief/reindex/status (un-graph-ranked 05 recall + a visible diagnostic,
 // ADR-004); @executable traceability)
-import { graphifyPostureTests } from "./graphify-posture.test.mjs";
 import { graphifyDegradeTests } from "./graphify-degrade.test.mjs";
 // milestone 11 (re-open / ADR-007) — graph:impact: the DETERMINISTIC, edge-based
 // coupling command the running agents consume. The NON-VACUOUS value test (computeImpact
@@ -62,7 +61,6 @@ export const tests = [
   ...graphifyReindexTests,
   ...graphifyRecallTests,
   ...graphifyRerankingTests,
-  ...graphifyPostureTests,
   ...graphifyDegradeTests,
   ...graphifyStoreFirstTests,
 ];

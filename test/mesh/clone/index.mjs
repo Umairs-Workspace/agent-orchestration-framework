@@ -36,7 +36,6 @@ import { meshCloneCredentialMintFailureLoudTests } from "./mesh-clone-credential
 // 01), and the code-enforced default private-key directory (task 02).
 import { meshCloneCredentialAppIdentityPerWorkspaceTests } from "./mesh-clone-credential-app-identity-per-workspace.test.mjs";
 import { meshCloneCredentialCrossOrgIsolationTests } from "./mesh-clone-credential-cross-org-isolation.test.mjs";
-import { meshCloneCredentialAppKeyDefaultDirTests } from "./mesh-clone-credential-app-key-default-dir.test.mjs";
 import { meshCloneCredentialPushMintScopedTests } from "./mesh-clone-credential-push-mint-scoped.test.mjs";
 // m42 wave (b) / item 4 — the clone-time identity pin: a fresh checkout answers the
 // fleet's canonical id on every machine.
@@ -60,7 +59,6 @@ export const tests = [
   // 00-02 traceability modules + the acd-cross-org-key-isolation fitness function)
   ...meshCloneCredentialAppIdentityPerWorkspaceTests,
   ...meshCloneCredentialCrossOrgIsolationTests,
-  ...meshCloneCredentialAppKeyDefaultDirTests,
   ...meshCloneCredentialPushMintScopedTests,
   ...meshCloneIdentityPinTests,
 ];

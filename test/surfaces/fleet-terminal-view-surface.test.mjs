@@ -1095,7 +1095,7 @@ export const fleetTerminalViewSurfaceTests = [
   // store, read through the REAL `/api/mesh/status` shaping (ADR-008's
   // producer-fed rule). Scenarios 1, 2, 4 and 6 land here; scenarios 3 and 5 are
   // properties of the pure projection literal and land in the pure shaper's own
-  // suite (test/assignment/assignment-fleet-status-shape.test.mjs).
+  // suite (packages/mesh/test/assignment-fleet-status-shape.suite.mjs).
   //
   // The lanes below stand up NO server and bind NO port.
   // ═══════════════════════════════════════════════════════════════════════════
