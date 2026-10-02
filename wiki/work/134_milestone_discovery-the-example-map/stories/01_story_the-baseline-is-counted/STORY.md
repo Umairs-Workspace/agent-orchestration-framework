@@ -5,10 +5,10 @@ slug: the-baseline-is-counted
 title: "The baseline is counted — misunderstood-requirement findings and amendment rounds per story, on four delivered milestones, before the gate ships"
 parent: 134
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-10-02
 adrs: [ADR-007]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -129,3 +129,7 @@ lists the commands and the classification rule, so another reader can repeat the
   document.
 - The classification is a judgement. Write down the rule and the borderline cases, and count
   floors, as the origin research's §8 does.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

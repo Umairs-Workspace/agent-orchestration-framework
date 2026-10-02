@@ -90,15 +90,15 @@ Out of scope:
 
 ## Stories
 
-- [ ] `01_story_the-baseline-is-counted`: the before-number. Misunderstood-requirement findings
+- [x] `01_story_the-baseline-is-counted`: the before-number. Misunderstood-requirement findings
   and amendment rounds per story on 124, 126, 127 and 133.
-- [ ] `02_story_the-map-is-a-document`: the `EXAMPLES.md` grammar and its one parser, the
+- [x] `02_story_the-map-is-a-document`: the `EXAMPLES.md` grammar and its one parser, the
   work-examples family, and the `work.examples.enabled` gate.
-- [ ] `03_story_the-answer-is-read-from-the-harness`: one reader of `AskUserQuestion` answers,
+- [x] `03_story_the-answer-is-read-from-the-harness`: one reader of `AskUserQuestion` answers,
   stamped onto the run record at settle from the real transcript store.
-- [ ] `04_story_the-readiness-gate`: the examples doctor lane, the `EXAMPLES.md` budget row, and
+- [x] `04_story_the-readiness-gate`: the examples doctor lane, the `EXAMPLES.md` budget row, and
   the continue door.
-- [ ] `05_story_the-discovery-beat`: refine's discovery block, the PO and architect briefs, the
+- [x] `05_story_the-discovery-beat`: refine's discovery block, the PO and architect briefs, the
   template, and `--autonomous` asking at its one stop.
 
 The live run (one real story through discovery, interactive) is the milestone's `@manual`
@@ -108,3 +108,7 @@ verification, not a story (ARCHITECTURE ADR-007).
 
 None in the stream. Interactive `AskUserQuestion` works today, so this milestone does not wait for
 131. The loop-driven path does, and it is 136's.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134. All five stories are done. The four controls are green with their red probes recorded, and the live run took 144 through discovery with the operator. F-134-01 (the one blocker) was fixed in the item; the other findings are non-blockers, routed in VERIFICATION. The whole-tree gate ran sharded, and its reds are 142's and the environment's (see REGRESSION.md).

@@ -5,10 +5,10 @@ slug: the-map-is-a-document
 title: "The map is a document — the EXAMPLES.md grammar and its one parser, the work-examples family, and the work.examples gate"
 parent: 134
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-10-02
 adrs: [ADR-001, ADR-002, ADR-004, ADR-006]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -85,3 +85,7 @@ and `test/arch/examples/`, each with its exemption, which names its planned memb
   existing source-directory budget control is what checks it. `PLAN.md` names the planned members.
 - The `EXAMPLES.md` template is NOT here. It is story 05's, because `src/bundle/manifest.json`
   hashes the template and `refine.md` together.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

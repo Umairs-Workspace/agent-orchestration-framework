@@ -5,7 +5,7 @@ slug: the-readiness-gate
 title: "The readiness gate — the examples doctor lane, the EXAMPLES.md budget row, and a continue door that refuses a story with an open business question"
 parent: 134
 depends: [02, 03]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
 updated: 2026-10-02
@@ -106,3 +106,7 @@ lane's own pure function. The `src/work` row goes 45 → 46 with its reason. FF-
   group alone, where an over-budget `EXAMPLES.md` binds. A loop-driven refine stopping is 136's.
 - `aof work doctor` must be run from the repository root when you verify. It reports "healthy"
   over an empty stream from a subdirectory.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

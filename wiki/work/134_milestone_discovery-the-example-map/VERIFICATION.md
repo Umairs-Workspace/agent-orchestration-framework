@@ -148,3 +148,76 @@ Build: inline in the operator's session `ed33b986-4965-4b5f-98cb-1174699c96aa`, 
   templates or the guide, plus the examples indexes): 1787 cases, 3 not ok. One was real, and it
   was 134/04's (the kernel import ports; see 134/04 above). FF-9603 (2) and 96/02-00 are the `143`
   stream's. `shared-cli.steps.mjs` is not a runner suite.
+
+## Verification evidence
+
+- **134/01 (`@manual @docs`), re-checked at accept, 2026-10-02.** 133 was archived after the
+  contract was written, so the 133 paths in `STORY.md` `reads:`, the task's Examples and R7's
+  commands were repointed at `wiki/work/archive/133_…` (`0d0b8ea9`); `validate 134/01` PASS.
+  Every R7 ref (`124/00`–`02`, `126/00`–`06`, `127/01`–`05`, `133/01`–`06`) resolves through
+  `aof work find`, and each milestone has its row count and a milestone row. R7's commands, re-run
+  from the root, print its stated numbers: the five counted rows (126/F-24, 127/F-03, F-04, F-27,
+  F-133-01), one `@bug` feature (133/04 task 03), `contract-wording` 0/0/6/0, `design-gap`
+  3/11/7/1, and 11 `misunderstanding` lessons. verifies → 134/01 task 00.
+- **134/02 – 134/05 (`@executable`) and FF-13401 – FF-13404, at accept.** `scripts/test.mjs --only
+  test/examples/index.mjs test/arch/examples/index.mjs` (temp `AOF_GLOBAL_HOME`/`CLAUDE_CONFIG_DIR`):
+  90 cases, 0 failures. verifies → 134/02 tasks 00-02, 134/03 tasks 00-02, 134/04 tasks 00-03,
+  134/05 tasks 00-04.
+- **The live run (ADR-007), 2026-10-02, operator's session `b32f99e5-1417-4b35-9523-5ec40c1199e2`
+  (`claude-vscode`).** The operator chose a backlog story: `the-whole-tree-run-signs-off-in-minutes`,
+  promoted to **144** (a map token needs a numbered ref). `work.examples.enabled` turned on for this
+  repo. Run `20261002T203914159Z-0000` started on 144 with `--session`. The map
+  (`144_story_…/EXAMPLES.md`, 33 lines) holds 4 rules, 9 examples, 4 business and 2 technical
+  questions.
+  - Before asking: `aof work doctor 144` → 4 × `error example-question-open` (Q1–Q4): the Contract
+    stage stops.
+  - Round 1 asked Q1–Q4 with tokens. The operator rejected all four. Three were answered by the
+    story's own user story, title and Notes, and one was an engineering call put with an
+    unexplained internal ("16 workers? What?"). Recorded as F-134-01.
+  - Round 2 re-asked the four with their context. Answers: Q1 "No more than 15mins. There's a work
+    item to optimize"; Q2 "These are shit tests, not properly isolated. These need to be logged";
+    Q3 "We should be able to pass in settings"; Q4 a non-answer ("What does this have to do with
+    milestone 134?"). Q1–Q3 written `answered`, and E1, E4, E9 `stated Q1`/`Q2`/`Q3`; Q4 left
+    `asked`.
+  - Settle: `cd wiki && aof work run-complete 144 --outcome done` → `state done`. The record's
+    `brief.answers` holds 8 stamped replies, one per token per round, each with
+    `sessionId b32f99e5…` and `entrypoint claude-vscode`, e.g.
+    `["144 Q1","No more than 15mins. There's a work item to optimize","toolu_01GTcwgnfd24DMcy1ke2E2TV","2026-10-02T21:53:26.734Z","claude-vscode"]`.
+  - After: `aof work doctor 144` → exactly one `error example-question-open`, Q4 ("still asked").
+    The stated examples and answered questions are anchored and raise nothing. 144 stays at its
+    Contract gate until its own refine settles Q4.
+  - Verdict: the grammar, the anchor, the gate and the beat work end to end on a real story. The
+    beat's question quality failed in round 1 (F-134-01, fixed in `5c0685e6`).
+- **The beat fix, `5c0685e6`.** `refine.md` adds **Strike before asking** and the PO brief adds the
+  same rule: drop every question the record already answers, relabel engineering choices as
+  `technical`, and give each remaining question its context in the person's terms. Rendered through
+  `aof work update` (6 updated) and `generate-bundle-manifest` (116 entries). Bundle-reader sweep
+  (the 17 suites that read refine, the PO brief or the manifest, plus the `test/examples`,
+  `test/bundle` and `test/command` indexes): 708 cases, 0 failures.
+
+## Regression gate
+
+Whole tree via `scripts/test-sharded.mjs` from a clean detached worktree at `0d0b8ea9`, temp
+`AOF_GLOBAL_HOME` and `CLAUDE_CONFIG_DIR`, 2026-10-02: **11,604 of 11,604 registered cases**
+executed in 1200 units, wall 60.0 min (another session was loading the machine), 16 workers.
+8 units red, 13 load flakes. Attribution:
+
+- **Inherited from 142's squash (red on `main`): F-134-03.** FF-11903 ×2, 119/00 task02 ×2
+  (`cited-path-resolve`), FF-5204, and `this-tree-holds-what-is-live` 00/02.
+- **The launch environment:** 63/03 task04 reads the gate's exported `CLAUDE_CONFIG_DIR`, as in
+  134/04's sweep.
+- **Contention:** `fleet-terminal-view-producer-fed`, `agent-session-driver-transcript` (53/00
+  task03) and `loop-diag` (131/01). These three plus 63/03 re-run alone at `0d0b8ea9` with no
+  `CLAUDE_CONFIG_DIR`: 126 cases, 0 failures.
+- No red is in a file 134 changed.
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+|---|---|---|---|---|---|---|
+| F-134-01 | Live run round 1: the discovery beat put four questions to the operator that the story's user story, title and Notes already answered, or that were engineering calls, with no context and an unexplained internal ("16 workers"). The operator rejected all four. | defect | major | blocker, fixed in the item | 134/05 prose, `5c0685e6` | fixed |
+| F-134-02 | A stamp records any reply on a token, including a non-answer ("What sort of question is this?"). The anchor proves the person replied on that token, not that the reply answers it; whether it answers stays the map writer's judgement. | gap | minor | non-blocker: within ADR-003's stated claim (the channel replied) | OUTCOME gap; 136 | open |
+| F-134-03 | 142's squash recorded no rename for modules it deleted and re-created, so `main` is red on FF-11903, 119/00 task02, FF-5204 and `this-tree-holds-what-is-live` 00/02. | defect | major | non-blocker for 134 (inherited, no 134 file) | story (operator), per STATE | open |
+| F-134-04 | 13 suites go red under load and green alone. The operator's ruling (144 Q2): they are not isolated, and each is logged. `fleet-boards-branch-deleted`, `core-workspace`, `work-ui-fleet-origin-standalone`, `advertised-paths`, `work-ui-verb-rename`, `mesh-ui-global-scope`, `asset-base-seam`, `application-assembly`, `mesh-ui-cli-face`, `work-ui-board-serves-unchanged`, `session-screen-verdicts`, `bundle-asset-manifest-complete`, `framework-stops-shipping-guard`. | defect | minor | non-blocker | 144 (E4) | open |
+| F-134-05 | The Plan 09 test ledger (`registryCases`) is a live ratchet stored in the archived `142/plans/09-test-ledger.json`, so every story that adds a case edits a delivered milestone. | defect | minor | non-blocker | story (operator), per STATE | open |
+| F-134-06 | A backlog story cannot carry an anchored answer: the token admits only a numbered ref (`<NN>` or `<NN/SS>`), so discovery needs the story promoted first. | gap | minor | non-blocker | 136 | open |

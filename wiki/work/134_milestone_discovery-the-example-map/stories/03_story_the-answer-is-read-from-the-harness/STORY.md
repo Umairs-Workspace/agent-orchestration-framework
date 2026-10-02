@@ -5,7 +5,7 @@ slug: the-answer-is-read-from-the-harness
 title: "The answer is read from the harness — one reader of AskUserQuestion answers, stamped once onto the run record at settle, from the real transcript store"
 parent: 134
 depends: [02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
 updated: 2026-10-02
@@ -106,3 +106,7 @@ FF-13404.
   settles.
 - The milestone `VERIFICATION.md` takes the red probes of FF-13401 and FF-13404 and task 03's
   evidence. `STATE.md` takes task 03's operator procedure and paste slots.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

@@ -5,7 +5,7 @@ slug: the-discovery-beat
 title: "The discovery beat — refine maps rules, key examples and questions before any headline Scenario, asks a person the business questions, and --autonomous asks them at its one stop"
 parent: 134
 depends: [02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
 updated: 2026-10-02
@@ -99,3 +99,7 @@ the level above the three zoom levels. All rendered copies are refreshed through
 - The map's grammar and token are 02's. This story teaches them and does not restate the parser's
   rules in a second form.
 - QA's Examples tables do not change (SPEC, out of scope).
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.
