@@ -52,7 +52,7 @@ export const yarnInstallationTests = [
         'setup-ui.mjs': ['node:http', 'node:fs/promises', 'node:path'],
         'terminal-ws.mjs': ['@aof/execution/pty', 'ws'],
       } : name === 'knowledge' ? {
-        'import/source.mjs': ['node:fs', 'node:child_process'],
+        'import/source.mjs': ['node:fs', 'node:child_process', '@aof/foundation/git-args'],
         'import/store.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
         'import/recovery.mjs': ['node:path', 'node:fs', 'node:fs/promises', 'node:child_process', '@aof/work/lifecycle', '@aof/work/declared-id'],
         'import/materialize.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
@@ -97,7 +97,7 @@ export const yarnInstallationTests = [
         'session-screen.mjs': ['@aof/contracts/loop-bounds'],
         'claude-screens.mjs': ['@aof/contracts/loop-bounds'],
         'claude-trust.mjs': ['node:os', 'node:path', 'node:fs/promises', 'node:crypto'],
-        'worktrees.mjs': ['node:child_process'],
+        'worktrees.mjs': ['node:child_process', '@aof/foundation/git-args'],
         'bounded-process.mjs': ['node:child_process', 'node:fs'],
       } : name === 'mesh' ? {
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
@@ -153,7 +153,7 @@ export const yarnInstallationTests = [
         'relay-client.mjs': ['ws'],
         'terminal-relay-bridge.mjs': ['ws'],
         'terminal-mirror.mjs': ['ws'],
-        'worktrees.mjs': ['node:path', '@aof/execution/worktrees'],
+        'worktrees.mjs': ['node:path', '@aof/execution/worktrees', '@aof/foundation/git-args'],
       } : name === 'work-loop' ? {
         'dispatch.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
         'commands/dispatch.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],

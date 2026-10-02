@@ -7,7 +7,8 @@
     "./fs": "./src/fs.mjs",
     "./degrade": "./src/degrade.mjs",
     "./log": "./src/log.mjs",
-    "./sqlite-runtime": "./src/sqlite-runtime.mjs"
+    "./sqlite-runtime": "./src/sqlite-runtime.mjs",
+    "./git-args": "./src/git-args.mjs"
   },
   "files": [
     "src"

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { createWorktreeOperations, defaultGitExec, resolveExec, parsePorcelainStatus } from "@aof/execution/worktrees";
+import { gitPositional } from "@aof/foundation/git-args";
 
 // Mesh owns lane paths, naming, retention, staging and preparation policy.
 // Composition is inert; the application supplies workspace loading and the lazy toolchain port.
@@ -582,6 +583,8 @@ async function addSessionWorktree(projectRoot, itemRef, commitish, options = {})
 // Returns the materialized path. A non-zero `worktree add` is a thrown coded fault (the
 // caller decides how to surface it — the never-swallow discipline addWorktree keeps).
 async function reuseWorktreeOnBranch(projectRoot, assignmentId, baseBranch, options = {}) {
+  // The branch arrives in a directive from another node: it reaches git only as a positional.
+  gitPositional(baseBranch, "the base branch");
   const exec = resolveExec(options);
   const worktreePath = meshWorktreePath(projectRoot, assignmentId);
   // The exec seam may be sync (a test double) or async (production `git` spawn), so every
@@ -593,7 +596,7 @@ async function reuseWorktreeOnBranch(projectRoot, assignmentId, baseBranch, opti
 
   // Best-effort refresh of the branch from origin — a fault here (local-only branch,
   // origin unreachable) never blocks the reuse; the local branch, if present, is used.
-  await tryExec(["fetch", "origin", baseBranch]);
+  await tryExec(["fetch", "origin", "--", baseBranch]);
 
   // Release any worktree still holding the branch (the refine's), then prune stale admin
   // metadata so a later add at this path is never blocked (RESEARCH §4's prunable note).

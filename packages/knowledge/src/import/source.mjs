@@ -1,5 +1,6 @@
 import { existsSync, statSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { gitPositional } from "@aof/foundation/git-args";
 // The read-only source-access seam (milestone 13 / story 00 — the SPINE; ADR-002).
 //
 // Mirrors src/planning-init.mjs's `resolveInjectedSha` / `AOF_PLANNING_*`
@@ -79,7 +80,7 @@ export function resolveImportSource({ repo, dryRun = false, resolveSource, sourc
     // injection vector. Omitting `shell` keeps argv un-joined, so a user-supplied
     // URL can never reach a shell. Mirrors recovery.mjs's shell-less `git log` spawn
     // (story 01 proved a shell-less `git` argv resolves on Windows in CI).
-    const result = spawnSync("git", ["ls-remote", repo], { encoding: "utf8" });
+    const result = spawnSync("git", ["ls-remote", "--", gitPositional(repo, "the remote source")], { encoding: "utf8" });
     if (result.status !== 0) {
       throw new Error(`Could not reach the remote source "${repo}" via read-only git ls-remote.`);
     }

@@ -1,6 +1,7 @@
 // Git worktree mechanisms. Callers supply preparation, diagnostics and merge identity/message policy.
 // Historical error codes are preserved for existing callers. No mesh paths or application imports.
 import { execFile } from "node:child_process";
+import { gitPositional } from "@aof/foundation/git-args";
 
 function settleExecFile(error, stdout, stderr, resolve, reject) {
   if (error && (error.code === "ENOENT" || error.killed || error.signal)) {
@@ -181,6 +182,7 @@ async function remoteBranchExists(projectRoot, branch, options = {}) {
 // still exactly one function that decides how a branch reaches its base — which is what
 // keeps ADR-008's refusal semantics (and its never-discards invariant) in one place.
 async function adoptRemoteBranch(projectRoot, branch, options = {}) {
+  gitPositional(branch, "the branch to adopt");
   const exec = resolveExec(options);
   // Best-effort refresh, mirroring reuseWorktreeOnBranch's own first step: a fault here
   // (origin unreachable) must not block adopting the ref this clone already has — but it is
@@ -188,7 +190,7 @@ async function adoptRemoteBranch(projectRoot, branch, options = {}) {
   // than saying nothing. The adopt below then proceeds against whatever `refs/remotes/origin/`
   // this clone last saw, which is the fact an operator reading a stale adopt needs.
   try {
-    await exec(["fetch", "origin", branch], { cwd: projectRoot });
+    await exec(["fetch", "origin", "--", branch], { cwd: projectRoot });
   } catch (error) {
     reportDegrade(new Error(`origin could not be refreshed before adopting ${branch}, so the adopt used this clone's last-known refs/remotes/origin/${branch}: ${error?.message ?? error}`), { path: projectRoot });
   }

@@ -6,6 +6,7 @@ import os from 'node:os';
 import { createDegradeReporter } from '@aof/foundation/degrade';
 import { createJsonlLogSink, readJsonlLog } from '@aof/foundation/log';
 import { readJson, writeText, normalizeId, createTempFileSweeper } from '@aof/foundation/fs';
+import { gitPositional } from '@aof/foundation/git-args';
 
 async function fixture(run) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'aof-foundation-'));
@@ -111,4 +112,13 @@ test('a failed log event does not prevent the next event from being recorded', (
 test('identifier validation keeps the existing accepted and refused shapes', () => {
   assert.equal(normalizeId('Feature_1.a-b'), 'Feature_1.a-b');
   for (const invalid of ['', '../outside', 'has space', null]) assert.throws(() => normalizeId(invalid), /Invalid id/);
+});
+
+test('a git positional is refused when git could read it as an option', () => {
+  assert.equal(gitPositional('aof/mesh/node-1/07-02', 'branch'), 'aof/mesh/node-1/07-02');
+  assert.equal(gitPositional('https://example.test/repo.git', 'remote'), 'https://example.test/repo.git');
+  assert.throws(() => gitPositional('--upload-pack=touch pwned', 'branch'), /may not start with "-"/);
+  assert.throws(() => gitPositional('-u', 'branch'), /may not start with "-"/);
+  assert.throws(() => gitPositional('', 'branch'), /non-empty string/);
+  assert.throws(() => gitPositional(undefined, 'branch'), /non-empty string/);
 });
