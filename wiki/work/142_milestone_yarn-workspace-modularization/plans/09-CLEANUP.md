@@ -8,7 +8,7 @@ Evidence for every test move is the tracked [09-test-ledger.json](09-test-ledger
 
 | Finding | Result |
 | --- | --- |
-| 1. No test-ownership cleanup | **Done in part, by measurement.** 99 of 1,106 root suites moved to the workspace that proves them; the ledger records all 1,106, and every retained assembled-application suite now carries its own measured subject (see [Test placement](#test-placement)). 73 suites that execute one feature package, or only core, remain at the root and are listed in the ledger as open. `apps/ui/test/` exists with a `test` script. |
+| 1. No test-ownership cleanup | **Done, by measurement.** 131 of 1,106 root suites moved to the workspace whose code they execute; the ledger records all 1,106, and every retained suite carries a specific reason (see [Test placement](#test-placement)). `apps/ui/test/` exists with a `test` script. |
 | 2. Whole-tree gate not green | See [Final gate](#final-gate). The wiki link floor is repaired; two of the other three ratchets are operator decisions (below). |
 | 3. Completion evidence not reconciled | The index's stale "already implemented" paragraph, the plan table, the completion audit and the checklist are updated. |
 | 4. `UPGRADE-CHANGELOG.md` deleted | Restored byte-identical from `2cd5d915` (`447854a9`); `work-upgrade-changelog` is 9/9 again. |
@@ -23,7 +23,7 @@ and 270 more into retired `src/` paths (links whose destination no longer exists
 | --- | --- |
 | P09-R2-01 sharding splits dependent cases | **Fixed.** `scripts/test-sharded.mjs` treats a suite file as atomic: one process, cases in order. A file is chunked only when it declares `export const independentCases = true` (and then only once it exceeds `--split-seconds`). `--plan` prints the units and the heaviest files without running anything. Seven heavy files are marked, each after all 286 of their cases passed alone in fresh processes (`loop-command-wave`, `loop-command-reconcile`, `work-dispatch-lanes`, `gate-propagation-refusals-leave-branch`, `loop-cap-exhaustion-carries-the-record`, `blocked-run-parking`, `lane-is-local-slot`). The live-tree suite is not marked, so `work-this-tree-holds-what-is-live` can no longer be cut between its promote setup and its promote case. |
 | P09-R2-02 ledger is invalid JSON | **Fixed.** The 40 stray quotes from the `test/ui` → `test/surfaces` rename are gone; the ledger parses, all 1,106 `now` paths exist on disk and are unique. |
-| P09-R2-03 convenience-assembled suites kept at root | **Done in part; the rest is classified, not moved.** The cited `scope-flags-fields-agree` is owned by `@aof/knowledge` (fail-on-use backend loaders; case name unchanged). Beyond it, 29 more suites moved (99 in all; case-name hashes identical to the ledger's for every one): 7 mesh suites built from `@aof/mesh` factories through `packages/mesh/test/support/mesh-services.mjs`; 8 `@aof/execution` suites (the rasterizer, the terminal-session registry and six run-store suites); 2 notion mapping suites; and 12 core-owned suites for the `assets` namespace (DSL, config inspection and editing, work init), which is core's own logic rather than a feature package's. The other retained suites were each run alone under V8 coverage against an assembly-only baseline: **91 execute two or more feature packages** (genuine integration), **303 drive a command, server or UI surface** through the assembled dispatcher, and **73 execute one feature package or only core** and are therefore package-owned in principle (open, named per entry). The static assembly-graph walk this plan first used over-counted packages (the shared `work` service takes collaborators from every package) and is not evidence. |
+| P09-R2-03 convenience-assembled suites kept at root | **Done.** The cited `scope-flags-fields-agree` is owned by `@aof/knowledge`, and 61 more suites moved in two waves (131 in all). Every moved suite builds its subject from its package's factories, with fail-on-use stand-ins for collaborators it never reaches, and its case-name hash is identical to the ledger's. Every retained assembled-application suite was run alone under V8 coverage against an assembly-only baseline and carries a specific reason: 303 drive a command, server or UI surface; 91 execute two or more feature packages; 14 test a package together with core's own modules or shipped assets; 18 share a root fixture with suites or guards that stay; 11 read repository-level files; 5 are pinned at their root path (2 by registration guards, 3 by the delivered 127/05 contract); 1 shares the discord fixture. The static assembly-graph walk this plan first used over-counted packages (the shared `work` service takes collaborators from every package) and is not evidence. |
 
 ## Test placement
 
@@ -35,6 +35,13 @@ added two registered regression cases. The current registry therefore has **11,5
 | --- | ---: | --- |
 | `apps/ui/test` | 33 (+18 harness files in `apps/ui/test/support`) | `@aof/ui` — 776 cases |
 | `packages/core/test` | 36 (24 by source import, 12 for the `assets` namespace through `support/assets-services.mjs`) | `aof` — 343 cases |
+| `packages/mesh/test` | 22 (+ `support/mesh-services.mjs`) | `@aof/mesh` — 197 cases |
+| `packages/work/test` | 15 (+ `support/` work, acceptor, doctor and observer services, the pre-Examples parser helper) | `@aof/work` — 325 cases |
+| `packages/execution/test` | 8 (+ `support/run-store.mjs`) | `@aof/execution` — 93 cases |
+| `packages/work-loop/test` | 7 (+ story fixtures) | `@aof/work-loop` — 67 cases (it owned none) |
+| `packages/knowledge/test` | 6 | `@aof/knowledge` — 72 cases |
+| `packages/integration-notion/test` | 2 | `@aof/integration-notion` — 21 cases |
+| `packages/foundation/test`, `packages/work-graph/test` | 1 / 1 | their packages (foundation gained a suite index) |
 | `packages/work-loop/test` | 6 (+ story fixtures) | `@aof/work-loop` — 42 cases (it owned none) |
 | `packages/work/test` | 4 (+ pre-Examples parser helper) | `@aof/work` — 150 cases |
 | `packages/knowledge/test`, `packages/work-graph/test` | 2 / 1 | their packages; knowledge now runs 44 registered + 7 native cases |
@@ -58,7 +65,10 @@ they cannot live in `apps/ui` because an app may not import the assembled core).
 | 482 | Repository-wide architecture guards (`test/arch`, by the placement rule). |
 | 303 | Drive a registered command, server or UI surface through the assembled application; the dispatcher and the command bindings are part of what the suite proves (each entry names the commands or surfaces). |
 | 91 | **Measured cross-package integration:** each executes functions in two or more feature packages beyond what assembling the application runs (V8 coverage, assembly-only baseline subtracted); each entry lists the packages and function counts. |
-| 73 | **Open — package-owned in principle:** each executes exactly one feature package (71) or only core (2). They stay because their subject is built from collaborators core supplies (mesh presence and the control stream, the work service core composes over its path policy, fs and digest template, shared root fixtures) and the package-level rebuild is not done. Each entry names its subject and what it would need. This is the unfinished part of Plan 09's ownership requirement. |
+| 14 | **Package-to-core integration:** the subject includes core's own module or shipped asset (the frozen set, the bundle and its templates, the tool store, `loadWorkspace`, the model vocabulary) alongside the feature package; each entry names it. |
+| 18 | Execute one feature package, but share a root fixture (`work-reindex-fixture`, the mesh directive-channel and clone-credential mint fixtures, `rubric-reports`, the claude-screens recordings, `source-slice`) with suites or architecture guards that stay; they move only together with them. |
+| 11 | Read repository-level files: this repository's own tree or git history, `schemas/aof.schema.json`, archived fixtures, `.aof/aof.config.json`. |
+| 5 / 1 | Pinned at their root path — two by staying registration guards, three (`work-spike-chore-{enumerate,next,validate}`) by the delivered 127/05 contract, which fixes the `test/work/stream` budget at 35 / the discord gateway, which shares its fixture with three command suites. |
 | 14 / 11 / 5 | Spawn the CLI / exercise `scripts/` / repo-level fixtures. |
 | 15 | Read a repository artifact no workspace owns (`schemas/`, live wiki, hooks, tracked renders), import an arch guard, or use the
 repo-wide `source-slice` helper (imported by 226 suites) — each named in the ledger. |
@@ -122,7 +132,7 @@ The four `work/this-tree-holds-what-is-live` ratchets, each with its disposition
 
 ## Open
 
-1. **73 suites that execute one feature package, or only core, remain at the root** ([Test placement](#test-placement)). Each is named in the ledger with its subject and what a package-level construction would need. Plan 09's ownership requirement is **not complete** while they remain.
+1. Test ownership: nothing open. Every root suite is either cross-package, a repository-wide guard, or retained with a specific reason in the ledger. The 18 fixture-bound suites can move only together with their fixtures' other importers, which are named per entry.
 2. The platform legs listed in [08-VERIFICATION](08-VERIFICATION.md) stay open; nothing here changes them.
 
 ## Final gate
@@ -145,10 +155,12 @@ for it with the measured diff.
 | Sharded #3 at `fb9e8f4b` (after the `test/surfaces` rename) | 11,537 (the report then miscounted retried units) | 38.0 min | Only the ratchets — but it ran without timings (fresh worktree) and two units burned 20-min kills: the slow file ran unsplit, and a transcript case hung on a real-time race outside its own 30 s ceiling. Both fixed in `d48bf751` |
 | **Sharded #4 at `d48bf751` — the confirming run** | **11,537 of 11,537** | **23.1 min** | **Only the three operator ratchets.** Four timing-sensitive cases red under 16-way load, green alone (named in the run's SUMMARY.txt) |
 | **Sharded #5 at `e7addd1e` - the tested commit for the second-review fixes** | **11,539 of 11,539** | **33.9 min** | Only the accepted 142 record-doc finding (cases 00 and 02 of the live-tree suite; case 01, the link floor, passes). `fleet-terminal-view-producer-fed` (a real-session case) failed in the pool and on its alone-retry, then passed 2 of 3 unloaded runs (the failing case differed between runs: an intermittent real-PTY race; the file is unchanged since the rename). Four load flakes green alone. |
-| Workspace suites | 14 workspaces, 1,594 cases at `e7addd1e` (execution 93, mesh 62, core 343, notion 21, knowledge 44, work 150, work-loop 42, work-graph 63, ui 776) | — | all green in isolation, from the clean worktree |
-| Integration + cargo lanes | inside the sharded runs | — | green (`cargo test` and `cargo check` of `apps/desktop` pass at `e7addd1e`) |
-| UI build / supply-chain audit / workspace boundaries | — | — | pass / 0 warnings / 0 findings (at `e7addd1e`) |
-| Windows distribution (`build-sea` → `stage-release-assets` → `verify-distribution`) | 8 checks | — | all pass at `e7addd1e` (fresh SEA build), including the real SEA PTY round-trip and the built UI |
+| Sharded #6 at `c611275d` (after the second ownership wave) | 11,539 of 11,539 | 19.7 min | Found one regression of the wave: moving three spike/chore suites out of `test/work/stream` broke the delivered 127/05 contract's budget pin (`work-archive-is-a-move` 00, `work-this-tree-holds-what-is-live` 02). Fixed in `5035a225` by returning them byte-identical. |
+| **Sharded #7 at `5035a225` — the tested commit** | **11,539 of 11,539** | **22.5 min** | **Only the accepted 142 record-doc finding** (live-tree cases 00 and 02, one finding each). Two load flakes green alone (`blocked-run-parking`, `fleet-terminal-view-producer-fed`). |
+| Workspace suites | 14 workspaces at `5035a225`: 1,959 registered + 247 native cases (core 343, mesh 197, work 325, execution 93, knowledge 72, work-loop 67, work-graph 63, notion 21, foundation 2, ui 776) | — | all green in isolation, from the clean worktree |
+| Integration + cargo lanes | inside the sharded runs | — | green (`cargo test` and `cargo check` of `apps/desktop` pass at `5035a225`) |
+| UI build / supply-chain audit / workspace boundaries | — | — | pass / 0 warnings / 0 findings (at `5035a225`) |
+| Windows distribution (`build-sea` → `stage-release-assets` → `verify-distribution`) | 8 checks | — | all pass at `5035a225` (fresh SEA build), including the real SEA PTY round-trip and the built UI |
 
 The wall time rose from 23.1 to 33.9 minutes at `e7addd1e`: suites are now atomic by default (P09-R2-01), so the heaviest unmarked files run as one unit each (`acd-tune-is-non-vacuous-over-this-repo` 451 s and `work-this-tree-holds-what-is-live` 426 s summed under load) and only the seven marked files still split. That is the price of not cutting a suite between a case and its setup; marking more files `independentCases`, after the same alone-run evidence, is the way back.
 

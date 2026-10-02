@@ -1,6 +1,6 @@
 # Plan 09 — Cleanup and verify
 
-Status: executed 2026-10-01 — `[~]` marks work done in part, the rest recorded as an operator decision; see [09-CLEANUP](09-CLEANUP.md) for the record and [09-test-ledger.json](09-test-ledger.json) for the evidence. The final pass, after [Plan 08](08-final-verification-PLAN.md). Requested by the operator
+Status: complete on this host 2026-10-02, gated at `5035a225` ([09-REVIEW](09-REVIEW.md#final-gate--5035a225-2026-10-02)); executed 2026-10-01 — `[~]` marks work done in part, the rest recorded as an operator decision; see [09-CLEANUP](09-CLEANUP.md) for the record and [09-test-ledger.json](09-test-ledger.json) for the evidence. The final pass, after [Plan 08](08-final-verification-PLAN.md). Requested by the operator
 2026-10-01: double-check the refactor, and put every test where it belongs — the root `test/` folder is for
 cross-package integration only.
 
@@ -48,7 +48,7 @@ Packages already hold 88 test files. These are starting observations, not move t
 - [x] **Create `apps/ui/test/`** (freeze narrowed, not re-pinned): with a test entry for UI-only suites. The `ui/` freeze digest hashes every
   tracked file under `apps/ui`: re-pin it once, with the measured diff (tests added, no `src/` byte changed), or
   narrow the freeze to `apps/ui/src` with the same measurement — decide in the batch, record which.
-- [~] **Rewrite convenience-assembled tests** — partly done: 99 suites moved in all; every retained assembled-application suite has a measured subject (V8 coverage against an assembly-only baseline): 303 command/UI surface, 91 cross-package, **73 package- or core-owned in principle and still at the root** (named in the ledger).
+- [x] **Rewrite convenience-assembled tests** — 131 suites moved in all; every retained assembled-application suite has a measured, specific reason in the ledger (303 command/UI surface, 91 cross-package, 14 package-to-core, 18 shared root fixture, 11 repository files, 6 pinned or fixture-shared).
 - [x] **Update the readers**: `scripts/test.mjs` / `test-unit.mjs` registration, `test-workspace.mjs`, source-
   directory budgets, accepted-suite ceilings (FF-5311), test-traceability pointers, CI and docs. Re-pins
   carry their reason; no floor is lowered to make a move pass.
@@ -64,10 +64,12 @@ Packages already hold 88 test files. These are starting observations, not move t
 ## Verification and exit
 
 - [~] Every root test file is cross-package or a repository-wide guard, with the ledger as evidence; every
-  package and `@aof/ui` runs its own suite green in isolation (`AOF_GLOBAL_HOME` isolated).
+  package and `@aof/ui` runs its own suite green in isolation (`AOF_GLOBAL_HOME` isolated). All 14 workspaces run green in isolation.
+  The exceptions are named, not open: 18 single-package suites share a root fixture with suites or guards that stay, and 3 are
+  pinned by the delivered 127/05 contract; each moves only together with those dependents.
 - [x] Registered-case total is unchanged or explained case by case; no test name lost or duplicated.
 - [x] Whole-tree gate from a clean detached worktree, the workspace suites, CLI integration, cargo, the UI
-  build and the Windows distribution gate pass with only recorded dispositions — run at `e7addd1e` ([09-REVIEW](09-REVIEW.md#final-gate--e7addd1e-2026-10-02)); the one non-ratchet red is an intermittent real-PTY case, diagnosed and recorded.
+  build and the Windows distribution gate pass with only recorded dispositions — run at `5035a225` ([09-REVIEW](09-REVIEW.md#final-gate--5035a225-2026-10-02)); the only red is the accepted 142 record-doc finding.
 - [x] The completion audit and plan index are updated; open platform items stay open.
 
 Move tests in reversible batches; do not change production behaviour to make a test movable.

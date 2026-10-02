@@ -1,7 +1,8 @@
 # Plan 09 independent acceptance review
 
-Latest recorded assessment: **gate run at `e7addd1e`; the verified scope (Windows x64) is supported, the full Plan 09 requirement is not met**. See
-[the 2026-10-02 final gate](#final-gate--e7addd1e-2026-10-02). Full Plan 09 signoff remains withheld until the 73 open ownership suites are moved or the reduced scope is explicitly accepted.
+Latest recorded assessment: **final gate at `5035a225` — Plan 09 is complete for the verified scope (Windows x64)**. See
+[the final gate](#final-gate--5035a225-2026-10-02). The only red is the accepted 142 record-doc finding; the desktop app,
+Linux/WSL, macOS/arm64 and the hosted CI matrix remain open and are not claimed.
 The earlier sections below preserve the review of `dd8b610e` and its follow-up evidence.
 
 Reviewed 2026-10-01 at `dd8b610e`, on `refactor/yarn-workspace-modularization`.
@@ -268,7 +269,7 @@ acceptance threshold was lowered, and no repository work-item state was altered.
 acceptance still requires the remaining ownership work and the final gate/dispositions recorded
 in the plan; this focused recheck does not replace those requirements.
 
-## Final gate — e7addd1e (2026-10-02)
+## Final gate — e7addd1e (2026-10-02) — superseded by [5035a225](#final-gate--5035a225-2026-10-02)
 
 Run from a clean detached worktree at the tested commit `e7addd1e` (`prepare-worktree`, isolated
 `AOF_GLOBAL_HOME`, clean launch environment), Windows x64. Logs are in ignored `.tmp/gate-142/`. Docs-only commits
@@ -305,3 +306,34 @@ What this does and does not establish:
 - **Not verified:** the real desktop-app run, Linux/WSL on this revision, macOS/arm64 and the hosted CI matrix remain open.
 - Signoff of the **verified scope** (Windows x64) is supportable on this evidence **only if** the 73 open suites and the accepted
   142 finding are accepted as a stated reduction; otherwise Plan 09 is incomplete.
+
+## Final gate — 5035a225 (2026-10-02)
+
+The ownership work the e7addd1e gate left open is done, and the gate was re-run from a clean detached worktree at the tested
+commit `5035a225` (`prepare-worktree`, isolated `AOF_GLOBAL_HOME`, clean launch environment), Windows x64. Logs are in ignored
+`.tmp/gate-142/`.
+
+| Check | Result |
+| --- | --- |
+| Supply-chain audit | pass, 0 warnings |
+| Workspace boundaries | pass, 0 findings |
+| UI production build | pass |
+| Workspace suites (`test-workspace --all`) | 14 workspaces, 1,959 registered + 247 native cases, 0 failures |
+| Whole tree, sharded | **11,539 of 11,539** cases in 22.5 min; 1 failing unit (below), 2 load flakes green alone |
+| Integration and cargo lanes | green (`cargo test`, `cargo check` of `apps/desktop`) |
+| Windows distribution | `build-sea` → `stage-release-assets` → `verify-distribution`: all 8 checks pass |
+
+The one red: `work-this-tree-holds-what-is-live` cases 00 and 02, each with the single finding "missing or empty record doc" on
+142's `SPEC.md` — the **accepted** disposition ([09-CLEANUP](09-CLEANUP.md#work-stream-dispositions-and-what-stays-open)).
+
+Against the findings:
+
+- **P09-R2-01, P09-R2-02:** fixed and covered by registered regression cases.
+- **P09-R2-03:** done. 131 of 1,106 root suites moved (case-name hashes identical to the ledger's for every one). Every retained
+  assembled-application suite was measured under V8 coverage and carries a specific reason in the ledger; no entry is open.
+  18 single-package suites stay only because they share a root fixture with staying suites or guards, and 3 because the delivered
+  127/05 contract pins their directory's budget — each named, each movable only with those dependents.
+- The intermediate gate at `c611275d` caught the 127/05 pin; the three suites were returned byte-identical in `5035a225`.
+
+Open, and not claimed: the real desktop-app run, Linux/WSL on this revision, macOS/arm64, the hosted CI matrix, and 142's record
+doc (an operator decision).
