@@ -114,10 +114,10 @@ function sanitizeRefSlug(value, fallback) {
   // are never dots).
   slug = slug.replace(/\.{2,}/g, "-");
   // A ref component cannot begin with "." nor end with "." or the sequence ".lock".
-  slug = slug.replace(/^\.+/, "").replace(/\.lock$/i, "-lock").replace(/\.+$/, "");
+  slug = trimRun(trimRun(slug, ".", { end: false }).replace(/\.lock$/i, "-lock"), ".", { start: false });
   // Cosmetic tidy-up only (not required for validity): collapse runs of "-" the
   // substitutions above may have produced, and drop stray leading/trailing "-".
-  slug = slug.replace(/-{2,}/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+  slug = trimRun(slug.replace(/-{2,}/g, "-"), "-");
   return slug.length > 0 ? slug : fallback;
 }
 
@@ -782,4 +782,15 @@ async function sweepRetainedWorktrees(projectRoot, retainedAssignments, options 
 }
 
   return { DEFAULT_WORKTREE_RETENTION_MS, WORKTREE_PREPARE_DEADLINE_EXPIRED, WORKTREE_PREPARE_FAILED, WORKTREE_PREPARE_NOT_STARTED, addDispatchWorktree, addSessionWorktree, addWorktree, adoptRemoteBranch, advanceBranchToBase, commitWorktreeChanges, defaultGitExec, dispatchWorktreeSlug, ensureCommitAvailable, findItemWorktree, headCommit, isInsideMeshWorktree, isUnderMeshDispatchWorktreesRoot, isUnderMeshSessionWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, localBranchExists, meshDispatchWorktreePath, meshDispatchWorktreesRoot, meshIdentityArgs, meshItemBranchName, meshSessionWorktreePath, meshSessionWorktreesRoot, meshWorktreePath, meshWorktreesRoot, parsePorcelainStatus, remoteBranchExists, removeDispatchWorktree, removeWorktree, resolveExec, reuseWorktreeOnBranch, sessionWorktreeSlug, sweepRetainedWorktrees };
+}
+
+// Strip every leading and/or trailing `ch` with a linear scan. An end-anchored regex (`/-+$/`)
+// retries from each position of a long run that is NOT at the end, which is quadratic, and these
+// values can arrive from another node.
+function trimRun(value, ch, { start = true, end = true } = {}) {
+  let from = 0;
+  let to = value.length;
+  if (start) while (from < to && value[from] === ch) from += 1;
+  if (end) while (to > from && value[to - 1] === ch) to -= 1;
+  return value.slice(from, to);
 }

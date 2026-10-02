@@ -116,7 +116,7 @@ export async function writeSidecarPatch(sidecarPath, patch) {
 // for macOS. Stripping a trailing `.local` makes the derived id match Tailscale's short
 // name so the join holds on real cross-OS hardware.
 export function sanitizeHostname(hostname) {
-  return String(hostname ?? "")
+  return trimRun(String(hostname ?? "")
     .toLowerCase()
     // Strip the macOS mDNS `.local` suffix so the id matches Tailscale's short HostName.
     .replace(/\.local$/, "")
@@ -125,9 +125,7 @@ export function sanitizeHostname(hostname) {
     // …then collapse any run of "-" (including pre-existing hyphens that now abut the
     // substituted ones, e.g. "--__--" → "-") to ONE "-", so a separator RUN is a
     // single "-" (the feature example `umami--__--desktop` → `umami-desktop`).
-    .replace(/-+/g, "-")
-    .replace(/^-+/, "")
-    .replace(/-+$/, "");
+    .replace(/-+/g, "-"), "-");
 }
 
 // A short, STABLE per-install hash, derived deterministically from the install-local
@@ -435,4 +433,15 @@ export async function resolveInstallSalt(sidecarPath, config, { writePatch = wri
     await writePatch(sidecarPath, { salt });
   }
   return salt;
+}
+
+// Strip every leading and/or trailing `ch` with a linear scan. An end-anchored regex (`/-+$/`)
+// retries from each position of a long run that is NOT at the end, which is quadratic, and these
+// values can arrive from another node.
+function trimRun(value, ch, { start = true, end = true } = {}) {
+  let from = 0;
+  let to = value.length;
+  if (start) while (from < to && value[from] === ch) from += 1;
+  if (end) while (to > from && value[to - 1] === ch) to -= 1;
+  return value.slice(from, to);
 }
