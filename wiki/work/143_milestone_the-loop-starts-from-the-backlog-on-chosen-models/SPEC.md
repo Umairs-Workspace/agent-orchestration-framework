@@ -1,16 +1,16 @@
 ---
 type: milestone
-number:
+number: 143
 slug: the-loop-starts-from-the-backlog-on-chosen-models
 title: "The loop starts from the backlog, refines a whole item in one pass, and runs each phase on the model the operator chose"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-02
 schema: 1
 aofVersion: 0.1.0
 ---
-# The loop starts from the backlog, refines a whole item in one pass, and runs each phase on the model the operator chose
+# 143 · The loop starts from the backlog, refines a whole item in one pass, and runs each phase on the model the operator chose
 
 ## Objective
 
@@ -68,18 +68,24 @@ Out of scope:
   keeps that distinct from the ROLE map `work.agents.models` for subagents. This milestone extends those
   homes and adds no third one.
 
-## Open questions (settle with the operator at refine)
+## Settled at refine (2026-10-02)
 
-- **Whether subagent role models are in scope.** Should `--model` also override the role map
-  (`work.agents.models`), or only the session that aof spawns? Proposed: the session only. Subagent
-  models stay in config, which keeps ADR-005's two surfaces apart.
-- **Where the autonomous-refine setting lives.** Candidates: `work.autonomous`, the loop declaration, or
-  both. Proposed: `work.autonomous.refine: "whole-item" | "per-story"` (default `per-story`, today's
-  behaviour), overridden per run by `--refine whole-item|per-story`.
+- **Subagent role models are out of scope.** `--model` sets the session aof spawns, and only that.
+  `work.agents.models` stays config-only, which keeps 70/ADR-005's two surfaces apart (ADR-003 §7).
+- **The autonomous-refine setting lives at `work.loop.refine`** (`per-story` default, or `whole-item`),
+  overridden per run by `--refine`. This departs from the proposed `work.autonomous.refine`: FF-6901
+  makes `work.loop.*` the one home for the loop's settings (ADR-002 §1).
 
 ## Stories
 
-To be broken down (`aof:refine`).
+- [ ] `00_story_the-loop-promotes-a-backlog-ref`: `aof work loop <backlog-slug>` promotes through
+  `work:promote`, runs at the minted number and records the slug it came from.
+- [ ] `01_story_a-whole-item-refine-in-one-drive`: `work.loop.refine` / `--refine whole-item` makes the
+  milestone's break-down drive `/aof:refine <ref> --autonomous`.
+- [ ] `02_story_one-grammar-for-per-phase-session-choices`: `parseSessionChoices`, the per-part
+  resolver with its sources, and repeatable string flags in the CLI parser.
+- [ ] `03_story_the-loop-runs-each-phase-on-the-chosen-model`: the loop resolves every phase once,
+  records it on the declaration, lends each drive its own, and resumes on it.
 
 ## Dependencies
 
