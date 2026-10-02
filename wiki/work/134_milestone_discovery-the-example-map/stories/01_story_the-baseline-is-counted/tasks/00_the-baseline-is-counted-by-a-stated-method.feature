@@ -27,7 +27,7 @@ Feature: The baseline is counted by a stated method, per story, on four delivere
       | 124       | wiki/work/archive/124_milestone_the-edges-aof-does-not-draw/stories  | 3       | 124/00 to 124/02 |
       | 126       | wiki/work/archive/126_milestone_the-declaration-is-the-unit/stories  | 7       | 126/00 to 126/06 |
       | 127       | wiki/work/archive/127_milestone_backlog-and-archive/stories          | 5       | 127/01 to 127/05 |
-      | 133       | wiki/work/133_milestone_architecture-diagrams/stories                | 6       | 133/01 to 133/06 |
+      | 133       | wiki/work/archive/133_milestone_architecture-diagrams/stories        | 6       | 133/01 to 133/06 |
 
   Scenario: the classification rule comes before the numbers it produces
     When the section is read from its heading down
@@ -97,7 +97,7 @@ Feature: The baseline is counted by a stated method, per story, on four delivere
       | 133       | 133_milestone_architecture-diagrams       | `2078166`, which lands every story's contract at once, and `7a9ad6e`    |
 
   Scenario: 133 is counted as the tree records it, though its SPEC still reads in-progress
-    Given `wiki/work/133_milestone_architecture-diagrams/SPEC.md` reads `status: in-progress` while its `STATE.md` records it verified and accepted on 2026-09-23
+    Given `wiki/work/archive/133_milestone_architecture-diagrams/SPEC.md` reads `status: in-progress` while its `STATE.md` records it verified and accepted on 2026-09-23
     When the section's method is read
     Then it says 133 is counted as of the commit it names: all six stories accepted and the milestone verified, the SPEC not flipped to done while F-133-09 holds the door, and F-133-06 open
     And it says 133's numbers may still grow
