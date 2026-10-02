@@ -30,7 +30,7 @@ reads:
   - src/degrade.mjs
   - test/support/source-slice.mjs
   - test/run/run-spend-ingest.test.mjs
-  - test/run/run-store-spend.test.mjs
+  - packages/execution/test/run-store-spend.suite.mjs
   - test/arch/run/acd-no-lease-store-run-record-untouched.test.mjs
   - test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs
   - test/arch/examples/index.mjs

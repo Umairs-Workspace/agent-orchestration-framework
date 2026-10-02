@@ -22,7 +22,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // and the relay lane drives the REAL, unmodified packages/core/src/mesh/relay.mjs `serveRelay()` broker
 // over a REAL in-process ws socket via the REAL production
 // `createTerminalRelayPushTransport` — the SAME in-process-real-relay harness
-// test/mesh/relay/mesh-relay-broker-fanout.test.mjs and test/mesh/relay/mesh-relay-envelope-resilience.test.mjs
+// test/mesh/relay/mesh-relay-broker-fanout.test.mjs and packages/mesh/test/mesh-relay-envelope-resilience.suite.mjs
 // already established for m23/m26's own "a new kind rides the wire with zero relay
 // change" precedent — never a hand-built stub of what the relay's parseEnvelope/fan-out
 // "should" do.

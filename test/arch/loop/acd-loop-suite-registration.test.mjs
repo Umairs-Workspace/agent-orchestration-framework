@@ -305,7 +305,10 @@ const RUNNER_REGIONS = Object.freeze([
 // import names it; `LANES_ONLY_FLAG` is declared; and the dispatch runs `runSuite([])` under that flag (`runSuite(tests)` otherwise),
 // so `scripts/test-sharded.mjs` can run the integration and cargo lanes exactly once. Every pinned region above is
 // unchanged.
-const RUNNER_RESIDUE = "d5350861a1b09ec975fdefbf125727dd2bb4edc79b82bd61abde66fcd4d6678f";
+// 142/09 recheck: the harness gains only suiteCaseChunks (12 non-comment lines),
+// the shared atomic-by-default planner covered by the workspace sharding regression.
+// runCases, runnerShapedExports, and all three pinned execution/isolation regions are unchanged.
+const RUNNER_RESIDUE = "bd6e01cac4e2e6e412b7348893c6a3201d89702fd564a2f3aa82483a3757575d";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

@@ -37,7 +37,6 @@ import { meshRevokeTests } from "./mesh-revoke.test.mjs";
 // acd-mesh-command-cli-bijection; acd-enroll-git-argv-no-shell stays RED until story
 // 02 lands packages/core/src/commands/mesh-revoke.mjs (the gate reads both files).
 import { meshInviteMintTests } from "./mesh-invite-mint.test.mjs";
-import { meshEnrollDeviceFlowTests } from "./mesh-enroll-device-flow.test.mjs";
 import { meshJoinProvisionTests } from "./mesh-join-provision.test.mjs";
 
 export const tests = [
@@ -48,6 +47,5 @@ export const tests = [
   // fix; these three suites (invite mint, device-flow enroll, join+provision) had
   // never actually run under `node scripts/test.mjs`, silently, since they were added.
   ...meshInviteMintTests,
-  ...meshEnrollDeviceFlowTests,
   ...meshJoinProvisionTests,
 ];

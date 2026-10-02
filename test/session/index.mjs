@@ -29,7 +29,6 @@ import { terminalWsTests } from "./terminal-ws.test.mjs";
 // queue is bounded, newest-wins and reports its drops (task 01).
 import { terminalWsPreSessionQueueTests } from "./terminal-ws-presession-queue.test.mjs";
 import { terminalWsPreSessionBoundTests } from "./terminal-ws-presession-bound.test.mjs";
-import { terminalSessionsTests } from "./terminal-sessions.test.mjs";
 // milestone 46 / story 03 (ADR-001/002/003/004/005; DG-46-2) — THE SHARED TERMINAL CORE.
 // One framework-free `.mjs` set at `apps/ui/src/terminal/`, imported by nothing yet: this repo has
 // NO React test harness, so every decision the two terminals disagree about is landed as a
@@ -129,7 +128,6 @@ import { attributionAtSpawnTests } from "./attribution-at-spawn.test.mjs";
 // aof:verify.
 import { selfHealHostnameMismatchTests } from "./self-heal-hostname-mismatch.test.mjs";
 import { agentModelOverrideTests } from "./agent-model-override.test.mjs";
-import { agentModelSoloInertTests } from "./agent-model-solo-inert.test.mjs";
 // ── milestone 49 / story 03 — THE PANE DECLARES ITSELF, AND THE GATE SAYS SO (ADR-007 the fourth
 // host + the posture; ADR-008 the amendment). THE MILESTONE'S ONE DELIBERATE REVERSAL, and the
 // three task features below are one story for one reason: part 1's new surface → posture-home
@@ -174,7 +172,6 @@ export const tests = [
   ...terminalWsTests,
   ...terminalWsPreSessionQueueTests,
   ...terminalWsPreSessionBoundTests,
-  ...terminalSessionsTests,
   // milestone 46 / story 03 — the shared terminal core (tasks 00–04, all @executable), the two
   // capabilities the architect's review added to the leaf, and every gate clause this story
   // turns green. The remaining whole-tree clauses are parked for 46/04; see the import block
@@ -197,7 +194,6 @@ export const tests = [
   // milestone 33 (story 00) — per-install-node-identity: tasks 00–03
   ...selfHealHostnameMismatchTests,
   ...agentModelOverrideTests,
-  ...agentModelSoloInertTests,
   // milestone 49 / story 03 — the pane declares itself, and the gate says so. Task 00's fourth
   // host (34 cases over the SHIPPED affordance tables and the SHIPPED form/cost detector), task
   // 01's mount declaration (37 cases over the SHIPPED posture, read through the SHIPPED policy),

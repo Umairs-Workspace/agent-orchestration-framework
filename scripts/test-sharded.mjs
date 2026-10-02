@@ -8,18 +8,21 @@
 //     a sharded run that loses a case is a failure, never a pass.
 //   - Every case still runs through `runCases` (via `scripts/test-shard.mjs`), with its own isolated global home.
 //   - The integration and cargo lanes run exactly once, through `scripts/test.mjs --lanes-only`.
-//   - Units are scheduled longest-first from the timings the previous run recorded (`.tmp/test-timings.json`);
-//     a file that took longer than --split-seconds is split into case chunks so one file is not the floor.
+//   - Units are scheduled longest-first from the timings the previous run recorded (`.tmp/test-timings.json`).
+//     A suite file is ATOMIC: its cases run in one process, in order, because cases in a file may share a fixture
+//     (one case creates the item the next promotes) and a chunk that starts mid-file cannot recreate that setup.
+//     Only a file that declares `export const independentCases = true` - every case builds its own state and
+//     passes alone, in any order - is split into case chunks once it took longer than --split-seconds.
 //   - A failed unit is re-run ONCE, alone, after the pool drains. Red again = a failure. Green alone = a load
 //     flake, reported by name; --strict makes a flake fail the run.
 //
-//   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--strict] [--no-lanes]
+//   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--strict] [--no-lanes] [--plan]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { runnerShapedExports } from "./test-harness.mjs";
+import { runnerShapedExports, suiteCaseChunks } from "./test-harness.mjs";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
 const argv = process.argv.slice(2);
@@ -56,8 +59,10 @@ for (const target of importsOf(path.join(repo, "scripts", "test.mjs"))) if (path
 for (const index of indexFiles) for (const target of importsOf(index)) if (target.endsWith(".mjs") && !suiteFiles.includes(target)) suiteFiles.push(target);
 const assignment = new Map(); // case object -> { file, position }
 const units = new Map(); // file -> positions[]
+const independent = new Set(); // files that declare their cases independent, so they may be chunked
 for (const file of suiteFiles) {
   const module = await import(pathToFileURL(file).href);
+  if (module.independentCases === true) independent.add(file);
   runnerShapedExports(module).flat().forEach((entry, position) => {
     if (!registered.has(entry) || assignment.has(entry)) return;
     assignment.set(entry, { file, position });
@@ -71,24 +76,27 @@ if (unassigned.length || duplicates) {
   for (const entry of unassigned.slice(0, 20)) console.error(`  unassigned: ${entry.name}`);
   process.exit(1);
 }
-console.log(`# sharded: ${tests.length} registered cases from ${units.size} files, ${JOBS} workers`);
+console.log(`# sharded: ${tests.length} registered cases from ${units.size} files (${independent.size} chunkable), ${JOBS} workers`);
 
-// 2. WORK UNITS, longest first, the slow files split into case chunks.
+// 2. WORK UNITS, longest first; a file is one unit unless it declares independentCases (then a slow one is chunked).
 const timingsSource = [timingsPath, mainTimingsPath].find((candidate) => candidate && existsSync(candidate));
 const timings = timingsSource ? JSON.parse(readFileSync(timingsSource, "utf8")) : {};
 const plan = [];
 for (const [file, positions] of units) {
   const key = rel(file);
   const seconds = timings[key]?.seconds ?? positions.length * 0.5;
-  const chunks = Math.min(positions.length, Math.max(1, Math.ceil(seconds / SPLIT_SECONDS)));
-  const size = Math.ceil(positions.length / chunks);
-  for (let start = 0; start < positions.length; start += size) {
-    const slice = positions.slice(start, start + size);
-    plan.push({ key, file, positions: slice, chunked: chunks > 1, estimate: seconds * (slice.length / positions.length) });
+  const chunks = suiteCaseChunks(positions, { independentCases: independent.has(file), seconds, splitSeconds: SPLIT_SECONDS });
+  for (const slice of chunks) {
+    plan.push({ key, file, positions: slice, chunked: chunks.length > 1, estimate: seconds * (slice.length / positions.length) });
   }
 }
 if (LANES) plan.push({ key: "lanes (integration + cargo)", lanes: true, positions: [], estimate: timings["lanes (integration + cargo)"]?.seconds ?? 300 });
 plan.sort((a, b) => b.estimate - a.estimate);
+if (argv.includes("--plan")) {
+  console.log(`# plan: ${plan.length} units; the heaviest ${Math.min(10, plan.length)} (estimate from recorded timings):`);
+  for (const unit of plan.slice(0, 10)) console.log(`  ${unit.estimate.toFixed(0).padStart(5)}s  ${unit.positions.length || "-"} cases  ${unit.key}${unit.chunked ? " (chunk)" : ""}`);
+  process.exit(0);
+}
 
 // 3. THE POOL.
 function runUnit(unit, label) {

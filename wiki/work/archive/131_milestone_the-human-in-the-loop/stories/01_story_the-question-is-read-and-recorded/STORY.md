@@ -48,7 +48,7 @@ files:
   - test/run/run-retry-command.test.mjs
   - test/run/run-session-limit-resume.test.mjs
   - test/run/run-store-record.test.mjs
-  - test/run/run-store-spend.test.mjs
+  - packages/execution/test/run-store-spend.suite.mjs
   - test/run/run-status-document-frozen.test.mjs
 schema: 1
 aofVersion: 0.1.0

@@ -1,5 +1,10 @@
 # Plan 09 independent acceptance review
 
+Latest recorded assessment: **the shard and ledger findings are resolved in the working tree;
+the cited ownership example is fixed, but the broader ownership finding remains partial**. See
+[the 2026-10-02 recheck](#recheck-and-fixes--2026-10-02). Full Plan 09 signoff remains withheld.
+The earlier sections below preserve the review of `dd8b610e` and its follow-up evidence.
+
 Reviewed 2026-10-01 at `dd8b610e`, on `refactor/yarn-workspace-modularization`.
 The checkout was clean before review. This is an engineering review, not an AOF lifecycle transition.
 
@@ -123,3 +128,143 @@ This review does not claim a complete inspection of all 2,343 changed files in `
 whole-tree run, a fresh native distribution build, or desktop/platform acceptance. Those are not
 substituted by the focused greens above. No production files, test expectations, work-item states,
 dependency versions or platform dispositions were changed for this review.
+
+## Second review — d48bf751
+
+Reviewed 2026-10-01, covering the Plan 09 changes from `dd8b610e` through `d48bf751`.
+**Verdict: signoff withheld.** Findings below were open at the reviewed revision. Logged after the
+review at checkout `b854ad5b`; later commits have not been reassessed by this logging update.
+
+### Findings register
+
+| ID | Severity | Finding | Status at reviewed revision | Required disposition |
+| --- | --- | --- | --- | --- |
+| P09-R2-01 | High | Timing-based sharding separates cases that share a fixture | Open | Preserve dependent cases in one process, or make the cases independently runnable |
+| P09-R2-02 | Medium | The test-ownership ledger is invalid JSON after the folder rename | Open | Repair the malformed paths and validate the ledger |
+| P09-R2-03 | Medium | The blanket assembled-application rationale retains package-owned tests at root | Open | Classify these suites individually and move convenience-assembled tests to their owning packages |
+
+### P09-R2-01 — Sharding breaks dependent cases
+
+Location at the reviewed revision: `scripts/test-sharded.mjs:83` (chunk sizing and slicing), and
+`test/work/stream/work-this-tree-holds-what-is-live.test.mjs:458` (the dependent assertion).
+
+The scheduler splits a suite's case positions using recorded timings without preserving shared
+fixture dependencies. In the live-tree suite, position 4 creates a backlog item in a shared copy;
+position 5 promotes that item. With the recorded 383.495 seconds for 19 cases and the supported
+`--split-seconds 100` option, the scheduler creates chunks of five: positions 0–4 and 5–9 run in
+different processes. The same boundary can arise with default settings when timings change.
+
+Reproduction:
+
+```text
+node scripts/test-shard.mjs test/work/stream/work-this-tree-holds-what-is-live.test.mjs 5
+```
+
+Observed: one case executed, one failure, exit 1 — `the previous scenario left the item in the
+copy's backlog`. Retrying the same chunk alone cannot restore the missing setup. This creates
+false gate failures dependent on timing history and machine speed. Keep suites atomic unless
+their cases are known to be independent, or remove the shared setup dependency before splitting.
+Receipt: `.tmp/signoff-142/shard-dependent-case.log`.
+
+### P09-R2-02 — Ownership ledger cannot be parsed
+
+Location at the reviewed revision: `plans/09-test-ledger.json:1013` in this milestone.
+
+The `fb9e8f4b` rename introduced 40 malformed path values, including:
+
+```text
+"now":"test/surfaces/"board-action.test.mjs"
+```
+
+`JSON.parse` fails at line 1013, column 65 (`Expected ',' or '}' after property value`). The
+required acceptance artifact therefore cannot support automated path, ownership or case-count
+reconciliation. Repair the stray quotes and validate both JSON syntax and the recorded paths.
+The diagnostic removed the stray quotes only in memory to inspect classifications; it did not
+modify the ledger on disk.
+
+### P09-R2-03 — Convenience-assembled tests remain misclassified
+
+Locations at the reviewed revision: `test/work/scope-flags-fields-agree.test.mjs:11` and its
+ledger entry at `plans/09-test-ledger.json:1133`.
+
+This suite loads the assembled application solely to compare `SCOPE_FLAGS` with `SCOPE_FIELDS`,
+both owned by `@aof/knowledge`. Its ledger reason says a move requires rebuilding the collaborator
+graph. A direct probe passed the same assertion using `createMemory` from `@aof/knowledge/memory`
+with fail-on-use `loadLocalBackend` and `loadGraphifyBackend` stubs, and `SCOPE_FIELDS` from
+`@aof/knowledge/memory/local-retrieval`. Neither backend was invoked; no application assembly was
+needed.
+
+This is a concrete exception to the blanket retention rationale, not a claim that all 505 retained
+suites should move. Inspect their actual subjects individually. Construction cost alone does not
+establish cross-package coverage under Plan 09's rule; move single-package cases or record a
+specific integration subject that justifies retention.
+
+### Verification for the second review
+
+All fresh executions below ran approved outside the sandbox after Windows denied sandboxed
+process creation. Results apply to `d48bf751`:
+
+- `node scripts/supply-chain-audit.mjs`: pass, zero warnings.
+- `node scripts/workspace-boundaries.mjs`: pass, empty findings.
+- `node scripts/test-workspace.mjs --all`, with an isolated global home: all 14 workspaces pass,
+  **1,344 registered cases and 247 native cases** (`workspaces-current.log`).
+- The assembled registry contains **11,537 cases with 11,537 unique names**. This census alone
+  does not claim historical name-multiset equivalence.
+- Nine existing changelog cases and the existing live-tree link-ratchet case, executed through
+  `runCases`: **10 cases, zero failures** (`repaired-findings.log`). The earlier missing-changelog
+  and link-ratchet findings are repaired at this revision.
+- The dependent-case shard reproduction fails as recorded in P09-R2-01; the package-only
+  scope-flags probe passes as recorded in P09-R2-03.
+
+Receipts are under ignored `.tmp/signoff-142/`. No new full-tree gate, native distribution build
+or platform acceptance was performed for this review. No tracked files were changed during the
+review itself; this subsequent update records its findings without changing implementation or
+test expectations.
+
+## Recheck and fixes — 2026-10-02
+
+Rechecked the working tree based on `b854ad5b`, preserving the existing uncommitted fixes. The user
+authorized direct fixes. This pass verifies and hardens the cited defects; it does not claim to
+have completed the remaining 504-suite ownership migration or a new clean-worktree whole-tree gate.
+
+| ID | Current disposition | Evidence and remaining work |
+| --- | --- | --- |
+| P09-R2-01 | Resolved in working tree | Suite files are atomic unless `independentCases === true`. The actual plan at `--split-seconds 100` keeps all 19 live-tree cases in one unit. The setup/promotion pair passes together. A registered regression covers the dependency at four thresholds and exact-once coverage for opted-in chunks. |
+| P09-R2-02 | Resolved in working tree | The ledger parses; all 1,106 current paths exist and are unique. A registered regression checks the JSON, path confinement, file existence, stored name hashes and exactly-once registration. Restoring the malformed quote in memory makes parsing fail. |
+| P09-R2-03 | Partial; broader finding open | The cited constant-agreement test is now owned by `@aof/knowledge`, with fail-on-use backend ports and the original case name. The remaining 504 suites have not all received the individual subject classification required by the finding; the construction-cost rationale remains insufficient to accept that group. |
+
+Changes made in this pass:
+
+- Extracted the scheduler's atomic-by-default chunk calculation into `suiteCaseChunks` in the
+  existing test harness so the production scheduling decision is directly exercised by a test.
+  Invalid split thresholds on opted-in suites fail explicitly.
+- Added two cases to the existing workspace suite, rather than changing any existing case names:
+  `workspace-tests/sharding keeps shared-fixture suites atomic unless cases explicitly opt into independence`
+  and `workspace-tests/Plan 09 ownership ledger parses and matches current files and registered case names`.
+  The registry is now **11,539**, the previous 11,537 plus exactly these two checks. The ledger
+  records both names and the updated suite hash; its placement totals are **70 moved / 1,036 retained**.
+- Refreshed the runtime audit for the reviewed scheduler change. FF-5311's residue digest was
+  advanced only for the appended helper's **12 non-comment lines**. A byte comparison against
+  `HEAD` confirms the pre-existing harness is unchanged; the three execution/isolation-region
+  pins are unchanged and their planted-violation checks still pass.
+
+Verification ran approved outside the sandbox, using isolated global homes for executable suites:
+
+- Supply-chain audit: pass, zero warnings.
+- Focused workspace, ledger, boundary, source-budget and runner-registration selection: 32 cases;
+  31 initially passed and FF-5311 identified the helper's unrecorded digest change. After the
+  measured digest update, all 12 runner-registration cases passed on rerun; the other 20 cases
+  had passed unchanged. Logs: `recheck-focused.log`, `recheck-registration.log`.
+- `node scripts/test-workspace.mjs @aof/knowledge`: **44 registered + 7 native cases**, zero failures
+  (`recheck-knowledge.log`).
+- `node scripts/test-sharded.mjs --plan --split-seconds 100`: **11,539 cases mapped**, seven
+  explicitly chunkable files; the live-tree suite remains one 19-case unit (`recheck-plan.log`).
+- `node scripts/test-shard.mjs test/work/stream/work-this-tree-holds-what-is-live.test.mjs 4,5`:
+  **two cases, zero failures** (`recheck-dependent-pair.log`).
+- In-memory red probes: the old malformed quote is rejected by `JSON.parse`; forcibly opting the
+  dependent suite into splitting loses the promotion setup. No tracked file was mutated by a probe.
+
+Receipts are in ignored `.tmp/signoff-142/`. No dependencies were installed or changed, no existing
+acceptance threshold was lowered, and no repository work-item state was altered. Full Plan 09
+acceptance still requires the remaining ownership work and the final gate/dispositions recorded
+in the plan; this focused recheck does not replace those requirements.

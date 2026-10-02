@@ -13,6 +13,8 @@ import { installPayload } from '../../scripts/install-local.mjs';
 import { inspectBoundaries, dependencyCycles, moduleReferences } from '../../scripts/workspace-boundaries.mjs';
 import { workspaceTestInventory, assertNativeTestSource } from '../../scripts/workspace-tests.mjs';
 import { sourceFiles } from '../../scripts/source-inventory.mjs';
+import { runnerShapedExports, suiteCaseChunks } from '../../scripts/test-harness.mjs';
+import { createHash } from 'node:crypto';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 function ownershipFixture(run) {
@@ -32,6 +34,61 @@ function ownershipFixture(run) {
 
 
 export const coreWorkspaceTests = [
+  { name: 'workspace-tests/sharding keeps shared-fixture suites atomic unless cases explicitly opt into independence', run() {
+    const positions = Array.from({ length: 19 }, (_, index) => index);
+    for (const splitSeconds of [1, 60, 100, 1000]) {
+      for (const independentCases of [undefined, false, 'true']) {
+        const chunks = suiteCaseChunks(positions, { independentCases, seconds: 383.495, splitSeconds });
+        assert.deepEqual(chunks, [positions]);
+        for (const chunk of chunks) {
+          let created = false;
+          for (const position of chunk) {
+            if (position === 4) created = true;
+            if (position === 5) assert.ok(created, 'promotion shares its setup process at every timing threshold');
+          }
+        }
+      }
+    }
+    const independent = suiteCaseChunks(positions, { independentCases: true, seconds: 383.495, splitSeconds: 100 });
+    assert.deepEqual(independent.map(chunk => chunk.length), [5, 5, 5, 4]);
+    assert.deepEqual(independent.flat(), positions, 'opted-in chunks retain every case exactly once and in order');
+    assert.deepEqual(suiteCaseChunks([], { independentCases: true }), []);
+    for (const splitSeconds of [0, -1, NaN, Infinity]) {
+      assert.throws(() => suiteCaseChunks(positions, { independentCases: true, splitSeconds }), /positive split threshold/u);
+    }
+  } },
+  { name: 'workspace-tests/Plan 09 ownership ledger parses and matches current files and registered case names', async run() {
+    const stream = path.join(repoRoot, 'wiki/work');
+    const homes = [];
+    for (const directory of [stream, path.join(stream, 'archive')]) {
+      for (const entry of await readdir(directory, { withFileTypes: true })) {
+        if (entry.isDirectory() && entry.name.startsWith('142_milestone_')) homes.push(path.join(directory, entry.name));
+      }
+    }
+    assert.equal(homes.length, 1, 'the migration has one live or archived evidence home');
+    const ledger = JSON.parse(await readFile(path.join(homes[0], 'plans/09-test-ledger.json'), 'utf8'));
+    const { tests } = await import('../../scripts/test.mjs');
+    const registrations = new Map();
+    for (const entry of tests) registrations.set(entry.name, (registrations.get(entry.name) ?? 0) + 1);
+    assert.equal(ledger.entries.length, ledger.summary.baselineFiles);
+    assert.equal(new Set(ledger.entries.map(entry => entry.path)).size, ledger.entries.length);
+    assert.equal(new Set(ledger.entries.map(entry => entry.now)).size, ledger.entries.length);
+    let cases = 0;
+    for (const entry of ledger.entries) {
+      const file = path.resolve(repoRoot, entry.now);
+      const relative = path.relative(repoRoot, file);
+      assert.ok(relative && !relative.startsWith('..') && !path.isAbsolute(relative), entry.now);
+      await readFile(file); // Verify zero-case/native entries exist without executing their native tests here.
+      if (!entry.cases) continue;
+      const names = runnerShapedExports(await import(pathToFileURL(file).href)).flat().map(test => test.name).sort();
+      assert.equal(names.length, entry.cases, entry.now);
+      assert.equal(createHash('sha256').update(names.join('\n')).digest('hex'), entry.namesSha256, entry.now);
+      for (const name of names) assert.equal(registrations.get(name), 1, name);
+      cases += names.length;
+    }
+    assert.equal(cases, ledger.summary.namesInLedger);
+    assert.equal(tests.length, ledger.summary.registryCases);
+  } },
   { name: 'core-workspace/copied core runs without source aliases or optional app packages', async run() {
     const parent = await realpath(os.tmpdir());
     const fixture = await mkdtemp(path.join(parent, 'aof core distribution '));

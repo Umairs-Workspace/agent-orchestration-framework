@@ -36,7 +36,6 @@ import { workToolchainDeclarationTests } from "./work-toolchain-declaration.test
 // predicate as its own hand-owned, unmarked hook with its cases re-homed (task 02).
 // Task 01's re-aim of FF-5505 lands in acd-frozen-set-compiled.test.mjs, already imported.
 import { frameworkStopsShippingGuardTests } from "./framework-stops-shipping-guard.test.mjs";
-import { workInitTests } from "./work-init.test.mjs";
 // chore 51 — the config half of init (`aof work init-config`, the second call
 // `/aof:init` makes once it has analysed the repo).
 import { workInitConfigTests } from "./work-init-config.test.mjs";
@@ -106,7 +105,6 @@ import { briefPinnedToTheStreamTests } from "./brief-pinned-to-the-stream.test.m
 import { fourDeadlinesTests } from "./four-deadlines.test.mjs";
 import { loadworkspaceHydrationTests } from "./loadworkspace-hydration.test.mjs";
 import { backcompatMigrateDoctorTests } from "./backcompat-migrate-doctor.test.mjs";
-import { workDelegationTests } from "./work-delegation.test.mjs";
 // story 31 — migrate-claude-command (the /aof:migrate BUNDLE BODY — the inference
 // ceiling over the story-29 mechanical CLI). Task 00's @executable content pins over
 // the AUTHORED packages/core/assets/commands/migrate.md (grep-able marker facts + offset
@@ -135,8 +133,6 @@ import { danglingDeclarationFfTests } from "./dangling-declaration-ff.test.mjs";
 // story 03 — gaps are schedulable debt: the `--status` recall filter (gap lifecycle)
 // + promote-gap-to-chore over the reused chore insert seam.
 import { gapCarriesDischargeTests } from "./gap-carries-discharge.test.mjs";
-// review fix — pin the deliberate SCOPE_FLAGS/SCOPE_FIELDS seam-split as coverage.
-import { scopeFlagsFieldsAgreeTests } from "./scope-flags-fields-agree.test.mjs";
 // milestone 40 / story 01 — version stamp & reader (ADR-001/002/003/004): the
 // reader (schema-int/aofVersion-string, schema-0 baseline, task 00), new items
 // born-stamped at scaffold (task 01), and the ADR-004 transform-scoped
@@ -235,7 +231,6 @@ export const tests = [
   ...workToolchainDeclarationTests,
   // story 87 — repo-specific lab hygiene leaves the bundle, and stays here hand-owned
   ...frameworkStopsShippingGuardTests,
-  ...workInitTests,
   ...workInitConfigTests,
   // milestone 127 / story 02 task 04 — the phase door and the mode-less read side
   ...workIntakeWriteSideTests,
@@ -264,7 +259,6 @@ export const tests = [
   ...fourDeadlinesTests,
   ...loadworkspaceHydrationTests,
   ...backcompatMigrateDoctorTests,
-  ...workDelegationTests,
   // story 31 — migrate-claude-command (the /aof:migrate bundle body + distribution)
   ...migrateClaudeCommandTests,
   ...doctorCwdIndependenceTests,
@@ -275,7 +269,6 @@ export const tests = [
   ...verifyAuthorsOutcomeTests,
   ...danglingDeclarationFfTests,
   ...gapCarriesDischargeTests,
-  ...scopeFlagsFieldsAgreeTests,
   // milestone 40 / story 01 — version stamp & reader task traceability
   ...workVersionReaderTests,
   // 2026-08-16 — the item status lifecycle (writer, run mint, door, phase door)

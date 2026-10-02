@@ -7,6 +7,10 @@ cross-package integration only.
 Independent review 2026-10-01: **signoff withheld** at `dd8b610e`; see
 [findings and fresh verification](09-REVIEW.md). Each finding's resolution is in [09-CLEANUP](09-CLEANUP.md).
 
+Rechecked 2026-10-02: the shard and ledger defects are fixed and covered by regression checks;
+the cited knowledge test is moved. The broader ownership finding remains open. The registry now
+holds 11,539 cases: the preserved 11,537 plus two named review checks (see [review](09-REVIEW.md#recheck-and-fixes--2026-10-02)).
+
 ## Objective
 
 Leave the tree with nothing transitional in it and every test owned by the workspace it proves. A package's
@@ -38,13 +42,13 @@ Packages already hold 88 test files. These are starting observations, not move t
 - [x] **Ledger** (all 1,106 baseline files classified, names recorded): Classify every root test file into a tracked `09-test-ledger.json`: owners reached (imports,
   source paths read, processes spawned), verdict (move to `<home>` / rewrite then move / stays: reason), and its
   registered test names. Recompute rather than trusting the heuristic above.
-- [x] **Move package-owned tests** (69 moved; names identical, 11,537): in per-package batches. Preserve every test name, register each case
+- [x] **Move package-owned tests** (70 moved; existing names preserved): in per-package batches. Preserve every test name, register each case
   exactly once (root runner, package entry and the workspace-boundary census agree), keep source guards
   non-vacuous, and move shared helpers with their only consumer or into a package's test support.
 - [x] **Create `apps/ui/test/`** (freeze narrowed, not re-pinned): with a test entry for UI-only suites. The `ui/` freeze digest hashes every
   tracked file under `apps/ui`: re-pin it once, with the measured diff (tests added, no `src/` byte changed), or
   narrow the freeze to `apps/ui/src` with the same measurement — decide in the batch, record which.
-- [~] **Rewrite convenience-assembled tests** — NOT done: 505 suites stay, with the wiring evidence recorded; an operator decision: where the subject is one package; keep the rest with a reason.
+- [~] **Rewrite convenience-assembled tests** — the cited constant-agreement suite is moved; 504 suites remain to classify individually: where the subject is one package, rewrite then move; keep genuine integration tests with a specific reason.
 - [x] **Update the readers**: `scripts/test.mjs` / `test-unit.mjs` registration, `test-workspace.mjs`, source-
   directory budgets, accepted-suite ceilings (FF-5311), test-traceability pointers, CI and docs. Re-pins
   carry their reason; no floor is lowered to make a move pass.

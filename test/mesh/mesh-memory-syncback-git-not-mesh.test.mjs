@@ -174,7 +174,7 @@ function produceUpEnvelope() {
 
 // The REAL { type:'joined' } and { type:'error' } control-frames, driven from a REAL
 // ephemeral serveRelay + a REAL ws client (mirrors
-// test/mesh/relay/mesh-relay-envelope-resilience.test.mjs's own connect idiom).
+// packages/mesh/test/mesh-relay-envelope-resilience.suite.mjs's own connect idiom).
 async function produceControlFrames() {
   const relay = await serveRelay({ port: 0 });
   try {

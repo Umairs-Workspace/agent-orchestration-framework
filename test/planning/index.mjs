@@ -30,13 +30,11 @@ import { planningPrdTests } from "./planning-prd.test.mjs";
 // milestone 06 — headroom plugin (story 00: config-contract @executable traceability)
 import { headroomConfigContractTests } from "./headroom-config-contract.test.mjs";
 // milestone 06 — headroom plugin (story 01: toggle-cli, story 02: wrap-routing @executable traceability)
-import { headroomToggleCliTests } from "./headroom-toggle-cli.test.mjs";
 import { headroomWrapRoutingTests } from "./headroom-wrap-routing.test.mjs";
 // milestone 12 — managed tool provisioning (story 03: headroom retrofit — the
 // store-first re-point of headroom's defaultWhich onto resolveManagedBinary, ADR-004
 // task 00; the headroom descriptor's uv-lane plan + the tool-platform platform-matrix
 // warning, ADR-004 task 01 @executable; @executable traceability)
-import { headroomProvisionPlatformTests } from "./headroom-provision-platform.test.mjs";
 // milestone 71 / story 01 — findings become work items (ADR-003/ADR-004): the triage
 // rule as a pure decider + the second face on the one promotion engine, plus FF-7103
 // (one type, one placement, zero shifts) and FF-7104 (one engine, two faces, no rival).
@@ -58,9 +56,7 @@ export const tests = [
   ...tuneCommandTests,
   ...headroomConfigContractTests,
   ...planningPrdTests,
-  ...headroomToggleCliTests,
   ...headroomWrapRoutingTests,
-  ...headroomProvisionPlatformTests,
   // milestone 71 / story 01 — all three @executable tasks (the triage rule, the
   // promotion, and the one-type bound) + FF-7103 + FF-7104. 39/03's own untouched
   // suite is the control on the extraction being behaviour-preserving.

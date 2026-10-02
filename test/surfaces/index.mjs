@@ -76,7 +76,6 @@ import { boardRunStatusRouteTests } from "./board-run-status-route.test.mjs";
 // "board lists seven streamed stories, then dead-ends every click" gap.
 import { boardWorkerContentTests } from "./board-worker-content.test.mjs";
 import { fleetScopeTests } from "./fleet-scope.test.mjs";
-import { renderPlanTests } from "./render-plan.test.mjs";
 import { setupUiTests } from "./setup-ui.test.mjs";
 // milestone 38 / story 06 / task 04 — BLOCKER F-38.06c (raised at aof:verify 38): the
 // transport was reachable but had NO CONSUMER SURFACE. The ADR-013 `session_id` join
@@ -325,7 +324,6 @@ export const tests = [
   ...boardRunStatusRouteTests,
   ...boardWorkerContentTests,
   ...fleetScopeTests,
-  ...renderPlanTests,
   ...setupUiTests,
   // task 04 — BLOCKER F-38.06c: the (nodeId, sessionId) join key reaches the browser
   // (persist → surface → render) and the fleet gains its read-only terminal-VIEW

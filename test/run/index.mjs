@@ -31,7 +31,6 @@
 // acd-sync-root-set (which also re-arms the EXTENDED acd-mesh-sync-record-neutral
 // over the root-set engine). The five FROZEN_KEYS literals across the run suites
 // carry the fourteenth key ("node") — the supersede's sanctioned ripple.
-import { runNodePartitionTests } from "./run-node-partition.test.mjs";
 // milestone 19 — work-run-lifecycle (story 00: run-store — the SPINE packages/core/src/run-store.mjs:
 // the per-run JSON store under runs/ (ADR-002 path seam runsDir/runRecordPath), the frozen
 // run-record schema (ADR-003), and the state-machine transition table (ADR-001). The three
@@ -39,8 +38,6 @@ import { runNodePartitionTests } from "./run-node-partition.test.mjs";
 // the three fitness arch-tests — derived-record invariant (FF#1, prune AND rebuild),
 // write-scope guard (FF#2), partition-ready layout (FF#3).
 import { runStoreRecordTests } from "./run-store-record.test.mjs";
-import { runStoreStateMachineTests } from "./run-store-state-machine.test.mjs";
-import { runStoreDerivedLogTests } from "./run-store-derived-log.test.mjs";
 // milestone 19 — work-run-lifecycle (story 01: run-commands — the three work:run-*
 // commands (run-start/run-complete/run-status, ADR-003) registered into the SAME
 // core + the CLI `work run-*` dispatch/--json face; each a thin wrapper over story
@@ -66,8 +63,6 @@ import { runLifecycleRestartTests } from "./run-lifecycle-restart.test.mjs";
 // collision-safe mint (ADR-006), and the atomic persist (ADR-007). Five @executable
 // behavioural test files + five fitness-function arch-tests.
 import { runResilienceRecordKeysTests } from "./run-resilience-record-keys.test.mjs";
-import { runFailureClassificationTests } from "./run-failure-classification.test.mjs";
-import { runRetryLineageTests } from "./run-retry-lineage.test.mjs";
 import { runHeartbeatReclaimTests } from "./run-heartbeat-reclaim.test.mjs";
 import { runHeartbeatConsumptionTests } from "./run-heartbeat-consumption.test.mjs";
 import { runDedupAtomicPersistTests } from "./run-dedup-atomic-persist.test.mjs";
@@ -88,9 +83,8 @@ import { runCompleteReasonTests } from "./run-complete-reason.test.mjs";
 // key `spend` (ADR-001), the four mutually-exclusive writer-enforced token buckets
 // (ADR-003), cost stamped once with provenance (ADR-004), and the closed exit
 // vocabulary (ADR-008). The four @executable task features trace to
-// test/run/run-store-spend.test.mjs; the four fitness functions FF-6801 (the EXTENDED
+// packages/execution/test/run-store-spend.suite.mjs; the four fitness functions FF-6801 (the EXTENDED
 // acd-run-record-node-additive, registered below) / FF-6802 / FF-6803 / FF-6804.
-import { runStoreSpendTests } from "./run-store-spend.test.mjs";
 // milestone 68 / story 02 — spend-ingest-at-settle: the transcript's own numbers,
 // copied once, priced once. The new producer module (packages/core/src/run-spend-ingest.mjs)
 // reads the session's whole transcript tree into the spend envelope and stamps it
@@ -135,19 +129,14 @@ import { runMintSessionAttributionTests } from "./run-mint-session-attribution.t
 import { regressionGateTests } from "./regression-gate.test.mjs";
 
 export const tests = [
-  ...runNodePartitionTests,
   // milestone 19 — work-run-lifecycle (story 00: run-store)
   ...runStoreRecordTests,
-  ...runStoreStateMachineTests,
-  ...runStoreDerivedLogTests,
   // milestone 19 — work-run-lifecycle (story 01: run-commands)
   ...runCommandsTests,
   ...runCliFaceTests,
   ...runLifecycleRestartTests,
   // milestone 20 — autonomous-run-resilience (story 00: resilience-core)
   ...runResilienceRecordKeysTests,
-  ...runFailureClassificationTests,
-  ...runRetryLineageTests,
   ...runHeartbeatReclaimTests,
   ...runHeartbeatConsumptionTests,
   ...runDedupAtomicPersistTests,
@@ -163,7 +152,6 @@ export const tests = [
   // milestone 68 / story 00 — spend-bearing-run-record: the four @executable task
   // features + the story's four fitness functions (FF-6801 the EXTENDED
   // acd-run-record-node-additive, now also spread so it is actually enforced).
-  ...runStoreSpendTests,
   // milestone 68 / story 02 — spend-ingest-at-settle: the transcript → spend
   // producer + stamp-once-at-settle (both @executable task features).
   ...runSpendIngestTests,

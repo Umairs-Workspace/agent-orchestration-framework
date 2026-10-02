@@ -8,11 +8,9 @@
 import { diagramPlanCommandTests } from "./diagram-plan-command.test.mjs";
 // milestone 133 / story 02 — export: the browser ladder and the rasterizer (tasks 00-01), and
 // `aof diagram export` (task 02).
-import { diagramRasterizeTests } from "./diagram-rasterize.test.mjs";
 import { diagramExportCommandTests } from "./diagram-export-command.test.mjs";
 
 export const tests = [
   ...diagramPlanCommandTests,
-  ...diagramRasterizeTests,
   ...diagramExportCommandTests,
 ];

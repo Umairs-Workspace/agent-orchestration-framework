@@ -48,3 +48,18 @@ export function runnerShapedExports(module) {
   return found;
 }
 
+// Suite state belongs to its process. Timings may split only suites that explicitly
+// promise independent cases; faster machines and different thresholds cannot opt others in.
+export function suiteCaseChunks(positions, { independentCases = false, seconds = 0, splitSeconds = 60 } = {}) {
+  if (!positions.length) return [];
+  if (independentCases !== true) return [positions.slice()];
+  if (!Number.isFinite(splitSeconds) || splitSeconds <= 0 || !Number.isFinite(seconds) || seconds < 0) {
+    throw new TypeError("suiteCaseChunks: timings must be finite, with a positive split threshold");
+  }
+  const count = Math.min(positions.length, Math.max(1, Math.ceil(seconds / splitSeconds)));
+  const size = Math.ceil(positions.length / count);
+  const chunks = [];
+  for (let start = 0; start < positions.length; start += size) chunks.push(positions.slice(start, start + size));
+  return chunks;
+}
+

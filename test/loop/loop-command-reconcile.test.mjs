@@ -835,3 +835,7 @@ function reentryTests() {
     },
   ];
 }
+
+// Every case here passes alone, in a fresh process (142 Plan 09 measured each position separately), so the sharded run may
+// split this file across workers. Remove this export the moment a case starts relying on an earlier one's state.
+export const independentCases = true;

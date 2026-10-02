@@ -20,7 +20,6 @@ import { graphBinaryProvisioningTests } from "./graph-binary-provisioning.test.m
 // milestone 09 — graphify command core (story 02: rendered-faces — the graphify
 // skill + MCP config entry rendered through the existing asset/lock/drift
 // machinery, invoking aof graph not graphify, ADR-005; @executable traceability)
-import { graphRenderedFacesTests } from "./graph-rendered-faces.test.mjs";
 // milestone 09 — graphify command core (story 04: mcp-server-runtime — the stdio
 // MCP server `aof graph serve` whose tools map tools/call → invoke("graph:…")
 // behind the registry, ADR-005 amendment + ADR-006 inv. 2; @executable traceability)
@@ -58,7 +57,6 @@ export const tests = [
   ...graphCommandCoreTests,
   ...graphBuildFailurePropagationTests,
   ...graphBinaryProvisioningTests,
-  ...graphRenderedFacesTests,
   ...graphMcpServerTests,
   ...graphifyBackendSelectionTests,
   ...graphifyReindexTests,

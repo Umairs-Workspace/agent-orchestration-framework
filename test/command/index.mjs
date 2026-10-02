@@ -27,9 +27,7 @@ import { applicationAssemblyTests } from "./application-assembly.test.mjs";
 // enforcing fitness functions — the route↔command/command↔CLI bijection + the no-UI-core-import / no-subprocess guards)
 import { cliFaceContractTests } from "./cli-face-contract.test.mjs";
 import { configInspectTests } from "./config-inspect.test.mjs";
-import { configEditorTests } from "./config-editor.test.mjs";
 import { configFaultVisibleTests } from "./config-fault-visible.test.mjs";
-import { dslPrimitiveTests } from "./dsl-primitives.test.mjs";
 // ── milestone 45 / story 04 — THE ADVERTISED ENTRY POINTS (ADR-002 + ADR-003). Every
 // producer that hands the operator a URL stops minting `?mode=` and mints the path it
 // actually serves: the board / fleet / config-editor launchers (probe AND announce, which
@@ -70,9 +68,7 @@ export const tests = [
   ...applicationAssemblyTests,
   ...cliFaceContractTests,
   ...configInspectTests,
-  ...configEditorTests,
   ...configFaultVisibleTests,
-  ...dslPrimitiveTests,
   // milestone 45 / story 04 — the advertised entry points (tasks 00–01; 02 is @manual)
   ...advertisedPathsTests,
   // milestone 66 / story 01 — the declaration form (tasks 00–01) + its two fitness functions

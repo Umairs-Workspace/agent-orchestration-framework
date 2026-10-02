@@ -13,13 +13,11 @@
 // coded tamper, and the human ownership-marker escape hatch (FF-5505/FF-5506).
 import { yarnInstallationTests } from "./yarn-installation.test.mjs";
 import { coreWorkspaceTests } from "./core-workspace.test.mjs";
-import { adapterWarningTests } from "./adapter-warnings.test.mjs";
 // milestone 12 — managed tool provisioning (story 01: the lifecycle surface —
 // the project:provision command + CLI dispatch, ADR-003 task 00; the three
 // store-aware doctorConfig checks superseding graphify-binary, ADR-003 task 01;
 // @executable traceability)
 import { toolProvisionCommandTests } from "./tool-provision-command.test.mjs";
-import { toolDoctorChecksTests } from "./tool-doctor-checks.test.mjs";
 // milestone 27 fleet issue/assign write-route tests are retired with the removed fleet write surface.
 // story 30 — per-agent model selection (task 01: bundle default map; task 02:
 // per-project config override wins + validation; task 03: solo-mode inert map)
@@ -117,9 +115,7 @@ import { digestTemplateShipsTests } from "./digest-template-ships.test.mjs";
 
 export const tests = [
   // milestone 55 / story 04 â€” frozen rules reach their declared boundaries or refuse
-  ...adapterWarningTests,
   ...toolProvisionCommandTests,
-  ...toolDoctorChecksTests,
   // story 30 — per-agent model selection
   ...adapterTests,
   ...schemaTests,

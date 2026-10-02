@@ -26,8 +26,6 @@
 // 03_registry-over-git feature gets NO executable test (verified at aof:verify).
 // Fitness acd-registry-write-scope (imported above) turns GREEN with this story.
 import { meshRegistryStoreSeamTests } from "./mesh-registry-store-seam.test.mjs";
-import { meshRegistryAggregateMutationsTests } from "./mesh-registry-aggregate-mutations.test.mjs";
-import { meshRegistryPendingLifecycleTests } from "./mesh-registry-pending-lifecycle.test.mjs";
 // milestone 22 — mesh-foundation (story 00: mesh-store spine + face skeleton — the
 // SPINE packages/core/src/mesh/store.mjs: the partition path seam meshDir/nodeRecordPath (ADR-002),
 // the frozen node-record schema's OPAQUE per-node persist/read (ADR-003) through the
@@ -49,8 +47,6 @@ import { meshResyncTests } from "./mesh-resync.test.mjs";
 
 export const tests = [
   ...meshRegistryStoreSeamTests,
-  ...meshRegistryAggregateMutationsTests,
-  ...meshRegistryPendingLifecycleTests,
   // milestone 22 — mesh-foundation (story 00: mesh-store spine + face skeleton)
   ...meshRecordStoreTests,
   ...meshPartitionConventionTests,

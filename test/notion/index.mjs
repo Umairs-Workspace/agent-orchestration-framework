@@ -16,7 +16,6 @@
 // @executable traceability — the projection/apply + arch-tests are later stories)
 import { notionSpineCommandTests } from "./notion-spine-command.test.mjs";
 import { notionSpineOptinNoopTests } from "./notion-spine-optin-noop.test.mjs";
-import { notionMappingSidecarTests } from "./notion-mapping-sidecar.test.mjs";
 // milestone 17 — Notion work-board sync (story 01: the projection + one-way sync —
 // the PURE projectMilestone plan (00_projection-plan), the --dry-run zero-call
 // preview (02_dry-run-zero-calls), and the statusMap projection + honest skip
@@ -34,7 +33,6 @@ import { notionDryRunTests } from "./notion-dry-run.test.mjs";
 // install / auth round-trip rows are @manual, deferred to verify.)
 import { notionConfigSchemaTests } from "./notion-config-schema.test.mjs";
 import { notionAuthEnvTests } from "./notion-auth-env.test.mjs";
-import { notionDoctorTests } from "./notion-doctor.test.mjs";
 // milestone 18 — per-folder integration descriptor (story 00: the AUTHORING SPINE —
 // the new packages/core/src/integrations/routing.mjs reader/resolver (ADR-001/002/003), the boards
 // registry schema oneOf with the flat m17 back-compat arm at the Ajv-2020 seam
@@ -56,7 +54,6 @@ import { integrationsAssociateTests } from "./integrations-associate.test.mjs";
 // are deleted+unwired HERE as their mechanism is removed by the projection rewrite.)
 import { integrationsProjectionBoardRoutingTests } from "./integrations-projection-board-routing.test.mjs";
 import { integrationsProjectionParentNestingTests } from "./integrations-projection-parent-nesting.test.mjs";
-import { integrationsMultiboardSidecarTests } from "./integrations-multiboard-sidecar.test.mjs";
 // milestone 18 — per-folder integration descriptor (story 02: the CLEANUP + FITNESS
 // story — the packages/core/src/work.mjs parseScalarOrCollection revert (drop the `{}` inline-flow-map
 // branch, ADR-007) + the notion-top-level `parents` removal, locked by the two task
@@ -75,18 +72,15 @@ import { integrationsLegacyRemovedTests } from "./integrations-legacy-removed.te
 export const tests = [
   ...notionSpineCommandTests,
   ...notionSpineOptinNoopTests,
-  ...notionMappingSidecarTests,
   ...notionApplyIdempotentTests,
   ...notionDryRunTests,
   ...notionConfigSchemaTests,
   ...notionAuthEnvTests,
-  ...notionDoctorTests,
   ...integrationsRoutingReaderTests,
   ...integrationsBoardsRegistryTests,
   ...integrationsAssociateTests,
   ...integrationsProjectionBoardRoutingTests,
   ...integrationsProjectionParentNestingTests,
-  ...integrationsMultiboardSidecarTests,
   ...integrationsParserRevertedTests,
   ...integrationsLegacyRemovedTests,
 ];

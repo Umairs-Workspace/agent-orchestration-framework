@@ -28,8 +28,6 @@
 // stays green — mesh-relay.mjs's serve-unit shape is REUSED by the ADR-003 launcher, only
 // its role as the liveness transport is retired.
 import { meshRelayBrokerFanoutTests } from "./mesh-relay-broker-fanout.test.mjs";
-import { meshRelayEnvelopeResilienceTests } from "./mesh-relay-envelope-resilience.test.mjs";
-import { meshRelayControlNodeTests } from "./mesh-relay-control-node.test.mjs";
 // milestone 24 — device-code group-enrollment (story 02: the enforceable trust boundary —
 // ADR-003/004). packages/core/src/mesh/registry.mjs gains the PURE credential-verify seam
 // verifyCredential(registry, token) (hash the presented relayAuth, constant-time compare
@@ -54,7 +52,6 @@ import { meshRelayControlNodeTests } from "./mesh-relay-control-node.test.mjs";
 // acd-relay-stateless + acd-relay-envelope-neutral + acd-enroll-endpoint-http-not-ws GREEN
 // (the gate is a READ + a decision, never a write); the new verb rides
 // acd-mesh-command-cli-bijection.
-import { meshRelayAuthGateTests } from "./mesh-relay-auth-gate.test.mjs";
 // milestone 33 (story 01) — fabric-native transport + coordination launcher: task 02
 // (02_broker-retirement.feature, dedicated behavioural coverage, review Fix 5) — a
 // node's presence/liveness view fully populated with the broker never started (over
@@ -68,9 +65,6 @@ import { controlStreamServerTests } from "./control-stream-server.test.mjs";
 
 export const tests = [
   ...meshRelayBrokerFanoutTests,
-  ...meshRelayEnvelopeResilienceTests,
-  ...meshRelayControlNodeTests,
-  ...meshRelayAuthGateTests,
   ...meshBrokerRetirementTests,
   ...controlStreamServerTests,
 ];

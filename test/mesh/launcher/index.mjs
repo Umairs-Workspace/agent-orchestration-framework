@@ -23,7 +23,6 @@ import { meshFaceSkeletonTests } from "./mesh-face-skeleton.test.mjs";
 // mesh fabric is unconfigured.
 import { meshCoordinationLauncherTests } from "./mesh-coordination-launcher.test.mjs";
 import { meshLauncherStreamRoleTests } from "./mesh-launcher-stream-role.test.mjs";
-import { meshLauncherLockTests } from "./mesh-launcher-lock.test.mjs";
 // ── milestone 48 / story 02 — RUN SUBSUMPTION MOVES TO THE FORMATTER (ADR-004, with
 // ADR-009's one-home clause and ADR-010 R3's strictness ruling). The milestone's ONLY
 // behaviour-changing merge, and its two halves MUST land together: the producer's
@@ -41,7 +40,6 @@ export const tests = [
   ...meshFaceSkeletonTests,
   ...meshCoordinationLauncherTests,
   ...meshLauncherStreamRoleTests,
-  ...meshLauncherLockTests,
   // milestone 48 / story 02 — run subsumption moves to the formatter (ADR-004/009/010 R3).
   // Its two @executable task features (00 the wire, fed by the REAL assembler; 01 the pure
   // render). The fitness function this story AMENDS is acd-session-run-reconciliation,
