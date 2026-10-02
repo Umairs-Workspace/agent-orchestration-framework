@@ -1,4 +1,5 @@
 import path from "node:path";
+import { EXAMPLES_DOC } from "../examples/map.mjs";
 
 // work:doctor — milestone 16: the DOC-BLOAT / CONTEXT-BUDGET check-group. A single
 // PURE `(snapshot, ctx) => Finding[]` function APPENDED to the engine's CHECK_GROUPS
@@ -32,6 +33,9 @@ const BUDGET_KEY = {
   // one of them is updated. A story carrying no PLAN.md contributes no docSizes entry, so it is
   // SILENT here rather than measured as zero-length.
   [PLAN_BASENAME]: "plan",
+  // milestone 134 / ADR-001 §1 — a story's example map, the same kind of row: measured by the probe
+  // only while the gate is on, and refused only at the accepting item's door, like every row here.
+  [EXAMPLES_DOC]: "examples",
 };
 
 // Task contracts are budgeted by EXTENSION, not by name — a story holds arbitrarily

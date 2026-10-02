@@ -185,7 +185,9 @@ export const doctorDiagramsLaneTests = [
   {
     name: "133/03 task 01: the lane is registered where the roster says lanes are registered, and its codes are its own",
     run: async () => {
-      assert.equal(CHECK_GROUPS.at(-1), diagramsGroup, "diagramsGroup is the registry's last entry");
+      // Appended after every lane before it; 134/04's examples lane is the one entry appended since.
+      assert.equal(CHECK_GROUPS.at(-2), diagramsGroup, "diagramsGroup is appended after every earlier lane, with only the examples lane after it");
+      assert.equal(CHECK_GROUPS.at(-1).name, "examplesGroup", "the one entry after it is 134/04's examples lane");
       const spine = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8");
       assert.ok(dependencySpecifiers(spine).some(edge => edge.parameter === "workDoctorDiagramsServices" && edge.specifier === "./doctor-diagrams.mjs"), "the doctor receives its configured diagrams lane");
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");

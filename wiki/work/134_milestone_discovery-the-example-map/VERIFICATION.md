@@ -12,7 +12,7 @@ file, then run the control green again.
 |---|---|---|---|
 | FF-13401 | `test/arch/examples/acd-example-answer-one-reader.test.mjs` | GREEN (4 ok) | appended `export const probeAnswerReader = (entry) => entry.toolUseResult;` to `src/config-inspect.mjs` → `the harness's answer has one reader`, actual `['src/config-inspect.mjs', 'src/work-examples/answers.mjs']` (134/03 build, 2026-09-24) |
 | FF-13402 | `test/arch/examples/acd-example-map-single-home.test.mjs` | GREEN (3 ok) | appended `export const probeLabel = (line) => line.endsWith("[confirmed]");` to `src/config-inspect.mjs` → `src/config-inspect.mjs: spells a bracketed provenance label` (134/02 build, 2026-09-24) |
-| FF-13403 | `test/arch/examples/acd-examples-off-is-today.test.mjs` | pending (134/04) | — |
+| FF-13403 | `test/arch/examples/acd-examples-off-is-today.test.mjs` | GREEN (3 ok) | replaced `    if (examplesEnabled === true && item.type === "story") {` in `packages/work/src/doctor/index.mjs` with `    if (item.type === "story") {` → `absent: no doc-over-budget names EXAMPLES.md` and `the gate off leaves the doctor's findings exactly those of a stream with no map` (deep-equal fails), 2 of 3 red (134/04 build, 2026-10-02) |
 | FF-13404 | `test/arch/examples/acd-settle-reads-the-transcript-store.test.mjs` | GREEN (3 ok) | replaced `projectsDir: settleProjectsDir({ projectsDir, workspace, env, home }),` in `src/effects/run-transitions.mjs` with `projectsDir: projectsDir ?? workspace?.projectRoot ?? undefined,` → `transitionRunComplete takes a transcript directory from workspace.projectRoot` and `completeRun's directory is not the resolved one` (134/03 build, 2026-09-24) |
 
 ## 134/03 — the answer is read from the harness
@@ -70,3 +70,44 @@ Near-miss recall (`transcript settle spend answers AskUserQuestion run record`):
   Every `reads:`/`files:` source path was repointed at its package home, then validate PASS and
   doctor clean. Focused set (`scripts/test.mjs --only`, temp `AOF_GLOBAL_HOME`/`CLAUDE_CONFIG_DIR`):
   55 cases, 0 failures, including every `134-03` case and FF-13401/FF-13404.
+
+## 134/04 — the readiness gate
+
+Build: inline in the operator's session `ed33b986-4965-4b5f-98cb-1174699c96aa`, run
+`20261002T183736045Z-0001`, branch `134-discovery-example-map`, 2026-10-02 (a wave of one).
+Near-miss recall (`doctor lane continue door example map readiness gate budget`) surfaced m69/R6
+("validate and doctor were green while … the suite [was] red") and m59/R6 ("a structural rule
+stated as a PATH or as SOURCE TEXT is a rule with a door"). The first is why the importer and arch
+sweeps below were run, not only the story's own suites. The second is why the lane's purity is
+held by a deterministic re-run as well as by its source grep.
+
+- **Built against the post-142 layout.** The contract was refined on the pre-142 tree. The lane is
+  `packages/work/src/doctor/examples.mjs` (`createDoctorExamples({ examplesEnabledFromConfig })`,
+  assembled as `application.work.doctorExamples` and injected into `createWorkDoctor`), and the
+  row is `packages/work/src/doctor` 10 → 11 (task 01's "src/work 45 → 46"). The test headers name
+  the translation.
+- **Tasks 00-03 `@executable`: GREEN.** `test/examples/doctor-examples-lane.test.mjs` 18 ok,
+  `test/examples/continue-door-examples.test.mjs` 6 ok, FF-13403 3 ok (`scripts/test.mjs --only`,
+  temp `AOF_GLOBAL_HOME`/`CLAUDE_CONFIG_DIR`). Package `node:test` files over the changed seams
+  (`@aof/work` command-faces, doctor, domain-services, reentry, status-gate; `@aof/knowledge` and
+  `@aof/work-loop` services): 32 pass.
+- **Door red probe:** replacing `if (phase === "continue") await refuseOpenExamples(ctx, exact);` in
+  `packages/work/src/commands/continue.mjs` with a comment turns 4 of the 6 door cases red (`the CLI
+  exits non-zero`). Restored, and green again.
+- **Importer sweep** (every suite under `test/` that reaches the doctor, the door or the budget,
+  plus the package suites): 2636 cases, 8 not ok. Two were this build's (FF-7805 pinned
+  `createWorkDoctor`'s whole argument list; 133/03 pinned the diagrams lane as the last lane). Both
+  are re-pinned to their own claim, and both are green. The rest are not this build's: 63/03 task04
+  (the sweep's own exported `CLAUDE_CONFIG_DIR`, green when re-run without it), FF-9603 (2), 96/02-00
+  and 70/05 task02 ×2 (another session's uncommitted `143` stream), `cli-child-process` (not a
+  runner suite), and `this-tree-holds-what-is-live` 00/02.
+- **Arch lane** (every `test/arch/*/index.mjs`): 2110 cases, 6 not ok. One was this build's (FF-11903
+  pins `buildSnapshot`'s options as ending in `renameMap = null`; the two new options now precede
+  it) and it is green. FF-12905 passed when re-run alone. FF-9603 (2) is the `143` stream's.
+- **Inherited reds measured, not this build's (142's restructure):** FF-11903 "the map is DERIVED"
+  (`packages/contracts/src/error.mjs` ≠ `packages/core/src/command-error.mjs`) and its citation
+  ceiling (347 against 55); FF-5204 (`src/run-store.mjs`, cited by a shipped loop record, no longer
+  exists); `this-tree-holds-what-is-live` (122 stale reads against 117, every one under
+  `archive/`). This branch lowers the live count by four (134/03's three, 134/04's one).
+- **This repository's doctor** (`aof work doctor --json` from the root, gate off): 0 `example-*`
+  findings and 0 `doc-over-budget` naming `EXAMPLES.md`.

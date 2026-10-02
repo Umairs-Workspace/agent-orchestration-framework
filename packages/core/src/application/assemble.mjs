@@ -59,6 +59,7 @@ import { assembleCommandsDispatch } from './bindings/commands/dispatch.mjs';
 import { assembleCommandsDoc } from './bindings/commands/doc.mjs';
 import { assembleWorkDoctorDiagrams } from './bindings/work/doctor-diagrams.mjs';
 import { assembleWorkDoctor } from './bindings/work/doctor.mjs';
+import { assembleWorkDoctorExamples } from './bindings/work/doctor-examples.mjs';
 import { assembleEffectsReconcile } from './bindings/effects/reconcile.mjs';
 import { assembleCommandsDoctor } from './bindings/commands/doctor.mjs';
 import { assembleLoopAskRequest } from './bindings/loop/ask-request.mjs';
@@ -268,7 +269,8 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const meshAssignment = assembleMeshAssignment({ globalWorkStoreServices: globalWorkStore, workReadServices: workRead, effectsAssignmentTransitionsServices: effectsAssignmentTransitions, itemLockServices: itemLock });
   const commandsResolve = assembleCommandsResolve({ workReadServices: workRead, runStoreServices: runStore });
   const effectsItemTransitions = assembleEffectsItemTransitions({ workServices: work, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade });
-  const commandsContinue = assembleCommandsContinue({ meshAssignmentServices: meshAssignment, commandsResolveServices: commandsResolve, effectsItemTransitionsServices: effectsItemTransitions, boardMeshExecutionServices: boardMeshExecution, cacheReadServices: cacheRead });
+  const workDoctorExamples = assembleWorkDoctorExamples({ configInspectServices: configInspect });
+  const commandsContinue = assembleCommandsContinue({ meshAssignmentServices: meshAssignment, commandsResolveServices: commandsResolve, effectsItemTransitionsServices: effectsItemTransitions, boardMeshExecutionServices: boardMeshExecution, cacheReadServices: cacheRead, configInspectServices: configInspect, workDoctorExamplesServices: workDoctorExamples, provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; } });
   const runHeartbeatConsumption = assembleRunHeartbeatConsumption({ degradeServices: degrade, runStoreServices: runStore });
   const effectsRunTransitions = assembleEffectsRunTransitions({ runStoreServices: runStore, runHeartbeatConsumptionServices: runHeartbeatConsumption, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade, itemLockServices: itemLock, workObserveServices: workObserve });
   const commandsRunRetry = assembleCommandsRunRetry({ commandsResolveServices: commandsResolve, effectsRunTransitionsServices: effectsRunTransitions, itemLockServices: itemLock });
@@ -282,9 +284,9 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsDispatch = assembleCommandsDispatch({ workReadServices: workRead, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, workDispatchServices: workDispatch });
   const commandsDoc = assembleCommandsDoc({ commandsResolveServices: commandsResolve, cacheReadServices: cacheRead, workReadServices: workRead });
   const workDoctorDiagrams = assembleWorkDoctorDiagrams({ configInspectServices: configInspect });
-  const workDoctor = assembleWorkDoctor({ runStoreServices: runStore, workDoctorDiagramsServices: workDoctorDiagrams });
+  const workDoctor = assembleWorkDoctor({ runStoreServices: runStore, workDoctorDiagramsServices: workDoctorDiagrams, workDoctorExamplesServices: workDoctorExamples, configInspectServices: configInspect, provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; } });
   const effectsReconcile = assembleEffectsReconcile({ workServices: work, runStoreServices: runStore, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, degradeServices: degrade });
-  const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
+  const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, configInspectServices: configInspect, workObserveServices: workObserve, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const loopAskRequest = assembleLoopAskRequest({ workspaceServices: workspace, degradeServices: degrade });
   const runSessionCapture = assembleRunSessionCapture({ runStoreServices: runStore, degradeServices: degrade });
   const runSpendIngest = assembleRunSpendIngest({ runStoreServices: runStore });
@@ -581,6 +583,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
       }),
       read: workRead,
       doctorDiagrams: workDoctorDiagrams,
+      doctorExamples: workDoctorExamples,
       doctor: workDoctor,
       integrations: Object.freeze({
         routing: integrationsRouting,

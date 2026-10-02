@@ -162,7 +162,9 @@ export const archTests = [
         "the execution model is COMPUTED from the run records by every consumer that has one",
       );
       const composition = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8"));
-      assert.match(composition, /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup \}\)/u);
+      // The projection is INJECTED into the doctor. The lanes injected after it (diagrams 133/03,
+      // examples 134/04) are not this control's claim, so only the projection's place is pinned.
+      assert.match(composition, /createWorkDoctor\(\{ projectExecution, readRuns, /u);
       const doctor = stripComments(await readFile(path.join(repoRoot, "packages/work/src/doctor/index.mjs"), "utf8"));
       assert.match(doctor, /projectExecution\(/u, "the injected projection is called by the snapshot reader");
       // The RENDERER has exactly one consumer, and it only ever composes bytes — nothing imports it to

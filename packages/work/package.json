@@ -44,6 +44,7 @@
     "./doctor/depends": "./src/doctor/depends.mjs",
     "./doctor/loop-ready": "./src/doctor/loop-ready.mjs",
     "./doctor/diagrams": "./src/doctor/diagrams.mjs",
+    "./doctor/examples": "./src/doctor/examples.mjs",
     "./doctor": "./src/doctor/index.mjs",
     "./counters": "./src/counters.mjs",
     "./tune/formation": "./src/tune/formation.mjs",

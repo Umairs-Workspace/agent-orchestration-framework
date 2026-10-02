@@ -154,6 +154,15 @@ because `packages/work/src/examples/answers.mjs` is a factory and `src/work-exam
   (`run-spend-ingest`, `work`, `degrade`), so `validate 134/03` went red on a story nobody had
   touched. The continue repointed every `reads:`/`files:` entry at its package home. A restructure
   that splits a module owes the in-flight stories' contracts in the same change.
+- **134/04 was refined against the pre-142 tree and built on the post-142 one (2026-10-02).** Every
+  `src/` path in its contract had moved. The lane is `packages/work/src/doctor/examples.mjs`
+  (`createDoctorExamples`, injected into `createWorkDoctor` as the diagrams lane is) and the row
+  is `packages/work/src/doctor` 10 → 11. The declared write set missed the composition layer 142
+  introduced: the core bindings (`work/doctor-examples.mjs`, new, so `bindings/work` went 14 → 15;
+  `work/doctor.mjs`, `commands/continue.mjs`, `commands/doctor.mjs`), `assemble.mjs`, the work
+  package's `exports`, the doctor test stand-in and 133/03's "diagrams is the last lane" assertion.
+  All of them are now in `files:`. The doctor and the door get `collectAnswers` through a lazy
+  provider, because the answers collector is assembled after both (the run store's precedent).
 - **134/03 review close (inline, 2026-10-02): no Blocker. One recorded Nit:** FF-13401's third
   case title (`test/arch/examples/acd-example-answer-one-reader.test.mjs:76`) and its header comment
   still name `src/run-store.mjs`. The writer lives in `packages/execution/src/runs.mjs` since 142,

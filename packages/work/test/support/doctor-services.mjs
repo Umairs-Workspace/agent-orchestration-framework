@@ -12,6 +12,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { createWorkDoctor } from "@aof/work/doctor";
 import { createDoctorDiagrams } from "@aof/work/doctor/diagrams";
+import { createDoctorExamples } from "@aof/work/doctor/examples";
 import { createDoctorCommand } from "@aof/work/commands/doctor";
 
 const refuse = (name) => () => {
@@ -27,10 +28,20 @@ export function createDoctorServices() {
       return DIAGRAMS_OFF;
     },
   });
+  // milestone 134 / story 04 — the examples gate stands in OFF, as the diagrams policy does: this
+  // suite declares no work.examples, so no map is read and no answer is ever collected.
+  const examplesEnabledFromConfig = (config) => {
+    if (config?.work?.examples !== undefined) throw new Error("this stand-in resolves only a config declaring no work.examples");
+    return false;
+  };
+  const { examplesGroup } = createDoctorExamples({ examplesEnabledFromConfig });
   const doctor = createWorkDoctor({
     projectExecution: refuse("projectExecution"),
     readRuns: refuse("readRuns"),
     diagramsGroup,
+    examplesGroup,
+    examplesEnabledFromConfig,
+    collectAnswers: refuse("collectAnswers"),
   });
   const { readRenameMap } = createDoctorCommand({ execFileAsync: promisify(execFile) });
   return Object.freeze({ ...doctor, readRenameMap });

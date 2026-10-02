@@ -8,7 +8,7 @@ import { readJson } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
 // Application composition supplies shared runtime services and transition policy.
-export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore }) {
+export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, examplesEnabledFromConfig, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore }) {
 // work:doctor — the deterministic, cross-item HEALTH lane of the work stream
 // (milestone 15 / ADR-001). The SIBLING of work:validate on the SAME command
 // core: same `{ id, input, run, cli }` contract, same getCommand/invoke door, the
@@ -179,7 +179,15 @@ const doctorCommand = {
         { docNames: CONVENTION_DOCS },
         { globalWorkStoreOptions: ctx.globalWorkStoreOptions ?? {} },
       );
+    // milestone 134 / story 04 — the examples gate, resolved once through its one resolver, and the
+    // transcript directory a live answer is read from, resolved at THIS edge as the settle seam
+    // resolves it, so the engine never reads the environment.
+    const examplesEnabled = examplesEnabledFromConfig(ctx.workspace.config ?? {});
     const snapshot = await buildSnapshot(ctx.workspace.workDir, {
+      examplesEnabled,
+      projectsDir: examplesEnabled && ctx.workspace.projectRoot
+        ? claudeProjectsDir({ cwd: ctx.workspace.projectRoot, env: process.env })
+        : null,
       // 119/ADR-004 — the rename map, read HERE and handed in as plain data. A repository that is
       // not a git checkout, or a git that fails for any reason, yields an EMPTY map: the probe then
       // resolves exactly what it resolved before, which is the honest degradation. It is never an
