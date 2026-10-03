@@ -270,6 +270,20 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
 
   **Formulation.** PO writes the headline Scenarios; `aof-qa` writes the Examples tables;
   `aof-developer` checks feasibility.
+  **With an applicable example map, formulate from it.** This holds only when the discovery beat
+  above ran and the map is not declared not applicable. Otherwise formulation is exactly as this
+  paragraph says without it: no `Rule:` block and no example id is asked for. The PO reads the map
+  first. It writes one `Rule:` per map rule, titled with the rule's id and text
+  (`Rule: R1 · A member may hold at most five loans`), and under it one headline Scenario per key
+  example, titled with the example's id and its outcome
+  (`Scenario: E2 · a sixth loan is refused while five are out`). QA writes its outlines inside the
+  rule they test, and a row that restates a map example carries the example's id in a column
+  headed `example` (a row `| E3 | 5 |` under `| example | loans |`). Where a map example and a
+  table row say the same thing, the key example stays the headline Scenario and the table keeps
+  only the edges. Every `confirmed` or `stated` example must be carried this way, under its own
+  rule: `aof work doctor` reports one that is not as `example-untraced`, and continue refuses the
+  build until it is restored. A project whose runner does not bind `Rule:` writes one feature per
+  rule instead, titled with the rule's id (`Feature: R1 · …`) and holding no `Rule:` line.
   **Under orchestrated mode, one `aof-qa` writes the Examples tables for all of the story's tasks**
   — a single pass that sees every task at once. **The QA pass is never split into one agent per
   task**: each such agent re-reads the same story, ADRs and code at full cost, and none of them sees

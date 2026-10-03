@@ -7,6 +7,10 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   tasks/02_the-po-brief-learns-the-map-and-the-architect-brief-learns-the-classification-review.feature
 //   tasks/03_the-examples-template-is-a-legal-map-the-bundle-installs.feature
 //   tasks/04_the-acceptance-criteria-guide-names-discovery-above-the-three-zoom-levels.feature
+// and, for milestone 135 / story 05 (the contract is formulated from the map), in
+//   tasks/00_refine-formulates-from-the-map.feature
+//   tasks/01_the-briefs-and-the-guide-carry-the-level-above-the-matrix.feature
+// whose id specimens are read back through the package's id readers (135/ADR-004 §1).
 //
 // It reads the bundle SOURCES and their rendered copies from this checkout and pins CONTENT, not
 // wording (133/05's precedent). Byte-identity with a fresh render is read from
@@ -20,7 +24,8 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseExampleMap, readMapToken } from "@aof/specification-by-example/map";
+import { EXAMPLE_COLUMN, groupRuleId, parseExampleMap, readMapToken, rowExampleId, scenarioExampleId } from "@aof/specification-by-example/map";
+import { parseFeature } from "@aof/work/feature-parse";
 
 const getCommand = _aofApplication.getCommand;
 const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
@@ -33,11 +38,13 @@ const flat = (text) => text.replace(/\s+/g, " ");
 const REFINE = "packages/core/assets/commands/refine.md";
 const PO = "packages/core/assets/agents/aof-product-owner.md";
 const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
+const QA = "packages/core/assets/agents/aof-qa.md";
 const TEMPLATE = "packages/core/assets/templates/story/EXAMPLES.md";
 const INSTALLED = ".aof/templates/work/story/EXAMPLES.md";
 const GUIDE = "wiki/acceptance-criteria.md";
 const REFINE_COPIES = [".claude/commands/aof/refine.md", ".codex/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"];
 const PO_COPIES = [".claude/agents/aof-product-owner.md", ".codex/agents/aof-product-owner.md", ".opencode/agents/aof-product-owner.md"];
+const QA_COPIES = [".claude/agents/aof-qa.md", ".codex/agents/aof-qa.md", ".opencode/agents/aof-qa.md"];
 const ARCHITECT_COPIES = [".claude/agents/aof-architect.md", ".codex/agents/aof-architect.md", ".opencode/agents/aof-architect.md"];
 const MAP_LINE = /^\s*(## R|- E|- Q)\d/m;
 
@@ -81,6 +88,29 @@ const reviewOf = (brief) => {
   const start = own.indexOf("- **The classification review**");
   return own.slice(start, own.indexOf("\n", start));
 };
+// 135/05: the Contract's map-driven formulation, its bold lead to the orchestrated-mode paragraph.
+function formulationOf(refine) {
+  const contract = contractOf(refine);
+  const start = contract.indexOf("**With an applicable example map, formulate from it.**");
+  const end = contract.indexOf("**Under orchestrated mode", start);
+  assert.ok(start >= 0 && end > start, "the map-driven formulation is found");
+  return contract.slice(start, end);
+}
+// The PO brief's formulation bullet, and QA's sub-bullet under its test-case design.
+const bulletOf = (brief, lead) => {
+  const start = brief.indexOf(lead);
+  assert.ok(start >= 0, `${lead} is found`);
+  return brief.slice(start, brief.indexOf("\n", start));
+};
+const poFormulationOf = (brief) => bulletOf(ownershipOf(brief), "- **Formulating from the map.**");
+const qaFormulationOf = (brief) => bulletOf(ownershipOf(brief), "  - **Under a map rule.**");
+// The guide's level above the matrix: its heading to the three zoom levels.
+function aboveTheMatrixOf(guide) {
+  const start = guide.indexOf("### Above the matrix");
+  const end = guide.indexOf("## Three zoom levels from one source");
+  assert.ok(start >= 0 && end > start, "the level above the matrix comes before the zoom levels");
+  return guide.slice(start, end);
+}
 const workedTokens = (text) => [...text.matchAll(/`(\d+(?:\/\d+)? [QE][1-9]\d* · [^`]+)`/g)].map((match) => match[1]);
 
 let dryRun = null;
@@ -490,6 +520,162 @@ export const refineDiscoveryBeatTests = [
       assert.ok(named.length > 0, "a template path is named");
       for (const rel of named) assert.ok(existsSync(path.join(repoRoot, rel)), `${rel} exists in this checkout`);
       assert.equal(MAP_LINE.test(passage), false, "no line opens as a map line does");
+    },
+  },
+  // ══ 135/05 · 00_refine-formulates-from-the-map.feature ══
+  {
+    name: "examples/135-05 00 E1 · the Formulation passage tells the PO to write one Rule per map rule and one headline per key example",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /The PO reads the map first/);
+      assert.match(text, /one `Rule:` per map rule, titled with the rule's id and text/);
+      assert.match(text, /one headline Scenario per key example, titled with the example's id and its outcome/);
+    },
+  },
+  {
+    name: "examples/135-05 00 E2 · the passage makes the map row the headline where a table row says the same thing",
+    run: async () => {
+      assert.match(flat(formulationOf(await read(REFINE))), /Where a map example and a table row say the same thing, the key example stays the headline Scenario and the table keeps only the edges/);
+    },
+  },
+  {
+    name: "examples/135-05 00 the id forms the passage teaches are the ones the trace reads (outline: 3 forms)",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      const rule = /`Rule: ([^`]+)`/.exec(text)?.[1];
+      const headline = /`Scenario: ([^`]+)`/.exec(text)?.[1];
+      const header = /`(\|[^`]*\|)` *\)/.exec(text)?.[1] ?? /under `(\|[^`]*\|)`/.exec(text)?.[1];
+      const row = /a row `(\|[^`]*\|)`/.exec(text)?.[1];
+      const cells = (line) => line.split("|").slice(1, -1).map((cell) => cell.trim());
+      assert.ok(rule && headline && header && row, `every specimen is found: ${JSON.stringify({ rule, headline, header, row })}`);
+      const column = cells(header).indexOf(EXAMPLE_COLUMN);
+      assert.ok(column >= 0, `the header has an ${EXAMPLE_COLUMN} column: ${header}`);
+      const rows = [["rule title", groupRuleId(rule), "R1"], ["headline scenario title", scenarioExampleId(headline), "E2"], ["example column cell", rowExampleId(cells(row)[column]), "E3"]];
+      for (const [form, read, id] of rows) assert.equal(read, id, form);
+    },
+  },
+  {
+    name: "examples/135-05 00 E3 · QA's outlines go inside the rule, and a restating row carries the example's id",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /QA writes its outlines inside the rule they test/);
+      assert.match(text, /a row that restates a map example carries the example's id in a column headed `example`/);
+    },
+  },
+  {
+    name: "examples/135-05 00 an agreed example the contract leaves out is named by the doctor",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /Every `confirmed` or `stated` example must be carried this way, under its own rule/);
+      assert.match(text, /`aof work doctor` reports one that is not as `example-untraced`/);
+    },
+  },
+  {
+    name: "examples/135-05 00 E4 · the map-driven formulation applies only when discovery ran and the map is applicable (outline: 3 conditions)",
+    run: async () => {
+      const refine = await read(REFINE);
+      const text = flat(formulationOf(refine));
+      const beat = flat(passageOf(refine).passage);
+      const rows = [
+        // The gate off: the discovery beat does not run, and the formulation is held to the beat having run.
+        ["the gate is off", () => {
+          assert.match(beat, /When it is off, write no `EXAMPLES\.md`/);
+          assert.match(text, /only when the discovery beat above ran/);
+          assert.match(text, /Otherwise formulation is exactly as this paragraph says without it: no `Rule:` block and no example id is asked for/);
+        }],
+        ["the story's map says \"Not applicable\"", () => {
+          assert.match(text, /the map is not declared not applicable/);
+          assert.match(text, /no `Rule:` block and no example id is asked for/);
+        }],
+        ["the gate is on and the map is applicable", () => {
+          assert.match(text, /With an applicable example map, formulate from it/);
+          assert.match(text, /one `Rule:` per map rule/);
+          assert.match(text, /one headline Scenario per key example, titled with the example's id/);
+        }],
+      ];
+      for (const [condition, check] of rows) {
+        try { check(); } catch (error) { error.message = `${condition}: ${error.message}`; throw error; }
+      }
+      // The formulation spells neither the gate's key nor the map's file name: the discovery passage
+      // is their one home in the Contract (134/05).
+      assert.equal(/work\.examples\.enabled|EXAMPLES\.md/.test(text), false);
+    },
+  },
+  {
+    name: "examples/135-05 00 the passage names the fallback for a runner that cannot read Rule",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /A project whose runner does not bind `Rule:` writes one feature per rule instead, titled with the rule's id \(`Feature: R1 · …`\)/);
+      assert.equal(groupRuleId(/`Feature: ([^`]+)`/.exec(text)?.[1]), "R1");
+    },
+  },
+  {
+    name: "examples/135-05 00 each rendered refine copy carries the passage and matches a fresh render (outline: 3 copies)",
+    run: async () => {
+      const actions = freshRenderActions();
+      const passage = flat(formulationOf(await read(REFINE)));
+      for (const copy of REFINE_COPIES) {
+        assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+        assert.ok(flat(await read(copy)).includes(passage), `${copy} carries the map-driven Formulation passage`);
+      }
+    },
+  },
+
+  // ══ 135/05 · 01_the-briefs-and-the-guide-carry-the-level-above-the-matrix.feature ══
+  {
+    name: "examples/135-05 01 a brief carries its half and no other (outline: 2 briefs)",
+    run: async () => {
+      const po = flat(poFormulationOf(await read(PO)));
+      assert.match(po, /With an applicable map .*, you write a `Rule:` per map rule, titled with its id and text .* and under it a headline Scenario per key example, titled with its id and outcome/);
+      const qa = flat(qaFormulationOf(await read(QA)));
+      assert.match(qa, /your tables sit inside the rule they test, with an `example` column on a row that restates a map example/);
+      // Each its own half: the PO's names no `example` column, QA's writes no headline.
+      assert.equal(po.includes("`example` column"), false, "the PO's half leaves the column to QA");
+      assert.equal(/you write a `Rule:`|headline Scenario per key example/.test(qa), false, "QA's half leaves the headlines to the PO");
+      for (const [brief, half] of [[PO, poFormulationOf(await read(PO))], [QA, qaFormulationOf(await read(QA))]]) {
+        assert.equal(MAP_LINE.test(half), false, `${brief} restates no line of the map's grammar`);
+      }
+    },
+  },
+  {
+    name: "examples/135-05 01 each rendered brief matches a fresh render (outline: 6 copies)",
+    run: async () => {
+      const actions = freshRenderActions();
+      const halves = [[flat(poFormulationOf(await read(PO))), PO_COPIES], [flat(qaFormulationOf(await read(QA))), QA_COPIES]];
+      for (const [half, copies] of halves) {
+        for (const copy of copies) {
+          assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+          assert.ok(flat(await read(copy)).includes(half), `${copy} carries its source's half`);
+        }
+      }
+    },
+  },
+  {
+    name: "examples/135-05 01 E2 · the guide makes a key example the headline and the matrix the edges",
+    run: async () => {
+      const text = flat(aboveTheMatrixOf(await read(GUIDE)));
+      assert.match(text, /The map's key examples are the headline Scenarios/);
+      assert.match(text, /The Examples tables cover the edges/);
+      assert.match(text, /A map row restated in a table stays the headline, and the table keeps only the edges/);
+    },
+  },
+  {
+    name: "examples/135-05 01 the guide shows a rule as a Rule: block in one specimen",
+    run: async () => {
+      const section = aboveTheMatrixOf(await read(GUIDE));
+      const specimens = [...section.matchAll(/```gherkin\n([\s\S]*?)```/g)].map((match) => match[1]);
+      assert.equal(specimens.length, 1, "one Gherkin specimen");
+      const feature = parseFeature(specimens[0]);
+      assert.deepEqual(feature.structural, [], "the specimen parses with no structural finding");
+      assert.deepEqual(feature.rules.map((rule) => groupRuleId(rule.name)), ["R1"], "a Rule: titled by a rule id");
+      const headline = feature.scenarios.find((scenario) => !scenario.outline);
+      assert.equal(scenarioExampleId(headline?.name), "E2", "a headline scenario titled by an example id");
+      const outline = feature.scenarios.find((scenario) => scenario.outline);
+      const [block] = outline?.examples ?? [];
+      const column = block?.columns.indexOf(EXAMPLE_COLUMN) ?? -1;
+      assert.ok(column >= 0, "an outline with an example column");
+      assert.deepEqual(block.cells.map((cells) => rowExampleId(cells[column])).filter(Boolean), ["E1"], "the row's example id reads back");
+      for (const scenario of feature.scenarios) assert.equal(groupRuleId(scenario.rule?.name), "R1", `${scenario.name} sits under R1`);
     },
   },
 ];

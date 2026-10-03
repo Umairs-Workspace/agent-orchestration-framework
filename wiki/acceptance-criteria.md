@@ -76,6 +76,39 @@ person's recorded answer makes it `confirmed` or `stated`, and the gate checks t
 against the harness's own record, never against the map's word for it. The map's grammar lives in
 its template and in `aof work doctor`'s examples lane, not here.
 
+### Above the matrix: the key examples are the headlines
+
+When a story has an applicable map, formulation starts from it. The map's key examples are the
+headline Scenarios, and each map rule becomes a `Rule:` block titled with the rule's id, so a
+rule has one place to live. The Examples tables cover the edges: the boundaries, error codes and
+malformed inputs no person needed to agree. A map row restated in a table stays the headline, and
+the table keeps only the edges; a row that does restate one carries its id in an `example` column.
+
+```gherkin
+Feature: Lending
+
+  Rule: R1 · A member may hold at most five loans at once
+
+    Scenario: E2 · a sixth loan is refused while five are out
+      Given a member holding 5 loans
+      When they ask for a 6th
+      Then the loan is refused
+
+    Scenario Outline: the limit holds at its edges
+      Given a member holding <held> loans
+      When they ask for one more
+      Then the loan is <outcome>
+
+      Examples:
+        | example | held | outcome |
+        | E1      | 4    | issued  |
+        |         | 0    | issued  |
+```
+
+`aof work doctor` traces every `confirmed` or `stated` example to the Scenario or row that carries
+its id, under its own rule. A test runner that does not bind `Rule:` gets one feature per rule,
+titled the same way (`Feature: R1 · …`).
+
 ## Three zoom levels from one source
 
 The tension to resolve: the feature file must stay **scannable** (few headline outcomes) while test
