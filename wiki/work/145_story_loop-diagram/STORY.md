@@ -3,7 +3,7 @@ type: story
 number: 145
 slug: loop-diagram
 title: "A milestone's loop plan can be drawn — /aof:loop-diagram shows which stories the loop will build in parallel, through the one diagram engine"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
