@@ -5,7 +5,7 @@ slug: the-board-groups-scenarios-by-rule
 title: "The board groups scenarios by rule — a task's scenarios show under their rule's heading, and a task with no rule looks as it does today"
 parent: 135
 depends: [01, 02]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
