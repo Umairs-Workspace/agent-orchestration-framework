@@ -5,7 +5,7 @@ slug: the-parser-reads-rule-as-a-group
 title: "The parser reads Rule: as a group — a rule owns its scenarios and its tags, Example: is a scenario, and an Examples row keeps its cells"
 parent: 135
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -56,3 +56,7 @@ that over the whole tree.
 - The parser spells no map id. Reading `R<n> · ` and `E<n>` belongs to the package (ADR-003 §6,
   FF-13402).
 - No source reader changes in this story. 03 (the board) and 04 (the trace) pick up the new keys.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 135: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

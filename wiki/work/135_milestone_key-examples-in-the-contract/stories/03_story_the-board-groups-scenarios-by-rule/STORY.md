@@ -5,7 +5,7 @@ slug: the-board-groups-scenarios-by-rule
 title: "The board groups scenarios by rule — a task's scenarios show under their rule's heading, and a task with no rule looks as it does today"
 parent: 135
 depends: [01, 02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -56,3 +56,7 @@ headings in file order. Scenarios outside any rule come first.
   `apps/ui/test`'s ceiling by one), and on 02 for the `rule` key.
 - `yarn ui:build` when the panel changes. The design-conformance review judges the panel against
   `DESIGN.md`'s binding checklist, or against a committed mock if the operator provides one.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 135: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

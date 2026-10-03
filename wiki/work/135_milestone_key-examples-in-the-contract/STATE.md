@@ -13,11 +13,11 @@ doc: state
 
 - [x] refined 2026-10-03 (solo, `--autonomous`): RESEARCH, ARCHITECTURE (ADR-001 to ADR-007,
   FF-13501 and FF-13502 pending), DESIGN, five stories
-- [ ] 01 the practice is its own package. Contract authored.
-- [ ] 02 the parser reads `Rule:` as a group. Contract authored.
-- [ ] 03 the board groups scenarios by rule. Contract authored.
-- [ ] 04 an agreed example cannot fall out. Contract authored after Q1 was answered at the end review.
-- [ ] 05 the contract is formulated from the map. Contract authored.
+- [x] 01 the practice is its own package. Accepted 2026-10-03.
+- [x] 02 the parser reads `Rule:` as a group. Accepted 2026-10-03.
+- [x] 03 the board groups scenarios by rule. Accepted 2026-10-03, after F-135-01 was repaired at verify.
+- [x] 04 an agreed example cannot fall out. Accepted 2026-10-03.
+- [x] 05 the contract is formulated from the map. Accepted 2026-10-03, after F-135-02 was repaired at verify.
 
 ## Notes & decisions in flight
 
@@ -62,9 +62,9 @@ doc: state
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green
-- [ ] `@manual` signed off: one mapped story formulated and linted end to end
+- [x] `@executable` suite green (story-scoped, at `3eb38e39`)
+- [x] Fitness functions green, red probes recorded
+- [x] `@manual`: one mapped story formulated and linted end to end (135/04, E8)
 
 ## Feedback (for retro)
 

@@ -251,5 +251,5 @@ verification in `STATE.md`, not a story.
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-13501 | **Dependencies run one way.** No module under `packages/work/src/**` imports `@aof/specification-by-example`, `packages/work/package.json` does not list it, and no comment-stripped `@aof/work` source spells `EXAMPLES.md`. pending | `test/arch/examples/acd-sbe-package-one-way.test.mjs` | ADR-001 §2, §3 |
-| FF-13502 | **The trace is declared, never inferred.** The lane resolves an example only through `map.mjs`'s id readers over `parseFeature`'s value. No module in the package compares an example's text to a scenario's text or steps. pending | `test/arch/examples/acd-example-trace-declared.test.mjs` | ADR-004 §1 |
+| FF-13501 | **Dependencies run one way.** No module under `packages/work/src/**` imports `@aof/specification-by-example`, `packages/work/package.json` does not list it, and no comment-stripped `@aof/work` source spells `EXAMPLES.md`. | `test/arch/examples/acd-sbe-package-one-way.test.mjs` | ADR-001 §2, §3 |
+| FF-13502 | **The trace is declared, never inferred.** The lane resolves an example only through `map.mjs`'s id readers over `parseFeature`'s value. No module in the package compares an example's text to a scenario's text or steps. | `test/arch/examples/acd-example-trace-declared.test.mjs` | ADR-004 §1 |

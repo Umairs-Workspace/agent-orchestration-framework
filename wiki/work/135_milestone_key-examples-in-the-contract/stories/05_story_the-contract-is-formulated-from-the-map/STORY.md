@@ -5,7 +5,7 @@ slug: the-contract-is-formulated-from-the-map
 title: "The contract is formulated from the map — the PO writes a Rule: per map rule and a headline scenario per key example, QA's tables sit beneath, and the guide names the level above the matrix"
 parent: 135
 depends: [01]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -62,3 +62,7 @@ The fallback for a runner that does not bind `Rule:` (one feature per rule) is n
   there.
 - The prose must name the id forms ADR-004 traces (`R<n> · ` on a rule, `E<n> · ` on a scenario, an
   `example` column) without restating the map's grammar. The template remains its one teacher.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 135: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

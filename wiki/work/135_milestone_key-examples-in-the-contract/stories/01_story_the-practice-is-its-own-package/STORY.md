@@ -5,7 +5,7 @@ slug: the-practice-is-its-own-package
 title: "The practice is its own package — the map, the answers, the lane and the build door move into @aof/specification-by-example, and @aof/work keeps only seams that never name them"
 parent: 135
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -102,3 +102,7 @@ behaviour change: every 134 suite passes from the new home with only its imports
   install (AGENTS.md, supply-chain safety). No third-party dependency is added.
 - The arch tests FF-13401, FF-13402 and FF-13403 are code. Their path constants move. Their
   invariants do not change.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 135: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

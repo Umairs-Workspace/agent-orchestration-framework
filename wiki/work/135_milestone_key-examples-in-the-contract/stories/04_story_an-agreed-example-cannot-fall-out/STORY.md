@@ -5,7 +5,7 @@ slug: an-agreed-example-cannot-fall-out
 title: "An agreed example cannot fall out — every confirmed or stated example resolves, by its id, to a scenario or an Examples row under its own rule, or the doctor names it"
 parent: 135
 depends: [01, 02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -66,3 +66,7 @@ continue door refuses a story with an untraced agreed example, by the operator's
   never trip it, and 144 lints as today.
 - The trace reads `featureTexts`, which is already on every story row of the doctor snapshot.
   The door reads the story's `tasks/*.feature` itself.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 135: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

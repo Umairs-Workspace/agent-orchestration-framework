@@ -74,11 +74,11 @@ Out of scope:
 
 ## Stories
 
-- [ ] [01 · The practice is its own package](stories/01_story_the-practice-is-its-own-package/STORY.md)
-- [ ] [02 · The parser reads `Rule:` as a group](stories/02_story_the-parser-reads-rule-as-a-group/STORY.md)
-- [ ] [03 · The board groups scenarios by rule](stories/03_story_the-board-groups-scenarios-by-rule/STORY.md)
-- [ ] [04 · An agreed example cannot fall out](stories/04_story_an-agreed-example-cannot-fall-out/STORY.md)
-- [ ] [05 · The contract is formulated from the map](stories/05_story_the-contract-is-formulated-from-the-map/STORY.md)
+- [x] [01 · The practice is its own package](stories/01_story_the-practice-is-its-own-package/STORY.md)
+- [x] [02 · The parser reads `Rule:` as a group](stories/02_story_the-parser-reads-rule-as-a-group/STORY.md)
+- [x] [03 · The board groups scenarios by rule](stories/03_story_the-board-groups-scenarios-by-rule/STORY.md)
+- [x] [04 · An agreed example cannot fall out](stories/04_story_an-agreed-example-cannot-fall-out/STORY.md)
+- [x] [05 · The contract is formulated from the map](stories/05_story_the-contract-is-formulated-from-the-map/STORY.md)
 
 ## Dependencies
 
