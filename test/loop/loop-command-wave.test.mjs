@@ -381,10 +381,10 @@ export const loopCommandWaveTests = [
       const lines = shell.split(/\r?\n/u).length;
       // 143/00 review — the bound tightened from 129/04's 2311 to the shell's size at 143/00's close, so
       // growth is a stated raise or an extraction, never drift. The split is TECH_DEBT item 92.
-      // 2131 -> 2161 is 143/01: the `--refine` flag in its three homes, its vocabulary guard, and the
+      // 2131 -> 2162 is 143/01 (with its review fix): the `--refine` flag in its three homes, its vocabulary guard, and the
       // mode lent to every decision and every drive. An extraction was not open to it:
       // `packages/work-loop/src` is at its file budget with no allowance.
-      assert.ok(lines <= 2161, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2161 it was at 143/01 — extract, or raise this bound with a reason`);
+      assert.ok(lines <= 2162, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2162 it was at 143/01 — extract, or raise this bound with a reason`);
     },
   },
 

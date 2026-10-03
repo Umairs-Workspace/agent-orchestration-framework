@@ -7,7 +7,7 @@ const loopCommand = _aofApplication.getCommand("work:loop");
 const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 const readRuns = _aofApplication.execution.runs.readRuns;
-import { buildLoopDeclaration, readLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
+import { buildLoopDeclaration, isWholeItemCascade, readLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
 import { completingDriver, loopFixture, treeFiles, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 
 async function refusal(fn, code) {
@@ -352,3 +352,64 @@ export const loopCommandRefineScopeTests = [
     },
   },
 ];
+
+// ══════════════ 143/01 review — the wire from a whole-item decision to the drive ══════════════
+//
+// The engine decision and the drive's composition are pinned apart elsewhere; these walk the loop
+// so deleting the lend at either seam turns a case red.
+loopCommandRefineScopeTests.push(
+  ...[
+    ["whole-item", "/aof:refine 04 --solo --autonomous"],
+    ["per-story", "/aof:refine 04 --solo"],
+  ].map(([refine, command]) => ({
+    name: `143/01 review — an in-process walk under ${refine} composes the break-down drive as ${command}`,
+    async run() {
+      const fx = await backlogFixture();
+      try {
+        const { commands } = await launch(fx, { scope: "widget-sync", refine, cap: 1 });
+        assert.equal(commands[0], command);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/01 review — a walk that drives as a child lends autonomous to the break-down drive only",
+    async run() {
+      for (const [refine, lent] of [["whole-item", true], ["per-story", false]]) {
+        const fx = await backlogFixture();
+        try {
+          const calls = [];
+          const spawnPhaseDrive = async (args) => {
+            calls.push(args);
+            return { outcome: "document", document: { outcome: "done", sessionId: `s-${calls.length}`, settlementContext: {} } };
+          };
+          await runLoopBody({ scope: "widget-sync", refine, cap: 1 }, { ...fx.ctx, spawnPhaseDrive, report: () => {} });
+          assert.ok(calls.length >= 1, `${refine}: the walk drove as a child`);
+          assert.equal(calls[0].phase, "refine");
+          assert.equal(calls[0].ref, "04");
+          assert.equal(calls[0].autonomous === true, lent, `${refine}: autonomous lent ${lent}`);
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
+    name: "143/01 review — the decision and a re-entered drive ask one predicate, and the re-entry passes it",
+    async run() {
+      assert.equal(isWholeItemCascade({ refine: "whole-item", phase: "refine", type: "milestone" }), true);
+      for (const facts of [
+        { refine: "per-story", phase: "refine", type: "milestone" },
+        { refine: "whole-item", phase: "refine", type: "story" },
+        { refine: "whole-item", phase: "verify", type: "milestone" },
+        { refine: null, phase: "refine", type: "milestone" },
+        {},
+      ]) assert.equal(isWholeItemCascade(facts), false, JSON.stringify(facts));
+      const cycle = await readFile(new URL("../../packages/work-loop/src/cycle.mjs", import.meta.url), "utf8");
+      const reentry = cycle.slice(cycle.indexOf("async function reenterPrimaryAsks"));
+      assert.match(reentry, /isWholeItemCascade\(\{ refine: declaration\?\.refine, phase, type: item\.type \}\)/u, "the re-entry asks the predicate of the run's own declaration");
+      assert.match(reentry, /drivePhase\(\{[^}]*\bautonomous\b[^}]*\}, ctx\)/u, "…and hands it to every re-drive");
+    },
+  },
+);

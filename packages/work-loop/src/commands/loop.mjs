@@ -53,6 +53,7 @@ import {
   loopDispatchConcurrencyFromConfig,
   LOOP_REFINE_MODES,
   loopRefineFromConfig,
+  resolveLoopRefine,
   progressMaxResetsFromConfig,
   reviewRoundsFromConfig,
   scheduleToCloseFromConfig,
@@ -561,7 +562,7 @@ export function createLoopShell({
           promotedFrom: inherited.promotedFrom ?? null,
           // 143/01 — explicit wins, the declaration's is inherited, and a pre-143 one (none recorded)
           // reads as the configured mode.
-          refine: inherited.refine ?? loopRefineFromConfig(ctx.workspace),
+          refine: inherited.refine == null ? loopRefineFromConfig(ctx.workspace) : resolveLoopRefine(inherited.refine),
         };
       }
     } else {

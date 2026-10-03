@@ -26,6 +26,7 @@ import {
   decideReviewGate,
   decideScheduleToClose,
   isReviewBlockerClaim,
+  isWholeItemCascade,
   lineageElapsedMs,
   loopScopeIncludes,
   mapStoreRefusal,
@@ -1179,7 +1180,10 @@ export function createStoryCycle({
       const declaration = run.brief?.loop ?? null;
       const phase = declaration?.phase ?? "continue";
       const cycle = Number.isInteger(declaration?.cycle) ? declaration.cycle : 1;
-      const redrive = (retryRecord, answer = null) => drivePhase({ ref: item.ref, phase, cycle, declaration, brief: run.brief, retryRecord, answer, now: input.now }, ctx);
+      // 143/01 — a re-entered break-down refine keeps its cascade: the answer resumes the same
+      // session, but a RETRY starts a fresh one from the composed prompt, which must carry it.
+      const autonomous = isWholeItemCascade({ refine: declaration?.refine, phase, type: item.type });
+      const redrive = (retryRecord, answer = null) => drivePhase({ ref: item.ref, phase, cycle, declaration, brief: run.brief, retryRecord, answer, autonomous, now: input.now }, ctx);
       const waiting = { item, record: run, outcome: { outcome: "needs-input", sessionId: run.sessionId }, cycle, phase, settlementContext: null, changeBaseline: null, progressBaseCommit: null, gradeAbsent: null };
       const waited = await awaitAnswer(waiting, { ...ask.site, drive: (answer) => redrive(run, answer), ref: item.ref, phase, item, cwd: primaryRoot, reenter: true }, ask.deps);
       if (waited.parked != null) {

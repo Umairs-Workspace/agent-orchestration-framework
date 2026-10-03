@@ -60,6 +60,15 @@ doc: state
   - The shell grew 2131 → 2161 lines; the bound in `loop-command-wave.test.mjs` was raised with that
     reason, because `packages/work-loop/src` is at its file budget (TECH_DEBT 92 owns the split).
   - FF-14302 folded into `acd-loop-concurrency-single-home.test.mjs` (`test/arch/loop` at its ceiling).
+- **143/01 review close** (APPROVE, no Blocker):
+  - *fixed (Important):* a re-entered break-down refine that failed after its answer was retried
+    without `--autonomous` — the decision and the re-entry now share the engine's
+    `isWholeItemCascade`, so the retry keeps the cascade.
+  - *fixed (Important):* nothing tested the wire from a `whole-item` decision to the drive — walk
+    cases now assert the composed prompt in-process and the child's `autonomous` lend.
+  - *fixed (Nit):* an inherited refine mode is resolved through the vocabulary, so a hand-edited
+    `"Whole-Item"` resumes as `per-story` rather than being echoed; the stale "ten-key" names.
+  - *amendment for the accepting contract:* task 00's FF-14302 scenario names the unfolded path.
 
 ## Notes & decisions in flight
 

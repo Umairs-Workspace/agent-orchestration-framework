@@ -1196,6 +1196,14 @@ const REFINE_FIRST = "refine_first";
 // this module imports nothing. FF-14302 holds it to this one spelling outside the bounds home.
 const WHOLE_ITEM = "whole-item";
 
+// isWholeItemCascade({ refine, phase, type }) — the ONE answer to "is this drive the whole-item refine
+// cascade?": a refine of a MILESTONE under `whole-item`. The decision below asks it, and so does a
+// re-entered drive (`cycle.mjs`), which rebuilds the act from the run's declaration — so neither
+// spells the member, and the two cannot disagree (143/01 review).
+export function isWholeItemCascade({ refine, phase, type } = {}) {
+  return refine === WHOLE_ITEM && phase === "refine" && type === "milestone";
+}
+
 function refineFirstDecision(input) {
   if (input.concurrency !== REFINE_FIRST) return null;
   const unrefined = memberRefs(input.unrefined);
@@ -1242,7 +1250,7 @@ export function decideLoopPhase(input = {}) {
     // 143/01 (ADR-002 §4) — under `whole-item` the BREAK-DOWN drive (a milestone with no stories) is
     // the cascade: it carries `autonomous: true`. Every other decision is unchanged, so a cascade that
     // dies part-way is finished by the ordinary per-story refine decisions, with no resume logic.
-    const cascade = phase === "refine" && input.refine === WHOLE_ITEM ? { autonomous: true } : {};
+    const cascade = isWholeItemCascade({ refine: input.refine, phase, type }) ? { autonomous: true } : {};
     return boundedDrive(ref, phase, input.cycle, input.cap, cascade);
   }
   if (type !== "story") {

@@ -55,7 +55,7 @@ function assertRead(what, count, floor, unit = "file(s)") {
 
 export const archTests = [
   {
-    name: "arch/53 FF-5304 (acd-loop-probe-contract): registered run is a ten-key read-only probe with verbatim next and an empty driven account",
+    name: "arch/53 FF-5304 (acd-loop-probe-contract): registered run is a eleven-key read-only probe with verbatim next and an empty driven account",
     run: async () => {
       const fx = await loopFixture();
       try {
@@ -222,7 +222,7 @@ export const archTests = [
       // reaches no stop at all, so "a real loop that halted on exactly this stop" was true of
       // no loop. The body is invoked here, the stop is asserted BEFORE the shape it guards,
       // and the m45/R5 rule — a fitness function must check what its name claims — is the
-      // reason. (The probe's own ten-key contract is pinned by this file's first entry.)
+      // reason. (The probe's own eleven-key contract is pinned by this file's first entry.)
       const fx = await loopFixture();
       try {
         fx.workspace.config.work.rubric = { command: [process.execPath, "runner.cjs"], report: { format: "tap", path: "report.tap", floor: 1 } };
