@@ -11,6 +11,8 @@ doc: state
 - Continued 2026-10-02 (`aof:continue 143`, hybrid at the operator's choice: each story is built
   inline, then reviewed by one independent agent). Built in the sibling worktree `aof-143` on branch
   `143-loop-from-backlog-on-chosen-models` off `main`, because the primary checkout sits on 134's branch.
+- Walked to the Review gate 2026-10-03: 00, 01, 02, 03 built, gated and reviewed (one independent
+  architect+QA reviewer each; no Blocker survived) and `in-review`. Next: `aof:verify 143`.
 
 ## Feedback (for retro)
 
