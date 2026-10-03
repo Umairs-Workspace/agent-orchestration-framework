@@ -108,6 +108,10 @@ const CITATION = /(?<![A-Za-z0-9_./-])(?:src|packages\/[A-Za-z0-9_-]+\/src)\/[A-
 //     `src/work/observe.mjs`, the transcript reader it meant (130/VERIFICATION F-19).
 // 131's uncommitted refine, measured in the primary checkout, adds five more of the planned-module
 // species. They are not counted here because a clean gate cannot read them. HIGH_WATER is untouched.
+// HELD at 55 through 136's accept (2026-10-03). 142's squash (88ebd022) had pushed the count to 348:
+// a module that moved and changed in one squash reads as D + A, and a module split behind a forward
+// left only its original source on main. The rename ledger now records PR #5's 1,106 renames and its
+// 311 forwards (136/VERIFICATION F-136-01), and the same command printed `55 14614 866 2895`.
 const UNRESOLVED_CEILING = 55;
 const HIGH_WATER = 77;
 
@@ -326,7 +330,7 @@ export const archTests = [
       assert.ok(renameMap.size > 0, `the rename map is non-empty (${renameMap.size} records) — read from git's own rename records and from no file in the tree`);
       assert.equal(
         resolveThroughRenames("src/commands/errors.mjs", renameMap),
-        "packages/core/src/command-error.mjs",
+        "packages/contracts/src/error.mjs",
         "the control names ONE known rename it resolved, so a map that answered nothing could not report green",
       );
       const resolver = stripComments(await readFile(path.join(root, RESOLVER), "utf8"));

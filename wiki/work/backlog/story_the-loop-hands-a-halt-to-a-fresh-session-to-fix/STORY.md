@@ -9,8 +9,6 @@ created: 2026-10-03
 updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
-reads: []
-files: []
 ---
 # The loop hands a halt to a fresh session to fix, then resumes
 

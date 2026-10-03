@@ -32,7 +32,13 @@ const readRenameMap = _aofApplication.work.commandTools.doctor.readRenameMap;
 const execFileAsync = promisify(execFile);
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "packages/core/src/command-error.mjs" });
+// 142's squash records the second hop straight to the contracts package (`src/command-error.mjs` ->
+// `packages/contracts/src/error.mjs`, R100); the branch's intermediate `packages/core` hop is not on
+// main (136/VERIFICATION F-136-01).
+const KNOWN_RENAME = Object.freeze({ from: "src/commands/errors.mjs", to: "packages/contracts/src/error.mjs" });
+// A module 142 split: renamed into packages/core, then reduced to a forward and deleted. Only the
+// rename ledger's recorded forward (`F`) reaches its owning binding.
+const KNOWN_FORWARD = Object.freeze({ from: "src/run-store.mjs", to: "packages/core/src/application/bindings/run-store.mjs" });
 
 async function realRenameMap() {
   return readCitationHistory(repoRoot, async args => {
@@ -106,7 +112,7 @@ export const citedPathResolveTests = [
     name: "119/00 task02 — one resolver answers every citation: two ways to resolve, and four ways not to",
     run: async () => {
       const renameMap = await realRenameMap();
-      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", "apps/ui/src/fleet/scope.mjs"]);
+      const present = new Set(["src/work/doctor.mjs", "packages/contracts/src/error.mjs", KNOWN_FORWARD.to, "apps/ui/src/fleet/scope.mjs"]);
       const existsAtHead = (candidate) => present.has(candidate);
       const answer = (cited, map = renameMap) => resolveCitedPath(cited, { existsAtHead, renameMap: map });
 
@@ -114,7 +120,10 @@ export const citedPathResolveTests = [
       assert.deepEqual([head.resolved, head.at, head.via], [true, "src/work/doctor.mjs", "head"], "a src/ path that exists at HEAD resolves at its own path");
 
       const renamed = answer(KNOWN_RENAME.from);
-      assert.deepEqual([renamed.resolved, renamed.at, renamed.via], [true, "packages/contracts/src/error.mjs", "module"], "the recorded rename reaches its deleted forward, whose recorded public export reaches the owning implementation");
+      assert.deepEqual([renamed.resolved, renamed.at, renamed.via], [true, KNOWN_RENAME.to, "rename"], "a path renamed twice in this repository's history resolves at its final path");
+
+      const forwarded = answer(KNOWN_FORWARD.from);
+      assert.deepEqual([forwarded.resolved, forwarded.at, forwarded.via], [true, KNOWN_FORWARD.to, "module"], "the recorded rename reaches its deleted forward, whose recorded destination reaches the owning implementation");
 
       const twice = resolveCitedPath("src/a.mjs", {
         existsAtHead: (candidate) => candidate === "src/c.mjs",

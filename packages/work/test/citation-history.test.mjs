@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deletedModules, constructorHomes, moduleRelocations } from '../src/citation-history.mjs';
+import { deletedModules, constructorHomes, forwardRecords, moduleRelocations, parseForwardRecords } from '../src/citation-history.mjs';
 import { buildRenameMap, resolveCitedPath, resolveThroughRenames } from '../src/cited-path-resolve.mjs';
 
 const deletion = target => `diff --git a/packages/core/src/old.mjs b/packages/core/src/old.mjs\ndeleted file mode 100644\n--- a/packages/core/src/old.mjs\n+++ /dev/null\n-export { value } from "${target}";\n`;
@@ -15,6 +15,18 @@ test('recorded deleted forwards reach explicit public implementations without be
   assert.equal(resolveThroughRenames('src/old.mjs', map), 'packages/core/src/old.mjs');
   assert.equal(resolveCitedPath('src/old.mjs', { renameMap: map, existsAtHead: () => false }).resolved, false);
   assert.equal(resolveCitedPath('src/never.mjs', { renameMap: map, existsAtHead: () => false }).resolved, false);
+});
+
+test('recorded forwards round-trip through the ledger shape, first record wins, and rename lines are not forwards', () => {
+  const links = new Map([['packages/core/src/old.mjs', 'packages/work/src/leaf.mjs'], ['packages/core/src/split.mjs', Object.freeze(['a.mjs', 'b.mjs'])]]);
+  const lines = forwardRecords(links);
+  assert.deepEqual(lines, ['F\tpackages/core/src/old.mjs\tpackages/work/src/leaf.mjs', 'F\tpackages/core/src/split.mjs\ta.mjs\tb.mjs']);
+  const parsed = parseForwardRecords(['# comment', 'R100\tsrc/old.mjs\tpackages/core/src/old.mjs', ...lines, 'F\tpackages/core/src/old.mjs\tolder.mjs', 'F\tno-target'].join('\n'));
+  assert.deepEqual([...parsed], [...links]);
+  const map = buildRenameMap([{ from: 'src/old.mjs', to: 'packages/core/src/old.mjs' }]);
+  map.moduleLinks = parsed;
+  const answer = resolveCitedPath('src/old.mjs', { renameMap: map, existsAtHead: file => file === 'packages/work/src/leaf.mjs' });
+  assert.deepEqual([answer.resolved, answer.at, answer.via], [true, 'packages/work/src/leaf.mjs', 'module']);
 });
 
 test('deletion parsing rejects modifications and keeps the newest recorded source', () => {
