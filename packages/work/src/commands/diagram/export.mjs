@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
@@ -96,10 +95,13 @@ const diagramExportCommand = {
     if (input.adr === LOOP_SUBJECT) {
       const generator = generatorFor(diagrams.generator);
       const paths = loopDiagramPaths(toPosix(path.relative(projectRoot, item.dir)), generator.sourceExt, diagrams.formats);
-      if (!existsSync(path.resolve(projectRoot, paths.source))) {
+      let source;
+      try {
+        source = await readFile(path.resolve(projectRoot, paths.source), "utf8");
+      } catch (error) {
+        if (error.code !== "ENOENT") throw error;
         throw commandError(`${paths.source} does not exist. Draw it first (aof diagram plan ${item.ref} ${LOOP_SUBJECT}).`, "diagram-source-missing", 404);
       }
-      const source = await readFile(path.resolve(projectRoot, paths.source), "utf8");
       return await exportSource({ generator, source, paths, diagrams, projectRoot, ctx });
     }
     assertAdrId(input.adr);
