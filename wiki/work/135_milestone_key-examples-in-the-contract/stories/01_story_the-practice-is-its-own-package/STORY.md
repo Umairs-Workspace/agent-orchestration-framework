@@ -5,7 +5,7 @@ slug: the-practice-is-its-own-package
 title: "The practice is its own package — the map, the answers, the lane and the build door move into @aof/specification-by-example, and @aof/work keeps only seams that never name them"
 parent: 135
 depends: []
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -91,8 +91,8 @@ behaviour change: every 134 suite passes from the new home with only its imports
 
 ## Tasks
 
-- [ ] 00 [the package holds the practice and work keeps only seams](tasks/00_the-package-holds-the-practice-and-work-keeps-only-seams.feature)
-- [ ] 01 [nothing a user can see changes](tasks/01_nothing-a-user-can-see-changes.feature)
+- [x] 00 [the package holds the practice and work keeps only seams](tasks/00_the-package-holds-the-practice-and-work-keeps-only-seams.feature)
+- [x] 01 [nothing a user can see changes](tasks/01_nothing-a-user-can-see-changes.feature)
 
 ## Notes
 

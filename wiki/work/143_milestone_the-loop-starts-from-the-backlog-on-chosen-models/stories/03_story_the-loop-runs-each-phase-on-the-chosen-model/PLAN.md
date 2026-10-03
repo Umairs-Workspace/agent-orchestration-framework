@@ -39,7 +39,7 @@ alongside the existing `thinking`. The dry run returns `model: { id, source } | 
 With `AOF_GLOBAL_HOME` set to a fresh temp directory, run through `scripts/test.mjs --only`: the
 drive-phase-driver, declaration, declaration-join, resume, wave, narration, probe and refusals
 suites, the narration and attempt-clock arch tests, FF-14303, FF-7006 and the application assembly
-suite. Then install the payload (`node scripts/install-local.mjs --skip-ui`) and check
+suite. Then install the payload (the local installer with `--skip-ui`) and check
 `aof --version`. Run `aof work loop 143 --model refine=opus:xhigh --model verify=fable --dry-run
 --json` and read `sessions`. Do not start a live loop from an agent shell.
 

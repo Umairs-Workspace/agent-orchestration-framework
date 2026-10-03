@@ -43,6 +43,7 @@
     "@aof/mesh": "workspace:*",
     "@aof/messaging": "workspace:*",
     "@aof/server": "workspace:*",
+    "@aof/specification-by-example": "workspace:*",
     "@aof/work": "workspace:*",
     "@aof/work-graph": "workspace:*",
     "@aof/work-loop": "workspace:*",

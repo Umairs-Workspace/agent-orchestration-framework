@@ -65,3 +65,22 @@ doc: state
 - [ ] `@executable` suite green
 - [ ] Fitness functions green
 - [ ] `@manual` signed off: one mapped story formulated and linted end to end
+
+## Feedback (for retro)
+
+- **135/01 build (2026-10-03, solo): the declared write set was incomplete.** The move also had to
+  touch `packages/core/src/application/bindings/commands/doctor.mjs` (its gate resolver became
+  unused), `test/bundle/yarn-installation.test.mjs` and `test/bundle/core-workspace.test.mjs` (the
+  package purity inventory and the owner count), `test/arch/audit/acd-controls-never-execute.test.mjs`
+  (FF-5905 pins `createWorkDoctor`'s signature and the lane roster), `scripts/workspace-runtime-audit.json`
+  (source digests) and 142's `plans/09-test-ledger.json` (case-name hashes). None was in `files:`.
+  Refine for a package move should census every control that pins a moved module's path, signature
+  or digest.
+- **135/01 build: inherited reds repaired, not caused.** The 143 merge left the Plan 09 ledger's loop
+  rows, `loop.mjs`'s runtime-audit digest and three 143 `PLAN.md` path restatements (FF-9603) red;
+  135's own refine left FF-9603 red on 01's and 04's `PLAN.md`. All were mechanical and fixed in
+  the 135/01 change. FF-11903 (citation rename history) was red before the move and stays a gate
+  matter for `aof:verify`.
+- **135/01 design note:** the examples gate's resolver no longer flows into `@aof/work` at all — the
+  doctor command hands the snapshot `config` and the probe resolves the gate itself. 03, 04 and 05
+  should read the map through `row.extensions.examples`, not `examplesMap`.

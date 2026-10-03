@@ -8,7 +8,7 @@ export function assembleRunStore({ degradeServices, provideWorkExamplesAnswers }
 
   const implementation = createRunStore({
     reportDegrade,
-    getAnswerTokens: () => import("@aof/work/examples/map"),
+    getAnswerTokens: () => import("@aof/specification-by-example/map"),
     readSessionAnswers: async (...args) => {
       const { readSessionAnswers } = await provideWorkExamplesAnswers();
       return await readSessionAnswers(...args);

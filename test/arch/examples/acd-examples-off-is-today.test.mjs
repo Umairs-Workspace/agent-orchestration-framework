@@ -14,7 +14,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import path from "node:path";
-import { EXAMPLES_DOC } from "@aof/work/examples/map";
+import { EXAMPLES_DOC } from "@aof/specification-by-example/map";
 import { E, Q, QUESTIONS, R, mapOf, pinMtimes, snapshotOf, withExamplesProject } from "../../examples/doctor-examples-lane.test.mjs";
 
 const doctorWork = _aofApplication.work.doctor.doctorWork;
@@ -61,7 +61,7 @@ export const archTests = [
           assert.deepEqual(exampleCodes(findings), [], `${label}: no example-* finding`);
           assert.deepEqual(overBudgetMaps(findings), [], `${label}: no doc-over-budget names EXAMPLES.md`);
           const row = (await snapshotOf(fx)).items.find((item) => item.ref === "134/04");
-          assert.equal(row.examplesMap, null, label);
+          assert.equal(row.extensions?.examples ?? null, null, label);
           assert.equal(EXAMPLES_DOC in row.docSizes, false, label);
           const door = fx.cli("work", "continue", "134/04", "--json");
           assert.equal(door.json?.ok, true, `${label}: the continue is not refused — ${door.stdout || door.stderr}`);

@@ -40,7 +40,7 @@ example flowing into an `includes`, `===` or regex). Run a red probe: add
 
 With `AOF_GLOBAL_HOME` and `CLAUDE_CONFIG_DIR` set to fresh temp directories, run through `--only`:
 the package's index, `test/examples/doctor-examples-lane.test.mjs`, `continue-door-examples.test.mjs`,
-every `test/arch/examples` control and FF-12402. Then, from the repository root on a freshly
+every examples arch control and FF-12402. Then, from the repository root on a freshly
 installed payload, `aof work doctor --json` must report no `example-untraced`. On a scratch copy of
 03, delete its `E1 · …` scenario: `aof work doctor 135/03` names it only if 03's map holds an agreed
 E1. It holds only proposed examples, so expect silence, which is itself a check of R2.

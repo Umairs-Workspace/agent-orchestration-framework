@@ -1,0 +1,23 @@
+{
+  "name": "@aof/specification-by-example",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./map": "./src/map.mjs",
+    "./answers": "./src/answers.mjs",
+    "./doctor-lane": "./src/doctor-lane.mjs",
+    "./build-door": "./src/build-door.mjs",
+    "./story-probe": "./src/story-probe.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/specification-by-example"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/work": "workspace:*"
+  }
+}

@@ -35,7 +35,7 @@ comments, then match definitions). It is registered in `test/arch/session/index.
 
 ## The verification step
 
-With `AOF_GLOBAL_HOME` set to a fresh temp directory, run through `scripts/test.mjs --only`: the
+With `AOF_GLOBAL_HOME` set to a fresh temp directory, run through the test runner's `--only`: the
 execution package's session-model suite (through its index), `domain-services`, the new face test,
 the command-route and application-assembly suites, FF-7006 and the new FF-14303. Red-probe both
 FF-14303 clauses. Every `aof` command parses through the changed face, so also run

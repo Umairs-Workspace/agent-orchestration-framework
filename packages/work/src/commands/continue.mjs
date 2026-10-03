@@ -1,10 +1,12 @@
-import path from "node:path";
-import { readFile } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
-import { EXAMPLES_DOC } from "../examples/map.mjs";
 
 // Core supplies configured execution, mesh, notification and transition services.
-export function createPhaseDoorCommands({ assignWork, resolveItem, resolveItemExact, transitionItemStatus, readExecutionOverlay, resolveScopedExecution, executionScopeRef, readStreamedItemRow, examplesEnabledFromConfig, examplesFindings, collectAnswers }) {
+//
+// milestone 135 / ADR-001 §3 — `beforeBuild` is a list of `async (ctx, row)` checks a composed
+// practice brings to the build door. The continue door awaits each in order, after its backlog
+// refusal and before it reads the overlay, and a check refuses by throwing: the first throw ends the
+// walk, so nothing moves, nothing is minted and nothing is dispatched. An empty list refuses nothing.
+export function createPhaseDoorCommands({ assignWork, resolveItem, resolveItemExact, transitionItemStatus, readExecutionOverlay, resolveScopedExecution, executionScopeRef, readStreamedItemRow, beforeBuild = [] }) {
 // work:continue — "continue this task", with ONE option: WHERE to continue it.
 //
 // THE DEFECT (operator, 2026-07-26): there were three different doors to the same act.
@@ -191,39 +193,6 @@ async function startedHere(ctx, phase, ref) {
   }
 }
 
-// refuseOpenExamples(ctx, row) — milestone 134 / story 04 (ADR-005 §4): THE BUILD DOOR'S HALF OF
-// THE READINESS GATE. The doctor reports a story's open business question; this is where a story
-// built on a rule nobody asked about is actually stopped. It judges the map with the doctor lane's
-// own pure function over the same answers, so the door and `aof work doctor` cannot disagree, and
-// it refuses on ANY error-severity finding — a map the parser cannot read is not a map whose
-// questions are closed. Silent for everything it cannot judge here: the gate off, a row that is
-// not a story, a row with no local folder (its own node's door meets it) and a story with no map.
-async function refuseOpenExamples(ctx, row) {
-  if (row?.type !== "story" || typeof row.dir !== "string" || row.dir === "") return;
-  if (!examplesEnabledFromConfig(ctx.workspace?.config ?? {})) return;
-  const dir = path.resolve(ctx.workspace?.projectRoot ?? "", row.dir);
-  let text;
-  try {
-    text = await readFile(path.join(dir, EXAMPLES_DOC), "utf8");
-  } catch {
-    return;
-  }
-  const answers = await collectAnswers({ ...row, dir }, { workspace: ctx.workspace });
-  const errors = examplesFindings({ ref: row.ref, status: row.status ?? null, dir, text, answers })
-    .filter((finding) => finding.severity === "error");
-  if (errors.length === 0) return;
-  const error = commandError(
-    [`\`${row.ref}\`'s example map has ${errors.length} open finding(s) — settle them in \`aof:refine ${row.ref}\` before the build:`,
-      ...errors.map((finding) => `  ${finding.code}: ${finding.message}`)].join("\n"),
-    "examples-question-open",
-    409,
-  );
-  // The status door's `artifact-budget-exceeded` precedent: the findings ride the one structured
-  // refusal channel, so `--json` prints them and a caller never parses prose.
-  error.detail = { ref: row.ref, findings: errors };
-  throw error;
-}
-
 function createPhaseDoorCommand(phase) {
   return {
     id: `work:${phase}`,
@@ -270,11 +239,10 @@ function createPhaseDoorCommand(phase) {
         );
       }
 
-      // milestone 134 / story 04 — a continue on a story whose map still carries an error is
-      // refused here, before the overlay is read: nothing moves, nothing is minted, nothing is
-      // dispatched. Only the build door refuses — refine is where the questions get asked, and
-      // verify judges a built story. A milestone continue refuses no one (ADR-005 §4).
-      if (phase === "continue") await refuseOpenExamples(ctx, exact);
+      // milestone 135 / ADR-001 §3 — the build door's injected checks, here and only here: before the
+      // overlay is read, so a refusal moves nothing, mints nothing and dispatches nothing. Only the
+      // build door runs them — refine and verify are not builds.
+      if (phase === "continue") for (const check of beforeBuild) await check(ctx, exact);
 
       const localNodeId = ctx.workspace?.config?.mesh?.nodeId ?? null;
 

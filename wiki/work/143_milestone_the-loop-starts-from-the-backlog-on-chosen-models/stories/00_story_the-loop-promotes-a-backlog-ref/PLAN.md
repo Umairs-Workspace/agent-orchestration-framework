@@ -34,7 +34,7 @@ its `null` default.
 With `AOF_GLOBAL_HOME` set to a fresh temp directory, run through `scripts/test.mjs --only`: the
 new backlog-scope suite, `work-loop-declaration`, `loop-command-refusals`, `loop-command-probe`, the
 scope-guard suite and arch test, the declaration join suites, the new FF-14301 arch test, and
-`test/command/application-assembly.test.mjs` (the inventory fixture). Then red-probe FF-14301.
+the application assembly suite (the inventory fixture). Then red-probe FF-14301.
 Last, in a throwaway workspace with a backlog milestone, run `aof work loop <slug> --dry-run --json`
 and check that nothing moved.
 

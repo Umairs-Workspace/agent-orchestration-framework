@@ -4,7 +4,7 @@
 //   tasks/00_the-map-parses-in-a-closed-grammar-and-fails-closed.feature
 //   tasks/01_the-queries-and-the-token-have-one-home.feature
 //
-// `packages/work/src/examples/map.mjs` is pure, so every map text here is held in memory and handed to the
+// `packages/specification-by-example/src/map.mjs` is pure, so every map text here is held in memory and handed to the
 // real parser: no file is written or read. One test object per @executable scenario, Scenario
 // Outline rows folded into one entry iterating the rows. node:assert/strict, `{ name, run }` shape.
 import assert from "node:assert/strict";
@@ -26,10 +26,10 @@ import {
   readMapToken,
   ruleCount,
   rulesWithoutExample,
-} from "@aof/work/examples/map";
+} from "@aof/specification-by-example/map";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const MAP_MODULE = path.join(repoRoot, "packages", "work", "src", "examples", "map.mjs");
+const MAP_MODULE = path.join(repoRoot, "packages", "specification-by-example", "src", "map.mjs");
 
 // ── fixtures ─────────────────────────────────────────────────────────────────
 

@@ -2,6 +2,8 @@
 // ONE WRITER.
 //
 // "`toolUseResult` appears in `packages/work/src/examples/answers.mjs` and in no other module;
+// (since 135/01 the reader is `packages/specification-by-example/src/answers.mjs`; the invariant is
+// unchanged, its path moved with the package — 135/ADR-001 §5)
 //  `answers.mjs` does not spell the string `AskUserQuestion`; and `answers` is written onto a run's
 //  `brief` only inside `recordAnswers` in `packages/core/src/run-store.mjs`."
 //
@@ -22,7 +24,7 @@ import { fileURLToPath } from "node:url";
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_READER = "packages/work/src/examples/answers.mjs";
+const THE_READER = "packages/specification-by-example/src/answers.mjs";
 const THE_WRITER = "packages/execution/src/runs.mjs";
 const WRITER_HEADER = "async function recordAnswers(";
 
@@ -52,7 +54,7 @@ function outsideTheWriter(code) {
 
 export const archTests = [
   {
-    name: "arch/134 FF-13401: `toolUseResult` is read in packages/work/src/examples/answers.mjs and in no other module",
+    name: "arch/134 FF-13401: `toolUseResult` is read in packages/specification-by-example/src/answers.mjs and in no other module",
     run: async () => {
       const readers = [];
       for (const full of await modules()) {

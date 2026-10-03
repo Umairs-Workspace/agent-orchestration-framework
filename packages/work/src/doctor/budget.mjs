@@ -1,5 +1,4 @@
 import path from "node:path";
-import { EXAMPLES_DOC } from "../examples/map.mjs";
 
 // work:doctor — milestone 16: the DOC-BLOAT / CONTEXT-BUDGET check-group. A single
 // PURE `(snapshot, ctx) => Finding[]` function APPENDED to the engine's CHECK_GROUPS
@@ -33,9 +32,6 @@ const BUDGET_KEY = {
   // one of them is updated. A story carrying no PLAN.md contributes no docSizes entry, so it is
   // SILENT here rather than measured as zero-length.
   [PLAN_BASENAME]: "plan",
-  // milestone 134 / ADR-001 §1 — a story's example map, the same kind of row: measured by the probe
-  // only while the gate is on, and refused only at the accepting item's door, like every row here.
-  [EXAMPLES_DOC]: "examples",
 };
 
 // Task contracts are budgeted by EXTENSION, not by name — a story holds arbitrarily
@@ -47,8 +43,14 @@ const BUDGET_KEY = {
 // among them for ANY type: the Accept-time artifact a story or chore now carries too
 // adds no `doc-over-budget` finding — it RELIEVES the one a parentless story fires by
 // giving delivered-state somewhere to live other than STORY.md.
-export function budgetKeyFor(docName) {
+//
+// milestone 135 / ADR-001 §3 — an INJECTED row (`{ doc, kind, lines }`, supplied by a practice core
+// composes in) maps its document to its kind here, beside the built-in rows and judged by the same
+// rule. A built-in name wins, so an injected row can add a document and never re-kind one.
+export function budgetKeyFor(docName, rows = []) {
   if (BUDGET_KEY[docName]) return BUDGET_KEY[docName];
+  const injected = rows.find((row) => row?.doc === docName);
+  if (injected) return injected.kind;
   return docName.endsWith(".feature") ? "feature" : undefined;
 }
 
@@ -64,7 +66,7 @@ export function budgetGroup(snapshot, ctx) {
   for (const item of snapshot.items) {
     const docSizes = item.docSizes ?? {};
     for (const [docName, size] of Object.entries(docSizes)) {
-      const key = budgetKeyFor(docName);
+      const key = budgetKeyFor(docName, ctx?.budgetRows ?? []);
       const budget = budgets[key];
       const lines = size?.lines;
       if (key == null || budget == null || lines == null) continue;

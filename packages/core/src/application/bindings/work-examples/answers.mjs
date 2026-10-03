@@ -1,5 +1,5 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
-import { createExampleAnswers } from "@aof/work/examples/answers";
+import { createExampleAnswers } from "@aof/specification-by-example/answers";
 
 export function assembleWorkExamplesAnswers({ agentSessionDriverServices, degradeServices, runStoreServices, runSpendIngestServices, workObserveServices }) {
   // Core constructs this application service from its owning package.

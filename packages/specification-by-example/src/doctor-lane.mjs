@@ -1,5 +1,5 @@
 import path from "node:path";
-import { severityFor } from "../lifecycle.mjs";
+import { severityFor } from "@aof/work/lifecycle";
 import {
   EXAMPLES_DOC,
   malformedLines,
@@ -8,12 +8,13 @@ import {
   provenanceClaims,
   ruleCount,
   rulesWithoutExample,
-} from "../examples/map.mjs";
+} from "./map.mjs";
 
 // Application policy is supplied by core: the gate's one resolver.
 export function createDoctorExamples({ examplesEnabledFromConfig }) {
 // work:doctor — milestone 134 / story 04: THE EXAMPLES LANE (ADR-005 §1), the tenth `CHECK_GROUPS`
-// entry. One pure `(snapshot, ctx) => Finding[]` group, appended; it edits no existing group.
+// entry, which core appends through the engine's `extensionGroups` seam (135 / ADR-001 §3). One
+// pure `(snapshot, ctx) => Finding[]` group, appended; it edits no existing group.
 //
 // WHAT IT ASKS. A story's example map (ADR-001) makes two claims a builder will act on: that a
 // business question is settled, and that an example was agreed by a person. Neither may rest on an
@@ -33,12 +34,13 @@ export function createDoctorExamples({ examplesEnabledFromConfig }) {
 // `*_FINDING_CODES` array — that suffix is the advisory class's marker (FF-12402).
 //
 // ONE JUDGEMENT, TWO CALLERS. `examplesFindings` judges one map; the lane calls it per story row
-// and the continue door (`commands/continue.mjs`) calls it for the one story it opens, so the
-// doctor and the door cannot disagree about a story (ADR-005 §4).
+// and the continue door's before-build check (`./build-door.mjs`) calls it for the one story it
+// opens, so the doctor and the door cannot disagree about a story (ADR-005 §4).
 //
-// THE LANE READS NO DISK. The map's text and its answers ride the snapshot as `examplesMap`, read
-// at the engine's impure edge only when the gate is on and the file is there (ADR-005 §2). Every
-// map pattern and label is read through `../examples/map.mjs` (FF-13402).
+// THE LANE READS NO DISK. The map's text and its answers ride the snapshot row as
+// `extensions.examples`, read by this package's story probe (`./story-probe.mjs`) at the engine's
+// impure edge only when the gate is on and the file is there (ADR-005 §2). Every map pattern and
+// label is read through `./map.mjs` (FF-13402).
 
 const EXAMPLE_LANE_CODES = Object.freeze([
   "example-question-open",
@@ -87,7 +89,7 @@ function examplesGroup(snapshot, ctx = {}) {
   for (const item of snapshot?.items ?? []) {
     // A row with no map is silent: the gate was off at the probe, the row is not a story, the story
     // holds no `EXAMPLES.md`, or another node holds it (PO ruling 5).
-    const map = item?.examplesMap;
+    const map = item?.extensions?.examples;
     if (item?.type !== "story" || map == null || typeof map.text !== "string") continue;
     if (typeof item.dir !== "string" || item.dir === "") continue;
     findings.push(...examplesFindings({

@@ -9,12 +9,12 @@ are in `STORY.md`'s frontmatter and are not repeated here.
 (`./map`, `./answers`, `./doctor-lane`, `./build-door`, `./story-probe`), `files: ["src"]`, the
 `test-workspace.mjs` script and dependencies on `@aof/work` and `@aof/contracts` only. List it in
 core's and the root's dependencies, run `yarn install` so the lock gains the workspace entry, then
-run the supply-chain audit. Register `test/index.mjs` in `scripts/test.mjs` beside the other owned
+run the supply-chain audit. Register the package's test index in the root test registry beside the other owned
 package indexes.
 
 **Move first, and only then invert.** Use `git mv` for `map.mjs`, `answers.mjs` and the lane, so the
 history follows them. Repoint every importer: core bindings, the run store's `getAnswerTokens`
-loader, the test support file and the root `test/examples` suites. Get everything green at this
+loader, the test support file and the root examples suites. Get everything green at this
 point, before touching a seam.
 
 **The three seams**, each a parameter that `@aof/work` accepts and names generically:
@@ -42,11 +42,11 @@ State each in its `why`.
 ## The verification step
 
 With `AOF_GLOBAL_HOME` and `CLAUDE_CONFIG_DIR` set to fresh temp directories, run through the test
-runner's `--only`: the package's own index, every `test/examples` suite, every `test/arch/examples`
+runner's `--only`: the package's own index, every root examples suite, every examples arch
 control, `packages/work/test/doctor.test.mjs`, `domain-services.test.mjs`, the work-doctor suite,
-the source-directory budget and the workspace boundary check (`node scripts/check.mjs` if it runs
-the boundaries). Then `aof work doctor 144` from the repository root on a freshly installed payload
-must give the same example findings as before the move. Never run the full suite.
+the source-directory budget and the workspace boundary check. Then `aof work doctor 144` from the
+repository root on a freshly installed payload must give the same example findings as before the
+move. Never run the full suite.
 
 ## Out of scope
 

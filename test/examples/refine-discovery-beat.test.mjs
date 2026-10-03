@@ -20,7 +20,7 @@ import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseExampleMap, readMapToken } from "@aof/work/examples/map";
+import { parseExampleMap, readMapToken } from "@aof/specification-by-example/map";
 
 const getCommand = _aofApplication.getCommand;
 const parseSpecArgv = _aofApplication.cli.parseSpecArgv;

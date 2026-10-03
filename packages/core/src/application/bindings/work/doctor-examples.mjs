@@ -1,8 +1,8 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
-import { createDoctorExamples } from "@aof/work/doctor/examples";
+import { createDoctorExamples } from "@aof/specification-by-example/doctor-lane";
 
 export function assembleWorkDoctorExamples({ configInspectServices }) {
-  // Core composition for work-owned doctor services.
+  // Core composition for the specification-by-example doctor lane.
 
   const { examplesEnabledFromConfig } = configInspectServices;
 

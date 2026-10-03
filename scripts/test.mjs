@@ -3,6 +3,7 @@ import { tests as ownedExecutionTests } from "../packages/execution/test/index.m
 import { tests as ownedIntegrationNotionTests } from "../packages/integration-notion/test/index.mjs";
 import { tests as ownedMeshTests } from "../packages/mesh/test/index.mjs";
 import { tests as ownedWorkGraphTests } from "../packages/work-graph/test/index.mjs";
+import { tests as ownedSpecificationByExampleTests } from "../packages/specification-by-example/test/index.mjs";
 import { tests as ownedUiTests } from "../apps/ui/test/index.mjs";
 import { tests as ownedWorkLoopTests } from "../packages/work-loop/test/index.mjs";
 import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
@@ -96,6 +97,7 @@ export const tests = [
   ...ownedIntegrationNotionTests,
   ...ownedMeshTests,
   ...ownedWorkGraphTests,
+  ...ownedSpecificationByExampleTests,
   ...ownedUiTests,
   ...ownedWorkLoopTests,
   ...ownedWorkTests,

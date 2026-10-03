@@ -6,8 +6,6 @@ import path from 'node:path';
 import { compilePhaseBrief, PHASE_BRIEF_MAX_CHARS } from '@aof/work/phase-brief';
 import { compileBriefForItem } from '@aof/work/phase-brief-read';
 import { createStoryContractDeriver } from '@aof/work/story-contract-derive';
-import { mapToken } from '@aof/work/examples/map';
-import { createExampleAnswers } from '@aof/work/examples/answers';
 import { partitionReadySetByDeclaredFiles } from '@aof/work/ready-wave';
 import { createMigrateFolderCommand } from '@aof/work/commands/migrate-folder';
 import { createDiagramFileCommand } from '@aof/work/commands/diagram/file';
@@ -54,20 +52,6 @@ test('contract proposals use the supplied knowledge services without guessing un
   assert.equal(proposal.complete, false);
   assert.deepEqual(proposal.unknownCoupling, ['src/a.mjs']);
   assert.ok(proposal.files.some(entry => entry.path === 'test/a.test.mjs'));
-});
-
-test('example answer collection filters settled run evidence to the requested story', async () => {
-  const record = { token: mapToken('01/00', 'Q1'), question: 'question', answer: 'yes', toolUseId: 'tool', at: '2026-09-29' };
-  const reader = createExampleAnswers({
-    HUMAN_INPUT_TOOL_NAMES: ['AskUserQuestion'], reportDegrade() {},
-    readRuns: async () => [{ state: 'done', brief: { answers: [record, record] } }],
-    isRunning: () => false, readTranscriptTree: async () => null, claudeProjectsDir: () => null,
-  });
-  assert.deepEqual(reader.readAnswers('not JSON'), []);
-  assert.equal(await reader.readSessionAnswers(null, 'session'), null);
-  // An invalid or unrelated map token is never attributed to the current story.
-  assert.deepEqual(await reader.collectAnswers({ ref: '02/00', dir: '/fixture/story' }), []);
-  assert.deepEqual(await reader.collectAnswers({ ref: '01/00', dir: '/fixture/story' }), [record]);
 });
 
 test('ready waves keep a missing write contract alone', async () => {
