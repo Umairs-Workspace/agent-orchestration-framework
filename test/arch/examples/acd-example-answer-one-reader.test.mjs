@@ -21,7 +21,7 @@ import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
+import { blankStringLiterals, functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_READER = "packages/specification-by-example/src/answers.mjs";
@@ -52,7 +52,71 @@ function outsideTheWriter(code) {
   return body == null ? code : code.replace(body, "");
 }
 
+// FF-13601 (milestone 136 / ADR-001 §1, §2) — 131'S ANSWER IS READ AS PROVENANCE IN ONE PLACE.
+//
+// "In comment-stripped `packages/specification-by-example/src/**`, a run record's `asks` is read
+//  only in `answers.mjs`, and only inside `collectAnswers`; the reader names no token pattern of
+//  its own (it calls `readMapToken`)."
+//
+// `collectAnswers` reads the asks through the one helper it calls, `readAskAnswers`, so that body is
+// the sanctioned region. A read is a property access (`.asks`, `?.asks`, `["asks"]`); a token
+// pattern is a regular-expression literal naming an `E`/`Q` id. Both detectors are deliberately
+// simple: the package is five modules, and a second checker grows there or not at all.
+const SBE_SRC = "packages/specification-by-example/src";
+const ASK_HELPER = "function readAskAnswers(";
+const readsAsks = (code) => /(?:\?\.|\.)\s*asks\b|\[\s*["'`]asks["'`]\s*\]/.test(code);
+function ownTokenPatterns(source) {
+  const code = blankStringLiterals(source);
+  const literals = [...code.matchAll(/(?<![\w$)\]])\/(?![/*])(?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\[])+\/[dgimsuyv]*/g)].map((match) => match[0]);
+  return literals.filter((literal) => /\[(?:EQ|QE)\]|[EQ](?:\\d|\[[01]-9\])/.test(literal));
+}
+async function askReaders(plant = {}) {
+  const readers = [];
+  for (const name of (await readdir(path.join(repoRoot, SBE_SRC))).filter((entry) => entry.endsWith(".mjs")).sort()) {
+    const file = `${SBE_SRC}/${name}`;
+    let code = stripComments(plant[name] ?? await readFile(path.join(repoRoot, file), "utf8"));
+    if (file === THE_READER) {
+      const body = functionBody(code, ASK_HELPER);
+      if (body != null) code = code.replace(body, "");
+    }
+    if (readsAsks(code)) readers.push(file);
+    if (file === THE_READER && ownTokenPatterns(code).length > 0) readers.push(`${file}: a token pattern of its own`);
+  }
+  return readers;
+}
+
 export const archTests = [
+  {
+    name: "arch/136 FF-13601: a run's asks are read in answers.mjs only, inside collectAnswers's helper, and the reader names no token pattern",
+    run: async () => {
+      const code = stripComments(await readFile(path.join(repoRoot, THE_READER), "utf8"));
+      const helper = functionBody(code, ASK_HELPER);
+      assert.ok(helper != null, "readAskAnswers is found in the reader");
+      assert.ok(readsAsks(helper), "the detector sees the helper's own read — the sweep is not vacuous");
+      assert.match(functionBody(code, "async function collectAnswers(") ?? "", /\breadAskAnswers\(/, "collectAnswers calls the helper");
+      assert.match(helper, /\breadMapToken\(/, "the helper reads the token through readMapToken");
+      assert.deepEqual(await askReaders(), [], "131's answer has one reader, and it spells no token");
+    },
+  },
+  {
+    name: "arch/136 FF-13601 red probe: a second reader of the asks, or a token pattern of the reader's own, turns the control red",
+    run: async () => {
+      const lane = await readFile(path.join(repoRoot, SBE_SRC, "doctor-lane.mjs"), "utf8");
+      const plantedLane = `${lane}\nexport const plantedAsks = (run) => run.asks;\n`;
+      assert.deepEqual(await askReaders({ "doctor-lane.mjs": plantedLane }), [`${SBE_SRC}/doctor-lane.mjs`], "a second reader names doctor-lane.mjs");
+      const reader = await readFile(path.join(repoRoot, THE_READER), "utf8");
+      for (const pattern of ["/Q\\d+/", "/^7\\/2 [EQ][1-9]\\d*/", "/\\bQ[0-9]+/"]) {
+        const planted = `${reader}\nexport const plantedToken = (text) => ${pattern}.test(text);\n`;
+        assert.deepEqual(await askReaders({ "answers.mjs": planted }), [`${THE_READER}: a token pattern of its own`], `${pattern} names answers.mjs`);
+      }
+      const outside = reader.replace("async function collectAnswers(story, opts = {}) {", "async function collectAnswers(story, opts = {}) {\n  void story.asks;");
+      assert.notEqual(outside, reader, "the plant landed");
+      assert.deepEqual(await askReaders({ "answers.mjs": outside }), [THE_READER], "a read outside the helper names answers.mjs");
+      for (const benign of ["// run.asks is read by the reader", "const text = \"the asks\";", "const asksCount = 1;"]) {
+        assert.equal(readsAsks(stripComments(benign)), false, `${benign} is not a read`);
+      }
+    },
+  },
   {
     name: "arch/134 FF-13401: `toolUseResult` is read in packages/specification-by-example/src/answers.mjs and in no other module",
     run: async () => {

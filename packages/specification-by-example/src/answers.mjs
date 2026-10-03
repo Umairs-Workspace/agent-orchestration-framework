@@ -121,6 +121,41 @@ function transcriptDirFor({ projectsDir, workspace, env = process.env, home } = 
   return claudeProjectsDir({ cwd: workspace.projectRoot, env, ...(home ? { home } : {}) });
 }
 
+// THE LOOP'S ANSWER — a person's answer recorded on the run itself (milestone 136 / ADR-001,
+// FF-13601). Under a driving shell the question goes out as 131's ask and the answer comes back
+// through `aof work answer`, the board or a Discord reply; the run's owner writes it onto the run
+// record's `asks` (`answerRunAsk`) and the harness writes no `toolUseResult` for it. An entry
+// anchors only when it is answered and its question names exactly ONE token: one at its head, and
+// none at the head of any later line — 131's answer is one text, and nothing can say which part of
+// it settled which of two tokens (§2). Every channel counts (136/01 Q1); `by` names it.
+// Pure and total, as `readAnswers` is: a malformed `asks` yields nothing and never throws.
+function readAskAnswers(run) {
+  const asks = Array.isArray(run?.asks) ? run.asks : [];
+  const records = [];
+  for (const entry of asks) {
+    if (entry == null || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const { question, answer, answeredAt } = entry;
+    if (!nonEmptyString(question) || !nonEmptyString(answer) || !nonEmptyString(answeredAt)) continue;
+    const [first, ...rest] = question.split("\n");
+    const head = readMapToken(first);
+    if (!head || rest.some((line) => readMapToken(line) != null)) continue;
+    records.push({
+      key: ["ask", run.runId ?? null, entry.askedAt ?? null],
+      record: {
+        token: mapToken(head.storyRef, head.id),
+        question,
+        answer,
+        toolUseId: null,
+        sessionId: nonEmptyString(run.sessionId) ? run.sessionId : null,
+        at: answeredAt,
+        entrypoint: null,
+        by: entry.by ?? null,
+      },
+    });
+  }
+  return records;
+}
+
 // A story's parent milestone as a run-store item: its ref's head, and the folder that holds the
 // story's `stories/` folder.
 function parentOf(story) {
@@ -131,9 +166,10 @@ function parentOf(story) {
 
 /**
  * A story's answers, wherever they live: the stamps of the settled runs of the story and of its
- * parent milestone, and — for a run still `running` — what this reader returns live from that run's
- * session. Only records whose token names the story; de-duplicated on `(toolUseId, question)` and
- * ordered by `at`, ties keeping the stamp's own order.
+ * parent milestone, for a run still `running` what this reader returns live from that run's
+ * session, and — for every run, in any state — the answered loop asks on its record (136/ADR-001).
+ * Only records whose token names the story; a harness answer de-duplicated on `(toolUseId,
+ * question)`, an ask on its run and `askedAt`; ordered by `at`, ties keeping the stamp's own order.
  *
  *   opts — { projectsDir } or { workspace, env, home } for the live read; { parent } to name the
  *          parent item rather than derive it from the story's folder.
@@ -142,28 +178,31 @@ async function collectAnswers(story, opts = {}) {
   const items = [story, opts.parent ?? parentOf(story)].filter((item) => nonEmptyString(item?.dir));
   const dir = transcriptDirFor(opts);
   const found = [];
+  const harness = (record) => ({ key: [record?.toolUseId, record?.question], record });
   for (const item of items) {
     for (const run of await readRuns(item)) {
       if (isRunning(run)) {
-        if (!dir || !nonEmptyString(run.sessionId)) continue;
-        try {
-          found.push(...((await readSessionAnswers(dir, run.sessionId)) ?? []));
-        } catch (error) {
-          // A live read that fails answers nothing for that run, and says so; the stamps still stand.
-          reportDegrade("example-answers", error);
+        if (dir && nonEmptyString(run.sessionId)) {
+          try {
+            found.push(...((await readSessionAnswers(dir, run.sessionId)) ?? []).map(harness));
+          } catch (error) {
+            // A live read that fails answers nothing for that run, and says so; the stamps still stand.
+            reportDegrade("example-answers", error);
+          }
         }
       } else if (Array.isArray(run.brief?.answers)) {
-        found.push(...run.brief.answers);
+        found.push(...run.brief.answers.map(harness));
       }
+      found.push(...readAskAnswers(run));
     }
   }
   const seen = new Set();
   const mine = [];
-  for (const record of found) {
+  for (const { key, record } of found) {
     if (readMapToken(record?.token)?.storyRef !== story.ref) continue;
-    const key = JSON.stringify([record.toolUseId, record.question]);
-    if (seen.has(key)) continue;
-    seen.add(key);
+    const id = JSON.stringify(key);
+    if (seen.has(id)) continue;
+    seen.add(id);
     mine.push(record);
   }
   return mine.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));

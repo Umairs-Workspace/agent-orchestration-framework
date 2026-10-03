@@ -4,7 +4,7 @@ number: 01
 slug: a-loop-answer-anchors-the-example
 title: "A loop answer anchors the example — the answer 131 records on a run is a person's answer to the map token its question opens with"
 parent: 136
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -38,8 +38,8 @@ map). Nothing is stamped a second time, and the doctor lane and the build door a
 
 ## Tasks
 
-- [ ] 00 [an answered loop question is a person's answer to its token](tasks/00_an-answered-loop-question-is-a-persons-answer-to-its-token.feature)
-- [ ] 01 [an ask that cannot name its one token anchors none](tasks/01_an-ask-that-cannot-name-its-one-token-anchors-none.feature)
+- [x] 00 [an answered loop question is a person's answer to its token](tasks/00_an-answered-loop-question-is-a-persons-answer-to-its-token.feature)
+- [x] 01 [an ask that cannot name its one token anchors none](tasks/01_an-ask-that-cannot-name-its-one-token-anchors-none.feature)
 
 ## Notes
 

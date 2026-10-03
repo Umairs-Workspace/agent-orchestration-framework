@@ -152,4 +152,4 @@ verification in `STATE.md`. It needs both stories delivered and is not a story.
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-13601 | **131's answer is read as provenance in one place.** In comment-stripped `packages/specification-by-example/src/**`, a run record's `asks` is read only in `answers.mjs`, and only inside `collectAnswers`; the reader names no token pattern of its own (it calls `readMapToken`). | `test/arch/examples/acd-example-answer-one-reader.test.mjs` (a new case beside FF-13401), pending | ADR-001 §1, §2 |
+| FF-13601 | **131's answer is read as provenance in one place.** In comment-stripped `packages/specification-by-example/src/**`, a run record's `asks` is read only in `answers.mjs`, and only inside `collectAnswers`; the reader names no token pattern of its own (it calls `readMapToken`). | `test/arch/examples/acd-example-answer-one-reader.test.mjs` (two cases beside FF-13401: the sweep, whose sanctioned region is `readAskAnswers`, the one helper `collectAnswers` calls, and its red probes), landed 136/01 | ADR-001 §1, §2 |
