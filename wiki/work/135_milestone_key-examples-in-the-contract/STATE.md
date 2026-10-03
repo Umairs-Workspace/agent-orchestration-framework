@@ -107,3 +107,8 @@ doc: state
   over the live work stream, so any later story whose contract drops an agreed example while it is
   open turns this suite red — which is the gate doing its job, but the failure will surface in 135/04's
   suite rather than the story that caused it.
+- **135/05 build (2026-10-03, solo):** the render that refreshes the nine copies also rewrites
+  `.aof/aof.lock.json` (their hashes), which is not in `files:`; committed with the story. The
+  Formulation paragraph names neither the gate's key nor the map's file name, because 134/05 pins
+  the discovery passage as their one home in the Contract. The importer sweep (91 suites, 1387
+  cases) was green.

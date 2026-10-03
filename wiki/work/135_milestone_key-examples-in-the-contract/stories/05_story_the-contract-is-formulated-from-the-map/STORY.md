@@ -5,7 +5,7 @@ slug: the-contract-is-formulated-from-the-map
 title: "The contract is formulated from the map — the PO writes a Rule: per map rule and a headline scenario per key example, QA's tables sit beneath, and the guide names the level above the matrix"
 parent: 135
 depends: [01]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -53,8 +53,8 @@ The fallback for a runner that does not bind `Rule:` (one feature per rule) is n
 
 ## Tasks
 
-- [ ] 00 [refine formulates from the map](tasks/00_refine-formulates-from-the-map.feature)
-- [ ] 01 [the briefs and the guide carry the level above the matrix](tasks/01_the-briefs-and-the-guide-carry-the-level-above-the-matrix.feature)
+- [x] 00 [refine formulates from the map](tasks/00_refine-formulates-from-the-map.feature)
+- [x] 01 [the briefs and the guide carry the level above the matrix](tasks/01_the-briefs-and-the-guide-carry-the-level-above-the-matrix.feature)
 
 ## Notes
 
