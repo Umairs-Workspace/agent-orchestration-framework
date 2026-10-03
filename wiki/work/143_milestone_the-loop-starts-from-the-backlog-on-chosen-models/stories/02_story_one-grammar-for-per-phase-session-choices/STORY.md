@@ -4,10 +4,10 @@ number: 02
 slug: one-grammar-for-per-phase-session-choices
 title: "One grammar for per-phase session choices — parseSessionChoices, a per-part resolver with its sources, and repeatable CLI flags"
 parent: 143
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-003]
@@ -26,10 +26,12 @@ files:
   - packages/execution/src/session-model.mjs
   - packages/core/src/application/bindings/spine/face.mjs
   - packages/execution/test/session-model.suite.mjs
-  - test/command/command-face-repeatable-flag.test.mjs
+  - packages/execution/test/domain-services.test.mjs
+  - test/command/cli-face-contract.test.mjs
   - test/command/index.mjs
-  - test/arch/session/acd-session-choice-single-home.test.mjs
-  - test/arch/session/index.mjs
+  - test/arch/session/acd-agent-model-source-map.test.mjs
+  - packages/knowledge/src/memory.mjs
+  - packages/mesh/src/commands/session.mjs
 ---
 # 02 · One grammar for per-phase session choices
 
@@ -48,9 +50,9 @@ grammar yet. Story 03 wires it into the loop and the drive.
 
 ## Tasks
 
-- [ ] 00 [a choice is read by one grammar](tasks/00_a-choice-is-read-by-one-grammar.feature)
-- [ ] 01 [each part resolves from flag, config, then default](tasks/01_each-part-resolves-from-flag-config-then-default.feature)
-- [ ] 02 [a string flag can be given more than once](tasks/02_a-string-flag-can-be-given-more-than-once.feature)
+- [x] 00 [a choice is read by one grammar](tasks/00_a-choice-is-read-by-one-grammar.feature)
+- [x] 01 [each part resolves from flag, config, then default](tasks/01_each-part-resolves-from-flag-config-then-default.feature)
+- [x] 02 [a string flag can be given more than once](tasks/02_a-string-flag-can-be-given-more-than-once.feature)
 
 ## Notes
 

@@ -32,7 +32,8 @@
 // in a branch of `packages/core/src/loop/wave.mjs` (leg 2); 129/07: read `loopConfig(ws)?.dispatch?.concurrency`
 // from `packages/core/src/loop/wave.mjs` (leg 2 names the loop key's second reader).
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { functionBody, matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
@@ -64,7 +65,9 @@ export const SELF_CONTAINED_LOOP_KEYS = Object.freeze([
   "work.loop.agents.refine.mode",
   "work.loop.agents.continue.mode",
 ]);
-export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS].sort());
+// 143/01 (ADR-002 §1) — the refine scope, a mode with this key's discipline, appended after the three.
+export const REFINE_SCOPE_KEY = "work.loop.refine";
+export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS, REFINE_SCOPE_KEY].sort());
 
 // The two modules that may spell a mode literal, by path (ADR-001 §1 and §4).
 export const MODE_LITERAL_HOMES = Object.freeze([BOUNDS_HOME, ENGINE]);
@@ -145,7 +148,7 @@ export function sweepFamilyKeys(units) {
     if (!((rel.startsWith("packages/core/src/loop/") || rel.startsWith("packages/work-loop/src/")) || rel === "packages/work-loop/src/commands/loop.mjs")) continue;
     for (const match of code.matchAll(WORK_LOOP_KEY_RE)) {
       const key = match[0];
-      if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through packages/core/src/loop-bounds.mjs's twelve keys and holds no number of its own`);
+      if (!pinned.has(key)) problems.push(`${rel} names \`${key}\`, which neither resolver map carries — the family reads its bounds through packages/core/src/loop-bounds.mjs's thirteen keys and holds no number of its own`);
     }
     // Dispatch now shares this package; its one pool-bound read is checked by sweepDispatchBoundReads.
     if (rel !== DISPATCH_HOME && [...code.matchAll(DISPATCH_BOUND_READ_RE)].length > 0) {
@@ -165,7 +168,7 @@ async function srcUnits() {
 
 export const archTests = [
   {
-    name: "arch/129/05 FF-12901: leg 1 (the maps) — work.loop.concurrency resolves in src/loop-bounds.mjs as a mode, both maps carry exactly the twelve keys, and the range probe admits the two modes and nothing else",
+    name: "arch/129/05 FF-12901: leg 1 (the maps) — work.loop.concurrency resolves in src/loop-bounds.mjs as a mode, both maps carry exactly the thirteen keys, and the range probe admits the two modes and nothing else",
     run: async () => {
       // Lazily — the harness's entry-key sweep (FF-5311) imports every arch file, and a leaf
       // imported at module scope is a leaf whose absence takes the whole index down.
@@ -184,7 +187,7 @@ export const archTests = [
         assert.deepEqual(
           keys,
           [...PINNED_LOOP_KEYS],
-          `${mapName} carries exactly the eight FF-6901 keys plus ${KEY} plus the three of 129/07${extra.length > 0 ? ` — a key outside the twelve: ${extra.join(", ")} (a second concurrency number is the twin 129/ADR-006 refuses)` : ""}${missing.length > 0 ? ` — missing: ${missing.join(", ")}` : ""}`,
+          `${mapName} carries exactly the eight FF-6901 keys plus ${KEY} plus the three of 129/07 plus 143/01's refine scope${extra.length > 0 ? ` — a key outside the thirteen: ${extra.join(", ")} (a second concurrency number is the twin 129/ADR-006 refuses)` : ""}${missing.length > 0 ? ` — missing: ${missing.join(", ")}` : ""}`,
         );
       }
 
@@ -214,8 +217,13 @@ export const archTests = [
       // 129/07 — the three self-contained keys map to the leaf's own resolvers by identity, sit
       // AFTER the mode in the declared order, and answer null when unset (140: a mode's default is
       // the phase's, applied by `loopAgentModeFromConfig`, never the key resolver's).
-      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
-      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
+      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
+      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
+      // 143/01 — the refine scope follows them, last, in both maps.
+      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(12), [REFINE_SCOPE_KEY]);
+      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(12), [REFINE_SCOPE_KEY]);
+      assert.equal(loopBounds.rangeProbe(REFINE_SCOPE_KEY, "whole-item").admissible, true, "whole-item is admissible");
+      assert.equal(loopBounds.rangeProbe(REFINE_SCOPE_KEY, "Whole-Item").admissible, false, "a case variant is not");
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.dispatch.concurrency"], loopBounds.resolveLoopDispatchConcurrency, "the lane bound's value resolver by identity");
       assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS["work.loop.dispatch.concurrency"], loopBounds.loopDispatchConcurrencyFromConfig, "…and its config resolver");
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.agents.refine.mode"], loopBounds.resolveLoopAgentMode, "the refine mode's value resolver by identity");
@@ -301,3 +309,59 @@ export const archTests = [
     },
   },
 ];
+
+// ══════════════ 143/01 — FF-14302: the refine scope has one home (ADR-002 §1, §4) ══════════════
+//
+// Folded in beside FF-12901 rather than a new file: `test/arch/loop` sits at its directory-budget
+// ceiling, and this is the same subject — a loop MODE's vocabulary and where it may be spelled. The
+// members are a frozen array exported once from the bounds home; outside it, comment-stripped
+// `packages/**/src` spells `"whole-item"` exactly once, in the engine's one comparison constant.
+
+async function packageSourceFiles() {
+  const packages = path.join(repoRoot, "packages");
+  const files = [];
+  async function walk(dir) {
+    for (const entry of await readdir(dir, { withFileTypes: true })) {
+      if (entry.name === "node_modules") continue;
+      const target = path.join(dir, entry.name);
+      if (entry.isDirectory()) await walk(target);
+      else if (entry.name.endsWith(".mjs")) files.push(target);
+    }
+  }
+  for (const entry of await readdir(packages, { withFileTypes: true })) {
+    const src = path.join(packages, entry.name, "src");
+    if (entry.isDirectory() && existsSync(src)) await walk(src);
+  }
+  return files;
+}
+
+const WHOLE_ITEM_LITERAL = /(["'`])whole-item\1/gu;
+const REFINE_MODES_EXPORT = /export\s+const\s+LOOP_REFINE_MODES\s*=\s*Object\.freeze\(\s*\[\s*"per-story"\s*,\s*"whole-item"\s*\]\s*\)/gu;
+
+archTests.push({
+  name: "arch/143 FF-14302 (acd-loop-concurrency-single-home, extended): the refine scope's members are one frozen export, and \"whole-item\" is spelled once outside it, in the engine",
+  run: async () => {
+    const loopBounds = await import("@aof/contracts/loop-bounds");
+    const files = await packageSourceFiles();
+    assert.ok(files.length >= 200, `NOTHING WAS READ: packages/**/src walked ${files.length} file(s)`);
+    const exports = [];
+    const literals = [];
+    for (const file of files) {
+      const rel = path.relative(repoRoot, file).split(path.sep).join("/");
+      const code = stripComments(await readFile(file, "utf8"));
+      for (const _ of code.matchAll(REFINE_MODES_EXPORT)) exports.push(rel);
+      if (rel === BOUNDS_HOME) continue;
+      for (const _ of code.matchAll(WHOLE_ITEM_LITERAL)) literals.push(rel);
+    }
+    assert.deepEqual(exports, [BOUNDS_HOME], "the two members are one frozen array, exported once, from the bounds home");
+    assert.deepEqual(literals, [ENGINE], `outside the bounds home "whole-item" is spelled once, in the engine's comparison constant: ${literals.join(", ")}`);
+    assert.equal(Object.isFrozen(loopBounds.LOOP_REFINE_MODES), true);
+    assert.deepEqual([...loopBounds.LOOP_REFINE_MODES], ["per-story", "whole-item"]);
+
+    // Both detectors are armed.
+    assert.equal([...'const x = "whole-item";'.matchAll(WHOLE_ITEM_LITERAL)].length, 1);
+    assert.equal([..."const x = `whole-item`;".matchAll(WHOLE_ITEM_LITERAL)].length, 1);
+    assert.equal([...'const x = "whole-items";'.matchAll(WHOLE_ITEM_LITERAL)].length, 0, "a different word is not the member");
+    assert.equal([...'export const LOOP_REFINE_MODES = Object.freeze(["per-story", "whole-item"]);'.matchAll(REFINE_MODES_EXPORT)].length, 1);
+  },
+});

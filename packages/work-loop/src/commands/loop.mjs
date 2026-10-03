@@ -51,6 +51,9 @@ import {
   heartbeatFromConfig,
   loopConcurrencyFromConfig,
   loopDispatchConcurrencyFromConfig,
+  LOOP_REFINE_MODES,
+  loopRefineFromConfig,
+  resolveLoopRefine,
   progressMaxResetsFromConfig,
   reviewRoundsFromConfig,
   scheduleToCloseFromConfig,
@@ -114,7 +117,7 @@ export function createLoopShell({
   const { decideBuildProgress, evaluateProgressPolicy, readProgressSamples } = progress;
   const { CONTROL_FINDING_CODES } = doctor;
   const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks } = cycle;
-  const { normalizeEffort, resolveSessionLaunch, THINKING_UNKNOWN_LEVEL, thinkingUnknownLevelMessage } = sessions;
+  const { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
   const { resolveItemExact } = items;
   const { declaredRubric } = gradeCommand;
   const { meshNodeIdOf } = placement;
@@ -356,7 +359,11 @@ export function createLoopShell({
     return "ready";
   }
 
-  function loopState({ scope, level, cap, loopRunId, next, act, resumable, driven = [] }) {
+  // 143/01 (ADR-002 §3) — `refine`, the ELEVENTH key, appended last: the refine mode this invocation
+  // drives (or would drive) under. One document shape for the probe and every end state.
+  // 143/03 (ADR-004 §5) — `sessions`, the TWELFTH key, after it: the per-phase table this invocation
+  // drives (or would drive) on.
+  function loopState({ scope, level, cap, loopRunId, next, act, resumable, driven = [], refine = null, sessions = null }) {
     return {
       scope,
       level,
@@ -368,6 +375,8 @@ export function createLoopShell({
       stops: [...LOOP_STOPS],
       resumable,
       driven,
+      refine,
+      sessions,
     };
   }
 
@@ -436,34 +445,84 @@ export function createLoopShell({
     };
   }
 
-  // 141 — `--thinking` read through the one effort vocabulary: the canonical level, `null` when the
-  // flag is absent, and the coded refusal for a level the vocabulary does not know.
-  function requestedThinking(input) {
-    if (typeof input?.thinking !== "string" || input.thinking.length === 0) return null;
-    const level = normalizeEffort(input.thinking);
-    if (level == null) throw commandError(thinkingUnknownLevelMessage(input.thinking), THINKING_UNKNOWN_LEVEL, 400);
-    return level;
+  // 143/03 (ADR-004 §1) — the repeatable `--model` and `--thinking`, read by story 02's ONE grammar with
+  // the other vocabulary guards, before any registered read; a refusal is the grammar's own code. A
+  // string from an older caller is a one-element list, and `""` is absent, as 141's flag was.
+  // `thinking` keeps 141's meaning: the UNPHASED `--thinking` level, or `null`. `explicit` is whether
+  // any session flag was given, which is what a resume reads (ADR-004 §3).
+  const flagValues = (value) => (Array.isArray(value) ? value : typeof value === "string" && value.length > 0 ? [value] : []);
+  function requestedSessions(input) {
+    const model = flagValues(input?.model);
+    const thinking = flagValues(input?.thinking);
+    const parsed = parseSessionChoices({ model, thinking });
+    if (parsed.refusal) throw commandError(parsed.refusal.message, parsed.refusal.code, 400);
+    const unphased = thinking.find((value) => typeof value === "string" && !value.includes("="));
+    return { choices: parsed.choices, explicit: model.length + thinking.length > 0, thinking: unphased === undefined ? null : normalizeEffort(unphased) };
   }
 
-  // 141 — the one line that says what effort the loop drives at, before its first drive.
-  const LOOP_PHASES = Object.freeze(["refine", "continue", "verify"]);
-  function thinkingNarration(thinking, config) {
-    if (typeof thinking === "string" && thinking.length > 0) return `Thinking: ${thinking} for every phase (--thinking).`;
-    const phases = LOOP_PHASES.map((phase) => {
-      const { effort, effortSource } = resolveSessionLaunch(config, phase);
-      return `${phase} ${effort} (${effortSource})`;
-    });
-    return `Thinking: ${phases.join(", ")}.`;
+  // 143/01 (ADR-002 §2) — `--refine` read against the one vocabulary: the member, `null` when the flag
+  // is absent, and a coded refusal naming both members for anything else, before any registered read.
+  const LOOP_REFINE_UNKNOWN = "loop-refine-unknown";
+  function requestedRefine(input) {
+    if (input?.refine === undefined || input.refine === null) return null;
+    if (LOOP_REFINE_MODES.includes(input.refine)) return input.refine;
+    throw commandError(`--refine "${String(input.refine)}" is not a refine mode. Use one of: ${LOOP_REFINE_MODES.join(", ")}.`, LOOP_REFINE_UNKNOWN, 400);
   }
 
-  async function resolveInvocation(input, ctx) {
+  // 143/00 (ADR-001 §1) — A SCOPE THE LOOP GRAMMAR DOES NOT ADMIT, resolved by the refine/continue
+  // door's own EXACT resolver (`work:find` is a query and would guess). The row is a backlog item when
+  // its `number` is `null` — strictly, for the reason `continue.mjs` spells out: a live row has no
+  // `number` key at all. Anything else is `null` here, and the scope grammar answers it unchanged.
+  async function backlogRowFor(scope, ctx) {
+    if (typeof scope !== "string" || scope === "" || decideLoopScope(scope).admitted === true) return null;
+    const row = await resolveItemExact(ctx, scope);
+    return row?.number === null ? row : null;
+  }
+
+  // 143/00 (ADR-001 §4) — THE DOORS THAT ACT ON A RUNNING LOOP never promote: a loop runs at a
+  // number, so a backlog slug cannot name one. One refusal for `--stop`, `--hand-off` and `--resume`.
+  const LOOP_BACKLOG_REF_NOT_RUNNING = "loop-backlog-ref-not-running";
+  async function refuseBacklogScope(input, ctx, door) {
+    const row = await backlogRowFor(typeof input?.scope === "string" ? input.scope.trim() : "", ctx);
+    if (row !== null) backlogNotRunning(row, door);
+  }
+  function backlogNotRunning(row, door) {
+    throw commandError(
+      `\`${row.ref}\` is a backlog item, so no loop runs at it and ${door} has nothing to act on. Start it with: aof work loop ${row.ref}`,
+      LOOP_BACKLOG_REF_NOT_RUNNING,
+      409,
+    );
+  }
+
+  // resolveInvocation(input, ctx, { promote }) — `promote: true` is the LAUNCH's alone. Every other
+  // caller is read-only, and a backlog slug answers it `wouldPromote` with nothing written.
+  async function resolveInvocation(input, ctx, { promote = false } = {}) {
     const requested = requestedSettings(input, ctx);
-    // 141 — refused with the other vocabulary guards, before any registered read.
-    const thinking = requestedThinking(input);
+    // 141, 143/03 — refused with the other vocabulary guards, before any registered read.
+    const sessionRequest = requestedSessions(input);
+    const thinking = sessionRequest.thinking;
+    // 143/01 — refused with them too.
+    const refine = requestedRefine(input);
 
     // Reject malformed settings before paying for any registered read. L3's
     // workspace facts are gathered only after these vocabulary guards pass.
     const requestedLevel = requireDecision(resolveLoopLevel(requested.level));
+    // 143/00 (ADR-001 §1-§4) — a backlog slug is resolved BEFORE the scope grammar runs, and the
+    // engine's grammar is not widened. A resume refuses it; a read-only caller (the probe, an L1
+    // report) is told what would be promoted; only the launch promotes, through the one door, and
+    // then runs at `created.ref` exactly as if the operator had typed that number.
+    let promotedFrom = null;
+    const backlog = await backlogRowFor(requested.scope, ctx);
+    if (backlog !== null) {
+      if (input?.resume === true) backlogNotRunning(backlog, "--resume");
+      const backlogCap = requireDecision(resolveLoopBound(requested.cap));
+      if (promote !== true || requestedLevel.level === "L1") {
+        return { wouldPromote: backlog.ref, scope: backlog.ref, level: requestedLevel.level, cap: backlogCap.cap };
+      }
+      const promoted = await invokeRegistered("work:promote", { slug: backlog.ref }, ctx);
+      promotedFrom = backlog.ref;
+      requested.scope = promoted.created.ref;
+    }
     const requestedScope = requireDecision(decideLoopScope(requested.scope));
     const requestedCap = requireDecision(resolveLoopBound(requested.cap));
     // 126/02: a LAUNCH carries the flag straight through; a RESUME hands it to the engine's
@@ -474,6 +533,11 @@ export function createLoopShell({
       cap: requestedCap.cap,
       supervised: input?.supervised === true,
       thinking,
+      // 143/03 — the per-phase table; a resume replaces it below.
+      sessions: resolveSessionTable(ctx.workspace?.config, sessionRequest.choices),
+      promotedFrom,
+      // 143/01 (ADR-002 §3) — the flag, else the configured mode; a resume replaces it below.
+      refine: refine ?? loopRefineFromConfig(ctx.workspace),
     };
     let resume = { items: [], runs: [], stranded: [], lastDeclaration: null };
 
@@ -485,6 +549,11 @@ export function createLoopShell({
         cap: input.cap ?? (resume.lastDeclaration ? undefined : resolved.cap),
         supervised: input.supervised,
         thinking,
+        explicitSessions: sessionRequest.explicit,
+        // The phases a pre-143 declaration's `thinking` is spread over — the leaf's one list.
+        sessionPhases: SESSION_PHASES,
+        sessionChoices: sessionRequest.choices,
+        refine,
         declaration: resume.lastDeclaration,
       });
       if (inherited?.refusal) throwRefusal(inherited.refusal);
@@ -495,6 +564,13 @@ export function createLoopShell({
           cap: inherited.cap ?? resolved.cap,
           supervised: inherited.supervised === true,
           thinking: inherited.thinking ?? null,
+          // 143/03 (ADR-004 §3) — the recorded flag choices (or the new flags alone), resolved against
+          // the CURRENT config, so a config edit is the operator's standing choice.
+          sessions: resolveSessionTable(ctx.workspace?.config, inherited.sessionChoices ?? {}),
+          promotedFrom: inherited.promotedFrom ?? null,
+          // 143/01 — explicit wins, the declaration's is inherited, and a pre-143 one (none recorded)
+          // reads as the configured mode.
+          refine: inherited.refine == null ? loopRefineFromConfig(ctx.workspace) : resolveLoopRefine(inherited.refine),
         };
       }
     } else {
@@ -561,8 +637,11 @@ export function createLoopShell({
   }
 
   async function probeLoop(input, ctx) {
-    const { scope, level, cap, l3Gate, resume } = await resolveInvocation(input, ctx);
-    const { next, decision } = await nextDecision(scope, level, cap, ctx, { l3Gate });
+    const resolved = await resolveInvocation(input, ctx);
+    // 143/00 (ADR-001 §4) — the probe is read-only, so a backlog slug is answered, never promoted.
+    if (typeof resolved.wouldPromote === "string") return backlogProbe(resolved);
+    const { scope, level, cap, l3Gate, resume } = resolved;
+    const { next, decision } = await nextDecision(scope, level, cap, ctx, { l3Gate, refine: resolved.refine });
     return loopState({
       scope,
       level,
@@ -571,7 +650,15 @@ export function createLoopShell({
       next,
       act: decision.act,
       resumable: { stranded: resume.stranded, lastDeclaration: resume.lastDeclaration },
+      refine: resolved.refine,
+      sessions: resolved.sessions,
     });
+  }
+
+  // 143/00 (ADR-001 §4) — what a read-only door answers for a backlog slug: the slug it would
+  // promote, and no `next` or `act`, because nothing can be decided for a scope with no number yet.
+  function backlogProbe({ wouldPromote, level, cap }) {
+    return { scope: wouldPromote, level, cap, wouldPromote };
   }
 
   // 130/02 (ADR-002 §1, §5) — THE COMMAND FACE OF THE STOP. `run` dispatches here on
@@ -586,6 +673,7 @@ export function createLoopShell({
     if (input.resume === true) {
       throw commandError("--stop and --resume are exclusive: a stop asks the loop to halt, a resume asks for it back. Pass one.", "loop-stop-exclusive", 400);
     }
+    await refuseBacklogScope(input, ctx, "--stop");
     const answer = await stopLoop(ctx.workspace, { scope: input.scope, now: input.now });
     if (answer.ok === false) {
       throw commandError(answer.message, answer.code, answer.code === "loop-stop-no-declaration" ? 404 : 409);
@@ -603,6 +691,7 @@ export function createLoopShell({
     if (input.stop === true || input.dryRun === true || input.resume === true) {
       throw commandError("--hand-off asks the supervisor to relaunch the loop and is its own request — pass it without --stop, --dry-run or --resume.", "invalid-input", 400);
     }
+    await refuseBacklogScope(input, ctx, "--hand-off");
     const answer = await handOffLoop(ctx.workspace, { scope: input.scope, now: input.now });
     if (answer.ok === false) {
       throw commandError(answer.message, answer.code, answer.code === "loop-hand-off-no-declaration" ? 404 : 409);
@@ -633,15 +722,15 @@ export function createLoopShell({
   // of the same string: one literal, one home, the hand-copied-glyph species F-78-E records.
   const SHELL_LOOP_ID = "loop:autonomous-cascade";
 
-  function declarationFor({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking }) {
+  function declarationFor({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, promotedFrom, refine, sessions }) {
     // The id is an INPUT to the engine, exactly as `loopRunId` and `startedAt` are. Nothing here
     // opens `.aof/loops/` to obtain or validate it: whether it resolves to a declared node is the
     // reader's question, answered as a `ran-undeclared` gap and never as a run-time refusal.
     //
     // `supervised` arrives the same way, already resolved by `resolveLoopResume`'s explicit-wins /
     // absent-inherits rule (126/02) — this seam carries it, it does not decide it. `thinking` (141)
-    // arrives the same way, already a canonical level or `null`.
-    return buildLoopDeclaration({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, id: SHELL_LOOP_ID });
+    // arrives the same way, already a canonical level or `null`, and so does `promotedFrom` (143/00).
+    return buildLoopDeclaration({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, promotedFrom, refine, sessions, id: SHELL_LOOP_ID });
   }
 
   function haltDecision(stop, ref, producer) {
@@ -853,9 +942,9 @@ export function createLoopShell({
     if (parked != null) for (const line of askBlockLines(parked)) await report(line);
   }
 
-  async function runL1({ scope, level, cap, loopRunId, startedAt, resume }, ctx, report) {
+  async function runL1({ scope, level, cap, loopRunId, startedAt, resume, refine, sessions }, ctx, report) {
     const { rows } = await localScopeItems(scope, ctx);
-    const first = await nextDecision(scope, level, cap, ctx, { rows });
+    const first = await nextDecision(scope, level, cap, ctx, { rows, refine });
     const reports = [];
     for (const row of rows) {
       if (!loopScopeIncludes(scope, row.ref) || row.status === "done") continue;
@@ -866,6 +955,7 @@ export function createLoopShell({
         level,
         cap,
         next,
+        refine,
         ...(facts.tasks !== undefined ? { tasks: facts.tasks } : {}),
         ...(facts.stories !== undefined ? { stories: facts.stories } : {}),
       }));
@@ -880,6 +970,8 @@ export function createLoopShell({
       next: first.next,
       act: first.decision.act,
       resumable: { stranded: resume.stranded, lastDeclaration: resume.lastDeclaration },
+      refine,
+      sessions,
     });
     for (const row of reports) await report(`${row.ref} — ${row.act}${row.phase ? ` ${row.phase}` : ""}${row.stop ? ` (${row.stop})` : ""}`);
     return state;
@@ -997,7 +1089,18 @@ export function createLoopShell({
     // invocation's ENTIRE output, so silencing them would make `--level L1 --quiet` print zero
     // bytes — the precise opposite of what `--quiet` promises.
     const narrate = input.quiet === true ? NO_PRINT : report;
-    const resolved = await resolveInvocation(input, ctx);
+    const resolved = await resolveInvocation(input, ctx, { promote: true });
+    // 143/00 — an L1 report is read-only, so a backlog slug is answered as the probe answers it. The
+    // launch face never renders a launcher's return, so the answer is printed here as an ACCOUNT line:
+    // an L1 invocation that printed nothing would be the zero-byte report the narrate seam forbids.
+    if (typeof resolved.wouldPromote === "string") {
+      const state = backlogProbe(resolved);
+      await report(renderLoopState(state));
+      await suppliedCtx.onLoopEnd?.({ ...end, level: state.level });
+      return state;
+    }
+    // 143/00 (ADR-001 §3) — the promotion's one line, before anything is driven.
+    if (resolved.promotedFrom !== null && input.resume !== true) await narrate(`Promoted ${resolved.promotedFrom} → ${resolved.scope}.`);
     const startedAt = input.startedAt
       ?? resolved.resume.lastDeclaration?.startedAt
       ?? new Date().toISOString();
@@ -1120,7 +1223,7 @@ export function createLoopShell({
     const walk = async () => {
     try {
       if (input.resume === true && !resolved.resume.lastDeclaration) {
-        const { next, decision } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
+        const { next, decision } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate, refine: resolved.refine });
         const state = endState({
           ...resolved,
           loopRunId,
@@ -1273,7 +1376,7 @@ export function createLoopShell({
                   : {}),
               });
               if (reviewDecision.act === "halt") {
-                const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
+                const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate, refine: resolved.refine });
                 const halt = { ...reviewDecision, ref: item.ref };
                 const state = endState({
                   ...resolved,
@@ -1308,7 +1411,7 @@ export function createLoopShell({
           }
         }
         if (resumedProgressHalt != null) {
-          const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate });
+          const { next } = await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, { l3Gate: resolved.l3Gate, refine: resolved.refine });
           const state = endState({
             ...resolved,
             loopRunId,
@@ -1328,14 +1431,15 @@ export function createLoopShell({
       if (resolved.level === "L1") {
         return await runL1({ ...resolved, loopRunId, startedAt }, ctx, report);
       }
-      // 141 — THE EFFORT LINE, narrated ONCE, just before this invocation's first drive (the wave's
+      // 141, 143/03 — THE SESSIONS LINE, narrated ONCE, just before this invocation's first drive (the wave's
       // or the sequential walk's). A walk that stops before driving anything prints none, so its
       // loud and quiet output stay byte-identical.
-      let thinkingNarrated = false;
-      const narrateThinking = async () => {
-        if (thinkingNarrated) return;
-        thinkingNarrated = true;
-        await narrate(thinkingNarration(resolved.thinking, ctx.workspace?.config));
+      let sessionsNarrated = false;
+      const narrateSessions = async () => {
+        if (sessionsNarrated) return;
+        sessionsNarrated = true;
+        // 143/03 (ADR-004 §5) — `Sessions:`, replacing 141's `Thinking:` line; the leaf composes it.
+        await narrate(sessionTableLine(resolved.sessions));
       };
 
       // milestone 124 / story 01 (ADR-005 §5) — THE UNITS HANDED BACK TO THEIR PLAN, set aside for
@@ -1452,7 +1556,7 @@ export function createLoopShell({
         await source.poll();
         // ---- BUILD: the wave, in lanes (ADR-001 §3, ADR-008 §1) ----
         if (phase === "build") {
-          await narrateThinking();
+          await narrateSessions();
           const built = await runWaveBuild({
             ctx,
             resolved,
@@ -1509,6 +1613,7 @@ export function createLoopShell({
           : await nextDecision(resolved.scope, resolved.level, resolved.cap, ctx, {
             l3Gate: resolved.l3Gate,
             setAside,
+            refine: resolved.refine,
             ...(refineFirst ? { concurrency, ...(unrefined === undefined ? {} : { unrefined }) } : {}),
           });
         pendingAct = null;
@@ -1789,9 +1894,9 @@ export function createLoopShell({
         }
         // THE ACT LINE — printed at the one place a multi-hour wait begins. `drivePhase` mints the
         // run and then awaits the PTY session; every fact worth reading is already in scope here.
-        await narrateThinking();
+        await narrateSessions();
         await narrate(`Driving ${act.ref} — ${act.phase}, cycle ${cycle} of ${resolved.cap}, ${resolved.level}.`);
-        let phaseRun = await drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx);
+        let phaseRun = await drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, gradeAbsent, changeBaseline, progressBaseCommit, autonomous: act.autonomous === true, now: input.now }, ctx);
         // 130/02 (ADR-003 §3, §7) — THE INTERRUPT PATH ALWAYS SETTLES. The order after a drive is
         // settle → interrupt → needs-input → retry: a drive that ended on its own settles as it
         // ended, a drive the source cancelled settles `cancelled`, and only then is the source
@@ -1809,7 +1914,7 @@ export function createLoopShell({
           // over this site's own drive, so no new drive site appears.
           const waited = await awaitAnswer(phaseRun, {
             ...ask.site,
-            drive: (answer) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord: phaseRun.record, answer, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx),
+            drive: (answer) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord: phaseRun.record, answer, gradeAbsent, changeBaseline, progressBaseCommit, autonomous: act.autonomous === true, now: input.now }, ctx),
             ref: act.ref,
             phase: act.phase,
             item: phaseRun.item,
@@ -1830,7 +1935,7 @@ export function createLoopShell({
 
         {
           const retried = await retryUntilTerminal(phaseRun, {
-            drive: (retryRecord, answer = null) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, answer, gradeAbsent, changeBaseline, progressBaseCommit, now: input.now }, ctx),
+            drive: (retryRecord, answer = null) => drivePhase({ ref: act.ref, phase: act.phase, cycle, declaration, brief, retryRecord, fix, answer, gradeAbsent, changeBaseline, progressBaseCommit, autonomous: act.autonomous === true, now: input.now }, ctx),
             ref: act.ref,
             phase: act.phase,
             brief,
@@ -1892,6 +1997,10 @@ export function createLoopShell({
   }
 
   function renderLoopState(state) {
+    // 143/00 (ADR-001 §4) — a read-only door's answer for a backlog slug, read by the key only it carries.
+    if (typeof state?.wouldPromote === "string") {
+      return `${state.wouldPromote} — a backlog item: \`aof work loop ${state.wouldPromote}\` would promote it to the stream's tail, then loop at its number. Nothing was written.`;
+    }
     // 131/11 (ADR-009 §6) — the hand-off's one line, read by the key only it carries.
     if (state?.handedOff === true) {
       return `${state.scope} — handed to the supervisor: it relaunches loop ${state.loopRunId} with --resume on its next poll. ${state.path}`;
@@ -1949,8 +2058,13 @@ export function createLoopShell({
         stop: { type: "boolean" },
         // 131/11 ADR-009 §6 — the hand-off to the supervisor, in the same three homes.
         handOff: { type: "boolean" },
-        // 141 — the effort every driven session thinks at, in the same three homes.
-        thinking: { type: "string" },
+        // 141 — the effort every driven session thinks at, in the same three homes. 143/03 — repeatable,
+        // so a list; a string from an older caller is still read as one value.
+        thinking: { type: ["array", "string"] },
+        // 143/03 ADR-004 §1 — the per-phase model and effort, in the same three homes.
+        model: { type: ["array", "string"] },
+        // 143/01 ADR-002 §2 — the refine mode for this run, in the same three homes.
+        refine: { type: "string" },
       },
       required: ["scope"],
       additionalProperties: false,
@@ -1965,7 +2079,7 @@ export function createLoopShell({
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--thinking LEVEL] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
@@ -1976,7 +2090,9 @@ export function createLoopShell({
           dryRun: { type: "boolean", description: "render the read-only probe instead of entering the loop" },
           quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
           supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
-          thinking: { type: "string", description: "the effort every session this run drives thinks at (low, medium, high, xhigh, max; extra-high is xhigh); overrides every phase for this run, and a resume inherits it" },
+          thinking: { type: "string", repeatable: true, description: "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it" },
+          model: { type: "string", repeatable: true, description: "repeatable: [PHASE=][MODEL][:EFFORT] — the model (and effort) a phase's sessions run on, every phase when no PHASE= is given (refine, continue, verify); overrides the configured per-phase session model and effort for this run, and a resume inherits it" },
+          refine: { type: "string", description: "per-story (one story's contract per refine drive) or whole-item (a milestone's break-down drive authors every contract in one session); overrides work.loop.refine, and a resume inherits it" },
         },
       },
       argv: (positionals, options) => ({
@@ -1990,7 +2106,9 @@ export function createLoopShell({
         ...(options.dryRun === true ? { dryRun: true } : {}),
         ...(options.quiet === true ? { quiet: true } : {}),
         ...(options.supervised === true ? { supervised: true } : {}),
-        ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
+        ...(options.thinking !== undefined ? { thinking: options.thinking } : {}),
+        ...(options.model !== undefined ? { model: options.model } : {}),
+        ...(typeof options.refine === "string" ? { refine: options.refine } : {}),
       }),
       // 130/02 (ADR-002 §1) — a `--stop` stays on the probe side exactly as `--dry-run` does: it
       // never enters the foreground body, never installs the diag recorder, never reaches a PTY.
@@ -2053,7 +2171,6 @@ export function createLoopShell({
     recordBuildProgress,
     renderLoopState,
     runLoopBody,
-    runLoopLaunch,
-    thinkingNarration
+    runLoopLaunch
   });
 }

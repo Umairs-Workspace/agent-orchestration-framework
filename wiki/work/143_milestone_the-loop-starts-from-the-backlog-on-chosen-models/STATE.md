@@ -8,6 +8,89 @@ doc: state
 - Captured 2026-10-02 from the operator.
 - Refined 2026-10-02 (`aof:refine 143 --autonomous`, solo): ADR-001…005 in `ARCHITECTURE.md`, four
   stories, every contract authored. Next: `aof:continue 143`.
+- Continued 2026-10-02 (`aof:continue 143`, hybrid at the operator's choice: each story is built
+  inline, then reviewed by one independent agent). Built in the sibling worktree `aof-143` on branch
+  `143-loop-from-backlog-on-chosen-models` off `main`, because the primary checkout sits on 134's branch.
+- Walked to the Review gate 2026-10-03: 00, 01, 02, 03 built, gated and reviewed (one independent
+  architect+QA reviewer each; no Blocker survived) and `in-review`. Next: `aof:verify 143`.
+
+## Feedback (for retro)
+
+- **143/00: the declared write set named two new files in directories already at their budget
+  ceiling** (`test/loop` 63/63 and `test/arch/loop` 66/66, `acd-source-directory-budget`). The cases
+  were folded into the suites whose subject they share: the backlog-scope cases into
+  `loop-command-refusals.test.mjs`, and FF-14301 into `acd-loop-scope-guard.test.mjs`. `files:` and the
+  FF table were corrected. Stories 01 and 03 declare the same kind of new file. Refine should check
+  budget rows before declaring a new file.
+- **143/00: the contract says `aof work loop <slug> --json` launches, but `--json` never launches.**
+  Face policy (`spine/face.mjs`) makes `--json` the read-only probe. So through the CLI, `--json` with
+  a backlog slug answers `wouldPromote` like `--dry-run`, and the promotion happens on the foreground
+  launch. The scenarios are exercised through `runLoopBody`, as every launch-path loop suite is.
+- **143/00: ADR-005 says the mesh assignment directive and the trigger declaration build loop
+  declarations. They don't.** Both import only `decideLoopScope` and hand the loop a numeric scope,
+  so the declaration is always built by the loop shell. The `null` default still covers them.
+- **143/00 decision: an L1 report on a backlog slug answers `wouldPromote` and writes nothing,**
+  because L1 is read-only (`acd-loop-l1-read-only`). ADR-001 §4 did not name L1.
+- **143/00 known edge:** an `--level L3` launch on a backlog slug promotes before the L3 gate is
+  computed. The gate reads the promoted number's doctor, so a refused gate leaves the item promoted
+  and the loop not started — no worse than promoting by hand, then being refused.
+- **143/00 review close** (one independent architect+QA reviewer, CHANGES REQUESTED, no Blocker):
+  - *fixed:* an L1 launch on a backlog slug printed nothing (the launch face never renders a
+    return) — it now prints the answer as an account line, asserted.
+  - *fixed:* the resume case's lineage assertion iterated zero times (the resume halted at once) —
+    the fixture now launches at cap 1 and resumes at cap 3, and asserts the resume drove.
+  - *fixed (Nit):* the resume path resolved the slug twice; it now refuses on the row it holds.
+  - *fixed (health):* the shell's line bound tightened from 2311 to 2131
+    (`loop-command-wave.test.mjs`); the split is ledgered as TECH_DEBT item 92.
+  - *recorded (Nit):* the L3-promotes-before-its-gate edge above.
+  - *amendment for the accepting contract:* task 00's `--json` launch scenarios cannot launch
+    (face policy), and its FF-14301 scenario names the unfolded file path.
+- **143/02 review close** (APPROVE):
+  - *fixed (Important):* a blank model (`verify=  `) parsed, then fell back to config silently —
+    it now refuses `session-choice-empty` (or is effort-only with an effort suffix), asserted.
+  - *fixed (Nit):* FF-14303's read detector gained the bracket and destructuring spellings.
+  - *fixed (Nit):* the same `split("=", 2)` inline-value defect in the two hand-rolled parsers
+    (`knowledge/src/memory.mjs`, `mesh/src/commands/session.mjs`); moving them onto
+    `parseSpecArgv` is story-shaped — `story (operator)`.
+  - *amendment for the accepting contract:* task 01's FF-14303 scenario names the unfolded path.
+- **143/01 build decisions:**
+  - `work.loop.refine` IS registered in both resolver maps (appended last), against the build brief's
+    "do not add it if nothing enumerates": FF-12901's sweep refuses any `work.loop.*` key the loop
+    family names that the maps do not carry, and the flag's description names it.
+  - `refine` is the LoopState document's eleventh key on every answer, not on the probe alone:
+    FF-5409 freezes one shape for the probe and a walk's end state.
+  - The shell grew 2131 → 2161 lines; the bound in `loop-command-wave.test.mjs` was raised with that
+    reason, because `packages/work-loop/src` is at its file budget (TECH_DEBT 92 owns the split).
+  - FF-14302 folded into `acd-loop-concurrency-single-home.test.mjs` (`test/arch/loop` at its ceiling).
+- **143/01 review close** (APPROVE, no Blocker):
+  - *fixed (Important):* a re-entered break-down refine that failed after its answer was retried
+    without `--autonomous` — the decision and the re-entry now share the engine's
+    `isWholeItemCascade`, so the retry keeps the cascade.
+  - *fixed (Important):* nothing tested the wire from a `whole-item` decision to the drive — walk
+    cases now assert the composed prompt in-process and the child's `autonomous` lend.
+  - *fixed (Nit):* an inherited refine mode is resolved through the vocabulary, so a hand-edited
+    `"Whole-Item"` resumes as `per-story` rather than being echoed; the stale "ten-key" names.
+  - *amendment for the accepting contract:* task 00's FF-14302 scenario names the unfolded path.
+- **143/03 build decisions:**
+  - The lend is read off the DECLARATION, by one engine function (`sessionLendFor`), at all three
+    seams (in-process, the primary's child, a wave lane). A resumed run lends what its declaration
+    recorded, with no second source.
+  - `resolveSessionTable` and `sessionTableLine` live in the session leaf beside
+    `resolveSessionLaunch` (ADR-003's one home), not in the shell; the shell bound rose 2162 → 2177
+    for the flags, the request and the table on the record (TECH_DEBT 92 headline refreshed).
+  - `sessions` is the LoopState document's twelfth key on every answer (FF-5409's one shape).
+  - The flag help no longer spells the config path: FF-14303 reads any `agents.session` spelling in
+    the loop family as a read, strings included, and the control was kept rather than narrowed.
+  - The build brief's `install-local` step was NOT taken: installing from this branch worktree would
+    replace the live payload the operator's daemons run (built from 134's checkout). The CLI was
+    checked through the worktree's own `packages/core/bin/aof.mjs` instead.
+- **143/03 review close** (APPROVE, no Blocker, no Important):
+  - *fixed (Nit):* the engine kept its own phase list for the resume rule — it now walks the record's
+    own keys, and the pre-143 fallback spreads over the leaf's `SESSION_PHASES`, handed in.
+  - *fixed (Nit):* two stray blank lines in the shell; the bound stays at 2177.
+  - *recorded (for verify):* three scenarios are evidenced piecewise rather than through a running
+    loop — task 01's wave-lane row (a source match plus `sessionLendFor`), and task 02's resumed-refine
+    and supervisor-relaunch rows (the resume rule plus the lend). The reviewer traced each end to end.
 
 ## Notes & decisions in flight
 

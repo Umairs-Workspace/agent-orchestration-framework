@@ -5,10 +5,10 @@ slug: the-loop-runs-each-phase-on-the-chosen-model
 title: "The loop runs each phase on the chosen model — resolved once, recorded on the declaration, lent to every drive, resumed on"
 parent: 143
 depends: [02]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-003, ADR-004]
@@ -30,24 +30,48 @@ reads:
   - packages/work-loop/test/support/work-loop-story-fixtures.mjs
   - test/arch/loop/acd-loop-narrates-in-flight.test.mjs
   - test/arch/loop/acd-clock-counts-attempts.test.mjs
-  - test/arch/session/acd-session-choice-single-home.test.mjs
+  - test/arch/session/acd-agent-model-source-map.test.mjs
 files:
-  - packages/work-loop/src/commands/loop.mjs
-  - packages/work-loop/src/engine.mjs
-  - packages/work-loop/src/commands/drive.mjs
-  - packages/work-loop/src/cycle.mjs
+  - docs/acd.md
+  - packages/core/src/application/assemble.mjs
+  - packages/core/src/application/bindings/commands/loop.mjs
+  - packages/execution/src/session-model.mjs
+  - packages/execution/test/session-model.suite.mjs
   - packages/work-loop/src/child-drive.mjs
+  - packages/work-loop/src/commands/drive.mjs
+  - packages/work-loop/src/commands/loop.mjs
+  - packages/work-loop/src/cycle.mjs
+  - packages/work-loop/src/engine.mjs
   - packages/work-loop/src/wave.mjs
+  - packages/work-loop/test/support/work-loop-story-fixtures.mjs
+  - schemas/aof.schema.json
+  - test/arch/loop/acd-cap-exhaustion-returns-to-the-plan.test.mjs
+  - test/arch/loop/acd-clock-counts-attempts.test.mjs
+  - test/arch/loop/acd-declaration-predicate-is-composed.test.mjs
+  - test/arch/loop/acd-lane-grade-is-lane-scoped.test.mjs
+  - test/arch/loop/acd-lane-records-and-the-declaration.test.mjs
+  - test/arch/loop/acd-loop-l1-read-only.test.mjs
+  - test/arch/loop/acd-loop-narrates-in-flight.test.mjs
+  - test/arch/loop/acd-loop-probe-contract.test.mjs
+  - test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs
+  - test/arch/loop/acd-loop-stop-request-single-home.test.mjs
+  - test/fixtures/application/command-inventory.json
   - test/loop/drive-command-phase-drivers.test.mjs
-  - test/loop/work-loop-declaration.test.mjs
-  - test/loop/loop-command-resume.test.mjs
-  - test/loop/loop-command-wave.test.mjs
+  - test/loop/index.mjs
+  - test/loop/loop-command-board-state.test.mjs
   - test/loop/loop-command-narration.test.mjs
   - test/loop/loop-command-probe.test.mjs
   - test/loop/loop-command-refusals.test.mjs
-  - test/fixtures/application/command-inventory.json
-  - schemas/aof.schema.json
-  - docs/acd.md
+  - test/loop/loop-command-resume.test.mjs
+  - test/loop/loop-command-stops.test.mjs
+  - test/loop/loop-command-wave.test.mjs
+  - test/loop/loop-driven-row-carries-the-grade.test.mjs
+  - test/loop/loop-fix-transport-shape.test.mjs
+  - test/loop/loop-record-reaches-the-redrive.test.mjs
+  - test/loop/loop-resumed-redrive-declares-its-grade.test.mjs
+  - test/loop/work-loop-declaration.test.mjs
+  - test/loop/work-loop-declarations.test.mjs
+  - wiki/work/TECH_DEBT.md
 ---
 # 03 · The loop runs each phase on the chosen model
 
@@ -68,9 +92,9 @@ carries the table. A resume re-applies the recorded flag choices unless new sess
 
 ## Tasks
 
-- [ ] 00 [the loop resolves and records every phase](tasks/00_the-loop-resolves-and-records-every-phase.feature)
-- [ ] 01 [each drive runs on its own phase's choice](tasks/01_each-drive-runs-on-its-own-phases-choice.feature)
-- [ ] 02 [a resume reruns on the recorded choices](tasks/02_a-resume-reruns-on-the-recorded-choices.feature)
+- [x] 00 [the loop resolves and records every phase](tasks/00_the-loop-resolves-and-records-every-phase.feature)
+- [x] 01 [each drive runs on its own phase's choice](tasks/01_each-drive-runs-on-its-own-phases-choice.feature)
+- [x] 02 [a resume reruns on the recorded choices](tasks/02_a-resume-reruns-on-the-recorded-choices.feature)
 
 ## Notes
 

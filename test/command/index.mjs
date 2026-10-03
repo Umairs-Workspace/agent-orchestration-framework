@@ -25,7 +25,7 @@ import { commandCoreContractTests } from "./command-core-contract.test.mjs";
 import { applicationAssemblyTests } from "./application-assembly.test.mjs";
 // milestone 08 — CLI command core (story 01: the CLI face; story 02: the board face; story 03: the
 // enforcing fitness functions — the route↔command/command↔CLI bijection + the no-UI-core-import / no-subprocess guards)
-import { cliFaceContractTests } from "./cli-face-contract.test.mjs";
+import { cliFaceContractTests, cliFaceRepeatableFlagTests } from "./cli-face-contract.test.mjs";
 import { configInspectTests } from "./config-inspect.test.mjs";
 import { configFaultVisibleTests } from "./config-fault-visible.test.mjs";
 // ── milestone 45 / story 04 — THE ADVERTISED ENTRY POINTS (ADR-002 + ADR-003). Every
@@ -67,6 +67,8 @@ export const tests = [
   ...commandCoreContractTests,
   ...applicationAssemblyTests,
   ...cliFaceContractTests,
+  // 143/02 — a repeatable string flag, and the inline value after the first =.
+  ...cliFaceRepeatableFlagTests,
   ...configInspectTests,
   ...configFaultVisibleTests,
   // milestone 45 / story 04 — the advertised entry points (tasks 00–01; 02 is @manual)

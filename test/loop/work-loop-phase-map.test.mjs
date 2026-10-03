@@ -405,3 +405,46 @@ export const workLoopPhaseMapTests = [
   // (test/loop/ is at its budget ceiling, so no new suite file).
   ...loopConcurrencyTests,
 ];
+
+// =============================================================================
+// 143/01 task 01 — ONLY THE BREAK-DOWN DECISION CARRIES `autonomous`, AND ONLY UNDER whole-item
+// =============================================================================
+//
+// `143_milestone_…/stories/01_story_a-whole-item-refine-in-one-drive/tasks/01_the-break-down-drive-carries-autonomous.feature`.
+// The engine is handed the resolved refine mode as `refine`, beside `concurrency`.
+const noStories = { state: "ready", ref: "143", type: "milestone" };
+workLoopPhaseMapTests.push(
+  ...[
+    ["whole-item", "sequential", { next: noStories, stories: { total: 0, done: 0 } }, { act: "drive", ref: "143", phase: "refine", cycle: 1, autonomous: true }],
+    ["whole-item", "refine_first", { next: noStories, stories: { total: 0, done: 0 }, unrefined: [] }, { act: "drive", ref: "143", phase: "refine", cycle: 1, autonomous: true }],
+    ["per-story", "sequential", { next: noStories, stories: { total: 0, done: 0 } }, { act: "drive", ref: "143", phase: "refine", cycle: 1 }],
+    [undefined, "sequential", { next: noStories, stories: { total: 0, done: 0 } }, { act: "drive", ref: "143", phase: "refine", cycle: 1 }],
+    ["whole-item", "sequential", { next: ready("story", "143/02", "not-started"), ...tasks(0) }, { act: "drive", ref: "143/02", phase: "refine", cycle: 1 }],
+    ["whole-item", "refine_first", { next: { state: "ready", ref: "143", type: "milestone" }, stories: { total: 4, done: 0 }, unrefined: ["143/02"] }, { act: "drive", ref: "143/02", phase: "refine", cycle: 1 }],
+    ["whole-item", "sequential", { next: { state: "ready", ref: "143", type: "milestone" }, stories: { total: 4, done: 4 } }, { act: "drive", ref: "143", phase: "verify", cycle: 1 }],
+  ].map(([refine, concurrency, facts, decision]) => ({
+    name: `143/01 task01 refine ${refine ?? "absent"} × ${concurrency}, head ${facts.next.ref}${facts.stories ? ` (${facts.stories.total} stories)` : ""} → ${decision.phase} ${decision.ref}${decision.autonomous ? " autonomous" : ""}`,
+    run() {
+      const answer = decideLoopPhase({ ...facts, concurrency, ...(refine === undefined ? {} : { refine }), cap: 3 });
+      assert.deepEqual(answer, decision);
+      if (decision.autonomous !== true) assert.equal(Object.hasOwn(answer, "autonomous"), false, "no autonomous key at all");
+    },
+  })),
+  {
+    name: "143/01 task01 a cascade that died part-way is finished story by story, never by a second autonomous refine",
+    run() {
+      // The break-down wrote stories 00 and 01, gave 00 its tasks, and died: the milestone now has
+      // stories, so the milestone branch decides verify — never the break-down refine again — and the
+      // unrefined story is refined on its own.
+      for (const concurrency of ["sequential", "refine_first"]) {
+        const sequentialHead = { next: ready("story", "143/01", "not-started"), ...tasks(0) };
+        const refineFirstHead = { next: { state: "ready", ref: "143/00", type: "story", status: "not-started" }, ...tasks(1), unrefined: ["143/01"] };
+        const answer = decideLoopPhase({ ...(concurrency === "sequential" ? sequentialHead : refineFirstHead), concurrency, refine: "whole-item", cap: 3 });
+        assert.deepEqual(answer, { act: "drive", ref: "143/01", phase: "refine", cycle: 1 }, concurrency);
+      }
+      const milestoneAgain = decideLoopPhase({ next: { state: "ready", ref: "143", type: "milestone" }, stories: { total: 2, done: 0 }, concurrency: "sequential", refine: "whole-item", cap: 3 });
+      assert.notEqual(milestoneAgain.phase, "refine", "a milestone with stories is never the break-down drive again");
+      assert.equal(Object.hasOwn(milestoneAgain, "autonomous"), false);
+    },
+  },
+);

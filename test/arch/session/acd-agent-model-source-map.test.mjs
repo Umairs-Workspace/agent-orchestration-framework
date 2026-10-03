@@ -14,7 +14,7 @@
 // (readDescriptor), so this test derives the role set live rather than
 // re-hardcoding it.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readDescriptor, bundleRoot } from "../../../packages/core/src/work/bundle.mjs";
@@ -153,3 +153,66 @@ export const archTests = [
     },
   },
 ];
+
+// ══════════════ 143/02 — FF-14303: the session choice has one grammar and one resolver ══════════════
+//
+// Folded in beside FF-7006 rather than a new file: `test/arch/session` sits at its directory-budget
+// ceiling, and this is the same subject — which module may resolve the SESSION model and effort.
+// `parseSessionChoices` and `resolveSessionLaunch` are defined only in the session leaf, and nothing
+// under `packages/work-loop/src/` reads `work.agents.session` itself.
+
+const SESSION_DEFINITION = /(?:\bfunction\s+(parseSessionChoices|resolveSessionLaunch)\s*\(|\b(?:const|let|var)\s+(parseSessionChoices|resolveSessionLaunch)\s*=)/gu;
+// Every spelling of reaching the key: a dotted or optional-chained read, a bracket read, and a
+// destructuring of `session` out of an `agents` object.
+const SESSION_CONFIG_READ = /\bagents\s*(?:\?\.|\.)\s*session\b|\bagents\s*(?:\?\.)?\[\s*["'`]session["'`]\s*\]|\{[^{}]*\bsession\b[^{}]*\}\s*=\s*[\w.?]*\bagents\b/u;
+
+function sourceFilesUnder(dir) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === "node_modules") continue;
+    const target = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...sourceFilesUnder(target));
+    else if (entry.name.endsWith(".mjs")) files.push(target);
+  }
+  return files;
+}
+
+const rel = (file) => path.relative(root, file).split(path.sep).join("/");
+
+archTests.push({
+  name: "arch/143 FF-14303 (acd-agent-model-source-map, extended): parseSessionChoices and resolveSessionLaunch have one home, and the loop reads no session config",
+  run: async () => {
+    const packages = path.join(root, "packages");
+    const srcFiles = readdirSync(packages, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && existsSync(path.join(packages, entry.name, "src")))
+      .flatMap((entry) => sourceFilesUnder(path.join(packages, entry.name, "src")));
+    assert.ok(srcFiles.length >= 200, `NOTHING WAS READ: packages/**/src walked ${srcFiles.length} file(s)`);
+
+    const definitions = [];
+    for (const file of srcFiles) {
+      for (const match of stripComments(readFileSync(file, "utf8")).matchAll(SESSION_DEFINITION)) {
+        definitions.push(`${rel(file)}:${match[1] ?? match[2]}`);
+      }
+    }
+    assert.deepEqual(definitions.sort(), [
+      "packages/execution/src/session-model.mjs:parseSessionChoices",
+      "packages/execution/src/session-model.mjs:resolveSessionLaunch",
+    ], "each is defined once, in the session leaf");
+
+    const loopFiles = srcFiles.filter((file) => rel(file).startsWith("packages/work-loop/src/"));
+    assert.ok(loopFiles.length >= 10, `NOTHING WAS READ: packages/work-loop/src walked ${loopFiles.length} file(s)`);
+    const readers = loopFiles.filter((file) => SESSION_CONFIG_READ.test(stripComments(readFileSync(file, "utf8")))).map(rel);
+    assert.deepEqual(readers, [], "the loop resolves sessions through the leaf and never reads work.agents.session");
+
+    // Both detectors are armed.
+    assert.equal([..."export function parseSessionChoices(x) {}".matchAll(SESSION_DEFINITION)].length, 1);
+    assert.equal([..."const resolveSessionLaunch = () => {};".matchAll(SESSION_DEFINITION)].length, 1);
+    assert.equal([..."const { resolveSessionLaunch } = sessions;".matchAll(SESSION_DEFINITION)].length, 0, "a destructured import is not a definition");
+    assert.ok(SESSION_CONFIG_READ.test("const s = config?.work?.agents?.session;"));
+    assert.ok(SESSION_CONFIG_READ.test("config.work.agents.session.models"));
+    assert.ok(SESSION_CONFIG_READ.test("const { session } = config.work.agents;"), "a destructured read is a read");
+    assert.ok(SESSION_CONFIG_READ.test('const s = config.work.agents["session"];'), "a bracket read is a read");
+    assert.ok(!SESSION_CONFIG_READ.test("const sessions = agents.sessions;"), "a different key is not a read");
+    assert.ok(!SESSION_CONFIG_READ.test("const { sessions } = config.work.agents;"), "a different destructured key is not a read");
+  },
+});

@@ -47,8 +47,8 @@ import {
   stripAsks,
 } from "../support/loop/lane-fixture.mjs";
 
-const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
+const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom", "refine", "sessions"]);
 const NOW = "2026-09-14T12:00:00.000Z";
 // A grade record as `compileGrade` writes one — the provenance stamp is what the store's writer
 // demands of every claim a brief carries.
@@ -379,7 +379,16 @@ export const loopCommandWaveTests = [
     run: async () => {
       const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const lines = shell.split(/\r?\n/u).length;
-      assert.ok(lines < 2311, `src/commands/loop.mjs is ${lines} lines, below the 2311 it was before 129/04`);
+      // 143/00 review — the bound tightened from 129/04's 2311 to the shell's size at 143/00's close, so
+      // growth is a stated raise or an extraction, never drift. The split is TECH_DEBT item 92.
+      // 2131 -> 2162 is 143/01 (with its review fix): the `--refine` flag in its three homes, its vocabulary guard, and the
+      // mode lent to every decision and every drive. An extraction was not open to it:
+      // `packages/work-loop/src` is at its file budget with no allowance. 2162 -> 2177 is 143/03: the
+      // repeatable session flags in their three homes, the one session request, and the table on the
+      // record, the probe and the resume — the table's resolver and its narration line moved to the
+      // session leaf rather than grow the shell further. Its review fix — the shell hands the engine the leaf's
+      // phase list, so the engine keeps no copy — fit inside 2177 once two stray blank lines went.
+      assert.ok(lines <= 2177, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2177 it was at 143/03 — extract, or raise this bound with a reason`);
     },
   },
 

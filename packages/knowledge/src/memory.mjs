@@ -197,7 +197,12 @@ function parseMemoryArgv(argv) {
       continue;
     }
 
-    const [rawKey, inlineValue] = arg.slice(2).split("=", 2);
+    // 143/02 — the inline value is everything after the FIRST `=` (`split("=", 2)` dropped the rest),
+    // the same fix the one face parser took.
+    const body = arg.slice(2);
+    const equals = body.indexOf("=");
+    const rawKey = equals < 0 ? body : body.slice(0, equals);
+    const inlineValue = equals < 0 ? undefined : body.slice(equals + 1);
     const key = rawKey;
 
     if (key === "json") {

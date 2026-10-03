@@ -21,8 +21,10 @@ const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
 
 // 130/02 (ADR-003 §6) — `Cleared` joins the in-flight class: the resume's clear of a standing
 // stop request rides `narrate` by the same role rule, FF-12602's eleventh line.
-// 141 — `Thinking:` joins it: the effort line is printed before the first drive, on `narrate`.
-const IN_FLIGHT = /^(Driving|Retrying|Resumed|Reclaimed|Gate|Cleared|Thinking:) /u;
+// 141 — `Thinking:` joins it: the effort line is printed before the first drive, on `narrate`. 143/03
+// (ADR-004 §5) — `Sessions:` replaced it, superseding 141's narration scenario in the open: the delivered
+// feature is not edited, the new rule is 143/03's task 00.
+const IN_FLIGHT = /^(Driving|Retrying|Resumed|Reclaimed|Gate|Cleared|Sessions:) /u;
 const isInFlight = (line) => IN_FLIGHT.test(line);
 
 /** Drive the fixture, collecting every line the ONE injected printer receives. */
@@ -195,7 +197,7 @@ export const loopCommandNarrationTests = [
       try {
         const { lines } = await collect(fx, { now: "2026-09-08T10:00:00.000Z" }, { onCommand: closingCommands(fx) });
         // 141 — the effort line comes first, then the act line, both before the drive.
-        assert.equal(lines[0], "Thinking: refine high (default), continue high (default), verify high (default).");
+        assert.equal(lines[0], "Sessions: refine default model at high (default); continue default model at high (default); verify default model at high (default).");
         assert.equal(
           lines[1],
           "Driving 03/01 — continue, cycle 1 of 3, L2.",
@@ -572,7 +574,7 @@ export const loopCommandNarrationTests = [
           assert.equal(call.args.includes("--thinking"), false);
         }
         assert.equal(driver.typed.some((input) => input.includes("--thinking")), false, "no directive typed into a session carries --thinking");
-        assert.equal(lines[0], "Thinking: xhigh for every phase (--thinking).", "the effort line is narrated before the first drive");
+        assert.equal(lines[0], "Sessions: refine default model at xhigh (--thinking); continue default model at xhigh (--thinking); verify default model at xhigh (--thinking).", "the sessions line is narrated before the first drive");
       } finally {
         await fx.cleanup();
       }
@@ -589,7 +591,7 @@ export const loopCommandNarrationTests = [
           const at = call.args.indexOf("--effort");
           assert.equal(call.args[at + 1], "high", "a continue and a verify with nothing configured launch at high");
         }
-        assert.equal(lines[0], "Thinking: refine medium (config), continue high (default), verify high (default).");
+        assert.equal(lines[0], "Sessions: refine default model at medium (config); continue default model at high (default); verify default model at high (default).");
       } finally {
         await fx.cleanup();
       }

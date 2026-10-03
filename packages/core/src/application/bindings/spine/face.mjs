@@ -62,7 +62,12 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
         options._.push(arg);
         continue;
       }
-      const [rawKey, inlineValue] = arg.slice(2).split("=", 2);
+      // 143/02 — the inline value is EVERYTHING after the first `=`: `split("=", 2)` dropped the rest,
+      // so `--model=refine=opus` read as `refine`.
+      const body = arg.slice(2);
+      const equals = body.indexOf("=");
+      const rawKey = equals < 0 ? body : body.slice(0, equals);
+      const inlineValue = equals < 0 ? undefined : body.slice(equals + 1);
       const key = rawKey.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
       const flag = flags[key];
       if (!flag) {
@@ -83,7 +88,10 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
       if (value === undefined) {
         throw commandError(`Flag "--${rawKey}" requires a value.${usageSuffix(spec)}`, "missing-flag-value", 400);
       }
-      options[key] = value;
+      // 143/02 (ADR-003 §6) — a `repeatable: true` string flag collects every value, in order; any
+      // other string flag keeps its last value, as it always has.
+      if (flag.repeatable === true) (options[key] ??= []).push(value);
+      else options[key] = value;
     }
     return options;
   }

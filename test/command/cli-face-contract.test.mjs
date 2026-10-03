@@ -21,6 +21,7 @@
 // Mirrors test/arch/work/acd-work-list-contract.test.mjs: build a temp fixture
 // work-stream (`.aof/aof.config.json` + `wiki/work/...`), `spawnSync` the real CLI
 // (`bin/aof.mjs`) with cwd = the fixture root, and assert exit code + stdout/stderr.
+import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
@@ -625,6 +626,55 @@ export const cliFaceContractTests = [
       } finally {
         await rm(root, { recursive: true, force: true });
       }
+    },
+  },
+];
+
+// ══════════════ 143/02 task 02 — a string flag can be given more than once ══════════════
+//
+// Folded into this suite rather than a new file: `test/command` sits at its directory-budget
+// ceiling, and the one flag parser is the face this suite pins.
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
+const REPEATABLE_SPEC = Object.freeze({
+  flags: {
+    model: { type: "string", repeatable: true },
+    level: { type: "string" },
+  },
+});
+
+export const cliFaceRepeatableFlagTests = [
+  ...[
+    [["143", "--model", "opus"], ["opus"]],
+    [["143", "--model", "sonnet:high", "--model", "verify=fable"], ["sonnet:high", "verify=fable"]],
+    [["143", "--model=refine=opus:xhigh", "--model", "verify=fable"], ["refine=opus:xhigh", "verify=fable"]],
+    [["143"], undefined],
+  ].map(([argv, collected]) => ({
+    name: `143/02 task02 a repeatable flag collects every value in order — ${JSON.stringify(argv)}`,
+    run() {
+      const options = parseSpecArgv(argv, REPEATABLE_SPEC);
+      assert.deepEqual(options.model, collected);
+      assert.deepEqual(options._, ["143"]);
+    },
+  })),
+  ...[
+    ["--model=refine=opus", "model", ["refine=opus"]],
+    ["--level=a=b", "level", "a=b"],
+  ].map(([arg, key, value]) => ({
+    name: `143/02 task02 an inline value keeps everything after the first = — ${arg}`,
+    run() {
+      assert.deepEqual(parseSpecArgv([arg], REPEATABLE_SPEC)[key], value);
+    },
+  })),
+  {
+    name: "143/02 task02 a non-repeatable string flag keeps its last value, as today",
+    run() {
+      assert.equal(parseSpecArgv(["--level", "L1", "--level", "L2"], REPEATABLE_SPEC).level, "L2");
+    },
+  },
+  {
+    name: "143/02 task02 a repeatable flag with no value still refuses",
+    run() {
+      assert.throws(() => parseSpecArgv(["--model"], REPEATABLE_SPEC), (error) => error?.code === "missing-flag-value");
     },
   },
 ];
