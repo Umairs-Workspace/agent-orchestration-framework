@@ -25,15 +25,15 @@ injects it:
 - The not-isolated names come from the program's raw output (`outcome.runner` carries stdout), as
   `# not isolated - <case>` lines. The TAP normaliser in `grade.mjs` is not touched. A comment line
   is not a case, so it neither inflates nor fails the report.
-- `scripts/test-sharded.mjs` keeps its pool. Its report text and its exit decision move into
-  `scripts/test-sharded-report.mjs`, a pure module, so task 01's lines and task 02's slowest-files
+- The sharded runner keeps its pool. Its report text and its exit decision move into a pure
+  report module beside it, so task 01's lines and task 02's slowest-files
   sums can be tested without starting a pool. Today a flake prints `flake - unit …` and `was red
   under load: …`. Replace those with one `# not isolated - <case>` per case. The failure lines must
   stay at column 0 as `not ok - <case>`, because that is what the TAP reader counts.
 - Once the gate prints its verdict, it echoes the program's `# slowest files` block and its
   `# logs:` path.
 
-FF-5311 pins `scripts/test.mjs` and `scripts/test-harness.mjs`, and this story writes neither (Q6).
+FF-5311 pins the serial runner and its harness, and this story writes neither (Q6).
 `acd-gate-result-is-evidence` (FF-9606) has to stay green: no path may admit a claim in place of a
 run.
 

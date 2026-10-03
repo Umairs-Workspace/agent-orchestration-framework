@@ -38,6 +38,7 @@ files:
   - test/work/work-toolchain-declaration.test.mjs
   - test/testing/test-sharded-report.test.mjs
   - test/testing/index.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
 ---
 # 144 · The whole-tree test run signs off in minutes, not half a day
 
