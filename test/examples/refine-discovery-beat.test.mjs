@@ -111,6 +111,15 @@ function aboveTheMatrixOf(guide) {
   assert.ok(start >= 0 && end > start, "the level above the matrix comes before the zoom levels");
   return guide.slice(start, end);
 }
+// 136/02: the driven paragraph — the discovery bullet that names `AOF_RUN_ID`, to the next bullet.
+function drivenOf(refine) {
+  const { passage } = passageOf(refine);
+  const at = passage.indexOf("`AOF_RUN_ID`");
+  assert.ok(at >= 0, "the passage names AOF_RUN_ID");
+  const start = passage.lastIndexOf("\n  - ", at) + 1;
+  const next = passage.indexOf("\n  - ", at);
+  return passage.slice(start, next === -1 ? passage.length : next);
+}
 const workedTokens = (text) => [...text.matchAll(/`(\d+(?:\/\d+)? [QE][1-9]\d* · [^`]+)`/g)].map((match) => match[1]);
 
 let dryRun = null;
@@ -676,6 +685,122 @@ export const refineDiscoveryBeatTests = [
       assert.ok(column >= 0, "an outline with an example column");
       assert.deepEqual(block.cells.map((cells) => rowExampleId(cells[column])).filter(Boolean), ["E1"], "the row's example id reads back");
       for (const scenario of feature.scenarios) assert.equal(groupRuleId(scenario.rule?.name), "R1", `${scenario.name} sits under R1`);
+    },
+  },
+
+  // ══ 136/02 00_the-discovery-beat-asks-one-tokened-question-per-ask-in-a-driven-session.feature ══
+  {
+    name: "examples/136-02 00 E1 a driven session asks exactly one question per call",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      assert.match(text, /A driven session is one whose environment carries `AOF_RUN_ID`/);
+      assert.match(text, /in a driven session each `AskUserQuestion` call carries exactly one question/);
+    },
+  },
+  {
+    name: "examples/136-02 00 E3 an interactive refine keeps its batch of up to four",
+    run: async () => {
+      const { passage } = passageOf(await read(REFINE));
+      assert.match(flat(passage), /one call carries at most four questions/, "the batch rule is still present");
+      const driven = drivenOf(await read(REFINE));
+      const elsewhere = passage.replace(driven, "");
+      assert.equal(/exactly one question|one question per/.test(flat(elsewhere)), false, "the one-question rule is stated only in the driven paragraph");
+      assert.match(flat(driven), /environment carries `AOF_RUN_ID`/);
+    },
+  },
+  {
+    name: "examples/136-02 00 E4 the ask's first line carries the token, the discovery marker, the rule and the example",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      const order = [
+        /The question opens with its token/,
+        /then names itself a discovery question/,
+        /the rule it bears on as `R<n> · <rule>`/,
+        /the example it would settle, or that it would add a new one/,
+      ];
+      let from = 0;
+      for (const step of order) {
+        const hit = step.exec(text.slice(from));
+        assert.ok(hit, `${step} is said, after the step before it`);
+        from += hit.index + hit[0].length;
+      }
+      const labels = ["`Decision needed:`", "`Options:`", "`I would pick:`", "`What the answer changes:`"].map((label) => text.indexOf(label));
+      assert.ok(labels.every((at) => at >= 0), "the four labels are named");
+      assert.deepEqual([...labels].sort((a, b) => a - b), labels, "in that order");
+      assert.match(text, /under 1,500 characters/);
+    },
+  },
+  {
+    name: "examples/136-02 00 the specimen ask in the paragraph reads back as a token",
+    run: async () => {
+      const [specimen] = workedTokens(drivenOf(await read(REFINE)));
+      assert.ok(specimen, "the driven paragraph holds a specimen ask");
+      assert.deepEqual(readMapToken(specimen), { storyRef: "7/2", id: "Q1" });
+      assert.match(specimen, /Discovery question — rule R1 · .* settles E2\./, "the specimen carries the marker, the rule and the example");
+    },
+  },
+  {
+    name: "examples/136-02 00 the paragraph restates no line of the map's grammar",
+    run: async () => {
+      assert.equal(MAP_LINE.test(drivenOf(await read(REFINE))), false, "no line opens as a map line does");
+    },
+  },
+  {
+    name: "examples/136-02 00 E5 an unanswered question leaves the story at the gate",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      assert.match(text, /Mark the question `asked` before the call/);
+      assert.match(text, /A business question is never given a default in a driven session/);
+      assert.match(text, /is never sent as the NEEDS_INPUT sentinel/);
+      assert.match(text, /A question parked unanswered leaves the story at the Contract gate, with no `tasks\/` written/);
+    },
+  },
+  {
+    name: "examples/136-02 00 the answer is written into the map and the doctor is asked again",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      assert.match(text, /The answer arrives as the next input of the resumed session/);
+      assert.match(text, /write it into the map \(the question `answered`, and its example `stated Q<n>` or `confirmed`\)/);
+      assert.match(text, /then run `aof work doctor <story> --json`/);
+    },
+  },
+  {
+    name: "examples/136-02 00 E6 a technical question keeps its documented default",
+    run: async () => {
+      assert.match(flat(drivenOf(await read(REFINE))), /a technical question still takes its documented default/);
+    },
+  },
+  {
+    name: "examples/136-02 00 the driven paragraph runs only when the examples gate is on",
+    run: async () => {
+      const refine = await read(REFINE);
+      const { passage } = passageOf(refine);
+      const driven = drivenOf(refine);
+      assert.ok(passage.includes(driven), "the driven paragraph sits inside the discovery passage");
+      assert.ok(passage.indexOf("When it is on, before any `.feature` exists") < passage.indexOf(driven), "…under the gate's on-branch");
+    },
+  },
+
+  // ══ 136/02 01_a-driven-cascade-asks-its-questions-one-after-another-and-the-copies-match.feature ══
+  {
+    name: "examples/136-02 01 E2 a driven cascade asks its open business questions one after another",
+    run: async () => {
+      const block = flat(autonomousOf(await read(REFINE)));
+      assert.match(block, /in a session whose environment carries `AOF_RUN_ID`, each call carries one question/);
+      assert.match(block, /each such question is its own ask and its own wait/);
+      assert.match(block, /an interactive cascade asks in batches of four/);
+      assert.match(block, /A question the person does not answer — deferred by the person, or refused by the harness — leaves its story at the Contract gate with no `tasks\/` written; the other stories go on/);
+    },
+  },
+  {
+    name: "examples/136-02 01 every rendered copy of refine is exactly what the source renders (outline: 3 copies)",
+    run: async () => {
+      const driven = flat(drivenOf(await read(REFINE)));
+      const actions = freshRenderActions();
+      for (const copy of REFINE_COPIES) {
+        assert.ok(flat(await read(copy)).includes(driven), `${copy} carries the driven paragraph`);
+        assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+      }
     },
   },
 ];

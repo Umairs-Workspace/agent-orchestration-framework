@@ -633,7 +633,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:e3412bd9b55eb1424bc13f3f4b19f32528746ad29b4fbba33bb1f7523fa77fc9"
+      "hash": "sha256:9c47030ba3e0a457685bbd5326fedbbb507069c2b8f36bfe81e438d96485b987"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",
@@ -1011,7 +1011,7 @@
         "id": "aof-refine",
         "kind": "skill"
       },
-      "hash": "sha256:c6c9569c615af8b1f9baba33ae2d004439f06c4eac7debd4e0c54f078cf7d94d"
+      "hash": "sha256:073319afb8c7a6ad3825e5b6e6a5653fcc7f32f2e100c9bc43afba361403706b"
     },
     {
       "path": ".codex/skills/aof-retrospective/SKILL.md",

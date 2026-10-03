@@ -4,7 +4,7 @@ number: 02
 slug: a-driven-refine-asks-through-the-loop
 title: "A driven refine asks through the loop — one tokened discovery question per ask, carrying its rule and example, and never a default"
 parent: 136
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -42,7 +42,7 @@ unchanged.
 
 ## Tasks
 
-- [ ] 00 [the discovery beat asks one tokened question per ask in a driven session](tasks/00_the-discovery-beat-asks-one-tokened-question-per-ask-in-a-driven-session.feature)
-- [ ] 01 [a driven cascade asks its questions one after another, and the copies match](tasks/01_a-driven-cascade-asks-its-questions-one-after-another-and-the-copies-match.feature)
+- [x] 00 [the discovery beat asks one tokened question per ask in a driven session](tasks/00_the-discovery-beat-asks-one-tokened-question-per-ask-in-a-driven-session.feature)
+- [x] 01 [a driven cascade asks its questions one after another, and the copies match](tasks/01_a-driven-cascade-asks-its-questions-one-after-another-and-the-copies-match.feature)
 
 ## Notes
