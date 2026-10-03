@@ -57,6 +57,27 @@ failure, restore the file, then run the control green again.
   had been recorded. Its findings are advisory warnings only: `numbering-gap`,
   `control-runner-unchecked`, `rubric-join-unchecked` ×5 and `depends-edges-unchecked`.
 
+## Regression gate
+
+`aof work regression-gate 135` was run twice, each time in the clean detached worktree
+`aof-gate-135` with a temp `AOF_GLOBAL_HOME`, `ui/dist` built and the private-terms file copied
+in. Both rows are in `REGRESSION.md`.
+
+1. **`8647e4de`, red, 29.8 min.** Three of its reds were 135's own: FF-11902, `m42-item-3` and four
+   of FF-11903's unresolved citations (F-135-05, F-135-06). All three were fixed in `93d039e7`. Its
+   four not-isolated reds passed alone: 78 cases, 0 failures.
+2. **`aa9fd84c`, red, 27.1 min.** No red here is 135's. Every remaining red was re-run alone in the
+   same worktree and still failed alone, so none is contention:
+   - FF-11903 ×2, 119/00 task02 ×2 and FF-5204 are 142's squash, which lost the rename history
+     (F-134-03, red on main). The sweep reads 348 against a ceiling of 55, and no row names 135.
+   - `this-tree-holds-what-is-live` 00 reads 122 stale-reads findings against a baseline of 117.
+     `aof work validate --json` from the root returns 123 findings, and none names 135.
+   - `this-tree-holds-what-is-live` 02 ×2 fail because 134 is `done` and still at the root. That
+     clears with `aof work archive 134`, which is the operator's act (127/ADR-004).
+   - Its five not-isolated reds passed alone: 99 cases, 0 failures.
+
+The accept goes through `--gate-override` with that reason, recorded as its own row.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
@@ -65,3 +86,13 @@ failure, restore the file, then run the control green again.
 | F-135-02 | 135/05 added 12 registered cases without raising the Plan 09 ledger's `registryCases` (11825), so `core-workspace` was red. | defect | minor | blocker: fixed at verify | `3eb38e39`: 11825 to 11837, with the renamed board pin's case-name hash. | fixed |
 | F-135-03 | The task-card surface cannot be rendered for a design judgement: DESIGN.md declares no `Route`, and `work.ui.baseUrl` is unset (the board runs on an ephemeral port). | gap | minor | non-blocker: the binding checklist is asserted structurally | DESIGN.md (a `Route` for the surface) and an `aof:verify --url` run against a live board | open |
 | F-135-04 | 04's "the live stream gains no trace finding" runs the real doctor over the live stream. A later story that drops an agreed example while open turns 04's suite red, not its own. | gap | minor | non-blocker: the gate doing its job, with an indirect pointer | recorded at 04's review; the red names the offending story in its message | closed |
+| F-135-05 | The whole-tree gate at `8647e4de` reds two controls on 04's code: `m42-item-3`, a comment-only `catch` in `build-door.mjs`'s task reader, and FF-11902, FF-13502 asserting a derived module set equal to `["doctor-lane.mjs"]`. | defect | major | blocker: fixed at verify | `93d039e7`: the reader walks `tasks/` as the doctor's `taskFilesState` does, with a sentinel `.catch(() => null)`. FF-13502 names the lane among the set under a ceiling of one. | fixed |
+| F-135-06 | ARCHITECTURE.md cited the package's four modules by bare `src/…` path, which adds four rows to FF-11903's unresolved-citation sweep. | defect | minor | blocker: fixed at verify | `93d039e7`: full `packages/specification-by-example/src/…` paths. The sweep reads 352 → 348, none naming 135. | fixed |
+
+## Accept decision
+
+Accepted 2026-10-03 by `aof:verify 135`. All five stories are done, `aof:validate 135` is PASS,
+doctor shows no `control-unresolved`, and no blocker finding is open (F-135-01, 02, 05 and 06 are
+fixed). The regression gate is accepted through `--gate-override` with the reason in
+`## Regression gate`, recorded as its own row in `REGRESSION.md`. F-135-03 (no rendered design
+judgement of the task card) stays open as a non-blocker.

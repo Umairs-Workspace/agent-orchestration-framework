@@ -3,7 +3,7 @@ type: milestone
 number: 135
 slug: key-examples-in-the-contract
 title: "Key examples in the contract — the map's rules become Rule: blocks, its agreed examples become headline scenarios, and none can silently fall out"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
 updated: 2026-10-03

@@ -18,6 +18,8 @@ doc: state
 - [x] 03 the board groups scenarios by rule. Accepted 2026-10-03, after F-135-01 was repaired at verify.
 - [x] 04 an agreed example cannot fall out. Accepted 2026-10-03.
 - [x] 05 the contract is formulated from the map. Accepted 2026-10-03, after F-135-02 was repaired at verify.
+- Verified 2026-10-03 (`aof:verify 135`): the five stories accepted, F-135-01/02 repaired in `3eb38e39`,
+  the `@manual` live trace run on 135/04. Evidence, the gate and the findings are in `VERIFICATION.md`.
 
 ## Notes & decisions in flight
 
@@ -43,11 +45,6 @@ doc: state
   ADR-002 §3).
 - **Graph:** built 2026-10-03T10:31:53Z, code only, no egress. The first build timed out at 120 s
   and succeeded with `AOF_GRAPHIFY_TIMEOUT_MS=900000`. Impact is cited in ADR-007.
-- **Before 03, 04 and 05 build (m134/R2):** re-derive their `files:` from the tree once 01 merges,
-  because 01 moves code they reference by forward path.
-- **The live run is scheduled before review (m134/R1):** once 04 and 05 are built, and before
-  either goes to review, refine one real mapped story end to end, then delete one of its agreed
-  example's scenarios and confirm that `example-untraced` names it. That is the `@manual` row below.
 - **Dogfooding:** 03 and 05 are formulated in 135's own form (`Rule: R<n> · …`, `E<n> · …`), so
   once 04 lands, their contracts are the trace's first real subjects.
 
@@ -63,52 +60,12 @@ doc: state
 ## Verification
 
 - [x] `@executable` suite green (story-scoped, at `3eb38e39`)
+- [x] Whole-tree gate: two runs, red only on inherited cases at `aa9fd84c`, accepted by override with its reason
 - [x] Fitness functions green, red probes recorded
 - [x] `@manual`: one mapped story formulated and linted end to end (135/04, E8)
 
-## Feedback (for retro)
+## Feedback (for retro) — archived 2026-10-03
 
-- **135/01 build (2026-10-03, solo): the declared write set was incomplete.** The move also had to
-  touch `packages/core/src/application/bindings/commands/doctor.mjs` (its gate resolver became
-  unused), `test/bundle/yarn-installation.test.mjs` and `test/bundle/core-workspace.test.mjs` (the
-  package purity inventory and the owner count), `test/arch/audit/acd-controls-never-execute.test.mjs`
-  (FF-5905 pins `createWorkDoctor`'s signature and the lane roster), `scripts/workspace-runtime-audit.json`
-  (source digests) and 142's `plans/09-test-ledger.json` (case-name hashes). None was in `files:`.
-  Refine for a package move should census every control that pins a moved module's path, signature
-  or digest.
-- **135/01 build: inherited reds repaired, not caused.** The 143 merge left the Plan 09 ledger's loop
-  rows, `loop.mjs`'s runtime-audit digest and three 143 `PLAN.md` path restatements (FF-9603) red;
-  135's own refine left FF-9603 red on 01's and 04's `PLAN.md`. All were mechanical and fixed in
-  the 135/01 change. FF-11903 (citation rename history) was red before the move and stays a gate
-  matter for `aof:verify`.
-- **135/01 design note:** the examples gate's resolver no longer flows into `@aof/work` at all — the
-  doctor command hands the snapshot `config` and the probe resolves the gate itself. 03, 04 and 05
-  should read the map through `row.extensions.examples`, not `examplesMap`.
-- **135/02 build:** under the full parser-importer sweep (391 cases) `brief-pinned-to-the-stream`'s
-  two 70/05 cases went red on 143/03's refine brief, and passed alone both with and without the
-  parser change — a contention flake, named so a later gate does not mistake it for 02.
-- **135/03 review (finding, recorded):** design conformance at build was INCONCLUSIVE. A renderer
-  resolves (the cached Chromium), but `work.ui.baseUrl` is unset and DESIGN.md's task-card surface
-  declares no `Route`, so nothing was rendered and no designer judged it. The binding checklist's
-  regions, order and classes are asserted structurally by `board-rule-groups.suite.mjs`; a
-  rendered judgement wants a `Route` on the surface (or `--url`) at `aof:verify`.
-- **135/04 build (2026-10-03, solo): the declared write set was incomplete.** Beyond `files:`, the
-  trace also had to touch `test/arch/examples/acd-examples-off-is-today.test.mjs` (FF-13403's
-  non-vacuity control asserts EVERY lane code fires, so its worst fixture gained a rule-titled
-  contract), `test/bundle/yarn-installation.test.mjs` (the package's per-file import allowlist gains
-  `@aof/work/feature-parse` for the lane), 142's `plans/09-test-ledger.json` (`registryCases`
-  11795 -> 11825) and `test/arch/testing/acd-source-directory-budget.test.mjs` (two stale member
-  counts). Refine for a lane that gains a code should census the controls that enumerate the codes.
-- **135/04 build: an inherited red, not caused.** `acd-ui-surface-file-budget` (ADR-015/F2) is red at
-  HEAD: 135/03 (`9ebb0b2b`) took `apps/ui/src/board/DetailPanel.tsx` from 997 to 1031 lines, over its
-  1000-line ratchet. Outside the 04-05 span, so not repaired here; 135/03's verify must extract the
-  rule-grouped scenario list into a sibling component.
-- **135/04 review (finding, recorded):** "the live stream gains no trace finding" runs the real doctor
-  over the live work stream, so any later story whose contract drops an agreed example while it is
-  open turns this suite red — which is the gate doing its job, but the failure will surface in 135/04's
-  suite rather than the story that caused it.
-- **135/05 build (2026-10-03, solo):** the render that refreshes the nine copies also rewrites
-  `.aof/aof.lock.json` (their hashes), which is not in `files:`; committed with the story. The
-  Formulation paragraph names neither the gate's key nor the map's file name, because 134/05 pins
-  the discovery passage as their one home in the Contract. The importer sweep (91 suites, 1387
-  cases) was green.
+Graduated into `RETROSPECTIVE.md` (milestone R1-R2) and the stories' own `RETROSPECTIVE.md` (01 R1,
+03 R1-R2, 04 R1-R2, 05 R1; 02 surfaced nothing worth a lesson). The blow-by-blow is in git history
+(`a7f6316c`).

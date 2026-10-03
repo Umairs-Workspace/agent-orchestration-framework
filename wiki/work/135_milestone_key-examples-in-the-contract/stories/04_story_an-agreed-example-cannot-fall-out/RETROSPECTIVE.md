@@ -15,7 +15,9 @@ updated: 2026-10-03
 - the Plan 09 ledger
 - two stale counts in the source-directory budget
 
-None of them was in `files:`.
+None of them was in `files:`. The milestone's whole-tree gate later found two more red on 04's
+code: a comment-only `catch` in `build-door.mjs`, and FF-13502 asserting a derived set equal to a
+literal (F-135-05).
 
 **Why.** Refine declared where the code is born, not who counts the codes.
 
