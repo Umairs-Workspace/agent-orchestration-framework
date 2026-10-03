@@ -84,3 +84,11 @@ doc: state
 - **135/01 design note:** the examples gate's resolver no longer flows into `@aof/work` at all — the
   doctor command hands the snapshot `config` and the probe resolves the gate itself. 03, 04 and 05
   should read the map through `row.extensions.examples`, not `examplesMap`.
+- **135/02 build:** under the full parser-importer sweep (391 cases) `brief-pinned-to-the-stream`'s
+  two 70/05 cases went red on 143/03's refine brief, and passed alone both with and without the
+  parser change — a contention flake, named so a later gate does not mistake it for 02.
+- **135/03 review (finding, recorded):** design conformance at build was INCONCLUSIVE. A renderer
+  resolves (the cached Chromium), but `work.ui.baseUrl` is unset and DESIGN.md's task-card surface
+  declares no `Route`, so nothing was rendered and no designer judged it. The binding checklist's
+  regions, order and classes are asserted structurally by `board-rule-groups.suite.mjs`; a
+  rendered judgement wants a `Route` on the surface (or `--url`) at `aof:verify`.

@@ -5,7 +5,7 @@ slug: the-board-groups-scenarios-by-rule
 title: "The board groups scenarios by rule — a task's scenarios show under their rule's heading, and a task with no rule looks as it does today"
 parent: 135
 depends: [01, 02]
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -47,8 +47,8 @@ headings in file order. Scenarios outside any rule come first.
 
 ## Tasks
 
-- [ ] 00 [the tasks projection carries each scenario's rule](tasks/00_the-tasks-projection-carries-each-scenarios-rule.feature)
-- [ ] 01 [the task card shows scenarios under their rule](tasks/01_the-task-card-shows-scenarios-under-their-rule.feature)
+- [x] 00 [the tasks projection carries each scenario's rule](tasks/00_the-tasks-projection-carries-each-scenarios-rule.feature)
+- [x] 01 [the task card shows scenarios under their rule](tasks/01_the-task-card-shows-scenarios-under-their-rule.feature)
 
 ## Notes
 

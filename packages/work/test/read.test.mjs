@@ -73,3 +73,70 @@ test('remote read commands consume injected content and preserve exact write res
   assert.equal(tasks.tasks[0].feature,'Remote');
   assert.equal(tasks.tasks[0].counts.executable,1);
 });
+
+// milestone 135 / story 03 — 00_the-tasks-projection-carries-each-scenarios-rule.feature. The tasks
+// command is driven as `aof work tasks <story> --json` drives it (its `run` is the face's result),
+// over a local story folder or over members a worker streamed.
+async function withLocalTask(feature, body) {
+  const parent = await realpath(os.tmpdir());
+  const root = await mkdtemp(path.join(parent, 'aof-tasks-rule-'));
+  try {
+    const dir = path.join(root, 'work', '07_milestone_m', 'stories', '02_story_s');
+    await mkdir(path.join(dir, 'tasks'), {recursive:true});
+    await writeFile(path.join(dir, 'tasks', '00_task.feature'), feature);
+    const item = {ref:'07/02', dir, type:'story', slug:'s'};
+    const {tasksCommand} = createTasksCommand({resolveItem:async()=>item, readStreamedItemRow:async()=>null, readWorkerDocMembers:async()=>null, meshNodeIdOf:()=>'control', reportedElsewhere:()=>false});
+    return await body(await tasksCommand.run({ref:'07/02'}, {workspace:{config:{}}}));
+  } finally { await rm(root, {recursive:true, force:true}); }
+}
+async function remoteTask(feature) {
+  const item = {ref:'07/02', dir:null, type:'story', slug:'s', answeredFrom:'cache', reportedBy:'worker'};
+  const {tasksCommand} = createTasksCommand({resolveItem:async()=>item, readStreamedItemRow:async()=>item, readWorkerDocMembers:async()=>({reportedBy:'worker', members:[{member:'00_task.feature', body:feature}]}), meshNodeIdOf:()=>'control', reportedElsewhere:()=>true});
+  return tasksCommand.run({ref:'07/02'}, {workspace:{config:{}}});
+}
+const ruled = (...blocks) => ['@executable', 'Feature: loans', '', ...blocks.flat(), ''].join('\n');
+const scenario = (name) => [`    Scenario: ${name}`, '      Given a member', ''];
+const rule = (title, ...names) => [`  Rule: ${title}`, '', ...names.flatMap(scenario)];
+
+test('135/03 00 E1 · scenarios under two rules carry their rules\' titles in file order', () => withLocalTask(
+  ruled(rule('R1 · at most five loans', 'a', 'b'), rule('R2 · overdue blocks', 'c')),
+  (result) => assert.deepEqual(result.tasks[0].scenarios.map((entry) => entry.rule), ['R1 · at most five loans', 'R1 · at most five loans', 'R2 · overdue blocks']),
+));
+
+test('135/03 00 E2 · a scenario outside any rule carries no rule', () => withLocalTask(
+  ruled(scenario('loose'), rule('R1 · at most five loans', 'a', 'b')),
+  (result) => {
+    const [first, ...rest] = result.tasks[0].scenarios;
+    assert.equal(first.rule, null);
+    assert.deepEqual(rest.map((entry) => entry.rule), ['R1 · at most five loans', 'R1 · at most five loans']);
+  },
+));
+
+test('135/03 00 E3 · a feature with no Rule projects every scenario with a null rule', () => withLocalTask(
+  ['@executable', 'Feature: plain', '', ...scenario('one'), ...scenario('two'), '  @manual', ...scenario('three')].join('\n'),
+  (result) => {
+    const [task] = result.tasks;
+    for (const entry of task.scenarios) {
+      assert.deepEqual(Object.keys(entry), ['name', 'outline', 'lane', 'rule']);
+      assert.equal(entry.rule, null);
+    }
+    // The per-lane counts are the parse's own lanes, as before this story: two executable, and the
+    // third doubly tagged (feature @executable + its own @manual), so it has no lane.
+    assert.deepEqual(task.counts, {executable:2, manual:0, uat:0});
+  },
+));
+
+test('135/03 00 the projection carries the rule title and nothing else of the rule (outline: local, remote read from the cache)', async () => {
+  const feature = ['Feature: loans', '', '  @manual', '  Rule: R2 · overdue blocks', '', ...scenario('c'), ...scenario('d')].join('\n');
+  const check = (label, result) => {
+    for (const entry of result.tasks[0].scenarios) {
+      assert.deepEqual(Object.keys(entry), ['name', 'outline', 'lane', 'rule'], label);
+      assert.equal(entry.rule, 'R2 · overdue blocks', label);
+      assert.equal(entry.lane, 'manual', `${label}: the rule's tag is in scope, but only its title crosses`);
+    }
+  };
+  await withLocalTask(feature, (result) => check('local', result));
+  const remote = await remoteTask(feature);
+  assert.equal(remote.answeredFrom, 'cache');
+  check('remote, read from the cache', remote);
+});

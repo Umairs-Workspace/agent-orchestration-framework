@@ -179,7 +179,9 @@ export type ContinueResponse = {
 // (the browser can't read disk). Mirrors the /api/work/tasks wire shape.
 export type TaskLane = "executable" | "manual" | "uat";
 
-export type TaskScenario = { name: string; lane: TaskLane | null; outline: boolean };
+// `rule` is the title of the `Rule:` the scenario sits under, or null (135/ADR-005). A cached payload
+// from an older node carries no `rule` key; the panel reads `undefined` as null where it groups.
+export type TaskScenario = { name: string; lane: TaskLane | null; outline: boolean; rule: string | null };
 
 export type TaskFeature = {
   file: string;
