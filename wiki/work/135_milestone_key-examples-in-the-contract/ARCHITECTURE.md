@@ -41,9 +41,9 @@ continue door (`commands/continue.mjs:4`, `refuseOpenExamples` at `:201`).
 ### Decision
 
 1. **`packages/specification-by-example/`** (`@aof/specification-by-example`). It holds the map
-   grammar (`src/map.mjs`, moved from `packages/work/src/examples/map.mjs`), the answer reader
-   (`src/answers.mjs`), the doctor lane (`src/doctor-lane.mjs`, from `work/src/doctor/examples.mjs`)
-   and the build-door check (`src/build-door.mjs`, from `refuseOpenExamples`). 135's trace (ADR-004)
+   grammar (`packages/specification-by-example/src/map.mjs`, moved from `packages/work/src/examples/map.mjs`), the answer reader
+   (`packages/specification-by-example/src/answers.mjs`), the doctor lane (`packages/specification-by-example/src/doctor-lane.mjs`, from `work/src/doctor/examples.mjs`)
+   and the build-door check (`packages/specification-by-example/src/build-door.mjs`, from `refuseOpenExamples`). 135's trace (ADR-004)
    is born there.
 2. **Dependencies run one way.** The package may import `@aof/work` (`feature-parse`, `lifecycle`)
    and `@aof/contracts`. `@aof/work` imports nothing from it, and no `@aof/work` source spells the

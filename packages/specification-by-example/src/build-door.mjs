@@ -19,19 +19,19 @@ import { EXAMPLES_DOC } from "./map.mjs";
 // snapshot keys its `featureTexts`, so the trace (135 / ADR-004) reaches the door with the same
 // input and the same messages: a story whose contract lost an agreed example is not built.
 async function taskFeatureTexts(dir) {
-  let names;
+  let entries;
   try {
-    names = await readdir(path.join(dir, "tasks"));
+    entries = await readdir(path.join(dir, "tasks"), { withFileTypes: true });
   } catch {
     return {};
   }
+  // The doctor's own walk (`taskFilesState`): a contract is a regular `*.feature` file, and one that
+  // cannot be read (a vanished entry) is absent rather than an error, as the doctor's `fileState` reads it.
+  const names = entries.filter((entry) => entry.isFile() && entry.name.endsWith(".feature")).map((entry) => entry.name).sort();
   const texts = {};
-  for (const name of names.filter((entry) => entry.endsWith(".feature")).sort()) {
-    try {
-      texts[`tasks/${name}`] = await readFile(path.join(dir, "tasks", name), "utf8");
-    } catch {
-      // Not a readable file (a directory named `*.feature`, a vanished entry): not a contract.
-    }
+  for (const name of names) {
+    const text = await readFile(path.join(dir, "tasks", name), "utf8").catch(() => null);
+    if (text != null) texts[`tasks/${name}`] = text;
   }
   return texts;
 }

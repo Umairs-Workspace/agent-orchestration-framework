@@ -62,7 +62,9 @@ export const archTests = [
       assert.match(lane, /import \{ parseFeature \} from "@aof\/work\/feature-parse";/u, "the lane parses through the one feature parser");
       assert.match(lane, /untracedExamples\(map, parsedFeatures\(featureTexts\)\)/u, "the lane asks map.mjs's trace");
       const parsers = modules.filter(({ code }) => /\bparseFeature\b/.test(code)).map(({ name }) => name);
-      assert.deepEqual(parsers, ["doctor-lane.mjs"], "one module of the package parses a feature");
+      // The home is named AMONG the set under a ceiling of one, never enumerated as the answer (FF-11902).
+      assert.ok(parsers.includes("doctor-lane.mjs"), `the lane is a module that parses a feature: ${JSON.stringify(parsers)}`);
+      assert.ok(parsers.length <= 1, `one module of the package parses a feature: ${JSON.stringify(parsers)}`);
     },
   },
   {
