@@ -65,6 +65,24 @@
 //   • `Rule:` (Gherkin 6) as a header that returns to description state — 0 files.
 //     Refusing it would make every step under a `Rule:` a false positive, which is the
 //     more expensive error of the two.
+//   • `Example:` (Gherkin 6) as the bare-scenario synonym for `Scenario:` — 0 files
+//     (measured 2026-10-03, milestone 135 / ADR-003 §3). Without it an `Example:` after a
+//     `Background:` produced no scenario and no finding: a scenario falling out of a
+//     contract silently. `outline` stays false for it.
+//
+// milestone 135 / ADR-003 — `Rule:` IS A GROUPING THAT OWNS ITS SCENARIOS. Every change is
+// an ADDITIVE KEY inside the `BEGIN/END 135/ADR-003 rules` markers, so the frozen parser
+// (the source with both marker families removed) is the pre-135 reader and FF-5704 can keep
+// comparing against it:
+//   scenarios[].rule — `{ name, line }` of the `Rule:` the scenario sits under, or null.
+//   rules            — `[{ name, line, tags }]`, in file order; a rule ends at the next
+//                      `Rule:`, the next `Feature:` or the end of the file.
+//   examples[].columns / examples[].cells — the header cells and one array of trimmed cell
+//                      strings per data row (`rows` stays the count). `\|` is a literal pipe
+//                      inside a cell and `\\` a literal backslash, as in Gherkin.
+// A rule's tags have RULE SCOPE: the tags read before `Rule:` apply to every scenario in the
+// rule (`effective = feature + rule + scenario`) instead of leaking onto the next scenario
+// only. `tags` still lists every token once, so the vocabulary check is unchanged.
 //
 // Pure: no `node:fs`, no spawn, no clock — callers pass the file text, and the same
 // text yields byte-identical output on every call.
@@ -85,7 +103,31 @@ const isStepLine = (line) => STEP_KEYWORDS.some((keyword) => line.startsWith(key
 const DOCSTRING_DELIMITERS = ["\"\"\"", "```"];
 const docstringDelimiter = (line) => DOCSTRING_DELIMITERS.find((delimiter) => line.startsWith(delimiter)) ?? null;
 
-const SCENARIO_RE = /^Scenario( Outline| Template)?:/;
+let SCENARIO_RE = /^Scenario( Outline| Template)?:/;
+// BEGIN 135/ADR-003 rules
+SCENARIO_RE = /^(?:Scenario( Outline| Template)?|Example):/;
+
+// One Examples table row's cells: split on unescaped `|`, drop the pieces outside the outer
+// pipes, trim each. `\|` and `\\` unescape; any other `\x` is kept as written.
+function tableCells(line) {
+  const cells = [];
+  let cell = "";
+  for (let index = 0; index < line.length; index += 1) {
+    const char = line[index];
+    if (char === "\\" && (line[index + 1] === "|" || line[index + 1] === "\\")) {
+      cell += line[index + 1];
+      index += 1;
+    } else if (char === "|") {
+      cells.push(cell);
+      cell = "";
+    } else {
+      cell += char;
+    }
+  }
+  cells.push(cell);
+  return cells.slice(1, -1).map((value) => value.trim());
+}
+// END 135/ADR-003 rules
 const EXAMPLES_RE = /^(Examples|Scenarios):/;
 
 export function parseFeature(text) {
@@ -113,6 +155,10 @@ export function parseFeature(text) {
   let currentScenario = null;
   let currentExamples = null;
   // END ADR-005 examples
+  // BEGIN 135/ADR-003 rules
+  let currentRule = null;
+  const rules = [];
+  // END 135/ADR-003 rules
 
   const openRegion = (line) => {
     if (regionAt == null) regionAt = line;
@@ -147,6 +193,10 @@ export function parseFeature(text) {
     if (line === "" || line.startsWith("#") || line.startsWith("|")) {
       // BEGIN ADR-005 examples
       if (line.startsWith("|") && currentExamples) {
+        // BEGIN 135/ADR-003 rules
+        if (currentExamples.hasColumnHeader) currentExamples.block.cells.push(tableCells(line));
+        else currentExamples.block.columns = tableCells(line);
+        // END 135/ADR-003 rules
         if (currentExamples.hasColumnHeader) currentExamples.block.rows += 1;
         else currentExamples.hasColumnHeader = true;
       }
@@ -172,6 +222,9 @@ export function parseFeature(text) {
       currentScenario = null;
       currentExamples = null;
       // END ADR-005 examples
+      // BEGIN 135/ADR-003 rules
+      currentRule = null;
+      // END 135/ADR-003 rules
       feature = line.replace(/^Feature:\s*/, "").trim() || null;
       featureTags = pending;
       pending = [];
@@ -184,7 +237,10 @@ export function parseFeature(text) {
     if (scenarioMatch) {
       const outline = Boolean(scenarioMatch[1]);
       const name = line.replace(SCENARIO_RE, "").trim();
-      const effective = [...featureTags, ...pending];
+      let effective = [...featureTags, ...pending];
+      // BEGIN 135/ADR-003 rules
+      effective = [...featureTags, ...(currentRule?.tags ?? []), ...pending];
+      // END 135/ADR-003 rules
       const verification = effective.filter((tag) => VERIFICATION_TAGS.has(tag));
       const lane = verification.length === 1 ? verification[0].slice(1) : null;
       const scenario = { name, outline, lane, verification, line: lineNumber };
@@ -193,6 +249,10 @@ export function parseFeature(text) {
       currentScenario = scenario;
       currentExamples = null;
       // END ADR-005 examples
+      // BEGIN 135/ADR-003 rules
+      // Copied, so the scenario's rule never aliases the `rules` entry that carries the tags.
+      scenario.rule = currentRule ? { name: currentRule.name, line: currentRule.line } : null;
+      // END 135/ADR-003 rules
       scenarios.push(scenario);
       pending = [];
       state = "steps";
@@ -215,6 +275,12 @@ export function parseFeature(text) {
       currentScenario = null;
       currentExamples = null;
       // END ADR-005 examples
+      // BEGIN 135/ADR-003 rules
+      // The tags read above the rule are the rule's, not the next scenario's.
+      currentRule = { name: line.replace(/^Rule:\s*/, "").trim(), line: lineNumber, tags: pending };
+      rules.push(currentRule);
+      pending = [];
+      // END 135/ADR-003 rules
       state = "description";
       closeRegion();
       continue;
@@ -229,6 +295,10 @@ export function parseFeature(text) {
           rows: 0,
           line: lineNumber,
         };
+        // BEGIN 135/ADR-003 rules
+        block.columns = [];
+        block.cells = [];
+        // END 135/ADR-003 rules
         currentScenario.examples.push(block);
         currentExamples = { block, hasColumnHeader: false };
       }
@@ -285,5 +355,9 @@ export function parseFeature(text) {
           },
         ];
 
-  return { feature, scenarios, tags, structural };
+  let parsed = { feature, scenarios, tags, structural };
+  // BEGIN 135/ADR-003 rules
+  parsed = { feature, scenarios, tags, structural, rules: rules.map(({ name, line, tags: ruleTags }) => ({ name, line, tags: [...ruleTags] })) };
+  // END 135/ADR-003 rules
+  return parsed;
 }

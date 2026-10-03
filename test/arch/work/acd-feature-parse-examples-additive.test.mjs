@@ -1,7 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { parseFeature } from "@aof/work/feature-parse";
-import { featureFiles, loadPreExamplesParser, withoutExamples } from "../../../packages/work/test/support/feature-parse-pre-examples.mjs";
+import { featureFiles, frozenView, loadPreExamplesParser } from "../../../packages/work/test/support/feature-parse-pre-examples.mjs";
+
+// FF-5704 — the parser's additive keys leave every pre-existing key and value as it was. Since
+// milestone 135 (ADR-003) the additive family includes the `Rule:` grouping: `scenarios[].rule`,
+// `rules`, `examples[].columns` and `examples[].cells` are removed with `examples` before the
+// comparison, and `verification`/`lane` are compared only where no tagged rule is in scope (the
+// frozen parser leaks a rule's tag onto the next scenario, which is the defect 135 fixed).
 
 export const archTests = [
   {
@@ -14,7 +20,8 @@ export const archTests = [
       for (const file of files) {
         const source = await readFile(file, "utf8");
         const parsed = parseFeature(source);
-        assert.deepEqual(withoutExamples(parsed), legacyParse(source), file);
+        const { current, legacy } = frozenView(parsed, legacyParse(source));
+        assert.deepEqual(current, legacy, file);
         for (const scenario of parsed.scenarios) {
           assert.ok(Array.isArray(scenario.examples), `${file}: examples array`);
           scenarios += 1;

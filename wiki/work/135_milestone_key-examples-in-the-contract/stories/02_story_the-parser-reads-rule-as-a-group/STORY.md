@@ -5,7 +5,7 @@ slug: the-parser-reads-rule-as-a-group
 title: "The parser reads Rule: as a group — a rule owns its scenarios and its tags, Example: is a scenario, and an Examples row keeps its cells"
 parent: 135
 depends: []
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -48,8 +48,8 @@ that over the whole tree.
 
 ## Tasks
 
-- [ ] 00 [a scenario knows its rule and a rule owns its tags](tasks/00_a-scenario-knows-its-rule-and-a-rule-owns-its-tags.feature)
-- [ ] 01 [example is a scenario and a row keeps its cells](tasks/01_example-is-a-scenario-and-a-row-keeps-its-cells.feature)
+- [x] 00 [a scenario knows its rule and a rule owns its tags](tasks/00_a-scenario-knows-its-rule-and-a-rule-owns-its-tags.feature)
+- [x] 01 [example is a scenario and a row keeps its cells](tasks/01_example-is-a-scenario-and-a-row-keeps-its-cells.feature)
 
 ## Notes
 

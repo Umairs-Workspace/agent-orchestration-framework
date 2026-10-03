@@ -377,7 +377,8 @@ export const featureParseStrictTests = [
     name: "66/00 parse: the structural findings arrive under a NEW key, so no consumer changes to keep working",
     run: () => {
       const parsed = parseFeature("@executable\nFeature: Thing\n\n  Scenario: does a thing\n    When x\n    Then y\n");
-      assert.deepEqual(Object.keys(parsed).sort(), ["feature", "scenarios", "structural", "tags"]);
+      // 135/02 (ADR-003 §1) adds `rules`, another NEW key; the four 66/00 named are unchanged.
+      assert.deepEqual(Object.keys(parsed).sort(), ["feature", "rules", "scenarios", "structural", "tags"]);
       assert.deepEqual(parsed.structural, [], "a clean file carries an empty findings list, never a missing key");
       // The consumer's own read still resolves.
       assert.equal(parsed.feature, "Thing");
@@ -669,5 +670,20 @@ export const featureParseStrictTests = [
       assert.equal(parsed.structural.length, 1, "the same words, in the case Gherkin reserves");
       assert.equal(parsed.structural[0].line, 4);
     },
+  },
+
+  // milestone 135 / story 02 (ADR-003 §2) — a rule's tags have rule scope, so validate's
+  // verification-count check (which reads each scenario's `verification` off the one parser) now
+  // names every scenario under a doubly tagged rule, and none outside it.
+  {
+    name: "135/02 00 validate reports a doubly tagged scenario under a tagged rule, naming that scenario",
+    run: () => withOpenStory(
+      ["@executable @validate", "Feature: loans", "", "  Scenario: S0", "    Given a member", "", "  @manual", "  Rule: R2 · An overdue loan blocks new loans", "", "    Scenario: S3", "      Given an overdue loan", "", "    Scenario: S4", "      Given a loan a day overdue", ""].join("\n"),
+      ({ findings }) => {
+        const counted = findings.filter((finding) => finding.problem.includes("verification tags"));
+        assert.deepEqual(counted.map((finding) => /scenario "([^"]+)"/u.exec(finding.problem)[1]).sort(), ["S3", "S4"]);
+        for (const finding of counted) assert.match(finding.problem, /carries 2 verification tags/u);
+      },
+    ),
   },
 ];
