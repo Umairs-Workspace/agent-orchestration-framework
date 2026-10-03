@@ -3,10 +3,10 @@ type: milestone
 number: 136
 slug: discovery-questions-in-the-loop
 title: "Discovery questions in the loop — a loop-driven refine asks its business questions through the human in the loop, the lane waits, and the answer confirms the example"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-10-03
 origin: wiki/planning/research/RESEARCH-specification-by-example.md
 depends: [131, 134]
 schema: 1
@@ -61,7 +61,10 @@ Out of scope:
 
 ## Stories
 
-To be broken down at refine.
+- [ ] 01 [A loop answer anchors the example](stories/01_story_a-loop-answer-anchors-the-example/STORY.md) — 131's recorded answer is a provenance source in 134's one collector (ADR-001)
+- [ ] 02 [A driven refine asks through the loop](stories/02_story_a-driven-refine-asks-through-the-loop/STORY.md) — one tokened discovery question per ask, never a default (ADR-002)
+
+The live run is the milestone's `@manual` verification, not a story (ADR-003).
 
 ## Dependencies
 
