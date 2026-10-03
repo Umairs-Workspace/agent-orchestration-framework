@@ -27,12 +27,17 @@ Refer to a token by **semantic role**, never by its hex value.
 | `accent` | Focal — 1–2 max per diagram | `#ba2646` | `#d8486a` | `--color-accent` `hsl(347 66% 44%)` (crimson) |
 | `accent-tint` | Fill for accent-bordered boxes | `rgba(186,38,70,0.08)` | `rgba(216,72,106,0.10)` | derived: `accent` at 0.08 |
 | `link` | Structural accent: HTTP/API calls, command and data flows | `#13766d` | `#3fa89c` | `--color-primary` `hsl(174 72% 27%)` (teal) |
+| `done` | Status: a finished item (stroke, tag text) | `#2f7d4f` | `#5cb784` | none — green, the operator's ruling (145 UAT) |
+| `done-tint` | Fill for a finished item's box | `rgba(47,125,79,0.14)` | `rgba(92,183,132,0.16)` | derived: `done` at 0.14 |
 
 > **Two hues, two jobs.** Crimson is the console's accent and is the diagram's FOCAL role — the one
 > thing the reader should look at first. Teal is the console's primary and is the diagram's
-> STRUCTURAL accent — the flows that carry the design. Nothing else takes a hue. The console never
-> puts a `primary` tint on a figure frame (DESIGN), so the diagram's own focal colour is the only
-> emphasis on the page.
+> STRUCTURAL accent — the flows that carry the design. The console never puts a `primary` tint on a
+> figure frame (DESIGN), so the diagram's own focal colour is the only emphasis on the page.
+>
+> **One status hue.** Green (`done`) marks a FINISHED item and nothing else — a loop diagram's built
+> stories. It is a state, not an emphasis, so it does not count against the 1–2 focal budget.
+> Nothing else takes a hue.
 
 ### Inversion rule (light → dark)
 
@@ -109,7 +114,7 @@ shipped guide.
 
 - **Contrast**: `ink` on `paper` and `muted` on `paper` both clear WCAG AA (the console's own pairs).
 - **One accent**: crimson is the only focal colour. Teal is structure, never a second focus.
-- **No rainbow palette**: paper, ink, accent and link. Everything else is a `muted` variant.
+- **No rainbow palette**: paper, ink, accent, link and the one status hue `done`. Everything else is a `muted` variant.
 - **Paper is the console's background**, a cool light grey, not pure white. Node fills may use white
   (the console's card surface), exactly as the console puts white cards on its grey page.
 - **No dot pattern and no container chrome** by default: the diagram sits in the console's own card

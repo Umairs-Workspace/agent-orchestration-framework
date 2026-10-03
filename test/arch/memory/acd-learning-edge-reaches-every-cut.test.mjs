@@ -124,6 +124,9 @@ const EXCLUDED = Object.freeze({
   "insert-milestone.md": "inserts one driver at a position and renumbers; no partition",
   "insert-story.md": "inserts one story at a position; no partition",
   "insert-uat.md": "inserts one uat session at a position; no partition",
+  // 145 — draws the waves the loop's own rules already computed (`aof diagram plan <ref> loop`);
+  // it reads a partition, never makes one, and carries no memory call.
+  "loop-diagram.md": "draws an existing milestone's wave plan; cuts nothing",
   "migrate.md": "migrates one source folder into one milestone",
   "observe.md": "reads transcript telemetry",
   "pay-debt.md": "pays down ledger entries in the files at hand",

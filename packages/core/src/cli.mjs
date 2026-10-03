@@ -281,7 +281,7 @@ async function graphCommand(args) {
 // a missing or unknown verb ever reaches this shim, which answers like graphCommand's.
 async function diagramCommand(args) {
   const [subcommand] = args;
-  console.error(`Unknown diagram command "${subcommand ?? ""}".\n\nExamples:\n  aof diagram plan 07 ADR-002 --slug generator-seam [--json]\n  aof diagram export 07 ADR-002 [--json]\n  aof diagram file 07 ADR-002-generator-seam.png [--json]`);
+  console.error(`Unknown diagram command "${subcommand ?? ""}".\n\nExamples:\n  aof diagram plan 07 ADR-002 --slug generator-seam [--json]\n  aof diagram export 07 ADR-002 [--json]\n  aof diagram plan 07 loop [--json]\n  aof diagram export 07 loop [--json]\n  aof diagram file 07 ADR-002-generator-seam.png [--json]`);
   process.exitCode = 1;
 }
 

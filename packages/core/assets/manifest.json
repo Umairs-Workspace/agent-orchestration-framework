@@ -582,6 +582,15 @@
       "hash": "sha256:07691aed2fc5bed616f3e58698bf58ea0d9edf80afff3e3d513a1f71480a745e"
     },
     {
+      "path": ".claude/commands/aof/loop-diagram.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "loop-diagram",
+        "kind": "command"
+      },
+      "hash": "sha256:1763a0f43cc9baaeb068fbfcf1292d63ea8f412e06955f5b4ec3b34228f961ac"
+    },
+    {
       "path": ".claude/commands/aof/migrate.md",
       "runtime": "claude",
       "resource": {
@@ -958,6 +967,15 @@
         "kind": "skill"
       },
       "hash": "sha256:dfd9bdc5469e3fcefe48f529a1d5708342c481fc62f0c92a19b633a0a789b521"
+    },
+    {
+      "path": ".codex/skills/aof-loop-diagram/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-loop-diagram",
+        "kind": "skill"
+      },
+      "hash": "sha256:f7e879a4cc061a6ea7ba04cf8c214d31949d8fa243ad9795c71d8878cc4fce09"
     },
     {
       "path": ".codex/skills/aof-migrate/SKILL.md",

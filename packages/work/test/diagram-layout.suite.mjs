@@ -6,6 +6,8 @@ import {
   diagramFile,
   diagramPaths,
   diagramStem,
+  loopDiagramPaths,
+  loopRasterSvgPath,
   parseDiagramLinks,
   readDiagramBrief,
   renderDiagramBlock,
@@ -140,6 +142,24 @@ export const diagramLayoutTests = [
       for (const name of ["ADR-002-seam.js", "ADR-002.svg", "../SPEC.md", "x/ADR-002-seam.svg", "ADR-2-seam.svg", "ADR-002-Seam.svg", "", null]) {
         assert.equal(diagramFile("wiki/work/07_milestone_m", name), null, String(name));
       }
+    },
+  },
+  {
+    name: "145 task 01: the loop diagram's execution/ paths have the same home, forward-slashed and project-relative",
+    run: () => {
+      const paths = loopDiagramPaths("wiki\\work\\07_milestone_m\\", ".html");
+      assert.deepEqual(paths, {
+        dir: "wiki/work/07_milestone_m/execution",
+        plan: "wiki/work/07_milestone_m/execution/loop-plan.json",
+        source: "wiki/work/07_milestone_m/execution/loop.html",
+        png: "wiki/work/07_milestone_m/execution/loop.png",
+      }, "the PNG is the one export; no SVG is kept (145 UAT)");
+      assert.equal(loopRasterSvgPath(paths), "wiki/work/07_milestone_m/execution/.loop.raster.svg", "the rasterizer's scratch SVG has the same home");
+      assert.deepEqual(loopDiagramPaths("wiki/work/07_milestone_m", null), {
+        dir: "wiki/work/07_milestone_m/execution",
+        plan: "wiki/work/07_milestone_m/execution/loop-plan.json",
+        png: "wiki/work/07_milestone_m/execution/loop.png",
+      }, "the plan needs no generator");
     },
   },
 ];

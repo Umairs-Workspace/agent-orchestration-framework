@@ -57,9 +57,15 @@ function filesNamingTheGenerator(entries) {
     .map(({ file }) => file);
 }
 
+// The bundle's prose moved from `packages/core/src/` to `packages/core/assets/` in 142, and the sweep
+// stayed on the old root — the contract's "including the bundle" held by nothing. 145 re-anchors it:
+// both roots are swept, and the sweep must reach the one command whose prose drives the generator.
+const BUNDLE_ROOT = path.join(repoRoot, "packages", "core", "assets");
+const LOOP_DIAGRAM_COMMAND = "packages/core/assets/commands/loop-diagram.md";
+
 async function readEntries() {
   const entries = [];
-  for (const full of await sourceFiles()) {
+  for (const full of [...await sourceFiles(), ...await sourceFiles(BUNDLE_ROOT)]) {
     entries.push({ file: path.relative(repoRoot, full).replace(/\\/g, "/"), text: await readFile(full, "utf8") });
   }
   return entries;
@@ -69,7 +75,9 @@ export const archTests = [
   {
     name: "arch/133 FF-13301: the generator's name appears in src/** only in its adapter",
     run: async () => {
-      assert.deepEqual(filesNamingTheGenerator(await readEntries()), [THE_ONE_HOME]);
+      const entries = await readEntries();
+      assert.ok(entries.some(({ file }) => file === LOOP_DIAGRAM_COMMAND), `the sweep reaches the bundle (${LOOP_DIAGRAM_COMMAND})`);
+      assert.deepEqual(filesNamingTheGenerator(entries), [THE_ONE_HOME]);
     },
   },
   {
