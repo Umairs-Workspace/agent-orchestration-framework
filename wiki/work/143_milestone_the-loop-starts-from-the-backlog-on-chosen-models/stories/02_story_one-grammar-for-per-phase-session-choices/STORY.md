@@ -4,10 +4,10 @@ number: 02
 slug: one-grammar-for-per-phase-session-choices
 title: "One grammar for per-phase session choices — parseSessionChoices, a per-part resolver with its sources, and repeatable CLI flags"
 parent: 143
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-003]

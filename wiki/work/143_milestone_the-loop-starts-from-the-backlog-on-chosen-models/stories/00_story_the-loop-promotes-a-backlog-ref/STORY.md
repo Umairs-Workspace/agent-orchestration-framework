@@ -4,10 +4,10 @@ number: 00
 slug: the-loop-promotes-a-backlog-ref
 title: "The loop promotes a backlog ref — through the one promote door, recorded, then run at the minted number"
 parent: 143
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-001]
