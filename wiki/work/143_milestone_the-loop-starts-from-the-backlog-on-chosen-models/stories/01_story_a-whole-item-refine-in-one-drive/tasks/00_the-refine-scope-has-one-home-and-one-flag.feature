@@ -55,7 +55,7 @@ Feature: the refine scope has one home and one flag
     Then it is usable and its `refine` is `null`, which the shell reads as the configured mode
 
   Scenario: the vocabulary is spelled once
-    When FF-14302 (`test/arch/loop/acd-loop-refine-scope-single-home.test.mjs`) scans comment-stripped `packages/**/src`
+    When FF-14302 (`test/arch/loop/acd-loop-concurrency-single-home.test.mjs`, its FF-14302 case) scans comment-stripped `packages/**/src`
     Then `per-story` and `whole-item` are a frozen array exported once from `packages/contracts/src/loop-bounds.mjs`
     And outside that file, `"whole-item"` is spelled once, in `engine.mjs`'s one comparison constant
 

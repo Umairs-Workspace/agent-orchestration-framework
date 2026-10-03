@@ -177,6 +177,11 @@ package specifier. Its importers were found with grep instead (`drive.mjs`, `loo
 bindings, `config-inspect.mjs`, `claude-settings.mjs`, `work/bundle.mjs`). `02` changes no export it
 already has, so none of them is in its write set.
 
+**Corrected at verify (2026-10-03).** The mesh assignment directive and the trigger declaration
+build no loop declaration: both import only `decideLoopScope` and hand the loop a numeric scope, so
+the loop shell builds every declaration (found at 143/00's build). The `null` defaults above are
+kept, and they cost nothing (F-143-07).
+
 ## Fitness functions
 
 | id | invariant | enforced by (arch-test) | from |

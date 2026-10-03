@@ -40,6 +40,6 @@ Feature: each part resolves from flag, config, then default
     Then it carries no `model`
 
   Scenario: the grammar and the resolver each have one home
-    When FF-14303 (`test/arch/session/acd-session-choice-single-home.test.mjs`) scans comment-stripped `packages/**/src`
+    When FF-14303 (`test/arch/session/acd-agent-model-source-map.test.mjs`, its FF-14303 case) scans comment-stripped `packages/**/src`
     Then `parseSessionChoices` and `resolveSessionLaunch` are each defined only in `packages/execution/src/session-model.mjs`
     And no module under `packages/work-loop/src/` reads `agents?.session` or `agents.session` from config

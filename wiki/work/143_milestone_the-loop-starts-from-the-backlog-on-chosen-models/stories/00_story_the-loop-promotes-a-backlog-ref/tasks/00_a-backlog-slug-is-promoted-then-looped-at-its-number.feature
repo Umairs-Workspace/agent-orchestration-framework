@@ -14,7 +14,7 @@ Feature: a backlog slug is promoted, then looped at its number
 
   Scenario: a backlog milestone is promoted and the loop runs at the number it was given
     Given a workspace whose stream ends at 143, and a backlog milestone `widget-sync` with no stories
-    When `aof work loop widget-sync --json` runs
+    When `aof work loop widget-sync` launches
     Then `widget-sync` is promoted to `144` and its folder is `144_milestone_widget-sync`
     And the loop's first drive is `refine 144`
     And the declaration on that drive's run has `scope` `"144"` and `promotedFrom` `"widget-sync"`
@@ -22,7 +22,7 @@ Feature: a backlog slug is promoted, then looped at its number
 
   Scenario Outline: the scope is resolved before the scope grammar runs
     Given <row>
-    When `aof work loop <scope> --json` runs
+    When `aof work loop <scope>` launches
     Then <outcome>
 
     Examples:
@@ -35,7 +35,7 @@ Feature: a backlog slug is promoted, then looped at its number
 
   Scenario: a promote refusal is the loop's refusal, and nothing is minted
     Given a backlog milestone `widget-sync` whose `depends:` names another backlog item
-    When `aof work loop widget-sync --json` runs
+    When `aof work loop widget-sync` launches
     Then it refuses with the code `promote-depends-backlog` and the promotion's own message
     And `widget-sync` is still in the backlog, and no run record is written
 
@@ -46,7 +46,7 @@ Feature: a backlog slug is promoted, then looped at its number
     And a declaration written before 143, which has no `promotedFrom` key, reads back the same way
 
   Scenario: the loop reaches promotion only through the registered command
-    When FF-14301 (`test/arch/loop/acd-loop-promotes-through-the-one-door.test.mjs`) scans `packages/work-loop/src/`
+    When FF-14301 (`test/arch/loop/acd-loop-scope-guard.test.mjs`, its FF-14301 case) scans `packages/work-loop/src/`
     Then no module there imports from `packages/work/src/promote/` or `packages/work/src/commands/promote.mjs`
     And the loop shell names the promotion only as `invokeRegistered("work:promote", …)`
 
