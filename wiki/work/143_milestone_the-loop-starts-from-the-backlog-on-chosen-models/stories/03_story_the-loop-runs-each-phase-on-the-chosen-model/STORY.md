@@ -5,7 +5,7 @@ slug: the-loop-runs-each-phase-on-the-chosen-model
 title: "The loop runs each phase on the chosen model — resolved once, recorded on the declaration, lent to every drive, resumed on"
 parent: 143
 depends: [02]
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03
