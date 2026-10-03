@@ -82,6 +82,13 @@ doc: state
   - The build brief's `install-local` step was NOT taken: installing from this branch worktree would
     replace the live payload the operator's daemons run (built from 134's checkout). The CLI was
     checked through the worktree's own `packages/core/bin/aof.mjs` instead.
+- **143/03 review close** (APPROVE, no Blocker, no Important):
+  - *fixed (Nit):* the engine kept its own phase list for the resume rule — it now walks the record's
+    own keys, and the pre-143 fallback spreads over the leaf's `SESSION_PHASES`, handed in.
+  - *fixed (Nit):* two stray blank lines in the shell; the bound stays at 2177.
+  - *recorded (for verify):* three scenarios are evidenced piecewise rather than through a running
+    loop — task 01's wave-lane row (a source match plus `sessionLendFor`), and task 02's resumed-refine
+    and supervisor-relaunch rows (the resume rule plus the lend). The reviewer traced each end to end.
 
 ## Notes & decisions in flight
 

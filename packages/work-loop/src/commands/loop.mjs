@@ -117,7 +117,7 @@ export function createLoopShell({
   const { decideBuildProgress, evaluateProgressPolicy, readProgressSamples } = progress;
   const { CONTROL_FINDING_CODES } = doctor;
   const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks } = cycle;
-  const { normalizeEffort, parseSessionChoices, resolveSessionTable, sessionTableLine } = sessions;
+  const { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
   const { resolveItemExact } = items;
   const { declaredRubric } = gradeCommand;
   const { meshNodeIdOf } = placement;
@@ -460,7 +460,6 @@ export function createLoopShell({
     return { choices: parsed.choices, explicit: model.length + thinking.length > 0, thinking: unphased === undefined ? null : normalizeEffort(unphased) };
   }
 
-
   // 143/01 (ADR-002 §2) — `--refine` read against the one vocabulary: the member, `null` when the flag
   // is absent, and a coded refusal naming both members for anything else, before any registered read.
   const LOOP_REFINE_UNKNOWN = "loop-refine-unknown";
@@ -469,7 +468,6 @@ export function createLoopShell({
     if (LOOP_REFINE_MODES.includes(input.refine)) return input.refine;
     throw commandError(`--refine "${String(input.refine)}" is not a refine mode. Use one of: ${LOOP_REFINE_MODES.join(", ")}.`, LOOP_REFINE_UNKNOWN, 400);
   }
-
 
   // 143/00 (ADR-001 §1) — A SCOPE THE LOOP GRAMMAR DOES NOT ADMIT, resolved by the refine/continue
   // door's own EXACT resolver (`work:find` is a query and would guess). The row is a backlog item when
@@ -552,6 +550,8 @@ export function createLoopShell({
         supervised: input.supervised,
         thinking,
         explicitSessions: sessionRequest.explicit,
+        // The phases a pre-143 declaration's `thinking` is spread over — the leaf's one list.
+        sessionPhases: SESSION_PHASES,
         sessionChoices: sessionRequest.choices,
         refine,
         declaration: resume.lastDeclaration,

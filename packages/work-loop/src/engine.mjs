@@ -1465,18 +1465,18 @@ const declaredSessions = (value) => (value !== null && typeof value === "object"
 // lent to a drive; a `config` or `default` part is neither, because the drive resolves it from the
 // same config. Spelled here because this module imports nothing.
 const SESSION_FLAG_SOURCES = Object.freeze(["--model", "--thinking"]);
-const SESSION_RECORD_PHASES = Object.freeze(["refine", "continue", "verify"]);
 const fromFlag = (source) => SESSION_FLAG_SOURCES.includes(source);
 
 // recordedSessionChoices(declaration) — the choices a resume with no session flag re-applies: every
-// FLAG-sourced part of the recorded `sessions`, as `parseSessionChoices` would have answered them. A
-// declaration written before 143 has no `sessions` and falls back to its `thinking`, as 141 resumed it.
-function recordedSessionChoices(declaration) {
+// FLAG-sourced part of the recorded `sessions`, as `parseSessionChoices` would have answered them — over
+// the phases the record itself holds, so this module keeps no second phase list. A declaration written
+// before 143 has no `sessions` and falls back to its `thinking`, as 141 resumed it, spread over the
+// phases the caller hands in (the session leaf's one list; this module imports nothing).
+function recordedSessionChoices(declaration, phases = []) {
   const sessions = declaration?.sessions;
   if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
     const choices = {};
-    for (const phase of SESSION_RECORD_PHASES) {
-      const entry = sessions[phase];
+    for (const [phase, entry] of Object.entries(sessions)) {
       if (entry === null || typeof entry !== "object") continue;
       const choice = {};
       if (fromFlag(entry.modelSource) && declaredString(entry.model) != null) Object.assign(choice, { model: entry.model, modelFlag: entry.modelSource });
@@ -1486,7 +1486,7 @@ function recordedSessionChoices(declaration) {
     return choices;
   }
   const thinking = declaredThinking(declaration?.thinking);
-  return thinking == null ? {} : Object.fromEntries(SESSION_RECORD_PHASES.map((phase) => [phase, { effort: thinking, effortFlag: "--thinking" }]));
+  return thinking == null ? {} : Object.fromEntries((Array.isArray(phases) ? phases : []).map((phase) => [phase, { effort: thinking, effortFlag: "--thinking" }]));
 }
 
 // sessionLendFor(declaration, phase) → `{ model?, thinking? }` — what ONE drive of `phase` is lent
@@ -1727,7 +1727,7 @@ export function resolveLoopResume(input = {}) {
   const thinking = explicitSessions
     ? declaredThinking(input.thinking)
     : declaredThinking(input.thinking) ?? declaredThinking(recovered?.thinking);
-  const sessionChoices = explicitSessions ? copyPlain(input.sessionChoices ?? {}) : recordedSessionChoices(recovered);
+  const sessionChoices = explicitSessions ? copyPlain(input.sessionChoices ?? {}) : recordedSessionChoices(recovered, input.sessionPhases);
   return {
     resumed: recovered !== null && recovered !== undefined,
     supervised,

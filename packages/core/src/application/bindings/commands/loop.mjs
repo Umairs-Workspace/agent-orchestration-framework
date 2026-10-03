@@ -5,6 +5,7 @@ import {
   normalizeEffort,
   parseSessionChoices,
   resolveSessionTable,
+  SESSION_PHASES,
   sessionTableLine,
 } from "@aof/execution/session-model";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
@@ -84,7 +85,7 @@ export function assembleCommandsLoop({ workServices, loopProgressServices, loopC
     progress: { decideBuildProgress, evaluateProgressPolicy, readProgressSamples },
     doctor: { CONTROL_FINDING_CODES },
     cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks },
-    sessions: { normalizeEffort, parseSessionChoices, resolveSessionTable, sessionTableLine },
+    sessions: { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric },
     placement: { meshNodeIdOf },

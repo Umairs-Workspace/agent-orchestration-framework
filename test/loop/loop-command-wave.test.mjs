@@ -386,7 +386,8 @@ export const loopCommandWaveTests = [
       // `packages/work-loop/src` is at its file budget with no allowance. 2162 -> 2177 is 143/03: the
       // repeatable session flags in their three homes, the one session request, and the table on the
       // record, the probe and the resume — the table's resolver and its narration line moved to the
-      // session leaf rather than grow the shell further.
+      // session leaf rather than grow the shell further. Its review fix — the shell hands the engine the leaf's
+      // phase list, so the engine keeps no copy — fit inside 2177 once two stray blank lines went.
       assert.ok(lines <= 2177, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2177 it was at 143/03 — extract, or raise this bound with a reason`);
     },
   },
