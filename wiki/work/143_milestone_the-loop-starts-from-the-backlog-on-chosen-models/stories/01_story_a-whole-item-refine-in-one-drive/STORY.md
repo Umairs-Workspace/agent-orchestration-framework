@@ -4,7 +4,7 @@ number: 01
 slug: a-whole-item-refine-in-one-drive
 title: "A whole-item refine in one drive — work.loop.refine / --refine whole-item makes the break-down drive /aof:refine --autonomous"
 parent: 143
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03
@@ -92,3 +92,7 @@ and `--autonomous` crosses both drive seams. `aof work drive refine <ref> --auto
   This story does not edit it.
 - FF-14302 lands here. Red-probe it (spell `"whole-item"` in `cycle.mjs`) and record the probe in
   the milestone `VERIFICATION.md`.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 143: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

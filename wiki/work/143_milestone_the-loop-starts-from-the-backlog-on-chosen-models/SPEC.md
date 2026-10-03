@@ -6,7 +6,7 @@ title: "The loop starts from the backlog, refines a whole item in one pass, and 
 status: in-progress
 owner: product-owner
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -78,13 +78,13 @@ Out of scope:
 
 ## Stories
 
-- [ ] `00_story_the-loop-promotes-a-backlog-ref`: `aof work loop <backlog-slug>` promotes through
+- [x] `00_story_the-loop-promotes-a-backlog-ref`: `aof work loop <backlog-slug>` promotes through
   `work:promote`, runs at the minted number and records the slug it came from.
-- [ ] `01_story_a-whole-item-refine-in-one-drive`: `work.loop.refine` / `--refine whole-item` makes the
+- [x] `01_story_a-whole-item-refine-in-one-drive`: `work.loop.refine` / `--refine whole-item` makes the
   milestone's break-down drive `/aof:refine <ref> --autonomous`.
-- [ ] `02_story_one-grammar-for-per-phase-session-choices`: `parseSessionChoices`, the per-part
+- [x] `02_story_one-grammar-for-per-phase-session-choices`: `parseSessionChoices`, the per-part
   resolver with its sources, and repeatable string flags in the CLI parser.
-- [ ] `03_story_the-loop-runs-each-phase-on-the-chosen-model`: the loop resolves every phase once,
+- [x] `03_story_the-loop-runs-each-phase-on-the-chosen-model`: the loop resolves every phase once,
   records it on the declaration, lends each drive its own, and resumes on it.
 
 ## Dependencies

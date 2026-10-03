@@ -5,7 +5,7 @@ slug: the-loop-runs-each-phase-on-the-chosen-model
 title: "The loop runs each phase on the chosen model — resolved once, recorded on the declaration, lent to every drive, resumed on"
 parent: 143
 depends: [02]
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03
@@ -105,3 +105,7 @@ carries the table. A resume re-applies the recorded flag choices unless new sess
 - The loop shell's `LOOP_PHASES` copy is replaced by story 02's exported phase list.
 - `schemas/aof.schema.json`'s description of `work.agents.session.effort` names `--thinking` as the
   override. It gains `--model`.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 143: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

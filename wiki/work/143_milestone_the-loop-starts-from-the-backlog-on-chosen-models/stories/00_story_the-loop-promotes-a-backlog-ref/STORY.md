@@ -4,7 +4,7 @@ number: 00
 slug: the-loop-promotes-a-backlog-ref
 title: "The loop promotes a backlog ref — through the one promote door, recorded, then run at the minted number"
 parent: 143
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03
@@ -67,3 +67,7 @@ is the loop's refusal.
   keep producing usable ones without passing it (ADR-005).
 - FF-14301 lands here. Red-probe it (add an import of `promote.mjs` to the loop shell) and record the
   probe in the milestone `VERIFICATION.md`.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 143: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.

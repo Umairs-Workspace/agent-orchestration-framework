@@ -4,7 +4,7 @@ number: 02
 slug: one-grammar-for-per-phase-session-choices
 title: "One grammar for per-phase session choices — parseSessionChoices, a per-part resolver with its sources, and repeatable CLI flags"
 parent: 143
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03
@@ -62,3 +62,7 @@ grammar yet. Story 03 wires it into the loop and the drive.
 - FF-14303 lands here. Its second clause (nothing under `packages/work-loop/src/` reads
   `agents.session`) already holds, and the test pins it before story 03 touches the loop.
   Red-probe both clauses and record the probes in the milestone `VERIFICATION.md`.
+
+## Accept decision
+
+Accepted 2026-10-03 by aof:verify 143: its scenarios green at accept (milestone VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open.
