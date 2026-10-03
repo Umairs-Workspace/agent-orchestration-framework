@@ -17,7 +17,6 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import {
-  EMPTY_CELL,
   REGRESSION_DIVIDER,
   REGRESSION_HEADER,
   REGRESSION_HEADING,
@@ -26,6 +25,8 @@ import {
 
 const COMMIT = "0123456789abcdef0123456789abcdef01234567";
 const INSTANT = "2026-09-04T10:00:00Z";
+// A green row carries its run line since 144 — how the run ran and how long it took — as the gate writes it.
+const RUN_LINE = "sharded · 1.0 min";
 
 export async function seedGreenRegressionGate(itemDir) {
   await writeFile(
@@ -35,7 +36,7 @@ export async function seedGreenRegressionGate(itemDir) {
       "",
       REGRESSION_HEADER,
       REGRESSION_DIVIDER,
-      `| ${COMMIT} | ${INSTANT} | all | green | ${EMPTY_CELL} |`,
+      `| ${COMMIT} | ${INSTANT} | all | green | ${RUN_LINE} |`,
       "",
     ].join("\n"),
     "utf8",

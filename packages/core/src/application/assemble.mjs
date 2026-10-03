@@ -387,7 +387,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workTestChanged = assembleWorkTestChanged({ workTestSelectServices: workTestSelect });
   const workToolchain = assembleWorkToolchain({  });
   const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, commandsResolveServices: commandsResolve, workTestSelectServices: workTestSelect, workToolchainServices: workToolchain });
-  const commandsRegressionGate = assembleCommandsRegressionGate({ meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest });
+  const commandsRegressionGate = assembleCommandsRegressionGate({ meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest, workToolchainServices: workToolchain });
   const commandsResume = assembleCommandsResume({ commandsResolveServices: commandsResolve, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, workReadServices: workRead, itemLockServices: itemLock, loopAskRequestServices: loopAskRequest, loopAskServices: loopAsk, boardMeshExecutionServices: boardMeshExecution, notifyNotifyServices: notifyNotify, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const commandsResync = assembleCommandsResync({ globalWorkStoreServices: globalWorkStore, workspaceServices: workspace, meshResyncServices: meshResync });
   const commandsRunComplete = assembleCommandsRunComplete({ commandsResolveServices: commandsResolve, effectsRunTransitionsServices: effectsRunTransitions, runStoreServices: runStore, globalWorkPublisherServices: globalWorkPublisher });
@@ -563,6 +563,10 @@ export function assembleApplication({ env = process.env, base = createBaseServic
         }),
         regressionGate: Object.freeze({
           DIRTY_TREE: commandsRegressionGate.DIRTY_TREE,
+          JOBS_INVALID: commandsRegressionGate.JOBS_INVALID,
+          JOBS_UNDECLARED: commandsRegressionGate.JOBS_UNDECLARED,
+          SETTINGS_CONFLICT: commandsRegressionGate.SETTINGS_CONFLICT,
+          regressionGateCommand: commandsRegressionGate.regressionGateCommand,
           runRegressionGate: commandsRegressionGate.runRegressionGate,
         }),
         tune: Object.freeze({

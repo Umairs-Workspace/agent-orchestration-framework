@@ -2,13 +2,42 @@
 type: story
 number: 144
 slug: the-whole-tree-run-signs-off-in-minutes
-title: "The whole-tree test run signs off in minutes, not half a day — per-case timing, sharded workers, and the slow tail trimmed"
-status: in-progress
+title: "The whole-tree test run signs off in minutes, not half a day — the gate runs sharded, logs what is not isolated, and times itself"
+status: in-review
 owner: product-owner
 created: 2026-09-27
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
+reads:
+  - wiki/work/144_story_the-whole-tree-run-signs-off-in-minutes/EXAMPLES.md
+  - packages/work/src/commands/test.mjs
+  - packages/work/src/regression-record.mjs
+  - packages/work/src/grade.mjs
+  - scripts/test.mjs
+  - scripts/test-shard.mjs
+  - scripts/test-harness.mjs
+  - test/arch/grade/acd-gate-result-is-evidence.test.mjs
+  - test/arch/work/acd-work-command-cli-bijection.test.mjs
+files:
+  - packages/work/src/commands/regression-gate.mjs
+  - packages/work/src/testing/toolchain.mjs
+  - packages/core/src/application/bindings/commands/regression-gate.mjs
+  - packages/core/src/application/bindings/work/toolchain.mjs
+  - packages/core/src/application/assemble.mjs
+  - test/fixtures/application/command-inventory.json
+  - packages/work/test/status-gate.test.mjs
+  - scripts/workspace-runtime-audit.json
+  - wiki/work/archive/142_milestone_yarn-workspace-modularization/plans/09-test-ledger.json
+  - scripts/test-sharded.mjs
+  - scripts/test-sharded-report.mjs
+  - .aof/aof.config.json
+  - docs/acd.md
+  - test/run/regression-gate.test.mjs
+  - test/support/regression-gate-fixture.mjs
+  - test/work/work-toolchain-declaration.test.mjs
+  - test/testing/test-sharded-report.test.mjs
+  - test/testing/index.mjs
 ---
 # 144 · The whole-tree test run signs off in minutes, not half a day
 
@@ -23,10 +52,9 @@ door onto `--gate-override`.**
 
 ## Tasks
 
-<!-- Authored by `aof:refine` after promotion. Proposed partition:
-     (1) per-case timing in the runner, with a granted 53/FF-5311 re-pin;
-     (2) a sharded whole-tree run that `aof work regression-gate` uses;
-     (3) the slow tail trimmed. -->
+- [x] [00 · the gate runs the declared whole-tree program with the operator's settings](tasks/00_the-gate-runs-the-declared-whole-tree-program-with-the-operators-settings.feature)
+- [x] [01 · a lost or failing case is red, and a case that is not isolated is logged](tasks/01_a-lost-or-failing-case-is-red-and-a-case-that-is-not-isolated-is-logged.feature)
+- [x] [02 · the run says where its time went, and measures itself against the budget](tasks/02_the-run-says-where-its-time-went-and-measures-itself-against-the-budget.feature)
 
 ## Notes
 
@@ -49,5 +77,19 @@ door onto `--gate-override`.**
   the grant and the re-pin, as FF-5311's own ceiling rows provide.
 - **Kept whole.** The integration lane and the cargo lane still run once, the gate's scope stays
   `all`, and a sharded run that loses a case is a failure, never a pass.
+- **Scope settled at refine (2026-10-03).** Making the slow suites faster is another item's work
+  (144 Q4); this story logs an overrun of the 15-minute budget (Q1) rather than meeting it. The
+  sharded runner (142) already times each unit outside `scripts/test.mjs`, so no FF-5311 grant or
+  re-pin is needed (Q6).
 - The profile harness used on 2026-09-26 was a scratch script, not committed. It ran each file
   through `scripts/test.mjs --only` in N processes, with one isolated `AOF_GLOBAL_HOME` each.
+
+## Feedback (for retro)
+
+- **Write set was short by six files (build, 2026-10-03).** The gate reaches the toolchain through
+  `bindings/work/toolchain.mjs` and `assemble.mjs`; the command inventory fixture pins its usage;
+  `packages/work/test/status-gate.test.mjs` builds the factory directly; and every edit to a suite or
+  an audited file re-stamps 142's `09-test-ledger.json` and `scripts/workspace-runtime-audit.json`.
+  All six are now in `files:`. Refine should census these two pins for any story touching tests.
+- **Runner-side `--strict` and the timings write are proven through `test-sharded-report.mjs`**, not
+  a spawned pool (PLAN's choice); the `@manual` gate run is the end-to-end witness.

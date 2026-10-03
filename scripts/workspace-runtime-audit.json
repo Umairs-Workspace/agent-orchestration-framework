@@ -500,7 +500,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
     "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
-    "sourceDigest": "74456ad63c46f4031f5f5aa4827db0ca08c9d070cc776b36a9b6a97d7b958798",
+    "sourceDigest": "16e525c2888912abb0a28e7fa79d7c9fe4edba4a27a082eeb0c6e7a5917b5ab6",
     "reason": "Git-only bounded comparison reader; no application module entry."
   },
   {
@@ -860,7 +860,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -868,7 +868,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -876,7 +876,7 @@
     "kind": "child-process",
     "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
     "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
   },
   {
@@ -892,7 +892,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   }
 ]
