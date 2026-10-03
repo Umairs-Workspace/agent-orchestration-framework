@@ -30,7 +30,7 @@ reads:
   - packages/work-loop/test/support/work-loop-story-fixtures.mjs
   - test/arch/loop/acd-loop-narrates-in-flight.test.mjs
   - test/arch/loop/acd-clock-counts-attempts.test.mjs
-  - test/arch/session/acd-session-choice-single-home.test.mjs
+  - test/arch/session/acd-agent-model-source-map.test.mjs
 files:
   - docs/acd.md
   - packages/core/src/application/assemble.mjs
