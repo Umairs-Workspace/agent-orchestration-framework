@@ -3,7 +3,7 @@ type: milestone
 number: 143
 slug: the-loop-starts-from-the-backlog-on-chosen-models
 title: "The loop starts from the backlog, refines a whole item in one pass, and runs each phase on the model the operator chose"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03

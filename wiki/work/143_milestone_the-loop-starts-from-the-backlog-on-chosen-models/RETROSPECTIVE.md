@@ -42,3 +42,22 @@ debt the bound exists to stop.
 item's first task, not a ledger entry.
 
 **Refs:** TECH_DEBT 92; `test/loop/loop-command-wave.test.mjs`.
+
+## R3 — three of the gate's reds were 143's, and no story lane could have shown them
+
+- **Kind:** near-miss · **Area:** process · **Stage:** build · **Owner:** developer
+- **Raised by:** the regression gate at `4f7cc720`
+
+**What happened.** The whole-tree gate was red in three places no 143 lane had run. The Plan 09
+ledger lacked FF-14302's new case. The runtime audit still held `commands/loop.mjs`'s old source
+digest. And the real-stream brief guard found that 143/03's refine brief dropped its declared ADRs,
+which led to a packer defect (F-143-08). The importer sweep at accept selects suites by what they
+import, and these three scan the whole tree, so they name nothing.
+
+**Why.** A tree-wide scan reads the repository, not a module. An importer sweep cannot select it.
+
+**Lesson.** A story that adds a test case, changes a file with an audited runtime call, or adds a
+real story to the stream also runs `test/bundle/core-workspace.test.mjs` and
+`test/work/brief-pinned-to-the-stream.test.mjs` before review.
+
+**Refs:** F-143-08, F-143-09; 134/04's sweep note in 134 VERIFICATION.

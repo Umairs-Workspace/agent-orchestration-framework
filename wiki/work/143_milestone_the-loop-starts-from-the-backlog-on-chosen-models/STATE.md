@@ -17,11 +17,11 @@ doc: state
   `aof-143` worktree and its branch were removed.
 - Verified 2026-10-03 (`aof:verify 143`): the four stories accepted, and the contract wording
   corrected first (`4f7cc720`, F-143-01/02/07). Evidence, the gate and the findings are in
-  `VERIFICATION.md`.
+  `VERIFICATION.md`. The gate found a brief-packer defect (F-143-08), fixed in `051e54ed`.
 
 ## Feedback (for retro) — archived 2026-10-03
 
-Graduated into `RETROSPECTIVE.md` (milestone R1-R2) and each story's own `RETROSPECTIVE.md`
+Graduated into `RETROSPECTIVE.md` (milestone R1-R3) and each story's own `RETROSPECTIVE.md`
 (00 R1-R3, 01 R1-R2, 02 R1-R2, 03 R1-R2). The blow-by-blow is in git history (`503d40eb`).
 
 ## Notes & decisions in flight
@@ -47,5 +47,5 @@ Graduated into `RETROSPECTIVE.md` (milestone R1-R2) and each story's own `RETROS
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green
+- [x] `@executable` suite green (story lane at accept; VERIFICATION `## Verification evidence`)
+- [x] Fitness functions green (FF-14301–14303; whole-tree gate red on inherited and 135 cases only, overridden with its reason)
