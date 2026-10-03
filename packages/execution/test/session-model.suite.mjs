@@ -200,6 +200,7 @@ export const sessionModelTests = [
     ["anthropic.claude-opus-v1:0", "refine", { model: "anthropic.claude-opus-v1:0", modelFlag: "--model" }],
     ["verify=anthropic.claude-opus-v1:0:high", "verify", { model: "anthropic.claude-opus-v1:0", modelFlag: "--model", effort: "high", effortFlag: "--model" }],
     ["opus:turbo", "refine", { model: "opus:turbo", modelFlag: "--model" }],
+    ["verify=  :high", "verify", { effort: "high", effortFlag: "--model" }],
   ].map(([value, phase, choice]) => ({
     name: `143/02 task00 --model ${JSON.stringify(value)} → ${phase} ${choice === undefined ? "nothing chosen" : JSON.stringify(choice)}`,
     run: async () => {
@@ -247,6 +248,8 @@ export const sessionModelTests = [
     [{ thinking: ["verify=ultra"] }, THINKING_UNKNOWN_LEVEL, ["ultra", ...EFFORT_SPELLINGS]],
     [{ model: [""] }, SESSION_CHOICE_EMPTY, ['""']],
     [{ model: ["verify="] }, SESSION_CHOICE_EMPTY, ["verify="]],
+    // A blank model is no model (review, 143/02): refused rather than dropped later to config.
+    [{ model: ["verify=  "] }, SESSION_CHOICE_EMPTY, ["verify=  "]],
     [{ model: ["verify=fable", "verify=opus"] }, SESSION_CHOICE_CONFLICT, ["verify=fable", "verify=opus", "for verify"]],
     [{ model: ["verify=fable:high"], thinking: ["verify=max"] }, SESSION_CHOICE_CONFLICT, ["verify=fable:high", "verify=max", "for verify"]],
     [{ model: [":high"], thinking: ["high"] }, SESSION_CHOICE_CONFLICT, ['":high"', '"high"']],

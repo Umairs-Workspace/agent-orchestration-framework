@@ -34,6 +34,8 @@ files:
   - packages/work-loop/test/support/work-loop-story-fixtures.mjs
   - test/arch/loop/acd-loop-scope-guard.test.mjs
   - test/fixtures/application/command-inventory.json
+  - test/loop/loop-command-wave.test.mjs
+  - wiki/work/TECH_DEBT.md
   - docs/acd.md
 ---
 # 00 · The loop promotes a backlog ref

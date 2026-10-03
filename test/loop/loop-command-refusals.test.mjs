@@ -211,6 +211,8 @@ export const loopCommandBacklogScopeTests = [{
       assert.match(loopCommand.cli.render(probe), /Nothing was written/u);
       const l1 = await launch(fx, { scope: "widget-sync", level: "L1" });
       assert.equal(l1.state.wouldPromote, "widget-sync");
+      assert.equal(l1.reports.length, 1, "the L1 launch prints its answer: the launch face never renders a return");
+      assert.match(l1.reports[0], /^widget-sync — a backlog item: .*Nothing was written.$/u);
       assert.deepEqual(await treeFiles(fx.projectRoot), before);
     } finally {
       await fx.cleanup();
@@ -243,12 +245,14 @@ export const loopCommandBacklogScopeTests = [{
   async run() {
     const fx = await backlogFixture();
     try {
-      await launch(fx, { scope: "widget-sync" });
+      // A cap of 1 halts the first launch after one refine drive, so the resume (at a raised cap) drives again.
+      await launch(fx, { scope: "widget-sync", cap: 1 });
       const probe = await loopCommand.run({ scope: "04", resume: true }, fx.ctx);
       assert.equal(probe.resumable.lastDeclaration.promotedFrom, "widget-sync");
       const before = await declarationsOn(fx, "04");
-      await launch(fx, { scope: "04", resume: true });
+      await launch(fx, { scope: "04", resume: true, cap: 3 });
       const after = await declarationsOn(fx, "04");
+      assert.ok(after.length > before.length, `the resume drove (${before.length} → ${after.length} declared runs)`);
       for (const declaration of after.slice(before.length)) assert.equal(declaration.promotedFrom, "widget-sync");
       const promoted = (await readdir(fx.workDir)).filter((name) => name.endsWith("_milestone_widget-sync"));
       assert.deepEqual(promoted, ["04_milestone_widget-sync"]);

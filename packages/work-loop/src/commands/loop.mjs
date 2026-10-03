@@ -471,7 +471,9 @@ export function createLoopShell({
   const LOOP_BACKLOG_REF_NOT_RUNNING = "loop-backlog-ref-not-running";
   async function refuseBacklogScope(input, ctx, door) {
     const row = await backlogRowFor(typeof input?.scope === "string" ? input.scope.trim() : "", ctx);
-    if (row === null) return;
+    if (row !== null) backlogNotRunning(row, door);
+  }
+  function backlogNotRunning(row, door) {
     throw commandError(
       `\`${row.ref}\` is a backlog item, so no loop runs at it and ${door} has nothing to act on. Start it with: aof work loop ${row.ref}`,
       LOOP_BACKLOG_REF_NOT_RUNNING,
@@ -496,7 +498,7 @@ export function createLoopShell({
     let promotedFrom = null;
     const backlog = await backlogRowFor(requested.scope, ctx);
     if (backlog !== null) {
-      if (input?.resume === true) await refuseBacklogScope(input, ctx, "--resume");
+      if (input?.resume === true) backlogNotRunning(backlog, "--resume");
       const backlogCap = requireDecision(resolveLoopBound(requested.cap));
       if (promote !== true || requestedLevel.level === "L1") {
         return { wouldPromote: backlog.ref, scope: backlog.ref, level: requestedLevel.level, cap: backlogCap.cap };
@@ -1052,9 +1054,12 @@ export function createLoopShell({
     // bytes — the precise opposite of what `--quiet` promises.
     const narrate = input.quiet === true ? NO_PRINT : report;
     const resolved = await resolveInvocation(input, ctx, { promote: true });
-    // 143/00 — an L1 report is read-only, so a backlog slug is answered as the probe answers it.
+    // 143/00 — an L1 report is read-only, so a backlog slug is answered as the probe answers it. The
+    // launch face never renders a launcher's return, so the answer is printed here as an ACCOUNT line:
+    // an L1 invocation that printed nothing would be the zero-byte report the narrate seam forbids.
     if (typeof resolved.wouldPromote === "string") {
       const state = backlogProbe(resolved);
+      await report(renderLoopState(state));
       await suppliedCtx.onLoopEnd?.({ ...end, level: state.level });
       return state;
     }

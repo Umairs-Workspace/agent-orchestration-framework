@@ -162,7 +162,9 @@ export const archTests = [
 // under `packages/work-loop/src/` reads `work.agents.session` itself.
 
 const SESSION_DEFINITION = /(?:\bfunction\s+(parseSessionChoices|resolveSessionLaunch)\s*\(|\b(?:const|let|var)\s+(parseSessionChoices|resolveSessionLaunch)\s*=)/gu;
-const SESSION_CONFIG_READ = /\bagents\s*(?:\?\.|\.)\s*session\b/u;
+// Every spelling of reaching the key: a dotted or optional-chained read, a bracket read, and a
+// destructuring of `session` out of an `agents` object.
+const SESSION_CONFIG_READ = /\bagents\s*(?:\?\.|\.)\s*session\b|\bagents\s*(?:\?\.)?\[\s*["'`]session["'`]\s*\]|\{[^{}]*\bsession\b[^{}]*\}\s*=\s*[\w.?]*\bagents\b/u;
 
 function sourceFilesUnder(dir) {
   const files = [];
@@ -208,6 +210,9 @@ archTests.push({
     assert.equal([..."const { resolveSessionLaunch } = sessions;".matchAll(SESSION_DEFINITION)].length, 0, "a destructured import is not a definition");
     assert.ok(SESSION_CONFIG_READ.test("const s = config?.work?.agents?.session;"));
     assert.ok(SESSION_CONFIG_READ.test("config.work.agents.session.models"));
+    assert.ok(SESSION_CONFIG_READ.test("const { session } = config.work.agents;"), "a destructured read is a read");
+    assert.ok(SESSION_CONFIG_READ.test('const s = config.work.agents["session"];'), "a bracket read is a read");
     assert.ok(!SESSION_CONFIG_READ.test("const sessions = agents.sessions;"), "a different key is not a read");
+    assert.ok(!SESSION_CONFIG_READ.test("const { sessions } = config.work.agents;"), "a different destructured key is not a read");
   },
 });

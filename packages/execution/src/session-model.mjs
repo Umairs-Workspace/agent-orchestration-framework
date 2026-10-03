@@ -149,10 +149,13 @@ function readChoice(flag, raw) {
       return choiceRefusal(THINKING_UNKNOWN_LEVEL, `--model "${value}": "${named}" is not a known effort level. Use one of: ${EFFORT_SPELLINGS.join(", ")}.`);
     }
   }
-  if (model === "" && effort == null) {
+  // A blank model is no model — the resolver would drop it and silently fall back to config, so the
+  // grammar refuses it here rather than accept a value nothing will honour.
+  const named = model.trim() !== "";
+  if (!named && effort == null) {
     return choiceRefusal(SESSION_CHOICE_EMPTY, `--model "${value}" names neither a model nor an effort.`);
   }
-  return { phase, ...(model === "" ? {} : { model }), ...(effort == null ? {} : { effort }), flag, raw: value };
+  return { phase, ...(named ? { model } : {}), ...(effort == null ? {} : { effort }), flag, raw: value };
 }
 
 // parseSessionChoices({ model, thinking }) -> { choices } | { refusal: { code, message } }

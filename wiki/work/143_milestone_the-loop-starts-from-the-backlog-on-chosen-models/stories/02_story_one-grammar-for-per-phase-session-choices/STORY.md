@@ -30,6 +30,8 @@ files:
   - test/command/cli-face-contract.test.mjs
   - test/command/index.mjs
   - test/arch/session/acd-agent-model-source-map.test.mjs
+  - packages/knowledge/src/memory.mjs
+  - packages/mesh/src/commands/session.mjs
 ---
 # 02 · One grammar for per-phase session choices
 

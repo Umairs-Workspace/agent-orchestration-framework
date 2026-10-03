@@ -32,6 +32,25 @@ doc: state
 - **143/00 known edge:** an `--level L3` launch on a backlog slug promotes before the L3 gate is
   computed. The gate reads the promoted number's doctor, so a refused gate leaves the item promoted
   and the loop not started — no worse than promoting by hand, then being refused.
+- **143/00 review close** (one independent architect+QA reviewer, CHANGES REQUESTED, no Blocker):
+  - *fixed:* an L1 launch on a backlog slug printed nothing (the launch face never renders a
+    return) — it now prints the answer as an account line, asserted.
+  - *fixed:* the resume case's lineage assertion iterated zero times (the resume halted at once) —
+    the fixture now launches at cap 1 and resumes at cap 3, and asserts the resume drove.
+  - *fixed (Nit):* the resume path resolved the slug twice; it now refuses on the row it holds.
+  - *fixed (health):* the shell's line bound tightened from 2311 to 2131
+    (`loop-command-wave.test.mjs`); the split is ledgered as TECH_DEBT item 92.
+  - *recorded (Nit):* the L3-promotes-before-its-gate edge above.
+  - *amendment for the accepting contract:* task 00's `--json` launch scenarios cannot launch
+    (face policy), and its FF-14301 scenario names the unfolded file path.
+- **143/02 review close** (APPROVE):
+  - *fixed (Important):* a blank model (`verify=  `) parsed, then fell back to config silently —
+    it now refuses `session-choice-empty` (or is effort-only with an effort suffix), asserted.
+  - *fixed (Nit):* FF-14303's read detector gained the bracket and destructuring spellings.
+  - *fixed (Nit):* the same `split("=", 2)` inline-value defect in the two hand-rolled parsers
+    (`knowledge/src/memory.mjs`, `mesh/src/commands/session.mjs`); moving them onto
+    `parseSpecArgv` is story-shaped — `story (operator)`.
+  - *amendment for the accepting contract:* task 01's FF-14303 scenario names the unfolded path.
 
 ## Notes & decisions in flight
 

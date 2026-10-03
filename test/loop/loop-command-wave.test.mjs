@@ -379,7 +379,9 @@ export const loopCommandWaveTests = [
     run: async () => {
       const shell = await readFile(new URL("../../packages/work-loop/src/commands/loop.mjs", import.meta.url), "utf8");
       const lines = shell.split(/\r?\n/u).length;
-      assert.ok(lines < 2311, `src/commands/loop.mjs is ${lines} lines, below the 2311 it was before 129/04`);
+      // 143/00 review — the bound tightened from 129/04's 2311 to the shell's size at 143/00's close, so
+      // growth is a stated raise or an extraction, never drift. The split is TECH_DEBT item 92.
+      assert.ok(lines <= 2131, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2131 it was at 143/00 — extract, or raise this bound with a reason`);
     },
   },
 
