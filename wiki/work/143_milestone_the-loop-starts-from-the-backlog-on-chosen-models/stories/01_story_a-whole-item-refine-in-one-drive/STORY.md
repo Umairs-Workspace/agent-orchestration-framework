@@ -4,7 +4,7 @@ number: 01
 slug: a-whole-item-refine-in-one-drive
 title: "A whole-item refine in one drive — work.loop.refine / --refine whole-item makes the break-down drive /aof:refine --autonomous"
 parent: 143
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-10-02
 updated: 2026-10-03
