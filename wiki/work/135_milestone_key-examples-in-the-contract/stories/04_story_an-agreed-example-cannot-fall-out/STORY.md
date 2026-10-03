@@ -5,7 +5,7 @@ slug: an-agreed-example-cannot-fall-out
 title: "An agreed example cannot fall out — every confirmed or stated example resolves, by its id, to a scenario or an Examples row under its own rule, or the doctor names it"
 parent: 135
 depends: [01, 02]
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -55,9 +55,9 @@ continue door refuses a story with an untraced agreed example, by the operator's
 
 ## Tasks
 
-- [ ] 00 [an agreed example resolves by its id inside its rule](tasks/00_an-agreed-example-resolves-by-its-id-inside-its-rule.feature)
-- [ ] 01 [the trace waits for a contract formulated from the map](tasks/01_the-trace-waits-for-a-contract-formulated-from-the-map.feature)
-- [ ] 02 [the build is refused while an agreed example is missing](tasks/02_the-build-is-refused-while-an-agreed-example-is-missing.feature)
+- [x] 00 [an agreed example resolves by its id inside its rule](tasks/00_an-agreed-example-resolves-by-its-id-inside-its-rule.feature)
+- [x] 01 [the trace waits for a contract formulated from the map](tasks/01_the-trace-waits-for-a-contract-formulated-from-the-map.feature)
+- [x] 02 [the build is refused while an agreed example is missing](tasks/02_the-build-is-refused-while-an-agreed-example-is-missing.feature)
 
 ## Notes
 

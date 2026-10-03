@@ -92,3 +92,18 @@ doc: state
   declares no `Route`, so nothing was rendered and no designer judged it. The binding checklist's
   regions, order and classes are asserted structurally by `board-rule-groups.suite.mjs`; a
   rendered judgement wants a `Route` on the surface (or `--url`) at `aof:verify`.
+- **135/04 build (2026-10-03, solo): the declared write set was incomplete.** Beyond `files:`, the
+  trace also had to touch `test/arch/examples/acd-examples-off-is-today.test.mjs` (FF-13403's
+  non-vacuity control asserts EVERY lane code fires, so its worst fixture gained a rule-titled
+  contract), `test/bundle/yarn-installation.test.mjs` (the package's per-file import allowlist gains
+  `@aof/work/feature-parse` for the lane), 142's `plans/09-test-ledger.json` (`registryCases`
+  11795 -> 11825) and `test/arch/testing/acd-source-directory-budget.test.mjs` (two stale member
+  counts). Refine for a lane that gains a code should census the controls that enumerate the codes.
+- **135/04 build: an inherited red, not caused.** `acd-ui-surface-file-budget` (ADR-015/F2) is red at
+  HEAD: 135/03 (`9ebb0b2b`) took `apps/ui/src/board/DetailPanel.tsx` from 997 to 1031 lines, over its
+  1000-line ratchet. Outside the 04-05 span, so not repaired here; 135/03's verify must extract the
+  rule-grouped scenario list into a sibling component.
+- **135/04 review (finding, recorded):** "the live stream gains no trace finding" runs the real doctor
+  over the live work stream, so any later story whose contract drops an agreed example while it is
+  open turns this suite red — which is the gate doing its job, but the failure will surface in 135/04's
+  suite rather than the story that caused it.
