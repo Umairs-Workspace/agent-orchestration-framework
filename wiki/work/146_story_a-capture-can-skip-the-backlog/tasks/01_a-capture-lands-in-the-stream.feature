@@ -14,7 +14,7 @@ Feature: A capture with --in-stream lands numbered in the stream
       Then the folder "04_story_probe-capture" exists at the root of its work tree
       And no "backlog/story_probe-capture" folder remains
       And "aof work find probe-capture --json" answers ref "04"
-      And "aof work validate" is green
+      And "aof work validate" reports no finding other than the fresh scaffold's empty reads/files signature
 
     Scenario: the same capture without the switch stays in the backlog
       Given the same scratch project

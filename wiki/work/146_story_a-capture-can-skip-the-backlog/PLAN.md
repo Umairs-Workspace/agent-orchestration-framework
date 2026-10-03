@@ -24,13 +24,13 @@ stays in the backlog where it was scaffolded (promote.md step 4).
 `add-story.md` applies the switch to a standalone story only — the existing "A NESTED story is not
 promoted" sentence already covers the nested path; do not add a rule for it.
 
-Then regenerate: `aof work update` renders the 15 copies and refreshes `manifest.json` and the
-lock. Commit the sources and the renders together.
+Then regenerate: `aof work update` renders the 15 copies and refreshes the lock; the bundle-manifest
+generator (not `aof work update`) refreshes `manifest.json`. Commit the sources and the renders together.
 
 ## Verification step
 
-`node scripts/test.mjs --only test/work/work-add-in-stream.test.mjs test/arch/work/acd-one-mint.test.mjs test/arch/work/acd-intake-write-side-only.test.mjs`
-with `AOF_GLOBAL_HOME` isolated. Then `aof work update --dry-run --json` from the repo root must
+The repo test runner with `--only` over the story's suite (its `files:` set) and the FF-12703 and
+FF-12704 arch-tests (its `reads:` set), with `AOF_GLOBAL_HOME` isolated. Then `aof work update --dry-run --json` from the repo root must
 report all 15 add-prompt copies as `skip`.
 
 Task 01 (`@manual`): in a scratch copy of a project with `work.intake: "backlog"`, follow the

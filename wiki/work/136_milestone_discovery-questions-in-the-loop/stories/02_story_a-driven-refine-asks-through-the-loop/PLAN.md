@@ -35,7 +35,7 @@ the questions go one per call, each its own ask and wait; the interactive batch 
 
 ## The verification step
 
-`node scripts/test.mjs --only test/examples/refine-discovery-beat.test.mjs` with `AOF_GLOBAL_HOME`
+The repo test runner with `--only test/examples/refine-discovery-beat.test.mjs` and `AOF_GLOBAL_HOME`
 isolated, then `aof work update --dry-run --json` answering `skip` for the three copies. The live
 proof is the milestone's `@manual` run: a loop refine whose ask arrives in Discord with the token
 and the discovery marker on its first line.

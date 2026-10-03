@@ -33,8 +33,8 @@ probes the task names in `VERIFICATION.md`.
 
 ## The verification step
 
-`node scripts/test.mjs --only test/examples/example-answers.test.mjs test/arch/examples/acd-example-answer-one-reader.test.mjs test/examples/doctor-examples-lane.test.mjs test/examples/continue-door-examples.test.mjs`
-with `AOF_GLOBAL_HOME` isolated. The doctor-lane and door suites are importers of the collector and
+The repo test runner with `--only` over the story's test files (its `files:` set) plus the
+examples doctor-lane and continue-door suites, with `AOF_GLOBAL_HOME` isolated. The doctor-lane and door suites are importers of the collector and
 must stay green untouched. The fixtures already build run records under a temp item; add `asks`
 entries in the shape `answerRunAsk` writes.
 

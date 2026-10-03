@@ -3,7 +3,7 @@ type: story
 number: 146
 slug: a-capture-can-skip-the-backlog
 title: "A capture can skip the backlog — a switch on the add commands sends one item straight into the stream, whatever work.intake says"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
@@ -26,6 +26,7 @@ files:
   - .aof/aof.lock.json
   - test/work/work-add-in-stream.test.mjs
   - test/work/index.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
   - .claude/commands/aof/add-milestone.md
   - .claude/commands/aof/add-story.md
   - .claude/commands/aof/add-chore.md
@@ -57,7 +58,7 @@ for the whole project, which changes every later capture as well.**
 
 - [x] `tasks/00_the-add-commands-take-in-stream.feature` — the five add prompts carry `--in-stream`,
   and their rendered copies match a fresh render
-- [ ] `tasks/01_a-capture-lands-in-the-stream.feature` — one capture driven end to end in a scratch
+- [x] `tasks/01_a-capture-lands-in-the-stream.feature` — one capture driven end to end in a scratch
   project under a backlog intake
 
 ## Notes
@@ -85,3 +86,7 @@ for the whole project, which changes every later capture as well.**
   - *recorded* — `work-this-tree-holds-what-is-live` is red at this tree independent of 146: 134 sits
     done at the root, and validate's stale-reads count is 122 against a ratchet of 117. No finding
     names a 146 file.
+- **Verify (2026-10-03):** three blockers fixed in the item — the `test/work` budget row rose
+  45 → 46 with its reason (F-146-01); three `PLAN.md` on this branch, 146 and 136/01–02, broke the
+  plan restatement ban (F-146-02); task 01 `validate is green` could not hold over a fresh scaffold,
+  and the Then now names that one expected finding (F-146-03). See VERIFICATION.md.
