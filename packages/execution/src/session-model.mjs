@@ -198,3 +198,26 @@ export function parseSessionChoices({ model = [], thinking = [] } = {}) {
   }
   return { choices };
 }
+
+// resolveSessionTable(config, choices) -> { refine | continue | verify: { model, modelSource, effort, effortSource } }
+//
+// Every phase resolved ONCE through `resolveSessionLaunch` (143/03, ADR-004 §1-§2), with `model` and
+// `modelSource` `null` when no model resolves. `choices` is `parseSessionChoices`'s answer. This table
+// is what the loop records on its declaration and lends each drive from.
+export function resolveSessionTable(config, choices = {}) {
+  return Object.fromEntries(SESSION_PHASES.map((phase) => {
+    const { model, modelSource, effort, effortSource } = resolveSessionLaunch(config, phase, { choice: choices?.[phase] });
+    return [phase, { model: model ?? null, modelSource: modelSource ?? null, effort, effortSource }];
+  }));
+}
+
+// sessionTableLine(table) -> the one line a loop narrates before its first drive (143/03, ADR-004 §5):
+// `Sessions: refine opus (--model) at xhigh (--model); continue default model at high (config); …`.
+export function sessionTableLine(table) {
+  const phases = SESSION_PHASES.map((phase) => {
+    const entry = table?.[phase] ?? {};
+    const model = entry.model == null ? "default model" : `${entry.model} (${entry.modelSource})`;
+    return `${phase} ${model} at ${entry.effort} (${entry.effortSource})`;
+  });
+  return `Sessions: ${phases.join("; ")}.`;
+}

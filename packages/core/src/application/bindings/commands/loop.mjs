@@ -3,9 +3,9 @@ import { createLoopShell } from "@aof/work-loop/commands/loop";
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import {
   normalizeEffort,
-  resolveSessionLaunch,
-  THINKING_UNKNOWN_LEVEL,
-  thinkingUnknownLevelMessage,
+  parseSessionChoices,
+  resolveSessionTable,
+  sessionTableLine,
 } from "@aof/execution/session-model";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 
@@ -84,7 +84,7 @@ export function assembleCommandsLoop({ workServices, loopProgressServices, loopC
     progress: { decideBuildProgress, evaluateProgressPolicy, readProgressSamples },
     doctor: { CONTROL_FINDING_CODES },
     cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks },
-    sessions: { normalizeEffort, resolveSessionLaunch, THINKING_UNKNOWN_LEVEL, thinkingUnknownLevelMessage },
+    sessions: { normalizeEffort, parseSessionChoices, resolveSessionTable, sessionTableLine },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric },
     placement: { meshNodeIdOf },
@@ -117,7 +117,6 @@ export function assembleCommandsLoop({ workServices, loopProgressServices, loopC
   const renderLoopState = implementation.renderLoopState;
   const runLoopBody = implementation.runLoopBody;
   const runLoopLaunch = implementation.runLoopLaunch;
-  const thinkingNarration = implementation.thinkingNarration;
 
-  return { DOCTOR_GATE_CODES, LOOP_FIX_TRANSPORT_KEYS, SHELL_LOOP_ID, admitResumeBuildRun, admittedDoctorFindings, applyGradeBaseline, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, loopCommand, mergeGateFindings, readGradeBaseline, recordBuildProgress, renderLoopState, runLoopBody, runLoopLaunch, thinkingNarration };
+  return { DOCTOR_GATE_CODES, LOOP_FIX_TRANSPORT_KEYS, SHELL_LOOP_ID, admitResumeBuildRun, admittedDoctorFindings, applyGradeBaseline, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, loopCommand, mergeGateFindings, readGradeBaseline, recordBuildProgress, renderLoopState, runLoopBody, runLoopLaunch };
 }

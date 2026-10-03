@@ -408,7 +408,7 @@
               "properties": {
                 "models": {
                   "type": "object",
-                  "description": "Phase -> model. An unset phase passes no --model, so the session runs on claude's own default.",
+                  "description": "Phase -> model. An unset phase passes no --model, so the session runs on claude's own default. aof work loop --model [PHASE=]MODEL and aof work drive --model override it for one run.",
                   "additionalProperties": {
                     "type": "string",
                     "minLength": 1,
@@ -417,7 +417,7 @@
                 },
                 "effort": {
                   "type": "object",
-                  "description": "Phase -> effort level: low, medium, high, xhigh, extra-high (another name for xhigh) or max. An unset phase launches at high, the default. aof work loop --thinking and aof work drive --thinking override it for one run. Authoritative validation is `aof project validate`.",
+                  "description": "Phase -> effort level: low, medium, high, xhigh, extra-high (another name for xhigh) or max. An unset phase launches at high, the default. aof work loop --model [PHASE=][MODEL]:EFFORT or --thinking [PHASE=]LEVEL, and aof work drive --thinking, override it for one run. Authoritative validation is `aof project validate`.",
                   "additionalProperties": {
                     "type": "string",
                     "enum": [

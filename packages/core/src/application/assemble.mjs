@@ -813,7 +813,6 @@ export function assembleApplication({ env = process.env, base = createBaseServic
           renderLoopState: commandsLoop.renderLoopState,
           runLoopBody: commandsLoop.runLoopBody,
           runLoopLaunch: commandsLoop.runLoopLaunch,
-          thinkingNarration: commandsLoop.thinkingNarration,
         }),
         trigger: Object.freeze({
           LEVEL_FLAG: commandsTrigger.LEVEL_FLAG,

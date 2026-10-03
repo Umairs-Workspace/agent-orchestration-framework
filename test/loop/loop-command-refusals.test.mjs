@@ -7,8 +7,9 @@ const loopCommand = _aofApplication.getCommand("work:loop");
 const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 const readRuns = _aofApplication.execution.runs.readRuns;
-import { buildLoopDeclaration, isWholeItemCascade, readLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
-import { completingDriver, loopFixture, treeFiles, writeDeclarationRun } from "./loop-command-probe.test.mjs";
+import { buildLoopDeclaration, isWholeItemCascade, readLoopDeclaration, resolveLoopResume, sessionLendFor } from "../../packages/work-loop/src/engine.mjs";
+import { resolveSessionTable } from "@aof/execution/session-model";
+import { DECLARATION_L1, completingDriver, loopFixture, treeFiles, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 
 async function refusal(fn, code) {
   await assert.rejects(fn, (error) => error?.code === code);
@@ -44,7 +45,7 @@ export const loopCommandRefusalTests = [{
         { ...fx.ctx, agentSessionDriverOptions: driver.options, report: (line) => reports.push(line) },
       );
       assert.equal(driver.spawnCalls.length, 0);
-      assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
+      assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"]);
       assert.deepEqual(state.driven, []);
       assert.equal("reports" in state, false);
       assert.ok(reports.length >= 1);
@@ -123,7 +124,7 @@ export const loopCommandBacklogScopeTests = [{
       }
       const promoted = reports.indexOf("Promoted widget-sync → 04.");
       assert.ok(promoted >= 0, reports.join("\n"));
-      const thinking = reports.findIndex((line) => line.startsWith("Thinking:"));
+      const thinking = reports.findIndex((line) => line.startsWith("Sessions:"));
       assert.ok(thinking >= 0 && promoted < thinking, "the promotion line comes before the first drive's narration");
     } finally {
       await fx.cleanup();
@@ -281,7 +282,7 @@ export const loopCommandRefineScopeTests = [
         if (configured !== undefined) fx.workspace.config.work.loop = { refine: configured };
         const probe = await loopCommand.run({ scope: "03", dryRun: true, ...(flag === undefined ? {} : { refine: flag }) }, fx.ctx);
         assert.equal(probe.refine, resolved);
-        assert.equal(Object.keys(probe).at(-1), "refine", "appended last");
+        assert.equal(Object.keys(probe)[10], "refine", "the eleventh key, after driven");
       } finally {
         await fx.cleanup();
       }
@@ -413,3 +414,267 @@ loopCommandRefineScopeTests.push(
     },
   },
 );
+
+// ══════════════ 143/03 — the loop runs each phase on the chosen model (ADR-004) ══════════════
+//
+// Folded here with 143/00's and 143/01's cases: `test/loop` is at its budget ceiling, and the session
+// flags are the scope door's vocabulary guards too.
+
+const row = (model, modelSource, effort, effortSource) => ({ model, modelSource, effort, effortSource });
+const withSession = (fx, session) => { fx.workspace.config.work.agents = { session }; return fx; };
+const firstDeclaration = async (fx, ref = "03/01") => (await declarationsOn(fx, ref))[0];
+
+export const loopCommandSessionTests = [
+  // ── task 00 — the loop resolves and records every phase ──
+  {
+    name: "143/03 task00 the operator's example resolves per phase and is recorded",
+    async run() {
+      const fx = withSession(await loopFixture(), { effort: { refine: "high", continue: "high", verify: "high" } });
+      try {
+        await launch(fx, { scope: "03", model: ["sonnet:high", "refine=opus:xhigh", "verify=fable:high"], cap: 1 });
+        const declaration = await firstDeclaration(fx);
+        assert.deepEqual(declaration.sessions, {
+          refine: row("opus", "--model", "xhigh", "--model"),
+          continue: row("sonnet", "--model", "high", "--model"),
+          verify: row("fable", "--model", "high", "--model"),
+        });
+        assert.equal(declaration.thinking, null);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  ...[
+    [undefined, undefined, {}, row(null, null, "high", "default")],
+    ["opus", "medium", {}, row("opus", "config", "medium", "config")],
+    ["opus", "medium", { model: ["continue=sonnet"] }, row("sonnet", "--model", "medium", "config")],
+    ["opus", "medium", { thinking: ["continue=max"] }, row("opus", "config", "max", "--thinking")],
+    ["opus", undefined, { thinking: ["xhigh"] }, row("opus", "config", "xhigh", "--thinking")],
+    [undefined, undefined, { model: ["refine=opus"] }, row(null, null, "high", "default")],
+  ].map(([cfgModel, cfgEffort, flags, expected]) => ({
+    name: `143/03 task00 continue — config ${cfgModel ?? "unset"}/${cfgEffort ?? "unset"}, ${JSON.stringify(flags)} → ${JSON.stringify(expected)}`,
+    async run() {
+      const fx = withSession(await loopFixture(), {
+        ...(cfgModel === undefined ? {} : { models: { continue: cfgModel } }),
+        ...(cfgEffort === undefined ? {} : { effort: { continue: cfgEffort } }),
+      });
+      try {
+        const probe = await loopCommand.run({ scope: "03", dryRun: true, ...flags }, fx.ctx);
+        assert.deepEqual(probe.sessions.continue, expected);
+        assert.equal(Object.keys(probe).at(-1), "sessions", "the probe carries the table, last");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/03 task00 an unphased --thinking is still recorded as 141's thinking",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        await launch(fx, { scope: "03", thinking: ["extra-high"], cap: 1 });
+        const declaration = await firstDeclaration(fx);
+        assert.equal(declaration.thinking, "xhigh");
+        for (const phase of ["refine", "continue", "verify"]) assert.deepEqual(declaration.sessions[phase], row(null, null, "xhigh", "--thinking"), phase);
+        // An older caller's single string is still one value.
+        const probe = await loopCommand.run({ scope: "03", dryRun: true, thinking: "extra-high" }, fx.ctx);
+        assert.equal(probe.sessions.verify.effort, "xhigh");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  ...[
+    [{ model: ["build=opus"] }, "session-choice-unknown-phase"],
+    [{ model: ["refine=:turbo"] }, "thinking-unknown-level"],
+    [{ thinking: ["turbo"] }, "thinking-unknown-level"],
+    [{ model: ["verify="] }, "session-choice-empty"],
+    [{ model: ["verify=fable:high"], thinking: ["verify=max"] }, "session-choice-conflict"],
+  ].map(([flags, code]) => ({
+    name: `143/03 task00 ${JSON.stringify(flags)} refuses ${code} at the door — nothing written, nothing spawned`,
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const before = await treeFiles(fx.projectRoot);
+        const driver = completingDriver(fx);
+        let reads = 0;
+        const ctx = { ...fx.ctx, agentSessionDriverOptions: driver.options, invokeRegistered: async () => { reads += 1; throw new Error("no read"); } };
+        await refusal(() => runLoopBody({ scope: "03", ...flags }, ctx), code);
+        await refusal(() => loopCommand.run({ scope: "03", dryRun: true, ...flags }, ctx), code);
+        assert.equal(reads, 0, "refused before any registered read");
+        assert.equal(driver.spawnCalls.length, 0);
+        assert.deepEqual(await treeFiles(fx.projectRoot), before);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/03 task00 the loop says what each phase runs on before its first drive",
+    async run() {
+      const fx = withSession(await loopFixture(), { effort: { continue: "high" } });
+      try {
+        const { reports } = await launch(fx, { scope: "03", model: ["refine=opus:xhigh", "verify=fable"], thinking: ["verify=high"], cap: 1 });
+        const line = "Sessions: refine opus (--model) at xhigh (--model); continue default model at high (config); verify fable (--model) at high (--thinking).";
+        assert.ok(reports.includes(line), reports.join("\n"));
+        assert.equal(reports.some((each) => each.startsWith("Thinking:")), false, "the Sessions line replaces 141's Thinking line");
+        const driving = reports.findIndex((each) => each.startsWith("Driving "));
+        assert.ok(driving === -1 || reports.indexOf(line) < driving, "before the first drive");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "143/03 task00 a declaration built without sessions reads back usable with null",
+    run() {
+      const fresh = buildLoopDeclaration({ loopRunId: "lr", scope: "53", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: "2026-10-02T00:00:00.000Z", id: "loop:autonomous-cascade" });
+      assert.equal(fresh.sessions, null);
+      const read = readLoopDeclaration([{ runId: "r", createdAt: "2026-10-02T00:00:01.000Z", brief: { loop: fresh } }]);
+      assert.notEqual(read, null);
+      assert.equal(read.sessions, null);
+    },
+  },
+  {
+    name: "143/03 task00 the usage, the schema text and the operator guide name the flag",
+    async run() {
+      assert.ok(loopCommand.cli.spec.usage.includes("[--model [PHASE=][MODEL][:EFFORT]]..."));
+      assert.ok(loopCommand.cli.spec.usage.includes("[--thinking [PHASE=]LEVEL]..."));
+      assert.equal(loopCommand.cli.spec.flags.model.repeatable, true);
+      assert.equal(loopCommand.cli.spec.flags.thinking.repeatable, true);
+      // The session effort map's description, found by its own opening words rather than a schema path.
+      const descriptions = [];
+      JSON.parse(await readFile(new URL("../../schemas/aof.schema.json", import.meta.url), "utf8"), (key, value) => { if (key === "description" && typeof value === "string") descriptions.push(value); return value; });
+      const effortText = descriptions.find((text) => text.startsWith("Phase -> effort level"));
+      assert.ok(effortText, "the session effort description is found");
+      assert.match(effortText, /--model/u);
+      assert.match(effortText, /--thinking/u);
+      const guide = await readFile(new URL("../../docs/acd.md", import.meta.url), "utf8");
+      assert.match(guide.replace(/\s+/gu, " "), /aof work loop <ref> --model sonnet:high --model refine=opus:xhigh --model verify=fable:high/u);
+    },
+  },
+
+  // ── task 01 — each drive runs on its own phase's choice (the walk's seams) ──
+  ...[
+    ["in-process", false],
+    ["as the primary's child drive", true],
+  ].map(([seam, child]) => ({
+    name: `143/03 task01 --model continue=sonnet:low reaches a continue drive ${seam}`,
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const calls = [];
+        const driver = completingDriver(fx);
+        const ctx = { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} };
+        if (child) ctx.spawnPhaseDrive = async (args) => { calls.push(args); return { outcome: "document", document: { outcome: "done", sessionId: `s-${calls.length}`, settlementContext: {} } }; };
+        await runLoopBody({ scope: "03", model: ["continue=sonnet:low"], cap: 1 }, ctx);
+        if (child) {
+          assert.ok(calls.length >= 1);
+          assert.equal(calls[0].phase, "continue");
+          assert.equal(calls[0].model, "sonnet");
+          assert.equal(calls[0].thinking, "low");
+        } else {
+          const args = driver.spawnCalls[0]?.args ?? [];
+          assert.deepEqual(args.slice(args.indexOf("--model"), args.indexOf("--model") + 2), ["--model", "sonnet"], args.join(" "));
+          assert.deepEqual(args.slice(args.indexOf("--effort"), args.indexOf("--effort") + 2), ["--effort", "low"], args.join(" "));
+        }
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/03 task01 with no session flag the loop lends nothing, as in 141",
+    async run() {
+      const fx = withSession(await loopFixture(), { models: { refine: "opus" } });
+      try {
+        const calls = [];
+        const ctx = { ...fx.ctx, report: () => {}, spawnPhaseDrive: async (args) => { calls.push(args); return { outcome: "document", document: { outcome: "done", sessionId: "s", settlementContext: {} } }; } };
+        await runLoopBody({ scope: "03", cap: 1 }, ctx);
+        assert.ok(calls.length >= 1);
+        for (const call of calls) {
+          assert.equal("model" in call, false, `${call.phase}: no model lent`);
+          assert.equal("thinking" in call, false, `${call.phase}: no thinking lent`);
+        }
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "143/03 task01 a wave lane's child is lent the continue phase's flag parts from its own declaration",
+    async run() {
+      const wave = await readFile(new URL("../../packages/work-loop/src/wave.mjs", import.meta.url), "utf8");
+      assert.match(wave, /\.\.\.sessionLendFor\(declaration, "continue"\)/u, "the lane spawn spreads the continue lend");
+      const declaration = buildLoopDeclaration({ loopRunId: "lr", scope: "03", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: "2026-10-02T00:00:00.000Z", id: "loop:autonomous-cascade", sessions: { continue: row("sonnet", "--model", "low", "--model") } });
+      assert.deepEqual(sessionLendFor(declaration, "continue"), { model: "sonnet", thinking: "low" });
+    },
+  },
+
+  // ── task 02 — a resume reruns on the recorded choices ──
+  ...[
+    ["high", {}, row("opus", "--model", "xhigh", "--model"), row(null, null, "high", "config")],
+    ["low", {}, row("opus", "--model", "xhigh", "--model"), row(null, null, "low", "config")],
+    ["high", { model: ["refine=sonnet"] }, row("sonnet", "--model", "high", "default"), row(null, null, "high", "config")],
+    ["high", { thinking: ["max"] }, row(null, null, "max", "--thinking"), row(null, null, "max", "--thinking")],
+  ].map(([cfgEffort, flags, refine, cont]) => ({
+    name: `143/03 task02 recorded refine opus:xhigh (--model), continue effort now ${cfgEffort}, resumed with ${JSON.stringify(flags)}`,
+    async run() {
+      const fx = withSession(await loopFixture(), { effort: { continue: cfgEffort } });
+      try {
+        const declaration = { ...DECLARATION_L1, sessions: { refine: row("opus", "--model", "xhigh", "--model"), continue: row(null, null, "high", "config"), verify: row(null, null, "high", "default") } };
+        const { item } = await writeDeclarationRun(fx, { declaration, state: "done", at: "2026-10-02T11:00:00.000Z" });
+        const before = (await readRuns(item)).length;
+        await launch(fx, { scope: "03", resume: true, ...flags });
+        const minted = (await readRuns(item)).slice(before).map((run) => run.brief?.loop).filter(Boolean);
+        assert.ok(minted.length >= 1, "the resume minted a run");
+        assert.deepEqual(minted[0].sessions.refine, refine);
+        assert.deepEqual(minted[0].sessions.continue, cont);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/03 task02 a resumed refine drive is lent the recorded model and effort",
+    run() {
+      const recorded = { ...DECLARATION_L1, sessions: { refine: row("opus", "--model", "xhigh", "--model"), continue: row(null, null, "high", "config"), verify: row(null, null, "high", "default") } };
+      const resumed = resolveLoopResume({ scope: "03", declaration: recorded });
+      assert.deepEqual(resumed.sessionChoices, { refine: { model: "opus", modelFlag: "--model", effort: "xhigh", effortFlag: "--model" } });
+      const table = resolveSessionTable({}, resumed.sessionChoices);
+      const declaration = buildLoopDeclaration({ ...DECLARATION_L1, sessions: table });
+      assert.deepEqual(sessionLendFor(declaration, "refine"), { model: "opus", thinking: "xhigh" });
+      assert.deepEqual(sessionLendFor(declaration, "continue"), {}, "a config part is never lent");
+    },
+  },
+  ...[
+    ["xhigh", {}, row(null, null, "xhigh", "--thinking")],
+    [null, {}, row(null, null, "high", "default")],
+    ["xhigh", { thinking: ["low"] }, row(null, null, "low", "--thinking")],
+  ].map(([thinking, flags, expected]) => ({
+    name: `143/03 task02 a pre-143 declaration with thinking ${thinking ?? "null"}, resumed with ${JSON.stringify(flags)} → every phase at ${expected.effort} (${expected.effortSource})`,
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const { item } = await writeDeclarationRun(fx, { declaration: { ...DECLARATION_L1, thinking }, state: "done", at: "2026-10-02T11:00:00.000Z" });
+        const before = (await readRuns(item)).length;
+        await launch(fx, { scope: "03", resume: true, ...flags });
+        const minted = (await readRuns(item)).slice(before).map((run) => run.brief?.loop).filter(Boolean);
+        assert.ok(minted.length >= 1);
+        for (const phase of ["refine", "continue", "verify"]) assert.deepEqual(minted[0].sessions[phase], expected, phase);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/03 task02 a supervisor relaunch (--resume, no session flag) keeps the operator's verify model",
+    run() {
+      const launched = resolveSessionTable({}, { verify: { model: "fable", modelFlag: "--model", effort: "high", effortFlag: "--model" } });
+      const halted = buildLoopDeclaration({ ...DECLARATION_L1, supervised: true, sessions: launched });
+      const resumed = resolveLoopResume({ scope: "03", declaration: readLoopDeclaration([{ runId: "r", createdAt: "2026-10-02T00:00:01.000Z", brief: { loop: halted } }]) });
+      const relaunched = buildLoopDeclaration({ ...DECLARATION_L1, supervised: true, sessions: resolveSessionTable({}, resumed.sessionChoices) });
+      assert.deepEqual(sessionLendFor(relaunched, "verify"), { model: "fable", thinking: "high" }, "the verify drive launches with --model fable --effort high");
+    },
+  },
+];

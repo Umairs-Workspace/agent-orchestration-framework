@@ -303,7 +303,7 @@ export const loopCommandProbeTests = [
         const before = await treeFiles(fx.projectRoot);
         const next = await invoke("work:next", { scope: "03" }, ctx);
         const result = await loopCommand.run({ scope: "03" }, ctx);
-        assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
+        assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"]);
         assert.deepEqual(result.next, next);
         assert.deepEqual(result.stops, [...LOOP_STOPS]);
         assert.deepEqual(result.driven, []);
@@ -336,14 +336,14 @@ export const loopCommandProbeTests = [
     },
   },
   {
-    name: "loop command probe — a finished scope is done and still carries all eleven keys (143/01 appended refine)",
+    name: "loop command probe — a finished scope is done and still carries all twelve keys (143/01 appended refine, 143/03 sessions)",
     async run() {
       const fx = await loopFixture({ milestoneStatus: "done", storyStatus: "done" });
       try {
         const result = await loopCommand.run({ scope: "03" }, fx.ctx);
         assert.equal(result.state, "done");
         assert.deepEqual(result.act, { act: "done" });
-        assert.equal(Object.keys(result).length, 11);
+        assert.equal(Object.keys(result).length, 12);
       } finally {
         await fx.cleanup();
       }
@@ -363,8 +363,8 @@ export const loopCommandProbeTests = [
       assert.match(command.cli.spec.usage, /\[--stop\]/u);
       // 131/11 (ADR-009 §6) adds `handOff` by the same three-homes rule: the tenth property, the ninth flag.
       // 141 adds `thinking` by the same rule: the eleventh property, the tenth flag.
-      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking", "refine"].sort(), "twelve properties (143/01 added refine)");
-      assert.equal(Object.keys(command.cli.spec.flags).length, 11, "eleven flags (143/01 added --refine)");
+      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking", "refine", "model"].sort(), "thirteen properties (143/01 added refine, 143/03 model)");
+      assert.equal(Object.keys(command.cli.spec.flags).length, 12, "twelve flags (143/01 added --refine, 143/03 --model)");
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(command.cli.launch({ stop: true }), null);
     },
@@ -434,7 +434,7 @@ export const loopCommandProbeTests = [
           const before = await treeFiles(fx.projectRoot);
           const result = await loopCommand.run(row.input, ctx);
           if (row.answer === "probe") {
-            assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"], JSON.stringify(row.input));
+            assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"], JSON.stringify(row.input));
           } else {
             assert.deepEqual(Object.keys(result), ["ok", "loopRunId", "scope", "live", "request", "state", "path"], JSON.stringify(row.input));
             assert.equal(result.loopRunId, "L1");
@@ -789,14 +789,17 @@ export const loopCommandProbeTests = [
     },
   },
   {
-    name: "141/01 the usage line names [--thinking LEVEL], and the flag says extra-high is xhigh and it overrides every phase for this run",
+    // 143/03 (ADR-004 §1) — the flag became repeatable with a phase form: the usage names it so, and its
+    // input is a list (a string from an older caller is still one value). The description keeps 141's words.
+    name: "141/01 the usage line names [--thinking [PHASE=]LEVEL]..., and the flag says extra-high is xhigh and it overrides every phase for this run",
     run() {
-      assert.ok(loopCommand.cli.spec.usage.includes("[--thinking LEVEL]"));
-      const { description, type } = loopCommand.cli.spec.flags.thinking;
+      assert.ok(loopCommand.cli.spec.usage.includes("[--thinking [PHASE=]LEVEL]..."));
+      const { description, type, repeatable } = loopCommand.cli.spec.flags.thinking;
       assert.equal(type, "string");
+      assert.equal(repeatable, true);
       assert.match(description, /extra-high is xhigh/u);
       assert.match(description, /overrides every phase for this run/u);
-      assert.deepEqual(loopCommand.input.properties.thinking, { type: "string" });
+      assert.deepEqual(loopCommand.input.properties.thinking, { type: ["array", "string"] });
       assert.deepEqual(loopCommand.cli.argv(["03"], { thinking: "extra-high" }), { scope: "03", thinking: "extra-high" });
     },
   },

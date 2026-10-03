@@ -19,8 +19,9 @@ import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-comman
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-// 143/01 (ADR-002 §3) appended the ELEVENTH, `refine`: the mode the loop would drive under.
-const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
+// 143/01 (ADR-002 §3) appended the ELEVENTH, `refine`: the mode the loop would drive under. 143/03
+// (ADR-004 §5) the TWELFTH, `sessions`: the per-phase model and effort table.
+const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"]);
 // 129/01 (ADR-008 §5) appended the THREE LANE STOPS as members 13-15 — `lane-open-failed`,
 // `lane-merge-refused`, `lane-merge-conflict`, in that order, at the end. The twelve before them
 // keep their names and their order; this literal grows by exactly those three and no other.
@@ -55,7 +56,7 @@ function assertRead(what, count, floor, unit = "file(s)") {
 
 export const archTests = [
   {
-    name: "arch/53 FF-5304 (acd-loop-probe-contract): registered run is a eleven-key read-only probe with verbatim next and an empty driven account",
+    name: "arch/53 FF-5304 (acd-loop-probe-contract): registered run is a twelve-key read-only probe with verbatim next and an empty driven account",
     run: async () => {
       const fx = await loopFixture();
       try {
@@ -222,7 +223,7 @@ export const archTests = [
       // reaches no stop at all, so "a real loop that halted on exactly this stop" was true of
       // no loop. The body is invoked here, the stop is asserted BEFORE the shape it guards,
       // and the m45/R5 rule — a fitness function must check what its name claims — is the
-      // reason. (The probe's own eleven-key contract is pinned by this file's first entry.)
+      // reason. (The probe's own twelve-key contract is pinned by this file's first entry.)
       const fx = await loopFixture();
       try {
         fx.workspace.config.work.rubric = { command: [process.execPath, "runner.cjs"], report: { format: "tap", path: "report.tap", floor: 1 } };

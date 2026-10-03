@@ -69,6 +69,19 @@ doc: state
   - *fixed (Nit):* an inherited refine mode is resolved through the vocabulary, so a hand-edited
     `"Whole-Item"` resumes as `per-story` rather than being echoed; the stale "ten-key" names.
   - *amendment for the accepting contract:* task 00's FF-14302 scenario names the unfolded path.
+- **143/03 build decisions:**
+  - The lend is read off the DECLARATION, by one engine function (`sessionLendFor`), at all three
+    seams (in-process, the primary's child, a wave lane). A resumed run lends what its declaration
+    recorded, with no second source.
+  - `resolveSessionTable` and `sessionTableLine` live in the session leaf beside
+    `resolveSessionLaunch` (ADR-003's one home), not in the shell; the shell bound rose 2162 → 2177
+    for the flags, the request and the table on the record (TECH_DEBT 92 headline refreshed).
+  - `sessions` is the LoopState document's twelfth key on every answer (FF-5409's one shape).
+  - The flag help no longer spells the config path: FF-14303 reads any `agents.session` spelling in
+    the loop family as a read, strings included, and the control was kept rather than narrowed.
+  - The build brief's `install-local` step was NOT taken: installing from this branch worktree would
+    replace the live payload the operator's daemons run (built from 134's checkout). The CLI was
+    checked through the worktree's own `packages/core/bin/aof.mjs` instead.
 
 ## Notes & decisions in flight
 

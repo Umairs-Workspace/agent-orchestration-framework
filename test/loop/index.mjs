@@ -51,7 +51,7 @@ import { loopCommandReconcileTests } from "./loop-command-reconcile.test.mjs";
 // records, and the ninth declaration key. FF-12604 driven half.
 import { workLoopDeclarationsTests } from "./work-loop-declarations.test.mjs";
 import { loopCommandBoardStateTests } from "./loop-command-board-state.test.mjs";
-import { loopCommandBacklogScopeTests, loopCommandRefineScopeTests, loopCommandRefusalTests } from "./loop-command-refusals.test.mjs";
+import { loopCommandBacklogScopeTests, loopCommandRefineScopeTests, loopCommandRefusalTests, loopCommandSessionTests } from "./loop-command-refusals.test.mjs";
 import { loopCommandRegistrationTests } from "./loop-command-registration.test.mjs";
 // milestone 102 — THE DECLARATION NAMES ITS LOOP. Story 00's eighth key rides the existing
 // declaration/determinism/stop-set suites; story 01's driven-loop scenarios ride
@@ -279,6 +279,8 @@ export const tests = [
   ...loopCommandBacklogScopeTests,
   // 143/01 — the refine scope's flag, probe key and resume inheritance.
   ...loopCommandRefineScopeTests,
+  // 143/03 — the per-phase session flags, record, lends and resume.
+  ...loopCommandSessionTests,
   ...loopCommandRegistrationTests,
   // milestone 102 — the declaration names its loop (see the import note).
   ...loopDeclarationJoinTests,

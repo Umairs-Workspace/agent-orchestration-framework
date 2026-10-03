@@ -47,8 +47,8 @@ import {
   stripAsks,
 } from "../support/loop/lane-fixture.mjs";
 
-const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom", "refine"]);
+const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom", "refine", "sessions"]);
 const NOW = "2026-09-14T12:00:00.000Z";
 // A grade record as `compileGrade` writes one — the provenance stamp is what the store's writer
 // demands of every claim a brief carries.
@@ -383,8 +383,11 @@ export const loopCommandWaveTests = [
       // growth is a stated raise or an extraction, never drift. The split is TECH_DEBT item 92.
       // 2131 -> 2162 is 143/01 (with its review fix): the `--refine` flag in its three homes, its vocabulary guard, and the
       // mode lent to every decision and every drive. An extraction was not open to it:
-      // `packages/work-loop/src` is at its file budget with no allowance.
-      assert.ok(lines <= 2162, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2162 it was at 143/01 — extract, or raise this bound with a reason`);
+      // `packages/work-loop/src` is at its file budget with no allowance. 2162 -> 2177 is 143/03: the
+      // repeatable session flags in their three homes, the one session request, and the table on the
+      // record, the probe and the resume — the table's resolver and its narration line moved to the
+      // session leaf rather than grow the shell further.
+      assert.ok(lines <= 2177, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2177 it was at 143/03 — extract, or raise this bound with a reason`);
     },
   },
 

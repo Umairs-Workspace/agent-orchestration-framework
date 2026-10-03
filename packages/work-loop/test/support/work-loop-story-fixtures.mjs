@@ -162,6 +162,8 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       promotedFrom: null,
       // 143/01 — and the TWELFTH, `refine`, `null` when the caller passes none.
       refine: null,
+      // 143/03 — and the THIRTEENTH, `sessions`, `null` when the caller passes none.
+      sessions: null,
     },
   },
   {
@@ -175,6 +177,7 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       thinking: null,
       promotedFrom: null,
       refine: null,
+      sessionChoices: {},
       loopRunId: null,
       scope: "53",
       priorScope: null,

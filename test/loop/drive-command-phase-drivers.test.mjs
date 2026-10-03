@@ -289,7 +289,7 @@ async function assertDriveComposes(phase, work, command) {
     const workspace = { ...fx.workspace, config: { work: { ...fx.workspace.config.work, ...work } } };
     const byPhase = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
     const result = await byPhase[phase].run({ ref: "03/01", dryRun: true }, { workspace, agentSessionDriverOptions: driver.options });
-    assert.deepEqual(result, { ref: "03/01", phase, command, effort: DEFAULT_DRY_EFFORT });
+    assert.deepEqual(result, { ref: "03/01", phase, command, effort: DEFAULT_DRY_EFFORT, model: null });
     assert.equal(driver.spawnCalls.length, 0);
     await mkdir(path.dirname(fx.workspace.configPath), { recursive: true });
     await writeFile(fx.workspace.configPath, `${JSON.stringify({ name: "drive-fixture", work: workspace.config.work }, null, 2)}\n`, "utf8");
@@ -354,7 +354,7 @@ export const driveCommandPhaseDriverTests = [
           { ref: "03/01", dryRun: true },
           { workspace: fx.workspace, agentSessionDriverOptions: driver.options },
         );
-        assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo", effort: DEFAULT_DRY_EFFORT });
+        assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo", effort: DEFAULT_DRY_EFFORT, model: null });
         assert.equal(driver.spawnCalls.length, 0);
       } finally {
         await fx.cleanup();
@@ -1038,7 +1038,7 @@ export const driveCommandPhaseDriverTests = [
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous"], `${command.id}: the schema's properties are exactly the seven (141 added thinking, 143/01 autonomous)`);
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model"], `${command.id}: the schema's properties are exactly the eight (141 added thinking, 143/01 autonomous, 143/03 model)`);
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);
@@ -1091,7 +1091,7 @@ export const driveCommandPhaseDriverTests = [
             { ref: "03/01", dryRun: true, ...extra },
             { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() },
           );
-          assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo", effort: DEFAULT_DRY_EFFORT }, `dry-run ${JSON.stringify(extra)}`);
+          assert.deepEqual(result, { ref: "03/01", phase: "continue", command: "/aof:continue 03/01 --solo", effort: DEFAULT_DRY_EFFORT, model: null }, `dry-run ${JSON.stringify(extra)}`);
           assert.equal(driver.spawnCalls.length, 0, `dry-run ${JSON.stringify(extra)}: never launched`);
           const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
           assert.deepEqual(await readRuns(item), [], `dry-run ${JSON.stringify(extra)}: no record`);
@@ -1731,6 +1731,8 @@ export const driveCommandPhaseDriverTests = [
   ...driveThinkingTests(),
   // 143/01 — the whole-item refine cascade crosses the drive.
   ...driveAutonomousTests(),
+  // 143/03 — the drive's --model and each phase's lend.
+  ...driveModelTests(),
 ];
 
 // The dry-run's effort when nothing is configured and no --thinking is given (141/00).
@@ -2109,7 +2111,8 @@ function driveAnswerTests() {
           const badFix = await writeFixFile(fx, "bad.json", "{ not json");
           const goodFix = await writeFixFile(fx, "good.json", fixBag());
           const dry = await continueDriverCommand.run({ ref: "03/01", run: runId, dryRun: true, answer: missing }, { workspace: fx.workspace });
-          assert.deepEqual(Object.keys(dry).sort(), ["command", "effort", "phase", "ref"]);
+          // 143/03 — the dry run reports the model beside the effort.
+          assert.deepEqual(Object.keys(dry).sort(), ["command", "effort", "model", "phase", "ref"]);
           const driver = scriptedDriver("done", undefined, "S1");
           const ctx = { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() };
           assert.equal((await refusalOf(continueDriverCommand.run({ ref: "03/01", run: runId, answer: missing, fix: badFix }, ctx)))?.code, "drive-answer-unreadable");
@@ -2219,5 +2222,69 @@ function driveAutonomousTests() {
         assert.deepEqual(ending(double), ["--run", "r1", "--thinking", "xhigh", "--autonomous", "--json"], "beside --thinking");
       },
     },
+  ];
+}
+
+// ── story 143/03, task 01 — EACH DRIVE RUNS ON ITS OWN PHASE'S CHOICE. The drive's single-phase
+// `--model` resolves over the loop's lend and the config, the dry run reports it, and a lane child's argv
+// carries the lent `--model` before the lent `--thinking`.
+function driveModelTests() {
+  const withConfig = (fx, session) => ({ ...fx.workspace, config: { work: { ...fx.workspace.config.work, agents: { session } } } });
+  return [
+    ...[
+      [{}, null, { id: "opus", source: "config" }],
+      [{ model: "fable" }, null, { id: "fable", source: "--model" }],
+      [{}, "sonnet", { id: "sonnet", source: "--model" }],
+      [{ model: "fable" }, "sonnet", { id: "fable", source: "--model" }],
+    ].map(([flags, lent, model]) => ({
+      name: `143/03 task01 the drive's own --model resolves over the lend and the config [${JSON.stringify(flags)}, lent ${lent ?? "nothing"} → ${model.id} (${model.source})]`,
+      async run() {
+        const fx = await fixture();
+        try {
+          const workspace = withConfig(fx, { models: { verify: "opus" } });
+          const result = await verifyDriverCommand.run({ ref: "03/01", dryRun: true, ...flags }, { workspace, ...(lent == null ? {} : { loopDrive: { model: lent } }) });
+          assert.deepEqual(result.model, model);
+          if (flags.model) assert.deepEqual(verifyDriverCommand.cli.argv(["03/01"], { model: "fable", dryRun: true }), { ref: "03/01", dryRun: true, model: "fable" });
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    })),
+    {
+      name: "143/03 task01 the drive's dry run reports no model when none resolves, and the effort as before",
+      async run() {
+        const fx = await fixture();
+        try {
+          const result = await continueDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace: fx.workspace });
+          assert.equal(result.model, null);
+          assert.deepEqual(result.effort, { level: "high", source: "default" });
+          assert.ok(continueDriverCommand.cli.spec.usage.includes("[--model ID]"));
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    },
+    ...[
+      // `aof work loop 143 --model refine=opus:xhigh --model verify=fable`, continue effort "medium" in config.
+      ["refine", { model: "opus", thinking: "xhigh" }, ["--model", "opus", "--thinking", "xhigh"], { model: { id: "opus", source: "--model" }, effort: { level: "xhigh", source: "--thinking" } }],
+      ["continue", {}, [], { model: null, effort: { level: "medium", source: "config" } }],
+      ["verify", { model: "fable" }, ["--model", "fable"], { model: { id: "fable", source: "--model" }, effort: { level: "high", source: "default" } }],
+    ].map(([phase, lend, argv, launch]) => ({
+      name: `143/03 task01 a ${phase} drive is lent its own phase's flag parts and nothing else — argv ${JSON.stringify(argv)}`,
+      async run() {
+        const { double } = await lane({ phase, ...lend, script: { stdout: JSON.stringify({ ...DOC, phase }) } });
+        const args = double.calls[0].args;
+        assert.deepEqual(args.slice(args.indexOf("--run") + 2, args.indexOf("--json")), argv);
+        const fx = await fixture();
+        try {
+          const workspace = withConfig(fx, { effort: { continue: "medium" } });
+          const byPhase = { refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand };
+          const result = await byPhase[phase].run({ ref: "03/01", dryRun: true }, { workspace, loopDrive: lend });
+          assert.deepEqual({ model: result.model, effort: result.effort }, launch, "the spawned claude's --model and --effort");
+        } finally {
+          await fx.cleanup();
+        }
+      },
+    })),
   ];
 }

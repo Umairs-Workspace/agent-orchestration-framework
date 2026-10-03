@@ -3469,7 +3469,7 @@ and delete its duplicates; needs a ruling on module ownership. `src/commands/loo
 
 ---
 
-## 92. The loop shell is one 2,131-line module holding seven doors, and it grows by every loop feature
+## 92. The loop shell is one 2,177-line module holding seven doors, and it grows by every loop feature
 
 **Status:** open (raised 2026-10-03 by architect, at 143/00 review). **Severity:** medium.
 **What's wrong.** `commands/loop.mjs` holds the probe, the stop, the hand-off, the launch body,

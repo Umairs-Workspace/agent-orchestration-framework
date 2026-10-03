@@ -14,6 +14,8 @@ import {
   normalizeEffort,
   parseSessionChoices,
   resolveSessionLaunch,
+  resolveSessionTable,
+  sessionTableLine,
   SESSION_CHOICE_CONFLICT,
   SESSION_CHOICE_EMPTY,
   SESSION_CHOICE_UNKNOWN_PHASE,
@@ -300,6 +302,21 @@ export const sessionModelTests = [
     run: async () => {
       const config = { work: { agents: { session: { effort: { continue: "medium" } } } } };
       assert.deepEqual(resolveSessionLaunch(config, "continue", { thinking: "extra-high" }), { effort: "xhigh", effortSource: "--thinking" });
+    },
+  },
+  // ═══════════ 143/03 — the table every phase resolves into, and the line the loop narrates ═══════════
+  {
+    name: "143/03 resolveSessionTable resolves all three phases once, with nulls where no model resolves",
+    run: async () => {
+      const { choices } = parseSessionChoices({ model: ["refine=opus:xhigh", "verify=fable"], thinking: ["verify=high"] });
+      const table = resolveSessionTable({ work: { agents: { session: { effort: { continue: "high" } } } } }, choices);
+      assert.deepEqual(table, {
+        refine: { model: "opus", modelSource: "--model", effort: "xhigh", effortSource: "--model" },
+        continue: { model: null, modelSource: null, effort: "high", effortSource: "config" },
+        verify: { model: "fable", modelSource: "--model", effort: "high", effortSource: "--thinking" },
+      });
+      assert.equal(sessionTableLine(table), "Sessions: refine opus (--model) at xhigh (--model); continue default model at high (config); verify fable (--model) at high (--thinking).");
+      assert.deepEqual(resolveSessionTable(undefined).refine, { model: null, modelSource: null, effort: "high", effortSource: "default" });
     },
   },
   {

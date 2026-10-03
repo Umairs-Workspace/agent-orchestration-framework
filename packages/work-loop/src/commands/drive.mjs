@@ -260,6 +260,8 @@ export function createPhaseDrivers({
           thinking: { type: "string" },
           // 143/01 — the whole-item refine: break down and author every contract in this one session.
           autonomous: { type: "boolean" },
+          // 143/03 — the model this one drive's session runs on, over the phase's configured one.
+          model: { type: "string" },
         },
         required: ["ref"],
         additionalProperties: false,
@@ -306,10 +308,20 @@ export function createPhaseDrivers({
         // phase from `work.agents.session` (distinct from the render-time role maps
         // `work.agents.models` / `work.agents.effort`; see src/session-model.mjs), with `--thinking`
         // over the configured effort and `high` under both. The dry run says what it would launch at.
-        const session = resolveSessionLaunch(ctx.workspace?.config, phase, { thinking });
+        // 143/03 (ADR-004 §4) — the model resolves in the same order the effort does: this drive's own
+        // `--model`, then the loop's lend (`ctx.loopDrive.model`), then config, then none. A drive is one
+        // phase, so its `--model` takes no phase prefix. `model: ""` is absent.
+        const modelGiven = typeof input.model === "string" && input.model.length > 0
+          ? input.model
+          : typeof ctx.loopDrive?.model === "string" && ctx.loopDrive.model.length > 0
+            ? ctx.loopDrive.model
+            : null;
+        const choice = modelGiven == null ? undefined : { model: modelGiven, modelFlag: "--model" };
+        const session = resolveSessionLaunch(ctx.workspace?.config, phase, { thinking, choice });
         const effort = { level: session.effort, source: session.effortSource };
         if (input.dryRun === true) {
-          return { ref: item.ref, phase, command, effort };
+          const model = session.model === undefined ? null : { id: session.model, source: session.modelSource };
+          return { ref: item.ref, phase, command, effort, model };
         }
 
         // 129/02 (ADR-005 §2) — the two flags that carry a loop drive across the process
@@ -566,13 +578,14 @@ export function createPhaseDrivers({
       cli: {
         route: ["work", "drive", phase],
         spec: {
-          usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--autonomous] [--dry-run] [--json]`,
+          usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]`,
           flags: {
             dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
             run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
             fix: { type: "string", description: "a JSON file holding the fix transport; honoured by continue only" },
             answer: { type: "string", description: "an answered ask file: resume the lent run's own session with the answer typed as its first input" },
             thinking: { type: "string", description: "the effort this session thinks at (low, medium, high, xhigh, max; extra-high is xhigh), over the phase's configured effort" },
+            model: { type: "string", description: "the model this session runs on, over the phase's configured session model" },
             autonomous: { type: "boolean", description: "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)" },
           },
         },
@@ -583,11 +596,13 @@ export function createPhaseDrivers({
           ...(typeof options.fix === "string" ? { fix: options.fix } : {}),
           ...(typeof options.answer === "string" ? { answer: options.answer } : {}),
           ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
+          ...(typeof options.model === "string" ? { model: options.model } : {}),
           ...(options.autonomous === true ? { autonomous: true } : {}),
         }),
         render(result) {
           if (result.outcome == null) {
-            return `${result.ref} — drive ${result.phase}: ${result.command} at effort ${result.effort.level} (${result.effort.source}; dry run, no session started).`;
+            const model = result.model == null ? "the default model" : `${result.model.id} (${result.model.source})`;
+            return `${result.ref} — drive ${result.phase}: ${result.command} on ${model} at effort ${result.effort.level} (${result.effort.source}; dry run, no session started).`;
           }
           const session = result.sessionId == null ? "no session id" : `session ${result.sessionId}`;
           const failure = result.failureReason == null ? "" : ` (${result.failureReason})`;

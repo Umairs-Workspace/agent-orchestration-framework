@@ -152,7 +152,8 @@ export const archTests = [
       assert.equal(calls.filter((call) => call.seam === "report" && /^`(?:Gate |Driving |Retrying |Resumed |Reclaimed |Lane |Wave |Baseline |Cleared )/u.test(call.text)).length, 0, "no in-flight line is on report anywhere in the family");
       assert.equal(printCalls(shell).filter((call) => call.seam === "narrate").length, 14, "fourteen in-flight lines in the shell: the two ladder rungs, the fresh gate's three grade lines, Reclaimed, the refine-phase line, the sequential baseline, Resumed, Driving, the cleared stop request, the cleared resume request, the Thinking line and the Promoted line");
       assert.equal(seamOf("Promoted ${resolved.promotedFrom}"), "narrate", "the Promoted line is in flight (143/00)");
-      assert.equal(seamOf("thinkingNarration(resolved.thinking"), "narrate", "the Thinking line is in flight (141)");
+      // 143/03 — the Sessions line replaced the Thinking line, on the same seam.
+      assert.equal(seamOf("sessionTableLine(resolved.sessions"), "narrate", "the Sessions line is in flight (141, 143/03)");
       assert.equal(printCalls(await source("packages/work-loop/src/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
       assert.ok(inFlight.length >= 18, `the family narrates at least the eighteen the shell and the ladder hold (${inFlight.length})`);
     },
@@ -248,13 +249,14 @@ export const archTests = [
       assert.deepEqual(
         Object.keys(schema.properties).sort(),
         // 143/01 — the TWELFTH and the ELEVENTH, `refine`, by the same rule.
-        ["cap", "dryRun", "handOff", "level", "quiet", "refine", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
+        // 143/03 — the THIRTEENTH and the TWELFTH, `model`, by the same rule.
+        ["cap", "dryRun", "handOff", "level", "model", "quiet", "refine", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 11, "eleven flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11, --thinking from 141 and --refine from 143/01");
+      assert.equal(Object.keys(flags).length, 12, "twelve flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11, --thinking from 141, --refine from 143/01 and --model from 143/03");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);

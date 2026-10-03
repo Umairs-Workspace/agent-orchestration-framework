@@ -28,6 +28,7 @@ import {
   isReviewBlockerClaim,
   isWholeItemCascade,
   lineageElapsedMs,
+  sessionLendFor,
   loopScopeIncludes,
   mapStoreRefusal,
   retryLineage,
@@ -542,15 +543,19 @@ export function createStoryCycle({
       )
       : { record: retryRecord };
 
-    // 141 — the loop's `--thinking` rides every drive from its declaration; `null` passes nothing and
-    // the drive resolves its own phase's effort.
-    const thinking = typeof declaration?.thinking === "string" && declaration.thinking.length > 0 ? declaration.thinking : null;
+    // 141, 143/03 (ADR-004 §4) — the drive is lent the FLAG parts of its own phase's recorded choice,
+    // read off the declaration; a part from config or the default is not lent, so the drive resolves it
+    // from the same config. A declaration with no `sessions` lends 141's `thinking`.
+    const lend = sessionLendFor(declaration, phase);
+    const thinking = lend.thinking ?? null;
+    const model = lend.model ?? null;
     if (typeof ctx.spawnPhaseDrive === "function") {
       const { outcome, settlementContext } = await drivePhaseInChild(ctx, {
         ref,
         phase,
         runId: record.runId,
         thinking,
+        model,
         // 143/01 (ADR-002 §5) — the whole-item cascade crosses the process boundary on the argv.
         autonomous: autonomous === true,
         fix: answer == null ? fix : null,
@@ -568,6 +573,7 @@ export function createStoryCycle({
         loopDrive: {
           runId: record.runId,
           ...(thinking == null ? {} : { thinking }),
+          ...(model == null ? {} : { model }),
           // 143/01 (ADR-002 §5) — and in-process, on the lend.
           ...(autonomous === true ? { autonomous: true } : {}),
           ...(answer != null ? { answer } : fix == null ? {} : { fix }),
@@ -590,6 +596,7 @@ export function createStoryCycle({
     runId,
     fix,
     thinking = null,
+    model = null,
     autonomous = false,
     answerFile = null,
     worktreePath = ctx.workspace.projectRoot,
@@ -611,6 +618,7 @@ export function createStoryCycle({
         ...(fixFile == null ? {} : { fixFile }),
         ...(answerFile == null ? {} : { answerFile }),
         ...(thinking == null ? {} : { thinking }),
+        ...(model == null ? {} : { model }),
         ...(autonomous === true ? { autonomous: true } : {}),
         env: {
           ...(typeof process.env.AOF_GLOBAL_HOME === "string" ? { AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME } : {}),

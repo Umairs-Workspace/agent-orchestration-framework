@@ -31,7 +31,7 @@ import { completingDriver, loopFixture, replaceStatus, treeFiles } from "./loop-
 // 126/02 (ADR-004 §5) appends the NINTH key, `supervised`, by the same additive-supersession
 // discipline 102/00 used for the eighth. The eight before it keep their names, order and values.
 // 141 — the tenth key, `thinking`, appended last.
-const DECLARATION_KEYS = ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom", "refine"];
+const DECLARATION_KEYS = ["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom", "refine", "sessions"];
 
 // A driver that walks the fixture milestone to done, so one invocation mints runs in more than one
 // phase — which is what makes "the same id across every phase and cycle" a measurement rather than a

@@ -158,7 +158,6 @@ async function driveTwoMemberWaveWithFakeGrade() {
   renderLoopState: _aofApplication.loop.commandTools.loop.renderLoopState,
   runLoopBody: _aofApplication.loop.commandTools.loop.runLoopBody,
   runLoopLaunch: _aofApplication.loop.commandTools.loop.runLoopLaunch,
-  thinkingNarration: _aofApplication.loop.commandTools.loop.thinkingNarration,
 }));
   const { meshDispatchWorktreePath } = await Promise.resolve(Object.freeze({
   DEFAULT_WORKTREE_RETENTION_MS: _aofApplication.mesh.worktree.DEFAULT_WORKTREE_RETENTION_MS,

@@ -165,7 +165,7 @@ export const archTests = [
         assert.ok(recovered != null, `${rel}: still usable — the five-key requirement was not widened`);
         assert.deepEqual(
           Object.keys(recovered),
-          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom", "refine"],
+          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom", "refine", "sessions"],
           `${rel}: eight projected keys (141 appended thinking, 143/00 promotedFrom)`,
         );
         if (loop.thinking == null) assert.equal(recovered.thinking, null, `${rel}: a record naming no thinking recovers with no override`);
