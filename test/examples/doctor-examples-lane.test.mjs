@@ -7,6 +7,12 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   tasks/01_the-snapshot-reads-a-story-map-and-budgets-it-only-when-the-gate-is-on.feature
 // and, for milestone 135 / story 01 (the practice moved into its own package), in
 //   tasks/01_nothing-a-user-can-see-changes.feature
+// and, for milestone 135 / story 04 (an agreed example cannot fall out), end to end through the CLI,
+// in
+//   tasks/00_an-agreed-example-resolves-by-its-id-inside-its-rule.feature
+//   tasks/01_the-trace-waits-for-a-contract-formulated-from-the-map.feature
+// (task 00 is covered case by case at the lane's own function in the package's
+// `example-trace.suite.mjs`, whose fixture builders this file imports).
 //
 // The lane is asked over LITERAL snapshots whose story dirs name a directory that does not exist,
 // so a lane that reached the disk would see nothing. The probe, the budget row and the doctor's
@@ -30,6 +36,9 @@ import { fileURLToPath } from "node:url";
 import { EXAMPLES_DOC, MALFORMED_REASONS, parseExampleMap } from "@aof/specification-by-example/map";
 import { budgetKeyFor } from "@aof/work/doctor/budget";
 import { EXAMPLES_BUDGET_ROWS } from "@aof/specification-by-example/story-probe";
+import {
+  E2_NAME, E3_NAME, FULL_CONTRACT, R2_WITH_E4, RULE_1, contract, featureText, outline, rule, scenario, traceAnswers, traceMap,
+} from "../../packages/specification-by-example/test/example-trace.suite.mjs";
 
 const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
 const buildSnapshot = _aofApplication.work.doctor.buildSnapshot;
@@ -144,9 +153,10 @@ const exampleFindingsOf = (json, ref = "134/04") => (json?.findings ?? []).filte
 export const doctorExamplesLaneTests = [
   // ══ 00_the-examples-lane-reports-the-map-a-person-has-not-answered.feature ══
   {
+    // 135/04 (ADR-004 §3) appends the sixth code, `example-untraced`, to the five 134/ADR-005 named.
     name: "examples/134-04 00 the lane's codes are exactly ADR-005's five, frozen, and it is the tenth lane",
     run: async () => {
-      assert.deepEqual([...EXAMPLE_LANE_CODES], ["example-question-open", "example-provenance-unanchored", "example-map-malformed", "example-rule-no-example", "example-map-too-many-rules"]);
+      assert.deepEqual([...EXAMPLE_LANE_CODES], ["example-question-open", "example-provenance-unanchored", "example-map-malformed", "example-rule-no-example", "example-map-too-many-rules", "example-untraced"]);
       assert.ok(Object.isFrozen(EXAMPLE_LANE_CODES));
       assert.equal(CHECK_GROUPS.at(-1), examplesGroup, "examplesGroup is the last entry of CHECK_GROUPS");
       assert.equal(CHECK_GROUPS.at(-2), diagramsGroup, "…directly after diagramsGroup");
@@ -520,6 +530,158 @@ export const doctorExamplesLaneTests = [
       assert.deepEqual((record.brief?.answers ?? []).map((answer) => answer.token), ["7/2 Q1"]);
     }),
   },
+  // ══ 135/04 · 00_an-agreed-example-resolves-by-its-id-inside-its-rule.feature (end to end) ══
+  {
+    name: "examples/135-04 00 E1 · a confirmed example carried by a headline scenario under its rule resolves",
+    run: () => withTraced({}, async (fx) => {
+      const { json } = fx.cli("work", "doctor", "7/2", "--json");
+      assert.ok(Array.isArray(json?.findings), "the doctor answered");
+      assert.deepEqual(untracedOf(json), []);
+      assert.deepEqual(json.findings.filter((finding) => finding.code.startsWith("example-") && finding.severity === "error"), [], "the fixture is otherwise clean");
+    }),
+  },
+  {
+    name: "examples/135-04 00 E2 · deleting the scenario that carries a confirmed example turns the doctor red and names it",
+    run: () => withTraced({ features: RULE_1_WITHOUT_E2 }, async (fx) => {
+      const { status, json } = fx.cli("work", "doctor", "7/2", "--json");
+      const found = untracedOf(json);
+      assert.equal(found.length, 1, JSON.stringify(json?.findings));
+      assert.equal(found[0].severity, "error");
+      for (const word of ["7/2", "E2", "confirmed", "R1"]) assert.ok(found[0].message.includes(word), `names ${word}: ${found[0].message}`);
+      assert.equal(path.resolve(fx.project, found[0].path), path.join(fx.s04.dir, EXAMPLES_DOC));
+      assert.notEqual(status, 0, "the doctor exits non-zero");
+    }),
+  },
+  {
+    name: "examples/135-04 00 E3 · an agreed example resolves through either carrier, under its rule (outline: 4 rows)",
+    run: async () => {
+      const rows = [
+        ["E2", scenario(E2_NAME), scenario(E3_NAME)],
+        ["E2", outline("by row", "example", "E2"), scenario(E3_NAME)],
+        ["E3", scenario(E3_NAME), scenario(E2_NAME)],
+        ["E3", outline("by row", "example", "E3"), scenario(E2_NAME)],
+      ];
+      for (const [id, carrier, other] of rows) {
+        await withTraced({ features: contract(rule(RULE_1, carrier, other)) }, async (fx) => {
+          assert.deepEqual(untracedIds(fx.cli("work", "doctor", "7/2", "--json").json), [], `${id} through ${carrier[0].trim()}`);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/135-04 00 E4 · an id only counts in its exact form and its own rule's group (outline: 6 rows)",
+    run: async () => {
+      const e3 = rule(RULE_1, scenario(E3_NAME));
+      const rows = [
+        ["under R2", [e3, rule("R2 · An overdue loan blocks …", scenario(E2_NAME))], "found under rule R2"],
+        ["under an unnamed rule", [e3, rule("a rule titled with no rule id", scenario(E2_NAME))], "found outside rule R1"],
+        ["id not at the head", [rule(RULE_1, scenario(E3_NAME), scenario("Refuse E2 · a sixth loan"))], null],
+        ["E20", [rule(RULE_1, scenario(E3_NAME), scenario("E20 · twenty"))], null],
+        ["a column headed case", [rule(RULE_1, scenario(E3_NAME), outline("by row", "case", "E2"))], null],
+        ["a step's text", [rule(RULE_1, scenario(E3_NAME), scenario("a member asks", "Given example E2 holds"))], null],
+      ];
+      for (const [label, blocks, saying] of rows) {
+        await withTraced({ features: contract(...blocks) }, async (fx) => {
+          const json = fx.cli("work", "doctor", "7/2", "--json").json;
+          assert.deepEqual(untracedIds(json), ["E2"], label);
+          const [finding] = untracedOf(json);
+          if (saying) assert.ok(finding.message.includes(saying), `${label}: ${finding.message}`);
+          else assert.equal(finding.message.includes("found"), false, `${label}: ${finding.message}`);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/135-04 00 in a feature-per-rule contract the feature is the group",
+    run: () => withTraced({ features: { "tasks/00_r1.feature": featureText(RULE_1, scenario(E2_NAME), scenario(E3_NAME)) } }, async (fx) => {
+      const { json } = fx.cli("work", "doctor", "7/2", "--json");
+      assert.ok(Array.isArray(json?.findings), "the doctor answered");
+      assert.deepEqual(untracedIds(json), []);
+    }),
+  },
+  {
+    name: "examples/135-04 00 the finding follows the acceptance horizon (outline: 3 statuses)",
+    run: async () => {
+      for (const [status, severity] of [["in-progress", "error"], ["in-review", "error"], ["done", "warn"]]) {
+        await withTraced({ features: contract(rule(RULE_1, scenario(E3_NAME))), status }, async (fx) => {
+          assert.deepEqual(untracedOf(fx.cli("work", "doctor", "7/2", "--json").json).map((finding) => finding.severity), [severity], status);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/135-04 00 E5 · a proposed example carried nowhere is not reported",
+    run: () => withTraced({}, async (fx) => {
+      const { json } = fx.cli("work", "doctor", "7/2", "--json");
+      assert.ok(Array.isArray(json?.findings), "the doctor answered");
+      assert.equal(untracedOf(json).some((finding) => finding.message.includes("E1")), false);
+    }),
+  },
+  {
+    name: "examples/135-04 00 one finding per untraced agreed example, in map order",
+    run: () => withTraced({ features: contract(rule(RULE_1, scenario("a member asks"))) }, async (fx) => {
+      assert.deepEqual(untracedIds(fx.cli("work", "doctor", "7/2", "--json").json), ["E2", "E3"]);
+    }),
+  },
+
+  // ══ 135/04 · 01_the-trace-waits-for-a-contract-formulated-from-the-map.feature ══
+  {
+    name: "examples/135-04 01 E6 · a story whose tasks name no rule id is not traced",
+    run: () => withTraced({ features: UNNAMED }, async (fx) => {
+      const { json } = fx.cli("work", "doctor", "7/2", "--json");
+      assert.ok(Array.isArray(json?.findings), "the doctor answered");
+      assert.deepEqual(untracedOf(json), []);
+      // Non-vacuity: the same scenarios under "Rule: R1 · …" are traced, and E2 is reported.
+      await writeTasks(fx, contract(rule(RULE_1, scenario("a sixth loan is refused"), scenario(E3_NAME))));
+      assert.deepEqual(untracedIds(fx.cli("work", "doctor", "7/2", "--json").json), ["E2"]);
+    }),
+  },
+  {
+    name: "examples/135-04 01 E7 · a story at discovery with no tasks is not traced, so its contract can be written",
+    run: () => withTraced({ features: null }, async (fx) => {
+      const { json } = fx.cli("work", "doctor", "7/2", "--json");
+      assert.ok(Array.isArray(json?.findings), "the doctor answered");
+      assert.deepEqual(json.findings.filter((finding) => finding.code.startsWith("example-") && finding.severity === "error"), []);
+    }),
+  },
+  {
+    name: "examples/135-04 01 the trace is silent wherever the map is (outline: 5 conditions)",
+    run: async () => {
+      const bare = contract(rule(RULE_1, scenario("a member asks")));
+      const rows = [
+        ["work.examples is absent", { examples: ABSENT }],
+        ["work.examples.enabled is false", { examples: { enabled: false } }],
+        ["the story has no EXAMPLES.md", { map: null }],
+        ["the map is not applicable", { map: "# 7/2 · the map\nNot applicable: a rename with no rule a person owns.\n" }],
+        ["the map's only examples are proposed", { map: traceMap({ e2: "proposed", e3: "proposed" }) }],
+      ];
+      for (const [label, options] of rows) {
+        await withTraced({ ...options, features: bare }, async (fx) => {
+          const { json } = fx.cli("work", "doctor", "7/2", "--json");
+          assert.ok(Array.isArray(json?.findings), `${label}: the doctor answered`);
+          assert.deepEqual(untracedOf(json), [], label);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/135-04 01 one group titled with a rule id is enough to bring the whole contract under the trace",
+    run: () => withTraced({ map: traceMap({ extraRules: [R2_WITH_E4] }), features: {
+      "tasks/00_lending.feature": featureText("lending", rule(RULE_1, scenario(E2_NAME), scenario(E3_NAME))),
+      "tasks/01_overdue.feature": featureText("overdue loans", scenario("an overdue loan blocks a new one")),
+    } }, async (fx) => {
+      assert.deepEqual(untracedIds(fx.cli("work", "doctor", "7/2", "--json").json), ["E4"]);
+    }),
+  },
+  {
+    name: "examples/135-04 01 the live stream gains no trace finding when this story lands",
+    run: () => {
+      const result = spawnSync(process.execPath, [cliPath, "work", "doctor", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      const json = JSON.parse(result.stdout);
+      assert.ok(Array.isArray(json.findings), "the doctor answered");
+      assert.deepEqual(untracedOf(json), []);
+    },
+  },
   {
     name: "examples/135-01 01 off is still today (outline: 3 settings)",
     run: async () => {
@@ -534,6 +696,28 @@ export const doctorExamplesLaneTests = [
     },
   },
 ];
+
+// 135/04's fixture: story 7/2 with the gate on, its map's rule R1 holding E1 [proposed], E2
+// [confirmed] and E3 [stated Q1] (Q1 answered), every claim anchored by a settled run's stamp, and
+// `features` written into its `tasks/` (none when null). Exported for the door's suite.
+export async function withTraced({ examples = { enabled: true }, map = traceMap(), features = FULL_CONTRACT, status = "in-progress" } = {}, body) {
+  return withExamplesProject({ ...(examples === ABSENT ? {} : { examples }), milestone: "7", story: "2", status04: status }, async (fx) => {
+    if (map != null) await fx.writeMap(fx.s04, map);
+    await fx.settled(fx.s04, traceAnswers());
+    if (features != null) await writeTasks(fx, features);
+    return body(fx);
+  });
+}
+export async function writeTasks(fx, features) {
+  const tasks = path.join(fx.s04.dir, "tasks");
+  await rm(tasks, { recursive: true, force: true });
+  await mkdir(tasks, { recursive: true });
+  for (const [key, text] of Object.entries(features)) await writeFile(path.join(fx.s04.dir, key), text, "utf8");
+}
+export const untracedOf = (json) => (json?.findings ?? []).filter((finding) => finding.code === "example-untraced");
+export const untracedIds = (json) => untracedOf(json).map((finding) => /^7\/2: (E\d+) /.exec(finding.message)?.[1]);
+const RULE_1_WITHOUT_E2 = contract(rule(RULE_1, outline("a member at the limit", "example", "E3")));
+const UNNAMED = contract(rule("A member may hold at most five loans", scenario("a sixth loan is refused"), scenario(E3_NAME)));
 
 // 135/01's Background, on story 04's fixture renumbered to milestone 7 and story 2.
 const SEVEN_TWO_MAP = mapOf(R(1, E(1), E(2, "[confirmed]")), QUESTIONS(Q(1, "business", "open")));

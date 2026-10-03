@@ -1,4 +1,5 @@
 import path from "node:path";
+import { parseFeature } from "@aof/work/feature-parse";
 import { severityFor } from "@aof/work/lifecycle";
 import {
   EXAMPLES_DOC,
@@ -8,6 +9,7 @@ import {
   provenanceClaims,
   ruleCount,
   rulesWithoutExample,
+  untracedExamples,
 } from "./map.mjs";
 
 // Application policy is supplied by core: the gate's one resolver.
@@ -27,8 +29,15 @@ export function createDoctorExamples({ examplesEnabledFromConfig }) {
 //   example-map-malformed          a line the grammar does not admit
 //   example-rule-no-example        a rule with no example — ALWAYS `warn`
 //   example-map-too-many-rules     more than four rules, once per map — ALWAYS `warn`
+//   example-untraced               a `confirmed` or `stated` example no scenario or Examples row
+//                                  carries, by its id, inside its own rule's group (135 / ADR-004)
 //
-// THIS LANE GATES. Its three error codes take the acceptance horizon (`severityFor`): `error` while
+// THE TRACE (135 / ADR-004 §4) judges only a contract formulated from the map: the story has a task
+// feature and at least one of its groups names a rule id. It reads the row's `featureTexts` (on
+// every story row of the snapshot) through the one feature parser, and resolves an example only
+// through `./map.mjs`'s id readers — never by comparing an example's text with a scenario's.
+//
+// THIS LANE GATES. Its four error codes take the acceptance horizon (`severityFor`): `error` while
 // the story is open, `warn` once it is `done`, because a delivered map may no longer be edited (the
 // diagrams lane's precedent, 133/ADR-006). Its codes are therefore NOT exported as a
 // `*_FINDING_CODES` array — that suffix is the advisory class's marker (FF-12402).
@@ -48,13 +57,20 @@ const EXAMPLE_LANE_CODES = Object.freeze([
   "example-map-malformed",
   "example-rule-no-example",
   "example-map-too-many-rules",
+  "example-untraced",
 ]);
 
 // The split signal is a constant, not config: at discovery there are no tasks to measure a story's
 // size against (ADR-005 §1, PO ruling 6).
 const RULE_LIMIT = 4;
 
-function examplesFindings({ ref, status, dir, text, answers }) {
+// The task features, parsed, in path order: `featureTexts` is keyed `tasks/<name>`.
+function parsedFeatures(featureTexts) {
+  return Object.keys(featureTexts ?? {}).sort()
+    .map((key) => ({ path: key, feature: parseFeature(featureTexts[key]) }));
+}
+
+function examplesFindings({ ref, status, dir, text, answers, featureTexts = {} }) {
   const map = parseExampleMap(text);
   const severity = severityFor(status);
   const target = path.join(dir, EXAMPLES_DOC);
@@ -80,6 +96,15 @@ function examplesFindings({ ref, status, dir, text, answers }) {
   if (rules > RULE_LIMIT) {
     push("example-map-too-many-rules", "warn", `the map holds ${rules} rules, over the limit of ${RULE_LIMIT} — the story is likely too big.`);
   }
+  for (const example of untracedExamples(map, parsedFeatures(featureTexts))) {
+    const claimed = example.provenance === "stated" ? `stated ${example.question}` : example.provenance;
+    const where = example.foundAt == null
+      ? ""
+      : example.foundAt.rule
+        ? ` It was found under rule ${example.foundAt.rule} (${example.foundAt.path} line ${example.foundAt.line}).`
+        : ` It was found outside rule ${example.rule} (${example.foundAt.path} line ${example.foundAt.line}).`;
+    push("example-untraced", severity, `${example.id} (${EXAMPLES_DOC} line ${example.line}) is ${claimed} under ${example.rule}, but no scenario or Examples row in the story's task features carries it inside a group naming ${example.rule}.${where}`);
+  }
   return findings;
 }
 
@@ -98,6 +123,7 @@ function examplesGroup(snapshot, ctx = {}) {
       dir: item.dir,
       text: map.text,
       answers: map.answers,
+      featureTexts: item.featureTexts,
     }));
   }
   return findings;

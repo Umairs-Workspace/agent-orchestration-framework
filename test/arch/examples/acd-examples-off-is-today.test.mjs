@@ -15,7 +15,8 @@ import assert from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { EXAMPLES_DOC } from "@aof/specification-by-example/map";
-import { E, Q, QUESTIONS, R, mapOf, pinMtimes, snapshotOf, withExamplesProject } from "../../examples/doctor-examples-lane.test.mjs";
+import { E, Q, QUESTIONS, R, mapOf, pinMtimes, snapshotOf, withExamplesProject, writeTasks } from "../../examples/doctor-examples-lane.test.mjs";
+import { featureText, rule, scenario } from "../../../packages/specification-by-example/test/example-trace.suite.mjs";
 
 const doctorWork = _aofApplication.work.doctor.doctorWork;
 const EXAMPLE_LANE_CODES = _aofApplication.work.doctorExamples.EXAMPLE_LANE_CODES;
@@ -25,7 +26,10 @@ const NOW = Date.parse("2026-09-25T09:00:00.000Z");
 const NOON = new Date(2026, 8, 24, 12, 0, 0);
 
 // The worst map a story could carry, 60 lines: an open business question, a `[confirmed]` example
-// no answer stands behind, a malformed line, a rule with no example and five rules.
+// no answer stands behind, a malformed line, a rule with no example and five rules. Since 135/04 it
+// rides with WORST_CONTRACT, a contract formulated from the map that carries none of its examples,
+// so the trace's `example-untraced` is held off by the gate too.
+const WORST_CONTRACT = { "tasks/00_worst.feature": featureText("worst", rule("R1 · rule 1", scenario("an example with no id"))) };
 const WORST = (() => {
   const body = [
     ...R(1, E(1, "[confirmed]")),
@@ -57,6 +61,7 @@ export const archTests = [
       for (const [label, examples] of OFF) {
         await withExamplesProject(examples === undefined ? {} : { examples }, async (fx) => {
           await fx.writeMap(fx.s04, WORST);
+          await writeTasks(fx, WORST_CONTRACT);
           const findings = await doctorWork(fx.workDir, fx.config, undefined, { now: NOW, projectRoot: fx.project, projectsDir: fx.projectsDir });
           assert.deepEqual(exampleCodes(findings), [], `${label}: no example-* finding`);
           assert.deepEqual(overBudgetMaps(findings), [], `${label}: no doc-over-budget names EXAMPLES.md`);
@@ -73,9 +78,10 @@ export const archTests = [
     name: "arch/134 FF-13403: the same fixture with the gate on is caught, so the control is not vacuous",
     run: () => withExamplesProject({ examples: { enabled: true } }, async (fx) => {
       await fx.writeMap(fx.s04, WORST);
+      await writeTasks(fx, WORST_CONTRACT);
       const findings = await doctorWork(fx.workDir, fx.config, undefined, { now: NOW, projectRoot: fx.project, projectsDir: fx.projectsDir });
       const codes = new Set(exampleCodes(findings).filter((finding) => finding.message.startsWith("134/04:")).map((finding) => finding.code));
-      assert.deepEqual([...codes].sort(), [...EXAMPLE_LANE_CODES].sort(), "all five example-* codes are reported for 134/04");
+      assert.deepEqual([...codes].sort(), [...EXAMPLE_LANE_CODES].sort(), "every example-* code is reported for 134/04");
       assert.equal(overBudgetMaps(findings).length, 1, "one doc-over-budget names EXAMPLES.md");
       const door = fx.cli("work", "continue", "134/04", "--json");
       assert.equal(door.json?.code, "examples-question-open", door.stdout || door.stderr);

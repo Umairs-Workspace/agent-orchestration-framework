@@ -12,6 +12,8 @@ import { archTests as acdSettleReadsTheTranscriptStoreTests } from "./acd-settle
 import { archTests as acdExamplesOffIsTodayTests } from "./acd-examples-off-is-today.test.mjs";
 // milestone 135 / story 01 — FF-13501 (the practice's package is depended on one way).
 import { archTests as acdSbePackageOneWayTests } from "./acd-sbe-package-one-way.test.mjs";
+// milestone 135 / story 04 — FF-13502 (the trace is declared, never inferred).
+import { archTests as acdExampleTraceDeclaredTests } from "./acd-example-trace-declared.test.mjs";
 
 export const tests = [
   ...acdExampleMapSingleHomeTests,
@@ -19,4 +21,5 @@ export const tests = [
   ...acdSettleReadsTheTranscriptStoreTests,
   ...acdExamplesOffIsTodayTests,
   ...acdSbePackageOneWayTests,
+  ...acdExampleTraceDeclaredTests,
 ];

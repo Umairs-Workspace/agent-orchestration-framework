@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
 import { EXAMPLES_DOC } from "./map.mjs";
 
@@ -14,6 +14,28 @@ import { EXAMPLES_DOC } from "./map.mjs";
 // cannot read is not a map whose questions are closed. Silent for everything it cannot judge here:
 // the gate off, a row that is not a story, a row with no local folder (its own node's door meets it)
 // and a story with no map.
+//
+// It reads the story's `tasks/*.feature` itself, keyed `tasks/<name>` exactly as the doctor
+// snapshot keys its `featureTexts`, so the trace (135 / ADR-004) reaches the door with the same
+// input and the same messages: a story whose contract lost an agreed example is not built.
+async function taskFeatureTexts(dir) {
+  let names;
+  try {
+    names = await readdir(path.join(dir, "tasks"));
+  } catch {
+    return {};
+  }
+  const texts = {};
+  for (const name of names.filter((entry) => entry.endsWith(".feature")).sort()) {
+    try {
+      texts[`tasks/${name}`] = await readFile(path.join(dir, "tasks", name), "utf8");
+    } catch {
+      // Not a readable file (a directory named `*.feature`, a vanished entry): not a contract.
+    }
+  }
+  return texts;
+}
+
 export function createExamplesBuildDoor({ examplesEnabledFromConfig, examplesFindings, collectAnswers }) {
   async function refuseOpenExamples(ctx, row) {
     if (row?.type !== "story" || typeof row.dir !== "string" || row.dir === "") return;
@@ -26,7 +48,8 @@ export function createExamplesBuildDoor({ examplesEnabledFromConfig, examplesFin
       return;
     }
     const answers = await collectAnswers({ ...row, dir }, { workspace: ctx.workspace });
-    const errors = examplesFindings({ ref: row.ref, status: row.status ?? null, dir, text, answers })
+    const featureTexts = await taskFeatureTexts(dir);
+    const errors = examplesFindings({ ref: row.ref, status: row.status ?? null, dir, text, answers, featureTexts })
       .filter((finding) => finding.severity === "error");
     if (errors.length === 0) return;
     const error = commandError(

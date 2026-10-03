@@ -45,10 +45,11 @@ export const yarnInstallationTests = [
       const nativePorts = name === 'effects' ? {
         'journal-open.mjs': ['node:path', 'node:fs/promises', 'node:crypto'],
       } : name === 'specification-by-example' ? {
-        // 135/ADR-001: the practice imports @aof/work's lifecycle and @aof/contracts' error, and reads only the story's own map.
+        // 135/ADR-001: the practice imports @aof/work's lifecycle and @aof/contracts' error, and reads only the story's own map;
+        // 135/04 (ADR-004): the lane parses task features through @aof/work's one feature parser, and the door reads the story's own tasks/.
         'map.mjs': [],
         'answers.mjs': ['node:path'],
-        'doctor-lane.mjs': ['node:path', '@aof/work/lifecycle'],
+        'doctor-lane.mjs': ['node:path', '@aof/work/lifecycle', '@aof/work/feature-parse'],
         'story-probe.mjs': ['node:path'],
         'build-door.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
       } : name === 'server' ? {

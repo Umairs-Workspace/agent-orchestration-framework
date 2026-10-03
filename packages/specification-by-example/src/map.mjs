@@ -316,3 +316,90 @@ export function readMapToken(text) {
   const head = TOKEN_AT_HEAD.exec(text);
   return head ? { storyRef: head[1], id: head[2] } : null;
 }
+
+// ── THE TRACE — an agreed example resolves by its DECLARED id, inside its rule's group ─────────
+// (milestone 135 / ADR-002 §2, ADR-004). Never by value: a map row's prose ("5 loans") never equals
+// a step's text, and an inferred join is what 54/ADR-006 refuses. The ids are read here, beside the
+// map's own grammar, so a contract and its map are spelt one way (FF-13402); the queries take
+// `parseFeature`'s value and never a feature's text, so this module stays a leaf (FF-13502).
+//
+// A scenario CARRIES `E<n>` when its name starts with `E<n> · `. An Examples row carries it when its
+// cell under the column headed `example` is exactly `E<n>`. A scenario's GROUP is the `Rule:` it
+// sits under, or its `Feature:` when it sits under none, and a group NAMES `R<n>` when its title
+// starts with `R<n> · ` — so one feature per rule (ADR-002 §3) needs no path of its own.
+export const EXAMPLE_COLUMN = "example";
+const RULE_AT_HEAD = /^(R[1-9]\d*) · /;
+const EXAMPLE_AT_HEAD = /^(E[1-9]\d*) · /;
+const EXAMPLE_ID = /^E[1-9]\d*$/;
+
+// The rule id a group's title names, or null.
+export function groupRuleId(title) {
+  return typeof title === "string" ? RULE_AT_HEAD.exec(title)?.[1] ?? null : null;
+}
+
+// The example id a scenario's name carries, or null.
+export function scenarioExampleId(name) {
+  return typeof name === "string" ? EXAMPLE_AT_HEAD.exec(name)?.[1] ?? null : null;
+}
+
+// The example id an `example` cell carries — the whole cell, or null.
+export function rowExampleId(cell) {
+  return typeof cell === "string" && EXAMPLE_ID.test(cell) ? cell : null;
+}
+
+// Every carrier in a story's task features, in the order given: `{ id, rule, path, line }`, where
+// `rule` is the id the carrier's group names (or null) and `line` is its scenario's line.
+//   features — [{ path, feature }], `feature` being `parseFeature`'s value.
+function carriersOf(features) {
+  const carriers = [];
+  for (const { path, feature } of features) {
+    for (const scenario of feature?.scenarios ?? []) {
+      const rule = groupRuleId(scenario.rule ? scenario.rule.name : feature.feature);
+      const ids = [scenarioExampleId(scenario.name)];
+      for (const block of scenario.examples ?? []) {
+        const column = (block.columns ?? []).indexOf(EXAMPLE_COLUMN);
+        if (column === -1) continue;
+        for (const cells of block.cells ?? []) ids.push(rowExampleId(cells[column]));
+      }
+      for (const id of ids) if (id) carriers.push({ id, rule, path, line: scenario.line });
+    }
+  }
+  return carriers;
+}
+
+// Was this contract formulated from the map? At least one group — a `Rule:` or a `Feature:` —
+// names a rule id (ADR-004 §4). A contract with no task feature, or one written before 135, was not.
+export function contractNamesRules(features) {
+  return features.some(({ feature }) => groupRuleId(feature?.feature) != null
+    || (feature?.rules ?? []).some((rule) => groupRuleId(rule.name) != null));
+}
+
+/**
+ * The agreed examples a contract formulated from the map does not carry inside their own rule, in
+ * map order: `{ id, line, rule, provenance, question, foundAt }`, where `foundAt` is the first
+ * carrier of the id in a group that does not name its rule (`{ rule, path, line }`, `rule` null for
+ * a group naming no rule id), or null when nothing carries it. A `proposed` example is never
+ * required. Answers `[]` for a map declared not applicable and for a contract that names no rule.
+ */
+export function untracedExamples(map, features) {
+  if (map.notApplicable != null || !contractNamesRules(features)) return [];
+  const carriers = carriersOf(features);
+  const untraced = [];
+  for (const rule of map.rules) {
+    for (const example of rule.examples) {
+      if (example.provenance === "proposed") continue;
+      const found = carriers.filter((carrier) => carrier.id === example.id);
+      if (found.some((carrier) => carrier.rule === rule.id)) continue;
+      const [elsewhere] = found;
+      untraced.push({
+        id: example.id,
+        line: example.line,
+        rule: rule.id,
+        provenance: example.provenance,
+        question: example.question,
+        foundAt: elsewhere ? { rule: elsewhere.rule, path: elsewhere.path, line: elsewhere.line } : null,
+      });
+    }
+  }
+  return untraced;
+}

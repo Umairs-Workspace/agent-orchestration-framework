@@ -4,6 +4,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //
 // Covers EVERY @executable scenario in
 //   tasks/02_continue-refuses-a-story-while-a-business-question-stands.feature
+// and, for milestone 135 / story 04 (the build is refused while an agreed example is missing), in
+//   tasks/02_the-build-is-refused-while-an-agreed-example-is-missing.feature
 //
 // Driven through the real CLI over story 04's fixture project (`doctor-examples-lane.test.mjs`):
 // its global home, its Claude config directory (the fixture transcript store, handed in as
@@ -17,7 +19,8 @@ import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { countAssignments } from "../support/item-lock-fixture.mjs";
 import { withCacheReadFixture, plantCacheRow, runCommand, WORKER_NODE } from "../support/cache-read-fixture.mjs";
-import { E, Q, QUESTIONS, R, NOT_APPLICABLE, answersFor, mapOf, withExamplesProject } from "./doctor-examples-lane.test.mjs";
+import { E, Q, QUESTIONS, R, NOT_APPLICABLE, answersFor, mapOf, untracedOf, withExamplesProject, withTraced, writeTasks } from "./doctor-examples-lane.test.mjs";
+import { E2_NAME, E3_NAME, RULE_1, contract, outline, rule, scenario } from "../../packages/specification-by-example/test/example-trace.suite.mjs";
 
 const invoke = _aofApplication.invoke;
 const loadWorkspace = _aofApplication.loadWorkspace;
@@ -53,7 +56,71 @@ const refusedWith = (outcome, ...words) => {
 };
 const notRefused = (outcome, label) => assert.notEqual(outcome.json?.code, CODE, `${label}: ${outcome.stdout || outcome.stderr}`);
 
+// 135/04 task 02's contracts: R1 carrying E3 by a row, with and without E2's headline scenario.
+const WITHOUT_E2 = contract(rule(RULE_1, outline("a member at the limit", "example", "E3")));
+const WITH_E2 = contract(rule(RULE_1, scenario(E2_NAME), outline("a member at the limit", "example", "E3")));
+const pairsOf = (findings) => findings.map((finding) => [finding.code, finding.message]).sort();
+
 export const continueDoorExamplesTests = [
+  // ══ 135/04 · 02_the-build-is-refused-while-an-agreed-example-is-missing.feature ══
+  {
+    name: "examples/135-04 02 E8 · continue refuses a story whose contract lost a confirmed example",
+    run: () => withTraced({ features: WITHOUT_E2, status: "not-started" }, async (fx) => {
+      const storyPath = path.join(fx.s04.dir, "STORY.md");
+      const before = await readFile(storyPath);
+      const runsBefore = await readdir(path.join(fx.s04.dir, "runs"));
+      const answer = fx.cli("work", "continue", "7/2", "--json");
+      refusedWith(answer, "7/2", "E2", "example-untraced");
+      const { error } = await inProcess(fx, "7/2");
+      assert.equal(error?.code, CODE);
+      assert.equal(error?.status, 409);
+      const untraced = error.detail.findings.filter((finding) => finding.code === "example-untraced");
+      assert.equal(untraced.length, 1);
+      assert.ok(untraced[0].message.includes("E2"), untraced[0].message);
+      assert.ok((await readFile(storyPath)).equals(before), "no status moved: STORY.md is byte-identical");
+      assert.deepEqual(await readdir(path.join(fx.s04.dir, "runs")), runsBefore, "no run minted");
+      assert.equal(await countAssignments({ env: fx.env }), 0, "nothing dispatched");
+    }),
+  },
+  {
+    name: "examples/135-04 02 restoring the example lets the build start",
+    run: () => withTraced({ features: WITHOUT_E2 }, async (fx) => {
+      refusedWith(fx.cli("work", "continue", "7/2", "--json"), "E2");
+      await writeTasks(fx, WITH_E2);
+      const answer = fx.cli("work", "continue", "7/2", "--json");
+      notRefused(answer, "restored");
+      assert.equal(answer.json?.ok, true, answer.stdout || answer.stderr);
+    }),
+  },
+  {
+    name: "examples/135-04 02 the door and the doctor agree on the trace (outline: 4 states)",
+    run: async () => {
+      const rows = [
+        ["E2 carried under R1", WITH_E2, 0],
+        ["E2 carried nowhere", WITHOUT_E2, 1],
+        ["E2 carried only under R2", contract(rule(RULE_1, scenario(E3_NAME)), rule("R2 · An overdue loan blocks …", scenario(E2_NAME))), 1],
+        ["no task names a rule id and E2 is carried nowhere", contract(rule("A member may hold at most five loans", scenario(E3_NAME))), 0],
+      ];
+      for (const [label, features, count] of rows) {
+        await withTraced({ features }, async (fx) => {
+          const doctor = untracedOf(fx.cli("work", "doctor", "7/2", "--json").json).filter((finding) => finding.severity === "error");
+          assert.equal(doctor.length, count, `${label}: non-vacuity`);
+          const { error } = await inProcess(fx, "7/2");
+          const door = (error?.detail?.findings ?? []).filter((finding) => finding.code === "example-untraced");
+          assert.deepEqual(pairsOf(door), pairsOf(doctor), label);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/135-04 02 a story with no tasks is never refused on the trace",
+    run: () => withTraced({ features: null }, async (fx) => {
+      const answer = fx.cli("work", "continue", "7/2", "--json");
+      notRefused(answer, "no tasks");
+      assert.equal(answer.json?.ok, true, answer.stdout || answer.stderr);
+    }),
+  },
+
   {
     name: "examples/134-04 02 continue on a story is judged by its map (outline: 14 cases)",
     run: async () => {
