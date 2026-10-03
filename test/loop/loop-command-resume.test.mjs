@@ -401,7 +401,7 @@ export const loopCommandResumeTests = [
         const probe = await loopCommand.run({ scope: "03", resume: true }, fx.ctx);
         assert.deepEqual(
           Object.keys(probe.resumable.lastDeclaration),
-          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom"],
+          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom", "refine"],
         );
         assert.equal(probe.resumable.lastDeclaration.supervised, true);
       } finally {

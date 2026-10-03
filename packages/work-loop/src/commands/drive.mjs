@@ -123,9 +123,11 @@ export function createPhaseDrivers({
   // mode, `verify` — composes none. The drive never reads the workspace twin `work.agents.mode`.
   const PHASE_MODE_FLAGS = Object.freeze({ solo: "--solo", orchestrated: "--orchestrated" });
 
-  function phaseCommand(phase, ref, mode = null) {
+  // 143/01 (ADR-002 §5) — a whole-item refine appends `--autonomous` AFTER the mode flag: the prompt
+  // is the cascade `aof:refine --autonomous` already performs. Absent, the command is byte-identical.
+  function phaseCommand(phase, ref, mode = null, { autonomous = false } = {}) {
     const flag = Object.prototype.hasOwnProperty.call(PHASE_MODE_FLAGS, mode) ? ` ${PHASE_MODE_FLAGS[mode]}` : "";
-    return `/aof:${phase} ${ref}${flag}`;
+    return `/aof:${phase} ${ref}${flag}${autonomous === true ? " --autonomous" : ""}`;
   }
 
   // 129/02 (ADR-005 §2-§3; ruling 2026-09-13) — `--fix <file>` is the fix transport ACROSS THE
@@ -256,6 +258,8 @@ export function createPhaseDrivers({
           answer: { type: "string" },
           // 141 — the effort this one drive's session thinks at, over the phase's configured one.
           thinking: { type: "string" },
+          // 143/01 — the whole-item refine: break down and author every contract in this one session.
+          autonomous: { type: "boolean" },
         },
         required: ["ref"],
         additionalProperties: false,
@@ -284,13 +288,20 @@ export function createPhaseDrivers({
           throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
         }
 
+        // 143/01 (ADR-002 §5) — `--autonomous` wins over the loop's lend, as `--thinking` does. It is
+        // a REFINE cascade, so any other phase refuses it at the door, before any read or mint.
+        const autonomous = input.autonomous === true || ctx.loopDrive?.autonomous === true;
+        if (autonomous && phase !== "refine") {
+          throw commandError(`--autonomous is a refine cascade; \`aof work drive ${phase}\` does not take it. Use \`aof work drive refine <ref> --autonomous\`.`, "drive-autonomous-refine-only", 400);
+        }
+
         const item = await resolveItemExact(ctx, ref);
         if (!item) {
           throw commandError(`No item resolves to ref "${ref}".`, "ref-not-found", 404);
         }
         requireLocalCheckout(item, ref);
 
-        const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase));
+        const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous });
         // milestone 70 / story 01 (ADR-005), story 141 — the SESSION model and effort, resolved per
         // phase from `work.agents.session` (distinct from the render-time role maps
         // `work.agents.models` / `work.agents.effort`; see src/session-model.mjs), with `--thinking`
@@ -555,13 +566,14 @@ export function createPhaseDrivers({
       cli: {
         route: ["work", "drive", phase],
         spec: {
-          usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--dry-run] [--json]`,
+          usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--autonomous] [--dry-run] [--json]`,
           flags: {
             dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
             run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
             fix: { type: "string", description: "a JSON file holding the fix transport; honoured by continue only" },
             answer: { type: "string", description: "an answered ask file: resume the lent run's own session with the answer typed as its first input" },
             thinking: { type: "string", description: "the effort this session thinks at (low, medium, high, xhigh, max; extra-high is xhigh), over the phase's configured effort" },
+            autonomous: { type: "boolean", description: "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)" },
           },
         },
         argv: (positionals, options) => ({
@@ -571,6 +583,7 @@ export function createPhaseDrivers({
           ...(typeof options.fix === "string" ? { fix: options.fix } : {}),
           ...(typeof options.answer === "string" ? { answer: options.answer } : {}),
           ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
+          ...(options.autonomous === true ? { autonomous: true } : {}),
         }),
         render(result) {
           if (result.outcome == null) {

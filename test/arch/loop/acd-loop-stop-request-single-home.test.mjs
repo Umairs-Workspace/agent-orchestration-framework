@@ -77,7 +77,7 @@ const CORE_IMPORTERS = Object.freeze(["packages/core/src/application/bindings/co
 const STATE_WORDS = Object.freeze(['"requested"', '"honoured"', "'requested'", "'honoured'"]);
 // The seven keys of the verb's document (ADR-002 §4) and the ten of the probe (FF-5304).
 const DOCUMENT_KEYS = Object.freeze(["ok", "loopRunId", "scope", "live", "request", "state", "path"]);
-const PROBE_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+const PROBE_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
 const STORE_PATTERN = /(?:^|[-/\\])loop(?:[-/\\].*)?[-]store\.mjs$/u; // FF-5307's own
 const WRITE_CALL_FORM = /\b(?:writeFile|mkdir|rename)\s*\(/u; // FF-5307's own
 const SIGNAL_LISTENER = /\bprocess\s*\.\s*(?:once|on)\s*\(\s*["'`]SIG/u;

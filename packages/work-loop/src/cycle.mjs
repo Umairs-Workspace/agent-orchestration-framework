@@ -525,7 +525,7 @@ export function createStoryCycle({
   // 131/03 (ADR-001 §1(b)) — `answer` RE-DRIVES A RUN THAT WAITED ON A HUMAN: the waiting record is
   // the `retryRecord`, so nothing is minted and the same run is driven at the same attempt with the
   // answer typed into its own session. An answer never rides a new run.
-  async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, answer = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, now }, ctx) {
+  async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, answer = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, autonomous = false, now }, ctx) {
     if (answer != null && retryRecord == null) throw new TypeError("drivePhase: an answer re-drives the run that waited for it, so it needs that run as retryRecord");
     const item = requireLocalCheckout(await resolveItemExact(ctx, ref), ref);
     const opts = transitionOptionsFor(ctx);
@@ -550,6 +550,8 @@ export function createStoryCycle({
         phase,
         runId: record.runId,
         thinking,
+        // 143/01 (ADR-002 §5) — the whole-item cascade crosses the process boundary on the argv.
+        autonomous: autonomous === true,
         fix: answer == null ? fix : null,
         answerFile: answer == null ? null : askFileFor(record.runId, askEnvFor(ctx)),
       });
@@ -565,6 +567,8 @@ export function createStoryCycle({
         loopDrive: {
           runId: record.runId,
           ...(thinking == null ? {} : { thinking }),
+          // 143/01 (ADR-002 §5) — and in-process, on the lend.
+          ...(autonomous === true ? { autonomous: true } : {}),
           ...(answer != null ? { answer } : fix == null ? {} : { fix }),
           recordSettlementContext(value) {
             settlementContext = value;
@@ -585,6 +589,7 @@ export function createStoryCycle({
     runId,
     fix,
     thinking = null,
+    autonomous = false,
     answerFile = null,
     worktreePath = ctx.workspace.projectRoot,
   }) {
@@ -605,6 +610,7 @@ export function createStoryCycle({
         ...(fixFile == null ? {} : { fixFile }),
         ...(answerFile == null ? {} : { answerFile }),
         ...(thinking == null ? {} : { thinking }),
+        ...(autonomous === true ? { autonomous: true } : {}),
         env: {
           ...(typeof process.env.AOF_GLOBAL_HOME === "string" ? { AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME } : {}),
           ...(env ?? {}),

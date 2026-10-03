@@ -30,7 +30,7 @@ import {
 // THE FROZEN TEN, ORDER INCLUDED — the same literal `acd-loop-probe-contract` pins, restated
 // here so this task's own contract fails if the document is widened, whether or not the
 // arch-test runs in the same pass.
-const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
 // The row's shape before this story: the keys an UNGRADED drive still carries, exactly.
 const ROW_KEYS = Object.freeze(["ref", "phase", "runId", "outcome", "attempt", "cycle"]);
 const GRADE_ROW_KEYS = Object.freeze([...ROW_KEYS, "verdict", "codes", "cases"]);

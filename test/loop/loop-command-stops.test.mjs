@@ -167,7 +167,7 @@ function assertFrozenHalt(state, { stop, producer, ref }, report, detailPattern)
   assert.equal(state.act.stop, stop);
   assert.equal(state.act.producer, producer);
   assert.equal(state.act.ref, ref);
-  assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+  assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
   assert.deepEqual(Object.keys(state.act).sort(), ["act", "producer", "ref", "stop"]);
   assert.equal("readyAt" in state, false);
   assert.equal("readyAt" in state.act, false);
@@ -861,7 +861,7 @@ aofVersion: 0.1.0
           const driver = completingDriver(fx);
           const { state, last } = await runCollected({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: source });
           assert.equal(driver.spawnCalls.length, 0, JSON.stringify(row));
-          assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+          assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
           assert.deepEqual(state.act, { act: "halt", stop: "operator-interrupt", ref: "03/01", producer: row.producer });
           const details = row.details.replace("<path>", stopRequestPath(loopStopsDir(), state.loopRunId));
           assert.equal(last, `03 — halted on operator-interrupt at 03/01 (producer ${row.producer}). Resume with: aof work loop 03 --resume Details: signal=${row.producer}; level=${row.level}${details}.`);
@@ -960,7 +960,8 @@ aofVersion: 0.1.0
         const driver = completingDriver(fx);
         const { state } = await runCollected({ scope: "03" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, stopSource: source });
         assert.deepEqual(Object.keys(state.act).sort(), ["act", "producer", "ref", "stop"], "Details never enter the act");
-        assert.equal(Object.keys(state).length, 10);
+        // 143/01 appended `refine`, the eleventh.
+        assert.equal(Object.keys(state).length, 11);
       } finally {
         await fx.cleanup();
       }

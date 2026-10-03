@@ -51,6 +51,15 @@ doc: state
     (`knowledge/src/memory.mjs`, `mesh/src/commands/session.mjs`); moving them onto
     `parseSpecArgv` is story-shaped — `story (operator)`.
   - *amendment for the accepting contract:* task 01's FF-14303 scenario names the unfolded path.
+- **143/01 build decisions:**
+  - `work.loop.refine` IS registered in both resolver maps (appended last), against the build brief's
+    "do not add it if nothing enumerates": FF-12901's sweep refuses any `work.loop.*` key the loop
+    family names that the maps do not carry, and the flag's description names it.
+  - `refine` is the LoopState document's eleventh key on every answer, not on the probe alone:
+    FF-5409 freezes one shape for the probe and a walk's end state.
+  - The shell grew 2131 → 2161 lines; the bound in `loop-command-wave.test.mjs` was raised with that
+    reason, because `packages/work-loop/src` is at its file budget (TECH_DEBT 92 owns the split).
+  - FF-14302 folded into `acd-loop-concurrency-single-home.test.mjs` (`test/arch/loop` at its ceiling).
 
 ## Notes & decisions in flight
 

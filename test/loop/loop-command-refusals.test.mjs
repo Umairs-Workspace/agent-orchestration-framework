@@ -8,7 +8,7 @@ const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 const readRuns = _aofApplication.execution.runs.readRuns;
 import { buildLoopDeclaration, readLoopDeclaration } from "../../packages/work-loop/src/engine.mjs";
-import { completingDriver, loopFixture, treeFiles } from "./loop-command-probe.test.mjs";
+import { completingDriver, loopFixture, treeFiles, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 
 async function refusal(fn, code) {
   await assert.rejects(fn, (error) => error?.code === code);
@@ -44,7 +44,7 @@ export const loopCommandRefusalTests = [{
         { ...fx.ctx, agentSessionDriverOptions: driver.options, report: (line) => reports.push(line) },
       );
       assert.equal(driver.spawnCalls.length, 0);
-      assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+      assert.deepEqual(Object.keys(state), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
       assert.deepEqual(state.driven, []);
       assert.equal("reports" in state, false);
       assert.ok(reports.length >= 1);
@@ -261,3 +261,94 @@ export const loopCommandBacklogScopeTests = [{
     }
   },
 }];
+
+// ══════════════ 143/01 — the refine scope's one flag (ADR-002 §2, §3) ══════════════
+//
+// Folded here for the reason the backlog cases are: `test/loop` is at its budget ceiling, and the
+// flag is the scope door's own vocabulary guard, beside the refusals above.
+
+export const loopCommandRefineScopeTests = [
+  ...[
+    [undefined, undefined, "per-story"],
+    ["whole-item", undefined, "whole-item"],
+    ["whole-item", "per-story", "per-story"],
+    [undefined, "whole-item", "whole-item"],
+  ].map(([configured, flag, resolved]) => ({
+    name: `143/01 task00 work.loop.refine ${configured ?? "unset"}, --refine ${flag ?? "absent"} → the probe's refine is ${resolved}`,
+    async run() {
+      const fx = await loopFixture();
+      try {
+        if (configured !== undefined) fx.workspace.config.work.loop = { refine: configured };
+        const probe = await loopCommand.run({ scope: "03", dryRun: true, ...(flag === undefined ? {} : { refine: flag }) }, fx.ctx);
+        assert.equal(probe.refine, resolved);
+        assert.equal(Object.keys(probe).at(-1), "refine", "appended last");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/01 task00 --refine all refuses loop-refine-unknown, naming both members, before any read",
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const before = await treeFiles(fx.projectRoot);
+        let reads = 0;
+        const ctx = { ...fx.ctx, invokeRegistered: async () => { reads += 1; throw new Error("no read may happen"); } };
+        for (const door of [() => loopCommand.run({ scope: "03", dryRun: true, refine: "all" }, ctx), () => runLoopBody({ scope: "03", refine: "all" }, ctx)]) {
+          await assert.rejects(door, (error) => error?.code === "loop-refine-unknown" && error.message.includes("per-story") && error.message.includes("whole-item"));
+        }
+        assert.equal(reads, 0, "refused before any registered read");
+        assert.deepEqual(await treeFiles(fx.projectRoot), before);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  ...[
+    ["whole-item", undefined, "whole-item"],
+    ["whole-item", "per-story", "per-story"],
+    [undefined, undefined, "per-story"],
+    [undefined, "whole-item", "whole-item"],
+  ].map(([recorded, flag, resolved]) => ({
+    name: `143/01 task00 a declaration with refine ${recorded ?? "absent (pre-143)"}, resumed ${flag === undefined ? "with --resume alone" : `with --refine ${flag}`} → ${resolved}`,
+    async run() {
+      const fx = await loopFixture();
+      try {
+        const declaration = { loopRunId: "L1", scope: "03", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: "2026-10-02T11:00:00.000Z", id: "loop:autonomous-cascade", supervised: false, ...(recorded === undefined ? {} : { refine: recorded }) };
+        const { item } = await writeDeclarationRun(fx, { declaration, state: "done", at: "2026-10-02T11:00:00.000Z" });
+        // The probe answers the mode the resumed walk would declare.
+        const probe = await loopCommand.run({ scope: "03", resume: true, ...(flag === undefined ? {} : { refine: flag }) }, fx.ctx);
+        assert.equal(probe.refine, resolved);
+        // …and the resumed walk declares it on the runs it mints.
+        const before = (await readRuns(item)).length;
+        await launch(fx, { scope: "03", resume: true, ...(flag === undefined ? {} : { refine: flag }) });
+        const minted = (await readRuns(item)).slice(before).map((run) => run.brief?.loop).filter(Boolean);
+        assert.ok(minted.length >= 1, "the resume drove");
+        for (const loop of minted) assert.equal(loop.refine, resolved);
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  })),
+  {
+    name: "143/01 task00 a declaration built without refine reads back usable with null",
+    run() {
+      const fresh = buildLoopDeclaration({ loopRunId: "lr", scope: "53", level: "L2", cap: 3, phase: "continue", cycle: 1, startedAt: "2026-10-02T00:00:00.000Z", id: "loop:autonomous-cascade" });
+      assert.equal(fresh.refine, null);
+      const read = readLoopDeclaration([{ runId: "r", createdAt: "2026-10-02T00:00:01.000Z", brief: { loop: fresh } }]);
+      assert.notEqual(read, null);
+      assert.equal(read.refine, null);
+    },
+  },
+  {
+    name: "143/01 task00 the usage and the operator guide name the flag",
+    async run() {
+      assert.match(loopCommand.cli.spec.usage, /\[--refine per-story\|whole-item\]/u);
+      assert.deepEqual(loopCommand.cli.argv(["03"], { refine: "whole-item" }), { scope: "03", refine: "whole-item" });
+      const guide = await readFile(new URL("../../docs/acd.md", import.meta.url), "utf8");
+      assert.match(guide, /`work\.loop\.refine`/u);
+      assert.match(guide, /`--refine per-story\|whole-item`/u);
+    },
+  },
+];

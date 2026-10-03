@@ -160,6 +160,8 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       thinking: null,
       // 143/00 — and the ELEVENTH, `promotedFrom`, `null` when the scope was a number.
       promotedFrom: null,
+      // 143/01 — and the TWELFTH, `refine`, `null` when the caller passes none.
+      refine: null,
     },
   },
   {
@@ -172,6 +174,7 @@ export const WORK_LOOP_STORY_FIXTURES = freezePlain([
       supervised: false,
       thinking: null,
       promotedFrom: null,
+      refine: null,
       loopRunId: null,
       scope: "53",
       priorScope: null,

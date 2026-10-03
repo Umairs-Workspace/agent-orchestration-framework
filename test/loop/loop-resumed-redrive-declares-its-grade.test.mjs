@@ -42,7 +42,7 @@ import {
 
 // The frozen ten, order included — the same literal `acd-loop-probe-contract` pins, restated
 // so this task's own contract fails if the document is widened.
-const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
 const ACT_KEYS = Object.freeze(["act", "ref", "phase", "stop", "producer"]);
 
 const INVALID_FEATURE = "Feature: Invalid\n  Scenario: missing lane\n    Given a fixture\n";
@@ -77,6 +77,8 @@ const declarationFor = (cap) => ({
   thinking: null,
   // 143/00 — the eleventh, likewise.
   promotedFrom: null,
+  // 143/01 — the twelfth, likewise.
+  refine: null,
 });
 
 /** A clean baseline of this rule's era: measured before the story's first drive, nothing inherited. */

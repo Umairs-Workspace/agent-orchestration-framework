@@ -116,10 +116,10 @@ export const loopFixTransportShapeTests = [
       // level string — a scalar, not a transport.
       assert.deepEqual(createPhaseDriverCommand("continue").input, {
         type: "object",
-        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" }, thinking: { type: "string" } },
+        properties: { ref: { type: "string" }, dryRun: { type: "boolean" }, run: { type: "string" }, fix: { type: "string" }, answer: { type: "string" }, thinking: { type: "string" }, autonomous: { type: "boolean" } },
         required: ["ref"],
         additionalProperties: false,
-      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path and 141's thinking level, and holds no transport");
+      }, "the driver's registered input schema is 129/02's four keys plus 131/03's answer path, 141's thinking level and 143/01's autonomous boolean, and holds no transport");
     },
   },
 

@@ -1191,6 +1191,10 @@ export function mapStoreRefusal(answer) {
 // The refine drive starts at cycle 1: `cycle` on this input is the HEAD's counter for the
 // HEAD's phase, and the story being refined is a different unit in a different phase.
 const REFINE_FIRST = "refine_first";
+// 143/01 (ADR-002 §4) — the refine mode, as the engine sees it: handed the RESOLVED value as the input
+// `refine` (`@aof/contracts/loop-bounds` resolves it) and compared against this one constant, because
+// this module imports nothing. FF-14302 holds it to this one spelling outside the bounds home.
+const WHOLE_ITEM = "whole-item";
 
 function refineFirstDecision(input) {
   if (input.concurrency !== REFINE_FIRST) return null;
@@ -1235,7 +1239,11 @@ export function decideLoopPhase(input = {}) {
   }
   if (type === "milestone") {
     const phase = (input.stories?.total ?? 0) === 0 ? "refine" : "verify";
-    return boundedDrive(ref, phase, input.cycle, input.cap);
+    // 143/01 (ADR-002 §4) — under `whole-item` the BREAK-DOWN drive (a milestone with no stories) is
+    // the cascade: it carries `autonomous: true`. Every other decision is unchanged, so a cascade that
+    // dies part-way is finished by the ordinary per-story refine decisions, with no resume logic.
+    const cascade = phase === "refine" && input.refine === WHOLE_ITEM ? { autonomous: true } : {};
+    return boundedDrive(ref, phase, input.cycle, input.cap, cascade);
   }
   if (type !== "story") {
     return halt("unmapped-item-type", `work:next:type=${String(type)}`, { ref, type });
@@ -1429,6 +1437,9 @@ export function buildLoopDeclaration(input = {}) {
     // `null` when the scope was a number. A caller that passes nothing (the mesh assignment directive,
     // the trigger declaration) declares `null`.
     promotedFrom: declaredString(input.promotedFrom),
+    // THE TWELFTH KEY, APPENDED LAST (143/01, ADR-002 §3). The resolved refine mode this run drives
+    // under, or `null` when the caller passes none — which the shell reads as the configured mode.
+    refine: declaredString(input.refine),
   };
 }
 
@@ -1470,6 +1481,8 @@ function recoverableDeclaration(loop) {
     // THE EIGHTH PROJECTED KEY (143/00), for the same reason. A declaration written before 143 has
     // no `promotedFrom` and stays usable at five keys; its absence reads as `null`.
     promotedFrom: declaredString(loop.promotedFrom),
+    // THE NINTH PROJECTED KEY (143/01), for the same reason; absent reads as `null`.
+    refine: declaredString(loop.refine),
   };
 }
 
@@ -1652,6 +1665,10 @@ export function resolveLoopResume(input = {}) {
     // 143/00 (ADR-001 §4) — a resume carries the slug the loop was promoted from. It is a fact about
     // the lineage, never a flag: nothing overrides it, and nothing promotes again.
     promotedFrom: declaredString(recovered?.promotedFrom),
+    // 143/01 (ADR-002 §3) — the refine mode follows 126/02's rule: an explicit `--refine` wins, an
+    // absent one inherits the declaration's, and `null` (none recorded) is the shell's to resolve
+    // from config.
+    refine: declaredString(input.refine) ?? declaredString(recovered?.refine),
     loopRunId: copyPlain(recovered?.loopRunId ?? null),
     scope: scope.scope,
     priorScope: copyPlain(recovered?.scope ?? null),

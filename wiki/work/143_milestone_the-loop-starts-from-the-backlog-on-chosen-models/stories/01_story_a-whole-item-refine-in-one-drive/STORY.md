@@ -4,10 +4,10 @@ number: 01
 slug: a-whole-item-refine-in-one-drive
 title: "A whole-item refine in one drive — work.loop.refine / --refine whole-item makes the break-down drive /aof:refine --autonomous"
 parent: 143
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-03
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-002]
@@ -29,22 +29,39 @@ reads:
   - test/arch/command/acd-prompt-bounds-name-their-home.test.mjs
   - test/loop/work-loops-resolved-ceilings.test.mjs
 files:
-  - packages/contracts/src/loop-bounds.mjs
-  - packages/work-loop/src/engine.mjs
-  - packages/work-loop/src/commands/loop.mjs
-  - packages/work-loop/src/commands/drive.mjs
-  - packages/work-loop/src/cycle.mjs
-  - packages/work-loop/src/child-drive.mjs
-  - test/loop/loop-bounds.test.mjs
-  - test/loop/work-loop-phase-map.test.mjs
-  - test/loop/drive-command-phase-drivers.test.mjs
-  - test/loop/work-loop-declaration.test.mjs
-  - test/loop/loop-command-resume.test.mjs
-  - test/loop/loop-command-refusals.test.mjs
-  - test/arch/loop/acd-loop-refine-scope-single-home.test.mjs
-  - test/arch/loop/index.mjs
-  - test/fixtures/application/command-inventory.json
   - docs/acd.md
+  - packages/contracts/src/loop-bounds.mjs
+  - packages/work-loop/src/child-drive.mjs
+  - packages/work-loop/src/commands/drive.mjs
+  - packages/work-loop/src/commands/loop.mjs
+  - packages/work-loop/src/cycle.mjs
+  - packages/work-loop/src/engine.mjs
+  - packages/work-loop/test/support/work-loop-story-fixtures.mjs
+  - test/arch/loop/acd-cap-exhaustion-returns-to-the-plan.test.mjs
+  - test/arch/loop/acd-clock-counts-attempts.test.mjs
+  - test/arch/loop/acd-declaration-predicate-is-composed.test.mjs
+  - test/arch/loop/acd-loop-concurrency-single-home.test.mjs
+  - test/arch/loop/acd-loop-l1-read-only.test.mjs
+  - test/arch/loop/acd-loop-narrates-in-flight.test.mjs
+  - test/arch/loop/acd-loop-probe-contract.test.mjs
+  - test/arch/loop/acd-loop-state-rides-the-run-record.test.mjs
+  - test/arch/loop/acd-loop-stop-request-single-home.test.mjs
+  - test/fixtures/application/command-inventory.json
+  - test/loop/drive-command-phase-drivers.test.mjs
+  - test/loop/index.mjs
+  - test/loop/loop-bounds.test.mjs
+  - test/loop/loop-command-board-state.test.mjs
+  - test/loop/loop-command-probe.test.mjs
+  - test/loop/loop-command-refusals.test.mjs
+  - test/loop/loop-command-resume.test.mjs
+  - test/loop/loop-command-stops.test.mjs
+  - test/loop/loop-command-wave.test.mjs
+  - test/loop/loop-driven-row-carries-the-grade.test.mjs
+  - test/loop/loop-record-reaches-the-redrive.test.mjs
+  - test/loop/loop-resumed-redrive-declares-its-grade.test.mjs
+  - test/loop/work-loop-declaration.test.mjs
+  - test/loop/work-loop-declarations.test.mjs
+  - test/loop/work-loop-phase-map.test.mjs
 ---
 # 01 · A whole-item refine in one drive
 
@@ -64,8 +81,8 @@ and `--autonomous` crosses both drive seams. `aof work drive refine <ref> --auto
 
 ## Tasks
 
-- [ ] 00 [the refine scope has one home and one flag](tasks/00_the-refine-scope-has-one-home-and-one-flag.feature)
-- [ ] 01 [the break-down drive carries --autonomous](tasks/01_the-break-down-drive-carries-autonomous.feature)
+- [x] 00 [the refine scope has one home and one flag](tasks/00_the-refine-scope-has-one-home-and-one-flag.feature)
+- [x] 01 [the break-down drive carries --autonomous](tasks/01_the-break-down-drive-carries-autonomous.feature)
 
 ## Notes
 

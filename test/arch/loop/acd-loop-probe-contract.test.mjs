@@ -19,7 +19,8 @@ import { completingDriver, loopFixture, treeFiles } from "../../loop/loop-comman
 import { functionBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+// 143/01 (ADR-002 §3) appended the ELEVENTH, `refine`: the mode the loop would drive under.
+const TOP_KEYS = Object.freeze(["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
 // 129/01 (ADR-008 §5) appended the THREE LANE STOPS as members 13-15 — `lane-open-failed`,
 // `lane-merge-refused`, `lane-merge-conflict`, in that order, at the end. The twelve before them
 // keep their names and their order; this literal grows by exactly those three and no other.

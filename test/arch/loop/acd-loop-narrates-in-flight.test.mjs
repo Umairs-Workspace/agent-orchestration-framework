@@ -247,13 +247,14 @@ export const archTests = [
       // the TENTH, `thinking`, by the same rule.
       assert.deepEqual(
         Object.keys(schema.properties).sort(),
-        ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
+        // 143/01 — the TWELFTH and the ELEVENTH, `refine`, by the same rule.
+        ["cap", "dryRun", "handOff", "level", "quiet", "refine", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 10, "ten flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11 and --thinking from 141");
+      assert.equal(Object.keys(flags).length, 11, "eleven flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11, --thinking from 141 and --refine from 143/01");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);

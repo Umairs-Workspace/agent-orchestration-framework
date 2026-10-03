@@ -108,7 +108,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     return lines.slice(-STDERR_TAIL_LINES);
   }
 
-  // spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, thinking, env, deadlineMs, signal, graceMs, spawnChild })
+  // spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, thinking, autonomous, env, deadlineMs, signal, graceMs, spawnChild })
   // → { outcome, document, exitCode, stderrTail, spawn }
   //
   //   outcome   "document" | "refused" | "died" | "timeout" | "aborted"
@@ -130,6 +130,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     fixFile,
     answerFile,
     thinking,
+    autonomous,
     env,
     deadlineMs,
     signal,
@@ -155,6 +156,8 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
       ...(withFix ? ["--fix", fixFile] : []),
       // 141 — the loop's effort override; the child's own door validates it.
       ...(typeof thinking === "string" && thinking.length > 0 ? ["--thinking", thinking] : []),
+      // 143/01 (ADR-002 §5) — the whole-item refine cascade; absent passes nothing.
+      ...(autonomous === true ? ["--autonomous"] : []),
       "--json",
     ];
     const args = isPackaged() ? verb : [getCliEntry(), ...verb];

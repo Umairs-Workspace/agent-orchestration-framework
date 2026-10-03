@@ -59,7 +59,7 @@ export const archTests = [
       // and 131/11 (ADR-009 §6) adds `handOff`. 141 adds `thinking`.
       assert.deepEqual(
         Object.keys(loopCommand.input.properties),
-        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop", "handOff", "thinking"],
+        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop", "handOff", "thinking", "refine"],
       );
       assert.equal(loopCommand.input.additionalProperties, false);
     },

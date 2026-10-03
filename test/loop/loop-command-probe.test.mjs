@@ -303,7 +303,7 @@ export const loopCommandProbeTests = [
         const before = await treeFiles(fx.projectRoot);
         const next = await invoke("work:next", { scope: "03" }, ctx);
         const result = await loopCommand.run({ scope: "03" }, ctx);
-        assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"]);
+        assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"]);
         assert.deepEqual(result.next, next);
         assert.deepEqual(result.stops, [...LOOP_STOPS]);
         assert.deepEqual(result.driven, []);
@@ -336,14 +336,14 @@ export const loopCommandProbeTests = [
     },
   },
   {
-    name: "loop command probe — a finished scope is done and still carries all ten keys",
+    name: "loop command probe — a finished scope is done and still carries all eleven keys (143/01 appended refine)",
     async run() {
       const fx = await loopFixture({ milestoneStatus: "done", storyStatus: "done" });
       try {
         const result = await loopCommand.run({ scope: "03" }, fx.ctx);
         assert.equal(result.state, "done");
         assert.deepEqual(result.act, { act: "done" });
-        assert.equal(Object.keys(result).length, 10);
+        assert.equal(Object.keys(result).length, 11);
       } finally {
         await fx.cleanup();
       }
@@ -363,8 +363,8 @@ export const loopCommandProbeTests = [
       assert.match(command.cli.spec.usage, /\[--stop\]/u);
       // 131/11 (ADR-009 §6) adds `handOff` by the same three-homes rule: the tenth property, the ninth flag.
       // 141 adds `thinking` by the same rule: the eleventh property, the tenth flag.
-      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"], "eleven properties");
-      assert.equal(Object.keys(command.cli.spec.flags).length, 10, "ten flags");
+      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking", "refine"].sort(), "twelve properties (143/01 added refine)");
+      assert.equal(Object.keys(command.cli.spec.flags).length, 11, "eleven flags (143/01 added --refine)");
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(command.cli.launch({ stop: true }), null);
     },
@@ -434,7 +434,7 @@ export const loopCommandProbeTests = [
           const before = await treeFiles(fx.projectRoot);
           const result = await loopCommand.run(row.input, ctx);
           if (row.answer === "probe") {
-            assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"], JSON.stringify(row.input));
+            assert.deepEqual(Object.keys(result), ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine"], JSON.stringify(row.input));
           } else {
             assert.deepEqual(Object.keys(result), ["ok", "loopRunId", "scope", "live", "request", "state", "path"], JSON.stringify(row.input));
             assert.equal(result.loopRunId, "L1");
