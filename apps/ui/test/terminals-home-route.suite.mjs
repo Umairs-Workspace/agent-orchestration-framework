@@ -522,7 +522,10 @@ export const terminalsHomeRouteTests = [
         // `DiagramMarkdown` call — everything else went to `diagrams.mjs`. Four lines of headroom.
         // 996 -> 998 by 131/05 (ADR-006 §4): the ask card's import and its one-line mount; the card
         // is its own module (`AskCard.tsx`). Two lines of headroom.
-        ["apps/ui/src/board/DetailPanel.tsx", 998, 1000, "127/04's move out and pill in, 133/04's tab, then 131/05's ask card mount; two lines of headroom now"],
+        // 998 -> 904 at `aof:verify 135` (F-135-01): 135/03's rule grouping took the panel to 1,031,
+        // over its ceiling, so the whole TASKS tab moved out to `TasksTab.tsx` and only its import
+        // and mount stay. Ninety-six lines of headroom.
+        ["apps/ui/src/board/DetailPanel.tsx", 904, 1000, "127/04's move out and pill in, 133/04's tab, 131/05's ask card mount, then 135's TASKS tab moved out to its own module"],
         ["apps/ui/src/config/App.tsx", 1298, 1300, "untouched"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {
