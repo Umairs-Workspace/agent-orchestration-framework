@@ -1,8 +1,15 @@
 ---
+name: aof-loop-diagram
 description: Draw a milestone's loop plan — which stories `aof work loop` builds together under refine_first, which wait and why, and which are already built — through the project's diagram engine, into the milestone's execution/ folder.
-argument-hint: "<milestone ref>"
-allowed-tools: [Read, Write, Bash]
 ---
+
+<!-- aof-generated: true; aof-runtime: codex -->
+
+Use this skill when the user asks for `$aof-loop-diagram <milestone ref>`, or asks to run the AOF `aof:loop-diagram` procedure in Codex.
+
+Where this procedure mentions `$ARGUMENTS`, use the text the user supplied after the skill name.
+Where it mentions Claude slash command `/aof:loop-diagram`, treat that as this Codex skill invocation.
+
 <objective>
 Draw the waves the loop will fan a milestone out into, so the operator can see before or after a run
 what builds in parallel. A story held back by a `files:` collision or a `depends:` edge should show up

@@ -39,8 +39,8 @@ Feature: /aof:loop-diagram draws the plan in the operator's session
   Scenario: a real milestone is drawn end to end in this repository
     Given the payload is installed and this repository runs "refine_first"
     When "/aof:loop-diagram 135" is run in a Claude Code session
-    Then "wiki/work/135_milestone_key-examples-in-the-contract/execution/" holds "loop-plan.json", "loop.html", "loop.svg" and "loop.png"
-    And the waves in "loop.svg" match "loop-plan.json"
+    Then "wiki/work/135_milestone_key-examples-in-the-contract/execution/" holds "loop-plan.json", "loop.html" and "loop.png", and no SVG
+    And the waves in "loop.png" match "loop-plan.json", with the built stories in green
 
   @uat
   Scenario: the operator can read the parallelism off the picture

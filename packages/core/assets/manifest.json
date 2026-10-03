@@ -588,7 +588,7 @@
         "id": "loop-diagram",
         "kind": "command"
       },
-      "hash": "sha256:c48c9c904e8bf8893be89a9ee1ac40a4ed88668ce037aff5b41aed5ea432d7fa"
+      "hash": "sha256:1763a0f43cc9baaeb068fbfcf1292d63ea8f412e06955f5b4ec3b34228f961ac"
     },
     {
       "path": ".claude/commands/aof/migrate.md",
@@ -975,7 +975,7 @@
         "id": "aof-loop-diagram",
         "kind": "skill"
       },
-      "hash": "sha256:1b73af5d21efface08ddf170b6bc4dbc82037436abba837adb8761caf532c9a8"
+      "hash": "sha256:f7e879a4cc061a6ea7ba04cf8c214d31949d8fa243ad9795c71d8878cc4fce09"
     },
     {
       "path": ".codex/skills/aof-migrate/SKILL.md",

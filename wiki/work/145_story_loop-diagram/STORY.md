@@ -70,7 +70,7 @@ from the loop-diag log after a wave has already gone wrong.**
 
 - [x] `tasks/00_the-wave-plan-is-replayed-from-the-loops-own-rules.feature` — the plan replays nextWork + the files partition, held reasons, lane bound, built shading
 - [x] `tasks/01_diagram-plan-loop-writes-the-plan-or-says-why-not.feature` — `aof diagram plan <ref> loop`: the three stops, loop-plan.json, the engine's instructions
-- [x] `tasks/02_diagram-export-loop-writes-the-svg-and-png.feature` — `aof diagram export <ref> loop` through toSvg + the rasterizer
+- [x] `tasks/02_diagram-export-loop-writes-the-png.feature` — `aof diagram export <ref> loop` through toSvg + the rasterizer, PNG only
 - [x] `tasks/03_aof-loop-diagram-draws-it-in-the-session.feature` — `/aof:loop-diagram`, FF-13301/13302 extended, a real run on 135
 
 ## Notes

@@ -1,8 +1,7 @@
 ---
 description: Draw a milestone's loop plan — which stories `aof work loop` builds together under refine_first, which wait and why, and which are already built — through the project's diagram engine, into the milestone's execution/ folder.
-argument-hint: "<milestone ref>"
-allowed-tools: [Read, Write, Bash]
 ---
+
 <objective>
 Draw the waves the loop will fan a milestone out into, so the operator can see before or after a run
 what builds in parallel. A story held back by a `files:` collision or a `depends:` edge should show up

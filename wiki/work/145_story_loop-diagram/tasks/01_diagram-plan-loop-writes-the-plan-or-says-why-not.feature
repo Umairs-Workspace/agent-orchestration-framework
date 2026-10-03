@@ -27,8 +27,9 @@ Feature: "aof diagram plan <ref> loop" writes the plan, or says why not
       Then it exits 0
       And "wiki/work/07_milestone_m/execution/loop-plan.json" exists and holds the wave plan for 7
       And the answer carries "enabled: true", "available: true" and the generator's id
-      And its "paths" name "execution/loop-plan.json", "execution/loop.html", "execution/loop.svg" and "execution/loop.png" under the milestone
+      And its "paths" name "execution/loop-plan.json", "execution/loop.html" and "execution/loop.png" under the milestone, and no SVG
       And its "brief" lists every wave with its stories, the held stories with their reasons, the built stories and the lane bound
+      And its "brief" asks for the built stories in the style guide's green "done" role
       And its "instructions" name the skill's path, the brief and "execution/loop.html" as the one file to write
 
     Scenario: E2 · a project that does not refine upfront is stopped by name

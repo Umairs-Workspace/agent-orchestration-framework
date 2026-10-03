@@ -101,7 +101,7 @@ function loopBrief(plan) {
   ].join(" ");
   const lines = [
     `The loop plan for milestone ${plan.item}: the waves its stories build in under work.loop.concurrency "${refineFirst}".`,
-    "Draw one column per wave, left to right, each wave's stories stacked inside it. Shade the stories already built so they read as finished, draw a held story or one waiting for a lane visibly distinct from the stories that build, and draw the depends edges as arrows between stories.",
+    "Draw one column per wave, left to right, each wave's stories stacked inside it. Fill the stories already built with the style guide's `done` role (green) so they read as finished, draw a held story or one waiting for a lane visibly distinct from the stories that build, and draw the depends edges as arrows between stories.",
     "",
   ];
   for (const wave of plan.waves) {
@@ -157,7 +157,7 @@ async function planLoop(item, ref, ctx) {
   const located = generator.locate({ home: os.homedir() });
   if (!located.ok) return { enabled: true, available: false, code: located.code, fix: located.fix, item: item.ref, plan: planPath };
 
-  const paths = loopDiagramPaths(itemRel, generator.sourceExt, diagrams.formats);
+  const paths = loopDiagramPaths(itemRel, generator.sourceExt);
   const absolute = Object.fromEntries(Object.entries(paths).map(([key, value]) => [key, path.resolve(projectRoot, value)]));
   const brief = loopBrief(plan);
   return {
@@ -262,8 +262,7 @@ const diagramPlanCommand = {
           `${result.item} loop — draw the wave plan with ${result.generator}`,
           `  plan:   ${result.paths.plan}`,
           `  source: ${result.paths.source}`,
-          ...(result.paths.svg ? [`  svg:    ${result.paths.svg}`] : []),
-          ...(result.paths.png ? [`  png:    ${result.paths.png}`] : []),
+          `  png:    ${result.paths.png}`,
           "",
           result.instructions,
         ].join("\n");

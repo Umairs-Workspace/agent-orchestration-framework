@@ -10,7 +10,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // CLI child cannot spawn a fake browser script on Windows).
 import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
@@ -31,6 +31,7 @@ const EXECUTION = `${MILESTONE}/execution`;
 const PLAN = `${EXECUTION}/loop-plan.json`;
 const SOURCE_PATH = `${EXECUTION}/loop.html`;
 const SVG = `${EXECUTION}/loop.svg`;
+const RASTER_SVG = `${EXECUTION}/.loop.raster.svg`;
 const PNG_PATH = `${EXECUTION}/loop.png`;
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 7, 7, 7]);
 const DRAWN = '<!doctype html><html><body><svg viewBox="0 0 1200 600"><title>Loop</title><rect/></svg></body></html>';
@@ -180,8 +181,8 @@ export const loopDiagramCommandTests = [
       assert.equal(envelope.enabled, true);
       assert.equal(envelope.available, true);
       assert.equal(envelope.generator, ID);
-      assert.deepEqual(envelope.paths, { dir: EXECUTION, plan: PLAN, source: SOURCE_PATH, svg: SVG, png: PNG_PATH });
-      for (const needle of ["Wave 1: 07/01", "Wave 2: 07/02", "held out of wave 1: 07/02", "overlap 07/01", "[built — in-review]", `Lane bound: ${plan.bound}`]) {
+      assert.deepEqual(envelope.paths, { dir: EXECUTION, plan: PLAN, source: SOURCE_PATH, png: PNG_PATH }, "no SVG is a loop diagram's output (145 UAT)");
+      for (const needle of ["Wave 1: 07/01", "Wave 2: 07/02", "held out of wave 1: 07/02", "overlap 07/01", "[built — in-review]", "`done` role (green)", `Lane bound: ${plan.bound}`]) {
         assert.ok(envelope.brief.includes(needle), `the brief names ${needle}:\n${envelope.brief}`);
       }
       assert.ok(envelope.instructions.includes(path.join(fx.home, "cache", "install", "skills", ID, "SKILL.md")), "the skill's path");
@@ -296,27 +297,38 @@ export const loopDiagramCommandTests = [
   },
   // ── task 02 · `aof diagram export <ref> loop` ──────────────────────────────────────────────
   {
-    name: "145/02: a drawn loop diagram is exported beside its source, with no block",
+    name: "145/02: a drawn loop diagram is exported as a PNG beside its source, keeping no SVG and no block",
     run: () => withFixture({}, async (fx) => {
       await drawn(fx);
-      const fake = rasterizer(WRITES);
+      let rasterized = null;
+      const fake = rasterizer(({ child, out, at: when }) => when(0, () => {
+        const input = fake.spawned[0].args.at(-1);
+        rasterized = readFileSync(input.startsWith("file:") ? fileURLToPath(input) : input, "utf8");
+        writeFileSync(out, PNG);
+        child.emit("exit", 0);
+      }));
       const result = await exportInProcess(fx, fake);
       assert.equal(exitOf(result), 0);
-      assert.equal(await readFile(at(fx, SVG), "utf8"), generatorFor(ID).toSvg(DRAWN));
+      assert.equal(rasterized, generatorFor(ID).toSvg(DRAWN), "the PNG is rasterized from the generator's toSvg of loop.html");
       assert.ok((await readFile(at(fx, PNG_PATH))).length > 0);
-      assert.deepEqual(result.written, [SVG, PNG_PATH]);
+      assert.deepEqual(result.written, [PNG_PATH]);
       assert.equal("block" in result, false);
-      assert.ok(fake.spawned[0].args.at(-1).endsWith("loop.svg"), "the rasterizer rendered the SVG");
+      assert.equal(exists(fx, SVG), false, "no loop.svg is kept");
+      assert.equal(exists(fx, RASTER_SVG), false, "the rasterizer's scratch SVG is removed");
     }),
   },
   {
-    name: "145/02: a PNG failure keeps the SVG and exits non-zero",
+    name: "145/02: a PNG failure writes nothing, keeps the drawn source and exits non-zero",
     run: () => withFixture({ diagrams: { generator: ID, browser: path.join(os.tmpdir(), "no-such-browser.exe") } }, async (fx) => {
       await drawn(fx);
       const result = aof(fx, "diagram", "export", "07", "loop", "--json");
       assert.notEqual(result.status, 0);
       const envelope = json(result);
-      assert.equal(exists(fx, SVG), true);
+      assert.deepEqual(envelope.written, []);
+      assert.equal(exists(fx, SVG), false);
+      assert.equal(exists(fx, RASTER_SVG), false, "the scratch SVG is removed on a PNG failure too");
+      assert.equal(exists(fx, PNG_PATH), false);
+      assert.equal(exists(fx, SOURCE_PATH), true, "loop.html is still there to open");
       assert.equal(envelope.png.ok, false);
       assert.equal(envelope.png.code, "diagram-png-renderer-missing");
       assert.ok(typeof envelope.png.fix === "string" && envelope.png.fix.length > 0);
@@ -335,7 +347,8 @@ export const loopDiagramCommandTests = [
         await withFixture(row.options, async (fx) => {
           if (row.source != null) await drawn(fx, row.source);
           assert.equal(refusal(aof(fx, "diagram", "export", "07", "loop", "--json")).code, row.code);
-          assert.equal(exists(fx, SVG), false, row.code);
+          assert.equal(exists(fx, RASTER_SVG), false, row.code);
+          assert.equal(exists(fx, PNG_PATH), false, row.code);
         });
       }
     },
@@ -346,7 +359,7 @@ export const loopDiagramCommandTests = [
       await drawn(fx);
       const result = await exportInProcess(fx, rasterizer(WRITES));
       assert.equal(exitOf(result), 0);
-      assert.equal(exists(fx, SVG), true);
+      assert.equal(exists(fx, PNG_PATH), true);
     }),
   },
   {
