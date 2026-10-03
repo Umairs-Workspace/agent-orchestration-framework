@@ -75,6 +75,23 @@ export function diagramPaths(itemDir, stem, sourceExt, formats) {
   return paths;
 }
 
+// 145 — THE LOOP DIAGRAM'S PLACE, in the same home (FF-13302 extended). `aof diagram plan <ref>
+// loop` / `export <ref> loop` take the subject `loop` where the ADR plan takes an ADR id, and write
+// under the item's `execution/` folder: the plan aof computes, the source the session draws, and
+// the exports. Forward-slash and project-relative like `diagramPaths`; `source` is present only
+// when a generator's extension is known, `svg`/`png` only when `formats` asks for them.
+export const LOOP_SUBJECT = "loop";
+export const EXECUTION_DIR = "execution";
+
+export function loopDiagramPaths(itemDir, sourceExt, formats = []) {
+  const dir = `${String(itemDir).replace(/\\/g, "/").replace(/\/+$/, "")}/${EXECUTION_DIR}`;
+  const paths = { dir, plan: `${dir}/${LOOP_SUBJECT}-plan.json` };
+  if (typeof sourceExt === "string") paths.source = `${dir}/${LOOP_SUBJECT}${sourceExt}`;
+  if (formats.includes("svg")) paths.svg = `${dir}/${LOOP_SUBJECT}.svg`;
+  if (formats.includes("png")) paths.png = `${dir}/${LOOP_SUBJECT}.png`;
+  return paths;
+}
+
 // The one file a reader may ask an item's `diagrams/` folder for (133/VERIFICATION F-133-02): a bare
 // `ADR-NNN-<slug>` stem plus one of the three extensions export writes. Anything else — a path, a
 // `..`, another extension, a stem with no ADR or no slug — is null, so a request can never name a

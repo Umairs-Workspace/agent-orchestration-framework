@@ -61,6 +61,10 @@ export const NUMBER_CONSUMER_FILES = Object.freeze([
   // behind `.filter(isLiveStreamRow)` over the same rows. Guarded; none is allow-listed.
   "packages/work/src/commands/archive.mjs",
   "packages/work/src/archive.mjs",
+  // 145 — the loop plan (`planLoopWaves`) finds its driver and orders the driver's stories by
+  // number; the driver is found behind `item.number != null` and every story behind the same guard
+  // in `isMember`. Guarded; none is allow-listed.
+  "packages/work/src/ready-wave.mjs",
 ]);
 
 // The sites the rule cannot classify, each with the reason it is admitted. Keyed by file +

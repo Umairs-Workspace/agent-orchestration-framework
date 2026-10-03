@@ -6,6 +6,7 @@ import {
   diagramFile,
   diagramPaths,
   diagramStem,
+  loopDiagramPaths,
   parseDiagramLinks,
   readDiagramBrief,
   renderDiagramBlock,
@@ -140,6 +141,22 @@ export const diagramLayoutTests = [
       for (const name of ["ADR-002-seam.js", "ADR-002.svg", "../SPEC.md", "x/ADR-002-seam.svg", "ADR-2-seam.svg", "ADR-002-Seam.svg", "", null]) {
         assert.equal(diagramFile("wiki/work/07_milestone_m", name), null, String(name));
       }
+    },
+  },
+  {
+    name: "145 task 01: the loop diagram's execution/ paths have the same home, forward-slashed and project-relative",
+    run: () => {
+      assert.deepEqual(loopDiagramPaths("wiki\\work\\07_milestone_m\\", ".html", ["svg", "png"]), {
+        dir: "wiki/work/07_milestone_m/execution",
+        plan: "wiki/work/07_milestone_m/execution/loop-plan.json",
+        source: "wiki/work/07_milestone_m/execution/loop.html",
+        svg: "wiki/work/07_milestone_m/execution/loop.svg",
+        png: "wiki/work/07_milestone_m/execution/loop.png",
+      });
+      assert.deepEqual(loopDiagramPaths("wiki/work/07_milestone_m", null), {
+        dir: "wiki/work/07_milestone_m/execution",
+        plan: "wiki/work/07_milestone_m/execution/loop-plan.json",
+      }, "the plan needs no generator");
     },
   },
 ];

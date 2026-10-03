@@ -207,6 +207,9 @@ import { storyContractDeriveTests } from "./story-contract-derive.test.mjs";
 // the builder alone) plus FF-9603 (the ban asserted over the stream as well as the template, the
 // budget number living only in the defaults, the vocabulary unchanged, and the gate's one reader).
 import { storyPlanDocumentTests } from "./story-plan-document.test.mjs";
+// 145 / task 00 — the wave plan `aof diagram plan <ref> loop` draws: the waves, the held members and
+// why, the depends edges, the lane bound and the built shading, replayed from the loop's own rules.
+import { loopWavePlanTests } from "./loop-wave-plan.test.mjs";
 // milestone 124 / story 00 — the depends census, as a fourth advisory doctor lane. Tasks 02 (each
 // unwitnessed edge named, with both endpoints and both sets, at `warn`, rendering no verdict) and
 // 03 (exactly one `depends-edges-unchecked` per run, its two exclusion reasons kept apart, and the
@@ -290,4 +293,6 @@ export const tests = [
   // milestone 124 / story 00 — the depends lane (tasks 02–03; see the import note).
   ...doctorDependsLaneTests,
   ...doctorDiagramsLaneTests,
+  // 145 / task 00 — the loop's wave plan, replayed from nextWork and the files partition.
+  ...loopWavePlanTests,
 ];

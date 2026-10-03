@@ -1,9 +1,10 @@
+import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 
 
-import { assertAdrId, diagramPaths, diagramsDir, findDiagramSources, readAdrTitle, renderDiagramBlock } from "../../diagrams/layout.mjs";
+import { assertAdrId, diagramPaths, diagramsDir, findDiagramSources, LOOP_SUBJECT, loopDiagramPaths, readAdrTitle, renderDiagramBlock } from "../../diagrams/layout.mjs";
 
 
 export function createDiagramExportCommand({ resolveWorkDiagrams, generatorFor, requireLocalCheckout, resolveItemExact, findBrowser, rasterizeSvg }) {
@@ -44,6 +45,28 @@ async function listNames(dir) {
 
 const toPosix = (value) => value.replace(/\\/g, "/");
 
+// THE SHARED TAIL (145): the source through the generator's `toSvg` — its shape refusals thrown
+// before any write — then the SVG, then the PNG through a browser aof finds. Both subjects, the
+// ADR and the loop, export through this one function rather than two copies of it.
+async function exportSource({ generator, source, paths, diagrams, projectRoot, ctx }) {
+  const abs = (rel) => path.resolve(projectRoot, rel);
+  const svg = generator.toSvg(source);
+  await mkdir(abs(paths.dir), { recursive: true });
+  await writeFile(abs(paths.svg), svg, "utf8");
+  const written = [paths.svg];
+  if (!diagrams.formats.includes("png")) return { written };
+
+  const browser = findBrowser({ configured: diagrams.browser, env: ctx.env ?? process.env });
+  if (!browser.ok) return { written, png: { ok: false, code: browser.code, message: browser.message, fix: browser.fix } };
+  const rendered = await rasterizeSvg({ ...(ctx.diagramRasterizer ?? {}), svgPath: abs(paths.svg), pngPath: abs(paths.png), browser });
+  if (!rendered.ok) {
+    const { ok, code, fix, exitCode, stderr } = rendered;
+    return { written, png: { ok, code, fix, ...(exitCode === undefined ? {} : { exitCode, stderr }) } };
+  }
+  written.push(paths.png);
+  return { written, png: { ok: true, rung: browser.rung, browser: toPosix(browser.path) } };
+}
+
 const diagramExportCommand = {
   id: "diagram:export",
   input: {
@@ -67,6 +90,18 @@ const diagramExportCommand = {
       throw commandError("Diagrams are off for this project (work.diagrams is unset, off, or invalid), so there is nothing to export.", "diagram-disabled", 409);
     }
     requireLocalCheckout(item, ref);
+    // 145 — the loop subject: the drawn `execution/` source, exported through the same tail. A
+    // loop diagram is pasted into no document, so it carries no block, and a done milestone's plan
+    // may still be drawn (it is a debugging aid, not a delivered ADR's figure).
+    if (input.adr === LOOP_SUBJECT) {
+      const generator = generatorFor(diagrams.generator);
+      const paths = loopDiagramPaths(toPosix(path.relative(projectRoot, item.dir)), generator.sourceExt, diagrams.formats);
+      if (!existsSync(path.resolve(projectRoot, paths.source))) {
+        throw commandError(`${paths.source} does not exist. Draw it first (aof diagram plan ${item.ref} ${LOOP_SUBJECT}).`, "diagram-source-missing", 404);
+      }
+      const source = await readFile(path.resolve(projectRoot, paths.source), "utf8");
+      return await exportSource({ generator, source, paths, diagrams, projectRoot, ctx });
+    }
     assertAdrId(input.adr);
     const title = readAdrTitle(await readText(path.join(item.dir, "ARCHITECTURE.md")), input.adr);
     if (title == null) {
@@ -92,30 +127,16 @@ const diagramExportCommand = {
     }
     const { stem } = sources[0];
     const paths = diagramPaths(itemRel, stem, generator.sourceExt, diagrams.formats);
-    const abs = (rel) => path.resolve(projectRoot, rel);
-    const svg = generator.toSvg(await readFile(abs(paths.source), "utf8"));
-
-    await mkdir(abs(paths.dir), { recursive: true });
-    await writeFile(abs(paths.svg), svg, "utf8");
-    const written = [paths.svg];
+    const source = await readFile(path.resolve(projectRoot, paths.source), "utf8");
     const block = renderDiagramBlock({ adrId: input.adr, title, stem, sourceExt: generator.sourceExt, formats: diagrams.formats });
-    if (!diagrams.formats.includes("png")) return { written, block };
-
-    const browser = findBrowser({ configured: diagrams.browser, env: ctx.env ?? process.env });
-    if (!browser.ok) return { written, block, png: { ok: false, code: browser.code, message: browser.message, fix: browser.fix } };
-    const rendered = await rasterizeSvg({ ...(ctx.diagramRasterizer ?? {}), svgPath: abs(paths.svg), pngPath: abs(paths.png), browser });
-    if (!rendered.ok) {
-      const { ok, code, fix, exitCode, stderr } = rendered;
-      return { written, block, png: { ok, code, fix, ...(exitCode === undefined ? {} : { exitCode, stderr }) } };
-    }
-    written.push(paths.png);
-    return { written, block, png: { ok: true, rung: browser.rung, browser: toPosix(browser.path) } };
+    const { written, png } = await exportSource({ generator, source, paths, diagrams, projectRoot, ctx });
+    return { written, block, ...(png === undefined ? {} : { png }) };
   },
 
   cli: {
     route: ["diagram", "export"],
     spec: {
-      usage: "aof diagram export <ref> <ADR-NNN> [--json]",
+      usage: "aof diagram export <ref> <ADR-NNN> [--json]\n       aof diagram export <milestone ref> loop [--json]",
     },
 
     argv: (positionals) => ({ ref: positionals[0], adr: positionals[1] }),
@@ -129,7 +150,7 @@ const diagramExportCommand = {
         lines.push(`PNG not written (${result.png.code}) — ${result.png.message ?? result.png.fix}`);
         if (result.png.message) lines.push(`  ${result.png.fix}`);
       }
-      lines.push("", "Paste this under the ADR:", "", result.block);
+      if (result.block !== undefined) lines.push("", "Paste this under the ADR:", "", result.block);
       return lines.join("\n");
     },
 
