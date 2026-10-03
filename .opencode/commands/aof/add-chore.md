@@ -20,7 +20,9 @@ as `"stream"`; only the exact string `"backlog"` selects the backlog. Resolve re
 
 <process>
 For: "$ARGUMENTS"
-1. **The folder — the backlog, under either setting.** Slug = kebab (e.g. `tidy-config`). An optional
+1. **The folder — the backlog, under either setting.** `--in-stream` may appear anywhere in the
+   arguments and is removed from them before the slug and title are derived; it decides only step 4.
+   Slug = kebab (e.g. `tidy-config`). An optional
    group comes from the arguments (`in <group/path>`) and is a PATH and nothing more. The folder is
    `<work.dir>/backlog/[<group>/]chore_<slug>/`: that is where a new chore is written whichever way
    `work.intake` is set. Do NOT work out a stream number — deciding one is `aof work promote`'s job
@@ -35,10 +37,15 @@ For: "$ARGUMENTS"
    housekeeping + why, one or two sentences); `## Definition of Done` (a checkbox list of concrete
    checkable items — the close criterion, always include `aof work validate` green); `## Notes`
    (optional).
-4. **Then the intake decides whether it stays there.** Under `work.intake: "backlog"` it STAYS:
+4. **Then the intake decides whether it stays there — unless `--in-stream` was given.** With
+   `--in-stream`, run `aof work promote <slug> --json` straight after the scaffold, whatever
+   `work.intake` says, and report the minted ref. That promote names no position, so the chore
+   lands at the tail. Without the switch, under `work.intake: "backlog"` it STAYS:
    `aof:promote <slug>` is what later schedules it, and the only way to name a position. Under
    `"stream"` (or an absent key) run `aof work promote <slug> --json` immediately and report the
-   minted ref — appended at the tail, as `add-chore` has always landed it.
+   minted ref — appended at the tail, as `add-chore` has always landed it. A promote refusal after
+   `--in-stream` (`promote-depends-backlog`, say) is reported as a stop, and the chore stays where
+   it was scaffolded, in the backlog: never reach around the refusal by editing the tree.
 5. Ask only the framing questions you can't infer (the intent, the checklist items).
 6. **Frame ONLY** — no boxes ticked yet (that's the chore running, then `aof:verify`). No `tasks/`, no
    `.feature`, no user story — a chore carries no behavioural contract.
@@ -53,6 +60,6 @@ regression). No `.feature`, no behavioural verify.
 
 <output>
 Report the path + the intent, and — when `depends` was given — that the entries are validated at
-promotion. Under `"backlog"`: next is `aof:promote <slug>`. Under `"stream"`: report the minted ref.
-Then do the housekeeping, tick the checklist, and `aof:verify <NN>`.
+promotion. Under `"backlog"` without the switch: next is `aof:promote <slug>`. With `--in-stream`, or
+under `"stream"`: report the minted ref. Then do the housekeeping, tick the checklist, and `aof:verify <NN>`.
 </output>

@@ -1,6 +1,6 @@
 ---
 description: Capture a UAT session — a cross-milestone acceptance gate over the delivery so far. Scaffolds a self-contained uat_slug folder (SESSION + STATE) on the project's intake, depending on the milestones it accepts. Numbered by aof work promote, run/accepted later by aof:verify.
-argument-hint: "<short session description> [in <group/path>] [accepting NN[,NN…]]   (accepting optional — defaults to the delivered span)"
+argument-hint: "<short session description> [in <group/path>] [accepting NN[,NN…]] [--in-stream]   (accepting optional — defaults to the delivered span)"
 allowed-tools: [Read, Grep, Glob, Bash, Write, AskUserQuestion]
 ---
 <objective>
@@ -20,7 +20,9 @@ as `"stream"`; only the exact string `"backlog"` selects the backlog. Resolve re
 
 <process>
 For: "$ARGUMENTS"
-1. **The folder — the backlog, under either setting.** Slug = kebab (e.g. `alpha-acceptance`,
+1. **The folder — the backlog, under either setting.** `--in-stream` may appear anywhere in the
+   arguments and is removed from them before the slug and title are derived; it decides only step 4.
+   Slug = kebab (e.g. `alpha-acceptance`,
    `release-r1`). An optional group comes from the arguments (`in <group/path>`) and is a PATH and
    nothing more. The folder is `<work.dir>/backlog/[<group>/]uat_<slug>/`: that is where a new session
    is written whichever way `work.intake` is set. Do NOT work out a stream number — deciding one is
@@ -41,10 +43,15 @@ For: "$ARGUMENTS"
      environmental checks`; `## Acceptance judgment`; `## Findings`; `## Sign-off / verdict`.
    - `STATE.md` — frontmatter `doc: state`; `## Progress`; `## Notes & decisions in flight`;
      `## Feedback (for retro)`.
-4. **Then the intake decides whether it stays there.** Under `work.intake: "backlog"` it STAYS:
+4. **Then the intake decides whether it stays there — unless `--in-stream` was given.** With
+   `--in-stream`, run `aof work promote <slug> --json` straight after the scaffold, whatever
+   `work.intake` says, and report the minted ref. That promote names no position, so the session
+   lands at the tail. Without the switch, under `work.intake: "backlog"` it STAYS:
    `aof:promote <slug>` is what later schedules it, and the only way to name a position. Under
    `"stream"` (or an absent key) run `aof work promote <slug> --json` immediately and report the
-   minted ref — appended at the tail, as `add-uat` has always landed it.
+   minted ref — appended at the tail, as `add-uat` has always landed it. A promote refusal after
+   `--in-stream` (`promote-depends-backlog`, say) is reported as a stop, and the session stays where
+   it was scaffolded, in the backlog: never reach around the refusal by editing the tree.
 5. Ask only the framing questions you can't infer (the acceptance objective, the span boundary).
 6. **Frame ONLY** — no checks executed, no findings, no sign-off (that's `aof:verify`). Absence is
    information.
@@ -58,6 +65,7 @@ The session starts at `status: not-started` in `SESSION.md` frontmatter. Running
 
 <output>
 Report the path + the milestones it accepts, and that the span is validated at promotion. Under
-`"backlog"`: next is `aof:promote <slug>`. Under `"stream"`: report the minted ref. Then
+`"backlog"` without the switch: next is `aof:promote <slug>`. With `--in-stream`, or under
+`"stream"`: report the minted ref. Then
 `aof:verify <NN>` to run the session and record acceptance.
 </output>

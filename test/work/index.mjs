@@ -218,6 +218,8 @@ import { doctorDependsLaneTests } from "./doctor-depends-lane.test.mjs";
 // milestone 133 / story 03 — the diagrams doctor lane (ADR-006): links, exports, the ADR a link
 // sits under, and orphans.
 import { doctorDiagramsLaneTests } from "./doctor-diagrams-lane.test.mjs";
+// story 146 — a capture can skip the backlog: --in-stream on the five add prompts (task 00).
+import { workAddInStreamTests } from "./work-add-in-stream.test.mjs";
 
 export const tests = [
   // milestone 59 / story 01 — the fast-lane-only six, now in what CI executes
@@ -290,4 +292,5 @@ export const tests = [
   // milestone 124 / story 00 — the depends lane (tasks 02–03; see the import note).
   ...doctorDependsLaneTests,
   ...doctorDiagramsLaneTests,
+  ...workAddInStreamTests,
 ];

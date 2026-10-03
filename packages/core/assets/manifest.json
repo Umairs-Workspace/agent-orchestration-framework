@@ -426,7 +426,7 @@
         "id": "add-chore",
         "kind": "command"
       },
-      "hash": "sha256:a45aa5c5e420fee422fdfa10eb8eeef34ecd309a6ca2c4e691cd4224326c286c"
+      "hash": "sha256:45f80ca1d0ffb3bcb216a7f63af16162dcc02d333237a0a70261fe36c588eb7a"
     },
     {
       "path": ".claude/commands/aof/add-milestone.md",
@@ -435,7 +435,7 @@
         "id": "add-milestone",
         "kind": "command"
       },
-      "hash": "sha256:8cb96dbbc9c1b663f537cf1b7c859c66aad12d85802fe9f4f6585af120a48cc7"
+      "hash": "sha256:b8d482131d8a2b2a0d1cf77bc736f0605c34ff25de600b69d2c65c1fa99be299"
     },
     {
       "path": ".claude/commands/aof/add-spike.md",
@@ -444,7 +444,7 @@
         "id": "add-spike",
         "kind": "command"
       },
-      "hash": "sha256:bc9532f7647ff86b6b430d8324b772ea0fb695d6104088e0c8710b2dd16f03d8"
+      "hash": "sha256:2e06b2ba1a79799c33f00c689dd1401a43d01cc4e2325e048f774db22a6b1a15"
     },
     {
       "path": ".claude/commands/aof/add-story.md",
@@ -453,7 +453,7 @@
         "id": "add-story",
         "kind": "command"
       },
-      "hash": "sha256:52d0c2ac131ffbac4b104902ee6add9e850e6647e8c218aa58430184785f3a03"
+      "hash": "sha256:2df7d209c806680f5009c6f9224d3cc6a1e829e22ff35e8d5b2e249a2d3ac309"
     },
     {
       "path": ".claude/commands/aof/add-task.md",
@@ -471,7 +471,7 @@
         "id": "add-uat",
         "kind": "command"
       },
-      "hash": "sha256:f01a13f8805ec699baf35edf34bb291fce64b8ab9b46d761cbf82082c2b0c609"
+      "hash": "sha256:432223d777c262e677c890abaf5798baca12a15521e2ec539b9b568618797aee"
     },
     {
       "path": ".claude/commands/aof/archive.md",
@@ -804,7 +804,7 @@
         "id": "aof-add-chore",
         "kind": "skill"
       },
-      "hash": "sha256:ad27f76d275b49f80d8ffdaa3d6232646df0653dd930c516c4d61596fe495d3d"
+      "hash": "sha256:609845633a6dfeff383f9c6ac1a107082e3967d16f7f4fc07572e8b7bd079491"
     },
     {
       "path": ".codex/skills/aof-add-milestone/SKILL.md",
@@ -813,7 +813,7 @@
         "id": "aof-add-milestone",
         "kind": "skill"
       },
-      "hash": "sha256:31264083eeb306548d255d2fb7c4c647a904536076f84784b47b89fbf185418a"
+      "hash": "sha256:f5e9772af6ef92db277d384e0f49fa8cf62fdde41dd126601a47e087af0c1076"
     },
     {
       "path": ".codex/skills/aof-add-spike/SKILL.md",
@@ -822,7 +822,7 @@
         "id": "aof-add-spike",
         "kind": "skill"
       },
-      "hash": "sha256:3db54f7cc9fdde612771d0e011174aebfa4de616c8335cc2f114a502426b3bb5"
+      "hash": "sha256:8de3d3febb9d2512358065083d424a0b429febab853eed4c20421fed31fc7f47"
     },
     {
       "path": ".codex/skills/aof-add-story/SKILL.md",
@@ -831,7 +831,7 @@
         "id": "aof-add-story",
         "kind": "skill"
       },
-      "hash": "sha256:b18ec1ba2b24d48a62b76833cf9f9d4d3b4d5bf126aa24aa995b650fa97e34e2"
+      "hash": "sha256:d77a535dcc2938a18789fe9ec34c301bb59e52fdab1cdbff23fdebd3a8388543"
     },
     {
       "path": ".codex/skills/aof-add-task/SKILL.md",
@@ -849,7 +849,7 @@
         "id": "aof-add-uat",
         "kind": "skill"
       },
-      "hash": "sha256:ffdae5e0f3dee3d33ca9eda3a854543a2b41c73dcefdc229b82558557281f879"
+      "hash": "sha256:47d26057253e52d7928eefcebcd8eb4ecdaf18e4eb4f70e066f2afae7d3008d3"
     },
     {
       "path": ".codex/skills/aof-archive/SKILL.md",

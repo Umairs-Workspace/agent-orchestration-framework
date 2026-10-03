@@ -1,6 +1,6 @@
 ---
 description: Capture a spike — a top-level de-risk driver scaffolded on the project's intake as spike_slug/SPIKE.md. Groups no stories, carries no .feature; its deliverable is a recorded finding. Numbered by aof work promote, resolved later by aof:verify.
-argument-hint: "<the unknown / risk to de-risk> [in <group/path>] [timebox 1d|2d|…] [depends NN[,NN…]]"
+argument-hint: "<the unknown / risk to de-risk> [in <group/path>] [timebox 1d|2d|…] [depends NN[,NN…]] [--in-stream]"
 allowed-tools: [Read, Grep, Glob, Bash, Write]
 ---
 <objective>
@@ -20,7 +20,9 @@ as `"stream"`; only the exact string `"backlog"` selects the backlog. Resolve re
 
 <process>
 For: "$ARGUMENTS"
-1. **The folder — the backlog, under either setting.** Slug = kebab (e.g. `de-risk-mesh-routing`). An
+1. **The folder — the backlog, under either setting.** `--in-stream` may appear anywhere in the
+   arguments and is removed from them before the slug and title are derived; it decides only step 4.
+   Slug = kebab (e.g. `de-risk-mesh-routing`). An
    optional group comes from the arguments (`in <group/path>`) and is a PATH and nothing more. The
    folder is `<work.dir>/backlog/[<group>/]spike_<slug>/`: that is where a new spike is written
    whichever way `work.intake` is set. Do NOT work out a stream number — deciding one is
@@ -36,10 +38,15 @@ For: "$ARGUMENTS"
    `# <Title>` with no number prefix; `## Question` (the unknown, framed as a real question);
    `## Timebox` (the box + stop condition); `## Investigation` (empty — filled as the spike runs);
    `## Finding` (empty — the deliverable); `## Outcome / Next` (empty — what it unblocks).
-4. **Then the intake decides whether it stays there.** Under `work.intake: "backlog"` it STAYS:
+4. **Then the intake decides whether it stays there — unless `--in-stream` was given.** With
+   `--in-stream`, run `aof work promote <slug> --json` straight after the scaffold, whatever
+   `work.intake` says, and report the minted ref. That promote names no position, so the spike
+   lands at the tail. Without the switch, under `work.intake: "backlog"` it STAYS:
    `aof:promote <slug>` is what later schedules it, and the only way to name a position. Under
    `"stream"` (or an absent key) run `aof work promote <slug> --json` immediately and report the
-   minted ref — appended at the tail, as `add-spike` has always landed it.
+   minted ref — appended at the tail, as `add-spike` has always landed it. A promote refusal after
+   `--in-stream` (`promote-depends-backlog`, say) is reported as a stop, and the spike stays where
+   it was scaffolded, in the backlog: never reach around the refusal by editing the tree.
 5. Ask only the framing questions you can't infer (the question itself, the timebox).
 6. **Frame ONLY** — no investigation started, no finding recorded (that's the spike running, then
    `aof:verify`). No `tasks/`, no `.feature` — a spike carries no behavioural contract.
@@ -54,6 +61,6 @@ recording `## Finding`) and flipping it to `done` — which unblocks anything th
 
 <output>
 Report the path + the question this spike answers, and — when `depends` was given — that the entries
-are validated at promotion. Under `"backlog"`: next is `aof:promote <slug>`. Under `"stream"`: report
-the minted ref. Then run the investigation, record the finding, and `aof:verify <NN>`.
+are validated at promotion. Under `"backlog"` without the switch: next is `aof:promote <slug>`. With
+`--in-stream`, or under `"stream"`: report the minted ref. Then run the investigation, record the finding, and `aof:verify <NN>`.
 </output>
