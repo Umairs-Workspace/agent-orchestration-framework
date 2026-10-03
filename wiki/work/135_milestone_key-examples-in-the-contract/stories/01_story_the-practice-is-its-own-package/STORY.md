@@ -5,7 +5,7 @@ slug: the-practice-is-its-own-package
 title: "The practice is its own package — the map, the answers, the lane and the build door move into @aof/specification-by-example, and @aof/work keeps only seams that never name them"
 parent: 135
 depends: []
-status: in-progress
+status: in-review
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-03
