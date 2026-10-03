@@ -3,7 +3,7 @@ type: story
 number: 144
 slug: the-whole-tree-run-signs-off-in-minutes
 title: "The whole-tree test run signs off in minutes, not half a day — the gate runs sharded, logs what is not isolated, and times itself"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-10-03
@@ -87,10 +87,4 @@ door onto `--gate-override`.**
 
 ## Feedback (for retro)
 
-- **Write set was short by six files (build, 2026-10-03).** The gate reaches the toolchain through
-  `bindings/work/toolchain.mjs` and `assemble.mjs`; the command inventory fixture pins its usage;
-  `packages/work/test/status-gate.test.mjs` builds the factory directly; and every edit to a suite or
-  an audited file re-stamps 142's `09-test-ledger.json` and `scripts/workspace-runtime-audit.json`.
-  All six are now in `files:`. Refine should census these two pins for any story touching tests.
-- **Runner-side `--strict` and the timings write are proven through `test-sharded-report.mjs`**, not
-  a spawned pool (PLAN's choice); the `@manual` gate run is the end-to-end witness.
+Graduated into RETROSPECTIVE.md R1 at accept (2026-10-03).
