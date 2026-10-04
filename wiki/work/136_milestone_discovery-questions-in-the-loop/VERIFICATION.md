@@ -50,6 +50,25 @@ failure, restore the file, then run the control green again.
      a lane, verified, and milestone 08 accepted. No other lane waited (there was one).
   - verifies → SPEC outcome; ADR-001 §1-§3 (live), ADR-002 §2-§5 (live), ADR-004 (live).
 
+## Regression gate
+
+`aof work regression-gate 136` was run twice in the clean detached worktree `aof-gate-136` (prepared
+with `prepare-worktree.mjs`, the private-terms file copied in, a temp `AOF_GLOBAL_HOME`). Both rows
+are in `REGRESSION.md`.
+
+1. **`6a98ebf7`, red, 28.2 min.** Eight reds were this branch's own: FF-11904 and 138/00 (`test/loop`
+   over its ceiling), 53/00 task01 (a new suite naming the session driver), 131/01 task04 (`? asks :`
+   read as a key), FF-11902 (FF-13601's walk with no floor), 96/02 ×2 (03's plan restated declared
+   paths), FF-7106 (03's tracked render undeclared) and 87/02. All fixed in `479c8185`; the twelve
+   suites behind them re-ran green alone (200 cases, then FF-11902's 12). `core-workspace` read no
+   `apps/ui/dist` in the fresh worktree; the first run built it.
+2. **`0aec7fcd`, red, 19.1 min.** One isolated red: `this-tree-holds-what-is-live` 02, because six
+   accepted drivers (134, 135, 143, 144, 145, 146) are `done` and still at the root of `wiki/work`.
+   No red names 136. Its two not-isolated reds (38-06 F-38.06e) passed alone: 4 cases, 0 failures.
+
+The accept goes through `--gate-override` with that reason, recorded as its own row. Archiving
+the six is the operator's act (127/ADR-004), and the operator set it aside for this accept.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
@@ -59,3 +78,11 @@ failure, restore the file, then run the control green again.
 | F-136-03 | A mesh worker records an answer on its own run with `question: null` (`park-resume.mjs` `recordAnswer`), so a worker's answer anchors no example, against ADR-001 §4's claim; and a worker's re-drive does not carry a question the session never recorded. | gap | minor | non-blocker: the local loop path is whole; no mesh-driven refine is in use | backlog | open |
 | F-136-04 | A lane on Windows printed `Error: AttachConsole failed` from node-pty's `conpty_console_list_agent.js` on stderr while its session settled `done`. | defect | minor | non-blocker: noise on a healthy lane | backlog | open |
 | F-136-05 | The Plan 09 ledger was not re-measured for 136/01's, 145's and 146's new cases, and 145 did not update the command inventory for the `diagram` usage it changed, so `core-workspace` was red on this branch. | defect | minor | blocker: fixed at verify | `bacac26d`: the ledger re-measured with the check's own reader; the two `diagram` entries taken from the live inventory. | fixed |
+
+## Accept decision
+
+Accepted 2026-10-04 by `aof:verify 136`. All three stories are done, `aof:validate 136` is PASS,
+doctor shows no `control-unresolved`, the `@manual` live run is green, and no blocker finding is
+open (F-136-01, 02 and 05 are fixed). The regression gate is accepted through `--gate-override`
+with the reason in `## Regression gate`. F-136-03 (a mesh worker's answer anchors nothing) and
+F-136-04 (node-pty stderr noise) stay open as non-blockers.

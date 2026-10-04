@@ -14,8 +14,9 @@ doc: state
 - [x] broken down at refine, 2026-10-03: two stories in one wave (ARCHITECTURE ADR-003)
 - [x] 01 a loop answer anchors the example — built and reviewed 2026-10-03 (solo), in-review
 - [x] 02 a driven refine asks through the loop — built and reviewed 2026-10-03 (solo), in-review
-- [ ] 03 a pending ask is read from the hook — added at verify 2026-10-03, after the live run on the
-  test-bed timed out twice in front of a question the loop never saw (ADR-004)
+- [x] 03 a pending ask is read from the hook — added and built at verify 2026-10-03/04, after the
+  live run on the test-bed timed out twice in front of a question the loop never saw (ADR-004)
+- [x] accepted 2026-10-04 at `aof:verify 136`: all three stories done, the live run green
 
 ## Notes & decisions in flight
 
@@ -43,22 +44,16 @@ doc: state
   on 134, which is not on main yet). One wave, both stories inline, review lenses played in this
   session; no Blocker in either story, so one round each.
 
-## Feedback (for retro)
-
-- **FF-11903 is red, and not by 136.** 01's importer sweep ran
-  `test/arch/command/acd-cited-path-resolves.test.mjs`: 348 unresolved `src/` citations under
-  `wiki/work/**` against a ceiling of 55, mostly archived 142 plans, and its rename probe expects
-  `packages/core/src/command-error.mjs` where it now answers `packages/contracts/src/error.mjs`.
-  136 adds no unresolved citation. The milestone gate at verify will meet it.
-- **02's `files:` omits `.aof/aof.lock.json`.** `aof work update` rewrites the lock with every
-  rendered copy's hash, so a story that changes bundle prose writes it. Committed with 02, as 134/05
-  and 135/05 did. Recorded finding.
-- **01's build brief asked for FF-13601's red probes in `VERIFICATION.md`.** The probes are
-  self-checking cases in the arch suite (a second reader in `doctor-lane.mjs`, three token
-  patterns, a read outside the helper); `VERIFICATION.md` is verify's to write.
-
 ## Verification
 
-- [ ] `@executable` suite green
+- [x] `@executable` suite green — story lanes, the importer sweeps and the whole-tree gate at
+  `0aec7fcd` (red only on accepted drivers left at the root; REGRESSION.md)
 - [x] `@manual` signed off: one live loop-driven discovery question, answered — 2026-10-04 on the
   test-bed (08/00 Q1, answered `… inside max`, anchored; VERIFICATION evidence)
+
+## Feedback (for retro) — archived 2026-10-04
+
+Graduated into `RETROSPECTIVE.md` (milestone R1-R3) and the stories' own `RETROSPECTIVE.md` (01 R1-R2,
+03 R1-R2; 02 surfaced nothing beyond 135/R1, which 01/R2 cites). The FF-11903 note became F-136-01,
+02's lock omission is 01/R2's pattern, and the FF-13601 probe note is the red probe in
+VERIFICATION. The blow-by-blow is in git history (`bc85bcba`).

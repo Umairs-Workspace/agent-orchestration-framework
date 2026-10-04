@@ -4,7 +4,7 @@ number: 03
 slug: a-pending-ask-is-read-from-the-hook
 title: "A pending ask is read from the hook — a driven session's question reaches the operator although the transcript does not show it until it is answered"
 parent: 136
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
 updated: 2026-10-04

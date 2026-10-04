@@ -4,10 +4,10 @@ number: 02
 slug: a-driven-refine-asks-through-the-loop
 title: "A driven refine asks through the loop — one tokened discovery question per ask, carrying its rule and example, and never a default"
 parent: 136
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-04
 adrs: [ADR-002]
 reads:
   - wiki/work/136_milestone_discovery-questions-in-the-loop/SPEC.md

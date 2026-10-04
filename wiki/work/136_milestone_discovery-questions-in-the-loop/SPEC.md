@@ -61,9 +61,9 @@ Out of scope:
 
 ## Stories
 
-- [ ] 01 [A loop answer anchors the example](stories/01_story_a-loop-answer-anchors-the-example/STORY.md) — 131's recorded answer is a provenance source in 134's one collector (ADR-001)
-- [ ] 02 [A driven refine asks through the loop](stories/02_story_a-driven-refine-asks-through-the-loop/STORY.md) — one tokened discovery question per ask, never a default (ADR-002)
-- [ ] 03 [A pending ask is read from the hook](stories/03_story_a-pending-ask-is-read-from-the-hook/STORY.md) — the question reaches the operator although the transcript shows it only once answered (ADR-004; added at verify)
+- [x] 01 [A loop answer anchors the example](stories/01_story_a-loop-answer-anchors-the-example/STORY.md) — 131's recorded answer is a provenance source in 134's one collector (ADR-001)
+- [x] 02 [A driven refine asks through the loop](stories/02_story_a-driven-refine-asks-through-the-loop/STORY.md) — one tokened discovery question per ask, never a default (ADR-002)
+- [x] 03 [A pending ask is read from the hook](stories/03_story_a-pending-ask-is-read-from-the-hook/STORY.md) — the question reaches the operator although the transcript shows it only once answered (ADR-004; added at verify)
 
 The live run is the milestone's `@manual` verification, not a story (ADR-003).
 

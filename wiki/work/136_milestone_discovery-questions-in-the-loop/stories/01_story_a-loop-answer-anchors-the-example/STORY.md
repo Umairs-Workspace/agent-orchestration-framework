@@ -4,10 +4,10 @@ number: 01
 slug: a-loop-answer-anchors-the-example
 title: "A loop answer anchors the example — the answer 131 records on a run is a person's answer to the map token its question opens with"
 parent: 136
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-03
-updated: 2026-10-03
+updated: 2026-10-04
 adrs: [ADR-001]
 reads:
   - wiki/work/136_milestone_discovery-questions-in-the-loop/SPEC.md
