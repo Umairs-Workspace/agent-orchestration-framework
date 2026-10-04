@@ -34,6 +34,7 @@ import { loopCommandProbeTests } from "./loop-command-probe.test.mjs";
 import { loopCommandSequencingTests } from "./loop-command-sequencing.test.mjs";
 import { loopCommandGateTests } from "./loop-command-gate.test.mjs";
 import { loopCommandStopsTests } from "./loop-command-stops.test.mjs";
+import { loopAskPendingHookTests } from "./loop-ask-pending-hook.test.mjs";
 import { loopCommandResumeTests } from "./loop-command-resume.test.mjs";
 // milestone 126 / story 00, tasks 02-03 — FF-12602's DRIVEN half: what reaches the one injected
 // printer while a drive or a gate is still pending, and what `--quiet` does and does not silence.
@@ -366,4 +367,5 @@ export const tests = [
   // import note).
   ...loopRecordSignoffShapeTests,
   ...loopDiagTests,
+  ...loopAskPendingHookTests,
 ];

@@ -2,7 +2,7 @@
 
 
 // Core supplies configured services and deferred application loaders. Construction is inert.
-export function createMeshParkResumeServices({ answerRunAsk, heartbeat, openRunAsk, readAskQuestion, claimAssignmentParkResume, completeAssignmentParkResume, reportAssignmentSettled, reportTerminalResumeRefused, transitionRunComplete, reportDegrade, loadPresence, loadWork, loadNotifications }) {
+export function createMeshParkResumeServices({ answerRunAsk, heartbeat, openRunAsk, readAskQuestion, readPendingAsk = null, claimAssignmentParkResume, completeAssignmentParkResume, reportAssignmentSettled, reportTerminalResumeRefused, transitionRunComplete, reportDegrade, loadPresence, loadWork, loadNotifications }) {
 // The parked-run resume protocol's worker-side orchestration. This lives beside
 // the assignment effect seam rather than growing mesh-worker-execution's already
 // guarded sink: one durable park identity claims one resume, the first real PTY
@@ -155,7 +155,7 @@ function createMeshParkResume({
       return;
     }
     if (outcome.outcome === "needs-input") {
-      const ask = worktreePath == null ? null : await readWorkerAsk({ worktreePath, sessionId: forkedSessionId, now });
+      const ask = worktreePath == null ? null : await readWorkerAsk({ worktreePath, sessionId: forkedSessionId, now, itemDir: item?.dir ?? null });
       await report("running", { runId: runRecord.runId, sessionId: forkedSessionId, code: "needs-input", ...(ask == null ? {} : { ask }) });
       await complete(runRecord);
       log("info", `session ${sessionId}: resumed session parked needs-input (run ${runRecord.runId} stays running; resume it again to continue)`);
@@ -237,8 +237,11 @@ function directivePhase(command) {
 // worktree the session ran in, and clipped to 8,000 code points with `…`. An unreadable transcript
 // is `question: null` (the reader's own degrade) and never a throw, so a park is never delayed by a
 // failed read.
-async function readWorkerAsk({ worktreePath, sessionId, phase = null, now = () => new Date(), env } = {}) {
-  const read = await readAskQuestion({ cwd: worktreePath, sessionId, ...(env ? { env } : {}) });
+// `itemDir` + `since` read the hook's record of a pending question first (136/ADR-004): claude writes
+// a pending human-input call to the transcript only once it is answered.
+async function readWorkerAsk({ worktreePath, sessionId, phase = null, now = () => new Date(), env, itemDir = null, since = null } = {}) {
+  const pending = readPendingAsk == null || itemDir == null ? null : await readPendingAsk({ itemDir, sessionId, since, cwd: worktreePath, ...(env ? { env } : {}) });
+  const read = pending?.question ?? await readAskQuestion({ cwd: worktreePath, sessionId, ...(env ? { env } : {}) });
   const points = typeof read === "string" ? [...read] : null;
   const question = points == null ? null
     : points.length > WORKER_ASK_MAX_CODE_POINTS ? `${points.slice(0, WORKER_ASK_MAX_CODE_POINTS).join("")}…` : read;

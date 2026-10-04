@@ -89,6 +89,7 @@ const SKILL_IDS = ["codex-computer-use", "codex-implementation", "codex-review"]
 // tell "a member was added" from "a member was broken".
 const HOOK_IDS = [
   "claude-artifact-sync",
+  "claude-ask-pending",
   "claude-run-heartbeat",
   "claude-session-end",
   "claude-session-prompt-ping",
@@ -114,7 +115,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 29 commands, 7 templates, 3 skills, 11 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 29 commands, 7 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -127,7 +128,7 @@ export const bundleTests = [
       assert.equal(byKind("command"), 29, "29 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt and loop-diagram, 145)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 7, "milestone/story/task/uat/spike/chore templates + the type-agnostic `shared` (OUTCOME.md)");
-      assert.equal(byKind("hook"), 11, "11 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat");
+      assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
     }
   },
   {
@@ -197,7 +198,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/descriptor: one typed entry per member — every member carries id + kind; 8 agents, 27 commands, 7 templates, 3 skills, 11 hooks",
+    name: "bundle/descriptor: one typed entry per member — every member carries id + kind; 8 agents, 27 commands, 7 templates, 3 skills, 12 hooks",
     run: async () => {
       const members = descriptorMembers();
       for (const member of members) {
@@ -221,7 +222,7 @@ export const bundleTests = [
       assert.deepEqual(
         members.filter((m) => m.kind === "hook").map((m) => m.id).sort(),
         [...HOOK_IDS].sort(),
-        "11 hooks declared: lifecycle hooks plus Claude artifact-sync and run-heartbeat triggers"
+        "12 hooks declared: lifecycle hooks plus Claude artifact-sync, run-heartbeat and ask-pending triggers"
       );
       assert.deepEqual(
         members.filter((m) => m.kind === "template").map((m) => m.id).sort(),

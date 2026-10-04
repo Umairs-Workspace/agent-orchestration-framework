@@ -137,6 +137,7 @@ spawned agent never does.
 |---|---|---|
 | 01 a-loop-answer-anchors-the-example | ADR-001: the reader in `answers.mjs`, its suite, FF-13601 | none |
 | 02 a-driven-refine-asks-through-the-loop | ADR-002: `refine.md`, its rendered copies and manifest hash, its prose suite | none |
+| 03 a-pending-ask-is-read-from-the-hook (added at verify, 2026-10-03) | ADR-004: the hook, its bundle entries, `readPendingAsk`, the driver's settle, the owner's read and re-drive | none |
 
 **Where the cut falls.** `answers.mjs` has one dependent and one dependency (`aof graph impact`), so
 01 is local to the package and its existing suite `test/examples/example-answers.test.mjs`. 02
@@ -147,6 +148,54 @@ writes only bundle prose, which has no code edge, and its pins go in the existin
 **The live run** (one loop, one story with a real business question, the message received, the
 answer given with `aof work answer`, the map read at the source) is the milestone's `@manual`
 verification in `STATE.md`. It needs both stories delivered and is not a story.
+
+## ADR-004 — A pending question is read from a hook, because the transcript no longer shows it
+
+### Context
+
+The milestone's live run (verify, 2026-10-03) drove 136/02's refine on the test-bed. The session
+asked exactly the question ADR-002 sets (its token first, the four lines, the options as the
+tool's), and the loop never saw it: the run's `asks` stayed empty, the session sat in its picker
+for twenty minutes, and the run failed on `timeout`, twice. The screen recorded at the timeout
+shows the picker; the transcript holds no `AskUserQuestion` record at all. Claude Code 2.1.288
+writes a pending human-input call to the transcript only once it is answered, so 131's detection
+(`readLastAssistantTurn`, a pending `tool_use` with no `user` record behind it) cannot fire, and
+nor can its question read. A `PreToolUse` hook does fire, before the picker draws, with the call's
+`tool_input`, `tool_use_id` and `session_id` (measured the same night by an interactive probe).
+
+### Decision
+
+1. **The hook records the call.** A bundled `PreToolUse` hook, matched to `AskUserQuestion`,
+   appends `{ runId, sessionId, toolUseId, name, input, at }` to `<item>/runs/.asks-pending.ndjson`
+   when the session carries `AOF_RUN_ITEM_DIR` and `AOF_RUN_ID`. It is the heartbeat hook's
+   discipline: no framework import, no store, no output, success on every path.
+2. **One reader, in the transcript family.** `readPendingAsk` in `observe.mjs` answers the
+   session's last record at or after a `since` instant whose `tool_use_id` has no result in the
+   transcript, with the question composed as `askQuestionFromTurn` composes a pending tool's.
+3. **The driver settles on it.** The completion watch reads the record first, scoped to records
+   written after the drive began: a resumed session never answers a call it lost, so an older
+   record is history. It settles `needs-input`, pending, exactly as a pending call on disk does.
+4. **The owner reads the question from it.** `ask.mjs` and the mesh worker's `readWorkerAsk` read
+   the record first, scoped past the run's last answer, and fall back to `readAskQuestion`.
+5. **The re-drive carries the question when the session lost it.** A question read from the
+   record never reached the transcript, so `claude --resume` cannot show it to the session. The
+   typed input is then `You asked:` + the question + `The answer:` + the answer. An answer to a
+   question the transcript holds stays verbatim (131/03 unchanged). The answer RECORDED on the run
+   is verbatim either way, so ADR-001's anchor reads it unchanged.
+
+### Alternatives considered
+
+- *Read the question off the screen.* The picker is drawn, wraps at the terminal width and
+  changes with every Claude Code release; the hook's input is the structured call. Rejected.
+- *Time the session out faster.* It turns a twenty-minute silent failure into a five-minute one
+  and still asks nobody. Rejected.
+
+### Consequences
+
+Every driven ask, not only discovery, reaches the operator again on the current Claude Code. A
+session whose hook is not installed (a repo that has not run `aof work update`) keeps today's
+transcript-only behaviour. A mesh worker records its answer with `question: null` (131/ADR-010),
+so a worker's answer still anchors no example; that is 136/VERIFICATION F-136-03.
 
 ## Fitness functions
 

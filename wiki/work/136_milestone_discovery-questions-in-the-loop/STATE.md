@@ -14,6 +14,8 @@ doc: state
 - [x] broken down at refine, 2026-10-03: two stories in one wave (ARCHITECTURE ADR-003)
 - [x] 01 a loop answer anchors the example — built and reviewed 2026-10-03 (solo), in-review
 - [x] 02 a driven refine asks through the loop — built and reviewed 2026-10-03 (solo), in-review
+- [ ] 03 a pending ask is read from the hook — added at verify 2026-10-03, after the live run on the
+  test-bed timed out twice in front of a question the loop never saw (ADR-004)
 
 ## Notes & decisions in flight
 

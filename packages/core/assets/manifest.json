@@ -690,6 +690,15 @@
       "hash": "sha256:b48b8f0163b8e026fee7ec7d39c236defe0a25eea5c7d1065eb6ba0978978739"
     },
     {
+      "path": ".claude/hooks/aof/ask-pending-enqueue.mjs",
+      "runtime": "claude",
+      "resource": {
+        "id": "ask-pending-enqueue",
+        "kind": "asset"
+      },
+      "hash": "sha256:3a3629490e3cbae0c8a55cc3f1278dd6ef797b3c61a5ee80835d1438c4c34bbc"
+    },
+    {
       "path": ".claude/hooks/aof/run-heartbeat-enqueue.mjs",
       "runtime": "claude",
       "resource": {

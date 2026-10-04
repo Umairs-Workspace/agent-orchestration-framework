@@ -108,7 +108,7 @@
     "kind": "child-process",
     "expression": "execFile(bin, args, { cwd: brief.worktreeCwd, windowsHide: true, timeout: options.timeoutMs ?? 10 * 60 * 1000 }, (error, stdout) => {\n        // A non-zero exit or a spawn fault is a `failed` outcome (never an unhandled\n        // rejection out of this seam) — the caller completes the run accordingly.\n        if (error) {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n          return;\n        }\n        try {\n          const parsed = JSON.parse(String(stdout ?? \"\"));\n          const terminal = parsed.terminal_reason ?? parsed.stop_reason ?? null;\n          const ok = terminal === \"completed\" || terminal === \"end_turn\";\n          resolve(ok ? { outcome: \"done\" } : { outcome: \"failed\", failureReason: \"agent_error\" });\n        } catch {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n        }\n      })",
     "digest": "b87e7b1327e6f3a585d01be5c9cce669c042ebf7d169151724549106d3907589",
-    "sourceDigest": "66d1a85c53ec184619f78cc8650a3779ebe322ec86b1512fe1055d8d6dfbbc25",
+    "sourceDigest": "4566639164c2d6152e86e0949cc3c22109033ed49c2d3b5719b49845b6025e47",
     "reason": "Runs the assistant binary and argv supplied by the declared launch; this package owns session execution and its process limits."
   },
   {
@@ -308,7 +308,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
     "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "309b8c0ef7bb2ef1b63b59ecf93a69074ef7114ac82499e7858cf65deca68090",
+    "sourceDigest": "871b3ede39a6a8d2c7448d25cdfd6cf24110b2d43d85221d1cb5c923123cd1f8",
     "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
   },
   {
@@ -316,7 +316,7 @@
     "kind": "child-process",
     "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
     "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
-    "sourceDigest": "309b8c0ef7bb2ef1b63b59ecf93a69074ef7114ac82499e7858cf65deca68090",
+    "sourceDigest": "871b3ede39a6a8d2c7448d25cdfd6cf24110b2d43d85221d1cb5c923123cd1f8",
     "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
   },
   {

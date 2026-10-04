@@ -186,6 +186,41 @@ async function readAskQuestion({ cwd, env = process.env, sessionId, sinceOffset 
   }
 }
 
+// milestone 136 / ADR-004 — A PENDING QUESTION IS READ FROM THE HOOK'S RECORD. Claude Code writes a
+// pending human-input call to the transcript only once it is answered (measured 2026-10-03 on claude
+// 2.1.288: a driven refine sat in its picker for twenty minutes with no `tool_use` on disk), so the
+// transcript read above cannot see a question while it waits. The PreToolUse hook appends the call
+// to `<item>/runs/.asks-pending.ndjson`; this reads it back.
+const PENDING_ASKS_FILE = ".asks-pending.ndjson";
+
+// readPendingAsk({ itemDir, sessionId, since, cwd, env }) → null | { question, toolUseId, at } —
+// the session's LAST recorded human-input call when it was recorded at or after `since` (an ISO
+// instant; a resumed session never answers a call it lost, so an older record is history) and the
+// transcript holds no result for it. The question is composed as `askQuestionFromTurn` composes a
+// pending tool's. NEVER throws: an absent file, record or session is `null`.
+async function readPendingAsk({ itemDir, sessionId, since = null, cwd, env = process.env } = {}) {
+  try {
+    if (typeof itemDir !== "string" || itemDir.length === 0 || typeof sessionId !== "string" || sessionId.length === 0) return null;
+    const text = await fsp.readFile(path.join(itemDir, "runs", PENDING_ASKS_FILE), "utf8").catch(() => "");
+    const floor = since == null ? -Infinity : Date.parse(since);
+    let last = null;
+    for (const line of text.split("\n")) {
+      const record = safeParse(line.trim());
+      if (record?.sessionId !== sessionId || typeof record.toolUseId !== "string" || !HUMAN_INPUT_TOOL_NAMES.includes(record.name)) continue;
+      if (!(Date.parse(record.at) >= floor)) continue;
+      last = record;
+    }
+    if (last == null) return null;
+    const transcript = await fsp.readFile(path.join(claudeProjectsDir({ cwd, env }), `${sessionId}.jsonl`), "utf8").catch(() => "");
+    if (transcript.includes(`"tool_use_id":"${last.toolUseId}"`)) return null;
+    const question = askQuestionFromTurn({ stopReason: "tool_use", answered: false, humanInputTool: { name: last.name, input: last.input } });
+    return question == null ? null : { question, toolUseId: last.toolUseId, at: last.at };
+  } catch (error) {
+    reportDegrade("ask-question-unreadable", error, { sessionId: sessionId ?? null });
+    return null;
+  }
+}
+
 function safeParse(line) {
   try {
     return JSON.parse(line);
@@ -1940,5 +1975,5 @@ function observabilityEnabled(config) {
   return config?.work?.observability?.enabled !== false;
 }
 
-return { BUILD_ROLES, DEFAULT_HUMAN_WAIT_MS, DEFAULT_STALL_MS, HUMAN_INPUT_TOOL_NAMES, NEEDS_INPUT_SENTINEL, PRE68_DERIVATION_MARKER, PRE68_JSON_KEY, PRE68_MINER, analyzeSessionThread, analyzeTranscript, analyzeWaves, applyCacheTarget, askQuestionFromTurn, buildSessionItemIndex, cacheTargetIsHonourable, classifyToolCallResult, claudeProjectsDir, clusterInfraKills, collectMilestoneAgents, collectSessionSignals, fmtDur, humanTurnText, markLegacySnapshot, markLegacySnapshots, mergeIntervals, observabilityEnabled, observeMilestone, overlapMs, pre68DerivationHeader, pre68JsonHeader, projectSlug, readAskQuestion, readLastAssistantTurn, readLatestSnapshot, renderReportMarkdown, resolveMilestoneFolder, rollupRunsByPhase, snapshotTimestamp, tokenSplit, unionMs, verdictForCacheBucket };
+return { BUILD_ROLES, DEFAULT_HUMAN_WAIT_MS, DEFAULT_STALL_MS, HUMAN_INPUT_TOOL_NAMES, NEEDS_INPUT_SENTINEL, PRE68_DERIVATION_MARKER, PRE68_JSON_KEY, PRE68_MINER, analyzeSessionThread, analyzeTranscript, analyzeWaves, applyCacheTarget, askQuestionFromTurn, buildSessionItemIndex, cacheTargetIsHonourable, classifyToolCallResult, claudeProjectsDir, clusterInfraKills, collectMilestoneAgents, collectSessionSignals, fmtDur, humanTurnText, markLegacySnapshot, markLegacySnapshots, mergeIntervals, observabilityEnabled, observeMilestone, overlapMs, pre68DerivationHeader, pre68JsonHeader, projectSlug, readAskQuestion, readLastAssistantTurn, readLatestSnapshot, readPendingAsk, renderReportMarkdown, resolveMilestoneFolder, rollupRunsByPhase, snapshotTimestamp, tokenSplit, unionMs, verdictForCacheBucket };
 }

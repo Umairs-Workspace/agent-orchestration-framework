@@ -36,6 +36,8 @@ export function createAskOrchestration({
   const { answerRunAsk, isStale, openRunAsk, parkRunAsk, readRuns } = runs;
   const { enqueueHeartbeat: enqueueHeartbeatDefault } = heartbeats;
   const { readAskQuestion } = transcripts;
+  // 136/ADR-004 — optional: a question the session never wrote to its transcript.
+  const readPendingAsk = typeof transcripts.readPendingAsk === "function" ? transcripts.readPendingAsk : null;
   const { buildNotifyEnvelope, notify } = notifications;
   const { accountLine } = notificationFormatting;
   const { reportDegrade } = diagnostics;
@@ -61,6 +63,15 @@ export function createAskOrchestration({
     const asks = Array.isArray(record?.asks) ? record.asks : [];
     return asks[asks.length - 1] ?? null;
   };
+  // 136/ADR-004 — the newest answer among `asks`: a pending-question record written before it
+  // belongs to a question already answered.
+  const answeredSince = (asks) => {
+    const times = (Array.isArray(asks) ? asks : []).map((ask) => ask?.answeredAt).filter((at) => typeof at === "string");
+    return times.length ? times.sort().at(-1) : null;
+  };
+  // A question the session never wrote to its transcript is lost to the resumed session too, so
+  // the re-drive types it ahead of the answer; a transcript question keeps the answer verbatim.
+  const answerFor = (question, answer, lost) => (lost && typeof question === "string" ? `You asked:\n${question}\n\nThe answer:\n${answer}` : answer);
   // A run is WAITING ON A HUMAN when its record's last ask is a plain object with no answer.
   function standingAsk(record) {
     const last = lastAsk(record);
@@ -175,9 +186,13 @@ export function createAskOrchestration({
         let sessionId = current.outcome?.sessionId ?? current.record.sessionId ?? null;
         let question;
         let askedAt;
+        let lost = false;
         const opened = askWait.now();
+        const pendingAt = async (since) => (readPendingAsk == null ? null : readPendingAsk({ itemDir: item?.dir, sessionId, since, cwd, env }));
         if (!reenter) {
-          question = await readAskQuestion({ cwd, env, sessionId, sinceOffset: 0 });
+          const pending = await pendingAt(answeredSince(current.record?.asks));
+          lost = pending != null;
+          question = pending?.question ?? (await readAskQuestion({ cwd, env, sessionId, sinceOffset: 0 }));
           // THE RECORD IS THE FIRST WRITE: a refusal here is thrown unchanged, before any file,
           // notice or row (QA ruling 6).
           const record = await openRunAsk(item, runId, { question, phase: word, now: iso(opened) });
@@ -190,12 +205,14 @@ export function createAskOrchestration({
         } else {
           // RE-ENTRY (ADR-004 §5): the record's standing ask is not re-opened and not re-announced.
           // A file that is parked, absent or not a record is set back to `waiting` from the record.
-          const entry = standingAsk((await readRuns(item)).find((run) => run.runId === runId) ?? current.record) ?? lastAsk(current.record);
+          const stored = (await readRuns(item)).find((run) => run.runId === runId) ?? current.record;
+          const entry = standingAsk(stored) ?? lastAsk(current.record);
           question = entry?.question ?? null;
           askedAt = entry?.askedAt ?? iso(opened);
           const file = await askWait.read(runId);
           // The run record names its session; a record that never learned it falls back to the file's.
           sessionId = sessionId ?? file?.sessionId ?? null;
+          lost = (await pendingAt(answeredSince((Array.isArray(stored?.asks) ? stored.asks : []).slice(0, -1)))) != null;
           if (file == null || file.state === parked) {
             await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: entry?.phase ?? word, node, question, now: () => new Date(opened) });
           }
@@ -256,7 +273,7 @@ export function createAskOrchestration({
         const by = typeof file.by?.actor === "string" ? file.by.actor : null;
         await answerRunAsk(item, runId, { answer: file.answer, by, now: iso(at) });
         await narrate(accountLine(envelopeAt("session-answered", at, { outcome: { by, answer: file.answer } })));
-        const redriven = await drive({ runId, sessionId, text: file.answer });
+        const redriven = await drive({ runId, sessionId, text: answerFor(question, file.answer, lost) });
         // THE SPEND OF AN ANSWERED RUN (task 01, ruling 12): the waiting drive's baseline rides the
         // run the site settles, so the one settle charges the whole run from its first turn.
         current = { ...redriven, settlementContext: settlementContext ?? redriven.settlementContext ?? null };

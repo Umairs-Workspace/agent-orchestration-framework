@@ -20,7 +20,7 @@ export function assembleLoopAsk({ loopAskRequestServices, runStoreServices, runH
   const { parkRunAsk } = runStoreServices;
   const { readRuns } = runStoreServices;
   const { enqueueHeartbeat: enqueueHeartbeatDefault } = runHeartbeatConsumptionServices;
-  const { readAskQuestion } = workObserveServices;
+  const { readAskQuestion, readPendingAsk } = workObserveServices;
   const { buildNotifyEnvelope } = notifyNotifyServices;
   const { notify } = notifyNotifyServices;
 
@@ -30,7 +30,7 @@ export function assembleLoopAsk({ loopAskRequestServices, runStoreServices, runH
     askRequests: { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks },
     runs: { answerRunAsk, isStale, openRunAsk, parkRunAsk, readRuns },
     heartbeats: { enqueueHeartbeat: enqueueHeartbeatDefault },
-    transcripts: { readAskQuestion },
+    transcripts: { readAskQuestion, readPendingAsk },
     notifications: { buildNotifyEnvelope, notify },
     notificationFormatting: { accountLine },
     diagnostics: { reportDegrade },

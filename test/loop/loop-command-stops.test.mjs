@@ -1421,6 +1421,29 @@ function composerTests() {
       },
     },
     {
+      // 136/03 task00 E4 (ADR-004 §5) beside E5, which is the case above: a question read from the
+      // hook's record never reached the transcript, so the re-drive types it ahead of the answer.
+      name: "136/03 task00 E4 — a question the transcript never held is asked from the hook's record and re-driven with the question ahead of the answer",
+      async run() {
+        const answeredBash = [
+          { type: "assistant", message: { stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_0", name: "Bash", input: { command: "aof work doctor" } }] } },
+          { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "toolu_0", content: "ok" }] } },
+        ];
+        await withComposer(async ({ item, record, deps, phaseRun, site, redriveDone }) => {
+          const call = { runId: record.runId, sessionId: "S1", toolUseId: "toolu_1", name: "AskUserQuestion", input: { questions: [{ question: "08/00 Q1 · Discovery question", options: [{ label: "A" }, { label: "B" }] }] }, at: "2026-09-23T17:11:00.000Z" };
+          await mkdir(path.join(item.dir, "runs"), { recursive: true });
+          await writeFile(path.join(item.dir, "runs", ".asks-pending.ndjson"), `${JSON.stringify(call)}\n`, "utf8");
+          const drive = redriveDone();
+          const wait = fakeWait({ onNext: async (n) => { if (n === 1) await answerIt("Ellipsis counted"); } });
+          await awaitAnswer(phaseRun, site(drive), deps({ askWait: wait }));
+          const question = "08/00 Q1 · Discovery question\n- A\n- B";
+          const last = (await recordOf(item)).asks.at(-1);
+          assert.deepEqual([last.question, last.answer], [question, "Ellipsis counted"], "the run records the question and the answer verbatim");
+          assert.deepEqual(drive.calls, [{ runId: record.runId, sessionId: "S1", text: `You asked:\n${question}\n\nThe answer:\nEllipsis counted` }]);
+        }, { transcript: answeredBash });
+      },
+    },
+    {
       name: "131/03 task00 — the bound parks the run and says so once; a stop parks and tells nobody; the record stays running",
       async run() {
         await withComposer(async ({ item, record, posts, deps, phaseRun, site, redriveDone }) => {
