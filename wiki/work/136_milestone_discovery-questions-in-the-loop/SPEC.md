@@ -3,10 +3,10 @@ type: milestone
 number: 136
 slug: discovery-questions-in-the-loop
 title: "Discovery questions in the loop — a loop-driven refine asks its business questions through the human in the loop, the lane waits, and the answer confirms the example"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-10-03
+updated: 2026-10-04
 origin: wiki/planning/research/RESEARCH-specification-by-example.md
 depends: [131, 134]
 schema: 1
