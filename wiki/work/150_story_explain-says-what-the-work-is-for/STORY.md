@@ -26,6 +26,9 @@ files:
   - packages/work/src/discovery.mjs
   - packages/work/src/commands/find.mjs
   - packages/work/test/work-resolve.suite.mjs
+  - packages/work/test/index.mjs
+  - test/fixtures/application/command-inventory.json
+  - wiki/work/archive/142_milestone_yarn-workspace-modularization/plans/09-test-ledger.json
   - packages/core/assets/commands/explain.md
   - packages/core/assets/bundle.json
   - packages/core/assets/manifest.json
@@ -54,11 +57,11 @@ changes behind in the work tree**.
 
 ## Tasks
 
-- [ ] `tasks/00_find-resolves-a-work-tree-folder-path.feature` — `aof work find` (and every
+- [x] `tasks/00_find-resolves-a-work-tree-folder-path.feature` — `aof work find` (and every
   reader on `findWork`) resolves a folder path; today's forms answer byte-identically
-- [ ] `tasks/01_the-bundle-ships-aof-explain-read-only.feature` — `/aof:explain` ships in every
+- [x] `tasks/01_the-bundle-ships-aof-explain-read-only.feature` — `/aof:explain` ships in every
   runtime, offers no writing tool, and names no writing verb except to forbid it
-- [ ] `tasks/02_aof-explain-says-what-each-item-is-for.feature` — one answer per ref, in order:
+- [x] `tasks/02_aof-explain-says-what-each-item-is-for.feature` — one answer per ref, in order:
   unresolved and ambiguous refs, backlog and archived marks, short vs `--verbose`, nothing invented
 
 ## Notes

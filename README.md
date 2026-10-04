@@ -98,6 +98,7 @@ The unit of independence is the **story** — boundaries follow real coupling so
 | `/aof:add-milestone` · `/aof:add-story` · `/aof:add-task` · `/aof:add-uat` / `$aof-add-milestone` · `$aof-add-story` · `$aof-add-task` · `$aof-add-uat` | scaffold a milestone / story / task / cross-milestone UAT gate |
 | `/aof:feedback` / `$aof-feedback` | capture a mistake, blocker, or UAT observation the instant it's noticed (any actor) |
 | `/aof:recent` / `$aof-recent` | scan the work stream chronologically (catch up / filter by type, status, milestone) |
+| `/aof:explain` / `$aof-explain` | say what one or more work items are for — by number or backlog folder path, briefly or with `--verbose`; read-only, nothing is written |
 | `/aof:insert-milestone` · `/aof:insert-story` · `/aof:insert-chore` · `/aof:insert-uat` / `$aof-insert-milestone` · `$aof-insert-story` · `$aof-insert-chore` · `$aof-insert-uat` | insert a work item before or after an existing item while preserving stream ordering and references |
 | `/aof:delegate` | set the two model decisions — toggle gpt-5.6 delegation on/off (default off), then always choose the orchestrator model (Fable 5 or Opus 4.8) |
 

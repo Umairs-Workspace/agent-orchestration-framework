@@ -43,7 +43,9 @@ const preStoryManifestResidueHash = "sha256:5e90cb38b3e02e763808b7268493d9c834c6
 const phaseIds = ["continue", "refine", "verify"];
 const commandIdsBeforeStory = [
   "add-chore", "add-milestone", "add-spike", "add-story", "add-task", "add-uat",
-  "assimilate-code", "autonomous", "code-review", "continue", "delegate", "feedback",
+  // `explain` ADDED AT 150, WITH the diff that lands it, in the descriptor's own order (after
+  // `delegate`): the read-only `/aof:explain` command, composed of the existing read verbs.
+  "assimilate-code", "autonomous", "code-review", "continue", "delegate", "explain", "feedback",
   // `loop-diagram` ADDED AT 145, in the descriptor's own order (after `insert-uat`): the
   // `/aof:loop-diagram` wrapper over `aof diagram plan|export <ref> loop` — the same species as
   // `promote` and `archive`, repaired at `aof:verify 145`.

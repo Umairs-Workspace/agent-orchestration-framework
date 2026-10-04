@@ -16,7 +16,7 @@ import { deliveredStoryRecordsTests } from "./delivered-story-records-reported.s
 import { orderWorkTests } from "./work-next.suite.mjs";
 import { workObserveAttributionTests } from "./work-observe-attribution.suite.mjs";
 import { workObserveSnapshotsTests } from "./work-observe-snapshots.suite.mjs";
-import { resolveItemsTests } from "./work-resolve.suite.mjs";
+import { resolveItemsTests, resolvePathTests } from "./work-resolve.suite.mjs";
 import { workDoctorTests } from "./work-doctor.suite.mjs";
 import { verifyAuthorsOutcomeTests } from "./verify-authors-outcome.suite.mjs";
 import { workTests } from "./work.suite.mjs";
@@ -41,6 +41,7 @@ export const tests = [
   ...workObserveAttributionTests,
   ...workObserveSnapshotsTests,
   ...resolveItemsTests,
+  ...resolvePathTests,
   ...workDoctorTests,
   ...verifyAuthorsOutcomeTests,
   ...workTests,

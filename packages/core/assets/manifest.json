@@ -528,6 +528,15 @@
       "hash": "sha256:a1a31256fcca8d71bdadc4a561308a943b3f5de56256fb42e91b8dd5c317312d"
     },
     {
+      "path": ".claude/commands/aof/explain.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "explain",
+        "kind": "command"
+      },
+      "hash": "sha256:093e5738e82e1681e58e36e9a6d01b0f73e2fcc1d13621b253e7921d3ce7e6f5"
+    },
+    {
       "path": ".claude/commands/aof/feedback.md",
       "runtime": "claude",
       "resource": {
@@ -922,6 +931,15 @@
         "kind": "skill"
       },
       "hash": "sha256:a52c74aebb797f5bf6ca269631769c48640b25685a01197cd234d6780aa5e535"
+    },
+    {
+      "path": ".codex/skills/aof-explain/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-explain",
+        "kind": "skill"
+      },
+      "hash": "sha256:56b5c161d9cfba618ed026f51120aa8c8163c56f3b2da48a78a742720c32e9c9"
     },
     {
       "path": ".codex/skills/aof-feedback/SKILL.md",

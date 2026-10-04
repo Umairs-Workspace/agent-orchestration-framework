@@ -56,6 +56,7 @@
     { "id": "code-review", "kind": "command", "file": "commands/code-review.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "continue", "kind": "command", "file": "commands/continue.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "delegate", "kind": "command", "file": "commands/delegate.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
+    { "id": "explain", "kind": "command", "file": "commands/explain.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "feedback", "kind": "command", "file": "commands/feedback.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "init", "kind": "command", "file": "commands/init.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "insert-chore", "kind": "command", "file": "commands/insert-chore.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },

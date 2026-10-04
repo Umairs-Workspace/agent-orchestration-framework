@@ -118,6 +118,8 @@ const EXCLUDED = Object.freeze({
   "code-review.md": "ships and reviews a branch",
   "continue.md": "builds an existing story; carries its own recall regardless",
   "delegate.md": "sets two model decisions",
+  // 150 — says what items are for, composed of the read verbs; writes nothing, carries no memory call.
+  "explain.md": "explains items; reads only, cuts nothing",
   "feedback.md": "captures one raw entry",
   "init.md": "installs ACD and authors a config",
   "insert-chore.md": "inserts one chore at a position and renumbers; no partition",
