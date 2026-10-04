@@ -19,6 +19,6 @@ are in `STORY.md`'s frontmatter and are not repeated here.
 
 ## The verification step
 
-`node scripts/test.mjs --only test/loop/loop-ask-pending-hook.test.mjs` with `AOF_GLOBAL_HOME`
-isolated, then the importer sweep: the driver, ask, observe, bundle and mesh suites. The live proof
-is 136's `@manual` run on the test-bed.
+The story's own suite through the repo runner's `--only`, with `AOF_GLOBAL_HOME` isolated, then the
+importer sweep: the driver, ask, observe, bundle and mesh suites. The live proof is 136's `@manual`
+run on the test-bed.

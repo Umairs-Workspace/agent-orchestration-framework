@@ -65,8 +65,8 @@ export function createAskOrchestration({
   };
   // 136/ADR-004 — the newest answer among `asks`: a pending-question record written before it
   // belongs to a question already answered.
-  const answeredSince = (asks) => {
-    const times = (Array.isArray(asks) ? asks : []).map((ask) => ask?.answeredAt).filter((at) => typeof at === "string");
+  const answeredSince = (entries) => {
+    const times = (Array.isArray(entries) ? entries : []).map((ask) => ask?.answeredAt).filter((at) => typeof at === "string");
     return times.length ? times.sort().at(-1) : null;
   };
   // A question the session never wrote to its transcript is lost to the resumed session too, so

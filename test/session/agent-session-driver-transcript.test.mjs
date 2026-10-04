@@ -1036,5 +1036,50 @@ export const agentSessionDriverTranscriptTests = [
     },
   },
   ...readerAndProducerTests(),
+  ...pendingAskWatchTests(),
 ];
 
+// 136/03 (ADR-004) — THE DRIVER SETTLES ON THE HOOK'S RECORD. Claude Code writes a pending
+// AskUserQuestion call to the transcript only once it is answered (measured on 2.1.288 at 136's live
+// run), so the completion watch reads the PreToolUse hook's record first, scoped to records written
+// after the drive began. The transcript below ends on an answered Bash call: nothing of the question.
+function pendingAskWatchTests() {
+  const INPUT = { questions: [{ question: "08/00 Q1 · Discovery question", options: [{ label: "A" }, { label: "B" }] }] };
+  async function withPending(body) {
+    const root = await mkdtemp(path.join(os.tmpdir(), "aof-136-03-watch-"));
+    try {
+      const itemDir = path.join(root, "item");
+      await mkdir(path.join(itemDir, "runs"), { recursive: true });
+      const env = { CLAUDE_CONFIG_DIR: path.join(root, "claude") };
+      const cwd = path.join(root, "tree");
+      const projects = claudeProjectsDir({ cwd, env });
+      await mkdir(projects, { recursive: true });
+      const records = [
+        { type: "assistant", message: { stop_reason: "tool_use", content: [{ type: "tool_use", id: "toolu_0", name: "Bash", input: { command: "aof work doctor" } }] } },
+        { type: "user", message: { content: [{ type: "tool_result", tool_use_id: "toolu_0", content: "ok" }] } },
+      ];
+      await writeFile(path.join(projects, "S1.jsonl"), `${records.map((record) => JSON.stringify(record)).join("\n")}\n`, "utf8");
+      const call = { runId: "R1", sessionId: "S1", toolUseId: "toolu_1", name: "AskUserQuestion", input: INPUT, at: "2026-10-03T21:45:50.000Z" };
+      await writeFile(path.join(itemDir, "runs", ".asks-pending.ndjson"), `${JSON.stringify(call)}\n`, "utf8");
+      return await body({ itemDir, env, cwd });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  }
+  return [
+    {
+      name: "136/03 task00 E1 — the driver's completion watch settles needs-input, pending, on the hook's record alone",
+      run: () => withPending(async ({ itemDir, env, cwd }) => {
+        const settled = await defaultWatchTranscriptCompletion({ cwd, env, sessionId: "S1", pollMs: 5, idleMs: 60000, pendingAsk: { itemDir, since: "2026-10-03T21:44:47.000Z" } });
+        assert.deepEqual(settled, { outcome: "needs-input", declared: true, pending: true });
+      }),
+    },
+    {
+      name: "136/03 task00 E3 — the completion watch never settles on a record from before its drive began",
+      run: () => withPending(async ({ itemDir, env, cwd }) => {
+        const settled = await defaultWatchTranscriptCompletion({ cwd, env, sessionId: "S1", pollMs: 5, idleMs: 60000, declaredIdleMs: 60000, signal: AbortSignal.timeout(200), pendingAsk: { itemDir, since: "2026-10-03T23:26:17.000Z" } });
+        assert.equal(settled, null, "a resumed session is not taken to be waiting on a call it lost");
+      }),
+    },
+  ];
+}

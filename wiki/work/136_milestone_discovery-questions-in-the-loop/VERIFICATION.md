@@ -18,9 +18,11 @@ failure, restore the file, then run the control green again.
   the primary checkout with a temp `AOF_GLOBAL_HOME`, through `scripts/test.mjs --only` over
   `example-answers`, `refine-discovery-beat` and the FF-13601 control: 94 cases, 0 failures.
   - verifies → 136/01 tasks 00-01, 136/02 tasks 00-01.
-- **136/03 (`@executable`, 1 feature), 2026-10-04 at `bacac26d`.** `loop-ask-pending-hook` (E1-E3,
-  E6, the bundle registration) and `loop-command-stops` (E4 beside 131/03's verbatim case, which
-  is E5): every 136/03 case green. The importer sweep over every suite that reads what 03 touched:
+- **136/03 (`@executable`, 1 feature), 2026-10-04.** `loop-command-stops` (the reader E1-E3, the
+  hook E1 and E6, the bundle registration, and E4 beside 131/03's verbatim case, which is E5) and
+  `agent-session-driver-transcript` (the driver's settle, E1 and E3): every 136/03 case green. The
+  cases sit in the two suites that own the subject; a suite of their own overran `test/loop`'s
+  ceiling and the driver's named-consumer census at the first gate run. The importer sweep over every suite that reads what 03 touched:
   the root bundle, settings-merge, 87, session-hook, silent-catch, driver-transcript,
   core-workspace and application-assembly suites green (`53/00 task03` red only under contention,
   green alone); the packages `aof` 344, `@aof/work` 315, `@aof/execution` 135, `@aof/mesh` 197,

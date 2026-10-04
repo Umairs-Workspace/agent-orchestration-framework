@@ -27,9 +27,11 @@ files:
   - packages/core/src/application/bindings/loop/ask.mjs
   - packages/core/src/application/bindings/agent-session-driver.mjs
   - packages/core/src/application/bindings/mesh/park-resume.mjs
-  - test/loop/loop-ask-pending-hook.test.mjs
   - test/loop/loop-command-stops.test.mjs
-  - test/loop/index.mjs
+  - test/session/agent-session-driver-transcript.test.mjs
+  - .claude/hooks/aof/ask-pending-enqueue.mjs
+  - .claude/settings.json
+  - .aof/aof.lock.json
 schema: 1
 aofVersion: 0.1.0
 ---

@@ -72,7 +72,10 @@ function ownTokenPatterns(source) {
 }
 async function askReaders(plant = {}) {
   const readers = [];
-  for (const name of (await readdir(path.join(repoRoot, SBE_SRC))).filter((entry) => entry.endsWith(".mjs")).sort()) {
+  const modules = (await readdir(path.join(repoRoot, SBE_SRC))).filter((entry) => entry.endsWith(".mjs")).sort();
+  // FF-11902: the sweep must reach the reader it judges, so an emptied walk reds rather than passes.
+  assert.ok(modules.includes(path.basename(THE_READER)), `the sweep of ${SBE_SRC} reads ${THE_READER}`);
+  for (const name of modules) {
     const file = `${SBE_SRC}/${name}`;
     let code = stripComments(plant[name] ?? await readFile(path.join(repoRoot, file), "utf8"));
     if (file === THE_READER) {
