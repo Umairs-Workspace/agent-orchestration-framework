@@ -85,7 +85,10 @@ export const LOOP_SUBJECT = "loop";
 export const EXECUTION_DIR = "execution";
 
 export function loopDiagramPaths(itemDir, sourceExt) {
-  const dir = `${String(itemDir).replace(/\\/g, "/").replace(/\/+$/, "")}/${EXECUTION_DIR}`;
+  // Trailing slashes are trimmed by a loop, not `/\/+$/`, which is polynomial on a long run of `/`.
+  let base = String(itemDir).replace(/\\/g, "/");
+  while (base.endsWith("/")) base = base.slice(0, -1);
+  const dir = `${base}/${EXECUTION_DIR}`;
   const paths = { dir, plan: `${dir}/${LOOP_SUBJECT}-plan.json` };
   if (typeof sourceExt === "string") paths.source = `${dir}/${LOOP_SUBJECT}${sourceExt}`;
   paths.png = `${dir}/${LOOP_SUBJECT}.png`;

@@ -67,7 +67,9 @@ const ASK_HELPER = "function readAskAnswers(";
 const readsAsks = (code) => /(?:\?\.|\.)\s*asks\b|\[\s*["'`]asks["'`]\s*\]/.test(code);
 function ownTokenPatterns(source) {
   const code = blankStringLiterals(source);
-  const literals = [...code.matchAll(/(?<![\w$)\]])\/(?![/*])(?:\\.|\[(?:\\.|[^\]\n])*\]|[^/\n\\[])+\/[dgimsuyv]*/g)].map((match) => match[0]);
+  // Inside a class, `\\.` and the plain-character branch must not both match a backslash, or a run
+  // of backslashes backtracks exponentially (CodeQL); an escape in a class is matched by `\\.` alone.
+  const literals = [...code.matchAll(/(?<![\w$)\]])\/(?![/*])(?:\\.|\[(?:\\.|[^\]\n\\])*\]|[^/\n\\[])+\/[dgimsuyv]*/g)].map((match) => match[0]);
   return literals.filter((literal) => /\[(?:EQ|QE)\]|[EQ](?:\\d|\[[01]-9\])/.test(literal));
 }
 async function askReaders(plant = {}) {
