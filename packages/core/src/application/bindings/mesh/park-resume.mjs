@@ -7,7 +7,7 @@ export function assembleMeshParkResume({ runStoreServices, workObserveServices, 
   const { answerRunAsk } = runStoreServices;
   const { heartbeat } = runStoreServices;
   const { openRunAsk } = runStoreServices;
-  const { readAskQuestion } = workObserveServices;
+  const { readAskQuestion, readPendingAsk } = workObserveServices;
   const { claimAssignmentParkResume } = effectsAssignmentTransitionsServices;
   const { completeAssignmentParkResume } = effectsAssignmentTransitionsServices;
   const { reportAssignmentSettled } = effectsAssignmentTransitionsServices;
@@ -15,7 +15,7 @@ export function assembleMeshParkResume({ runStoreServices, workObserveServices, 
   const { transitionRunComplete } = effectsRunTransitionsServices;
   const { reportDegrade } = degradeServices;
 
-  const { createMeshParkResume, directivePhase, readWorkerAsk, announceWorkerAsk } = createMeshParkResumeServices({ answerRunAsk, heartbeat, openRunAsk, readAskQuestion, claimAssignmentParkResume, completeAssignmentParkResume, reportAssignmentSettled, reportTerminalResumeRefused, transitionRunComplete, reportDegrade, loadPresence: () => provideMeshPresence(), loadWork: () => provideWork(), loadNotifications: () => provideNotifyNotify() });
+  const { createMeshParkResume, directivePhase, readWorkerAsk, announceWorkerAsk } = createMeshParkResumeServices({ answerRunAsk, heartbeat, openRunAsk, readAskQuestion, readPendingAsk, claimAssignmentParkResume, completeAssignmentParkResume, reportAssignmentSettled, reportTerminalResumeRefused, transitionRunComplete, reportDegrade, loadPresence: () => provideMeshPresence(), loadWork: () => provideWork(), loadNotifications: () => provideNotifyNotify() });
 
   return { createMeshParkResume, directivePhase, readWorkerAsk, announceWorkerAsk };
 }

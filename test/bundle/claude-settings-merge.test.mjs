@@ -573,10 +573,16 @@ export const claudeSettingsMergeTests = [
           // still survives byte-identical (checked above), and the framework now adds
           // NOTHING beside it. Asserting the absence is what keeps this a real check —
           // silently dropping the line would leave a re-introduced hook unnoticed.
+          // 136/03 (ADR-004): the one framework PreToolUse member is the human-input recorder, in a
+          // group of its own matched to AskUserQuestion; nothing joins the operator's guard.
           assert.deepEqual(
-            aofEntries(afterFirst, "PreToolUse"),
+            aofEntries(afterFirst, "PreToolUse").filter((entry) => entry[AOF_HOOK_MARKER] !== "claude-ask-pending"),
             [],
             `${door.name}: the framework plants no PreToolUse entry beside the operator's own guard`,
+          );
+          assert.ok(
+            (afterFirst.hooks?.PreToolUse ?? []).every((group) => !(group.hooks ?? []).some((entry) => entry[AOF_HOOK_MARKER] === "claude-ask-pending") || (group.matcher === "AskUserQuestion" && group.hooks.length === 1)),
+            `${door.name}: the recorder sits alone in its own AskUserQuestion group`,
           );
           // …and the three session members really did arrive, on the right events,
           // exactly once each. Without this the clause above would be a weakening.

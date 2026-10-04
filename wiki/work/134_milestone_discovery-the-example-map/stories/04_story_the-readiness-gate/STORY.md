@@ -5,30 +5,30 @@ slug: the-readiness-gate
 title: "The readiness gate — the examples doctor lane, the EXAMPLES.md budget row, and a continue door that refuses a story with an open business question"
 parent: 134
 depends: [02, 03]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-10-02
 adrs: [ADR-001, ADR-005, ADR-006]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
   - wiki/work/134_milestone_discovery-the-example-map/ARCHITECTURE.md#ADR-001
   - wiki/work/134_milestone_discovery-the-example-map/ARCHITECTURE.md#ADR-005
   - wiki/work/134_milestone_discovery-the-example-map/ARCHITECTURE.md#ADR-006
-  - src/work-examples/map.mjs
-  - src/work-examples/answers.mjs
-  - src/config-inspect.mjs
-  - src/work/doctor.mjs
-  - src/work/doctor-budget.mjs
-  - src/work/doctor-diagrams.mjs
-  - src/work/doctor-loop-ready.mjs
-  - src/work/observe.mjs
-  - src/run-store.mjs
-  - src/commands/resolve.mjs
-  - src/commands/doctor.mjs
-  - src/commands/continue.mjs
-  - src/command-error.mjs
-  - src/acceptance-horizon.mjs
+  - packages/work/src/examples/map.mjs
+  - packages/work/src/examples/answers.mjs
+  - packages/core/src/application/bindings/config-inspect.mjs
+  - packages/work/src/doctor/index.mjs
+  - packages/work/src/doctor/budget.mjs
+  - packages/work/src/doctor/diagrams.mjs
+  - packages/work/src/doctor/loop-ready.mjs
+  - packages/work/src/observe.mjs
+  - packages/execution/src/runs.mjs
+  - packages/work/src/commands/resolve.mjs
+  - packages/work/src/commands/doctor.mjs
+  - packages/work/src/commands/continue.mjs
+  - packages/contracts/src/error.mjs
+  - packages/work/src/lifecycle.mjs
   - test/work/doctor-diagrams-lane.test.mjs
   - test/work/doctor-context-budget.test.mjs
   - test/work/story-plan-document.test.mjs
@@ -40,11 +40,23 @@ reads:
   - test/examples/index.mjs
   - test/arch/examples/index.mjs
 files:
-  - src/work/doctor-examples.mjs
-  - src/work/doctor.mjs
-  - src/work/doctor-budget.mjs
-  - src/commands/doctor.mjs
-  - src/commands/continue.mjs
+  - packages/work/src/doctor/examples.mjs
+  - packages/work/src/doctor/index.mjs
+  - packages/work/src/doctor/budget.mjs
+  - packages/work/src/commands/doctor.mjs
+  - packages/work/src/commands/continue.mjs
+  - packages/work/package.json
+  - packages/core/src/application/assemble.mjs
+  - packages/core/src/application/bindings/work/doctor-examples.mjs
+  - packages/core/src/application/bindings/work/doctor.mjs
+  - packages/core/src/application/bindings/commands/continue.mjs
+  - packages/core/src/application/bindings/commands/doctor.mjs
+  - packages/work/test/support/doctor-services.mjs
+  - test/work/doctor-diagrams-lane.test.mjs
+  - test/arch/loop/acd-loop-record-is-a-face.test.mjs
+  - test/bundle/yarn-installation.test.mjs
+  - scripts/workspace-runtime-audit.json
+  - wiki/work/archive/142_milestone_yarn-workspace-modularization/plans/09-test-ledger.json
   - test/examples/index.mjs
   - test/examples/doctor-examples-lane.test.mjs
   - test/examples/continue-door-examples.test.mjs
@@ -54,6 +66,7 @@ files:
   - test/arch/audit/acd-controls-never-execute.test.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
   - wiki/work/134_milestone_discovery-the-example-map/VERIFICATION.md
+  - wiki/work/134_milestone_discovery-the-example-map/STATE.md
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -79,10 +92,10 @@ lane's own pure function. The `src/work` row goes 45 → 46 with its reason. FF-
 
 ## Tasks
 
-- [ ] 00 [the examples lane reports the map a person has not answered](tasks/00_the-examples-lane-reports-the-map-a-person-has-not-answered.feature)
-- [ ] 01 [the snapshot reads a story map and budgets it only when the gate is on](tasks/01_the-snapshot-reads-a-story-map-and-budgets-it-only-when-the-gate-is-on.feature)
-- [ ] 02 [continue refuses a story while a business question stands](tasks/02_continue-refuses-a-story-while-a-business-question-stands.feature)
-- [ ] 03 [off is today](tasks/03_off-is-today.feature)
+- [x] 00 [the examples lane reports the map a person has not answered](tasks/00_the-examples-lane-reports-the-map-a-person-has-not-answered.feature)
+- [x] 01 [the snapshot reads a story map and budgets it only when the gate is on](tasks/01_the-snapshot-reads-a-story-map-and-budgets-it-only-when-the-gate-is-on.feature)
+- [x] 02 [continue refuses a story while a business question stands](tasks/02_continue-refuses-a-story-while-a-business-question-stands.feature)
+- [x] 03 [off is today](tasks/03_off-is-today.feature)
 
 ## Notes
 
@@ -93,3 +106,7 @@ lane's own pure function. The `src/work` row goes 45 → 46 with its reason. FF-
   group alone, where an over-budget `EXAMPLES.md` binds. A loop-driven refine stopping is 136's.
 - `aof work doctor` must be run from the repository root when you verify. It reports "healthy"
   over an empty stream from a subdirectory.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

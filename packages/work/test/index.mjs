@@ -6,7 +6,6 @@ import { tuneProvenanceTests } from "./tune-provenance.suite.mjs";
 import { tuneDistanceTests } from "./tune-distance.suite.mjs";
 import { hookWiringTests } from "./work-audit-hook-wiring.suite.mjs";
 import { workDebtTests } from "./work-debt.suite.mjs";
-import { exampleMapParseTests } from "./example-map-parse.suite.mjs";
 import { rubricJoinIsDeclaredTests } from "./rubric-join-is-declared.suite.mjs";
 import { tuneFormationTests } from "./tune-formation.suite.mjs";
 import { featureParseExamplesTests } from "./feature-parse-examples.suite.mjs";
@@ -31,7 +30,6 @@ export const tests = [
   ...tuneDistanceTests,
   ...hookWiringTests,
   ...workDebtTests,
-  ...exampleMapParseTests,
   ...rubricJoinIsDeclaredTests,
   ...tuneFormationTests,
   ...featureParseExamplesTests,

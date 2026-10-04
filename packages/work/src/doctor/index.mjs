@@ -18,7 +18,14 @@ import { DIAGRAMS_DIR } from "../diagrams/layout.mjs";
 import { resolveDeclaredSet } from "../story-contract.mjs";
 
 // Application policy and cross-domain reads are supplied by core.
-export function createWorkDoctor({ projectExecution, readRuns, diagramsGroup }) {
+//
+// milestone 135 / ADR-001 §3 — THREE PRACTICE-NEUTRAL SEAMS, each defaulting to nothing, so an
+// engine built with none of them reports exactly what the built-in lanes report:
+//   storyProbe(item, { projectsDir, config, fileState }) → { docSizes, extensions } | null
+//     called once per story row at the snapshot's impure edge; both halves are merged into the row.
+//   budgetRows   [{ doc, kind, lines }] — documents the budget lane measures beside its own rows.
+//   extensionGroups — check groups appended after the built-in lanes, in the order given.
+export function createWorkDoctor({ projectExecution, readRuns, diagramsGroup, storyProbe = null, budgetRows = [], extensionGroups = [] }) {
 // `work:doctor`'s engine — the deterministic, cross-item HEALTH lane over an ACD
 // work stream (milestone 15 / ADR-003). A SIBLING of `work.mjs`'s `validateWork`,
 // a new *consumer* of the model: it reuses `listItems` for identity, a `readMeta`
@@ -65,6 +72,9 @@ export function createWorkDoctor({ projectExecution, readRuns, diagramsGroup }) 
 // here rather than in the lane is what keeps the lane replayable from a literal snapshot.
 // milestone 133 / story 03 — the diagrams lane, and the folder segment its listing probe reads
 // through the layout's one home (FF-13302).
+// milestone 135 / ADR-001 §3 — THE STORY PROBE SEAM: whatever a composed practice needs to know
+// about a story is read by its own probe at this engine's impure edge (below), so the practice's
+// lane stays a pure function of the snapshot and this engine names none of it.
 
 // The record-doc mapping is owned by `work.mjs`; doctor is a consumer. `work.mjs` does
 // not export the type→doc map, so the snapshot pass replicates that tiny body here (the
@@ -368,7 +378,7 @@ function storyContractSets(item, text, projectRoot) {
   };
 }
 
-async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, renameMap = null } = {}) {
+async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, renameMap = null } = {}) {
   const items = await listItems(workDir);
 
   // A SNAPSHOT FACT GATHERED BY A RECURSIVE WALK BELONGS TO THE ITEM THAT OWNS THE PATH
@@ -482,6 +492,22 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       const plan = await fileState(path.join(item.dir, PLAN_BASENAME));
       if (plan.present) docSizes[PLAN_BASENAME] = { lines: plan.lines };
     }
+    // milestone 135 / ADR-001 §3 — THE STORY PROBE, asked beside the plan and only for a story. It
+    // gets the config and the caller's transcript directory as data, and this engine's own
+    // `fileState`, so a document it measures is counted exactly as every other budgeted document
+    // is. What it answers is merged, never interpreted: its sizes join `docSizes` (the budget lane
+    // judges them through an injected row) and its extensions ride the row for the practice's own
+    // lane. No probe, or a probe that answers nothing, leaves the row without extensions. A size this
+    // engine measured itself wins, as a built-in budget row wins in `budgetKeyFor`: a probe can add a
+    // document and never re-measure one.
+    let extensions = null;
+    if (typeof storyProbe === "function" && item.type === "story") {
+      const probed = await storyProbe(item, { projectsDir, config: config ?? {}, fileState });
+      for (const [docName, size] of Object.entries(probed?.docSizes ?? {})) {
+        if (!(docName in docSizes)) docSizes[docName] = size;
+      }
+      if (probed?.extensions && Object.keys(probed.extensions).length > 0) extensions = { ...probed.extensions };
+    }
     // milestone 124 / story 00 (ADR-002 §4) — THE CONTRACT SETS, RESOLVED HERE and nowhere else.
     // `reads:`/`files:` live only on `STORY.md`, whose text this snapshot has ALREADY read for
     // its frontmatter (above) — so this costs no traversal and opens no file, exactly as 66/03's
@@ -510,6 +536,9 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       docSizes,
       docTexts,
       hasTasks: taskFiles.hasTasks,
+      // milestone 135 / ADR-001 §3 — what the story probe answered, keyed by practice, or null when
+      // no probe ran or it answered nothing (see the probe above).
+      extensions,
       // milestone 78 / story 03 — see the read above. `{ present, text }` is `fileState`'s own shape;
       // `loopEngagements` is null for an item with no record, which is the ordinary case.
       executionRecord: { present: executionRecord.present, text: executionRecord.text },
@@ -861,6 +890,9 @@ const CHECK_GROUPS = [
   // wrong ADR, and a file nothing links. Unlike the three lanes above it, its link codes GATE —
   // they take the acceptance horizon — and so it carries no `*_FINDING_CODES` array.
   diagramsGroup,
+  // milestone 135 / ADR-001 §3 — the lanes a composed practice brings, appended after every
+  // built-in lane in the order core hands them in.
+  ...extensionGroups,
 ];
 
 // ----------------------------------------------------------- the engine ----
@@ -892,6 +924,8 @@ function staleWindowFromConfig(config) {
 // ~150-against-300 convention: advisory guidance ahead of the hard warning. It is a DEFAULT rather
 // than a measurement because no plan document exists in any stream yet to measure; when a
 // distribution exists the repair is one line, here.
+// An injected budget row (milestone 135 / ADR-001 §3) carries its own default as `lines`; its kind
+// is resolved below exactly like a built-in one, so `work.doctor.budgets.<kind>` overrides it.
 const DEFAULT_BUDGETS = { spec: 300, architecture: 700, story: 150, feature: 300, plan: 80 };
 
 // Resolve `config.work.doctor.budgets = { spec, architecture, story, feature }` (line
@@ -906,12 +940,17 @@ function budgetsFromConfig(config) {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
   };
+  const injected = {};
+  for (const row of budgetRows) {
+    if (typeof row?.kind === "string" && !(row.kind in DEFAULT_BUDGETS)) injected[row.kind] = resolve(raw[row.kind], row.lines);
+  }
   return {
     spec: resolve(raw.spec, DEFAULT_BUDGETS.spec),
     architecture: resolve(raw.architecture, DEFAULT_BUDGETS.architecture),
     story: resolve(raw.story, DEFAULT_BUDGETS.story),
     feature: resolve(raw.feature, DEFAULT_BUDGETS.feature),
     plan: resolve(raw.plan, DEFAULT_BUDGETS.plan),
+    ...injected,
   };
 }
 
@@ -974,7 +1013,7 @@ function dedupe(findings) {
 // file's mesh block independently and hands it in here as plain data, exactly like
 // `now`/`staleWindow` — the engine itself performs no extra disk read.
 async function doctorWork(workDir, config, scope, options = {}) {
-  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot } = options;
+  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir } = options;
   // milestone 43 / story 06 (ADR-005) — `cache` + `selfNode` are injected at the SAME impure
   // edge as `now` and `rawCommittedMesh`: plain data, read by `commands/doctor.mjs`, so the
   // engine still performs no store open and still reads no clock. Absent ⇒ the snapshot is
@@ -996,11 +1035,16 @@ async function doctorWork(workDir, config, scope, options = {}) {
     // the key) and a present one as the report's own text. The resolver is the lane's own,
     // so the two snapshot builders cannot come to read the key two ways.
     report: declaredReportFrom(config),
+    // milestone 135 / ADR-001 §3 — the config and the transcript directory the caller names (or
+    // none), handed to the story probe as data; the probe's own gate decides whether it reads.
+    config: config ?? {},
+    projectsDir: projectsDir ?? null,
   });
   const ctx = {
     now: now ?? null,
     staleWindow: staleWindow ?? staleWindowFromConfig(config),
     budgets: budgets ?? budgetsFromConfig(config),
+    budgetRows,
     // Present ONLY for the status door's `→ done` preflight. Ordinary scoped/open
     // doctor calls and stream sweeps omit it, so their budget findings stay warnings.
     acceptingRef: acceptingRef ?? null,

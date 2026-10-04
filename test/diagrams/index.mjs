@@ -9,8 +9,12 @@ import { diagramPlanCommandTests } from "./diagram-plan-command.test.mjs";
 // milestone 133 / story 02 — export: the browser ladder and the rasterizer (tasks 00-01), and
 // `aof diagram export` (task 02).
 import { diagramExportCommandTests } from "./diagram-export-command.test.mjs";
+// 145 — the loop diagram: `aof diagram plan <ref> loop` (task 01), `aof diagram export <ref> loop`
+// (task 02) and the `/aof:loop-diagram` command's prose (task 03).
+import { loopDiagramCommandTests } from "./loop-diagram-command.test.mjs";
 
 export const tests = [
   ...diagramPlanCommandTests,
   ...diagramExportCommandTests,
+  ...loopDiagramCommandTests,
 ];

@@ -13,6 +13,7 @@ import { terminalOneImplementationTests } from "./terminal-one-implementation.su
 import { terminalUnavailablePaneTests } from "./terminal-unavailable-pane.suite.mjs";
 import { appRoutesTests } from "./app-routes.suite.mjs";
 import { boardDiagramsTests } from "./board-diagrams.suite.mjs";
+import { boardRuleGroupsTests } from "./board-rule-groups.suite.mjs";
 import { boardRunsPureTests } from "./board-runs-pure.suite.mjs";
 import { fleetAssignmentChipTests } from "./fleet-assignment-chip.suite.mjs";
 import { homeFeedAxisTests } from "./home-feed-axis.suite.mjs";
@@ -48,6 +49,7 @@ export const tests = [
   ...terminalUnavailablePaneTests,
   ...appRoutesTests,
   ...boardDiagramsTests,
+  ...boardRuleGroupsTests,
   ...boardRunsPureTests,
   ...fleetAssignmentChipTests,
   ...homeFeedAxisTests,

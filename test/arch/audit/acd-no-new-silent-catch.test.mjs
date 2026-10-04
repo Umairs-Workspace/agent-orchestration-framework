@@ -62,6 +62,12 @@ const BASELINE = {
   // background. Pinned at 1 and shrink-only like every other entry: a second catch in that
   // hook reds this gate.
   "packages/core/assets/hooks/run-heartbeat-enqueue.mjs": 1,
+  // 136/03 (ADR-004) — the THIRD member, for the same reason: `ask-pending-enqueue.mjs` is the
+  // PreToolUse hook on the human-input tool, closed to every reporting channel the same way (no
+  // framework import, nothing on stdout), and it must exit 0 because a failing PreToolUse hook would
+  // get in the way of the question it records. Its ONE site is the record append; the compensating
+  // control is the transcript read it backs up, which still settles an ask whose call is on disk.
+  "packages/core/assets/hooks/ask-pending-enqueue.mjs": 1,
 };
 
 

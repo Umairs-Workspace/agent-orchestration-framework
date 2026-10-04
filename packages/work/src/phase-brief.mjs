@@ -1391,21 +1391,30 @@ export function compilePhaseBrief(inputs = {}) {
   // to the re-plan as `carried`, which both suppresses a second reduction and keeps the
   // record of what happened to it in a plan that no longer performs it. Nothing is written
   // onto the section itself: the packer's control state does not ride out on the payload.
+  //
+  // A condenser that DECLINES (null) reduced nothing, so it is not entered in `exhausted`: a
+  // section that already fits the whole ceiling declines here, and entered as final it was
+  // never condensed again — not by the re-plan, not by reinstatement — so once sacrificed it
+  // could only be offered back whole. Measured on 143/03's refine brief: a 5,257-char
+  // declared slice was sacrificed with 3,261 chars unspent, while its condenser fits it in
+  // 2,772. `offered` is what keeps this pass from picking the same section twice.
   const exhausted = new Map();
+  const offered = new Set();
   for (let round = 0; round < ordered.length; round += 1) {
     if (renderCompleteContext(text, notice).length <= PHASE_BRIEF_MAX_CHARS) break;
     let target = null;
     for (let index = retained.length - 1; index >= 1; index -= 1) {
       const section = retained[index];
-      if (exhausted.has(section.id) || condensations.has(section.id)) continue;
+      if (offered.has(section.id) || condensations.has(section.id)) continue;
       if (BRIEF_SECTION_CONDENSERS[section.id] == null) continue;
       target = section;
       break;
     }
     if (target == null) break;
+    offered.add(target.id);
     const reduction = condenseSection(target, Math.max(0, PHASE_BRIEF_MAX_CHARS - headerLength(target)));
-    exhausted.set(target.id, reduction);
     if (reduction == null) continue;
+    exhausted.set(target.id, reduction);
     planned = planned.map((section) => (
       section.id === target.id ? reduction.section : section
     ));

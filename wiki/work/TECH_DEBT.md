@@ -3466,3 +3466,17 @@ actually bounds this repo is the shell's private `cycles` Map.
 the live path never takes — and each new cap site is written against the shell, not the decider.
 **The fix.** Hand the shell's history to the engine (`cycle`, `lastPhase`, `gate`, `verifyCycle`)
 and delete its duplicates; needs a ruling on module ownership. `src/commands/loop.mjs:860`
+
+---
+
+## 92. The loop shell is one 2,177-line module holding seven doors, and it grows by every loop feature
+
+**Status:** open (raised 2026-10-03 by architect, at 143/00 review). **Severity:** medium.
+**What's wrong.** `commands/loop.mjs` holds the probe, the stop, the hand-off, the launch body,
+the L1 report, the resume reconciliation and the sequential walk in one closure; 143 alone adds
+the backlog promotion, the refine mode and the per-phase sessions to it.
+**How it bites.** Every loop story writes this file, so the wave planner serialises them, and the
+only bound on its size is a line ceiling (`test/loop/loop-command-wave.test.mjs`).
+**The fix.** Split the doors (probe/stop/hand-off) from the launch body along the seams the
+wave and cycle extractions used; `packages/work-loop/src` is at its file budget, so the split
+needs a stated row raise. `packages/work-loop/src/commands/loop.mjs:91`

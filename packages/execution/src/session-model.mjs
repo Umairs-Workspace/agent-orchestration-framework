@@ -66,27 +66,158 @@ export const THINKING_UNKNOWN_LEVEL = "thinking-unknown-level";
 export const thinkingUnknownLevelMessage = (value) =>
   `--thinking "${value}" is not a known effort level. Use one of: ${EFFORT_SPELLINGS.join(", ")}.`;
 
-// resolveSessionLaunch(config, phase, { thinking }) -> { model?, effort, effortSource }
+// resolveSessionLaunch(config, phase, { thinking, choice }) -> { model?, effort, effortSource, modelSource? }
 //
-// Resolves the phase session's chosen model and effort. `phase` is one of the loop's phase names
-// (refine / continue / verify); an unknown phase name contributes no configured route. A model
-// route whose value is not a non-empty string is ignored. `thinking` is the caller's
-// already-validated `--thinking` level (or absent); `effortSource` names which rung answered —
-// `--thinking`, `config` or `default`.
-export function resolveSessionLaunch(config, phase, { thinking } = {}) {
+// Resolves the phase session's chosen model and effort, each PART on its own (143/02, ADR-003 §5):
+// the flag, then `work.agents.session.models` / `.effort`, then the default (no model; `DEFAULT_EFFORT`).
+// `phase` is one of the loop's phase names; an unknown phase name contributes no configured route. A
+// model route whose value is not a non-empty string is ignored.
+//
+// `choice` is the phase's entry from `parseSessionChoices` (`{ model?, modelFlag?, effort?, effortFlag? }`).
+// `thinking` is 141's option, kept: the caller's already-validated UNPHASED `--thinking` level, read
+// only when the choice sets no effort. `effortSource` names which rung answered the effort (`--model`,
+// `--thinking`, `config` or `default`), and `modelSource` the model's (`--model` or `config`). It is
+// appended last, and only when a model resolves, so an unrouted answer is byte-identical to 141's.
+export function resolveSessionLaunch(config, phase, { thinking, choice } = {}) {
   const session = config?.work?.agents?.session;
   const routed = session && typeof session === "object" && !Array.isArray(session) ? session : {};
   const pick = (map) => {
     if (!map || typeof map !== "object" || Array.isArray(map)) return undefined;
     return Object.prototype.hasOwnProperty.call(map, phase) ? map[phase] : undefined;
   };
-  const model = pick(routed.models);
+  const usableModel = (value) => typeof value === "string" && value.trim() !== "";
+  const chosenModel = usableModel(choice?.model) ? choice.model : null;
+  const configuredModel = usableModel(pick(routed.models)) ? pick(routed.models) : null;
   const out = {};
-  if (typeof model === "string" && model.trim() !== "") out.model = model;
+  if (chosenModel != null) out.model = chosenModel;
+  else if (configuredModel != null) out.model = configuredModel;
+  const chosen = normalizeEffort(choice?.effort);
   const flagged = normalizeEffort(thinking);
   const configured = normalizeEffort(pick(routed.effort));
-  if (flagged != null) Object.assign(out, { effort: flagged, effortSource: "--thinking" });
+  if (chosen != null) Object.assign(out, { effort: chosen, effortSource: choice.effortFlag ?? "--model" });
+  else if (flagged != null) Object.assign(out, { effort: flagged, effortSource: "--thinking" });
   else if (configured != null) Object.assign(out, { effort: configured, effortSource: "config" });
   else Object.assign(out, { effort: DEFAULT_EFFORT, effortSource: "default" });
+  if (out.model !== undefined) out.modelSource = chosenModel != null ? (choice.modelFlag ?? "--model") : "config";
   return out;
+}
+
+// ── THE PER-PHASE SESSION CHOICE GRAMMAR (143/02, ADR-003) — its one home ──
+//
+// `--model [<phase>=][<model>][:<effort>]` and `--thinking [<phase>=]<effort>`, both repeatable, read
+// by ONE pure function so the loop and the drive cannot drift apart. A value it cannot read is
+// refused with a code, never guessed at.
+
+// The loop's phases, in the order a refusal names them.
+export const SESSION_PHASES = Object.freeze(["refine", "continue", "verify"]);
+export const SESSION_CHOICE_UNKNOWN_PHASE = "session-choice-unknown-phase";
+export const SESSION_CHOICE_EMPTY = "session-choice-empty";
+export const SESSION_CHOICE_CONFLICT = "session-choice-conflict";
+
+const choiceRefusal = (code, message) => ({ refusal: { code, message } });
+
+// One flag value → `{ phase, model?, effort?, flag, raw }`, or a refusal. `phase` is `null` for an
+// unphased value. `--model` splits on the FIRST `=`, then on the LAST `:` only when the suffix is an
+// effort spelling, so any other `:` (a Bedrock-style `…-v1:0`) stays part of the model id.
+function readChoice(flag, raw) {
+  const value = typeof raw === "string" ? raw : "";
+  const at = value.indexOf("=");
+  let phase = null;
+  let rest = value;
+  if (at >= 0) {
+    phase = value.slice(0, at);
+    rest = value.slice(at + 1);
+    if (!SESSION_PHASES.includes(phase)) {
+      return choiceRefusal(SESSION_CHOICE_UNKNOWN_PHASE, `${flag} "${value}": "${phase}" is not a phase. Use one of: ${SESSION_PHASES.join(", ")}.`);
+    }
+  }
+  if (flag === "--thinking") {
+    const effort = normalizeEffort(rest);
+    if (effort == null) return choiceRefusal(THINKING_UNKNOWN_LEVEL, thinkingUnknownLevelMessage(rest));
+    return { phase, effort, flag, raw: value };
+  }
+  let model = rest;
+  let effort = null;
+  const colon = rest.lastIndexOf(":");
+  if (colon >= 0) {
+    const level = normalizeEffort(rest.slice(colon + 1));
+    if (level != null) {
+      model = rest.slice(0, colon);
+      effort = level;
+    } else if (rest.startsWith(":")) {
+      const named = rest.slice(colon + 1);
+      return choiceRefusal(THINKING_UNKNOWN_LEVEL, `--model "${value}": "${named}" is not a known effort level. Use one of: ${EFFORT_SPELLINGS.join(", ")}.`);
+    }
+  }
+  // A blank model is no model — the resolver would drop it and silently fall back to config, so the
+  // grammar refuses it here rather than accept a value nothing will honour.
+  const named = model.trim() !== "";
+  if (!named && effort == null) {
+    return choiceRefusal(SESSION_CHOICE_EMPTY, `--model "${value}" names neither a model nor an effort.`);
+  }
+  return { phase, ...(named ? { model } : {}), ...(effort == null ? {} : { effort }), flag, raw: value };
+}
+
+// parseSessionChoices({ model, thinking }) -> { choices } | { refusal: { code, message } }
+//
+// `choices` maps each phase something was chosen for to `{ model?, modelFlag?, effort?, effortFlag? }`.
+// SPECIFICITY, NOT ORDER (ADR-003 §4): a phased value beats an unphased one for its phase, and two
+// values at the SAME specificity that set the same part of the same phase refuse — even when they
+// are equal, because nothing here picks a winner.
+export function parseSessionChoices({ model = [], thinking = [] } = {}) {
+  const read = [];
+  for (const [flag, values] of [["--model", model], ["--thinking", thinking]]) {
+    for (const raw of Array.isArray(values) ? values : [values]) {
+      const choice = readChoice(flag, raw);
+      if (choice.refusal) return choice;
+      read.push(choice);
+    }
+  }
+  // The writer of each (specificity, phase, part) slot, so a second writer is named with the first.
+  const slots = new Map();
+  for (const choice of read) {
+    for (const part of ["model", "effort"]) {
+      if (choice[part] === undefined) continue;
+      const slot = `${choice.phase ?? "*"}:${part}`;
+      const first = slots.get(slot);
+      if (first) {
+        const where = choice.phase == null ? "every phase" : choice.phase;
+        return choiceRefusal(SESSION_CHOICE_CONFLICT, `${first.flag} "${first.raw}" and ${choice.flag} "${choice.raw}" both set the ${part} for ${where}. Give one.`);
+      }
+      slots.set(slot, choice);
+    }
+  }
+  const choices = {};
+  for (const phase of SESSION_PHASES) {
+    const entry = {};
+    for (const part of ["model", "effort"]) {
+      const writer = slots.get(`${phase}:${part}`) ?? slots.get(`*:${part}`);
+      if (writer) Object.assign(entry, { [part]: writer[part], [`${part}Flag`]: writer.flag });
+    }
+    if (Object.keys(entry).length > 0) choices[phase] = entry;
+  }
+  return { choices };
+}
+
+// resolveSessionTable(config, choices) -> { refine | continue | verify: { model, modelSource, effort, effortSource } }
+//
+// Every phase resolved ONCE through `resolveSessionLaunch` (143/03, ADR-004 §1-§2), with `model` and
+// `modelSource` `null` when no model resolves. `choices` is `parseSessionChoices`'s answer. This table
+// is what the loop records on its declaration and lends each drive from.
+export function resolveSessionTable(config, choices = {}) {
+  return Object.fromEntries(SESSION_PHASES.map((phase) => {
+    const { model, modelSource, effort, effortSource } = resolveSessionLaunch(config, phase, { choice: choices?.[phase] });
+    return [phase, { model: model ?? null, modelSource: modelSource ?? null, effort, effortSource }];
+  }));
+}
+
+// sessionTableLine(table) -> the one line a loop narrates before its first drive (143/03, ADR-004 §5):
+// `Sessions: refine opus (--model) at xhigh (--model); continue default model at high (config); …`.
+export function sessionTableLine(table) {
+  const phases = SESSION_PHASES.map((phase) => {
+    const entry = table?.[phase] ?? {};
+    const model = entry.model == null ? "default model" : `${entry.model} (${entry.modelSource})`;
+    return `${phase} ${model} at ${entry.effort} (${entry.effortSource})`;
+  });
+  return `Sessions: ${phases.join("; ")}.`;
 }

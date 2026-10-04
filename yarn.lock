@@ -94,6 +94,7 @@ __metadata:
     "@aof/mesh": "workspace:*"
     "@aof/messaging": "workspace:*"
     "@aof/server": "workspace:*"
+    "@aof/specification-by-example": "workspace:*"
     "@aof/ui": "workspace:*"
     "@aof/work": "workspace:*"
     "@aof/work-graph": "workspace:*"
@@ -122,6 +123,15 @@ __metadata:
   dependencies:
     "@aof/execution": "workspace:*"
     ws: "npm:^8.21.0"
+  languageName: unknown
+  linkType: soft
+
+"@aof/specification-by-example@workspace:*, @aof/specification-by-example@workspace:packages/specification-by-example":
+  version: 0.0.0-use.local
+  resolution: "@aof/specification-by-example@workspace:packages/specification-by-example"
+  dependencies:
+    "@aof/contracts": "workspace:*"
+    "@aof/work": "workspace:*"
   languageName: unknown
   linkType: soft
 
@@ -1855,6 +1865,7 @@ __metadata:
     "@aof/mesh": "workspace:*"
     "@aof/messaging": "workspace:*"
     "@aof/server": "workspace:*"
+    "@aof/specification-by-example": "workspace:*"
     "@aof/ui": "workspace:*"
     "@aof/work": "workspace:*"
     "@aof/work-graph": "workspace:*"

@@ -167,7 +167,12 @@ function parseSessionOptions(args) {
       options._.push(arg);
       continue;
     }
-    const [key, inlineValue] = arg.slice(2).split("=", 2);
+    // 143/02 — the inline value is everything after the FIRST `=` (`split("=", 2)` dropped the rest),
+    // the same fix the one face parser took.
+    const body = arg.slice(2);
+    const equals = body.indexOf("=");
+    const key = equals < 0 ? body : body.slice(0, equals);
+    const inlineValue = equals < 0 ? undefined : body.slice(equals + 1);
     if (key === "json") {
       options[key] = true;
       continue;

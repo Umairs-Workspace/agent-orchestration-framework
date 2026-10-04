@@ -5,10 +5,10 @@ slug: the-baseline-is-counted
 title: "The baseline is counted — misunderstood-requirement findings and amendment rounds per story, on four delivered milestones, before the gate ships"
 parent: 134
 depends: []
-status: in-review
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-10-02
 adrs: [ADR-007]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -75,28 +75,28 @@ reads:
   - wiki/work/archive/127_milestone_backlog-and-archive/stories/05_story_this-tree-holds-what-is-live/STORY.md
   - wiki/work/archive/127_milestone_backlog-and-archive/stories/05_story_this-tree-holds-what-is-live/RETROSPECTIVE.md
   - wiki/work/archive/127_milestone_backlog-and-archive/stories/05_story_this-tree-holds-what-is-live/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/VERIFICATION.md
-  - wiki/work/133_milestone_architecture-diagrams/STATE.md
-  - wiki/work/133_milestone_architecture-diagrams/RETROSPECTIVE.md
-  - wiki/work/133_milestone_architecture-diagrams/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/SPEC.md
-  - wiki/work/133_milestone_architecture-diagrams/DESIGN.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/01_story_the-seam-is-named-in-config/STORY.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/01_story_the-seam-is-named-in-config/RETROSPECTIVE.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/01_story_the-seam-is-named-in-config/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/02_story_export-writes-the-svg-and-the-png/STORY.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/02_story_export-writes-the-svg-and-the-png/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/03_story_the-gates-know-about-diagrams/STORY.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/03_story_the-gates-know-about-diagrams/RETROSPECTIVE.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/03_story_the-gates-know-about-diagrams/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/STORY.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/tasks/03_the-figure-expands-and-the-block-links-open.feature
-  - wiki/work/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/RETROSPECTIVE.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/05_story_the-architect-draws/STORY.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/05_story_the-architect-draws/OUTCOME.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/06_story_the-live-draw/STORY.md
-  - wiki/work/133_milestone_architecture-diagrams/stories/06_story_the-live-draw/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/VERIFICATION.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/STATE.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/RETROSPECTIVE.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/SPEC.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/DESIGN.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/01_story_the-seam-is-named-in-config/STORY.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/01_story_the-seam-is-named-in-config/RETROSPECTIVE.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/01_story_the-seam-is-named-in-config/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/02_story_export-writes-the-svg-and-the-png/STORY.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/02_story_export-writes-the-svg-and-the-png/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/03_story_the-gates-know-about-diagrams/STORY.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/03_story_the-gates-know-about-diagrams/RETROSPECTIVE.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/03_story_the-gates-know-about-diagrams/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/STORY.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/tasks/03_the-figure-expands-and-the-block-links-open.feature
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/RETROSPECTIVE.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/04_story_the-console-shows-it/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/05_story_the-architect-draws/STORY.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/05_story_the-architect-draws/OUTCOME.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/06_story_the-live-draw/STORY.md
+  - wiki/work/archive/133_milestone_architecture-diagrams/stories/06_story_the-live-draw/OUTCOME.md
 files:
   - wiki/work/134_milestone_discovery-the-example-map/RESEARCH.md
 schema: 1
@@ -129,3 +129,7 @@ lists the commands and the classification rule, so another reader can repeat the
   document.
 - The classification is a judgement. Write down the rule and the borderline cases, and count
   floors, as the origin research's §8 does.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

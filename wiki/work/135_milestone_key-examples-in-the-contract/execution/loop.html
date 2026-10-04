@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Milestone 135 loop plan · Dependency</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper: #f3f5f7;
+      --color-ink:   #1b1f27;
+      --color-muted: #585f6a;
+      --color-soft:  #7a818d;
+      --color-rule:  rgba(27,31,39,0.12);
+      --font-sans:   Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-serif:  'Instrument Serif', serif;
+      --font-mono:   ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1200px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 900px; display: block; }
+    footer {
+      margin-top: 1.5rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--color-rule);
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--color-muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Loop plan · 135 · work.loop.concurrency refine_first</p>
+    <h1>Milestone 135 builds in two waves</h1>
+
+    <svg viewBox="0 0 1040 448" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="loop-title loop-desc">
+      <title id="loop-title">Milestone 135 loop plan</title>
+      <desc id="loop-desc">Two waves under refine_first with a lane bound of 3. Wave 1 builds 135/01 and 135/02. Wave 2 builds 135/05, 135/03 and 135/04. 135/03 and 135/04 depend on 01 and 02; 135/05 depends on 01. No story is held and none waits for a lane. Every story is already built (done).</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#585f6a"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#ba2646"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#13766d"/>
+        </marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f3f5f7"/>
+
+      <!-- Wave zones (painted first) -->
+      <rect x="40" y="40" width="280" height="328" rx="8" fill="rgba(27,31,39,0.025)" stroke="rgba(27,31,39,0.12)" stroke-width="1"/>
+      <text x="60" y="62" fill="#585f6a" font-size="8" font-weight="500" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.18em">WAVE 1</text>
+      <text x="300" y="62" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.12em" text-anchor="end">2 STORIES · 2 OF 3 LANES</text>
+
+      <rect x="520" y="40" width="280" height="328" rx="8" fill="rgba(27,31,39,0.025)" stroke="rgba(27,31,39,0.12)" stroke-width="1"/>
+      <text x="540" y="62" fill="#585f6a" font-size="8" font-weight="500" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.18em">WAVE 2</text>
+      <text x="780" y="62" fill="#7a818d" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.12em" text-anchor="end">3 STORIES · 3 OF 3 LANES</text>
+
+      <!-- depends edges (drawn before nodes) -->
+      <g fill="none" stroke="#585f6a" stroke-width="1" marker-end="url(#arrow)">
+        <!-- 135/01 -> 135/05 -->
+        <path d="M300,142 H332 Q340,142 340,134 V116 Q340,108 348,108 H540"/>
+        <!-- 135/01 -> 135/03 -->
+        <path d="M300,156 H452 Q460,156 460,164 V192 Q460,200 468,200 H540"/>
+        <!-- 135/01 -> 135/04 -->
+        <path d="M300,170 H412 Q420,170 420,178 V296 Q420,304 428,304 H540"/>
+        <!-- 135/02 -> 135/03 (hops over 01 -> 04 at x=420) -->
+        <path d="M300,282 H372 Q380,282 380,274 V232 Q380,224 388,224 H414 A6,6 0 0 1 426,224 H540"/>
+        <!-- 135/02 -> 135/04 -->
+        <path d="M300,302 H348 Q356,302 356,310 V320 Q356,328 364,328 H540"/>
+      </g>
+
+      <!-- Nodes: every story is built (done), so every node takes the done (green) treatment -->
+      <g font-family="Inter, ui-sans-serif, system-ui, sans-serif">
+        <!-- 135/01 -->
+        <rect x="60" y="128" width="240" height="56" rx="8" fill="#f3f5f7"/>
+        <rect x="60" y="128" width="240" height="56" rx="8" fill="rgba(47,125,79,0.14)" stroke="#2f7d4f" stroke-width="1"/>
+        <text x="72" y="144" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em">135/01</text>
+        <rect x="248" y="135" width="40" height="12" rx="2" fill="transparent" stroke="rgba(47,125,79,0.6)" stroke-width="0.8"/>
+        <text x="268" y="144" fill="#2f7d4f" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em" text-anchor="middle">DONE</text>
+        <text x="72" y="164" fill="#1b1f27" font-size="12" font-weight="600">The practice is its own package</text>
+        <text x="72" y="177" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">built · no depends</text>
+
+        <!-- 135/02 -->
+        <rect x="60" y="264" width="240" height="56" rx="8" fill="#f3f5f7"/>
+        <rect x="60" y="264" width="240" height="56" rx="8" fill="rgba(47,125,79,0.14)" stroke="#2f7d4f" stroke-width="1"/>
+        <text x="72" y="280" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em">135/02</text>
+        <rect x="248" y="271" width="40" height="12" rx="2" fill="transparent" stroke="rgba(47,125,79,0.6)" stroke-width="0.8"/>
+        <text x="268" y="280" fill="#2f7d4f" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em" text-anchor="middle">DONE</text>
+        <text x="72" y="300" fill="#1b1f27" font-size="12" font-weight="600">Parser reads Rule as a group</text>
+        <text x="72" y="313" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">built · no depends</text>
+
+        <!-- 135/05 -->
+        <rect x="540" y="80" width="240" height="56" rx="8" fill="#f3f5f7"/>
+        <rect x="540" y="80" width="240" height="56" rx="8" fill="rgba(47,125,79,0.14)" stroke="#2f7d4f" stroke-width="1"/>
+        <text x="552" y="96" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em">135/05</text>
+        <rect x="728" y="87" width="40" height="12" rx="2" fill="transparent" stroke="rgba(47,125,79,0.6)" stroke-width="0.8"/>
+        <text x="748" y="96" fill="#2f7d4f" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em" text-anchor="middle">DONE</text>
+        <text x="552" y="116" fill="#1b1f27" font-size="12" font-weight="600">Contract formed from the map</text>
+        <text x="552" y="129" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">built · depends 01</text>
+
+        <!-- 135/03 -->
+        <rect x="540" y="184" width="240" height="56" rx="8" fill="#f3f5f7"/>
+        <rect x="540" y="184" width="240" height="56" rx="8" fill="rgba(47,125,79,0.14)" stroke="#2f7d4f" stroke-width="1"/>
+        <text x="552" y="200" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em">135/03</text>
+        <rect x="728" y="191" width="40" height="12" rx="2" fill="transparent" stroke="rgba(47,125,79,0.6)" stroke-width="0.8"/>
+        <text x="748" y="200" fill="#2f7d4f" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em" text-anchor="middle">DONE</text>
+        <text x="552" y="220" fill="#1b1f27" font-size="12" font-weight="600">Board groups scenarios by rule</text>
+        <text x="552" y="233" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">built · depends 01, 02</text>
+
+        <!-- 135/04 -->
+        <rect x="540" y="288" width="240" height="56" rx="8" fill="#f3f5f7"/>
+        <rect x="540" y="288" width="240" height="56" rx="8" fill="rgba(47,125,79,0.14)" stroke="#2f7d4f" stroke-width="1"/>
+        <text x="552" y="304" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em">135/04</text>
+        <rect x="728" y="295" width="40" height="12" rx="2" fill="transparent" stroke="rgba(47,125,79,0.6)" stroke-width="0.8"/>
+        <text x="748" y="304" fill="#2f7d4f" font-size="7" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.08em" text-anchor="middle">DONE</text>
+        <text x="552" y="324" fill="#1b1f27" font-size="12" font-weight="600">Agreed example cannot fall out</text>
+        <text x="552" y="337" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">built · depends 01, 02</text>
+      </g>
+
+      <!-- Side panel: lane bound, held, the plan's one assumption -->
+      <g>
+        <text x="836" y="62" fill="#585f6a" font-size="8" font-weight="500" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.18em">LANE BOUND</text>
+        <text x="836" y="82" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif">3 concurrent lanes</text>
+        <text x="836" y="96" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">none waits for a lane</text>
+
+        <text x="836" y="128" fill="#585f6a" font-size="8" font-weight="500" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.18em">HELD</text>
+        <text x="836" y="148" fill="#1b1f27" font-size="12" font-weight="600" font-family="Inter, ui-sans-serif, system-ui, sans-serif">None</text>
+        <text x="836" y="162" fill="#7a818d" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">no files: overlap in a wave</text>
+
+        <text x="836" y="196" fill="#585f6a" font-size="8" font-weight="500" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.18em">ASSUMPTION</text>
+        <text fill="#585f6a" font-size="14" font-style="italic" font-family="'Instrument Serif', serif">
+          <tspan x="836" y="218">The live loop asks again</tspan>
+          <tspan x="836" y="236">as each lane finishes, not</tspan>
+          <tspan x="836" y="254">once per wave: these waves</tspan>
+          <tspan x="836" y="272">are the order only if every</tspan>
+          <tspan x="836" y="290">lane in a wave finishes</tspan>
+          <tspan x="836" y="308">together.</tspan>
+        </text>
+      </g>
+
+      <!-- Legend -->
+      <line x1="40" y1="396" x2="1000" y2="396" stroke="rgba(27,31,39,0.12)" stroke-width="0.8"/>
+      <text x="40" y="424" fill="#585f6a" font-size="8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" letter-spacing="0.14em">LEGEND</text>
+      <rect x="120" y="412" width="28" height="16" rx="4" fill="rgba(47,125,79,0.14)" stroke="#2f7d4f" stroke-width="1"/>
+      <text x="156" y="424" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">built (in review / done)</text>
+      <rect x="332" y="412" width="28" height="16" rx="4" fill="#ffffff" stroke="#1b1f27" stroke-width="1"/>
+      <text x="368" y="424" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">to build</text>
+      <rect x="456" y="412" width="28" height="16" rx="4" fill="rgba(27,31,39,0.02)" stroke="rgba(27,31,39,0.35)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="492" y="424" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">held / waits for a lane</text>
+      <line x1="664" y1="420" x2="700" y2="420" stroke="#585f6a" stroke-width="1" marker-end="url(#arrow)"/>
+      <text x="708" y="424" fill="#585f6a" font-size="9" font-family="ui-monospace, SFMono-Regular, Consolas, monospace">depends: (builds before)</text>
+    </svg>
+
+    <footer>
+      Drawn from execution/loop-plan.json (aof diagram plan 135 loop). Wave 2 is drawn 05, 03, 04 rather than in stream
+      order so the 01 → 05 edge crosses nothing; the one remaining crossing (02 → 03 over 01 → 04) is drawn as a hop.
+    </footer>
+  </div>
+</body>
+</html>

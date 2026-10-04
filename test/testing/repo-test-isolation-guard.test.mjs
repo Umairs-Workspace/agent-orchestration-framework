@@ -112,8 +112,10 @@ export const repoTestIsolationGuardTests = [
         assert.deepEqual(after.hooks.PreToolUse, JSON.parse(before).hooks.PreToolUse, "the entry is left exactly as it is");
         assert.deepEqual(result.drift.filter((row) => row.event === "PreToolUse"), [], "it is reported as neither drift…");
         assert.deepEqual(result.tamper, [], "…nor tamper");
+        // 136/03 (ADR-004): the one framework PreToolUse member is the human-input recorder, alone in
+        // its own AskUserQuestion group; it judges no command, so it is not an opinion about this one.
         assert.deepEqual(
-          (after.hooks.PreToolUse ?? []).flatMap((group) => (group?.hooks ?? []).filter(isAofEntry)),
+          (after.hooks.PreToolUse ?? []).flatMap((group) => (group?.hooks ?? []).filter((hook) => isAofEntry(hook) && !(group.matcher === "AskUserQuestion" && hook[AOF_HOOK_MARKER] === "claude-ask-pending"))),
           [],
           "and no framework-authored entry is added beside it",
         );

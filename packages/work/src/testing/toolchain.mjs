@@ -72,6 +72,7 @@ const TOOLCHAIN_CONFIG_KEYS = Object.freeze([
   "work.test.roots",
   "work.test.deadlineMs",
   "work.test.report",
+  "work.test.gate",
   "work.worktree.prepare",
 ]);
 
@@ -384,6 +385,72 @@ function resolveWorktreePrepare(config, options = {}) {
   });
 }
 
+// THE GATE'S WHOLE-TREE PROGRAM (144). `work.test` is the program every scope launches; the
+// regression gate may launch a different one over the same whole tree — this repo's sharded runner —
+// and only the gate does. So it is a THIRD declaration, compiled here beside the other two, and it
+// differs from both in what it carries: no command (the gate runs `work.test.command`, so one
+// program resolution answers both), an `args` vector that REPLACES `work.test.args` for the gate run
+// only, an optional `jobsArgs` template in which `{jobs}` expands once, and an optional
+// `budgetMinutes` the gate measures its wall time against. ABSENT IS AN ANSWER — the gate runs
+// `work.test` exactly as before, so a project that declares nothing sees no change. PRESENT AND
+// FAULTY is the test runner's own refusal, keyed by the field, raised at compile time exactly as
+// the other two are.
+const TEST_GATE_KEY = "work.test.gate";
+const JOBS_TOKEN = "{jobs}";
+
+function resolveTestGate(config) {
+  const declared = config?.work?.test?.gate;
+  if (declared == null) return Object.freeze({ ok: true, gate: null });
+  const fault = (field, message) =>
+    refusal(TEST_RUNNER_DECLARATION_INVALID, `${TEST_GATE_KEY}.${field}`, `${TEST_GATE_KEY}.${field} ${message}`);
+
+  if (!isPlainObject(declared)) {
+    return refusal(
+      TEST_RUNNER_DECLARATION_INVALID,
+      TEST_GATE_KEY,
+      `${TEST_GATE_KEY} is present and is not an object — it must carry the gate's \`args\` vector, and optionally \`jobsArgs\` and \`budgetMinutes\`. Absent means the gate runs \`work.test\`; present means it has to compile.`,
+    );
+  }
+
+  if (declared.args === undefined) return fault("args", "is required — it is the argument vector the gate runs in place of work.test.args, and a gate declaration without one names no program");
+  const argsProblem = stringArrayProblem(declared.args);
+  if (argsProblem === -1) return fault("args", "must be an array — one element per argument, never one string a shell would re-split");
+  if (argsProblem != null) return fault("args", `holds a non-string at index ${argsProblem} — every element reaches the child verbatim, so it must already be a string`);
+
+  const jobsProblem = stringArrayProblem(declared.jobsArgs);
+  if (jobsProblem === -1) return fault("jobsArgs", `must be an array — it is an argv TEMPLATE in which \`${JOBS_TOKEN}\` expands once, not a string`);
+  if (jobsProblem != null) return fault("jobsArgs", `holds a non-string at index ${jobsProblem} — an argv template is a vector of strings`);
+  if (declared.jobsArgs !== undefined && declared.jobsArgs.filter((element) => element.includes(JOBS_TOKEN)).length !== 1) {
+    return fault("jobsArgs", `must carry the \`${JOBS_TOKEN}\` token in exactly one element — it is where the operator's worker count goes`);
+  }
+
+  if (declared.budgetMinutes !== undefined
+    && (typeof declared.budgetMinutes !== "number" || !Number.isFinite(declared.budgetMinutes) || declared.budgetMinutes <= 0)) {
+    return fault("budgetMinutes", "must be a positive number of minutes — the wall time a whole-tree sign-off may take before the gate row calls it over budget");
+  }
+
+  return Object.freeze({
+    ok: true,
+    gate: Object.freeze({
+      args: Object.freeze([...declared.args]),
+      jobsArgs: declared.jobsArgs === undefined ? null : Object.freeze([...declared.jobsArgs]),
+      budgetMinutes: declared.budgetMinutes ?? null,
+    }),
+  });
+}
+
+// The toolchain the gate launches: `work.test` with its `args` replaced by the gate's, and the
+// operator's worker count expanded into `jobsArgs`. `serial`, or no gate declaration, is the
+// test runner unchanged. Which settings are LEGAL is the gate command's question, asked before it
+// gets here; this only composes.
+function gateToolchain(toolchain, gate, { serial = false, jobs = null } = {}) {
+  if (serial || gate == null) return toolchain;
+  const jobsVector = jobs == null || gate.jobsArgs == null
+    ? []
+    : gate.jobsArgs.map((element) => element.split(JOBS_TOKEN).join(String(jobs)));
+  return Object.freeze({ ...toolchain, args: Object.freeze([...gate.args, ...jobsVector]) });
+}
+
 // ── THE ONE EXPANSION RULE (ADR-001 §3) ──────────────────────────────────────────────────────
 
 const FILE_TOKEN = "{file}";
@@ -503,5 +570,5 @@ async function launchRunner(toolchain, files, options = {}) {
   );
 }
 
-return { DEFAULT_REPORT_FORMAT, FILE_TOKEN, REPORT_FORMATS, SHIM_EXTENSIONS, TEST_RUNNER_DECLARATION_INVALID, TEST_RUNNER_UNDECLARED, TEST_RUNNER_UNRESOLVABLE, TOOLCHAIN_CONFIG_KEYS, TOOLCHAIN_REFUSAL_CODES, TOOLCHAIN_VERDICTS, WORKTREE_PREPARE_DECLARATION_INVALID, WORKTREE_PREPARE_UNRESOLVABLE, argumentVector, launchRunner, launchStep, resolveProgram, resolveTestToolchain, resolveWorktreePrepare, selectionArgs, shimProblem, toolchainReport };
+return { DEFAULT_REPORT_FORMAT, FILE_TOKEN, JOBS_TOKEN, REPORT_FORMATS, SHIM_EXTENSIONS, TEST_RUNNER_DECLARATION_INVALID, TEST_RUNNER_UNDECLARED, TEST_RUNNER_UNRESOLVABLE, TOOLCHAIN_CONFIG_KEYS, TOOLCHAIN_REFUSAL_CODES, TOOLCHAIN_VERDICTS, WORKTREE_PREPARE_DECLARATION_INVALID, WORKTREE_PREPARE_UNRESOLVABLE, argumentVector, gateToolchain, launchRunner, launchStep, resolveProgram, resolveTestGate, resolveTestToolchain, resolveWorktreePrepare, selectionArgs, shimProblem, toolchainReport };
 }

@@ -20,7 +20,7 @@ const RECORD_KEYS = Object.freeze(["runId", "itemRef", "state", "attempt", "outc
 // discipline 102/00 used for the eighth (`id`). The eight before it keep their names, order and
 // meanings; 126/01's contract anticipated this move and left it to this story.
 // 141 appended the tenth, `thinking`, by the same additive discipline.
-const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking"]);
+const LOOP_KEYS = Object.freeze(["loopRunId", "scope", "level", "cap", "phase", "cycle", "startedAt", "id", "supervised", "thinking", "promotedFrom", "refine", "sessions"]);
 const STATES = Object.freeze(["queued", "running", "done", "failed", "cancelled"]);
 const EDGES = Object.freeze(["queued>running", "queued>cancelled", "running>done", "running>failed", "running>cancelled"]);
 
@@ -181,7 +181,13 @@ function assertUiFrozen(pairs) {
   // strip runs to a fixed point. Measured: `git diff --numstat -- apps/ui/src` is TWO files, both under
   // `apps/ui/src/board/` — `Markdown.tsx` (+31: `stripHtmlComments`, the fixed-point loop over a linear `htmlCommentsOnce` scan) and `DetailPanel.tsx` (+2 −2: the
   // import and the one call that replaces the single-pass regex). No run-record key, cycle, level or loop state is read.
-  assert.equal(hash.digest("hex"), "51aa705bad44c2d76c1144f1bcd9a9c25c52e1550f5dfd14a95d32eb4648b654", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 135/03 (ADR-005) and at `aof:verify 135` (F-135-01): a rule heading, not a loop face. 135/03
+  // changed the tree without re-pinning, and its verify both re-pins and extracts. Measured with `TasksTab.tsx` in
+  // the index: `git diff --numstat 10879bef -- apps/ui/src` is THREE files, all under `apps/ui/src/board/`:
+  // `TasksTab.tsx` (new, 134: the TASKS tab moved out whole, with its rule grouping), `DetailPanel.tsx` (+2 −96:
+  // the import and the mount stay) and `api.ts` (+3 −1: `TaskScenario.rule`). What it reads is a scenario's
+  // rule title on the tasks route. No run-record key, cycle, level or loop state is read.
+  assert.equal(hash.digest("hex"), "af02d79e4a94520bd3d4b1895b70e5702999edb8b5d51edbd791bc619c92c390", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

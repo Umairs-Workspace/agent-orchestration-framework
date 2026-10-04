@@ -1,0 +1,46 @@
+{
+  "runId": "20261003T171038034Z-0000",
+  "itemRef": "136",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "bc02d908-8504-46a1-af7b-daec75259d2c",
+  "brief": {
+    "answers": [
+      {
+        "token": "136/01 Q1",
+        "question": "136/01 Q1 · When a loop asks you a business question about a story's rules, which of your answers may settle it? Today you can answer a loop's question three ways: `aof work answer` in a terminal, the reply box on the board, or a reply in Discord from an allowlisted account. Each is recorded word for word with who answered, from where, and when. Accepting Discord means you can settle a rule from your phone. Excluding it means a Discord reply still resumes the session, but the example it would settle stays unconfirmed, and the build stays blocked until you answer again from a terminal or the board.",
+        "answer": "All three count",
+        "toolUseId": "toolu_01WJrxrYtgFa1kMU7v2a24cD",
+        "sessionId": "bc02d908-8504-46a1-af7b-daec75259d2c",
+        "at": "2026-10-03T17:45:42.375Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-03T17:10:38.034Z",
+  "updatedAt": "2026-10-03T17:48:40.973Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 240,
+      "output": 123527,
+      "cacheRead": 16970418,
+      "cacheCreate": 338954
+    },
+    "costUsd": 8.215827899999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 120,
+    "toolCalls": 66,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

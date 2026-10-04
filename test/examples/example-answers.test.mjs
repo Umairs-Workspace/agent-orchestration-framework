@@ -17,10 +17,19 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // directory and Claude config directory is a fresh temp directory; nothing reads the real
 // `~/.claude`. One test object per @executable scenario, Scenario Outline rows folded into one
 // entry iterating the rows. node:assert/strict, `{ name, run }` shape.
+//
+// And, for milestone 136 / story 01 (a loop answer anchors the example), EVERY @executable scenario
+// in
+//   tasks/00_an-answered-loop-question-is-a-persons-answer-to-its-token.feature
+//   tasks/01_an-ask-that-cannot-name-its-one-token-anchors-none.feature
+//     (FF-13601 is `test/arch/examples/acd-example-answer-one-reader.test.mjs`)
+// over story 04's fixture project renumbered to `7/2`, its asks written by 131's own run-store
+// writers and the doctor driven through the real CLI.
 import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { E, Q, QUESTIONS, R, mapOf, withExamplesProject } from "./doctor-examples-lane.test.mjs";
 
 const HUMAN_INPUT_TOOL_NAMES = _aofSessions.agentSessionDriver.HUMAN_INPUT_TOOL_NAMES;
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
@@ -31,6 +40,7 @@ const recordAnswers = _aofApplication.execution.runs.recordAnswers;
 const retryRun = _aofApplication.execution.runs.retryRun;
 const runRecordPath = _aofApplication.execution.runs.runRecordPath;
 const startRun = _aofApplication.execution.runs.startRun;
+const { answerRunAsk, openRunAsk, parkRunAsk, runNodeRecordPath } = _aofApplication.execution.runs;
 const collectAnswers = _aofApplication.work.examples.answers.collectAnswers;
 const readAnswers = _aofApplication.work.examples.answers.readAnswers;
 const projectSlug = _aofSessions.workObserve.projectSlug;
@@ -504,4 +514,232 @@ export const exampleAnswersTests = [
       }
     },
   },
+
+  // ══ 136/01 00_an-answered-loop-question-is-a-persons-answer-to-its-token.feature ══
+  {
+    name: "examples/136-01 00 E1 an answered ask anchors its token, and the doctor reports nothing",
+    run: () => withLoopStory(async (fx) => {
+      const run = await askedRun(fx.s04, { state: "done" });
+      const records = await collectAnswers(fx.s04, { projectsDir: fx.projectsDir });
+      assert.deepEqual(records, [{
+        token: "7/2 Q1", question: ASK_Q, answer: "No", toolUseId: null, sessionId: run.sessionId, at: LOOP_AT, entrypoint: null, by: YOU,
+      }]);
+      assert.deepEqual(unanchored(fx), []);
+    }),
+  },
+  {
+    name: "examples/136-01 00 E2 an ask parked at the bound and never answered anchors nothing",
+    run: () => withLoopStory(async (fx) => {
+      await askedRun(fx.s04, { parked: true, answer: null });
+      const [run] = await readRuns(fx.s04);
+      assert.ok(run.asks[0].parkedAt != null && run.asks[0].answer == null && run.asks[0].answeredAt == null, "the ask is parked, unanswered");
+      const found = unanchored(fx);
+      for (const id of ["E2", "Q1"]) {
+        assert.ok(found.some((finding) => finding.message.startsWith(`7/2: ${id} (`) && finding.severity === "error"), `${id} is unanchored — ${JSON.stringify(found)}`);
+      }
+    }),
+  },
+  {
+    name: "examples/136-01 00 E3 an answer written while the run is still running anchors",
+    run: () => withLoopStory(async (fx) => {
+      await askedRun(fx.s04, { state: "running" });
+      assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), ["7/2 Q1"]);
+    }),
+  },
+  {
+    name: "examples/136-01 00 the ask is read from every run of the story and of its parent milestone, in any state (outline: 5 rows)",
+    run: async () => {
+      for (const [which, state] of [["7/2", "running"], ["7/2", "done"], ["7/2", "failed"], ["7", "running"], ["7", "done"]]) {
+        await withLoopStory(async (fx) => {
+          await askedRun(which === "7" ? fx.milestone : fx.s04, { state });
+          assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), ["7/2 Q1"], `${which} ${state}`);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/136-01 00 an ask tokened for a sibling story is not this story's answer",
+    run: () => withLoopStory(async (fx) => {
+      await askedRun(fx.milestone, { question: "7/3 Q1 · Does a reserved book count?" });
+      assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), []);
+    }),
+  },
+  {
+    name: "examples/136-01 00 the ask's answer is not stamped onto the run a second time",
+    run: () => withLoopStory(async (fx) => {
+      const run = await askedRun(fx.s04, { state: "running" });
+      const settled = fx.cli("work", "run-complete", "7/2", "--outcome", "done");
+      assert.equal(settled.status, 0, `run-complete exits 0 — ${settled.stderr}`);
+      const record = (await readRuns(fx.s04)).find((entry) => entry.runId === run.runId);
+      assert.equal(record.state, "done", "the run settled");
+      assert.deepEqual((record.brief?.answers ?? []).filter((answer) => answer?.token === "7/2 Q1"), [], "brief.answers holds no 7/2 Q1 record");
+      assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), ["7/2 Q1"]);
+    }),
+  },
+  {
+    name: "examples/136-01 00 a loop answer and a harness answer both count, in the order they were given",
+    run: () => withLoopStory(async (fx) => {
+      const harness = valid("7/2 E4", { at: "2026-10-03T09:00:00.000Z" });
+      await settled(fx.s04, { answers: [harness] });
+      await askedRun(fx.s04, { state: "done" });
+      assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), ["7/2 E4", "7/2 Q1"]);
+    }),
+  },
+  {
+    name: "examples/136-01 00 two asks of the same question on two runs are two records",
+    run: () => withLoopStory(async (fx) => {
+      await askedRun(fx.s04, { state: "done", at: "2026-10-03T10:02:00.000Z" });
+      await askedRun(fx.s04, { state: "done", at: "2026-10-03T11:02:00.000Z", now: "2026-10-03T11:00:00.000Z" });
+      const records = await collectAnswers(fx.s04, { projectsDir: fx.projectsDir });
+      assert.deepEqual(tokensOf(records), ["7/2 Q1", "7/2 Q1"]);
+      assert.deepEqual(records.map((record) => record.at), ["2026-10-03T10:02:00.000Z", "2026-10-03T11:02:00.000Z"]);
+    }),
+  },
+  {
+    name: "examples/136-01 00 E6 a Discord reply from an allowlisted account anchors, and names the account",
+    run: () => withLoopStory(async (fx) => {
+      const by = { actor: "@ops-lead", via: "discord", node: "node-7297" };
+      await askedRun(fx.s04, { by });
+      const records = await collectAnswers(fx.s04, { projectsDir: fx.projectsDir });
+      assert.deepEqual(tokensOf(records), ["7/2 Q1"]);
+      assert.deepEqual(records[0].by, by);
+    }),
+  },
+  {
+    name: "examples/136-01 00 E7 an answer from the board's reply box anchors",
+    run: () => withLoopStory(async (fx) => {
+      const by = { actor: "you", via: "board", node: "node-7297" };
+      await askedRun(fx.s04, { by });
+      const records = await collectAnswers(fx.s04, { projectsDir: fx.projectsDir });
+      assert.deepEqual(tokensOf(records), ["7/2 Q1"]);
+      assert.deepEqual(records[0].by, by);
+    }),
+  },
+  {
+    name: "examples/136-01 00 no channel is filtered out (outline: 3 channels)",
+    run: async () => {
+      for (const via of ["cli", "board", "discord"]) {
+        await withLoopStory(async (fx) => {
+          await askedRun(fx.s04, { by: { actor: "you", via, node: "node-7297" } });
+          assert.deepEqual(unanchored(fx), [], via);
+        });
+      }
+    },
+  },
+
+  // ══ 136/01 01_an-ask-that-cannot-name-its-one-token-anchors-none.feature ══
+  {
+    name: "examples/136-01 01 E4 an ask carrying two tokens anchors neither",
+    run: () => withLoopStory(async (fx) => {
+      await askedRun(fx.s04, { question: "7/2 Q1 · Does a reserved book count?\n\n7/2 Q2 · May a member swap a book?", answer: "Yes" });
+      assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), []);
+    }),
+  },
+  {
+    name: "examples/136-01 01 E5 an ask with no token at its head anchors nothing, and the reader does not fail",
+    run: () => withLoopStory(async (fx) => {
+      await askedRun(fx.s04, { question: "Decision needed: does a reserved book count?", answer: "Yes" });
+      let records;
+      await assert.doesNotReject(async () => { records = await collectAnswers(fx.s04, { projectsDir: fx.projectsDir }); });
+      assert.deepEqual(records, []);
+    }),
+  },
+  {
+    name: "examples/136-01 01 which question shapes anchor (outline: 7 shapes)",
+    run: async () => {
+      const rows = [
+        ["7/2 Q1 · Discovery question …\n- Yes\n- No", ["7/2 Q1"]],
+        ["7/2 E2 · Is a sixth loan refused while five are out?", ["7/2 E2"]],
+        ["7/2 Q1", ["7/2 Q1"]],
+        ["7/2 Q1 · Unlike 7/2 Q2, does a reserved book count?", ["7/2 Q1"]],
+        ["7/2 Q1 · Does a reserved book count?\n7/2 E3 · …", []],
+        [" 7/2 Q1 · a leading space", []],
+        ["Q1 · no story ref", []],
+      ];
+      for (const [question, expected] of rows) {
+        await withLoopStory(async (fx) => {
+          await askedRun(fx.s04, { question, answer: "Yes" });
+          assert.deepEqual(tokensOf(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir })), expected, JSON.stringify(question));
+        });
+      }
+    },
+  },
+  {
+    name: "examples/136-01 01 an entry with no answer anchors nothing (outline: 3 fields)",
+    run: async () => {
+      const entry = { question: "7/2 Q1 · Does a reserved book count?", phase: "refine", askedAt: ASK_AT, parkedAt: null, answer: "Yes", answeredAt: LOOP_AT, by: YOU };
+      for (const [label, over] of [["answer null", { answer: null }], ["answer empty", { answer: "" }], ["answeredAt null", { answeredAt: null }]]) {
+        await withLoopStory(async (fx) => {
+          const run = await askedRun(fx.s04, { answer: null });
+          await plantAsks(fx.s04, run.runId, [{ ...entry, ...over }]);
+          assert.deepEqual(await collectAnswers(fx.s04, { projectsDir: fx.projectsDir }), [], label);
+        });
+      }
+    },
+  },
+  {
+    name: "examples/136-01 01 a run whose asks cannot be read yields no ask records and does not stop the others (outline: 4 shapes)",
+    run: async () => {
+      const shapes = [
+        ["not an array", { question: "7/2 Q1 · x", answer: "Yes", answeredAt: LOOP_AT }],
+        ["an array holding a number", [42]],
+        ["an array holding null", [null]],
+        ["an entry whose question is a number", [{ question: 7, answer: "Yes", answeredAt: LOOP_AT, askedAt: ASK_AT, by: YOU }]],
+      ];
+      for (const [label, asks] of shapes) {
+        await withLoopStory(async (fx) => {
+          const broken = await askedRun(fx.s04, { answer: null, state: "done" });
+          await plantAsks(fx.s04, broken.runId, asks);
+          await askedRun(fx.s04, { state: "done", now: "2026-10-03T11:00:00.000Z" });
+          let records;
+          await assert.doesNotReject(async () => { records = await collectAnswers(fx.s04, { projectsDir: fx.projectsDir }); }, label);
+          assert.deepEqual(tokensOf(records), ["7/2 Q1"], label);
+        });
+      }
+    },
+  },
 ];
+
+// ── 136/01 fixtures — story 7/2 with the gate on, its map's R1 holding E2 [stated Q1], Q1 answered ──
+
+const ASK_Q = "7/2 Q1 · Discovery question — rule R1 · A member may hold at most five loans; settles E2.\n- Yes\n- No";
+const ASK_AT = "2026-10-03T10:00:00.000Z";
+const LOOP_AT = "2026-10-03T10:02:00.000Z";
+const YOU = Object.freeze({ actor: "you", via: "cli", node: "node-7297" });
+const LOOP_MAP = mapOf(R(1, E(1), E(2, "[stated Q1]")), QUESTIONS(Q(1, "business", "answered")));
+const tokensOf = (records) => records.map((record) => record.token);
+
+function withLoopStory(body) {
+  return withExamplesProject({ examples: { enabled: true }, milestone: "7", story: "2" }, async (fx) => {
+    assert.equal(fx.s04.ref, "7/2");
+    await fx.writeMap(fx.s04, LOOP_MAP);
+    return body(fx);
+  });
+}
+
+// "the ask": an `asks` entry written by 131's own writers, on a run of `item` left in `state`.
+async function askedRun(item, { state = "running", question = ASK_Q, answer = "No", by = YOU, at = LOOP_AT, parked = false, now = ASK_AT, sessionId = `sess-loop-${now}` } = {}) {
+  const run = await startRun(item, { sessionId, now });
+  await openRunAsk(item, run.runId, { question, phase: "refine", now });
+  if (parked) await parkRunAsk(item, run.runId, { now });
+  if (answer != null) await answerRunAsk(item, run.runId, { answer, by, now: at });
+  if (state !== "running") {
+    await completeRun(item, { runId: run.runId, outcome: state, failureReason: state === "failed" ? "runtime_offline" : null, now: at });
+  }
+  return run;
+}
+
+// Replace a run record's `asks` with what no writer of 131's would write.
+async function plantAsks(item, runId, asks) {
+  const record = (await readRuns(item)).find((run) => run.runId === runId);
+  const file = record.node ? runNodeRecordPath(item, record.node, runId) : runRecordPath(item, runId);
+  const raw = JSON.parse(await readFile(file, "utf8"));
+  await writeFile(file, JSON.stringify({ ...raw, asks }, null, 2), "utf8");
+}
+
+// The doctor's `example-provenance-unanchored` findings for 7/2, through the real CLI.
+function unanchored(fx) {
+  const { json } = fx.cli("work", "doctor", "7/2", "--json");
+  assert.ok(json, "the doctor answers JSON");
+  return (json.findings ?? []).filter((finding) => finding.code === "example-provenance-unanchored" && finding.message.startsWith("7/2:"));
+}

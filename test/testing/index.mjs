@@ -51,6 +51,10 @@ import { installerPlaceTests } from "./installer-place.test.mjs";
 // (already registered above), which harden the isPackaged() ternary's branch
 // wiring, not just its presence.
 import { buildSeaRecipeGuardsTests } from "./build-sea-recipe-guards.test.mjs";
+// 144 — the sharded whole-tree run's report and verdict: a case red twice or lost is a column-0
+// `not ok`, a case red in the pool and green alone is a `# not isolated` comment, and the
+// slowest-files block sums each file across its chunks. The pure module, driven without a pool.
+import { testShardedReportTests } from "./test-sharded-report.test.mjs";
 
 export const tests = [
   // milestone 72 / story 02 - the test command's face (tasks 00-02) plus FF-7204.
@@ -61,4 +65,6 @@ export const tests = [
   ...installerVerifyTests,
   ...installerPlaceTests,
   ...buildSeaRecipeGuardsTests,
+  // 144 — the sharded run's report and verdict.
+  ...testShardedReportTests,
 ];

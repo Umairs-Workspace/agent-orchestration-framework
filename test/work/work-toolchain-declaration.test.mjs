@@ -510,4 +510,48 @@ export const workToolchainDeclarationTests = [
       );
     },
   },
+  // ══════════════ 144 / task 00 — the gate's whole-tree program is a third declaration ══
+  {
+    name: "144-00 work.test.gate compiles beside work.test: absent is the test runner unchanged, present replaces args and expands {jobs} once",
+    run: () => {
+      const resolveTestGate = _aofApplication.work.toolchain.resolveTestGate;
+      const gateToolchain = _aofApplication.work.toolchain.gateToolchain;
+      assert.ok(TOOLCHAIN_CONFIG_KEYS.includes("work.test.gate"), "the module owns the gate key");
+
+      assert.deepEqual(resolveTestGate({ work: { test: {} } }), { ok: true, gate: null }, "absent is an answer, not a refusal");
+
+      const declared = resolveTestGate({ work: { test: { gate: { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetMinutes: 15 } } } });
+      assert.equal(declared.ok, true);
+      assert.deepEqual(declared.gate, { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetMinutes: 15 });
+
+      const base = Object.freeze({ command: "node", program: "/usr/bin/node", args: Object.freeze(["scripts/test.mjs"]), selectArgs: Object.freeze([]), roots: Object.freeze(["test"]), deadlineMs: 1000, report: Object.freeze({ format: "tap" }) });
+      assert.deepEqual([...gateToolchain(base, declared.gate, {}).args], ["scripts/test-sharded.mjs"], "the gate's args replace work.test.args");
+      assert.deepEqual([...gateToolchain(base, declared.gate, { jobs: 8 }).args], ["scripts/test-sharded.mjs", "--jobs", "8"], "{jobs} expands once, in place");
+      assert.equal(gateToolchain(base, declared.gate, { serial: true }), base, "--serial is the test runner unchanged");
+      assert.equal(gateToolchain(base, null, {}), base, "no gate declared is the test runner unchanged");
+      assert.equal(gateToolchain(base, declared.gate, {}).program, "/usr/bin/node", "the program is still work.test's, resolved once");
+    },
+  },
+  {
+    name: "144-00 a malformed work.test.gate is the test runner's own refusal, keyed by the field",
+    run: () => {
+      const resolveTestGate = _aofApplication.work.toolchain.resolveTestGate;
+      for (const [label, gate, key] of [
+        ["args as one string", { args: "scripts/test-sharded.mjs" }, "work.test.gate.args"],
+        ["args absent", { jobsArgs: ["--jobs", "{jobs}"] }, "work.test.gate.args"],
+        ["a non-string arg", { args: ["a", 3] }, "work.test.gate.args"],
+        ["jobsArgs as one string", { args: ["scripts/test-sharded.mjs"], jobsArgs: "--jobs" }, "work.test.gate.jobsArgs"],
+        ["jobsArgs without the token", { args: ["x"], jobsArgs: ["--jobs", "8"] }, "work.test.gate.jobsArgs"],
+        ["a zero budget", { args: ["x"], budgetMinutes: 0 }, "work.test.gate.budgetMinutes"],
+        ["a string budget", { args: ["x"], budgetMinutes: "15" }, "work.test.gate.budgetMinutes"],
+        ["not an object", ["scripts/test-sharded.mjs"], "work.test.gate"],
+      ]) {
+        const result = resolveTestGate({ work: { test: { gate } } });
+        assert.equal(result.ok, false, `${label} is refused`);
+        assert.equal(result.code, TEST_RUNNER_DECLARATION_INVALID, `…with the declaration-invalid code (${label})`);
+        assert.equal(result.key, key, `…keyed ${key}`);
+        assert.ok(result.message.startsWith(key), `…and its message names ${key}`);
+      }
+    },
+  },
 ];

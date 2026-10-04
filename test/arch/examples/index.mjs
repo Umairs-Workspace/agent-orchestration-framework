@@ -8,9 +8,18 @@ import { archTests as acdExampleMapSingleHomeTests } from "./acd-example-map-sin
 // reads the transcript store that exists).
 import { archTests as acdExampleAnswerOneReaderTests } from "./acd-example-answer-one-reader.test.mjs";
 import { archTests as acdSettleReadsTheTranscriptStoreTests } from "./acd-settle-reads-the-transcript-store.test.mjs";
+// milestone 134 / story 04 — FF-13403 (with the examples gate off, the doctor and the door are today).
+import { archTests as acdExamplesOffIsTodayTests } from "./acd-examples-off-is-today.test.mjs";
+// milestone 135 / story 01 — FF-13501 (the practice's package is depended on one way).
+import { archTests as acdSbePackageOneWayTests } from "./acd-sbe-package-one-way.test.mjs";
+// milestone 135 / story 04 — FF-13502 (the trace is declared, never inferred).
+import { archTests as acdExampleTraceDeclaredTests } from "./acd-example-trace-declared.test.mjs";
 
 export const tests = [
   ...acdExampleMapSingleHomeTests,
   ...acdExampleAnswerOneReaderTests,
   ...acdSettleReadsTheTranscriptStoreTests,
+  ...acdExamplesOffIsTodayTests,
+  ...acdSbePackageOneWayTests,
+  ...acdExampleTraceDeclaredTests,
 ];

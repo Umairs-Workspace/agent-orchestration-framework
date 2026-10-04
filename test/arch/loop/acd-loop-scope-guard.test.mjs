@@ -371,3 +371,61 @@ export const archTests = [
     },
   },
 ];
+
+// ══════════════ 143/00 — FF-14301: the loop promotes through the one door (ADR-001 §2) ══════════════
+//
+// Folded into the scope guard rather than a new file: `test/arch/loop` sits at its directory-budget
+// ceiling, and the backlog slug is a SCOPE form the shell resolves before this guard's grammar runs.
+// No module under `packages/work-loop/src/` imports the promotion's implementation, by relative path
+// or by package specifier; the shell names it only as the registered command.
+
+// The import specifiers that reach the promotion's implementation: the `promote/` leaf and the
+// `commands/promote.mjs` verb, by relative path (`…/work/src/promote/…`, `…/commands/promote.mjs`)
+// or by package export (`@aof/work/promote/…`, `@aof/work/commands/promote`).
+const PROMOTION_IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["']((?:[^"']*\/work\/src\/promote\/|@aof\/work\/promote\/)[^"']*|[^"']*\/commands\/promote(?:\.mjs)?)["']/gu;
+
+function promotionImports(text) {
+  return [...stripComments(text).matchAll(PROMOTION_IMPORT)].map((match) => match[1]);
+}
+
+async function sourceFiles(dir) {
+  const files = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const target = path.join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...await sourceFiles(target));
+    else if (entry.name.endsWith(".mjs")) files.push(target);
+  }
+  return files;
+}
+
+archTests.push({
+  name: "arch/143 FF-14301 (acd-loop-scope-guard): the loop promotes a backlog ref only through the registered work:promote",
+  async run() {
+    const loopSrc = path.join(root, "packages", "work-loop", "src");
+    const files = await sourceFiles(loopSrc);
+    assertRead("packages/work-loop/src", files.length, 10);
+    const offenders = [];
+    for (const file of files) {
+      for (const specifier of promotionImports(await readFile(file, "utf8"))) {
+        offenders.push(`${path.relative(root, file).split(path.sep).join("/")} imports ${specifier}`);
+      }
+    }
+    assert.deepEqual(offenders, [], "the loop reaches a promotion only as invokeRegistered(\"work:promote\", …) — never by importing it");
+
+    // The detector is armed: each planted form is caught.
+    for (const planted of [
+      'import { runPromote } from "../../work/src/commands/promote.mjs";',
+      'import { promoteRow } from "@aof/work/commands/promote";',
+      'import { promote } from "@aof/work/promote/promotion";',
+      'const { promote } = await import("../../../work/src/promote/promotion.mjs");',
+    ]) {
+      assert.equal(promotionImports(planted).length, 1, `a planted promotion import is caught: ${planted}`);
+    }
+    assert.equal(promotionImports('// import { x } from "@aof/work/commands/promote";').length, 0, "a comment is not an import");
+    assert.equal(promotionImports('import { x } from "@aof/work/commands/promote-gap-to-chore";').length, 0, "a sibling verb is not the promotion");
+
+    const shell = stripComments(await readFile(path.join(loopSrc, "commands", "loop.mjs"), "utf8"));
+    const doors = shell.match(/invokeRegistered\(\s*"work:promote"/gu) ?? [];
+    assert.equal(doors.length, 1, "the loop shell names the promotion once, as the registered command");
+  },
+});

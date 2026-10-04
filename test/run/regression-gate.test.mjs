@@ -7,6 +7,13 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   tasks/01_the-accept-door-refuses-without-a-green-gate.feature
 //   tasks/02_the-override-is-data-and-it-is-recorded.feature
 //
+// …and 144 (the whole-tree run signs off in minutes): the gate half of every @executable scenario in
+//   tasks/00_the-gate-runs-the-declared-whole-tree-program-with-the-operators-settings.feature
+//   tasks/01_a-lost-or-failing-case-is-red-and-a-case-that-is-not-isolated-is-logged.feature
+//   tasks/02_the-run-says-where-its-time-went-and-measures-itself-against-the-budget.feature
+// The runner half (the lines it prints, its exit, the slowest-files sums) is
+// test/testing/test-sharded-report.test.mjs.
+//
 // EVERY RECORD HERE IS A REAL `REGRESSION.md` ON DISK, written by the shipped writer and read back
 // through the shipped parser. Handing the door a hand-built row object would drive the arithmetic
 // and skip the two things most likely to be wrong: that the document ROUND-TRIPS (a writer whose
@@ -52,6 +59,12 @@ import {
 } from "@aof/work/regression-record";
 const DIRTY_TREE = _aofApplication.work.commandTools.regressionGate.DIRTY_TREE;
 const runRegressionGate = _aofApplication.work.commandTools.regressionGate.runRegressionGate;
+const regressionGateCommand = _aofApplication.work.commandTools.regressionGate.regressionGateCommand;
+const SETTINGS_CONFLICT = _aofApplication.work.commandTools.regressionGate.SETTINGS_CONFLICT;
+const JOBS_INVALID = _aofApplication.work.commandTools.regressionGate.JOBS_INVALID;
+const JOBS_UNDECLARED = _aofApplication.work.commandTools.regressionGate.JOBS_UNDECLARED;
+const runTest = _aofApplication.work.commandTools.test.runTest;
+const launchRunner = _aofApplication.work.toolchain.launchRunner;
 const GATE_MISSING = _aofApplication.work.commandTools.itemStatus.GATE_MISSING;
 const GATE_RED = _aofApplication.work.commandTools.itemStatus.GATE_RED;
 const OVERRIDE_REASON_REQUIRED = _aofApplication.work.commandTools.itemStatus.OVERRIDE_REASON_REQUIRED;
@@ -516,4 +529,301 @@ export const regressionGateTests = [
       );
     },
   },
+  // ═══════════ 144 — the gate runs the declared whole-tree program, logs what is not isolated, times itself ══
+  //
+  // These rows drive the REAL `runTest` body and the REAL `launchRunner` (argv composition and outcome
+  // mapping), with only the bounded spawn stubbed as a spy and the clock injected. So "it launched X"
+  // is the argument vector the shipped code composed, not one this file assembled.
+  {
+    name: "144-00 a green sharded run is recorded as a gate that satisfies the door, and the accept door needs no override",
+    run: () => withDoorFixture({ record: null }, async ({ ctx, mDir, root }) => {
+      const program = programStub();
+      const out = await runRegressionGate({ ref: "70", now: INSTANT }, gateDeps144({
+        root,
+        item: { ref: "70", dir: mDir, type: "milestone" },
+        config: config144(GATE_144),
+        program,
+        git: gitStub({ commit: LATER_COMMIT }),
+      }));
+      assert.deepEqual(program.launched, ["node scripts/test-sharded.mjs"], "it launched the declared gate program");
+      assert.equal(out.result, "green");
+      assert.equal(out.scope, "all");
+      assert.equal(out.commit, LATER_COMMIT);
+      assert.equal(out.satisfiesDoor, true, "the envelope says the row satisfies the door");
+      const moved = await invoke("work:status", { ref: "70", status: "done" }, ctx);
+      assert.equal(moved.moved, true, "no --gate-override is needed to pass the regression door");
+      assert.equal(moved.regressionGate?.commit, LATER_COMMIT);
+    }),
+  },
+  {
+    name: "144-00 the operator's settings choose the program and the worker count, and the scope stays all",
+    run: async () => {
+      for (const [flags, argv] of [
+        [{}, "node scripts/test-sharded.mjs"],
+        [{ jobs: "8" }, "node scripts/test-sharded.mjs --jobs 8"],
+        [{ serial: true }, "node scripts/test.mjs"],
+      ]) {
+        await withGate144({ config: config144(GATE_144) }, async ({ run, program }) => {
+          // Through the CLI's own argv mapping, so the flag names are part of what is driven.
+          const out = await run(regressionGateCommand.cli.argv(["70"], flags));
+          assert.deepEqual(program.launched, [argv], `${JSON.stringify(flags)} launched ${argv}`);
+          assert.equal(out.scope, "all", "…and the row's scope is all");
+        });
+      }
+    },
+  },
+  {
+    name: "144-00 with no gate program declared the gate runs the test program as before, named serial",
+    run: () => withGate144({ config: config144(undefined) }, async ({ run, program }) => {
+      const out = await run({ ref: "70" });
+      assert.deepEqual(program.launched, ["node scripts/test.mjs"]);
+      assert.match(out.detail, /^serial · 0\.0 min$/, "the row's detail names the run as serial");
+    }),
+  },
+  {
+    name: "144-00 a setting the gate cannot honour is refused before anything runs",
+    run: async () => {
+      for (const [gate, input, code] of [
+        [GATE_144, { serial: true, jobs: "4" }, SETTINGS_CONFLICT],
+        [GATE_144, { jobs: "0" }, JOBS_INVALID],
+        [GATE_144, { jobs: "many" }, JOBS_INVALID],
+        [{ args: ["scripts/test-sharded.mjs"] }, { jobs: "4" }, JOBS_UNDECLARED],
+        [undefined, { jobs: "4" }, JOBS_UNDECLARED],
+      ]) {
+        await withGate144({ config: config144(gate) }, async ({ run, program, recordPath }) => {
+          const error = await refusalOf(() => run({ ref: "70", ...input }));
+          assert.equal(error.code, code, `${JSON.stringify(input)} against ${JSON.stringify(gate)} is refused ${code}`);
+          assert.deepEqual(program.launched, [], "no program was launched");
+          await assert.rejects(() => readFile(recordPath, "utf8"), "and REGRESSION.md is unchanged");
+        });
+      }
+    },
+  },
+  {
+    name: "144-00 a malformed gate declaration is the toolchain's own refusal, recorded red naming the key",
+    run: async () => {
+      for (const [gate, key] of [
+        [{ args: "scripts/test-sharded.mjs" }, "args"],
+        [{ args: ["scripts/test-sharded.mjs"], jobsArgs: "--jobs" }, "jobsArgs"],
+      ]) {
+        await withGate144({ config: config144(gate) }, async ({ run, program, recordPath }) => {
+          const out = await run({ ref: "70" });
+          assert.deepEqual(program.launched, [], "no program was launched");
+          const [row] = parseRegressionRows(await readFile(recordPath, "utf8"), recordPath);
+          assert.equal(row.result, "red");
+          assert.ok(row.detail.includes(`work.test.gate.${key}`), `the detail names work.test.gate.${key}: ${row.detail}`);
+          assert.equal(out.exit, 1);
+        });
+      }
+    },
+  },
+  {
+    name: "144-00 settings never get past the dirty-tree refusal",
+    run: () => withGate144({ config: config144(GATE_144), git: { dirty: " M packages/work/src/grade.mjs\n" } }, async ({ run, program, recordPath }) => {
+      const error = await refusalOf(() => run({ ref: "70", jobs: "8" }));
+      assert.equal(error.code, DIRTY_TREE);
+      assert.match(error.message, /packages\/work\/src\/grade\.mjs/);
+      assert.deepEqual(program.launched, []);
+      await assert.rejects(() => readFile(recordPath, "utf8"));
+    }),
+  },
+  {
+    name: "144-00 the usage and the operator guide name the settings",
+    run: async () => {
+      assert.equal(regressionGateCommand.cli.spec.usage, "aof work regression-gate <ref> [--serial] [--jobs N] [--json]");
+      const guide = await readFile(path.join(repoRoot, "docs", "acd.md"), "utf8");
+      assert.match(guide, /regression-gate[\s\S]{0,400}`work\.test\.gate` when the project declares one/, "the guide says the gate runs work.test.gate when declared");
+      assert.match(guide, /`--serial`/);
+      assert.match(guide, /`--jobs N`/);
+    },
+  },
+  {
+    name: "144-01 a case red in the pool and red again alone makes the row red and names it",
+    run: () => withGate144({ config: config144(GATE_144), program: { exitCode: 1, stdout: "TAP version 13\n", stderr: "not ok - loop wave merges home\n" } }, async ({ run, recordPath }) => {
+      const out = await run({ ref: "70" });
+      const [row] = parseRegressionRows(await readFile(recordPath, "utf8"), recordPath);
+      assert.equal(row.result, "red");
+      assert.match(row.detail, /^loop wave merges home · /);
+      assert.equal(out.satisfiesDoor, false);
+    }),
+  },
+  {
+    name: "144-01 a case red in the pool and green alone is logged on a green row that satisfies the door",
+    run: () => withGate144({ config: config144(GATE_144), program: { stdout: "TAP version 13\n# not isolated - fleet boards branch deleted\n" } }, async ({ run, recordPath }) => {
+      const out = await run({ ref: "70" });
+      const [row] = parseRegressionRows(await readFile(recordPath, "utf8"), recordPath);
+      assert.equal(row.result, "green");
+      assert.ok(row.detail.startsWith("not isolated: fleet boards branch deleted · "), row.detail);
+      assert.equal(out.satisfiesDoor, true);
+      assert.deepEqual(out.notIsolated, ["fleet boards branch deleted"]);
+    }),
+  },
+  {
+    name: "144-01 every not-isolated case is named, in the order the run reported them",
+    run: () => withGate144({
+      config: config144(GATE_144),
+      program: { stdout: "TAP version 13\n# not isolated - core workspace\n# not isolated - advertised paths\n# not isolated - asset base seam\n" },
+    }, async ({ run }) => {
+      const out = await run({ ref: "70" });
+      assert.ok(out.detail.startsWith("not isolated: core workspace, advertised paths, asset base seam · "), out.detail);
+    }),
+  },
+  {
+    name: "144-01 a run that cannot account for every registered case is red, carrying the runner's line",
+    run: async () => {
+      for (const line of [
+        "the sharded run cannot account for the registry: 1 case(s) map to no suite file, 0 duplicate entries",
+        "test/loop/loop-command-wave.test.mjs: executed 3 of 5 assigned cases",
+      ]) {
+        await withGate144({ config: config144(GATE_144), program: { exitCode: 1, stderr: `not ok - ${line}\n` } }, async ({ run, recordPath }) => {
+          await run({ ref: "70" });
+          const [row] = parseRegressionRows(await readFile(recordPath, "utf8"), recordPath);
+          assert.equal(row.result, "red");
+          assert.ok(row.detail.includes(line), `the detail carries "${line}": ${row.detail}`);
+        });
+      }
+    },
+  },
+  {
+    name: "144-02 the row says how the run ran and how long it took, and logs an overrun without turning it red",
+    run: async () => {
+      for (const [flags, minutes, detail] of [
+        [{}, 13.8, "sharded · 13.8 min"],
+        [{ jobs: "8" }, 14.9, "sharded --jobs 8 · 14.9 min"],
+        [{}, 24.1, "sharded · 24.1 min · over budget (15 min)"],
+        [{ serial: true }, 104.0, "serial · 104.0 min · over budget (15 min)"],
+      ]) {
+        await withGate144({ config: config144({ ...GATE_144, budgetMinutes: 15 }), minutes }, async ({ run }) => {
+          const out = await run({ ref: "70", ...flags });
+          assert.equal(out.result, "green");
+          assert.equal(out.detail, detail);
+        });
+      }
+    },
+  },
+  {
+    name: "144-02 a red row keeps its failing cases first",
+    run: () => withGate144({
+      config: config144({ ...GATE_144, budgetMinutes: 15 }),
+      minutes: 22.0,
+      program: { exitCode: 1, stderr: "not ok - loop wave merges home\n" },
+    }, async ({ run }) => {
+      const out = await run({ ref: "70" });
+      assert.equal(out.detail, "loop wave merges home · sharded · 22.0 min · over budget (15 min)");
+    }),
+  },
+  {
+    name: "144-02 a not-isolated case sits between the failures and the run line",
+    run: () => withGate144({
+      config: config144({ ...GATE_144, budgetMinutes: 15 }),
+      minutes: 12.5,
+      program: { stdout: "TAP version 13\n# not isolated - core workspace\n" },
+    }, async ({ run }) => {
+      const out = await run({ ref: "70" });
+      assert.equal(out.result, "green");
+      assert.equal(out.detail, "not isolated: core workspace · sharded · 12.5 min");
+    }),
+  },
+  {
+    name: "144-02 with no budget declared nothing is called over budget",
+    run: () => withGate144({ config: config144(GATE_144), minutes: 40.0 }, async ({ run }) => {
+      assert.equal((await run({ ref: "70" })).detail, "sharded · 40.0 min");
+    }),
+  },
+  {
+    name: "144-02 a budget that is not a positive number is refused before anything runs, recorded red",
+    run: async () => {
+      for (const budgetMinutes of [0, "15"]) {
+        await withGate144({ config: config144({ ...GATE_144, budgetMinutes }) }, async ({ run, program, recordPath }) => {
+          await run({ ref: "70" });
+          assert.deepEqual(program.launched, [], "no program was launched");
+          const [row] = parseRegressionRows(await readFile(recordPath, "utf8"), recordPath);
+          assert.equal(row.result, "red");
+          assert.ok(row.detail.includes("work.test.gate.budgetMinutes"), row.detail);
+        });
+      }
+    },
+  },
+  {
+    name: "144-02 the gate prints where the time went — the slowest-files block unchanged, then its logs",
+    run: () => withGate144({
+      config: config144(GATE_144),
+      program: {
+        stdout: [
+          "TAP version 13",
+          "# sharded run 2026-10-03T00-00-00-000Z",
+          "# slowest files (seconds summed across their chunks):",
+          "    735s  47 cases  test/loop/loop-command-wave.test.mjs",
+          "    412s  18 cases  test/loop/loop-command-reconcile.test.mjs",
+          "# logs: .tmp/test-sharded/2026-10-03T00-00-00-000Z",
+          "",
+        ].join("\n"),
+      },
+    }, async ({ run }) => {
+      const text = regressionGateCommand.cli.render(await run({ ref: "70" }));
+      const lines = text.split("\n");
+      assert.match(lines[0], /^ok - regression gate 70 /, "the verdict line first");
+      const at = lines.indexOf("# slowest files (seconds summed across their chunks):");
+      assert.ok(at > 0, "the block follows the verdict");
+      assert.deepEqual(lines.slice(at + 1, at + 3), [
+        "    735s  47 cases  test/loop/loop-command-wave.test.mjs",
+        "    412s  18 cases  test/loop/loop-command-reconcile.test.mjs",
+      ], "each line unchanged: summed seconds, case count, file");
+      assert.equal(lines[at + 3], "Logs: .tmp/test-sharded/2026-10-03T00-00-00-000Z");
+    }),
+  },
 ];
+
+// ── 144's fixture ──────────────────────────────────────────────────────────────
+
+const TEST_144 = Object.freeze({ command: "node", args: ["scripts/test.mjs"], selectArgs: ["--only", "{file}"], roots: ["test"], deadlineMs: 60000, report: { format: "tap" } });
+const GATE_144 = Object.freeze({ args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"] });
+const config144 = (gate) => ({ work: { test: gate === undefined ? { ...TEST_144 } : { ...TEST_144, gate } } });
+
+// The bounded spawn, as a spy behind the REAL `launchRunner`: it records the declared command and
+// the argument vector the shipped code composed, and answers in the seam's own envelope.
+function programStub({ exitCode = 0, stdout = "TAP version 13\n", stderr = "" } = {}) {
+  const launched = [];
+  const launch = (toolchain, files, options) => launchRunner(toolchain, files, {
+    ...options,
+    launch: async (call) => {
+      launched.push([toolchain.command, ...call.args].join(" "));
+      return Object.freeze({ outcome: "exited", command: call.command, args: call.args, attempted: [call.command, ...call.args].join(" "), deadlineMs: call.deadlineMs, exitCode, signal: null, stdout, stderr, error: null });
+    },
+  });
+  return { launched, launch };
+}
+
+// A clock that reads 0 at launch and `minutes` at exit.
+const clockOf = (minutes) => {
+  let reads = 0;
+  return () => (reads++ === 0 ? 0 : Math.round(minutes * 60000));
+};
+
+function gateDeps144({ root, item, config, program, git, minutes = 0 }) {
+  return {
+    projectRoot: root,
+    config,
+    resolve: async (ref) => (ref === item.ref ? item : null),
+    git,
+    // The shipped command body, with only the suite walk stubbed: `all` launches no selection argv.
+    runSuite: (input, deps) => runTest(input, { ...deps, walk: async () => [] }),
+    launch: program.launch,
+    clock: clockOf(minutes),
+  };
+}
+
+async function withGate144({ config, git = {}, program: answer = {}, minutes = 0 }, body) {
+  const tmp = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-regression-gate-144-")));
+  const itemDir = path.join(tmp, "wiki", "work", "70_milestone_gate");
+  await mkdir(itemDir, { recursive: true });
+  const item = { ref: "70", dir: itemDir, type: "milestone" };
+  const program = programStub(answer);
+  const deps = gateDeps144({ root: tmp, item, config, program, git: gitStub(git), minutes });
+  const run = (input) => runRegressionGate({ now: INSTANT, ...input }, deps);
+  try {
+    await body({ run, program, recordPath: path.join(itemDir, REGRESSION_RECORD_BASENAME) });
+  } finally {
+    await rm(tmp, { recursive: true, force: true });
+  }
+}

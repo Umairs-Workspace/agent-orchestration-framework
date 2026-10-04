@@ -16,7 +16,7 @@ const instant = '2026-09-01T10:00:00Z';
 
 test('regression gate refuses a dirty tree before launching tests or writing evidence', () => fixture(async root => {
   const item = { ref: '01', dir: root };
-  const { runRegressionGate } = createRegressionGateCommand({ requireLocalCheckout: () => {}, headCommit: assert.fail, runTest: assert.fail });
+  const { runRegressionGate } = createRegressionGateCommand({ requireLocalCheckout: () => {}, headCommit: assert.fail, runTest: assert.fail, resolveTestGate: assert.fail });
   await assert.rejects(runRegressionGate({ ref: '01' }, {
     projectRoot: root, resolve: async () => item, git: async () => ({ status: 0, stdout: '?? src/new.mjs\n' }), write: assert.fail,
   }), { code: 'regression-gate-dirty-tree' });
@@ -31,6 +31,9 @@ test('regression gate records the configured whole-tree runner result through it
       assert.equal(options.cwd, root); assert.equal(options.timeout, 30000); callback(null, '', '');
     },
     headCommit: async () => commit,
+    // 144: the gate program is the toolchain module's; none is declared here, so work.test runs unchanged.
+    resolveTestGate: () => ({ ok: true, gate: null }), gateToolchain: (toolchain) => toolchain,
+    resolveTestToolchain: assert.fail, launchRunner: assert.fail,
     runTest: async (input, options) => { calls.push(input); assert.equal(options.projectRoot, root); return { scope: 'all', widened: [], exit: 0, report: { failures: [] } }; },
   });
   const result = await regressionGateCommand.run({ ref: '01', now: instant }, { workspace: { projectRoot: root, config: {} } });

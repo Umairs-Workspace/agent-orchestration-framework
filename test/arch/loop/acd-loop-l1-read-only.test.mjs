@@ -42,7 +42,7 @@ export const archTests = [
         assert.deepEqual(state.driven, [], "L1 mints no run records, so the frozen driven account remains empty");
         assert.deepEqual(
           Object.keys(state).sort(),
-          ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven"].sort(),
+          ["scope", "level", "cap", "loopRunId", "state", "next", "act", "stops", "resumable", "driven", "refine", "sessions"].sort(),
           "the report-channel account never grows an eleventh LoopState key",
         );
         assert.equal(fake.spawnCalls.length, 0);

@@ -269,10 +269,10 @@ grep -c '^| F-.* | design-gap | ' $V              # 3, 11, 7, 1
 # the five counted rows
 grep -n '^| F-24 ' $A/126_milestone_the-declaration-is-the-unit/VERIFICATION.md
 grep -n '^| F-0[34] \|^| F-27 ' $A/127_milestone_backlog-and-archive/VERIFICATION.md
-grep -n '^| F-133-01 ' wiki/work/133_milestone_architecture-diagrams/VERIFICATION.md
+grep -n '^| F-133-01 ' wiki/work/archive/133_milestone_architecture-diagrams/VERIFICATION.md
 # task features added as a fix (@bug): 1, 133/04 task 03
 grep -l '@bug' $A/{124,126,127}_milestone_*/stories/*/tasks/*.feature \
-  wiki/work/133_milestone_architecture-diagrams/stories/*/tasks/*.feature
+  wiki/work/archive/133_milestone_architecture-diagrams/stories/*/tasks/*.feature
 # git reach (3, 3, 26, 2), and the commits touching any task feature
 git log --format=%h -- wiki/work/<name> wiki/work/archive/<name> | wc -l
 git log --format=%h -- "wiki/work/<name>/stories/*/tasks/*" "wiki/work/archive/<name>/stories/*/tasks/*"
@@ -281,7 +281,7 @@ git log --format=%h -- "wiki/work/<name>/stories/*/tasks/*" "wiki/work/archive/<
 git show 9e6623a~1:wiki/work/127_milestone_backlog-and-archive/STATE.md | grep -n 'no `.feature`'
 # retrospective lessons labelled misunderstanding: 11
 grep -rh 'Kind:\*\* misunderstanding' $A/{124,126,127}_milestone_* \
-  wiki/work/133_milestone_architecture-diagrams --include=RETROSPECTIVE.md | wc -l
+  wiki/work/archive/133_milestone_architecture-diagrams --include=RETROSPECTIVE.md | wc -l
 ```
 
 ## Commands (2026-09-23)
@@ -293,5 +293,5 @@ grep -l '"name":"AskUserQuestion"' *.jsonl | wc -l                  # 88
 # tool_use_id, read toolUseResult (answers / "User rejected tool use"), isSidechain
 grep -h '"name":"AskUserQuestion"' */subagents/*.jsonl | wc -l      # 0
 # spend never stamped by a hand-run settle:
-node -e 'r=require("./wiki/work/133_milestone_architecture-diagrams/runs/<node>/<run>.json"); console.log(r.sessionId, r.spend)'
+node -e 'r=require("./wiki/work/archive/133_milestone_architecture-diagrams/runs/<node>/<run>.json"); console.log(r.sessionId, r.spend)'
 ```

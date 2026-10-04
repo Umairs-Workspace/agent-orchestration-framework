@@ -194,7 +194,6 @@ async function driveTwoMemberWave() {
   renderLoopState: _aofApplication.loop.commandTools.loop.renderLoopState,
   runLoopBody: _aofApplication.loop.commandTools.loop.runLoopBody,
   runLoopLaunch: _aofApplication.loop.commandTools.loop.runLoopLaunch,
-  thinkingNarration: _aofApplication.loop.commandTools.loop.thinkingNarration,
 }));
   const { readRuns } = await Promise.resolve(Object.freeze({
   COST_SOURCES: _aofApplication.execution.runs.COST_SOURCES,

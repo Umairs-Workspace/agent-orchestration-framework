@@ -1281,7 +1281,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
         // This transition releases scheduler capacity. Put it on the existing
         // durable assignment-report outbox so {sent:false} means "still owed",
         // never "parked anyway".
-        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input", ask: await readWorkerAsk({ worktreePath, sessionId, phase: directivePhase(directiveCommand), now: resolveNow, env: options.env }) });
+        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input", ask: await readWorkerAsk({ worktreePath, sessionId, phase: directivePhase(directiveCommand), now: resolveNow, env: options.env, itemDir: item?.dir ?? null, since: runRecord.createdAt ?? null }) });
         onCleanup(assignmentId, "needs-input", worktreePath);
         return;
       }

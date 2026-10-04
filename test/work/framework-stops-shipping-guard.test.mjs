@@ -76,6 +76,15 @@ const readSettings = async (file) => JSON.parse(await readFile(file, "utf8"));
 const aofEntriesOn = (settings, event) => (settings?.hooks?.[event] ?? [])
   .flatMap((group) => (group?.hooks ?? []).filter(isAofEntry));
 
+// 136/03 (ADR-004) — the ONE framework PreToolUse member, and why it is not what 87 withdrew: it is
+// matched to the human-input tool alone, records the pending question, prints nothing and always
+// exits 0, so it judges no command before it runs. Every other framework PreToolUse entry still
+// reds the checks below, and so does this one if its group ever matches anything wider.
+const ASK_RECORDER = "claude-ask-pending";
+const judgingEntriesOn = (settings) => (settings?.hooks?.PreToolUse ?? [])
+  .flatMap((group) => (group?.hooks ?? []).filter((entry) => isAofEntry(entry) && !(entry.aofManaged === ASK_RECORDER && group.matcher === "AskUserQuestion")));
+const withoutRecorder = (groups) => (groups ?? []).filter((group) => !(group?.matcher === "AskUserQuestion" && (group.hooks ?? []).every((entry) => entry.aofManaged === ASK_RECORDER)));
+
 async function consumer(body, settings = {}) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-87-consumer-"));
   try {
@@ -148,16 +157,16 @@ export const frameworkStopsShippingGuardTests = [
       const settings = await readSettings(settingsPath);
 
       // No framework-authored entry judges a command before it runs.
-      assert.deepEqual(aofEntriesOn(settings, "PreToolUse"), [], "no framework-authored PreToolUse entry is planted");
-      assert.equal(Object.hasOwn(settings.hooks ?? {}, "PreToolUse"), false, "…and the event key is not even created for one");
+      assert.deepEqual(judgingEntriesOn(settings), [], "no framework-authored PreToolUse entry that judges a command is planted");
+      assert.deepEqual(withoutRecorder(settings.hooks?.PreToolUse), [], "…the event carries the human-input recorder alone");
 
       // Nothing the bundle renders lands a guard in their hook directory.
       const outputs = renderBundleOutputs(loadBundle(), { runtimes: ["claude"] });
       assert.equal(outputs.some((output) => output.path === GUARD_TARGET), false, "the render plants no test-isolation guard");
       assert.deepEqual(
         outputs.map((output) => output.path).filter((candidate) => candidate.startsWith(".claude/hooks/aof/")).sort(),
-        [".claude/hooks/aof/artifact-sync-enqueue.mjs", ".claude/hooks/aof/run-heartbeat-enqueue.mjs"],
-        "…only the two enqueue scripts, each installed by its own sibling descriptor",
+        [".claude/hooks/aof/artifact-sync-enqueue.mjs", ".claude/hooks/aof/ask-pending-enqueue.mjs", ".claude/hooks/aof/run-heartbeat-enqueue.mjs"],
+        "…only the three enqueue scripts, each installed by its own sibling descriptor",
       );
       assert.equal(existsSync(path.join(dir, ...GUARD_TARGET.split("/"))), false, "their hook directory carries no test-isolation guard");
     }),
@@ -176,7 +185,7 @@ export const frameworkStopsShippingGuardTests = [
         false,
         "the framework-owned test-isolation entry is gone",
       );
-      assert.deepEqual(after.hooks.PreToolUse, [OPERATOR_PRE_TOOL_USE], "the operator's own entry survives, in its own position");
+      assert.deepEqual(withoutRecorder(after.hooks.PreToolUse), [OPERATOR_PRE_TOOL_USE], "the operator's own entry survives, in its own position");
       assert.equal(
         JSON.stringify(after.hooks.SessionStart[0]),
         JSON.stringify(OPERATOR_SESSION_START),
@@ -302,7 +311,7 @@ export const frameworkStopsShippingGuardTests = [
         const survivor = after.hooks.PreToolUse.flatMap((group) => group.hooks ?? []).filter((entry) => entry.args?.[0] === "operator-owned.mjs");
         assert.equal(survivor.length, 1, "an entry an operator claimed by removing its marker: left alone, as the escape hatch already promises");
         assert.equal(Object.hasOwn(survivor[0], AOF_HOOK_MARKER), false, "…and it is not re-marked");
-        assert.deepEqual(aofEntriesOn(after, "PreToolUse"), [], "…while the framework's own marked entry is retracted");
+        assert.deepEqual(judgingEntriesOn(after), [], "…while the framework's own marked entry is retracted");
 
         assert.equal(existsSync(orphan), true, "a guard file an earlier version installed: left on disk");
         assert.equal(

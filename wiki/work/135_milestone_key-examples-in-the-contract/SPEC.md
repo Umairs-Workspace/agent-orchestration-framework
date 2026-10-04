@@ -3,10 +3,10 @@ type: milestone
 number: 135
 slug: key-examples-in-the-contract
 title: "Key examples in the contract — the map's rules become Rule: blocks, its agreed examples become headline scenarios, and none can silently fall out"
-status: not-started
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-23
+updated: 2026-10-03
 origin: wiki/planning/research/RESEARCH-specification-by-example.md
 depends: [134]
 schema: 1
@@ -39,6 +39,11 @@ lints exactly as today.
 
 In scope:
 
+- **Specification by example is its own package** (added by the operator at refine, 2026-10-03).
+  134's map grammar, answer reader, doctor lane and build-door check move from `@aof/work` into
+  `@aof/specification-by-example`, and the trace below is born there. `@aof/work` keeps only
+  extension seams that never name the map. `work.examples.enabled` stays the switch that turns the
+  practice on (ARCHITECTURE ADR-001).
 - **`Rule:` as a first-class header.** `src/feature-parse.mjs` tolerates `Rule:` today (it returns
   to description state, ADR-005 of its milestone). Here the parser, the traceability and litmus
   readers, and the board's feature view learn it as a grouping that owns its scenarios. A feature
@@ -52,8 +57,9 @@ In scope:
   levels: the map's key examples are the headline, and the matrix covers the edges. Where a map row
   and a table row say the same thing, the map row is the headline and the table keeps only the edges.
 - **The traceability extension.** Every `stated` or `confirmed` example resolves to a scenario or an
-  Examples row, and a miss is a doctor/validate finding. It lives in the existing traceability lint
-  as one more reader, not as a sibling lint.
+  Examples row, and a miss is a doctor/validate finding. It is one more reader in an existing lane,
+  not a sibling lint. The lane is the example-map lane, which already gates, rather than the
+  advisory rubric join (ADR-004 §3).
 - **The Contract stage formulates from the map.** The refine prompt's Three Amigos pass reads the map
   first. The PO writes the headline scenarios under `Rule:` blocks from the key examples, and QA
   writes the tables beneath them.
@@ -68,7 +74,11 @@ Out of scope:
 
 ## Stories
 
-To be broken down at refine.
+- [x] [01 · The practice is its own package](stories/01_story_the-practice-is-its-own-package/STORY.md)
+- [x] [02 · The parser reads `Rule:` as a group](stories/02_story_the-parser-reads-rule-as-a-group/STORY.md)
+- [x] [03 · The board groups scenarios by rule](stories/03_story_the-board-groups-scenarios-by-rule/STORY.md)
+- [x] [04 · An agreed example cannot fall out](stories/04_story_an-agreed-example-cannot-fall-out/STORY.md)
+- [x] [05 · The contract is formulated from the map](stories/05_story_the-contract-is-formulated-from-the-map/STORY.md)
 
 ## Dependencies
 

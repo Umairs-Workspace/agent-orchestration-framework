@@ -1,0 +1,72 @@
+{
+  "item": "135",
+  "bound": 3,
+  "assumption": "The live loop asks again as each lane finishes, not once per wave: these waves are the order only if every lane in a wave finishes together.",
+  "waves": [
+    {
+      "wave": 1,
+      "members": [
+        {
+          "ref": "135/01",
+          "slug": "the-practice-is-its-own-package",
+          "status": "done",
+          "built": true
+        },
+        {
+          "ref": "135/02",
+          "slug": "the-parser-reads-rule-as-a-group",
+          "status": "done",
+          "built": true
+        }
+      ],
+      "held": []
+    },
+    {
+      "wave": 2,
+      "members": [
+        {
+          "ref": "135/03",
+          "slug": "the-board-groups-scenarios-by-rule",
+          "status": "done",
+          "built": true
+        },
+        {
+          "ref": "135/04",
+          "slug": "an-agreed-example-cannot-fall-out",
+          "status": "done",
+          "built": true
+        },
+        {
+          "ref": "135/05",
+          "slug": "the-contract-is-formulated-from-the-map",
+          "status": "done",
+          "built": true
+        }
+      ],
+      "held": []
+    }
+  ],
+  "edges": [
+    {
+      "from": "135/01",
+      "to": "135/03"
+    },
+    {
+      "from": "135/02",
+      "to": "135/03"
+    },
+    {
+      "from": "135/01",
+      "to": "135/04"
+    },
+    {
+      "from": "135/02",
+      "to": "135/04"
+    },
+    {
+      "from": "135/01",
+      "to": "135/05"
+    }
+  ],
+  "unplanned": []
+}

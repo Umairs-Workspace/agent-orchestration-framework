@@ -13,8 +13,9 @@
 //     (one case creates the item the next promotes) and a chunk that starts mid-file cannot recreate that setup.
 //     Only a file that declares `export const independentCases = true` - every case builds its own state and
 //     passes alone, in any order - is split into case chunks once it took longer than --split-seconds.
-//   - A failed unit is re-run ONCE, alone, after the pool drains. Red again = a failure. Green alone = a load
-//     flake, reported by name; --strict makes a flake fail the run.
+//   - A failed unit is re-run ONCE, alone, after the pool drains. Red again = a failure. Green alone = a test that is
+//     not isolated, logged by name as `# not isolated - <case>` and not a failure; --strict makes it fail the run.
+//   - The report text and the exit decision are `scripts/test-sharded-report.mjs`'s, a pure module (144).
 //
 //   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--strict] [--no-lanes] [--plan]
 import { execFileSync, spawn } from "node:child_process";
@@ -23,6 +24,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { runnerShapedExports, suiteCaseChunks } from "./test-harness.mjs";
+import { fileTimings, lostUnitFailure, registryRefusal, shardedExit, shardedReport } from "./test-sharded-report.mjs";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
 const argv = process.argv.slice(2);
@@ -38,6 +40,9 @@ const started = Date.now();
 const stamp = new Date().toISOString().replace(/[:.]/g, "-");
 const outDir = path.join(repo, ".tmp", "test-sharded", stamp);
 mkdirSync(outDir, { recursive: true });
+// A TAP version line first, so a green run - which prints no result line at all - still reads as TAP to `aof test`
+// (and so to the regression gate) rather than as a report it cannot read.
+console.log("TAP version 13");
 const timingsPath = path.join(repo, ".tmp", "test-timings.json");
 // A gate runs from a fresh detached worktree, which has no `.tmp/` history: without timings the slow files run unsplit
 // and the run's floor is its heaviest file. So timings are also read from, and written back to, the main checkout.
@@ -72,7 +77,7 @@ for (const file of suiteFiles) {
 const unassigned = tests.filter((entry) => !assignment.has(entry));
 const duplicates = tests.length - registered.size;
 if (unassigned.length || duplicates) {
-  console.error(`not ok - the sharded run cannot account for the registry: ${unassigned.length} case(s) map to no suite file, ${duplicates} duplicate entr${duplicates === 1 ? "y" : "ies"}`);
+  console.error(registryRefusal({ unassigned: unassigned.length, duplicates }));
   for (const entry of unassigned.slice(0, 20)) console.error(`  unassigned: ${entry.name}`);
   process.exit(1);
 }
@@ -116,7 +121,7 @@ function runUnit(unit, label) {
       const failed = [...output.matchAll(/^not ok - (.*)$/gm)].map((match) => match[1]);
       const lost = !unit.lanes && executed !== unit.positions.length;
       const ok = code === 0 && failed.length === 0 && !lost;
-      if (lost) failed.push(`${unit.key}: executed ${executed} of ${unit.positions.length} assigned cases`);
+      if (lost) failed.push(lostUnitFailure(unit.key, executed, unit.positions.length));
       const result = { unit, ok, code, seconds: (Date.now() - begun) / 1000, executed, failed, output };
       writeFileSync(path.join(outDir, `${label}.log`), output);
       resolve(result);
@@ -145,32 +150,24 @@ for (const result of failedUnits) {
 }
 
 // 5. TIMINGS for the next schedule, and the report.
-const perFile = {};
-for (const result of results) {
-  const entry = perFile[result.unit.key] ?? (perFile[result.unit.key] = { seconds: 0, cases: 0 });
-  entry.seconds += result.seconds; entry.cases += result.unit.positions.length;
-}
+const perFile = fileTimings(results);
 for (const target of [timingsPath, mainTimingsPath].filter(Boolean)) {
   try { mkdirSync(path.dirname(target), { recursive: true }); writeFileSync(target, JSON.stringify(perFile, null, 1)); } catch { /* best-effort */ }
 }
 // A unit that failed in the pool counts what its alone-retry executed: the retry ran exactly that unit's cases again.
 const retried = new Map([...flakes, ...failures].map(({ first, retry }) => [first, retry]));
 const executed = results.filter((result) => !result.unit.lanes).reduce((sum, result) => sum + Math.max(0, (retried.get(result) ?? result).executed), 0);
-const summed = results.reduce((sum, result) => sum + result.seconds, 0);
-const wall = (Date.now() - started) / 1000;
-const slowest = Object.entries(perFile).sort((a, b) => b[1].seconds - a[1].seconds).slice(0, 12);
-const report = [
-  `# sharded run ${stamp}`,
-  `# ${executed} of ${tests.length} registered cases executed in ${results.length} units; wall ${(wall / 60).toFixed(1)} min, summed ${(summed / 60).toFixed(1)} min, ${JOBS} workers`,
-  `# failures: ${failures.length} unit(s); load flakes (red in the pool, green alone): ${flakes.length}`,
-  ...failures.flatMap(({ retry }) => [`not ok - unit ${retry.unit.key}`, ...retry.failed.map((name) => `  not ok - ${name}`)]),
-  ...flakes.flatMap(({ first }) => [`flake - unit ${first.unit.key}`, ...first.failed.map((name) => `  was red under load: ${name}`)]),
-  "# slowest files (seconds summed across their chunks):",
-  ...slowest.map(([key, value]) => `  ${value.seconds.toFixed(0).padStart(5)}s  ${value.cases} cases  ${key}`),
-  `# logs: ${rel(outDir)}`,
-];
+const verdict = { failures, flakes, executed, registered: tests.length, strict: STRICT };
+const report = shardedReport({
+  ...verdict,
+  stamp,
+  units: results.length,
+  wallSeconds: (Date.now() - started) / 1000,
+  summedSeconds: results.reduce((sum, result) => sum + result.seconds, 0),
+  jobs: JOBS,
+  perFile,
+  logs: rel(outDir),
+});
 writeFileSync(path.join(outDir, "SUMMARY.txt"), report.join("\n") + "\n");
 console.log(report.join("\n"));
-const lostCases = executed !== tests.length && failures.length === 0;
-if (lostCases) console.error(`not ok - executed ${executed} cases, the registry holds ${tests.length}`);
-process.exit(failures.length || lostCases || (STRICT && flakes.length) ? 1 : 0);
+process.exit(shardedExit(verdict));

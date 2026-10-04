@@ -30,6 +30,9 @@
     "plan": {
       "enabled": true
     },
+    "examples": {
+      "enabled": true
+    },
     "diagrams": {
       "generator": "diagram-design",
       "formats": [
@@ -53,6 +56,16 @@
       "deadlineMs": 7200000,
       "report": {
         "format": "tap"
+      },
+      "gate": {
+        "args": [
+          "scripts/test-sharded.mjs"
+        ],
+        "jobsArgs": [
+          "--jobs",
+          "{jobs}"
+        ],
+        "budgetMinutes": 15
       }
     },
     "worktree": {

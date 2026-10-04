@@ -108,7 +108,7 @@
     "kind": "child-process",
     "expression": "execFile(bin, args, { cwd: brief.worktreeCwd, windowsHide: true, timeout: options.timeoutMs ?? 10 * 60 * 1000 }, (error, stdout) => {\n        // A non-zero exit or a spawn fault is a `failed` outcome (never an unhandled\n        // rejection out of this seam) — the caller completes the run accordingly.\n        if (error) {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n          return;\n        }\n        try {\n          const parsed = JSON.parse(String(stdout ?? \"\"));\n          const terminal = parsed.terminal_reason ?? parsed.stop_reason ?? null;\n          const ok = terminal === \"completed\" || terminal === \"end_turn\";\n          resolve(ok ? { outcome: \"done\" } : { outcome: \"failed\", failureReason: \"agent_error\" });\n        } catch {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n        }\n      })",
     "digest": "b87e7b1327e6f3a585d01be5c9cce669c042ebf7d169151724549106d3907589",
-    "sourceDigest": "66d1a85c53ec184619f78cc8650a3779ebe322ec86b1512fe1055d8d6dfbbc25",
+    "sourceDigest": "4566639164c2d6152e86e0949cc3c22109033ed49c2d3b5719b49845b6025e47",
     "reason": "Runs the assistant binary and argv supplied by the declared launch; this package owns session execution and its process limits."
   },
   {
@@ -308,7 +308,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
     "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "309b8c0ef7bb2ef1b63b59ecf93a69074ef7114ac82499e7858cf65deca68090",
+    "sourceDigest": "871b3ede39a6a8d2c7448d25cdfd6cf24110b2d43d85221d1cb5c923123cd1f8",
     "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
   },
   {
@@ -316,7 +316,7 @@
     "kind": "child-process",
     "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
     "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
-    "sourceDigest": "309b8c0ef7bb2ef1b63b59ecf93a69074ef7114ac82499e7858cf65deca68090",
+    "sourceDigest": "871b3ede39a6a8d2c7448d25cdfd6cf24110b2d43d85221d1cb5c923123cd1f8",
     "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
   },
   {
@@ -388,7 +388,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "569c5e82bf3013787cfad4f437099ff139d2ad5435c9ca573a9ab57c6ecbe626",
+    "sourceDigest": "649fddd36d7dd4a57d2185b5f286c3876040d0cc15ae2fef7a512b724db45f21",
     "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
   },
   {
@@ -476,7 +476,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "76f3586732a7f18c1ca46440aa78bcf1c55463eaccebc931981f828f5b2b34c1",
+    "sourceDigest": "2952dd8814f6fa6c2db83a82ee15952173f1a46895b67c0255d1901e256957f2",
     "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
   },
   {
@@ -500,7 +500,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
     "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
-    "sourceDigest": "74456ad63c46f4031f5f5aa4827db0ca08c9d070cc776b36a9b6a97d7b958798",
+    "sourceDigest": "16e525c2888912abb0a28e7fa79d7c9fe4edba4a27a082eeb0c6e7a5917b5ab6",
     "reason": "Git-only bounded comparison reader; no application module entry."
   },
   {
@@ -804,7 +804,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "sourceDigest": "3f5978238675928df6660e10661320d67556117cf6ca4ac09001bf66aa62a8df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -812,7 +812,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "sourceDigest": "3f5978238675928df6660e10661320d67556117cf6ca4ac09001bf66aa62a8df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -820,7 +820,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "sourceDigest": "3f5978238675928df6660e10661320d67556117cf6ca4ac09001bf66aa62a8df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -828,7 +828,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(file)).href)",
     "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "4864be43e9d0c4cd39e5ae630c9b7484578fffd8abfe0efc99fdfe4a5b1fd25d",
+    "sourceDigest": "3f5978238675928df6660e10661320d67556117cf6ca4ac09001bf66aa62a8df",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -860,7 +860,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -868,7 +868,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -876,7 +876,7 @@
     "kind": "child-process",
     "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
     "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
   },
   {
@@ -892,7 +892,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "2075dd1490c4df31684de697307db3f324efc7786228904afd41ae51991dda43",
+    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   }
 ]

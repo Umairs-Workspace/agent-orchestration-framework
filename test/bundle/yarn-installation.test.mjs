@@ -38,12 +38,20 @@ export const yarnInstallationTests = [
     assert.deepEqual(importSpecifiers(dependencyRules).map(entry => entry.specifier), ['./identity.mjs'],
       'dependency rules use only the zero-import identity grammar');
     assert.deepEqual(computedDynamicImports(dependencyRules), [], 'dependency rules cannot hide an impure import');
-    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server']) {
+    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       // Plan 01 keeps domain I/O in its owner; these are exact file-level ports, never package-wide permissions.
       const nativePorts = name === 'effects' ? {
         'journal-open.mjs': ['node:path', 'node:fs/promises', 'node:crypto'],
+      } : name === 'specification-by-example' ? {
+        // 135/ADR-001: the practice imports @aof/work's lifecycle and @aof/contracts' error, and reads only the story's own map;
+        // 135/04 (ADR-004): the lane parses task features through @aof/work's one feature parser, and the door reads the story's own tasks/.
+        'map.mjs': [],
+        'answers.mjs': ['node:path'],
+        'doctor-lane.mjs': ['node:path', '@aof/work/lifecycle', '@aof/work/feature-parse'],
+        'story-probe.mjs': ['node:path'],
+        'build-door.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
       } : name === 'server' ? {
         'commands/work-ui.mjs': ['node:path'],
         'static-serve.mjs': ['node:path'],
@@ -190,7 +198,6 @@ export const yarnInstallationTests = [
         "phase-brief-read.mjs": ["node:fs/promises","node:path"],
         "ready-wave.mjs": ["node:path","node:fs/promises"],
         "story-contract-derive.mjs": ["node:path","node:fs"],
-        "examples/answers.mjs": ["node:path"],
         "commands/migrate-folder.mjs": ["node:path","node:fs/promises","@aof/contracts/error"],
         "commands/diagram/plan.mjs": ["node:fs","node:fs/promises","node:os","node:path","@aof/contracts/error"],
         "commands/diagram/export.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
@@ -293,7 +300,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');

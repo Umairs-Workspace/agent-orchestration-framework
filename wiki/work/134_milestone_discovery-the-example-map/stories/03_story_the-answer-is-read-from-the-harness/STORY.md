@@ -5,10 +5,10 @@ slug: the-answer-is-read-from-the-harness
 title: "The answer is read from the harness — one reader of AskUserQuestion answers, stamped once onto the run record at settle, from the real transcript store"
 parent: 134
 depends: [02]
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-23
-updated: 2026-09-24
+updated: 2026-10-02
 adrs: [ADR-003]
 reads:
   - wiki/work/134_milestone_discovery-the-example-map/SPEC.md
@@ -16,18 +16,18 @@ reads:
   - wiki/work/134_milestone_discovery-the-example-map/ARCHITECTURE.md#ADR-003
   - wiki/work/134_milestone_discovery-the-example-map/ARCHITECTURE.md#ADR-006
   - wiki/work/134_milestone_discovery-the-example-map/stories/02_story_the-map-is-a-document/tasks/01_the-queries-and-the-token-have-one-home.feature
-  - src/work-examples/map.mjs
-  - src/run-store.mjs
-  - src/run-spend-ingest.mjs
-  - src/effects/run-transitions.mjs
-  - src/loop/cycle.mjs
-  - src/commands/drive.mjs
-  - src/work/observe.mjs
-  - src/agent-session-driver.mjs
-  - src/commands/run-complete.mjs
-  - src/commands/run-start.mjs
-  - src/work.mjs
-  - src/degrade.mjs
+  - packages/work/src/examples/map.mjs
+  - packages/execution/src/runs.mjs
+  - packages/execution/src/spend.mjs
+  - packages/execution/src/run-transitions.mjs
+  - packages/work-loop/src/cycle.mjs
+  - packages/work-loop/src/commands/drive.mjs
+  - packages/work/src/observe.mjs
+  - packages/execution/src/session-driver.mjs
+  - packages/work/src/commands/run-complete.mjs
+  - packages/work/src/commands/run-start.mjs
+  - packages/core/src/application/bindings/work.mjs
+  - packages/foundation/src/degrade.mjs
   - test/support/source-slice.mjs
   - test/run/run-spend-ingest.test.mjs
   - packages/execution/test/run-store-spend.suite.mjs
@@ -36,11 +36,11 @@ reads:
   - test/arch/examples/index.mjs
   - test/examples/index.mjs
 files:
-  - src/work-examples/answers.mjs
-  - src/run-store.mjs
-  - src/effects/run-transitions.mjs
-  - src/loop/cycle.mjs
-  - src/commands/drive.mjs
+  - packages/work/src/examples/answers.mjs
+  - packages/execution/src/runs.mjs
+  - packages/execution/src/run-transitions.mjs
+  - packages/work-loop/src/cycle.mjs
+  - packages/work-loop/src/commands/drive.mjs
   - test/examples/index.mjs
   - test/examples/example-answers.test.mjs
   - test/run/run-spend-ingest.test.mjs
@@ -81,7 +81,7 @@ FF-13404.
 - [x] 00 [one reader turns a person's answer into a record](tasks/00_one-reader-turns-a-persons-answer-into-a-record.feature)
 - [x] 01 [the answer is stamped once at settle and collected for a story](tasks/01_the-answer-is-stamped-once-at-settle-and-collected-for-a-story.feature)
 - [x] 02 [settle reads the transcript store that exists](tasks/02_settle-reads-the-transcript-store-that-exists.feature)
-- [ ] 03 [the anchor is measured at the source](tasks/03_the-anchor-is-measured-at-the-source.feature)
+- [x] 03 [the anchor is measured at the source](tasks/03_the-anchor-is-measured-at-the-source.feature)
 
 ## Notes
 
@@ -106,3 +106,7 @@ FF-13404.
   settles.
 - The milestone `VERIFICATION.md` takes the red probes of FF-13401 and FF-13404 and task 03's
   evidence. `STATE.md` takes task 03's operator procedure and paste slots.
+
+## Accept decision
+
+Accepted 2026-10-02 by aof:verify 134: its scenarios green at accept (VERIFICATION `## Verification evidence`), validate PASS, no blocker finding open. The milestone live run exercised it end to end on 144.

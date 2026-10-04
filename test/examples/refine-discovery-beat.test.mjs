@@ -1,0 +1,806 @@
+import { defaultApplication as _aofApplication } from "aof/default-application";
+// Traceability wiring for milestone 134 / story 05 — the discovery beat.
+//
+// Covers EVERY @executable scenario in
+//   tasks/00_refine-opens-the-story-contract-with-a-discovery-beat-when-the-gate-is-on.feature
+//   tasks/01_autonomous-brings-every-open-business-question-to-its-one-stop-as-a-question.feature
+//   tasks/02_the-po-brief-learns-the-map-and-the-architect-brief-learns-the-classification-review.feature
+//   tasks/03_the-examples-template-is-a-legal-map-the-bundle-installs.feature
+//   tasks/04_the-acceptance-criteria-guide-names-discovery-above-the-three-zoom-levels.feature
+// and, for milestone 135 / story 05 (the contract is formulated from the map), in
+//   tasks/00_refine-formulates-from-the-map.feature
+//   tasks/01_the-briefs-and-the-guide-carry-the-level-above-the-matrix.feature
+// whose id specimens are read back through the package's id readers (135/ADR-004 §1).
+//
+// It reads the bundle SOURCES and their rendered copies from this checkout and pins CONTENT, not
+// wording (133/05's precedent). Byte-identity with a fresh render is read from
+// `aof work update --dry-run --json`, which answers `skip` for a copy that is exactly what the
+// current source renders. The contract names the sources under `src/bundle/`; since 142 they are
+// `packages/core/assets/`. The map's grammar and token are read through story 02's module, and
+// nothing is imported from story 04: the doctor codes here are row data.
+import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { EXAMPLE_COLUMN, groupRuleId, parseExampleMap, readMapToken, rowExampleId, scenarioExampleId } from "@aof/specification-by-example/map";
+import { parseFeature } from "@aof/work/feature-parse";
+
+const getCommand = _aofApplication.getCommand;
+const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
+const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
+const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
+const flat = (text) => text.replace(/\s+/g, " ");
+
+const REFINE = "packages/core/assets/commands/refine.md";
+const PO = "packages/core/assets/agents/aof-product-owner.md";
+const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
+const QA = "packages/core/assets/agents/aof-qa.md";
+const TEMPLATE = "packages/core/assets/templates/story/EXAMPLES.md";
+const INSTALLED = ".aof/templates/work/story/EXAMPLES.md";
+const GUIDE = "wiki/acceptance-criteria.md";
+const REFINE_COPIES = [".claude/commands/aof/refine.md", ".codex/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"];
+const PO_COPIES = [".claude/agents/aof-product-owner.md", ".codex/agents/aof-product-owner.md", ".opencode/agents/aof-product-owner.md"];
+const QA_COPIES = [".claude/agents/aof-qa.md", ".codex/agents/aof-qa.md", ".opencode/agents/aof-qa.md"];
+const ARCHITECT_COPIES = [".claude/agents/aof-architect.md", ".codex/agents/aof-architect.md", ".opencode/agents/aof-architect.md"];
+const MAP_LINE = /^\s*(## R|- E|- Q)\d/m;
+
+// ── the slices the rulings name ─────────────────────────────────────────────────────────────────
+// The story Contract: its bullet to the `--autonomous` block's bold lead (task 00, developer 1).
+function contractOf(refine) {
+  const start = refine.indexOf("- **story — Contract (Three Amigos):**");
+  const end = refine.indexOf("**`--autonomous` — cascade");
+  assert.ok(start >= 0 && end > start, "the story Contract section is found");
+  return refine.slice(start, end);
+}
+// The passage: its paragraph naming the gate, to the section's next bold-led paragraph.
+function passageOf(refine) {
+  const contract = contractOf(refine);
+  const gate = contract.indexOf("`work.examples.enabled`");
+  assert.ok(gate >= 0, "the Contract names the gate");
+  const start = contract.lastIndexOf("\n\n", gate) + 2;
+  const next = /\n\n\s*\*\*/.exec(contract.slice(gate));
+  const end = next ? gate + next.index : contract.length;
+  return { contract, passage: contract.slice(start, end), start, end };
+}
+// The `--autonomous` block: its bold lead to `<amendment_ratification>` (task 01, developer 1).
+function autonomousOf(refine) {
+  const start = refine.indexOf("**`--autonomous` — cascade");
+  const end = refine.indexOf("<amendment_ratification>");
+  assert.ok(start >= 0 && end > start, "the --autonomous block is found");
+  return refine.slice(start, end);
+}
+const milestoneBulletOf = (block) => block.slice(block.indexOf("- **milestone** →"), block.indexOf("\n- **story** →"));
+const outputOf = (refine) => refine.slice(refine.indexOf("<output>"), refine.indexOf("</output>"));
+const ownershipOf = (brief) => brief.slice(brief.indexOf("<ownership>"), brief.indexOf("</ownership>"));
+// The map bullet of the PO brief (with its sub-bullets), and the architect's review bullet.
+const poMapOf = (brief) => {
+  const own = ownershipOf(brief);
+  const start = own.indexOf("- A story's `EXAMPLES.md`");
+  const after = own.slice(start + 1).search(/\n- /);
+  return own.slice(start, after === -1 ? own.length : start + 1 + after);
+};
+const reviewOf = (brief) => {
+  const own = ownershipOf(brief);
+  const start = own.indexOf("- **The classification review**");
+  return own.slice(start, own.indexOf("\n", start));
+};
+// 135/05: the Contract's map-driven formulation, its bold lead to the orchestrated-mode paragraph.
+function formulationOf(refine) {
+  const contract = contractOf(refine);
+  const start = contract.indexOf("**With an applicable example map, formulate from it.**");
+  const end = contract.indexOf("**Under orchestrated mode", start);
+  assert.ok(start >= 0 && end > start, "the map-driven formulation is found");
+  return contract.slice(start, end);
+}
+// The PO brief's formulation bullet, and QA's sub-bullet under its test-case design.
+const bulletOf = (brief, lead) => {
+  const start = brief.indexOf(lead);
+  assert.ok(start >= 0, `${lead} is found`);
+  return brief.slice(start, brief.indexOf("\n", start));
+};
+const poFormulationOf = (brief) => bulletOf(ownershipOf(brief), "- **Formulating from the map.**");
+const qaFormulationOf = (brief) => bulletOf(ownershipOf(brief), "  - **Under a map rule.**");
+// The guide's level above the matrix: its heading to the three zoom levels.
+function aboveTheMatrixOf(guide) {
+  const start = guide.indexOf("### Above the matrix");
+  const end = guide.indexOf("## Three zoom levels from one source");
+  assert.ok(start >= 0 && end > start, "the level above the matrix comes before the zoom levels");
+  return guide.slice(start, end);
+}
+// 136/02: the driven paragraph — the discovery bullet that names `AOF_RUN_ID`, to the next bullet.
+function drivenOf(refine) {
+  const { passage } = passageOf(refine);
+  const at = passage.indexOf("`AOF_RUN_ID`");
+  assert.ok(at >= 0, "the passage names AOF_RUN_ID");
+  const start = passage.lastIndexOf("\n  - ", at) + 1;
+  const next = passage.indexOf("\n  - ", at);
+  return passage.slice(start, next === -1 ? passage.length : next);
+}
+const workedTokens = (text) => [...text.matchAll(/`(\d+(?:\/\d+)? [QE][1-9]\d* · [^`]+)`/g)].map((match) => match[1]);
+
+let dryRun = null;
+function freshRenderActions() {
+  if (dryRun) return dryRun;
+  const result = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+  assert.equal(result.status, 0, result.stderr);
+  dryRun = new Map(JSON.parse(result.stdout).actions.map((action) => [action.path, action.action]));
+  return dryRun;
+}
+
+export const refineDiscoveryBeatTests = [
+  // ══ 00_refine-opens-the-story-contract-with-a-discovery-beat-when-the-gate-is-on.feature ══
+  {
+    name: "examples/134-05 00 the beat opens the story Contract, before the headline Scenarios are written",
+    run: async () => {
+      const { contract, passage, start, end } = passageOf(await read(REFINE));
+      assert.ok(passage.includes("`work.examples.enabled`") && passage.includes("`EXAMPLES.md`"), "one passage names the gate and the map");
+      for (const name of ["work.examples.enabled", "EXAMPLES.md"]) {
+        for (let at = contract.indexOf(name); at !== -1; at = contract.indexOf(name, at + 1)) {
+          assert.ok(at >= start && at < end, `every mention of ${name} in the Contract is in the one passage`);
+        }
+      }
+      assert.ok(contract.indexOf("PO writes the headline Scenarios") > end, "the passage comes before the PO writes the headline Scenarios");
+    },
+  },
+  {
+    name: "examples/134-05 00 with the gate off or absent, the beat does not run and refine writes what it writes today",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      assert.match(text, /defaults to \*\*off\*\*/);
+      assert.match(text, /absent, `false` or any other value .* is off/);
+      assert.match(text, /When it is off, write no `EXAMPLES\.md`, ask no question/);
+      assert.match(text, /nothing else in the Contract changes/);
+    },
+  },
+  {
+    name: "examples/134-05 00 the beat runs only when the gate is the boolean true (outline: 4 values)",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      // The gate sentence, read as the rule it states.
+      assert.match(text, /only the boolean `true` turns it on/);
+      assert.match(text, /\(the string `"true"` included\) is off/);
+      const runs = (value) => value === true;
+      for (const [value, expected] of [[undefined, false], [false, false], ["true", false], [true, true]]) {
+        assert.equal(runs(value), expected, JSON.stringify(value));
+      }
+    },
+  },
+  {
+    name: "examples/134-05 00 the PO drafts the map from the user story and the SPEC",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      assert.match(text, /before any `\.feature` exists/);
+      assert.match(text, /The PO drafts the example map\*\* — one `EXAMPLES\.md` in the story's own folder, from the story's user story and the milestone SPEC/);
+      assert.match(text, /the rules, two or three key examples per rule with real values including the awkward edge, and every question the PO cannot answer from the record/);
+      assert.match(text, /Every example the PO writes is `proposed`, and only a person's recorded answer makes one `confirmed` or `stated`/);
+      assert.match(text, /Its form is the template at/);
+      assert.match(text, /no rule a person owns declares the map not applicable in one line/);
+    },
+  },
+  {
+    name: "examples/134-05 00 the passage teaches the map by its template, and restates no line of the grammar",
+    run: async () => {
+      const { passage } = passageOf(await read(REFINE));
+      assert.ok(passage.includes("`.aof/templates/work/story/EXAMPLES.md`"));
+      assert.equal(MAP_LINE.test(passage), false, "no line opens as a map line does");
+    },
+  },
+  {
+    name: "examples/134-05 00 the passage names the answer that licenses each label a person stands behind (outline: 3 labels)",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      assert.match(text, /An example's `confirmed` is written only after the person's recorded answer to the example's own token, `<story ref> E<n>`/);
+      assert.match(text, /An example's `stated Q<n>` and a question's `answered` are written only after the person's recorded answer to the question's token, `<story ref> Q<n>`/);
+    },
+  },
+  {
+    name: "examples/134-05 00 the architect reviews every technical label before any question is asked",
+    run: async () => {
+      const { passage } = passageOf(await read(REFINE));
+      const text = flat(passage);
+      assert.match(text, /The architect reviews every question the PO labelled `technical`\*\*, and relabels one that is really policy as `business`/);
+      assert.match(text, /A technical question may take a documented default, recorded as `defaulted <pointer>`; a business question never does/);
+      assert.ok(passage.indexOf("The architect reviews") < passage.indexOf("The main session asks"), "the review precedes the asking");
+    },
+  },
+  {
+    name: "examples/134-05 00 the main session asks each business question through AskUserQuestion, with its map token at the head",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      assert.match(text, /The main session asks\*\* each business question through `AskUserQuestion`, in solo and in orchestrated mode alike/);
+      assert.match(text, /Each question opens with its token — `<story ref> Q<n>`, or `<story ref> E<n>` when a proposed example is put to the person to confirm/);
+      assert.match(text, /The agent writes the answer into the map, but it is the harness's record of the answer, not the map, that makes the label hold/);
+    },
+  },
+  {
+    name: "examples/134-05 00 the token the passage teaches is one the reader reads back (outline: 2 forms)",
+    run: async () => {
+      const worked = workedTokens(passageOf(await read(REFINE)).passage);
+      for (const letter of ["Q", "E"]) {
+        const text = worked.find((candidate) => readMapToken(candidate)?.id.startsWith(letter));
+        assert.ok(text, `a worked question opens with a ${letter} token: ${JSON.stringify(worked)}`);
+        assert.match(readMapToken(text).storyRef, /^\d+(\/\d+)?$/);
+      }
+    },
+  },
+  {
+    name: "examples/134-05 00 the stage stops on doctor's error before the first headline Scenario",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      assert.match(text, /Once the questions are asked, run `aof work doctor <story> --json`/);
+      assert.match(text, /Any error-severity `example-\*` finding stops the Contract stage before the first headline Scenario, and no `tasks\/` is written/);
+    },
+  },
+  {
+    name: "examples/134-05 00 the stop is read by severity, not by code (outline: 5 codes)",
+    run: async () => {
+      const text = flat(passageOf(await read(REFINE)).passage);
+      const stopsOnError = /Any error-severity `example-\*` finding stops the Contract stage/.test(text);
+      const warnGoesOn = /A warn does not stop the stage/.test(text);
+      assert.ok(stopsOnError && warnGoesOn, "both halves of the stop sentence are stated");
+      const outcome = (code, severity) => (code.startsWith("example-") && severity === "error" && stopsOnError) ? "stops" : (severity === "warn" && warnGoesOn ? "goes on" : "unknown");
+      for (const [code, severity, expected] of [
+        ["example-question-open", "error", "stops"],
+        ["example-provenance-unanchored", "error", "stops"],
+        ["example-map-malformed", "error", "stops"],
+        ["example-rule-no-example", "warn", "goes on"],
+        ["example-map-too-many-rules", "warn", "goes on"],
+      ]) assert.equal(outcome(code, severity), expected, code);
+    },
+  },
+  {
+    name: "examples/134-05 00 the doctor command the beat names is a command that exists",
+    run: () => {
+      const command = getCommand("work:doctor");
+      assert.ok(command, "work:doctor is registered");
+      assert.deepEqual(command.cli.route, ["work", "doctor"]);
+      assert.doesNotThrow(() => parseSpecArgv(["7/2", "--json"], command.cli.spec, "work:doctor"));
+    },
+  },
+  {
+    name: "examples/134-05 00 every rendered copy of refine carries the beat and matches a fresh render (outline: 3 copies)",
+    run: async () => {
+      const key = flat(passageOf(await read(REFINE)).passage).slice(0, 400);
+      const actions = freshRenderActions();
+      for (const copy of REFINE_COPIES) {
+        assert.ok(flat(await read(copy)).includes(key), `${copy} carries the passage`);
+        assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+      }
+    },
+  },
+
+  // ══ 01_autonomous-brings-every-open-business-question-to-its-one-stop-as-a-question.feature ══
+  {
+    name: "examples/134-05 01 the rule sits beside the documented-default sentence and excepts business questions from it",
+    run: async () => {
+      const bullet = flat(milestoneBulletOf(autonomousOf(await read(REFINE))));
+      assert.match(bullet, /\*\*documented default decisions\*\* for non-critical open questions/);
+      assert.match(bullet, /a business-rule question from a story's example map never takes a default/);
+    },
+  },
+  {
+    name: "examples/134-05 01 the cascade runs discovery for every story and authors only the contracts no open question blocks",
+    run: async () => {
+      const block = flat(autonomousOf(await read(REFINE)));
+      assert.match(block, /When `work\.examples\.enabled` is on, .*The cascade runs the discovery beat for every story/);
+      assert.match(block, /authors a story's Contract only when its map has no open business question/);
+    },
+  },
+  {
+    name: "examples/134-05 01 the open business questions are asked at the one end review, through AskUserQuestion, with their tokens",
+    run: async () => {
+      const block = flat(autonomousOf(await read(REFINE)));
+      assert.match(block, /Every open business question from every story is asked at the single end review, through `AskUserQuestion`, as a question and never as a default/);
+      assert.match(block, /each carrying its map token/);
+      assert.match(block, /the contracts the answers unblock are authored inside that same stop/);
+    },
+  },
+  {
+    name: "examples/134-05 01 the one stop settles each story by what became of its question (outline: 3 responses)",
+    run: async () => {
+      const block = flat(autonomousOf(await read(REFINE)));
+      const gate = /leaves its story at the Contract gate with no `tasks\/` written/;
+      const rows = [
+        ["answered", [/An answered question is written into its story's map/, /each once its story passes the beat's doctor stop/]],
+        ["deferred by the person", [/deferred by the person/, gate]],
+        ["refused by the harness", [/refused by the harness/, gate]],
+      ];
+      for (const [response, rules] of rows) for (const rule of rules) assert.match(block, rule, response);
+      // The second story, whose question was answered, is authored inside the stop either way.
+      assert.match(block, /the other stories go on/);
+      assert.match(block, /the contracts the answers unblock are authored inside that same stop/);
+    },
+  },
+  {
+    name: "examples/134-05 01 a question the person defers leaves its story at the gate",
+    run: async () => {
+      assert.match(flat(autonomousOf(await read(REFINE))), /A question the person does not answer — deferred by the person, or refused by the harness — leaves its story at the Contract gate with no `tasks\/` written/);
+    },
+  },
+  {
+    name: "examples/134-05 01 the autonomous review surface lists the questions asked apart from the defaults taken",
+    run: async () => {
+      assert.match(flat(outputOf(await read(REFINE))), /lists the business questions asked and their answers apart from the default decisions taken/);
+    },
+  },
+  {
+    name: "examples/134-05 01 with the gate off, the autonomous block reads as it does today",
+    run: async () => {
+      const blocks = autonomousOf(await read(REFINE)).split(/\n(?=- )|\n\s*\n/);
+      const rule = blocks.filter((block) => /business(-rule)? question|AskUserQuestion/.test(block));
+      assert.ok(rule.length > 0, "non-vacuity: the rule's sentences were found");
+      for (const block of rule) assert.ok(block.includes("`work.examples.enabled`"), `conditional: ${flat(block).slice(0, 120)}`);
+    },
+  },
+
+  // ══ 02_the-po-brief-learns-the-map-and-the-architect-brief-learns-the-classification-review.feature ══
+  {
+    name: "examples/134-05 02 the PO brief owns the example map",
+    run: async () => {
+      const text = flat(poMapOf(await read(PO)));
+      assert.match(text, /`EXAMPLES\.md` — its \*\*example map\*\*, drafted only when `work\.examples\.enabled` is on/);
+      assert.match(text, /its rules, two or three key examples per rule with real values including the awkward edge, and its questions/);
+      assert.match(text, /Label every question `business` or `technical`; a question you cannot place is `business`/);
+    },
+  },
+  {
+    name: "examples/134-05 02 the PO brief says the PO proposes, and never asks or writes a person's label",
+    run: async () => {
+      const text = flat(poMapOf(await read(PO)));
+      assert.match(text, /Every example you write is `proposed`/);
+      assert.match(text, /you never write `confirmed` or `stated` without a person's recorded answer for that token/);
+      assert.match(text, /You do not ask the map's questions yourself\. Return them, .* and the main session asks them/);
+    },
+  },
+  {
+    name: "examples/134-05 02 the PO brief names the token whose answer licenses each person's label (outline: 3 labels)",
+    run: async () => {
+      const text = flat(poMapOf(await read(PO)));
+      assert.match(text, /An example's `confirmed` waits on the answer to its own token, `<story ref> E<n>`/);
+      assert.match(text, /an example's `stated Q<n>` and a question's `answered` wait on the answer to the question's token, `<story ref> Q<n>`/);
+    },
+  },
+  {
+    name: "examples/134-05 02 the PO brief carries the token's shape",
+    run: async () => {
+      assert.match(flat(poMapOf(await read(PO))), /`<story ref> Q<n>` for a question, `<story ref> E<n>` for a proposed example put to a person/);
+    },
+  },
+  {
+    name: "examples/134-05 02 the token the PO brief teaches is one the reader reads back (outline: 2 forms)",
+    run: async () => {
+      const worked = workedTokens(poMapOf(await read(PO)));
+      for (const letter of ["Q", "E"]) {
+        const text = worked.find((candidate) => readMapToken(candidate)?.id.startsWith(letter));
+        assert.ok(text, `a worked question opens with a ${letter} token: ${JSON.stringify(worked)}`);
+      }
+    },
+  },
+  {
+    name: "examples/134-05 02 the architect brief owns the classification review",
+    run: async () => {
+      const text = flat(reviewOf(await read(ARCHITECT)));
+      assert.match(text, /review every `technical` label on the map and relabel one that is really policy as `business`/);
+      assert.match(text, /A technical question may take a documented default, recorded as `defaulted <pointer>`/);
+      assert.match(text, /an ADR never settles a business question/);
+    },
+  },
+  {
+    name: "examples/134-05 02 every rendered copy of the two briefs carries its half and matches a fresh render (outline: 6 copies)",
+    run: async () => {
+      const actions = freshRenderActions();
+      const halves = [[flat(poMapOf(await read(PO))), PO_COPIES], [flat(reviewOf(await read(ARCHITECT))), ARCHITECT_COPIES]];
+      for (const [half, copies] of halves) {
+        for (const copy of copies) {
+          assert.ok(flat(await read(copy)).includes(half), `${copy} carries the same passage as its source`);
+          assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+        }
+      }
+    },
+  },
+
+  // ══ 03_the-examples-template-is-a-legal-map-the-bundle-installs.feature ══
+  {
+    name: "examples/134-05 03 the template shows every form the grammar admits",
+    run: async () => {
+      const template = await read(TEMPLATE);
+      assert.match(template, /^## R1 · /m, "a rule heading");
+      for (const label of ["[proposed]", "[confirmed]", "[stated Q"]) assert.ok(template.includes(label), label);
+      assert.match(template, /^## Questions$/m);
+      assert.match(template, /^- Q\d+ · business · /m);
+      assert.match(template, /^- Q\d+ · technical · /m);
+      assert.match(template, /^Not applicable: \S/m, "the one-line not-applicable form");
+    },
+  },
+  {
+    name: "examples/134-05 03 the template's live lines hold each form, as the parser reads them (outline: 10 forms)",
+    run: async () => {
+      const map = parseExampleMap(await read(INSTALLED));
+      const examples = map.rules.flatMap((rule) => rule.examples);
+      const answered = new Set(map.questions.filter((question) => question.state === "answered").map((question) => question.id));
+      const rows = [
+        ["a rule", map.rules.some((rule) => rule.examples.length > 0)],
+        ["proposed", examples.some((example) => example.provenance === "proposed")],
+        ["confirmed", examples.some((example) => example.provenance === "confirmed")],
+        ["stated Q<n>", examples.some((example) => example.provenance === "stated" && answered.has(example.question))],
+        ["business", map.questions.some((question) => question.class === "business")],
+        ["technical", map.questions.some((question) => question.class === "technical" && question.state === "defaulted" && question.pointer)],
+        ["open", map.questions.some((question) => question.class === "business" && question.state === "open")],
+        ["asked", map.questions.some((question) => question.state === "asked")],
+        ["answered", answered.size > 0],
+        ["defaulted", !map.questions.some((question) => question.class === "business" && question.state === "defaulted")],
+      ];
+      for (const [form, holds] of rows) assert.ok(holds, form);
+    },
+  },
+  {
+    name: "examples/134-05 03 the not-applicable form sits in a comment, and parses when it stands alone",
+    run: async () => {
+      const installed = await read(INSTALLED);
+      const line = installed.split("\n").find((text) => text.startsWith("Not applicable: "));
+      assert.ok(line, "the line is in the installed template");
+      const open = installed.lastIndexOf("<!--", installed.indexOf(line));
+      const close = installed.indexOf("-->", open);
+      assert.ok(open >= 0 && close > installed.indexOf(line), "it sits inside a comment");
+      const alone = parseExampleMap(line);
+      assert.ok(typeof alone.notApplicable === "string" && alone.notApplicable.length > 0);
+      assert.deepEqual(alone.malformed, []);
+    },
+  },
+  {
+    name: "examples/134-05 03 the template carries no frontmatter",
+    run: async () => {
+      assert.equal((await read(TEMPLATE)).split("\n").includes("---"), false);
+    },
+  },
+  {
+    name: "examples/134-05 03 the template parses with no malformed line (outline: installed and source)",
+    run: async () => {
+      for (const rel of [INSTALLED, TEMPLATE]) {
+        const map = parseExampleMap(await read(rel));
+        assert.deepEqual(map.malformed, [], rel);
+        assert.equal(map.notApplicable, null, rel);
+      }
+      assert.ok((await read(INSTALLED)).startsWith("<!--"), "the installed copy carries the marker at its head");
+    },
+  },
+  {
+    name: "examples/134-05 03 a verbatim copy of the installed template fits the map's one-screen budget",
+    run: async () => {
+      const lines = (await read(INSTALLED)).split("\n");
+      if (lines.at(-1) === "") lines.pop();
+      assert.ok(lines.length <= 50, `${lines.length} lines`);
+    },
+  },
+  {
+    name: "examples/134-05 03 the installed template is refreshed by aof work update and catalogued in the manifest",
+    run: async () => {
+      assert.equal(freshRenderActions().get(INSTALLED), "skip", "byte-identical to a fresh render");
+      const manifest = JSON.parse(await read("packages/core/assets/manifest.json"));
+      const entries = (manifest.files ?? manifest.entries ?? Object.values(manifest).find(Array.isArray) ?? []);
+      const entry = entries.find((candidate) => candidate.path === INSTALLED);
+      assert.ok(entry, "the manifest lists the installed template");
+      assert.deepEqual(entry.resource, { id: "story", kind: "template" });
+    },
+  },
+
+  // ══ 04_the-acceptance-criteria-guide-names-discovery-above-the-three-zoom-levels.feature ══
+  {
+    name: "examples/134-05 04 the guide places discovery above the three zoom levels",
+    run: async () => {
+      const guide = await read(GUIDE);
+      const heading = guide.search(/^## .*example map/im);
+      const zoom = guide.indexOf("## Three zoom levels from one source");
+      assert.ok(heading >= 0 && heading < zoom, "the example-map heading comes first");
+      const text = flat(guide.slice(heading, zoom));
+      assert.match(text, /before any Scenario is written/);
+      assert.match(text, /key examples are agreed with a person rather than enumerated/);
+    },
+  },
+  {
+    name: "examples/134-05 04 the guide says who decides a business rule",
+    run: async () => {
+      const guide = await read(GUIDE);
+      const text = flat(guide.slice(guide.search(/^## .*example map/im), guide.indexOf("## Three zoom levels from one source")));
+      assert.match(text, /A business-rule question goes to a person/);
+      assert.match(text, /A technical question may take a documented default/);
+      assert.match(text, /An example is `proposed` until a person's recorded answer makes it `confirmed` or `stated`/);
+    },
+  },
+  {
+    name: "examples/134-05 04 the guide says the map is conditional and points at its home",
+    run: async () => {
+      const guide = await read(GUIDE);
+      const text = flat(guide.slice(guide.search(/^## .*example map/im), guide.indexOf("## Three zoom levels from one source")));
+      assert.match(text, /When a project turns on `work\.examples\.enabled`/);
+      assert.match(text, /the story's `EXAMPLES\.md`, whose form is defined by its template/);
+    },
+  },
+  {
+    name: "examples/134-05 04 the guide points at the template by a path that resolves, and restates no line of the grammar",
+    run: async () => {
+      const guide = await read(GUIDE);
+      const passage = guide.slice(guide.search(/^## .*example map/im), guide.indexOf("## Three zoom levels from one source"));
+      const named = [...passage.matchAll(/`([^`]*templates[^`]*EXAMPLES\.md)`/g)].map((match) => match[1]);
+      assert.ok(named.length > 0, "a template path is named");
+      for (const rel of named) assert.ok(existsSync(path.join(repoRoot, rel)), `${rel} exists in this checkout`);
+      assert.equal(MAP_LINE.test(passage), false, "no line opens as a map line does");
+    },
+  },
+  // ══ 135/05 · 00_refine-formulates-from-the-map.feature ══
+  {
+    name: "examples/135-05 00 E1 · the Formulation passage tells the PO to write one Rule per map rule and one headline per key example",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /The PO reads the map first/);
+      assert.match(text, /one `Rule:` per map rule, titled with the rule's id and text/);
+      assert.match(text, /one headline Scenario per key example, titled with the example's id and its outcome/);
+    },
+  },
+  {
+    name: "examples/135-05 00 E2 · the passage makes the map row the headline where a table row says the same thing",
+    run: async () => {
+      assert.match(flat(formulationOf(await read(REFINE))), /Where a map example and a table row say the same thing, the key example stays the headline Scenario and the table keeps only the edges/);
+    },
+  },
+  {
+    name: "examples/135-05 00 the id forms the passage teaches are the ones the trace reads (outline: 3 forms)",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      const rule = /`Rule: ([^`]+)`/.exec(text)?.[1];
+      const headline = /`Scenario: ([^`]+)`/.exec(text)?.[1];
+      const header = /`(\|[^`]*\|)` *\)/.exec(text)?.[1] ?? /under `(\|[^`]*\|)`/.exec(text)?.[1];
+      const row = /a row `(\|[^`]*\|)`/.exec(text)?.[1];
+      const cells = (line) => line.split("|").slice(1, -1).map((cell) => cell.trim());
+      assert.ok(rule && headline && header && row, `every specimen is found: ${JSON.stringify({ rule, headline, header, row })}`);
+      const column = cells(header).indexOf(EXAMPLE_COLUMN);
+      assert.ok(column >= 0, `the header has an ${EXAMPLE_COLUMN} column: ${header}`);
+      const rows = [["rule title", groupRuleId(rule), "R1"], ["headline scenario title", scenarioExampleId(headline), "E2"], ["example column cell", rowExampleId(cells(row)[column]), "E3"]];
+      for (const [form, read, id] of rows) assert.equal(read, id, form);
+    },
+  },
+  {
+    name: "examples/135-05 00 E3 · QA's outlines go inside the rule, and a restating row carries the example's id",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /QA writes its outlines inside the rule they test/);
+      assert.match(text, /a row that restates a map example carries the example's id in a column headed `example`/);
+    },
+  },
+  {
+    name: "examples/135-05 00 an agreed example the contract leaves out is named by the doctor",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /Every `confirmed` or `stated` example must be carried this way, under its own rule/);
+      assert.match(text, /`aof work doctor` reports one that is not as `example-untraced`/);
+    },
+  },
+  {
+    name: "examples/135-05 00 E4 · the map-driven formulation applies only when discovery ran and the map is applicable (outline: 3 conditions)",
+    run: async () => {
+      const refine = await read(REFINE);
+      const text = flat(formulationOf(refine));
+      const beat = flat(passageOf(refine).passage);
+      const rows = [
+        // The gate off: the discovery beat does not run, and the formulation is held to the beat having run.
+        ["the gate is off", () => {
+          assert.match(beat, /When it is off, write no `EXAMPLES\.md`/);
+          assert.match(text, /only when the discovery beat above ran/);
+          assert.match(text, /Otherwise formulation is exactly as this paragraph says without it: no `Rule:` block and no example id is asked for/);
+        }],
+        ["the story's map says \"Not applicable\"", () => {
+          assert.match(text, /the map is not declared not applicable/);
+          assert.match(text, /no `Rule:` block and no example id is asked for/);
+        }],
+        ["the gate is on and the map is applicable", () => {
+          assert.match(text, /With an applicable example map, formulate from it/);
+          assert.match(text, /one `Rule:` per map rule/);
+          assert.match(text, /one headline Scenario per key example, titled with the example's id/);
+        }],
+      ];
+      for (const [condition, check] of rows) {
+        try { check(); } catch (error) { error.message = `${condition}: ${error.message}`; throw error; }
+      }
+      // The formulation spells neither the gate's key nor the map's file name: the discovery passage
+      // is their one home in the Contract (134/05).
+      assert.equal(/work\.examples\.enabled|EXAMPLES\.md/.test(text), false);
+    },
+  },
+  {
+    name: "examples/135-05 00 the passage names the fallback for a runner that cannot read Rule",
+    run: async () => {
+      const text = flat(formulationOf(await read(REFINE)));
+      assert.match(text, /A project whose runner does not bind `Rule:` writes one feature per rule instead, titled with the rule's id \(`Feature: R1 · …`\)/);
+      assert.equal(groupRuleId(/`Feature: ([^`]+)`/.exec(text)?.[1]), "R1");
+    },
+  },
+  {
+    name: "examples/135-05 00 each rendered refine copy carries the passage and matches a fresh render (outline: 3 copies)",
+    run: async () => {
+      const actions = freshRenderActions();
+      const passage = flat(formulationOf(await read(REFINE)));
+      for (const copy of REFINE_COPIES) {
+        assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+        assert.ok(flat(await read(copy)).includes(passage), `${copy} carries the map-driven Formulation passage`);
+      }
+    },
+  },
+
+  // ══ 135/05 · 01_the-briefs-and-the-guide-carry-the-level-above-the-matrix.feature ══
+  {
+    name: "examples/135-05 01 a brief carries its half and no other (outline: 2 briefs)",
+    run: async () => {
+      const po = flat(poFormulationOf(await read(PO)));
+      assert.match(po, /With an applicable map .*, you write a `Rule:` per map rule, titled with its id and text .* and under it a headline Scenario per key example, titled with its id and outcome/);
+      const qa = flat(qaFormulationOf(await read(QA)));
+      assert.match(qa, /your tables sit inside the rule they test, with an `example` column on a row that restates a map example/);
+      // Each its own half: the PO's names no `example` column, QA's writes no headline.
+      assert.equal(po.includes("`example` column"), false, "the PO's half leaves the column to QA");
+      assert.equal(/you write a `Rule:`|headline Scenario per key example/.test(qa), false, "QA's half leaves the headlines to the PO");
+      for (const [brief, half] of [[PO, poFormulationOf(await read(PO))], [QA, qaFormulationOf(await read(QA))]]) {
+        assert.equal(MAP_LINE.test(half), false, `${brief} restates no line of the map's grammar`);
+      }
+    },
+  },
+  {
+    name: "examples/135-05 01 each rendered brief matches a fresh render (outline: 6 copies)",
+    run: async () => {
+      const actions = freshRenderActions();
+      const halves = [[flat(poFormulationOf(await read(PO))), PO_COPIES], [flat(qaFormulationOf(await read(QA))), QA_COPIES]];
+      for (const [half, copies] of halves) {
+        for (const copy of copies) {
+          assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+          assert.ok(flat(await read(copy)).includes(half), `${copy} carries its source's half`);
+        }
+      }
+    },
+  },
+  {
+    name: "examples/135-05 01 E2 · the guide makes a key example the headline and the matrix the edges",
+    run: async () => {
+      const text = flat(aboveTheMatrixOf(await read(GUIDE)));
+      assert.match(text, /The map's key examples are the headline Scenarios/);
+      assert.match(text, /The Examples tables cover the edges/);
+      assert.match(text, /A map row restated in a table stays the headline, and the table keeps only the edges/);
+    },
+  },
+  {
+    name: "examples/135-05 01 the guide shows a rule as a Rule: block in one specimen",
+    run: async () => {
+      const section = aboveTheMatrixOf(await read(GUIDE));
+      const specimens = [...section.matchAll(/```gherkin\n([\s\S]*?)```/g)].map((match) => match[1]);
+      assert.equal(specimens.length, 1, "one Gherkin specimen");
+      const feature = parseFeature(specimens[0]);
+      assert.deepEqual(feature.structural, [], "the specimen parses with no structural finding");
+      assert.deepEqual(feature.rules.map((rule) => groupRuleId(rule.name)), ["R1"], "a Rule: titled by a rule id");
+      const headline = feature.scenarios.find((scenario) => !scenario.outline);
+      assert.equal(scenarioExampleId(headline?.name), "E2", "a headline scenario titled by an example id");
+      const outline = feature.scenarios.find((scenario) => scenario.outline);
+      const [block] = outline?.examples ?? [];
+      const column = block?.columns.indexOf(EXAMPLE_COLUMN) ?? -1;
+      assert.ok(column >= 0, "an outline with an example column");
+      assert.deepEqual(block.cells.map((cells) => rowExampleId(cells[column])).filter(Boolean), ["E1"], "the row's example id reads back");
+      for (const scenario of feature.scenarios) assert.equal(groupRuleId(scenario.rule?.name), "R1", `${scenario.name} sits under R1`);
+    },
+  },
+
+  // ══ 136/02 00_the-discovery-beat-asks-one-tokened-question-per-ask-in-a-driven-session.feature ══
+  {
+    name: "examples/136-02 00 E1 a driven session asks exactly one question per call",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      assert.match(text, /A driven session is one whose environment carries `AOF_RUN_ID`/);
+      assert.match(text, /in a driven session each `AskUserQuestion` call carries exactly one question/);
+    },
+  },
+  {
+    name: "examples/136-02 00 E3 an interactive refine keeps its batch of up to four",
+    run: async () => {
+      const { passage } = passageOf(await read(REFINE));
+      assert.match(flat(passage), /one call carries at most four questions/, "the batch rule is still present");
+      const driven = drivenOf(await read(REFINE));
+      const elsewhere = passage.replace(driven, "");
+      assert.equal(/exactly one question|one question per/.test(flat(elsewhere)), false, "the one-question rule is stated only in the driven paragraph");
+      assert.match(flat(driven), /environment carries `AOF_RUN_ID`/);
+    },
+  },
+  {
+    name: "examples/136-02 00 E4 the ask's first line carries the token, the discovery marker, the rule and the example",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      const order = [
+        /The question opens with its token/,
+        /then names itself a discovery question/,
+        /the rule it bears on as `R<n> · <rule>`/,
+        /the example it would settle, or that it would add a new one/,
+      ];
+      let from = 0;
+      for (const step of order) {
+        const hit = step.exec(text.slice(from));
+        assert.ok(hit, `${step} is said, after the step before it`);
+        from += hit.index + hit[0].length;
+      }
+      const labels = ["`Decision needed:`", "`Options:`", "`I would pick:`", "`What the answer changes:`"].map((label) => text.indexOf(label));
+      assert.ok(labels.every((at) => at >= 0), "the four labels are named");
+      assert.deepEqual([...labels].sort((a, b) => a - b), labels, "in that order");
+      assert.match(text, /under 1,500 characters/);
+    },
+  },
+  {
+    name: "examples/136-02 00 the specimen ask in the paragraph reads back as a token",
+    run: async () => {
+      const [specimen] = workedTokens(drivenOf(await read(REFINE)));
+      assert.ok(specimen, "the driven paragraph holds a specimen ask");
+      assert.deepEqual(readMapToken(specimen), { storyRef: "7/2", id: "Q1" });
+      assert.match(specimen, /Discovery question — rule R1 · .* settles E2\./, "the specimen carries the marker, the rule and the example");
+    },
+  },
+  {
+    name: "examples/136-02 00 the paragraph restates no line of the map's grammar",
+    run: async () => {
+      assert.equal(MAP_LINE.test(drivenOf(await read(REFINE))), false, "no line opens as a map line does");
+    },
+  },
+  {
+    name: "examples/136-02 00 E5 an unanswered question leaves the story at the gate",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      assert.match(text, /Mark the question `asked` before the call/);
+      assert.match(text, /A business question is never given a default in a driven session/);
+      assert.match(text, /is never sent as the NEEDS_INPUT sentinel/);
+      assert.match(text, /A question parked unanswered leaves the story at the Contract gate, with no `tasks\/` written/);
+    },
+  },
+  {
+    name: "examples/136-02 00 the answer is written into the map and the doctor is asked again",
+    run: async () => {
+      const text = flat(drivenOf(await read(REFINE)));
+      assert.match(text, /The answer arrives as the next input of the resumed session/);
+      assert.match(text, /write it into the map \(the question `answered`, and its example `stated Q<n>` or `confirmed`\)/);
+      assert.match(text, /then run `aof work doctor <story> --json`/);
+    },
+  },
+  {
+    name: "examples/136-02 00 E6 a technical question keeps its documented default",
+    run: async () => {
+      assert.match(flat(drivenOf(await read(REFINE))), /a technical question still takes its documented default/);
+    },
+  },
+  {
+    name: "examples/136-02 00 the driven paragraph runs only when the examples gate is on",
+    run: async () => {
+      const refine = await read(REFINE);
+      const { passage } = passageOf(refine);
+      const driven = drivenOf(refine);
+      assert.ok(passage.includes(driven), "the driven paragraph sits inside the discovery passage");
+      assert.ok(passage.indexOf("When it is on, before any `.feature` exists") < passage.indexOf(driven), "…under the gate's on-branch");
+    },
+  },
+
+  // ══ 136/02 01_a-driven-cascade-asks-its-questions-one-after-another-and-the-copies-match.feature ══
+  {
+    name: "examples/136-02 01 E2 a driven cascade asks its open business questions one after another",
+    run: async () => {
+      const block = flat(autonomousOf(await read(REFINE)));
+      assert.match(block, /in a session whose environment carries `AOF_RUN_ID`, each call carries one question/);
+      assert.match(block, /each such question is its own ask and its own wait/);
+      assert.match(block, /an interactive cascade asks in batches of four/);
+      assert.match(block, /A question the person does not answer — deferred by the person, or refused by the harness — leaves its story at the Contract gate with no `tasks\/` written; the other stories go on/);
+    },
+  },
+  {
+    name: "examples/136-02 01 every rendered copy of refine is exactly what the source renders (outline: 3 copies)",
+    run: async () => {
+      const driven = flat(drivenOf(await read(REFINE)));
+      const actions = freshRenderActions();
+      for (const copy of REFINE_COPIES) {
+        assert.ok(flat(await read(copy)).includes(driven), `${copy} carries the driven paragraph`);
+        assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
+      }
+    },
+  },
+];

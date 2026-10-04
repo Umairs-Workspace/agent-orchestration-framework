@@ -43,8 +43,14 @@ const BUDGET_KEY = {
 // among them for ANY type: the Accept-time artifact a story or chore now carries too
 // adds no `doc-over-budget` finding — it RELIEVES the one a parentless story fires by
 // giving delivered-state somewhere to live other than STORY.md.
-export function budgetKeyFor(docName) {
+//
+// milestone 135 / ADR-001 §3 — an INJECTED row (`{ doc, kind, lines }`, supplied by a practice core
+// composes in) maps its document to its kind here, beside the built-in rows and judged by the same
+// rule. A built-in name wins, so an injected row can add a document and never re-kind one.
+export function budgetKeyFor(docName, rows = []) {
   if (BUDGET_KEY[docName]) return BUDGET_KEY[docName];
+  const injected = rows.find((row) => row?.doc === docName);
+  if (injected) return injected.kind;
   return docName.endsWith(".feature") ? "feature" : undefined;
 }
 
@@ -60,7 +66,7 @@ export function budgetGroup(snapshot, ctx) {
   for (const item of snapshot.items) {
     const docSizes = item.docSizes ?? {};
     for (const [docName, size] of Object.entries(docSizes)) {
-      const key = budgetKeyFor(docName);
+      const key = budgetKeyFor(docName, ctx?.budgetRows ?? []);
       const budget = budgets[key];
       const lines = size?.lines;
       if (key == null || budget == null || lines == null) continue;

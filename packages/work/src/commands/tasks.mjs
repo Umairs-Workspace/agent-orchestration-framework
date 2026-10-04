@@ -51,7 +51,10 @@ function parsedTask(text) {
   // one above. `scenarios[].verification` in particular would put a second spelling of
   // the verification-tag fact on the wire beside `counts`, which is the one thing this
   // function's own comment exists to refuse.
-  const scenarios = parsed.scenarios.map(({ name, outline, lane }) => ({ name, outline, lane }));
+  // milestone 135 / ADR-005 §1 — and the TITLE of the rule a scenario sits under (or null), so the
+  // board can group a task's scenarios by rule. Only the title crosses the wire: the rule's line
+  // and tags are the parser's facts, and a smaller projection is a smaller contract.
+  const scenarios = parsed.scenarios.map(({ name, outline, lane, rule }) => ({ name, outline, lane, rule: rule?.name ?? null }));
   return { feature: parsed.feature, scenarios, counts };
 }
 

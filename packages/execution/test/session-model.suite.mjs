@@ -12,14 +12,24 @@ import {
   DEFAULT_EFFORT,
   EFFORT_SPELLINGS,
   normalizeEffort,
+  parseSessionChoices,
   resolveSessionLaunch,
+  resolveSessionTable,
+  sessionTableLine,
+  SESSION_CHOICE_CONFLICT,
+  SESSION_CHOICE_EMPTY,
+  SESSION_CHOICE_UNKNOWN_PHASE,
   SESSION_MODEL_CONFIG_PATH,
+  THINKING_UNKNOWN_LEVEL,
 } from "@aof/execution/session-model";
 
 // Story 141 superseded 70/01's "absence is silence" for the EFFORT half only: an unrouted phase now
 // launches at the default effort. The model half is unchanged, so an unrouted phase still resolves
 // no model — these 70/01 cases keep their meaning with the default effort added to the answer.
 const UNROUTED = Object.freeze({ effort: "high", effortSource: "default" });
+// 143/02 appended `modelSource` last, present exactly when a model resolves: a configured route
+// answers it as `config`. The 70/01 rows below keep their model and effort, with that key added.
+const FROM_CONFIG = Object.freeze({ modelSource: "config" });
 
 export const sessionModelTests = [
   // ═══════════ 01_model-and-effort-chosen.feature — the resolver ═══════════
@@ -28,7 +38,7 @@ export const sessionModelTests = [
     name: "70/01 task01 a configured session model resolves from work.agents.session for the phase",
     run: async () => {
       const config = { work: { agents: { session: { models: { continue: "claude-opus-4-1" } } } } };
-      assert.deepEqual(resolveSessionLaunch(config, "continue"), { model: "claude-opus-4-1", ...UNROUTED });
+      assert.deepEqual(resolveSessionLaunch(config, "continue"), { model: "claude-opus-4-1", ...UNROUTED, ...FROM_CONFIG });
     },
   },
   // Scenario: the spawn states which effort it wants (resolver half)
@@ -53,15 +63,15 @@ export const sessionModelTests = [
     name: "70/01 task01 outline a model for every phase — each routed phase resolves its own model, other phases nothing",
     run: async () => {
       const config = { work: { agents: { session: { models: { continue: "claude-opus-4-1", verify: "claude-sonnet-4-1" } } } } };
-      assert.deepEqual(resolveSessionLaunch(config, "continue"), { model: "claude-opus-4-1", ...UNROUTED });
-      assert.deepEqual(resolveSessionLaunch(config, "verify"), { model: "claude-sonnet-4-1", ...UNROUTED });
+      assert.deepEqual(resolveSessionLaunch(config, "continue"), { model: "claude-opus-4-1", ...UNROUTED, ...FROM_CONFIG });
+      assert.deepEqual(resolveSessionLaunch(config, "verify"), { model: "claude-sonnet-4-1", ...UNROUTED, ...FROM_CONFIG });
     },
   },
   {
     name: "70/01 task01 outline a model for one phase only — a phase with no routing entry resolves nothing for the others",
     run: async () => {
       const config = { work: { agents: { session: { models: { verify: "claude-opus-4-1" } } } } };
-      assert.deepEqual(resolveSessionLaunch(config, "verify"), { model: "claude-opus-4-1", ...UNROUTED });
+      assert.deepEqual(resolveSessionLaunch(config, "verify"), { model: "claude-opus-4-1", ...UNROUTED, ...FROM_CONFIG });
       assert.deepEqual(resolveSessionLaunch(config, "continue"), UNROUTED, "an unrouted phase resolves nothing");
       assert.deepEqual(resolveSessionLaunch(config, "refine"), UNROUTED, "an unrouted phase resolves nothing");
     },
@@ -84,7 +94,7 @@ export const sessionModelTests = [
     name: "70/01 task01 outline a known phase and a model — the model is resolved",
     run: async () => {
       const r = resolveSessionLaunch({ work: { agents: { session: { models: { continue: "claude-opus-4-1" } } } } }, "continue");
-      assert.deepEqual(r, { model: "claude-opus-4-1", ...UNROUTED });
+      assert.deepEqual(r, { model: "claude-opus-4-1", ...UNROUTED, ...FROM_CONFIG });
     },
   },
   {
@@ -115,7 +125,7 @@ export const sessionModelTests = [
       // The role map `work.agents.models` is present and populated; the session resolver
       // must ignore it entirely — a role-keyed map is not a session route.
       const config = { work: { agents: { models: { "aof-developer": "opus" }, session: { models: { continue: "claude-opus-4-1" } } } } };
-      assert.deepEqual(resolveSessionLaunch(config, "continue"), { model: "claude-opus-4-1", ...UNROUTED }, "the session model resolves from work.agents.session");
+      assert.deepEqual(resolveSessionLaunch(config, "continue"), { model: "claude-opus-4-1", ...UNROUTED, ...FROM_CONFIG }, "the session model resolves from work.agents.session");
       // With NO session config at all, even a populated role map yields nothing.
       const configNoSession = { work: { agents: { models: { "aof-developer": "opus" } } } };
       assert.deepEqual(resolveSessionLaunch(configNoSession, "continue"), UNROUTED, "the session resolver does not read work.agents.models");
@@ -176,4 +186,146 @@ export const sessionModelTests = [
       assert.equal(Object.hasOwn(resolved, "model"), false, "the model half keeps its absence-is-silence rule");
     },
   })),
+
+  // ═══════════ 143/02 task 00 — a choice is read by one grammar ═══════════
+  // Scenario Outline: a --model value is read into its parts
+  ...[
+    ["opus", "refine", { model: "opus", modelFlag: "--model" }],
+    ["opus", "verify", { model: "opus", modelFlag: "--model" }],
+    ["sonnet:medium", "continue", { model: "sonnet", modelFlag: "--model", effort: "medium", effortFlag: "--model" }],
+    ["verify=fable", "verify", { model: "fable", modelFlag: "--model" }],
+    ["verify=fable", "refine", undefined],
+    ["verify=fable:high", "verify", { model: "fable", modelFlag: "--model", effort: "high", effortFlag: "--model" }],
+    ["refine=:xhigh", "refine", { effort: "xhigh", effortFlag: "--model" }],
+    ["refine=:extra-high", "refine", { effort: "xhigh", effortFlag: "--model" }],
+    [":max", "continue", { effort: "max", effortFlag: "--model" }],
+    ["anthropic.claude-opus-v1:0", "refine", { model: "anthropic.claude-opus-v1:0", modelFlag: "--model" }],
+    ["verify=anthropic.claude-opus-v1:0:high", "verify", { model: "anthropic.claude-opus-v1:0", modelFlag: "--model", effort: "high", effortFlag: "--model" }],
+    ["opus:turbo", "refine", { model: "opus:turbo", modelFlag: "--model" }],
+    ["verify=  :high", "verify", { effort: "high", effortFlag: "--model" }],
+  ].map(([value, phase, choice]) => ({
+    name: `143/02 task00 --model ${JSON.stringify(value)} → ${phase} ${choice === undefined ? "nothing chosen" : JSON.stringify(choice)}`,
+    run: async () => {
+      const answer = parseSessionChoices({ model: [value] });
+      assert.equal(answer.refusal, undefined);
+      assert.deepEqual(answer.choices[phase], choice);
+    },
+  })),
+  // Scenario Outline: a --thinking value is read into an effort
+  ...[
+    ["high", "refine", { effort: "high", effortFlag: "--thinking" }],
+    ["verify=max", "verify", { effort: "max", effortFlag: "--thinking" }],
+    ["verify=max", "continue", undefined],
+    ["extra-high", "continue", { effort: "xhigh", effortFlag: "--thinking" }],
+  ].map(([value, phase, choice]) => ({
+    name: `143/02 task00 --thinking ${JSON.stringify(value)} → ${phase} ${choice === undefined ? "nothing chosen" : JSON.stringify(choice)}`,
+    run: async () => {
+      assert.deepEqual(parseSessionChoices({ thinking: [value] }).choices[phase], choice);
+    },
+  })),
+  // Scenario Outline: a phased value beats an unphased one, across both flags
+  ...[
+    [{ model: ["sonnet:high", "verify=fable"] },
+      { model: "fable", modelFlag: "--model", effort: "high", effortFlag: "--model" },
+      { model: "sonnet", modelFlag: "--model", effort: "high", effortFlag: "--model" }],
+    [{ model: ["sonnet:high"], thinking: ["verify=max"] },
+      { model: "sonnet", modelFlag: "--model", effort: "max", effortFlag: "--thinking" },
+      { model: "sonnet", modelFlag: "--model", effort: "high", effortFlag: "--model" }],
+    [{ model: ["verify=fable"], thinking: ["low"] },
+      { model: "fable", modelFlag: "--model", effort: "low", effortFlag: "--thinking" },
+      { effort: "low", effortFlag: "--thinking" }],
+  ].map(([given, verify, refine]) => ({
+    name: `143/02 task00 specificity — ${JSON.stringify(given)}`,
+    run: async () => {
+      const { choices } = parseSessionChoices(given);
+      assert.deepEqual(choices.verify, verify);
+      assert.deepEqual(choices.refine, refine);
+    },
+  })),
+  // Scenario Outline: a value it cannot read is refused with a code
+  ...[
+    [{ model: ["build=opus"] }, SESSION_CHOICE_UNKNOWN_PHASE, ["build", "refine", "continue", "verify"]],
+    [{ thinking: ["Refine=high"] }, SESSION_CHOICE_UNKNOWN_PHASE, ["Refine", "refine", "continue", "verify"]],
+    [{ model: ["refine=:turbo"] }, THINKING_UNKNOWN_LEVEL, ["turbo", ...EFFORT_SPELLINGS]],
+    [{ thinking: ["verify=ultra"] }, THINKING_UNKNOWN_LEVEL, ["ultra", ...EFFORT_SPELLINGS]],
+    [{ model: [""] }, SESSION_CHOICE_EMPTY, ['""']],
+    [{ model: ["verify="] }, SESSION_CHOICE_EMPTY, ["verify="]],
+    // A blank model is no model (review, 143/02): refused rather than dropped later to config.
+    [{ model: ["verify=  "] }, SESSION_CHOICE_EMPTY, ["verify=  "]],
+    [{ model: ["verify=fable", "verify=opus"] }, SESSION_CHOICE_CONFLICT, ["verify=fable", "verify=opus", "for verify"]],
+    [{ model: ["verify=fable:high"], thinking: ["verify=max"] }, SESSION_CHOICE_CONFLICT, ["verify=fable:high", "verify=max", "for verify"]],
+    [{ model: [":high"], thinking: ["high"] }, SESSION_CHOICE_CONFLICT, ['":high"', '"high"']],
+    [{ thinking: ["high", "max"] }, SESSION_CHOICE_CONFLICT, ['"high"', '"max"']],
+  ].map(([given, code, named]) => ({
+    name: `143/02 task00 refused ${code} — ${JSON.stringify(given)}`,
+    run: async () => {
+      const answer = parseSessionChoices(given);
+      assert.equal(answer.choices, undefined);
+      assert.equal(answer.refusal.code, code);
+      for (const part of named) assert.ok(answer.refusal.message.includes(part), `${answer.refusal.message} names ${part}`);
+    },
+  })),
+  {
+    name: "143/02 task00 no flags is no choice",
+    run: async () => {
+      assert.deepEqual(parseSessionChoices({}), { choices: {} });
+      assert.deepEqual(parseSessionChoices(), { choices: {} });
+    },
+  },
+
+  // ═══════════ 143/02 task 01 — each part resolves from flag, config, then default ═══════════
+  ...[
+    [undefined, undefined, undefined, undefined, undefined, "high", "default"],
+    ["opus", "medium", undefined, "opus", "config", "medium", "config"],
+    ["opus", "medium", { model: "fable", modelFlag: "--model" }, "fable", "--model", "medium", "config"],
+    ["opus", "medium", { effort: "xhigh", effortFlag: "--model" }, "opus", "config", "xhigh", "--model"],
+    ["opus", undefined, { effort: "max", effortFlag: "--thinking" }, "opus", "config", "max", "--thinking"],
+    [undefined, undefined, { model: "fable", modelFlag: "--model", effort: "high", effortFlag: "--model" }, "fable", "--model", "high", "--model"],
+    ["  ", "turbo", undefined, undefined, undefined, "high", "default"],
+  ].map(([cfgModel, cfgEffort, choice, model, modelSource, effort, effortSource]) => ({
+    name: `143/02 task01 verify — config ${cfgModel ?? "unset"}/${cfgEffort ?? "unset"}, choice ${choice ? JSON.stringify(choice) : "absent"} → ${model ?? "none"} (${modelSource ?? "absent"}) at ${effort} (${effortSource})`,
+    run: async () => {
+      const session = {
+        ...(cfgModel === undefined ? {} : { models: { verify: cfgModel } }),
+        ...(cfgEffort === undefined ? {} : { effort: { verify: cfgEffort } }),
+      };
+      const resolved = resolveSessionLaunch({ work: { agents: { session } } }, "verify", choice === undefined ? {} : { choice });
+      assert.equal(resolved.model, model);
+      assert.equal(resolved.modelSource, modelSource);
+      assert.equal(Object.hasOwn(resolved, "modelSource"), model !== undefined, "modelSource is present exactly when a model resolves");
+      assert.equal(resolved.effort, effort);
+      assert.equal(resolved.effortSource, effortSource);
+    },
+  })),
+  {
+    name: "143/02 task01 the 141 option still means an unphased --thinking",
+    run: async () => {
+      const config = { work: { agents: { session: { effort: { continue: "medium" } } } } };
+      assert.deepEqual(resolveSessionLaunch(config, "continue", { thinking: "extra-high" }), { effort: "xhigh", effortSource: "--thinking" });
+    },
+  },
+  // ═══════════ 143/03 — the table every phase resolves into, and the line the loop narrates ═══════════
+  {
+    name: "143/03 resolveSessionTable resolves all three phases once, with nulls where no model resolves",
+    run: async () => {
+      const { choices } = parseSessionChoices({ model: ["refine=opus:xhigh", "verify=fable"], thinking: ["verify=high"] });
+      const table = resolveSessionTable({ work: { agents: { session: { effort: { continue: "high" } } } } }, choices);
+      assert.deepEqual(table, {
+        refine: { model: "opus", modelSource: "--model", effort: "xhigh", effortSource: "--model" },
+        continue: { model: null, modelSource: null, effort: "high", effortSource: "config" },
+        verify: { model: "fable", modelSource: "--model", effort: "high", effortSource: "--thinking" },
+      });
+      assert.equal(sessionTableLine(table), "Sessions: refine opus (--model) at xhigh (--model); continue default model at high (config); verify fable (--model) at high (--thinking).");
+      assert.deepEqual(resolveSessionTable(undefined).refine, { model: null, modelSource: null, effort: "high", effortSource: "default" });
+    },
+  },
+  {
+    name: "143/02 task01 the role map does not leak into the session",
+    run: async () => {
+      const config = { work: { agents: { models: { "aof-developer": "haiku" } } } };
+      const resolved = resolveSessionLaunch(config, "continue", { choice: { effort: "low", effortFlag: "--thinking" } });
+      assert.equal(Object.hasOwn(resolved, "model"), false);
+      assert.equal(Object.hasOwn(resolved, "modelSource"), false);
+    },
+  },
 ];

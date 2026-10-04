@@ -5,13 +5,14 @@ import { promisify } from "node:util";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 import { probeFabric, remediationForReason } from "@aof/mesh/fabric";
 
-export function assembleCommandsDoctor({ workDoctorServices, cacheReadServices, workReadServices, effectsTableServices, effectsJournalServices, effectsDispatchServices, effectsReconcileServices, provideCommandCore }) {
+export function assembleCommandsDoctor({ workDoctorServices, cacheReadServices, workReadServices, effectsTableServices, effectsJournalServices, effectsDispatchServices, effectsReconcileServices, workObserveServices, provideCommandCore }) {
   // Core composition for work-owned doctor commands.
 
   const { buildSnapshot } = workDoctorServices;
   const { doctorWork } = workDoctorServices;
   const { staleWindowFromConfig } = workDoctorServices;
   const { CONVENTION_DOCS } = workDoctorServices;
+  const { claudeProjectsDir } = workObserveServices;
   const { readCachedWorkFacts } = cacheReadServices;
   const { isMeshWorktree } = workReadServices;
 
@@ -32,7 +33,7 @@ export function assembleCommandsDoctor({ workDoctorServices, cacheReadServices, 
   // Registration does not invoke it; shutdown revokes it with the other ports.
   const loadCommandCore = () => provideCommandCore();
 
-  const { doctorCommand, readRenameMap } = createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore });
+  const { doctorCommand, readRenameMap } = createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore });
 
   return { doctorCommand, readRenameMap };
 }

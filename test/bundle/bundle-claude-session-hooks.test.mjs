@@ -512,7 +512,10 @@ export const bundleClaudeSessionHookTests = [
         // joins the operator's own PreToolUse group any more. The assertion is re-aimed to
         // the absence rather than dropped: a re-introduced hook would otherwise land here
         // unnoticed, beside a group this scenario has just proved is byte-identical.
-        assert.deepEqual(aofEntriesOn(settings, "PreToolUse"), [], "the framework appends no PreToolUse entry beside the operator's own");
+        // 136/03 (ADR-004) adds ONE framework PreToolUse member, the human-input recorder, in a group
+        // of its own matched to AskUserQuestion; it never joins the operator's group.
+        assert.deepEqual(aofEntriesOn(settings, "PreToolUse").filter((found) => found.entry?.aofManaged !== "claude-ask-pending"), [], "the framework appends no PreToolUse entry beside the operator's own");
+        assert.ok(settings.hooks.PreToolUse.every((group) => !(group.hooks ?? []).some((entry) => entry.aofManaged === "claude-ask-pending") || (group.matcher === "AskUserQuestion" && group.hooks.length === 1)), "…the recorder sits alone in its own AskUserQuestion group");
 
         // A third apply reports no change and rewrites no bytes.
         const beforeStat = await stat(settingsPath);

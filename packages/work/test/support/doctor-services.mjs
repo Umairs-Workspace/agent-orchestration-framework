@@ -30,6 +30,8 @@ export function createDoctorServices() {
   const doctor = createWorkDoctor({
     projectExecution: refuse("projectExecution"),
     readRuns: refuse("readRuns"),
+    // milestone 135 / ADR-001 §3 — no story probe, no budget rows and no extension lanes: the
+    // engine with nothing composed in, which is what @aof/work alone is.
     diagramsGroup,
   });
   const { readRenameMap } = createDoctorCommand({ execFileAsync: promisify(execFile) });

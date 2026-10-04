@@ -10,6 +10,8 @@ import { createTerminalSpawn } from "./pty.mjs";
 // Historical source notes inside the preserved body describe the earlier in-core layout.
 export function createSessionDriver({ transcripts, launch, reportDegrade }) {
   const { claudeProjectsDir, readLastAssistantTurn, NEEDS_INPUT_SENTINEL, HUMAN_INPUT_TOOL_NAMES } = transcripts;
+  // 136/ADR-004 — optional: a pending question the transcript cannot show yet (see readPendingAsk).
+  const readPendingAsk = typeof transcripts.readPendingAsk === "function" ? transcripts.readPendingAsk : null;
   const { resolveProvider, loadNodePty, openSessionScreen, ensureWorktreeTrusted, buildOtelResourceAttributes, OTEL_RESOURCE_ATTRIBUTES_ENV_KEY, OTEL_TELEMETRY_ENV_KEY, composePhaseBriefInput } = launch;
   for (const [name, value] of Object.entries({ claudeProjectsDir, readLastAssistantTurn, resolveProvider, loadNodePty, openSessionScreen, ensureWorktreeTrusted, buildOtelResourceAttributes, composePhaseBriefInput, reportDegrade })) {
     if (typeof value !== "function") throw new TypeError(`createSessionDriver: ${name} is required`);
@@ -369,7 +371,13 @@ const DECLARED_COMPLETION_IDLE_MS = 10 * 1000;
 // answered and the session is live again. Every other pending stop_reason is "still
 // working" -> null. NEVER throws (an absent or half-written file is simply "nothing
 // settled yet").
-async function readTranscriptTerminalOutcome(file, sinceOffset = 0) {
+async function readTranscriptTerminalOutcome(file, sinceOffset = 0, pendingAsk = null) {
+  // 136/ADR-004 — claude writes a pending human-input call to the transcript only once it is
+  // answered, so the hook's record of it is read first: a call recorded during THIS drive with no
+  // result behind it is a session waiting on a person, exactly as a pending call on disk is.
+  if (pendingAsk != null && readPendingAsk != null && (await readPendingAsk(pendingAsk)) != null) {
+    return { outcome: "needs-input", declared: true, pending: true };
+  }
   // The scan is the transcript family's (131/ADR-002): this is a mapping over its one reader,
   // with the four answers it has always given. The RESUME baseline rides through unchanged — a
   // resumed session's transcript already ends in the outcome it parked with (m42, measured
@@ -459,8 +467,12 @@ async function defaultWatchTranscriptCompletion({
   // keeps the short declared window — that turn is over; parking is correct.
   onPendingInput,
   onPendingInputCleared,
+  // 136/ADR-004 — `{ itemDir, since }`: where the hook records a pending question, and the drive's
+  // start, before which a record is an earlier drive's. Absent → the transcript alone decides.
+  pendingAsk = null,
 } = {}) {
   if (typeof sessionId !== "string" || sessionId.length === 0) return null;
+  const pendingQuery = pendingAsk?.itemDir == null ? null : { itemDir: pendingAsk.itemDir, since: pendingAsk.since ?? null, sessionId, cwd, env };
   const projectsDir = claudeProjectsDir({ cwd, env });
   const file = path.join(projectsDir, `${sessionId}.jsonl`);
   return new Promise((resolve) => {
@@ -507,7 +519,7 @@ async function defaultWatchTranscriptCompletion({
       // transcripts is a session mid-work, not a quiet one (the exact truncation
       // measured live on `/aof:continue 18`, twice).
       const mtimeMs = await latestSessionActivityMtimeMs(projectsDir, sessionId);
-      const outcome = await readTranscriptTerminalOutcome(file, sinceOffset);
+      const outcome = await readTranscriptTerminalOutcome(file, sinceOffset, pendingQuery);
       // ANY movement anywhere in the tree restarts the quiet stretch — the session is
       // alive (a background agent wrote, a new turn began, a tool ran).
       if (mtimeMs !== lastMtimeMs) {
@@ -886,6 +898,9 @@ function resolveInteractiveDriverLaunch(driver, options = {}) {
 // throws (an unresolvable provider/binary or a spawn fault is a coded `failed`
 // outcome, matching the OLD defaultSpawnRuntime's own never-throw contract).
 async function driveInteractiveClaudeSession(brief, options = {}) {
+  // 136/ADR-004 — the instant this drive began: a pending-question record older than it belongs
+  // to a drive before it (a resumed session never answers a call it lost).
+  const drivenAt = new Date().toISOString();
   const ptySpawn = options.ptySpawn ?? defaultPtySpawn;
   const watchTranscriptSessionId = options.watchTranscriptSessionId ?? defaultWatchTranscriptSessionId;
   const launch = resolveInteractiveDriverLaunch(options.driver, options);
@@ -1548,6 +1563,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
             // Optional + guarded like every other seam here.
             onPendingInput: () => options.onNeedsInputPending?.(true),
             onPendingInputCleared: () => options.onNeedsInputPending?.(false),
+            ...(typeof options.heartbeat?.itemDir === "string" ? { pendingAsk: { itemDir: options.heartbeat.itemDir, since: drivenAt } } : {}),
           }),
         ).then((result) => {
           if (settled || result == null) return;

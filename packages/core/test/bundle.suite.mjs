@@ -60,6 +60,7 @@ const COMMAND_IDS = [
   "insert-milestone",
   "insert-story",
   "insert-uat",
+  "loop-diagram",
   "migrate",
   "observe",
   "pay-debt",
@@ -88,6 +89,7 @@ const SKILL_IDS = ["codex-computer-use", "codex-implementation", "codex-review"]
 // tell "a member was added" from "a member was broken".
 const HOOK_IDS = [
   "claude-artifact-sync",
+  "claude-ask-pending",
   "claude-run-heartbeat",
   "claude-session-end",
   "claude-session-prompt-ping",
@@ -113,7 +115,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 28 commands, 7 templates, 3 skills, 11 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 29 commands, 7 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -123,10 +125,10 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 28, "28 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init and pay-debt)");
+      assert.equal(byKind("command"), 29, "29 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt and loop-diagram, 145)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 7, "milestone/story/task/uat/spike/chore templates + the type-agnostic `shared` (OUTCOME.md)");
-      assert.equal(byKind("hook"), 11, "11 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat");
+      assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
     }
   },
   {
@@ -196,7 +198,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/descriptor: one typed entry per member — every member carries id + kind; 8 agents, 27 commands, 7 templates, 3 skills, 11 hooks",
+    name: "bundle/descriptor: one typed entry per member — every member carries id + kind; 8 agents, 27 commands, 7 templates, 3 skills, 12 hooks",
     run: async () => {
       const members = descriptorMembers();
       for (const member of members) {
@@ -215,12 +217,12 @@ export const bundleTests = [
       assert.deepEqual(
         members.filter((m) => m.kind === "command").map((m) => m.id).sort(),
         [...COMMAND_IDS].sort(),
-        "28 commands declared"
+        "29 commands declared"
       );
       assert.deepEqual(
         members.filter((m) => m.kind === "hook").map((m) => m.id).sort(),
         [...HOOK_IDS].sort(),
-        "11 hooks declared: lifecycle hooks plus Claude artifact-sync and run-heartbeat triggers"
+        "12 hooks declared: lifecycle hooks plus Claude artifact-sync, run-heartbeat and ask-pending triggers"
       );
       assert.deepEqual(
         members.filter((m) => m.kind === "template").map((m) => m.id).sort(),
@@ -238,7 +240,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 36, "36 resource members (8 agents + 28 commands)");
+      assert.equal(resourceMembers.length, 37, "37 resource members (8 agents + 29 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }
@@ -306,12 +308,23 @@ export const bundleTests = [
     run: async () => {
       const bundle = loadBundle();
       const outputs = renderBundleOutputs(bundle, { runtimes: ["claude"] });
-      // Claude supports all agents (8) + all commands (28) + the 3 codex delegation skills + all template files.
+      // Claude supports all agents (8) + all commands (29) + the 3 codex delegation skills + all template files.
       const resourceOutputs = outputs.filter((o) => o.resource.kind === "agent" || o.resource.kind === "command");
       assert.equal(resourceOutputs.length, AGENT_IDS.length + COMMAND_IDS.length, "one output per claude resource member");
       for (const output of outputs) {
         assert.ok(typeof output.content === "string" && output.content.trim().length > 0, `${output.resource.id} content non-empty`);
       }
+    }
+  },
+  {
+    name: "bundle/loader (145/03): the bundle ships /aof:loop-diagram beside the other commands, with its argument hint",
+    run: async () => {
+      const bundle = loadBundle();
+      const rendered = renderBundleOutputs(bundle, { runtimes: ["claude"] })
+        .find((o) => String(o.path).replaceAll("\\", "/") === ".claude/commands/aof/loop-diagram.md");
+      assert.ok(rendered, "the command renders to .claude/commands/aof/loop-diagram.md");
+      // The loader carries the frontmatter value as written, quotes included, for every command.
+      assert.equal(String(bundle.resources.find((member) => member.id === "loop-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<milestone ref>");
     }
   },
   // Scenario Outline: the bundle loads identically from any working directory.

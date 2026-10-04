@@ -149,6 +149,28 @@ export function loopConcurrencyFromConfig(workspace) {
   return resolveLoopConcurrency(loopConfig(workspace)?.concurrency);
 }
 
+// ── THE REFINE SCOPE (143/ADR-002 §1) ────────────────────────────────────────
+//
+// `work.loop.refine` is a MODE with the concurrency mode's discipline, and it lives here for the
+// same reason: FF-6901 makes `work.loop.*` the loop's one home, which is why it is not
+// `work.autonomous.refine`. Two members: `per-story` — today's loop, one story's contract per refine
+// drive, and what an unset key means, byte-identically — and `whole-item` — the break-down drive of
+// a milestone with no stories runs `/aof:refine <ref> --autonomous`, which breaks it down and
+// authors every story's contract in one session. A member resolves verbatim; anything else — a case
+// variant, an underscore, a boolean — resolves to the default, never a throw.
+export const LOOP_REFINE_MODES = Object.freeze(["per-story", "whole-item"]);
+export const DEFAULT_LOOP_REFINE = LOOP_REFINE_MODES[0];
+// The engine, which imports nothing, holds the one other spelling of `whole-item` (FF-14302); the
+// shell never compares against the member, it hands the resolved value on.
+
+export const resolveLoopRefine = (value) => (
+  LOOP_REFINE_MODES.includes(value) ? value : DEFAULT_LOOP_REFINE
+);
+
+export function loopRefineFromConfig(workspace) {
+  return resolveLoopRefine(loopConfig(workspace)?.refine);
+}
+
 // ── THE LOOP'S OWN LANE BOUND AND PHASE MODES (129/07) ───────────────────────
 //
 // The loop's settings are self-contained under `work.loop`: beside the mode sit
@@ -229,6 +251,9 @@ export const LOOP_BOUND_CONFIG_RESOLVERS = Object.freeze({
   "work.loop.dispatch.concurrency": loopDispatchConcurrencyFromConfig,
   "work.loop.agents.refine.mode": loopAgentRefineModeFromConfig,
   "work.loop.agents.continue.mode": loopAgentContinueModeFromConfig,
+  // 143/01 (ADR-002 §1) — the refine mode, appended last with the concurrency mode's discipline, so
+  // the loop family names no `work.loop.*` key these maps do not carry (FF-12901).
+  "work.loop.refine": loopRefineFromConfig,
 });
 
 export const LOOP_BOUND_CONFIG_KEYS = Object.freeze(Object.keys(LOOP_BOUND_CONFIG_RESOLVERS));
@@ -288,6 +313,8 @@ export const LOOP_BOUND_VALUE_RESOLVERS = Object.freeze({
   "work.loop.dispatch.concurrency": resolveLoopDispatchConcurrency,
   "work.loop.agents.refine.mode": resolveLoopAgentMode,
   "work.loop.agents.continue.mode": resolveLoopAgentMode,
+  // 143/01 — its value-shaped twin, in the same position.
+  "work.loop.refine": resolveLoopRefine,
 });
 
 export const LOOP_BOUND_VALUE_KEYS = Object.freeze(Object.keys(LOOP_BOUND_VALUE_RESOLVERS));

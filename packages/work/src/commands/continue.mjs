@@ -1,7 +1,12 @@
 import { commandError } from "@aof/contracts/error";
 
 // Core supplies configured execution, mesh, notification and transition services.
-export function createPhaseDoorCommands({ assignWork, resolveItem, resolveItemExact, transitionItemStatus, readExecutionOverlay, resolveScopedExecution, executionScopeRef, readStreamedItemRow }) {
+//
+// milestone 135 / ADR-001 §3 — `beforeBuild` is a list of `async (ctx, row)` checks a composed
+// practice brings to the build door. The continue door awaits each in order, after its backlog
+// refusal and before it reads the overlay, and a check refuses by throwing: the first throw ends the
+// walk, so nothing moves, nothing is minted and nothing is dispatched. An empty list refuses nothing.
+export function createPhaseDoorCommands({ assignWork, resolveItem, resolveItemExact, transitionItemStatus, readExecutionOverlay, resolveScopedExecution, executionScopeRef, readStreamedItemRow, beforeBuild = [] }) {
 // work:continue — "continue this task", with ONE option: WHERE to continue it.
 //
 // THE DEFECT (operator, 2026-07-26): there were three different doors to the same act.
@@ -233,6 +238,11 @@ function createPhaseDoorCommand(phase) {
           409,
         );
       }
+
+      // milestone 135 / ADR-001 §3 — the build door's injected checks, here and only here: before the
+      // overlay is read, so a refusal moves nothing, mints nothing and dispatches nothing. Only the
+      // build door runs them — refine and verify are not builds.
+      if (phase === "continue") for (const check of beforeBuild) await check(ctx, exact);
 
       const localNodeId = ctx.workspace?.config?.mesh?.nodeId ?? null;
 

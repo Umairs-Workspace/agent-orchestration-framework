@@ -8,8 +8,18 @@ import { examplesConfigGateTests } from "./examples-config-gate.test.mjs";
 // milestone 134 / story 03 — the one reader of a person's answer, its stamp at settle, and the
 // settle reading the transcript store that exists (tasks 00-02).
 import { exampleAnswersTests } from "./example-answers.test.mjs";
+// milestone 134 / story 04 — the examples doctor lane and its snapshot probe (tasks 00-01), and the
+// continue door that refuses a story while a business question stands (task 02).
+import { doctorExamplesLaneTests } from "./doctor-examples-lane.test.mjs";
+import { continueDoorExamplesTests } from "./continue-door-examples.test.mjs";
+// milestone 134 / story 05 — the discovery beat: refine's prose, the two briefs, the EXAMPLES.md
+// template and the acceptance-criteria guide (tasks 00-04).
+import { refineDiscoveryBeatTests } from "./refine-discovery-beat.test.mjs";
 
 export const tests = [
   ...examplesConfigGateTests,
   ...exampleAnswersTests,
+  ...doctorExamplesLaneTests,
+  ...continueDoorExamplesTests,
+  ...refineDiscoveryBeatTests,
 ];

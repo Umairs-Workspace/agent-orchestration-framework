@@ -66,6 +66,25 @@ export function moduleRelocations(modules, { exports, constructors }) {
   return links;
 }
 
+// A forward recorded in the rename ledger: `F\t<from>\t<to>[\t<to>…]`. A squash merge keeps only
+// the ORIGINAL source of a module it deleted, never the forward it became on the branch, so the
+// branch's links are derived once (with `moduleRelocations` and `relocationInputs` below) and
+// recorded beside the renames (136/VERIFICATION F-136-01). A live derivation wins over a record.
+export function parseForwardRecords(text) {
+  const links = new Map();
+  for (const line of String(text ?? '').split(/\r?\n/u)) {
+    const match = /^F\t([^\t]+)\t(.+)$/u.exec(line);
+    if (match == null || links.has(match[1])) continue;
+    const targets = match[2].split('\t').map(target => target.trim()).filter(Boolean);
+    if (targets.length) links.set(match[1], targets.length === 1 ? targets[0] : Object.freeze(targets));
+  }
+  return links;
+}
+
+export function forwardRecords(links) {
+  return [...links].map(([file, target]) => ['F', file, ...(Array.isArray(target) ? target : [target])].join('\t'));
+}
+
 export async function readCitationHistory(projectRoot, runGit) {
   const ledger = await readFile(path.join(projectRoot, ...RENAME_LEDGER_PATH), 'utf8').catch(() => '');
   const live = await runGit([...RENAME_LOG_ARGS]);
@@ -74,6 +93,14 @@ export async function readCitationHistory(projectRoot, runGit) {
   // lets a removal be checked before its commit without inventing a rename record.
   const history = await runGit(['log', '--format=', '--diff-filter=D', '-p', '--', 'packages/core/src']);
   const pending = await runGit(['diff', '--no-ext-diff', '--unified=10000', '--', 'packages/core/src']);
+  const links = moduleRelocations(deletedModules(`${pending}\n${history}`), await relocationInputs(projectRoot));
+  for (const [file, target] of parseForwardRecords(ledger)) if (!links.has(file)) links.set(file, target);
+  renameMap.moduleLinks = links;
+  return renameMap;
+}
+
+// Today's public exports and constructor homes: what a deleted forward is resolved against.
+export async function relocationInputs(projectRoot) {
   const exports = new Map();
   for (const owner of await readdir(path.join(projectRoot, 'packages')).catch(() => [])) {
     const manifest = await readFile(path.join(projectRoot, 'packages', owner, 'package.json'), 'utf8').then(JSON.parse).catch(() => null);
@@ -88,6 +115,5 @@ export async function readCitationHistory(projectRoot, runGit) {
     if (!name.endsWith('.mjs')) continue;
     sources.push({ file: `packages/core/src/application/${name}`, source: await readFile(path.join(assemblyDir, name), 'utf8') });
   }
-  renameMap.moduleLinks = moduleRelocations(deletedModules(`${pending}\n${history}`), { exports, constructors: constructorHomes(sources) });
-  return renameMap;
+  return { exports, constructors: constructorHomes(sources) };
 }

@@ -5,6 +5,10 @@
 //  module spells an `E<n>`/`Q<n>`/`R<n>` map pattern. No `packages/core/src/**` module writes a file named
 //  `EXAMPLES.md`."
 //
+// Since 135/01 the one home is `packages/specification-by-example/src/map.mjs`: the invariant is
+// unchanged, and its path moved with the package (135/ADR-001 §5). The sweep still covers every
+// runtime module, so the package's other modules are held to it too.
+//
 // Why it matters: the doctor lane, the continue door and the discovery prose all judge one map. A
 // second module that re-spells a label or a line shape is the drift that lets one of them read
 // `[confirmd]` as a claim, or a `defaulted` business question as closed, while the others do not.
@@ -31,10 +35,10 @@ import {
   PROVENANCE,
   QUESTION_CLASSES,
   QUESTION_STATES,
-} from "@aof/work/examples/map";
+} from "@aof/specification-by-example/map";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const THE_ONE_HOME = "packages/work/src/examples/map.mjs";
+const THE_ONE_HOME = "packages/specification-by-example/src/map.mjs";
 const ADMITTED = new Map([
   ["packages/work/src/declared-id.mjs", "the retrospective heading grammar (`## R<n>`), another grammar sharing the rule heading's shape"],
 ]);

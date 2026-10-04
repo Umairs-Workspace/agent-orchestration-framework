@@ -1191,6 +1191,18 @@ export function mapStoreRefusal(answer) {
 // The refine drive starts at cycle 1: `cycle` on this input is the HEAD's counter for the
 // HEAD's phase, and the story being refined is a different unit in a different phase.
 const REFINE_FIRST = "refine_first";
+// 143/01 (ADR-002 §4) — the refine mode, as the engine sees it: handed the RESOLVED value as the input
+// `refine` (`@aof/contracts/loop-bounds` resolves it) and compared against this one constant, because
+// this module imports nothing. FF-14302 holds it to this one spelling outside the bounds home.
+const WHOLE_ITEM = "whole-item";
+
+// isWholeItemCascade({ refine, phase, type }) — the ONE answer to "is this drive the whole-item refine
+// cascade?": a refine of a MILESTONE under `whole-item`. The decision below asks it, and so does a
+// re-entered drive (`cycle.mjs`), which rebuilds the act from the run's declaration — so neither
+// spells the member, and the two cannot disagree (143/01 review).
+export function isWholeItemCascade({ refine, phase, type } = {}) {
+  return refine === WHOLE_ITEM && phase === "refine" && type === "milestone";
+}
 
 function refineFirstDecision(input) {
   if (input.concurrency !== REFINE_FIRST) return null;
@@ -1235,7 +1247,11 @@ export function decideLoopPhase(input = {}) {
   }
   if (type === "milestone") {
     const phase = (input.stories?.total ?? 0) === 0 ? "refine" : "verify";
-    return boundedDrive(ref, phase, input.cycle, input.cap);
+    // 143/01 (ADR-002 §4) — under `whole-item` the BREAK-DOWN drive (a milestone with no stories) is
+    // the cascade: it carries `autonomous: true`. Every other decision is unchanged, so a cascade that
+    // dies part-way is finished by the ordinary per-story refine decisions, with no resume logic.
+    const cascade = isWholeItemCascade({ refine: input.refine, phase, type }) ? { autonomous: true } : {};
+    return boundedDrive(ref, phase, input.cycle, input.cap, cascade);
   }
   if (type !== "story") {
     return halt("unmapped-item-type", `work:next:type=${String(type)}`, { ref, type });
@@ -1424,10 +1440,71 @@ export function buildLoopDeclaration(input = {}) {
     // run thinks at, as the caller's already-canonical `--thinking` level (this module imports
     // nothing, so the vocabulary is applied before the value arrives), or `null` for no override.
     thinking: declaredThinking(input.thinking),
+    // THE ELEVENTH KEY, APPENDED LAST (143/00, ADR-001 §3), by the same discipline. The backlog slug
+    // the operator typed when the loop promoted it, beside `scope` holding the number it minted, or
+    // `null` when the scope was a number. A caller that passes nothing (the mesh assignment directive,
+    // the trigger declaration) declares `null`.
+    promotedFrom: declaredString(input.promotedFrom),
+    // THE TWELFTH KEY, APPENDED LAST (143/01, ADR-002 §3). The resolved refine mode this run drives
+    // under, or `null` when the caller passes none — which the shell reads as the configured mode.
+    refine: declaredString(input.refine),
+    // THE THIRTEENTH KEY, APPENDED LAST (143/03, ADR-004 §2): which model and effort each phase runs on,
+    // and where each came from — `{ refine | continue | verify: { model, modelSource, effort,
+    // effortSource } }`, resolved once by the shell — or `null` when the caller passes none.
+    sessions: declaredSessions(input.sessions),
   };
 }
 
-const declaredThinking = (value) => (typeof value === "string" && value.length > 0 ? value : null);
+const declaredString = (value) => (typeof value === "string" && value.length > 0 ? value : null);
+const declaredThinking = declaredString;
+const declaredSessions = (value) => (value !== null && typeof value === "object" && !Array.isArray(value) ? copyPlain(value) : null);
+
+// ── THE PER-PHASE SESSION RECORD (143/03, ADR-004 §3-§4) ──────────────────────────────
+//
+// The two sources that mean "the operator typed it". A part from either is re-applied on a resume and
+// lent to a drive; a `config` or `default` part is neither, because the drive resolves it from the
+// same config. Spelled here because this module imports nothing.
+const SESSION_FLAG_SOURCES = Object.freeze(["--model", "--thinking"]);
+const fromFlag = (source) => SESSION_FLAG_SOURCES.includes(source);
+
+// recordedSessionChoices(declaration) — the choices a resume with no session flag re-applies: every
+// FLAG-sourced part of the recorded `sessions`, as `parseSessionChoices` would have answered them — over
+// the phases the record itself holds, so this module keeps no second phase list. A declaration written
+// before 143 has no `sessions` and falls back to its `thinking`, as 141 resumed it, spread over the
+// phases the caller hands in (the session leaf's one list; this module imports nothing).
+function recordedSessionChoices(declaration, phases = []) {
+  const sessions = declaration?.sessions;
+  if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
+    const choices = {};
+    for (const [phase, entry] of Object.entries(sessions)) {
+      if (entry === null || typeof entry !== "object") continue;
+      const choice = {};
+      if (fromFlag(entry.modelSource) && declaredString(entry.model) != null) Object.assign(choice, { model: entry.model, modelFlag: entry.modelSource });
+      if (fromFlag(entry.effortSource) && declaredString(entry.effort) != null) Object.assign(choice, { effort: entry.effort, effortFlag: entry.effortSource });
+      if (Object.keys(choice).length > 0) choices[phase] = choice;
+    }
+    return choices;
+  }
+  const thinking = declaredThinking(declaration?.thinking);
+  return thinking == null ? {} : Object.fromEntries((Array.isArray(phases) ? phases : []).map((phase) => [phase, { effort: thinking, effortFlag: "--thinking" }]));
+}
+
+// sessionLendFor(declaration, phase) → `{ model?, thinking? }` — what ONE drive of `phase` is lent
+// (ADR-004 §4): the FLAG parts of its own phase's recorded choice, and nothing else, so "with no flag
+// the loop passes nothing" (141) stays true. A declaration with no `sessions` lends 141's `thinking`.
+export function sessionLendFor(declaration, phase) {
+  const sessions = declaration?.sessions;
+  if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
+    const entry = sessions[phase];
+    if (entry === null || typeof entry !== "object") return {};
+    return {
+      ...(entry.modelSource === "--model" && declaredString(entry.model) != null ? { model: entry.model } : {}),
+      ...(fromFlag(entry.effortSource) && declaredString(entry.effort) != null ? { thinking: entry.effort } : {}),
+    };
+  }
+  const thinking = declaredThinking(declaration?.thinking);
+  return thinking == null ? {} : { thinking };
+}
 
 function usableDeclaration(loop) {
   if (loop === null || typeof loop !== "object") return false;
@@ -1461,6 +1538,13 @@ function recoverableDeclaration(loop) {
     // THE SEVENTH PROJECTED KEY (141), for the same reason. A declaration written before 141 has no
     // `thinking` and stays usable at five keys; its absence reads as no override.
     thinking: declaredThinking(loop.thinking),
+    // THE EIGHTH PROJECTED KEY (143/00), for the same reason. A declaration written before 143 has
+    // no `promotedFrom` and stays usable at five keys; its absence reads as `null`.
+    promotedFrom: declaredString(loop.promotedFrom),
+    // THE NINTH PROJECTED KEY (143/01), for the same reason; absent reads as `null`.
+    refine: declaredString(loop.refine),
+    // THE TENTH PROJECTED KEY (143/03), for the same reason; absent reads as `null`.
+    sessions: declaredSessions(loop.sessions),
   };
 }
 
@@ -1635,11 +1719,27 @@ export function resolveLoopResume(input = {}) {
   const supervised = input.supervised === true || recovered?.supervised === true;
   // 141 — the effort override follows the same rule: an explicit `--thinking` wins, an absent one
   // inherits the declaration's (`null` when it carried none).
-  const thinking = declaredThinking(input.thinking) ?? declaredThinking(recovered?.thinking);
+  // 143/03 (ADR-004 §3) — the session flags resume as a SET. With any `--model`/`--thinking` given
+  // (`explicitSessions`), the recorded flag choices are all dropped and the new ones stand alone, and
+  // 141's `thinking` is the new unphased level or nothing. With none, every recorded flag part is
+  // re-applied; config and default parts are the shell's to re-resolve against the current config.
+  const explicitSessions = input.explicitSessions === true;
+  const thinking = explicitSessions
+    ? declaredThinking(input.thinking)
+    : declaredThinking(input.thinking) ?? declaredThinking(recovered?.thinking);
+  const sessionChoices = explicitSessions ? copyPlain(input.sessionChoices ?? {}) : recordedSessionChoices(recovered, input.sessionPhases);
   return {
     resumed: recovered !== null && recovered !== undefined,
     supervised,
     thinking,
+    // 143/00 (ADR-001 §4) — a resume carries the slug the loop was promoted from. It is a fact about
+    // the lineage, never a flag: nothing overrides it, and nothing promotes again.
+    promotedFrom: declaredString(recovered?.promotedFrom),
+    // 143/01 (ADR-002 §3) — the refine mode follows 126/02's rule: an explicit `--refine` wins, an
+    // absent one inherits the declaration's, and `null` (none recorded) is the shell's to resolve
+    // from config.
+    refine: declaredString(input.refine) ?? declaredString(recovered?.refine),
+    sessionChoices,
     loopRunId: copyPlain(recovered?.loopRunId ?? null),
     scope: scope.scope,
     priorScope: copyPlain(recovered?.scope ?? null),

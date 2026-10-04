@@ -44,7 +44,10 @@ const phaseIds = ["continue", "refine", "verify"];
 const commandIdsBeforeStory = [
   "add-chore", "add-milestone", "add-spike", "add-story", "add-task", "add-uat",
   "assimilate-code", "autonomous", "code-review", "continue", "delegate", "feedback",
-  "init", "insert-chore", "insert-milestone", "insert-story", "insert-uat", "migrate",
+  // `loop-diagram` ADDED AT 145, in the descriptor's own order (after `insert-uat`): the
+  // `/aof:loop-diagram` wrapper over `aof diagram plan|export <ref> loop` — the same species as
+  // `promote` and `archive`, repaired at `aof:verify 145`.
+  "init", "insert-chore", "insert-milestone", "insert-story", "insert-uat", "loop-diagram", "migrate",
   // `pay-debt` ADDED AT 119/03, and late: the command shipped with the tech-debt ledger work and
   // this list — the control that says the pre-existing member set is COMPLETE and undisturbed —
   // was not updated with it, so the leg has been red on this branch since. It surfaced here
