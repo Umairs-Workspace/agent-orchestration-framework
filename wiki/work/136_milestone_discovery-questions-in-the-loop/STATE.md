@@ -60,4 +60,5 @@ doc: state
 ## Verification
 
 - [ ] `@executable` suite green
-- [ ] `@manual` signed off: one live loop-driven discovery question, answered
+- [x] `@manual` signed off: one live loop-driven discovery question, answered — 2026-10-04 on the
+  test-bed (08/00 Q1, answered `… inside max`, anchored; VERIFICATION evidence)
