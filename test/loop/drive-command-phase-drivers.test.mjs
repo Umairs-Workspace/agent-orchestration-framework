@@ -16,6 +16,8 @@ const PHASE_MODE_FLAGS = _aofApplication.loop.commandTools.drive.PHASE_MODE_FLAG
 const continueDriverCommand = _aofApplication.getCommand("work:drive-continue");
 const refineDriverCommand = _aofApplication.getCommand("work:drive-refine");
 const verifyDriverCommand = _aofApplication.getCommand("work:drive-verify");
+// 147/02 — the fourth phase driver, the repair session's.
+const repairDriverCommand = _aofApplication.getCommand("work:drive-repair");
 // The driver is reached through the SINK, as every loop suite reaches it (53/ADR-015 §2: the set
 // of test files that NAME the driver module is closed; the sink re-exports its bindings by identity).
 const driveInteractiveClaudeSession = _aofApplication.mesh.worker.driveInteractiveClaudeSession;
@@ -301,7 +303,135 @@ async function assertDriveComposes(phase, work, command) {
   }
 }
 
+// ── 147/02 — the repair session is a fourth drive phase with its own command ─────────────────
+//
+// `tasks/02_the-repair-session-is-a-fourth-drive-phase.feature`. `work:drive-repair` types
+// `/aof:repair <ref> <hand-over file>` in the PRIMARY on the session `continue` resolves to, under a
+// lent run; it refuses what it cannot act on before any session starts.
+const TEN_HAND_OVER_KEYS = Object.freeze(["stop", "producer", "ref", "details", "diagLog", "lane", "branch", "base", "tip", "scope"]);
+const launchedEffort = (driver) => { const args = driver.spawnCalls[0].args; const at = args.indexOf("--effort"); return at >= 0 ? args[at + 1] : null; };
+// A hand-over file under a scratch aof home, as the launch writes one (147/00): the ten keys.
+async function withHandOver(body, overrides = {}) {
+  const home = await mkdtemp(path.join(tmpdir(), "aof-repair-home-"));
+  try {
+    const file = path.join(home, "loop-repairs", "R9.json");
+    await mkdir(path.dirname(file), { recursive: true });
+    const handOver = { stop: "lane-merge-conflict", producer: "dispatch:merge-home:conflict", ref: "03/01", details: "lane=C:/lanes/dispatch-03-01; branch=aof/mesh/03-01; base=b0; tip=t1.", diagLog: null, lane: "C:/lanes/dispatch-03-01", branch: "aof/mesh/03-01", base: "b0", tip: "t1", scope: "03", ...overrides };
+    assert.deepEqual(Object.keys(handOver), TEN_HAND_OVER_KEYS);
+    await writeFile(file, `${JSON.stringify(handOver, null, 2)}\n`, "utf8");
+    return await body(file, home);
+  } finally {
+    await rm(home, { recursive: true, force: true });
+  }
+}
+const continueMedium = (fx) => ({ ...fx.workspace, config: { work: { ...fx.workspace.config.work, agents: { session: { effort: { continue: "medium", verify: "low", refine: "low" } } } } } });
+
 export const driveCommandPhaseDriverTests = [
+  {
+    name: "147/02 the repair driver types the repair command with the hand-over file, in the primary checkout, on the session continue resolves to, under the lent run",
+    async run() {
+      const fx = await fixture();
+      try {
+        await withHandOver(async (file) => {
+          const driver = scriptedDriver("done", undefined, "sess-repair");
+          const result = await repairDriverCommand.run(
+            { ref: "03/01", run: "R9", halt: file },
+            { workspace: continueMedium(fx), agentSessionDriverOptions: driver.options, stdin: stdinDouble() },
+          );
+          assert.equal(driver.spawnCalls.length, 1, "one session is launched");
+          assert.equal(driver.typed[0].split("\n\n")[0], `/aof:repair 03/01 ${file}`, "the session is typed /aof:repair <ref> <file>");
+          assert.equal(driver.spawnCalls[0].options.cwd, fx.projectRoot, "launched in the primary checkout");
+          assert.equal(launchedEffort(driver), "medium", "on the effort continue resolves to for this run");
+          assert.equal(driver.spawnCalls[0].options.env.AOF_RUN_ID, "R9", "heartbeating the lent run");
+          assert.deepEqual({ ref: result.ref, phase: result.phase, command: result.command, outcome: result.outcome }, { ref: "03/01", phase: "repair", command: `/aof:repair 03/01 ${file}`, outcome: "done" });
+          const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
+          assert.deepEqual(await readRuns(item), [], "a lent run is neither minted nor settled by the child");
+        });
+        // The lend: the loop's `--model`/`--thinking` for continue reach the repair as any drive's would.
+        await withHandOver(async (file) => {
+          const driver = scriptedDriver("done", undefined, "sess-repair-2");
+          await repairDriverCommand.run(
+            { ref: "03/01", run: "R9", halt: file, thinking: "xhigh" },
+            { workspace: continueMedium(fx), agentSessionDriverOptions: driver.options, stdin: stdinDouble() },
+          );
+          assert.equal(launchedEffort(driver), "xhigh", "the lent effort wins over continue's configured one");
+        });
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "147/02 the repair driver's dry run reports the directive on continue's session and starts nothing — with the hand-over, and bare",
+    async run() {
+      const fx = await fixture();
+      try {
+        await withHandOver(async (file) => {
+          const driver = scriptedDriver();
+          const result = await repairDriverCommand.run({ ref: "03/01", dryRun: true, halt: file }, { workspace: continueMedium(fx), agentSessionDriverOptions: driver.options });
+          assert.deepEqual(result, { ref: "03/01", phase: "repair", command: `/aof:repair 03/01 ${file}`, effort: { level: "medium", source: "config" }, model: null });
+          const bare = await repairDriverCommand.run({ ref: "03/01", dryRun: true }, { workspace: fx.workspace, agentSessionDriverOptions: driver.options });
+          assert.deepEqual(bare, { ref: "03/01", phase: "repair", command: "/aof:repair 03/01", effort: DEFAULT_DRY_EFFORT, model: null }, "a dry run reads no hand-over");
+          assert.equal(driver.spawnCalls.length, 0);
+        });
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "147/02 [outline] the repair driver refuses what it cannot act on, before any session starts — no hand-over, an unreadable one, and --halt on another phase (3 rows + the unreadable shapes)",
+    async run() {
+      const fx = await fixture();
+      try {
+        const driver = scriptedDriver();
+        const ctx = { workspace: fx.workspace, agentSessionDriverOptions: driver.options, stdin: stdinDouble() };
+        const refused = async (command, input, code) => {
+          await assert.rejects(command.run(input, ctx), (error) => error.code === code, `${command.id} ${JSON.stringify(input)} → ${code}`);
+        };
+        await refused(repairDriverCommand, { ref: "03/01", run: "R9" }, "drive-repair-halt-required");
+        await refused(repairDriverCommand, { ref: "03/01", run: "R9", halt: path.join(fx.projectRoot, "missing.json") }, "drive-repair-halt-unreadable");
+        await refused(continueDriverCommand, { ref: "03/01", run: "R9", halt: "h.json" }, "drive-halt-repair-only");
+        await refused(refineDriverCommand, { ref: "03/01", halt: "h.json" }, "drive-halt-repair-only");
+        await refused(verifyDriverCommand, { ref: "03/01", halt: "h.json" }, "drive-halt-repair-only");
+        // every way the file is not a JSON object is the one code
+        await withHandOver(async (file, home) => {
+          for (const [label, bytes] of [["malformed", "{ not json"], ["an array", "[]"], ["a string", "\"x\""], ["null", "null"], ["empty", ""]]) {
+            await writeFile(file, bytes, "utf8");
+            await refused(repairDriverCommand, { ref: "03/01", run: "R9", halt: file }, "drive-repair-halt-unreadable");
+            void label;
+          }
+          await refused(repairDriverCommand, { ref: "03/01", run: "R9", halt: home }, "drive-repair-halt-unreadable");
+        });
+        assert.equal(driver.spawnCalls.length, 0, "no session is launched by any refusal");
+        const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
+        assert.deepEqual(await readRuns(item), [], "nothing is minted either");
+      } finally {
+        await fx.cleanup();
+      }
+    },
+  },
+  {
+    name: "147/02 the repair driver is registered as work:drive-repair, routed at aof work drive repair, and carries --halt in its three homes",
+    run() {
+      assert.equal(repairDriverCommand.id, "work:drive-repair");
+      assert.deepEqual(repairDriverCommand.cli.route, ["work", "drive", "repair"]);
+      assert.deepEqual(repairDriverCommand.input.properties.halt, { type: "string" });
+      assert.equal(repairDriverCommand.cli.spec.flags.halt.type, "string");
+      assert.ok(repairDriverCommand.cli.spec.usage.includes("--halt <file>"), repairDriverCommand.cli.spec.usage);
+      assert.ok(repairDriverCommand.cli.spec.usage.includes("--run <id>"));
+      assert.deepEqual(repairDriverCommand.cli.argv(["03/01"], { run: "R9", halt: "C:/home/loop-repairs/R9.json" }), { ref: "03/01", run: "R9", halt: "C:/home/loop-repairs/R9.json" });
+      assert.deepEqual(repairDriverCommand.cli.argv(["03/01"], {}), { ref: "03/01" });
+      for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
+        assert.equal(command.cli.spec.flags.halt.type, "string", `${command.id}: the flag is declared so the door can refuse it by its own code`);
+        assert.deepEqual(command.cli.argv(["03/01"], { halt: "h.json" }), { ref: "03/01", halt: "h.json" });
+      }
+      assert.deepEqual(PHASE_MODE_FLAGS, { solo: "--solo", orchestrated: "--orchestrated" }, "a repair composes no mode flag of its own");
+      assert.equal(phaseCommand("repair", "03/01", null, { halt: "C:/h.json" }), "/aof:repair 03/01 C:/h.json");
+      assert.equal(phaseCommand("repair", "03/01"), "/aof:repair 03/01");
+      assert.equal(phaseCommand("continue", "03/01", "solo"), "/aof:continue 03/01 --solo", "the other phases are byte-identical");
+    },
+  },
   {
     name: "loop phase drivers — each command spawns once and types only its own phase directive",
     async run() {
@@ -1038,7 +1168,7 @@ export const driveCommandPhaseDriverTests = [
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model"], `${command.id}: the schema's properties are exactly the eight (141 added thinking, 143/01 autonomous, 143/03 model)`);
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "halt"], `${command.id}: the schema's properties are exactly the nine (141 added thinking, 143/01 autonomous, 143/03 model, 147/02 halt)`);
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);

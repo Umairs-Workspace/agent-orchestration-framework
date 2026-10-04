@@ -30,7 +30,7 @@ import { loadBundle } from "./bundle.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "./bundle-synthesis.mjs";
 import { workspacePaths } from "../workspace.mjs";
 import { readConfig } from "./headroom.mjs";
-import { ensureAofGitignore } from "../aof-gitignore.mjs";
+import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../aof-gitignore.mjs";
 // m43 / ADR-002: the co-authored `.claude/settings.json` is not in the render plan;
 // the claude hook ENTRY lands through the surgical merge (the SAME call init makes, so
 // the two doors cannot drift), after the plan has written the files its argv names.
@@ -130,7 +130,12 @@ export async function updateWork(options = {}) {
   // existing install. Idempotent and additive, exactly as on the init path.
   await ensureAofGitignore(targetDir);
 
-  const claudeSettings = await applyClaudeSettingsMerge(targetDir, (await readConfig(targetDir)).config);
+  const { config } = await readConfig(targetDir);
+  // 147/03 (R4) — the WORK DIR's own git files are ensured on update too, so an existing install
+  // gets them: the heartbeat queues ignored and `STATE.md` merged by union, in every worktree.
+  await ensureWorkDirGitFiles(workDirFor(targetDir, config));
+
+  const claudeSettings = await applyClaudeSettingsMerge(targetDir, config);
 
   // Rewrite the install manifest (task 03, ADR-004 → ADR-009): createLockManifest
   // produces the lock-v2 record — it already PRESERVES drift-warned entries (keeps

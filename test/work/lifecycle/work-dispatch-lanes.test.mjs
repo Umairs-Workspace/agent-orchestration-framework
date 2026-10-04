@@ -41,6 +41,10 @@ const isUnderMeshWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshWorktr
 const isUnderMeshSessionWorktreesRoot = _aofApplication.mesh.worktree.isUnderMeshSessionWorktreesRoot;
 const meshItemBranchName = _aofApplication.mesh.worktree.meshItemBranchName;
 const listWorktrees = _aofApplication.mesh.worktree.listWorktrees;
+// 147/03 — the one commit verb, its queue pathspecs, and core's work-dir git files.
+const commitWorktreeChanges = _aofApplication.mesh.worktree.commitWorktreeChanges;
+import { HEARTBEAT_QUEUE_PATHSPECS } from "@aof/mesh/worktrees";
+import { ensureWorkDirGitFiles, WORK_DIR_GITIGNORE_ENTRIES, WORK_DIR_GITATTRIBUTES_ENTRIES } from "../../../packages/core/src/aof-gitignore.mjs";
 import { withDispatchRepo, git, dirtyPaths, writeRel, mergeHeadAbsent, conflictMarkers } from "../../support/dispatch-lane-fixture.mjs";
 const dispatchCommand = _aofApplication.getCommand("work:dispatch");
 const findWork = _aofWorkspace.work.findWork;
@@ -126,7 +130,153 @@ async function withUnionRepo(body, { doc, base }) {
   });
 }
 
+// ── 147/03 — the two known causes no longer halt the loop (R4) ───────────────────────────────
+//
+// `wiki/work/147_story_the-loop-hands-a-halt-to-a-fresh-session-to-fix/tasks/03_the-two-known-causes-no-longer-halt-the-loop.feature`.
+// Both halts of 2026-10-03 came from the loop's own records: a lane commit's `git add -A` captured
+// a live heartbeat queue, and two lanes' build notes conflicted in one milestone STATE.md. Every
+// Then below is read back from real git over the dispatch fixture, with the WORK DIR's own two
+// files ensured at the base (as `aof work init` leaves them) — never this repository's root
+// `.gitattributes`, so the nested file is what is proven.
+const QUEUE_DIR = "wiki/work/53_milestone_dispatch/stories/00_story_s00/runs";
+const STORY_QUEUE = `${QUEUE_DIR}/.heartbeats.ndjson`;
+const BEAT = `${JSON.stringify({ runId: "R1", at: "2026-10-03T10:00:00.000Z" })}\n`;
+const DISPATCH_MILESTONE_DIR = "wiki/work/53_milestone_dispatch";
+const DISPATCH_STATE = `${DISPATCH_MILESTONE_DIR}/STATE.md`;
+const committedNames = async (cwd, ref = "HEAD") => (await git(["show", "--name-only", "--format=", ref], cwd)).stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).sort();
+const committedStatus = async (cwd, ref = "HEAD") => (await git(["show", "--name-status", "--format=", ref], cwd)).stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+const onDisk = (root, rel) => existsSync(path.join(root, ...rel.split("/")));
+
+// withEnsuredRepo(body, { track, extra }) — the dispatch repo with the work dir's two ensured files
+// committed at its base, every `extra` file committed with them, and — when `track` names a queue
+// path — that queue FORCE-added so an earlier commit tracks it despite the ignore.
+async function withEnsuredRepo(body, { track = null, extra = {} } = {}) {
+  return withDispatchRepo(async (fx) => {
+    const ensured = await ensureWorkDirGitFiles(fx.workDir);
+    assert.deepEqual(ensured, { gitignore: true, gitattributes: true }, "guard: the fixture's work dir had neither file before");
+    for (const [rel, body] of Object.entries(extra)) await writeRel(fx.root, rel, body);
+    if (track != null) {
+      await writeRel(fx.root, track, BEAT);
+      await git(["add", "-f", "--", track], fx.root);
+    }
+    await git(["add", "-A"], fx.root);
+    await git(["-c", "user.email=fixture@aof.test", "-c", "user.name=aof fixture", "commit", "-q", "-m", "fixture: the work dir's git files"], fx.root);
+    return body(fx);
+  });
+}
+
 export const workDispatchLaneTests = [
+  {
+    name: "147/03 E10 — a heartbeat queue left by a lane's session is not committed, laneChanges answers no path, and the lane cleans up",
+    run: () => withEnsuredRepo(async ({ root }) => {
+      const lane = await resolveDispatchLane(root, "53/00");
+      await writeRel(lane.worktree, "src/a.mjs", "export const a = 1;\n");
+      await writeRel(lane.worktree, STORY_QUEUE, BEAT);
+      const answer = await commitDispatchLane(lane.worktree, { message: "aof(loop): 53/00 settled", node: "n" });
+      assert.equal(answer.committed, true, "the lane's work is committed");
+      assert.deepEqual(await committedNames(lane.worktree), ["src/a.mjs"], "the lane's commit contains src/a.mjs and no .heartbeats.ndjson path");
+      assert.ok(onDisk(lane.worktree, STORY_QUEUE), "the queue stays on disk in the lane");
+      assert.deepEqual(await laneChanges(lane.worktree), [], "laneChanges for the lane answers no path");
+      const merged = await mergeDispatchLaneHome(root, "53/00", { node: "n" });
+      assert.ok(["fast-forwarded", "merged"].includes(merged.outcome), `the lane merges home: ${JSON.stringify(merged)}`);
+      await cleanupDispatchLane(root, "53/00", { removeBranch: true });
+      assert.equal(existsSync(lane.worktree), false, "cleanupDispatchLane removes the lane");
+    }),
+  },
+  {
+    name: "147/03 — a heartbeat queue an earlier commit tracked is removed from the index by the next lane commit; the file stays on disk and the lane's status is clean",
+    run: () => withEnsuredRepo(async ({ root }) => {
+      assert.ok((await git(["ls-files", "--", STORY_QUEUE], root)).stdout.includes(STORY_QUEUE), "guard: the repository tracks the queue");
+      const lane = await resolveDispatchLane(root, "53/00");
+      await writeFile(path.join(lane.worktree, ...STORY_QUEUE.split("/")), `${BEAT}${BEAT}`, "utf8");
+      const answer = await commitDispatchLane(lane.worktree, { message: "aof(loop): 53/00 settled", node: "n" });
+      assert.equal(answer.committed, true, "the deletion from the index is the lane's commit");
+      assert.deepEqual(await committedStatus(lane.worktree), [`D\t${STORY_QUEUE}`], "the lane's commit deletes that path from the index");
+      assert.ok(onDisk(lane.worktree, STORY_QUEUE), "the file is still on disk in the lane");
+      assert.equal((await git(["ls-files", "--", STORY_QUEUE], lane.worktree)).stdout.trim(), "", "…and no longer tracked there");
+      assert.deepEqual(await porcelain(lane.worktree), [], "git status --porcelain in the lane is empty — the ignore covers it");
+    }, { track: STORY_QUEUE }),
+  },
+  ...[
+    "wiki/work/03_milestone_x/runs/.heartbeats.ndjson",
+    "wiki/work/03_milestone_x/stories/03_story_y/runs/.heartbeats.ndjson",
+    "wiki/work/03_milestone_x/stories/03_story_y/runs/.heartbeats.ndjson.batch",
+    "wiki/work/archive/07_story_z/runs/.heartbeats.ndjson",
+  ].map((queue) => ({
+    name: `147/03 [outline] every heartbeat queue path is kept out of an unscoped commitWorktreeChanges [${queue}]`,
+    run: () => withEnsuredRepo(async ({ root }) => {
+      await writeRel(root, queue, BEAT);
+      await writeRel(root, "src/b.mjs", "export const b = 2;\n");
+      const answer = await commitWorktreeChanges(root, { message: "aof(mesh): settle", node: "n" });
+      assert.equal(answer.committed, true, "the other change is committed (non-vacuous)");
+      assert.deepEqual(await committedNames(root), ["src/b.mjs"], `the commit contains no ${queue}`);
+      assert.ok(onDisk(root, queue), "the queue stays on disk");
+      assert.deepEqual(await porcelain(root), [], "…ignored, so the tree reads clean");
+    }),
+  })),
+  {
+    name: "147/03 E11 — two lanes appending build notes to the milestone STATE.md both merge home, under the work dir's own attributes file and no root one",
+    run: () => withEnsuredRepo(async ({ root }) => {
+      assert.equal(existsSync(path.join(root, ".gitattributes")), false, "guard: no root .gitattributes — the nested file is what is proven");
+      const a = await resolveDispatchLane(root, "53/00");
+      const b = await resolveDispatchLane(root, "53/01");
+      await writeRel(a.worktree, DISPATCH_STATE, `${STATE_BASE}\n## Build notes\n\nLane 53/00 built src/a.mjs and its step definitions.\n`);
+      await writeRel(b.worktree, DISPATCH_STATE, `${STATE_BASE}\n## Build notes\n\nLane 53/01 built src/b.mjs and its step definitions.\n`);
+      for (const lane of [a, b]) assert.equal((await commitDispatchLane(lane.worktree, { message: "aof(loop): lane settled", node: "n" })).committed, true);
+      const first = await mergeDispatchLaneHome(root, "53/00", { milestoneDir: DISPATCH_MILESTONE_DIR, node: "n" });
+      assert.equal(first.outcome, "fast-forwarded", `the first merge: ${JSON.stringify(first)}`);
+      const second = await mergeDispatchLaneHome(root, "53/01", { milestoneDir: DISPATCH_MILESTONE_DIR, node: "n" });
+      assert.equal(second.outcome, "merged", `the second merge answers merged, not conflict: ${JSON.stringify(second)}`);
+      assert.equal(await mergeHeadAbsent(root), true, "no MERGE_HEAD remains");
+      // the committed blob, as the existing union rows read it: a CRLF checkout would otherwise read CRLF line endings
+      const body = (await git(["show", `HEAD:${DISPATCH_STATE}`], root)).stdout;
+      assert.ok(body.includes("Lane 53/00 built src/a.mjs and its step definitions."), "the primary's STATE.md holds the first paragraph");
+      assert.ok(body.includes("Lane 53/01 built src/b.mjs and its step definitions."), "…and the second");
+      assert.equal(/^(<{7}|={7}|>{7})/mu.test(body), false, "…and no conflict marker");
+      assert.ok(body.startsWith("---\ndoc: state\n---\n"), "the frontmatter is intact");
+    }, { extra: { [DISPATCH_STATE]: STATE_BASE } }),
+  },
+  {
+    name: "147/03 — a conflict on any other file still halts: the second merge answers lane-merge-conflict and the primary is back at its pre-merge commit",
+    run: () => withEnsuredRepo(async ({ root }) => {
+      const a = await resolveDispatchLane(root, "53/00");
+      const b = await resolveDispatchLane(root, "53/01");
+      await writeRel(a.worktree, "src/a.mjs", "export const a = 1; // lane 53/00\n");
+      await writeRel(b.worktree, "src/a.mjs", "export const a = 1; // lane 53/01\n");
+      for (const lane of [a, b]) assert.equal((await commitDispatchLane(lane.worktree, { message: "aof(loop): lane settled", node: "n" })).committed, true);
+      const first = await mergeDispatchLaneHome(root, "53/00", { node: "n" });
+      assert.equal(first.outcome, "fast-forwarded");
+      const before = await rev(root, "HEAD");
+      const second = await mergeDispatchLaneHome(root, "53/01", { node: "n" });
+      assert.deepEqual({ outcome: second.outcome, code: second.code, ref: second.ref }, { outcome: "conflict", code: "lane-merge-conflict", ref: "53/01" }, JSON.stringify(second));
+      assert.equal(await rev(root, "HEAD"), before, "the primary is back at its pre-merge commit");
+      assert.equal(await mergeHeadAbsent(root), true);
+      assert.deepEqual(await conflictMarkers(root), []);
+    }, { extra: { "src/a.mjs": "export const a = 0;\n" } }),
+  },
+  {
+    name: "147/03 — this repository tracks no heartbeat queue, and tracks the work dir's two ensured files with their entries",
+    run: async () => {
+      const tracked = (await git(["ls-files", "-z"], repoRoot)).stdout.split("\0").filter(Boolean);
+      assert.ok(tracked.length > 1000, `the index was read (${tracked.length} paths)`);
+      const queues = tracked.filter((p) => p.endsWith("runs/.heartbeats.ndjson") || p.endsWith("runs/.heartbeats.ndjson.batch"));
+      assert.deepEqual(queues, [], "no tracked path ends in runs/.heartbeats.ndjson or runs/.heartbeats.ndjson.batch");
+      for (const [file, entries] of [["wiki/work/.gitignore", WORK_DIR_GITIGNORE_ENTRIES], ["wiki/work/.gitattributes", WORK_DIR_GITATTRIBUTES_ENTRIES]]) {
+        assert.ok(tracked.includes(file), `${file} is tracked`);
+        const lines = (await readFile(path.join(repoRoot, ...file.split("/")), "utf8")).split(/\r?\n/).map((l) => l.trim());
+        for (const entry of entries) assert.equal(lines.filter((l) => l === entry).length, 1, `${file} holds ${entry} once`);
+      }
+    },
+  },
+  {
+    name: "147/03 — the commit verb's pathspecs and the work dir's ignore entries name the same two queues",
+    run() {
+      assert.equal(Object.isFrozen(HEARTBEAT_QUEUE_PATHSPECS), true);
+      assert.deepEqual([...HEARTBEAT_QUEUE_PATHSPECS], WORK_DIR_GITIGNORE_ENTRIES.map((entry) => `:(glob)${entry}`), "one spelling per package, held equal here");
+      assert.deepEqual(WORK_DIR_GITIGNORE_ENTRIES, ["**/runs/.heartbeats.ndjson", "**/runs/.heartbeats.ndjson.batch"]);
+      assert.deepEqual(WORK_DIR_GITATTRIBUTES_ENTRIES, ["STATE.md merge=union"]);
+    },
+  },
   // ══════════════════════════════════════════════════════════════════════════
   // Scenario: a story is dispatched into its own worktree on its own branch
   // ══════════════════════════════════════════════════════════════════════════

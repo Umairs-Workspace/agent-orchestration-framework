@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import {
   LOOP_REFUSALS,
   LOOP_STOPS,
+  REPAIRABLE_STOPS,
+  decideHaltRepair,
   decideLoop,
   decideLoopAction,
   mapStoreRefusal,
+  sessionLendFor,
 } from "../src/engine.mjs";
 import { workLoopStoryFixturesFor } from "./support/work-loop-story-fixtures.mjs";
 
@@ -16,7 +19,79 @@ const base = {
   cap: 3,
 };
 
+// 147/00 — THE REPAIRABLE STOPS AND THE HAND-OVER DECISION (tasks/00, R1 and R2). The engine declares
+// the handed-over set as an export of its own and decides the hand-over purely; `LOOP_STOPS` is
+// unchanged by it. The fifteen-row outline is the feature's own table.
+const REPAIR_ROWS = Object.freeze([
+  ["lane-open-failed", "repair"],
+  ["lane-merge-refused", "repair"],
+  ["lane-merge-conflict", "repair"],
+  ["uat-gate", "stop"],
+  ["dependency-blocked", "stop"],
+  ["cap-exhausted", "stop"],
+  ["deadline-exhausted", "stop"],
+  ["progress-exhausted", "stop"],
+  ["no-progress", "stop"],
+  ["grade-indeterminate", "stop"],
+  ["session-needs-input", "stop"],
+  ["run-not-retryable", "stop"],
+  ["retry-parked", "stop"],
+  ["unmapped-item-type", "stop"],
+  ["operator-interrupt", "stop"],
+]);
+
 export const workLoopStopSetTests = [
+  {
+    name: "147/00 R1 — REPAIRABLE_STOPS is a frozen export of exactly the three lane stops, and LOOP_STOPS is unchanged by it",
+    run() {
+      assert.equal(Object.isFrozen(REPAIRABLE_STOPS), true);
+      assert.deepEqual([...REPAIRABLE_STOPS], ["lane-open-failed", "lane-merge-refused", "lane-merge-conflict"]);
+      assert.deepEqual([...REPAIRABLE_STOPS], LOOP_STOPS.slice(12), "the three are LOOP_STOPS' members 13-15, in their order");
+      assert.equal(LOOP_STOPS.length, 15, "LOOP_STOPS gains no member");
+      for (const stop of REPAIRABLE_STOPS) assert.ok(LOOP_STOPS.includes(stop), `${stop} is a loop stop`);
+    },
+  },
+  {
+    name: "147/00 R2 [outline] the engine hands over only the three lane stops — decideHaltRepair over every stop with repair on and no earlier repair (15 rows)",
+    run() {
+      assert.equal(REPAIR_ROWS.length, LOOP_STOPS.length, "the outline covers every stop");
+      assert.deepEqual(REPAIR_ROWS.map(([stop]) => stop).sort(), [...LOOP_STOPS].sort(), "…and names each exactly once");
+      for (const [stop, answer] of REPAIR_ROWS) {
+        assert.equal(decideHaltRepair({ stop, repairOn: true, priorRepair: null }), answer, `${stop} → ${answer}`);
+        assert.equal(decideHaltRepair({ stop }), answer, `${stop}: repair on and no prior repair are the defaults`);
+      }
+    },
+  },
+  {
+    name: "147/00 R1 — repair turned off answers stop for every lane stop; 147/01 R3 — one repair per halt: an earlier repair answers stop",
+    run() {
+      for (const stop of REPAIRABLE_STOPS) {
+        assert.equal(decideHaltRepair({ stop, repairOn: false }), "stop", `${stop}: off`);
+        assert.equal(decideHaltRepair({ stop, repairOn: undefined }), "repair", `${stop}: an absent switch is on`);
+        assert.equal(decideHaltRepair({ stop, repairOn: "true" }), "stop", `${stop}: only the boolean true is on`);
+        assert.equal(decideHaltRepair({ stop, repairOn: true, priorRepair: { runId: "R1" } }), "stop", `${stop}: a prior repair run stops`);
+        assert.equal(decideHaltRepair({ stop, repairOn: true, priorRepair: "R1" }), "stop", `${stop}: any non-null prior repair stops`);
+      }
+      assert.equal(decideHaltRepair({ stop: "uat-gate", repairOn: true, priorRepair: null }), "stop", "a non-lane stop is never repaired, whatever the switch");
+      assert.equal(decideHaltRepair(), "stop", "no stop at all is a stop");
+    },
+  },
+  {
+    name: "147/02 — the repair session is lent the CONTINUE phase's flag parts, and SESSION_PHASES gains no fourth row",
+    run() {
+      const declaration = {
+        sessions: {
+          refine: { model: "fable", modelSource: "--model", effort: "xhigh", effortSource: "--model" },
+          continue: { model: "opus", modelSource: "--model", effort: "high", effortSource: "--thinking" },
+          verify: { model: null, modelSource: "default", effort: "high", effortSource: "default" },
+        },
+      };
+      assert.deepEqual(sessionLendFor(declaration, "repair"), sessionLendFor(declaration, "continue"), "repair lends what continue lends");
+      assert.deepEqual(sessionLendFor(declaration, "repair"), { model: "opus", thinking: "high" });
+      assert.deepEqual(sessionLendFor({ sessions: { ...declaration.sessions, continue: { model: "opus", modelSource: "config", effort: "high", effortSource: "config" } } }, "repair"), {}, "config-sourced parts are not lent — the repair drive resolves them from the same config");
+      assert.equal("repair" in declaration.sessions, false, "the declaration's table stays the three phases");
+    },
+  },
   {
     name: "loop stop set — the shared story fixtures stay executable",
     run() {

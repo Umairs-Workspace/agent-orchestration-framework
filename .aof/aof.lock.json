@@ -10,7 +10,7 @@
   "frameworks": [],
   "frameworkInstallAttempts": [],
   "work": {
-    "generatedAt": "2026-10-04T20:45:41.643Z",
+    "generatedAt": "2026-10-04T20:49:11.114Z",
     "bundle": {
       "version": "0.1.0"
     },
@@ -28,7 +28,7 @@
           "kind": "agent"
         },
         "hash": "sha256:dcc0b7d3804cf6c60f966a52da308d6412bdb65804db08e2a72ad1c0975ce33c",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-compliance.md",
@@ -38,7 +38,7 @@
           "kind": "agent"
         },
         "hash": "sha256:20737b8c7a04c1508b607b6af358696254eea0e999019561222425152cf0d845",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-designer.md",
@@ -48,7 +48,7 @@
           "kind": "agent"
         },
         "hash": "sha256:ff7c285eadefee49b8551b8d1811a438cd6bd69ee42345555dd18ba5551359b2",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-developer.md",
@@ -58,7 +58,7 @@
           "kind": "agent"
         },
         "hash": "sha256:c8ca2b621a92e1620b2f94a44b1c4472326d6cf27849920dee8685132e76ca43",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-product-owner.md",
@@ -68,7 +68,7 @@
           "kind": "agent"
         },
         "hash": "sha256:d30867cef32238db8c9692aaa899e170c8ab54749e8dedf57d464cfafb3c2485",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-qa.md",
@@ -78,7 +78,7 @@
           "kind": "agent"
         },
         "hash": "sha256:4b3a7b9e02022befa6852318832959bda45b05653099f8d977c2bf5f39c9f17e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-researcher.md",
@@ -88,7 +88,7 @@
           "kind": "agent"
         },
         "hash": "sha256:641709966324c28a77a3068bf6eca5925491c66011b0461f2be9ccfff530d166",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/agents/aof-security.md",
@@ -98,7 +98,7 @@
           "kind": "agent"
         },
         "hash": "sha256:83f200cb66d451ffb8cc8fad6b013fa39333e9eba95c57b49464ae592c9d1309",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/add-chore.md",
@@ -108,7 +108,7 @@
           "kind": "command"
         },
         "hash": "sha256:45f80ca1d0ffb3bcb216a7f63af16162dcc02d333237a0a70261fe36c588eb7a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/add-milestone.md",
@@ -118,7 +118,7 @@
           "kind": "command"
         },
         "hash": "sha256:b8d482131d8a2b2a0d1cf77bc736f0605c34ff25de600b69d2c65c1fa99be299",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/add-spike.md",
@@ -128,7 +128,7 @@
           "kind": "command"
         },
         "hash": "sha256:2e06b2ba1a79799c33f00c689dd1401a43d01cc4e2325e048f774db22a6b1a15",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/add-story.md",
@@ -138,7 +138,7 @@
           "kind": "command"
         },
         "hash": "sha256:2df7d209c806680f5009c6f9224d3cc6a1e829e22ff35e8d5b2e249a2d3ac309",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/add-task.md",
@@ -148,7 +148,7 @@
           "kind": "command"
         },
         "hash": "sha256:ec0657153ee5161423bc1cd4d994d978a06a0c9c4da58772c236005791f0135c",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/add-uat.md",
@@ -158,7 +158,7 @@
           "kind": "command"
         },
         "hash": "sha256:432223d777c262e677c890abaf5798baca12a15521e2ec539b9b568618797aee",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/assimilate-code.md",
@@ -168,7 +168,7 @@
           "kind": "command"
         },
         "hash": "sha256:3bc4e9e677415c853d808564346f5143a6228107ab341edb31940b011e8fe015",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/autonomous.md",
@@ -178,7 +178,7 @@
           "kind": "command"
         },
         "hash": "sha256:a7de14fb0a256343d0674fa54e493af168ef0cfcdef4c6ea3126c8789fab5180",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/code-review.md",
@@ -188,7 +188,7 @@
           "kind": "command"
         },
         "hash": "sha256:d965f9b4c6241c07542b87ff6d9e0152c3a3f2e3a47579c9ec01903795023b17",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/continue.md",
@@ -198,7 +198,7 @@
           "kind": "command"
         },
         "hash": "sha256:df5ef8016b185ba4b3c3b4775a68d0b1208068ae3dfa678a2658576814963375",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/delegate.md",
@@ -208,7 +208,7 @@
           "kind": "command"
         },
         "hash": "sha256:a1a31256fcca8d71bdadc4a561308a943b3f5de56256fb42e91b8dd5c317312d",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/explain.md",
@@ -218,7 +218,7 @@
           "kind": "command"
         },
         "hash": "sha256:093e5738e82e1681e58e36e9a6d01b0f73e2fcc1d13621b253e7921d3ce7e6f5",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/feedback.md",
@@ -228,7 +228,7 @@
           "kind": "command"
         },
         "hash": "sha256:58d5e7471461467c78b8c3bcef7512685d404dc0e83418d462f0e237f74daf44",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/init.md",
@@ -238,7 +238,7 @@
           "kind": "command"
         },
         "hash": "sha256:ed82833e4169152843c7861adf191bca905657ad3b52139e978c1ef604bfdbef",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/insert-chore.md",
@@ -248,7 +248,7 @@
           "kind": "command"
         },
         "hash": "sha256:61a4bcd27a7187af0371501924a88d13dd1d70730fcf76326252adf4eb0efc72",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/insert-milestone.md",
@@ -258,7 +258,7 @@
           "kind": "command"
         },
         "hash": "sha256:9996b963893b63591b80f4b0c80e7f78d19c3913d2f7661aaa896b60ffce32fc",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/insert-story.md",
@@ -268,7 +268,7 @@
           "kind": "command"
         },
         "hash": "sha256:1168061f6b7c3de840dbfe7a783e85d52960be881e820272c93d850a9d335f64",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/insert-uat.md",
@@ -278,7 +278,7 @@
           "kind": "command"
         },
         "hash": "sha256:07691aed2fc5bed616f3e58698bf58ea0d9edf80afff3e3d513a1f71480a745e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/loop-diagram.md",
@@ -288,7 +288,7 @@
           "kind": "command"
         },
         "hash": "sha256:1763a0f43cc9baaeb068fbfcf1292d63ea8f412e06955f5b4ec3b34228f961ac",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/migrate.md",
@@ -298,7 +298,7 @@
           "kind": "command"
         },
         "hash": "sha256:65e0a99b4d47e8b502548d660d3cea844ba3811f38d42c81a25e25ede49d0911",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/observe.md",
@@ -308,7 +308,7 @@
           "kind": "command"
         },
         "hash": "sha256:bf461881e4e4eedb46dc609da20a4f218945f6580f88152396a2a7e06fb668fb",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/pay-debt.md",
@@ -318,7 +318,7 @@
           "kind": "command"
         },
         "hash": "sha256:65d5032084f2e36e045f0bf0a97097dab557c2acfd72b2507e3f3e31dc9220bb",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/promote.md",
@@ -328,7 +328,7 @@
           "kind": "command"
         },
         "hash": "sha256:58f4c245d6fea0ad1022e8de4371fffea9ba8a08ce73f3021691dc2a41131d72",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/archive.md",
@@ -338,7 +338,7 @@
           "kind": "command"
         },
         "hash": "sha256:8ef39be65ff36d6da8baef35ceaaf6deab9e207e0836d63cc193403d0f7193fb",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/recent.md",
@@ -348,7 +348,7 @@
           "kind": "command"
         },
         "hash": "sha256:96748c077508b6bdb7cf4c81d338ba8f9b96fb10ddb186996d4a6c4774f1cdcf",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/refine.md",
@@ -358,7 +358,17 @@
           "kind": "command"
         },
         "hash": "sha256:9c47030ba3e0a457685bbd5326fedbbb507069c2b8f36bfe81e438d96485b987",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
+      },
+      {
+        "path": ".claude/commands/aof/repair.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "repair",
+          "kind": "command"
+        },
+        "hash": "sha256:f4c310c8469da1849b30fc6c52dfbe58afff47a519b2094e54df82e24d9ba0bf",
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/retrospective.md",
@@ -368,7 +378,7 @@
           "kind": "command"
         },
         "hash": "sha256:01a16c8f70095df65765415dba63a4c0409598e35c64df9d11a04b52414167e0",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/shatter.md",
@@ -378,7 +388,7 @@
           "kind": "command"
         },
         "hash": "sha256:093c32f721d11e468dd7dfc34fdce8c354a9ad3b5c9ad3f00d657d6aa3299dd9",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/validate.md",
@@ -388,7 +398,7 @@
           "kind": "command"
         },
         "hash": "sha256:d5e7e0c0a857a0bfd7a123ec1ca44b107c4bd8e5435b7c3247e1df2273a97296",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/commands/aof/verify.md",
@@ -398,7 +408,7 @@
           "kind": "command"
         },
         "hash": "sha256:2dbb45f68d2a9306a4e2205960a9ce3b20cb44d7f94e5275288a369c4bc09cee",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/skills/codex-implementation/SKILL.md",
@@ -408,7 +418,7 @@
           "kind": "skill"
         },
         "hash": "sha256:806198ef5b5582efb47c7035358691e361bc8e4107ff6c46a98da6703ff5479b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/skills/codex-review/SKILL.md",
@@ -418,7 +428,7 @@
           "kind": "skill"
         },
         "hash": "sha256:550842936dbd385b1e84f93096ae329092a38f64b96095f5fe48292bd2220a8f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/skills/codex-computer-use/SKILL.md",
@@ -428,7 +438,7 @@
           "kind": "skill"
         },
         "hash": "sha256:63817f896bf18dc3827b51905c02d5001dd07dfe89441778e622116be31bcc8e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-architect.md",
@@ -438,7 +448,7 @@
           "kind": "agent"
         },
         "hash": "sha256:153a8ff4c2dff02cf0eeecd98dd7ac91c50aab7f22b525e591e33a6585e81dda",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-compliance.md",
@@ -448,7 +458,7 @@
           "kind": "agent"
         },
         "hash": "sha256:56e841b2d2083fb294b2a33f3019875319378ce318f7a75f49df50f72cbacc09",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-designer.md",
@@ -458,7 +468,7 @@
           "kind": "agent"
         },
         "hash": "sha256:df1dad2870682eda23168157e1d0201754ebea7c8e739713c5555d9879414c32",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-developer.md",
@@ -468,7 +478,7 @@
           "kind": "agent"
         },
         "hash": "sha256:7a542dfa68cb37189507f3411ddfd551cf6cec6cb36d2de7536d668b1f8da20c",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-product-owner.md",
@@ -478,7 +488,7 @@
           "kind": "agent"
         },
         "hash": "sha256:5eed89dfa095633defbec435a0fb0ee281d953318c6c965a9564810bae9398ed",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-qa.md",
@@ -488,7 +498,7 @@
           "kind": "agent"
         },
         "hash": "sha256:30f81a5139fe078d33006b82a0b4360c752f5dcf604b7ddff5f01a0cacf85387",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-researcher.md",
@@ -498,7 +508,7 @@
           "kind": "agent"
         },
         "hash": "sha256:341ef551c6b4fdf18ffc0f90b26bacbee0413734f6e21206522539af3bb14f03",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/agents/aof-security.md",
@@ -508,7 +518,7 @@
           "kind": "agent"
         },
         "hash": "sha256:026480f9b8d032fec55057fe3d7f582c409a34ec7531b19402d5e81c966cd035",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-add-chore/SKILL.md",
@@ -518,7 +528,7 @@
           "kind": "skill"
         },
         "hash": "sha256:609845633a6dfeff383f9c6ac1a107082e3967d16f7f4fc07572e8b7bd079491",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-add-milestone/SKILL.md",
@@ -528,7 +538,7 @@
           "kind": "skill"
         },
         "hash": "sha256:f5e9772af6ef92db277d384e0f49fa8cf62fdde41dd126601a47e087af0c1076",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-add-spike/SKILL.md",
@@ -538,7 +548,7 @@
           "kind": "skill"
         },
         "hash": "sha256:8de3d3febb9d2512358065083d424a0b429febab853eed4c20421fed31fc7f47",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-add-story/SKILL.md",
@@ -548,7 +558,7 @@
           "kind": "skill"
         },
         "hash": "sha256:d77a535dcc2938a18789fe9ec34c301bb59e52fdab1cdbff23fdebd3a8388543",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-add-task/SKILL.md",
@@ -558,7 +568,7 @@
           "kind": "skill"
         },
         "hash": "sha256:00fe8fa6679c01ddc3aaed51989f6597757400c34d43bfe368a0972dbc9a8c3d",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-add-uat/SKILL.md",
@@ -568,7 +578,7 @@
           "kind": "skill"
         },
         "hash": "sha256:47d26057253e52d7928eefcebcd8eb4ecdaf18e4eb4f70e066f2afae7d3008d3",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-assimilate-code/SKILL.md",
@@ -578,7 +588,7 @@
           "kind": "skill"
         },
         "hash": "sha256:11bc156ae1f8f1a91d95d6a12b8fc33dc9641233f8f9a8243d83eb91c28e4ffe",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-autonomous/SKILL.md",
@@ -588,7 +598,7 @@
           "kind": "skill"
         },
         "hash": "sha256:bce441c42eea7092e85b7fdfb69f4a2542c1f535e033a033ff5403e07da6905b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-code-review/SKILL.md",
@@ -598,7 +608,7 @@
           "kind": "skill"
         },
         "hash": "sha256:89973c65f16c9c1d0647243fd1d297902b607da88b826cb1e7bad8fa170032fc",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-continue/SKILL.md",
@@ -608,7 +618,7 @@
           "kind": "skill"
         },
         "hash": "sha256:18bd4c43168c0e77d4a3642af92b22c33e2c0b2a77222bc411f1c521a00d39d7",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-delegate/SKILL.md",
@@ -618,7 +628,7 @@
           "kind": "skill"
         },
         "hash": "sha256:a52c74aebb797f5bf6ca269631769c48640b25685a01197cd234d6780aa5e535",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-explain/SKILL.md",
@@ -628,7 +638,7 @@
           "kind": "skill"
         },
         "hash": "sha256:56b5c161d9cfba618ed026f51120aa8c8163c56f3b2da48a78a742720c32e9c9",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-feedback/SKILL.md",
@@ -638,7 +648,7 @@
           "kind": "skill"
         },
         "hash": "sha256:0fc220c32a530f8aada2c631b085ab89e57bd0a5a41c698190039fd260cb0fc2",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-init/SKILL.md",
@@ -648,7 +658,7 @@
           "kind": "skill"
         },
         "hash": "sha256:55650468d5ab0cae1faa16c6854db060bba73fd957c07f4721d09c40e89adf8c",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-insert-chore/SKILL.md",
@@ -658,7 +668,7 @@
           "kind": "skill"
         },
         "hash": "sha256:74bff7158baa717c9b97e854c7259a59ff73052b7af66f2d28839c6536eed3ac",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-insert-milestone/SKILL.md",
@@ -668,7 +678,7 @@
           "kind": "skill"
         },
         "hash": "sha256:f864a219bb00d0734198503e221dac18172f8cf50747d608ac67eda74270cdcc",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-insert-story/SKILL.md",
@@ -678,7 +688,7 @@
           "kind": "skill"
         },
         "hash": "sha256:393727076d0977bed3886bae92990cb305a0c1fe83330d141e709d827702d231",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-insert-uat/SKILL.md",
@@ -688,7 +698,7 @@
           "kind": "skill"
         },
         "hash": "sha256:dfd9bdc5469e3fcefe48f529a1d5708342c481fc62f0c92a19b633a0a789b521",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-loop-diagram/SKILL.md",
@@ -698,7 +708,7 @@
           "kind": "skill"
         },
         "hash": "sha256:f7e879a4cc061a6ea7ba04cf8c214d31949d8fa243ad9795c71d8878cc4fce09",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-migrate/SKILL.md",
@@ -708,7 +718,7 @@
           "kind": "skill"
         },
         "hash": "sha256:4d61fe1d0593966910e6f8d3682d96fe495e68a0afbb63299ffdcf135b57ab10",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-observe/SKILL.md",
@@ -718,7 +728,7 @@
           "kind": "skill"
         },
         "hash": "sha256:fd3319697fe8991023098cb51ca45b84f9ddf19b9071878f4cab00cc05278311",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-pay-debt/SKILL.md",
@@ -728,7 +738,7 @@
           "kind": "skill"
         },
         "hash": "sha256:bc764c7bb0b251216e2dc5d70493c88b0e0d11d8834f915fae5b654d3d0fffb8",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-promote/SKILL.md",
@@ -738,7 +748,7 @@
           "kind": "skill"
         },
         "hash": "sha256:39e65bd6aa941b74c1b07cd22846e54dac3fae19304916d19a4464cda5eb5917",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-archive/SKILL.md",
@@ -748,7 +758,7 @@
           "kind": "skill"
         },
         "hash": "sha256:73c144bcbb69ec1454dce85aefc4127e33f31c08f3438ce68cf1bb2da40a4f5f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-recent/SKILL.md",
@@ -758,7 +768,7 @@
           "kind": "skill"
         },
         "hash": "sha256:0bfe12d1e672e5f6a5c0ac8f8869e24c34bfbed73b0919c064c8e4f305653d3a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-refine/SKILL.md",
@@ -768,7 +778,17 @@
           "kind": "skill"
         },
         "hash": "sha256:073319afb8c7a6ad3825e5b6e6a5653fcc7f32f2e100c9bc43afba361403706b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
+      },
+      {
+        "path": ".codex/skills/aof-repair/SKILL.md",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-repair",
+          "kind": "skill"
+        },
+        "hash": "sha256:abd74dcf6a9beb19192260d36065f1c80268ac13d2992f0a63564de82598a356",
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-retrospective/SKILL.md",
@@ -778,7 +798,7 @@
           "kind": "skill"
         },
         "hash": "sha256:07df35ae73e127ef3a9128d79c1aa668f506a299d0159217fa3d279892dd7f31",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-shatter/SKILL.md",
@@ -788,7 +808,7 @@
           "kind": "skill"
         },
         "hash": "sha256:bcbf00d296cf0e32e4e71c17700f1176ff65f8b1cf77bff41905e3c8d0e8655d",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-validate/SKILL.md",
@@ -798,7 +818,7 @@
           "kind": "skill"
         },
         "hash": "sha256:7fd60fade37c26940b5f540fd65dc3daa7d2a444eecb6c2f6c5a786147f76d0d",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/skills/aof-verify/SKILL.md",
@@ -808,7 +828,7 @@
           "kind": "skill"
         },
         "hash": "sha256:7c401997ad39b1f62b46d54cdd7ff27843882838352c548a07ae3fae037af4e8",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-architect.md",
@@ -818,7 +838,7 @@
           "kind": "agent"
         },
         "hash": "sha256:a6d40cc051bd1cb68551941df4d62f673cf26819ceb541de2c0b81923cd603a2",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-compliance.md",
@@ -828,7 +848,7 @@
           "kind": "agent"
         },
         "hash": "sha256:3bdffd6c39acbddb9492ff3820f5df2a064dd01026cc14b9f98164447ab543a4",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-designer.md",
@@ -838,7 +858,7 @@
           "kind": "agent"
         },
         "hash": "sha256:26c98065136999be00b8d3d7a6f25634352545e28becd43ee70ae7bfb5700767",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-developer.md",
@@ -848,7 +868,7 @@
           "kind": "agent"
         },
         "hash": "sha256:9e3fd8cc9b7c7d00e222b1378dc63a37da6a6e06a9e7e7b3253ed891f60d576a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-product-owner.md",
@@ -858,7 +878,7 @@
           "kind": "agent"
         },
         "hash": "sha256:00cc1bc6365e0b2e9aa617e44fdf5418fbb68b6b90d6b1770331e74933aecf56",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-qa.md",
@@ -868,7 +888,7 @@
           "kind": "agent"
         },
         "hash": "sha256:39bf2c2aa900b3dc12232b08d19507298d12a53d08d785f49d26ee2648432b7d",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-researcher.md",
@@ -878,7 +898,7 @@
           "kind": "agent"
         },
         "hash": "sha256:b05afd9bdb2bcd3352da0cf5c05fb3ddd753da04fc865356616209126d92a411",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/agents/aof-security.md",
@@ -888,7 +908,7 @@
           "kind": "agent"
         },
         "hash": "sha256:ceed6dd7dc571270f4ab145bdffb472911cdf361247fe6c92277f9ec3b25a9e5",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/add-chore.md",
@@ -898,7 +918,7 @@
           "kind": "command"
         },
         "hash": "sha256:fdacbdba87007d754160d1134b3eeb9e897eed2faf3803b8d260d0fedddf990a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/add-milestone.md",
@@ -908,7 +928,7 @@
           "kind": "command"
         },
         "hash": "sha256:911d4d2c1e8d090acdf59731c291096eda9653cc9f9c207b5874bd7f57ded2f4",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/add-spike.md",
@@ -918,7 +938,7 @@
           "kind": "command"
         },
         "hash": "sha256:e7db0844dbe312c31e72677a6e0801be018c1003b107204b5e2246ca8f7c2147",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/add-story.md",
@@ -928,7 +948,7 @@
           "kind": "command"
         },
         "hash": "sha256:2cfea442b9ab46abd3e08889c95cf027e1445412ecaef94f5b69eb536abea052",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/add-task.md",
@@ -938,7 +958,7 @@
           "kind": "command"
         },
         "hash": "sha256:a9b3085afee1b8cc95a32758188b790ec5891cc937969c650682bd773a6d61c3",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/add-uat.md",
@@ -948,7 +968,7 @@
           "kind": "command"
         },
         "hash": "sha256:157635c35b6a1f4dbeb129080eb9942f6049f0818931265a629e4b345c540d7f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/assimilate-code.md",
@@ -958,7 +978,7 @@
           "kind": "command"
         },
         "hash": "sha256:ca6d066e0a0f753ae201ba6a8b4b28134977cc04e3420dfbab28121764927347",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/autonomous.md",
@@ -968,7 +988,7 @@
           "kind": "command"
         },
         "hash": "sha256:587039a564209c407b4c44d4525f2cfadab6a78e19490f3857b21426bca412c9",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/code-review.md",
@@ -978,7 +998,7 @@
           "kind": "command"
         },
         "hash": "sha256:56160ff7b3bdb013c6b048f148a79499515d4050f3e46803fdfb14bd0a41a98e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/continue.md",
@@ -988,7 +1008,7 @@
           "kind": "command"
         },
         "hash": "sha256:2ba8956e1ad02143abad0700248480ea9a032a1a82747a080e296c564cf1ce3a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/delegate.md",
@@ -998,7 +1018,7 @@
           "kind": "command"
         },
         "hash": "sha256:4ca19ef7ef383368ca127843aa9f2e93bfc4eeeb80c3d294c0e8888f8acac738",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/explain.md",
@@ -1008,7 +1028,7 @@
           "kind": "command"
         },
         "hash": "sha256:b87c689057f1506acf00fc7b4e3a41fa178086fbbccabfa0a002e78bda6d493e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/feedback.md",
@@ -1018,7 +1038,7 @@
           "kind": "command"
         },
         "hash": "sha256:06a28b2c761c944505ad80afa5d03df287915c7c81badf6f4eb6e34dccfbe4fd",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/init.md",
@@ -1028,7 +1048,7 @@
           "kind": "command"
         },
         "hash": "sha256:365cf87e462ad4b9e7767d4990845429b7d5abedcf56cb7e508f9877770e2966",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/insert-chore.md",
@@ -1038,7 +1058,7 @@
           "kind": "command"
         },
         "hash": "sha256:9e9d51f0a7863435f59093ab7d7c1be6e5d1b7e8505c0fa8a1cc9a845161c525",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/insert-milestone.md",
@@ -1048,7 +1068,7 @@
           "kind": "command"
         },
         "hash": "sha256:919ec03093e062790a08a0436679b1064c9a84d406131244f437c7eb2f5c4308",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/insert-story.md",
@@ -1058,7 +1078,7 @@
           "kind": "command"
         },
         "hash": "sha256:7589948b00442afc30c3807b5f2bafe58b77ca26d335e4f10a2998b4bc635831",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/insert-uat.md",
@@ -1068,7 +1088,7 @@
           "kind": "command"
         },
         "hash": "sha256:38d873e2b660cb212919dc24fa40956da63524ef708dbf38e5417e4fb1730d05",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/loop-diagram.md",
@@ -1078,7 +1098,7 @@
           "kind": "command"
         },
         "hash": "sha256:6e2829a239705c13022e754ab6f43a8e3d215e8af3acf4d774f24dbd8aa8e5e5",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/migrate.md",
@@ -1088,7 +1108,7 @@
           "kind": "command"
         },
         "hash": "sha256:c94d5ac1c47c7a89a31c1825034857fef6af5416b9c4ff2f3d24a06bfb492940",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/observe.md",
@@ -1098,7 +1118,7 @@
           "kind": "command"
         },
         "hash": "sha256:b115eddb0da9d6589dc806c7bdd8dfe7424ef624684a70f7127bb6b6069818eb",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/pay-debt.md",
@@ -1108,7 +1128,7 @@
           "kind": "command"
         },
         "hash": "sha256:8077a2251692673025ecae1c71a04b44f96c09e24448aef2ae242e1c102cec8b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/promote.md",
@@ -1118,7 +1138,7 @@
           "kind": "command"
         },
         "hash": "sha256:2f7ed48a9976832573dc816ed4ec1d681665ddbe8b188ae12e93fbbe58d616dc",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/archive.md",
@@ -1128,7 +1148,7 @@
           "kind": "command"
         },
         "hash": "sha256:c75dd3db8e714b866fbc9a583cb59451e7452580063b2024d20e628e3fccd49f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/recent.md",
@@ -1138,7 +1158,7 @@
           "kind": "command"
         },
         "hash": "sha256:b9e87ab9b17210e465a38f89d8b66374d225f02d8cf4a82129ad22363d2c125a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/refine.md",
@@ -1148,7 +1168,17 @@
           "kind": "command"
         },
         "hash": "sha256:c4133565c9e6692c69484ba5f706eec3d6ea829e5b58db00d82954fc1908b7c4",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
+      },
+      {
+        "path": ".opencode/commands/aof/repair.md",
+        "runtime": "opencode",
+        "resource": {
+          "id": "repair",
+          "kind": "command"
+        },
+        "hash": "sha256:3e57995ddb2ffc0827be9be546833514af24fd7bfb6edad369dbcd3ec3b15308",
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/retrospective.md",
@@ -1158,7 +1188,7 @@
           "kind": "command"
         },
         "hash": "sha256:a205d223c73ff6a964566aa73f8d7d01ea6c2e41d250d229b9c2bfba67476cc8",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/shatter.md",
@@ -1168,7 +1198,7 @@
           "kind": "command"
         },
         "hash": "sha256:6ac44d56368bdfa0321b3bf2fa46c0e82a23e11738af83f13d91b76374a74ebc",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/validate.md",
@@ -1178,7 +1208,7 @@
           "kind": "command"
         },
         "hash": "sha256:2f255e672f14fcd70a4cb68016222094c8e840b25ac01ed3d49e017f9d41e607",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/commands/aof/verify.md",
@@ -1188,7 +1218,7 @@
           "kind": "command"
         },
         "hash": "sha256:3d7fe7947f2598ea7cdf9bc8a190003293014be32a63ddccdd3b0765a245840b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".codex/hooks.json",
@@ -1198,7 +1228,7 @@
           "kind": "hooks"
         },
         "hash": "sha256:2991b2daf96855404dc2a96720361d52d03c202d74d78e8de50668de990507b6",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/plugins/aof-opencode-session-start.js",
@@ -1208,7 +1238,7 @@
           "kind": "hooks"
         },
         "hash": "sha256:28058b0d462d8b3e696102eb60c6686c0b7ca66c0d83c403055b1b130f5889f5",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/plugins/aof-opencode-session-prompt-ping.js",
@@ -1218,7 +1248,7 @@
           "kind": "hooks"
         },
         "hash": "sha256:d5fff734f0102f4080a2edea8fcbcaa8f1a1b4e7d19529d1fde4992738020d3b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".opencode/plugins/aof-opencode-session-end.js",
@@ -1228,7 +1258,7 @@
           "kind": "hooks"
         },
         "hash": "sha256:c4b09c91e0eac67f946ec02cecb54f84d75888492b20afd04bfad12dbcc0d72e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/chore/CHORE.md",
@@ -1239,7 +1269,7 @@
           "file": "CHORE.md"
         },
         "hash": "sha256:470e75c00c7de4e854436bc9923679ad3f1b58014ee2b26cdbafe60c245265e0",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/AOF.md",
@@ -1250,7 +1280,7 @@
           "file": "AOF.md"
         },
         "hash": "sha256:f09e49725d310a995909f621ae1c6a136496e6ef6db682b614dfbe623a69db50",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/ARCHITECTURE.md",
@@ -1261,7 +1291,7 @@
           "file": "ARCHITECTURE.md"
         },
         "hash": "sha256:fcf43ba9872408e47a9337d695e7633591de8168c5b9c0594920a6d396020f6a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/COMPLIANCE.md",
@@ -1272,7 +1302,7 @@
           "file": "COMPLIANCE.md"
         },
         "hash": "sha256:81de7f819485c25039975065e2cbc9743cc8d3b801d29f851752e458bb4751e3",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/DESIGN.md",
@@ -1283,7 +1313,7 @@
           "file": "DESIGN.md"
         },
         "hash": "sha256:96f1b330e231cdb2c1677c72a9863b94856c9eb03ff42a23cfd01045f8bdb770",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/RESEARCH.md",
@@ -1294,7 +1324,7 @@
           "file": "RESEARCH.md"
         },
         "hash": "sha256:a76f56e561d6a52c14bd5f603c0826e4ecb69b937aae134ae08ed3432621b80a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/SECURITY.md",
@@ -1305,7 +1335,7 @@
           "file": "SECURITY.md"
         },
         "hash": "sha256:98c5c2913643886c873a21bd1543f46595d7227638b2d1b261b2f34b6e747a14",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/SPEC.md",
@@ -1316,7 +1346,7 @@
           "file": "SPEC.md"
         },
         "hash": "sha256:2a0086803f79b5f773bf59b808f7eca7b194295c9c00e7f53f3334add4100fa1",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/STATE.md",
@@ -1327,7 +1357,7 @@
           "file": "STATE.md"
         },
         "hash": "sha256:22aac55bccd5a8c78991bc5ad4b9c994c4bad304dffff214dca4fdc731051e15",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/UAT.md",
@@ -1338,7 +1368,7 @@
           "file": "UAT.md"
         },
         "hash": "sha256:526436fec432d377720696577b9f10597db1bfa7c79471be0b0c085698870d49",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/milestone/VERIFICATION.md",
@@ -1349,7 +1379,7 @@
           "file": "VERIFICATION.md"
         },
         "hash": "sha256:e780b12993499f33796f2e3088b3f3a918e6af209216818b9c3595378f39493a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/shared/OUTCOME.md",
@@ -1360,7 +1390,7 @@
           "file": "OUTCOME.md"
         },
         "hash": "sha256:c481d5feb73856afed1d935d87911ca0afba15f12ac672314ed5f9029ddea8f4",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/spike/SPIKE.md",
@@ -1371,7 +1401,7 @@
           "file": "SPIKE.md"
         },
         "hash": "sha256:2ad536da4be2e5243771a559f77dc4ea9bf935614363bc848901754da6a83e4c",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/story/EXAMPLES.md",
@@ -1382,7 +1412,7 @@
           "file": "EXAMPLES.md"
         },
         "hash": "sha256:8cb6baedbd87fada5f224716c5db26460ba812cd937b6964ebce68790dcfe317",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/story/PLAN.md",
@@ -1393,7 +1423,7 @@
           "file": "PLAN.md"
         },
         "hash": "sha256:36f8ca8d398798e82e34254e66acc656a150ccdacb2f89f2e5e4e9fcbd942f2f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/story/STORY.md",
@@ -1404,7 +1434,7 @@
           "file": "STORY.md"
         },
         "hash": "sha256:88259488946dbe8b344fc0d413a4c0041b2a12a259bf5b2c810d2e00f5767a6b",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/task/example.feature",
@@ -1415,7 +1445,7 @@
           "file": "example.feature"
         },
         "hash": "sha256:63197d589bbc44030907c486a652b4516273163ae618a080e07eab49e3300be8",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/uat/SESSION.md",
@@ -1426,7 +1456,7 @@
           "file": "SESSION.md"
         },
         "hash": "sha256:4024dc7219259a6c9ccedd57a2d906594d33706726e64a1a06a172b5c870c3d7",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/templates/work/uat/STATE.md",
@@ -1437,7 +1467,7 @@
           "file": "STATE.md"
         },
         "hash": "sha256:a5f4217a4efbfaa97039fe1dbff14a98e8b9a84f21ca5c1a817f03960259e468",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",
@@ -1447,7 +1477,7 @@
           "kind": "asset"
         },
         "hash": "sha256:b48b8f0163b8e026fee7ec7d39c236defe0a25eea5c7d1065eb6ba0978978739",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/hooks/aof/run-heartbeat-enqueue.mjs",
@@ -1457,7 +1487,7 @@
           "kind": "asset"
         },
         "hash": "sha256:fb5707878d29d382becd95d760c08996e04b0a20f5a49285b95bf2ff3c5496c0",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".claude/hooks/aof/ask-pending-enqueue.mjs",
@@ -1467,7 +1497,7 @@
           "kind": "asset"
         },
         "hash": "sha256:3a3629490e3cbae0c8a55cc3f1278dd6ef797b3c61a5ee80835d1438c4c34bbc",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/frozen-set.jsonc",
@@ -1477,7 +1507,7 @@
           "kind": "asset"
         },
         "hash": "sha256:3ee6cfaf0d47e70f4f1fcf8d6d182c0fef77cd3581b45a35102704b9a5a87bfd",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/triggers.jsonc",
@@ -1487,7 +1517,7 @@
           "kind": "asset"
         },
         "hash": "sha256:04bd25061f76c3f329aa33efe783222a09757dcc82b5223f54389cf24c9ca5f7",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/autonomous-cascade.md",
@@ -1497,7 +1527,7 @@
           "kind": "asset"
         },
         "hash": "sha256:02bb0a3a949e82f2721c22cedab35a060e1b10d25a51b62c6fae57a8afdc3967",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/build-to-green.md",
@@ -1507,7 +1537,7 @@
           "kind": "asset"
         },
         "hash": "sha256:91f011d7e3d10474746b591151a4086ba50b56ce123fd0813ae9ecba98e4fb82",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/mesh-assignment-reclaim.md",
@@ -1517,7 +1547,7 @@
           "kind": "asset"
         },
         "hash": "sha256:4755ca418d7dad4329dfc591ce3253862fc0cfc4ca554b2b6dc0bc866420ef93",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/retrospective-memory-ingest.md",
@@ -1527,7 +1557,7 @@
           "kind": "asset"
         },
         "hash": "sha256:f976bb5e32f45a4acf6788ac8f65a86cc4eb037159a33172a4a29aabadd2ca8a",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/review-fix-rereview.md",
@@ -1537,7 +1567,7 @@
           "kind": "asset"
         },
         "hash": "sha256:8f3723460d50c93bbe90becf0caf887761413e7e0265c7fa61dc23fe6d5399c5",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/run-resilience.md",
@@ -1547,7 +1577,7 @@
           "kind": "asset"
         },
         "hash": "sha256:b3ffc3886c72a033b892e7d15ffca5d3c5e66b055e23f380a8fed6463f13f4b3",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/verify-triage-accept.md",
@@ -1557,7 +1587,7 @@
           "kind": "asset"
         },
         "hash": "sha256:975559a3dff9d245eed6737dcc7170a251efc92dedcb4d1022fe53f96d798fac",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/operator.md",
@@ -1567,7 +1597,7 @@
           "kind": "asset"
         },
         "hash": "sha256:d91c3dbacc95b067e55fb641ef9dafdbcdc4b729207a6d91f58bf5869048b562",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/product-owner.md",
@@ -1577,7 +1607,7 @@
           "kind": "asset"
         },
         "hash": "sha256:352d32232b646574c1faa7ab7b6cdf74905297e1a40045ad411303f115a70672",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/rubric-process-exit.md",
@@ -1587,7 +1617,7 @@
           "kind": "asset"
         },
         "hash": "sha256:af1112bb9b2b7de0b782dbf040b9abb93e5004a460f116d29020c2f71007472e",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/run-liveness.md",
@@ -1597,7 +1627,7 @@
           "kind": "asset"
         },
         "hash": "sha256:1fb6c6f0aabc94a003db22a87be2816c22a121388e40b2ffe3a17381a7f0482f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/run-lifecycle-policy.md",
@@ -1607,7 +1637,7 @@
           "kind": "asset"
         },
         "hash": "sha256:4523144a3c7467b6f92db024787c282c8c8d32081f2be40f345bfea2a41e4b06",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/build-to-green-watcher.md",
@@ -1617,7 +1647,7 @@
           "kind": "asset"
         },
         "hash": "sha256:60f51f767635618164b61dbccf6698ae40e0231619f3f007f2fa958065b938a9",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/review-fix-rereview-watcher.md",
@@ -1627,7 +1657,7 @@
           "kind": "asset"
         },
         "hash": "sha256:1db178353dbb1b033896debe2d8498ae763b93dae0803757da755d6bba3349d1",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/autonomous-cascade-watcher.md",
@@ -1637,7 +1667,7 @@
           "kind": "asset"
         },
         "hash": "sha256:966af3956f271c2eedd003874caf6784b025c414e18f14a5fdb41c355542cf15",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/speed-thoroughness-autonomy.md",
@@ -1647,7 +1677,7 @@
           "kind": "asset"
         },
         "hash": "sha256:f37839fbd4fe51d595efb4791ca28a374209225dd6c1590c93aa19a0c6c7fcec",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       },
       {
         "path": ".aof/loops/instrument-audit.md",
@@ -1657,7 +1687,7 @@
           "kind": "asset"
         },
         "hash": "sha256:e941eac96456814e2935b00c40e99018a34284f1366846fc3d53cab4fe92f27f",
-        "generatedAt": "2026-10-04T20:45:41.643Z"
+        "generatedAt": "2026-10-04T20:49:11.114Z"
       }
     ],
     "packages": [],

@@ -363,8 +363,8 @@ export const loopCommandProbeTests = [
       assert.match(command.cli.spec.usage, /\[--stop\]/u);
       // 131/11 (ADR-009 §6) adds `handOff` by the same three-homes rule: the tenth property, the ninth flag.
       // 141 adds `thinking` by the same rule: the eleventh property, the tenth flag.
-      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking", "refine", "model"].sort(), "thirteen properties (143/01 added refine, 143/03 model)");
-      assert.equal(Object.keys(command.cli.spec.flags).length, 12, "twelve flags (143/01 added --refine, 143/03 --model)");
+      assert.deepEqual(Object.keys(command.input.properties).sort(), ["cap", "dryRun", "handOff", "level", "quiet", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking", "refine", "model", "noRepair"].sort(), "fourteen properties (143/01 added refine, 143/03 model, 147/00 noRepair)");
+      assert.equal(Object.keys(command.cli.spec.flags).length, 13, "thirteen flags (143/01 added --refine, 143/03 --model, 147/00 --no-repair)");
       assert.equal(command.cli.launch({ dryRun: true }), null);
       assert.equal(command.cli.launch({ stop: true }), null);
     },

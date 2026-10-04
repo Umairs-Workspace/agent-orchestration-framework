@@ -26,19 +26,24 @@ function orchestrationServices() {
   };
 }
 
-test("orchestration composition is inert and the package contributes all four command descriptors", () => {
+// 147/02 — the work-loop package contributes FOUR phase drivers beside the loop: `work:drive-repair`
+// is the fourth, the session a lane halt is handed to, and the contribution refuses without it.
+test("orchestration composition is inert and the package contributes all five command descriptors", () => {
   const services = orchestrationServices();
   const cycle = createStoryCycle(services);
   const wave = createWaveOrchestration({ ...services, cycle });
   const shell = createLoopShell({ ...services, cycle, wave });
   const drivers = createPhaseDrivers(services);
-  const input = { loop: shell.loopCommand, refine: drivers.refineDriverCommand, continue: drivers.continueDriverCommand, verify: drivers.verifyDriverCommand };
+  const input = { loop: shell.loopCommand, refine: drivers.refineDriverCommand, continue: drivers.continueDriverCommand, verify: drivers.verifyDriverCommand, repair: drivers.repairDriverCommand };
   const contribution = createWorkLoopContribution(input);
-  assert.deepEqual(contribution.commands.map(command => command.id), ["work:loop", "work:drive-refine", "work:drive-continue", "work:drive-verify"]);
+  assert.deepEqual(contribution.commands.map(command => command.id), ["work:loop", "work:drive-refine", "work:drive-continue", "work:drive-verify", "work:drive-repair"]);
+  assert.equal(contribution.commands[4], drivers.repairDriverCommand);
+  assert.deepEqual(drivers.repairDriverCommand.cli.route, ["work", "drive", "repair"], "aof work drive repair is routed to work:drive-repair");
   assert.equal(contribution.commands[0], shell.loopCommand);
   assert.equal(contribution.commands[2], drivers.continueDriverCommand);
   for (const value of [cycle, wave, shell, drivers, contribution, contribution.commands]) assert.ok(Object.isFrozen(value));
-  assert.throws(() => createWorkLoopContribution({ ...input, verify: input.refine }), /all three phase drivers/);
+  assert.throws(() => createWorkLoopContribution({ ...input, verify: input.refine }), /all four phase drivers/);
+  assert.throws(() => createWorkLoopContribution({ ...input, repair: undefined }), /all four phase drivers/, "the repair driver is required too");
 });
 
 test("cycle invocation uses the supplied registry and preserves the per-call override", async () => {
@@ -145,4 +150,13 @@ test("child drive uses supplied CLI only for Node and preserves subprocess argum
   assert.equal(entryReads, 1);
   await assert.rejects(services.spawnLaneDrive({ ...input, answerFile: "answer", fixFile: "fix" }), /cannot ride one drive/);
   assert.equal(calls.length, 2);
+  // 147/00 — a repair drive names its hand-over file (`--halt`), and nothing else beside it.
+  await assert.rejects(services.spawnLaneDrive({ ...input, phase: "repair", haltFile: "halt.json", fixFile: "fix" }), /rides a repair drive alone/);
+  await assert.rejects(services.spawnLaneDrive({ ...input, phase: "repair", haltFile: "halt.json", answerFile: "answer" }), /rides a repair drive alone/);
+  assert.equal(calls.length, 2, "a caller error spawns nothing");
+  const repairFile = services.loopRepairFilePath("r1");
+  assert.equal(repairFile, path.join("runtime", "loop-repairs", "r1.json"), "the hand-over lives beside loop-fixes under the aof home");
+  assert.equal(services.loopFixFilePath("r1"), path.join("runtime", "loop-fixes", "r1.json"));
+  await services.spawnLaneDrive({ ...input, phase: "repair", haltFile: repairFile });
+  assert.deepEqual(calls[2].args, ["work", "drive", "repair", "42/01", "--run", "r1", "--halt", repairFile, "--json"]);
 });

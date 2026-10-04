@@ -31,7 +31,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // is NOT attempted here.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, stat, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -40,6 +40,9 @@ import { bundledFrozenSet, compileFrozenSet } from "../../packages/core/src/froz
 import { ARTIFACT_SYNC_SCRIPT_ARGV, ARTIFACT_SYNC_SCRIPT_RELPATH } from "@aof/mesh/artifact-sync";
 const initWork = _aofApplication.assets.work.init.initWork;
 import { updateWork } from "../../packages/core/src/work/update.mjs";
+// 147/02, 147/03 — the bundle descriptor the repair command is listed in, and the work dir's entries.
+import { readDescriptor } from "../../packages/core/src/work/bundle.mjs";
+import { WORK_DIR_GITIGNORE_ENTRIES, WORK_DIR_GITATTRIBUTES_ENTRIES } from "../../packages/core/src/aof-gitignore.mjs";
 const assetsApplyCommand = _aofApplication.getCommand("assets:apply");
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -137,7 +140,105 @@ const aofEntries = (settings, event = "PostToolUse") =>
 const operatorGroups = (settings, event = "PostToolUse") =>
   (settings?.hooks?.[event] ?? []).filter((group) => (group.hooks ?? []).every((entry) => entry[AOF_HOOK_MARKER] == null));
 
+// ── 147/03 — init and update ensure the work dir's two git files ─────────────────────────────
+//
+// `tasks/03_the-two-known-causes-no-longer-halt-the-loop.feature`, the init/update outline: the
+// SAME self-contained nested-file idiom `.aof/.gitignore` already uses, at the work dir. Every row
+// reads the file's own bytes back; the "not rewritten" row reads its mtime too.
+const workGitignore = (dir) => path.join(dir, "wiki", "work", ".gitignore");
+const workGitattributes = (dir) => path.join(dir, "wiki", "work", ".gitattributes");
+const trimmedLines = async (file) => (await readFile(file, "utf8")).split(/\r?\n/).map((line) => line.trim());
+const holdsOnce = (lines, entries, label) => {
+  for (const entry of entries) assert.equal(lines.filter((line) => line === entry).length, 1, `${label} holds ${entry} once`);
+};
+const REPAIR_RENDERS = [".claude/commands/aof/repair.md", ".codex/skills/aof-repair/SKILL.md", ".opencode/commands/aof/repair.md"];
+const REPAIR_SOURCE = path.join(repoRoot, "packages", "core", "assets", "commands", "repair.md");
+// The seven rules an unattended repair needs, as the feature's outline states them, each matched
+// against the command's prose (a line break inside a rule is whitespace).
+const REPAIR_RULES = [
+  ["it reads the hand-over file named in its arguments, and the loop-diag log the file names", /reads the hand-over file named in its arguments, and the loop-diag log the file names/u],
+  ["it works in the primary checkout, and in the lane worktree only when the file names one", /works in the primary checkout, and in the lane worktree only when the file names one/u],
+  ["it never discards a commit: no reset --hard, rebase, push --force, branch -f, checkout -B", /never discards a commit: no `reset --hard`, `rebase`, `push --force`, `branch -f`,\s+`checkout -B`/u],
+  ["it never commits, stashes or discards the operator's uncommitted changes in the primary; a cause that is the operator's own work ends the repair failed, naming the paths", /never commits, stashes or discards the operator's uncommitted changes in the primary; a\s+cause that is the operator's own work ends the repair failed, naming the paths/u],
+  ["it never edits a delivered .feature", /never edits a delivered `\.feature`/u],
+  ["it never runs aof work loop; the loop resumes itself", /never runs `aof work loop`; the loop resumes itself/u],
+  ["it ends by stating the cause it found and what it changed, or why it could not repair", /ends by stating the cause it found and what it changed, or why it could not repair/u],
+];
+
 export const claudeSettingsMergeTests = [
+  {
+    name: "147/03 [outline] init ensures the work dir's .gitignore when it does not exist — both queue entries, each once (and the attributes file beside it)",
+    run: () => withFixture(async ({ dir }) => {
+      assert.equal(existsSync(workGitignore(dir)), false, "guard: no file before");
+      await initWork({ targetDir: dir, runtimes: ["claude"] });
+      holdsOnce(await trimmedLines(workGitignore(dir)), WORK_DIR_GITIGNORE_ENTRIES, "init's .gitignore");
+      holdsOnce(await trimmedLines(workGitattributes(dir)), WORK_DIR_GITATTRIBUTES_ENTRIES, "init's .gitattributes");
+    }),
+  },
+  {
+    name: "147/03 [outline] update ensures the work dir's .gitignore that holds the line drafts/ — both entries added once, the operator's line kept",
+    run: () => withFixture(async ({ dir }) => {
+      await initWork({ targetDir: dir, runtimes: ["claude"] });
+      await writeFile(workGitignore(dir), "drafts/\n", "utf8");
+      await updateWork({ targetDir: dir });
+      const lines = await trimmedLines(workGitignore(dir));
+      holdsOnce(lines, WORK_DIR_GITIGNORE_ENTRIES, "update's .gitignore");
+      assert.equal(lines.filter((line) => line === "drafts/").length, 1, "every line it held before survives");
+    }),
+  },
+  {
+    name: "147/03 [outline] update ensures the work dir's .gitattributes when it does not exist — the union line",
+    run: () => withFixture(async ({ dir }) => {
+      await initWork({ targetDir: dir, runtimes: ["claude"] });
+      await rm(workGitattributes(dir), { force: true });
+      await updateWork({ targetDir: dir });
+      holdsOnce(await trimmedLines(workGitattributes(dir)), WORK_DIR_GITATTRIBUTES_ENTRIES, "update's .gitattributes");
+    }),
+  },
+  {
+    name: "147/03 [outline] update leaves a work dir .gitattributes (and .gitignore) that already holds its entries untouched — the same bytes, the same mtime",
+    run: () => withFixture(async ({ dir }) => {
+      await initWork({ targetDir: dir, runtimes: ["claude"] });
+      const old = new Date("2026-01-01T00:00:00.000Z");
+      const before = new Map();
+      for (const file of [workGitattributes(dir), workGitignore(dir)]) {
+        await utimes(file, old, old);
+        before.set(file, { bytes: await readFile(file, "utf8"), mtimeMs: (await stat(file)).mtimeMs });
+      }
+      await updateWork({ targetDir: dir });
+      for (const [file, prior] of before) {
+        assert.equal(await readFile(file, "utf8"), prior.bytes, `${path.basename(file)}: the bytes are unchanged`);
+        assert.equal((await stat(file)).mtimeMs, prior.mtimeMs, `${path.basename(file)}: the file is not rewritten`);
+      }
+      holdsOnce(await trimmedLines(workGitattributes(dir)), WORK_DIR_GITATTRIBUTES_ENTRIES, "the attributes file still");
+    }),
+  },
+  // ── 147/02 — the repair command reaches every runtime the bundle renders ─────────────────────
+  {
+    name: "147/02 — a dry-run update at the repository root reports the three repair renders skip, and the bundle lists commands/repair.md",
+    run: async () => {
+      const result = await updateWork({ targetDir: repoRoot, dryRun: true });
+      assert.equal(result.dryRun, true);
+      assert.equal(result.manifestWritten, false, "a dry run writes nothing");
+      for (const rel of REPAIR_RENDERS) {
+        const action = result.actions.find((entry) => String(entry.path).replaceAll("\\", "/").endsWith(rel));
+        assert.ok(action, `${rel} is in the plan`);
+        assert.equal(action.action, "skip", `${rel}: ${action.action} (${action.reason ?? ""})`);
+      }
+      assert.ok(readDescriptor().members.some((member) => member.kind === "command" && member.id === "repair" && member.file === "commands/repair.md"), "the bundle descriptor lists commands/repair.md");
+      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+      assert.ok(manifest.entries.some((entry) => entry.path === ".claude/commands/aof/repair.md" && entry.resource.id === "repair" && entry.resource.kind === "command"), "the shipped manifest carries the claude render");
+      assert.ok(manifest.entries.some((entry) => entry.path === ".codex/skills/aof-repair/SKILL.md" && entry.resource.id === "aof-repair"), "…and the codex render");
+    },
+  },
+  ...REPAIR_RULES.map(([rule, pattern]) => ({
+    name: `147/02 [outline] the repair command's prose says ${rule}`,
+    run: async () => {
+      const text = await readFile(REPAIR_SOURCE, "utf8");
+      assert.match(text, pattern);
+      assert.match(text, /^allowed-tools: \[Read, Grep, Glob, Bash, Edit, Write\]$/mu, "the session may read, run git and edit — the tools a repair needs, and no Task");
+    },
+  })),
   {
     // HEADLINE (AC9) — the defect this closes, stated as its own negation. A wholesale
     // render builds the file's entire body from `config.hooks` + `config.settings` and

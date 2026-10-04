@@ -71,6 +71,7 @@
     { "id": "archive", "kind": "command", "file": "commands/archive.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "recent", "kind": "command", "file": "commands/recent.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "refine", "kind": "command", "file": "commands/refine.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
+    { "id": "repair", "kind": "command", "file": "commands/repair.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "retrospective", "kind": "command", "file": "commands/retrospective.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "shatter", "kind": "command", "file": "commands/shatter.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "validate", "kind": "command", "file": "commands/validate.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },

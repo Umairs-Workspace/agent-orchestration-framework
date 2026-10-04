@@ -112,7 +112,13 @@ session; `--refine per-story|whole-item` overrides it for one run. Each phase's 
 model and effort the operator names — `aof work loop <ref> --model sonnet:high --model refine=opus:xhigh
 --model verify=fable:high` — where a value with no `PHASE=` applies to every phase and a phased one
 overrides it; `--thinking [PHASE=]LEVEL` sets the effort alone. The run record says which model ran
-which phase, and a `--resume` reruns on those choices unless new ones are given. [The loop graph]({{ '/loops/' | relative_url }}) is that registry,
+which phase, and a `--resume` reruns on those choices unless new ones are given. A halt about the
+loop's own bookkeeping – a lane that will not merge home or will not reopen (`lane-open-failed`,
+`lane-merge-refused`, `lane-merge-conflict`) – is handed to a fresh session typed `/aof:repair`,
+which diagnoses the cause from the hand-over the loop wrote and fixes only that; a repair that ends
+done resumes the loop by itself, on the choices it started with, and one that does not stops the loop
+for the operator with the repair run named. Each halt gets one repair. Every other stop still ends
+the loop as before, and `--no-repair` (or `work.loop.repair: false`) turns the hand-over off. [The loop graph]({{ '/loops/' | relative_url }}) is that registry,
 rendered.
 
 ## Starting

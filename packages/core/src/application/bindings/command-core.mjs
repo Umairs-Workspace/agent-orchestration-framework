@@ -65,6 +65,8 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   const { refineDriverCommand } = commandsDriveServices;
   const { continueDriverCommand } = commandsDriveServices;
   const { verifyDriverCommand } = commandsDriveServices;
+  // 147/02 — the fourth phase driver, the repair session's.
+  const { repairDriverCommand } = commandsDriveServices;
   const { loopCommand } = commandsLoopServices;
   // work:resync — m43 — see ./commands/resync.mjs's header.
   const { resyncCommand } = commandsResyncServices;
@@ -291,7 +293,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
       refineDoorCommand,
       verifyDoorCommand,
     ]),
-    createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand }),
+    createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand, repair: repairDriverCommand }),
     createResyncContribution(resyncCommand),
     { name: "aof", commands: [
       assetsListCommand,

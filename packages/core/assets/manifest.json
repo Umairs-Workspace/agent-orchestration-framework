@@ -654,6 +654,15 @@
       "hash": "sha256:9c47030ba3e0a457685bbd5326fedbbb507069c2b8f36bfe81e438d96485b987"
     },
     {
+      "path": ".claude/commands/aof/repair.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "repair",
+        "kind": "command"
+      },
+      "hash": "sha256:f4c310c8469da1849b30fc6c52dfbe58afff47a519b2094e54df82e24d9ba0bf"
+    },
+    {
       "path": ".claude/commands/aof/retrospective.md",
       "runtime": "claude",
       "resource": {
@@ -1057,6 +1066,15 @@
         "kind": "skill"
       },
       "hash": "sha256:073319afb8c7a6ad3825e5b6e6a5653fcc7f32f2e100c9bc43afba361403706b"
+    },
+    {
+      "path": ".codex/skills/aof-repair/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-repair",
+        "kind": "skill"
+      },
+      "hash": "sha256:abd74dcf6a9beb19192260d36065f1c80268ac13d2992f0a63564de82598a356"
     },
     {
       "path": ".codex/skills/aof-retrospective/SKILL.md",
