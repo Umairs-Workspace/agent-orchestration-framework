@@ -1,10 +1,14 @@
-// One package contributes loop orchestration and its three local phase drivers.
+// One package contributes loop orchestration and its four local phase drivers.
 // The core registry retains ownership of routing, shared namespaces and collisions.
-export function createWorkLoopContribution({ loop, refine, continue: build, verify }) {
-  const commands = [loop, refine, build, verify];
-  const ids = ["work:loop", "work:drive-refine", "work:drive-continue", "work:drive-verify"];
+//
+// 147/02 — `work:drive-repair` is the FOURTH phase driver, beside refine, continue and verify: the
+// session a lane halt is handed to. The loop never loads the session driver, so a repair session is
+// reached exactly as the other three are — by spawning `aof work drive repair`.
+export function createWorkLoopContribution({ loop, refine, continue: build, verify, repair }) {
+  const commands = [loop, refine, build, verify, repair];
+  const ids = ["work:loop", "work:drive-refine", "work:drive-continue", "work:drive-verify", "work:drive-repair"];
   if (commands.some((command, index) => command?.id !== ids[index])) {
-    throw new TypeError("Work-loop contribution requires the loop and all three phase drivers.");
+    throw new TypeError("Work-loop contribution requires the loop and all four phase drivers.");
   }
   return Object.freeze({ name: "@aof/work-loop", commands: Object.freeze(commands) });
 }

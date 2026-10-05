@@ -228,6 +228,8 @@ function argsFor(sub) {
     case "drive-refine": return ["work", "drive", "refine", "03/01", "--dry-run", "--json"];
     case "drive-continue": return ["work", "drive", "continue", "03/01", "--dry-run", "--json"];
     case "drive-verify": return ["work", "drive", "verify", "03/01", "--dry-run", "--json"];
+    // 147/02 — the fourth phase driver; its dry run reports the directive and reads no hand-over.
+    case "drive-repair": return ["work", "drive", "repair", "03/01", "--dry-run", "--json"];
     case "list": return ["work", "list", "--json"];
     // work:debt reads the ledger at the work directory root. The fixture has never accrued one,
     // so this probe exercises the `present: false` answer — the healthy state for most

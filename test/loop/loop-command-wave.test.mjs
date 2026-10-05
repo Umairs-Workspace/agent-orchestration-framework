@@ -388,7 +388,11 @@ export const loopCommandWaveTests = [
       // record, the probe and the resume — the table's resolver and its narration line moved to the
       // session leaf rather than grow the shell further. Its review fix — the shell hands the engine the leaf's
       // phase list, so the engine keeps no copy — fit inside 2177 once two stray blank lines went.
-      assert.ok(lines <= 2177, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2177 it was at 143/03 — extract, or raise this bound with a reason`);
+      // 2177 -> 2219 is 147: the repair MECHANISM (decide, mint, hand-over, drive, settle) was extracted
+      // to cycle.mjs's `repairLaneHalt` at review, beside the drive/settle it reuses; what stays is the
+      // `--no-repair` flag in its three homes, the `work.loop.repair` guard, and the launch's re-entry
+      // loop with its account lines — the launch is the one door that may resume, so it cannot move.
+      assert.ok(lines <= 2219, `packages/work-loop/src/commands/loop.mjs is ${lines} lines, above the 2219 it was at 147 — extract, or raise this bound with a reason`);
     },
   },
 

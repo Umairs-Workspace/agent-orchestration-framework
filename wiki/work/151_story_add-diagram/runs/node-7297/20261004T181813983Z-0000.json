@@ -1,0 +1,64 @@
+{
+  "runId": "20261004T181813983Z-0000",
+  "itemRef": "151",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "bd0f28ac-e931-428a-b6c5-054955e85a45",
+  "brief": {
+    "answers": [
+      {
+        "token": "151 Q1",
+        "question": "151 Q1 · When you run aof:add-diagram on an item without naming an ADR, and every ADR that has a diagram brief is already drawn, what should it do? (Refine's architect deliberately leaves most ADRs without a picture.)",
+        "answer": "Report nothing to draw (Recommended)",
+        "toolUseId": "toolu_01EsnDwCCYxeQaivXjyvHe7g",
+        "sessionId": "bd0f28ac-e931-428a-b6c5-054955e85a45",
+        "at": "2026-10-04T19:51:17.118Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "151 Q2",
+        "question": "151 Q2 · You name an ADR that already has a diagram pasted under it. Redraw it, or report it as already drawn?",
+        "answer": "Report, change nothing (Recommended)",
+        "toolUseId": "toolu_01EsnDwCCYxeQaivXjyvHe7g",
+        "sessionId": "bd0f28ac-e931-428a-b6c5-054955e85a45",
+        "at": "2026-10-04T19:51:17.118Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "151 Q3",
+        "question": "151 Q3 · Several ADRs have briefs but no diagram. Does one run draw them all, or ask which to draw?",
+        "answer": "Draw them all (Recommended)",
+        "toolUseId": "toolu_01EsnDwCCYxeQaivXjyvHe7g",
+        "sessionId": "bd0f28ac-e931-428a-b6c5-054955e85a45",
+        "at": "2026-10-04T19:51:17.118Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-04T18:18:13.983Z",
+  "updatedAt": "2026-10-04T19:55:01.149Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 100,
+      "output": 50622,
+      "cacheRead": 5094596,
+      "cacheCreate": 363024
+    },
+    "costUsd": 3.6493488000000003,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 50,
+    "toolCalls": 30,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

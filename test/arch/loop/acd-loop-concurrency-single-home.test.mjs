@@ -67,7 +67,9 @@ export const SELF_CONTAINED_LOOP_KEYS = Object.freeze([
 ]);
 // 143/01 (ADR-002 §1) — the refine scope, a mode with this key's discipline, appended after the three.
 export const REFINE_SCOPE_KEY = "work.loop.refine";
-export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS, REFINE_SCOPE_KEY].sort());
+// 147/00 (R1) — the repair switch, a boolean with this key's discipline, appended after the refine scope.
+export const REPAIR_SWITCH_KEY = "work.loop.repair";
+export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS, REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY].sort());
 
 // The two modules that may spell a mode literal, by path (ADR-001 §1 and §4).
 export const MODE_LITERAL_HOMES = Object.freeze([BOUNDS_HOME, ENGINE]);
@@ -219,9 +221,17 @@ export const archTests = [
       // the phase's, applied by `loopAgentModeFromConfig`, never the key resolver's).
       assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
       assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
-      // 143/01 — the refine scope follows them, last, in both maps.
-      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(12), [REFINE_SCOPE_KEY]);
-      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(12), [REFINE_SCOPE_KEY]);
+      // 143/01 — the refine scope follows them, in both maps; 147/00 — the repair switch follows it, last.
+      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(12), [REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY]);
+      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(12), [REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY]);
+      assert.equal(loopBounds.rangeProbe(REPAIR_SWITCH_KEY, true).admissible, true, "true is admissible");
+      assert.equal(loopBounds.rangeProbe(REPAIR_SWITCH_KEY, false).admissible, true, "false is admissible");
+      // (`null` is not probed: the probe reads `resolve(p) === p`, and `null` is what every mode
+      // key answers for an unresolvable value, so it is the launch's refusal that covers it.)
+      for (const proposed of ["false", 0, "true", 1]) {
+        assert.equal(loopBounds.rangeProbe(REPAIR_SWITCH_KEY, proposed).admissible, false, `${JSON.stringify(proposed)} is not a boolean and is not admissible`);
+      }
+      assert.equal(loopBounds.resolveLoopRepair(undefined), true, "unset is on");
       assert.equal(loopBounds.rangeProbe(REFINE_SCOPE_KEY, "whole-item").admissible, true, "whole-item is admissible");
       assert.equal(loopBounds.rangeProbe(REFINE_SCOPE_KEY, "Whole-Item").admissible, false, "a case variant is not");
       assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS["work.loop.dispatch.concurrency"], loopBounds.resolveLoopDispatchConcurrency, "the lane bound's value resolver by identity");

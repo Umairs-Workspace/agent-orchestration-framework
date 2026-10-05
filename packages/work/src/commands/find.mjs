@@ -48,14 +48,14 @@ const findCommand = {
   cli: {
     route: ["work", "find"],
     spec: {
-      usage: "aof work find <ref | query> [--json]",
+      usage: "aof work find <ref | path | query> [--json]",
       flags: {},
     },
 
     argv: (positionals) => {
       if (!positionals[0]) {
         throw commandError(
-          "Usage: aof work find <ref | query>   (e.g. aof work find 04, aof work find 04/02, aof work find auth)",
+          "Usage: aof work find <ref | path | query>   (e.g. aof work find 04, aof work find 04/02, aof work find wiki/work/backlog/story_auth, aof work find auth)",
           "invalid-input",
           400,
         );

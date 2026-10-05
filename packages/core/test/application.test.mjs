@@ -11,7 +11,8 @@ test('core constructs independent applications with the same command catalog', a
   const second = createApplication();
   try {
     assert.notEqual(first, second);
-    assert.equal(first.listCommands().length, 117);
+    // 147/02 — work:drive-repair, the fourth phase driver, made it 118.
+    assert.equal(first.listCommands().length, 118);
     assert.deepEqual(JSON.parse(JSON.stringify(first.listCommands())), JSON.parse(JSON.stringify(second.listCommands())));
     assert.notEqual(first.getCommand('work:list'), second.getCommand('work:list'));
     assert.equal(typeof first.getCommand('work:list').run, 'function');

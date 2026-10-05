@@ -3,10 +3,15 @@ export function createWorkEffects(getServices) {
   if (typeof getServices !== 'function') throw new TypeError('createWorkEffects requires a service provider.');
   async function advanceStatusOnRunStart(event) {
     const { setItemStatus, typeHasRecordDoc } = await getServices();
-    const { ref, itemDir, itemType } = event.payload ?? {};
+    const { ref, itemDir, itemType, phase } = event.payload ?? {};
     // A mint site with no local folder (the worker's no-workspace path) has no record doc
     // to move; nothing is owed rather than a fabricated path (the ADR-010/R6.4 reading).
     if (!itemDir) return { skipped: true, reason: "no-item-dir" };
+    // 147/01 — A REPAIR RUN NEVER STARTS ITS ITEM. The loop mints it on the ref whose LANE halted
+    // (a lane that would not merge home or reopen); the item's own status lives in that lane, and a
+    // move in the primary would both lie about it and collide with the lane's record when the repair
+    // merges it home. Bookkeeping about the lane, never work on the item: nothing is owed.
+    if (phase === "repair") return { skipped: true, reason: "repair-run" };
     // …and neither does an item whose TYPE carries none. An adhoc top-level `task` is a
     // folder holding one `.feature` and nothing else — "a task has no status field"
     // (add-task) — so there is no status to advance and no fault in there not being one.
@@ -25,8 +30,11 @@ export function createWorkEffects(getServices) {
 
   async function rollbackStatusIfFailed(event) {
     const { rollbackItemStatus, typeHasRecordDoc } = await getServices();
-    const { outcome, ref, itemDir, itemType } = event.payload ?? {};
+    const { outcome, ref, itemDir, itemType, phase } = event.payload ?? {};
     if (outcome !== "failed") return { skipped: true, reason: "outcome-not-failed" };
+    // 147/01 — the mirror of the start: a repair run that failed did not start its item, so it has
+    // nothing to roll back; the item's status is the lane's and is left exactly as it stands.
+    if (phase === "repair") return { skipped: true, reason: "repair-run" };
     // The advance-status mirror: an item type that carries no record doc was never owed a
     // rollback either, and must not be reported as a document fault.
     if (!typeHasRecordDoc(itemType)) return { skipped: true, reason: "type-has-no-record-doc" };

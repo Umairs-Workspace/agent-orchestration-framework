@@ -69,7 +69,6 @@ export const BOUND_FACTS = Object.freeze([
   { asset: "commands/continue.md", fact: "review rounds by default", anchor: /Review runs one round by default/u, home: "work.loop.reviewRounds" },
   { asset: "commands/continue.md", fact: "the review hard cap", anchor: /Three rounds is the hard cap/u, home: "MAX_REVIEW_ROUNDS" },
   { asset: "commands/continue.md", fact: "the build no-progress stop", anchor: /consecutive no-progress rounds/u, home: "work.loop.buildNoProgressRounds" },
-  { asset: "commands/code-review.md", fact: "the review hard cap", anchor: /Three rounds is the hard cap/u, home: "MAX_REVIEW_ROUNDS" },
   { asset: "loops/review-fix-rereview.md", fact: "the review ceiling", anchor: /^ceiling: \[config:/mu, home: "work.loop.reviewRounds" },
   { asset: "loops/build-to-green.md", fact: "the build ceiling", anchor: /^ceiling: \[config:/mu, home: "work.loop.buildNoProgressRounds" },
 ].map((row) => Object.freeze(row)));

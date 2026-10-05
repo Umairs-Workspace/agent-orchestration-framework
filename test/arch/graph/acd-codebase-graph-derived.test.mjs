@@ -33,7 +33,8 @@ const bundleDir = path.join(repoRoot, "packages", "core", "assets");
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),
   refine: path.join(bundleDir, "commands", "refine.md"),
-  codeReview: path.join(bundleDir, "commands", "code-review.md"),
+  // 149 — the review seam moved from the removed `code-review.md` to `review.md` (aof:review).
+  review: path.join(bundleDir, "commands", "review.md"),
 };
 
 export const archTests = [
@@ -88,7 +89,7 @@ export const archTests = [
       const cases = [
         ["aof-architect", SEAMS.architect, /aof graph impact/],
         ["refine (break-down)", SEAMS.refine, /aof graph impact/],
-        ["code-review (PR impact)", SEAMS.codeReview, /aof graph impact/],
+        ["review (blast radius)", SEAMS.review, /aof graph impact/],
       ];
       for (const [label, file, consumeRe] of cases) {
         const text = await readFile(file, "utf8");

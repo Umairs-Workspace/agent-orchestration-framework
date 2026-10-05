@@ -49,6 +49,31 @@ export const LOOP_STOPS = Object.freeze([
   "lane-merge-conflict",
 ]);
 
+// 147 (R1, R2) — THE REPAIRABLE STOPS: the three lane stops and nothing else, as a frozen export
+// of their own beside `LOOP_STOPS`, which is unchanged. A lane halt is about the loop's OWN
+// records — a lane that will not merge home or will not reopen — never about the code a story
+// built, so it is the one class a fresh session can be handed to repair without judging the story.
+// Every other stop still ends the loop for the operator exactly as before this story.
+export const REPAIRABLE_STOPS = Object.freeze([
+  "lane-open-failed",
+  "lane-merge-refused",
+  "lane-merge-conflict",
+]);
+
+// decideHaltRepair({ stop, repairOn, priorRepair }) → "repair" | "stop" (147/00, 147/01).
+//
+// A pure decision over three facts the launch gathers: the halt's stop id; whether repair is on
+// for this loop (`work.loop.repair`, or `--no-repair` for one run); and whether THIS loop has
+// already repaired THIS stop at THIS ref — a prior `repair` run on the halted ref under the same
+// loopRunId, read from the run store so the bound holds across a `--resume`. One repair per halt
+// (Q2): a halt that comes back after its repair stops for the operator, naming the repair.
+export function decideHaltRepair({ stop, repairOn = true, priorRepair = null } = {}) {
+  if (repairOn !== true) return "stop";
+  if (!REPAIRABLE_STOPS.includes(stop)) return "stop";
+  if (priorRepair != null) return "stop";
+  return "repair";
+}
+
 export const LOOP_REFUSALS = Object.freeze([
   "loop-scope-unsupported",
   "loop-level-locked",
@@ -1495,7 +1520,9 @@ function recordedSessionChoices(declaration, phases = []) {
 export function sessionLendFor(declaration, phase) {
   const sessions = declaration?.sessions;
   if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
-    const entry = sessions[phase];
+    // 147/02 — the repair session runs on the CONTINUE phase's resolved model and effort, so it is
+    // lent continue's flag parts; `SESSION_PHASES` stays three and the table gains no fourth row.
+    const entry = sessions[phase === "repair" ? "continue" : phase];
     if (entry === null || typeof entry !== "object") return {};
     return {
       ...(entry.modelSource === "--model" && declaredString(entry.model) != null ? { model: entry.model } : {}),

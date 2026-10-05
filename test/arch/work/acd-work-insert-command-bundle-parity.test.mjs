@@ -36,7 +36,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 
 // THE WRAPPED FAMILY, as a predicate over the registry id: the placement twins plus the one mint.
 // `work:promote-finding-to-chore` / `work:promote-gap-to-chore` are review-lane faces reached by an
-// agent through `aof:code-review`, not operator doors with prompts of their own — so the predicate
+// agent in a review lane, not operator doors with prompts of their own — so the predicate
 // admits the bare `work:promote` and nothing suffixed.
 // milestone 127 / story 03 task 04 — widened once more, by the same rule and in the same control:
 // `work:archive` is the operator's door out of the stream (127/ADR-004 §1), the twin of `promote`'s

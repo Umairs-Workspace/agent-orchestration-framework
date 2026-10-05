@@ -169,6 +169,8 @@ const WORK_IDS = [
   // F-14/F-15).
   "work:loop",
   "work:drive-refine",
+  // 147/02 — the fourth phase driver, the lane-halt repair session's.
+  "work:drive-repair",
   "work:drive-continue",
   "work:drive-verify",
   // PRE-EXISTING STALENESS, found at milestone 53's gate and recorded rather than
