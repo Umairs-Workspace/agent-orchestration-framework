@@ -43,8 +43,8 @@ at the root. Update deletes the three code-review renders and writes the review 
 
 ## Verification step
 
-Run `node scripts/test.mjs --only` over every test file in `files:`, plus
-`test/command/application-assembly.test.mjs` and `test/bundle/core-workspace.test.mjs`, with
+Run the runner's `--only` selection over every test file in `files:`, plus the
+application-assembly and core-workspace suites, with
 `AOF_GLOBAL_HOME` isolated. Then, at the root, `aof work update --dry-run --json` must report
 `skip` for every continue, review, autonomous and assimilate-code render. A
 `git grep -n "code-review\|codeReview" -- packages/core/assets docs README.md .aof` must print
@@ -65,4 +65,4 @@ nothing. Task 04 (`@manual`) is the real proof.
   shrink here: `aof:code-review` leaves the family list.
 - `story-context-contract` asserts "Three rounds is the hard cap" on code-review. That assertion
   goes. `review.md` must state no bound number (task 02), or acd-prompt-bounds wants a home row.
-- Build after 147 lands: both write the manifest, the lock and `docs/acd.md`.
+- Build after 147 lands: both write the manifest, the lock and the ACD reference doc.

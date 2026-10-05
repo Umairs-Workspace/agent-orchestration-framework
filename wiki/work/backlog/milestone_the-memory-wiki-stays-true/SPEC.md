@@ -8,7 +8,7 @@ owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
-depends: [memory-corpus-holds-its-vocabulary, memory-closes-the-loop, episodic-memory-is-recallable]
+depends: [148, memory-closes-the-loop, episodic-memory-is-recallable]
 schema: 1
 aofVersion: 0.1.0
 ---

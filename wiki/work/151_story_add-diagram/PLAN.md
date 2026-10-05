@@ -38,7 +38,7 @@ Story 147 (repair) grows the same count on its own branch: whichever merges seco
 
 ## Verification step
 
-`node scripts/test.mjs --only` over the story's test files (its `files:` set) with
+The runner's `--only` selection over the story's test files (its `files:` set) with
 `AOF_GLOBAL_HOME` isolated: the new diagrams suite reads the prose per
 scenario, as `loop-diagram-command.test.mjs` does for 145/03. Then `aof work update --dry-run --json`
 must report the three copies as `skip`.

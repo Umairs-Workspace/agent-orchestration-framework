@@ -1,0 +1,55 @@
+{
+  "runId": "20261004T152002318Z-0000",
+  "itemRef": "148",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "110c5e97-7082-47f1-bb3e-a02b38d7aec8",
+  "brief": {
+    "answers": [
+      {
+        "token": "148/02 Q1",
+        "question": "148/02 Q1 · 140 of the 775 lessons write a Kind outside the four (mistake, blocker, near-miss, misunderstanding): \"process\" 40, \"defect\" and its variants 43, \"blind spot\" 15, and 23 that record what worked (\"confirmed approach\", \"insight\", \"confirmation\"). How should the index treat them?",
+        "answer": "As written (Recommended)",
+        "toolUseId": "toolu_01CLQffCjFsxmtkzGJTuYb4L",
+        "sessionId": "110c5e97-7082-47f1-bb3e-a02b38d7aec8",
+        "at": "2026-10-04T16:06:29.109Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "148/05 Q1",
+        "question": "148/05 Q1 · Which memory layer should `aof work memory status` name for a lesson (an R<n> retrospective entry)? The origin research files the lesson line under procedural (\"what works\", §2.3/§4.3), but its headline calls the retrospective procedure that produces lessons the semantic layer's (§0). ADRs, capabilities, gaps and summaries are semantic either way.",
+        "answer": "Procedural (Recommended)",
+        "toolUseId": "toolu_01CLQffCjFsxmtkzGJTuYb4L",
+        "sessionId": "110c5e97-7082-47f1-bb3e-a02b38d7aec8",
+        "at": "2026-10-04T16:06:29.109Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-04T15:20:02.318Z",
+  "updatedAt": "2026-10-04T16:09:14.331Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high|xhigh",
+    "tokens": {
+      "input": 588,
+      "output": 485107,
+      "cacheRead": 72644973,
+      "cacheCreate": 836950
+    },
+    "costUsd": 32.210423399999996,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 294,
+    "toolCalls": 181,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

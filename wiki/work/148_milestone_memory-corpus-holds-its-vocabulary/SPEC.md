@@ -1,12 +1,12 @@
 ---
 type: milestone
-number:
+number: 148
 slug: memory-corpus-holds-its-vocabulary
 title: "The memory corpus holds its vocabulary — every lesson is reachable by its kind, the corpus reports its own conformance, and its ranking cannot regress silently"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-10-04
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
 schema: 1
 aofVersion: 0.1.0
@@ -17,7 +17,7 @@ aofVersion: 0.1.0
   (ARCHITECTURE / DESIGN / RESEARCH / UAT live in this folder too, conditionally).
   Does NOT contain: a per-story user story (→ each STORY.md) or acceptance criteria (→ task .feature).
 -->
-# The memory corpus holds its vocabulary
+# 148 · The memory corpus holds its vocabulary
 
 ## Objective
 
@@ -80,7 +80,19 @@ Out of scope:
 
 ## Stories
 
-To be broken down (`aof:refine`, once promoted).
+Partitioned by write set (ARCHITECTURE ADR-008). Wave 1 is 01 and 02; wave 2 is 03, 04 and 05.
+
+- [ ] `01_story_the-ranking-is-held-by-an-eval`: twenty or more real recall pairs stay in the
+  five-line block over the live corpus, as an arch test.
+- [ ] `02_story_a-lessons-meta-line-is-normalised-on-read`: one vocabulary module, the normaliser
+  in the one parser, and a `tags` field under index version 2, with a stale store reported.
+- [ ] `03_story_story-retrospectives-are-indexed`: every item's `RETROSPECTIVE.md` is read, so a
+  story's lessons are recallable under its ref. Depends on 01 and 02.
+- [ ] `04_story_a-live-lessons-meta-line-is-held`: validate errors on a live lesson with a non-enum
+  meta line, doctor warns on an archived one, and the live stream is green. Depends on 02.
+- [ ] `05_story_memory-status-reports-conformance-and-layers`: `status` names every record type's
+  layer and reports blank and non-enum counts on both backends, and the `--block` line shows tags.
+  Depends on 02.
 
 ## Dependencies
 

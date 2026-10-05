@@ -33,13 +33,13 @@ cuts nothing") and the README table.
 
 ## Verification step
 
-With `AOF_GLOBAL_HOME` in a fresh temp dir, run `scripts/test.mjs --only` over
-`packages/work/test/work-resolve.suite.mjs` (through its index), `test/bundle/explain-command.test.mjs`,
-the census suites above, and every importer of `discovery.mjs` that `aof graph impact` lists. Then
-install the payload and, from the repo root, run `aof work find
-wiki/work/backlog/story_a-halted-lane-is-reaped --json` (one row) and `aof work find
-wiki/work/backlog --json` (`[]`). Record `git status --porcelain`, run `/aof:explain 147 999
-wiki/work/backlog/story_a-halted-lane-is-reaped 129 loop`, and check the porcelain is unchanged.
+With `AOF_GLOBAL_HOME` in a fresh temp dir, run the runner's `--only` selection over the
+work-resolve suite (through its index), the explain-command suite, the census suites above, and
+every importer of `discovery.mjs` that `aof graph impact` lists. Then install the payload and, from
+the repo root, run `aof work find` on the halted-lane backlog story's folder path with `--json`
+(one row) and `aof work find
+wiki/work/backlog --json` (`[]`). Record `git status --porcelain`, run `/aof:explain` over 147,
+999, that backlog story's folder path, 129 and `loop`, and check the porcelain is unchanged.
 
 ## Out of scope
 
