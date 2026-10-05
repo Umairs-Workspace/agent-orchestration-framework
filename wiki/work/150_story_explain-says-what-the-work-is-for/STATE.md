@@ -1,6 +1,5 @@
-## Feedback (for retro)
+## Feedback (for retro) — archived 2026-10-05
 
-- Read set incomplete: the build had to edit test/fixtures/application/command-inventory.json (pins find's usage line), packages/work/test/index.mjs (suite registration) and the 142 Plan 09 test ledger (case-name hashes + registryCases), and a 127 control (test/work/stream/work-archive-is-a-move.test.mjs) that allows only archive.md and verify.md to name 'aof work archive'. Files: was widened; refine's PLAN listed none of these. — Raised by: aof-continue (solo review)
-- PLAN assumed 'aof work doc' serves every record doc; it serves SPEC and STORY only, not SPIKE/CHORE/SESSION. explain reads those via Read at the find row's dir, so a cache-only spike/chore/uat (dir null) cannot be explained. Story shape if wanted: work:doc's requestable set gains the three type record docs. — Raised by: aof-continue (solo review)
-- findWork's path branch defaults cwd to process.cwd() inside discovery.mjs, whose header says callers supply paths; a board/API caller would resolve a path against the daemon's cwd. Case-folding is win32-only, so a case-different path on a case-insensitive macOS volume does not match. — Raised by: aof-continue (solo review)
-- Prescribed 'aof test --scope impacted --story 150' widens to the whole tree on new paths (forbidden on the control node); ran scripts/test.mjs --only sets in a detached worktree instead: focused 636/0, findWork-importer sweep 1908 with one red (the 127 archive census) fixed by stating explain's read-only rule as an allowlist, re-run 120/0. — Raised by: aof-continue (solo review)
+The four build/review notes graduated at accept: the read-set and `aof work doc` notes into
+RETROSPECTIVE R1–R2, the `findWork` cwd and case-folding note into OUTCOME `## Gaps`, and the
+impacted-scope note is a known recurrence. The raw entries stay in `FEEDBACK.ndjson`.

@@ -3,10 +3,10 @@ type: story
 number: 150
 slug: explain-says-what-the-work-is-for
 title: "aof:explain says what a work item is for, without writing anything"
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 schema: 1
 aofVersion: 0.1.0
 reads:
