@@ -3,10 +3,10 @@ type: story
 number: 151
 slug: add-diagram
 title: "aof:add-diagram <work item> draws the architecture diagrams a refine left undrawn — through the same diagram plan/export the refine step uses"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 schema: 1
 aofVersion: 0.1.0
 reads:
@@ -51,9 +51,9 @@ flow picture in their head from the prose.**
 
 ## Tasks
 
-- [ ] `tasks/00_the-bundle-ships-aof-add-diagram.feature` — renders for every runtime; the four command censuses and FF-13301 move with it
-- [ ] `tasks/01_it-picks-the-adrs-a-refine-left-undrawn.feature` — R1/R2: undrawn briefs, all in one run; a named ADR, its brief drafted first; nothing to draw; already drawn
-- [ ] `tasks/02_it-draws-each-through-the-diagram-steps-own-answers.feature` — R3: plan → instructions → export → paste; off, missing, delivered, PNG miss; a real run end to end
+- [x] `tasks/00_the-bundle-ships-aof-add-diagram.feature` — renders for every runtime; the four command censuses and FF-13301 move with it
+- [x] `tasks/01_it-picks-the-adrs-a-refine-left-undrawn.feature` — R1/R2: undrawn briefs, all in one run; a named ADR, its brief drafted first; nothing to draw; already drawn
+- [x] `tasks/02_it-draws-each-through-the-diagram-steps-own-answers.feature` — R3: plan → instructions → export → paste; off, missing, delivered, PNG miss; a real run end to end
 
 ## Notes
 

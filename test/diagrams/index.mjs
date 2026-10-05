@@ -12,9 +12,12 @@ import { diagramExportCommandTests } from "./diagram-export-command.test.mjs";
 // 145 — the loop diagram: `aof diagram plan <ref> loop` (task 01), `aof diagram export <ref> loop`
 // (task 02) and the `/aof:loop-diagram` command's prose (task 03).
 import { loopDiagramCommandTests } from "./loop-diagram-command.test.mjs";
+// 151 — `/aof:add-diagram`: refine's diagram step run after the fact; the command's prose (tasks 01-02).
+import { addDiagramCommandTests } from "./add-diagram-command.test.mjs";
 
 export const tests = [
   ...diagramPlanCommandTests,
   ...diagramExportCommandTests,
   ...loopDiagramCommandTests,
+  ...addDiagramCommandTests,
 ];

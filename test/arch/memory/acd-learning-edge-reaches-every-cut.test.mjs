@@ -105,6 +105,8 @@ const CUT_MAKING = Object.freeze({
 // exclusion from an oversight — which is the failure this direction exists to prevent.
 const EXCLUDED = Object.freeze({
   "add-chore.md": "creates one chore; partitions nothing",
+  // 151 — re-runs refine's diagram step for an existing item's briefed ADRs; no partition, no memory call.
+  "add-diagram.md": "draws an existing item's ADR diagrams; cuts nothing",
   "add-milestone.md": "frames one named driver; spawns the PO but partitions nothing",
   "add-spike.md": "creates one spike; partitions nothing",
   "add-story.md": "adds one story to an existing milestone",

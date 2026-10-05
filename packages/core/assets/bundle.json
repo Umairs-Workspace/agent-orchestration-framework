@@ -46,6 +46,7 @@
     { "id": "auditor-instrument-audit", "kind": "asset", "file": "loops/instrument-audit.md", "target": ".aof/loops/instrument-audit.md", "runtimes": ["claude", "codex"] },
 
     { "id": "add-chore", "kind": "command", "file": "commands/add-chore.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
+    { "id": "add-diagram", "kind": "command", "file": "commands/add-diagram.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "add-milestone", "kind": "command", "file": "commands/add-milestone.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "add-spike", "kind": "command", "file": "commands/add-spike.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },
     { "id": "add-story", "kind": "command", "file": "commands/add-story.md", "runtimes": ["claude", "opencode"], "commandNamespace": "aof" },

@@ -43,6 +43,7 @@ const AGENT_IDS = [
 ];
 const COMMAND_IDS = [
   "add-chore",
+  "add-diagram",
   "add-milestone",
   "add-spike",
   "add-story",
@@ -219,7 +220,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 31 commands, 7 templates, 3 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 32 commands, 7 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -229,7 +230,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 31, "31 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — and explain, 150)");
+      assert.equal(byKind("command"), 32, "32 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — and add-diagram, 151)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 7, "milestone/story/task/uat/spike/chore templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
@@ -321,7 +322,7 @@ export const bundleTests = [
       assert.deepEqual(
         members.filter((m) => m.kind === "command").map((m) => m.id).sort(),
         [...COMMAND_IDS].sort(),
-        "31 commands declared"
+        "32 commands declared"
       );
       assert.deepEqual(
         members.filter((m) => m.kind === "hook").map((m) => m.id).sort(),
@@ -344,7 +345,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 39, "39 resource members (8 agents + 31 commands)");
+      assert.equal(resourceMembers.length, 40, "40 resource members (8 agents + 32 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }
@@ -412,7 +413,7 @@ export const bundleTests = [
     run: async () => {
       const bundle = loadBundle();
       const outputs = renderBundleOutputs(bundle, { runtimes: ["claude"] });
-      // Claude supports all agents (8) + all commands (31) + the 3 codex delegation skills + all template files.
+      // Claude supports all agents (8) + all commands (32) + the 3 codex delegation skills + all template files.
       const resourceOutputs = outputs.filter((o) => o.resource.kind === "agent" || o.resource.kind === "command");
       assert.equal(resourceOutputs.length, AGENT_IDS.length + COMMAND_IDS.length, "one output per claude resource member");
       for (const output of outputs) {
@@ -429,6 +430,23 @@ export const bundleTests = [
       assert.ok(rendered, "the command renders to .claude/commands/aof/loop-diagram.md");
       // The loader carries the frontmatter value as written, quotes included, for every command.
       assert.equal(String(bundle.resources.find((member) => member.id === "loop-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<milestone ref>");
+    }
+  },
+  {
+    name: "bundle/loader (151/00): the bundle ships /aof:add-diagram for every runtime, with its argument hint",
+    run: async () => {
+      const bundle = loadBundle();
+      const paths = renderBundleOutputs(bundle, { runtimes: ["claude", "opencode", "codex"] }).map((o) => String(o.path).replaceAll("\\", "/"));
+      for (const expected of [".claude/commands/aof/add-diagram.md", ".opencode/commands/aof/add-diagram.md", ".codex/skills/aof-add-diagram/SKILL.md"]) {
+        assert.ok(paths.includes(expected), `the command renders to ${expected}`);
+      }
+      assert.equal(String(bundle.resources.find((member) => member.id === "add-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<ref> [ADR-NNN]");
+      // The manifest hashes the claude and codex renders (no opencode entry, as for every command);
+      // that each hash is current is the manifest guards' claim, not this row's.
+      const { entries } = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+      for (const expected of [".claude/commands/aof/add-diagram.md", ".codex/skills/aof-add-diagram/SKILL.md"]) {
+        assert.match(String(entries.find((entry) => entry.path === expected)?.hash), /^sha256:[0-9a-f]{64}$/, `manifest.json carries ${expected}'s hash`);
+      }
     }
   },
   // Scenario Outline: the bundle loads identically from any working directory.

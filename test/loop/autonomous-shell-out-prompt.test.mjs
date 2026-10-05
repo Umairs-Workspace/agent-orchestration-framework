@@ -43,7 +43,10 @@ const preStoryManifestResidueHash = "sha256:5e90cb38b3e02e763808b7268493d9c834c6
 // addresses — see the loop that reads them for why the addresses had to go.
 const phaseIds = ["continue", "refine", "verify"];
 const commandIdsBeforeStory = [
-  "add-chore", "add-milestone", "add-spike", "add-story", "add-task", "add-uat",
+  // `add-diagram` ADDED AT 151, in the descriptor's own order (after `add-chore`): the
+  // `/aof:add-diagram` wrapper over `aof diagram plan|export <ref> <ADR-NNN>`, refine's diagram step
+  // run after the fact.
+  "add-chore", "add-diagram", "add-milestone", "add-spike", "add-story", "add-task", "add-uat",
   // `explain` ADDED AT 150, WITH the diff that lands it, in the descriptor's own order (after
   // `delegate`): the read-only `/aof:explain` command, composed of the existing read verbs.
   // `code-review` REMOVED AT 149, with the diff that deletes it: its review half is `aof:review`,

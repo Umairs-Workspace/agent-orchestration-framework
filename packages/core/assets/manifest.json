@@ -429,6 +429,15 @@
       "hash": "sha256:45f80ca1d0ffb3bcb216a7f63af16162dcc02d333237a0a70261fe36c588eb7a"
     },
     {
+      "path": ".claude/commands/aof/add-diagram.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "add-diagram",
+        "kind": "command"
+      },
+      "hash": "sha256:c4fa7395aa1239ec25ea5bcdba7859ef6b61871e1c387279bf3da3e6689eac00"
+    },
+    {
       "path": ".claude/commands/aof/add-milestone.md",
       "runtime": "claude",
       "resource": {
@@ -841,6 +850,15 @@
         "kind": "skill"
       },
       "hash": "sha256:609845633a6dfeff383f9c6ac1a107082e3967d16f7f4fc07572e8b7bd079491"
+    },
+    {
+      "path": ".codex/skills/aof-add-diagram/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-add-diagram",
+        "kind": "skill"
+      },
+      "hash": "sha256:47933d58d72ba37a2fa1d0404631c7b0bb33c9b909d870eaf8b820b5a7cb1e3d"
     },
     {
       "path": ".codex/skills/aof-add-milestone/SKILL.md",
