@@ -1,3 +1,0 @@
-# aof — per-node runtime state a session writes beside its run records; never commit (147/03).
-**/runs/.heartbeats.ndjson
-**/runs/.heartbeats.ndjson.batch

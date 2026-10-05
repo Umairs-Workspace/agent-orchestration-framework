@@ -43,14 +43,6 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     return path.join(getRuntimeRoot(env), "loop-fixes", `${runId}.json`);
   }
 
-  // 147/00 — THE HAND-OVER FILE'S HOME: `loop-repairs/<runId>.json` beside `loop-fixes/` under
-  // the aof home, keyed by the REPAIR run's id, never inside a checkout (ADR-005 §3 — a lane's or
-  // the primary's `git add -A` would otherwise commit it). The repair session reads it by the path
-  // on its argv; it is kept after the drive, as the record of what the session was handed.
-  function loopRepairFilePath(runId, { env } = {}) {
-    return path.join(getRuntimeRoot(env), "loop-repairs", `${runId}.json`);
-  }
-
   // childDriveOutcome(answer) — a `spawnLaneDrive` answer read as the driver outcome the settle
   // consumes: the document's own outcome when one parsed, `died` → `failed / runtime_offline`,
   // `timeout` → `failed / timeout`, `aborted` → `cancelled`, a refusal → `failed / agent_error`
@@ -116,7 +108,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     return lines.slice(-STDERR_TAIL_LINES);
   }
 
-  // spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, haltFile, thinking, model, autonomous, env, deadlineMs, signal, graceMs, spawnChild })
+  // spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, thinking, model, autonomous, env, deadlineMs, signal, graceMs, spawnChild })
   // → { outcome, document, exitCode, stderrTail, spawn }
   //
   //   outcome   "document" | "refused" | "died" | "timeout" | "aborted"
@@ -137,7 +129,6 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     lane,
     fixFile,
     answerFile,
-    haltFile,
     thinking,
     model,
     autonomous,
@@ -159,17 +150,11 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     const withFix = typeof fixFile === "string" && fixFile.length > 0;
     const withAnswer = typeof answerFile === "string" && answerFile.length > 0;
     if (withFix && withAnswer) throw new TypeError("spawnLaneDrive: \"answerFile\" and \"fixFile\" cannot ride one drive.");
-    // 147/00 — a REPAIR drive names its hand-over file and nothing else: the hand-over is the whole
-    // brief of the session, so a fix or an answer beside it is a caller error too.
-    const withHalt = typeof haltFile === "string" && haltFile.length > 0;
-    if (withHalt && (withFix || withAnswer)) throw new TypeError("spawnLaneDrive: \"haltFile\" rides a repair drive alone, never with \"fixFile\" or \"answerFile\".");
     const verb = [
       "work", "drive", phase, ref,
       "--run", runId,
       ...(withAnswer ? ["--answer", answerFile] : []),
       ...(withFix ? ["--fix", fixFile] : []),
-      // 147/00 — the repair session's hand-over, by path; absent passes nothing.
-      ...(withHalt ? ["--halt", haltFile] : []),
       // 141 — the loop's effort override; the child's own door validates it.
       // 143/03 (ADR-004 §4) — the lent model, before the lent effort; absent passes nothing.
       ...(typeof model === "string" && model.length > 0 ? ["--model", model] : []),
@@ -214,5 +199,5 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     return answer(document.ok === false ? "refused" : "document");
   }
 
-  return Object.freeze({ loopFixFilePath, loopRepairFilePath, childDriveOutcome, spawnLaneDrive });
+  return Object.freeze({ loopFixFilePath, childDriveOutcome, spawnLaneDrive });
 }

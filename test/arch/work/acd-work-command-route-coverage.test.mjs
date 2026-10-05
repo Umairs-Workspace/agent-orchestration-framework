@@ -229,8 +229,6 @@ const BOARD_DEFERRED = new Set([
   "drive-refine",
   "drive-continue",
   "drive-verify",
-  // 147/02 — the fourth phase driver takes the same carve-out, for the same reason.
-  "drive-repair",
   // milestone 59 / story 04 — `audit` takes the carve-out `grade` takes, and for the same reason
   // (54/ADR-003 §4): a served `/api/work/audit` would let a PAGE LOAD spawn a bounded child per
   // cited control, and this very gate stands the server up and hits every served route. The story

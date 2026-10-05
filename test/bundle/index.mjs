@@ -112,8 +112,6 @@ import { siteBuildTests } from "./site-build.test.mjs";
 import { bundleArchitectDrawsTests } from "./bundle-architect-draws.test.mjs";
 // story 137 — the AOF.md digest template ships with the record-doc set (task 00).
 import { digestTemplateShipsTests } from "./digest-template-ships.test.mjs";
-// story 150 — /aof:explain ships read-only and says what each item is for (tasks 01, 02).
-import { explainCommandTests } from "./explain-command.test.mjs";
 
 export const tests = [
   // milestone 55 / story 04 â€” frozen rules reach their declared boundaries or refuse
@@ -145,8 +143,6 @@ export const tests = [
   ...bundleArchitectDrawsTests,
   // story 137 — the AOF.md digest template ships with the record-doc set (task 00).
   ...digestTemplateShipsTests,
-  // story 150 — /aof:explain ships read-only and says what each item is for (tasks 01, 02).
-  ...explainCommandTests,
   ...yarnInstallationTests,
   ...coreWorkspaceTests,
 ];

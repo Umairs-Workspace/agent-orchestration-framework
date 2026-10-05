@@ -154,7 +154,7 @@ export const archTests = [
       assert.equal(seamOf("Promoted ${resolved.promotedFrom}"), "narrate", "the Promoted line is in flight (143/00)");
       // 143/03 — the Sessions line replaced the Thinking line, on the same seam.
       assert.equal(seamOf("sessionTableLine(resolved.sessions"), "narrate", "the Sessions line is in flight (141, 143/03)");
-      assert.equal(printCalls(await source("packages/work-loop/src/cycle.mjs")).filter((call) => call.seam === "narrate").length, 5, "five in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify, and 147's Driving repair");
+      assert.equal(printCalls(await source("packages/work-loop/src/cycle.mjs")).filter((call) => call.seam === "narrate").length, 4, "four in the ladder: Retrying, the settle conflict, Gate work:grade, Driving verify");
       assert.ok(inFlight.length >= 18, `the family narrates at least the eighteen the shell and the ladder hold (${inFlight.length})`);
     },
   },
@@ -188,8 +188,7 @@ export const archTests = [
         ...[...cycle.matchAll(/await drivePhase\(\{/gu)].map((m) => ({ text: cycle, index: m.index })),
         ...[...cycle.matchAll(/await drive\(retried\.record\)/gu)].map((m) => ({ text: cycle, index: m.index })),
       ];
-      // 147 — the FOURTH site: `repairLaneHalt`'s drive of the repair session, announced by its own Driving line.
-      assert.equal(drives.length, 4, "four drive sites: the main one (shell), the in-process retry, the cross to verify and the repair (all three in the ladder)");
+      assert.equal(drives.length, 3, "three drive sites: the main one (shell), the in-process retry and the cross to verify (both in the ladder)");
       for (const drive of drives) {
         const before = drive.text.slice(0, drive.index);
         const announced = Math.max(
@@ -251,14 +250,13 @@ export const archTests = [
         Object.keys(schema.properties).sort(),
         // 143/01 — the TWELFTH and the ELEVENTH, `refine`, by the same rule.
         // 143/03 — the THIRTEENTH and the TWELFTH, `model`, by the same rule.
-        // 147/00 — the FOURTEENTH and the THIRTEENTH, `noRepair`, by the same rule.
-        ["cap", "dryRun", "handOff", "level", "model", "noRepair", "quiet", "refine", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
+        ["cap", "dryRun", "handOff", "level", "model", "quiet", "refine", "resume", "reviewClaims", "scope", "stop", "supervised", "thinking"],
         "properties gained exactly one key",
       );
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 13, "thirteen flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11, --thinking from 141, --refine from 143/01, --model from 143/03 and --no-repair from 147/00");
+      assert.equal(Object.keys(flags).length, 12, "twelve flags: --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11, --thinking from 141, --refine from 143/01 and --model from 143/03");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);

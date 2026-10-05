@@ -32,13 +32,12 @@ const srcDir = path.join(repoRoot, "packages", "core", "src");
 const bundleDir = path.join(srcDir, "..", "assets");
 
 // The three wired 11 seams (ADR-002): the architect agent prompt (inherited by
-// continue + review), refine's break-down boundary grounding, and
-// review's blast-radius ranking (149: moved from the removed code-review).
+// continue + code-review review), refine's break-down boundary grounding, and
+// code-review's PR-impact triage grounding.
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),
   refine: path.join(bundleDir, "commands", "refine.md"),
-  // 149 — the review seam moved from the removed `code-review.md` to `review.md` (aof:review).
-  review: path.join(bundleDir, "commands", "review.md"),
+  codeReview: path.join(bundleDir, "commands", "code-review.md"),
 };
 
 // The FROZEN allow-list of src/ modules that legitimately read graph.json /
@@ -153,18 +152,18 @@ export const archTests = [
     name: "arch/codebase-grounding-no-parse: each 11 seam has the agent RUN `aof graph query|triage` and READ the legible output (agent-consumed command output)",
     run: async () => {
       // The architect + refine seams consume graph:query's coupling answer; the
-      // review seam consumes graph:impact's dependents. Each must instruct
+      // code-review seam consumes graph:triage's ranked queue. Each must instruct
       // the agent to RUN the command and READ its output.
       const architect = await readFile(SEAMS.architect, "utf8");
       const refine = await readFile(SEAMS.refine, "utf8");
-      const review = await readFile(SEAMS.review, "utf8");
+      const codeReview = await readFile(SEAMS.codeReview, "utf8");
 
       // ADR-007: each seam now leads with the DETERMINISTIC `aof graph impact` (exact
       // edge-based coupling), the reliable primary signal the running agents consume.
       for (const [label, text, cmd] of [
         ["aof-architect", architect, /aof graph impact/],
         ["refine (break-down)", refine, /aof graph impact/],
-        ["review (blast radius)", review, /aof graph impact/],
+        ["code-review (PR impact)", codeReview, /aof graph impact/],
       ]) {
         assert.match(text, cmd, `${label} instructs the agent to RUN the registered graph:impact command`);
         // And to READ the output (the legible answer/queue) — the agent-consumed
@@ -187,12 +186,12 @@ export const archTests = [
       // fuzzy query to the primary signal fails here (non-vacuous over the wording).
       const architect = await readFile(SEAMS.architect, "utf8");
       const refine = await readFile(SEAMS.refine, "utf8");
-      const review = await readFile(SEAMS.review, "utf8");
+      const codeReview = await readFile(SEAMS.codeReview, "utf8");
 
       for (const [label, text] of [
         ["aof-architect", architect],
         ["refine (break-down)", refine],
-        ["review (blast radius)", review],
+        ["code-review (PR impact)", codeReview],
       ]) {
         assert.match(
           text,

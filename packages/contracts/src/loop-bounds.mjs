@@ -171,19 +171,6 @@ export function loopRefineFromConfig(workspace) {
   return resolveLoopRefine(loopConfig(workspace)?.refine);
 }
 
-// 147/00 (R1) — `work.loop.repair`: whether a LANE halt (the engine's `REPAIRABLE_STOPS`) is
-// handed to a fresh repair session before the loop stops for the operator. A BOOLEAN with the
-// mode keys' discipline — on unless turned off: unset is `true`, `true`/`false` answer
-// themselves, and anything else (`"false"`, `0`, `null`) answers `null`, which the launch
-// refuses `loop-bound-unresolved` naming this key before anything is driven. It lives here
-// because every `work.loop.*` key lives here (FF-6901); the flag `--no-repair` turns it off for
-// one run and is the launch's own.
-export const DEFAULT_LOOP_REPAIR = true;
-export const resolveLoopRepair = (value) => (value === undefined ? DEFAULT_LOOP_REPAIR : typeof value === "boolean" ? value : null);
-export function loopRepairFromConfig(workspace) {
-  return resolveLoopRepair(loopConfig(workspace)?.repair);
-}
-
 // ── THE LOOP'S OWN LANE BOUND AND PHASE MODES (129/07) ───────────────────────
 //
 // The loop's settings are self-contained under `work.loop`: beside the mode sit
@@ -267,8 +254,6 @@ export const LOOP_BOUND_CONFIG_RESOLVERS = Object.freeze({
   // 143/01 (ADR-002 §1) — the refine mode, appended last with the concurrency mode's discipline, so
   // the loop family names no `work.loop.*` key these maps do not carry (FF-12901).
   "work.loop.refine": loopRefineFromConfig,
-  // 147/00 — the repair switch, appended last with the same discipline.
-  "work.loop.repair": loopRepairFromConfig,
 });
 
 export const LOOP_BOUND_CONFIG_KEYS = Object.freeze(Object.keys(LOOP_BOUND_CONFIG_RESOLVERS));
@@ -330,8 +315,6 @@ export const LOOP_BOUND_VALUE_RESOLVERS = Object.freeze({
   "work.loop.agents.continue.mode": resolveLoopAgentMode,
   // 143/01 — its value-shaped twin, in the same position.
   "work.loop.refine": resolveLoopRefine,
-  // 147/00 — its value-shaped twin, in the same position.
-  "work.loop.repair": resolveLoopRepair,
 });
 
 export const LOOP_BOUND_VALUE_KEYS = Object.freeze(Object.keys(LOOP_BOUND_VALUE_RESOLVERS));

@@ -11,11 +11,6 @@
 // applied by git relative to its own directory, so the entry `aof.memory.index.json`
 // ignores `.aof/aof.memory.index.json`. This module is the single owner of that
 // baseline; both init and the memory backend call it.
-//
-// 147/03 — the SAME idiom now covers the work dir too (`ensureWorkDirGitFiles`): a nested
-// `<work.dir>/.gitignore` for the heartbeat queues a session writes beside its run records, and a
-// nested `<work.dir>/.gitattributes` so two lanes' build notes in one milestone `STATE.md` merge by
-// union. One additive writer (`ensureEntries`) serves every file this module owns.
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile, appendFile, writeFile, mkdir } from "node:fs/promises";
@@ -47,35 +42,29 @@ export const AOF_GITIGNORE_ENTRIES = [
 
 const HEADER = "# aof — derived/regenerable artifacts; never commit (the tracked install is committed).\n";
 
-// ensureEntries(filePath, entries, header) — THE ONE ADDITIVE WRITER. Idempotent: preserves every
-// existing line, never duplicates an entry (matched trimmed, whole-line), creates the file with
-// `header` when absent, appends the missing entries when present, and never touches a file that
-// already holds every entry. Returns true iff the file was created or changed.
-async function ensureEntries(filePath, entries, header) {
-  const had = existsSync(filePath);
-  const existing = had ? await readFile(filePath, "utf8") : "";
-
-  const present = new Set(existing.split(/\r?\n/).map((line) => line.trim()));
-  const missing = entries.filter((entry) => !present.has(entry));
-  if (missing.length === 0) return false;
-
-  if (!had) {
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, `${header}${missing.join("\n")}\n`, "utf8");
-    return true;
-  }
-  const needsNewline = existing.length > 0 && !existing.endsWith("\n");
-  await appendFile(filePath, `${needsNewline ? "\n" : ""}${missing.join("\n")}\n`, "utf8");
-  return true;
-}
-
 // Idempotently ensure `<targetDir>/.aof/.gitignore` ignores every entry. Additive
 // (preserves any existing lines, e.g. an assistant-workspace `/work/`), never
 // duplicates an entry, and never touches the repo-root `.gitignore`. Returns true
 // iff the file was created or changed.
 export async function ensureAofGitignore(targetDir, entries = AOF_GITIGNORE_ENTRIES) {
   const { workspaceDir } = workspacePaths(targetDir);
-  return ensureEntries(path.join(workspaceDir, ".gitignore"), entries, HEADER);
+  const gitignorePath = path.join(workspaceDir, ".gitignore");
+
+  const had = existsSync(gitignorePath);
+  const existing = had ? await readFile(gitignorePath, "utf8") : "";
+
+  const present = new Set(existing.split(/\r?\n/).map((line) => line.trim()));
+  const missing = entries.filter((entry) => !present.has(entry));
+  if (missing.length === 0) return false;
+
+  if (!had) {
+    await mkdir(workspaceDir, { recursive: true });
+    await writeFile(gitignorePath, `${HEADER}${missing.join("\n")}\n`, "utf8");
+    return true;
+  }
+  const needsNewline = existing.length > 0 && !existing.endsWith("\n");
+  await appendFile(gitignorePath, `${needsNewline ? "\n" : ""}${missing.join("\n")}\n`, "utf8");
+  return true;
 }
 
 // --------------------------------------------------- graphify-out (10/ADR-005) --
@@ -98,52 +87,22 @@ const GRAPHIFY_OUT_HEADER =
   "# aof — graphify's derived graph (10/ADR-005); never commit (rebuilt from the .md stream).\n";
 
 export async function ensureGraphifyOutGitignore(projectRoot, entries = GRAPHIFY_OUT_GITIGNORE) {
-  return ensureEntries(path.join(projectRoot, GRAPHIFY_OUT_DIR, ".gitignore"), entries, GRAPHIFY_OUT_HEADER);
-}
+  const outDir = path.join(projectRoot, GRAPHIFY_OUT_DIR);
+  const gitignorePath = path.join(outDir, ".gitignore");
 
-// ------------------------------------------------------ the work dir (147/03) --
+  const had = existsSync(gitignorePath);
+  const existing = had ? await readFile(gitignorePath, "utf8") : "";
 
-// THE HEARTBEAT QUEUES ARE PER-NODE RUNTIME STATE. A session's PostToolUse hook appends to
-// `<item>/runs/.heartbeats.ndjson` (consumed into `.batch`) for as long as the session runs, so a
-// lane's whole-tree commit at its close captured a live queue — and the committed path then refused
-// the lane's reopen (`assignment-gate-propagation-dirty-worktree`). A nested `<work.dir>/.gitignore`
-// keeps every queue under the work dir untracked, in every worktree, by the F-02 idiom; the one
-// commit verb (`@aof/mesh` `commitWorktreeChanges`) spells the same two names as pathspecs, so a
-// queue an earlier commit tracked is also removed from the index. The two spellings are held equal
-// by 147/03's suite.
-export const WORK_DIR_GITIGNORE_ENTRIES = [
-  "**/runs/.heartbeats.ndjson",
-  "**/runs/.heartbeats.ndjson.batch",
-];
+  const present = new Set(existing.split(/\r?\n/).map((line) => line.trim()));
+  const missing = entries.filter((entry) => !present.has(entry));
+  if (missing.length === 0) return false;
 
-// STATE.md MERGES BY UNION (129/ADR-002 §5), in the WORK DIR's own attributes file. Every lane in a
-// wave appends its build notes to the one milestone `STATE.md`, so two lanes at one base conflict
-// at merge-home — the second of the two halts that motivated 147. A nested `.gitattributes` applies
-// relative to its own directory, so the bare pattern reaches every `STATE.md` under the work dir
-// and nothing beside it; a `STATE.md`'s frontmatter is `doc: state` alone, so union cannot
-// duplicate a key. Nothing else gets union (`TECH_DEBT.md`, `VERIFICATION.md` keep their conflicts).
-export const WORK_DIR_GITATTRIBUTES_ENTRIES = [
-  "STATE.md merge=union",
-];
-
-const WORK_DIR_GITIGNORE_HEADER =
-  "# aof — per-node runtime state a session writes beside its run records; never commit (147/03).\n";
-const WORK_DIR_GITATTRIBUTES_HEADER =
-  "# aof — lane build notes append to one STATE.md; a merge keeps both sides (129/ADR-002 §5, 147/03).\n";
-
-// workDirFor(targetDir, config) — the work dir init and update ensure the files in: the config's
-// `work.dir` resolved against the target, with `loadWorkspace`'s own default (`./wiki/work`), so the
-// two installers share one resolution rather than each spelling the default (147 review).
-export function workDirFor(targetDir, config) {
-  return path.resolve(targetDir, config?.work?.dir ?? "./wiki/work");
-}
-
-// ensureWorkDirGitFiles(workDir) — idempotently ensure `<workDir>/.gitignore` holds the queue
-// entries and `<workDir>/.gitattributes` the union line, each additively, neither rewritten when
-// it already holds its entries. `workDir` is the ABSOLUTE work dir (the config's `work.dir`,
-// resolved by the caller). Returns `{ gitignore, gitattributes }`, each true iff created/changed.
-export async function ensureWorkDirGitFiles(workDir) {
-  const gitignore = await ensureEntries(path.join(workDir, ".gitignore"), WORK_DIR_GITIGNORE_ENTRIES, WORK_DIR_GITIGNORE_HEADER);
-  const gitattributes = await ensureEntries(path.join(workDir, ".gitattributes"), WORK_DIR_GITATTRIBUTES_ENTRIES, WORK_DIR_GITATTRIBUTES_HEADER);
-  return { gitignore, gitattributes };
+  if (!had) {
+    await mkdir(outDir, { recursive: true });
+    await writeFile(gitignorePath, `${GRAPHIFY_OUT_HEADER}${missing.join("\n")}\n`, "utf8");
+    return true;
+  }
+  const needsNewline = existing.length > 0 && !existing.endsWith("\n");
+  await appendFile(gitignorePath, `${needsNewline ? "\n" : ""}${missing.join("\n")}\n`, "utf8");
+  return true;
 }

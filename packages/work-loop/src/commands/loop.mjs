@@ -54,7 +54,6 @@ import {
   LOOP_REFINE_MODES,
   loopRefineFromConfig,
   resolveLoopRefine,
-  loopRepairFromConfig,
   progressMaxResetsFromConfig,
   reviewRoundsFromConfig,
   scheduleToCloseFromConfig,
@@ -117,7 +116,7 @@ export function createLoopShell({
   const { loadWorkspace } = work;
   const { decideBuildProgress, evaluateProgressPolicy, readProgressSamples } = progress;
   const { CONTROL_FINDING_CODES } = doctor;
-  const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt } = cycle;
+  const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks } = cycle;
   const { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
   const { resolveItemExact } = items;
   const { declaredRubric } = gradeCommand;
@@ -470,14 +469,6 @@ export function createLoopShell({
     throw commandError(`--refine "${String(input.refine)}" is not a refine mode. Use one of: ${LOOP_REFINE_MODES.join(", ")}.`, LOOP_REFINE_UNKNOWN, 400);
   }
 
-  // 147/00 — repair is on unless `--no-repair` or `work.loop.repair: false`; a non-boolean is refused
-  // `loop-bound-unresolved` naming the key, with the other guards, before anything is read or driven.
-  function requestedRepair(input, ctx) {
-    const configured = loopRepairFromConfig(ctx.workspace);
-    if (configured === null) throwRefusal({ code: "loop-bound-unresolved", field: "work.loop.repair", message: "work.loop.repair must be true or false (it is on when unset)." });
-    return input?.noRepair !== true && configured;
-  }
-
   // 143/00 (ADR-001 §1) — A SCOPE THE LOOP GRAMMAR DOES NOT ADMIT, resolved by the refine/continue
   // door's own EXACT resolver (`work:find` is a query and would guess). The row is a backlog item when
   // its `number` is `null` — strictly, for the reason `continue.mjs` spells out: a live row has no
@@ -512,7 +503,6 @@ export function createLoopShell({
     const thinking = sessionRequest.thinking;
     // 143/01 — refused with them too.
     const refine = requestedRefine(input);
-    const repair = requestedRepair(input, ctx);
 
     // Reject malformed settings before paying for any registered read. L3's
     // workspace facts are gathered only after these vocabulary guards pass.
@@ -548,7 +538,6 @@ export function createLoopShell({
       promotedFrom,
       // 143/01 (ADR-002 §3) — the flag, else the configured mode; a resume replaces it below.
       refine: refine ?? loopRefineFromConfig(ctx.workspace),
-      repair,
     };
     let resume = { items: [], runs: [], stranded: [], lastDeclaration: null };
 
@@ -582,7 +571,6 @@ export function createLoopShell({
           // 143/01 — explicit wins, the declaration's is inherited, and a pre-143 one (none recorded)
           // reads as the configured mode.
           refine: inherited.refine == null ? loopRefineFromConfig(ctx.workspace) : resolveLoopRefine(inherited.refine),
-          repair,
         };
       }
     } else {
@@ -950,10 +938,7 @@ export function createLoopShell({
     // it on `report` — the account — so the answer command is never lost (task 05).
     const parked = Array.isArray(details.parked) && details.parked.length > 0 ? details.parked : null;
     const shown = parked == null ? details : { ...details, parked: parked.map(({ ref, runId, sessionId, askedAt }) => ({ ref, runId, sessionId, askedAt })) };
-    const line = `${renderLoopState(state)}${reportFacts(shown)}`;
-    // 147 — the halt line, kept on this body's own printer for the launch's hand-over and re-print.
-    if (state.act?.act === "halt") report.lastHalt = { line, details: shown };
-    await report(line);
+    await report(`${renderLoopState(state)}${reportFacts(shown)}`);
     if (parked != null) for (const line of askBlockLines(parked)) await report(line);
   }
 
@@ -1054,30 +1039,11 @@ export function createLoopShell({
   // RETURNS except the question's own (`session-needs-input` announced itself), and never a `done`, a
   // hand-off, an L1 report or a `Nothing to resume`. It is awaited, and it changes neither the state
   // nor the exit code; a body that throws announces nothing.
-  //
-  // 147 — a LANE halt is first handed to a repair session (`repairLaneHalt`, cycle.mjs). A repair that
-  // ends done RE-ENTERS the body with `resume: true` in this process, on the input it started with (the
-  // number a backlog slug was promoted to); anything else re-prints the halt line with the repair's
-  // facts and announces the halt once. A repaired halt is announced to nobody.
   async function runLoopLaunch(input, ctx = {}) {
-    const printer = ctx.report ?? NO_PRINT;
-    let body = input;
-    for (;;) {
-      let ended = null;
-      const state = await runLoopBody(body, { ...ctx, onLoopEnd: (end) => { ended = end; } });
-      const act = ended?.act;
-      if (!(act?.act === "halt" && ended.nothingToResume !== true && ended.level !== "L1" && !isParkedHalt(act) && ended.workspace != null)) return state;
-      const repaired = ended.resolved == null ? { decision: "stop", facts: null } : await repairLaneHalt({
-        act, halt: ended.halt ?? {}, loopRunId: ended.loopRunId, repairOn: ended.resolved.repair === true, diagLog: ctx.diagLogPath ?? null, scope: state.scope,
-        declare: () => declarationFor({ ...ended.resolved, loopRunId: ended.loopRunId, phase: "repair", cycle: 1, startedAt: ended.startedAt }),
-        now: input.now ?? new Date().toISOString(), narrate: input.quiet === true ? NO_PRINT : printer,
-      }, { ...ctx, workspace: ended.workspace });
-      if (repaired.decision === "resume") {
-        await printer(`Repaired ${act.stop} at ${act.ref ?? state.scope} (run ${repaired.runId}) — resuming ${state.scope}.`);
-        body = { ...input, scope: state.scope, resume: true };
-        continue;
-      }
-      if (repaired.facts != null) await printer(`${renderLoopState(state)}${reportFacts({ ...(ended.halt?.details ?? {}), ...repaired.facts })}`);
+    let ended = null;
+    const state = await runLoopBody(input, { ...ctx, onLoopEnd: (end) => { ended = end; } });
+    const act = ended?.act;
+    if (act?.act === "halt" && ended.nothingToResume !== true && ended.level !== "L1" && !isParkedHalt(act) && ended.workspace != null) {
       const at = new Date(input.now ?? Date.now());
       const envelope = buildNotifyEnvelope("loop-halted", {
         ref: state.scope,
@@ -1085,8 +1051,8 @@ export function createLoopShell({
         stop: { id: act.stop ?? null, producer: act.producer ?? null, remedy: act.remedy ?? loopHaltRemedy(state), ref: act.ref ?? null },
       }, { config: ended.workspace.config, now: () => at });
       await notify(ended.workspace, envelope, ctx.notifyOptions ?? {});
-      return state;
     }
+    return state;
   }
 
   // runLoopBody(input, ctx) — the loop, then ONE call of `ctx.onLoopEnd` (131/03, task 06 ruling 11)
@@ -1109,9 +1075,7 @@ export function createLoopShell({
     // caller wants. The launcher body below injects the real one — the `cli.launch`
     // seam owns its own announce lines, and the machine face is the probe, which never
     // launches and so never reaches here.
-    // 147 — wrapped per invocation, so the halt line `reportLine` keeps on it is this body's alone.
-    const printer = suppliedCtx.report ?? NO_PRINT;
-    const report = (line) => printer(line);
+    const report = suppliedCtx.report ?? NO_PRINT;
     // THE NARRATE SEAM (126/00 ADR-002, AMENDED) — DERIVED from the one injected printer, never a
     // second one and never a second parameter. Derived matters twice: no new `console.log` and so
     // no new PRINTERS row (the roster may only shrink, m42 category 2), and a caller that injects
@@ -1126,7 +1090,6 @@ export function createLoopShell({
     // bytes — the precise opposite of what `--quiet` promises.
     const narrate = input.quiet === true ? NO_PRINT : report;
     const resolved = await resolveInvocation(input, ctx, { promote: true });
-    end.resolved = resolved; // 147 — the launch repairs a lane halt with this invocation's resolution and loop id
     // 143/00 — an L1 report is read-only, so a backlog slug is answered as the probe answers it. The
     // launch face never renders a launcher's return, so the answer is printed here as an ACCOUNT line:
     // an L1 invocation that printed nothing would be the zero-byte report the narrate seam forbids.
@@ -1150,7 +1113,6 @@ export function createLoopShell({
     const loopRunId = input.resume === true
       ? resolved.resume.lastDeclaration?.loopRunId ?? randomUUID()
       : randomUUID();
-    end.loopRunId = loopRunId;
     const reviewCap = reviewRoundsFromConfig(ctx.workspace);
     const progressBound = buildNoProgressRoundsFromConfig(ctx.workspace);
     const progressResetBound = progressMaxResetsFromConfig(ctx.workspace);
@@ -2030,7 +1992,7 @@ export function createLoopShell({
     }
     };
     const state = await walk();
-    await suppliedCtx.onLoopEnd?.({ ...end, act: end.act ?? state?.act ?? null, level: state?.level ?? end.level, halt: report.lastHalt ?? null });
+    await suppliedCtx.onLoopEnd?.({ ...end, act: end.act ?? state?.act ?? null, level: state?.level ?? end.level });
     return state;
   }
 
@@ -2103,8 +2065,6 @@ export function createLoopShell({
         model: { type: ["array", "string"] },
         // 143/01 ADR-002 §2 — the refine mode for this run, in the same three homes.
         refine: { type: "string" },
-        // 147/00 R1 — repair off for this run, in the same three homes.
-        noRepair: { type: "boolean" },
       },
       required: ["scope"],
       additionalProperties: false,
@@ -2119,7 +2079,7 @@ export function createLoopShell({
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
@@ -2133,7 +2093,6 @@ export function createLoopShell({
           thinking: { type: "string", repeatable: true, description: "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it" },
           model: { type: "string", repeatable: true, description: "repeatable: [PHASE=][MODEL][:EFFORT] — the model (and effort) a phase's sessions run on, every phase when no PHASE= is given (refine, continue, verify); overrides the configured per-phase session model and effort for this run, and a resume inherits it" },
           refine: { type: "string", description: "per-story (one story's contract per refine drive) or whole-item (a milestone's break-down drive authors every contract in one session); overrides work.loop.refine, and a resume inherits it" },
-          noRepair: { type: "boolean", description: "do not hand a lane halt (lane-open-failed, lane-merge-refused, lane-merge-conflict) to a repair session; stop for the operator as before. work.loop.repair: false is the standing form" },
         },
       },
       argv: (positionals, options) => ({
@@ -2150,7 +2109,6 @@ export function createLoopShell({
         ...(options.thinking !== undefined ? { thinking: options.thinking } : {}),
         ...(options.model !== undefined ? { model: options.model } : {}),
         ...(typeof options.refine === "string" ? { refine: options.refine } : {}),
-        ...(options.noRepair === true ? { noRepair: true } : {}),
       }),
       // 130/02 (ADR-002 §1) — a `--stop` stays on the probe side exactly as `--dry-run` does: it
       // never enters the foreground body, never installs the diag recorder, never reaches a PTY.

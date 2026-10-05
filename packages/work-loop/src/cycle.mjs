@@ -29,8 +29,6 @@ import {
   isWholeItemCascade,
   lineageElapsedMs,
   sessionLendFor,
-  // 147 — the hand-over decision over a lane halt, asked by `repairLaneHalt` below.
-  decideHaltRepair,
   loopScopeIncludes,
   mapStoreRefusal,
   retryLineage,
@@ -62,7 +60,7 @@ export function createStoryCycle({
   invoke
 }) {
   const { resolveItemExact, requireLocalCheckout } = items;
-  const { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, loopRepairFilePath } = childDrive;
+  const { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath } = childDrive;
   const { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks } = asks;
   const { readAsk } = askRequests;
   const { resolveRefInWorktree } = dispatch;
@@ -529,10 +527,7 @@ export function createStoryCycle({
   // 131/03 (ADR-001 §1(b)) — `answer` RE-DRIVES A RUN THAT WAITED ON A HUMAN: the waiting record is
   // the `retryRecord`, so nothing is minted and the same run is driven at the same attempt with the
   // answer typed into its own session. An answer never rides a new run.
-  //
-  // 147/00 — `halt` is a REPAIR drive's hand-over: written under the aof home keyed by the run
-  // (`loop-repairs/<runId>.json`) before either drive path, and named to the session as `--halt`.
-  async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, answer = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, autonomous = false, halt = null, now }, ctx) {
+  async function drivePhase({ ref, phase, cycle, declaration, brief = runBrief(declaration), retryRecord = null, fix = null, answer = null, gradeAbsent = null, changeBaseline = null, progressBaseCommit = null, autonomous = false, now }, ctx) {
     if (answer != null && retryRecord == null) throw new TypeError("drivePhase: an answer re-drives the run that waited for it, so it needs that run as retryRecord");
     const item = requireLocalCheckout(await resolveItemExact(ctx, ref), ref);
     const opts = transitionOptionsFor(ctx);
@@ -554,7 +549,6 @@ export function createStoryCycle({
     const lend = sessionLendFor(declaration, phase);
     const thinking = lend.thinking ?? null;
     const model = lend.model ?? null;
-    const haltFile = halt == null ? null : await writeHandOver(record.runId, halt, ctx);
     if (typeof ctx.spawnPhaseDrive === "function") {
       const { outcome, settlementContext } = await drivePhaseInChild(ctx, {
         ref,
@@ -566,7 +560,6 @@ export function createStoryCycle({
         autonomous: autonomous === true,
         fix: answer == null ? fix : null,
         answerFile: answer == null ? null : askFileFor(record.runId, askEnvFor(ctx)),
-        haltFile,
       });
       return { item, record, outcome, cycle, phase, changeBaseline, progressBaseCommit, settlementContext, gradeAbsent };
     }
@@ -574,7 +567,7 @@ export function createStoryCycle({
     let settlementContext = null;
     const outcome = await invokeRegistered(
       `work:drive-${phase}`,
-      { ref, ...(haltFile == null ? {} : { halt: haltFile }) },
+      { ref },
       {
         ...ctx,
         loopDrive: {
@@ -606,7 +599,6 @@ export function createStoryCycle({
     model = null,
     autonomous = false,
     answerFile = null,
-    haltFile = null,
     worktreePath = ctx.workspace.projectRoot,
   }) {
     const env = ctx.globalWorkStoreOptions?.env;
@@ -625,7 +617,6 @@ export function createStoryCycle({
         lane: worktreePath,
         ...(fixFile == null ? {} : { fixFile }),
         ...(answerFile == null ? {} : { answerFile }),
-        ...(haltFile == null ? {} : { haltFile }),
         ...(thinking == null ? {} : { thinking }),
         ...(model == null ? {} : { model }),
         ...(autonomous === true ? { autonomous: true } : {}),
@@ -641,74 +632,6 @@ export function createStoryCycle({
     } finally {
       if (fixFile != null) await rm(fixFile, { force: true }).catch((error) => reportDegrade("loop-fix-file", error));
     }
-  }
-
-  // writeHandOver(runId, halt, ctx) — the repair session's hand-over, under the aof home and never in
-  // a checkout (129/ADR-005 §3: a lane's or the primary's `git add -A` would commit it). Kept after
-  // the drive, as the record of what the session was handed; its path is answered.
-  async function writeHandOver(runId, halt, ctx) {
-    const file = loopRepairFilePath(runId, { env: ctx.globalWorkStoreOptions?.env });
-    await mkdir(path.dirname(file), { recursive: true });
-    await writeFile(file, `${JSON.stringify(halt, null, 2)}\n`, "utf8");
-    return file;
-  }
-
-  // repairLaneHalt({ act, halt, loopRunId, declare, repairOn, diagLog, scope, now, narrate }, ctx)
-  //   → { decision: "resume", runId } | { decision: "stop", facts }   (147/00, 147/01)
-  //
-  // ONE REPAIR PER HALT. The engine's pure `decideHaltRepair` is asked twice, cheap facts first: the
-  // stop and the switch decide most halts without opening the store; only a repairable halt pays for
-  // the run read that answers `priorRepair` — a `repair` run under this loopRunId, on this ref, for
-  // this stop — which is what makes the bound hold across an operator's `--resume` (it keeps the id).
-  //
-  // On `repair`: mint a run on the halted ref (this loop's declaration at phase `repair`, and
-  // `brief.halt`); a refused mint (`duplicate-run` …) is a stop naming the code. Then drive it through
-  // `drivePhase` on that record — the child seam from the PRIMARY (Q5: merge-home and the reopen act
-  // from there, and the lane may not exist), continue's flag lend, the hand-over written by the run —
-  // and settle it with the child's outcome; a session that asked a question cannot be served by a
-  // repair, so it settles failed. `facts` are what the shell appends to the halt line's Details.
-  async function repairLaneHalt({ act, halt = {}, loopRunId, declare, repairOn, diagLog = null, scope, now, narrate = NO_PRINT }, ctx) {
-    if (decideHaltRepair({ stop: act.stop, repairOn }) !== "repair") return { decision: "stop", facts: null };
-    const ref = act.ref ?? scope;
-    const item = await resolveItemExact(ctx, ref);
-    if (item == null) return { decision: "stop", facts: { repair: "refused:ref-not-found" } };
-    const priorRepair = (await readRuns(item)).find((run) => run?.brief?.loop?.phase === "repair"
-      && run.brief.loop.loopRunId === loopRunId && run.brief?.halt?.stop === act.stop) ?? null;
-    if (decideHaltRepair({ stop: act.stop, repairOn, priorRepair }) !== "repair") return { decision: "stop", facts: { repaired: priorRepair.runId } };
-
-    const declaration = declare();
-    let record;
-    try {
-      const brief = { ...runBrief(declaration), halt: { stop: act.stop, producer: act.producer ?? null } };
-      ({ record } = await transitionRunStart(item, { brief, node: meshNodeIdOf(ctx.workspace.config), now }, transitionOptionsFor(ctx)));
-    } catch (error) {
-      return { decision: "stop", facts: { repair: `refused:${error?.code ?? "run-start-error"}` } };
-    }
-    // The hand-over: the halt's code, producer and ref, the Details text exactly as the account
-    // printed it, this invocation's loop-diag log, the lane facts the halt carried (null where none).
-    const line = typeof halt.line === "string" ? halt.line : "";
-    const at = line.indexOf(" Details: ");
-    const details = halt.details ?? {};
-    const handOver = {
-      stop: act.stop,
-      producer: act.producer ?? null,
-      ref,
-      details: at < 0 ? null : line.slice(at + " Details: ".length),
-      diagLog,
-      lane: details.lane ?? null,
-      branch: details.branch ?? null,
-      base: details.base ?? null,
-      tip: details.tip ?? null,
-      scope,
-    };
-    await narrate(`Driving ${ref} — repair of ${act.stop}, run ${record.runId}.`);
-    const driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
-    const outcome = driven.outcome.outcome === "needs-input" ? { ...driven.outcome, outcome: "failed", failureReason: "needs-input" } : driven.outcome;
-    const settled = await settleDriven({ ...driven, outcome }, ctx, { now, narrate });
-    const terminal = settled.record?.state ?? outcome.outcome;
-    return terminal === "done"
-      ? { decision: "resume", runId: record.runId }
-      : { decision: "stop", facts: { repair: record.runId, repairOutcome: terminal } };
   }
 
   function progressReportFacts(act) {
@@ -1317,7 +1240,6 @@ export function createStoryCycle({
     readGradeBaseline,
     recordBuildProgress,
     reenterPrimaryAsks,
-    repairLaneHalt,
     retryUntilTerminal,
     runBrief,
     settleDriven,

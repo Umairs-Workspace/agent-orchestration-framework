@@ -55,9 +55,8 @@ export function assembleCommandsDrive({ agentSessionDriverServices, claudeTrustS
   const createPhaseDriverCommand = implementation.createPhaseDriverCommand;
   const phaseCommand = implementation.phaseCommand;
   const refineDriverCommand = implementation.refineDriverCommand;
-  const repairDriverCommand = implementation.repairDriverCommand;
   const resolvePhaseResumeTarget = implementation.resolvePhaseResumeTarget;
   const verifyDriverCommand = implementation.verifyDriverCommand;
 
-  return { PHASE_MODE_FLAGS, composeFixInput, continueDriverCommand, createPhaseDriverCommand, phaseCommand, refineDriverCommand, repairDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand };
+  return { PHASE_MODE_FLAGS, composeFixInput, continueDriverCommand, createPhaseDriverCommand, phaseCommand, refineDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand };
 }

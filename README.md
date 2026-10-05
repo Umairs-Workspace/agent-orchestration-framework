@@ -90,7 +90,7 @@ The unit of independence is the **story** — boundaries follow real coupling so
 | `/aof:shatter` / `$aof-shatter` | a planning PRD → a series of framed milestone SPECs, with cross-milestone `depends` edges (the roadmap) |
 | `/aof:refine` / `$aof-refine` | break a milestone into independent stories, or author a story's task contracts via Three Amigos (PO scenarios + QA examples + developer feasibility); produces ARCHITECTURE / DESIGN / RESEARCH as needed |
 | `/aof:continue` / `$aof-continue` | execute/resume a work item — build its tasks to green, then structural + behavioural review; owns the milestone walk (every story, fanned out across the ready set), while refining stays with `/aof:refine` and accepting with `/aof:verify` |
-| `/aof:review` / `$aof-review` | review the operator's own build — after `/aof:continue <ref> --manual` hands you a guide and you write the code, run its tests, the gate ladder and the review lanes over your change, and hand every finding back; fixes nothing, and a clean review leaves the story `in-review` for `/aof:verify` |
+| `/aof:code-review` / `$aof-code-review` | ship + review a branch — commit & push in per-story batches, open a PR, run architect review (with conditional security/compliance lenses), fix findings, optionally squash-merge |
 | `/aof:verify` / `$aof-verify` | verify + accept — run the automated + agent-run checks, bring a human in only for `@uat`, log/triage findings, capture lessons in RETROSPECTIVE, sign off |
 | `/aof:validate` / `$aof-validate` | validate the stream — `aof work validate` + the agent-only checks (test-traceability, litmus) |
 | `/aof:autonomous` / `$aof-autonomous` | **deprecated** — the code-owned loop shell `aof work loop` replaced it in milestone 53. It still runs a range of milestones end-to-end, unattended (a thin sequencer that runs refine → build → verify on each item in dependency order, gating on `aof work validate`; resumable), so a run already in flight finishes; start new ones with `aof work loop` |
@@ -98,7 +98,6 @@ The unit of independence is the **story** — boundaries follow real coupling so
 | `/aof:add-milestone` · `/aof:add-story` · `/aof:add-task` · `/aof:add-uat` / `$aof-add-milestone` · `$aof-add-story` · `$aof-add-task` · `$aof-add-uat` | scaffold a milestone / story / task / cross-milestone UAT gate |
 | `/aof:feedback` / `$aof-feedback` | capture a mistake, blocker, or UAT observation the instant it's noticed (any actor) |
 | `/aof:recent` / `$aof-recent` | scan the work stream chronologically (catch up / filter by type, status, milestone) |
-| `/aof:explain` / `$aof-explain` | say what one or more work items are for — by number or backlog folder path, briefly or with `--verbose`; read-only, nothing is written |
 | `/aof:insert-milestone` · `/aof:insert-story` · `/aof:insert-chore` · `/aof:insert-uat` / `$aof-insert-milestone` · `$aof-insert-story` · `$aof-insert-chore` · `$aof-insert-uat` | insert a work item before or after an existing item while preserving stream ordering and references |
 | `/aof:delegate` | set the two model decisions — toggle gpt-5.6 delegation on/off (default off), then always choose the orchestrator model (Fable 5 or Opus 4.8) |
 

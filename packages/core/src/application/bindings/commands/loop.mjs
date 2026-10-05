@@ -43,8 +43,6 @@ export function assembleCommandsLoop({ workServices, loopProgressServices, loopC
   const { settleStoryCycle } = loopCycleServices;
   const { transitionOptionsFor } = loopCycleServices;
   const { reenterPrimaryAsks } = loopCycleServices;
-  // 147 — the repair of a lane halt, the launch's.
-  const { repairLaneHalt } = loopCycleServices;
 
   const { resolveItemExact } = commandsResolveServices;
   const { declaredRubric } = commandsGradeServices;
@@ -86,7 +84,7 @@ export function assembleCommandsLoop({ workServices, loopProgressServices, loopC
     work: { loadWorkspace },
     progress: { decideBuildProgress, evaluateProgressPolicy, readProgressSamples },
     doctor: { CONTROL_FINDING_CODES },
-    cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt },
+    cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks },
     sessions: { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric },

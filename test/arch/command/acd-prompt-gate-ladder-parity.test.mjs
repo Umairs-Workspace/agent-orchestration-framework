@@ -99,38 +99,7 @@ export function gateLadderProblems(shellSource, promptText) {
 
 const read = (rel) => readFile(path.join(root, rel), "utf8");
 
-// 149/02 — `aof:review` walks continue's ladder and lanes by reference. A second copy of either region
-// would need a second parity control, so the single home is asserted instead: no region of its own,
-// and no review-round bound stated as a number (the bound's home is continue's `<review_rounds>`).
-const REVIEW_PROMPT = "packages/core/assets/commands/review.md";
-
-export function reviewSingleHomeProblems(text) {
-  const problems = [];
-  if (markedRegion(text, LADDER_OPEN, LADDER_CLOSE) != null) problems.push(`${REVIEW_PROMPT}: holds a ${LADDER_OPEN} region of its own`);
-  if (markedRegion(text, REVIEW_MARK, "</review_rounds>") != null) problems.push(`${REVIEW_PROMPT}: holds a ${REVIEW_MARK} region of its own`);
-  for (const [label, pattern] of [
-    ["the review-rounds key", /work\.loop\.reviewRounds/u],
-    ["the review-rounds clamp", /MAX_REVIEW_ROUNDS/u],
-    ["a hard cap", /hard cap/iu],
-    ["a counted round bound", /\b(?:\d+|two|three|four|five|twice)\s+(?:review\s+)?rounds?\b/iu],
-  ]) {
-    if (pattern.test(text)) problems.push(`${REVIEW_PROMPT}: names ${label}`);
-  }
-  return problems;
-}
-
 export const archTests = [
-  {
-    name: "arch/149/02 the review command restates none of continue's ladder — no region of its own, no round bound as a number",
-    run: async () => {
-      const text = await read(REVIEW_PROMPT);
-      assert.deepEqual(reviewSingleHomeProblems(text), [], "review.md points at continue's regions and restates neither");
-      assert.ok(text.includes("`<gate_ladder>` region") && text.includes("`<review_rounds>` region"), "…and it does point at them");
-      // Non-vacuous in both directions: a planted region and a planted bound are each named.
-      assert.ok(reviewSingleHomeProblems(`${text}\n${LADDER_OPEN}\n1. \`aof work validate <ref>\`\n${LADDER_CLOSE}\n`).some((p) => p.includes(LADDER_OPEN)), "a copied ladder is named");
-      assert.ok(reviewSingleHomeProblems(`${text}\nThree rounds is the hard cap.\n`).some((p) => p.includes("hard cap")), "a restated cap is named");
-    },
-  },
   {
     name: "arch/71 FF-7105 (acd-prompt-gate-ladder-parity): the prompt's ladder is the shell's — same rungs, same order, before any review lane",
     run: async () => {

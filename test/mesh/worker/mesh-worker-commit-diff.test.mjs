@@ -255,12 +255,10 @@ export const meshWorkerCommitDiffTests = [
       const result = await commitWorktreeChanges("/tmp/wt", { message: "msg", node: "worker-a", pushExec: exec });
       assert.deepEqual(result, { committed: true });
       const kinds = calls.map((c) => (c.args.includes("commit") ? "commit" : c.args[0]));
-      // 147/03 — after the .aof reset, the heartbeat queues are kept out of the commit (and untracked if tracked).
-      assert.deepEqual(kinds, ["add", "reset", "rm", "diff", "commit"], "the sequence is add -A, reset -- .aof, rm --cached of the heartbeat queues, diff --cached, commit");
+      assert.deepEqual(kinds, ["add", "reset", "diff", "commit"], "the sequence is add -A, reset -- .aof, diff --cached, commit");
       assert.deepEqual(calls[0].args, ["add", "-A"]);
       assert.deepEqual(calls[1].args, ["reset", "-q", "--", ".aof"], "aof's own config/state is never synced home");
-      assert.deepEqual(calls[2].args, ["rm", "-r", "--cached", "-q", "--ignore-unmatch", "--", ":(glob)**/runs/.heartbeats.ndjson", ":(glob)**/runs/.heartbeats.ndjson.batch"], "a session's heartbeat queue is never committed");
-      const commitArgs = calls[4].args;
+      const commitArgs = calls[3].args;
       assert.ok(commitArgs.includes("--no-verify"), "the headless commit skips hooks the worktree cannot run");
       assert.ok(commitArgs.some((a) => a.startsWith("user.name=aof-mesh")), "committed under the aof-mesh identity");
       assert.ok(commitArgs.includes("msg"), "the given message is used");

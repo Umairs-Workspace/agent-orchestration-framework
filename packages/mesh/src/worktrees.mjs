@@ -3,19 +3,6 @@ import { createWorktreeOperations, defaultGitExec, resolveExec, parsePorcelainSt
 import { gitPositional } from "@aof/foundation/git-args";
 import { trimRun } from "@aof/foundation/text";
 
-// 147/03 (R4) — THE HEARTBEAT QUEUES, as git pathspecs. A session's PostToolUse hook appends to
-// `<item>/runs/.heartbeats.ndjson` (consumed into `.batch`) while the session runs, so a lane's
-// `git add -A` at its close captured a live queue — and that commit's path then refused the lane's
-// reopen (`assignment-gate-propagation-dirty-worktree`, a downstream milestone 03, 2026-10-03). The
-// unscoped commit door below never stages one and REMOVES one an earlier commit tracked from the
-// index; the file stays on disk, where the work dir's own `.gitignore` (core's
-// `ensureWorkDirGitFiles`, the same two names) covers it. Spelled here as pathspecs because this
-// package cannot reach core's ignore list, and the two spellings are held equal by 147/03's suite.
-export const HEARTBEAT_QUEUE_PATHSPECS = Object.freeze([
-  ":(glob)**/runs/.heartbeats.ndjson",
-  ":(glob)**/runs/.heartbeats.ndjson.batch",
-]);
-
 // Mesh owns lane paths, naming, retention, staging and preparation policy.
 // Composition is inert; the application supplies workspace loading and the lazy toolchain port.
 export function createMeshWorktrees({ reportDegrade, loadWorkspace, toolchain }) {
@@ -741,14 +728,6 @@ async function commitWorktreeChanges(worktreePath, { message, node, exec, pushEx
   // only when the stage could have reached it; a narrower scope leaves the operator's index alone.
   if (scoped == null || reachesAof) {
     await runner(["reset", "-q", "--", ".aof"], { cwd: worktreePath, env });
-  }
-  // 147/03 — the unscoped door (`-A`, a lane's or a worker's whole-tree commit) never commits a
-  // heartbeat queue: a staged one is unstaged and a TRACKED one is removed from the index, so the
-  // commit records its deletion and the file stays on disk. `--ignore-unmatch` makes a tree with no
-  // queue a no-op; a failure here is fatal, because the commit would otherwise carry the queue.
-  if (scoped == null) {
-    const untracked = await runner(["rm", "-r", "--cached", "-q", "--ignore-unmatch", "--", ...HEARTBEAT_QUEUE_PATHSPECS], { cwd: worktreePath, env });
-    if (untracked.status !== 0) throw fail(untracked, "rm --cached");
   }
 
   const staged = await runner(["diff", "--cached", "--name-only", ...commitScope], { cwd: worktreePath, env });

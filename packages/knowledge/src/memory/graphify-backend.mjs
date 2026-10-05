@@ -69,7 +69,7 @@ const GRAPHIFY_INDEX_VERSION = 1;
 // `aof import milestone`, which triggers one) replaced a code graph with work-item
 // nodes, after which `graph impact <file>` answered `present: false` with zero edges —
 // indistinguishable from the architectural fact "this module has no coupling". The
-// codebase graph, which the refine / review / aof-architect guidance all mandate
+// codebase graph, which the refine / code-review / aof-architect guidance all mandate
 // grounding structural decisions in, was the casualty. Two roots, no collision.
 const WORK_GRAPH_REL = path.join(".aof", "memory-graph");
 

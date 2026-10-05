@@ -5,7 +5,7 @@ description: Drives a milestone range through the code-owned loop shell, preserv
 
 <!-- aof-generated: true; aof-runtime: codex -->
 
-Use this skill when the user asks for `$aof-autonomous <range - NN-MM or NN> [--max-attempts N] [--solo]`, or asks to run the AOF `aof:autonomous` procedure in Codex.
+Use this skill when the user asks for `$aof-autonomous <range - NN-MM or NN> [--ship] [--max-attempts N] [--solo]`, or asks to run the AOF `aof:autonomous` procedure in Codex.
 
 Where this procedure mentions `$ARGUMENTS`, use the text the user supplied after the skill name.
 Where it mentions Claude slash command `/aof:autonomous`, treat that as this Codex skill invocation.
@@ -16,10 +16,13 @@ re-deriving any part of the drive in this prompt.
 </objective>
 
 <config>
-Read `.aof/aof.config.json` → `work.agents`. Parse
+Read `.aof/aof.config.json` → `work.agents` and `work.codeReview.autoComplete`. Parse
 `$ARGUMENTS` as follows:
 
 - **range** — an inclusive `NN-MM` range or a single `NN`; pass it to the shell verbatim.
+- **--ship** — after the shell reports a milestone accepted, run `aof:code-review <NN>` for that
+  milestone. It merges only when `work.codeReview.autoComplete` is set. A halt never ships an
+  unaccepted milestone.
 - **--max-attempts N** — forward `N` to the shell as `--cap N`. This prompt does not count attempts
   or state a fallback ceiling.
 - **--solo** — force solo role execution for this wrapper session. Otherwise resolve the wrapper
@@ -54,7 +57,7 @@ When the shell returns, quote its output rather than calculating a second accoun
 the shell says it drove. If it halted, report the shell's stop id, the ref where it halted, and the
 exact resume command it printed (`aof work loop <range> --resume`). End with the first item still
 needing a human and that resume command. If it completed, report the accepted milestones the shell
-named.
+named; with `--ship`, apply the post-accept action from `<config>` to each of them.
 </process>
 
 <output>

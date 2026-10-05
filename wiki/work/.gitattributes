@@ -1,2 +1,0 @@
-# aof — lane build notes append to one STATE.md; a merge keeps both sides (129/ADR-002 §5, 147/03).
-STATE.md merge=union

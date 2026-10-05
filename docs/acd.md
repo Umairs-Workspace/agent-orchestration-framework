@@ -63,11 +63,7 @@ Three commands carry an item through, and each is a slash command in Claude Code
    records appear only when the item needs them.
 2. **Continue** – the developer builds each task to green against the locked contract, then a
    structural review (architect) and a behavioural review (QA) run and their findings are fixed in
-   the same round. The item ends `in-review`. To write the code yourself, `/aof:continue <ref> --manual`
-   hands the operator a guide instead – the scenarios still red, the contract, the files that matter
-   and why, the tests to turn green and an order to take the tasks in – and builds nothing. Then
-   `/aof:review <ref>` reviews the operator's build before `/aof:verify`: the same gate and review
-   lanes, every finding handed back, no code touched.
+   the same round. The item ends `in-review`.
 3. **Verify** – the `@executable` suite and fitness functions run; `@manual` procedures are run and
    recorded; a human is brought in for `@uat` alone. Findings are triaged as blocker or not, the
    validate gate must pass, and `aof work status <ref> done` accepts. At the same moment the
@@ -116,13 +112,7 @@ session; `--refine per-story|whole-item` overrides it for one run. Each phase's 
 model and effort the operator names — `aof work loop <ref> --model sonnet:high --model refine=opus:xhigh
 --model verify=fable:high` — where a value with no `PHASE=` applies to every phase and a phased one
 overrides it; `--thinking [PHASE=]LEVEL` sets the effort alone. The run record says which model ran
-which phase, and a `--resume` reruns on those choices unless new ones are given. A halt about the
-loop's own bookkeeping – a lane that will not merge home or will not reopen (`lane-open-failed`,
-`lane-merge-refused`, `lane-merge-conflict`) – is handed to a fresh session typed `/aof:repair`,
-which diagnoses the cause from the hand-over the loop wrote and fixes only that; a repair that ends
-done resumes the loop by itself, on the choices it started with, and one that does not stops the loop
-for the operator with the repair run named. Each halt gets one repair. Every other stop still ends
-the loop as before, and `--no-repair` (or `work.loop.repair: false`) turns the hand-over off. [The loop graph]({{ '/loops/' | relative_url }}) is that registry,
+which phase, and a `--resume` reruns on those choices unless new ones are given. [The loop graph]({{ '/loops/' | relative_url }}) is that registry,
 rendered.
 
 ## Starting

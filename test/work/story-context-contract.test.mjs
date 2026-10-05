@@ -320,73 +320,7 @@ const collidesByEquality = (left, right) => left.some((a) => right.some((b) => a
 const collidesByCoverage = (left, right) =>
   left.some((entry) => contractSetCovers(right, entry)) || right.some((entry) => contractSetCovers(left, entry));
 
-
-// ── 149/02 — aof:review reviews the operator's build, and fixes nothing ─────────────────────────────
-//
-// `149_story_continue-manual-mode-guides-the-operator/tasks/02_aof-review-reviews-the-operators-build.feature`.
-// These rows replace the removed `aof:code-review`'s: the review half of that command is `review.md`.
-const reviewText = async () => (await readFile(path.join(bundle, "commands", "review.md"), "utf8")).replace(/\s+/gu, " ");
-
-const reviewCommandTests = [
-  {
-    name: "149/02 E9 · a green story is reviewed, and a clean review moves it to in-review",
-    async run() {
-      const text = await reviewText();
-      const mint = text.indexOf("**Mint the run before anything else** — `aof work run-start <ref> --json`");
-      const tests = text.indexOf("**Run the story's tests first** — `aof test --scope impacted --story <ref>`");
-      const ladder = text.indexOf("**Walk the gate ladder**");
-      const lanes = text.indexOf("**Run the review lanes**");
-      assert.ok(mint >= 0 && tests > mint && ladder > tests && lanes > ladder, "mint, then the tests, then the ladder, then the lanes");
-      assert.match(text, /\*\*No Blocker\*\* — `aof work status <ref> in-review`, then `aof work run-complete <ref> --outcome done`/u);
-      assert.match(text, /operator to take or leave\. Next: `aof:verify <ref>`/u);
-    },
-  },
-  {
-    name: "149/02 E10 · a red story is stopped before any reviewer runs",
-    async run() {
-      const text = await reviewText();
-      assert.match(text, /\*\*A red scenario stops the review before the gate ladder\*\*: name every red scenario, spawn no reviewer, and do not move the status/u);
-    },
-  },
-  {
-    name: "149/02 E11 · a Blocker is handed to the operator, and no agent edits the code",
-    async run() {
-      const text = await reviewText();
-      assert.match(text, /\*\*A Blocker\*\* — the story is left `in-progress`/u);
-      assert.match(text, /Report each finding with its file and line, its lens and its severity/u);
-      assert.match(text, /Next: the operator's fix, then `aof:review <ref>` again/u);
-    },
-  },
-  ...[
-    ["story or task only", /It accepts a story or a task, and refuses a milestone, a span, a uat session, a spike or a chore/u],
-    ["continue's regions", /The gate ladder is the `<gate_ladder>` region, and the review lanes are the story lane's review step and its `<review_rounds>` region, of the `continue` command beside it/u],
-    ["the three renders", /That command is rendered at `\.claude\/commands\/aof\/continue\.md`, `\.opencode\/commands\/aof\/continue\.md` and `\.codex\/skills\/aof-continue\/SKILL\.md`/u],
-    ["no developer, no fix", /`aof-developer` is never spawned, and no review lens applies a fix/u],
-    ["the change under review", /the diff against the merge-base with the default branch, uncommitted changes included/u],
-    ["the contract gap", /A changed path outside the story's `files:` is reported as a contract gap/u],
-    ["the blast-radius ranking", /Rank the review by blast radius, before the architect lens\.\*\* Run `aof graph build \.`[^]*Then run `aof graph impact <the changed files>`\. Rank the changed files by their dependents/u],
-    ["advisory, UNKNOWN never zero", /The ranking is advisory and never a gate\.\*\*[^]*? A file reported `present: false` is ranked UNKNOWN, never zero/u],
-    ["unranked on a graph miss", /A `graphify-missing`, `graphify-build-failed` or `graphify-no-persist` answer means the review runs unranked, with no block/u],
-    ["the execution mode", /an unset `work\.agents\.mode` resolves to orchestrated\*\*, and `--solo` or `--orchestrated` overrides it for the run/u],
-    ["one round per run", /Each run is one review round, and the next round is the operator's re-run after a fix/u],
-  ].map(([label, rule]) => ({
-    name: `149/02 the review command holds each rule a review of the operator's build needs [${label}]`,
-    async run() {
-      assert.match(await reviewText(), rule);
-    },
-  })),
-  {
-    name: "149/02 the docs name the manual walk",
-    async run() {
-      const docs = (await readFile(path.join(root, "docs", "acd.md"), "utf8")).replace(/\s+/gu, " ");
-      assert.match(docs, /`\/aof:continue <ref> --manual` hands the operator a guide/u);
-      assert.match(docs, /`\/aof:review <ref>` reviews the operator's build before `\/aof:verify`/u);
-    },
-  },
-];
-
 export const storyContextContractTests = [
-  ...reviewCommandTests,
   {
     name: "proposed-fixes/read-contract parses inline and block lists without widening work.mjs",
     run() {
@@ -564,11 +498,9 @@ export const storyContextContractTests = [
         "not strictly lower than the previous round",
       ]) assert.ok(continuePrompt.includes(phrase), phrase);
 
-      // 149 retired the `code-review.md` rows here with the command; `review.md` restates no bound,
-      // and `reviewCommandTests` below holds its own rows.
-      for (const gone of ["code-review.md"]) {
-        await assert.rejects(readFile(path.join(bundle, "commands", gone), "utf8"), { code: "ENOENT" }, `${gone} is removed`);
-      }
+      const codeReview = await readFile(path.join(bundle, "commands", "code-review.md"), "utf8");
+      assert.match(codeReview, /Three rounds is the hard cap/);
+      assert.match(codeReview, /equal to or higher than round N-1/);
 
       for (const agent of ["aof-architect", "aof-qa", "aof-designer", "aof-security", "aof-compliance"]) {
         const prompt = await readFile(path.join(bundle, "agents", `${agent}.md`), "utf8");

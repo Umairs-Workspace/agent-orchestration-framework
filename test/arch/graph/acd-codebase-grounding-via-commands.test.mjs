@@ -35,8 +35,7 @@ const DRIVER_REL = path.join("packages", "knowledge", "src/graphify.mjs");
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),
   refine: path.join(bundleDir, "commands", "refine.md"),
-  // 149 — the review seam moved from the removed `code-review.md` to `review.md` (aof:review).
-  review: path.join(bundleDir, "commands", "review.md"),
+  codeReview: path.join(bundleDir, "commands", "code-review.md"),
 };
 
 // The FROZEN set of src/ modules that reach the graph by IMPORTING the driver
@@ -229,11 +228,11 @@ export const archTests = [
       // bespoke graphify spawn.
       const architect = await readFile(SEAMS.architect, "utf8");
       const refine = await readFile(SEAMS.refine, "utf8");
-      const review = await readFile(SEAMS.review, "utf8");
+      const codeReview = await readFile(SEAMS.codeReview, "utf8");
 
       // Every seam builds via `aof graph build` (the codebase-scope command — ADR-005:
       // scope = the codebase, `aof graph build .`).
-      for (const [label, text] of [["aof-architect", architect], ["refine (break-down)", refine], ["review (blast radius)", review]]) {
+      for (const [label, text] of [["aof-architect", architect], ["refine (break-down)", refine], ["code-review (PR triage)", codeReview]]) {
         assert.match(text, /aof graph build\b/, `${label} invokes the registered \`aof graph build\` command`);
         // Codebase scope (ADR-005): the build target is the whole project (`.`), not the
         // work stream — distinguishes 11 from 10.
@@ -245,16 +244,17 @@ export const archTests = [
       // `aof graph impact` (exact edge-based dependents + dependencies) as its primary
       // grounding step — the reliable signal, replacing the fuzzy `graph query`/`triage`
       // as the thing the agent ranks/decides on.
-      for (const [label, text] of [["aof-architect", architect], ["refine (break-down)", refine], ["review (blast radius)", review]]) {
+      for (const [label, text] of [["aof-architect", architect], ["refine (break-down)", refine], ["code-review (PR impact)", codeReview]]) {
         assert.match(text, /aof graph impact\b/, `${label} invokes the registered \`aof graph impact\` command (the exact coupling signal)`);
       }
 
       // No seam spawns a bespoke graphify binary itself (the agent runs the CLI; the
       // seam must not instruct a direct `graphify <verb>` spawn bypassing `aof graph`).
-      // graphify IS named in review's prose (the `graphify-missing` miss codes) — that is a
-      // DESCRIPTION of the command's answers, not a bespoke spawn instruction. Assert no seam
+      // graphify IS named in code-review's prose (documenting what `aof graph triage`
+      // spawns under the hood: "spawns `graphify prs --triage`") — that is a DESCRIPTION
+      // of the command's internals, not a bespoke spawn instruction. Assert no seam
       // tells the agent to RUN a bare `graphify` binary as its grounding step.
-      for (const [label, text] of [["aof-architect", architect], ["refine (break-down)", refine], ["review (blast radius)", review]]) {
+      for (const [label, text] of [["aof-architect", architect], ["refine (break-down)", refine], ["code-review (PR triage)", codeReview]]) {
         assert.ok(
           !/\b(run|exec|spawn|call)\b[^\n]{0,40}`?graphify\s+(build|query|triage|extract)\b/i.test(text),
           `${label} does not instruct a bespoke graphify-binary spawn (the agent runs \`aof graph …\`, the registered command)`

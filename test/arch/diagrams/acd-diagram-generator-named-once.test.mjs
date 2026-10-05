@@ -59,10 +59,9 @@ function filesNamingTheGenerator(entries) {
 
 // The bundle's prose moved from `packages/core/src/` to `packages/core/assets/` in 142, and the sweep
 // stayed on the old root — the contract's "including the bundle" held by nothing. 145 re-anchors it:
-// both roots are swept, and the sweep must reach every command whose prose drives the generator
-// (151 added the second: `/aof:add-diagram`, refine's diagram step run after the fact).
+// both roots are swept, and the sweep must reach the one command whose prose drives the generator.
 const BUNDLE_ROOT = path.join(repoRoot, "packages", "core", "assets");
-const DIAGRAM_COMMANDS = ["packages/core/assets/commands/loop-diagram.md", "packages/core/assets/commands/add-diagram.md"];
+const LOOP_DIAGRAM_COMMAND = "packages/core/assets/commands/loop-diagram.md";
 
 async function readEntries() {
   const entries = [];
@@ -77,7 +76,7 @@ export const archTests = [
     name: "arch/133 FF-13301: the generator's name appears in src/** only in its adapter",
     run: async () => {
       const entries = await readEntries();
-      for (const command of DIAGRAM_COMMANDS) assert.ok(entries.some(({ file }) => file === command), `the sweep reaches the bundle (${command})`);
+      assert.ok(entries.some(({ file }) => file === LOOP_DIAGRAM_COMMAND), `the sweep reaches the bundle (${LOOP_DIAGRAM_COMMAND})`);
       assert.deepEqual(filesNamingTheGenerator(entries), [THE_ONE_HOME]);
     },
   },

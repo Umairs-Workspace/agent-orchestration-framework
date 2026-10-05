@@ -59,11 +59,7 @@ export function createPhaseDrivers({
   const { claudeProjectsDir } = transcripts;
   const { settleSpendFromTranscript, snapshotTranscriptTree } = spend;
 
-  // 147/02 — `repair` is the FOURTH phase driver: the session a lane halt is handed to. It is a
-  // driver, not a session phase — `SESSION_PHASES` stays three, and a repair resolves its model and
-  // effort as `continue` does (ADR-004 §4's lend reads continue's row for it).
-  const PHASES = Object.freeze(["refine", "continue", "verify", "repair"]);
-  const sessionPhaseOf = (phase) => (phase === "repair" ? "continue" : phase);
+  const PHASES = Object.freeze(["refine", "continue", "verify"]);
 
   function recordedSessionForFix({ phase, buildRun }) {
     if (phase !== "fix") return null;
@@ -129,39 +125,9 @@ export function createPhaseDrivers({
 
   // 143/01 (ADR-002 §5) — a whole-item refine appends `--autonomous` AFTER the mode flag: the prompt
   // is the cascade `aof:refine --autonomous` already performs. Absent, the command is byte-identical.
-  // 147/02 — a REPAIR types `/aof:repair <ref> <hand-over file>`: the file's path is the session's
-  // second argument, before any flag. Absent, the command is byte-identical to the other phases'.
-  function phaseCommand(phase, ref, mode = null, { autonomous = false, halt = null } = {}) {
+  function phaseCommand(phase, ref, mode = null, { autonomous = false } = {}) {
     const flag = Object.prototype.hasOwnProperty.call(PHASE_MODE_FLAGS, mode) ? ` ${PHASE_MODE_FLAGS[mode]}` : "";
-    const handOver = typeof halt === "string" && halt.length > 0 ? ` ${halt}` : "";
-    return `/aof:${phase} ${ref}${handOver}${flag}${autonomous === true ? " --autonomous" : ""}`;
-  }
-
-  // 147/02 — `--halt <file>` is the repair session's HAND-OVER across the process boundary: the JSON
-  // document the launch wrote under the aof home (`loop-repairs/<runId>.json`). Every way it fails to
-  // yield a JSON object — missing, a directory, malformed, a non-object — is the ONE code
-  // `drive-repair-halt-unreadable`, refused before any run is minted and before any spawn, exactly as
-  // `--fix` is. The driver reads it only to refuse early; the SESSION reads it by the path it is typed.
-  async function readHaltFile(file) {
-    let parsed;
-    try {
-      parsed = JSON.parse(await readFile(file, "utf8"));
-    } catch (error) {
-      throw commandError(
-        `The hand-over file "${file}" could not be read as a JSON object: ${error?.message ?? String(error)}`,
-        "drive-repair-halt-unreadable",
-        400,
-      );
-    }
-    if (parsed == null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      const kind = Array.isArray(parsed) ? "an array" : parsed === null ? "null" : `a ${typeof parsed}`;
-      throw commandError(
-        `The hand-over file "${file}" must hold a JSON object (the halt's hand-over), not ${kind}.`,
-        "drive-repair-halt-unreadable",
-        400,
-      );
-    }
-    return parsed;
+    return `/aof:${phase} ${ref}${flag}${autonomous === true ? " --autonomous" : ""}`;
   }
 
   // 129/02 (ADR-005 §2-§3; ruling 2026-09-13) — `--fix <file>` is the fix transport ACROSS THE
@@ -296,8 +262,6 @@ export function createPhaseDrivers({
           autonomous: { type: "boolean" },
           // 143/03 — the model this one drive's session runs on, over the phase's configured one.
           model: { type: "string" },
-          // 147/02 — the repair session's hand-over file; repair only.
-          halt: { type: "string" },
         },
         required: ["ref"],
         additionalProperties: false,
@@ -333,20 +297,13 @@ export function createPhaseDrivers({
           throw commandError(`--autonomous is a refine cascade; \`aof work drive ${phase}\` does not take it. Use \`aof work drive refine <ref> --autonomous\`.`, "drive-autonomous-refine-only", 400);
         }
 
-        // 147/02 — `--halt <file>` is the repair session's hand-over, and only a repair takes it: any
-        // other phase refuses it at the door, before any read or mint, as `--autonomous` is refused.
-        const haltGiven = typeof input.halt === "string" && input.halt.length > 0 ? input.halt : null;
-        if (haltGiven != null && phase !== "repair") {
-          throw commandError(`--halt is the repair session's hand-over; \`aof work drive ${phase}\` does not take it. Use \`aof work drive repair <ref> --run <id> --halt <file>\`.`, "drive-halt-repair-only", 400);
-        }
-
         const item = await resolveItemExact(ctx, ref);
         if (!item) {
           throw commandError(`No item resolves to ref "${ref}".`, "ref-not-found", 404);
         }
         requireLocalCheckout(item, ref);
 
-        const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous, halt: haltGiven });
+        const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous });
         // milestone 70 / story 01 (ADR-005), story 141 — the SESSION model and effort, resolved per
         // phase from `work.agents.session` (distinct from the render-time role maps
         // `work.agents.models` / `work.agents.effort`; see src/session-model.mjs), with `--thinking`
@@ -360,7 +317,7 @@ export function createPhaseDrivers({
             ? ctx.loopDrive.model
             : null;
         const choice = modelGiven == null ? undefined : { model: modelGiven, modelFlag: "--model" };
-        const session = resolveSessionLaunch(ctx.workspace?.config, sessionPhaseOf(phase), { thinking, choice });
+        const session = resolveSessionLaunch(ctx.workspace?.config, phase, { thinking, choice });
         const effort = { level: session.effort, source: session.effortSource };
         if (input.dryRun === true) {
           const model = session.model === undefined ? null : { id: session.model, source: session.modelSource };
@@ -372,14 +329,6 @@ export function createPhaseDrivers({
         // over it — the explicit door); `run: ""` is absent, the same `length > 0` guard.
         // `--fix` is read here, BEFORE the mint below, so its refusal precedes every effect.
         const lentRunId = typeof input.run === "string" && input.run.length > 0 ? input.run : null;
-        // 147/02 — A REPAIR CANNOT ACT WITHOUT ITS HAND-OVER: no file is `drive-repair-halt-required`,
-        // a file that is not a JSON object is `drive-repair-halt-unreadable`, both before any effect.
-        if (phase === "repair") {
-          if (haltGiven == null) {
-            throw commandError("A repair drive needs the halt's hand-over file. Usage: aof work drive repair <ref> --run <id> --halt <file>.", "drive-repair-halt-required", 400);
-          }
-          await readHaltFile(haltGiven);
-        }
         // 131/03 — THE ANSWER IS JUDGED FIRST: after the dry run, before the fix file, the mint, the
         // compile and the stdin bracket. `--answer` wins over `ctx.loopDrive.answer`, as `--fix` wins
         // over `ctx.loopDrive.fix`; `answer: ""` is absent.
@@ -629,9 +578,7 @@ export function createPhaseDrivers({
       cli: {
         route: ["work", "drive", phase],
         spec: {
-          usage: phase === "repair"
-            ? "aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]"
-            : `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]`,
+          usage: `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]`,
           flags: {
             dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
             run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
@@ -640,7 +587,6 @@ export function createPhaseDrivers({
             thinking: { type: "string", description: "the effort this session thinks at (low, medium, high, xhigh, max; extra-high is xhigh), over the phase's configured effort" },
             model: { type: "string", description: "the model this session runs on, over the phase's configured session model" },
             autonomous: { type: "boolean", description: "refine only: break the item down and author every contract in this one session (/aof:refine --autonomous)" },
-            halt: { type: "string", description: "repair only: the hand-over file the loop wrote for the halt (loop-repairs/<runId>.json under the aof home), typed to the session as /aof:repair <ref> <file>" },
           },
         },
         argv: (positionals, options) => ({
@@ -652,7 +598,6 @@ export function createPhaseDrivers({
           ...(typeof options.thinking === "string" ? { thinking: options.thinking } : {}),
           ...(typeof options.model === "string" ? { model: options.model } : {}),
           ...(options.autonomous === true ? { autonomous: true } : {}),
-          ...(typeof options.halt === "string" ? { halt: options.halt } : {}),
         }),
         render(result) {
           if (result.outcome == null) {
@@ -671,7 +616,6 @@ export function createPhaseDrivers({
   const refineDriverCommand = createPhaseDriverCommand("refine");
   const continueDriverCommand = createPhaseDriverCommand("continue");
   const verifyDriverCommand = createPhaseDriverCommand("verify");
-  const repairDriverCommand = createPhaseDriverCommand("repair");
 
   return Object.freeze({
     PHASE_MODE_FLAGS,
@@ -680,7 +624,6 @@ export function createPhaseDrivers({
     createPhaseDriverCommand,
     phaseCommand,
     refineDriverCommand,
-    repairDriverCommand,
     resolvePhaseResumeTarget,
     verifyDriverCommand
   });

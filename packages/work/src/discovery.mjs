@@ -126,16 +126,9 @@ export function isLiveStreamRow(row) {
 
 // ----------------------------------------------------------------- find ----
 
-// `query` is a structured ref (`NN`, `NN/SS`), a work-tree folder path, or a free-text slug
-// match. Semantic matching slots in at the lexical branch below.
-//
-// 150 — THE PATH BRANCH. A query holding `/` or `\` that is neither a pair nor a span is a
-// folder path, resolved from `cwd` (the operator's shell, by default). A trailing record doc
-// (`…/STORY.md`) names its folder. Only an item whose `dir` IS that folder matches: a path to
-// a root (`wiki/work/backlog`) or a `stories/` folder answers no row, never every item under
-// it. A slug holds no separator, so every query that answered a row before still reaches the
-// branch it reached then.
-export async function findWork(workDir, query, { view, cwd = process.cwd() } = {}) {
+// `query` is a structured ref (`NN`, `NN/SS`) or a free-text slug match.
+// Semantic matching slots in at the lexical branch below.
+export async function findWork(workDir, query, { view } = {}) {
   const items = await listItems(workDir, { view });
   const ref = (query ?? "").trim();
   let matches;
@@ -161,9 +154,6 @@ export async function findWork(workDir, query, { view, cwd = process.cwd() } = {
           && Number.parseInt(item.number, 10) >= span.lo
           && Number.parseInt(item.number, 10) <= span.hi)
         .sort((a, b) => Number.parseInt(a.number, 10) - Number.parseInt(b.number, 10));
-    } else if (/[\\/]/.test(ref)) {
-      const folder = folderOfPath(ref, cwd);
-      matches = items.filter((item) => item.dir != null && samePath(path.resolve(cwd, item.dir), folder));
     } else {
       const needle = ref.toLowerCase();
       // `name` is the on-disk FOLDER basename, so a ref only the cache knows has none —
@@ -199,17 +189,6 @@ export async function findWork(workDir, query, { view, cwd = process.cwd() } = {
   }
   return rows;
 }
-
-// Either separator on every platform: no item folder name holds a backslash, so reading one
-// as a separator on POSIX loses nothing and lets a Windows-typed path resolve there too.
-function folderOfPath(query, cwd) {
-  const target = path.resolve(cwd, query.replaceAll("\\", "/"));
-  return /\.md$/i.test(target) ? path.dirname(target) : target;
-}
-
-const samePath = process.platform === "win32"
-  ? (a, b) => a.toLowerCase() === b.toLowerCase()
-  : (a, b) => a === b;
 
 // ----------------------------------------------------------------- list ----
 

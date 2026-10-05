@@ -10,8 +10,8 @@
 //   03_bundle-manifest.feature     — the shipped content-addressed manifest
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
-import { existsSync, readFileSync } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -43,7 +43,6 @@ const AGENT_IDS = [
 ];
 const COMMAND_IDS = [
   "add-chore",
-  "add-diagram",
   "add-milestone",
   "add-spike",
   "add-story",
@@ -52,9 +51,9 @@ const COMMAND_IDS = [
   "archive",
   "assimilate-code",
   "autonomous",
+  "code-review",
   "continue",
   "delegate",
-  "explain",
   "feedback",
   "init",
   "insert-chore",
@@ -68,9 +67,7 @@ const COMMAND_IDS = [
   "promote",
   "recent",
   "refine",
-  "repair",
   "retrospective",
-  "review",
   "shatter",
   "validate",
   "verify"
@@ -112,115 +109,13 @@ function memberIds() {
   return descriptorMembers().map((member) => member.id);
 }
 
-// ── 149/02 + 149/03 — aof:review joins the bundle and aof:code-review leaves it ──────────────────────
-//
-// `149_story_continue-manual-mode-guides-the-operator/tasks/02_…` (the distribution row) and
-// `tasks/03_aof-code-review-is-removed.feature`. Removal reaches another repository through
-// `aof work update`: a render whose member left the bundle is classified `delete` against the lock.
-const CLI = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const REVIEW_RENDERS = [".claude/commands/aof/review.md", ".codex/skills/aof-review/SKILL.md", ".opencode/commands/aof/review.md"];
-const CODE_REVIEW_RENDERS = [
-  { path: ".claude/commands/aof/code-review.md", runtime: "claude", resource: { id: "code-review", kind: "command" } },
-  { path: ".codex/skills/aof-code-review/SKILL.md", runtime: "codex", resource: { id: "aof-code-review", kind: "skill" } },
-  { path: ".opencode/commands/aof/code-review.md", runtime: "opencode", resource: { id: "code-review", kind: "command" } },
-];
-const aofJson = (cwd, home, ...argv) => JSON.parse(execFileSync(process.execPath, [CLI, ...argv, "--json"], {
-  cwd, encoding: "utf8", env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
-}));
-const actionsOf = (result) => new Map(result.actions.map((entry) => [entry.path.replaceAll("\\", "/"), entry.action]));
-
-const reviewCommandBundleTests = [
-  {
-    name: "149/02 aof:review reaches every runtime the bundle renders, and the manifest is regenerated",
-    run: async () => {
-      const home = await mkdtemp(path.join(os.tmpdir(), "aof-review-dry-"));
-      try {
-        const actions = actionsOf(aofJson(repoRoot, home, "work", "update", "--dry-run"));
-        for (const render of REVIEW_RENDERS) assert.equal(actions.get(render), "skip", `${render} is rendered and current`);
-      } finally {
-        await rm(home, { recursive: true, force: true });
-      }
-      const member = readDescriptor().members.find((entry) => entry.id === "review");
-      assert.deepEqual(member, { id: "review", kind: "command", file: "commands/review.md", runtimes: ["claude", "opencode"], commandNamespace: "aof" });
-      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
-      const edge = readFileSync(path.join(repoRoot, "test", "arch", "memory", "acd-learning-edge-reaches-every-cut.test.mjs"), "utf8");
-      assert.ok(edge.includes(`"review.md": "reviews one story's build; cuts nothing"`), "the learning-edge control excludes review.md with its reason");
-    },
-  },
-  {
-    name: "149/03 E12 · an update deletes the code-review renders a repository already has",
-    run: async () => {
-      const root = await mkdtemp(path.join(os.tmpdir(), "aof-code-review-removed-"));
-      const home = path.join(root, "home");
-      const repo = path.join(root, "repo");
-      try {
-        await mkdir(repo, { recursive: true });
-        execFileSync("git", ["init", "-q", "."], { cwd: repo });
-        aofJson(repo, home, "work", "init", "--runtime", "claude,codex,opencode");
-        // The earlier bundle's three renders, as an update before 149 left them: on disk and in the lock.
-        const lockPath = path.join(repo, ".aof", "aof.lock.json");
-        const lock = JSON.parse(readFileSync(lockPath, "utf8"));
-        for (const entry of CODE_REVIEW_RENDERS) {
-          const content = `# ${entry.resource.id} — rendered by an earlier bundle\n`;
-          await mkdir(path.dirname(path.join(repo, entry.path)), { recursive: true });
-          await writeFile(path.join(repo, entry.path), content, "utf8");
-          lock.work.files.push({ ...entry, hash: hashContent(content), generatedAt: "2026-10-01T00:00:00.000Z" });
-        }
-        await writeFile(lockPath, `${JSON.stringify(lock, null, 2)}\n`, "utf8");
-        const actions = actionsOf(aofJson(repo, home, "work", "update", "--dry-run"));
-        for (const { path: render } of CODE_REVIEW_RENDERS) assert.equal(actions.get(render), "delete", `${render} is deleted`);
-      } finally {
-        await rm(root, { recursive: true, force: true });
-      }
-      const ids = readDescriptor().members.map((entry) => entry.id);
-      assert.ok(!ids.includes("code-review"), "bundle.json lists no code-review member");
-      assert.ok(ids.includes("review"), "…and lists review");
-      assert.ok(readShippedManifest().entries.every((entry) => entry.resource.id !== "code-review" && entry.resource.id !== "aof-code-review"), "the manifest holds no entry for code-review");
-      assert.equal(existsSync(path.join(repoRoot, "packages", "core", "assets", "commands", "code-review.md")), false, "commands/code-review.md does not exist");
-    },
-  },
-  ...[
-    "packages/core/assets/commands/assimilate-code.md",
-    "packages/core/assets/commands/autonomous.md",
-    "README.md",
-    "docs/acd.md",
-    ".aof/aof.config.json",
-  ].map((file) => ({
-    name: `149/03 nothing in the repository still points at the removed command [${file}]`,
-    run: () => {
-      const text = readFileSync(path.join(repoRoot, file), "utf8");
-      assert.ok(!text.includes("aof:code-review"), `${file} names no aof:code-review`);
-      assert.ok(!text.includes("codeReview"), `${file} names no codeReview`);
-    },
-  })),
-  {
-    name: "149/03 assimilate-code hands its reviewed story to verify",
-    run: () => {
-      const text = readFileSync(path.join(repoRoot, "packages", "core", "assets", "commands", "assimilate-code.md"), "utf8");
-      const output = text.slice(text.indexOf("<output>"));
-      assert.match(output, /Next: `aof:verify <ref>`/u, "the closing next step names aof:verify <ref>");
-    },
-  },
-  {
-    name: "149/03 the controls pinned on the removed command are retired with it",
-    run: async () => {
-      const { BOUND_FACTS } = await import("../../../test/arch/command/acd-prompt-bounds-name-their-home.test.mjs");
-      assert.ok(BOUND_FACTS.every((row) => row.asset !== "commands/code-review.md"), "acd-prompt-bounds-name-their-home holds no code-review row");
-      const read = (rel) => readFileSync(path.join(repoRoot, rel), "utf8");
-      assert.ok(!read("test/work/story-context-contract.test.mjs").includes('"commands", "code-review.md"'), "story-context-contract reads no commands/code-review.md");
-      assert.ok(!read("test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs").includes('"code-review.md":'), "the learning-edge control holds no exclusion for code-review.md");
-      assert.ok(COMMAND_IDS.includes("review") && !COMMAND_IDS.includes("code-review"), "the source-tree id list holds review and no code-review");
-    },
-  },
-];
-
 export const bundleTests = [
   // ====================================================================
   // 00_bundle-source-tree.feature
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 32 commands, 7 templates, 3 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 29 commands, 7 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -230,7 +125,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 32, "32 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — and add-diagram, 151)");
+      assert.equal(byKind("command"), 29, "29 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt and loop-diagram, 145)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 7, "milestone/story/task/uat/spike/chore templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
@@ -322,7 +217,7 @@ export const bundleTests = [
       assert.deepEqual(
         members.filter((m) => m.kind === "command").map((m) => m.id).sort(),
         [...COMMAND_IDS].sort(),
-        "32 commands declared"
+        "29 commands declared"
       );
       assert.deepEqual(
         members.filter((m) => m.kind === "hook").map((m) => m.id).sort(),
@@ -345,7 +240,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 40, "40 resource members (8 agents + 32 commands)");
+      assert.equal(resourceMembers.length, 37, "37 resource members (8 agents + 29 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }
@@ -413,7 +308,7 @@ export const bundleTests = [
     run: async () => {
       const bundle = loadBundle();
       const outputs = renderBundleOutputs(bundle, { runtimes: ["claude"] });
-      // Claude supports all agents (8) + all commands (32) + the 3 codex delegation skills + all template files.
+      // Claude supports all agents (8) + all commands (29) + the 3 codex delegation skills + all template files.
       const resourceOutputs = outputs.filter((o) => o.resource.kind === "agent" || o.resource.kind === "command");
       assert.equal(resourceOutputs.length, AGENT_IDS.length + COMMAND_IDS.length, "one output per claude resource member");
       for (const output of outputs) {
@@ -430,23 +325,6 @@ export const bundleTests = [
       assert.ok(rendered, "the command renders to .claude/commands/aof/loop-diagram.md");
       // The loader carries the frontmatter value as written, quotes included, for every command.
       assert.equal(String(bundle.resources.find((member) => member.id === "loop-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<milestone ref>");
-    }
-  },
-  {
-    name: "bundle/loader (151/00): the bundle ships /aof:add-diagram for every runtime, with its argument hint",
-    run: async () => {
-      const bundle = loadBundle();
-      const paths = renderBundleOutputs(bundle, { runtimes: ["claude", "opencode", "codex"] }).map((o) => String(o.path).replaceAll("\\", "/"));
-      for (const expected of [".claude/commands/aof/add-diagram.md", ".opencode/commands/aof/add-diagram.md", ".codex/skills/aof-add-diagram/SKILL.md"]) {
-        assert.ok(paths.includes(expected), `the command renders to ${expected}`);
-      }
-      assert.equal(String(bundle.resources.find((member) => member.id === "add-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<ref> [ADR-NNN]");
-      // The manifest hashes the claude and codex renders (no opencode entry, as for every command);
-      // that each hash is current is the manifest guards' claim, not this row's.
-      const { entries } = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
-      for (const expected of [".claude/commands/aof/add-diagram.md", ".codex/skills/aof-add-diagram/SKILL.md"]) {
-        assert.match(String(entries.find((entry) => entry.path === expected)?.hash), /^sha256:[0-9a-f]{64}$/, `manifest.json carries ${expected}'s hash`);
-      }
     }
   },
   // Scenario Outline: the bundle loads identically from any working directory.
@@ -607,8 +485,7 @@ export const bundleTests = [
       assert.match(architect.content, /^  read: allow$/m, "opencode agent allows each listed tool");
       assert.doesNotMatch(architect.content, /^  task: allow$/m, "opencode agent omits tools not in the allow-list");
     }
-  },
-  ...reviewCommandBundleTests,
+  }
 ];
 
 function pathToFileUrl(filePath) {
