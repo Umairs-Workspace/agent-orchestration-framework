@@ -259,7 +259,9 @@ function promptProblems(raw) {
     problems.push(`CAP-MUT-15: ${named.length - inside.length} \`aof work …\` invocation(s) sit OUTSIDE \`${PROCESS_OPEN}\` — the command that drives the range has one home, and a driving command named beside it is a second procedure`);
   }
   if (!prompt.includes("--solo")) problems.push("the `--solo` block was deleted from autonomous.md — execution-mode resolution is not loop shell and stays in the prompt");
-  if (!prompt.includes("--ship")) problems.push("the `--ship` step was deleted from autonomous.md — post-accept shipping is not loop shell and stays in the prompt");
+  // 149 — `--ship` and the `aof:code-review` it ran were removed; a prompt that brings either back
+  // has re-grown the post-accept shipping step the operator retired.
+  if (prompt.includes("--ship") || prompt.includes("aof:code-review")) problems.push("autonomous.md names `--ship` or `aof:code-review` — post-accept shipping was removed at 149 and stays removed");
   return problems;
 }
 
@@ -565,7 +567,6 @@ export const archTests = [
         "---",
         "<config>",
         "- **--solo** — force solo role execution for this wrapper session.",
-        "- **--ship** — after the shell reports a milestone accepted, run `aof:code-review <NN>`.",
         "</config>",
         "",
         PROCESS_OPEN,
@@ -583,7 +584,7 @@ export const archTests = [
       for (const token of SHELL_TOKENS) {
         const problems = promptProblems(`${control}\nA line that says ${token} in the body.\n`);
         assert.ok(
-          problems.some((problem) => problem.includes("CAP-MUT-10") && problem.includes(token) && problem.includes("line 14")),
+          problems.some((problem) => problem.includes("CAP-MUT-10") && problem.includes(token) && problem.includes("line 13")),
           `CAP-MUT-10: planting \`${token}\` must be reported with its line\n${problems.join("\n")}`,
         );
       }
@@ -630,9 +631,9 @@ export const archTests = [
       const unmarked = promptProblems(control.replaceAll(PROCESS_OPEN, "<body>").replaceAll(PROCESS_CLOSE, "</body>"));
       assert.ok(unmarked.some((problem) => problem.includes("NOT FOUND")), `a prompt with no ${PROCESS_OPEN} block fails as NOT FOUND\n${unmarked.join("\n")}`);
 
-      // …and the two blocks that are NOT loop shell must stay.
+      // …and the block that is NOT loop shell must stay, while the removed one stays removed (149).
       assert.ok(promptProblems(control.replaceAll("--solo", "--single")).some((problem) => problem.includes("`--solo`")), "a dropped --solo block is named");
-      assert.ok(promptProblems(control.replaceAll("--ship", "--deliver")).some((problem) => problem.includes("`--ship`")), "a dropped --ship block is named");
+      assert.ok(promptProblems(control.replace("</config>", "- **--ship** — after the shell reports a milestone accepted, run `aof:code-review <NN>`.\n</config>")).some((problem) => problem.includes("`--ship`")), "a re-added --ship block is named");
     },
   },
   {

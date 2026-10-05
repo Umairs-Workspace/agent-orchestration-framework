@@ -14,9 +14,6 @@
         }
       }
     },
-    "codeReview": {
-      "autoComplete": false
-    },
     "rubric": {
       "command": [
         "node",

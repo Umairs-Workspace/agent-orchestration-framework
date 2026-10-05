@@ -105,6 +105,8 @@ const CUT_MAKING = Object.freeze({
 // exclusion from an oversight — which is the failure this direction exists to prevent.
 const EXCLUDED = Object.freeze({
   "add-chore.md": "creates one chore; partitions nothing",
+  // 151 — re-runs refine's diagram step for an existing item's briefed ADRs; no partition, no memory call.
+  "add-diagram.md": "draws an existing item's ADR diagrams; cuts nothing",
   "add-milestone.md": "frames one named driver; spawns the PO but partitions nothing",
   "add-spike.md": "creates one spike; partitions nothing",
   "add-story.md": "adds one story to an existing milestone",
@@ -115,9 +117,10 @@ const EXCLUDED = Object.freeze({
   "archive.md": "archives one done driver's folder under archive/; no partition",
   "assimilate-code.md": "governs code already written; its memory call is `ingest`",
   "autonomous.md": "sequences existing items through the loop shell; cuts nothing",
-  "code-review.md": "ships and reviews a branch",
   "continue.md": "builds an existing story; carries its own recall regardless",
   "delegate.md": "sets two model decisions",
+  // 150 — says what items are for, composed of the read verbs; writes nothing, carries no memory call.
+  "explain.md": "explains items; reads only, cuts nothing",
   "feedback.md": "captures one raw entry",
   "init.md": "installs ACD and authors a config",
   "insert-chore.md": "inserts one chore at a position and renumbers; no partition",
@@ -134,7 +137,12 @@ const EXCLUDED = Object.freeze({
   // stream and mints its number; spawns no agent, carries no memory call, partitions nothing.
   "promote.md": "promotes one backlog item into the stream and mints its number; no partition",
   "recent.md": "reads the stream chronologically",
+  // 147 — the session a loop hands a lane halt to: repairs the loop's own records and cuts nothing.
+  // Classified at 149, whose run of this control first met it unclassified.
+  "repair.md": "repairs one lane halt's records; cuts nothing",
   "retrospective.md": "distils one milestone's lessons",
+  // 149 — reviews the operator's own build through continue's ladder and lanes; fixes nothing.
+  "review.md": "reviews one story's build; cuts nothing",
   "validate.md": "a structural check that spawns no agent and cuts nothing",
   "verify.md": "accepts an item; its memory calls are `ingest`",
 });

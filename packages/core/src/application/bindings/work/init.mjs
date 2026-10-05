@@ -6,7 +6,7 @@ import { createLockManifest, executeApplyActions, planApplyActions } from "../..
 import { RUNTIMES } from "../../../model.mjs";
 import { loadBundle } from "../../../work/bundle.mjs";
 import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "../../../work/bundle-synthesis.mjs";
-import { ensureAofGitignore } from "../../../aof-gitignore.mjs";
+import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../../../aof-gitignore.mjs";
 import { setHeadroomEnabled, readConfig, writeConfig } from "../../../work/headroom.mjs";
 import { applyClaudeSettingsMerge } from "../../../claude-settings.mjs";
 
@@ -122,7 +122,8 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
 
     await executeApplyActions(actions);
 
-    const claudeSettings = await applyClaudeSettingsMerge(targetDir, (await readConfig(targetDir)).config);
+    const { config } = await readConfig(targetDir);
+    const claudeSettings = await applyClaudeSettingsMerge(targetDir, config);
 
     // Establish the workspace `.gitignore` baseline (milestone 04 round-trip finding
     // F-02): a SELF-CONTAINED nested `.aof/.gitignore` that ignores the derived,
@@ -130,6 +131,10 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
     // The tracked install (lock, config, rendered members) stays committed. Idempotent
     // and additive, so a re-render (--force) or a later memory reindex composes cleanly.
     await ensureAofGitignore(targetDir);
+    // 147/03 (R4) — the WORK DIR's own git files, by the same idiom: `<work.dir>/.gitignore` keeps a
+    // session's heartbeat queues out of every lane commit, `<work.dir>/.gitattributes` merges the
+    // milestone `STATE.md` two lanes both appended to by union. Additive and idempotent, as above.
+    await ensureWorkDirGitFiles(workDirFor(targetDir, config));
 
     // Install manifest (ADR-004 → ADR-009): a lock-v2 record from createLockManifest,
     // MINUS its own `version` (the unified lock carries ONE top-level version), plus

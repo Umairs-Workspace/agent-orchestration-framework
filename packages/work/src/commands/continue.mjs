@@ -193,7 +193,14 @@ async function startedHere(ctx, phase, ref) {
   }
 }
 
+// 149 — the operator builds. `--manual` belongs to the build door only, and a manual continue
+// guides ONE story here: the operator is on this machine, so it is never dispatched, and the guide
+// it hands back reads one story's contract. Refine and verify never declare the input, so the flag
+// is refused there as unknown.
+const MANUAL_TYPES = new Set(["story", "task"]);
+
 function createPhaseDoorCommand(phase) {
+  const manualDoor = phase === "continue";
   return {
     id: `work:${phase}`,
     input: {
@@ -201,6 +208,7 @@ function createPhaseDoorCommand(phase) {
       properties: {
         ref: { type: "string" },
         node: { type: "string" },
+        ...(manualDoor ? { manual: { type: "boolean" } } : {}),
       },
       required: ["ref"],
       additionalProperties: false,
@@ -244,11 +252,34 @@ function createPhaseDoorCommand(phase) {
       // build door runs them — refine and verify are not builds.
       if (phase === "continue") for (const check of beforeBuild) await check(ctx, exact);
 
+      // 149 — a manual continue is one story or one task. Refused here, before the overlay is read,
+      // so a milestone (whose continue is the autonomous cascade) mints, dispatches and moves nothing.
+      const manual = manualDoor && input.manual === true;
+      if (manual && !MANUAL_TYPES.has(exact?.type)) {
+        const what = exact?.type == null ? "not a resolvable item" : `a ${exact.type}`;
+        throw commandError(
+          `\`${ref}\` is ${what} — a manual continue guides one story or one task at a time.`,
+          "continue-manual-not-a-story",
+          409,
+        );
+      }
+
       const localNodeId = ctx.workspace?.config?.mesh?.nodeId ?? null;
 
       const requestedNode = typeof input.node === "string" ? input.node.trim() : "";
       const overlay = await readExecutionOverlay(ctx.workspace, { globalWorkStoreOptions: storeOptions });
       const decision = resolveContinueDecision(overlay, ref, { requestedNode, localNodeId });
+
+      // 149 — the operator builds where they are, so a manual continue the decision would dispatch
+      // is refused before anything is minted: whether `--node` named another node or the last node
+      // was one. A `running` answer is still returned below — watching is not dispatching.
+      if (manual && decision.where === "remote") {
+        throw commandError(
+          `"${ref}" would continue on ${decision.node} — a manual continue runs here, where the operator builds.`,
+          "continue-manual-remote",
+          409,
+        );
+      }
 
       // Already in flight (the ref itself, or its scope — the milestone a story
       // belongs to). Nothing is minted and nothing local is spawned: the honest
@@ -282,7 +313,7 @@ function createPhaseDoorCommand(phase) {
           where: "local",
           node: decision.node,
           resolvedBy: decision.resolvedBy,
-          command: `/aof:${localPhase} ${ref}`,
+          command: `/aof:${localPhase} ${ref}${manual ? " --manual" : ""}`,
           ...(await startedHere(ctx, phase, ref)),
         };
       }
@@ -316,9 +347,10 @@ function createPhaseDoorCommand(phase) {
       // + the ONE generic face; the cli.mjs runVerbCli branches are deleted.
       route: ["work", phase],
       spec: {
-        usage: `aof work ${phase} <ref> [--node <id>] [--json]`,
+        usage: `aof work ${phase} <ref> [--node <id>]${manualDoor ? " [--manual]" : ""} [--json]`,
         flags: {
           node: { type: "string", description: "the node to run on (defaults to the last node that worked on it)" },
+          ...(manualDoor ? { manual: { type: "boolean", description: "the operator builds: continue one story or task here and hand back a guide, never a build" } } : {}),
         },
       },
 
@@ -326,6 +358,7 @@ function createPhaseDoorCommand(phase) {
       argv: (positionals, options = {}) => ({
         ref: positionals[0],
         ...(typeof options.node === "string" ? { node: options.node } : {}),
+        ...(manualDoor && options.manual === true ? { manual: true } : {}),
       }),
       render: (result) => {
         if (result.where === "running") {

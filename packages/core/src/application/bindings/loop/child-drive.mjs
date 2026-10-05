@@ -12,6 +12,7 @@ export function assembleLoopChildDrive({ workspaceServices }) {
 
   const {
     loopFixFilePath,
+    loopRepairFilePath,
     childDriveOutcome,
     spawnLaneDrive
   } = createChildDrive({
@@ -21,5 +22,5 @@ export function assembleLoopChildDrive({ workspaceServices }) {
     runBounded,
   });
 
-  return { "LANE_CANCEL_GRACE_MS": api0.LANE_CANCEL_GRACE_MS, loopFixFilePath, childDriveOutcome, spawnLaneDrive };
+  return { "LANE_CANCEL_GRACE_MS": api0.LANE_CANCEL_GRACE_MS, loopFixFilePath, loopRepairFilePath, childDriveOutcome, spawnLaneDrive };
 }

@@ -12,6 +12,8 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const { LANE_CANCEL_GRACE_MS } = loopChildDriveServices;
   const { childDriveOutcome } = loopChildDriveServices;
   const { loopFixFilePath } = loopChildDriveServices;
+  // 147 — the repair hand-over's home under the aof home.
+  const { loopRepairFilePath } = loopChildDriveServices;
   const { askEnvFor } = loopAskServices;
   const { askFileFor } = loopAskServices;
   const { awaitAnswer } = loopAskServices;
@@ -42,7 +44,7 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
 
   const implementation = createStoryCycle({
     items: { resolveItemExact, requireLocalCheckout },
-    childDrive: { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath },
+    childDrive: { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, loopRepairFilePath },
     asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },
     askRequests: { readAsk },
     dispatch: { resolveRefInWorktree },
@@ -84,11 +86,12 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const readGradeBaseline = implementation.readGradeBaseline;
   const recordBuildProgress = implementation.recordBuildProgress;
   const reenterPrimaryAsks = implementation.reenterPrimaryAsks;
+  const repairLaneHalt = implementation.repairLaneHalt;
   const retryUntilTerminal = implementation.retryUntilTerminal;
   const runBrief = implementation.runBrief;
   const settleDriven = implementation.settleDriven;
   const settleStoryCycle = implementation.settleStoryCycle;
   const transitionOptionsFor = implementation.transitionOptionsFor;
 
-  return { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, reenterPrimaryAsks, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor };
+  return { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, reenterPrimaryAsks, repairLaneHalt, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor };
 }

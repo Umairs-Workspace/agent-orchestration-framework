@@ -107,7 +107,7 @@ export const applicationAssemblyTests = [
         }});
         const { createApplication } = await import('./packages/core/src/application/assemble.mjs');
         const app = createApplication({ env: process.env });
-        assert.equal(app.listCommands().length, 117);
+        assert.equal(app.listCommands().length, 118); // 147/02 — work:drive-repair
         const { run } = await import('./packages/core/src/cli.mjs');
         await run(['--help']);
         await app.close();
@@ -128,7 +128,7 @@ export const applicationAssemblyTests = [
       const application = app('home');
       const before = JSON.parse(await readFile(new URL('../fixtures/application/command-inventory.json', import.meta.url), 'utf8'));
       assert.deepEqual(JSON.parse(JSON.stringify(application.listCommands())), before);
-      assert.equal(application.listCommands().length, 117);
+      assert.equal(application.listCommands().length, 118); // 147/02 — work:drive-repair
       await assert.rejects(access(path.join(root, 'home')), { code: 'ENOENT' });
       assert.deepEqual(application.mesh.worker.listActiveWorktrees(), []);
       assert.equal(registerActiveWorktree, defaultApplication.mesh.worker.registerActiveWorktree);

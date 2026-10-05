@@ -340,7 +340,7 @@
     "kind": "child-process",
     "expression": "exec([\"worktree\", \"remove\", worktreePath], { cwd: projectRoot })",
     "digest": "c8d88362cfa72c1d798d3cfd63425371dd015b4a2ed93e5f411b35af858942fa",
-    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -348,7 +348,7 @@
     "kind": "child-process",
     "expression": "exec([\"branch\", \"-d\", branch], { cwd: projectRoot })",
     "digest": "06995bb30dac9aef43eaf1f1c466b3fe2e6b02f5085dd21c1f2379eda57586af",
-    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -356,7 +356,7 @@
     "kind": "child-process",
     "expression": "exec([\"worktree\", \"remove\", \"--force\", worktreePath], { cwd: projectRoot })",
     "digest": "a258c3c4046f7d4e721740187b9a07f510223e1c747afd70e5aa68bc8f73ac24",
-    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -364,7 +364,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: projectRoot })",
     "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -372,7 +372,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: projectRoot })",
     "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "ac3b29f7cbaa79932be4cfabe0dfe4240740c9a5e5b306102dfebd5c0519f579",
+    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -388,7 +388,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "649fddd36d7dd4a57d2185b5f286c3876040d0cc15ae2fef7a512b724db45f21",
+    "sourceDigest": "4db1a3366d83f23e8608fde71c4b8f89dacc24b97282238dc0136d872fe941f1",
     "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
   },
   {

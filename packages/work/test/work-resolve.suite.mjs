@@ -13,6 +13,9 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { createFindCommand } from "@aof/work/commands/find";
+import { createDocCommand } from "@aof/work/commands/doc";
+import { createWorkResolvers } from "@aof/work/commands/resolve";
 const listItems = _workServices.listItems;
 const findWork = _workServices.findWork;
 const parseFrontmatter = _workServices.parseFrontmatter;
@@ -482,6 +485,110 @@ export const resolveItemsTests = [
         const parsed = parseFrontmatter(frontmatter({ type: "milestone", status: "done", title: "X" }));
         assert.equal(parsed.status, "done");
         assert.equal(parsed.title, "X");
+      }),
+  },
+];
+
+// --- 150 · aof work find resolves a work-tree folder path ------------------------------------
+//
+// Story 150, task 00. The feature's Background, built once: a project root holding
+// `wiki/work` with live story 147, nested story 148/01, archived milestone 129 and backlog story
+// "a-halted-lane-is-reaped". Every query is resolved "from the project root", which is the
+// `cwd` the resolver is handed; the faces are the real `work:find` / `work:doc` commands over
+// the real resolvers, with only the cache seam reduced to the disk answer.
+async function buildPathFixture() {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-resolve-path-"));
+  const work = path.join(root, "wiki", "work");
+  const item = async (rel, doc, fields) => {
+    const dir = path.join(work, ...rel.split("/"));
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, doc), `${frontmatter({ created: "2026-10-04", updated: "2026-10-04", ...fields })}\n# body\n`);
+  };
+  await item("147_story_the-loop-hands-a-halt", "STORY.md", { type: "story", number: "147", slug: "the-loop-hands-a-halt", status: "in-progress", title: "The loop hands a halt" });
+  await item("148_milestone_memory", "SPEC.md", { type: "milestone", number: "148", slug: "memory", status: "in-progress", title: "Memory" });
+  await item("148_milestone_memory/stories/01_story_the-ranking-is-held", "STORY.md", { type: "story", number: "01", slug: "the-ranking-is-held", status: "not-started", title: "The ranking is held", parent: "148" });
+  await item("archive/129_milestone_loop-concurrency", "SPEC.md", { type: "milestone", number: "129", slug: "loop-concurrency", status: "done", title: "Loop concurrency" });
+  await item("backlog/story_a-halted-lane-is-reaped", "STORY.md", { type: "story", slug: "a-halted-lane-is-reaped", status: "not-started", title: "A halted lane is reaped" });
+  return { root, work };
+}
+
+async function withPathFixture(body) {
+  const { root, work } = await buildPathFixture();
+  try {
+    const find = (query) => findWork(work, query, { cwd: root });
+    return await body({ root, work, find });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+const BACKLOG_STORY = "wiki/work/backlog/story_a-halted-lane-is-reaped";
+
+export const resolvePathTests = [
+  {
+    name: "work/resolve (150/00): a folder path resolves to the item whose folder it names — every Examples row",
+    run: () =>
+      withPathFixture(async ({ root, find }) => {
+        const rows = [
+          [BACKLOG_STORY, "a-halted-lane-is-reaped"],
+          [BACKLOG_STORY.replaceAll("/", "\\"), "a-halted-lane-is-reaped"],
+          [`${BACKLOG_STORY}/`, "a-halted-lane-is-reaped"],
+          [`${BACKLOG_STORY}/STORY.md`, "a-halted-lane-is-reaped"],
+          ["wiki/work/147_story_the-loop-hands-a-halt", "147"],
+          ["wiki/work/148_milestone_memory/stories/01_story_the-ranking-is-held", "148/01"],
+          ["wiki/work/archive/129_milestone_loop-concurrency", "129"],
+          [path.join(root, ...BACKLOG_STORY.split("/")), "a-halted-lane-is-reaped"],
+        ];
+        for (const [query, ref] of rows) {
+          const answer = await find(query);
+          assert.deepEqual(answer.map((row) => row.ref), [ref], `"${query}" answers exactly one row, ref ${ref}`);
+        }
+      }),
+  },
+  {
+    name: "work/resolve (150/00): a path that names no item folder answers no row — [] at exit 0 on --json, the miss line at exit 1 without",
+    run: () =>
+      withPathFixture(async ({ work, find }) => {
+        const { findCommand } = createFindCommand({ findWorkCacheFirst: (workspace, query) => find(query) });
+        for (const query of ["wiki/work/backlog", "wiki/work/backlog/story_no-such-item", "wiki/work/148_milestone_memory/stories", "packages/work/src"]) {
+          const result = await findCommand.run({ query }, { workspace: { workDir: work } });
+          assert.deepEqual(findCommand.cli.json(result), [], `"${query}" answers []`);
+          assert.equal(findCommand.cli.exit(result, { options: { json: true } }), 0, `"${query}" --json exits 0`);
+          assert.equal(findCommand.cli.render(result), `No work item matches "${query}".`);
+          assert.equal(findCommand.cli.exit(result, { options: {} }), 1, `"${query}" without --json exits 1`);
+        }
+      }),
+  },
+  {
+    name: "work/resolve (150/00): the forms that resolve today answer exactly the rows they answered before",
+    run: () =>
+      withPathFixture(async ({ work, find }) => {
+        const live = (rel, fields) => ({ ...fields, dir: path.join(work, ...rel.split("/")) });
+        const story147 = live("147_story_the-loop-hands-a-halt", { ref: "147", type: "story", slug: "the-loop-hands-a-halt", status: "in-progress", title: "The loop hands a halt", parent: null });
+        const story14801 = live("148_milestone_memory/stories/01_story_the-ranking-is-held", { ref: "148/01", type: "story", slug: "the-ranking-is-held", status: "not-started", title: "The ranking is held", parent: "148" });
+        const backlog = { ...live("backlog/story_a-halted-lane-is-reaped", { ref: "a-halted-lane-is-reaped", type: "story", slug: "a-halted-lane-is-reaped", status: "not-started", title: "A halted lane is reaped", parent: null }), number: null, backlog: "" };
+        const expected = { "147": [story147], "148/01": [story14801], "148/01-02": [story14801], "a-halted-lane": [backlog], "story_a-halted-lane": [backlog] };
+        for (const [query, rows] of Object.entries(expected)) {
+          assert.equal(JSON.stringify(await find(query)), JSON.stringify(rows), `"${query}" is byte-identical`);
+        }
+      }),
+  },
+  {
+    name: "work/resolve (150/00): a reader that resolves through findWork takes a path too — work:doc prints the backlog story's STORY.md",
+    run: () =>
+      withPathFixture(async ({ work, find }) => {
+        const { resolveItem } = createWorkResolvers({ findWorkCacheFirst: (workspace, query) => find(query), readRuns: async () => [] });
+        const { docCommand } = createDocCommand({
+          resolveItem,
+          readWorkerDoc: async () => null,
+          readStreamedItemRow: async () => null,
+          meshNodeIdOf: () => null,
+          reportedElsewhere: () => false,
+        });
+        const result = await docCommand.run({ ref: BACKLOG_STORY, doc: "STORY" }, { workspace: { workDir: work } });
+        assert.equal(result.present, true);
+        assert.equal(result.ref, "a-halted-lane-is-reaped");
+        assert.match(docCommand.cli.render(result), /title: A halted lane is reaped/);
       }),
   },
 ];

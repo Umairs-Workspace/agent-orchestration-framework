@@ -2,11 +2,12 @@
 // auto-act):
 // "No `graph:*` output from any 11 seam feeds a gate / merge / status-write /
 //  work-mutation; the grounding is read-and-inject into agent CONTEXT only. The agent
-//  decides; the graph informs. Concretely: the architect/refine/code-review grounding
+//  decides; the graph informs. Concretely: the architect/refine/review grounding
 //  steps inject graph output into the agent's context as a consider/cite instruction;
-//  no seam wires graph output into a CI gate, the code-review merge decision
-//  (`work.codeReview.autoComplete`), or a STORY.md/SPEC.md/STATE.md status/work write.
-//  The triage queue is ranking context for the reviewer, never an auto-block input."
+//  no seam wires graph output into a CI gate, a review verdict, or a
+//  STORY.md/SPEC.md/STATE.md status/work write. The blast-radius ranking is ranking context
+//  for the reviewer, never an auto-block input." (149: the review seam is `review.md`; the
+//  removed `code-review.md` and its merge decision went with it.)
 //
 // This is the milestone's load-bearing invariant (SPEC §Out of scope). The house
 // idiom is source-grep over the BUNDLED seams (markdown read as text). The assertion
@@ -25,7 +26,8 @@ const bundleDir = path.join(repoRoot, "packages", "core", "assets");
 const SEAMS = {
   architect: path.join(bundleDir, "agents", "aof-architect.md"),
   refine: path.join(bundleDir, "commands", "refine.md"),
-  codeReview: path.join(bundleDir, "commands", "code-review.md"),
+  // 149 — the review seam moved from the removed `code-review.md` to `review.md` (aof:review).
+  review: path.join(bundleDir, "commands", "review.md"),
 };
 
 export const archTests = [
@@ -86,34 +88,22 @@ export const archTests = [
     },
   },
   {
-    name: "arch/codebase-grounding-advisory: the code-review triage queue is RANKING CONTEXT for the reviewer, NEVER an auto-block input — the merge gate stays unchanged",
+    name: "arch/codebase-grounding-advisory: the review blast-radius ranking is RANKING CONTEXT for the reviewer, NEVER an auto-block input — never a gate",
     run: async () => {
-      // The code-review seam (graph:triage) is the highest-temptation surface (a ranked
-      // PR queue invites an auto-block). Assert it is explicitly ranking-context, never
-      // an auto-block, and the merge gate is unchanged with no wiring into autoComplete.
-      const codeReview = await readFile(SEAMS.codeReview, "utf8");
+      // The review seam (graph:impact's dependents) is the highest-temptation surface (a
+      // ranked change set invites an auto-block). Assert it is explicitly ranking-context,
+      // never an auto-block and never a gate. (149: it was code-review's PR triage, whose
+      // merge gate and `work.codeReview.autoComplete` were removed with the command.)
+      const review = await readFile(SEAMS.review, "utf8");
 
+      assert.match(review, /ranking context/i, "review: the ranking is RANKING CONTEXT for the reviewer");
       assert.match(
-        codeReview,
-        /ranking context/i,
-        "code-review: the triage queue is RANKING CONTEXT for the reviewer"
-      );
-      assert.match(
-        codeReview,
+        review,
         /never[\s\S]{0,40}?auto-block|not[\s\S]{0,20}?an auto-block/i,
-        "code-review: the triage is NEVER an auto-block input to the merge"
+        "review: the ranking is NEVER an auto-block input to the verdict"
       );
-      assert.match(
-        codeReview,
-        /merge gate[\s\S]{0,80}?(is \*\*unchanged\*\*|unchanged)/i,
-        "code-review: the merge gate (CI-green + no-blocking-finding) is explicitly UNCHANGED"
-      );
-      // No NEW wiring of graph output into the auto-complete merge decision.
-      assert.match(
-        codeReview,
-        /no wiring into[\s\S]{0,20}?work\.codeReview\.autoComplete|never a separate graph-gate/i,
-        "code-review: no graph output is wired into work.codeReview.autoComplete / no separate graph-gate"
-      );
+      assert.match(review, /advisory and never a gate/i, "review: the ranking is never a gate");
+      assert.ok(!/codeReview|code-review/u.test(review), "review: names no removed code-review wiring");
     },
   },
   {

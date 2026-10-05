@@ -117,8 +117,8 @@ story under milestone NN instead of standalone); optional **`--skip-qa`** (skip 
    on purpose — `done` is unreachable from `not-started`, which is exactly the refusal that would
    catch a story nobody assimilated, and a flag in front of it would empty that guard —
    bump `updated:`, and (when nested) tick its box in the milestone `SPEC.md` `## Stories`. The change
-   set is left EXACTLY as gathered — never committed, staged, or edited (shipping stays
-   `aof:code-review`'s job). A blocking finding instead stops at `aof work status <ref> in-review` and is reported as
+   set is left EXACTLY as gathered — never committed, staged, or edited (committing and shipping it
+   stay the operator's). A blocking finding instead stops at `aof work status <ref> in-review` and is reported as
    the open item.
 
 7. **Validate.** Run `aof work validate <ref>` — the captured story must pass folder / frontmatter /
@@ -141,5 +141,5 @@ Report: the story path + user story; the acceptance criteria authored (with each
 the architect verdict + any standards findings; the QA coverage verdict (SUFFICIENT / GAPS + the
 untested list) OR that coverage was skipped (`--skip-qa`); where the lessons landed (RETROSPECTIVE +
 memory); the `OUTCOME.md` authored at accept; and the final `aof work validate` result. State plainly that the code was left unchanged.
-Next: `aof:code-review` to ship the change, or `aof:continue <ref>` if QA surfaced gaps you want built.
+Next: `aof:verify <ref>` when a blocking finding left the story `in-review`, or `aof:continue <ref>` if QA surfaced gaps you want built.
 </output>

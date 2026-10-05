@@ -75,6 +75,10 @@ async function transitionRunStart(item, edge = {}, opts = {}) {
     itemDir: item.dir,
     itemType: item.type ?? null,
     workspaceRoot: workspace?.projectRoot ?? null,
+    // 147/01 — the LOOP PHASE the run was minted for, read off the brief's declaration (`null` for a
+    // run no loop minted). The status reactors read it: a `repair` run is bookkeeping about an item's
+    // lane, never work on the item, so it neither starts the item nor rolls its status back.
+    phase: runPhase(record),
   };
   return await raise("run.started", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
 }
@@ -139,6 +143,8 @@ async function transitionRunComplete(item, { runId, outcome, failureReason = nul
     itemDir: item.dir,
     itemType: item.type ?? null,
     workspaceRoot: workspace?.projectRoot ?? null,
+    // 147/01 — the completed run's loop phase, as on `run.started` (the rollback reactor reads it).
+    phase: runPhase(record),
   };
   return await raise("run.completed", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
 }
@@ -190,6 +196,8 @@ async function transitionRunReclaimed(item, { runId, now } = {}, opts = {}) {
     itemDir: item.dir,
     itemType: item.type ?? null,
     workspaceRoot: workspace?.projectRoot ?? null,
+    // 147/01 — the completed run's loop phase, as on `run.started` (the rollback reactor reads it).
+    phase: runPhase(record),
   };
   return await raise("run.completed", payload, record, { workspace, publisherOptions, journalOptions, drain, now });
 }
@@ -222,6 +230,13 @@ async function transitionStaleRunsReclaimed(items, { now, stalenessThreshold } =
 // drain's loci come from reachableLoci(workspace), which is what lets a
 // completion in an `autoSync: true` workspace pay its own integration step in
 // place while every other posture leaves it deferred for the integration's verb.
+// runPhase(record) — the loop phase a run was minted for: `brief.loop.phase` when a loop declared one
+// (`refine`, `continue`, `verify`, `repair`), `null` for every other run. Read here, once, for both events.
+function runPhase(record) {
+  const phase = record?.brief?.loop?.phase;
+  return typeof phase === "string" && phase.length > 0 ? phase : null;
+}
+
 async function raise(name, payload, record, { workspace, publisherOptions, journalOptions, drain, now }) {
   const reactorCtx = {
     ...(publisherOptions ? { publisherOptions } : {}),
