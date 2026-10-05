@@ -40,8 +40,8 @@ where the operator is and is never dispatched to a worker.)
 </config>
 
 <config>
-Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`** or **`--orchestrated`** flag and an
-optional **`--thinking <level>`**.
+Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`**, **`--orchestrated`** or
+**`--manual`** flag and an optional **`--thinking <level>`**.
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
 `work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
@@ -50,12 +50,16 @@ optional **`--thinking <level>`**.
 reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
 orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
-STOP before any role runs and report it. The loop composes a flag on every continue it drives:
-`work.loop.agents.continue.mode` when set, `--solo` when unset — the loop's own default, whose home
-is `packages/contracts/src/loop-bounds.mjs`. A loop-driven continue therefore never reads `work.agents.mode`. This
-command delegates to no other command, so the flag governs exactly one thing: which roles this
-session plays inline and which it spawns. It changes only WHO does the work, never WHAT is
-produced — the same build, the same review lanes, the same gates.
+STOP before any role runs and report it. **`--manual` together with `--solo` or `--orchestrated` is
+contradictory too** — `--manual` says the operator builds, which leaves no agent to choose: STOP
+before any role runs and before any run is minted, and report it. `--manual` is a per-run flag and
+never a `work.agents.mode` value, and the loop never composes it (`<manual_mode>` below).
+The loop composes a flag on every continue it drives: `work.loop.agents.continue.mode` when set,
+`--solo` when unset — the loop's own default, whose home is `packages/contracts/src/loop-bounds.mjs`.
+A loop-driven continue therefore never reads `work.agents.mode`. This command delegates to no other
+command, so the flag governs exactly one thing: which roles this session plays inline and which it
+spawns. It changes only WHO does the work, never WHAT is produced — the same build, the same review
+lanes, the same gates.
 
 Reach for it when the main session already holds the context a spawned agent would have to
 rediscover from cold: a well-trodden change, a small story, or a fix round on work you just did.
@@ -85,6 +89,44 @@ listed **READY**, resume its lineage with `aof work resume <ref>` and carry on f
 starting fresh: the prior session and its working tree are intact, and a fresh start pays for that work
 twice. If it is listed **parked**, say when it becomes ready and stop — retrying early burns one of three
 attempts on a kill that is certain to repeat. If the sweep is empty, proceed normally.
+
+<manual_mode>
+**`--manual` — the operator builds, and this session hands them a guide.** `--solo` and
+`--orchestrated` decide which agents do the work; `--manual` says the operator does. When
+`$ARGUMENTS` carries it, walk this region after the re-entry sweep above, in place of the dispatch
+on type below, and nothing else in `<process>`.
+
+- **One story or one task, never more.** A milestone or a `NN/MM-PP` span is refused before any run
+  is minted: run `aof work next <ref> --json` and name the ready stories it answers, to take one at a
+  time as `aof:continue <story> --manual`. Mint nothing, move nothing, and stop.
+- **Read the story exactly as the story lane's step 1 reads it, and no wider** — its `reads:` set
+  under `<read_depth>`, and its task features. A story whose `reads:` is absent, or whose tasks are
+  thin or untagged, halts and sends the operator to `aof:refine <ref>`, exactly as step 1 does.
+- **Mint the run with `aof work run-start <ref> --json` before the guide is printed** — the story
+  lane's step 2, whose `run.started` reactor starts the story. The session writes no status move of
+  its own.
+- **Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide** — the
+  first run and every re-run alike, so the guide is always headed by what is still red.
+- **Print the guide, with its parts in this order:**
+  - the scenarios still red, by name;
+  - the user story;
+  - each task file with its scenario names, read from `aof work tasks <ref> --json`;
+  - every `reads:` entry and every `files:` entry, each with one line on why it matters;
+  - the test files among `files:`, and the command `aof test --scope impacted --story <ref>` that
+    gates them;
+  - the build plan's mechanism and known traps, when the story has a `PLAN.md`;
+  - an order to take the tasks in, with the reason for it.
+
+  When every scenario is green the guide says so, and names `aof:review <ref>` as the next step.
+- **The guide is printed in the terminal only**, and no guide file is written to the story folder:
+  a re-run prints it again, current, from the same sources.
+- **Build nothing.** No `aof-developer` is spawned, in solo and in orchestrated mode alike, and no
+  file outside the item's own folder is written. No gate ladder is walked and no reviewer is
+  spawned: reviewing the operator's build is `aof:review`'s.
+- **Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed**,
+  then stop. The hand-back is `guided: <ref> is yours to build`, and it names `aof:review <ref>`
+  next — never `aof:verify`.
+</manual_mode>
 
 Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the span:
 
@@ -572,6 +614,8 @@ Report what landed, each task's green-status, and the review verdicts — then n
 was, and the command that follows it. Never print the accept hand-off after a stop:
 
 - **walked to the Review gate** — every member built and reviewed. Next: `aof:verify <ref>`.
+- **guided: `<ref>` is yours to build** — a manual continue printed the guide and built nothing.
+  Next: `aof:review <ref>`, once the operator's build is green.
 - **stopped: `<ref>` unrefined** — its contract is not authored/tagged. Next: `aof:refine <ref>`.
 - **stopped: blocked on `<waitingOn>`** — `aof work next` answered `blocked`. Next: finish what it
   names, then re-run `aof:continue <ref>`.

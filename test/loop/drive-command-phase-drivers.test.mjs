@@ -1783,6 +1783,18 @@ export const driveCommandPhaseDriverTests = [
     name: `140/01 the phase drive composes a flag for every refine and continue it drives [${phase}, ${JSON.stringify(work)} → ${command}]`,
     run: () => assertDriveComposes(phase, work, command),
   })),
+  // ── 149/01 — the loop never composes --manual ─────────────────────────────────
+  //
+  // `149_story_continue-manual-mode-guides-the-operator/tasks/01_manual-is-one-story-here-at-every-door.feature`.
+  // `--manual` is a per-run flag an operator types; it is no loop mode, so a `"manual"` loop key is
+  // an unknown value and resolves to the phase's default.
+  {
+    name: "149/01 the loop never composes --manual [continue, {\"loop\":{\"agents\":{\"continue\":{\"mode\":\"manual\"}}}} → /aof:continue 03/01 --solo]",
+    async run() {
+      await assertDriveComposes("continue", { loop: { agents: { continue: { mode: "manual" } } } }, "/aof:continue 03/01 --solo");
+      assert.equal(Object.hasOwn(PHASE_MODE_FLAGS, "manual"), false, "no mode flag spells --manual");
+    },
+  },
   {
     name: "140/01 the drive spells no mode of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS",
     async run() {

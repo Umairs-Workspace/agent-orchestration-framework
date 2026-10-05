@@ -437,7 +437,167 @@ export const boardMeshExecutionTests = [
   },
   // 131/04 — hoisted below.
   ...askOverlayTests(),
+  // 149/01 — hoisted below.
+  ...manualDoorTests(),
 ];
+
+// ---- 149 task 01 — manual is one story, run here, at every door -------------------------------------
+//
+// W is an on-disk mesh workspace (`w1`, this node `node-7297`) holding story 149, milestone 148 with
+// story 148/01, and uat session 32, under an isolated aof home per case. Mesh rows are written through
+// the assignment store's own writers; the door is the registered `work:continue`, and the refine and
+// verify rows go through the real CLI so the unknown-flag refusal is the parser's own.
+const CLI = path.join(REPO_ROOT, "packages", "core", "bin", "aof.mjs");
+const continueDoor = _aofApplication.getCommand("work:continue");
+
+async function manualWorld(body) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-manual-door-"));
+  const repo = path.join(root, "W");
+  const home = path.join(root, "H");
+  const env = { AOF_GLOBAL_HOME: home };
+  try {
+    await mkdir(path.join(repo, ".aof"), { recursive: true });
+    await mkdir(home, { recursive: true });
+    await writeFile(path.join(repo, ".aof", "aof.config.json"), JSON.stringify({ name: "manual-fixture", work: { dir: "./wiki/work" }, mesh: { enabled: true, workspaceId: "w1", nodeId: "node-7297" } }, null, 2), "utf8");
+    const work = path.join(repo, "wiki", "work");
+    const doc = (type, number, slug, extra = "") => `---\ntype: ${type}\nnumber: "${number}"\nslug: ${slug}\nstatus: not-started\ntitle: "${slug}"\n${extra}---\n# ${number}\n`;
+    const story = path.join(work, "149_story_manual");
+    await mkdir(path.join(story, "tasks"), { recursive: true });
+    await writeFile(path.join(story, "STORY.md"), doc("story", "149", "manual"), "utf8");
+    const milestone = path.join(work, "148_milestone_vocabulary");
+    await mkdir(path.join(milestone, "stories", "01_story_first", "tasks"), { recursive: true });
+    await writeFile(path.join(milestone, "SPEC.md"), doc("milestone", "148", "vocabulary"), "utf8");
+    await writeFile(path.join(milestone, "stories", "01_story_first", "STORY.md"), doc("story", "01", "first", 'parent: "148"\n'), "utf8");
+    await mkdir(path.join(work, "32_uat_acceptance"), { recursive: true });
+    await writeFile(path.join(work, "32_uat_acceptance", "SESSION.md"), doc("uat", "32", "acceptance"), "utf8");
+
+    const door = async (input) => continueDoor.run(input, { workspace: await loadWorkspace(repo, undefined, { env }), globalWorkStoreOptions: { env } });
+    const refusal = async (input) => {
+      try {
+        await door(input);
+      } catch (error) {
+        return error;
+      }
+      assert.fail(`${JSON.stringify(input)} was not refused`);
+    };
+    const execution = async (itemRef, state, node = "node-2976") => {
+      const store = await openGlobalWorkProjectionStore({ env });
+      try {
+        const now = "2026-10-04T12:00:00.000Z";
+        const record = assembleAssignmentRecord({ itemRef, workspaceId: "w1", targetNodeId: node, issuer: "control", now });
+        insertAssignment(store, record);
+        if (state !== "assigned") updateAssignmentState(store, record.assignmentId, state, { now });
+      } finally {
+        store.close?.();
+      }
+    };
+    const assignmentsFor = async (itemRef) => {
+      const store = await openGlobalWorkProjectionStore({ env });
+      try {
+        return store.db.prepare("SELECT assignment_id FROM global_assignments WHERE item_ref = ?").all(itemRef).length;
+      } finally {
+        store.close?.();
+      }
+    };
+    const statusOf = async (file) => /^status: (.*)$/mu.exec(await readFile(file, "utf8"))[1].trim();
+    const status = {
+      149: () => statusOf(path.join(story, "STORY.md")),
+      148: () => statusOf(path.join(milestone, "SPEC.md")),
+      32: () => statusOf(path.join(work, "32_uat_acceptance", "SESSION.md")),
+    };
+    const cli = (...argv) => spawnSync(process.execPath, [CLI, ...argv], { cwd: repo, encoding: "utf8", env: { ...process.env, ...env, NODE_NO_WARNINGS: "1" } });
+    return await body({ door, refusal, execution, assignmentsFor, status, cli });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+function manualDoorTests() {
+  return [
+    {
+      name: "149/01 E7 — the CLI door answers the manual command here, and starts the story",
+      run: () => manualWorld(async ({ cli, status }) => {
+        const json = cli("work", "continue", "149", "--manual", "--json");
+        assert.equal(json.status, 0, json.stderr);
+        const result = JSON.parse(json.stdout);
+        assert.equal(result.where, "local");
+        assert.equal(result.command, "/aof:continue 149 --manual");
+        assert.equal(await status[149](), "in-progress", "a local manual continue starts the story as any local continue does");
+        const plain = cli("work", "continue", "149", "--manual");
+        assert.equal(plain.status, 0, plain.stderr);
+        assert.equal(plain.stdout.trim(), 'Continue "149" here — run: /aof:continue 149 --manual');
+      }),
+    },
+    {
+      name: "149/01 E8 — the CLI door refuses a manual continue on another node, and mints nothing",
+      run: () => manualWorld(async ({ cli, assignmentsFor, status }) => {
+        const result = cli("work", "continue", "149", "--manual", "--node", "node-2976", "--json");
+        assert.notEqual(result.status, 0, "refused");
+        assert.match(`${result.stdout}${result.stderr}`, /continue-manual-remote/u);
+        assert.equal(await assignmentsFor("149"), 0, "no assignment exists for 149");
+        assert.equal(await status[149](), "not-started", "story 149 is still not-started");
+      }),
+    },
+    ...[
+      ["story 149's last run was on node-2976 and none is active", "149", "continue-manual-remote", (w) => w.execution("149", "done")],
+      ["milestone 148 has never run", "148", "continue-manual-not-a-story", async () => {}],
+      ["uat session 32 has never run", "32", "continue-manual-not-a-story", async () => {}],
+    ].map(([state, ref, code, given]) => ({
+      name: `149/01 the door refuses a manual continue it cannot run here [${state} → ${code}]`,
+      run: () => manualWorld(async (world) => {
+        await given(world);
+        const before = await world.assignmentsFor(ref);
+        const error = await world.refusal({ ref, manual: true });
+        assert.equal(error.code, code);
+        assert.equal(error.status ?? error.statusCode ?? 409, 409);
+        assert.equal(await world.assignmentsFor(ref), before, "nothing is minted or dispatched");
+        assert.equal(await world.status[ref](), "not-started", "the item's status is unchanged");
+      }),
+    })),
+    {
+      name: "149/01 a manual continue of a story already running on a worker answers where it runs",
+      run: () => manualWorld(async ({ door, execution }) => {
+        await execution("148", "running");
+        const manual = await door({ ref: "148/01", manual: true });
+        const plain = await door({ ref: "148/01" });
+        assert.equal(manual.where, "running");
+        assert.equal(manual.node, "node-2976");
+        assert.deepEqual(manual, plain, "exactly as without --manual");
+      }),
+    },
+    {
+      name: "149/01 without --manual every door answers as before [continue 149 · refine 149 --manual · verify 149 --manual]",
+      run: () => manualWorld(async ({ cli, status }) => {
+        const cont = cli("work", "continue", "149", "--json");
+        assert.equal(cont.status, 0, cont.stderr);
+        assert.equal(JSON.parse(cont.stdout).command, "/aof:continue 149");
+        for (const phase of ["refine", "verify"]) {
+          const before = await status[149]();
+          const refused = cli("work", phase, "149", "--manual", "--json");
+          assert.notEqual(refused.status, 0, `${phase} refuses --manual`);
+          const envelope = JSON.parse(refused.stdout);
+          assert.equal(envelope.code, "unknown-flag", `${phase}: refused as an unknown flag`);
+          assert.match(envelope.error, /Unknown flag "--manual"/u);
+          assert.equal(await status[149](), before, `${phase}: nothing moves`);
+        }
+      }),
+    },
+    {
+      name: "149/01 the command inventory carries the new input on continue only",
+      run: async () => {
+        const inventory = JSON.parse(await readFile(path.join(REPO_ROOT, "test", "fixtures", "application", "command-inventory.json"), "utf8"));
+        const row = (id) => inventory.find((entry) => entry.id === id);
+        assert.deepEqual(row("work:continue").input.properties.manual, { type: "boolean" });
+        assert.equal(row("work:continue").cli.spec.usage, "aof work continue <ref> [--node <id>] [--manual] [--json]");
+        assert.deepEqual(continueDoor.input.properties.manual, { type: "boolean" }, "the registry agrees");
+        for (const id of ["work:refine", "work:verify"]) {
+          assert.equal(row(id).input.properties.manual, undefined, `${id} declares no manual`);
+          assert.equal(_aofApplication.getCommand(id).input.properties.manual, undefined, `${id}: the registry agrees`);
+        }
+      },
+    },
+  ];
+}
 
 // ---- 131/05 task 00 — the list row carries the ask fact (ADR-006 §2) ------------------------------
 //

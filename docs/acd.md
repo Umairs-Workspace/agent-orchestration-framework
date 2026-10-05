@@ -63,7 +63,11 @@ Three commands carry an item through, and each is a slash command in Claude Code
    records appear only when the item needs them.
 2. **Continue** – the developer builds each task to green against the locked contract, then a
    structural review (architect) and a behavioural review (QA) run and their findings are fixed in
-   the same round. The item ends `in-review`.
+   the same round. The item ends `in-review`. To write the code yourself, `/aof:continue <ref> --manual`
+   hands the operator a guide instead – the scenarios still red, the contract, the files that matter
+   and why, the tests to turn green and an order to take the tasks in – and builds nothing. Then
+   `/aof:review <ref>` reviews the operator's build before `/aof:verify`: the same gate and review
+   lanes, every finding handed back, no code touched.
 3. **Verify** – the `@executable` suite and fitness functions run; `@manual` procedures are run and
    recorded; a human is brought in for `@uat` alone. Findings are triaged as blocker or not, the
    validate gate must pass, and `aof work status <ref> done` accepts. At the same moment the

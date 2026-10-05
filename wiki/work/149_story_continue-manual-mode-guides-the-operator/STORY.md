@@ -3,10 +3,10 @@ type: story
 number: 149
 slug: continue-manual-mode-guides-the-operator
 title: "Manual mode: continue guides the operator who builds the work themselves"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 schema: 1
 aofVersion: 0.1.0
 reads:
@@ -81,15 +81,15 @@ the fact**.
 
 ## Tasks
 
-- [ ] `tasks/00_a-manual-continue-hands-the-operator-a-guide.feature` — continue's `<manual_mode>`
+- [x] `tasks/00_a-manual-continue-hands-the-operator-a-guide.feature` — continue's `<manual_mode>`
   region: the run, the test run, the guide's parts, terminal only, the hand-back to `aof:review`
-- [ ] `tasks/01_manual-is-one-story-here-at-every-door.feature` — the contradiction stop, the
+- [x] `tasks/01_manual-is-one-story-here-at-every-door.feature` — the contradiction stop, the
   milestone refusal, the CLI door's `--manual` and its two refusals, and the loop never composing it
-- [ ] `tasks/02_aof-review-reviews-the-operators-build.feature` — the `/aof:review` command over
+- [x] `tasks/02_aof-review-reviews-the-operators-build.feature` — the `/aof:review` command over
   continue's one gate ladder and review lanes, findings to the operator, the blast-radius ranking
-- [ ] `tasks/03_aof-code-review-is-removed.feature` — the command, its renders, `--ship` and
+- [x] `tasks/03_aof-code-review-is-removed.feature` — the command, its renders, `--ship` and
   `work.codeReview.autoComplete` removed, and the controls pinned on them retired
-- [ ] `tasks/04_a-real-manual-story-walks-guide-review-verify.feature` — `@manual`, a real guide
+- [x] `tasks/04_a-real-manual-story-walks-guide-review-verify.feature` — `@manual`, a real guide
   and review in the test-bed
 
 ## Notes

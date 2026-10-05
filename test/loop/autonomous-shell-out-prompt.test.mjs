@@ -17,6 +17,7 @@ import {
 } from "../../packages/core/src/work/bundle-manifest.mjs";
 import { hashContent } from "../../packages/core/src/lock.mjs";
 import { executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
+import { markedRegion } from "../support/source-slice.mjs";
 const readRuns = _aofApplication.execution.runs.readRuns;
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -45,7 +46,9 @@ const commandIdsBeforeStory = [
   "add-chore", "add-milestone", "add-spike", "add-story", "add-task", "add-uat",
   // `explain` ADDED AT 150, WITH the diff that lands it, in the descriptor's own order (after
   // `delegate`): the read-only `/aof:explain` command, composed of the existing read verbs.
-  "assimilate-code", "autonomous", "code-review", "continue", "delegate", "explain", "feedback",
+  // `code-review` REMOVED AT 149, with the diff that deletes it: its review half is `aof:review`,
+  // and its shipping half went with `--ship` and `work.codeReview.autoComplete`.
+  "assimilate-code", "autonomous", "continue", "delegate", "explain", "feedback",
   // `loop-diagram` ADDED AT 145, in the descriptor's own order (after `insert-uat`): the
   // `/aof:loop-diagram` wrapper over `aof diagram plan|export <ref> loop` — the same species as
   // `promote` and `archive`, repaired at `aof:verify 145`.
@@ -63,15 +66,18 @@ const commandIdsBeforeStory = [
   // `packages/core/assets/commands/archive.md` is the `/aof:archive` wrapper over the one move verb (127/ADR-004),
   // and it landed outside the story's declared write set — the same species as `promote`, repaired
   // at `aof:verify 127`.
-  "observe", "pay-debt", "promote", "archive", "recent", "refine", "retrospective", "shatter", "validate", "verify",
+  // `repair` ADDED AT 147 (after `refine`, the descriptor's own order): the `/aof:repair` session a
+  // loop hands a lane halt to. `review` ADDED AT 149 (after `retrospective`): `/aof:review` reviews
+  // the operator's own build.
+  "observe", "pay-debt", "promote", "archive", "recent", "refine", "repair", "retrospective", "review", "shatter", "validate", "verify",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],
   ["c02", "/aof:autonomous 03-05", "aof work loop 03-05 --level L2"],
   ["c03", "/aof:autonomous 03 --max-attempts 5", "aof work loop 03 --level L2 --cap 5"],
   ["c04", "/aof:autonomous 03 --solo", "aof work loop 03 --level L2"],
-  ["c05", "/aof:autonomous 03 --ship", "aof work loop 03 --level L2"],
-  ["c06", "/aof:autonomous 03 --solo --ship --max-attempts 5", "aof work loop 03 --level L2 --cap 5"],
+  // c05 and c06 carried `--ship`, removed at 149; c06 keeps its two surviving flags together.
+  ["c06", "/aof:autonomous 03 --solo --max-attempts 5", "aof work loop 03 --level L2 --cap 5"],
 ];
 const CHILD_ROWS = ["b01", "b02", "b03", "b04"];
 const REPORT_ROWS = ["h01", "h02", "h03"];
@@ -301,14 +307,14 @@ export const autonomousShellOutPromptTests = [
         .map((match) => match[1])
         .filter((value) => value.startsWith("aof work") || value.startsWith("aof:"));
       assert.deepEqual(
-        [...new Set(commandFamilies.map((value) => value.startsWith("aof work loop") ? "aof work loop" : "aof:code-review"))].sort(),
-        ["aof work loop", "aof:code-review"],
-        "the shell is the only drive family; code-review is the only other command family",
+        [...new Set(commandFamilies.map((value) => value.startsWith("aof work loop") ? "aof work loop" : value))].sort(),
+        ["aof work loop"],
+        "the shell is the only command family — aof:code-review left it at 149",
       );
     },
   },
   {
-    name: "autonomous-shell-out/arguments: c01-c06 delegate the exact no-json command and only max-attempts adds cap",
+    name: "autonomous-shell-out/arguments: c01-c04 and c06 delegate the exact no-json command and only max-attempts adds cap",
     run: () => {
       const exercised = new Set();
       for (const [row, invocation, expected] of delegatedCommandRows) {
@@ -405,27 +411,25 @@ export const autonomousShellOutPromptTests = [
     },
   },
   {
-    name: "autonomous-shell-out/survivors: range, solo, ship and max-attempts keep their admitted effects while prompt-owned config names the loop surface and its twins",
+    name: "autonomous-shell-out/survivors: range, solo and max-attempts keep their admitted effects while prompt-owned config names the loop surface and its twins (149 E13: no --ship)",
     run: () => {
       const { member } = bundleFacts();
       assert.equal(
         member.argumentHint,
-        '"<range — NN-MM or NN> [--ship] [--max-attempts N] [--solo]"',
-        "anything else is as before: the complete advertised argument contract is unchanged",
+        '"<range — NN-MM or NN> [--max-attempts N] [--solo]"',
+        "149 E13: the advertised argument contract lost --ship and nothing else",
       );
       const text = flattened(member.body);
-      for (const value of ["NN-MM", "single `NN`", "--ship", "--max-attempts N", "--solo"]) {
+      for (const value of ["NN-MM", "single `NN`", "--max-attempts N", "--solo"]) {
         assert.ok(text.includes(value), `argument effect is stated: ${value}`);
       }
       assert.match(text, /--max-attempts N.*forward `N` to the shell as `--cap N`/);
       assert.match(text, /work\.agents\.mode/);
       assert.match(text, /governs only the roles this session plays itself/);
       assert.match(text, /does not reach the sessions the shell drives/);
-      assert.match(text, /work\.codeReview\.autoComplete/);
-      assert.match(text, /after the shell reports a milestone accepted, run `aof:code-review <NN>`/);
-      assert.match(text, /A halt never ships an unaccepted milestone/);
+      for (const gone of ["--ship", "aof:code-review", "work.codeReview.autoComplete"]) assert.ok(!text.includes(gone), `149 E13: the body names no ${gone}`);
       const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
-      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency", "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency"], "129/07: the loop's three keys and their two workspace twins join the mode");
+      assert.deepEqual([...new Set(configKeys)].sort(), ["work.agents", "work.agents.mode", "work.dispatch.concurrency", "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency"], "129/07: the loop's three keys and their two workspace twins join the mode; 149 removed work.codeReview.autoComplete");
     },
   },
   {
@@ -593,7 +597,7 @@ export const autonomousShellOutPromptTests = [
     },
   })),
   {
-    name: "129/07 task02 the autonomous prompt names the three keys and their fallbacks beside the mode, states no cardinal for them, and its key set is the eight",
+    name: "129/07 task02 the autonomous prompt names the three keys and their fallbacks beside the mode, states no cardinal for them, and its key set is the seven (149 removed work.codeReview.autoComplete)",
     run: async () => {
       const { member } = bundleFacts();
       const text = flattened(member.body);
@@ -613,7 +617,7 @@ export const autonomousShellOutPromptTests = [
       assert.equal((text.match(/aof work loop/g) ?? []).length, 2, "the family count is unchanged");
       const configKeys = [...text.matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
       assert.deepEqual([...new Set(configKeys)].sort(), [
-        "work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency",
+        "work.agents", "work.agents.mode", "work.dispatch.concurrency",
         "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
       ]);
     },
@@ -701,7 +705,7 @@ export const autonomousShellOutPromptTests = [
       }
       const configKeys = [...flattened(member.body).matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
       assert.deepEqual([...new Set(configKeys)].sort(), [
-        "work.agents", "work.agents.mode", "work.codeReview.autoComplete", "work.dispatch.concurrency",
+        "work.agents", "work.agents.mode", "work.dispatch.concurrency",
         "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
       ]);
       const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => entry.resource.id === "autonomous" || entry.resource.id === "aof-autonomous");
@@ -713,7 +717,116 @@ export const autonomousShellOutPromptTests = [
       }
     },
   },
+  // ── 149/00 — a manual continue hands the operator a guide instead of a build ────
+  //
+  // `149_story_continue-manual-mode-guides-the-operator/tasks/00_a-manual-continue-hands-the-operator-a-guide.feature`,
+  // and the two prompt rows of task 01 (E5, E6). Read off the marked `<manual_mode>` region, so a
+  // renumbered step cannot move these controls.
+  {
+    name: "149/00 E1 · a manual continue spawns no builder, writes nothing outside the item's folder, prints the guide and stops",
+    run: () => {
+      const region = manualRegionOf();
+      assert.match(region, /No `aof-developer` is spawned, in solo and in orchestrated mode alike/u);
+      assert.match(region, /no file outside the item's own folder is written/u);
+      assert.match(region, /Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed\*\*, then stop\./u);
+    },
+  },
+  {
+    name: "149/00 E2 · the guide names everything the operator needs before touching code, in order",
+    run: () => {
+      const region = manualRegionOf();
+      const parts = [
+        "the scenarios still red, by name",
+        "the user story",
+        "each task file with its scenario names, read from `aof work tasks <ref> --json`",
+        "every `reads:` entry and every `files:` entry, each with one line on why it matters",
+        "the test files among `files:`, and the command `aof test --scope impacted --story <ref>`",
+        "the build plan's mechanism and known traps, when the story has a `PLAN.md`",
+        "an order to take the tasks in, with the reason for it",
+      ];
+      const guide = region.slice(region.indexOf("Print the guide"));
+      const at = parts.map((part) => guide.indexOf(part));
+      parts.forEach((part, i) => assert.ok(at[i] >= 0, `the guide names: ${part}`));
+      assert.deepEqual([...at].sort((a, b) => a - b), at, "the parts are named in the guide's order");
+    },
+  },
+  {
+    name: "149/00 E3 · a manual continue starts the story through its run, and writes no status move of its own",
+    run: () => {
+      const region = manualRegionOf();
+      const mint = region.indexOf("Mint the run with `aof work run-start <ref> --json` before the guide is printed");
+      const guide = region.indexOf("Print the guide");
+      const close = region.indexOf("Close the run with `aof work run-complete <ref> --outcome done` after the guide is printed");
+      assert.ok(mint >= 0 && guide > mint && close > guide, "mint, then the guide, then the close");
+      assert.match(region, /The session writes no status move of its own/u);
+    },
+  },
+  {
+    name: "149/00 E4 · a re-run prints the guide again, headed by what is still red",
+    run: () => {
+      const region = manualRegionOf();
+      assert.match(region, /Every manual run runs `aof test --scope impacted --story <ref>` once, before the guide/u);
+      assert.match(region, /The guide is printed in the terminal only\*\*, and no guide file is written to the story folder/u);
+      assert.match(region, /When every scenario is green the guide says so, and names `aof:review <ref>` as the next step/u);
+    },
+  },
+  ...[
+    [/A story whose `reads:` is absent, or whose tasks are thin or untagged, halts and sends the operator to `aof:refine <ref>`/u, "an unrefined story halts to aof:refine"],
+    [/Read the story exactly as the story lane's step 1 reads it, and no wider/u, "the read is step 1's, no wider"],
+    [/No gate ladder is walked and no reviewer is spawned/u, "no gate ladder and no reviewer"],
+    [/The hand-back is `guided: <ref> is yours to build`, and it names `aof:review <ref>` next — never `aof:verify`/u, "the hand-back names aof:review, never aof:verify"],
+  ].map(([rule, label]) => ({
+    name: `149/00 the manual region holds each rule a manual continue needs [${label}]`,
+    run: () => assert.match(manualRegionOf(), rule),
+  })),
+  {
+    name: "149/00 the output section names the manual outcome",
+    run: () => {
+      const body = String(loadBundle().resources.find((entry) => entry.id === "continue").body);
+      const output = flattened(markedRegion(body, "<output>", "</output>") ?? "");
+      assert.match(output, /\*\*guided: `<ref>` is yours to build\*\* — [^-]*Next: `aof:review <ref>`/u);
+    },
+  },
+  {
+    name: "149/00 the argument hint and every render carry --manual, and the renders are current",
+    run: () => {
+      const bundle = loadBundle();
+      const member = bundle.resources.find((entry) => entry.id === "continue");
+      assert.equal(member.argumentHint, '"<item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]"');
+      const renders = [".claude/commands/aof/continue.md", ".codex/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"];
+      for (const render of renders) assert.ok(readFileSync(path.join(repoRoot, render), "utf8").includes("<manual_mode>"), `${render} carries <manual_mode>`);
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      assert.equal(dry.status, 0, dry.stderr);
+      const actions = new Map(JSON.parse(dry.stdout).actions.map((entry) => [entry.path.replaceAll("\\", "/"), entry.action]));
+      for (const render of renders) assert.equal(actions.get(render), "skip", `${render} is current`);
+    },
+  },
+  {
+    name: "149/01 E5 · --manual with --solo or --orchestrated is stopped as contradictory, before any role runs or any run is minted",
+    run: () => {
+      const config = configBlocksOf("continue");
+      assert.match(config, /\*\*`--manual` together with `--solo` or `--orchestrated` is contradictory too\*\*/u);
+      assert.match(config, /STOP before any role runs and before any run is minted, and report it/u);
+    },
+  },
+  {
+    name: "149/01 E6 · a manual continue on a milestone or span is refused before any run is minted, naming its ready stories",
+    run: () => {
+      const region = manualRegionOf();
+      assert.match(region, /A milestone or a `NN\/MM-PP` span is refused before any run is minted/u);
+      assert.match(region, /run `aof work next <ref> --json` and name the ready stories it answers, to take one at a time/u);
+    },
+  },
 ];
+
+// The `<manual_mode>` region of the bundled continue prompt, flattened (149/00).
+function manualRegionOf() {
+  const member = loadBundle().resources.find((entry) => entry.id === "continue");
+  assert.ok(member, "continue is a bundle member");
+  const region = markedRegion(String(member.body), "<manual_mode>", "</manual_mode>");
+  assert.ok(region != null, "continue.md: NOT FOUND — the <manual_mode> region could not be cut");
+  return flattened(region);
+}
 
 // The `<config>` blocks of a bundled prompt, flattened — continue.md carries two.
 function configBlocksOf(prompt) {
