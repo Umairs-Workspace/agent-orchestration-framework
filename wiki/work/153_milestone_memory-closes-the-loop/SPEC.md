@@ -1,6 +1,6 @@
 ---
 type: milestone
-number:
+number: 153
 slug: memory-closes-the-loop
 title: "Memory closes the loop — every recall and its verdict is accounted, a lesson that recurs is caught at the retrospective, and each lesson names where it was promoted"
 status: not-started
@@ -18,7 +18,7 @@ aofVersion: 0.1.0
   (ARCHITECTURE / DESIGN / RESEARCH / UAT live in this folder too, conditionally).
   Does NOT contain: a per-story user story (→ each STORY.md) or acceptance criteria (→ task .feature).
 -->
-# Memory closes the loop
+# 153 · Memory closes the loop
 
 ## Objective
 
