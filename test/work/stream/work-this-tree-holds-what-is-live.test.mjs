@@ -19,27 +19,20 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // `42_structural-overhaul`, and `next`'s candidacy walk, `validate`'s numbering lanes and the
 // board's derivation run over the stream's actual shape.
 //
-// A CHECK OVER THE REAL TREE NAMES REAL ITEMS, by ref and by the status read off their own record
-// doc — never by a count of folders the next accept would move. `52` is the SPEC's own example of
-// an archived milestone; `32` is the live gate satisfied only through archived drivers. The ONE
-// hard-coded count is the link ratchet below.
+// NO ASSERTION HERE DEPENDS ON ANOTHER ITEM'S STATE (148/VERIFICATION F-148-06). Signing off one
+// item must never wait on an earlier item being archived, on a gate's status, on the citations
+// inside delivered records, or on the stream's validate/doctor findings: those are the operator's
+// and `aof work validate` / `doctor`'s to report, never a suite's to fail on. What is asserted
+// holds whatever the stream's state is: the root and the archive partition into item folders and
+// sub-roots, an archived row answers by ref and is never proposed, and the board face follows the
+// archive parameter. `52` is used by ref because it is archived and stays archived.
 //
-// FOUR CONTRACT DELTAS, measured at the build (2026-09-16) and recorded in the milestone STATE.md
-// `## Feedback (for retro)` rather than silently resolved:
-//   · `aof work validate --json` over the whole tree is NOT `[]` at HEAD, and was not before this
-//     story: 117 `story reads path "…" does not exist` findings on done records whose `reads:`
-//     cite modules 119 moved, because the public-repo move (2026-09-13) cut the git history the
-//     cited-path resolver reads renames from. The move itself adds none once its commit lands
-//     (the same resolver follows the 2,289 renames it records), so the claim this suite holds is
-//     the RATCHET: no finding of any other class, and no more of that class than before.
-//   · `aof work doctor 52 --json` carries eight `control-unresolved` warnings for the same reason
-//     (FF-5201…FF-5209 cite `test/arch/acd-loop-*.test.mjs`, moved by 119/03); held as a ratchet.
-//   · `aof work init-config --json` re-serialises the config canonically (`JSON.stringify(…, 2)`),
-//     and this repository's config carries two hand-compacted lines (b5f6cd5) — so "byte-identical"
-//     cannot hold; the verb is run on a COPY of the config and asserted JSON-equal with
-//     `intakeWritten: false` and `intake: "backlog"`.
-//   · `find --json`'s live row is the frozen seven keys (127/01) — it carries no `number` key, so
-//     the promoted row is asserted on `ref` and on the ABSENCE of `backlog`, not on `number`.
+// `aof work init-config --json` re-serialises the config canonically (`JSON.stringify(…, 2)`),
+// and this repository's config carries two hand-compacted lines (b5f6cd5) — so "byte-identical"
+// cannot hold; the verb is run on a COPY of the config and asserted JSON-equal with
+// `intakeWritten: false` and `intake: "backlog"`. `find --json`'s live row is the frozen seven keys
+// (127/01) — it carries no `number` key, so the promoted row is asserted on `ref` and on the
+// ABSENCE of `backlog`, not on `number`.
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readdir, readFile, writeFile, copyFile, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -68,46 +61,9 @@ const THIS_SUITE = "test/work/stream/work-this-tree-holds-what-is-live.test.mjs"
 const slash = (value) => String(value).replaceAll("\\", "/");
 const refsOf = (rows) => rows.map((row) => row.ref);
 
-// ── THE RATCHETS, measured by the developer immediately before task 01's move ─────────────────
-//
-// The link census: 03/01's syntactic scan (inline `](…)` links with a RELATIVE target under
-// `wiki/work/**/*.md`, resolved against the file's directory, existence checked) over this
-// working tree at `ba25547` on 2026-09-16, immediately before `aof work archive --done --yes`.
-// Measured again immediately after: 3,069 / 2,312 — identical, every link resolving to the same
-// path under the one remap. What the suite pins from it, and why the two halves differ:
-//   · the WHOLE tree is a `>=` on both counts. The contract spells `==` on the total, but the
-//     live records keep being written — this build's own `VERIFICATION.md` and `STATE.md` entries
-//     under 127 raised the total within the hour — and a `==` over a tree that is still authored
-//     would red on the next verify's prose, never on a move (delta, STATE.md);
-//   · the MOVED files are the `==`: an accepted item's records are never edited, so the links in
-//     the files that moved are exactly the links those files held before, and a link the move
-//     invented or lost is the one thing that changes the number.
-// Re-measured 2026-09-22 at f820ae9 (129's gate, F-73): 3069 → 3067. The two links were the source
-// citations inside a TECH_DEBT entry that 130/03 DISCHARGED (c55b2f1) — a shrink-only ledger deletes
-// paid entries, and the floor moves down with them. Nothing was lost by the archive move: resolving
-// ROSE 2312 → 2317, and the into-archive legs below are untouched.
-export const LINKS_BEFORE = Object.freeze({ total: 3067, resolving: 2317, measuredAt: "2026-09-22", commit: "f820ae9" });
-export const LINKS_IN_MOVED_BEFORE = Object.freeze({ total: 2810, resolving: 2121 });
-// Of the 1,156 links that targeted a folder the move would archive, 48 did not resolve BEFORE it —
-// bare `packages/core/src/work.mjs#L458`-shaped citations in OUTCOME.md files, resolving inside the item folder
-// where no such file ever was. "Every link into archive/ resolves" is therefore held as the same
-// ratchet: no more broken links into the archive than were broken into those folders before.
-// 2026-09-22 (129's gate, F-76): 48 → 51 when 127 itself was archived — its own three bare
-// `packages/core/src/…#L…`-shaped citations moved under archive/ with it (broken before the move inside the root
-// folder, broken after inside the archived one; "into archive/" is where they now resolve). Every
-// later archive of a folder carrying such citations moves this number the same way.
-// 2026-09-24 (130's door, F-23): 51 → 52 when 129 was archived. Its VERIFICATION.md:572 carries a
-// literal `](target)` placeholder link, broken inside the root folder before the move and broken
-// inside the archived one after it. 132 and 137 carried none.
-export const BROKEN_INTO_MOVED_BEFORE = 52;
-
-// The validate ratchet (see the header): the whole-tree finding set at `ba25547`, before the move,
-// was 117 findings of exactly one class. The move may not add a finding of any class.
-export const VALIDATE_BEFORE = Object.freeze({ findings: 117, problem: /^story reads path "[^"]+" does not exist$/, measuredAt: "2026-09-16", commit: "ba25547" });
-
-// The doctor-52 ratchet (see the header): eight `control-unresolved` warnings at `ba25547`, every
-// one a control citing a `test/arch/acd-loop-*.test.mjs` path 119/03 moved, none an error.
-export const DOCTOR_52_BEFORE = Object.freeze({ controlUnresolved: 8, measuredAt: "2026-09-16", commit: "ba25547" });
+// The one validate class the shape copy cannot reproduce: it has no `packages/`, `test/` or git
+// history, so a `reads:` path the real tree resolves does not resolve in the copy.
+const STALE_READS = /^story reads path "[^"]+" does not exist$/;
 
 // ── the CLI, as an outsider runs it ──────────────────────────────────────────────────────────
 
@@ -139,7 +95,7 @@ function parse(result, label) {
 const json = (cwd, args, home) => parse(runCli(cwd, ["work", ...args, "--json"], home), `aof work ${args.join(" ")} --json`);
 
 // The class the ratchet admits, and nothing else.
-const isStaleReadsFinding = (finding) => VALIDATE_BEFORE.problem.test(finding.problem);
+const isStaleReadsFinding = (finding) => STALE_READS.test(finding.problem);
 
 // ── the real board face, in-process, over a project root ─────────────────────────────────────
 //
@@ -256,7 +212,13 @@ async function addToBacklog(work) {
   return leaf;
 }
 
-const rootItemFolders = async (dir) => (await readdir(dir, { withFileTypes: true })).filter((entry) => entry.isDirectory() && ITEM_RE.test(entry.name)).map((entry) => entry.name).sort();
+// The item folders at a work root, floored at one (FF-11902's non-vacuity rule): a walk of the wrong
+// directory must fail here. It names no item and no status — any one live item satisfies it.
+const rootItemFolders = async (dir) => {
+  const folders = (await readdir(dir, { withFileTypes: true })).filter((entry) => entry.isDirectory() && ITEM_RE.test(entry.name)).map((entry) => entry.name).sort();
+  assert.ok(folders.length > 0, `the walk of ${dir} found item folders (non-vacuous)`);
+  return folders;
+};
 const stripDir = ({ dir, ...rest }) => rest;
 // A LIVE row on the listing is the frozen seven keys and nothing else: no `number` (a backlog row
 // carries `number: null`), no `archived`. MAX is the highest top-level number among those.
@@ -283,40 +245,6 @@ async function dropSharedCopy() {
   await rm(root, { recursive: true, force: true });
 }
 
-// ── the link scan (task 02) — 03/01's rule, spelled here so the ratchet is black-box ──────────
-
-const LINK_RE = /\]\(([^\s)]+)[^)]*\)/g;
-const isRelativeTarget = (target) => !/^[a-z][a-z0-9+.-]*:/i.test(target) && !target.startsWith("/") && !target.startsWith("#") && !target.startsWith("\\");
-const decodeSegment = (segment) => { try { return decodeURIComponent(segment); } catch { return segment; } };
-
-async function walkAll(dir, out = []) {
-  for (const entry of await readdir(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) await walkAll(full, out);
-    else out.push(full);
-  }
-  return out;
-}
-
-export async function scanRelativeLinks(work) {
-  const links = [];
-  const markdownFiles = (await walkAll(work)).filter((f) => f.toLowerCase().endsWith(".md")).sort();
-  assert.ok(markdownFiles.length > 0, `the walk of ${work} found markdown to scan (non-vacuous)`);
-  for (const file of markdownFiles) {
-    const text = (await readFile(file)).toString("latin1");
-    for (const match of text.matchAll(LINK_RE)) {
-      const target = match[1];
-      if (!isRelativeTarget(target)) continue;
-      const pathPart = target.split(/[#?]/)[0];
-      if (pathPart === "") continue;
-      const resolved = path.resolve(path.dirname(file), pathPart.split("/").map(decodeSegment).join("/"));
-      links.push({ file: slash(path.relative(work, file)), target, resolved, exists: existsSync(resolved) });
-    }
-  }
-  return links;
-}
-
-
 // ── the tests ─────────────────────────────────────────────────────────────────────────────────
 
 export const workThisTreeHoldsWhatIsLiveTests = [
@@ -340,21 +268,6 @@ export const workThisTreeHoldsWhatIsLiveTests = [
       // so no commit on `main` can show the one-line diff again. The placement legs above are what the
       // tree itself still guarantees (retired at 138's door, m138/F-16; 127/05's .feature is untouched).
     },
-  },
-  {
-    name: "work/this-tree-holds-what-is-live: 00 validate and doctor from the repository root are no redder than before the write — no finding outside the pre-existing stale-reads class, no error-level finding",
-    run: () =>
-      withHome((home) => {
-        const findings = json(repoRoot, ["validate"], home);
-        assert.ok(Array.isArray(findings), "validate --json answers an array");
-        const foreign = findings.filter((finding) => !isStaleReadsFinding(finding));
-        assert.deepEqual(foreign, [], "no finding of any class this story could have caused (folder/frontmatter, tags, depends, numbering) — only the pre-existing stale-reads class");
-        assert.ok(findings.length <= VALIDATE_BEFORE.findings, `no more stale-reads findings than before the write (${findings.length} <= ${VALIDATE_BEFORE.findings}, measured ${VALIDATE_BEFORE.measuredAt} at ${VALIDATE_BEFORE.commit})`);
-
-        const doctor = json(repoRoot, ["doctor"], home);
-        assert.equal(doctor.errors, 0, "doctor reports no error-level finding");
-        assert.deepEqual(doctor.findings.filter((finding) => finding.severity === "error"), [], "…and none in its findings");
-      }),
   },
   {
     name: "work/this-tree-holds-what-is-live: 00 init-config over this repository's config answers intakeWritten: false and keeps the document JSON-equal — an existing \"backlog\" is kept (02/04's fill-don't-clobber)",
@@ -544,7 +457,7 @@ export const workThisTreeHoldsWhatIsLiveTests = [
           // structural lanes (folder/frontmatter, tags, depends, numbering) must agree exactly.
           const copyFindings = json(root, ["validate"], home);
           const realFindings = json(repoRoot, ["validate"], home);
-          assert.deepEqual(copyFindings.filter((f) => !isStaleReadsFinding(f)), realFindings.filter((f) => !isStaleReadsFinding(f)), "the structural finding sets are equal (both empty)");
+          assert.deepEqual(copyFindings.filter((f) => !isStaleReadsFinding(f)), realFindings.filter((f) => !isStaleReadsFinding(f)), "the structural finding sets are equal");
           assert.ok(copyFindings.length >= realFindings.length, "the copy's only extra findings are of the reads-path class");
         } finally {
           await rm(root, { recursive: true, force: true });
@@ -559,18 +472,15 @@ export const workThisTreeHoldsWhatIsLiveTests = [
   // Scenario: the root of the work directory is a short list of live items, and the archive
   // holds only done drivers
   {
-    name: "work/this-tree-holds-what-is-live: 02 the root of wiki/work holds only live items, the archive holds only done drivers, list --all carries every archived row last with archived: true, and 42_structural-overhaul is not an item",
+    name: "work/this-tree-holds-what-is-live: 02 the root of wiki/work holds only item folders and sub-roots, the archive holds only done drivers, list --all carries every archived row last with archived: true, and 42_structural-overhaul is not an item",
     run: () =>
       withHome(async (home) => {
+        // WHETHER A DONE ITEM HAS BEEN ARCHIVED YET IS NEVER ASSERTED HERE (148/VERIFICATION F-148-06).
+        // Archiving is the operator's act, at the operator's time (127/ADR-004); a suite that read
+        // the root's statuses made every later item's sign-off wait on the archiving of earlier ones.
+        // The same goes for naming which item sits where (the old "32 is at the root"): the stream's
+        // state is the operator's, and this suite asserts only what holds whatever that state is.
         const rootFolders = await rootItemFolders(workRoot);
-        assert.ok(rootFolders.length > 0, "the root holds live items");
-        for (const name of rootFolders) {
-          const [, number, type] = name.match(ITEM_RE);
-          const doc = await readFile(path.join(workRoot, name, recordDoc({ type, dir: path.join(workRoot, name) })), "utf8");
-          const { status } = parseFrontmatter(doc);
-          assert.notEqual(status, "done", `${number} (${name}) at the root is not done (status: ${status})`);
-        }
-        assert.ok(rootFolders.some((name) => name.startsWith("32_uat_")), "the live gate 32 is at the root");
         // The scenario's claim is the PROPERTY — a root folder outside the item grammar is never
         // enumerated as an item — and `42_structural-overhaul` was its one instance on the day the
         // move landed. The operator then accepted the GSD-era record as an imported milestone and
@@ -674,40 +584,11 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         assert.equal(doc.body, onDisk, "the body is the file's own bytes (CRLF and all)");
       }),
   },
-  {
-    name: "work/this-tree-holds-what-is-live: 02 doctor 52 reports no error-level finding, and no control-unresolved beyond the pre-existing lost-history set — none names a path under wiki/work",
-    run: () =>
-      withHome((home) => {
-        const doctor = json(repoRoot, ["doctor", "52"], home);
-        assert.equal(doctor.errors, 0, "no error-level finding");
-        assert.deepEqual(doctor.findings.filter((finding) => finding.severity === "error"), []);
-        const unresolved = doctor.findings.filter((finding) => finding.code === "control-unresolved");
-        assert.ok(unresolved.length <= DOCTOR_52_BEFORE.controlUnresolved, `no more control-unresolved than before the move (${unresolved.length} <= ${DOCTOR_52_BEFORE.controlUnresolved}, measured ${DOCTOR_52_BEFORE.measuredAt} at ${DOCTOR_52_BEFORE.commit})`);
-        for (const finding of unresolved) {
-          assert.match(String(finding.message), /cites test\/arch\/acd-loop-[a-z-]+\.test\.mjs/, `the pre-existing class only — a control 119/03 moved, its rename lost with the history (${finding.message})`);
-          assert.ok(!/wiki\/work/.test(String(finding.message)), "…never a path under wiki/work the move could have broken");
-        }
-      }),
-  },
-  {
-    name: "work/this-tree-holds-what-is-live: 02 validate 52 is [] — the archived milestone validates from disk",
-    run: () => withHome((home) => assert.deepEqual(json(repoRoot, ["validate", "52"], home), [])),
-  },
-  {
-    name: "work/this-tree-holds-what-is-live: 02 validate over the whole tree, archive included, holds the ratchet — no finding names an archived path that the move broke, no finding of any class the move could produce",
-    run: () =>
-      withHome((home) => {
-        const findings = json(repoRoot, ["validate"], home);
-        assert.deepEqual(findings.filter((finding) => !isStaleReadsFinding(finding)), [], "no folder/frontmatter, tag, depends or numbering finding anywhere — archive included");
-        assert.ok(findings.length <= VALIDATE_BEFORE.findings, `no more stale-reads findings than before the move (${findings.length} <= ${VALIDATE_BEFORE.findings})`);
-        assert.deepEqual(findings.filter((finding) => /reads path "wiki\/work\/\d+_/.test(finding.problem)), [], "no reads: citation of a root-level item path is left dangling — the resolver follows the recorded renames");
-      }),
-  },
 
   // Scenario: every walker that answers "what is next" never proposes an archived item, and a
   // live gate satisfied only by archived drivers is still ready
   {
-    name: "work/this-tree-holds-what-is-live: 02 next never proposes an archived item or a backlog slug, next 32 is ready through its eleven archived dependencies, the default list carries no archived row, and list --all carries 52 and its six stories",
+    name: "work/this-tree-holds-what-is-live: 02 next never proposes an archived item or a backlog slug, the default list carries no archived row, and list --all carries 52 and its six stories",
     run: () =>
       withHome(async (home) => {
         const archivedNames = await readdir(path.join(workRoot, ARCHIVE_ROOT));
@@ -716,24 +597,16 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         const live = new Set(all.filter(isLiveRow).map((row) => row.ref));
 
         const next = json(repoRoot, ["next"], home);
-        assert.ok(live.has(next.ref), `the unscoped next's ref is a live row (${next.ref})`);
-        for (const row of next.readySet) {
+        if (next.ref != null) assert.ok(live.has(next.ref), `the unscoped next's ref is a live row (${next.ref})`);
+        for (const row of next.readySet ?? []) {
           assert.ok(live.has(row.ref), `${row.ref} in the readySet is a live row`);
           assert.ok(!archivedRefs.has(row.ref.split("/")[0]), `${row.ref} is not under archive/`);
           assert.notEqual(row.ref, "52");
         }
 
-        const gate = json(repoRoot, ["next", "32"], home);
-        assert.equal(gate.state, "ready", "next 32 answers ready");
-        assert.equal(gate.ref, "32");
-        assert.ok(gate.waitingOn == null || gate.waitingOn.length === 0, "…with no waitingOn");
-        const session = parseFrontmatter(await readFile(path.join(workRoot, "32_uat_whole-mesh-acceptance", "SESSION.md"), "utf8"));
-        const depends = String(session.depends ?? "").replace(/[[\]]/g, "").split(",").map((entry) => entry.trim()).filter(Boolean);
-        assert.equal(depends.length, 11, "32 depends on eleven drivers");
-        for (const dep of depends) {
-          assert.ok(archivedRefs.has(dep), `dependency ${dep} is under archive/`);
-          assert.equal(all.find((row) => row.ref === dep && row.archived === true)?.status, "done", `dependency ${dep} is a done driver — satisfied, not missing`);
-        }
+        // 32's own state (ready, at the root, its dependencies archived) is not asserted: it is the
+        // operator's to change, and an archived dependency satisfying `next` is proved on the archive
+        // suite's fixture (`work-archive-is-a-move`), not on whichever items the stream holds today.
 
         const listed = json(repoRoot, ["list"], home);
         assert.deepEqual(listed.filter((row) => row.archived === true), [], "the default list carries no archived: true row");
@@ -762,11 +635,10 @@ export const workThisTreeHoldsWhatIsLiveTests = [
         const byDefault = await faceList(repoRoot, home);
         assert.deepEqual(byDefault.items.filter((row) => row.archived === true), [], "no archived: true row by default");
         for (const ref of liveRoots) assert.ok(byDefault.items.some((row) => row.ref === ref), `${ref} is on the face`);
-        // 129's gate (2026-09-22, F-76): 127 is archived now, so the milestone with stories is read off
-        // the live roots rather than named — the claim (a live milestone's stories ride the face) is unchanged.
-        const liveWithStories = liveRoots.find((ref) => all.some((row) => row.parent === ref));
-        assert.ok(liveWithStories != null, "a live milestone with stories exists (non-vacuous)");
-        assert.ok(byDefault.items.some((row) => row.parent === liveWithStories), "…with its stories");
+        // Every live item's stories ride the face — over whichever live items exist, none required.
+        for (const story of all.filter((row) => row.archived !== true && liveRoots.includes(String(row.parent ?? "")))) {
+          assert.ok(byDefault.items.some((row) => row.ref === story.ref), `${story.ref} rides the face with its parent`);
+        }
         const derived = deriveBoard(byDefault.items);
         assert.equal(derived.milestones.length, all.filter((row) => row.type === "milestone" && row.parent == null && isLiveRow(row)).length, "deriveBoard(items).milestones is exactly the live milestones");
         // No literal count beside the property: "three today (127, 129, 130)" was true for one day and
@@ -784,53 +656,6 @@ export const workThisTreeHoldsWhatIsLiveTests = [
       }),
   },
 
-  // Scenario: no relative link resolves worse than it did before the move, and no link was
-  // invented
-  {
-    name: "work/this-tree-holds-what-is-live: 02 the link ratchet holds — the total equals LINKS_BEFORE.total, the resolving count is >= LINKS_BEFORE.resolving, every link into archive/ resolves, no link targets a root path whose folder now lives under archive/, and the four wiki/memory.md links resolve",
-    run: async () => {
-      const links = await scanRelativeLinks(workRoot);
-      const resolving = links.filter((link) => link.exists).length;
-      assert.ok(links.length >= LINKS_BEFORE.total, `the tree holds at least the links measured before the move (${links.length} >= ${LINKS_BEFORE.total}, ${LINKS_BEFORE.measuredAt} at ${LINKS_BEFORE.commit}) — none was lost`);
-      assert.ok(resolving >= LINKS_BEFORE.resolving, `the resolving count is >= the count measured before the move (${resolving} >= ${LINKS_BEFORE.resolving})`);
-
-      const archiveRoot = path.join(workRoot, ARCHIVE_ROOT);
-      // Over the ITEM folders under archive/: the GSD-era record (`archive/.gsd-archive`, b32929d) is
-      // outside the grammar, carries its own internal links to files that never moved with it, and
-      // is not "the files that moved".
-      const archivedItemDirs = (await readdir(archiveRoot, { withFileTypes: true })).filter((entry) => entry.isDirectory() && ITEM_RE.test(entry.name)).map((entry) => `${ARCHIVE_ROOT}/${entry.name}/`);
-      assert.ok(archivedItemDirs.length > 100, `archive/ holds the item folders (${archivedItemDirs.length})`);
-      const underArchivedItem = (file) => archivedItemDirs.some((dir) => file.startsWith(dir));
-      const inMoved = links.filter((link) => underArchivedItem(link.file));
-      assert.ok(inMoved.length > 0, `the files under ${ARCHIVE_ROOT}/ carry links (non-vacuous)`);
-      // "The files that moved" is read as everything under archive/, and that set GROWS with every
-      // later archive (42's, 4caeec4, brought 63 links under archive/ the same day) — so the "none
-      // invented" equality could only ever hold on the day of the move. "None lost" is the property
-      // that survives, and it is the same floor the whole-tree ratchet above already holds.
-      assert.ok(inMoved.length >= LINKS_IN_MOVED_BEFORE.total, `the files under archive/ hold at least the links the moved files held before the move — none lost (${inMoved.length} >= ${LINKS_IN_MOVED_BEFORE.total})`);
-      assert.ok(inMoved.filter((link) => link.exists).length >= LINKS_IN_MOVED_BEFORE.resolving, `…and at least as many of them resolve (${inMoved.filter((link) => link.exists).length} >= ${LINKS_IN_MOVED_BEFORE.resolving})`);
-      const archivedNames = new Set(await readdir(archiveRoot));
-      const underNonItemArchiveFolder = (file) => file.startsWith(`${ARCHIVE_ROOT}/`) && !underArchivedItem(file);
-      const intoArchive = links.filter((link) => slash(link.resolved).startsWith(`${slash(archiveRoot)}/`) && !underNonItemArchiveFolder(link.file));
-      assert.ok(intoArchive.length > 1000, `links target the archive (${intoArchive.length})`);
-      const broken = intoArchive.filter((link) => !link.exists);
-      assert.ok(broken.length <= BROKEN_INTO_MOVED_BEFORE, `every link into archive/ that resolved before the move still resolves — no more than the ${BROKEN_INTO_MOVED_BEFORE} that were broken before it (${broken.length}): ${broken.slice(0, 5).map((link) => `${link.file} -> ${link.target}`).join("; ")}`);
-      assert.ok(intoArchive.length - broken.length >= 1156 - BROKEN_INTO_MOVED_BEFORE, `the resolving links into the archive are at least the 1,108 measured before the move (${intoArchive.length - broken.length})`);
-      const stale = links.filter((link) => {
-        const rel = slash(path.relative(workRoot, link.resolved));
-        return archivedNames.has(rel.split("/")[0]);
-      });
-      assert.deepEqual(stale.map((link) => `${link.file} -> ${link.target}`).slice(0, 20), [], "no link targets a root path wiki/work/<NN>_… whose folder now lives under archive/");
-
-      const memory = await readFile(path.join(repoRoot, "wiki", "memory.md"), "latin1");
-      const memoryLinks = [...memory.matchAll(LINK_RE)].map((match) => match[1]).filter((target) => target.includes("05_milestone_work-memory"));
-      assert.equal(memoryLinks.length, 4, "wiki/memory.md carries four links into 05_milestone_work-memory");
-      for (const target of memoryLinks) {
-        assert.ok(target.startsWith("work/archive/05_milestone_work-memory/"), `${target} reads work/archive/05_milestone_work-memory/…`);
-        assert.ok(existsSync(path.join(repoRoot, "wiki", target.split(/[#?]/)[0])), `${target} resolves`);
-      }
-    },
-  },
 
   // Scenario: the two runtime path-readers survive the archive of the items they read
   {

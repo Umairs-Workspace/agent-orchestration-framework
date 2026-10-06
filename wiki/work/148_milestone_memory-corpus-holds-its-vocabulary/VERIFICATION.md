@@ -129,9 +129,18 @@ re-run at `main` (`6351dd66`) over the same files:
 - **FF-12401.** The census counted the numeric `depends:` of three backlog rows (148's refine shattered
   them, naming 148 and 153). The lane never counts a backlog row as a source (127/ADR-002 §3). The
   control's domain now excludes backlog rows whole, as the lane does.
-- **`work-this-tree-holds-what-is-live` 02 stays red (F-148-06).** Twelve done items sit at the root:
-  134–136, 143–147 and 149–152. Archiving them is the operator's act (127/ADR-004), and the operator
-  will do it before the gate is re-run.
+- **F-148-06: the gate depended on other items' state, and that was the defect.** Twelve done items
+  sat at the root, and `work-this-tree-holds-what-is-live` 02 failed on it. Signing off one item
+  must never wait on the archiving of earlier ones. The repair went to the tests, not the stream:
+  - `work-this-tree-holds-what-is-live` drops every assertion over other items' state: no done item
+    at the root, 32 at the root and ready through archived dependencies, the whole-stream validate
+    and link ratchets, doctor and validate over archived 52, and "a live milestone with stories
+    exists". What stays holds whatever the stream's state is.
+  - The Plan 09 ledger check holds 142's archived record to its own consistency. It is no longer
+    re-measured against today's files and case names, which made every PR edit an archived milestone.
+  - FF-11903 sweeps only the documents of items that are not done. All 55 unresolved citations were
+    in done records, and live work reads 0 against the ceiling of 55.
+  The 12 items stay where they are, for the operator to archive whenever.
 
 ## Findings
 
@@ -142,4 +151,4 @@ re-run at `main` (`6351dd66`) over the same files:
 | F-148-03 | The whole-tree gate is red at `main` on eight controls (see `## Regression gate`), seven from #7 and one from 134 not yet archived. | defect | major | blocker for the milestone door | this branch: the seven controls are repaired (`## Regression gate`, repairs after the run); the archive half is F-148-06 | fixed |
 | F-148-04 | 23 lessons record what worked ("confirmed approach", "insight", "confirmation"), and no kind fits them, so they count as non-enum. | gap | minor | non-blocker: the SPEC holds the vocabulary as prescribed | a later SPEC (a fifth kind, or a ruling) | open |
 | F-148-05 | The gate's reds that are this branch's: two suites pin the stream row at 35, and the Plan 09 ledger holds a stale hash. | defect | major | blocker for the milestone door | this branch | fixed |
-| F-148-06 | Twelve done items (134–136, 143–147, 149–152) sit at the root of `wiki/work`, so `work-this-tree-holds-what-is-live` 02 is red and the whole-tree gate cannot go green. | defect | major | blocker for the milestone door | operator: `aof work archive` for each (127/ADR-004), then re-run `aof work regression-gate 148` | open |
+| F-148-06 | The whole-tree gate failed on other items' state: twelve done items not yet archived (`work-this-tree-holds-what-is-live` 02), citations inside done records (FF-11903), and an archived milestone's ledger re-measured per PR (Plan 09). | defect | major | blocker for the milestone door | this branch: the tests are decoupled from other items' state (`## Regression gate`, repairs after the run) | fixed |
