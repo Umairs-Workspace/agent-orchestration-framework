@@ -102,7 +102,13 @@ const FIXTURE_ARCH = [
 // What HEAD's ladder door printed for each human row, over the fixture above with its index
 // built. Captured as described in the header; `\n` is what `console.log` appended.
 const HUMAN_GOLDENS = [
-  { invocation: ["status"], stdout: "memory: backend=local records=2\n" },
+  // 148/05 — the first line is unchanged; the layers and conformance lines follow it (148/ADR-004 §3).
+  {
+    invocation: ["status"],
+    stdout: "memory: backend=local records=2\n"
+      + "layers: episodic 0 · semantic 1 · procedural 1\n"
+      + "conformance: kind blank 0 non-enum 0 · area blank 0 non-enum 1 · stage blank 0 non-enum 0 · owner blank 0 · gap status non-enum 0\n",
+  },
   { invocation: ["reindex"], stdout: "reindex: 2 record(s)\n" },
   { invocation: ["ingest"], stdout: "reindex: 2 record(s)\n" },
   {
@@ -150,6 +156,7 @@ const JSON_GOLDENS = [
       + "    \"kind\": \"near-miss\",\n"
       + "    \"owner\": \"developer\",\n"
       + "    \"status\": \"\",\n"
+      + "    \"tags\": [],\n"
       + "    \"summary\": \"pin line endings at the writer, never at the reviewer.\",\n"
       + "    \"text\": \"Pin line endings on every generated file \\n a generated file shipped with CRLF and the diff was every line. \\n nothing pinned the line endings at the writer. \\n pin line endings at the writer, never at the reviewer.\",\n"
       + "    \"source\": \"07_milestone_fixture/RETROSPECTIVE.md:6\",\n"
@@ -166,6 +173,7 @@ const JSON_GOLDENS = [
       + "    \"kind\": \"\",\n"
       + "    \"owner\": \"\",\n"
       + "    \"status\": \"Accepted\",\n"
+      + "    \"tags\": [],\n"
       + "    \"summary\": \"One ADR, so the brief's split has an adr to count.\",\n"
       + "    \"text\": \"The fixture keeps one decision \\n One ADR, so the brief's split has an adr to count.\",\n"
       + "    \"source\": \"07_milestone_fixture/ARCHITECTURE.md:6\",\n"
@@ -201,13 +209,15 @@ const JSON_GOLDENS = [
       + "  \"backend\": \"local\",\n"
       + "  \"recordCount\": 2,\n"
       + "  \"store\": \"<STORE>\",\n"
-      + "  \"version\": 1\n"
+      + "  \"version\": 2\n"
       + "}\n",
     check: (doc) => { assert.equal("records" in doc, false, "reindex --json carries no `records`"); assert.equal(doc.recordCount, 2); },
   },
   {
     invocation: ["status"],
     shape: "the { backend, recordCount } object",
+    // 148/05 — the seam composes `types`, `layers` and `conformance` after the backend's own facts
+    // (148/ADR-004); the fixture lesson's Area `tooling` is the one non-enum value.
     stdout: "{\n"
       + "  \"backend\": \"local\",\n"
       + "  \"recordCount\": 2,\n"
@@ -217,7 +227,47 @@ const JSON_GOLDENS = [
       + "  \"adrs\": 1,\n"
       + "  \"summaries\": 0,\n"
       + "  \"capabilities\": 0,\n"
-      + "  \"gaps\": 0\n"
+      + "  \"gaps\": 0,\n"
+      + "  \"index\": {\n"
+      + "    \"version\": 2,\n"
+      + "    \"current\": 2,\n"
+      + "    \"stale\": false\n"
+      + "  },\n"
+      + "  \"types\": {\n"
+      + "    \"adr\": {\n"
+      + "      \"count\": 1,\n"
+      + "      \"layer\": \"semantic\"\n"
+      + "    },\n"
+      + "    \"lesson\": {\n"
+      + "      \"count\": 1,\n"
+      + "      \"layer\": \"procedural\"\n"
+      + "    }\n"
+      + "  },\n"
+      + "  \"layers\": {\n"
+      + "    \"episodic\": 0,\n"
+      + "    \"semantic\": 1,\n"
+      + "    \"procedural\": 1\n"
+      + "  },\n"
+      + "  \"conformance\": {\n"
+      + "    \"kind\": {\n"
+      + "      \"blank\": 0,\n"
+      + "      \"nonEnum\": 0\n"
+      + "    },\n"
+      + "    \"area\": {\n"
+      + "      \"blank\": 0,\n"
+      + "      \"nonEnum\": 1\n"
+      + "    },\n"
+      + "    \"stage\": {\n"
+      + "      \"blank\": 0,\n"
+      + "      \"nonEnum\": 0\n"
+      + "    },\n"
+      + "    \"owner\": {\n"
+      + "      \"blank\": 0\n"
+      + "    },\n"
+      + "    \"gapStatus\": {\n"
+      + "      \"nonEnum\": 0\n"
+      + "    }\n"
+      + "  }\n"
       + "}\n",
     check: (doc) => { assert.equal(doc.backend, "local"); assert.equal(doc.recordCount, 2); },
   },
@@ -527,7 +577,7 @@ export const workMemoryCommandTests = [
   },
 
   {
-    name: "work-memory/00 the bijection probe answers one document at exit 0: `aof work memory status --json` on a bare fixture (no memory.backend ⇒ none) is exactly { backend: \"none\", recordCount: 0 }",
+    name: "work-memory/00 the bijection probe answers one document at exit 0: `aof work memory status --json` on a bare fixture (no memory.backend ⇒ none) is the none backend's status: zero records and an empty partition",
     run: async () => {
       const root = await makeRoot();
       try {
@@ -535,7 +585,20 @@ export const workMemoryCommandTests = [
         assert.equal(probe.status, 0, `the probe exits 0 (stderr: ${probe.stderr})`);
         let doc;
         assert.doesNotThrow(() => { doc = JSON.parse(probe.stdout); }, "exactly one parseable JSON document");
-        assert.deepEqual(doc, { backend: "none", recordCount: 0 }, "the none backend's honest status");
+        // 148/05 — the seam's composition over no records: an empty partition, every count zero.
+        assert.deepEqual(doc, {
+          backend: "none",
+          recordCount: 0,
+          types: {},
+          layers: { episodic: 0, semantic: 0, procedural: 0 },
+          conformance: {
+            kind: { blank: 0, nonEnum: 0 },
+            area: { blank: 0, nonEnum: 0 },
+            stage: { blank: 0, nonEnum: 0 },
+            owner: { blank: 0 },
+            gapStatus: { nonEnum: 0 },
+          },
+        }, "the none backend's honest status");
         assert.equal(probe.stdout, `${JSON.stringify(doc, null, 2)}\n`, "and nothing else on stdout");
       } finally {
         await rm(root, { recursive: true, force: true });

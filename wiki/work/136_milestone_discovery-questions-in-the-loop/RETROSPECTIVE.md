@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-04
+updated: 2026-10-06
 ---
 # 136 · Discovery questions in the loop — Retrospective
 
 ## R1 — the live run found what every green suite could not
 
-- **Kind:** mistake · **Area:** technical · **Stage:** verify · **Owner:** architect
+- **Kind:** mistake · **Area:** code (technical) · **Stage:** verify · **Owner:** architect
 - **Raised by:** `aof:verify 136`, the `@manual` live run
 
 **What happened.** 01 and 02 were green, and 131's ask detection had its own green suites. The

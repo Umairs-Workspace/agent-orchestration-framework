@@ -4,10 +4,10 @@ number: 04
 slug: a-live-lessons-meta-line-is-held
 title: "A live lesson's meta line is held — validate errors on a non-enum value in a live item, doctor warns on an archived one"
 parent: 148
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-06
 schema: 1
 aofVersion: 0.1.0
 depends: [02]
@@ -37,7 +37,11 @@ files:
   - .claude/commands/aof/retrospective.md
   - .opencode/commands/aof/retrospective.md
   - .codex/skills/aof-retrospective/SKILL.md
-  - packages/work/test/lesson-meta-hold.test.mjs
+  - packages/work/test/lesson-meta-hold.suite.mjs
+  - test/arch/audit/acd-controls-never-execute.test.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
+  - test/examples/doctor-examples-lane.test.mjs
+  - test/bundle/yarn-installation.test.mjs
   - packages/work/test/index.mjs
   - wiki/work/134_milestone_discovery-the-example-map/RETROSPECTIVE.md
   - wiki/work/134_milestone_discovery-the-example-map/stories/01_story_the-baseline-is-counted/RETROSPECTIVE.md
@@ -52,6 +56,7 @@ files:
   - wiki/work/144_story_the-whole-tree-run-signs-off-in-minutes/RETROSPECTIVE.md
   - wiki/work/145_story_loop-diagram/RETROSPECTIVE.md
   - wiki/work/146_story_a-capture-can-skip-the-backlog/RETROSPECTIVE.md
+  - wiki/work/149_story_continue-manual-mode-guides-the-operator/RETROSPECTIVE.md
 ---
 # 04 · A live lesson's meta line is held
 
@@ -73,9 +78,9 @@ retrospective prompt states the rule.
 
 ## Tasks
 
-- [ ] 00 [a live lesson's meta line is held by validate](tasks/00_a-live-lessons-meta-line-is-held-by-validate.feature)
-- [ ] 01 [an archived lesson's meta line is flagged, never failed](tasks/01_an-archived-lessons-meta-line-is-flagged-never-failed.feature)
-- [ ] 02 [the live stream is green when the hold lands](tasks/02_the-live-stream-is-green-when-the-hold-lands.feature)
+- [x] 00 [a live lesson's meta line is held by validate](tasks/00_a-live-lessons-meta-line-is-held-by-validate.feature)
+- [x] 01 [an archived lesson's meta line is flagged, never failed](tasks/01_an-archived-lessons-meta-line-is-flagged-never-failed.feature)
+- [x] 02 [the live stream is green when the hold lands](tasks/02_the-live-stream-is-green-when-the-hold-lands.feature)
 
 ## Notes
 

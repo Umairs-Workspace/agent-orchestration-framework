@@ -1,4 +1,5 @@
 import noneBackend from "./memory/none-backend.mjs";
+import { statusPartition } from "./memory/local-retrieval.mjs";
 import { commandError } from "@aof/contracts/error";
 
 // Configured application services are supplied by core; construction performs no I/O.
@@ -269,7 +270,8 @@ const HOOK_LIMIT = 5;
 // Shape: one line PER record (already scope-filtered + highest-score-first by
 // recall), capped at `limit` (default HOOK_LIMIT), each line exactly:
 //   `${id} (m${item}) · ${kind || recordType} · ${area} · ${title} · ${source}`
-// joined by "\n" with a trailing "\n". `kind || recordType` so an adr (whose
+// joined by "\n" with a trailing "\n" — and, for a record with tags, `· [t1; t2]` between the
+// title and the source (148/ADR-003). `kind || recordType` so an adr (whose
 // `kind` is "") shows "adr" while a lesson shows its kind (e.g. "near-miss"). The
 // id field carries its milestone (`(m<item>)`) — ids COLLIDE across milestones
 // (`R1`, `ADR-002` recur every milestone), so a bare id leaves an agent unable to
@@ -285,7 +287,12 @@ function renderRecallBlock(recallResult, { limit } = {}) {
   if (records.length === 0) return "";
   const lines = records.map((record) => {
     const id = record.item ? `${record.id} (m${record.item})` : record.id;
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title} · ${record.source}`;
+    // 148/ADR-003 — a record's tags (`recurring`, `caught at review`, a gap's discharge date) are
+    // ONE field, `[t1; t2]`, inserted before the source so the source stays last. An untagged
+    // record, and one from a store before index version 2 that carries no `tags`, renders the
+    // five-field line unchanged.
+    const tags = Array.isArray(record.tags) && record.tags.length > 0 ? ` · [${record.tags.join("; ")}]` : "";
+    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${tags} · ${record.source}`;
   });
   return lines.join("\n") + "\n";
 }
@@ -296,7 +303,8 @@ function renderRecallBlock(recallResult, { limit } = {}) {
 // `cli.json` call these; `defaultRender` below (the collector-based renderer `runMemory`'s
 // direct callers get) calls the SAME two. Three consumers parse this output without a
 // human in the loop — the bundle prompts paste `recall … --block` into agent context, the
-// hooks read the `--json` records ARRAY, `status`/`reindex` are one line each — so a second
+// hooks read the `--json` records ARRAY, `status`/`reindex` are one line each (status adds a
+// second only to name the ingest a stale store owes, 148/ADR-003) — so a second
 // copy of either projection is exactly the byte drift the one home exists to prevent.
 
 // The human projection: the string the face prints, or `null` when there is NOTHING to
@@ -318,9 +326,36 @@ function renderMemory(verb, result, { block = false, limit, help = false } = {})
     // digest).
     return result.text ?? "";
   }
-  if (verb === "status") return `memory: backend=${result.backend} records=${result.recordCount}`;
+  if (verb === "status") {
+    const lines = [`memory: backend=${result.backend} records=${result.recordCount}`];
+    // 148/ADR-004 §3 — the first line is unchanged; the seam's composition adds the layers each
+    // record type serves and the vocabulary's conformance, one line each.
+    if (result.layers) {
+      lines.push(`layers: ${Object.entries(result.layers).map(([layer, count]) => `${layer} ${count}`).join(" · ")}`);
+    }
+    if (result.conformance) lines.push(`conformance: ${conformanceText(result.conformance)}`);
+    // 148/ADR-003 — a store built before the current index version is named, with the verb that
+    // rebuilds it, rather than reported as if its numbers were current.
+    const index = result.index;
+    if (index?.stale) {
+      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof work memory ingest\` to rebuild it`);
+    }
+    return lines.join("\n");
+  }
   if (verb === "reindex" || verb === "ingest") return `reindex: ${result.recordCount} record(s)`;
   return typeof result === "string" ? result : JSON.stringify(result, null, 2);
+}
+
+// The conformance line's body: `kind blank 1 non-enum 1 · … · owner blank 0 · gap status non-enum 0`.
+const CONFORMANCE_LABELS = { gapStatus: "gap status" };
+const COUNT_LABELS = { blank: "blank", nonEnum: "non-enum" };
+function conformanceText(conformance) {
+  return Object.entries(conformance)
+    .map(([field, counts]) => [
+      CONFORMANCE_LABELS[field] ?? field,
+      ...Object.entries(counts).map(([key, count]) => `${COUNT_LABELS[key] ?? key} ${count}`),
+    ].join(" "))
+    .join(" · ");
 }
 
 // The --json projection: the VALUE the face serialises. ADR-004: recall emits the
@@ -476,7 +511,15 @@ async function executeMemoryVerb({ verb, query = "", only = null, scope = {}, op
   }
   // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): same interface method.
   if (verb === "reindex" || verb === "ingest") return backend.reindex(only, ctx);
-  if (verb === "status") return backend.status(ctx);
+  if (verb === "status") {
+    // 148/ADR-004 §2 — status is COMPOSED here, the way brief is: the backend's own facts,
+    // unchanged, then one unbounded recall, over which the seam adds `types`, `layers` and
+    // `conformance`. Counting at the seam rather than per backend is what keeps the two backends
+    // from disagreeing about what the store holds (m40/R3: graphify's own split names two types).
+    const base = await backend.status(ctx);
+    const recalled = await backend.recall("", {}, { limit: Infinity }, ctx);
+    return { ...base, ...statusPartition(recalled?.records ?? []) };
+  }
   return undefined;
 }
 

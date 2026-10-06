@@ -306,5 +306,61 @@ export const memoryRecallBlockTests = [
       assert.equal(block, "", "an empty recall renders the empty string");
       assert.ok(!block.includes("none"), "the empty block is not a 'none' placeholder");
     }
+  },
+
+  // ── milestone 148 / story 05, task 01 R3 (ADR-003): the block shows a record's tags ─────────────
+  // A tagged record inserts ONE field, `[t1; t2]`, between its title and its source, so the source
+  // stays the last field; an untagged record's line is byte-identical to the five-field line above.
+  {
+    name: "148/05 E7: a tagged lesson's line carries its tags before its source",
+    run: () => {
+      const title = "Adding a new record KIND obliges updating every consumer that partitions records by kind — memory status was left counting only lessons+adrs";
+      const source = "archive/40_milestone_work-item-versioning-upgrade/RETROSPECTIVE.md:28";
+      const lesson = { ...record({ recordType: "lesson", id: "R3", item: "40", kind: "near-miss", area: "memory/accounting", title, source }), tags: ["cross-milestone, discovered here"] };
+      assert.equal(
+        renderRecallBlock({ records: [lesson] }),
+        `R3 (m40) · near-miss · memory/accounting · ${title} · [cross-milestone, discovered here] · ${source}\n`,
+      );
+    }
+  },
+  {
+    name: "148/05 E8: an untagged record's line is unchanged, at five fields",
+    run: () => {
+      const lesson = {
+        ...record({
+          recordType: "lesson", id: "R2", item: "01", kind: "near-miss", area: "architecture",
+          title: "Content-addressed artifacts must pin line endings or cross-platform CI hashes diverge",
+          source: "archive/01_milestone_acd-asset-bundle/RETROSPECTIVE.md:27",
+        }),
+        tags: [],
+      };
+      const [line] = blockLines(renderRecallBlock({ records: [lesson] }));
+      assert.equal(line.split(" · ").length, 5);
+      assert.equal(line, "R2 (m01) · near-miss · architecture · Content-addressed artifacts must pin line endings or cross-platform CI hashes diverge · archive/01_milestone_acd-asset-bundle/RETROSPECTIVE.md:27");
+    }
+  },
+  {
+    name: "148/05 E9: a gap's discharge tag reaches its line",
+    run: () => {
+      const gap = { ...record({ recordType: "gap", id: "a-gap", item: "86", area: "delivery", title: "A gap", source: "wiki/work/86/OUTCOME.md:12" }), status: "discharged", tags: ["by story 86, 2026-09-04"] };
+      const fields = blockLines(renderRecallBlock({ records: [gap] }))[0].split(" · ");
+      assert.equal(fields.at(-2), "[by story 86, 2026-09-04]");
+      assert.equal(fields.at(-1), "wiki/work/86/OUTCOME.md:12");
+    }
+  },
+  {
+    name: "148/05: two tags are joined by a semicolon",
+    run: () => {
+      const lesson = { ...record({ recordType: "lesson", id: "R1", item: "12", kind: "near-miss", area: "process", title: "t" }), tags: ["recurring", "caught at review"] };
+      assert.equal(blockLines(renderRecallBlock({ records: [lesson] }))[0].split(" · ").at(-2), "[recurring; caught at review]");
+    }
+  },
+  {
+    name: "148/05: a record from a store before version 2 renders untagged",
+    run: () => {
+      const legacy = record({ recordType: "lesson", id: "R1", item: "12", kind: "mistake", area: "code", title: "t" });
+      assert.equal("tags" in legacy, false, "non-vacuity: the record carries no tags field");
+      assert.equal(blockLines(renderRecallBlock({ records: [legacy] }))[0].split(" · ").length, 5);
+    }
   }
 ];

@@ -22,6 +22,7 @@
     "./acceptor/observations": "./src/acceptor/observations.mjs",
     "./audit/reads": "./src/audit/reads.mjs",
     "./declared-id": "./src/declared-id.mjs",
+    "./memory-vocabulary": "./src/memory-vocabulary.mjs",
     "./audit/controls": "./src/audit/controls.mjs",
     "./audit/hook-wiring": "./src/audit/hook-wiring.mjs",
     "./audit/census": "./src/audit/census.mjs",

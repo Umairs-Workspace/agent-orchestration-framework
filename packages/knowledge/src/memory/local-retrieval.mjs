@@ -1,4 +1,5 @@
 import { refInScope } from "@aof/work/ref-scope";
+import { GAP_STATUSES, LESSON_ENUM_FIELDS } from "@aof/work/memory-vocabulary";
 // Local memory backend — RETRIEVAL (milestone 05 / story 02).
 //
 // This module owns the READ path of the local memory backend: ranking, scope
@@ -41,10 +42,86 @@ export const MEMORY_RECORD_FIELDS = [
   "kind",
   "owner",
   "status",
+  "tags",
   "summary",
   "text",
   "source"
 ];
+
+// 148/ADR-004 — THE ONE PARTITION OF RECORD TYPES INTO MEMORY LAYERS (origin §2.3, §5). Every type
+// the indexer emits is a key here, mapped to the layer it serves: a lesson is procedural (the
+// operator's ruling, 148/05 Q1), and decisions, capabilities, gaps and digests are semantic. The
+// episodic layer holds no type yet; `episodic-memory-is-recallable` adds its types TO THIS MAP rather
+// than partitioning a second time — m40/R3 is the consumer that was left behind when a kind was
+// added and nobody updated the split. `memory status` counts a type missing from the map as
+// `unmapped`, never drops it, and FF-14803 reds when an emitted type has no layer.
+export const MEMORY_LAYERS = Object.freeze(["episodic", "semantic", "procedural"]);
+export const UNMAPPED_LAYER = "unmapped";
+export const RECORD_TYPE_LAYERS = Object.freeze({
+  lesson: "procedural",
+  adr: "semantic",
+  capability: "semantic",
+  gap: "semantic",
+  summary: "semantic",
+});
+
+// The layer a record type serves, or `unmapped` for a type the map does not name.
+export function layerOf(recordType) {
+  return Object.hasOwn(RECORD_TYPE_LAYERS, recordType) ? RECORD_TYPE_LAYERS[recordType] : UNMAPPED_LAYER;
+}
+
+// 148/ADR-004 §2 — what the seam adds to a backend's `status`, computed over every record:
+//   types       { <type>: { count, layer } } — a type the map does not name is counted, `unmapped`;
+//   layers      { episodic, semantic, procedural } counts, plus `unmapped` only when one occurs;
+//   conformance kind/area/stage `{ blank, nonEnum }` over lessons, owner `{ blank }`, and
+//               gapStatus `{ nonEnum }` over gaps.
+// Records arrive normalised (148/ADR-002): a value that starts with a vocabulary word IS that word,
+// so a value outside the vocabulary is non-enum and "" is blank. Every number is nested, so status
+// gains no top-level number (a suite sums those against `recordCount`).
+export function statusPartition(records = []) {
+  const types = {};
+  const layers = Object.fromEntries(MEMORY_LAYERS.map((layer) => [layer, 0]));
+  const conformance = {
+    ...Object.fromEntries(Object.keys(LESSON_ENUM_FIELDS).map((field) => [field, { blank: 0, nonEnum: 0 }])),
+    owner: { blank: 0 },
+    gapStatus: { nonEnum: 0 },
+  };
+  for (const record of records) {
+    const type = record?.recordType || "";
+    const layer = layerOf(type);
+    types[type] ??= { count: 0, layer };
+    types[type].count += 1;
+    layers[layer] = (layers[layer] ?? 0) + 1;
+    if (type === "lesson") {
+      for (const [field, vocabulary] of Object.entries(LESSON_ENUM_FIELDS)) {
+        const value = String(record[field] ?? "");
+        if (value === "") conformance[field].blank += 1;
+        else if (!vocabulary.includes(value)) conformance[field].nonEnum += 1;
+      }
+      if (String(record.owner ?? "").trim() === "") conformance.owner.blank += 1;
+    } else if (type === "gap" && !GAP_STATUSES.includes(String(record.status ?? ""))) {
+      conformance.gapStatus.nonEnum += 1;
+    }
+  }
+  // Types in name order, so the document does not depend on the order recall happened to rank in.
+  const sorted = Object.fromEntries(Object.keys(types).sort().map((type) => [type, types[type]]));
+  return { types: sorted, layers, conformance };
+}
+
+// 148/ADR-003 — `tags` is an ARRAY of strings, present on every record and `[]` when there is
+// none. A store built before index version 2 carries no `tags`; its records are read as `[]`
+// rather than refused, because the index is derived and an ingest rebuilds it.
+export function withTags(record) {
+  return Array.isArray(record?.tags) ? record : { ...record, tags: [] };
+}
+
+// 148/ADR-003 — each backend's `status` reports its store's index version against the version
+// this build writes. Nested under `index`, so status gains no top-level number. An absent store
+// has no version and is not stale: it is not built, which `present` already says.
+export function indexVersionReport(storedVersion, current, present) {
+  const version = Number.isInteger(storedVersion) ? storedVersion : null;
+  return { version, current, stale: Boolean(present) && version !== current };
+}
 
 // The scope dimensions (ADR-006). `item` is a SUBTREE ref match (story 80 — `39`
 // reaches 39 and every story under it; `39/02` that story alone); the
@@ -263,10 +340,10 @@ export function rankRecords(records, query, scope = {}, opts = {}) {
 // retrieval and the indexer/store: the glue passes the on-disk loader as
 // `ctx.loadIndex`; tests pass a fixture array as `ctx.records`.
 async function resolveRecords(ctx = {}) {
-  if (Array.isArray(ctx.records)) return ctx.records;
+  if (Array.isArray(ctx.records)) return ctx.records.map(withTags);
   if (typeof ctx.loadIndex === "function") {
     const index = await ctx.loadIndex();
-    return Array.isArray(index?.records) ? index.records : [];
+    return Array.isArray(index?.records) ? index.records.map(withTags) : [];
   }
   return [];
 }

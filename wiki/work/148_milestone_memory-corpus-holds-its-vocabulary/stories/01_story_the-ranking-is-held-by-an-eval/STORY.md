@@ -4,10 +4,10 @@ number: 01
 slug: the-ranking-is-held-by-an-eval
 title: "The ranking is held by an eval — real recall pairs stay in the five-line block as the corpus grows"
 parent: 148
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-005]
@@ -56,8 +56,8 @@ lands first: story 03 is the first change to the pool that it guards.
 
 ## Tasks
 
-- [ ] 00 [the eval holds each pair in the block, and names the one it loses](tasks/00_the-eval-holds-each-pair-in-the-block-and-names-the-one-it-loses.feature)
-- [ ] 01 [the live corpus holds every cited pair](tasks/01_the-live-corpus-holds-every-cited-pair.feature)
+- [x] 00 [the eval holds each pair in the block, and names the one it loses](tasks/00_the-eval-holds-each-pair-in-the-block-and-names-the-one-it-loses.feature)
+- [x] 01 [the live corpus holds every cited pair](tasks/01_the-live-corpus-holds-every-cited-pair.feature)
 
 ## Notes
 

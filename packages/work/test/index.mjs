@@ -20,6 +20,11 @@ import { resolveItemsTests, resolvePathTests } from "./work-resolve.suite.mjs";
 import { workDoctorTests } from "./work-doctor.suite.mjs";
 import { verifyAuthorsOutcomeTests } from "./verify-authors-outcome.suite.mjs";
 import { workTests } from "./work.suite.mjs";
+// milestone 148 / story 02 — the memory vocabulary's enums, readers and normalisers.
+import { memoryVocabularyTests } from "./memory-vocabulary.suite.mjs";
+// milestone 148 / story 04 — a live lesson's meta line is held by validate; an archived one is
+// flagged by doctor's lesson-meta lane and never failed.
+import { lessonMetaHoldTests } from "./lesson-meta-hold.suite.mjs";
 
 export const tests = [
   ...diagramLayoutTests,
@@ -45,4 +50,6 @@ export const tests = [
   ...workDoctorTests,
   ...verifyAuthorsOutcomeTests,
   ...workTests,
+  ...memoryVocabularyTests,
+  ...lessonMetaHoldTests,
 ];

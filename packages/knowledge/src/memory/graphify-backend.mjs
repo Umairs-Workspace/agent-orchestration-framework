@@ -6,6 +6,8 @@ import {
   applyScope,
   normalizeScope,
   renderRecallText,
+  withTags,
+  indexVersionReport,
 } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { graphJsonPath, readGraph, normalizeGraph } from "../graph-normalize.mjs";
@@ -55,7 +57,8 @@ export function createGraphifyBackend({ coreInvoke, loadWorkspace, buildRecords,
 const INDEX_REL = path.join(".aof", "aof.memory.graphify.index.json");
 
 // The index-format version (mirrors 05/INDEX_VERSION; bump on a record-shape change).
-const GRAPHIFY_INDEX_VERSION = 1;
+// 148/ADR-003 — 2: every record gained `tags`, exactly as the local index did.
+const GRAPHIFY_INDEX_VERSION = 2;
 
 // The WORK-STREAM graph's own artifact root — beside this backend's own record store
 // under `.aof/` (git-ignored, and never on the mesh: acd-memory-index-never-on-mesh),
@@ -323,7 +326,8 @@ async function recall(query, scope = {}, opts = {}, ctx = {}) {
   const store = ctx.records
     ? { records: ctx.records } // a test may inject a fixture record set on ctx
     : await loadStore(ctx.projectRoot);
-  const records = Array.isArray(store?.records) ? store.records : [];
+  // 148/ADR-003 — a version-1 store's records carry no `tags`, and are read as `[]`.
+  const records = Array.isArray(store?.records) ? store.records.map(withTags) : [];
 
   // Read the built graph (null when absent) and re-rank: 05 base ranking + the
   // file-level graph relatedness boost (ADR-001). A null/empty graph → base ranking.
@@ -436,6 +440,8 @@ async function status(ctx = {}) {
     // The explicit graph state (10/ADR-004), with the 09 install hint when binary-absent.
     graphState,
     ...(graphHint != null ? { graphHint } : {}),
+    // 148/ADR-003 — a store built before GRAPHIFY_INDEX_VERSION is stale until an ingest rebuilds it.
+    index: indexVersionReport(store?.version, GRAPHIFY_INDEX_VERSION, existsSync(graphifyIndexPath(projectRoot))),
   };
 }
 

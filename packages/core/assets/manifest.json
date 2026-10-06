@@ -273,7 +273,7 @@
         "id": "shared",
         "kind": "template"
       },
-      "hash": "sha256:c481d5feb73856afed1d935d87911ca0afba15f12ac672314ed5f9029ddea8f4"
+      "hash": "sha256:fdcfbbbb835567d428b2fa7dee101d30d74b4326557c78eafcdacef29aaad568"
     },
     {
       "path": ".aof/templates/work/spike/SPIKE.md",
@@ -669,7 +669,7 @@
         "id": "retrospective",
         "kind": "command"
       },
-      "hash": "sha256:c38dde8be4bf4df6ba5f48c580912b616a639328ca4a9cf2e45a74fd2cffa0af"
+      "hash": "sha256:04a834141abe16038a06b9a5d28e01aab4ae4c99d4aae1ec69ba73ed96f1067a"
     },
     {
       "path": ".claude/commands/aof/review.md",
@@ -1092,7 +1092,7 @@
         "id": "aof-retrospective",
         "kind": "skill"
       },
-      "hash": "sha256:07df35ae73e127ef3a9128d79c1aa668f506a299d0159217fa3d279892dd7f31"
+      "hash": "sha256:c2368a6e253d43118736fab5f2382c035afcdf4d8f6b5f198339168b5a149929"
     },
     {
       "path": ".codex/skills/aof-review/SKILL.md",

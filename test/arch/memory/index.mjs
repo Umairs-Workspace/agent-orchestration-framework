@@ -46,6 +46,12 @@ import { archTests as acdMemoryIndexNeverOnMeshTests } from "./acd-memory-index-
 // a third cutter cannot arrive without one; and all three tracked renders of the edited member
 // match a fresh re-render.
 import { archTests as acdLearningEdgeReachesEveryCutTests } from "./acd-learning-edge-reaches-every-cut.test.mjs";
+// milestone 148 / story 01 — FF-14801: the base ranking keeps every cited eval pair within the
+// first five over the live corpus, and a pair whose record is gone reds as gone (ADR-005).
+import { archTests as acdMemoryRetrievalEvalTests } from "./acd-memory-retrieval-eval.test.mjs";
+// milestone 148 / story 05 — FF-14803: every emitted record type has a layer, and the composed
+// status accounts for every record on both backends.
+import { archTests as acdMemoryLayerMapTotalTests } from "./acd-memory-layer-map-total.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -68,4 +74,8 @@ export const tests = [
   ...acdMemoryIndexNeverOnMeshTests,
   // milestone 124 / story 02 — FF-12405 (see the import note).
   ...acdLearningEdgeReachesEveryCutTests,
+  // milestone 148 / story 01 — FF-14801 (see the import note).
+  ...acdMemoryRetrievalEvalTests,
+  // milestone 148 / story 05 — FF-14803 (see the import note).
+  ...acdMemoryLayerMapTotalTests,
 ];

@@ -51,6 +51,10 @@ findings, its `## Findings` section and any recorded blocker stop):
    never renumber:
    - **Kind:** mistake | blocker | near-miss | misunderstanding · **Area:** code | architecture | contract | security | process
    - **Stage:** refine | build | verify · **Owner:** the role/lane · **Raised by:** who flagged it
+   - `aof work validate` holds this line on a live item: Kind, Area and Stage each start with one of
+     the words listed above, and a qualifier goes after the word, as `near-miss (recurring)`; Owner
+     must be present. A lesson with no meta line fails on all four. An archived item's lessons are
+     flagged by `aof work doctor` and never rewritten.
    - **What happened** *(factual)* · **Why** *(root cause)* · **Lesson** *(what to do differently)* · **Refs:** the VERIFICATION `@finding-<id>` / ADR / commit / `observability/report.md` — **reference, never restate**
 5. **Conditional.** If a milestone surfaced nothing worth a lesson, **write no doc** and say so
    (absence is information). Never manufacture entries to fill the page. The `observability/` folder

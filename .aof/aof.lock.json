@@ -377,7 +377,7 @@
           "id": "retrospective",
           "kind": "command"
         },
-        "hash": "sha256:c38dde8be4bf4df6ba5f48c580912b616a639328ca4a9cf2e45a74fd2cffa0af",
+        "hash": "sha256:04a834141abe16038a06b9a5d28e01aab4ae4c99d4aae1ec69ba73ed96f1067a",
         "generatedAt": "2026-10-06T00:37:45.717Z"
       },
       {
@@ -807,7 +807,7 @@
           "id": "aof-retrospective",
           "kind": "skill"
         },
-        "hash": "sha256:07df35ae73e127ef3a9128d79c1aa668f506a299d0159217fa3d279892dd7f31",
+        "hash": "sha256:c2368a6e253d43118736fab5f2382c035afcdf4d8f6b5f198339168b5a149929",
         "generatedAt": "2026-10-06T00:37:45.717Z"
       },
       {
@@ -1207,7 +1207,7 @@
           "id": "retrospective",
           "kind": "command"
         },
-        "hash": "sha256:a205d223c73ff6a964566aa73f8d7d01ea6c2e41d250d229b9c2bfba67476cc8",
+        "hash": "sha256:d547499c7a5389e76d8ca941b1fe703d01ac8642a9e94fcacde222805c0c5076",
         "generatedAt": "2026-10-06T00:37:45.717Z"
       },
       {
@@ -1419,7 +1419,7 @@
           "kind": "template",
           "file": "OUTCOME.md"
         },
-        "hash": "sha256:c481d5feb73856afed1d935d87911ca0afba15f12ac672314ed5f9029ddea8f4",
+        "hash": "sha256:fdcfbbbb835567d428b2fa7dee101d30d74b4326557c78eafcdacef29aaad568",
         "generatedAt": "2026-10-06T00:37:45.717Z"
       },
       {

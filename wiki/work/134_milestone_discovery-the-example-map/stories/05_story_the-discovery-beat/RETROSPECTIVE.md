@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-02
+updated: 2026-10-06
 ---
 # 05 · The discovery beat — Retrospective
 
 ## R1 — the beat's first live questions were ones the record already answered
 
-- **Kind:** misunderstanding · **Area:** product · **Stage:** verify · **Owner:** product-owner
+- **Kind:** misunderstanding · **Area:** contract (product) · **Stage:** verify · **Owner:** product-owner
 - **Raised by:** the operator, at 134's live run on 144 (F-134-01)
 
 **What happened.** The beat said to ask "every question the PO cannot answer from the record", and

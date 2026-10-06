@@ -68,8 +68,9 @@ export const yarnInstallationTests = [
         'graph-normalize.mjs': ['node:path', 'node:fs'],
         'graphify.mjs': ['node:child_process', 'node:fs', 'node:path'],
         'memory.mjs': ['@aof/contracts/error'],
-        'memory/local-retrieval.mjs': ['@aof/work/ref-scope'],
-        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
+        'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
+        // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
+        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],
@@ -221,6 +222,8 @@ export const yarnInstallationTests = [
         'commands/item-status.mjs': ['node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs'],
         'commands/continue.mjs': ['@aof/contracts/error'],
         'commands/resume.mjs': ['@aof/contracts/error', '@aof/contracts/loop-bounds'],
+        // 152: the promote candidate list reads the backlog record docs it ranks.
+        'promote/candidates.mjs': ['node:path', 'node:fs/promises'],
         'commands/regression-gate.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs'],
         'regression-record.mjs': ['node:path'],
         'acceptor/source-units.mjs': ['node:path', 'node:fs/promises', 'picomatch'],
@@ -264,6 +267,7 @@ export const yarnInstallationTests = [
         'rubric.mjs': ['node:path'],
         'loop-record.mjs': ['node:path'],
         'depends.mjs': ['node:path'],
+        'lesson-meta.mjs': ['node:path'],
         'diagrams.mjs': ['node:path'],
         'controls.mjs': ['node:path'],
         'census.mjs': ['node:path', 'node:fs/promises'],

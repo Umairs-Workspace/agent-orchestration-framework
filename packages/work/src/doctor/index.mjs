@@ -14,6 +14,7 @@ import { resolveCitedPath } from "../cited-path-resolve.mjs";
 import { rubricTraceabilityGroup, declaredReportFrom } from "./rubric.mjs";
 import { loopRecordLane, EXECUTION_RECORD_BASENAME } from "./loop-record.mjs";
 import { dependsLane } from "./depends.mjs";
+import { lessonMetaLane } from "./lesson-meta.mjs";
 import { DIAGRAMS_DIR } from "../diagrams/layout.mjs";
 import { resolveDeclaredSet } from "../story-contract.mjs";
 
@@ -885,6 +886,12 @@ const CHECK_GROUPS = [
   // fourth instance of the mechanism that makes an advisory lane structurally unable to gate —
   // and the instance FF-12402 raises from a promise about one lane to a claim about the class.
   dependsLane,
+  // milestone 148 / story 04 (ADR-007 §3) — THE ARCHIVED LESSON-META LANE, appended as one entry:
+  // one warning per ARCHIVED retrospective holding a lesson whose meta line is outside the
+  // vocabulary. Live lessons are validate's, as errors; an archived source is never back-filled, so
+  // this lane reports and never gates. Its codes are a DIFFERENT frozen array from
+  // `CONTROL_FINDING_CODES` — the mechanism FF-12402 holds of the class.
+  lessonMetaLane,
   // milestone 133 / story 03 (ADR-006) — THE DIAGRAMS LANE, appended as one entry: a `diagrams/`
   // link whose file is not in the tree, a linked stem with no committed export, a link under the
   // wrong ADR, and a file nothing links. Unlike the three lanes above it, its link codes GATE —

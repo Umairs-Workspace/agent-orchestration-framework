@@ -1,6 +1,6 @@
 ---
 doc: retrospective
-updated: 2026-10-03
+updated: 2026-10-06
 ---
 # 04 · An agreed example cannot fall out — Retrospective
 
@@ -26,7 +26,7 @@ enumerate the members, and lists them in `files:`.
 
 ## R2 — a live-stream assertion reports in the wrong suite
 
-- **Kind:** near-miss · **Area:** test · **Stage:** review · **Owner:** QA
+- **Kind:** near-miss · **Area:** code (test) · **Stage:** build (review) · **Owner:** QA
 - **Raised by:** the reviewer
 
 **What happened.** "The live stream gains no trace finding" runs the real doctor over the live

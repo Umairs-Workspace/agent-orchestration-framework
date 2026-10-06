@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-02
+updated: 2026-10-06
 ---
 # 03 · The answer is read from the harness — Retrospective
 
 ## R1 — the write set missed records that cite the run store by line
 
-- **Kind:** mistake · **Area:** planning · **Stage:** refine · **Owner:** architect
+- **Kind:** mistake · **Area:** contract (planning) · **Stage:** refine · **Owner:** architect
 - **Raised by:** the 03 build, against FF-5810
 
 **What happened.** Two shipped loop records cite `isStale` and `transitionRunReclaimed` by line.
@@ -18,7 +18,7 @@ cite them by line.
 
 ## R2 — the focused set alone would have shipped three reds
 
-- **Kind:** near-miss · **Area:** testing · **Stage:** build · **Owner:** developer
+- **Kind:** near-miss · **Area:** process (testing) · **Stage:** build · **Owner:** developer
 - **Raised by:** the 03 build
 
 **What happened.** The first arch sweep caught FF-5810, FF-5504 (the run store may never spell
@@ -30,7 +30,7 @@ its own suites.
 
 ## R3 — an operator-gated hand-back cost a retry attempt
 
-- **Kind:** defect · **Area:** loop · **Stage:** build · **Owner:** developer
+- **Kind:** mistake (defect) · **Area:** code (loop) · **Stage:** build · **Owner:** developer
 - **Raised by:** run `20260924T141559728Z-0001`
 
 **What happened.** The session built and reviewed tasks 00–02 and handed back for the operator. The
@@ -40,7 +40,7 @@ run was then reclaimed as `runtime_offline` and re-minted as attempt 2/3, which 
 
 ## R4 — a squash that split a module left this contract pointing at deleted paths
 
-- **Kind:** process · **Area:** planning · **Stage:** continue · **Owner:** architect
+- **Kind:** blocker (process) · **Area:** contract (planning) · **Stage:** build (continue) · **Owner:** architect
 - **Raised by:** the post-142 re-gate
 
 **What happened.** 142 deleted three modules and re-created them as core bindings with no rename
