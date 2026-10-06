@@ -3,7 +3,7 @@ type: milestone
 number: 148
 slug: memory-corpus-holds-its-vocabulary
 title: "The memory corpus holds its vocabulary — every lesson is reachable by its kind, the corpus reports its own conformance, and its ranking cannot regress silently"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-10-06

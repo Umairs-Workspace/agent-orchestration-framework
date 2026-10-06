@@ -23,3 +23,11 @@ the lessons from running the milestone as a whole.
 - **Why:** 152's verify ran its own suites and the importers of its changed code. Neither control imports promote: each lists files by name. 152/R3 recorded the same gap, for a record-keyed control, in the same verify.
 - **Lesson:** A story whose diff adds a file runs `acd-source-directory-budget` and `yarn-installation` in its verify lane, whatever it imports. A commit that lands on a shared branch is green on both before the next item builds on it.
 - **Refs:** m148/F-148-01 · m152/R3 · m146/R1
+
+## R3 — The gate depended on other items' state, and three verifies stepped around it
+
+- **Kind:** mistake (recurring) · **Area:** process · **Stage:** verify · **Owner:** verifier, architect · **Raised by:** operator
+- **What happened:** 148's door was refused because twelve done items had not been archived, because citations inside done records had gone dark, and because an archived milestone's ledger had not been hand-edited for this PR. Verify repaired the records, re-pinned ceilings, and then asked the operator to archive twelve items before 148 could be signed off. The operator ruled that the defect was the coupling itself (F-148-06).
+- **Why:** The repository uses its own work stream as test data, so checks on stream hygiene were written as suite controls instead of validate or doctor lanes. Each time one went red over another item's records, the session treated it as a trap to step around. The memory recorded it as "a done-but-unarchived milestone at the root reds every later gate". It did not record it as a defect, and 148's own FF-14801 added another control of the same kind.
+- **Lesson:** A red caused by another item's records or state is a defect in the test, never a task for the stream. Decouple the test with a fixture, or scope it to items that are not done, and never ask the operator to tidy the stream so an item can be signed off. A new control never reads the live stream in a way that a later item's ordinary work can turn red.
+- **Refs:** m148/F-148-06 · m148/F-148-03 · m148/F-148-05 · m148/01

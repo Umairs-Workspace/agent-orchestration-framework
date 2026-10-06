@@ -142,6 +142,11 @@ re-run at `main` (`6351dd66`) over the same files:
     in done records, and live work reads 0 against the ceiling of 55.
   The 12 items stay where they are, for the operator to archive whenever.
 
+**The gate re-run, green.** `aof work regression-gate 148` from the same clean detached worktree at
+`62449ab2`, temp `AOF_GLOBAL_HOME`, 2026-10-06: **green**, sharded, 13.3 min. One case failed in the pool
+and passed alone (69/04 task 00, the production-door bound outline), and the runner names it. The row
+is in `REGRESSION.md`.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
@@ -152,3 +157,11 @@ re-run at `main` (`6351dd66`) over the same files:
 | F-148-04 | 23 lessons record what worked ("confirmed approach", "insight", "confirmation"), and no kind fits them, so they count as non-enum. | gap | minor | non-blocker: the SPEC holds the vocabulary as prescribed | a later SPEC (a fifth kind, or a ruling) | open |
 | F-148-05 | The gate's reds that are this branch's: two suites pin the stream row at 35, and the Plan 09 ledger holds a stale hash. | defect | major | blocker for the milestone door | this branch | fixed |
 | F-148-06 | The whole-tree gate failed on other items' state: twelve done items not yet archived (`work-this-tree-holds-what-is-live` 02), citations inside done records (FF-11903), and an archived milestone's ledger re-measured per PR (Plan 09). | defect | major | blocker for the milestone door | this branch: the tests are decoupled from other items' state (`## Regression gate`, repairs after the run) | fixed |
+
+## Accept decision
+
+**Accepted, 2026-10-06.** Stories 01 to 05 are done. FF-14801 to FF-14803 are green, each with a recorded
+red probe. The whole-tree gate is green at `62449ab2`. `aof work validate 148` passes, and doctor reports
+no `control-unresolved`. No blocker finding is open: F-148-01, 02, 03, 05 and 06 are fixed, and F-148-04
+is a deferred non-blocker. The retrieval eval's dependence on the live corpus is recorded as an open gap
+in `OUTCOME.md`, for the operator to rule on.
