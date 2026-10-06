@@ -93,7 +93,7 @@
         "id": "loop-retrospective-memory-ingest",
         "kind": "asset"
       },
-      "hash": "sha256:f976bb5e32f45a4acf6788ac8f65a86cc4eb037159a33172a4a29aabadd2ca8a"
+      "hash": "sha256:386e44d367c4257582a11adf39dac008b1f96278a9153d9ed478e4d81a299cd2"
     },
     {
       "path": ".aof/loops/review-fix-rereview-watcher.md",

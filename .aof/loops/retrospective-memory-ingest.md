@@ -23,7 +23,7 @@ measurement at `packages/core/assets/commands/retrospective.md:38-40`. Those two
 deterministic grader exists (RESEARCH §Q1.6).
 
 The ingest act is reached through `runMemory` at `packages/knowledge/src/memory.mjs:499`, composed by `createMemory` at
-`packages/knowledge/src/memory.mjs:5` — the
+`packages/knowledge/src/memory.mjs:6` — the
 seam's in-process entry, a thin composition over the one core path (`runMemoryVerb`,
 `packages/knowledge/src/memory.mjs:485`) that the registered command also runs. `ingest` is a member of `MEMORY_VERBS`
 at `packages/knowledge/src/memory.mjs:61` and aliases the reindex path at `packages/knowledge/src/memory.mjs:473`; no finer

@@ -4,10 +4,10 @@ number: 01
 slug: the-ranking-is-held-by-an-eval
 title: "The ranking is held by an eval — real recall pairs stay in the five-line block as the corpus grows"
 parent: 148
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-05
+updated: 2026-10-06
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-005]

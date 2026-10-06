@@ -4,7 +4,7 @@ number: 04
 slug: a-live-lessons-meta-line-is-held
 title: "A live lesson's meta line is held — validate errors on a non-enum value in a live item, doctor warns on an archived one"
 parent: 148
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-04
 updated: 2026-10-06

@@ -65,7 +65,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   const { refineDriverCommand } = commandsDriveServices;
   const { continueDriverCommand } = commandsDriveServices;
   const { verifyDriverCommand } = commandsDriveServices;
-  // 147/02 — the fourth phase driver, the repair session's.
+  // work:drive-repair — see ./commands/drive.mjs's header.
   const { repairDriverCommand } = commandsDriveServices;
   const { loopCommand } = commandsLoopServices;
   // work:resync — m43 — see ./commands/resync.mjs's header.

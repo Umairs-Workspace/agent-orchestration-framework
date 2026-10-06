@@ -5,11 +5,11 @@ doc: state
 
 ## Progress
 
-- [ ] `01_story_the-ranking-is-held-by-an-eval`: refined, contract authored (2 tasks)
-- [ ] `02_story_a-lessons-meta-line-is-normalised-on-read`: refined, contract authored (3 tasks)
-- [ ] `03_story_story-retrospectives-are-indexed`: refined, contract authored (1 task)
-- [ ] `04_story_a-live-lessons-meta-line-is-held`: refined, contract authored (3 tasks)
-- [ ] `05_story_memory-status-reports-conformance-and-layers`: refined, contract authored (2 tasks)
+- [x] `01_story_the-ranking-is-held-by-an-eval`: built, reviewed and accepted 2026-10-06 (2 tasks)
+- [x] `02_story_a-lessons-meta-line-is-normalised-on-read`: built, reviewed and accepted 2026-10-06 (3 tasks)
+- [x] `03_story_story-retrospectives-are-indexed`: built, reviewed and accepted 2026-10-06 (1 task)
+- [x] `04_story_a-live-lessons-meta-line-is-held`: built, reviewed and accepted 2026-10-06 (3 tasks)
+- [x] `05_story_memory-status-reports-conformance-and-layers`: built, reviewed and accepted 2026-10-06 (2 tasks)
 
 ## Notes & decisions in flight
 
@@ -39,9 +39,9 @@ doc: state
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green (FF-14801 to FF-14803), each with its red probe in VERIFICATION
-- [ ] `@manual` 148/04 task 02 recorded in VERIFICATION
+- [ ] `@executable` suite green — story lanes green; the whole-tree gate is red (VERIFICATION F-148-03, F-148-05)
+- [x] Fitness functions green (FF-14801 to FF-14803), each with its red probe in VERIFICATION
+- [x] `@manual` 148/04 task 02 recorded in VERIFICATION
 
 ## Feedback (for retro)
 

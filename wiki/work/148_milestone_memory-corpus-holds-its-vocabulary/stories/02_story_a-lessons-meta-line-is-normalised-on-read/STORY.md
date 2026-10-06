@@ -4,7 +4,7 @@ number: 02
 slug: a-lessons-meta-line-is-normalised-on-read
 title: "A lesson's meta line is normalised on read — one vocabulary, the enum token indexed, the qualifier kept as a tag"
 parent: 148
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-04
 updated: 2026-10-06

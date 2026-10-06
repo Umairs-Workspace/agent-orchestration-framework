@@ -4,7 +4,7 @@ number: 05
 slug: memory-status-reports-conformance-and-layers
 title: "Memory status reports conformance and layers — every record type with its layer, the blank and non-enum counts on both backends, and tags in the block"
 parent: 148
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-04
 updated: 2026-10-06

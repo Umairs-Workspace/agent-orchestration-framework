@@ -4,10 +4,10 @@ number: 03
 slug: story-retrospectives-are-indexed
 title: "Story retrospectives are indexed — every item's RETROSPECTIVE.md is read, so a story's lessons answer to its ref"
 parent: 148
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-05
+updated: 2026-10-06
 schema: 1
 aofVersion: 0.1.0
 depends: [01, 02]
