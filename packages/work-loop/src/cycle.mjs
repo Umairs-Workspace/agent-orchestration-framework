@@ -702,10 +702,10 @@ export function createStoryCycle({
       scope,
     };
     await narrate(`Driving ${ref} — repair of ${act.stop}, run ${record.runId}.`);
-    const driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
-    const outcome = driven.outcome.outcome === "needs-input" ? { ...driven.outcome, outcome: "failed", failureReason: "needs-input" } : driven.outcome;
-    const settled = await settleDriven({ ...driven, outcome }, ctx, { now, narrate });
-    const terminal = settled.record?.state ?? outcome.outcome;
+    let driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
+    if (driven.outcome.outcome === "needs-input") driven = { ...driven, outcome: { ...driven.outcome, outcome: "failed", failureReason: "needs-input" } };
+    driven = await settleDriven(driven, ctx, { now, narrate });
+    const terminal = driven.record?.state ?? driven.outcome.outcome;
     return terminal === "done"
       ? { decision: "resume", runId: record.runId }
       : { decision: "stop", facts: { repair: record.runId, repairOutcome: terminal } };

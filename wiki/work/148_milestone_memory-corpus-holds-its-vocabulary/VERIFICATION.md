@@ -102,12 +102,44 @@ re-run at `main` (`6351dd66`) over the same files:
   (`loop-command-stops` names `grade-indeterminate`), and `work-this-tree-holds-what-is-live` 02
   (134 is done at the root and not archived). All except 134's arrived with #7 (`6351dd66`).
 
+**Repairs after the run, 2026-10-06.** Each red was re-run at `8caa1cb7` with `node scripts/test.mjs
+--only`, repaired, and re-run green:
+
+- **F-148-05.** The two stream suites and `work-archive-is-a-move`'s Plan 06 pin held the
+  `test/work/stream` row at exactly 35 and `packages/work/src` at exactly 41. They now hold those
+  values as floors, because a later item raises a row with its reason in the row's `why` (152 and 148).
+  The Plan 09 ledger was re-measured with the control's own instrument for the seven suites whose
+  case names changed. It now reads `namesInLedger` 11,529 and `registryCases` 12,184.
+- **FF-5508.** The pin learned `noRepair` (147), as it learned `thinking` (141).
+- **FF-13002.** 147's repair drive is a fourth drive site. It now re-binds `driven` through
+  `settleDriven(driven`, as the other three do, with no change in behaviour. The control counts four
+  sites and names the fourth.
+- **grade/01.** 147's E6 case (a red grade stops the loop with no repair) moved from
+  `loop-command-stops`, which grade/01 holds to naming the grade nowhere, to `loop-command-wave`.
+  `loop-command-wave` already drives the grade's halts over the same lane fixture. The operator chose
+  this at verify. E5 stays in `loop-command-stops`, and grade/01 is unchanged.
+- **FF-11902.** The two `work-dispatch-lanes` checks compare the merged note lines as joined text.
+  They are fixture content the case wrote, so they are not a member census. The detector flagged
+  them because the file binds `lines` from a read elsewhere.
+- **FF-11903.** 60 → 55 against the ceiling of 55. PR #6's squash read 135/01's move of the examples
+  modules as D + A, so `.aof/rename-ledger.tsv` gains PR #6's 9 rename records, derived with the
+  resolver's own argv exactly as 136/F-136-01 derived PR #5's. 147's and 149's evidence cited two
+  test-bed files as bare `src/` paths, and they are now spelled `aof-test-repo/src/…`. 148/02 removed
+  two.
+- **FF-12401.** The census counted the numeric `depends:` of three backlog rows (148's refine shattered
+  them, naming 148 and 153). The lane never counts a backlog row as a source (127/ADR-002 §3). The
+  control's domain now excludes backlog rows whole, as the lane does.
+- **`work-this-tree-holds-what-is-live` 02 stays red (F-148-06).** Twelve done items sit at the root:
+  134–136, 143–147 and 149–152. Archiving them is the operator's act (127/ADR-004), and the operator
+  will do it before the gate is re-run.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
 | F-148-01 | 152 (`a035aa5d`, on this branch) left FF-11904's `test/work/stream` row at 36 against 35 and `promote/candidates.mjs` off the native-port list; 7 cases red in the story lane. | defect | major | blocker, fixed in the item | `c73e7ed1` | fixed |
 | F-148-02 | 148/02's `files:` declared `lesson-meta-normalised.suite.mjs`; the suite is `memory-meta-normalised.suite.mjs`. | defect | minor | fixed at verify | 148/02 `STORY.md` | fixed |
-| F-148-03 | The whole-tree gate is red at `main` on eight controls (see `## Regression gate`), seven from #7 and one from 134 not yet archived. | defect | major | blocker for the milestone door | operator: FF-5508's pin edit was refused by the session's permission classifier; FF-13002 needs a code or control decision; 134's archive is the operator's act | open |
+| F-148-03 | The whole-tree gate is red at `main` on eight controls (see `## Regression gate`), seven from #7 and one from 134 not yet archived. | defect | major | blocker for the milestone door | this branch: the seven controls are repaired (`## Regression gate`, repairs after the run); the archive half is F-148-06 | fixed |
 | F-148-04 | 23 lessons record what worked ("confirmed approach", "insight", "confirmation"), and no kind fits them, so they count as non-enum. | gap | minor | non-blocker: the SPEC holds the vocabulary as prescribed | a later SPEC (a fifth kind, or a ruling) | open |
-| F-148-05 | The gate's reds that are this branch's: two suites pin the stream row at 35, and the Plan 09 ledger holds a stale hash. | defect | major | blocker for the milestone door | this branch | open |
+| F-148-05 | The gate's reds that are this branch's: two suites pin the stream row at 35, and the Plan 09 ledger holds a stale hash. | defect | major | blocker for the milestone door | this branch | fixed |
+| F-148-06 | Twelve done items (134–136, 143–147, 149–152) sit at the root of `wiki/work`, so `work-this-tree-holds-what-is-live` 02 is red and the whole-tree gate cannot go green. | defect | major | blocker for the milestone door | operator: `aof work archive` for each (127/ADR-004), then re-run `aof work regression-gate 148` | open |

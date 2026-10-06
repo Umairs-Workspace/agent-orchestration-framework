@@ -33,7 +33,7 @@ lanes that proved it, not the mechanism.
 ## R2 — Overlapping `files:` serialize two lanes, so they can never conflict at merge home
 
 - **Kind:** misunderstanding · **Area:** contract · **Stage:** verify · **Owner:** product owner · **Raised by:** product owner at verify
-- **What happened:** task 04's fixture gave two stories the same `src/index.mjs` in `files:` to
+- **What happened:** task 04's fixture gave two stories the same `aof-test-repo/src/index.mjs` in `files:` to
   force a merge conflict. The wave held the second story behind the first, so its lane was cut after
   the first had merged, and no conflict could arise. The halt had to be provoked by a primary-side
   commit made after the second lane opened.

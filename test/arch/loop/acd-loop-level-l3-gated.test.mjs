@@ -56,10 +56,10 @@ export const archTests = [
       // and `cli.argv`, or it does not exist. An expected succession of this pin, not a drift:
       // the schema is still closed, `required` is still `["scope"]`, and the gathering this
       // control is actually about is untouched. 130/02 (ADR-002 §1) adds `stop` by the same rule,
-      // and 131/11 (ADR-009 §6) adds `handOff`. 141 adds `thinking`.
+      // and 131/11 (ADR-009 §6) adds `handOff`. 141 adds `thinking`, and 147 adds `noRepair`.
       assert.deepEqual(
         Object.keys(loopCommand.input.properties),
-        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop", "handOff", "thinking", "model", "refine"],
+        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop", "handOff", "thinking", "model", "refine", "noRepair"],
       );
       assert.equal(loopCommand.input.additionalProperties, false);
     },

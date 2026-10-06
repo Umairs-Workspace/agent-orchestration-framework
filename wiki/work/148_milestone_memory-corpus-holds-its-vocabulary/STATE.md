@@ -39,7 +39,7 @@ doc: state
 
 ## Verification
 
-- [ ] `@executable` suite green — story lanes green; the whole-tree gate is red (VERIFICATION F-148-03, F-148-05)
+- [ ] `@executable` suite green — story lanes green; gate reds F-148-03 and F-148-05 repaired; the gate re-runs after the operator archives the 12 done root items (F-148-06)
 - [x] Fitness functions green (FF-14801 to FF-14803), each with its red probe in VERIFICATION
 - [x] `@manual` 148/04 task 02 recorded in VERIFICATION
 

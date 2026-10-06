@@ -112,6 +112,10 @@ const CITATION = /(?<![A-Za-z0-9_./-])(?:src|packages\/[A-Za-z0-9_-]+\/src)\/[A-
 // a module that moved and changed in one squash reads as D + A, and a module split behind a forward
 // left only its original source on main. The rename ledger now records PR #5's 1,106 renames and its
 // 311 forwards (136/VERIFICATION F-136-01), and the same command printed `55 14614 866 2895`.
+// HELD at 55 through 148's accept (2026-10-06). PR #6's squash (678c3a52) read 135/01's move of the
+// examples modules as D + A, and 147 and 149 cited two test-bed files as bare `src/` paths, which
+// pushed the count to 60. The rename ledger now records PR #6's 9 renames (148/VERIFICATION
+// F-148-03), the test-bed paths are spelled `aof-test-repo/src/…`, and 148/02 removed two.
 const UNRESOLVED_CEILING = 55;
 const HIGH_WATER = 77;
 

@@ -82,7 +82,9 @@ const HOME = "packages/work-loop/src/stop-request.mjs";
 // `await drive(retried.record)` seam (the shell hands it `drivePhase`, the wave a child spawn).
 // The binding each assigns is what must reach `settleDriven(`.
 const DRIVE_SITE_RE = /\b(\w+)\s*=\s*await\s+(?:drivePhase\s*\(|drive\s*\(\s*retried\.record\s*\))/u;
-const EXPECTED_DRIVE_SITES = 3;
+// 147 adds the fourth: the ladder's repair drive (`await drivePhase({ ref, phase: "repair"`), which
+// settles its own binding like the other three.
+const EXPECTED_DRIVE_SITES = 4;
 const NOW = "2026-09-13T12:00:00.000Z";
 
 async function source(rel) {
@@ -217,7 +219,7 @@ export const archTests = [
       const units = [{ rel: SHELL, code: await source(SHELL) }, { rel: LADDER, code: await source(LADDER) }];
       assertRead("the shell and the ladder", units.reduce((sum, unit) => sum + unit.code.length, 0), 10_000, "bytes");
       const { sites, problems } = driveSiteProblems(units);
-      assert.equal(sites, EXPECTED_DRIVE_SITES, `there are exactly three drive sites — the main site (shell), the in-process retry and the cross to verify (both in the ladder, FF-12602 cited): ${sites} found. A sweep that finds fewer is reading the wrong needle, not a cleaner tree`);
+      assert.equal(sites, EXPECTED_DRIVE_SITES, `there are exactly four drive sites — the main site (shell), the in-process retry, the cross to verify and 147's repair drive (all three in the ladder, FF-12602 cited): ${sites} found. A sweep that finds fewer is reading the wrong needle, not a cleaner tree`);
       assert.deepEqual(problems, [], `for every await drivePhase( site the assigned binding reaches a settleDriven( call before any return in the enclosing block (ADR-003 §3):\n  - ${problems.join("\n  - ")}`);
 
       // SELF-CHECK — the detector reds on the `:1833` shape the register's red probe re-inserts

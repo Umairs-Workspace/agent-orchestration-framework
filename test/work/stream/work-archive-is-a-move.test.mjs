@@ -597,12 +597,14 @@ export const workArchiveIsAMoveTests = [
       assert.match(routes, /\r?\n\s*"archive",\r?\n/, "BOARD_DEFERRED names archive");
       assert.match(routes, /milestone 127 \/ story 03[\s\S]{0,900}\n\s*"archive",/, "…with its reason");
       const budget = await read("test/arch/testing/acd-source-directory-budget.test.mjs");
-      // `test/work/stream` reads 35 since 127/05 raised the row for its own suite (34 -> 35): the
-      // pin is what this scenario asks for, and the raise is stated in the row's own `why`.
+      // `test/work/stream` read 35 once 127/05 raised the row for its own suite (34 -> 35), and a
+      // later item raises it with its reason in the row's own `why` (152: 35 -> 36). The pin is
+      // that 127/03's raise still stands, so each ceiling is AT LEAST the one recorded here.
       for (const [directory, ceiling, file] of [["test/work/stream", 35, "work-archive-is-a-move.test.mjs"], ["test/arch/work", 49, "acd-archive-never-renumbers.test.mjs"]]) {
         const start = budget.indexOf(`directory: "${directory}",`);
         const block = budget.slice(start, budget.indexOf("}),", start));
-        assert.match(block, new RegExp(`ceiling: ${ceiling},`), `${directory} reads ${ceiling}`);
+        const read = Number(block.match(/ceiling: (\d+),/)?.[1]);
+        assert.ok(read >= ceiling, `${directory} reads ${read}, at least ${ceiling}`);
         assert.ok(block.includes("127/03") && block.includes(file), `${directory}'s why names 127/03 and ${file}`);
       }
       // Plan 06 removes the configured forwards. Their owner rows must shrink to
@@ -611,7 +613,8 @@ export const workArchiveIsAMoveTests = [
       for (const [directory, ceiling] of [["packages/core/src/commands", 6], ["packages/core/src/work", 10], ["packages/work/src/commands", 36], ["packages/work/src", 41]]) {
         const row = SOURCE_DIRECTORY_BUDGETS.find(entry => entry.directory === directory);
         assert.ok(row, `${directory} has an explicit budget`);
-        assert.equal(row.ceiling, ceiling, `${directory} retains its exact migration ceiling`);
+        // A later item raises a row with its reason in the row's `why` (148: packages/work/src 41 -> 42).
+        assert.ok(row.ceiling >= ceiling, `${directory} retains at least its migration ceiling (${row.ceiling} of ${ceiling})`);
         assert.equal(row.allowance, 0, `${directory} admits no unreviewed growth`);
         assert.match(row.why, /142 Plan 06/, `${directory} explains the ownership migration`);
       }
