@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AOF shared runtime session boundary</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#f3f5f7;color:#1b1f27;font-family:Inter,system-ui,sans-serif}
+.frame{max-width:1100px;margin:auto}.eyebrow{font:10px ui-monospace,Consolas,monospace;letter-spacing:.15em;color:#585f6a}
+h1{font:400 28px 'Instrument Serif',Georgia,serif}svg{width:100%;display:block}
+.name{font:600 12px Inter,system-ui,sans-serif;fill:#1b1f27}
+.sub{font:9px ui-monospace,Consolas,monospace;fill:#585f6a}
+.label{font:8px ui-monospace,Consolas,monospace;fill:#585f6a;letter-spacing:.06em}
+</style></head><body><main class="frame"><p class="eyebrow">AOF · 154 / ADR-001 · ARCHITECTURE</p><h1>One loop, two session adapters</h1>
+<svg viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ADR-001-runtime-session-title ADR-001-runtime-session-desc">
+<title id="ADR-001-runtime-session-title">AOF shared runtime session boundary</title>
+<desc id="ADR-001-runtime-session-desc">The loop delegates phases to a shared session boundary that selects Claude or Codex, while the phase driver persists native identity and questions before settling results.</desc>
+<style>.name{font:600 12px Inter,system-ui,sans-serif;fill:#1b1f27}.sub{font:9px ui-monospace,Consolas,monospace;fill:#585f6a}.label{font:8px ui-monospace,Consolas,monospace;fill:#585f6a;letter-spacing:.06em}</style>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#585f6a"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#ba2646"/></marker>
+<marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#13766d"/></marker>
+</defs>
+<rect width="1000" height="480" fill="#f3f5f7"/>
+<g fill="none" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)">
+<path d="M220 104 H320"/><path d="M560 104 H680"/>
+<path d="M752 160 V220 Q752 228 744 228 H688 Q680 228 680 236 V288"/>
+<path d="M824 160 V220 Q824 228 832 228 H872 Q880 228 880 236 V288"/>
+<path d="M440 160 V288"/>
+</g>
+<path d="M680 144 H560" fill="none" stroke="#585f6a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+<g class="label" text-anchor="middle">
+<rect x="244" y="80" width="52" height="16" fill="#f3f5f7"/><text x="270" y="90">PHASE</text>
+<rect x="580" y="80" width="80" height="16" fill="#f3f5f7"/><text x="620" y="90">BRIEF / STOP</text>
+<rect x="584" y="120" width="72" height="16" fill="#f3f5f7"/><text x="620" y="130">FACTS / RESULT</text>
+</g>
+<rect x="448" y="212" width="104" height="24" fill="#f3f5f7"/>
+<text class="label" x="456" y="227">AWAIT PERSIST</text>
+<rect x="40" y="80" width="180" height="80" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="56" y="110">Work loop</text><text class="sub" x="56" y="134">gates · retries · waves</text>
+<rect x="320" y="80" width="240" height="80" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="336" y="110">Phase driver</text><text class="sub" x="336" y="134">brief · lifecycle · persistence</text>
+<rect x="680" y="80" width="240" height="80" rx="8" fill="rgba(186,38,70,.08)" stroke="#ba2646"/>
+<text class="name" x="696" y="110">Runtime session boundary</text><text class="sub" x="696" y="134">resolved execution → adapter</text>
+<rect x="320" y="288" width="240" height="80" rx="8" fill="rgba(27,31,39,.05)" stroke="#585f6a"/>
+<text class="name" x="336" y="318">Existing run and ask stores</text><text class="sub" x="336" y="342">native id · answer · outcome</text>
+<rect x="600" y="288" width="160" height="80" rx="8" fill="rgba(27,31,39,.03)" stroke="rgba(27,31,39,.3)"/>
+<text class="name" x="616" y="318">Claude adapter</text><text class="sub" x="616" y="342">existing PTY</text>
+<rect x="800" y="288" width="160" height="80" rx="8" fill="rgba(27,31,39,.03)" stroke="rgba(27,31,39,.3)"/>
+<text class="name" x="816" y="318">Codex adapter</text><text class="sub" x="816" y="342">App Server stdio</text>
+<line x1="40" y1="412" x2="960" y2="412" stroke="#bec6d0"/>
+<text class="sub" x="40" y="436">Solid: delegated work / persistence</text>
+<text class="sub" x="360" y="436">Dashed: normalized return</text>
+<text class="sub" x="640" y="436">Tinted: state or assistant transport</text>
+</svg></main></body></html>
