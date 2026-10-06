@@ -3,9 +3,10 @@ import { existsSync } from "node:fs";
 import { readFile, rename, rm } from "node:fs/promises";
 import { listItems, findWork, isLiveStreamRow } from "../discovery.mjs";
 import { parseFrontmatter, recordDoc } from "../records.mjs";
-import { isDependTarget, isDependNumber, rewriteDependsEntries } from "../dependencies.mjs";
+import { isDependNumber, rewriteDependsEntries } from "../dependencies.mjs";
 import { BACKLOG_ROOT } from "../identity.mjs";
 import { appendPosition } from "../promote/promotion.mjs";
+import { classifyDepends, promotionCandidates } from "../promote/candidates.mjs";
 import { writeText } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
@@ -60,7 +61,6 @@ export function createPromoteCommand({ transitionStreamReindexed, INSERT_FLAGS, 
 // it for the same reason: a one-line helper is cheaper to mirror than to widen the 36-importer
 // god-node's public surface for (m41/ADR-001).
 const asList = (value) => (Array.isArray(value) ? value : value == null || value === "" ? [] : [value]);
-const sameNum = (a, b) => Number.parseInt(a, 10) === Number.parseInt(b, 10);
 const slash = (value) => String(value).replaceAll("\\", "/");
 
 // ─────────────────────────────────────────────────────────────── resolution ──
@@ -179,39 +179,8 @@ function prefixFirstHeading(text, padded) {
 
 // ──────────────────────────────────────────────────────── depends at promotion ──
 
-// ADR-003 §6 — promotion is where a backlog item's `depends:` is checked as a gate on entering the
-// stream. Entries are read as `parseFrontmatter` hands them (quotes and surrounding spaces
-// stripped, an empty entry dropped, a duplicate kept), split into number and slug by the one
-// predicate (`isDependNumber`, story 139), and checked against the PRE-shift stream: the operator
-// wrote them against the numbers that exist now, and the engine's own rewrite carries them
-// across a shift.
-//
-//   · an all-digit entry must name a NUMBERED top-level item `isDependTarget` admits — LIVE OR
-//     ARCHIVED. An archived target is satisfied, not missing (ADR-002 §3: the archive is a
-//     location, not a status), and `sameNum` makes `5` and `05` one number.
-//   · an entry naming a BACKLOG slug (exact, case-sensitive — a slug is lowercase by grammar) is
-//     `promote-depends-backlog`: the item waits on work that has not entered the stream, so it
-//     cannot enter ahead of it. Promoting that target rewrites this entry to its minted number
-//     (`resolveBacklogEdges` below), which is what clears the gate.
-//   · anything else is `promote-depends-unresolved`.
-//
-// EVERY offending entry comes back, in the order written, so the operator fixes the note once.
-function classifyDepends(entries, items) {
-  const targets = items.filter((item) => item.number != null && item.parent == null && isDependTarget(item));
-  const backlogSlugs = new Set(items.filter((item) => item.number == null).map((item) => item.slug));
-  const offenders = [];
-  for (const raw of entries) {
-    const entry = String(raw);
-    if (isDependNumber(entry)) {
-      if (!targets.some((item) => sameNum(item.number, entry))) {
-        offenders.push({ entry, code: "promote-depends-unresolved" });
-      }
-      continue;
-    }
-    offenders.push({ entry, code: backlogSlugs.has(entry) ? "promote-depends-backlog" : "promote-depends-unresolved" });
-  }
-  return offenders;
-}
+// The gate itself (`classifyDepends`, ADR-003 §6) lives in `../promote/candidates.mjs` (story
+// 152), so `--show-candidates` and `--next-item` ask the very rule a named promote asks.
 
 function dependsRefusal(slug, offenders) {
   const lines = offenders.map(({ entry, code }) =>
@@ -434,16 +403,53 @@ async function promoteRow(ctx, row, { at: namedAt, atGiven, yes } = {}) {
   };
 }
 
-// runPromote(ctx, { slug, at, yes }) — the verb. `at` absent ⇒ append; `at` present and unusable ⇒
-// `promote-invalid-at`, refused before any read of the stream.
-async function runPromote(ctx, { slug: rawSlug, at: rawAt, yes } = {}) {
+// Story 152 — the three ways to call the verb are exclusive, and a conflict is refused before the
+// work tree is read (Q5): a slug, `--next-item`, or `--show-candidates`, and the read-only
+// `--show-candidates` takes neither `--at` nor `--yes`.
+function refuseFlagConflict({ arg, nextItem, showCandidates, atGiven, yes }) {
+  const modes = [arg !== "" && "a slug", nextItem && "--next-item", showCandidates && "--show-candidates"].filter(Boolean);
+  const placed = showCandidates ? [atGiven && "--at", yes && "--yes"].filter(Boolean) : [];
+  if (modes.length < 2 && placed.length === 0) return;
+  const named = modes.length >= 2 ? modes.join(" and ") : `--show-candidates and ${placed.join(" and ")}`;
+  throw commandError(
+    `${named} cannot be combined: aof work promote <slug> | --next-item [--at <P>] [--yes] | --show-candidates.`,
+    "promote-flag-conflict",
+    400,
+  );
+}
+
+// The sentence for a backlog with no candidate — the same words on the read and on the refusal.
+function noCandidateSentence({ candidates, waiting }) {
+  if (candidates.length > 0) return null;
+  return waiting.length === 0 ? "The backlog is empty." : "No backlog item can be promoted yet.";
+}
+
+// runPromote(ctx, { slug, at, yes, showCandidates, nextItem }) — the verb. `at` absent ⇒ append;
+// `at` present and unusable ⇒ `promote-invalid-at`, refused before any read of the stream.
+// `--show-candidates` answers `{ candidates, waiting }` and writes nothing; `--next-item` hands
+// the head of `candidates` to `promoteRow`, the path a named promote takes, and adds only the
+// choice of row (`next`, which the JSON face does not print).
+async function runPromote(ctx, { slug: rawSlug, at: rawAt, yes, showCandidates = false, nextItem = false } = {}) {
   const workDir = ctx.workspace.workDir;
   const arg = typeof rawSlug === "string" ? rawSlug.trim() : "";
+  refuseFlagConflict({ arg, nextItem, showCandidates, atGiven: rawAt != null, yes });
   // A blank substring matches every row, so an empty argument is refused before `findWork` is
   // asked rather than answered as "ambiguous".
-  if (arg === "") {
+  if (arg === "" && !nextItem && !showCandidates) {
     throw commandError("A backlog item's slug is required: aof work promote <slug> [--at <P>].", "promote-missing-slug", 400);
   }
+
+  // A flag the face does not know (`-h`) arrives as a positional, and the free-text resolver's
+  // SUBSTRING match would promote whatever slug contains it. A slug never begins with `-`.
+  if (arg.startsWith("-")) {
+    throw commandError(
+      `"${arg}" is a flag promote does not know, not a slug: aof work promote <slug> | --next-item [--at <P>] [--yes] | --show-candidates.`,
+      "promote-flag-conflict",
+      400,
+    );
+  }
+
+  if (showCandidates) return await promotionCandidates(await listItems(workDir));
 
   const atGiven = rawAt != null;
   let at = null;
@@ -454,6 +460,19 @@ async function runPromote(ctx, { slug: rawSlug, at: rawAt, yes } = {}) {
     if (at == null) {
       throw commandError("--at must be a non-negative integer position.", "promote-invalid-at", 400);
     }
+  }
+
+  if (nextItem) {
+    const items = await listItems(workDir);
+    const answer = await promotionCandidates(items);
+    const empty = noCandidateSentence(answer);
+    if (empty != null) {
+      throw commandError(`${empty} Nothing was promoted — aof work promote --show-candidates names what each item waits on.`, "promote-no-candidates", 409);
+    }
+    const head = answer.candidates[0];
+    const row = items.find((item) => item.number == null && item.dir === head.dir);
+    const result = await promoteRow(ctx, row, { at, atGiven, yes });
+    return { ...result, next: { slug: head.slug, type: head.type, unblocks: head.unblocks } };
   }
 
   // An all-digit argument never reaches `findWork`'s free-text branch — `findWork("12")` is the
@@ -533,56 +552,108 @@ const promoteCommand = {
       slug: { type: "string" },
       at: { type: ["number", "string"] },
       yes: { type: "boolean" },
+      showCandidates: { type: "boolean" },
+      nextItem: { type: "boolean" },
     },
-    required: ["slug"],
     additionalProperties: false,
   },
 
   async run(input, ctx) {
-    return await runPromote(ctx, { slug: input.slug, at: input.at, yes: Boolean(input.yes) });
+    return await runPromote(ctx, {
+      slug: input.slug,
+      at: input.at,
+      yes: Boolean(input.yes),
+      showCandidates: Boolean(input.showCandidates),
+      nextItem: Boolean(input.nextItem),
+    });
   },
 
   cli: {
     route: ["work", "promote"],
     spec: {
-      usage: "aof work promote <slug> [--at <P>] [--yes] [--json]",
+      usage: "aof work promote <slug> | --next-item [--at <P>] [--yes] [--json] | --show-candidates [--json]",
       // The SHARED insert-verb flag vocabulary, so `--force` stays the alias of `--yes` it is
-      // everywhere else in this family.
-      flags: INSERT_FLAGS,
+      // everywhere else in this family; story 152's two modes are spread beside it, never into it.
+      flags: {
+        ...INSERT_FLAGS,
+        nextItem: { type: "boolean", description: "promote the first backlog item --show-candidates lists" },
+        showCandidates: { type: "boolean", description: "list the backlog items that can be promoted now, in order, then those that wait; writes nothing" },
+      },
     },
 
     argv: (positionals, options) => ({
       slug: positionals[0],
       at: options.at,
       yes: Boolean(options.yes || options.force),
+      ...(options.showCandidates ? { showCandidates: true } : {}),
+      ...(options.nextItem ? { nextItem: true } : {}),
     }),
 
-    // The two renders the contract names. Whether the operator NAMED a position is an argv fact,
-    // not an envelope fact (the envelope is frozen), so it is read from the `faceCtx` every render
-    // already receives rather than smuggled onto the result.
+    // The renders the contracts name. Whether the operator NAMED a position, or asked for the
+    // candidates, is an argv fact, not an envelope fact (the envelope is frozen), so it is read
+    // from the `faceCtx` every render already receives rather than smuggled onto the result.
     render(result, faceCtx) {
+      if (faceCtx?.options?.showCandidates) return renderCandidates(result);
       const named = faceCtx?.options?.at != null;
       const promoted = named
         ? `Promoted "${result.created.slug}" to ${result.created.ref} (at ${result.at}, shifted ${result.shifted} item(s)).`
         : `Promoted "${result.created.slug}" to ${result.created.ref} (appended).`;
+      // Story 152 — `--next-item` says which row it chose, on the line before.
+      const chosen = result.next ? `Next candidate: ${result.next.slug} (${result.next.type}, unblocks ${result.next.unblocks}).\n` : "";
       // Story 139 — one more line, only when edges were resolved, naming them in envelope order.
-      if (!Array.isArray(result.rewired) || result.rewired.length === 0) return promoted;
+      if (!Array.isArray(result.rewired) || result.rewired.length === 0) return `${chosen}${promoted}`;
       const slugs = result.rewired.map((entry) => entry.ref).join(", ");
-      return `${promoted}\nRewired ${result.rewired.length} backlog edge(s) to ${result.created.ref}: ${slugs}.`;
+      return `${chosen}${promoted}\nRewired ${result.rewired.length} backlog edge(s) to ${result.created.ref}: ${slugs}.`;
     },
 
     // The stdout envelope is the in-process envelope with its `dir` values forward-slashed
     // (task 00: "stdout is the envelope above, `dir` values forward-slashed") — a path the
     // operator can paste on any shell. Every OTHER key is byte-identical: the in-process envelope
     // keeps native paths for its callers, and `created.depends`, when present, is untouched.
-    json: (result) => ({
-      ...result,
-      created: { ...result.created, dir: slash(result.created.dir) },
-      from: { ...result.from, dir: slash(result.from.dir) },
-      ...(result.rewired ? { rewired: result.rewired.map((entry) => ({ ...entry, dir: slash(entry.dir) })) } : {}),
-    }),
+    // `--next-item`'s `next` is the human render's, so its envelope keeps a named promote's keys.
+    json: (result) => {
+      if (Array.isArray(result.candidates)) {
+        return {
+          candidates: result.candidates.map((row) => ({ ...row, dir: slash(row.dir) })),
+          waiting: result.waiting.map((row) => ({ ...row, dir: slash(row.dir) })),
+        };
+      }
+      const { next, ...promoted } = result; // eslint-disable-line no-unused-vars
+      return {
+        ...promoted,
+        created: { ...promoted.created, dir: slash(promoted.created.dir) },
+        from: { ...promoted.from, dir: slash(promoted.from.dir) },
+        ...(promoted.rewired ? { rewired: promoted.rewired.map((entry) => ({ ...entry, dir: slash(entry.dir) })) } : {}),
+      };
+    },
   },
 };
+
+// Story 152 — the `--show-candidates` human render: the candidates numbered in promotion order,
+// then the waiting rows with what each waits on, then the way to promote the first.
+function renderCandidates({ candidates, waiting }) {
+  const label = (row) => (row.backlog === "" ? row.slug : `${row.backlog}/${row.slug}`);
+  const lines = [];
+  const empty = noCandidateSentence({ candidates, waiting });
+  if (empty != null) lines.push(empty);
+  else {
+    lines.push(`Can be promoted now (${candidates.length}), in order:`);
+    candidates.forEach((row, index) => lines.push(`  ${index + 1}. ${label(row)} (${row.type}, unblocks ${row.unblocks})`));
+  }
+  if (waiting.length > 0) {
+    lines.push(`Waiting (${waiting.length}):`);
+    for (const row of waiting) {
+      const on = row.waitsOn
+        .map(({ entry, code }) => `${entry} (${code === "promote-depends-backlog" ? "still in the backlog" : "unresolved"})`)
+        .join(", ");
+      lines.push(`  - ${label(row)} (${row.type}) waits on ${on}`);
+    }
+  }
+  if (candidates.length > 0) {
+    lines.push(`Promote the first with: aof work promote ${candidates[0].slug} — or aof work promote --next-item.`);
+  }
+  return lines.join("\n");
+}
 
 return { archivedCollisions, classifyDepends, numbersWritten, prefixFirstHeading, promoteCommand, runInsertTopLevel, runPromote, stampNumber };
 }

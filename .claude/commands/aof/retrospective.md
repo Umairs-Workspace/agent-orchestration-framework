@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: The retrospective session — triage a milestone's mistakes/blockers (from STATE feedback notes + VERIFICATION findings) and distil them into RETROSPECTIVE.md as carryable lessons. Called at the close by aof:verify, or run directly to backfill past milestones.
+argument-hint: "[ref | range — omit for all done milestones without one]"
 aof-invocation: /aof:retrospective
 aof-runtime: claude
 ---

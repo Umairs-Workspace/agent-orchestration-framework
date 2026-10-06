@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Draw the ADR diagrams a refine left undrawn — every briefed ADR with no picture, or one ADR you name — through the same `aof diagram plan` / `aof diagram export` step refine uses, pasting each block under its brief.
+argument-hint: "<ref> [ADR-NNN]"
 aof-invocation: /aof:add-diagram
 aof-runtime: claude
 ---

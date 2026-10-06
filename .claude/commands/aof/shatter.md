@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Shatter a planning PRD into a framed roadmap — a milestone SPEC per deliverable chunk, plus a `spike` de-risk driver for any chunk that is a blocking unknown gating a milestone — the one batch session that lays out the roadmap and authors cross-milestone `depends` edges. Consumes a planning PRD (whatever produced it); never writes product strategy itself. One-directional — PRD → drivers, never back.
+argument-hint: "[PRD path — omit to auto-discover PRD-*.md] [in <group/path>]"
 aof-invocation: /aof:shatter
 aof-runtime: claude
 ---

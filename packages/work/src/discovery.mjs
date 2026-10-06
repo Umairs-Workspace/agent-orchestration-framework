@@ -289,8 +289,9 @@ function orderByNumber(rows) {
 
 // Backlog order (127/ADR-002 §5): group path, then slug — compared as PLAIN STRINGS in
 // code-point order (`<`, never `localeCompare`), so the listing is byte-identical on every
-// OS and locale. `""` (the top of the backlog) sorts before every named group.
-function byGroupThenSlug(a, b) {
+// OS and locale. `""` (the top of the backlog) sorts before every named group. Exported for
+// promote's candidates (story 152), whose final tie-break is this listing's order.
+export function byGroupThenSlug(a, b) {
   if (a.backlog !== b.backlog) return a.backlog < b.backlog ? -1 : 1;
   if (a.slug !== b.slug) return a.slug < b.slug ? -1 : 1;
   return 0;

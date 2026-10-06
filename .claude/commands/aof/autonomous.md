@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Drives a milestone range through the code-owned loop shell, preserving the autonomous door while keeping sequencing, gates, retries, and stops in one enforceable home.
+argument-hint: "<range — NN-MM or NN> [--max-attempts N] [--solo]"
 aof-invocation: /aof:autonomous
 aof-runtime: claude
 ---

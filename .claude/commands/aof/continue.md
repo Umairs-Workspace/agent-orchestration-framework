@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Execute/resume a work item — build its tasks to green, then structural + behavioural review. For a milestone, walks every story to built-and-reviewed; refining stays with `aof:refine`, accepting with `aof:verify`.
+argument-hint: "<item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]"
 aof-invocation: /aof:continue
 aof-runtime: claude
 ---

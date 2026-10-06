@@ -426,7 +426,7 @@
         "id": "add-chore",
         "kind": "command"
       },
-      "hash": "sha256:45f80ca1d0ffb3bcb216a7f63af16162dcc02d333237a0a70261fe36c588eb7a"
+      "hash": "sha256:9115f52f60343bb54e79ff949a304566e657698386f24bfb52c479a62eb3afbb"
     },
     {
       "path": ".claude/commands/aof/add-diagram.md",
@@ -435,7 +435,7 @@
         "id": "add-diagram",
         "kind": "command"
       },
-      "hash": "sha256:c4fa7395aa1239ec25ea5bcdba7859ef6b61871e1c387279bf3da3e6689eac00"
+      "hash": "sha256:5511d1f5414a84fb8ffc8a80a1d474e317d6b5c6d89fa7a954d723d74a8d54a5"
     },
     {
       "path": ".claude/commands/aof/add-milestone.md",
@@ -444,7 +444,7 @@
         "id": "add-milestone",
         "kind": "command"
       },
-      "hash": "sha256:b8d482131d8a2b2a0d1cf77bc736f0605c34ff25de600b69d2c65c1fa99be299"
+      "hash": "sha256:1000792e0d895335ff20d1d233b45ec9da464835b3071dc17475175a2ad0b11b"
     },
     {
       "path": ".claude/commands/aof/add-spike.md",
@@ -453,7 +453,7 @@
         "id": "add-spike",
         "kind": "command"
       },
-      "hash": "sha256:2e06b2ba1a79799c33f00c689dd1401a43d01cc4e2325e048f774db22a6b1a15"
+      "hash": "sha256:419298b538faba7ecb5ed2ad7782472217ddf856fb84ec7da1ca72021a2e1c12"
     },
     {
       "path": ".claude/commands/aof/add-story.md",
@@ -462,7 +462,7 @@
         "id": "add-story",
         "kind": "command"
       },
-      "hash": "sha256:2df7d209c806680f5009c6f9224d3cc6a1e829e22ff35e8d5b2e249a2d3ac309"
+      "hash": "sha256:97c394d698989432a768945f21e036fe91e76b8e081cfa8c8ed39c6f03f7f514"
     },
     {
       "path": ".claude/commands/aof/add-task.md",
@@ -471,7 +471,7 @@
         "id": "add-task",
         "kind": "command"
       },
-      "hash": "sha256:ec0657153ee5161423bc1cd4d994d978a06a0c9c4da58772c236005791f0135c"
+      "hash": "sha256:9617b4400c73f6ae8a6218a65f4915a6d84a5a64d40a48132668bbf74eb3c9be"
     },
     {
       "path": ".claude/commands/aof/add-uat.md",
@@ -480,7 +480,7 @@
         "id": "add-uat",
         "kind": "command"
       },
-      "hash": "sha256:432223d777c262e677c890abaf5798baca12a15521e2ec539b9b568618797aee"
+      "hash": "sha256:9e94c81cf8ab52351bad476ca68d55e0e944130d8a0c14b1c5f80b5a5ee8e806"
     },
     {
       "path": ".claude/commands/aof/archive.md",
@@ -489,7 +489,7 @@
         "id": "archive",
         "kind": "command"
       },
-      "hash": "sha256:8ef39be65ff36d6da8baef35ceaaf6deab9e207e0836d63cc193403d0f7193fb"
+      "hash": "sha256:e6c50df5b1dd47abf0853e1c269279cb2d65532d3a61d3fb1524d061c02dfb5b"
     },
     {
       "path": ".claude/commands/aof/assimilate-code.md",
@@ -498,7 +498,7 @@
         "id": "assimilate-code",
         "kind": "command"
       },
-      "hash": "sha256:52f7b1503c1b2cc6dd6df781536a81bdec4a1d8bccf965967cdcf1f4ce1d07ae"
+      "hash": "sha256:3b2e7a9ab5ea17a66674e3da81b51668143e5d7743065815b5cd53cb561c4283"
     },
     {
       "path": ".claude/commands/aof/autonomous.md",
@@ -507,7 +507,7 @@
         "id": "autonomous",
         "kind": "command"
       },
-      "hash": "sha256:74df3cff654dc8998da67bdf5aac55375c2ebfd96e18bdb6a57c7a3d3b406e8b"
+      "hash": "sha256:458c473ade89737bd2815db74ac4f87d074b38ffb00a1f1f3156a56e86f97c06"
     },
     {
       "path": ".claude/commands/aof/continue.md",
@@ -516,7 +516,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:8c55913a6bd3c2275bbbb70bc83cc7170e68888c5a54686decfb405c7052ef5e"
+      "hash": "sha256:5b4f6e97d4a494650cfe5d5b4a281145ed65d93888c5e9eef4e97d6022e8da03"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
@@ -525,7 +525,7 @@
         "id": "delegate",
         "kind": "command"
       },
-      "hash": "sha256:a1a31256fcca8d71bdadc4a561308a943b3f5de56256fb42e91b8dd5c317312d"
+      "hash": "sha256:333a68209d9504086289f395fde588159dcd9cf0da20c8d899beb39d70d28d7b"
     },
     {
       "path": ".claude/commands/aof/explain.md",
@@ -534,7 +534,7 @@
         "id": "explain",
         "kind": "command"
       },
-      "hash": "sha256:093e5738e82e1681e58e36e9a6d01b0f73e2fcc1d13621b253e7921d3ce7e6f5"
+      "hash": "sha256:e858ea353284b7cf68ddeaa5c88f2c43f65661006308995e092e8c67928f29fe"
     },
     {
       "path": ".claude/commands/aof/feedback.md",
@@ -543,7 +543,7 @@
         "id": "feedback",
         "kind": "command"
       },
-      "hash": "sha256:58d5e7471461467c78b8c3bcef7512685d404dc0e83418d462f0e237f74daf44"
+      "hash": "sha256:4078aceb936f879f3a86c399e44e0bfba78718495e1213c50bb8d7d976661fe0"
     },
     {
       "path": ".claude/commands/aof/init.md",
@@ -552,7 +552,7 @@
         "id": "init",
         "kind": "command"
       },
-      "hash": "sha256:ed82833e4169152843c7861adf191bca905657ad3b52139e978c1ef604bfdbef"
+      "hash": "sha256:a66423625a874f96f50fa28551dc8ff8b0b22e05d07d51d0ba23489da74e00b2"
     },
     {
       "path": ".claude/commands/aof/insert-chore.md",
@@ -561,7 +561,7 @@
         "id": "insert-chore",
         "kind": "command"
       },
-      "hash": "sha256:61a4bcd27a7187af0371501924a88d13dd1d70730fcf76326252adf4eb0efc72"
+      "hash": "sha256:6585ef58ea478420c0c6450ca995b7d4154fe51d10adffa01725228cf91398d6"
     },
     {
       "path": ".claude/commands/aof/insert-milestone.md",
@@ -570,7 +570,7 @@
         "id": "insert-milestone",
         "kind": "command"
       },
-      "hash": "sha256:9996b963893b63591b80f4b0c80e7f78d19c3913d2f7661aaa896b60ffce32fc"
+      "hash": "sha256:efa257870650ae51e11cb184313fa825f21aef92ee3945066cd55859fa6a4540"
     },
     {
       "path": ".claude/commands/aof/insert-story.md",
@@ -579,7 +579,7 @@
         "id": "insert-story",
         "kind": "command"
       },
-      "hash": "sha256:1168061f6b7c3de840dbfe7a783e85d52960be881e820272c93d850a9d335f64"
+      "hash": "sha256:847f78b7af7307aa18bbd13947fc235b4eb55976e4b9df9d4c3e9fbd8481376c"
     },
     {
       "path": ".claude/commands/aof/insert-uat.md",
@@ -588,7 +588,7 @@
         "id": "insert-uat",
         "kind": "command"
       },
-      "hash": "sha256:07691aed2fc5bed616f3e58698bf58ea0d9edf80afff3e3d513a1f71480a745e"
+      "hash": "sha256:9579e5883764da01aedbb7195731cab3ca66adc7819b212a0d7c975bd08afb2f"
     },
     {
       "path": ".claude/commands/aof/loop-diagram.md",
@@ -597,7 +597,7 @@
         "id": "loop-diagram",
         "kind": "command"
       },
-      "hash": "sha256:1763a0f43cc9baaeb068fbfcf1292d63ea8f412e06955f5b4ec3b34228f961ac"
+      "hash": "sha256:b911fc4c1cb5f1dd88f9feb9cf7c6839c5d22412a0577d71287d1174a41a33b3"
     },
     {
       "path": ".claude/commands/aof/migrate.md",
@@ -606,7 +606,7 @@
         "id": "migrate",
         "kind": "command"
       },
-      "hash": "sha256:65e0a99b4d47e8b502548d660d3cea844ba3811f38d42c81a25e25ede49d0911"
+      "hash": "sha256:ca2d7d58e8d9ef0c07868387867e15aa9439acee8d3daf53c0e2aaf11f4217dc"
     },
     {
       "path": ".claude/commands/aof/observe.md",
@@ -615,7 +615,7 @@
         "id": "observe",
         "kind": "command"
       },
-      "hash": "sha256:bf461881e4e4eedb46dc609da20a4f218945f6580f88152396a2a7e06fb668fb"
+      "hash": "sha256:62e93edba5afbfd6e3ceae58cb05f41fe8ba5d496203df65afe79c10d02829b0"
     },
     {
       "path": ".claude/commands/aof/pay-debt.md",
@@ -624,7 +624,7 @@
         "id": "pay-debt",
         "kind": "command"
       },
-      "hash": "sha256:65d5032084f2e36e045f0bf0a97097dab557c2acfd72b2507e3f3e31dc9220bb"
+      "hash": "sha256:ad391bb1ab50582d86ea2d0f4ad2e0bc4bbf664f3fc44ef97e5ad890a6a22e22"
     },
     {
       "path": ".claude/commands/aof/promote.md",
@@ -633,7 +633,7 @@
         "id": "promote",
         "kind": "command"
       },
-      "hash": "sha256:58f4c245d6fea0ad1022e8de4371fffea9ba8a08ce73f3021691dc2a41131d72"
+      "hash": "sha256:ba2ff654a1aaaa317e5cc2be8bf349bfa9a1251c3841bb9877ee8f46c9066382"
     },
     {
       "path": ".claude/commands/aof/recent.md",
@@ -642,7 +642,7 @@
         "id": "recent",
         "kind": "command"
       },
-      "hash": "sha256:96748c077508b6bdb7cf4c81d338ba8f9b96fb10ddb186996d4a6c4774f1cdcf"
+      "hash": "sha256:69cd14c73dd86da4b9c9ed069a0afbad99201cde7de994810d49bab684877119"
     },
     {
       "path": ".claude/commands/aof/refine.md",
@@ -651,7 +651,7 @@
         "id": "refine",
         "kind": "command"
       },
-      "hash": "sha256:9c47030ba3e0a457685bbd5326fedbbb507069c2b8f36bfe81e438d96485b987"
+      "hash": "sha256:b1498ce0f6c8fe4361d878748be7a92950e0164120d1f17a99cbad3634e7ca49"
     },
     {
       "path": ".claude/commands/aof/repair.md",
@@ -660,7 +660,7 @@
         "id": "repair",
         "kind": "command"
       },
-      "hash": "sha256:f4c310c8469da1849b30fc6c52dfbe58afff47a519b2094e54df82e24d9ba0bf"
+      "hash": "sha256:671dd6bffb338a9dfd5d31de5a85d678605234305a30fd4d39a4c6b816ef22dc"
     },
     {
       "path": ".claude/commands/aof/retrospective.md",
@@ -669,7 +669,7 @@
         "id": "retrospective",
         "kind": "command"
       },
-      "hash": "sha256:01a16c8f70095df65765415dba63a4c0409598e35c64df9d11a04b52414167e0"
+      "hash": "sha256:c38dde8be4bf4df6ba5f48c580912b616a639328ca4a9cf2e45a74fd2cffa0af"
     },
     {
       "path": ".claude/commands/aof/review.md",
@@ -678,7 +678,7 @@
         "id": "review",
         "kind": "command"
       },
-      "hash": "sha256:d651697e9c32fbeab987cbe375d79004529e3d7413c3c26f18414028037cbaed"
+      "hash": "sha256:2e107358a97b22923aafc3f1b631b49d727c50f66bf135d38ce1f998c7ed38b3"
     },
     {
       "path": ".claude/commands/aof/shatter.md",
@@ -687,7 +687,7 @@
         "id": "shatter",
         "kind": "command"
       },
-      "hash": "sha256:093c32f721d11e468dd7dfc34fdce8c354a9ad3b5c9ad3f00d657d6aa3299dd9"
+      "hash": "sha256:24f7b2eb18806c55b8ffc646d2695f122213cc00140db5d13a73f9a13f90123c"
     },
     {
       "path": ".claude/commands/aof/validate.md",
@@ -696,7 +696,7 @@
         "id": "validate",
         "kind": "command"
       },
-      "hash": "sha256:d5e7e0c0a857a0bfd7a123ec1ca44b107c4bd8e5435b7c3247e1df2273a97296"
+      "hash": "sha256:dfd4feee2543fb8f5aa0e9d9a97fae11ab8f123da145e4ec3a587670b3b6dd71"
     },
     {
       "path": ".claude/commands/aof/verify.md",
@@ -705,7 +705,7 @@
         "id": "verify",
         "kind": "command"
       },
-      "hash": "sha256:2dbb45f68d2a9306a4e2205960a9ce3b20cb44d7f94e5275288a369c4bc09cee"
+      "hash": "sha256:83850e0d844e39da90592421fc94a350b9c36b3adc10ca3357236c3b2939221f"
     },
     {
       "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",
@@ -1056,7 +1056,7 @@
         "id": "aof-promote",
         "kind": "skill"
       },
-      "hash": "sha256:39e65bd6aa941b74c1b07cd22846e54dac3fae19304916d19a4464cda5eb5917"
+      "hash": "sha256:c60fa757d14f87512e4e8ac119ae62adf77c8fad0d86dc6c963c94a37cda159d"
     },
     {
       "path": ".codex/skills/aof-recent/SKILL.md",

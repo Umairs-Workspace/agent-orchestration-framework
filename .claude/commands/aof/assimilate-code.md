@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Assimilate already-done work into a governed story — from your description + the real change set (pending or last commit), author a story with acceptance criteria, review the delivered code (architect standards + QA coverage), and capture the lessons to memory. No research, no build; the code is left exactly as-is. Resistance is futile.
+argument-hint: "<description> (--pending | --committed) [--under NN] [--skip-qa]"
 aof-invocation: /aof:assimilate-code
 aof-runtime: claude
 ---

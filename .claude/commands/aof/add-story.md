@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Create a story — a self-contained folder (STORY.md + empty tasks/), nested inside a LIVE milestone, or standalone on the project's intake.
+argument-hint: "<story description> [under milestone NN] [--in-stream]"
 aof-invocation: /aof:add-story
 aof-runtime: claude
 ---

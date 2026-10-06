@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Verify and accept a work item — run the automated + agent-run checks, bring a human in only for genuine @uat acceptance, log/triage findings, capture process lessons in RETROSPECTIVE, sign off, mark done. A milestone is accepted once its stories are.
+argument-hint: "<item ref> [--url <baseUrl>] [--thinking <level>]"
 aof-invocation: /aof:verify
 aof-runtime: claude
 ---

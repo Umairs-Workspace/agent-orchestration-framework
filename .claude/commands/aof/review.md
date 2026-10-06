@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Review the operator's own build of a story — run its tests, walk continue's gate ladder and review lanes over the change, and hand every finding back. Builds nothing and fixes nothing; a clean review moves the story to in-review for aof:verify.
+argument-hint: "<story or task ref> [--solo | --orchestrated]"
 aof-invocation: /aof:review
 aof-runtime: claude
 ---

@@ -94,6 +94,10 @@ import { workBacklogArchiveEnumerateTests } from "./work-backlog-archive-enumera
 // work-insert-top-level-places exports (spread above, beside the delivered insert assertions they
 // must keep green); the textual halves (FF-12703/12704) live in test/arch/work.
 import { workPromoteMintsTheNumberTests } from "./work-promote-mints-the-number.test.mjs";
+// story 152 — promote shows what to promote next: `--show-candidates` asks the depends gate of every
+// backlog row and orders the answer, `--next-item` promotes its head through the named promote's path
+// (tasks 00-01), and the /aof:promote wrapper offers both modes (task 02).
+import { workPromoteShowsCandidatesTests } from "./work-promote-shows-candidates.test.mjs";
 // milestone 127 / story 03 — archive is a move: the verbatim MOVE driven over the three-root fixture
 // extended with the archive fixture (tasks 00-04 — the verb and its coded refusals, the rename, the
 // crossing-link rewrite and its one invariant, `--done` behind its confirm gate, the `stream.archived`
@@ -157,6 +161,8 @@ export const tests = [
   ...workBacklogArchiveEnumerateTests,
   // milestone 127 / story 02 — promote mints the number (tasks 00-02 + task 04's promote refusal)
   ...workPromoteMintsTheNumberTests,
+  // story 152 — promote shows what to promote next (tasks 00-02)
+  ...workPromoteShowsCandidatesTests,
   // milestone 127 / story 03 — archive is a move (tasks 00-04)
   ...workArchiveIsAMoveTests,
   // milestone 127 / story 05 — this tree holds what is live (tasks 00 and 02 over the real stream)

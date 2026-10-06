@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Insert a milestone at a target position — scaffold NN_milestone_slug at --at P and re-index every item ≥ P up by one, keeping the stream valid. The placement twin of add-milestone.
+argument-hint: "<short milestone description> at <position P>"
 aof-invocation: /aof:insert-milestone
 aof-runtime: claude
 ---

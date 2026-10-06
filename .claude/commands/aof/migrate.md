@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Migrate a source folder into a managed milestone — runs `aof migrate` (the mechanical CLI) first, then agent inference fills only what the scan marked not recoverable, with an architect review of delivered work at migrate time.
+argument-hint: "<source folder> [--dry-run]"
 aof-invocation: /aof:migrate
 aof-runtime: claude
 ---

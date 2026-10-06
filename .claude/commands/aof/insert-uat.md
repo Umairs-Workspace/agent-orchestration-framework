@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Insert a UAT session at a target position — scaffold NN_uat_slug at --at P and re-index every item ≥ P up by one, keeping the stream valid. The placement twin of add-uat.
+argument-hint: "<short session description> at <position P> [accepting NN[,NN…]]"
 aof-invocation: /aof:insert-uat
 aof-runtime: claude
 ---

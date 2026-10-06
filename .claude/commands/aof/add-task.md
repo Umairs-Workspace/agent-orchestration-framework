@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Create a task — an adhoc standalone .feature, or a task inside an existing story.
+argument-hint: "<task description> [under story <ref>]"
 aof-invocation: /aof:add-task
 aof-runtime: claude
 ---

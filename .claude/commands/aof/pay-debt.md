@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Pay down structural debt — find the TECH_DEBT entries living in the files at hand, fix what fits, defer only what is genuinely story-sized, and discharge what is already paid.
+argument-hint: "[<ref> | <path>...] [--sweep] [--prune]"
 aof-invocation: /aof:pay-debt
 aof-runtime: claude
 ---

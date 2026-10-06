@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Refine a work item — break a milestone into independent stories, or author a story's task features (Three Amigos), producing ARCHITECTURE/DESIGN/RESEARCH as needed. With --autonomous, cascade the whole item (break down + author every contract) and stop once for a single review at the end.
+argument-hint: "<item ref — NN or slug> [--autonomous] [--solo | --orchestrated] [--thinking <level>]"
 aof-invocation: /aof:refine
 aof-runtime: claude
 ---

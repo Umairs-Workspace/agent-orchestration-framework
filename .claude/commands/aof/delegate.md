@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Set this project's two model decisions in one place — toggle Codex delegation on/off (default off), then always choose the orchestrator (main-session) model, Fable 5 or Opus 4.8. Pass `status` to just report the current settings.
+argument-hint: "on | off | status"
 aof-invocation: /aof:delegate
 aof-runtime: claude
 ---

@@ -440,10 +440,14 @@ function renderResource(runtime, adapter, resource, workflowIndex = new Map(), a
     const invocationName = resource.commandNamespace
       ? `${resource.commandNamespace}:${resource.id}`
       : resource.id;
+    // Claude Code shows `argument-hint` beside the command in its picker. The asset's raw value is
+    // re-quoted as one JSON string, which is valid YAML even when it starts with `[` or `<`.
+    const argumentHint = String(resource.argumentHint ?? "").trim().replace(/^['"]|['"]$/g, "");
     return [
       "---",
       "aof-generated: true",
       `description: ${resource.description ?? ""}`,
+      ...(argumentHint ? [`argument-hint: ${JSON.stringify(argumentHint)}`] : []),
       `aof-invocation: ${adapter.commandPrefix}${invocationName}`,
       `aof-runtime: ${runtime}`,
       "---",

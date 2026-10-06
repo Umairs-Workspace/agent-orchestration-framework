@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Repair a lane halt the loop handed over — diagnose the cause named in the hand-over file, fix the loop's own records (a lane that would not merge home or would not reopen), and hand back so the loop resumes by itself. Never the story's code, never the loop.
+argument-hint: "<halted ref> <hand-over file>"
 aof-invocation: /aof:repair
 aof-runtime: claude
 ---
