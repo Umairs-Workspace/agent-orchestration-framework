@@ -143,6 +143,6 @@ story. Red-probe evidence is owed in VERIFICATION at delivery, not fabricated at
 | FF-15401 | Loop engine contains no vendor protocol/transcript policy | `test/arch/session/acd-runtime-session-boundary.test.mjs` — pending | ADR-001 |
 | FF-15402 | Runtime resolution has one owner and retains legacy semantics | `test/arch/session/acd-runtime-choice-owner.test.mjs` — pending | ADR-002 |
 | FF-15403 | Codex execution cannot bypass permissions or fall back silently | `test/arch/session/acd-codex-permission-boundary.test.mjs` — pending | ADR-003, ADR-004 |
-| FF-15404 | Codex generated paths and co-authored writes have one owner | `test/arch/bundle/acd-codex-output-ownership.test.mjs` — pending | ADR-005 |
-| FF-15405 | Bundle runtime variants resolve references before rendering | `test/arch/bundle/acd-bundle-runtime-variants.test.mjs` — pending | ADR-006 |
+| FF-15404 | Codex generated paths and co-authored writes have one owner | `test/arch/store/acd-codex-output-ownership.test.mjs` | ADR-005 |
+| FF-15405 | Bundle runtime variants resolve references before rendering | `test/arch/command/acd-bundle-runtime-variants.test.mjs` | ADR-006 |
 | FF-15406 | Runtime observation never fabricates identity or cost | `test/arch/session/acd-runtime-observation-facts.test.mjs` — pending | ADR-007 |

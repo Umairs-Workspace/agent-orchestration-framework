@@ -1414,49 +1414,16 @@ paid — and it would erase the one measurement that says the tree is under pres
 
 ---
 
-## 34. `writeText` adds ~62 unbounded characters to every atomic write — a legal filename can be unwritable, and the rule has two homes
+## 34. Atomic temporary filenames exceeded component limits; lock writes duplicated the rule
 
-**Status:** open (raised 2026-08-11 by milestone 48's story-00 developer, measured through the real
-producer; ruled out of m48's scope by [48/ADR-011](archive/48_milestone_fleet-session-identity/ARCHITECTURE.md)).
-**Severity:** low likelihood, silent failure mode, repo-wide reach.
-
-<!-- ADR-011's paste-ready block cites this as "item 29". That number was already taken (item 29 is the
-     UI test-harness ref-guard item); landed here as item 34, the next free number. Cite it as item 34. -->
-
-**What's wrong.** `writeText` (`src/fs.mjs:22`) composes its atomic temp as
-`` `.tmp-${basename}-${pid}-${Date.now()}-${randomUUID()}` `` — a constant 57 characters plus the pid's
-digits ahead of the caller's own basename. NTFS, ext4 and APFS all cap a single path COMPONENT at 255
-bytes, so `writeText` silently converts "your target name is legal" into "your target name plus ~62
-characters must be legal" — a precondition it never states and no caller can see. `src/lock.mjs:55`
-carries the SAME composition character for character: one rule, two homes.
-
-**How it bites.** Measured 2026-08-10 through the real `aof session start`: with milestone 48's four-part
-session leaf (`<node>~<workspace>~<assistant>~<sessionId>.json`), a 164-character session id writes and a
-165-character one fails with `ENOENT` — the id is never truncated (the write is temp+rename and the temp
-is reclaimed at `src/fs.mjs:32`), but the failure is a raw filesystem error, not a coded refusal.
-`startSession`/`pingSession` are called at `src/commands/mesh-session.mjs:286`/`:291`, outside that
-module's coded-refusal `try/catch` at `:249-269`, so a hook receives a stack trace instead of the
-`session-*` envelope the module promises at `:30-34`. No measured producer emits an id anywhere near the
-limit (every one is a 36-character UUID), which is why this is debt and not a bug — but every writer in
-the repo shares the seam, and `src/fs.mjs` has **52 dependents**.
-
-**The second home is worse than a duplicate, verified 2026-08-11.** `writeLock` (`src/lock.mjs:52-58`)
-composes the identical temp name but calls `renameWithRetry` with **no** `try`/`catch` — so it has none of
-the m42/m38-F26 orphan reclaim `src/fs.mjs:26-34` exists to provide. A lost rename there strands the temp
-permanently, and the only thing that ever removes it is `sweepStaleTempFiles`' `.tmp-` prefix match
-(`src/fs.mjs:51`). Whoever fixes the length fixes this at the same time or leaves the worse copy behind.
-
-**The fix.** (a) Bound the echo: `` `.tmp-${basename.slice(0, N)}-${pid}-${Date.now()}-${randomUUID()}` ``
-for a small fixed `N`, so the temp's length is independent of the target's. Keep the `.tmp-` prefix
-(`sweepStaleTempFiles` matches it, `src/fs.mjs:51`; `src/commands/mesh-serve.mjs:88-93` reports it) and
-keep `randomUUID()` — it is the only collision-free component; the pid and `Date.now()` are debuggability,
-and two writes in one millisecond from one process share both. Nothing anywhere parses a temp name back
-into a target, so the echo is free to be bounded. (b) Land it in BOTH homes (`src/fs.mjs:22`,
-`src/lock.mjs:55`) or centralise the composition in one exported helper — a fix in one is a second
-spelling that drifts. (c) Add the arch-test that states the invariant: **the temp component is never
-longer than the target component it stands in for**, for any target that is itself legal. (d) Optionally,
-in the same change, give `meshSessionCommand` a coded refusal for a key it cannot store, so the failure
-arrives in this module's own envelope rather than as a stack trace.
+**Status:** resolved (2026-10-07, 154/04; originally raised 2026-08-11).
+The two writers echoed an unbounded basename into their temporary filenames;
+legal long targets failed, and failed lock renames stranded temporary files.
+The shared foundation writer now bounds the basename echo to twenty code units.
+The lock writer delegates to it, retaining rename retry and failure cleanup.
+Registered ownership tests write 210-character targets through both doors and
+prove a failed lock rename leaves no temporary file behind.
+Owner: `packages/foundation/src/fs.mjs:27`; evidence: 154 STATE, story 04.
 
 ---
 
