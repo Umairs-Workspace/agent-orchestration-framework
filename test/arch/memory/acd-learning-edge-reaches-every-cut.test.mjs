@@ -321,8 +321,8 @@ export const archTests = [
         const rel = `${COMMANDS_DIR}/${name}`;
         for (const call of invocationsIn(read(rel))) found.push({ rel, ...call });
       }
-      // Seven: `assimilate-code`, `continue`, `refine` ×2, `verify` ×2, and shatter's new one.
-      assert.equal(found.length, 7, `the bundle carries seven memory invocations (found ${found.length}: ${found.map((f) => f.rel).join(", ")})`);
+      // 154/05 adds retrospective's recall and ingest edge, retaining the seven existing calls.
+      assert.equal(found.length, 9, `the bundle carries nine memory invocations (found ${found.length}: ${found.map((f) => f.rel).join(", ")})`);
       assert.ok(found.length > 1, "the count it examined is reported and is greater than one");
 
       // THE TWO THAT MARKDOWN WRAPPED MID-COMMAND are each read as ONE invocation with a real verb
@@ -493,7 +493,7 @@ export const archTests = [
       for (const [rel, hash] of lockHashes) {
         let onDisk;
         try {
-          onDisk = read(rel);
+          onDisk = readFileSync(path.join(root, rel), "utf8");
         } catch {
           continue;
         }

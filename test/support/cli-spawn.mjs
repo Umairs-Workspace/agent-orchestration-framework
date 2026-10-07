@@ -88,7 +88,14 @@ export function installedBundlePath(rel, repoRoot) {
 
 export function readBundleProse(rel, repoRoot) {
   const text = readFileSync(installedBundlePath(rel, repoRoot), "utf8");
-  return /^\.codex[\\/]agents[\\/].*\.toml$/.test(rel) ? JSON.parse(/^developer_instructions = (.+)$/m.exec(text)[1]) : text;
+  if (/^\.codex[\\/]agents[\\/].*\.toml$/.test(rel)) return JSON.parse(/^developer_instructions = (.+)$/m.exec(text)[1]);
+  // Follow only the procedure explicitly attached by this native entry. Continue
+  // reading installed/tracked bytes, so missing or stale copies cannot hide behind
+  // freshly rendered expected text.
+  if (/^\.agents[\\/]skills[\\/].*[\\/]SKILL\.md$/.test(rel) && text.includes("Read procedure.md")) {
+    return text + "\n" + readFileSync(installedBundlePath(path.posix.join(path.posix.dirname(rel.replaceAll("\\", "/")), "procedure.md"), repoRoot), "utf8");
+  }
+  return text;
 }
 
 // The ASYNC counterpart — a Promise<{ status, signal, stdout, stderr, error }> mirroring

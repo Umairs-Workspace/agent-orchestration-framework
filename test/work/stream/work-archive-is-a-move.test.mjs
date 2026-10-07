@@ -1,4 +1,4 @@
-import { bundleFixtureRoot, installedBundlePath } from "../../support/cli-spawn.mjs";
+import { bundleFixtureRoot, installedBundlePath, readBundleProse } from "../../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import * as _aofPublic_aof_work_identity from "@aof/work/identity";
@@ -1150,7 +1150,7 @@ export const workArchiveIsAMoveTests = [
       assert.ok(output.includes(line), "the line sits inside <output>");
       assert.equal((verify.match(/aof work archive/g) ?? []).length, 1, "verify.md names the verb exactly once");
       for (const rendered of [".claude/commands/aof/verify.md", ".agents/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"]) {
-        assert.ok((await readFile(installedBundlePath(rendered, repoRoot), "utf8")).includes(line), `${rendered} carries the line`);
+        assert.ok(readBundleProse(rendered, repoRoot).includes(line), `${rendered} and its own declared procedure carry the line`);
       }
       const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
       const matches = [];

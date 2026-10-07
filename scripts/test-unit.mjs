@@ -12,6 +12,8 @@ import { promptTests } from "../packages/core/test/prompt.suite.mjs";
 import { modelTests } from "../packages/core/test/model.suite.mjs";
 import { codexNativeAssetTests } from "../packages/core/test/codex-native-assets.suite.mjs";
 import { codexOwnershipTests } from "../packages/core/test/codex-ownership.suite.mjs";
+import { bundleRuntimeVariantTests } from "../packages/core/test/bundle-runtime-variants.suite.mjs";
+import { archTests as bundleRuntimeVariantArchTests } from "../test/arch/command/acd-bundle-runtime-variants.test.mjs";
 import { archTests as codexOutputOwnershipTests } from "../test/arch/store/acd-codex-output-ownership.test.mjs";
 import { assetReferenceTests } from "../packages/core/test/asset-references.suite.mjs";
 import { workspaceTests } from "../packages/core/test/workspace.suite.mjs";
@@ -223,6 +225,8 @@ const tests = [
   ...modelTests,
   ...codexNativeAssetTests,
   ...codexOwnershipTests,
+  ...bundleRuntimeVariantTests,
+  ...bundleRuntimeVariantArchTests,
   ...codexOutputOwnershipTests,
   ...assetReferenceTests,
   ...workspaceTests,

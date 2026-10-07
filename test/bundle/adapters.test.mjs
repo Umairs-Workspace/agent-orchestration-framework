@@ -13,7 +13,7 @@ import { applyClaudeSettingsMerge, claudeSettingsPatch } from "../../packages/co
 // renders agreeing with the source.
 import { fileURLToPath } from "node:url";
 import { generateBundleManifest, serializeBundleManifest } from "../../packages/core/src/work/bundle-manifest.mjs";
-import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { spawnCliSync, readBundleProse } from "../support/cli-spawn.mjs";
 
 export const adapterTests = [
   {
@@ -191,17 +191,22 @@ async function rendersManifestAndLockAgree() {
   }
   const stop = "**`--thinking <level>` is a STOP, never a setting.**";
   const renders = {
-    continue: [".claude/commands/aof/continue.md", ".codex/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"],
-    refine: [".claude/commands/aof/refine.md", ".codex/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"],
-    verify: [".claude/commands/aof/verify.md", ".codex/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"],
+    continue: [".claude/commands/aof/continue.md", ".agents/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"],
+    refine: [".claude/commands/aof/refine.md", ".agents/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"],
+    verify: [".claude/commands/aof/verify.md", ".agents/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"],
   };
   for (const [command, files] of Object.entries(renders)) {
     const source = await readFile(path.join(REPO_ROOT, "packages", "core", "assets", "commands", `${command}.md`), "utf8");
     const paragraph = source.slice(source.indexOf(stop), source.indexOf("</config>", source.indexOf(stop))).trim();
     assert.ok(paragraph.length > stop.length, `${command}: the source carries the stop`);
     for (const file of files) {
-      const rendered = (await readFile(path.join(REPO_ROOT, file), "utf8")).replace(/\r\n/gu, "\n");
-      assert.ok(rendered.includes(paragraph), `${file} carries the --thinking stop as the source does`);
+      const rendered = readBundleProse(file, REPO_ROOT).replace(/\r\n/gu, "\n");
+      if (file.startsWith(".agents/")) {
+        assert.match(rendered, /Session effort is fixed at launch/u);
+        assert.match(rendered, /stop before minting/u);
+        assert.match(rendered, /Restart the Codex session\/client/u);
+        assert.doesNotMatch(rendered, /(?<!\w)\/effort/u);
+      } else assert.ok(rendered.includes(paragraph), `${file} carries the --thinking stop as the source does`);
     }
   }
 }

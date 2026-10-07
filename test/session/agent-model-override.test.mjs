@@ -287,7 +287,9 @@ export const agentModelOverrideTests = [
     name: "154/03 native Codex agent effort is retained and OpenCode remains unchanged (supersedes 141/02)",
     run: async () => {
       const bundle = loadBundle();
-      const config = { work: { agents: { effort: { "aof-architect": "extra-high" } } } };
+      const config = { work: { agents: { effort: { "aof-architect": "extra-high" }, runtimes: { codex: {
+        effort: { "aof-architect": "extra-high" }
+      } } } } };
       for (const runtime of ["codex", "opencode"]) {
         const pinned = renderBundleOutputsWithConfig(bundle, config, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");
         const plain = renderBundleOutputsWithConfig(bundle, {}, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");

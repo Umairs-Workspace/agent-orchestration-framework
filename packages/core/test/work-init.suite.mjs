@@ -488,12 +488,15 @@ export const workInitTests = [
         assert.ok(refineHint.length > 0, "the bundle's refine command declares an argument-hint to map");
         const declaredFlags = refineHint.match(/\[--[a-z-]+\]/g) ?? [];
         assert.ok(declaredFlags.length > 0, "the hint declares at least one flag, so the check below is not vacuous");
-        assert.match(content, /Use this skill when the user asks for `\$aof-refine <item ref[^`]*`/, "the skill states its invocation");
+        assert.match(content, /Use the native skill \$aof-refine/u, "the native skill states its invocation");
+        assert.match(content, /Arguments: <item ref/u, "the entry retains the mapped argument hint");
         for (const flag of declaredFlags) {
           assert.ok(content.includes(flag), `the codex skill carries the bundle's declared ${flag} — no flag is dropped in the mapping`);
         }
-        assert.match(content, /Where this procedure mentions `\$ARGUMENTS`, use the text the user supplied after the skill name\./);
-        assert.match(content, /Where it mentions Claude slash command `\/aof:refine`/);
+        assert.match(content, /\$ARGUMENTS is the operator text after its name/u);
+        assert.match(content, /Read procedure\.md/u);
+        const nativeProcedure = await readFile(p(repo, ".agents", "skills", "aof-refine", "procedure.md"), "utf8");
+        assert.doesNotMatch(content + nativeProcedure, /\/aof:refine/u, "the authored native variant requires no Claude slash translation");
         // no command file written under .codex (any namespace)
         const hooks = JSON.parse(await readFile(p(repo, ".codex", "hooks.json"), "utf8"));
         assert.equal(

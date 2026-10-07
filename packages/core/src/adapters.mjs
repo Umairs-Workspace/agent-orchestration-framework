@@ -244,7 +244,7 @@ function renderedResourceOutputs(targetDir, root, runtime, adapter, resource, wo
   }
   return [
     main,
-    ...associated.map((file) => renderedAssociatedFile(targetDir, assetDir, runtime, resource, file)),
+    ...associated.map((file) => renderedAssociatedFile(targetDir, assetDir, runtime, resource, file, assetReferenceIndex)),
     ...(explicit ? [renderedAssociatedFile(targetDir, assetDir, runtime, resource, {
       path: "agents/openai.yaml", content: "# aof-generated: true; aof-runtime: codex\npolicy:\n  allow_implicit_invocation: false\n"
     })] : [])
@@ -269,14 +269,16 @@ function workflowIndexFor(workflows) {
   return new Map((workflows ?? []).map((workflow) => [workflow.id, workflow]));
 }
 
-function renderedAssociatedFile(targetDir, assetDir, runtime, resource, file) {
+function renderedAssociatedFile(targetDir, assetDir, runtime, resource, file, assetReferenceIndex) {
   const outputPath = associatedFileOutputPath(resource, file.path);
   const filePath = path.join(assetDir, outputPath);
   if (!isInside(assetDir, filePath)) {
     throw new Error(`Associated file output escapes ${resource.kind} asset directory: ${file.path}`);
   }
   const projectRelative = path.relative(targetDir, filePath);
-  const content = file.content;
+  const content = file.resolveReferences
+    ? expandAssetReferences(expandFilePlaceholders(file.content, resource, runtime), runtime, assetReferenceIndex)
+    : file.content;
   return {
     absolutePath: filePath,
     path: projectRelative.startsWith("..") ? filePath : projectRelative,
@@ -322,7 +324,7 @@ function filePlaceholderReplacements(resource, runtime) {
     const placeholderPath = sourcePath.startsWith("files/") ? sourcePath.slice("files/".length) : sourcePath;
     const outputPath = associatedFileOutputPath(resource, sourcePath).replaceAll("\\", "/");
     const runtimePath = runtime === "codex" ? outputPath : resource.kind === "command"
-      ? `${root}/commands/${outputPath}`
+      ? `${root}/commands/${resource.commandNamespace ? `${resource.commandNamespace}/` : ""}${outputPath}`
       : `${root}/skills/${resource.id}/${outputPath}`;
     replacements.set(placeholderPath, runtimePath);
   }

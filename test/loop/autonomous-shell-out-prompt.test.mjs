@@ -1,4 +1,4 @@
-import { bundleFixtureRoot, installedBundlePath } from "../support/cli-spawn.mjs";
+import { bundleFixtureRoot, installedBundlePath, readBundleProse } from "../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // Milestone 53 / story 04 — executable evidence for the autonomous prompt hand-off.
 // The human soak in task 01 is deliberately absent: it is @uat and belongs to verify.
@@ -441,7 +441,9 @@ export const autonomousShellOutPromptTests = [
     run: () => {
       const descriptor = readDescriptor();
       const autonomous = descriptor.members.find((entry) => entry.id === "autonomous");
-      assert.deepEqual(autonomous, {
+      const { variants, ...commonAutonomous } = autonomous;
+      assert.ok(variants.codex, "154/05 supplies the native variant separately");
+      assert.deepEqual(commonAutonomous, {
         id: "autonomous",
         kind: "command",
         file: "commands/autonomous.md",
@@ -594,7 +596,7 @@ export const autonomousShellOutPromptTests = [
       for (const runtime of ["claude", "codex", "opencode"]) {
         const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
         assert.ok(rendered, `${prompt} renders for ${runtime}`);
-        const onDisk = readFileSync(installedBundlePath(rendered.path, repoRoot), "utf8");
+        const onDisk = readBundleProse(rendered.path, repoRoot);
         assert.ok(onDisk.includes("--orchestrated"), `${rendered.path} on disk carries --orchestrated`);
         assert.ok(onDisk.includes(`work.loop.agents.${prompt}.mode`), `${rendered.path} on disk names the key`);
       }
@@ -683,7 +685,7 @@ export const autonomousShellOutPromptTests = [
         const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`) && entry.resource.artifact !== "associated-file");
         assert.equal(renders.length, 3, `${prompt}: one render per runtime`);
         for (const render of renders) {
-          const onDisk = flattened(readFileSync(installedBundlePath(render.path, repoRoot), "utf8"));
+          const onDisk = flattened(readBundleProse(render.path, repoRoot));
           assert.match(onDisk, new RegExp(`An unset \`work\\.agents\\.mode\` resolves to ${fallback}\\b`, "u"), `${render.path} states the unset default`);
         }
       }
@@ -798,7 +800,7 @@ export const autonomousShellOutPromptTests = [
       const member = bundle.resources.find((entry) => entry.id === "continue");
       assert.equal(member.argumentHint, '"<item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]"');
       const renders = [".claude/commands/aof/continue.md", ".agents/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"];
-      for (const render of renders) assert.ok(readFileSync(installedBundlePath(render, repoRoot), "utf8").includes("<manual_mode>"), `${render} carries <manual_mode>`);
+      for (const render of renders) assert.ok(readBundleProse(render, repoRoot).includes("<manual_mode>"), `${render} and its own declared procedure carry <manual_mode>`);
       const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
       assert.equal(dry.status, 0, dry.stderr);
       const actions = new Map(JSON.parse(dry.stdout).actions.map((entry) => [entry.path.replaceAll("\\", "/"), entry.action]));

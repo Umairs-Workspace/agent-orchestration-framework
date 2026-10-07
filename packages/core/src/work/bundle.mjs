@@ -42,6 +42,21 @@ export function readDescriptor() {
   return JSON.parse(readAssetText("bundle", "bundle.json"));
 }
 
+function variantText(member, runtime, { file, section }, cache) {
+  let body;
+  try {
+    if (!cache.has(file)) cache.set(file, readAssetText("bundle", file));
+    body = cache.get(file);
+  }
+  catch (error) { throw new Error(`Missing variant for ${member.kind}:${member.id} (${runtime}): ${file}`, { cause: error }); }
+  if (section) {
+    const pieces = body.split(`<!-- variant:${section} -->`);
+    if (pieces.length !== 2) throw new Error(`Missing or repeated variant ${section} for ${member.id} (${runtime}): ${file}`);
+    body = pieces[1].split(/<!-- variant:[^>]+ -->/u)[0].trim();
+  }
+  return body;
+}
+
 // hookMemberConfig(member) — ONE mapping from a `kind: "hook"` descriptor member to
 // the config-shaped hook the renderers and the settings merge both consume.
 function hookMemberConfig(member) {
@@ -87,8 +102,8 @@ function splitFrontmatter(raw) {
 // Returns a config-shaped object: `resources[]` are the agent + command members
 // (consumed by renderConfigOutputs unchanged); `templates[]` are the template
 // members (rendered by renderBundleTemplateOutputs to a fixed bundle location).
-export function loadBundle() {
-  const descriptor = readDescriptor();
+export function loadBundle({ descriptor = readDescriptor() } = {}) {
+  const variantCache = new Map();
   const frozenSet = compileFrozenSet(bundledFrozenSet());
   const resources = [];
   const templates = [];
@@ -110,6 +125,16 @@ export function loadBundle() {
         body
       };
       if (frontmatter.model) resource.model = frontmatter.model;
+      if (member.variants) {
+        resource.runtimeVariants = Object.fromEntries(Object.entries(member.variants).map(([runtime, variant]) => {
+          if (variant === null) return [runtime, {}];
+          const { file, section, associatedFiles, ...settings } = variant;
+          return [runtime, { ...settings, body: variantText(member, runtime, variant, variantCache),
+            ...(associatedFiles ? { associatedFiles: associatedFiles.map(attachment => ({
+              path: attachment.path, content: variantText(member, runtime, attachment, variantCache), resolveReferences: true
+            })) } : {}) }];
+        }));
+      }
       if (member.kind === "agent" && frontmatter.tools) {
         resource.tools = frontmatter.tools.split(",").map((tool) => tool.trim()).filter(Boolean);
       }
@@ -162,7 +187,8 @@ export function loadBundle() {
   }
 
   applyFrozenAgentScopes(resources, frozenSet);
-  return { resources, hooks, templates, assets, descriptor, frozenSet };
+  const workflows = (descriptor.references ?? []).map(reference => ({ ...reference, body: readAssetText("bundle", reference.file) }));
+  return { resources, hooks, templates, assets, workflows, descriptor, frozenSet };
 }
 
 // renderBundleAssetOutputs(bundle, { runtimes }) — the asset kind's renderer, the
@@ -228,15 +254,23 @@ export function renderBundleTemplateOutputs(bundle, options = {}) {
 // functions. Resource outputs come from the UNCHANGED render engine.
 export function renderBundleOutputs(bundle, options = {}) {
   const resources = installableBundleResources(bundle.resources, options.runtimes ?? ["claude"]);
-  const config = { resources, hooks: bundle.hooks ?? [], workflows: [], packages: [] };
-  const memberKinds = new Set(["agent", "command", "skill", "hooks"]);
+  const config = { resources, hooks: bundle.hooks ?? [], workflows: bundle.workflows ?? [], packages: [] };
+  const memberKinds = new Set(["agent", "command", "skill", "hooks", "workflow"]);
   const resourceOutputs = renderConfigOutputs(config, {
     runtimes: options.runtimes,
     targetDir: options.targetDir
   }).filter((output) => memberKinds.has(output.resource?.kind));
   const templateOutputs = renderBundleTemplateOutputs(bundle, options);
   const assetOutputs = renderBundleAssetOutputs(bundle, options);
-  return [...resourceOutputs, ...templateOutputs, ...assetOutputs];
+  const outputs = [...resourceOutputs, ...templateOutputs, ...assetOutputs];
+  const targets = new Map();
+  for (const output of outputs) {
+    const target = output.path.replaceAll("\\", "/");
+    const prior = targets.get(target);
+    if (prior) throw new Error(`Bundle output conflict for ${output.resource.kind}:${output.resource.id} (${output.runtime}) at ${target}; also ${prior.resource.kind}:${prior.resource.id}.`);
+    targets.set(target, output);
+  }
+  return outputs;
 }
 
 // --- per-role model override map (story 30) ---------------------------------
@@ -287,18 +321,30 @@ export function agentEffortMap(projectConfig) {
 // story 141 — `work.agents.effort` is merged on the same pass as `resource.effort`, which
 // only the claude agent render emits.
 export function renderBundleOutputsWithConfig(bundle, projectConfig, options = {}) {
+  return renderBundleOutputs({ ...bundle, resources: projectBundleResources(bundle.resources, projectConfig) }, options);
+}
+
+export function projectBundleResources(bundleResources, projectConfig) {
   const overrides = agentModelMap(projectConfig);
   const efforts = agentEffortMap(projectConfig);
-  const own = (map, id) => Object.prototype.hasOwnProperty.call(map, id);
-  const resources = bundle.resources.map((resource) => {
-    if (resource.kind !== "agent") return resource;
+  const own = (map, id) => Object.prototype.hasOwnProperty.call(map ?? {}, id);
+  const resources = bundleResources.map((resource) => {
+    const project = projectConfig?.resources?.find(candidate => candidate.id === resource.id && candidate.kind === resource.kind);
+    const patched = { ...resource, overrides: { ...resource.overrides, ...project?.overrides } };
+    if (resource.kind !== "agent") return Object.keys(patched.overrides).length ? patched : resource;
+    for (const [runtime, settings] of Object.entries(projectConfig?.work?.agents?.runtimes ?? {})) {
+      const role = {};
+      if (own(settings.models, resource.id)) role.model = settings.models[resource.id];
+      if (own(settings.effort, resource.id)) role.effort = normalizeEffort(settings.effort[resource.id]) ?? settings.effort[resource.id];
+      if (Object.keys(role).length) patched.overrides[runtime] = { ...patched.overrides[runtime], ...role };
+    }
     const effort = own(efforts, resource.id) ? normalizeEffort(efforts[resource.id]) : null;
-    if (!own(overrides, resource.id) && effort == null) return resource;
-    return {
-      ...resource,
+    // Keep both legacy assistant projections; Codex choices have their own scope.
+    for (const runtime of ["claude", "opencode"]) if (own(overrides, resource.id) || effort != null) patched.overrides[runtime] = {
       ...(own(overrides, resource.id) ? { model: overrides[resource.id] } : {}),
-      ...(effort == null ? {} : { effort }),
+      ...(effort == null ? {} : { effort }), ...patched.overrides[runtime]
     };
+    return Object.keys(patched.overrides).length ? patched : resource;
   });
-  return renderBundleOutputs({ ...bundle, resources }, options);
+  return resources;
 }

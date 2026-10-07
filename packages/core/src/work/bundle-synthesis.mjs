@@ -12,9 +12,11 @@
 //     decision is a generic lookup; there is NO `runtime === "codex"`/`"claude"`
 //     branch here.
 import path from "node:path";
+import { readJson } from "@aof/foundation/fs";
+import { resolveResourceOverrides } from "../model.mjs";
 import { createRenderPlan } from "../render-plan.mjs";
 import { partitionByCapability } from "./bundle-runtime.mjs";
-import { renderBundleAssetOutputs, renderBundleTemplateOutputs } from "./bundle.mjs";
+import { projectBundleResources, renderBundleAssetOutputs, renderBundleTemplateOutputs } from "./bundle.mjs";
 import { packageVersion } from "./bundle-manifest.mjs";
 import { readConfig, readDelegation, readDelegationModel, applyDelegationToResources, applyDelegationModelToResources } from "./delegation.mjs";
 
@@ -29,8 +31,8 @@ export function bundleVersion() {
 // plus template outputs (runtime-independent, comment-stamped). Templates are
 // rendered to the fixed bundle location once.
 export async function planDesiredOutputs(bundle, installableResources, runtimes, targetDir) {
-  const config = { resources: installableResources, hooks: bundle.hooks ?? [], workflows: [], packages: [] };
-  const memberKinds = new Set(["agent", "command", "skill", "hooks"]);
+  const config = { resources: installableResources, hooks: bundle.hooks ?? [], workflows: bundle.workflows ?? [], packages: [] };
+  const memberKinds = new Set(["agent", "command", "skill", "hooks", "workflow"]);
   const resourceOutputs = (await createRenderPlan(config, { targetDir, runtimes }))
     .filter((output) => memberKinds.has(output.resource?.kind));
   // Output objects carry TWO path conventions intentionally: `path` is the logical
@@ -63,12 +65,16 @@ export async function synthesizeBundleConfig(bundle, { runtimes, targetDir }) {
   // `work.agents.delegation` toggle drops disable-model-invocation off the codex-*
   // skills when ON, so init/update render them auto-invocable. Absent config ⇒ OFF
   // ⇒ no change (the bundle default). No runtime branch — a generic per-resource map.
-  const { config } = await readConfig(targetDir);
+  const { config, configPath } = await readConfig(targetDir);
+  const members = new Set(bundle.resources.map(resource => `${resource.kind}:${resource.id}`));
+  const projectResources = await Promise.all((config.resources ?? []).map(async resource => members.has(`${resource.kind}:${resource.id}`)
+    ? { ...resource, overrides: await resolveResourceOverrides(resource, path.dirname(configPath), readJson) } : resource));
+  const projectConfig = { ...config, resources: projectResources };
   // Two config-aware projections, both pure per-resource maps: the delegation
   // TOGGLE drops disable-model-invocation off the codex-* skills when ON, and the
   // delegation MODEL bakes the configured id into every `{{delegationModel}}` token
   // (skills + agents) regardless of the toggle. Absent config ⇒ OFF + default model.
-  const toggled = applyDelegationToResources(bundle.resources, readDelegation(config));
+  const toggled = applyDelegationToResources(projectBundleResources(bundle.resources, projectConfig), readDelegation(config));
   const resources = applyDelegationModelToResources(toggled, readDelegationModel(config));
   const { installable, notInstallable } = partitionByCapability(resources, runtimes);
   const desiredOutputs = await planDesiredOutputs(bundle, installable, runtimes, targetDir);

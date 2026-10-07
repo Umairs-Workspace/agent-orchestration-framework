@@ -799,7 +799,17 @@ export const refineDiscoveryBeatTests = [
       const driven = flat(drivenOf(await read(REFINE)));
       const actions = freshRenderActions();
       for (const copy of REFINE_COPIES) {
-        assert.ok(flat(await read(copy)).includes(driven), `${copy} carries the driven paragraph`);
+        const prose = await read(copy);
+        if (copy.startsWith(".agents/")) {
+          const native = flat(drivenOf(prose));
+          assert.match(native, /each native question request carries exactly one question/u);
+          assert.match(native, /structured `needs_input` phase result with the same token, text and option list/u);
+          assert.match(native, /A question parked unanswered leaves the story at the Contract gate, with no `tasks\/` written/u);
+          assert.match(native, /The answer arrives as the next input of the resumed session/u);
+          assert.match(native, /then run `aof work doctor <story> --json`/u);
+          assert.doesNotMatch(native, /AskUserQuestion/u);
+          assert.deepEqual(readMapToken(workedTokens(native)[0]), { storyRef: "7/2", id: "Q1" });
+        } else assert.ok(flat(prose).includes(driven), `${copy} carries the driven paragraph`);
         assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);
       }
     },

@@ -144,7 +144,9 @@ const reviewCommandBundleTests = [
         await rm(home, { recursive: true, force: true });
       }
       const member = readDescriptor().members.find((entry) => entry.id === "review");
-      assert.deepEqual(member, { id: "review", kind: "command", file: "commands/review.md", runtimes: ["claude", "opencode"], commandNamespace: "aof" });
+      const { variants, ...common } = member;
+      assert.deepEqual(common, { id: "review", kind: "command", file: "commands/review.md", runtimes: ["claude", "opencode"], commandNamespace: "aof" });
+      assert.equal(variants.codex.section, "review", "154/05 adds a native variant without changing the common identity");
       assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"), "the shipped manifest is byte-identical to the generator's");
       const edge = readFileSync(path.join(repoRoot, "test", "arch", "memory", "acd-learning-edge-reaches-every-cut.test.mjs"), "utf8");
       assert.ok(edge.includes(`"review.md": "reviews one story's build; cuts nothing"`), "the learning-edge control excludes review.md with its reason");

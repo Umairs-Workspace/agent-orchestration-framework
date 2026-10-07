@@ -201,9 +201,32 @@ export function defaultWorkflowBodyFile() {
   return WORKFLOW_KIND.defaultBodyFile;
 }
 
+// One override-file resolver for DSL assets and bundled project customizations.
+// The existing JSON reader is lent by the caller; this model owns no filesystem.
+export async function resolveResourceOverrides(resource, baseDir, readJson) {
+  const overrides = {};
+  const configured = resource.overrides ?? {};
+  for (const runtime of supportedRuntimes()) {
+    const value = configured[runtime];
+    if (typeof value === "string") {
+      overrides[runtime] = await readJson(path.resolve(baseDir, value));
+    } else if (value && typeof value === "object") {
+      overrides[runtime] = value;
+    } else if (resource.path) {
+      const overridePath = path.resolve(baseDir, path.dirname(resource.path), "overrides", `${runtime}.json`);
+      try { overrides[runtime] = await readJson(overridePath); }
+      catch (error) { if (error.code !== "ENOENT") throw error; }
+    }
+  }
+  return overrides;
+}
+
 export function mergeRuntimeOverride(resource, runtime) {
   const override = resource.overrides?.[runtime];
   if (!override) return resource;
+  if (typeof override !== "object" || Array.isArray(override)) {
+    throw new Error(`Runtime override for "${resource.id}" (${runtime}) must be a resolved object.`);
+  }
 
   for (const field of IDENTITY_FIELDS) {
     if (Object.hasOwn(override, field) && override[field] !== resource[field]) {

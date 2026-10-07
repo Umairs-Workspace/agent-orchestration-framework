@@ -157,7 +157,10 @@ export const coreWorkspaceTests = [
       assert.match(run([path.join(repoRoot, 'packages/core/bin/aof.mjs'), '--version']), new RegExp('^' + manifest.version.replaceAll('.', '\\.')));
       assert.equal(run([path.join(repoRoot, 'packages/core/bin/aof.mjs'), '--help']), run([path.join(payload, 'bin/aof.mjs'), '--help']));
       run([path.join(payload, 'bin/aof.mjs'), 'work', 'init', unrelated, '--runtime', 'claude,codex', '--json']);
-      assert.match(await readFile(path.join(unrelated, '.agents/skills/aof-continue/SKILL.md'), 'utf8'), /aof work/);
+      const nativeEntry = await readFile(path.join(unrelated, '.agents/skills/aof-continue/SKILL.md'), 'utf8');
+      assert.match(nativeEntry, /\$aof-continue/u);
+      assert.match(nativeEntry, /Read procedure\.md/u);
+      assert.match(await readFile(path.join(unrelated, '.agents/skills/aof-continue/procedure.md'), 'utf8'), /aof work/);
       for (const verb of ['start', 'ping', 'end']) {
         const hookOutput = run([path.join(payload, 'bin/aof.mjs'), 'session', verb,
           '--workspace', 'copied-workspace', '--repo', 'copied-repo', '--assistant', 'claude', '--json'], {
