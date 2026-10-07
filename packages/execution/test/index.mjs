@@ -1,4 +1,5 @@
 import { sessionModelTests } from "./session-model.suite.mjs";
+import { runtimeSessionTests } from "./runtime-session.suite.mjs";
 import { diagramRasterizeTests } from "./diagram-rasterize.suite.mjs";
 import { terminalSessionsTests } from "./terminal-sessions.suite.mjs";
 import { runFailureClassificationTests } from "./run-failure-classification.suite.mjs";
@@ -9,6 +10,7 @@ import { runStoreSpendTests } from "./run-store-spend.suite.mjs";
 import { runStoreStateMachineTests } from "./run-store-state-machine.suite.mjs";
 
 export const tests = [
+  ...runtimeSessionTests,
   ...sessionModelTests,
   ...diagramRasterizeTests,
   ...terminalSessionsTests,
