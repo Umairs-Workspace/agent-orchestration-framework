@@ -215,7 +215,7 @@ import { assembleCommandCore } from './bindings/command-core.mjs';
 
 export function assembleApplication({ env = process.env, base = createBaseServices({ env }) } = {}) {
   const lifetime = createApplicationLifetime();
-  const { workspace, diagnosticsLog, degrade, claudeTrust, workObserve, terminalProviders, terminalScreen, terminalSessionScreen, agentSessionDriver, fs, workDigestTemplate, work, meshStore, meshSession, commandsMeshSession } = base;
+  const { workspace, diagnosticsLog, degrade, claudeTrust, workObserve, terminalProviders, terminalScreen, terminalSessionScreen, agentSessionDriver, runtimeSession, fs, workDigestTemplate, work, meshStore, meshSession, commandsMeshSession } = base;
   // Transports and recursive work operations may invoke the registry after registration.
   const commandPort = {
     invoke: (...args) => { lifetime.assertReady(); return commandCore.invoke(...args); },
@@ -287,10 +287,9 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workDoctor = assembleWorkDoctor({ runStoreServices: runStore, workDoctorDiagramsServices: workDoctorDiagrams, workDoctorExamplesServices: workDoctorExamples, configInspectServices: configInspect, provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; } });
   const effectsReconcile = assembleEffectsReconcile({ workServices: work, runStoreServices: runStore, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, degradeServices: degrade });
   const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, workObserveServices: workObserve, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
-  const loopAskRequest = assembleLoopAskRequest({ workspaceServices: workspace, degradeServices: degrade });
+  const loopAskRequest = assembleLoopAskRequest({ workspaceServices: workspace, degradeServices: degrade, meshLauncherLockServices: meshLauncherLock });
   const runSessionCapture = assembleRunSessionCapture({ runStoreServices: runStore, degradeServices: degrade });
   const runSpendIngest = assembleRunSpendIngest({ runStoreServices: runStore });
-  const commandsDrive = assembleCommandsDrive({ agentSessionDriverServices: agentSessionDriver, claudeTrustServices: claudeTrust, degradeServices: degrade, runStoreServices: runStore, loopAskRequestServices: loopAskRequest, runHeartbeatConsumptionServices: runHeartbeatConsumption, effectsRunTransitionsServices: effectsRunTransitions, runSessionCaptureServices: runSessionCapture, commandsResolveServices: commandsResolve, workObserveServices: workObserve, runSpendIngestServices: runSpendIngest });
   const effectsDocTransitions = assembleEffectsDocTransitions({ effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade });
   const commandsFeedback = assembleCommandsFeedback({ commandsResolveServices: commandsResolve, effectsDocTransitionsServices: effectsDocTransitions, globalWorkPublisherServices: globalWorkPublisher });
   const commandsFind = assembleCommandsFind({ workReadServices: workRead });
@@ -322,11 +321,12 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const loopProgress = assembleLoopProgress({ degradeServices: degrade, workDispatchServices: workDispatch });
   const loopChildDrive = assembleLoopChildDrive({ workspaceServices: workspace });
   const loopAsk = assembleLoopAsk({ loopAskRequestServices: loopAskRequest, runStoreServices: runStore, runHeartbeatConsumptionServices: runHeartbeatConsumption, workObserveServices: workObserve, notifyNotifyServices: notifyNotify, degradeServices: degrade });
+  const commandsDrive = assembleCommandsDrive({ runtimeSessionServices: runtimeSession, loopAskServices: loopAsk, agentSessionDriverServices: agentSessionDriver, claudeTrustServices: claudeTrust, degradeServices: degrade, runStoreServices: runStore, loopAskRequestServices: loopAskRequest, runHeartbeatConsumptionServices: runHeartbeatConsumption, effectsRunTransitionsServices: effectsRunTransitions, runSessionCaptureServices: runSessionCapture, commandsResolveServices: commandsResolve, workObserveServices: workObserve, runSpendIngestServices: runSpendIngest });
   const loopCycle = assembleLoopCycle({ commandsResolveServices: commandsResolve, loopChildDriveServices: loopChildDrive, loopAskServices: loopAsk, loopAskRequestServices: loopAskRequest, workDispatchServices: workDispatch, meshWorktreeServices: meshWorktree, loopProgressServices: loopProgress, commandsGradeServices: commandsGrade, itemLockServices: itemLock, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, degradeServices: degrade, runSpendIngestServices: runSpendIngest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const loopWave = assembleLoopWave({ workServices: work, runStoreServices: runStore, runHeartbeatConsumptionServices: runHeartbeatConsumption, effectsRunTransitionsServices: effectsRunTransitions, degradeServices: degrade, workDispatchServices: workDispatch, meshWorktreeServices: meshWorktree, loopChildDriveServices: loopChildDrive, loopAskServices: loopAsk, loopCycleServices: loopCycle, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const loopDiag = assembleLoopDiag({ workspaceServices: workspace, degradeServices: degrade });
   const loopStop = assembleLoopStop({ workServices: work, runStoreServices: runStore, loopStopRequestServices: loopStopRequest });
-  const commandsLoop = assembleCommandsLoop({ workServices: work, loopProgressServices: loopProgress, loopCycleServices: loopCycle, commandsResolveServices: commandsResolve, commandsGradeServices: commandsGrade, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, degradeServices: degrade, meshWorktreeServices: meshWorktree, loopWaveServices: loopWave, loopChildDriveServices: loopChildDrive, loopAskServices: loopAsk, loopDiagServices: loopDiag, notifyNotifyServices: notifyNotify, loopStopServices: loopStop, loopStopRequestServices: loopStopRequest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
+  const commandsLoop = assembleCommandsLoop({ runtimeSessionServices: runtimeSession, workServices: work, loopProgressServices: loopProgress, loopCycleServices: loopCycle, commandsResolveServices: commandsResolve, commandsGradeServices: commandsGrade, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, degradeServices: degrade, meshWorktreeServices: meshWorktree, loopWaveServices: loopWave, loopChildDriveServices: loopChildDrive, loopAskServices: loopAsk, loopDiagServices: loopDiag, notifyNotifyServices: notifyNotify, loopStopServices: loopStop, loopStopRequestServices: loopStopRequest, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const commandsLoopsGraph = assembleCommandsLoopsGraph({ workLoopsServices: workLoops });
   const commandsLoopsGroundedness = assembleCommandsLoopsGroundedness({ workLoopsServices: workLoops });
   const commandsLoopsShow = assembleCommandsLoopsShow({ workLoopsServices: workLoops });
@@ -608,6 +608,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
     execution: Object.freeze({
       runs: runStore,
       sessions: agentSessionDriver,
+      runtimeSessions: runtimeSession,
       transitions: effectsRunTransitions,
       terminal: Object.freeze({
         screen: terminalScreen,

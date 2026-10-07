@@ -289,7 +289,11 @@ export const archTests = [
         // preserved on read, and pinned on retry. Absence retains the seventeen-key legacy
         // record and original native identity; actual-store scenarios prove that shape and
         // refused retries preserve prior bytes. No state edge, board reader or UI file changed.
-        ["packages/execution/src/runs.mjs", "6279ee8c445dddbdd7e61e8b25d22e8390f033e392e66d97db2e02aa995b9e18"],
+        // RE-PINNED by 154/06 (ADR-001/004): native question tokens and choices ride
+        // the existing ask ledger; native session writes can stamp an explicit cold-fix
+        // reason, and native settlement excludes Claude transcripts. Legacy record
+        // keys and state edges remain unchanged and are exercised by the loop suites.
+        ["packages/execution/src/runs.mjs", "c6a7b7f2b3a32b34939272da7e5573d7788ee17c8f4e4b9416520cb90b8fe93b"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

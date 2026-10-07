@@ -889,6 +889,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       targetRunId = running[0].runId;
     }
     const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now });
+    if (settled.execution?.runtime === "codex") return settled;
     if (typeof projectsDir !== "string" || projectsDir.length === 0) return settled;
     // One degrade event carries every unread stamp: the reporter throttles per code, so a second
     // `run-store` event inside the window would be dropped.
@@ -968,7 +969,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // exactly as they are. A non-string/empty id is recorded as null (a run whose
   // session never reports an id stays honest). Target resolution matches completeRun /
   // settleRun: a supplied runId wins, else the item's single in-flight `running` run.
-  async function recordSessionId(item, { runId, sessionId = null, now } = {}) {
+  async function recordSessionId(item, { runId, sessionId = null, coldStartReason, now } = {}) {
     if (typeof sessionId !== "string" || sessionId.length === 0) sessionId = null;
     let targetRunId = runId;
     if (!targetRunId) {
@@ -982,11 +983,13 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       targetRunId = running[0].runId;
     }
     const record = await readRun(item, targetRunId);
+    if (coldStartReason !== undefined && (record.execution?.runtime !== "codex" || coldStartReason !== "native-thread-unavailable")) throw runError("invalid native cold start reason", "invalid-record", 400);
     // Byte-identical id → no rewrite: the id is written once and not churned.
     if (record.sessionId === sessionId) return record;
     const updated = {
       ...record,
       sessionId,
+      ...(coldStartReason === undefined ? {} : { brief: { ...record.brief, coldStartReason } }),
     };
     await persist(item, updated);
     return updated;
@@ -1144,13 +1147,19 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
 
   // openRunAsk(item, runId, { question, phase, now }) — appends a new, open entry. Refused
   // `run-ask-open` while the last entry is still unanswered: one question at a time.
-  async function openRunAsk(item, runId, { question = null, phase = null, now } = {}) {
+  async function openRunAsk(item, runId, { question = null, phase = null, native = null, now } = {}) {
     const record = await readRunningRun(item, runId);
     if (openLastAsk(record.asks) != null) {
+      const pending = openLastAsk(record.asks);
+      if (native !== null && pending.runtime === "codex" && pending.questionToken === native.questionToken && pending.question === question && pending.sessionId === native.sessionId && JSON.stringify(pending.choices) === JSON.stringify(native.choices)) return record;
       throw runError(`run ${runId} already has a question waiting on an answer`, "run-ask-open", 409);
     }
     const stamp = now ?? new Date().toISOString();
     const entry = { question, phase, askedAt: stamp, parkedAt: null, answer: null, answeredAt: null, by: null };
+    if (native !== null) {
+      if (record.execution?.runtime !== "codex" || typeof native.questionToken !== "string" || !native.questionToken || native.sessionId !== record.sessionId || !Array.isArray(native.choices)) throw runError("native ask requires this run's recorded thread and token", "invalid-record", 400);
+      Object.assign(entry, { runtime: "codex", questionToken: native.questionToken, sessionId: native.sessionId, choices: structuredClone(native.choices), workspaceId: native.workspaceId ?? null });
+    }
     const updated = { ...record, asks: [...record.asks, entry], updatedAt: stamp };
     await persist(item, updated);
     return updated;

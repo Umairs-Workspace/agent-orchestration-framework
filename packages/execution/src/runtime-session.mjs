@@ -13,6 +13,11 @@ export function createRuntimeSession({ adapters }) {
     return registered.get(runtime)?.capabilities ?? null;
   }
 
+  async function inspectCapabilities(runtime, options = {}) {
+    const adapter = registered.get(runtime);
+    return typeof adapter?.inspectCapabilities === "function" ? adapter.inspectCapabilities(options) : capabilities(runtime);
+  }
+
   async function canResume(runtime, sessionId, options = {}) {
     const adapter = registered.get(runtime);
     if (typeof sessionId !== "string" || !sessionId || typeof adapter?.canResume !== "function") return false;
@@ -56,6 +61,7 @@ export function createRuntimeSession({ adapters }) {
         onIdentity: value => publish("Identity", value),
         onActivity: value => publish("Activity", value),
         onQuestion: value => publish("Question", value),
+        onTurnStarted: value => publish("TurnStarted", value),
         onUsage: value => publish("Usage", value),
       });
       if (result?.outcome === "failed") controller.abort();
@@ -80,7 +86,7 @@ export function createRuntimeSession({ adapters }) {
     }
   }
 
-  return Object.freeze({ drive, capabilities, canResume });
+  return Object.freeze({ drive, capabilities, inspectCapabilities, canResume });
 }
 
 export function createClaudeSessionAdapter({ driveInteractiveClaudeSession, claudeProjectsDir, readAskQuestion, readPendingAsk }) {

@@ -565,6 +565,7 @@ export const SOURCE_DIRECTORY_BUDGETS = Object.freeze([
 // SHAPE, and leg 6 re-checks the size claim on every run, so the list cannot quietly absorb a
 // layer that has started growing.
 export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
+  Object.freeze({ directory: "packages/work-loop/test/runtime", why: "154/06: two native runtime phase and durable ask suites, below the eight-file threshold; no allowance or root ceiling increase." }),
   Object.freeze({ directory: "packages/execution/test/fixtures", why: "154/02: one public Codex protocol recording owned by the execution adapter suite; data below the flat-layer threshold, no growth allowance." }),
   Object.freeze({ directory: "packages/contracts/test", why: "142/06: contracts owns its native and domain array suites; independent and aggregate executed counts are checked. No growth allowance. 1 files below the flat-layer threshold." }),
   Object.freeze({ directory: "packages/work-loop/test/support", why: "142/09: shared story fixtures for @aof/work-loop's own suites (two root guards import it). No growth allowance. 1 files below the flat-layer threshold." }),

@@ -45,7 +45,7 @@ import {
   resolveLoopResume,
 } from "../engine.mjs";
 import {
-  MAX_REVIEW_ROUNDS,
+  MAX_REVIEW_ROUNDS, loopRuntimeSettingFromConfig,
   buildNoProgressRoundsFromConfig,
   REFINE_FIRST_CONCURRENCY,
   heartbeatFromConfig,
@@ -76,6 +76,7 @@ import {
 // rule) ride the same move: the one consumer of `ADVISORY_CODES`/`GRADE_VERDICTS` is the ladder.
 
 import { commandError } from "@aof/contracts/error";
+import { createRuntimeInvocation } from "./runtime-invocation.mjs";
 
 // 54/03 review finding D3 — "was a rubric DECLARED" is `work:grade`'s own predicate, and it
 // is read here rather than re-derived, so a declared-but-unrunnable grade cannot be mistaken
@@ -118,7 +119,8 @@ export function createLoopShell({
   const { decideBuildProgress, evaluateProgressPolicy, readProgressSamples } = progress;
   const { CONTROL_FINDING_CODES } = doctor;
   const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt } = cycle;
-  const { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
+  const { resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
+  const { requestedSessions, resolveRuntimeInvocation } = createRuntimeInvocation(sessions);
   const { resolveItemExact } = items;
   const { declaredRubric } = gradeCommand;
   const { meshNodeIdOf } = placement;
@@ -451,16 +453,6 @@ export function createLoopShell({
   // string from an older caller is a one-element list, and `""` is absent, as 141's flag was.
   // `thinking` keeps 141's meaning: the UNPHASED `--thinking` level, or `null`. `explicit` is whether
   // any session flag was given, which is what a resume reads (ADR-004 §3).
-  const flagValues = (value) => (Array.isArray(value) ? value : typeof value === "string" && value.length > 0 ? [value] : []);
-  function requestedSessions(input) {
-    const model = flagValues(input?.model);
-    const thinking = flagValues(input?.thinking);
-    const parsed = parseSessionChoices({ model, thinking });
-    if (parsed.refusal) throw commandError(parsed.refusal.message, parsed.refusal.code, 400);
-    const unphased = thinking.find((value) => typeof value === "string" && !value.includes("="));
-    return { choices: parsed.choices, explicit: model.length + thinking.length > 0, thinking: unphased === undefined ? null : normalizeEffort(unphased) };
-  }
-
   // 143/01 (ADR-002 §2) — `--refine` read against the one vocabulary: the member, `null` when the flag
   // is absent, and a coded refusal naming both members for anything else, before any registered read.
   const LOOP_REFINE_UNKNOWN = "loop-refine-unknown";
@@ -506,9 +498,11 @@ export function createLoopShell({
   // resolveInvocation(input, ctx, { promote }) — `promote: true` is the LAUNCH's alone. Every other
   // caller is read-only, and a backlog slug answers it `wouldPromote` with nothing written.
   async function resolveInvocation(input, ctx, { promote = false } = {}) {
+    if (input.runtime !== undefined && !["claude", "codex"].includes(input.runtime)) throw commandError("--runtime must be claude or codex", "unsupported-runtime", 400);
     const requested = requestedSettings(input, ctx);
     // 141, 143/03 — refused with the other vocabulary guards, before any registered read.
-    const sessionRequest = requestedSessions(input);
+    const native = input.runtime === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
+    const sessionRequest = requestedSessions(input, native);
     const thinking = sessionRequest.thinking;
     // 143/01 — refused with them too.
     const refine = requestedRefine(input);
@@ -554,6 +548,7 @@ export function createLoopShell({
 
     if (input?.resume === true) {
       resume = await resumableState(resolved.scope, ctx, { now: input.now });
+      if (resume.lastDeclaration?.execution == null) requestedSessions(input);
       const inherited = resolveLoopResume({
         scope: resolved.scope,
         level: input.level ?? (resume.lastDeclaration ? undefined : resolved.level),
@@ -588,6 +583,8 @@ export function createLoopShell({
     } else {
       resume = await resumableState(resolved.scope, ctx, { now: input.now });
     }
+
+    await resolveRuntimeInvocation({ input, ctx, resume, resolved, sessionRequest });
 
     let l3Gate = null;
     if (resolved.level === "L3") {
@@ -734,7 +731,7 @@ export function createLoopShell({
   // of the same string: one literal, one home, the hand-copied-glyph species F-78-E records.
   const SHELL_LOOP_ID = "loop:autonomous-cascade";
 
-  function declarationFor({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, promotedFrom, refine, sessions }) {
+  function declarationFor({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, promotedFrom, refine, sessions, execution }) {
     // The id is an INPUT to the engine, exactly as `loopRunId` and `startedAt` are. Nothing here
     // opens `.aof/loops/` to obtain or validate it: whether it resolves to a declared node is the
     // reader's question, answered as a `ran-undeclared` gap and never as a run-time refusal.
@@ -742,7 +739,7 @@ export function createLoopShell({
     // `supervised` arrives the same way, already resolved by `resolveLoopResume`'s explicit-wins /
     // absent-inherits rule (126/02) — this seam carries it, it does not decide it. `thinking` (141)
     // arrives the same way, already a canonical level or `null`, and so does `promotedFrom` (143/00).
-    return buildLoopDeclaration({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, promotedFrom, refine, sessions, id: SHELL_LOOP_ID });
+    return buildLoopDeclaration({ loopRunId, scope, level, cap, l3Gate, phase, cycle, startedAt, supervised, thinking, promotedFrom, refine, sessions, id: SHELL_LOOP_ID, ...(execution == null ? {} : { execution }) });
   }
 
   function haltDecision(stop, ref, producer) {
@@ -2101,6 +2098,7 @@ export function createLoopShell({
         thinking: { type: ["array", "string"] },
         // 143/03 ADR-004 §1 — the per-phase model and effort, in the same three homes.
         model: { type: ["array", "string"] },
+        runtime: { type: "string" },
         // 143/01 ADR-002 §2 — the refine mode for this run, in the same three homes.
         refine: { type: "string" },
         // 147/00 R1 — repair off for this run, in the same three homes.
@@ -2131,6 +2129,7 @@ export function createLoopShell({
           quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
           supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
           thinking: { type: "string", repeatable: true, description: "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it" },
+          runtime: { type: "string", description: "claude or codex; resumed runs retain their recorded runtime" },
           model: { type: "string", repeatable: true, description: "repeatable: [PHASE=][MODEL][:EFFORT] — the model (and effort) a phase's sessions run on, every phase when no PHASE= is given (refine, continue, verify); overrides the configured per-phase session model and effort for this run, and a resume inherits it" },
           refine: { type: "string", description: "per-story (one story's contract per refine drive) or whole-item (a milestone's break-down drive authors every contract in one session); overrides work.loop.refine, and a resume inherits it" },
           noRepair: { type: "boolean", description: "do not hand a lane halt (lane-open-failed, lane-merge-refused, lane-merge-conflict) to a repair session; stop for the operator as before. work.loop.repair: false is the standing form" },
@@ -2149,6 +2148,7 @@ export function createLoopShell({
         ...(options.supervised === true ? { supervised: true } : {}),
         ...(options.thinking !== undefined ? { thinking: options.thinking } : {}),
         ...(options.model !== undefined ? { model: options.model } : {}),
+        ...(options.runtime !== undefined ? { runtime: options.runtime } : {}),
         ...(typeof options.refine === "string" ? { refine: options.refine } : {}),
         ...(options.noRepair === true ? { noRepair: true } : {}),
       }),

@@ -21,7 +21,7 @@ import { commandError } from "@aof/contracts/error";
 // `run.started`/`run.completed` and inherits none of the declared cascade. Ported to the
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 
-import { loopBoundsFromConfig, loopAgentModeFromConfig } from "@aof/contracts/loop-bounds";
+import { loopBoundsFromConfig, loopAgentModeFromConfig, loopRuntimeSettingFromConfig } from "@aof/contracts/loop-bounds";
 
 import { access, readFile } from "node:fs/promises";
 import os from "node:os";
@@ -42,7 +42,7 @@ export function createPhaseDrivers({
   sessionCapture,
   items,
   transcripts,
-  spend
+  spend, runtimeSession, nativeAsks, execution
 }) {
   const { driveInteractiveClaudeSession, INTERACTIVE_COMMAND_READY_DELAY_MS } = sessionDriver;
   const { ensureWorktreeTrusted } = trust;
@@ -62,8 +62,109 @@ export function createPhaseDrivers({
   // 147/02 — `repair` is the FOURTH phase driver: the session a lane halt is handed to. It is a
   // driver, not a session phase — `SESSION_PHASES` stays three, and a repair resolves its model and
   // effort as `continue` does (ADR-004 §4's lend reads continue's row for it).
-  const PHASES = Object.freeze(["refine", "continue", "verify", "repair"]);
-  const sessionPhaseOf = (phase) => (phase === "repair" ? "continue" : phase);
+  const PHASES = Object.freeze(["refine", "continue", "verify", "repair", "review"]);
+  const sessionPhaseOf = (phase) => (["repair", "review"].includes(phase) ? "continue" : phase);
+
+  async function driveNative(phase, item, input, ctx, recorded) {
+    const managedRunId = input.run ?? ctx.loopDrive?.runId ?? null;
+    const base = ctx.agentSessionDriverOptions ?? {};
+    const cwd = ctx.workspace.projectRoot, env = base.env ?? process.env;
+    const choicePhase = sessionPhaseOf(phase);
+    const role = phase === "review" ? "aof-qa" : null;
+    let roleInstructions = "";
+    if (role != null) {
+      try { roleInstructions = await readFile(path.join(cwd, ".codex", "agents", `${role}.toml`), "utf8"); }
+      catch { throw commandError("Missing native review role: aof-qa", "runtime-asset-missing", 409); }
+    }
+    const supplied = { ...(input.model == null ? {} : { model: input.model }), ...(input.thinking == null ? {} : { effort: input.thinking === "extra-high" ? "xhigh" : input.thinking }) };
+    const procedure = path.join(cwd, ".agents", "skills", `aof-${phase}`, "SKILL.md");
+    let skill;
+    try { skill = await readFile(procedure, "utf8"); } catch { throw commandError(`Missing native procedure: ${procedure}`, "runtime-asset-missing", 409); }
+    if (!skill.includes("aof-runtime: codex")) throw commandError("The installed procedure is not a Codex variant", "runtime-asset-incompatible", 409);
+    for (const [mention, target] of [["procedure.md", path.join(path.dirname(procedure), "procedure.md")], ["workflow-contract.md", path.join(cwd, ".codex/aof/workflows/workflow-contract.md")]]) {
+      if (skill.includes(mention)) try { await access(target); } catch { throw commandError(`Missing native reference: ${target}`, "runtime-asset-missing", 409); }
+    }
+    let selected = recorded == null ? ctx.loopDrive?.execution ?? null : execution.resolveExecutionResume(recorded, { ...(input.runtime == null ? {} : { runtime: input.runtime }), choices: { [choicePhase]: supplied } });
+    if (selected == null) {
+      const capabilities = await runtimeSession.inspectCapabilities("codex", { ...base, cwd, env });
+      selected = execution.resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: { [choicePhase]: supplied }, capabilities: { codex: capabilities } });
+    }
+    selected = execution.validateExecutionEnvelope(selected);
+    if (selected.runtime !== "codex") throw commandError("The native drive differs from the recorded runtime", "execution-resume-conflict", 409);
+    const halt = input.halt ?? null;
+    if (phase === "repair") {
+      if (!halt) throw commandError("A repair requires its hand-over file", "drive-repair-halt-required", 400);
+      await readHaltFile(halt);
+    }
+    const fileAnswer = input.answer ? await readAnswerFile(input.answer) : null;
+    const answer = fileAnswer ?? (ctx.loopDrive?.answer == null ? null : { ...ctx.loopDrive.answer, state: ASK_ANSWERED });
+    if (answer != null) await admitAnswer(answer, { lentRunId: managedRunId, item });
+    const fixSource = answer == null ? (input.fix ? await readFixFile(input.fix) : ctx.loopDrive?.fix) : null;
+    const fix = phase === "continue" && fixSource?.buildRun ? fixSource : null;
+    const autonomous = input.autonomous === true || ctx.loopDrive?.autonomous === true;
+    const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous, halt }).replace(`/aof:${phase}`, `$aof-${phase}`);
+    const choice = selected.phases[choicePhase];
+    if (input.dryRun === true) return { ref: item.ref, phase, command, execution: selected, effort: { level: choice.effort, source: choice.effortSource }, model: { id: choice.model, source: choice.modelSource } };
+    const context = await compileBriefForItem({ itemRef: item.ref, phase, itemType: item.type, itemDir: item.dir, milestoneDir: item.type === "story" ? path.dirname(path.dirname(item.dir)) : item.dir });
+    let resumeSessionId = answer?.sessionId ?? null, coldStartReason;
+    const pendingDecision = [recorded, fix?.buildRun].some(run => run?.asks?.some(ask => ask.answeredAt == null));
+    if (answer == null && pendingDecision) throw commandError("Answer the pending native question before starting another phase or cold fix", "native-question-pending", 409);
+    const target = phase === "review" ? null : fix == null ? recorded?.sessionId ?? null : fix.resumeBuildRun?.sessionId ?? null;
+    if (fix != null && target == null) coldStartReason = "native-thread-unavailable";
+    if (answer == null && target != null) {
+      if (await runtimeSession.canResume("codex", target, { ...base, cwd, env })) resumeSessionId = target;
+      else {
+        if (fix == null) throw commandError("The recorded native thread is unavailable; a pending decision cannot be discarded", "native-resume-unavailable", 409);
+        coldStartReason = "native-thread-unavailable";
+      }
+    }
+    const runRecord = recorded ?? (managedRunId == null ? (await transitionRunStart(item, { execution: selected, now: new Date().toISOString() })).record : { runId: managedRunId });
+    const settlementContext = { runtime: "codex", projectsDir: null, transcriptBaseline: null, spendBaselineAvailable: false, reason: "runtime-spend-unavailable" };
+    ctx.loopDrive?.recordSettlementContext?.(settlementContext);
+    const dir = askRequests.loopAsksDir(nativeAsks.askEnvFor(ctx));
+    if (answer != null) {
+      const file = await askRequests.readAsk(dir, runRecord.runId);
+      if (file?.delivery?.state === "acknowledged") {
+        await nativeAsks.acknowledgeNativeAnswer({ item, runId: runRecord.runId, answer, turn: { sessionId: file.sessionId, turnId: file.delivery.turnId }, ctx });
+        return { ref: item.ref, phase, command, outcome: "needs-input", failureReason: "ask-delivery-acknowledged", sessionId: file.sessionId, settlementContext };
+      }
+      await askRequests.beginNativeDelivery(dir, runRecord.runId, { sessionId: answer.sessionId, questionToken: answer.questionToken });
+    }
+    let cancel, result;
+    try {
+      cancel = input.run == null ? null : await armStdinCancel(ctx.stdin ?? process.stdin, base.onPtyLive);
+      const signal = cancel == null ? base.signal : base.signal == null ? cancel.signal : AbortSignal.any([base.signal, cancel.signal]);
+      const launchCommand = (answer == null ? fix == null ? command : composeFixInput(command, fix) : JSON.stringify({ token: answer.questionToken, question: answer.question, choices: answer.choices, answer: answer.text })) + (role == null ? "" : `\nNative review role ${role}; this is an independent thread. Follow these role instructions and report findings:\n${roleInstructions}`);
+      result = await runtimeSession.drive({ itemRef: item.ref, worktreeCwd: cwd, phase: choicePhase, task: fix == null ? phase : "fix", procedure, arguments: [item.ref], ...(role == null ? {} : { role }), command: launchCommand, ...(resumeSessionId == null ? { context } : {}) }, {
+        ...base, execution: selected, signal, ...(resumeSessionId == null ? {} : { resumeSessionId }),
+        deadlinePolicy: base.deadlinePolicy ?? loopBoundsFromConfig(ctx.workspace),
+        onProcessLive: child => { cancel?.onPtyLive(child); base.onProcessLive?.(child); },
+        onIdentity: async sessionId => { await recordSessionId(item, { runId: runRecord.runId, sessionId, ...(coldStartReason === undefined ? {} : { coldStartReason }) }); await base.onIdentity?.(sessionId); },
+        onQuestion: async question => { await nativeAsks.persistNativeQuestion({ item, runId: runRecord.runId, question, phase, ctx }); await base.onQuestion?.(question); },
+        onActivity: async value => { await heartbeats.enqueueHeartbeat?.(item, runRecord.runId, new Date().toISOString()); await base.onActivity?.(value); },
+        onTurnStarted: async turn => { if (answer != null) await nativeAsks.acknowledgeNativeAnswer({ item, runId: runRecord.runId, answer, turn, ctx }); await base.onTurnStarted?.(turn); },
+      });
+      if (signal?.aborted && result.failureReason === "abort") result = { ...result, outcome: "cancelled", failureReason: "cancelled" };
+    } finally { cancel?.release(); }
+    let pendingFile = await askRequests.readAsk(dir, runRecord.runId);
+    if (result.outcome !== "done" && pendingFile == null) {
+      const stored = (await readRuns(item)).find(run => run.runId === runRecord.runId);
+      const pending = nativeAsks.standingAsk(stored);
+      if (pending?.runtime === "codex") {
+        // The run ledger is authoritative when interruption lands between its write
+        // and the ask projection. Recover that projection before any terminal write.
+        await nativeAsks.persistNativeQuestion({ item, runId: runRecord.runId, phase, ctx, question: { sessionId: pending.sessionId, token: pending.questionToken, text: pending.question, choices: pending.choices } });
+        pendingFile = await askRequests.readAsk(dir, runRecord.runId);
+      }
+    }
+    if (result.outcome !== "done" && pendingFile?.runtime === "codex" && pendingFile.state !== ASK_ANSWERED) result = { ...result, outcome: "needs-input", question: { token: pendingFile.questionToken, text: pendingFile.question, choices: pendingFile.choices, sessionId: pendingFile.sessionId } };
+    if (managedRunId == null && result.outcome === "needs-input") {
+      await askRequests.parkAsk(dir, runRecord.runId);
+      await runs.parkRunAsk(item, runRecord.runId);
+    }
+    if (managedRunId == null && result.outcome !== "needs-input") await transitionRunComplete(item, { runId: runRecord.runId, outcome: result.outcome, failureReason: result.failureReason ?? null, now: new Date().toISOString() }, { projectsDir: null, spendSettled: true });
+    return { ref: item.ref, phase, command, ...result, settlementContext };
+  }
 
   function recordedSessionForFix({ phase, buildRun }) {
     if (phase !== "fix") return null;
@@ -210,7 +311,7 @@ export function createPhaseDrivers({
       throw answerUnreadable(`The answer file "${file}" could not be read: ${error?.message ?? String(error)}`);
     }
     if (record == null) throw answerUnreadable(`The answer file "${file}" is not an ask record.`);
-    return { runId: record.runId, sessionId: record.sessionId, text: record.answer, state: record.state };
+    return { runId: record.runId, sessionId: record.sessionId, text: record.answer, state: record.state, ...(record.runtime === "codex" ? { runtime: record.runtime, questionToken: record.questionToken, question: record.question, choices: record.choices } : {}) };
   }
 
   // The answer is this run's own, or it is refused `drive-answer-not-own` (409): a run resumes only
@@ -296,6 +397,7 @@ export function createPhaseDrivers({
           autonomous: { type: "boolean" },
           // 143/03 — the model this one drive's session runs on, over the phase's configured one.
           model: { type: "string" },
+          runtime: { type: "string" },
           // 147/02 — the repair session's hand-over file; repair only.
           halt: { type: "string" },
         },
@@ -321,7 +423,8 @@ export function createPhaseDrivers({
           : typeof ctx.loopDrive?.thinking === "string" && ctx.loopDrive.thinking.length > 0
             ? ctx.loopDrive.thinking
             : null;
-        const thinking = thinkingGiven == null ? undefined : normalizeEffort(thinkingGiven);
+        const nativeHint = input.runtime === "codex" || ctx.loopDrive?.execution?.runtime === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.run != null || ctx.loopDrive?.runId != null;
+        const thinking = thinkingGiven == null ? undefined : nativeHint ? thinkingGiven : normalizeEffort(thinkingGiven);
         if (thinking === null) {
           throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
         }
@@ -346,6 +449,16 @@ export function createPhaseDrivers({
         }
         requireLocalCheckout(item, ref);
 
+        const managed = input.run ?? ctx.loopDrive?.runId ?? null;
+        const recorded = managed == null ? null : (await readRuns(item)).find(run => run.runId === managed);
+        const runtime = recorded == null ? input.runtime ?? ctx.loopDrive?.execution?.runtime ?? loopRuntimeSettingFromConfig(ctx.workspace).value ?? "claude" : recorded.execution?.runtime ?? "claude";
+        if (runtime === "codex" && managed != null && recorded == null) throw commandError("The native lent run has no durable record", "drive-run-not-found", 409);
+        if (!["claude", "codex"].includes(input.runtime ?? runtime)) throw commandError("Unsupported runtime", "unsupported-runtime", 400);
+        if (recorded != null && input.runtime != null && input.runtime !== runtime) throw commandError("The requested runtime differs from this run", "execution-resume-conflict", 409);
+        if (runtime === "codex") return driveNative(phase, item, input, ctx, recorded);
+        if (phase === "review") throw commandError("The independent native review driver requires Codex", "unsupported-runtime", 409);
+        if (thinkingGiven != null && normalizeEffort(thinkingGiven) == null) throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
+
         const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous, halt: haltGiven });
         // milestone 70 / story 01 (ADR-005), story 141 — the SESSION model and effort, resolved per
         // phase from `work.agents.session` (distinct from the render-time role maps
@@ -360,7 +473,14 @@ export function createPhaseDrivers({
             ? ctx.loopDrive.model
             : null;
         const choice = modelGiven == null ? undefined : { model: modelGiven, modelFlag: "--model" };
-        const session = resolveSessionLaunch(ctx.workspace?.config, sessionPhaseOf(phase), { thinking, choice });
+        const explicitChoice = { ...(input.model == null ? {} : { model: input.model }), ...(input.thinking == null ? {} : { effort: normalizeEffort(input.thinking) }) };
+        const selectedExecution = recorded?.execution != null
+          ? execution.resolveExecutionResume(recorded, { runtime: input.runtime, choices: { [sessionPhaseOf(phase)]: explicitChoice } })
+          : input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null
+            ? execution.resolveExecution(ctx.workspace.config, { runtime: input.runtime ?? "claude", choices: { [sessionPhaseOf(phase)]: explicitChoice } })
+            : null;
+        const pinnedChoice = selectedExecution?.phases[sessionPhaseOf(phase)];
+        const session = pinnedChoice == null ? resolveSessionLaunch(ctx.workspace?.config, sessionPhaseOf(phase), { thinking, choice }) : { ...pinnedChoice, model: pinnedChoice.model ?? undefined };
         const effort = { level: session.effort, source: session.effortSource };
         if (input.dryRun === true) {
           const model = session.model === undefined ? null : { id: session.model, source: session.modelSource };
@@ -433,7 +553,7 @@ export function createPhaseDrivers({
             : null);
         const ownsRun = managedRunId == null;
         const runRecord = managedRunId == null
-          ? await transitionRunStart(item, { now: new Date().toISOString() })
+          ? await transitionRunStart(item, { now: new Date().toISOString(), ...(selectedExecution == null ? {} : { execution: selectedExecution }) })
             .then(({ record }) => record)
             .catch((error) => {
               reportDegrade("drive", error);
@@ -633,6 +753,7 @@ export function createPhaseDrivers({
             ? "aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]"
             : `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]`,
           flags: {
+            runtime: { type: "string", description: "the execution runtime (claude or codex); a lent run keeps its recorded choice" },
             dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
             run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
             fix: { type: "string", description: "a JSON file holding the fix transport; honoured by continue only" },
@@ -645,6 +766,7 @@ export function createPhaseDrivers({
         },
         argv: (positionals, options) => ({
           ref: positionals[0],
+          ...(typeof options.runtime === "string" ? { runtime: options.runtime } : {}),
           ...(options.dryRun === true ? { dryRun: true } : {}),
           ...(typeof options.run === "string" ? { run: options.run } : {}),
           ...(typeof options.fix === "string" ? { fix: options.fix } : {}),
@@ -672,6 +794,7 @@ export function createPhaseDrivers({
   const continueDriverCommand = createPhaseDriverCommand("continue");
   const verifyDriverCommand = createPhaseDriverCommand("verify");
   const repairDriverCommand = createPhaseDriverCommand("repair");
+  const reviewDriverCommand = createPhaseDriverCommand("review");
 
   return Object.freeze({
     PHASE_MODE_FLAGS,
@@ -681,6 +804,7 @@ export function createPhaseDrivers({
     phaseCommand,
     refineDriverCommand,
     repairDriverCommand,
+    reviewDriverCommand,
     resolvePhaseResumeTarget,
     verifyDriverCommand
   });

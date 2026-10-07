@@ -140,6 +140,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     haltFile,
     thinking,
     model,
+    runtime,
     autonomous,
     env,
     deadlineMs,
@@ -166,6 +167,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     const verb = [
       "work", "drive", phase, ref,
       "--run", runId,
+      ...(typeof runtime === "string" ? ["--runtime", runtime] : []),
       ...(withAnswer ? ["--answer", answerFile] : []),
       ...(withFix ? ["--fix", fixFile] : []),
       // 147/00 — the repair session's hand-over, by path; absent passes nothing.

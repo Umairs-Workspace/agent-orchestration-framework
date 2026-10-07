@@ -57,9 +57,10 @@ export const archTests = [
       // the schema is still closed, `required` is still `["scope"]`, and the gathering this
       // control is actually about is untouched. 130/02 (ADR-002 §1) adds `stop` by the same rule,
       // and 131/11 (ADR-009 §6) adds `handOff`. 141 adds `thinking`, and 147 adds `noRepair`.
+      // 154/06 adds runtime selection; L3 admission and the closed schema remain unchanged.
       assert.deepEqual(
         Object.keys(loopCommand.input.properties),
-        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop", "handOff", "thinking", "model", "refine", "noRepair"],
+        ["scope", "level", "resume", "cap", "reviewClaims", "dryRun", "quiet", "supervised", "stop", "handOff", "thinking", "model", "runtime", "refine", "noRepair"],
       );
       assert.equal(loopCommand.input.additionalProperties, false);
     },

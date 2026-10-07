@@ -156,8 +156,8 @@ export function inspectBoundaries(root, { owners = workspaceOwners(root), files 
         const targetOwner = locate(target);
         // The two repository harnesses may register owned test suites. They may
         // never use this route to a sibling's implementation or an undeclared owner.
-        const ownedTest = targetOwner && owner.directory === root
-          && (file.rel === 'scripts/test.mjs' && target === path.join(targetOwner.directory, 'test', 'index.mjs')
+        const ownedTest = targetOwner && targetOwner !== owner && owner.directory === root
+          && (file.rel === 'scripts/test.mjs' && within(path.join(targetOwner.directory, 'test'), target) && path.basename(target) === 'index.mjs'
             || file.rel === 'scripts/test-unit.mjs' && within(path.join(targetOwner.directory, 'test'), target) && target.endsWith('.suite.mjs'));
         if (ownedTest) {
           if (!Object.hasOwn({ ...owner.manifest.dependencies, ...owner.manifest.devDependencies }, targetOwner.manifest.name)) problem(`undeclared test owner ${targetOwner.manifest.name}`);

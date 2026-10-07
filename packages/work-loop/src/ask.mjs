@@ -32,7 +32,7 @@ export function createAskOrchestration({
   diagnostics,
   workspaceIdentity
 }) {
-  const { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks } = askRequests;
+  const { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks, normalizeNativeQuestion, acknowledgeNativeDelivery } = askRequests;
   const { answerRunAsk, isStale, openRunAsk, parkRunAsk, readRuns } = runs;
   const { enqueueHeartbeat: enqueueHeartbeatDefault } = heartbeats;
   const { readAskQuestion } = transcripts;
@@ -76,6 +76,26 @@ export function createAskOrchestration({
   function standingAsk(record) {
     const last = lastAsk(record);
     return last != null && typeof last === "object" && !Array.isArray(last) && last.answeredAt == null ? last : null;
+  }
+
+  async function persistNativeQuestion({ item, runId, question, phase, ctx }) {
+    const native = normalizeNativeQuestion(question);
+    const run = (await readRuns(item)).find(record => record.runId === runId);
+    if (run?.sessionId !== native.sessionId || run?.execution?.runtime !== "codex") throw new Error("native question has no recorded session identity");
+    const site = run.brief?.nativeAskContext ?? { workspaceId: resolveWorkspaceId(ctx.workspace) };
+    const record = await openRunAsk(item, runId, { question: native.question, phase: phaseWord(phase), native: { ...native, workspaceId: site.workspaceId } });
+    return openAsk(loopAsksDir(askEnvFor(ctx)), { runId, ref: item.ref, ...site, ...native, phase: phaseWord(phase), node: ctx.workspace?.config?.mesh?.nodeId ?? null, askedAt: lastAsk(record).askedAt });
+  }
+
+  async function acknowledgeNativeAnswer({ item, runId, answer, turn, ctx }) {
+    const file = await acknowledgeNativeDelivery(loopAsksDir(askEnvFor(ctx)), runId, { sessionId: turn.sessionId, turnId: turn.turnId, questionToken: answer.questionToken });
+    const record = (await readRuns(item)).find(row => row.runId === runId);
+    const pending = standingAsk(record);
+    if (pending != null) {
+      if (pending.questionToken !== answer.questionToken) throw new Error("native acknowledgment differs from the pending question");
+      await answerRunAsk(item, runId, { answer: file.answer, by: file.by?.actor ?? null, now: file.answeredAt });
+    }
+    return file;
   }
 
   // defaultAskWait({ dir, bounds, timers, pollMs, now }) → the production seam, the stop source's
@@ -189,7 +209,18 @@ export function createAskOrchestration({
         let lost = false;
         const opened = askWait.now();
         const pendingAt = async (since) => (readPendingAsk == null ? null : readPendingAsk({ itemDir: item?.dir, sessionId, since, cwd, env }));
+        const nativeRun = current.record.execution?.runtime === "codex";
+        if (nativeRun) {
+          const stored = (await readRuns(item)).find(run => run.runId === runId) ?? current.record;
+          const entry = standingAsk(stored) ?? lastAsk(stored);
+          if (entry?.runtime !== "codex" || entry.sessionId !== sessionId) throw new Error("native ask is not durable on this run");
+          question = entry.question;
+          askedAt = entry.askedAt;
+          const file = await askWait.read(runId);
+          if (file == null) await openAsk(dir, { runId, ref, workspaceId: entry.workspaceId ?? workspaceId, loopRunId, scope, sessionId, phase: entry.phase, node, question, questionToken: entry.questionToken, choices: entry.choices, runtime: "codex", askedAt });
+        }
         if (!reenter) {
+          if (!nativeRun) {
           const pending = await pendingAt(answeredSince(current.record?.asks));
           lost = pending != null;
           question = pending?.question ?? (await readAskQuestion({ cwd, env, sessionId, sinceOffset: 0 }));
@@ -198,11 +229,13 @@ export function createAskOrchestration({
           const record = await openRunAsk(item, runId, { question, phase: word, now: iso(opened) });
           askedAt = lastAsk(record).askedAt;
           await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: word, node, question, now: () => new Date(opened) });
+          }
           const envelope = envelopeAt("session-needs-input", opened, { question });
           // A re-ask while the loop is stopping still records the question, and tells nobody.
           if (!stopping()) await notify(notifyWorkspace, envelope, notifyOptions);
           await narrate(accountLine(envelope));
         } else {
+          if (!nativeRun) {
           // RE-ENTRY (ADR-004 §5): the record's standing ask is not re-opened and not re-announced.
           // A file that is parked, absent or not a record is set back to `waiting` from the record.
           const stored = (await readRuns(item)).find((run) => run.runId === runId) ?? current.record;
@@ -215,6 +248,7 @@ export function createAskOrchestration({
           lost = (await pendingAt(answeredSince((Array.isArray(stored?.asks) ? stored.asks : []).slice(0, -1)))) != null;
           if (file == null || file.state === parked) {
             await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: entry?.phase ?? word, node, question, now: () => new Date(opened) });
+          }
           }
           await narrate(accountLine(envelopeAt("session-needs-input", opened, { question })));
         }
@@ -271,9 +305,14 @@ export function createAskOrchestration({
         const { answer: file } = outcome;
         const at = askWait.now();
         const by = typeof file.by?.actor === "string" ? file.by.actor : null;
-        await answerRunAsk(item, runId, { answer: file.answer, by, now: iso(at) });
+        if (!nativeRun) await answerRunAsk(item, runId, { answer: file.answer, by, now: iso(at) });
         await narrate(accountLine(envelopeAt("session-answered", at, { outcome: { by, answer: file.answer } })));
-        const redriven = await drive({ runId, sessionId, text: answerFor(question, file.answer, lost) });
+        // An uncertain send is an operator halt, never a duplicate turn on restart.
+        if (nativeRun && ["sending", "acknowledged"].includes(file.delivery?.state)) {
+          if (file.delivery.state === "acknowledged" && standingAsk((await readRuns(item)).find(run => run.runId === runId)) != null) await answerRunAsk(item, runId, { answer: file.answer, by, now: file.answeredAt });
+          return { parked: { ref, runId, sessionId, askedAt, question, reason: file.delivery.state === "sending" ? "ask-delivery-ambiguous" : "ask-delivery-acknowledged" } };
+        }
+        const redriven = await drive({ runId, sessionId, text: answerFor(question, file.answer, lost), ...(nativeRun ? { runtime: "codex", questionToken: file.questionToken, question, choices: file.choices } : {}) });
         // THE SPEND OF AN ANSWERED RUN (task 01, ruling 12): the waiting drive's baseline rides the
         // run the site settles, so the one settle charges the whole run from its first turn.
         current = { ...redriven, settlementContext: settlementContext ?? redriven.settlementContext ?? null };
@@ -281,6 +320,7 @@ export function createAskOrchestration({
           reenter = false;
           continue;
         }
+        if (nativeRun && (await readAsk(dir, runId))?.delivery?.state !== "acknowledged") return { parked: { ref, runId, sessionId, askedAt, question, reason: "ask-delivery-ambiguous" } };
         await clearAsk(dir, runId);
         return { phaseRun: current };
       }
@@ -374,6 +414,8 @@ export function createAskOrchestration({
     phaseWord,
     reenterStandingAsks,
     standingAsk,
-    sweepStaleAsks
+    sweepStaleAsks,
+    persistNativeQuestion,
+    acknowledgeNativeAnswer
   });
 }

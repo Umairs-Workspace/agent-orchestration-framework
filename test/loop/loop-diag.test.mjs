@@ -1278,7 +1278,7 @@ const askRequestTests = [
       const own = await readFile(path.join(root, home), "utf8");
       assert.match(own, /getRuntimeRoot\(env\)/u);
       assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"@aof\/foundation\/fs"/u);
-      assert.match(own, /createAskRequests\(\{ getRuntimeRoot, reportDegrade \}\)/u);
+      assert.match(own, /createAskRequests\(\{ getRuntimeRoot, reportDegrade, acquireLock = null \}\)/u);
     },
   },
 

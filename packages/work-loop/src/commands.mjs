@@ -4,9 +4,10 @@
 // 147/02 — `work:drive-repair` is the FOURTH phase driver, beside refine, continue and verify: the
 // session a lane halt is handed to. The loop never loads the session driver, so a repair session is
 // reached exactly as the other three are — by spawning `aof work drive repair`.
-export function createWorkLoopContribution({ loop, refine, continue: build, verify, repair }) {
+export function createWorkLoopContribution({ loop, refine, continue: build, verify, repair, review }) {
   const commands = [loop, refine, build, verify, repair];
   const ids = ["work:loop", "work:drive-refine", "work:drive-continue", "work:drive-verify", "work:drive-repair"];
+  if (review !== undefined) { commands.push(review); ids.push("work:drive-review"); }
   if (commands.some((command, index) => command?.id !== ids[index])) {
     throw new TypeError("Work-loop contribution requires the loop and all four phase drivers.");
   }

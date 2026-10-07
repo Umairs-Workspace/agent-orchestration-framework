@@ -230,6 +230,9 @@ function argsFor(sub) {
     case "drive-verify": return ["work", "drive", "verify", "03/01", "--dry-run", "--json"];
     // 147/02 — the fourth phase driver; its dry run reports the directive and reads no hand-over.
     case "drive-repair": return ["work", "drive", "repair", "03/01", "--dry-run", "--json"];
+    // Native review has no installed asset in this fixture: exercise its coded
+    // preflight refusal without starting an assistant or probing a real CLI.
+    case "drive-review": return ["work", "drive", "review", "03/01", "--runtime", "codex", "--dry-run", "--json"];
     case "list": return ["work", "list", "--json"];
     // work:debt reads the ledger at the work directory root. The fixture has never accrued one,
     // so this probe exercises the `present: false` answer — the healthy state for most
@@ -439,7 +442,7 @@ export const archTests = [
           // succeeded would MOVE a folder the other probes read.
           // Both 0 and 1 are clean runs for those; every other op exits 0. None
           // may crash (>1 or a null status from a thrown error).
-          const acceptable = ["validate", "doctor", "update", "ratchet", "regression-gate", "debt", "promote", "archive", "answer"].includes(sub) ? [0, 1] : [0];
+          const acceptable = sub === "drive-review" ? [1] : ["validate", "doctor", "update", "ratchet", "regression-gate", "debt", "promote", "archive", "answer"].includes(sub) ? [0, 1] : [0];
           assert.ok(
             acceptable.includes(result.status),
             `aof ${argsFor(sub).join(" ")} exits ${acceptable.join("/")} (got ${result.status}; stderr: ${result.stderr})`
@@ -448,6 +451,7 @@ export const archTests = [
           let parsed;
           assert.doesNotThrow(() => { parsed = JSON.parse(result.stdout); }, `aof ${argsFor(sub).join(" ")} emits parseable JSON (stdout: ${result.stdout.slice(0, 200)})`);
           assert.ok(parsed !== undefined, `aof ${argsFor(sub).join(" ")} produced a JSON value`);
+          if (sub === "drive-review") assert.equal(parsed.code, "runtime-asset-missing");
         }
       } finally {
         await rm(root, { recursive: true, force: true });

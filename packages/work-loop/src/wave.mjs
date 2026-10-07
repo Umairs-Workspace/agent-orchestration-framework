@@ -265,8 +265,8 @@ export function createWaveOrchestration({
       if (milestoneItem?.dir == null) return null;
       const baseCommit = await headCommit(primaryRoot, { exec });
       const declaration = declarationFor({ ...resolved, loopRunId, phase: "continue", cycle: 1, startedAt });
-      const brief = runBrief(declaration, { wave: { members, baseCommit, bound } });
-      const { record } = await transitionRunStart(milestoneItem, { brief, node, now: clock() }, laneTransitionOptionsFor(ctx.workspace));
+      const brief = { ...runBrief(declaration, { wave: { members, baseCommit, bound } }), ...(declaration.execution == null ? {} : { nativeAskContext: laneAsk.site }) };
+      const { record } = await transitionRunStart(milestoneItem, { brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, laneTransitionOptionsFor(ctx.workspace));
       const row = { ref: milestoneItem.ref, phase: "continue", runId: record.runId, outcome: "running", attempt: record.attempt, cycle: 1, wave: { members: [...members], bound } };
       driven.push(row);
       waveRun = { item: milestoneItem, record, row, members: [...members] };
@@ -389,7 +389,7 @@ export function createWaveOrchestration({
           return halt(haltDecision("lane-open-failed", ref, "work:dispatch:lane-ref-unresolved"), { lane: open.worktree, branch: open.branch });
         }
         laneWorkspace = await loadWorkspace(open.worktree, undefined, { env: ctx.globalWorkStoreOptions?.env });
-        laneCtx = { ...ctx, workspace: laneWorkspace };
+        laneCtx = { ...ctx, workspace: laneWorkspace, nativeAskContext: laneAsk.site };
         laneOpts = laneTransitionOptionsFor(laneWorkspace);
 
         // EVERY OPEN RECLAIMS FIRST (129/04 ruling): a stale running record in the lane is settled
@@ -469,6 +469,8 @@ export function createWaveOrchestration({
             lane: { worktree: open.worktree, branch: open.branch, baseCommit: lane.baseCommit },
           });
 
+          if (declaration.execution != null) brief.nativeAskContext = laneAsk.site;
+
           // ---- MINT, in the lane (ADR-004 §1-§2) ----
           let record;
           const retry = laneRetries.get(ref);
@@ -484,11 +486,11 @@ export function createWaveOrchestration({
               if (resumeDeadline.act === "halt") {
                 return halt({ ...resumeDeadline, ref }, { deadline: resumeDeadline.deadline, ceilingMs: resumeDeadline.ceilingMs, elapsedMs: resumeDeadline.elapsedMs, disposition: resumeDeadline.disposition });
               }
-              ({ record } = await transitionRunStart(laneItem, { mode: "retry", runId: retry.prior.runId, maxAttempts: cap, brief, node, now: clock() }, laneOpts));
+              ({ record } = await transitionRunStart(laneItem, { mode: "retry", runId: retry.prior.runId, maxAttempts: cap, brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, laneOpts));
               laneRetries.delete(ref);
               await narrate(`Resumed ${ref} — attempt ${record.attempt} of ${cap} on run ${record.runId}.`);
             } else {
-              ({ record } = await transitionRunStart(laneItem, { brief, node, now: clock() }, laneOpts));
+              ({ record } = await transitionRunStart(laneItem, { brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, laneOpts));
             }
           } catch (error) {
             if (error?.code === "duplicate-run") return halt(haltDecision("lane-open-failed", ref, "run-store:duplicate-run"), { lane: open.worktree, branch: open.branch });

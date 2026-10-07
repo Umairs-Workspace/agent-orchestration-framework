@@ -293,7 +293,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
       refineDoorCommand,
       verifyDoorCommand,
     ]),
-    createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand, repair: repairDriverCommand }),
+    createWorkLoopContribution({ loop: loopCommand, refine: refineDriverCommand, continue: continueDriverCommand, verify: verifyDriverCommand, repair: repairDriverCommand, review: commandsDriveServices.reviewDriverCommand }),
     createResyncContribution(resyncCommand),
     { name: "aof", commands: [
       assetsListCommand,

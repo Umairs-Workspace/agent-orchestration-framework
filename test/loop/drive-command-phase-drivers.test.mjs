@@ -1168,7 +1168,8 @@ export const driveCommandPhaseDriverTests = [
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "halt"], `${command.id}: the schema's properties are exactly the nine (141 added thinking, 143/01 autonomous, 143/03 model, 147/02 halt)`);
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "runtime", "halt"], `${command.id}: the closed schema adds runtime in 154/06`);
+        assert.equal(command.cli.spec.flags.runtime.type, "string");
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);

@@ -169,6 +169,9 @@ export const yarnInstallationTests = [
         'terminal-mirror.mjs': ['ws'],
         'worktrees.mjs': ['node:path', '@aof/execution/worktrees', '@aof/foundation/git-args', '@aof/foundation/text'],
       } : name === 'work-loop' ? {
+        // 154/06: the extracted invocation helper reuses the shell's contract leaves;
+        // this exact file gains no platform, provider or assembled-core permission.
+        'commands/runtime-invocation.mjs': ['@aof/contracts/error', '@aof/contracts/loop-bounds'],
         'dispatch.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
         'commands/dispatch.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'trigger/declaration.mjs': ['node:path', 'node:fs/promises'],

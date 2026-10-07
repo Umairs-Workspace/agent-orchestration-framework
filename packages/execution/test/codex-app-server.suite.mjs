@@ -8,7 +8,7 @@ import { createRuntimeSession } from "../src/runtime-session.mjs";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/codex-app-server-v1.json", import.meta.url), "utf8"));
 const secret = "FIXTURE_CREDENTIAL_MUST_NOT_APPEAR";
-export function codexFixture({ scenario = "complete", delivery = "ordinary", version = fixture.cliVersion, ignoreClose = false, adapterFactory = createCodexAppServerAdapter } = {}) {
+export function codexFixture({ scenario = "complete", delivery = "ordinary", version = fixture.cliVersion, models = fixture.models, ignoreClose = false, adapterFactory = createCodexAppServerAdapter } = {}) {
   const calls = [], events = [], children = [];
   const child = new EventEmitter(); Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null });
   let input = "";
@@ -30,7 +30,7 @@ export function codexFixture({ scenario = "complete", delivery = "ordinary", ver
           if (scenario === "request-timeout") return;
           if (scenario === "initialization-error") emit({ id: request.id, error: { code: -1, message: secret } });
           else reply(request, fixture.initialize);
-        } else if (request.method === "model/list") reply(request, { data: fixture.models, nextCursor: null });
+        } else if (request.method === "model/list") reply(request, { data: models, nextCursor: null });
         else if (["thread/start", "thread/resume", "thread/read"].includes(request.method)) reply(request, { thread: { id: scenario === "missing-identity" ? "" : fixture.nativeThreadId } });
         else if (request.method === "turn/interrupt") { events.push("interrupt"); if (scenario !== "stops-replying") reply(request, {}); }
         else if (request.method === "turn/start") {

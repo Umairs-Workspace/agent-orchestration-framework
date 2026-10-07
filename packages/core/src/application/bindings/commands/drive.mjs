@@ -9,7 +9,9 @@ import {
 } from "@aof/execution/session-model";
 import { buildRunAttribution } from "@aof/execution/otel-attribution";
 
-export function assembleCommandsDrive({ agentSessionDriverServices, claudeTrustServices, degradeServices, runStoreServices, loopAskRequestServices, runHeartbeatConsumptionServices, effectsRunTransitionsServices, runSessionCaptureServices, commandsResolveServices, workObserveServices, runSpendIngestServices }) {
+import { resolveExecution, resolveExecutionResume, validateExecutionEnvelope } from "@aof/execution/runtime-selection";
+
+export function assembleCommandsDrive({ runtimeSessionServices, loopAskServices, agentSessionDriverServices, claudeTrustServices, degradeServices, runStoreServices, loopAskRequestServices, runHeartbeatConsumptionServices, effectsRunTransitionsServices, runSessionCaptureServices, commandsResolveServices, workObserveServices, runSpendIngestServices }) {
   // Core composition; @aof/work-loop owns the implementation.
 
   const { driveInteractiveClaudeSession } = agentSessionDriverServices;
@@ -33,14 +35,17 @@ export function assembleCommandsDrive({ agentSessionDriverServices, claudeTrustS
   const { snapshotTranscriptTree } = runSpendIngestServices;
 
   const implementation = createPhaseDrivers({
+    runtimeSession: runtimeSessionServices,
+    nativeAsks: loopAskServices,
+    execution: { resolveExecution, resolveExecutionResume, validateExecutionEnvelope },
     sessionDriver: { driveInteractiveClaudeSession, INTERACTIVE_COMMAND_READY_DELAY_MS },
     trust: { ensureWorktreeTrusted },
     briefCompiler: { compileBriefForItem },
     sessions: { normalizeEffort, resolveSessionLaunch, THINKING_UNKNOWN_LEVEL, thinkingUnknownLevelMessage },
     diagnostics: { reportDegrade },
-    runs: { readRuns, recordSessionId },
-    askRequests: { ASK_STATES, readAsk },
-    heartbeats: { readConsumedHeartbeatAt },
+    runs: { readRuns, recordSessionId, parkRunAsk: runStoreServices.parkRunAsk },
+    askRequests: { ...loopAskRequestServices, ASK_STATES, readAsk },
+    heartbeats: { readConsumedHeartbeatAt, enqueueHeartbeat: runHeartbeatConsumptionServices.enqueueHeartbeat },
     transitions: { transitionRunStart, transitionRunComplete },
     attribution: { buildRunAttribution },
     sessionCapture: { captureSessionIdOnRecord },
@@ -59,5 +64,5 @@ export function assembleCommandsDrive({ agentSessionDriverServices, claudeTrustS
   const resolvePhaseResumeTarget = implementation.resolvePhaseResumeTarget;
   const verifyDriverCommand = implementation.verifyDriverCommand;
 
-  return { PHASE_MODE_FLAGS, composeFixInput, continueDriverCommand, createPhaseDriverCommand, phaseCommand, refineDriverCommand, repairDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand };
+  return { PHASE_MODE_FLAGS, composeFixInput, continueDriverCommand, createPhaseDriverCommand, phaseCommand, refineDriverCommand, repairDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand, reviewDriverCommand: implementation.reviewDriverCommand };
 }

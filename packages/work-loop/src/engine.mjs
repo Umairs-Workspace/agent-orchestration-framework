@@ -1519,6 +1519,10 @@ function recordedSessionChoices(declaration, phases = []) {
 // (ADR-004 §4): the FLAG parts of its own phase's recorded choice, and nothing else, so "with no flag
 // the loop passes nothing" (141) stays true. A declaration with no `sessions` lends 141's `thinking`.
 export function sessionLendFor(declaration, phase) {
+  if (declaration?.execution != null) {
+    const entry = declaration.execution.phases[phase === "repair" ? "continue" : phase];
+    return { runtime: declaration.execution.runtime, ...(entry.model == null ? {} : { model: entry.model }), thinking: entry.effort };
+  }
   const sessions = declaration?.sessions;
   if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
     // 147/02 — the repair session runs on the CONTINUE phase's resolved model and effort, so it is
