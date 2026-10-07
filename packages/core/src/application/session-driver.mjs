@@ -5,6 +5,8 @@ import { assembleTerminalScreen } from './bindings/terminal/screen.mjs';
 import { assembleTerminalSessionScreen } from './bindings/terminal/session-screen.mjs';
 import { assembleAgentSessionDriver } from './bindings/agent-session-driver.mjs';
 import { createRuntimeSession, createClaudeSessionAdapter } from '@aof/execution/runtime-session';
+import { createCodexAppServerAdapter } from '@aof/execution/codex-app-server';
+import { composePhaseBriefInput } from '@aof/work/phase-brief';
 
 export function createSessionDriverServices({ degrade }) {
 
@@ -15,6 +17,7 @@ export function createSessionDriverServices({ degrade }) {
   const terminalSessionScreen = assembleTerminalSessionScreen({ degradeServices: degrade, terminalScreenServices: terminalScreen });
   const agentSessionDriver = assembleAgentSessionDriver({ claudeTrustServices: claudeTrust, workObserveServices: workObserve, terminalProvidersServices: terminalProviders, degradeServices: degrade, terminalSessionScreenServices: terminalSessionScreen });
   const runtimeSession = createRuntimeSession({ adapters: {
+    codex: createCodexAppServerAdapter({ composePhaseBriefInput }),
     claude: createClaudeSessionAdapter({
       driveInteractiveClaudeSession: agentSessionDriver.driveInteractiveClaudeSession,
       claudeProjectsDir: workObserve.claudeProjectsDir,

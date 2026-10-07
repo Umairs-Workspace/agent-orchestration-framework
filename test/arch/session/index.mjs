@@ -1,3 +1,4 @@
+import { archTests as codexPermissionTests } from "./acd-codex-permission-boundary.test.mjs";
 // THE ARCH/SESSION SUITES — this directory's index, and the ONE place its membership is
 // written down (119/03, ADR-010). The registry names directories; a directory names its own
 // suites. A new suite here is one import and one spread IN THIS FILE, and `scripts/test.mjs`
@@ -175,6 +176,7 @@ import { archTests as acdAttributionIsCapturedOrAbsentTests } from "./acd-attrib
 
 export const tests = [
   ...runtimeSessionBoundaryTests,
+  ...codexPermissionTests,
   ...runtimeChoiceOwnerTests,
   // milestone 53 / story 05 — architectural fitness functions (FF-5301…FF-5311)
   ...acdSessionDriverMeshBlindTests,

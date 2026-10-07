@@ -4,6 +4,7 @@ import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
 import { createTerminalSpawn } from "./pty.mjs";
+import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
 
 // Execution owns the driver. Core supplies transcript readers, launch policy, screen
 // observation and diagnostics; this module imports no application or transport layer.
@@ -16,6 +17,7 @@ export function createSessionDriver({ transcripts, launch, reportDegrade }) {
   for (const [name, value] of Object.entries({ claudeProjectsDir, readLastAssistantTurn, resolveProvider, loadNodePty, openSessionScreen, ensureWorktreeTrusted, buildOtelResourceAttributes, composePhaseBriefInput, reportDegrade })) {
     if (typeof value !== "function") throw new TypeError(`createSessionDriver: ${name} is required`);
   }
+  const codexAdapter = createCodexAppServerAdapter({ composePhaseBriefInput });
 
 // src/agent-session-driver.mjs — THE SESSION DRIVER, given a home (milestone 53 /
 // story 00, ADR-001). Everything here was `src/mesh/worker-execution.mjs:835-1851`
@@ -74,21 +76,13 @@ export function createSessionDriver({ transcripts, launch, reportDegrade }) {
 // ADR-013): the interactive PTY path below (resolveInteractiveDriverLaunch /
 // driveInteractiveClaudeSession) replaces the old `claude -p <prompt>
 // --output-format json` one-shot entirely — `defaultSpawnRuntime` below never calls
-// this function for the `claude` driver any more. `codex` keeps its OWN pre-existing
-// headless-print form UNCHANGED (ADR-013 is scoped to `claude`; codex was never the
-// §4.3 problem — it never had a subscription-billing / human-in-the-loop story to
-// begin with, and no task in this story touches it). Any OTHER driver name resolves
+// this function for the `claude` driver any more. 154/02 replaces Codex's former
+// headless-print command with its owned App Server stdio command. Any OTHER driver name resolves
 // to `null` — a caller must route it through the interactive path or fail closed,
 // never silently fall back to a headless print form for `claude`.
 function buildDriverCommand(driver, brief) {
-  const prompt = `Drive work item ${brief.itemRef} to a terminal state (done or failed) in this worktree. ${brief.task ?? ""}`.trim();
-  if (driver === "codex") {
-    return {
-      bin: "codex",
-      args: ["exec", "--json", "-o", "last-message.txt", "--sandbox", "workspace-write", "--ask-for-approval", "never", prompt],
-    };
-  }
-  return null;
+  // 154/02 supersedes the historical one-shot; phase input travels in turn/start.
+  return driver === "codex" ? codexServerCommand() : null;
 }
 
 // ============================================================================
@@ -1761,11 +1755,8 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
 }
 
 // defaultSpawnRuntime(brief, options) — the PRODUCTION runtime-spawn default.
-// `codex` keeps its UNCHANGED headless one-shot child-process form (a real child,
-// cwd = brief.worktreeCwd; the returned promise resolves only once that child has
-// FULLY EXITED — execFile's callback fires on process exit, never merely on stdout
-// drain, the invariant task 03/milestone-35 cleanup-after-terminal safety depends
-// on). Every OTHER driver (`claude`, the default) routes through
+// 154/02 routes Codex through the owned App Server adapter, with bounded cleanup
+// before its result is returned. Every OTHER driver (`claude`, the default) routes through
 // driveInteractiveClaudeSession above — the ADR-013 interactive PTY path, which
 // resolves under the SAME "child fully exited or a detected NEEDS_INPUT sentinel
 // before any cleanup runs" discipline. Never exercised against a REAL binary by
@@ -1775,25 +1766,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
 function defaultSpawnRuntime(brief, options = {}) {
   const driver = options.driver ?? "claude";
   if (driver === "codex") {
-    const { bin, args } = buildDriverCommand(driver, brief);
-    return new Promise((resolve) => {
-      execFile(bin, args, { cwd: brief.worktreeCwd, windowsHide: true, timeout: options.timeoutMs ?? 10 * 60 * 1000 }, (error, stdout) => {
-        // A non-zero exit or a spawn fault is a `failed` outcome (never an unhandled
-        // rejection out of this seam) — the caller completes the run accordingly.
-        if (error) {
-          resolve({ outcome: "failed", failureReason: "agent_error" });
-          return;
-        }
-        try {
-          const parsed = JSON.parse(String(stdout ?? ""));
-          const terminal = parsed.terminal_reason ?? parsed.stop_reason ?? null;
-          const ok = terminal === "completed" || terminal === "end_turn";
-          resolve(ok ? { outcome: "done" } : { outcome: "failed", failureReason: "agent_error" });
-        } catch {
-          resolve({ outcome: "failed", failureReason: "agent_error" });
-        }
-      });
-    });
+    return codexAdapter.drive(brief, options);
   }
   return driveInteractiveClaudeSession(brief, options);
 }

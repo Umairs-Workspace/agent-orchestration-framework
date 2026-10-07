@@ -30,6 +30,11 @@ export function createRuntimeSession({ adapters }) {
     let sessionId = null;
     let persistenceFailure = null;
     let pending = Promise.resolve();
+    let releaseStop;
+    const stopped = new Promise(resolve => { releaseStop = resolve; });
+    controller.signal.addEventListener("abort", releaseStop, { once: true });
+    if (controller.signal.aborted) releaseStop();
+    const flush = () => Promise.race([pending.then(() => true), stopped.then(() => false)]);
     const publish = (kind, value) => {
       // Adapters may emit synchronously. Attach the rejection handler immediately, and
       // retain it here even when a legacy transport treats callback faults as advisory.
@@ -53,21 +58,24 @@ export function createRuntimeSession({ adapters }) {
         onQuestion: value => publish("Question", value),
         onUsage: value => publish("Usage", value),
       });
-      await pending;
+      if (result?.outcome === "failed") controller.abort();
+      if (!await flush()) return { ...result, outcome: "failed", failureReason: persistenceFailure ? "persistence_failed" : result?.failureReason ?? "abort", sessionId };
       if (result?.sessionId && result.sessionId !== sessionId) await publish("Identity", result.sessionId);
       // Wait for every event queued before terminal settlement, including unawaited
       // synchronous producers. Completion never outruns durable identity or questions.
-      await pending;
+      if (!await flush()) return { ...result, outcome: "failed", failureReason: persistenceFailure ? "persistence_failed" : "abort", sessionId };
       if (persistenceFailure) return { ...result, outcome: "failed", failureReason: "persistence_failed", persistenceEvent: persistenceFailure, sessionId };
       if (!["done", "failed", "needs-input"].includes(result?.outcome)) {
         return { outcome: "failed", failureReason: "invalid_session_result", sessionId };
       }
       return { ...result, sessionId: result.sessionId ?? sessionId };
     } catch {
-      await pending;
+      controller.abort();
+      await flush();
       return { outcome: "failed", failureReason: persistenceFailure ? "persistence_failed" : "agent_error", sessionId, ...(persistenceFailure ? { persistenceEvent: persistenceFailure } : {}) };
     } finally {
       options.signal?.removeEventListener("abort", abort);
+      controller.signal.removeEventListener("abort", releaseStop);
       controller.abort();
     }
   }

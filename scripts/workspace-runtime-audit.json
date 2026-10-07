@@ -104,14 +104,6 @@
     "reason": "Bounded process port executes the caller supplied grading program with a deadline and captured output. This is an intentional external program seam."
   },
   {
-    "file": "packages/execution/src/session-driver.mjs",
-    "kind": "child-process",
-    "expression": "execFile(bin, args, { cwd: brief.worktreeCwd, windowsHide: true, timeout: options.timeoutMs ?? 10 * 60 * 1000 }, (error, stdout) => {\n        // A non-zero exit or a spawn fault is a `failed` outcome (never an unhandled\n        // rejection out of this seam) — the caller completes the run accordingly.\n        if (error) {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n          return;\n        }\n        try {\n          const parsed = JSON.parse(String(stdout ?? \"\"));\n          const terminal = parsed.terminal_reason ?? parsed.stop_reason ?? null;\n          const ok = terminal === \"completed\" || terminal === \"end_turn\";\n          resolve(ok ? { outcome: \"done\" } : { outcome: \"failed\", failureReason: \"agent_error\" });\n        } catch {\n          resolve({ outcome: \"failed\", failureReason: \"agent_error\" });\n        }\n      })",
-    "digest": "b87e7b1327e6f3a585d01be5c9cce669c042ebf7d169151724549106d3907589",
-    "sourceDigest": "4566639164c2d6152e86e0949cc3c22109033ed49c2d3b5719b49845b6025e47",
-    "reason": "Runs the assistant binary and argv supplied by the declared launch; this package owns session execution and its process limits."
-  },
-  {
     "file": "packages/execution/src/svg-rasterizer.mjs",
     "kind": "child-process",
     "expression": "spawn(\n        browser.path,\n        browserArgv({ kind: browser.kind, width, height, scale, userDataDir, pngPath, svgPath }),\n        { stdio: [\"ignore\", \"ignore\", \"pipe\"], windowsHide: true },\n      )",
@@ -894,5 +886,21 @@
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
     "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
+  },
+  {
+    "kind": "child-process",
+    "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
+    "file": "packages/execution/src/codex-app-server.mjs",
+    "digest": "6a3d6136d5825d0005caf53afd2fb889aca533543cd1cdbc3be4da084b60935c",
+    "sourceDigest": "de62c11dad4bdb0292d067ce562ca50b25e457da9e69dfd47ec708c153a0899d",
+    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
+  },
+  {
+    "kind": "child-process",
+    "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
+    "file": "packages/execution/src/codex-app-server.mjs",
+    "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
+    "sourceDigest": "de62c11dad4bdb0292d067ce562ca50b25e457da9e69dfd47ec708c153a0899d",
+    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
   }
 ]

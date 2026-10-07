@@ -1,6 +1,8 @@
+import { archTests as codexPermissionTests } from "../test/arch/session/acd-codex-permission-boundary.test.mjs";
 import { adapterTests } from "../test/bundle/adapters.test.mjs";
 import { runtimeSessionTests } from "../packages/execution/test/runtime-session.suite.mjs";
 import { runtimeSelectionTests } from "../packages/execution/test/runtime-selection.suite.mjs";
+import { codexAppServerTests } from "../packages/execution/test/codex-app-server.suite.mjs";
 import { archTests as runtimeChoiceOwnerTests } from "../test/arch/session/acd-runtime-choice-owner.test.mjs";
 import { archTests as runtimeSessionBoundaryTests } from "../test/arch/session/acd-runtime-session-boundary.test.mjs";
 import { opencodeHookTests } from "../packages/core/test/opencode-hooks.suite.mjs";
@@ -117,8 +119,10 @@ import { loopProofTests } from "../test/work/roundtrip-loop-proof.test.mjs";
 const tests = [
   ...runtimeSessionTests,
   ...runtimeSelectionTests,
+  ...codexAppServerTests,
   ...runtimeChoiceOwnerTests,
   ...runtimeSessionBoundaryTests,
+  ...codexPermissionTests,
   ...adapterWarningTests,
   ...packageTests,
   ...workTests,

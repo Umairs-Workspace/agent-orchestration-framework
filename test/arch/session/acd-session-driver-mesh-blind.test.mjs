@@ -130,10 +130,11 @@ export const archTests = [
       // nine nodes previously reached through the core work facade (37 -> 29).
       // Plan 02 adds the explicit per-application path policy, which imports the existing workspace paths.
       // Plan 03 adds the pure core manifest locator, with only builtin imports.
-      assert.ok(graph.seen.size <= 31, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 assembly census of 31`);
+      // 154/02 adds exactly the Codex transport/profile and shared selection/model leaves.
+      assert.equal(graph.seen.size, 35, "the 31-module assembly plus four explicitly owned Codex/policy leaves");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport stays in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -285,7 +286,8 @@ export const archTests = [
       // 154/01: runs imports the pure execution policy and its existing session
       // model leaf. Neither adds I/O, mesh lifecycle or a driver import.
       for (const file of ["packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-model.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
-      assert.equal(sinkGraph.seen.size, 123, "the 121-module worker closure plus runtime selection and session-model policy leaves");
+      for (const file of ["packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
+      assert.equal(sinkGraph.seen.size, 125, "the 123-module worker closure plus the native Codex transport and profile");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

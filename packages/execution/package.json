@@ -14,6 +14,8 @@
     "./session-driver": "./src/session-driver.mjs",
     "./runtime-session": "./src/runtime-session.mjs",
     "./runtime-selection": "./src/runtime-selection.mjs",
+    "./codex-app-server": "./src/codex-app-server.mjs",
+    "./codex-protocol-profile": "./src/codex-protocol-profile.mjs",
     "./terminal/screen": "./src/terminal/screen.mjs",
     "./terminal/session-screen": "./src/terminal/session-screen.mjs",
     "./claude-trust": "./src/claude-trust.mjs",
