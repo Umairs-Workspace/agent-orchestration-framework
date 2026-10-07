@@ -86,6 +86,35 @@
     }
   },
   "$defs": {
+    "runtimePhaseChoices": {
+      "type": "object",
+      "properties": {
+        "refine": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "continue": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "verify": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      },
+      "additionalProperties": false
+    },
+    "runtimeRoleChoices": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1, "pattern": "\\S" }
+    },
+    "runtimeAgents": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "object",
+          "properties": {
+            "models": { "$ref": "#/$defs/runtimePhaseChoices" },
+            "effort": { "$ref": "#/$defs/runtimePhaseChoices" }
+          },
+          "additionalProperties": false
+        },
+        "models": { "$ref": "#/$defs/runtimeRoleChoices" },
+        "effort": { "$ref": "#/$defs/runtimeRoleChoices" }
+      },
+      "additionalProperties": false
+    },
     "globalRef": {
       "type": "object",
       "required": ["kind", "id"],
@@ -352,6 +381,11 @@
       "type": "object",
       "description": "Configuration for the ACD (Acceptance-Criteria Development) work stream: the flat, chronological stream of milestone / story / task / uat items.",
       "properties": {
+        "loop": {
+          "type": "object",
+          "properties": { "runtime": { "enum": ["claude", "codex"], "default": "claude" } },
+          "additionalProperties": true
+        },
         "dir": {
           "type": "string",
           "description": "Path, relative to the repo root, to the flat work-item stream (NN_type_slug folders)."
@@ -360,6 +394,15 @@
           "type": "object",
           "description": "How ACD role agents are orchestrated.",
           "properties": {
+            "runtimes": {
+              "type": "object",
+              "properties": {
+                "claude": { "$ref": "#/$defs/runtimeAgents" },
+                "codex": { "$ref": "#/$defs/runtimeAgents" }
+              },
+              "additionalProperties": false,
+              "description": "Runtime-specific phase and role choices. Claude inherits matching legacy settings; Codex never inherits Claude aliases. Model and effort compatibility is checked against native capabilities."
+            },
             "mode": {
               "enum": ["orchestrated", "solo"],
               "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated. Governs the sessions an operator types only: a loop-driven session reads work.loop.agents.<phase>.mode, never this key."

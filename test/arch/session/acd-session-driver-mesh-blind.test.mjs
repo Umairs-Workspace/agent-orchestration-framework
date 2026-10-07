@@ -282,7 +282,10 @@ export const archTests = [
       // 142 security fixes add two leaf helpers, MEASURED by diffing this walker's closure per commit:
       // @aof/foundation/git-args (via execution/worktrees, d0b83a39) and @aof/foundation/text (via mesh
       // node-identity, 5a677e4e). Both import nothing; the driver isolation is unchanged.
-      assert.equal(sinkGraph.seen.size, 121, "Plans 02/03 add the application path policy and pure core manifest locator to the 117-module worker closure; 142 adds git-args and text");
+      // 154/01: runs imports the pure execution policy and its existing session
+      // model leaf. Neither adds I/O, mesh lifecycle or a driver import.
+      for (const file of ["packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-model.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
+      assert.equal(sinkGraph.seen.size, 123, "the 121-module worker closure plus runtime selection and session-model policy leaves");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

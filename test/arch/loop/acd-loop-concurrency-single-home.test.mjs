@@ -69,7 +69,9 @@ export const SELF_CONTAINED_LOOP_KEYS = Object.freeze([
 export const REFINE_SCOPE_KEY = "work.loop.refine";
 // 147/00 (R1) — the repair switch, a boolean with this key's discipline, appended after the refine scope.
 export const REPAIR_SWITCH_KEY = "work.loop.repair";
-export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS, REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY].sort());
+// 154/ADR-002: a runtime choice is the fifteenth key; numeric bounds stay closed.
+export const RUNTIME_SELECTION_KEY = "work.loop.runtime";
+export const PINNED_LOOP_KEYS = Object.freeze([...NUMERIC_LOOP_KEYS, KEY, ...SELF_CONTAINED_LOOP_KEYS, REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY, RUNTIME_SELECTION_KEY].sort());
 
 // The two modules that may spell a mode literal, by path (ADR-001 §1 and §4).
 export const MODE_LITERAL_HOMES = Object.freeze([BOUNDS_HOME, ENGINE]);
@@ -222,8 +224,13 @@ export const archTests = [
       assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
       assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
       // 143/01 — the refine scope follows them, in both maps; 147/00 — the repair switch follows it, last.
-      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(12), [REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY]);
-      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(12), [REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY]);
+      assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(12), [REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY, RUNTIME_SELECTION_KEY]);
+      assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(12), [REFINE_SCOPE_KEY, REPAIR_SWITCH_KEY, RUNTIME_SELECTION_KEY]);
+      assert.equal(loopBounds.LOOP_BOUND_VALUE_RESOLVERS[RUNTIME_SELECTION_KEY], loopBounds.resolveLoopRuntime);
+      assert.equal(loopBounds.LOOP_BOUND_CONFIG_RESOLVERS[RUNTIME_SELECTION_KEY], loopBounds.loopRuntimeFromConfig);
+      for (const runtime of ["claude", "codex"]) assert.equal(loopBounds.rangeProbe(RUNTIME_SELECTION_KEY, runtime).admissible, true);
+      assert.equal(loopBounds.rangeProbe(RUNTIME_SELECTION_KEY, "other").admissible, false);
+      assert.equal(loopBounds.resolveLoopRuntime(undefined), "claude");
       assert.equal(loopBounds.rangeProbe(REPAIR_SWITCH_KEY, true).admissible, true, "true is admissible");
       assert.equal(loopBounds.rangeProbe(REPAIR_SWITCH_KEY, false).admissible, true, "false is admissible");
       // (`null` is not probed: the probe reads `resolve(p) === p`, and `null` is what every mode

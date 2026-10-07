@@ -39,7 +39,7 @@ import { writeText } from "@aof/foundation/fs";
 
 import { assertStampedClaim, compileProvenance } from "@aof/contracts/claim-provenance";
 import { createRunSpendIngest } from "./spend.mjs";
-
+import { resolveExecutionResume, validateExecutionEnvelope } from "./runtime-selection.mjs";
 // ------------------------------------------- failure classification (20) ----
 
 // The CLOSED retryable/non-retryable classification (20/ADR-002), the
@@ -548,7 +548,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // answeredAt, by }`, written only by the run's owner through the three ask writers below. A
   // sixteen-key record, and any non-array `asks`, reads forward as `[]`. The record keeps the
   // human's decision and its instants and never a derived wait (119/ADR-003).
-  function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null }) {
+  function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null, execution }) {
     return {
       runId,
       itemRef,
@@ -567,6 +567,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       resumeAfter: null,
       spend: null,
       asks: [],
+      ...(execution === undefined ? {} : { execution }),
     };
   }
 
@@ -595,6 +596,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       resumeAfter: raw.resumeAfter ?? null,
       spend: raw.spend ?? null,
       asks: Array.isArray(raw.asks) ? raw.asks : [],
+      ...(Object.prototype.hasOwnProperty.call(raw, "execution") ? { execution: structuredClone(raw.execution) } : {}),
     };
   }
 
@@ -606,7 +608,8 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // collision bumps seq and retries rather than the second mint silently overwriting
   // the first), and the ATOMIC persist (20/ADR-007). attempt/retryOf carry the retry
   // lineage (20/ADR-003); a fresh start passes the defaults (attempt 1, retryOf null).
-  async function mintRun(item, { sessionId = null, brief = {}, now, attempt = 1, retryOf = null, node = null } = {}) {
+  async function mintRun(item, { sessionId = null, brief = {}, now, attempt = 1, retryOf = null, node = null, ...additional } = {}) {
+    const execution = Object.prototype.hasOwnProperty.call(additional, "execution") ? validateExecutionEnvelope(additional.execution) : undefined;
     // New durable claims must already carry the stamp produced at their command edge.
     // Validate before reading the store, so refusal cannot infer or write anything.
     if (brief?.grade != null) assertStampedClaim(brief.grade);
@@ -634,7 +637,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
         seq += 1;
         continue;
       }
-      const record = buildRecord({ runId, itemRef: item.ref, sessionId, brief, createdAt, attempt, retryOf, node });
+      const record = buildRecord({ runId, itemRef: item.ref, sessionId, brief, createdAt, attempt, retryOf, node, execution });
       await persist(item, record);
       return record;
     }
@@ -647,8 +650,9 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // INJECTED DATA — the COMMAND layer passes config.mesh.nodeId when mesh is
   // configured (story 02's pass-through); the store never reads config, and the
   // no-node mint stays the flat single-node behaviour, byte-identical to today.
-  async function startRun(item, { sessionId = null, brief = {}, now, node = null } = {}) {
-    return mintRun(item, { sessionId, brief, now, node });
+  async function startRun(item, { sessionId = null, brief = {}, now, node = null, ...additional } = {}) {
+    return mintRun(item, { sessionId, brief, now, node,
+      ...(Object.prototype.hasOwnProperty.call(additional, "execution") ? { execution: additional.execution } : {}) });
   }
 
   // Read an item's runs — the UNION of flat entries + ONE level of node subdirs
@@ -1051,7 +1055,8 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
     return rest;
   }
 
-  async function retryRun(item, { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = {}) {
+  async function retryRun(item, options = {}) {
+    const { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = options;
     const runs = await readRuns(item);
     let prior;
     if (runId) {
@@ -1062,6 +1067,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
     if (!prior) {
       throw runError("no retryable failed run for this item", "no-retryable-run", 409);
     }
+    const execution = resolveExecutionResume(prior, options);
     // The two distinct gates (kept separate so the codes stay distinct): a
     // non-retryable reason (agent_error / unknown / null) vs a retryable reason already
     // at/over the ceiling. The classifier (ADR-002) is the single authority.
@@ -1097,6 +1103,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       attempt: prior.attempt + 1,
       retryOf: prior.runId,
       node,
+      ...(execution === null ? {} : { execution }),
     });
   }
 

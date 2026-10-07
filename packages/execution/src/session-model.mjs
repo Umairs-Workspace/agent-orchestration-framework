@@ -55,10 +55,10 @@ export const EFFORT_SPELLINGS = Object.freeze(["low", "medium", "high", "xhigh",
 
 // normalizeEffort(value) -> a canonical level, or null for a refusal. Exact spellings only: a
 // case variant (`Extra-High`) or a near miss (`x-high`) is refused rather than guessed at.
-export function normalizeEffort(value) {
+export function normalizeEffort(value, { levels = EFFORT_LEVELS } = {}) {
   if (typeof value !== "string") return null;
-  if (EFFORT_LEVELS.includes(value)) return value;
-  return Object.prototype.hasOwnProperty.call(EFFORT_ALIASES, value) ? EFFORT_ALIASES[value] : null;
+  const canonical = Object.prototype.hasOwnProperty.call(EFFORT_ALIASES, value) ? EFFORT_ALIASES[value] : value;
+  return levels.includes(canonical) ? canonical : null;
 }
 
 // The refusal every door that takes `--thinking` answers for a level it does not know.
@@ -78,7 +78,7 @@ export const thinkingUnknownLevelMessage = (value) =>
 // only when the choice sets no effort. `effortSource` names which rung answered the effort (`--model`,
 // `--thinking`, `config` or `default`), and `modelSource` the model's (`--model` or `config`). It is
 // appended last, and only when a model resolves, so an unrouted answer is byte-identical to 141's.
-export function resolveSessionLaunch(config, phase, { thinking, choice } = {}) {
+export function resolveSessionLaunch(config, phase, { thinking, choice, effortLevels = EFFORT_LEVELS } = {}) {
   const session = config?.work?.agents?.session;
   const routed = session && typeof session === "object" && !Array.isArray(session) ? session : {};
   const pick = (map) => {
@@ -91,9 +91,9 @@ export function resolveSessionLaunch(config, phase, { thinking, choice } = {}) {
   const out = {};
   if (chosenModel != null) out.model = chosenModel;
   else if (configuredModel != null) out.model = configuredModel;
-  const chosen = normalizeEffort(choice?.effort);
-  const flagged = normalizeEffort(thinking);
-  const configured = normalizeEffort(pick(routed.effort));
+  const chosen = normalizeEffort(choice?.effort, { levels: effortLevels });
+  const flagged = normalizeEffort(thinking, { levels: effortLevels });
+  const configured = normalizeEffort(pick(routed.effort), { levels: effortLevels });
   if (chosen != null) Object.assign(out, { effort: chosen, effortSource: choice.effortFlag ?? "--model" });
   else if (flagged != null) Object.assign(out, { effort: flagged, effortSource: "--thinking" });
   else if (configured != null) Object.assign(out, { effort: configured, effortSource: "config" });
@@ -119,7 +119,7 @@ const choiceRefusal = (code, message) => ({ refusal: { code, message } });
 // One flag value → `{ phase, model?, effort?, flag, raw }`, or a refusal. `phase` is `null` for an
 // unphased value. `--model` splits on the FIRST `=`, then on the LAST `:` only when the suffix is an
 // effort spelling, so any other `:` (a Bedrock-style `…-v1:0`) stays part of the model id.
-function readChoice(flag, raw) {
+function readChoice(flag, raw, levels) {
   const value = typeof raw === "string" ? raw : "";
   const at = value.indexOf("=");
   let phase = null;
@@ -132,7 +132,7 @@ function readChoice(flag, raw) {
     }
   }
   if (flag === "--thinking") {
-    const effort = normalizeEffort(rest);
+    const effort = normalizeEffort(rest, { levels });
     if (effort == null) return choiceRefusal(THINKING_UNKNOWN_LEVEL, thinkingUnknownLevelMessage(rest));
     return { phase, effort, flag, raw: value };
   }
@@ -140,7 +140,7 @@ function readChoice(flag, raw) {
   let effort = null;
   const colon = rest.lastIndexOf(":");
   if (colon >= 0) {
-    const level = normalizeEffort(rest.slice(colon + 1));
+    const level = normalizeEffort(rest.slice(colon + 1), { levels });
     if (level != null) {
       model = rest.slice(0, colon);
       effort = level;
@@ -164,11 +164,11 @@ function readChoice(flag, raw) {
 // SPECIFICITY, NOT ORDER (ADR-003 §4): a phased value beats an unphased one for its phase, and two
 // values at the SAME specificity that set the same part of the same phase refuse — even when they
 // are equal, because nothing here picks a winner.
-export function parseSessionChoices({ model = [], thinking = [] } = {}) {
+export function parseSessionChoices({ model = [], thinking = [] } = {}, { effortLevels = EFFORT_LEVELS } = {}) {
   const read = [];
   for (const [flag, values] of [["--model", model], ["--thinking", thinking]]) {
     for (const raw of Array.isArray(values) ? values : [values]) {
-      const choice = readChoice(flag, raw);
+      const choice = readChoice(flag, raw, effortLevels);
       if (choice.refusal) return choice;
       read.push(choice);
     }

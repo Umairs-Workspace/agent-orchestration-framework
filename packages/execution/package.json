@@ -13,6 +13,7 @@
     "./pty": "./src/pty.mjs",
     "./session-driver": "./src/session-driver.mjs",
     "./runtime-session": "./src/runtime-session.mjs",
+    "./runtime-selection": "./src/runtime-selection.mjs",
     "./terminal/screen": "./src/terminal/screen.mjs",
     "./terminal/session-screen": "./src/terminal/session-screen.mjs",
     "./claude-trust": "./src/claude-trust.mjs",

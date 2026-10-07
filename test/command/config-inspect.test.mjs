@@ -14,6 +14,32 @@ import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 export const configInspectTests = [
   {
+    name: "154/01 task00 — installed asset targets and delegation do not select execution; next runtime is explicit",
+    run: async () => {
+      const dir = await mkdtemp(path.join(os.tmpdir(), "aof-execution-inspect-"));
+      try {
+        await mkdir(path.join(dir, ".aof"));
+        const file = path.join(dir, ".aof", "aof.config.json");
+        const config = { name: "demo", resources: [], work: { agents: { delegation: "on", delegationModel: "delegated-model" } } };
+        await writeFile(path.join(dir, ".aof", "aof.lock.json"), JSON.stringify({ version: 2, runtimes: ["claude"], work: { runtimes: ["codex"] } }));
+        await writeFile(file, JSON.stringify(config));
+        let report = await inspectConfig(dir);
+        assert.equal(report.execution.runtime, "claude"); assert.equal(report.execution.runtimeSource, "default");
+        assert.deepEqual(report.assetRuntimes, ["claude", "codex"]);
+        assert.deepEqual(report.delegation, { enabled: "on", model: "delegated-model" });
+        config.work.loop = { runtime: "codex" }; config.work.agents.runtimes = { codex: { session: { models: { continue: "opus" } } } };
+        await writeFile(file, JSON.stringify(config));
+        report = await inspectConfig(dir, { capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true, supportedReasoningEfforts: [{ reasoningEffort: "high" }] }] } } });
+        assert.ok(report.diagnostics.some(value => value.code === "unsupported-model" && value.path === "work.agents.runtimes.codex.session.models.continue"));
+        assert.equal(report.execution, null);
+        config.work.agents.runtimes.codex.session.models = [];
+        await writeFile(file, JSON.stringify(config));
+        report = await inspectConfig(dir);
+        assert.ok(report.diagnostics.some(value => value.code === "invalid-runtime-settings" && value.path === "work.agents.runtimes.codex.session.models"));
+      } finally { await rm(dir, { recursive: true, force: true }); }
+    },
+  },
+  {
     name: "inspects valid config with resources and packages",
     run: inspectsValidConfig
   },

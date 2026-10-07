@@ -20,8 +20,8 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "cbcba21c85312f9f848e216cee82e72aec0b5c0368c46e580d437523430ab566",
-    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed."
+    "sourceDigest": "c1a2993023880b7b8bb75cb02e5868b0260cdcb7423ae8e2db183585f797d194",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged."
   },
   {
     "file": "packages/core/src/application/bindings/work/loops.mjs",

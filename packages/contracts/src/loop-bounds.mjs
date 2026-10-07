@@ -269,6 +269,7 @@ export const LOOP_BOUND_CONFIG_RESOLVERS = Object.freeze({
   "work.loop.refine": loopRefineFromConfig,
   // 147/00 — the repair switch, appended last with the same discipline.
   "work.loop.repair": loopRepairFromConfig,
+  "work.loop.runtime": loopRuntimeFromConfig,
 });
 
 export const LOOP_BOUND_CONFIG_KEYS = Object.freeze(Object.keys(LOOP_BOUND_CONFIG_RESOLVERS));
@@ -332,6 +333,7 @@ export const LOOP_BOUND_VALUE_RESOLVERS = Object.freeze({
   "work.loop.refine": resolveLoopRefine,
   // 147/00 — its value-shaped twin, in the same position.
   "work.loop.repair": resolveLoopRepair,
+  "work.loop.runtime": resolveLoopRuntime,
 });
 
 export const LOOP_BOUND_VALUE_KEYS = Object.freeze(Object.keys(LOOP_BOUND_VALUE_RESOLVERS));
@@ -408,4 +410,19 @@ export function deadlineApplicability(policy, attemptElapsedMs) {
     startToClose: true,
     scheduleToClose: true,
   });
+}
+
+// 154/ADR-002: execution reads the declared runtime through this same config
+// owner. Presence is retained so provenance and malformed values cannot default.
+export const EXECUTION_RUNTIMES = Object.freeze(["claude", "codex"]);
+export const DEFAULT_EXECUTION_RUNTIME = "claude";
+export function resolveLoopRuntime(value) {
+  return value === undefined ? DEFAULT_EXECUTION_RUNTIME : EXECUTION_RUNTIMES.includes(value) ? value : null;
+}
+export function loopRuntimeSettingFromConfig(workspace) {
+  const loop = loopConfig(workspace);
+  return { present: Object.prototype.hasOwnProperty.call(loop ?? {}, "runtime"), value: loop?.runtime };
+}
+export function loopRuntimeFromConfig(workspace) {
+  return resolveLoopRuntime(loopRuntimeSettingFromConfig(workspace).value);
 }

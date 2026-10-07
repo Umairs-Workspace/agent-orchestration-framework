@@ -1,5 +1,7 @@
 import { adapterTests } from "../test/bundle/adapters.test.mjs";
 import { runtimeSessionTests } from "../packages/execution/test/runtime-session.suite.mjs";
+import { runtimeSelectionTests } from "../packages/execution/test/runtime-selection.suite.mjs";
+import { archTests as runtimeChoiceOwnerTests } from "../test/arch/session/acd-runtime-choice-owner.test.mjs";
 import { archTests as runtimeSessionBoundaryTests } from "../test/arch/session/acd-runtime-session-boundary.test.mjs";
 import { opencodeHookTests } from "../packages/core/test/opencode-hooks.suite.mjs";
 import { catalogTests } from "../packages/core/test/catalog.suite.mjs";
@@ -114,6 +116,8 @@ import { loopProofTests } from "../test/work/roundtrip-loop-proof.test.mjs";
 
 const tests = [
   ...runtimeSessionTests,
+  ...runtimeSelectionTests,
+  ...runtimeChoiceOwnerTests,
   ...runtimeSessionBoundaryTests,
   ...adapterWarningTests,
   ...packageTests,

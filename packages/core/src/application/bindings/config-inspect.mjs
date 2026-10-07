@@ -27,6 +27,8 @@ import {
 } from "../../model.mjs";
 import { readDescriptor, agentModelMap, AGENT_MODEL_MAP_PATH, AGENT_EFFORT_MAP_PATH } from "../../work/bundle.mjs";
 import { EFFORT_SPELLINGS, normalizeEffort } from "@aof/execution/session-model";
+import { inspectExecution, validateRuntimeSettings } from "@aof/execution/runtime-selection";
+import { readDelegation, readDelegationModel } from "../../work/delegation.mjs";
 import { resolveManagedBinary, toolDescriptors } from "../../tool-store.mjs";
 import { delimiter } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -77,15 +79,29 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     const diagnostics = await validateConfig(projectDir, options);
     let config = null;
     let adapterWarnings = [];
+    let executionConfig = null;
+    let assetRuntimes = [];
 
     if (!diagnostics.some((item) => item.severity === "error")) {
       config = await loadProjectConfig(configPath, options);
+      // Asset normalization intentionally drops the work subtree. Execution uses
+      // the validated source configuration, and installation uses its own lock.
+      executionConfig = await readJsonWithDiagnostic(configPath);
+      try {
+        const lock = await readLock(paths.lockPath);
+        assetRuntimes = [...new Set([...(Array.isArray(lock?.runtimes) ? lock.runtimes : []), ...(Array.isArray(lock?.work?.runtimes) ? lock.work.runtimes : [])])];
+      } catch {
+        diagnostics.push({ severity: "error", code: "invalid-install-lock", path: paths.lockPath, message: "Installed runtime metadata could not be read." });
+      }
       adapterWarnings = collectAdapterWarnings(config, {
         targetDir: projectDir,
         runtimes: options.runtimes ?? supportedRuntimes(),
         global: Boolean(options.global)
       });
     }
+
+    const executionInspection = executionConfig ? inspectExecution(executionConfig, { ...options, roles: [...acdRoleSet()] }) : null;
+    if (executionInspection) diagnostics.push(...executionInspection.diagnostics.map(value => ({ severity: "error", ...value })));
 
     return {
       configPath,
@@ -112,7 +128,11 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       projectDocs: config?.projectDocs?.map((doc) => ({ id: doc.id, targets: doc.targets, runtimes: doc.runtimes })) ?? [],
       settings: config?.settings ?? {},
       diagnostics,
-      adapterWarnings
+      adapterWarnings,
+      execution: executionInspection?.execution ?? null,
+      executionByRuntime: executionConfig ? Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(executionConfig, { ...options, runtime, roles: [...acdRoleSet()] })])) : {},
+      assetRuntimes,
+      delegation: executionConfig ? { enabled: readDelegation(executionConfig), model: readDelegationModel(executionConfig) } : null,
     };
   }
 
@@ -1213,6 +1233,8 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       return;
     }
     validateWorkAgents(work.agents, diagnostics);
+    try { validateRuntimeSettings({ work }, { roles: [...acdRoleSet()] }); }
+    catch (error) { diagnostics.push({ ...diagnostic("error", error.path, error.message, error.code), source: error.source }); }
     validateWorkPlan(work.plan, diagnostics);
     validateWorkExamples(work.examples, diagnostics);
     validateWorkDiagrams(work.diagrams, diagnostics);

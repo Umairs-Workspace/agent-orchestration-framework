@@ -103,6 +103,7 @@ export const yarnInstallationTests = [
         'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
         'pty.mjs': ['node:module', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
+        'runtime-selection.mjs': ['@aof/contracts/loop-bounds'],
         // 154/ADR-001: the session adapter owns native availability and bounded ANSI decoding.
         'runtime-session.mjs': ['node:fs/promises', 'node:path', 'node:util'],
         'screen.mjs': ['@xterm/headless'],

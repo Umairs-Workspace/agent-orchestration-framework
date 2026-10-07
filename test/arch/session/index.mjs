@@ -12,6 +12,7 @@
 // milestone 53 / story 05 — architectural fitness functions (FF-5301…FF-5311).
 import { archTests as acdSessionDriverMeshBlindTests } from "./acd-session-driver-mesh-blind.test.mjs";
 import { archTests as runtimeSessionBoundaryTests } from "./acd-runtime-session-boundary.test.mjs";
+import { archTests as runtimeChoiceOwnerTests } from "./acd-runtime-choice-owner.test.mjs";
 import { archTests as acdSessionDriverSingleHomeTests } from "./acd-session-driver-single-home.test.mjs";
 import { archTests as acdRawCaptureBeforeClassificationTests } from "./acd-raw-capture-before-classification.test.mjs";
 import { archTests as acdSessionVerbBootsNoRegistryTests } from "./acd-session-verb-boots-no-registry.test.mjs";
@@ -174,6 +175,7 @@ import { archTests as acdAttributionIsCapturedOrAbsentTests } from "./acd-attrib
 
 export const tests = [
   ...runtimeSessionBoundaryTests,
+  ...runtimeChoiceOwnerTests,
   // milestone 53 / story 05 — architectural fitness functions (FF-5301…FF-5311)
   ...acdSessionDriverMeshBlindTests,
   ...acdSessionDriverSingleHomeTests,

@@ -285,7 +285,11 @@ export const archTests = [
         // Plan 01 moves only the strict freshness predicate to contracts; the store returns the same function.
         // 142/06 exports the existing pure retry predicates by identity for framework module ceilings.
         // Their bodies and the run writer are unchanged; the public factory returns those same functions.
-        ["packages/execution/src/runs.mjs", "812a7624917cdc50fa7aeec3a0dd1985d99486956d170cdcb8c1b53eb98685e1"],
+        // RE-PINNED by 154/01 (ADR-002): an opt-in execution envelope is validated before mint,
+        // preserved on read, and pinned on retry. Absence retains the seventeen-key legacy
+        // record and original native identity; actual-store scenarios prove that shape and
+        // refused retries preserve prior bytes. No state edge, board reader or UI file changed.
+        ["packages/execution/src/runs.mjs", "6279ee8c445dddbdd7e61e8b25d22e8390f033e392e66d97db2e02aa995b9e18"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that
