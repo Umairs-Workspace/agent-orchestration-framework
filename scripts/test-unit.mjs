@@ -11,6 +11,8 @@ import { pathTests } from "../packages/core/test/paths.suite.mjs";
 import { promptTests } from "../packages/core/test/prompt.suite.mjs";
 import { modelTests } from "../packages/core/test/model.suite.mjs";
 import { codexNativeAssetTests } from "../packages/core/test/codex-native-assets.suite.mjs";
+import { codexOwnershipTests } from "../packages/core/test/codex-ownership.suite.mjs";
+import { archTests as codexOutputOwnershipTests } from "../test/arch/store/acd-codex-output-ownership.test.mjs";
 import { assetReferenceTests } from "../packages/core/test/asset-references.suite.mjs";
 import { workspaceTests } from "../packages/core/test/workspace.suite.mjs";
 import { renderPlanTests } from "../packages/core/test/render-plan.suite.mjs";
@@ -220,6 +222,8 @@ const tests = [
   ...schemaTests,
   ...modelTests,
   ...codexNativeAssetTests,
+  ...codexOwnershipTests,
+  ...codexOutputOwnershipTests,
   ...assetReferenceTests,
   ...workspaceTests,
   ...pathTests,

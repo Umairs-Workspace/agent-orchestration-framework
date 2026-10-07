@@ -383,16 +383,16 @@ Feature: AOF CLI lifecycle
 
   Scenario: Protect drifted generated files unless forced
     Given a project with .aof file-backed config
-    When I run `assets apply --codex`
+    When I run `assets apply --claude`
     Then the command should succeed
-    When I replace file `.agents/skills/file-backed/SKILL.md` with `Manual edit`
-    And I run `assets apply --codex`
+    When I replace file `.claude/skills/file-backed/SKILL.md` with `Manual edit`
+    And I run `assets apply --claude`
     Then the command should succeed
     And stdout should contain `drift-warning`
-    And file `.agents/skills/file-backed/SKILL.md` should contain `Manual edit`
-    When I run `assets apply --codex --force`
+    And file `.claude/skills/file-backed/SKILL.md` should contain `Manual edit`
+    When I run `assets apply --claude --force`
     Then the command should succeed
-    And file `.agents/skills/file-backed/SKILL.md` should contain `File-backed body`
+    And file `.claude/skills/file-backed/SKILL.md` should contain `File-backed body`
 
   Scenario: Prune stale owned generated files
     Given a project with .aof file-backed config

@@ -462,7 +462,7 @@ async function rendersExpandedDslRuntimeOutputs() {
       ],
       settings: {
         claude: { permissions: { allow: ["Bash(npm test)"] } },
-        codex: { model: "gpt-5.4", approval_policy: "on-request" }
+        codex: { model: "gpt-5.4" }
       }
     });
 
@@ -495,11 +495,9 @@ async function rendersExpandedDslRuntimeOutputs() {
     assert.match(claudeMcp, /"type": "http"/);
     assert.match(codexConfig, /\[mcp_servers\.docs\]/);
     assert.doesNotMatch(codexConfig, /\[\[hooks\.PostToolUse\]\]/);
-    assert.equal(codexHooks.hooks.PostToolUse[0].matcher, "Write");
-    assert.deepEqual(codexHooks.hooks.PostToolUse[0].hooks, [
-      { type: "command", command: "npm test" }
-    ]);
-    assert.match(codexConfig, /approval_policy = "on-request"/);
+    assert.equal(codexHooks.hooks.PostToolUse[0].hooks[0].command, "npm test");
+    assert.doesNotMatch(codexConfig, /approval_policy =/, "154/04: asset application cannot author execution access");
+    assert.match(codexConfig, /model = "gpt-5.4"/);
     assert.match(agents, /Use generated guidance/);
     assert.match(claudeDoc, /Use generated guidance/);
   } finally {

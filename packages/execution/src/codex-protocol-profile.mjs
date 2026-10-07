@@ -1,6 +1,10 @@
 // Version-specific public App Server shapes; lifecycle and policy live elsewhere.
 export const CODEX_PROFILE = Object.freeze({
   name: "codex-app-server-v1", version: 1, supportedVersions: Object.freeze(["0.160.0"]),
+  // Native event names from openai/codex rust-v0.160.0, codex-rs/hooks/src/lib.rs
+  // (HOOK_EVENT_NAMES). A definition still needs native hook review/trust.
+  hookEvents: Object.freeze(["PreToolUse", "PermissionRequest", "PostToolUse", "PreCompact", "PostCompact",
+    "SessionStart", "SessionEnd", "UserPromptSubmit", "SubagentStart", "SubagentStop", "Stop", "Interrupt"]),
   frameBytes: 1024 * 1024, resultBytes: 65536, queuedMessages: 128,
   requestMs: 15000, interruptMs: 1000, closeMs: 1000,
 });

@@ -15,6 +15,7 @@ import { planningInitTests } from "./planning-init.suite.mjs";
 import { identitySidecarPersistTests } from "./identity-sidecar-persist.suite.mjs";
 import { modelTests } from "./model.suite.mjs";
 import { codexNativeAssetTests } from "./codex-native-assets.suite.mjs";
+import { codexOwnershipTests } from "./codex-ownership.suite.mjs";
 import { assetReferenceTests } from "./asset-references.suite.mjs";
 import { toolStorePathResolutionTests } from "./tool-store-path-resolution.suite.mjs";
 import { catalogTests } from "./catalog.suite.mjs";
@@ -55,6 +56,7 @@ export const tests = [
   ...identitySidecarPersistTests,
   ...modelTests,
   ...codexNativeAssetTests,
+  ...codexOwnershipTests,
   ...assetReferenceTests,
   ...toolStorePathResolutionTests,
   ...catalogTests,

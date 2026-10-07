@@ -1,5 +1,4 @@
 import path from "node:path";
-import { writeText } from "@aof/foundation/fs";
 import { hashContent } from "./lock.mjs";
 import { hasUnsupportedCommonHookFields } from "./adapter-warnings.mjs";
 import { createAssetReferenceIndex, expandAssetReferences } from "./asset-references.mjs";
@@ -20,14 +19,17 @@ export function supportedRuntimes() {
 }
 
 export async function applyConfig(config, options = {}) {
-  const outputs = renderConfigOutputs(config, options);
-  const writes = [];
-
-  for (const output of outputs) {
-    writes.push(await writeText(output.absolutePath, output.content, { dryRun: options.dryRun }));
-  }
-
-  return writes;
+  // Resolve lazily because the plan's pure render half imports this module.
+  // Public embedding callers share the CLI's preflight, rather than a second writer.
+  const { createRenderPlan, planApplyActions, executeApplyActions } = await import("./render-plan.mjs");
+  const { readLock } = await import("./lock.mjs");
+  const { codexOwnershipBaseline } = await import("./codex-settings.mjs");
+  const targetDir = path.resolve(options.targetDir ?? process.cwd());
+  const outputs = await createRenderPlan(config, options);
+  const previous = codexOwnershipBaseline(await readLock(path.join(targetDir, ".aof/aof.lock.json")));
+  const actions = await planApplyActions(outputs, previous, options);
+  if (options.dryRun) return actions.map(item => ({ path: item.absolutePath, action: item.action, reason: item.reason }));
+  return executeApplyActions(actions);
 }
 
 export function renderConfigOutputs(config, options = {}) {
