@@ -118,7 +118,7 @@ function memberIds() {
 // `tasks/03_aof-code-review-is-removed.feature`. Removal reaches another repository through
 // `aof work update`: a render whose member left the bundle is classified `delete` against the lock.
 const CLI = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const REVIEW_RENDERS = [".claude/commands/aof/review.md", ".codex/skills/aof-review/SKILL.md", ".opencode/commands/aof/review.md"];
+const REVIEW_RENDERS = [".claude/commands/aof/review.md", ".agents/skills/aof-review/SKILL.md", ".opencode/commands/aof/review.md"];
 const CODE_REVIEW_RENDERS = [
   { path: ".claude/commands/aof/code-review.md", runtime: "claude", resource: { id: "code-review", kind: "command" } },
   { path: ".codex/skills/aof-code-review/SKILL.md", runtime: "codex", resource: { id: "aof-code-review", kind: "skill" } },
@@ -135,7 +135,10 @@ const reviewCommandBundleTests = [
     run: async () => {
       const home = await mkdtemp(path.join(os.tmpdir(), "aof-review-dry-"));
       try {
-        const actions = actionsOf(aofJson(repoRoot, home, "work", "update", "--dry-run"));
+        const installed = path.join(home, "fixture");
+        await mkdir(installed);
+        aofJson(installed, home, "work", "init", "--runtime", "claude,codex,opencode");
+        const actions = actionsOf(aofJson(installed, home, "work", "update", "--dry-run"));
         for (const render of REVIEW_RENDERS) assert.equal(actions.get(render), "skip", `${render} is rendered and current`);
       } finally {
         await rm(home, { recursive: true, force: true });
@@ -437,14 +440,14 @@ export const bundleTests = [
     run: async () => {
       const bundle = loadBundle();
       const paths = renderBundleOutputs(bundle, { runtimes: ["claude", "opencode", "codex"] }).map((o) => String(o.path).replaceAll("\\", "/"));
-      for (const expected of [".claude/commands/aof/add-diagram.md", ".opencode/commands/aof/add-diagram.md", ".codex/skills/aof-add-diagram/SKILL.md"]) {
+      for (const expected of [".claude/commands/aof/add-diagram.md", ".opencode/commands/aof/add-diagram.md", ".agents/skills/aof-add-diagram/SKILL.md"]) {
         assert.ok(paths.includes(expected), `the command renders to ${expected}`);
       }
       assert.equal(String(bundle.resources.find((member) => member.id === "add-diagram")?.argumentHint).replace(/^"|"$/g, ""), "<ref> [ADR-NNN]");
       // The manifest hashes the claude and codex renders (no opencode entry, as for every command);
       // that each hash is current is the manifest guards' claim, not this row's.
       const { entries } = JSON.parse(readFileSync(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
-      for (const expected of [".claude/commands/aof/add-diagram.md", ".codex/skills/aof-add-diagram/SKILL.md"]) {
+      for (const expected of [".claude/commands/aof/add-diagram.md", ".agents/skills/aof-add-diagram/SKILL.md"]) {
         assert.match(String(entries.find((entry) => entry.path === expected)?.hash), /^sha256:[0-9a-f]{64}$/, `manifest.json carries ${expected}'s hash`);
       }
     }

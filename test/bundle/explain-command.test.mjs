@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, installedBundlePath, readBundleProse } from "../support/cli-spawn.mjs";
 // Story 150 — `/aof:explain` says what a work item is for, without writing anything.
 //
 // task 01 (the bundle ships it, read-only) and task 02 (what each answer holds). Task 00, the
@@ -16,10 +17,10 @@ import { fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 const SOURCE = "packages/core/assets/commands/explain.md";
-const COPIES = [".claude/commands/aof/explain.md", ".opencode/commands/aof/explain.md", ".codex/skills/aof-explain/SKILL.md"];
+const COPIES = [".claude/commands/aof/explain.md", ".opencode/commands/aof/explain.md", ".agents/skills/aof-explain/SKILL.md"];
 const WRITE_VERBS = ["aof work run-start", "aof work status", "aof work feedback", "aof work promote", "aof work archive"];
 
-const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
+const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
 
 async function source() {
   const text = await read(SOURCE);
@@ -40,8 +41,8 @@ export const explainCommandTests = [
   {
     name: "150 task 01: the bundle ships /aof:explain in every runtime, in the census, with its argument hint",
     run: async () => {
-      for (const copy of COPIES) assert.ok(existsSync(path.join(repoRoot, copy)), `${copy} is rendered`);
-      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      for (const copy of COPIES) assert.ok(existsSync(installedBundlePath(copy, repoRoot)), `${copy} is rendered`);
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
       assert.equal(dry.status, 0, dry.stderr);
       const actions = new Map(JSON.parse(dry.stdout).actions.map((action) => [action.path, action.action]));
       for (const copy of COPIES) assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);

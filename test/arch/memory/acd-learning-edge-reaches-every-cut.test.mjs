@@ -1,3 +1,4 @@
+import { readBundleProse } from "../../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // FF-12405 — "The learning edge reaches EVERY cut-making command, in a form the shipped CLI
 // actually parses, and the edited bundle source re-renders into all three of its mirrors."
@@ -37,7 +38,7 @@ const listCommands = _aofApplication.listCommands;
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 const slash = (value) => String(value).split("\\").join("/");
-const read = (rel) => readFileSync(path.join(root, rel), "utf8");
+const read = (rel) => readBundleProse(rel, root);
 
 const COMMANDS_DIR = "packages/core/assets/commands";
 const SHATTER = `${COMMANDS_DIR}/shatter.md`;
@@ -415,7 +416,7 @@ export const archTests = [
       const outputs = renderBundleOutputs(bundle, { runtimes });
       const mirrors = [
         ".claude/commands/aof/shatter.md",
-        ".codex/skills/aof-shatter/SKILL.md",
+        ".agents/skills/aof-shatter/SKILL.md",
         ".opencode/commands/aof/shatter.md",
       ];
       const byPath = new Map(outputs.map((output) => [slash(output.path), output]));
@@ -521,7 +522,7 @@ export const archTests = [
       const six = [
         SHATTER,
         ".claude/commands/aof/shatter.md",
-        ".codex/skills/aof-shatter/SKILL.md",
+        ".agents/skills/aof-shatter/SKILL.md",
         ".opencode/commands/aof/shatter.md",
         "packages/core/assets/manifest.json",
         ".aof/aof.lock.json",

@@ -14,6 +14,8 @@ export const RUNTIMES = {
     name: "Codex",
     localRoot: ".codex",
     globalRoot: path.join(os.homedir(), ".codex"),
+    assetRoots: { skill: ".agents", agent: ".codex", rule: "." },
+    globalAssetRoots: { skill: path.join(os.homedir(), ".agents") },
     commandPrefix: "$"
   },
   opencode: {
@@ -132,6 +134,31 @@ export const IDENTITY_FIELDS = new Set(["id", "kind"]);
 
 export function supportedRuntimes() {
   return Object.keys(RUNTIMES);
+}
+
+// Native discovery roots are per asset kind; runtime configuration keeps its own root.
+export function runtimeAssetRoot(runtime, kind, { global = false } = {}) {
+  const adapter = RUNTIMES[runtime];
+  if (!adapter) throw new Error(`Unsupported runtime "${runtime}".`);
+  return global ? adapter.globalAssetRoots?.[kind] ?? adapter.globalRoot
+    : adapter.assetRoots?.[kind] ?? adapter.localRoot;
+}
+
+// Claude aliases are not native Codex model ids. Omission means native inheritance,
+// with the capability gap reported by the warning collector, never an alias translation.
+export function codexAgentModel(model) {
+  return ["opus", "sonnet", "haiku", "inherit"].includes(model) ? undefined : model;
+}
+
+export function codexGuidanceScope(paths = []) {
+  if (!Array.isArray(paths)) return { path: null, unsafe: true, advisory: false };
+  const scopes = paths.map(scope => typeof scope === "string" ? scope.replaceAll("\\", "/").trim() : "");
+  const unsafe = scopes.some(scope => !scope || /[\x00-\x1f\x7f:]/u.test(scope)
+    || scope.startsWith("/") || scope.split("/").includes(".."));
+  if (unsafe) return { path: null, unsafe: true, advisory: false };
+  const advisory = scopes.length > 1 || scopes.some(scope => /[*?[\]{}]/u.test(scope));
+  const directory = !advisory && scopes.length ? path.posix.normalize(scopes[0]) : ".";
+  return { path: path.posix.join(directory, "AGENTS.md"), unsafe: false, advisory };
 }
 
 export function supportedResourceKinds() {

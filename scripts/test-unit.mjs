@@ -10,6 +10,8 @@ import { catalogTests } from "../packages/core/test/catalog.suite.mjs";
 import { pathTests } from "../packages/core/test/paths.suite.mjs";
 import { promptTests } from "../packages/core/test/prompt.suite.mjs";
 import { modelTests } from "../packages/core/test/model.suite.mjs";
+import { codexNativeAssetTests } from "../packages/core/test/codex-native-assets.suite.mjs";
+import { assetReferenceTests } from "../packages/core/test/asset-references.suite.mjs";
 import { workspaceTests } from "../packages/core/test/workspace.suite.mjs";
 import { renderPlanTests } from "../packages/core/test/render-plan.suite.mjs";
 import { configInspectTests } from "../test/command/config-inspect.test.mjs";
@@ -217,6 +219,8 @@ const tests = [
   ...setupUiTests,
   ...schemaTests,
   ...modelTests,
+  ...codexNativeAssetTests,
+  ...assetReferenceTests,
   ...workspaceTests,
   ...pathTests,
   ...promptTests,

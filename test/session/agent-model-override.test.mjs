@@ -284,7 +284,7 @@ export const agentModelOverrideTests = [
     }
   },
   {
-    name: "141/02 the codex and opencode agent renders carry no effort key even for a pinned role",
+    name: "154/03 native Codex agent effort is retained and OpenCode remains unchanged (supersedes 141/02)",
     run: async () => {
       const bundle = loadBundle();
       const config = { work: { agents: { effort: { "aof-architect": "extra-high" } } } };
@@ -293,7 +293,10 @@ export const agentModelOverrideTests = [
         const plain = renderBundleOutputsWithConfig(bundle, {}, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");
         assert.equal(pinned.length, 1, runtime);
         assert.doesNotMatch(pinned[0].content, /^effort:/mu, `${runtime}: no effort line`);
-        assert.equal(pinned[0].content, plain[0].content, `${runtime}: the render is unchanged`);
+        if (runtime === "codex") {
+          assert.match(pinned[0].content, /^model_reasoning_effort = "xhigh"$/m);
+          assert.doesNotMatch(plain[0].content, /^model_reasoning_effort =/m);
+        } else assert.equal(pinned[0].content, plain[0].content, `${runtime}: the render is unchanged`);
       }
     }
   },

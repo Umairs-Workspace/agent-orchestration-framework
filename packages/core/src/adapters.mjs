@@ -3,14 +3,15 @@ import { writeText } from "@aof/foundation/fs";
 import { hashContent } from "./lock.mjs";
 import { hasUnsupportedCommonHookFields } from "./adapter-warnings.mjs";
 import { createAssetReferenceIndex, expandAssetReferences } from "./asset-references.mjs";
-import { RUNTIMES, mergeRuntimeOverride } from "./model.mjs";
+import { RUNTIMES, mergeRuntimeOverride, runtimeAssetRoot, codexGuidanceScope, codexAgentModel } from "./model.mjs";
 import {
   claudeMcpJson,
   codexConfigToml,
   projectDocContent,
   codexHooksJson,
   projectDocOutputPath,
-  targetForProjectDocRuntime
+  targetForProjectDocRuntime,
+  toToml
 } from "./runtime-config.mjs";
 import { opencodePluginFiles } from "./opencode-hooks.mjs";
 
@@ -50,11 +51,13 @@ export function renderConfigOutputs(config, options = {}) {
     for (const resource of config.resources) {
       if (!resource.runtimes.includes(runtime)) continue;
       assertRenderableResource(runtime, resource);
-      outputs.push(...renderedResourceOutputs(targetDir, root, runtime, adapter, mergeRuntimeOverride(resource, runtime), workflowIndex, assetReferenceIndex));
+      const assetRoot = runtimeAssetRoot(runtime, resource.kind, options);
+      outputs.push(...renderedResourceOutputs(targetDir, options.global ? assetRoot : path.join(targetDir, assetRoot), runtime, adapter, mergeRuntimeOverride(resource, runtime), workflowIndex, assetReferenceIndex));
     }
     for (const resource of packageResourcesForRuntime(config.packages ?? [], runtime)) {
       assertRenderableResource(runtime, resource);
-      outputs.push(...renderedResourceOutputs(targetDir, root, runtime, adapter, mergeRuntimeOverride(resource, runtime), workflowIndex, assetReferenceIndex));
+      const assetRoot = runtimeAssetRoot(runtime, resource.kind, options);
+      outputs.push(...renderedResourceOutputs(targetDir, options.global ? assetRoot : path.join(targetDir, assetRoot), runtime, adapter, mergeRuntimeOverride(resource, runtime), workflowIndex, assetReferenceIndex));
     }
   }
 
@@ -221,22 +224,28 @@ function renderedResource(targetDir, root, runtime, adapter, resource, workflowI
     runtime,
     resource: resourceMetadata(resource),
     source: resource,
-    body: contentFor(resource, null, workflowIndex),
+    body: contentFor(resource, runtime === "codex" && resource.kind === "rule" ? runtime : null, workflowIndex, assetReferenceIndex),
     content,
     hash: hashContent(content)
   };
 }
 
 function renderedResourceOutputs(targetDir, root, runtime, adapter, resource, workflowIndex = new Map(), assetReferenceIndex = createAssetReferenceIndex()) {
+  if (runtime === "codex" && resource.kind === "rule" && codexGuidanceScope(resource.paths).unsafe) return [];
   const main = renderedResource(targetDir, root, runtime, adapter, resource, workflowIndex, assetReferenceIndex);
-  if (!supportsAssociatedFiles(resource.kind) || !Array.isArray(resource.associatedFiles) || resource.associatedFiles.length === 0) {
-    return [main];
-  }
-
   const assetDir = associatedFileOutputDir(main.absolutePath, resource);
+  const associated = supportsAssociatedFiles(resource.kind) ? resource.associatedFiles ?? [] : [];
+  const explicit = runtime === "codex" && resource.kind === "skill"
+    && (resource.disableModelInvocation === true || resource._aofMappedFrom?.kind === "command");
+  if (explicit && associated.some(file => associatedFileOutputPath(resource, file.path) === "agents/openai.yaml")) {
+    throw new Error(`Generated invocation policy conflicts with associated agents/openai.yaml for skill:${resource.id}.`);
+  }
   return [
     main,
-    ...resource.associatedFiles.map((file) => renderedAssociatedFile(targetDir, assetDir, runtime, resource, file))
+    ...associated.map((file) => renderedAssociatedFile(targetDir, assetDir, runtime, resource, file)),
+    ...(explicit ? [renderedAssociatedFile(targetDir, assetDir, runtime, resource, {
+      path: "agents/openai.yaml", content: "# aof-generated: true; aof-runtime: codex\npolicy:\n  allow_implicit_invocation: false\n"
+    })] : [])
   ];
 }
 
@@ -302,7 +311,7 @@ function expandFilePlaceholders(content, resource, runtime) {
 
 function filePlaceholderReplacements(resource, runtime) {
   const adapter = RUNTIMES[runtime];
-  const root = adapter?.localRoot?.replaceAll("\\", "/");
+  const root = adapter ? runtimeAssetRoot(runtime, resource.kind).replaceAll("\\", "/") : null;
   const replacements = new Map();
   if (!root || !Array.isArray(resource.associatedFiles)) return replacements;
 
@@ -310,7 +319,7 @@ function filePlaceholderReplacements(resource, runtime) {
     const sourcePath = String(file.path).replaceAll("\\", "/");
     const placeholderPath = sourcePath.startsWith("files/") ? sourcePath.slice("files/".length) : sourcePath;
     const outputPath = associatedFileOutputPath(resource, sourcePath).replaceAll("\\", "/");
-    const runtimePath = resource.kind === "command"
+    const runtimePath = runtime === "codex" ? outputPath : resource.kind === "command"
       ? `${root}/commands/${outputPath}`
       : `${root}/skills/${resource.id}/${outputPath}`;
     replacements.set(placeholderPath, runtimePath);
@@ -394,7 +403,7 @@ function resourcePath(runtime, resource) {
     return path.join("commands", resource.commandNamespace, `${resource.id}.md`);
   }
   if (resource.kind === "command") return path.join("commands", `${resource.id}.md`);
-  if (resource.kind === "agent") return path.join("agents", `${resource.id}.md`);
+  if (resource.kind === "agent") return path.join("agents", `${resource.id}.${runtime === "codex" ? "toml" : "md"}`);
   if (resource.kind === "rule" && (runtime === "claude" || runtime === "opencode")) return path.join("rules", `${resource.id}.md`);
   if (resource.kind === "rule" && runtime === "codex") return codexRulePath(resource);
   throw new Error(`Cannot render resource kind "${resource.kind}".`);
@@ -404,8 +413,8 @@ function renderResource(runtime, adapter, resource, workflowIndex = new Map(), a
   if (resource.kind === "skill") {
     if (runtime === "codex") {
       return renderCodexMarkdownResource([
-        `name: ${resource.name ?? resource.id}`,
-        `description: ${resource.description ?? ""}`
+        `name: ${JSON.stringify(resource.name ?? resource.id)}`,
+        `description: ${JSON.stringify(resource.description ?? "")}`
       ], contentFor(resource, runtime, workflowIndex, assetReferenceIndex));
     }
 
@@ -462,10 +471,13 @@ function renderResource(runtime, adapter, resource, workflowIndex = new Map(), a
   }
 
   if (runtime === "codex") {
-    return renderCodexMarkdownResource([
-      `name: ${resource.name ?? resource.id}`,
-      `description: ${resource.description ?? ""}`
-    ], contentFor(resource, runtime, workflowIndex, assetReferenceIndex));
+    return "# aof-generated: true; aof-runtime: codex\n" + toToml({
+      name: resource.name ?? resource.id,
+      description: resource.description ?? "",
+      developer_instructions: contentFor(resource, runtime, workflowIndex, assetReferenceIndex).trim(),
+      ...(codexAgentModel(resource.model) ? { model: resource.model } : {}),
+      ...(resource.effort ? { model_reasoning_effort: resource.effort } : {})
+    });
   }
 
   if (runtime === "opencode") {
@@ -594,6 +606,7 @@ function renderRule(runtime, resource, workflowIndex = new Map(), assetReference
       "",
       resource.description ? `> ${resource.description}` : null,
       Array.isArray(resource.paths) && resource.paths.length > 0 ? `Applies to: ${resource.paths.join(", ")}` : null,
+      codexGuidanceScope(resource.paths).advisory ? "Advisory condition only: apply this guidance when the listed paths match. Codex does not enforce these path selectors." : null,
       "",
       contentFor(resource, runtime, workflowIndex, assetReferenceIndex).trim(),
       ""
@@ -667,9 +680,5 @@ function mergedWorkflowArguments(workflow, resource) {
 }
 
 function codexRulePath(resource) {
-  if (Array.isArray(resource.paths) && resource.paths.length === 1 && !/[*?[\]{}]/.test(resource.paths[0])) {
-    return path.join(resource.paths[0], "AGENTS.md");
-  }
-
-  return "AGENTS.md";
+  return codexGuidanceScope(resource.paths).path;
 }

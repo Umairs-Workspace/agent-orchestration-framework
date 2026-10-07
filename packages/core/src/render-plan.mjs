@@ -4,6 +4,7 @@ import { writeText } from "@aof/foundation/fs";
 import { hashContent, hashFileIfExists, LOCK_VERSION } from "./lock.mjs";
 import { renderConfigOutputs } from "./adapters.mjs";
 import { resolvedPackageEntry } from "./packages.mjs";
+import { codexGuidanceScope } from "./model.mjs";
 
 export async function createRenderPlan(config, options = {}) {
   const outputs = renderConfigOutputs(config, options);
@@ -223,6 +224,7 @@ function mergeCodexAgents(group) {
       "",
       output.source.description ? `> ${output.source.description}` : null,
       Array.isArray(output.source.paths) && output.source.paths.length > 0 ? `Applies to: ${output.source.paths.join(", ")}` : null,
+      codexGuidanceScope(output.source.paths).advisory ? "Advisory condition only: apply this guidance when the listed paths match. Codex does not enforce these path selectors." : null,
       "",
       output.body.trim(),
       ""

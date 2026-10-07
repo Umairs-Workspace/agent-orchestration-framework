@@ -155,7 +155,7 @@ export const graphRenderedFacesTests = [
         await applyConfig(config, { targetDir, runtimes: FACE_RUNTIMES });
 
         for (const runtime of FACE_RUNTIMES) {
-          const filePath = path.join(targetDir, `.${runtime}`, "skills", GRAPHIFY_SKILL_ID, "SKILL.md");
+          const filePath = path.join(targetDir, runtime === "codex" ? ".agents" : `.${runtime}`, "skills", GRAPHIFY_SKILL_ID, "SKILL.md");
           const body = await readFile(filePath, "utf8");
           assert.match(body, /aof-generated: true/, `${runtime}: rendered skill carries the aof stamp`);
           assert.match(body, /aof graph build/, `${runtime}: rendered skill names aof graph build`);

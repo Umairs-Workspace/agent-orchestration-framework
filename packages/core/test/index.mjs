@@ -14,6 +14,8 @@ import { headroomStoreFirstTests } from "./headroom-store-first.suite.mjs";
 import { planningInitTests } from "./planning-init.suite.mjs";
 import { identitySidecarPersistTests } from "./identity-sidecar-persist.suite.mjs";
 import { modelTests } from "./model.suite.mjs";
+import { codexNativeAssetTests } from "./codex-native-assets.suite.mjs";
+import { assetReferenceTests } from "./asset-references.suite.mjs";
 import { toolStorePathResolutionTests } from "./tool-store-path-resolution.suite.mjs";
 import { catalogTests } from "./catalog.suite.mjs";
 import { frameworkTests } from "./frameworks.suite.mjs";
@@ -52,6 +54,8 @@ export const tests = [
   ...planningInitTests,
   ...identitySidecarPersistTests,
   ...modelTests,
+  ...codexNativeAssetTests,
+  ...assetReferenceTests,
   ...toolStorePathResolutionTests,
   ...catalogTests,
   ...frameworkTests,

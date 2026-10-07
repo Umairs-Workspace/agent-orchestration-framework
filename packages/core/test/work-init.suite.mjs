@@ -458,20 +458,20 @@ export const workInitTests = [
       try {
         const result = await initWork({ targetDir: repo, runtimes: ["codex"] });
         // agent members appear under .codex
-        assert.ok(existsSync(p(repo, ".codex", "agents", "aof-architect.md")), "codex agent rendered");
-        const codexArchitect = await readFile(p(repo, ".codex", "agents", "aof-architect.md"), "utf8");
-        assert.match(codexArchitect, /^name: aof-architect$/m, "codex agent keeps codex-readable name metadata");
-        assert.match(codexArchitect, /^description: /m, "codex agent keeps codex-readable description metadata");
-        assert.doesNotMatch(codexArchitect, /^model:/m, "codex agent frontmatter omits Claude model aliases");
-        assert.doesNotMatch(codexArchitect, /^tools:/m, "codex agent frontmatter omits Claude tool allow-lists");
+        assert.ok(existsSync(p(repo, ".codex", "agents", "aof-architect.toml")), "codex agent rendered");
+        const codexArchitect = await readFile(p(repo, ".codex", "agents", "aof-architect.toml"), "utf8");
+        assert.match(codexArchitect, /^name = "aof-architect"$/m, "codex agent keeps codex-readable name metadata");
+        assert.match(codexArchitect, /^description = /m, "codex agent keeps codex-readable description metadata");
+        assert.doesNotMatch(codexArchitect, /^model =/m, "codex agent inherits its model instead of translating Claude aliases");
+        assert.doesNotMatch(codexArchitect, /^tools =/m, "codex agent omits Claude tool allow-lists");
         assert.doesNotMatch(codexArchitect, /^aof-generated:/m, "codex agent frontmatter omits AOF-only metadata");
         assert.doesNotMatch(codexArchitect, /^aof-runtime:/m, "codex agent frontmatter omits AOF-only metadata");
-        assert.match(codexArchitect, /<!-- aof-generated: true; aof-runtime: codex -->/, "codex agent carries AOF metadata as a markdown comment");
+        assert.match(codexArchitect, /^# aof-generated: true; aof-runtime: codex/m, "codex agent carries AOF metadata as a TOML comment");
         assert.deepEqual(result.notInstallable, [], "codex ACD command procedures are installable via mapped skills");
-        const refineSkill = p(repo, ".codex", "skills", "aof-refine", "SKILL.md");
+        const refineSkill = p(repo, ".agents", "skills", "aof-refine", "SKILL.md");
         assert.ok(existsSync(refineSkill), "refine command procedure rendered as a codex skill");
         const content = await readFile(refineSkill, "utf8");
-        assert.match(content, /^name: aof-refine$/m, "codex skill has a stable skill name");
+        assert.match(content, /^name: "aof-refine"$/m, "codex skill has a stable skill name");
         // DERIVED FROM THE BUNDLE, never a copy of it. This assertion used to freeze the
         // rendered sentence verbatim, under a comment asserting that `[--solo]` had been
         // removed from refine.md. It had not: the flag is in the bundle's own
@@ -522,7 +522,7 @@ export const workInitTests = [
       try {
         await initWork({ targetDir: repo, runtimes: ["claude", "codex"] });
         assert.ok(existsSync(p(repo, ".claude", "agents", "aof-architect.md")), "claude root populated");
-        assert.ok(existsSync(p(repo, ".codex", "agents", "aof-architect.md")), "codex root populated");
+        assert.ok(existsSync(p(repo, ".codex", "agents", "aof-architect.toml")), "codex root populated");
         const work = await readWorkSection(repo);
         assert.ok(work.runtimes.includes("claude") && work.runtimes.includes("codex"), "work.runtimes lists both");
       } finally {
@@ -547,11 +547,11 @@ export const workInitTests = [
           const root = row.runtime === "claude" ? ".claude" : ".codex";
           if (row.outcome === "rendered") {
             const where = row.kind === "agent"
-              ? p(repo, root, "agents", `${row.id}.md`)
+              ? p(repo, root, "agents", `${row.id}.${row.runtime === "codex" ? "toml" : "md"}`)
               : p(repo, root, "commands", "aof", `${row.id}.md`);
             assert.ok(existsSync(where), `(${row.runtime},${row.kind}) rendered at ${where}`);
           } else {
-            const skill = p(repo, root, "skills", `aof-${row.id}`, "SKILL.md");
+            const skill = p(repo, row.runtime === "codex" ? ".agents" : root, "skills", `aof-${row.id}`, "SKILL.md");
             assert.ok(existsSync(skill), `(${row.runtime},${row.kind}) rendered as mapped skill`);
             assert.ok(
               !result.notInstallable.some((n) => n.kind === row.kind && n.runtime === row.runtime),

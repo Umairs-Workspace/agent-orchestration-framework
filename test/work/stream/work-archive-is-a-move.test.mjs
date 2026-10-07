@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, installedBundlePath } from "../../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import * as _aofPublic_aof_work_identity from "@aof/work/identity";
@@ -586,7 +587,7 @@ export const workArchiveIsAMoveTests = [
       assert.doesNotMatch(face, /insert-shared\.mjs/, "the face carries no import of insert-shared.mjs");
       assert.match(face, /const ARCHIVE_FLAGS/, "the flags are declared in the module");
 
-      const read = (file) => readFile(path.join(repoRoot, ...file.split("/")), "utf8");
+      const read = (file) => readFile(installedBundlePath(file, repoRoot), "utf8");
       const contract = await read("test/command/command-core-contract.test.mjs");
       assert.match(contract, /"work:archive",/, "WORK_IDS names work:archive");
       const bijection = await read("test/arch/work/acd-work-command-cli-bijection.test.mjs");
@@ -1100,20 +1101,20 @@ export const workArchiveIsAMoveTests = [
       assert.ok(member, "bundle.json declares the member archive");
       assert.equal(member.file, "commands/archive.md");
       assert.equal(member.commandNamespace, "aof");
-      const dry = parse(runCli(repoRoot, ["work", "update", "--dry-run", "--json"], { home: await mkdtemp(path.join(os.tmpdir(), "aof-127-update-")) }));
-      const rendered = [".claude/commands/aof/archive.md", ".codex/skills/aof-archive/SKILL.md", ".opencode/commands/aof/archive.md"];
+      const dry = parse(runCli(bundleFixtureRoot(repoRoot), ["work", "update", "--dry-run", "--json"], { home: await mkdtemp(path.join(os.tmpdir(), "aof-127-update-")) }));
+      const rendered = [".claude/commands/aof/archive.md", ".agents/skills/aof-archive/SKILL.md", ".opencode/commands/aof/archive.md"];
       for (const file of rendered) {
-        assert.ok(existsSync(path.join(repoRoot, ...file.split("/"))), `${file} exists`);
+        assert.ok(existsSync(installedBundlePath(file, repoRoot)), `${file} exists`);
         const action = dry.actions.find((entry) => slash(entry.path) === file);
         assert.equal(action?.action, "skip", `${file} is current — the dry run reports nothing to write`);
       }
       const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
-      const lock = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.lock.json"), "utf8"));
+      const lock = JSON.parse(await readFile(path.join(bundleFixtureRoot(repoRoot), ".aof", "aof.lock.json"), "utf8"));
       const manifestEntries = manifest.entries.filter((entry) => rendered.includes(slash(entry.path)));
       const lockEntries = (lock.work?.files ?? []).filter((entry) => rendered.includes(slash(entry.path)));
       // The shipped manifest is generated for the claude and codex renders (the promote precedent
       // carries the same two); the lock carries all three the project renders.
-      assert.deepEqual(manifestEntries.map((entry) => slash(entry.path)).sort(), rendered.filter((file) => !file.startsWith(".opencode/")), "the manifest carries the claude + codex renders");
+      assert.deepEqual(manifestEntries.map((entry) => slash(entry.path)).sort(), rendered.filter((file) => !file.startsWith(".opencode/")).sort(), "the manifest carries the claude + codex renders");
       assert.equal(lockEntries.length, 3, "the lock carries the three renders");
       for (const entry of manifestEntries) {
         const inLock = lockEntries.find((candidate) => slash(candidate.path) === slash(entry.path));
@@ -1148,8 +1149,8 @@ export const workArchiveIsAMoveTests = [
       const output = verify.slice(verify.indexOf("<output>"), verify.indexOf("</output>"));
       assert.ok(output.includes(line), "the line sits inside <output>");
       assert.equal((verify.match(/aof work archive/g) ?? []).length, 1, "verify.md names the verb exactly once");
-      for (const rendered of [".claude/commands/aof/verify.md", ".codex/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"]) {
-        assert.ok((await readFile(path.join(repoRoot, ...rendered.split("/")), "utf8")).includes(line), `${rendered} carries the line`);
+      for (const rendered of [".claude/commands/aof/verify.md", ".agents/skills/aof-verify/SKILL.md", ".opencode/commands/aof/verify.md"]) {
+        assert.ok((await readFile(installedBundlePath(rendered, repoRoot), "utf8")).includes(line), `${rendered} carries the line`);
       }
       const dir = path.join(repoRoot, "packages", "core", "assets", "commands");
       const matches = [];

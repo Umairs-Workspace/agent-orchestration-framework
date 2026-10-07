@@ -174,9 +174,12 @@ async function rendersManifestAndLockAgree() {
     "the shipped manifest is the regenerated one",
   );
   const home = await mkdtemp(path.join(os.tmpdir(), "aof-141-home-"));
+  const installed = path.join(home, "fixture");
+  await mkdir(installed);
+  await _aofApplication.assets.work.init.initWork({ targetDir: installed, runtimes: ["claude", "codex", "opencode"] });
   try {
     const dry = spawnCliSync(process.execPath, [path.join(REPO_ROOT, "packages", "core", "bin", "aof.mjs"), "work", "update", "--dry-run", "--json"], {
-      cwd: REPO_ROOT,
+      cwd: installed,
       encoding: "utf8",
       env: { ...process.env, AOF_GLOBAL_HOME: home },
     });
@@ -221,20 +224,20 @@ async function rendersPortableResources() {
     const claudeCommand = await readFile(path.join(targetDir, ".claude", "commands", "prime.md"), "utf8");
     const codexGitignore = await readFile(path.join(targetDir, ".codex", ".gitignore"), "utf8");
     const claudeAgent = await readFile(path.join(targetDir, ".claude", "agents", "reviewer.md"), "utf8");
-    const codexAgent = await readFile(path.join(targetDir, ".codex", "agents", "reviewer.md"), "utf8");
+    const codexAgent = await readFile(path.join(targetDir, ".codex", "agents", "reviewer.toml"), "utf8");
 
     assert.match(claudeCommand, /aof-generated: true/);
     assert.match(claudeCommand, /aof-invocation: \/prime/);
     assert.match(codexGitignore, /!\.gitignore/);
     assert.match(claudeAgent, /^model: opus$/m);
     assert.match(claudeAgent, /^tools: Read, Grep$/m);
-    assert.match(codexAgent, /^name: reviewer$/m);
-    assert.match(codexAgent, /^description: Review$/m);
-    assert.doesNotMatch(codexAgent, /^model:/m);
+    assert.match(codexAgent, /^name = "reviewer"$/m);
+    assert.match(codexAgent, /^description = "Review"$/m);
+    assert.doesNotMatch(codexAgent, /^model =/m);
     assert.doesNotMatch(codexAgent, /^tools:/m);
     assert.doesNotMatch(codexAgent, /^aof-generated:/m);
     assert.doesNotMatch(codexAgent, /^aof-runtime:/m);
-    assert.match(codexAgent, /<!-- aof-generated: true; aof-runtime: codex -->/);
+    assert.match(codexAgent, /^# aof-generated: true; aof-runtime: codex/m);
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -325,10 +328,10 @@ async function rendersRuleGuidance() {
     });
 
     const writes = await applyConfig(config, { targetDir });
-    assert.equal(writes.length, 4);
+    assert.equal(writes.length, 3);
 
     const claudeRule = await readFile(path.join(targetDir, ".claude", "rules", "project-rules.md"), "utf8");
-    const codexAgents = await readFile(path.join(targetDir, ".codex", "src", "AGENTS.md"), "utf8");
+    const codexAgents = await readFile(path.join(targetDir, "src", "AGENTS.md"), "utf8");
 
     assert.match(claudeRule, /paths: src/);
     assert.match(claudeRule, /Use scoped patterns/);
@@ -357,7 +360,7 @@ async function appliesRuntimeOverrideBodies() {
     });
 
     await applyConfig(config, { targetDir, runtimes: ["codex"] });
-    const codexSkill = await readFile(path.join(targetDir, ".codex", "skills", "context", "SKILL.md"), "utf8");
+    const codexSkill = await readFile(path.join(targetDir, ".agents", "skills", "context", "SKILL.md"), "utf8");
 
     assert.match(codexSkill, /Codex body/);
     assert.doesNotMatch(codexSkill, /Shared body/);
@@ -404,7 +407,7 @@ async function appliesRuntimeOverridesAcrossKinds() {
     assert.match(await readFile(path.join(targetDir, ".claude", "skills", "context", "SKILL.md"), "utf8"), /Claude skill/);
     assert.match(await readFile(path.join(targetDir, ".claude", "commands", "prime.md"), "utf8"), /Claude command/);
     assert.match(await readFile(path.join(targetDir, ".claude", "agents", "reviewer.md"), "utf8"), /model: sonnet/);
-    assert.match(await readFile(path.join(targetDir, ".codex", "src", "AGENTS.md"), "utf8"), /Codex rule/);
+    assert.match(await readFile(path.join(targetDir, "src", "AGENTS.md"), "utf8"), /Codex rule/);
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -421,9 +424,9 @@ async function respectsResourceRuntimeFilters() {
     });
 
     const writes = await applyConfig(config, { targetDir });
-    assert.equal(writes.length, 2);
-    assert.equal(path.relative(targetDir, writes[0].path), path.join(".codex", "skills", "codex-only", "SKILL.md"));
-    assert.equal(path.relative(targetDir, writes[1].path), path.join(".codex", ".gitignore"));
+    assert.equal(writes.length, 1);
+    assert.equal(path.relative(targetDir, writes[0].path), path.join(".agents", "skills", "codex-only", "SKILL.md"));
+    assert.ok(!existsSync(path.join(targetDir, ".codex", "skills")));
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -572,7 +575,7 @@ async function rendersWorkflowBackedWrapperDefaults() {
     assert.equal(writes.length, 6);
 
     const claudeCommand = await readFile(path.join(targetDir, ".claude", "commands", "audit.md"), "utf8");
-    const codexSkill = await readFile(path.join(targetDir, ".codex", "skills", "audit", "SKILL.md"), "utf8");
+    const codexSkill = await readFile(path.join(targetDir, ".agents", "skills", "audit", "SKILL.md"), "utf8");
     assert.match(claudeCommand, /\.claude\/aof\/workflows\/audit\.md/);
     assert.match(claudeCommand, /Argument hint: `<milestone>`/);
     assert.match(claudeCommand, /`milestone` \(required\): Claude milestone id/);
@@ -617,14 +620,14 @@ async function rendersAssetReferencePlaceholders() {
     await applyConfig(config, { targetDir });
 
     const claudeReview = await readFile(path.join(targetDir, ".claude", "skills", "review", "SKILL.md"), "utf8");
-    const codexReview = await readFile(path.join(targetDir, ".codex", "skills", "review", "SKILL.md"), "utf8");
+    const codexReview = await readFile(path.join(targetDir, ".agents", "skills", "review", "SKILL.md"), "utf8");
     const codexWorkflow = await readFile(path.join(targetDir, ".codex", "aof", "workflows", "audit.md"), "utf8");
 
     assert.match(claudeReview, /\.claude\/skills\/ci\/SKILL\.md/);
     assert.match(claudeReview, /\.claude\/aof\/workflows\/audit\.md/);
-    assert.match(codexReview, /\.codex\/skills\/ci\/SKILL\.md/);
+    assert.match(codexReview, /\.agents\/skills\/ci\/SKILL\.md/);
     assert.match(codexReview, /\.codex\/aof\/workflows\/audit\.md/);
-    assert.match(codexWorkflow, /\.codex\/skills\/ci\/SKILL\.md/);
+    assert.match(codexWorkflow, /\.agents\/skills\/ci\/SKILL\.md/);
     assert.doesNotMatch(codexReview, /\{\{/);
   } finally {
     await rm(targetDir, { recursive: true, force: true });

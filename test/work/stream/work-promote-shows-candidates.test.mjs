@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, installedBundlePath } from "../../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // Traceability wiring for story 152 — "Promote shows what to promote next".
@@ -551,11 +552,11 @@ export const workPromoteShowsCandidatesTests = [
   {
     name: "work/promote-shows-candidates: 02 the rendered runtime copies match the asset",
     run: async () => {
-      const lock = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.lock.json"), "utf8"));
+      const lock = JSON.parse(await readFile(path.join(bundleFixtureRoot(repoRoot), ".aof", "aof.lock.json"), "utf8"));
       const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
       const { createHash } = await import("node:crypto");
-      for (const copy of [".claude/commands/aof/promote.md", ".opencode/commands/aof/promote.md", ".codex/skills/aof-promote/SKILL.md"]) {
-        const text = await readFile(path.join(repoRoot, ...copy.split("/")), "utf8");
+      for (const copy of [".claude/commands/aof/promote.md", ".opencode/commands/aof/promote.md", ".agents/skills/aof-promote/SKILL.md"]) {
+        const text = await readFile(installedBundlePath(copy, repoRoot), "utf8");
         // OpenCode's command frontmatter has no argument-hint field, so the hint is asserted where a
         // copy renders one: claude's `argument-hint:` line and codex's usage line.
         if (!copy.startsWith(".opencode/")) assert.ok(text.includes("--next-item [at <position P>] | --show-candidates"), `${copy} carries the new argument hint`);

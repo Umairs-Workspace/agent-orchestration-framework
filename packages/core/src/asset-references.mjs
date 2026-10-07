@@ -1,5 +1,5 @@
 import { normalizeId } from "@aof/foundation/fs";
-import { RUNTIMES, supportedRuntimes } from "./model.mjs";
+import { runtimeAssetRoot, supportedRuntimes } from "./model.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./application/default-foundation.mjs";
 
@@ -92,7 +92,7 @@ export function getAssetReference(index, reference) {
 }
 
 export function assetRuntimePath(kind, id, runtime) {
-  const root = RUNTIMES[runtime]?.localRoot?.replaceAll("\\", "/") ?? `.${runtime}`;
+  const root = runtimeAssetRoot(runtime, kind).replaceAll("\\", "/");
   if (kind === "skill") return `${root}/skills/${id}/SKILL.md`;
   if (kind === "workflow") return `${root}/aof/workflows/${id}.md`;
   throw new Error(`Unsupported asset reference kind "${kind}".`);

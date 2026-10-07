@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, installedBundlePath } from "../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // Milestone 53 / story 04 — executable evidence for the autonomous prompt hand-off.
 // The human soak in task 01 is deliberately absent: it is @uat and belongs to verify.
@@ -24,7 +25,7 @@ const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
 const cliPath = fileURLToPath(new URL("../../packages/core/bin/aof.mjs", import.meta.url));
 const promptPath = path.join(repoRoot, "packages", "core", "assets", "commands", "autonomous.md");
 const renderedPath = ".claude/commands/aof/autonomous.md";
-const mappedSkillPath = ".codex/skills/aof-autonomous/SKILL.md";
+const mappedSkillPath = ".agents/skills/aof-autonomous/SKILL.md";
 const autonomousPreStoryHashes = new Map([
   [renderedPath, "sha256:7e54cc8968803780629bb321877a872b6aa40f498e0b4df16547989940c8316b"],
   [mappedSkillPath, "sha256:63ed9dc4565106057cd3ae490461628ca5b910f3263c0f4a4cfa9a4b8e51e0fd"],
@@ -467,8 +468,8 @@ export const autonomousShellOutPromptTests = [
         .filter((item) => item.resource.id === "autonomous" || item.resource.id === "aof-autonomous");
       assert.deepEqual(
         runtimeRenders.map((item) => item.path.replaceAll("\\", "/")).sort(),
-        [...autonomousPreStoryHashes.keys()].sort(),
-        "one authored command produces exactly the named Claude command and mapped Codex skill, with no third render",
+        [...autonomousPreStoryHashes.keys(), ".agents/skills/aof-autonomous/agents/openai.yaml"].sort(),
+        "one authored command produces the two primary renders and the native invocation policy",
       );
       for (const runtimeRender of runtimeRenders) {
         const runtimePath = runtimeRender.path.replaceAll("\\", "/");
@@ -593,7 +594,7 @@ export const autonomousShellOutPromptTests = [
       for (const runtime of ["claude", "codex", "opencode"]) {
         const rendered = renderBundleOutputs(bundle, { runtimes: [runtime] }).find((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
         assert.ok(rendered, `${prompt} renders for ${runtime}`);
-        const onDisk = readFileSync(path.join(repoRoot, rendered.path), "utf8");
+        const onDisk = readFileSync(installedBundlePath(rendered.path, repoRoot), "utf8");
         assert.ok(onDisk.includes("--orchestrated"), `${rendered.path} on disk carries --orchestrated`);
         assert.ok(onDisk.includes(`work.loop.agents.${prompt}.mode`), `${rendered.path} on disk names the key`);
       }
@@ -673,16 +674,16 @@ export const autonomousShellOutPromptTests = [
   {
     name: "140/00 the renders, the manifest and the lock agree with the source",
     run: () => {
-      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
       assert.equal(dry.status, 0, dry.stderr);
       const { summary } = JSON.parse(dry.stdout);
       assert.deepEqual({ created: summary.created, updated: summary.updated, deleted: summary.deleted, drift: summary["drift-warning"] }, { created: 0, updated: 0, deleted: 0, drift: 0 });
       const bundle = loadBundle();
       for (const [prompt, fallback] of [["refine", "solo"], ["continue", "orchestrated"]]) {
-        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`);
+        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`) && entry.resource.artifact !== "associated-file");
         assert.equal(renders.length, 3, `${prompt}: one render per runtime`);
         for (const render of renders) {
-          const onDisk = flattened(readFileSync(path.join(repoRoot, render.path), "utf8"));
+          const onDisk = flattened(readFileSync(installedBundlePath(render.path, repoRoot), "utf8"));
           assert.match(onDisk, new RegExp(`An unset \`work\\.agents\\.mode\` resolves to ${fallback}\\b`, "u"), `${render.path} states the unset default`);
         }
       }
@@ -711,10 +712,10 @@ export const autonomousShellOutPromptTests = [
         "work.agents", "work.agents.mode", "work.dispatch.concurrency",
         "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
       ]);
-      const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => entry.resource.id === "autonomous" || entry.resource.id === "aof-autonomous");
+      const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === "autonomous" || entry.resource.id === "aof-autonomous") && entry.resource.artifact !== "associated-file");
       assert.equal(renders.length, 3, "three rendered files");
       for (const render of renders) {
-        const [onDisk] = loopParagraph(readFileSync(path.join(repoRoot, render.path), "utf8"));
+        const [onDisk] = loopParagraph(readFileSync(installedBundlePath(render.path, repoRoot), "utf8"));
         assert.match(onDisk ?? "", modes, `${render.path} carries the modes' default`);
         assert.match(onDisk ?? "", bound, `${render.path} carries the lane bound's fallback`);
       }
@@ -796,9 +797,9 @@ export const autonomousShellOutPromptTests = [
       const bundle = loadBundle();
       const member = bundle.resources.find((entry) => entry.id === "continue");
       assert.equal(member.argumentHint, '"<item ref, or a NN/MM-PP story span> [--solo | --orchestrated | --manual] [--thinking <level>]"');
-      const renders = [".claude/commands/aof/continue.md", ".codex/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"];
-      for (const render of renders) assert.ok(readFileSync(path.join(repoRoot, render), "utf8").includes("<manual_mode>"), `${render} carries <manual_mode>`);
-      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      const renders = [".claude/commands/aof/continue.md", ".agents/skills/aof-continue/SKILL.md", ".opencode/commands/aof/continue.md"];
+      for (const render of renders) assert.ok(readFileSync(installedBundlePath(render, repoRoot), "utf8").includes("<manual_mode>"), `${render} carries <manual_mode>`);
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
       assert.equal(dry.status, 0, dry.stderr);
       const actions = new Map(JSON.parse(dry.stdout).actions.map((entry) => [entry.path.replaceAll("\\", "/"), entry.action]));
       for (const render of renders) assert.equal(actions.get(render), "skip", `${render} is current`);

@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, readBundleProse } from "../support/cli-spawn.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // Traceability wiring for milestone 134 / story 05 — the discovery beat.
 //
@@ -32,7 +33,7 @@ const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
+const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
 const flat = (text) => text.replace(/\s+/g, " ");
 
 const REFINE = "packages/core/assets/commands/refine.md";
@@ -42,10 +43,10 @@ const QA = "packages/core/assets/agents/aof-qa.md";
 const TEMPLATE = "packages/core/assets/templates/story/EXAMPLES.md";
 const INSTALLED = ".aof/templates/work/story/EXAMPLES.md";
 const GUIDE = "wiki/acceptance-criteria.md";
-const REFINE_COPIES = [".claude/commands/aof/refine.md", ".codex/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"];
-const PO_COPIES = [".claude/agents/aof-product-owner.md", ".codex/agents/aof-product-owner.md", ".opencode/agents/aof-product-owner.md"];
-const QA_COPIES = [".claude/agents/aof-qa.md", ".codex/agents/aof-qa.md", ".opencode/agents/aof-qa.md"];
-const ARCHITECT_COPIES = [".claude/agents/aof-architect.md", ".codex/agents/aof-architect.md", ".opencode/agents/aof-architect.md"];
+const REFINE_COPIES = [".claude/commands/aof/refine.md", ".agents/skills/aof-refine/SKILL.md", ".opencode/commands/aof/refine.md"];
+const PO_COPIES = [".claude/agents/aof-product-owner.md", ".codex/agents/aof-product-owner.toml", ".opencode/agents/aof-product-owner.md"];
+const QA_COPIES = [".claude/agents/aof-qa.md", ".codex/agents/aof-qa.toml", ".opencode/agents/aof-qa.md"];
+const ARCHITECT_COPIES = [".claude/agents/aof-architect.md", ".codex/agents/aof-architect.toml", ".opencode/agents/aof-architect.md"];
 const MAP_LINE = /^\s*(## R|- E|- Q)\d/m;
 
 // ── the slices the rulings name ─────────────────────────────────────────────────────────────────
@@ -125,7 +126,7 @@ const workedTokens = (text) => [...text.matchAll(/`(\d+(?:\/\d+)? [QE][1-9]\d* �
 let dryRun = null;
 function freshRenderActions() {
   if (dryRun) return dryRun;
-  const result = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+  const result = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
   assert.equal(result.status, 0, result.stderr);
   dryRun = new Map(JSON.parse(result.stdout).actions.map((action) => [action.path, action.action]));
   return dryRun;

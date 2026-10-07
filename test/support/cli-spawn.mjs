@@ -20,6 +20,9 @@
 // thread block via Atomics.wait (Node permits this on the main thread); it only happens
 // on the rare transient failure, never on the success path.
 import { spawnSync, spawn } from "node:child_process";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 const MAX_ATTEMPTS = 6;
 
@@ -45,6 +48,48 @@ export function spawnSyncHardened(command, args, options = {}) {
 // Alias: the CLI-spawn call sites (the bulk of the suite) read clearer as `spawnCliSync`.
 // Same function — both names are the one shared hardened spawn.
 export const spawnCliSync = spawnSyncHardened;
+
+const nativeFixtures = new Map();
+const trackedBundlePaths = new Map();
+
+// Fresh native addresses are not adopted by this repository until migration. Tracked
+// copies still read from the checkout, so a stale or missing tracked file cannot hide
+// behind a freshly generated fixture. Untracked native copies exercise actual CLI init.
+export function bundleFixtureRoot(repoRoot) {
+  if (nativeFixtures.has(repoRoot)) return nativeFixtures.get(repoRoot);
+  const parent = path.resolve(os.tmpdir());
+  const fixture = mkdtempSync(path.join(parent, "aof-native-bundle-"));
+  const project = path.join(fixture, "project");
+  mkdirSync(project);
+  const result = spawnCliSync(process.execPath, [path.join(repoRoot, "packages/core/bin/aof.mjs"), "work", "init", "--runtime", "claude,codex,opencode", "--json"], {
+    cwd: project, encoding: "utf8", windowsHide: true,
+    env: { ...process.env, AOF_GLOBAL_HOME: path.join(fixture, "home") }
+  });
+  process.once("exit", () => {
+    if (path.dirname(path.resolve(fixture)) !== parent) throw new Error("Native fixture escaped its temporary parent");
+    rmSync(fixture, { recursive: true, force: true });
+  });
+  if (result.status !== 0) throw new Error(`Native bundle fixture init failed: ${result.stderr || result.stdout}`);
+  nativeFixtures.set(repoRoot, project);
+  return project;
+}
+
+export function installedBundlePath(rel, repoRoot) {
+  rel = rel.replaceAll("\\", "/");
+  if (!trackedBundlePaths.has(repoRoot)) {
+    const result = spawnSyncHardened("git", ["ls-files"], { cwd: repoRoot, encoding: "utf8", windowsHide: true });
+    if (result.status !== 0) throw new Error(`Cannot inspect tracked bundle paths: ${result.stderr}`);
+    trackedBundlePaths.set(repoRoot, new Set(result.stdout.split(/\r?\n/)));
+  }
+  const native = rel.startsWith(".agents/") || /^\.codex\/agents\/.*\.toml$/.test(rel);
+  const root = native && !trackedBundlePaths.get(repoRoot).has(rel) ? bundleFixtureRoot(repoRoot) : repoRoot;
+  return path.join(root, rel);
+}
+
+export function readBundleProse(rel, repoRoot) {
+  const text = readFileSync(installedBundlePath(rel, repoRoot), "utf8");
+  return /^\.codex[\\/]agents[\\/].*\.toml$/.test(rel) ? JSON.parse(/^developer_instructions = (.+)$/m.exec(text)[1]) : text;
+}
 
 // The ASYNC counterpart — a Promise<{ status, signal, stdout, stderr, error }> mirroring
 // spawnSyncHardened's result shape (same never-ran retry). Use this — NOT spawnCliSync —
