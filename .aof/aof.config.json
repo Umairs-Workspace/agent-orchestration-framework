@@ -6,6 +6,7 @@
     "intake": "backlog",
     "agents": {
       "productOwner": "inline",
+      "mode": "solo",
       "session": {
         "effort": {
           "refine": "high",
