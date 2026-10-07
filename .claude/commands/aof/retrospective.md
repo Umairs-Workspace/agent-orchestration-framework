@@ -31,6 +31,9 @@ For each target item (a milestone NN, or a story — the steps are the same, rea
 own folder; a story has no `STATE.md`/`VERIFICATION.md` of its own, so its evidence is its review
 findings, its `## Findings` section and any recorded blocker stop):
 
+Before triage, recall the target's domain with `aof work memory recall "<domain / keywords>" --block`.
+Use existing lessons to deduplicate, never as invented evidence; an empty block is harmless.
+
 1. **Refresh observability (on by default).** Run `aof work observe NN --write --if-enabled` — the
    CLI self-gates on `work.observability.enabled`, which now defaults **ON** (set it to `false` to opt
    out), so it is always safe to call
@@ -63,6 +66,8 @@ findings, its `## Findings` section and any recorded blocker stop):
 5. **Conditional.** If a milestone surfaced nothing worth a lesson, **write no doc** and say so
    (absence is information). Never manufacture entries to fill the page. The `observability/` folder
    (when the opt-in is on) is written regardless — it is a diagnostic, not a lesson doc.
+6. **Index the authored records.** Run `aof work memory ingest` after the target's lesson pass;
+   this is safe when memory is off. Keep the shared Kind / Area / Stage / Owner vocabulary above.
 </process>
 
 <output>

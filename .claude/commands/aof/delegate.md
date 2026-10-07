@@ -7,6 +7,9 @@ aof-runtime: claude
 ---
 
 <objective>
+The primary runtime and optional cross-assistant delegation are separate. Native Claude roles
+remain Claude whether delegation is off or on; Codex primary roles remain Codex. An enabled
+toggle permits only separately requested cross-assistant work. It never switches this session.
 One command for the project's two model decisions: whether the ACD agents may delegate bulk/mechanical
 work to the configured Codex delegation model (via Codex — **default off**, Claude does everything itself),
 and which model the
