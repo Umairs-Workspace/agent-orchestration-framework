@@ -4,7 +4,7 @@ number: 2
 slug: codex-session-protocol
 title: "Codex executes a bounded phase through App Server"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -24,7 +24,7 @@ As an operator, I want a tested Codex session adapter with honest outcomes, so t
 
 - [x] `tasks/00_protocol-and-results.feature` — protocol and results
 - [x] `tasks/01_cancellation-and-requests.feature` — cancellation and requests
-- [ ] `tasks/02_live-profile-proof.feature` — live profile proof
+- [x] `tasks/02_live-profile-proof.feature` — live profile proof
 
 ## Notes
 
@@ -45,3 +45,7 @@ As an operator, I want a tested Codex session adapter with honest outcomes, so t
   overlaps. Dependencies express delivered interfaces, not an assertion that all stories can run together.
 - Examples are proposed from the agreed milestone scope; there are no unanswered business questions.
   Build must implement executable traceability and register each new suite before reporting green.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Protocol/loop cases pass, including the queue-burst negative probe. Actual CLI 0.160.0 proves create/resume, structured question fallback, native token usage and owned-process cancellation. No native question-tool support or monetary cost is inferred. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
