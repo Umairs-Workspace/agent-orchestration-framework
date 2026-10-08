@@ -1,5 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createDispatchLanes } from "@aof/work-loop/dispatch";
+import { isHeartbeatQueuePath } from "@aof/mesh/worktrees";
 
 export function assembleWorkDispatch({ meshWorktreeServices, workServices, degradeServices, meshLauncherLockServices }) {
   // Core composition for work-loop-owned local dispatch.
@@ -19,7 +20,7 @@ export function assembleWorkDispatch({ meshWorktreeServices, workServices, degra
   const { reportDegrade } = degradeServices;
   const { acquireMeshLauncherLock } = meshLauncherLockServices;
 
-  const { DEFAULT_DISPATCH_CONCURRENCY, DEFAULT_LANE_QUIET_MS, cleanupDispatchLane, commitDispatchLane, dispatchConcurrencyFromConfig, dispatchLaneBase, dispatchLaneOccupiesSlot, dispatchReadySet, inspectDispatchLaneAdmission, inspectDispatchLanes, laneChanges, mergeDispatchLaneHome, narrowDispatchBound, overlappingFiles, planDispatchLaneAdmissions, resolveDispatchConcurrency, resolveDispatchLane, resolveRefInWorktree, sweepDispatchLanes, withDispatchLaneAdmissionLock, worktreeWorkDir } = createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock });
+  const { DEFAULT_DISPATCH_CONCURRENCY, DEFAULT_LANE_QUIET_MS, cleanupDispatchLane, commitDispatchLane, dispatchConcurrencyFromConfig, dispatchLaneBase, dispatchLaneOccupiesSlot, dispatchReadySet, inspectDispatchLaneAdmission, inspectDispatchLanes, laneChanges, mergeDispatchLaneHome, narrowDispatchBound, overlappingFiles, planDispatchLaneAdmissions, resolveDispatchConcurrency, resolveDispatchLane, resolveRefInWorktree, sweepDispatchLanes, withDispatchLaneAdmissionLock, worktreeWorkDir } = createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, isHeartbeatQueuePath, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock });
 
   return { DEFAULT_DISPATCH_CONCURRENCY, DEFAULT_LANE_QUIET_MS, cleanupDispatchLane, commitDispatchLane, dispatchConcurrencyFromConfig, dispatchLaneBase, dispatchLaneOccupiesSlot, dispatchReadySet, inspectDispatchLaneAdmission, inspectDispatchLanes, laneChanges, mergeDispatchLaneHome, narrowDispatchBound, overlappingFiles, planDispatchLaneAdmissions, resolveDispatchConcurrency, resolveDispatchLane, resolveRefInWorktree, sweepDispatchLanes, withDispatchLaneAdmissionLock, worktreeWorkDir };
 }

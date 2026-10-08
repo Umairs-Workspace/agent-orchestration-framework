@@ -777,6 +777,45 @@ export const workDispatchLaneTests = [
         assert.equal((await git(["rev-parse", meshItemBranchName("53/00")], root)).stdout.trim(), tip, "…and its line, with every commit, is not");
       }),
   },
+  // A downstream 009 (2026-10-06): a work dir with no 147/03 ignore file, so `git status` lists a
+  // finished session's heartbeat queues. They were counted as uncommitted work, so the loop's own
+  // cleanup and the sweep both kept every merged lane, and the kept trees filled the dispatch bound.
+  ...[
+    ["cleanup", (root) => cleanupDispatchLane(root, "53/00", { removeBranch: false })],
+    ["sweep", (root) => sweepDispatchLanes(root, ["53/00"], { remove: true })],
+  ].map(([door, close]) => ({
+    name: `dispatch/02 a lane holding only heartbeat queues is not dirty, and its ${door} removes it [no work-dir ignore file]`,
+    run: () =>
+      withDispatchRepo(async ({ root }) => {
+        const lane = await resolveDispatchLane(root, "53/00");
+        const queues = ["wiki/work/53_m/runs/.heartbeats.ndjson", "wiki/work/53_m/stories/00_s/runs/.heartbeats.ndjson.batch"];
+        for (const queue of queues) await writeRel(lane.worktree, queue, "{\"runId\":\"r\",\"at\":\"2026-10-06T00:00:00.000Z\"}\n");
+        const listed = (await git(["status", "--porcelain", "--untracked-files=all"], lane.worktree)).stdout.split(/\r?\n/).filter(Boolean);
+        assert.equal(listed.length, queues.length, "git lists the queues: this install does not ignore them");
+
+        const [inspected] = await inspectDispatchLanes(root, ["53/00"]);
+        assert.deepEqual({ changed: inspected.changed, dirty: inspected.dirty }, { changed: [], dirty: false }, "a queue is not the lane's work");
+
+        await close(root);
+        assert.equal(existsSync(lane.worktree), false, `the ${door} removed the tree`);
+        assert.notEqual((await git(["branch", "--list", lane.branch], root)).stdout.trim(), "", "…and kept its line");
+      }),
+  })),
+  {
+    name: "dispatch/02 heartbeat queues beside real unsaved work: the lane is still kept, naming only the work",
+    run: () =>
+      withDispatchRepo(async ({ root }) => {
+        const lane = await resolveDispatchLane(root, "53/00");
+        await writeRel(lane.worktree, "wiki/work/53_m/runs/.heartbeats.ndjson", "{}\n");
+        await writeFile(path.join(lane.worktree, "unsaved.txt"), "bytes no commit points at\n", "utf8");
+
+        const refused = await cleanupDispatchLane(root, "53/00", { removeBranch: false });
+        assert.deepEqual({ code: refused.code, changed: refused.changed }, { code: "dispatch-lane-uncommitted-work", changed: ["unsaved.txt"] });
+        const swept = await sweepDispatchLanes(root, ["53/00"], { remove: true });
+        assert.deepEqual(swept.kept.map((entry) => entry.keptBecause), ["uncommitted-work"]);
+        assert.ok(existsSync(path.join(lane.worktree, "unsaved.txt")), "the unsaved bytes are still there");
+      }),
+  },
 
   // ══════════════════════════════════════════════════════════════════════════
   // Scenario: every lane is individually reportable
