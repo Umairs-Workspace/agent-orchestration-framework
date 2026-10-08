@@ -110,6 +110,36 @@ async function drive(options = {}, brief = BRIEF) {
   return settled;
 }
 
+// conptyShapedSpawn({ onWrite }) — the fixture's scripted PTY dressed in node-pty 1.1.0's Windows
+// conpty shape (`_isReady`, `_close`, `_agent`), so `releaseAfterTreeKill` takes the native path.
+// The native close counts itself and emits the exit a real process exit would; `killed` stays the
+// fixture's own, so a test can tell the two releases apart.
+function conptyShapedSpawn({ onWrite } = {}) {
+  let nativeKills = 0;
+  const { spawn: fakeSpawn, ptys } = createFakePtySpawn({ onWrite });
+  const spawn = async (...args) => {
+    const pty = await fakeSpawn(...args);
+    const exits = [];
+    const onExit = pty.onExit.bind(pty);
+    pty.onExit = (cb) => { exits.push(cb); return onExit(cb); };
+    Object.assign(pty, {
+      _isReady: true,
+      _close() {},
+      _agent: {
+        _useConpty: true,
+        _useConptyDll: false,
+        _pty: 7,
+        _inSocket: {},
+        _outSocket: {},
+        _ptyNative: { kill() { nativeKills += 1; exits.slice().forEach((cb) => cb({ exitCode: 1 })); } },
+        _conoutSocketWorker: { dispose() {} },
+      },
+    });
+    return pty;
+  };
+  return { spawn, ptys, nativeKills: () => nativeKills };
+}
+
 // THE RESUME SHAPE'S ONE ADAPTER. The fixture's scripted PTY emits only from inside
 // `term.write(...)` — deliberately, so a test can script the agent's reply to the exact
 // line the driver typed with no race. A `command: null` brief writes NOTHING, so there
@@ -857,6 +887,44 @@ export const agentSessionDriverDrivesTests = [
       assert.equal(settled.value.outcome, "needs-input", "the settle is unaffected by a faulting hook");
       assert.deepEqual(kills, [], "a test double's pid is fiction: no tree kill was attempted");
       assert.equal(ptys[0].killed, true, "the pty is still released");
+    },
+  },
+  // 2026-10-06 — after a SUCCESSFUL tree kill, `term.kill()` forked node-pty's console-list agent at
+  // a console that was gone: `Error: AttachConsole failed` and its stack on every lane's stderr, and a
+  // five-second fallback `process.kill` of a dead pid. The pty is now released natively, without the
+  // agent; a failed tree kill still releases through `term.kill()`; and the settle's own cleanup
+  // never releases the pty a second time (it did, and the agent came back). The double has node-pty
+  // 1.1.0's conpty shape, and its native close emits the exit the real process exit does.
+  ...[
+    ["succeeds", null, { native: 1, kill: false }],
+    ["fails", new Error("taskkill failed"), { native: 0, kill: true }],
+  ].map(([how, treeError, expected]) => ({
+    name: `stop — on win32, when the tree kill ${how}, the pty is released once, ${expected.kill ? "through term.kill()" : "natively, without node-pty's console-list agent"}`,
+    run: async () => {
+      const events = [];
+      const conpty = conptyShapedSpawn({ onWrite: ({ emitData }) => { emitData("NEEDS_INPUT\n"); } });
+      const settled = await drive({
+        ptySpawn: conpty.spawn,
+        terminateTree: true,
+        terminateTreeExec: (bin, args, opts, callback) => callback(treeError, treeError ? "" : "SUCCESS", ""),
+        onSessionStop: (event) => { events.push(event); },
+      });
+      assert.equal(settled.value.outcome, "needs-input");
+      if (process.platform !== "win32") {
+        assert.deepEqual({ native: conpty.nativeKills(), kill: conpty.ptys[0].killed }, { native: 0, kill: true }, "no tree kill off win32, so term.kill() as before");
+        return;
+      }
+      assert.deepEqual({ native: conpty.nativeKills(), kill: conpty.ptys[0].killed }, expected);
+      assert.deepEqual(events.map((event) => event.phase), ["stop-requested", "tree-terminated", "pty-released", "exit-confirmed"]);
+    },
+  })),
+  {
+    name: "settle — a session that exits by itself is released once, natively: its processes are gone, so node-pty's console-list agent is never forked",
+    run: async () => {
+      const conpty = conptyShapedSpawn({ onWrite: ({ emitExit }) => { emitExit(0); } });
+      const settled = await drive({ ptySpawn: conpty.spawn });
+      assert.equal(settled.value.outcome, "done");
+      assert.deepEqual({ native: conpty.nativeKills(), kill: conpty.ptys[0].killed }, { native: 1, kill: false });
     },
   },
   {
