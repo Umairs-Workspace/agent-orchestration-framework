@@ -73,7 +73,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 
 ## Frozen behavioral workload — 154/11, before measurement
 
-Status: protocol authored; no live samples or accepted performance optimization.
+Status: the original frozen protocol is retained here; its completed live evaluation follows below.
 Keep the snapshot, workload, runtime CLI/profile, exact model and effort fixed within
 each baseline/candidate pair. Start each repetition from a fresh isolated fixture.
 The first functional native Codex variant is the functional baseline; the historical
@@ -97,3 +97,61 @@ record the failed case and retained/reverted variant. Source word counts above a
 loaded-context observations only, not measured execution improvements. The deterministic
 154/11 transport fixtures test plumbing and bounds; they are not samples of this workload.
 Manual sampling, native prerequisite failures and acceptance evidence belong to verify.
+
+## Recorded native evaluation — 2026-10-08
+
+Source `af85ca30d50408395d0b7cb3256145ff1112c323`; Codex CLI 0.160.0,
+`codex-app-server-v1`, `gpt-6.1-sol`, high effort. Each of four cases ran three times
+in each arm from the same frozen fixture. The baseline inlines the same functional native
+procedure and shared contract; the candidate uses the shipped entry and explicit references.
+This is a packaging comparison, not a fabricated historical pre-Codex speed baseline.
+Both arms used the same explicit fixture sandbox and paired host load. The initial earlier-source
+pilot is excluded and named in the frozen protocol.
+
+| case | arm | completed | elapsed seconds, median [min–max], all attempts | captured total tokens, median [min–max] |
+|---|---|---|---|---|
+| refine | baseline | 3/3 | 153.7 [150.0–166.3] | 1,050,616 [1,018,709–1,258,855] |
+| build-review-fix | baseline | 2/3 | 505.7 [151.3–511.8] | 2,774,595 [1,042,147–3,286,127] |
+| blocking-question | baseline | 3/3 | 120.0 [108.1–185.5] | 805,014 [424,582–1,114,374] |
+| repair | baseline | 3/3 | 65.8 [55.6–113.7] | 179,979 [172,663–182,788] |
+| refine | candidate | 3/3 | 160.8 [151.3–168.4] | 926,053 [838,602–986,080] |
+| build-review-fix | candidate | 2/3 | 402.1 [120.0–544.0] | 2,902,717 [612,190–3,469,974] |
+| blocking-question | candidate | 3/3 | 103.3 [99.3–145.3] | 507,753 [491,216–650,072] |
+| repair | candidate | 3/3 | 72.7 [50.5–87.0] | 201,859 [141,900–203,003] |
+
+All 24 attempts are retained. **22 completed; one build attempt in each arm stopped on a denied
+Graphify permission request** (baseline repetition 1, candidate repetition 3). These failed
+attempts are neither successes nor fast samples to use as an optimization benefit. Completed
+build/fix elapsed ranges were 505.7–511.8 seconds baseline and 402.1–544.0 seconds candidate.
+No required gate was bypassed past a native refusal. Actual successful build samples have
+separate builder and structural/behavioural reviewer contexts, automated craft evidence, and
+independent delta review after warm repair. Role instructions do not imply enforced read-only
+permissions. All oracles and sentinels are unchanged; no production write escaped the declared
+story. Governing configuration/ancestor-guidance reads outside the source read list are
+disclosed for candidate build repetition 2 and baseline build repetition 3.
+
+The actual continue ladder is **validate → doctor**; both rungs rerun after metadata fixes and
+before initial/delta reviews. The impacted test remains its separate required command. Missing
+graph coverage reports widened discovery with zero discovered suites; real execution of the
+locked two-case runner supplies the observed behavior, never a claimed zero-suite verdict.
+The question samples persist one unanswered token, close the first server and deliver one
+authorized answer on the same native thread. No unnecessary durable business asks were observed.
+Repair samples reproduce the real detached-head producer refusal, reattach the original branch
+and rerun the same producer successfully without changing production code.
+
+Captured token counters are de-duplicated native turn deltas, not an inferred bill or unobserved
+child usage. Monetary cost is unavailable (null). Entry word counts are refine 6451 → 334,
+continue 8917 → 371, and repair 2151 → 330.
+Each workflow still loads its own procedure and shared contract, so these entry reductions do
+not establish total-context savings.
+
+**Decision:** retain the shipped native variant as the functional baseline. Accept no overall
+execution-speed or monetary-cost optimization from this small host-constrained evaluation.
+No cheaper variant is accepted by omitting a gate, scope bound or independent review. The
+separate fully loop-driven Codex fixture completes all phases and acceptance under the documented
+host conditions. Default-Claude live acceptance and the whole-tree regression remain separate
+requirements.
+
+Evidence: `verification/2026-10-08-reverify/prompt-evaluation.json` contains the frozen protocol,
+prompt digests, all sample identities, actual commands/role events, checks, usage, failures and
+raw-report hashes. Raw native reports are retained in ignored `.tmp/154-benchmark/`.

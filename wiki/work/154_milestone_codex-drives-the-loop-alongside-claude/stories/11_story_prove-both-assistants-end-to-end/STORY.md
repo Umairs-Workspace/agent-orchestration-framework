@@ -4,7 +4,7 @@ number: 11
 slug: prove-both-assistants-end-to-end
 title: "Live acceptance proves Codex and preserves Claude"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -23,8 +23,8 @@ As an operator, I want reproducible evidence and upgrade guidance for both assis
 ## Tasks
 
 - [x] `tasks/00_regression-and-upgrade-guide.feature` — regression and upgrade guide
-- [ ] `tasks/01_live-lifecycle-acceptance.feature` — live lifecycle acceptance
-- [ ] `tasks/02_prompt-behavior-evaluation.feature` — prompt behavior evaluation
+- [x] `tasks/01_live-lifecycle-acceptance.feature` — live lifecycle acceptance
+- [x] `tasks/02_prompt-behavior-evaluation.feature` — prompt behavior evaluation
 
 ## Notes
 
@@ -73,3 +73,6 @@ As an operator, I want reproducible evidence and upgrade guidance for both assis
   native lifecycle/recovery, comparable Claude execution, independent native review, repeated
   prompt samples, six fitness red probes and visual acceptance belong to verify. No acceptance
   or VERIFICATION.md was authored by continue.
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Real default-Claude and Codex loops accepted their fixture milestones. All five native recovery checkpoints, independent native reviews, all six fitness controls and UI checks have recorded evidence. The frozen prompt workload ran all 24 attempts; two permission stops are retained, and no overall performance optimization is accepted. Owning automated checks pass. The parent milestone still requires its final clean full regression gate. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.

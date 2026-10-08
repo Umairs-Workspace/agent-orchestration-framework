@@ -286,25 +286,56 @@ Warm-fix and operator-stop evidence is retained in `verification/2026-10-08-reve
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
-| D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | The approved fixture policy now supports actual native build, independent review and acceptance; question/restart recovery passes. Finish warm-fix, stop, worker reconnect and repeated workload proof. Preserve permission refusal. | 154/11 live acceptance; 154/02 remaining profile proof | open |
+| D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | The approved fixture policy now supports actual native build, independent review and acceptance; question/restart recovery passes. The complete native loop, warm fix, tool cancellation, process restart and real worker reconnect pass. All 24 frozen prompt attempts are recorded, including two protected permission stops; no overall performance optimization is accepted. Native permissions remain explicit. | 154/11 live acceptance | closed |
 | D-02 | Fleet origin lacks the config API; the autonomous rerun started the real isolated AOF editor and passed 18 browser checks plus binding-checklist design review at three widths. | prerequisite-gap | Blocker | Responsive, keyboard and state evidence is now retained; no further URL input needed. | 154/10 manual verification | closed |
-| D-03 | The previous clean gate failed FF-7106 on generated siblings omitted from story 155's declarations. Elapsed time was 23.9 minutes; the 15-minute budget is advisory and did not cause the red result. | regression-gap | Blocker | Declaration and agent-mode changes are committed at a2846fce; 405 focused cases, 35 native-asset cases and 7 bundle checks pass. The obsolete a2846fce rerun was cancelled after native fixes changed the source; it is not evidence of a green gate. A final corrected snapshot still requires a recorded clean gate. | 155 declared write set; milestone 154 regression gate | open |
+| D-03 | The previous clean gate failed FF-7106 on generated siblings omitted from story 155's declarations. Elapsed time was 23.9 minutes; the 15-minute budget is advisory and did not cause the red result. | regression-gap | Blocker | Declaration and agent-mode changes are committed at a2846fce; 405 focused cases, 35 native-asset cases and 7 bundle checks pass. The obsolete a2846fce rerun was cancelled after native fixes changed the source; it is not evidence of a green gate. The corrected af85ca30 snapshot is now running the actual clean detached gate with eight workers and isolated global state. | 155 declared write set; milestone 154 regression gate | open |
 | D-04 | Actual Codex continue thread 01a11cb6-4f9d-7c41-8445-b940552c24fb invoked run-start and received duplicate-run because the native phase driver omitted its run environment. | bug | Blocker | Lend the driver-owned run identity to native tool processes. Two ownership regression cases plus all 46 phase/question cases pass; mutation probe fails without the fix. Live confirmation now returns driven:true on the same run; the later test-launch refusal is D-05. Evidence: verification/2026-10-08-reverify/native-run-ownership.json. | 154/06 task00 | closed |
-
 | D-05 | The actual Codex sandbox allows fixture execution and file writes but refuses Node output pipes with EPERM. The required AOF test command cannot start its child. Print-only probes confirm inherited output and file-backed capture work; ordinary and overlapped pipes fail. | prerequisite-gap | Blocker | A synchronous Windows EPERM now retries the same executable with temporary file-backed capture when stdin has no cancel channel. All 45 affected cases pass, including output, deadline, abort and cleanup; the actual sandboxed AOF test command exits zero. No policy changed. Evidence: verification/2026-10-08-reverify/native-file-capture.json. | 154/11 native acceptance; bounded test execution | closed |
-
 | D-06 | The next actual native continue phase ran its test gate, then halted with protocol_queue_limit during validation. The adapter queues every notification, including events it never consumes, behind durable observation writes. | bug | Blocker | Filtering now drops ignorable notifications before queue admission. The new 512-notification case fails without the fix; all 81 protocol/loop cases pass with it. Scoped validate is empty and doctor has zero errors. Actual native continue now completes with three independent reviewer threads; story and fixture milestone acceptance followed. | 154/02 protocol transport | closed |
-
 | D-07 | Clean full verification found node:path absent from bounded-process platform imports and stale source digests for unchanged process calls in config-inspect and codex-app-server. | declaration-drift | Blocker | Declare the capture module platform API and refresh only source hashes after confirming all three audited call expressions are unchanged. Exact failing units pass 24/24; the final clean gate is still required. | 154/11 regression declaration maintenance | closed |
-
-| D-08 | Real worker reconnect preserved the assignment and Codex envelope, but the native continue close failed because the lane record still said not-started after the primary run was minted. | bug | Blocker | Advance the separate lane view through the guarded status transition before native execution; retain one primary-owned run. New real status-command regression and negative probe exercise this boundary; live rerun pending. | 154/07 task00 | open |
+| D-08 | Real worker reconnect preserved the assignment and Codex envelope, but the native continue close failed because the lane record still said not-started after the primary run was minted. | bug | Blocker | Advance the separate lane view through the guarded status transition before native execution; retain one primary-owned run. 18 focused cases pass; the negative probe fails without the fix. The actual WebSocket reconnect, pinned Codex execution, local-origin push, assignment/run done states and lane cleanup now pass. Evidence: codex-worker-reconnect.json. | 154/07 task00 | closed |
 
 ## Accept decision
 
-**NOT ACCEPTED after autonomous reverification.** The visual/keyboard lane now passes, default-Claude
-workflow evidence advanced, and the clean whole-tree gate actually ran. That gate is red; native
-Codex full recovery and repeated prompt evaluation remain incomplete. A fixture-only workspace-write
-launch policy was explicitly approved and real Codex refine completed; native build exposed D-04.
-No story was marked done and no milestone story checkbox was ticked. Milestone remains
-in-progress, its twelve stories remain in-review, and no acceptance OUTCOME or retrospective
-was fabricated. No genuine human UAT scenarios are declared in this milestone.
+**Milestone acceptance pending the final clean regression gate.** Native lifecycle and recovery,
+UI/design, fitness probes and the frozen prompt evaluation are complete. Individual stories are
+accepted through the CLI with their own outcomes and conditional retrospectives. D-03 remains
+open until the actual af85ca30 whole-tree run settles; no override is used. No genuine human
+UAT scenarios are declared.
+
+## Complete native loop — 2026-10-08
+
+A fresh fixture ran all four phases through one production sequential L2 loop, id
+`ee80af33-bed4-4791-8c0a-0b4d774d312e`. Native refine, continue with independent architect/QA
+review, story verify and milestone verify all completed on their first phase attempt. The actual
+configured two-case runner passed; story and milestone accepted, and all four owned runs settled
+done. Source exports numeric 42; the locked runner and sentinel remain unchanged.
+
+The explicit process-local policy permitted fixture workspace writes, disabled network and
+retained on-request approval; no native approval was granted. The brief stated the observed
+Windows output-pipe and Graphify limits, so reviewers used actual in-process negative probes and
+the documented fresh-source fallback. This changed no test, review or acceptance obligation.
+Before milestone verify, the outer fixture operator committed the actual fixture and ran its real
+clean regression gate; the native phase consumed that command-authored green row. It did not
+substitute a claimed result or override. Earlier wave-launch and pipe-permission attempts remain
+excluded from the successful result, with their raw reports retained.
+
+Evidence: `verification/2026-10-08-reverify/codex-complete-loop.json` records native sessions,
+commands, independent role events, gate output, source revision and actual run states.
+verifies → `154/11/tasks/01_live-lifecycle-acceptance.feature`, full Codex lifecycle;
+`154/06`, native governed phase sequencing. Separate question/restart, warm-fix, stop and worker
+reconnect artifacts cover the recovery checkpoints; the default-Claude proof remains separate.
+
+## Repeated native prompt workload
+
+The predeclared four-case, two-arm, three-repetition workload is complete: 24 actual native
+attempts, 22 completed and two recorded Graphify permission stops, one per arm. The detailed
+manual audit covers exact gate ordering, attributable independent reviews, scope preservation,
+unnecessary durable questions, elapsed variability and observed token counters. Costs remain
+unavailable. The shipped native variant is retained as a functional baseline; no overall speed
+or monetary-cost optimization is accepted. See PROMPT-AUDIT.md and
+`verification/2026-10-08-reverify/prompt-evaluation.json`.
+
+verifies → `154/11/tasks/02_prompt-behavior-evaluation.feature`: frozen workload, three
+repetitions per arm/case, rejected unsupported benefit claims and separately retained Claude
+regression proof. Protected permission failures remain visible rather than waived.
