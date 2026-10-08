@@ -20,7 +20,7 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "c1a2993023880b7b8bb75cb02e5868b0260cdcb7423ae8e2db183585f797d194",
+    "sourceDigest": "a700ec5abb80045d9e507917ba2b92180604a56cff420965ed5d477a3175c708",
     "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged."
   },
   {

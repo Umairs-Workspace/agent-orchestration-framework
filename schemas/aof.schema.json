@@ -746,6 +746,16 @@
         "backend": {
           "enum": ["local", "none", "graphify"],
           "description": "The memory backend that answers the `aof work memory` verbs. `local` = the cheap derived-index backend; `none` = a no-op so ACD runs unchanged when memory is absent; `graphify` = the graph-grounded backend (records from the 05 parsers, re-ranked by a work-stream graph built via invoke('graph:build'))."
+        },
+        "graphify": {
+          "type": "object",
+          "properties": {
+            "extractionBackend": {
+              "enum": ["claude", "claude-cli", "gemini", "openai", "kimi", "deepseek", "ollama"],
+              "description": "Existing Graphify extractor selected explicitly. Absent keeps claude-cli as the reported legacy default; the choice does not follow the primary coding assistant or silently fall back."
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

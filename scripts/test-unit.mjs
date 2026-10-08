@@ -96,6 +96,7 @@ import { archTests as acdUnifiedLockSectionsTests } from "../test/arch/store/acd
 import { workMemorySeamTests } from "../test/work/lifecycle/work-memory-seam.test.mjs";
 import { memoryIndexingTests } from "../test/memory/memory-indexing.test.mjs";
 import { memoryRetrievalTests } from "../packages/knowledge/test/memory-retrieval.suite.mjs";
+import { memoryBackendConfigTests } from "../packages/knowledge/test/memory-backend-config.suite.mjs";
 import { archTests as acdMemoryBackendSelectionTests } from "../test/arch/memory/acd-memory-backend-selection.test.mjs";
 import { archTests as acdMemoryDerivedIndexTests } from "../test/arch/memory/acd-memory-derived-index.test.mjs";
 import { archTests as acdMemoryIndexLocationTests } from "../test/arch/memory/acd-memory-index-location.test.mjs";
@@ -126,6 +127,7 @@ import { installProofTests } from "../test/work/roundtrip-install-proof.test.mjs
 import { loopProofTests } from "../test/work/roundtrip-loop-proof.test.mjs";
 
 const tests = [
+  ...memoryBackendConfigTests,
   ...runtimeEventsTests,
   ...runtimeObserveTests,
   ...runtimeObservationFactsTests,

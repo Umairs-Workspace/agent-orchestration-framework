@@ -14,6 +14,60 @@ import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
 
 export const configInspectTests = [
   {
+    name: "154/09 task01 E2 + outline — effective configuration reports the legacy Claude dependency, explicit extractor and local without changing configuration or corpus",
+    run: async () => {
+      const dir = await mkdtemp(path.join(os.tmpdir(), "aof-memory-inspect-"));
+      try {
+        await mkdir(path.join(dir, ".aof"));
+        const file = path.join(dir, ".aof", "aof.config.json");
+        const corpus = path.join(dir, ".aof", "aof.memory.graphify.index.json");
+        const bytes = '{"records":[{"id":"R1","source":"RETROSPECTIVE.md:1"}]}\n';
+        await writeFile(corpus, bytes);
+        for (const [memory, extractionBackend, source, dependency] of [
+          [{ backend: "graphify" }, "claude-cli", "legacy default", "Claude CLI (claude)"],
+          [{ backend: "graphify", graphify: { extractionBackend: "ollama" } }, "ollama", "project setting", "Ollama"],
+          [{ backend: "local" }, null, "project setting", null],
+        ]) {
+          const configBytes = JSON.stringify({ name: "demo", resources: [], memory, work: { loop: { runtime: "codex" } } }, null, 2) + "\n";
+          await writeFile(file, configBytes);
+          const report = await inspectConfig(dir);
+          assert.deepEqual(report.diagnostics, []);
+          assert.equal(report.memory.backend, memory.backend);
+          assert.equal(report.memory.extraction?.backend ?? null, extractionBackend);
+          assert.equal(report.memory.extraction?.source ?? report.memory.source, source);
+          assert.ok(dependency ? report.memory.dependencies.includes(dependency) : report.memory.dependencies.length === 0);
+          if (extractionBackend === "claude-cli") assert.match(report.memory.extraction.alternative, /"local"/);
+          assert.equal(await readFile(file, "utf8"), configBytes);
+          assert.equal(await readFile(corpus, "utf8"), bytes);
+        }
+      } finally { await rm(dir, { recursive: true, force: true }); }
+    },
+  },
+  {
+    name: "154/09 task00 — unsupported extractor is a named project diagnostic; schema agrees with the existing graph backend catalog",
+    run: async () => {
+      const dir = await mkdtemp(path.join(os.tmpdir(), "aof-memory-invalid-"));
+      try {
+        await mkdir(path.join(dir, ".aof"));
+        const config = { name: "demo", resources: [], memory: { backend: "graphify", graphify: { extractionBackend: "codex" } } };
+        await writeFile(path.join(dir, ".aof", "aof.config.json"), JSON.stringify(config));
+        const diagnostics = await validateConfig(dir);
+        assert.deepEqual(diagnostics.map(entry => [entry.path, entry.code]), [["memory.graphify.extractionBackend", "invalid-memory-extraction-backend"]]);
+        assert.match(diagnostics[0].message, /codex/);
+        assert.equal((await inspectConfig(dir)).memory, null);
+        const { GRAPHIFY_BACKENDS } = await import("../../packages/knowledge/src/graphify-backends.mjs");
+        const schema = JSON.parse(await readFile(new URL("../../schemas/aof.schema.json", import.meta.url), "utf8"));
+        assert.deepEqual(schema.$defs.memory.properties.graphify.properties.extractionBackend.enum, GRAPHIFY_BACKENDS.map(entry => entry.backend));
+        const Ajv2020 = (await import("ajv/dist/2020.js")).default;
+        const validate = new Ajv2020({ strict: false }).compile(schema);
+        assert.equal(validate(config), false);
+        for (const { backend } of GRAPHIFY_BACKENDS) { config.memory.graphify.extractionBackend = backend; assert.equal(validate(config), true); }
+        for (const value of [null, 1, "", [], {}]) { config.memory.graphify.extractionBackend = value; assert.equal(validate(config), false); }
+        delete config.memory.graphify.extractionBackend; assert.equal(validate(config), true);
+      } finally { await rm(dir, { recursive: true, force: true }); }
+    },
+  },
+  {
     name: "154/01 task00 — installed asset targets and delegation do not select execution; next runtime is explicit",
     run: async () => {
       const dir = await mkdtemp(path.join(os.tmpdir(), "aof-execution-inspect-"));

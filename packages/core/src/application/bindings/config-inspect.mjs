@@ -34,7 +34,7 @@ import { delimiter } from "node:path";
 import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { generatorIds } from "../../diagrams/generators.mjs";
-
+import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices }) {
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
@@ -129,6 +129,7 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       settings: config?.settings ?? {},
       diagnostics,
       adapterWarnings,
+      memory: executionConfig ? inspectMemoryConfiguration(executionConfig) : null,
       execution: executionInspection?.execution ?? null,
       executionByRuntime: executionConfig ? Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(executionConfig, { ...options, runtime, roles: [...acdRoleSet()] })])) : {},
       assetRuntimes,
@@ -273,6 +274,8 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     await validateProjectDocs(Array.isArray(raw.projectDocs) ? raw.projectDocs : [], baseDir, diagnostics);
     validateSettings(raw.settings, diagnostics);
     validateWork(raw.work, diagnostics);
+    try { inspectMemoryConfiguration(raw); }
+    catch (error) { diagnostics.push(diagnostic("error", error.path, error.message, error.code)); }
 
     return diagnostics;
   }

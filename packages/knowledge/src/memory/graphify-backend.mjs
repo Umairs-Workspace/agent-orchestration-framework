@@ -11,7 +11,7 @@ import {
 } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { graphJsonPath, readGraph, normalizeGraph } from "../graph-normalize.mjs";
-
+import { LEGACY_GRAPHIFY_BACKEND, resolveGraphifyExtraction } from "../graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createGraphifyBackend({ coreInvoke, loadWorkspace, buildRecords, ensureAofGitignore, ensureGraphifyOutGitignore }) {
 // The `graphify` memory backend (milestone 10, story 00 — the SPINE).
@@ -85,7 +85,7 @@ function workGraphRoot(projectRoot) {
 // is graphify's native, credential-local default (keyless, billed-to-plan). The model
 // is tunable via graphify's own GRAPHIFY_CLAUDE_CLI_MODEL — a knob, not an aof contract.
 // (Story 02 owns surfacing this + the honest egress label; story 00 only passes it.)
-const GRAPHIFY_EXTRACTION_BACKEND = "claude-cli";
+const GRAPHIFY_EXTRACTION_BACKEND = LEGACY_GRAPHIFY_BACKEND;
 
 // The honest egress label of the chosen extraction backend (10/ADR-003): the doc/media
 // hop RAN, so "docs-media" — exactly classifyEgress("claude-cli") in graph-build.mjs.
@@ -151,12 +151,12 @@ async function buildGraphCtx(ctx) {
 // which we CATCH and report as a skipped-graph outcome — NEVER a crash (ADR-004; story
 // 00 keeps the handling MINIMAL but non-crashing; the full degrade is story 02). The
 // graph targets the work stream only (ADR-006: path = ctx.workDir).
-async function attemptGraphBuild(ctx) {
+async function attemptGraphBuild(ctx, extraction) {
   // The injectable invoke seam (mirrors local's injectable ctx.loadIndex): production
   // wires nothing and uses the real command-core invoke; tests inject ctx.invoke to
   // drive the binary-present / binary-absent paths hermetically without a live binary.
   const invoke = ctx.invoke ?? coreInvoke;
-  const backend = GRAPHIFY_EXTRACTION_BACKEND;
+  const backend = extraction.backend;
   try {
     const graphCtx = await buildGraphCtx(ctx);
     // outRoot pins the work-stream graph to its OWN artifact (see workGraphRoot): the
@@ -190,10 +190,13 @@ async function attemptGraphBuild(ctx) {
     // the records were written BEFORE the graph attempt, so reindex still TERMINATES and
     // returns; only the derived graph re-rank signal is skipped (10/ADR-004).
     const timedOut = code === "graphify-timeout";
-    const hint = error?.message ?? String(error);
+    const originalHint = error?.message ?? String(error);
+    const hint = extraction.source === "project setting" ? `Graphify extractor "${backend}" requires ${extraction.dependencies.join(" and ")}: ${originalHint}. ${extraction.alternative}` : originalHint;
     return {
       built: false,
       backend,
+      source: extraction.source,
+      dependencies: extraction.dependencies,
       graphPath: null,
       egress: null,
       // The structured miss code (graphify-missing when the binary is absent,
@@ -226,6 +229,7 @@ async function attemptGraphBuild(ctx) {
 // is @manual. `ingest` is an ALIAS of reindex (the seam routes it; no separate write
 // path), so it rebuilds the same record set.
 async function reindex(only, ctx = {}) {
+  const extraction = resolveGraphifyExtraction(ctx.configMemory);
   const { projectRoot } = ctx;
   const store = await buildStore(only, ctx);
   const storePath = graphifyIndexPath(projectRoot);
@@ -238,7 +242,7 @@ async function reindex(only, ctx = {}) {
   await ensureGraphifyOutGitignore(projectRoot);
   await ensureGraphifyOutGitignore(workGraphRoot(projectRoot));
 
-  const graph = await attemptGraphBuild(ctx);
+  const graph = await attemptGraphBuild(ctx, extraction);
 
   return {
     backend: "graphify",
@@ -323,6 +327,7 @@ function withGraphSignal(result, signal) {
 // diagnostic ("unavailable" vs "graph-ranked") and the human `text` view notes the
 // fallback. recall NEVER throws on a missing graph/binary.
 async function recall(query, scope = {}, opts = {}, ctx = {}) {
+  resolveGraphifyExtraction(ctx.configMemory);
   const store = ctx.records
     ? { records: ctx.records } // a test may inject a fixture record set on ctx
     : await loadStore(ctx.projectRoot);
@@ -408,6 +413,7 @@ function resolveGraphState(ctx, graphPresent) {
 // chosen extraction backend (claude-cli) + its honest egress label are surfaced too
 // (10/ADR-003 — the selection is visible, never a silent network default).
 async function status(ctx = {}) {
+  const extraction = resolveGraphifyExtraction(ctx.configMemory);
   const { projectRoot } = ctx;
   const store = await loadStore(projectRoot);
   const records = Array.isArray(store?.records) ? store.records : [];
@@ -434,7 +440,10 @@ async function status(ctx = {}) {
     // the backend imports NEITHER the graph:build command NOR the graphify driver (the
     // acd-graphify-backend-via-command boundary). The classifier itself is pinned by the
     // story-03 acd-graphify-backend-classified arch-test over graph-build.mjs.
-    extractionBackend: GRAPHIFY_EXTRACTION_BACKEND,
+    extractionBackend: extraction.backend,
+    extractionSource: extraction.source,
+    extractionDependencies: extraction.dependencies,
+    memoryAlternative: extraction.alternative,
     extractionEgress: GRAPHIFY_EXTRACTION_EGRESS,
     graphPresent,
     // The explicit graph state (10/ADR-004), with the 09 install hint when binary-absent.

@@ -1,7 +1,7 @@
 import noneBackend from "./memory/none-backend.mjs";
 import { statusPartition } from "./memory/local-retrieval.mjs";
 import { commandError } from "@aof/contracts/error";
-
+import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
 // `aof work memory <verb>` — the memory SEAM (milestone 05, story 00).
@@ -93,37 +93,6 @@ const BACKEND_REGISTRY = {
   graphify: () => loadGraphifyBackend()
 };
 
-// The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory
-// (or absent backend) is equivalent to "none".
-function selectBackendName(config) {
-  return declaredBackendName(config) ?? "none";
-}
-
-// declaredBackendName(config) — THE single textual read of the selection key in the
-// whole of `src/`, and the reason it is separate from `selectBackendName`: the two
-// callers need DIFFERENT answers about an absent value. Dispatch wants "none" (an
-// unconfigured project runs the no-op backend); the scaffold below needs to tell
-// "nothing is declared" apart from "`none` was chosen deliberately", because it must
-// write the default over the first and never over the second. Collapsing both into one
-// function is what would force a second spelling of the key somewhere else.
-// A falsy declaration (empty string) is "not declared" — the scaffold's original rule.
-function declaredBackendName(config) {
-  const declared = config?.memory?.backend;
-  return typeof declared === "string" && declared.length > 0 ? declared : null;
-}
-
-// MEMORY_BACKEND_CONFIG_PATH — the selection's dotted config path, as PROSE. A face
-// that prints "memory.backend: graphify (set)" was spelling the key a second time, in
-// a string, where nothing kept it honest if the key ever moved. It reads from here now,
-// so the key has one home in code AND in the text a user sees.
-// Spelled as its two path SEGMENTS, and the reason is worth stating rather than
-// leaving as a curiosity: `acd-memory-backend-selection` detects a property ACCESS of
-// `.backend` off a `.memory` access, textually. This constant is PROSE — the label a
-// face prints — not a read, and as one literal it tripped that control as a seventh
-// reader. The segments are what the path actually is, so writing them this way makes
-// the source match the rule the control's own comment states, rather than dodging it.
-const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
-
 // applyDefaultBackendSelection(config, defaultBackend) — the WRITE half of the same
 // invariant, and it lives here for the same reason the read does.
 //
@@ -161,6 +130,7 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
   if (!loader) {
     throw new Error(`Unknown memory backend "${name}". Registered: ${Object.keys(registry).join(", ")}.`);
   }
+  if (name === 'graphify') resolveGraphifyExtraction(config?.memory);
   return loader();
 }
 
@@ -342,7 +312,10 @@ function renderMemory(verb, result, { block = false, limit, help = false } = {})
     }
     return lines.join("\n");
   }
-  if (verb === "reindex" || verb === "ingest") return `reindex: ${result.recordCount} record(s)`;
+  if (verb === "reindex" || verb === "ingest") {
+    const headline = `reindex: ${result.recordCount} record(s)`;
+    return result.graph?.source === "project setting" && result.graph.built === false ? `${headline}\n${result.graph.reason}` : headline;
+  }
   return typeof result === "string" ? result : JSON.stringify(result, null, 2);
 }
 
@@ -534,7 +507,7 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
   if (input?.help === true) return memoryUsage();
   gateMemoryVerb(input?.verb);
   const backend = await resolveBackend(config);
-  return executeMemoryVerb(input, { backend, ctx });
+  return executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
 }
 
 // THE IN-PROCESS ENTRY over ARGV — a thin composition of the same path the routed door
@@ -559,4 +532,52 @@ async function runMemory(argv, { config, resolveBackend, render = defaultRender,
 }
 
 return { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, briefDigest, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
+}
+
+// The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory
+// (or absent backend) is equivalent to "none".
+export function selectBackendName(config) {
+  return declaredBackendName(config) ?? "none";
+}
+
+// declaredBackendName(config) — THE single textual read of the selection key in the
+// whole of `src/`, and the reason it is separate from `selectBackendName`: the two
+// callers need DIFFERENT answers about an absent value. Dispatch wants "none" (an
+// unconfigured project runs the no-op backend); the scaffold below needs to tell
+// "nothing is declared" apart from "`none` was chosen deliberately", because it must
+// write the default over the first and never over the second. Collapsing both into one
+// function is what would force a second spelling of the key somewhere else.
+// A falsy declaration (empty string) is "not declared" — the scaffold's original rule.
+export function declaredBackendName(config) {
+  const declared = config?.memory?.backend;
+  return typeof declared === "string" && declared.length > 0 ? declared : null;
+}
+
+// MEMORY_BACKEND_CONFIG_PATH — the selection's dotted config path, as PROSE. A face
+// that prints "memory.backend: graphify (set)" was spelling the key a second time, in
+// a string, where nothing kept it honest if the key ever moved. It reads from here now,
+// so the key has one home in code AND in the text a user sees.
+// Spelled as its two path SEGMENTS, and the reason is worth stating rather than
+// leaving as a curiosity: `acd-memory-backend-selection` detects a property ACCESS of
+// `.backend` off a `.memory` access, textually. This constant is PROSE — the label a
+// face prints — not a read, and as one literal it tripped that control as a seventh
+// reader. The segments are what the path actually is, so writing them this way makes
+// the source match the rule the control's own comment states, rather than dodging it.
+export const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
+
+
+// Pure inspection shares dispatch's single selection reader. It never probes a tool,
+// reads credentials, mutates configuration or opens a record store.
+export function inspectMemoryConfiguration(config) {
+  const declared = declaredBackendName(config);
+  const backend = selectBackendName(config);
+  resolveGraphifyExtraction(config?.memory); // validate an authored nested setting even when inactive
+  if (!['none', 'local', 'graphify'].includes(backend)) {
+    const error = commandError(`Unknown memory backend "${backend}". Registered: none, local, graphify.`, 'invalid-memory-backend', 400);
+    error.path = MEMORY_BACKEND_CONFIG_PATH;
+    throw error;
+  }
+  const extraction = backend === 'graphify' ? resolveGraphifyExtraction(config?.memory) : null;
+  return { backend, source: declared === null ? 'default' : 'project setting', path: MEMORY_BACKEND_CONFIG_PATH,
+    dependencies: extraction?.dependencies ?? [], extraction };
 }
