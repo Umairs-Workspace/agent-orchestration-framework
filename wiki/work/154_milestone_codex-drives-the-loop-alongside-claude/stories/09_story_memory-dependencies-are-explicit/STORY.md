@@ -4,7 +4,7 @@ number: 9
 slug: memory-dependencies-are-explicit
 title: "Codex projects can choose an explicit memory backend"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -52,3 +52,7 @@ As a Codex operator, I want memory extraction dependencies visible and configura
 - Required round 2 completed: 12,450/12,450 registered cases, 1,213 units, 58.2 minutes, three persistent failing cases and four units green only on isolated retry. Persistent cases: copied core without source aliases; needs-input PTY stream ending; real stop-source interval process exit. Counts 1 -> 3 record one no-progress round. Summary: .tmp/154-evidence/test-sharded/2026-10-08T01-12-13-522Z/SUMMARY.txt. A later 45-second wait returned after a large wall-clock gap; the gate report had already completed.
 - Separate reproduction against the same fixed snapshot after the gap passes all three registered cases unchanged (25,529ms, 934ms, 1,438ms). This is diagnostic evidence, not a replacement gate and not a no-progress reset. No production change or timeout relaxation. Additional read gaps: core-workspace.test.mjs was read in full; only the failing case sections of fleet-terminal-view-producer-fed.test.mjs and loop-diag.test.mjs were inspected. No edits to these owners. Round 3 will use eight workers through the configured jobs argument and a fresh isolated home to reduce concurrent contention. A third-round failure count of three or higher reaches the two-consecutive-no-progress stop bound.
 - Required round 3 is running against snapshot 5d56ed180ffb8a95ee7a786a79062897e813a777 with eight workers and a fresh isolated home. Log directory: .tmp/154-evidence/test-sharded/2026-10-08T08-50-37-785Z. The no-progress counter remains one until its completed result is measured.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Explicit backend selection, extractor dependencies and local-memory behavior pass. The exact leaf-port admission is verified without adding a second memory vocabulary or ledger. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
