@@ -27,3 +27,13 @@ Feature: regression and upgrade guide
       Then verification records the exact commands, revision and outcomes
       And unregistered tests, unresolved controls and persistent failures are not reported green
 
+
+    @bug @finding-D-05
+    Scenario: Windows pipe refusal retains bounded test execution within the same permissions
+      Given the Windows sandbox denies output pipes before a child starts
+      And the same executable and workspace files are permitted
+      When AOF runs the configured test command without a stdin cancel channel
+      Then file-backed capture retains its observed stdout, stderr and exit code
+      And timeout and abort bounds still stop the child
+      And temporary capture files are removed after success or failure
+      And no permission policy is broadened
