@@ -4,7 +4,7 @@ number: 10
 slug: runtime-config-editor
 title: "The config editor explains effective assistant settings"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -49,3 +49,7 @@ As an operator, I want to edit and inspect runtime and scoped model settings in 
 - Build diagnostic: a complete older asset-only API payload with resources/diagnostics reproduced a render crash at draft.runtime. The checked execution payload now fails before form state changes and exposes retry; the registered mounted regression retries against the real API. No new route, process launch or dependency. The incomplete gate attempt was cancelled, never reported green, and the completed-round baseline is retained for its restart.
 
 - The full gate exposed a registration name-shape violation in the new freeze case. It now retains arch/53 FF-5307 (subject): and cites 154/10 after the colon; all 12 owning registration controls pass unchanged. Only the failing name-validator/shape/case sections were read as a diagnostic read-set gap. Completed gate rounds improve from four failing cases to one; the final snapshot gates the repaired name without relaxing any control.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Execution-config parsing and editor/API tests pass. Eighteen real browser checks and the binding design checklist pass at 390/768/1280; production UI build passes. D-02 is closed. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
