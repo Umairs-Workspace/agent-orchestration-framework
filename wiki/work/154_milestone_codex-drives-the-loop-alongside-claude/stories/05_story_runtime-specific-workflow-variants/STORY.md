@@ -4,10 +4,10 @@ number: 5
 slug: runtime-specific-workflow-variants
 title: "Shared workflows render assistant-specific instructions"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-07
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 depends: [01, 04]
@@ -55,3 +55,7 @@ As a workflow maintainer, I want shared ACD contracts with native Claude and Cod
   archive, promote, mode/manual and copied-distribution consumers are declared. Native entries
   retain argument hints; obligations may reside in their own explicitly attached procedure.
   Existing executable outcomes are retained; no delivered feature or ADR was edited.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Runtime-local variant resolution, installed references and delegation capability/bounds cases pass. FF-15405 red probes refuse missing procedures. Native independent reviewers execute the installed contract; prompt performance evaluation remains a separate 154/11 acceptance lane. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
