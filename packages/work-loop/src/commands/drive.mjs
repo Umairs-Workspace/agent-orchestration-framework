@@ -140,7 +140,8 @@ export function createPhaseDrivers({
       const signal = cancel == null ? base.signal : base.signal == null ? cancel.signal : AbortSignal.any([base.signal, cancel.signal]);
       const launchCommand = (answer == null ? fix == null ? command : composeFixInput(command, fix) : JSON.stringify({ token: answer.questionToken, question: answer.question, choices: answer.choices, answer: answer.text })) + (role == null ? "" : `\nNative review role ${role}; this is an independent thread. Follow these role instructions and report findings:\n${roleInstructions}`);
       result = await runtimeSession.drive({ itemRef: item.ref, worktreeCwd: cwd, phase: choicePhase, task: fix == null ? phase : "fix", procedure, arguments: [item.ref], ...(role == null ? {} : { role }), command: launchCommand, ...(resumeSessionId == null ? { context } : {}) }, {
-        ...base, execution: selected, signal, ...(resumeSessionId == null ? {} : { resumeSessionId }),
+        ...base, env: { ...env, AOF_RUN_ID: runRecord.runId, AOF_RUN_ITEM_DIR: item.dir },
+        execution: selected, signal, ...(resumeSessionId == null ? {} : { resumeSessionId }),
         deadlinePolicy: base.deadlinePolicy ?? loopBoundsFromConfig(ctx.workspace),
         onProcessLive: child => {
           cancel?.onPtyLive(child); base.onProcessLive?.(child); beat();

@@ -261,13 +261,17 @@ no speed, cost, correctness or template-optimization benefit is claimed from par
 |---|---|---|---|---|---|---|
 | D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | Establish an operator-authorized native policy that permits fixture writes, then rerun the declared lifecycle, independent review and recovery workloads. Preserve the adapter's permission refusal. | 154/11 live acceptance; 154/02 remaining profile proof | open |
 | D-02 | Fleet origin lacks the config API; the autonomous rerun started the real isolated AOF editor and passed 18 browser checks plus binding-checklist design review at three widths. | prerequisite-gap | Blocker | Responsive, keyboard and state evidence is now retained; no further URL input needed. | 154/10 manual verification | closed |
-| D-03 | The clean frozen gate actually ran: FF-7106 fails on 22 omitted generated siblings in story 155's committed write set; 23.9 minutes also exceeds the 15-minute gate budget. | regression-gap | Blocker | Route the complete declaration list to story 155's owner, preserve concurrent edits, and rerun the recorded clean gate after that work is committed. Address the budget result through supported runner configuration; do not override a slow gate. | 155 declared write set; milestone 154 regression gate | open |
+| D-03 | The previous clean gate failed FF-7106 on generated siblings omitted from story 155's declarations. Elapsed time was 23.9 minutes; the 15-minute budget is advisory and did not cause the red result. | regression-gap | Blocker | Declaration and agent-mode changes are committed at a2846fce; 405 focused cases, 35 native-asset cases and 7 bundle checks pass. A new clean recorded gate is running. | 155 declared write set; milestone 154 regression gate | open |
+| D-04 | Actual Codex continue thread 01a11cb6-4f9d-7c41-8445-b940552c24fb invoked run-start and received duplicate-run because the native phase driver omitted its run environment. | bug | Blocker | Lend the driver-owned run identity to native tool processes. Two ownership regression cases plus all 46 phase/question cases pass; mutation probe fails without the fix. Live confirmation now returns driven:true on the same run; the later test-launch refusal is D-05. Evidence: verification/2026-10-08-reverify/native-run-ownership.json. | 154/06 task00 | closed |
+
+| D-05 | The actual Codex sandbox allows fixture execution and file writes but refuses Node output pipes with EPERM. The required AOF test command cannot start its child. Print-only probes confirm inherited output and file-backed capture work; ordinary and overlapped pipes fail. | prerequisite-gap | Blocker | Preserve native approval refusal and investigate output capture within the existing policy; no broader permission was granted. | 154/11 native acceptance; bounded test execution | open |
 
 ## Accept decision
 
 **NOT ACCEPTED after autonomous reverification.** The visual/keyboard lane now passes, default-Claude
 workflow evidence advanced, and the clean whole-tree gate actually ran. That gate is red; native
-Codex write permissions, full recovery and repeated prompt evaluation remain incomplete.
+Codex full recovery and repeated prompt evaluation remain incomplete. A fixture-only workspace-write
+launch policy was explicitly approved and real Codex refine completed; native build exposed D-04.
 No story was marked done and no milestone story checkbox was ticked. Milestone remains
 in-progress, its twelve stories remain in-review, and no acceptance OUTCOME or retrospective
 was fabricated. No genuine human UAT scenarios are declared in this milestone.

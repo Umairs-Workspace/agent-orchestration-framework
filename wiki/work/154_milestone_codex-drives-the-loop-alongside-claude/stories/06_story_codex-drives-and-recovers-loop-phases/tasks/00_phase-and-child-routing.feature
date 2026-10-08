@@ -31,3 +31,11 @@ Feature: phase and child routing
       Then the phase refuses with the missing asset or profile named
       And no assistant starts
 
+
+    @bug @finding-D-04
+    Scenario: Driven native bookkeeping retains the loop-owned run
+      Given a Codex phase whose driver has already minted its run
+      When the native session invokes run-start and run-complete for its item
+      Then both commands identify the existing driven run
+      And the child neither mints a duplicate nor settles the driver-owned run
+      And the driver settles it once after the phase ends

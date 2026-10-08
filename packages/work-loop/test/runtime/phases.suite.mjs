@@ -16,6 +16,9 @@ import { resolveWorkspaceId } from "../../../mesh/src/workspace-identity.mjs";
 import { createChildDrive } from "../../src/child-drive.mjs";
 import { buildLoopDeclaration, sessionLendFor, decideLoopAction, decideScheduleToClose, decideHaltRepair } from "../../src/engine.mjs";
 import { createRuntimeInvocation } from "../../src/commands/runtime-invocation.mjs";
+import { createWorkResolvers } from "../../../work/src/commands/resolve.mjs";
+import { createRunStartCommand } from "../../../work/src/commands/run-start.mjs";
+import { createRunCompleteCommand } from "../../../work/src/commands/run-complete.mjs";
 
 export async function nativePhaseFixture({ scenario = "complete", available = true, version, failFirstAskFile = false, heartbeatEvents = null } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "aof-native-loop-"));
@@ -63,6 +66,37 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  ...[false, true].map(managed => ({ name: `154/06 task00 — native ${managed ? "loop-managed" : "standalone"} phase lends run ownership to child bookkeeping`, async run() {
+    const f = await nativePhaseFixture();
+    try {
+      const run = managed ? await f.mint() : null;
+      const parentEnv = { AOF_RUN_ID: "outer-run", AOF_RUN_ITEM_DIR: "outer-item", FIXTURE_INHERITED: "retained" };
+      let observed;
+      const result = await f.drivers.continueDriverCommand.run({ ref: f.item.ref }, { ...f.ctx,
+        ...(managed ? { loopDrive: { runId: run.runId, execution: f.selected } } : {}),
+        agentSessionDriverOptions: { env: parentEnv, onTurnStarted: async () => {
+          const env = f.probes.at(-1).children[0].options.env;
+          const { resolveDrivenRun } = createWorkResolvers({ readRuns: a.execution.runs.readRuns });
+          const services = { resolveItemExact: async () => f.item, requireLocalCheckout: () => {}, resolveDrivenRun };
+          const started = await createRunStartCommand(services).runStartCommand.run({ ref: f.item.ref }, { env });
+          assert.equal(started.driven, true);
+          const completed = await createRunCompleteCommand(services).runCompleteCommand.run({ ref: f.item.ref, outcome: "done" }, { env });
+          assert.equal(completed.driven, true);
+          assert.equal(completed.runId, started.runId);
+          assert.equal(completed.state, "running", "the child cannot settle its driver's run");
+          assert.equal((await a.execution.runs.readRuns(f.item)).length, 1, "no duplicate child run");
+          assert.equal(env.FIXTURE_INHERITED, "retained");
+          assert.equal(await resolveDrivenRun({ env }, { ref: "154/07" }), null, "another item still owns its own bookkeeping");
+          observed = started.runId;
+        } },
+      });
+      assert.equal(result.outcome, "done", JSON.stringify(result));
+      const records = await a.execution.runs.readRuns(f.item);
+      assert.equal(records.length, 1); assert.equal(records[0].runId, observed);
+      assert.equal(records[0].state, managed ? "running" : "done");
+      assert.equal(parentEnv.AOF_RUN_ID, "outer-run", "caller environment is not mutated");
+    } finally { await f.cleanup(); }
+  } })),
   ...["server connected but no work event", "normalized tool or text activity", "runtime hooks disabled", "owned server process exits"].map(activity => ({ name: `154/08 task01 — Liveness is distinct from useful progress: ${activity}`, async run() {
     const beats = []; const f = await nativePhaseFixture({ scenario: "active", heartbeatEvents: beats });
     try {
