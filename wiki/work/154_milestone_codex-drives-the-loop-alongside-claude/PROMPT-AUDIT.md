@@ -1,7 +1,7 @@
 ---
 doc: prompt-audit
 created: 2026-10-07
-updated: 2026-10-07
+updated: 2026-10-08
 ---
 # Runtime prompt audit
 
@@ -70,3 +70,30 @@ section when shared obligations change. Installation is ownership guarded, not a
 | skill:codex-implementation | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (679 common-body words baseline) | none |
 | skill:codex-review | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (466 common-body words baseline) | none |
 | skill:codex-computer-use | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (897 common-body words baseline) | none |
+
+## Frozen behavioral workload — 154/11, before measurement
+
+Status: protocol authored; no live samples or accepted performance optimization.
+Keep the snapshot, workload, runtime CLI/profile, exact model and effort fixed within
+each baseline/candidate pair. Start each repetition from a fresh isolated fixture.
+The first functional native Codex variant is the functional baseline; the historical
+compatibility preamble was not executable and supplies no before/after timing claim.
+Claude's common procedure is its separate baseline, not a Codex comparison arm.
+
+| case | fixed stimulus | required correctness evidence |
+|---|---|---|
+| refine | one framed fixture story and an out-of-scope sentinel | authored tagged contracts; read/write ownership; no sentinel change or sibling execution |
+| build-review-fix | a small declared answer task and one reproduced regression | actual test and validate/doctor gates; bounded fix; attributable independent review without editing production |
+| blocking-question | one explicit business decision, then interruption before delivery | durable token/thread; no fabricated answer; one ask at a time; authorized answer delivered once after recovery |
+| repair | one recorded repairable lane halt and the same allowed change | named cause reproduced; bounded repair; preserved runtime/identity and scope; gates rerun before retry |
+
+Run each available baseline and candidate at least three times per case. Record
+revision and prompt digests, sample/repetition, native session ids, correctness,
+scope escapes, missed gates, unnecessary questions, review independence, elapsed
+time and available usage. Missing counters and monetary cost are null with a reason.
+Report variability as well as any measured benefit, within each runtime first.
+Reject a cheaper variant that misses a gate, escapes scope or weakens independence;
+record the failed case and retained/reverted variant. Source word counts above are
+loaded-context observations only, not measured execution improvements. The deterministic
+154/11 transport fixtures test plumbing and bounds; they are not samples of this workload.
+Manual sampling, native prerequisite failures and acceptance evidence belong to verify.

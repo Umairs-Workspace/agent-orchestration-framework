@@ -1,6 +1,24 @@
 Feature: AOF CLI lifecycle
   User-facing lifecycle commands should stay stable across refactors.
 
+  Scenario: 154/11 Claude retains the isolated default lifecycle and failure bound
+    Given a deterministic runtime regression for "claude"
+    Then its real CLI, phase gates and settled runs pass
+    And a persistently failing task stops within the recorded bound
+
+  Scenario: 154/11 Codex retains the isolated native lifecycle and failure bound
+    Given a deterministic runtime regression for "codex"
+    Then its real CLI, phase gates and settled runs pass
+    And a persistently failing task stops within the recorded bound
+
+  Scenario: 154/11 live fixture preparation is not live acceptance
+    Given a prepared live runtime fixture for "codex"
+    Then it has native assets and an isolated global home without launching or accepting
+
+  Scenario: 154/11 an unsupported Codex profile is not a passing lifecycle
+    Given an unsupported Codex runtime regression
+    Then its profile refusal precedes phase work
+
   Scenario: Show command help
     Given an empty project
     When I run `--help`

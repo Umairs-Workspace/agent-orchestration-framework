@@ -684,6 +684,7 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   Object.freeze({ directory: "test/fixtures/rubric-reports", why: "eight rubric report fixtures — data the rubric suites read, not a layer of modules." }),
   Object.freeze({ directory: "test/integration/support", why: "seven integration helpers, under the threshold." }),
   Object.freeze({ directory: "test/integration", why: "four integration suites plus their subdirectories — a bounded layer under the threshold." }),
+  Object.freeze({ directory: "test/support/runtime-loop", why: "154/11: one isolated runtime lifecycle fixture shared by the existing integration feature and explicit verification preparation tool; below the flat-layer threshold. The support root and both integration ceilings stay unchanged." }),
   // 119/03 — the first subject directory under `test/support/`, and the row above asked for it by
   // name: `test/support` was at its ceiling of 68 and its `why` says a 69th belongs in a subject
   // directory rather than beside the other 68. Two helpers answer one question — where a suite

@@ -102,3 +102,29 @@ outcomes, cancellation, restart with a parked answer, and usage on the chosen su
 Only public schemas and help were inspected during refinement. No paid model session, credential
 inspection, dependency install or product implementation was performed. A failed live probe blocks
 the dependent integration story until fixed; it never licenses a silent transport or model fallback.
+
+## R7 · Delivery proof boundaries, 2026-10-08
+
+The implementation's versioned profile now admits 0.160.0; the initially observed
+0.130.0 candidate is refused. This is a protocol-fixture allowlist, not completed live
+compatibility proof. The pinned public schema evidence and deterministic phase/run
+tests do not establish account access, native review independence or worker recovery.
+No global CLI upgrade, credential inspection or paid model call was performed here.
+The read-only version probe on 2026-10-08 now reports `codex-cli 0.160.0` locally;
+the earlier 0.130.0 observation is historical. Version availability is not live proof.
+
+Story 11 adds a real CLI/loop fixture with scripted assistant transports. It migrates
+a historical asset DSL, then explicitly configures the new runtime/work settings;
+legacy config-format migration is not a promise to preserve arbitrary new work keys.
+`work init --runtime claude,codex` installs the bundle choices; `work update` reads its
+manifest and refuses a runtime flag. The fixture exercises both native asset layouts,
+canonical inspection, actual rubric/validate/doctor and settled run records. Its failing
+arm introduces a new failing task case after the harness baseline so it cannot be
+excluded as an inherited failure; progress reset limits remain the contract's own.
+
+The explicit preparation tool retains a separate live project/global home with a
+strict initially-red answer test and orchestrated role requirement. Preparation never
+launches an assistant or accepts an item. The frozen four-case prompt protocol is in
+PROMPT-AUDIT; no repeated model measurements, cost benefit or cross-runtime performance
+claim is made. Native lifecycle/recovery, the comparable live Claude run, six fitness
+red probes and visual design remain for the verification phase.
