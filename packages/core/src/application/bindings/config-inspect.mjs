@@ -2045,5 +2045,15 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     }
   }
 
-  return { inspectConfig, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
+  // The editor uses this same resolver for absent configuration and save validation.
+  // Inspection cannot prove a native model catalog that has not been supplied.
+  function inspectExecutionSettings(config, options = {}) {
+    const settings = { ...options, roles: [...acdRoleSet()] };
+    return {
+      ...inspectExecution(config, settings),
+      executionByRuntime: Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(config, { ...settings, runtime })])),
+    };
+  }
+
+  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
 }

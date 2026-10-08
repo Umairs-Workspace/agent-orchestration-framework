@@ -1,6 +1,8 @@
 import { assets } from "./support/assets-services.mjs";
 import assert from "node:assert/strict";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import childProcess from "node:child_process";
+import { syncBuiltinESMExports } from "node:module";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp } from "node:fs/promises";
@@ -11,6 +13,15 @@ const saveEditableSections = assets.configEditor.saveEditableSections;
 const validateEditableResource = assets.configEditor.validateEditableResource;
 
 export const configEditorTests = [
+  { name: "154/10 task00 E1 — installed assets remain separate from the inherited Claude execution and provenance", run: executionDefaults },
+  { name: "154/10 task00 E2 — execution roundtrip preserves memory, assets, overrides and legacy Claude without processes", run: executionRoundtrip },
+  ...[
+    ["unknown execution runtime", { runtime: "other" }, "work.loop.runtime"],
+    ["malformed phase settings", { runtimes: { codex: { session: { models: [] } } } }, "work.agents.runtimes.codex.session.models"],
+    ["unsupported effort for the selected model", { runtime: "codex", runtimes: { codex: { session: { models: { continue: "fixture" }, effort: { continue: "low" } } } } }, "work.agents.runtimes.codex.session.effort.continue"],
+    ["invalid runtime-scoped model map", { runtimes: { codex: { models: [] } } }, "work.agents.runtimes.codex.models"],
+  ].map(([name, edit, field]) => ({ name: `154/10 task00 invalid edit — ${name} leaves persisted bytes unchanged`, run: () => invalidExecutionEdit(edit, field) })),
+  { name: "154/10 execution settings refuse global scope and do not create a global execution config", run: globalExecutionRefusal },
   {
     name: "exposes central capability payload",
     run: exposesCapabilities
@@ -48,6 +59,95 @@ export const configEditorTests = [
     run: preservesWorkConfig
   }
 ];
+
+async function withExecutionProject(run) {
+  const root = await mkdtemp(path.join(os.tmpdir(), "aof-execution-editor-"));
+  const configPath = path.join(root, ".aof", "aof.config.json");
+  const config = {
+    name: "execution-editor", resources: [{ kind: "skill", id: "context", body: "Keep context", runtimes: ["claude", "codex"] }], packages: [],
+    memory: { backend: "local" }, runtimes: { codex: { config: { model: "asset-model" } } },
+    settings: { claude: { permissions: { allow: ["Read"] } } },
+    work: { dir: "./delivery", loop: { reviewRounds: 2 }, agents: { mode: "solo", session: { models: { continue: "legacy-claude" }, effort: { continue: "high" } }, runtimes: { claude: { models: { "aof-architect": "claude-role" } } } } },
+  };
+  const options = { env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } };
+  try {
+    await mkdir(path.dirname(configPath));
+    await writeFile(configPath, JSON.stringify(config));
+    await writeFile(path.join(root, ".aof", "aof.lock.json"), JSON.stringify({ version: 2, runtimes: ["claude"], work: { runtimes: ["codex"] } }));
+    await run({ root, config, configPath, options });
+  } finally { assert.ok(path.resolve(root).startsWith(path.resolve(os.tmpdir()) + path.sep)); await rm(root, { recursive: true, force: true }); }
+}
+
+async function executionDefaults() {
+  await withExecutionProject(async ({ root, configPath, options }) => {
+    const original = await readFile(configPath, "utf8");
+    const payload = await loadEditableConfig(root, options);
+    assert.equal(payload.execution.runtime, "claude");
+    assert.equal(payload.execution.runtimeSource, "default");
+    assert.deepEqual(payload.assetRuntimes, ["claude", "codex"]);
+    assert.equal(payload.execution.phases.continue.modelSource, "work.agents.session.models.continue");
+    assert.equal(payload.execution.roles["aof-architect"].modelSource, "work.agents.runtimes.claude.models.aof-architect");
+    assert.equal(payload.executionSettings.runtime, null);
+    assert.equal(payload.executionByRuntime.codex.execution.phases.continue.model, null);
+    assert.equal(payload.executionByRuntime.codex.execution.unproven, true);
+    assert.equal(await readFile(configPath, "utf8"), original);
+  });
+}
+
+async function executionRoundtrip() {
+  await withExecutionProject(async ({ root, config, configPath, options }) => {
+    const originals = Object.fromEntries(["spawn", "spawnSync", "exec", "execSync", "execFile", "execFileSync"].map(key => [key, childProcess[key]]));
+    const calls = [];
+    for (const key of Object.keys(originals)) childProcess[key] = (...args) => { calls.push([key, args[0]]); throw new Error("Configuration editing must not launch a process"); };
+    syncBuiltinESMExports();
+    try {
+      const edit = { runtime: "codex", runtimes: { ...config.work.agents.runtimes, codex: { session: { models: { continue: "codex-model" }, effort: { continue: "high" } }, models: { "aof-architect": "codex-role" } } } };
+      const result = await saveEditableSections(root, { executionSettings: edit }, options);
+      assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+      const saved = JSON.parse(await readFile(configPath, "utf8"));
+      for (const key of ["memory", "resources", "runtimes", "settings"]) assert.deepEqual(saved[key], config[key], key);
+      assert.deepEqual(saved.work.agents.session, config.work.agents.session);
+      assert.deepEqual(saved.work.agents.runtimes.claude, config.work.agents.runtimes.claude);
+      assert.equal(saved.work.dir, config.work.dir);
+      assert.equal(saved.work.loop.reviewRounds, 2);
+      assert.equal(saved.work.agents.mode, "solo");
+      const loaded = await loadEditableConfig(root, options);
+      assert.deepEqual(loaded.executionSettings, edit);
+      assert.equal(loaded.execution.runtime, "codex");
+      assert.equal(loaded.execution.runtimeSource, "project");
+      assert.equal(loaded.execution.phases.continue.model, "codex-model");
+      assert.equal(loaded.execution.phases.continue.modelSource, "work.agents.runtimes.codex.session.models.continue");
+      assert.equal(loaded.execution.roles["aof-architect"].model, "codex-role");
+      assert.deepEqual(calls, []);
+      assert.deepEqual((await readdir(root)).sort(), [".aof"]);
+      assert.equal((await saveEditableSections(root, { executionSettings: { runtime: null } }, options)).ok, true);
+      assert.equal((await loadEditableConfig(root, options)).execution.runtimeSource, "default");
+      assert.equal((await saveEditableSections(root, { settings: config.settings }, options)).ok, true);
+      assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")).memory, config.memory);
+    } finally { Object.assign(childProcess, originals); syncBuiltinESMExports(); }
+  });
+}
+
+async function invalidExecutionEdit(edit, field) {
+  await withExecutionProject(async ({ root, configPath, options }) => {
+    const original = await readFile(configPath, "utf8");
+    const capabilities = { codex: { models: [{ id: "fixture", model: "fixture", isDefault: true, supportedReasoningEfforts: ["high"] }] } };
+    const result = await saveEditableSections(root, { executionSettings: edit }, { ...options, capabilities });
+    assert.equal(result.ok, false);
+    assert.ok(result.diagnostics.some(value => value.path === field && value.message), JSON.stringify(result.diagnostics));
+    assert.equal(await readFile(configPath, "utf8"), original);
+  });
+}
+
+async function globalExecutionRefusal() {
+  await withExecutionProject(async ({ root, configPath, options }) => {
+    const original = await readFile(configPath, "utf8");
+    const result = await saveEditableSections(root, { executionSettings: { runtime: "codex" } }, { ...options, scope: "global" });
+    assert.equal(result.ok, false);
+    assert.equal(result.diagnostics[0].path, "scope");
+    assert.equal(await readFile(configPath, "utf8"), original);
+  });
+}
 
 function exposesCapabilities() {
   const payload = capabilitiesPayload();

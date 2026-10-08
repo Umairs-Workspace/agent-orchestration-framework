@@ -92,9 +92,9 @@ export const UI_DIRECTORY_BUDGETS = Object.freeze([
   }),
   Object.freeze({
     directory: "config",
-    ceiling: 4,
+    ceiling: 5,
     allowance: 0,
-    why: "the config editor. `App.tsx` is 1,298 of its 1,300-line ceiling, so the next region there MUST become a sibling module in this directory — which is the one growth this table expects to be asked for, and it should be asked for rather than taken.",
+    why: "the config editor. `App.tsx` is 1,298 of its 1,300-line ceiling, so the next region there MUST become a sibling module in this directory — which is the one growth this table expects to be asked for, and it should be asked for rather than taken. RAISED 4 -> 5 by 154/10 (ADR-008) for RuntimeSettings.tsx, the project execution region mandated by DESIGN. App mounts it in the existing settings section; effective choices still come from the canonical server resolver. Exactly five delivered members, zero allowance. Further regions must split an existing owner or justify their own module; this admits no extra primitive, route or directory.",
   }),
   Object.freeze({
     directory: "fleet",
