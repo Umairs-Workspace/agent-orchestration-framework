@@ -4,7 +4,7 @@ number: 6
 slug: codex-drives-and-recovers-loop-phases
 title: "Codex drives and recovers the existing work loop"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -37,3 +37,7 @@ As an operator, I want Codex to refine, build, review, verify and recover within
   overlaps. Dependencies express delivered interfaces, not an assertion that all stories can run together.
 - Examples are proposed from the agreed milestone scope; there are no unanswered business questions.
   Build must implement executable traceability and register each new suite before reporting green.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. The actual single sequential native loop ee80af33-bed4-4791-8c0a-0b4d774d312e completed refine, build with independent review, story verify and milestone verify; all four owned runs settled done and the real fixture regression gate passed. Separate native warm-fix, question/restart and stop-during-tool evidence passes. Permission refusals remain explicit. See codex-complete-loop.json and codex-warm-stop.json. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
