@@ -126,6 +126,11 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       }
       if (!named(message.method)) { fail("protocol_invalid_message"); return; }
       if (finishing || terminal) return;
+      // Output deltas and legacy/extension notifications are not consumed here.
+      // Discard them before the persistence queue: a verbose native command must
+      // not crowd out phase results, usage, questions or approval refusals.
+      if (!Object.hasOwn(message, "id") && !["turn/started", "turn/completed", "thread/tokenUsage/updated",
+        "item/started", "item/completed", "item/agentMessage/delta"].includes(message.method)) return;
       if (++queued > CODEX_PROFILE.queuedMessages) { fail("protocol_queue_limit"); return; }
       events = events.then(() => event(message)).catch(() => fail("persistence_failed")).finally(() => { queued--; });
     }

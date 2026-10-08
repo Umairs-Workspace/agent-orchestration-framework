@@ -43,3 +43,11 @@ Feature: protocol and results
         | an unknown mandatory server request |
         | a terminal disconnect before result |
 
+
+    @bug @finding-D-06
+    Scenario: Ignorable native notifications cannot exhaust the durable event queue
+      Given a native command emits a burst of output and extension notifications
+      When the adapter receives those notifications alongside usage and phase completion
+      Then it discards notifications it does not consume before queue admission
+      And the bounded queue preserves native identity, usage and the completed phase result
+      And server requests still reach the permission and question handlers

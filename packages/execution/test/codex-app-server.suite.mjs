@@ -47,6 +47,10 @@ export function codexFixture({ scenario = "complete", delivery = "ordinary", ver
           if (scenario === "stderr-error") { child.stderr.emit("error", new Error(secret)); return; }
           const result = scenario === "structured-question" ? { status: "needs_input", question: { token: "structured-token", text: "Choose a behaviour", choices: ["First", "Second"] }, failureReason: null } : fixture.complete;
           const frames = [{ method: "thread/tokenUsage/updated", params: fixture.usage }];
+          if (delivery === "notification-burst") for (let i = 0; i < 512; i++) frames.push({
+            method: ["codex/event/exec_command_output_delta", "item/commandExecution/outputDelta", "fixture/harmless"][i % 3],
+            params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId, delta: secret },
+          });
           if (delivery === "unknown" || delivery === "interleaved") frames.push({ method: "fixture/harmless", params: {} });
           if (scenario !== "transport-only") frames.push({ method: "item/completed", params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId, item: { type: "agentMessage", phase: "final_answer", text: JSON.stringify(result) } } });
           frames.push({ method: "turn/completed", params: { threadId: fixture.nativeThreadId, turn: { id: fixture.nativeTurnId, status: "completed" } } });
@@ -66,7 +70,7 @@ function released(probe) {
   assert.equal(probe.children.length, 1);
 }
 export const codexAppServerTests = [
-  ...["ordinary", "split", "coalesced", "interleaved", "unknown"].map(delivery => ({ name: `154/02 task00 — attributable phase input and completed result: ${delivery}`, async run() {
+  ...["ordinary", "split", "coalesced", "interleaved", "unknown", "notification-burst"].map(delivery => ({ name: `154/02 task00 — attributable phase input and completed result: ${delivery}`, async run() {
     const p = codexFixture({ delivery }); const identities = [], usage = [];
     const result = await p.adapter.drive(p.brief, { ...p.options, onIdentity: async id => identities.push(id), onUsage: async value => usage.push(value) });
     assert.equal(result.outcome, "done"); assert.equal(result.sessionId, fixture.nativeThreadId); assert.deepEqual(identities, [fixture.nativeThreadId]);
