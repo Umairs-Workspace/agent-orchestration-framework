@@ -1,0 +1,147 @@
+{
+  "started": "2026-10-08T15:06:19.129Z",
+  "ended": "2026-10-08T15:06:57.947Z",
+  "fixtureRevision": "e1323a16da0e34d6115c175ad826238bb41c7072",
+  "result": {
+    "outcome": "failed",
+    "failureReason": "operator_action_required",
+    "sessionId": "01a11c0d-0bb7-7731-849b-e183cb319513",
+    "processStarted": true,
+    "cliVersion": "0.160.0",
+    "profile": "codex-app-server-v1",
+    "profileVersion": 1,
+    "execution": {
+      "version": 1,
+      "runtime": "codex",
+      "runtimeSource": "flag",
+      "transport": "app-server-stdio",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "phases": {
+        "refine": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "default"
+        },
+        "continue": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "default"
+        },
+        "verify": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "default"
+        }
+      },
+      "roles": {}
+    }
+  },
+  "events": [
+    {
+      "method": "thread-response",
+      "id": "01a11c0d-0bb7-7731-849b-e183cb319513",
+      "approvalPolicy": "on-request",
+      "sandbox": {
+        "type": "readOnly",
+        "networkAccess": false
+      }
+    },
+    {
+      "method": "item/commandExecution/requestApproval",
+      "keys": [
+        "kind",
+        "threadId",
+        "turnId",
+        "itemId",
+        "startedAtMs",
+        "environmentId",
+        "reason",
+        "command",
+        "cwd",
+        "commandActions",
+        "proposedExecpolicyAmendment",
+        "availableDecisions"
+      ],
+      "cwd": "CHECKOUT\\.tmp\\154-reverify-temp\\aof-live-runtime-dcDM6K\\project",
+      "command": "\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -NoProfile -Command \"node CHECKOUT\\\\.tmp\\\\154-reverify-checkout\\\\packages\\\\core\\\\bin\\\\aof.mjs work run-start 07/01 --json\"",
+      "reason": "The native read-only sandbox blocked the required AOF run record. Do you want to allow this run-start command to write the record?"
+    }
+  ],
+  "usage": [
+    {
+      "sessionId": "01a11c0d-0bb7-7731-849b-e183cb319513",
+      "turnId": "01a11c0d-1c97-73c3-9dc0-5b4116bf3e31",
+      "total": {
+        "totalTokens": 22281,
+        "inputTokens": 22167,
+        "cachedInputTokens": 0,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 114,
+        "reasoningOutputTokens": 0
+      },
+      "last": {
+        "totalTokens": 22281,
+        "inputTokens": 22167,
+        "cachedInputTokens": 0,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 114,
+        "reasoningOutputTokens": 0
+      },
+      "modelContextWindow": 258400
+    },
+    {
+      "sessionId": "01a11c0d-0bb7-7731-849b-e183cb319513",
+      "turnId": "01a11c0d-1c97-73c3-9dc0-5b4116bf3e31",
+      "total": {
+        "totalTokens": 54065,
+        "inputTokens": 53737,
+        "cachedInputTokens": 22016,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 328,
+        "reasoningOutputTokens": 35
+      },
+      "last": {
+        "totalTokens": 31784,
+        "inputTokens": 31570,
+        "cachedInputTokens": 22016,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 214,
+        "reasoningOutputTokens": 35
+      },
+      "modelContextWindow": 258400
+    },
+    {
+      "sessionId": "01a11c0d-0bb7-7731-849b-e183cb319513",
+      "turnId": "01a11c0d-1c97-73c3-9dc0-5b4116bf3e31",
+      "total": {
+        "totalTokens": 90032,
+        "inputTokens": 89463,
+        "cachedInputTokens": 53376,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 569,
+        "reasoningOutputTokens": 78
+      },
+      "last": {
+        "totalTokens": 35967,
+        "inputTokens": 35726,
+        "cachedInputTokens": 31360,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 241,
+        "reasoningOutputTokens": 43
+      },
+      "modelContextWindow": 258400
+    }
+  ],
+  "identities": [
+    "01a11c0d-0bb7-7731-849b-e183cb319513",
+    {
+      "sessionId": "01a11c0d-0bb7-7731-849b-e183cb319513",
+      "turnId": "01a11c0d-1c97-73c3-9dc0-5b4116bf3e31"
+    }
+  ],
+  "accepted": false
+}
