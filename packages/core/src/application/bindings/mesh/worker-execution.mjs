@@ -6,7 +6,7 @@ import { compileBriefForItem } from "@aof/work/phase-brief-read";
 import { validateExecutionEnvelope, validateExecutionCapabilities } from "@aof/execution/runtime-selection";
 import { prepareCodexWorktree } from "../../../codex-settings.mjs";
 
-export function assembleMeshWorkerExecution({ workServices, runStoreServices, runSessionCaptureServices, effectsRunTransitionsServices, effectsAssignmentTransitionsServices, meshParkResumeServices, meshWorktreeServices, workDispatchServices, meshPresenceServices, agentSessionDriverServices, degradeServices, runHeartbeatConsumptionServices, meshWorkerLaunchServices, meshWorkerRepoAdmissionServices, runtimeSessionServices, commandsDriveServices, loopAskServices, loopAskRequestServices }) {
+export function assembleMeshWorkerExecution({ workServices, runStoreServices, runSessionCaptureServices, effectsRunTransitionsServices, effectsItemTransitionsServices, effectsAssignmentTransitionsServices, meshParkResumeServices, meshWorktreeServices, workDispatchServices, meshPresenceServices, agentSessionDriverServices, degradeServices, runHeartbeatConsumptionServices, meshWorkerLaunchServices, meshWorkerRepoAdmissionServices, runtimeSessionServices, commandsDriveServices, loopAskServices, loopAskRequestServices }) {
   // Core composition for mesh-owned runtime services.
 
   const { findWork } = workServices;
@@ -80,6 +80,19 @@ export function assembleMeshWorkerExecution({ workServices, runStoreServices, ru
     canResume: (sessionId, cwd, options) => runtimeSessionServices.canResume("codex", sessionId, { ...options, cwd }),
     inspectPhase: ({ item, worktreeItem, worktreePath, ws, execution, phase }, options) => commandsDriveServices.driveNativePhase(phase, item, { dryRun: true }, { workspace: { ...ws, projectRoot: worktreePath }, agentSessionDriverOptions: options, loopDrive: { execution, briefItem: worktreeItem } }),
     async drive({ item, worktreeItem, worktreePath, ws, runRecord, phase, answer }, options = {}) {
+      // The worker mints its one run in the primary AFTER materializing the lane.
+      // That run starts the primary item; the lane still has its pre-mint status.
+      // Advance the lane through the existing guarded status transition, without
+      // minting a second run or rolling an already-reviewed item backwards.
+      if (phase !== "repair" && worktreeItem.dir !== item.dir && workServices.typeHasRecordDoc(worktreeItem.type)) {
+        try {
+          await effectsItemTransitionsServices.transitionItemStatus(worktreeItem,
+            { toStatus: "in-progress", expectFrom: ["not-started", "blocked"] },
+            { journalOptions: { env: options.env } });
+        } catch (error) {
+          if (error?.code !== "status-edge-not-applicable") throw error;
+        }
+      }
       const controller = new AbortController();
       let started = false;
       const ctx = { workspace: { ...ws, projectRoot: worktreePath }, globalWorkStoreOptions: { env: options.env ?? process.env }, loopDrive: { runId: runRecord.runId, execution: runRecord.execution, briefItem: worktreeItem }, agentSessionDriverOptions: {

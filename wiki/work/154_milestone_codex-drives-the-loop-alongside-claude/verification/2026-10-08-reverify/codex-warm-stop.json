@@ -1,0 +1,773 @@
+{
+  "warmFirst": {
+    "stage": "warm",
+    "started": "2026-10-08T19:09:09.911Z",
+    "fixtureRevision": "1df233ef329557aa69f4ca6d0fdfc7488f366d0c",
+    "sourceRevision": "3dec8d1e",
+    "events": [
+      {
+        "type": "thread",
+        "id": "01a11ce6-7658-7151-81af-63593236ed2a"
+      },
+      {
+        "type": "process-closed",
+        "pid": 46632,
+        "code": 0
+      },
+      {
+        "type": "thread",
+        "id": "01a11ce6-7658-7151-81af-63593236ed2a",
+        "policy": {
+          "type": "workspaceWrite",
+          "writableRoots": [
+            "<workspace>\\.tmp\\154-recovery-temp\\aof-live-runtime-iIPZkg\\global-aof"
+          ],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": true,
+          "excludeSlashTmp": true
+        }
+      },
+      {
+        "type": "process-closed",
+        "pid": 32348,
+        "code": 0
+      }
+    ],
+    "pids": [
+      46632,
+      32348
+    ],
+    "before": {
+      "runId": "20261008T190347390Z-0001",
+      "itemRef": "07/01",
+      "state": "done",
+      "attempt": 1,
+      "outcome": "done",
+      "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+      "brief": {
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+              "turnId": "01a11ce6-8153-7613-8f72-659308a7dfed",
+              "baseline": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheCreate": 0,
+                "reasoningOutput": 0,
+                "total": 0
+              },
+              "latest": {
+                "input": 817757,
+                "output": 2954,
+                "cacheRead": 766464,
+                "cacheCreate": 0,
+                "reasoningOutput": 329,
+                "total": 820711
+              },
+              "tokens": {
+                "input": 817757,
+                "output": 2954,
+                "cacheRead": 766464,
+                "cacheCreate": 0,
+                "reasoningOutput": 329,
+                "total": 820711
+              },
+              "lastActivityAt": "2026-10-08T19:05:49.469Z"
+            }
+          ],
+          "tokens": {
+            "input": 817757,
+            "output": 2954,
+            "cacheRead": 766464,
+            "cacheCreate": 0,
+            "reasoningOutput": 329,
+            "total": 820711
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T19:05:49.469Z"
+        }
+      },
+      "createdAt": "2026-10-08T19:03:47.390Z",
+      "updatedAt": "2026-10-08T19:05:49.575Z",
+      "failureReason": null,
+      "heartbeatAt": "2026-10-08T19:03:47.722Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": null,
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "result": {
+      "ref": "07/01",
+      "phase": "continue",
+      "command": "$aof-continue 07/01 --solo",
+      "outcome": "failed",
+      "failureReason": "phase_failed",
+      "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+      "processStarted": true,
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      },
+      "cleanupWarnings": [
+        "interrupt_failed"
+      ],
+      "settlementContext": {
+        "runtime": "codex",
+        "projectsDir": null,
+        "transcriptBaseline": null,
+        "spendBaselineAvailable": false,
+        "reason": "runtime-spend-unavailable"
+      }
+    },
+    "run": {
+      "runId": "20261008T190910367Z-0002",
+      "itemRef": "07/01",
+      "state": "failed",
+      "attempt": 1,
+      "outcome": "failed",
+      "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+      "brief": {
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+              "turnId": "01a11ceb-69e2-7f90-85fe-b5b96fe1ef5c",
+              "baseline": {
+                "input": 817757,
+                "output": 2954,
+                "cacheRead": 766464,
+                "cacheCreate": 0,
+                "reasoningOutput": 329,
+                "total": 820711
+              },
+              "latest": {
+                "input": 1284814,
+                "output": 4484,
+                "cacheRead": 1226496,
+                "cacheCreate": 0,
+                "reasoningOutput": 573,
+                "total": 1289298
+              },
+              "tokens": {
+                "input": 467057,
+                "output": 1530,
+                "cacheRead": 460032,
+                "cacheCreate": 0,
+                "reasoningOutput": 244,
+                "total": 468587
+              },
+              "lastActivityAt": "2026-10-08T19:10:17.054Z"
+            }
+          ],
+          "tokens": {
+            "input": 467057,
+            "output": 1530,
+            "cacheRead": 460032,
+            "cacheCreate": 0,
+            "reasoningOutput": 244,
+            "total": 468587
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T19:10:17.054Z"
+        }
+      },
+      "createdAt": "2026-10-08T19:09:10.367Z",
+      "updatedAt": "2026-10-08T19:10:17.141Z",
+      "failureReason": "phase_failed",
+      "heartbeatAt": "2026-10-08T19:09:10.515Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": null,
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "ask": null,
+    "ended": "2026-10-08T19:10:17.201Z"
+  },
+  "warmRetry": {
+    "stage": "warm",
+    "started": "2026-10-08T19:17:13.574Z",
+    "fixtureRevision": "1df233ef329557aa69f4ca6d0fdfc7488f366d0c",
+    "sourceRevision": "3dec8d1e",
+    "events": [
+      {
+        "type": "thread",
+        "id": "01a11ce6-7658-7151-81af-63593236ed2a"
+      },
+      {
+        "type": "process-closed",
+        "pid": 32972,
+        "code": 0
+      },
+      {
+        "type": "thread",
+        "id": "01a11ce6-7658-7151-81af-63593236ed2a",
+        "policy": {
+          "type": "workspaceWrite",
+          "writableRoots": [
+            "<workspace>\\.tmp\\154-recovery-temp\\aof-live-runtime-iIPZkg\\global-aof"
+          ],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": true,
+          "excludeSlashTmp": true
+        }
+      },
+      {
+        "type": "process-closed",
+        "pid": 27744,
+        "code": 0
+      }
+    ],
+    "pids": [
+      32972,
+      27744
+    ],
+    "before": {
+      "runId": "20261008T190347390Z-0001",
+      "itemRef": "07/01",
+      "state": "done",
+      "attempt": 1,
+      "outcome": "done",
+      "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+      "brief": {
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+              "turnId": "01a11ce6-8153-7613-8f72-659308a7dfed",
+              "baseline": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheCreate": 0,
+                "reasoningOutput": 0,
+                "total": 0
+              },
+              "latest": {
+                "input": 817757,
+                "output": 2954,
+                "cacheRead": 766464,
+                "cacheCreate": 0,
+                "reasoningOutput": 329,
+                "total": 820711
+              },
+              "tokens": {
+                "input": 817757,
+                "output": 2954,
+                "cacheRead": 766464,
+                "cacheCreate": 0,
+                "reasoningOutput": 329,
+                "total": 820711
+              },
+              "lastActivityAt": "2026-10-08T19:05:49.469Z"
+            }
+          ],
+          "tokens": {
+            "input": 817757,
+            "output": 2954,
+            "cacheRead": 766464,
+            "cacheCreate": 0,
+            "reasoningOutput": 329,
+            "total": 820711
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T19:05:49.469Z"
+        }
+      },
+      "createdAt": "2026-10-08T19:03:47.390Z",
+      "updatedAt": "2026-10-08T19:05:49.575Z",
+      "failureReason": null,
+      "heartbeatAt": "2026-10-08T19:03:47.722Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": null,
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "result": {
+      "ref": "07/01",
+      "phase": "continue",
+      "command": "$aof-continue 07/01 --solo",
+      "outcome": "done",
+      "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+      "processStarted": true,
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      },
+      "settlementContext": {
+        "runtime": "codex",
+        "projectsDir": null,
+        "transcriptBaseline": null,
+        "spendBaselineAvailable": false,
+        "reason": "runtime-spend-unavailable"
+      }
+    },
+    "run": {
+      "runId": "20261008T191714690Z-0003",
+      "itemRef": "07/01",
+      "state": "done",
+      "attempt": 1,
+      "outcome": "done",
+      "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+      "brief": {
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11ce6-7658-7151-81af-63593236ed2a",
+              "turnId": "01a11cf2-dcb0-7731-a30f-c1d9c0f53402",
+              "baseline": {
+                "input": 1284814,
+                "output": 4484,
+                "cacheRead": 1226496,
+                "cacheCreate": 0,
+                "reasoningOutput": 573,
+                "total": 1289298
+              },
+              "latest": {
+                "input": 1805697,
+                "output": 6128,
+                "cacheRead": 1739520,
+                "cacheCreate": 0,
+                "reasoningOutput": 652,
+                "total": 1811825
+              },
+              "tokens": {
+                "input": 520883,
+                "output": 1644,
+                "cacheRead": 513024,
+                "cacheCreate": 0,
+                "reasoningOutput": 79,
+                "total": 522527
+              },
+              "lastActivityAt": "2026-10-08T19:19:06.411Z"
+            }
+          ],
+          "tokens": {
+            "input": 520883,
+            "output": 1644,
+            "cacheRead": 513024,
+            "cacheCreate": 0,
+            "reasoningOutput": 79,
+            "total": 522527
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T19:19:06.411Z"
+        }
+      },
+      "createdAt": "2026-10-08T19:17:14.690Z",
+      "updatedAt": "2026-10-08T19:19:06.740Z",
+      "failureReason": null,
+      "heartbeatAt": "2026-10-08T19:17:15.709Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": null,
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "ask": null,
+    "ended": "2026-10-08T19:19:06.928Z"
+  },
+  "operatorStop": {
+    "started": "2026-10-08T19:27:12.385Z",
+    "fixture": {
+      "projectDir": "<workspace>\\.tmp\\154-stop-1791487629642\\project",
+      "globalDir": "<workspace>\\.tmp\\154-stop-1791487629642\\global-aof"
+    },
+    "events": [
+      {
+        "type": "spawn",
+        "pid": 46280,
+        "cwd": "<workspace>\\.tmp\\154-stop-1791487629642\\project",
+        "at": "2026-10-08T19:27:13.150Z"
+      },
+      {
+        "type": "process-closed",
+        "pid": 46280,
+        "code": 0,
+        "at": "2026-10-08T19:27:13.978Z"
+      },
+      {
+        "type": "spawn",
+        "pid": 26908,
+        "cwd": "<workspace>\\.tmp\\154-stop-1791487629642\\project",
+        "at": "2026-10-08T19:27:18.550Z"
+      },
+      {
+        "type": "thread",
+        "id": "01a11cfb-fdb6-7293-a7ba-1731539f53d2",
+        "policy": {
+          "type": "workspaceWrite",
+          "writableRoots": [
+            "<workspace>\\.tmp\\154-stop-1791487629642\\global-aof"
+          ],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": true,
+          "excludeSlashTmp": true
+        }
+      },
+      {
+        "type": "operator-signal",
+        "at": "2026-10-08T19:27:31.758Z",
+        "level": 2
+      },
+      {
+        "type": "process-closed",
+        "pid": 26908,
+        "code": 0,
+        "at": "2026-10-08T19:27:31.961Z"
+      }
+    ],
+    "launches": [
+      {
+        "phase": "continue",
+        "task": "continue",
+        "command": "$aof-continue 07/01 --orchestrated",
+        "at": "2026-10-08T19:27:17.905Z",
+        "result": {
+          "outcome": "failed",
+          "failureReason": "abort",
+          "sessionId": "01a11cfb-fdb6-7293-a7ba-1731539f53d2",
+          "processStarted": true,
+          "cliVersion": "0.160.0",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "execution": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "work.agents.runtimes.codex.session.effort.continue",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "work.agents.runtimes.codex.session.effort.refine",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "work.agents.runtimes.codex.session.effort.verify",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "project",
+            "transport": "app-server-stdio",
+            "version": 1
+          }
+        },
+        "ended": "2026-10-08T19:27:31.962Z"
+      }
+    ],
+    "tool": {
+      "pid": 47488,
+      "started": "2026-10-08T19:27:31.724Z"
+    },
+    "result": {
+      "scope": "07",
+      "level": "L2",
+      "cap": 3,
+      "loopRunId": "db383e52-04e7-4bd1-b1b5-ebface04bedc",
+      "state": "halted",
+      "next": {
+        "state": "ready",
+        "ref": "07/01",
+        "type": "story",
+        "slug": "s01",
+        "status": "not-started",
+        "path": "<workspace>\\.tmp\\154-stop-1791487629642\\project\\wiki\\work\\07_milestone_wave\\stories\\01_story_s01",
+        "readySet": [
+          {
+            "state": "ready",
+            "ref": "07/01",
+            "type": "story",
+            "slug": "s01",
+            "status": "not-started",
+            "path": "<workspace>\\.tmp\\154-stop-1791487629642\\project\\wiki\\work\\07_milestone_wave\\stories\\01_story_s01",
+            "answeredFrom": "disk"
+          }
+        ],
+        "skipped": [],
+        "answeredFrom": "disk",
+        "wave": [
+          {
+            "state": "ready",
+            "ref": "07/01",
+            "type": "story",
+            "slug": "s01",
+            "status": "not-started",
+            "answeredFrom": "disk"
+          }
+        ],
+        "heldSet": []
+      },
+      "act": {
+        "act": "halt",
+        "ref": "07/01",
+        "stop": "operator-interrupt",
+        "producer": "SIGINT"
+      },
+      "stops": [
+        "uat-gate",
+        "dependency-blocked",
+        "cap-exhausted",
+        "deadline-exhausted",
+        "progress-exhausted",
+        "no-progress",
+        "grade-indeterminate",
+        "session-needs-input",
+        "run-not-retryable",
+        "retry-parked",
+        "unmapped-item-type",
+        "operator-interrupt",
+        "lane-open-failed",
+        "lane-merge-refused",
+        "lane-merge-conflict"
+      ],
+      "resumable": {
+        "stranded": [],
+        "lastDeclaration": null
+      },
+      "driven": [
+        {
+          "ref": "07/01",
+          "phase": "continue",
+          "runId": "20261008T192717571Z-0000",
+          "outcome": "cancelled",
+          "attempt": 1,
+          "cycle": 1
+        }
+      ],
+      "refine": "per-story",
+      "sessions": {
+        "refine": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+        },
+        "continue": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+        },
+        "verify": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+        }
+      }
+    },
+    "toolFinished": false,
+    "passed": true,
+    "ended": "2026-10-08T19:27:32.062Z"
+  },
+  "notes": [
+    "Initial warm repair restored behavior but stopped on a repeated in-review transition; retry used the existing --if-applicable option and completed on the original native thread.",
+    "Stop was issued through the production signal source after the fixture tool wrote its running marker. Exactly one phase was cancelled. The tool process was absent and its completion marker remained absent after the 45-second window.",
+    "An earlier stop harness listened for buffered output, missed the running window and is excluded from passing evidence."
+  ]
+}

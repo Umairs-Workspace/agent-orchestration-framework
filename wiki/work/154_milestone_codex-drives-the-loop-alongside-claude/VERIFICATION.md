@@ -280,6 +280,8 @@ The two persistent failures were the bounded capture module platform-import decl
 stale source hashes in the runtime audit. Both are repaired; their exact units now pass 24/24 cases.
 The command-generated red row is retained in `REGRESSION.md`; the corrected commit needs a new gate.
 
+Warm-fix and operator-stop evidence is retained in `verification/2026-10-08-reverify/codex-warm-stop.json`. The warm retry completed on the same build thread after using AOF's idempotent status option. The real loop stop cancelled exactly one native phase while its tool was running and started no successor. The missed buffered-output trigger is retained as an excluded harness attempt.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
@@ -294,6 +296,8 @@ The command-generated red row is retained in `REGRESSION.md`; the corrected comm
 | D-06 | The next actual native continue phase ran its test gate, then halted with protocol_queue_limit during validation. The adapter queues every notification, including events it never consumes, behind durable observation writes. | bug | Blocker | Filtering now drops ignorable notifications before queue admission. The new 512-notification case fails without the fix; all 81 protocol/loop cases pass with it. Scoped validate is empty and doctor has zero errors. Actual native continue now completes with three independent reviewer threads; story and fixture milestone acceptance followed. | 154/02 protocol transport | closed |
 
 | D-07 | Clean full verification found node:path absent from bounded-process platform imports and stale source digests for unchanged process calls in config-inspect and codex-app-server. | declaration-drift | Blocker | Declare the capture module platform API and refresh only source hashes after confirming all three audited call expressions are unchanged. Exact failing units pass 24/24; the final clean gate is still required. | 154/11 regression declaration maintenance | closed |
+
+| D-08 | Real worker reconnect preserved the assignment and Codex envelope, but the native continue close failed because the lane record still said not-started after the primary run was minted. | bug | Blocker | Advance the separate lane view through the guarded status transition before native execution; retain one primary-owned run. New real status-command regression and negative probe exercise this boundary; live rerun pending. | 154/07 task00 | open |
 
 ## Accept decision
 

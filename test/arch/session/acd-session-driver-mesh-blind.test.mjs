@@ -295,7 +295,11 @@ export const archTests = [
       // 155/00: the drive reads the session chain's leaf @aof/contracts/agent-mode (153 -> 154),
       // which imports only the bounds home; no I/O, lifecycle or driver import.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/contracts/src/agent-mode.mjs")), "155/00 adds the agent-mode chain leaf");
-      assert.equal(sinkGraph.seen.size, 154, "the configured worker facade includes its native phase and question-ledger services");
+      // 154/07 D-08: the materialized lane uses the existing guarded item-status
+      // transition. Comparing this walker against ea99c42d adds exactly its binding
+      // and implementation; no driver import or lifecycle denylist changes.
+      for (const owner of ["packages/core/src/application/bindings/effects/item-transitions.mjs", "packages/work/src/item-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 156, "the configured worker facade includes the lane status transition alongside native phases and questions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

@@ -387,7 +387,7 @@ codexOwnershipTests.push(...codexWorktreeHandoffTests);
 {
 // 154/07 tasks00–01: assembled production handlers/stores/phase driver; fake only native transport.
 
-async function fixture(run, { scenario = "complete", available = true, version } = {}) {
+async function fixture(run, { scenario = "complete", available = true, version, onNativeDrive } = {}) {
   return withMeshWorkerExecFixture(async fx => {
     await markRepoPublished(fx.root, { workspaceId: fx.workspaceId });
     await seedNodeWorkspaceMembership(fx, { workspaceId: fx.workspaceId, nodeId: "worker-a" });
@@ -397,7 +397,7 @@ async function fixture(run, { scenario = "complete", available = true, version }
     const runtimeSession = createRuntimeSession({ adapters: { codex: {
       inspectCapabilities: async options => { const p = make(); return p.adapter.inspectCapabilities({ ...p.options, ...options }); },
       canResume: async () => available,
-      drive: async (brief, options) => { const p = make(); return p.adapter.drive(brief, { ...p.options, ...options }); },
+      drive: async (brief, options) => { await onNativeDrive?.(brief, options, { fx, a, base }); const p = make(); return p.adapter.drive(brief, { ...p.options, ...options }); },
     } } });
     const env = { ...process.env, ...fx.env };
     const base = createBaseServices({ env });
@@ -428,6 +428,19 @@ async function fixture(run, { scenario = "complete", available = true, version }
 }
 
 const codexWorkerHandoffTests = [
+  { name: "154/07 task00 — native worker starts its lane before the governed review transition without minting a second run", run: () => fixture(async f => {
+    await f.handler(f.directive);
+    const runs = await f.a.execution.runs.readRuns(f.item);
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].state, "done");
+  }, { onNativeDrive: async (brief, options, { a, base, fx }) => {
+    const workspace = await base.work.loadWorkspace(brief.worktreeCwd, undefined, { env: options.env });
+    const item = await a.work.commandTools.resolve.resolveItemExact({ workspace }, fx.itemRef);
+    assert.equal(item.status, "in-progress", "the worktree view must follow the primary run start before native tools execute");
+    assert.deepEqual(await a.execution.runs.readRuns(item), [], "the primary remains the sole run owner");
+    const result = await a.getCommand("work:status").run({ ref: fx.itemRef, status: "in-review" }, { workspace });
+    assert.equal(result.status, "in-review", "the real native closing command must be a legal transition");
+  } }) },
   { name: "154/07 task00 — spawned loop CLI consumes handoff through its configured resolver and refuses an empty envelope", run: () => fixture(async f => {
     for (const transport of [undefined, JSON.stringify(f.execution), "null"]) {
       const env = { ...process.env, ...f.env, AOF_LOOP_DIAG: "0" };
