@@ -1,3 +1,4 @@
+import { archTests as runtimeObservationFactsTests } from "./acd-runtime-observation-facts.test.mjs";
 import { archTests as codexPermissionTests } from "./acd-codex-permission-boundary.test.mjs";
 // THE ARCH/SESSION SUITES — this directory's index, and the ONE place its membership is
 // written down (119/03, ADR-010). The registry names directories; a directory names its own
@@ -175,6 +176,7 @@ import { archTests as acdSessionProducerFactSurvivesTheWireTests } from "./acd-s
 import { archTests as acdAttributionIsCapturedOrAbsentTests } from "./acd-attribution-is-captured-or-absent.test.mjs";
 
 export const tests = [
+  ...runtimeObservationFactsTests,
   ...runtimeSessionBoundaryTests,
   ...codexPermissionTests,
   ...runtimeChoiceOwnerTests,

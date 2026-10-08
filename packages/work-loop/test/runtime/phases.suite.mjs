@@ -17,7 +17,7 @@ import { createChildDrive } from "../../src/child-drive.mjs";
 import { buildLoopDeclaration, sessionLendFor, decideLoopAction, decideScheduleToClose, decideHaltRepair } from "../../src/engine.mjs";
 import { createRuntimeInvocation } from "../../src/commands/runtime-invocation.mjs";
 
-export async function nativePhaseFixture({ scenario = "complete", available = true, version, failFirstAskFile = false } = {}) {
+export async function nativePhaseFixture({ scenario = "complete", available = true, version, failFirstAskFile = false, heartbeatEvents = null } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "aof-native-loop-"));
   const dir = path.join(root, "wiki/work/154_milestone_fixture/stories/06_story_native");
   await mkdir(path.join(dir, "tasks"), { recursive: true });
@@ -55,7 +55,7 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
   } };
   const forbidden = () => { throw Error("Claude transcript or trust path reached"); };
   const asks = createAskOrchestration({ askRequests: questionRequests, runs: a.execution.runs, heartbeats: { enqueueHeartbeat: async () => {} }, transcripts: { readAskQuestion: forbidden, readPendingAsk: forbidden }, notifications: { buildNotifyEnvelope: (event, fields) => ({ event, ...fields }), notify: async () => {} }, notificationFormatting: { accountLine: () => "ask" }, diagnostics: { reportDegrade: forbidden }, workspaceIdentity: { resolveWorkspaceId } });
-  const drivers = assembleCommandsDrive({ runtimeSessionServices: runtimeSession, loopAskServices: asks, agentSessionDriverServices: { driveInteractiveClaudeSession: forbidden }, claudeTrustServices: { ensureWorktreeTrusted: forbidden }, degradeServices: { reportDegrade: forbidden }, runStoreServices: a.execution.runs, loopAskRequestServices: requests, runHeartbeatConsumptionServices: { readConsumedHeartbeatAt: async () => null, enqueueHeartbeat: async () => {} }, effectsRunTransitionsServices: a.execution.transitions, runSessionCaptureServices: {}, commandsResolveServices: { resolveItemExact: async () => item, requireLocalCheckout: value => value }, workObserveServices: { claudeProjectsDir: forbidden }, runSpendIngestServices: { settleSpendFromTranscript: forbidden, snapshotTranscriptTree: forbidden } });
+  const drivers = assembleCommandsDrive({ runtimeSessionServices: runtimeSession, loopAskServices: asks, agentSessionDriverServices: { driveInteractiveClaudeSession: forbidden }, claudeTrustServices: { ensureWorktreeTrusted: forbidden }, degradeServices: { reportDegrade: forbidden }, runStoreServices: a.execution.runs, loopAskRequestServices: requests, runHeartbeatConsumptionServices: { readConsumedHeartbeatAt: async () => null, enqueueHeartbeat: async (...args) => { if (heartbeatEvents) { heartbeatEvents.push(args); await a.execution.runs.heartbeat(args[0], args[1], { now: args[2] }); } } }, effectsRunTransitionsServices: a.execution.transitions, runSessionCaptureServices: {}, commandsResolveServices: { resolveItemExact: async () => item, requireLocalCheckout: value => value }, workObserveServices: { claudeProjectsDir: forbidden }, runSpendIngestServices: { settleSpendFromTranscript: forbidden, snapshotTranscriptTree: forbidden } });
   const ctx = { workspace, globalWorkStoreOptions: { env: { AOF_GLOBAL_HOME: path.join(root, "runtime") } } };
   const selected = execution.resolveExecution(workspace.config, { capabilities: { codex: { models: codexFixture().fixture.models } } });
   const mint = async (extra = {}) => (await a.execution.transitions.transitionRunStart(item, { execution: selected, ...extra })).record;
@@ -63,6 +63,37 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  ...["server connected but no work event", "normalized tool or text activity", "runtime hooks disabled", "owned server process exits"].map(activity => ({ name: `154/08 task01 — Liveness is distinct from useful progress: ${activity}`, async run() {
+    const beats = []; const f = await nativePhaseFixture({ scenario: "active", heartbeatEvents: beats });
+    try {
+      f.workspace.config.work.loop.heartbeatMs = 30;
+      const started = Date.now(); const result = await f.drivers.continueDriverCommand.run({ ref: f.item.ref }, { ...f.ctx, agentSessionDriverOptions: {
+        deadlinePolicy: { startToCloseMs: 150 },
+        onTurnStarted: turn => {
+          const child = f.probes.at(-1).child;
+          if (activity === "normalized tool or text activity") child.stdout.write(JSON.stringify({ method: "item/agentMessage/delta", params: { threadId: turn.sessionId, turnId: turn.turnId, delta: "fixture text" } }) + "\n");
+          if (activity === "owned server process exits") setTimeout(() => child.kill(), 30);
+        },
+      } });
+      assert.equal(result.failureReason, activity === "owned server process exits" ? "protocol_disconnected" : "timeout");
+      assert.ok(Date.now() - started < 2000, "heartbeat never extends the original deadline");
+      assert.ok(beats.length >= 1, "driver beats without any trusted hook");
+      const record = (await a.execution.runs.readRuns(f.item))[0];
+      assert.ok(record.heartbeatAt); assert.equal(record.state, "failed");
+      assert.equal(record.brief.runtimeObservation.lastActivityAt != null, activity === "normalized tool or text activity");
+      const count = beats.length; await new Promise(resolve => setTimeout(resolve, 30)); assert.equal(beats.length, count, "liveness stops with the owned process");
+    } finally { await f.cleanup(); }
+  } })),
+  { name: "154/08 task00 — native adapter usage reaches the actual configured run service", async run() {
+    const f = await nativePhaseFixture();
+    try {
+      const result = await f.drivers.continueDriverCommand.run({ ref: f.item.ref }, f.ctx); assert.equal(result.outcome, "done");
+      const record = (await a.execution.runs.readRuns(f.item))[0];
+      assert.equal(record.brief.runtimeObservation.tokens.input, f.probes.at(-1).fixture.usage.tokenUsage.total.inputTokens);
+      assert.equal(record.brief.runtimeObservation.tokens.total, 26); assert.equal(record.brief.runtimeObservation.costUsd, null);
+      assert.equal(record.brief.runtimeObservation.turns[0].turnId, f.probes.at(-1).fixture.nativeTurnId);
+    } finally { await f.cleanup(); }
+  } },
   { name: "154/06 task00 — the loop invocation pins native phase choices once and resumes without consulting edited configuration", async run() {
     const f = await nativePhaseFixture();
     try {

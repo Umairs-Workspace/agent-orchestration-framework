@@ -131,7 +131,9 @@ export function createPhaseDrivers({
       }
       await askRequests.beginNativeDelivery(dir, runRecord.runId, { sessionId: answer.sessionId, questionToken: answer.questionToken });
     }
-    let cancel, result;
+    let cancel, result, beatTimer;
+    let beats = Promise.resolve();
+    const beat = () => { beats = beats.then(() => heartbeats.enqueueHeartbeat?.(item, runRecord.runId, new Date().toISOString())).catch(error => reportDegrade("native-driver-heartbeat", error)); };
     try {
       cancel = input.run == null ? null : await armStdinCancel(ctx.stdin ?? process.stdin, base.onPtyLive);
       const signal = cancel == null ? base.signal : base.signal == null ? cancel.signal : AbortSignal.any([base.signal, cancel.signal]);
@@ -139,14 +141,19 @@ export function createPhaseDrivers({
       result = await runtimeSession.drive({ itemRef: item.ref, worktreeCwd: cwd, phase: choicePhase, task: fix == null ? phase : "fix", procedure, arguments: [item.ref], ...(role == null ? {} : { role }), command: launchCommand, ...(resumeSessionId == null ? { context } : {}) }, {
         ...base, execution: selected, signal, ...(resumeSessionId == null ? {} : { resumeSessionId }),
         deadlinePolicy: base.deadlinePolicy ?? loopBoundsFromConfig(ctx.workspace),
-        onProcessLive: child => { cancel?.onPtyLive(child); base.onProcessLive?.(child); },
+        onProcessLive: child => {
+          cancel?.onPtyLive(child); base.onProcessLive?.(child); beat();
+          beatTimer = setInterval(beat, Math.max(1, Math.floor(loopBoundsFromConfig(ctx.workspace).heartbeatMs / 3)));
+          child.once?.("close", () => { clearInterval(beatTimer); });
+        },
         onIdentity: async sessionId => { await recordSessionId(item, { runId: runRecord.runId, sessionId, ...(coldStartReason === undefined ? {} : { coldStartReason }) }); await base.onIdentity?.(sessionId); },
         onQuestion: async question => { await nativeAsks.persistNativeQuestion({ item, runId: runRecord.runId, question, phase, ctx }); await base.onQuestion?.(question); },
-        onActivity: async value => { await heartbeats.enqueueHeartbeat?.(item, runRecord.runId, new Date().toISOString()); await base.onActivity?.(value); },
-        onTurnStarted: async turn => { if (answer != null) await nativeAsks.acknowledgeNativeAnswer({ item, runId: runRecord.runId, answer, turn, ctx }); await base.onTurnStarted?.(turn); },
+        onActivity: async value => { await runs.recordRuntimeEvent?.(item, { runId: runRecord.runId, event: value }); await base.onActivity?.(value); },
+        onUsage: async value => { await runs.recordRuntimeEvent?.(item, { runId: runRecord.runId, event: { ...value, kind: "usage" } }); await base.onUsage?.(value); },
+        onTurnStarted: async turn => { await runs.recordRuntimeEvent?.(item, { runId: runRecord.runId, event: { ...turn, kind: "turn", resumed: resumeSessionId != null } }); if (answer != null) await nativeAsks.acknowledgeNativeAnswer({ item, runId: runRecord.runId, answer, turn, ctx }); await base.onTurnStarted?.(turn); },
       });
       if (signal?.aborted && result.failureReason === "abort") result = { ...result, outcome: "cancelled", failureReason: "cancelled" };
-    } finally { cancel?.release(); }
+    } finally { clearInterval(beatTimer); await beats; cancel?.release(); }
     let pendingFile = await askRequests.readAsk(dir, runRecord.runId);
     if (result.outcome !== "done" && pendingFile == null) {
       const stored = (await readRuns(item)).find(run => run.runId === runRecord.runId);

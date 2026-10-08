@@ -1,3 +1,6 @@
+import { runtimeEventsTests } from "../packages/execution/test/runtime-events.suite.mjs";
+import { runtimeObserveTests } from "../packages/work/test/runtime-observe.suite.mjs";
+import { archTests as runtimeObservationFactsTests } from "../test/arch/session/acd-runtime-observation-facts.test.mjs";
 import { archTests as codexPermissionTests } from "../test/arch/session/acd-codex-permission-boundary.test.mjs";
 import { adapterTests } from "../test/bundle/adapters.test.mjs";
 import { runtimeSessionTests } from "../packages/execution/test/runtime-session.suite.mjs";
@@ -123,6 +126,9 @@ import { installProofTests } from "../test/work/roundtrip-install-proof.test.mjs
 import { loopProofTests } from "../test/work/roundtrip-loop-proof.test.mjs";
 
 const tests = [
+  ...runtimeEventsTests,
+  ...runtimeObserveTests,
+  ...runtimeObservationFactsTests,
   ...runtimeSessionTests,
   ...runtimeSelectionTests,
   ...codexAppServerTests,

@@ -131,10 +131,11 @@ export const archTests = [
       // Plan 02 adds the explicit per-application path policy, which imports the existing workspace paths.
       // Plan 03 adds the pure core manifest locator, with only builtin imports.
       // 154/02 adds exactly the Codex transport/profile and shared selection/model leaves.
-      assert.equal(graph.seen.size, 35, "the 31-module assembly plus four explicitly owned Codex/policy leaves");
+      assert.ok(graph.seen.has(path.join(root, "packages/execution/src/runtime-events.mjs")), "154/08 adds one pure observation leaf, without a lifecycle import");
+      assert.equal(graph.seen.size, 36, "the 31-module assembly plus five explicitly owned Codex/policy and observation leaves");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport stays in execution; no work, mesh or core import is introduced");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -290,7 +291,8 @@ export const archTests = [
       // 154/07: native worker phases reuse the configured drive and pending-question owners.
       // The measured assembly/import delta is 27 modules; the driver fences above are unchanged.
       for (const owner of ["packages/core/src/codex-settings.mjs", "packages/work-loop/src/commands/drive.mjs", "packages/work-loop/src/ask-request.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 152, "the configured worker facade includes its native phase and question-ledger services");
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/execution/src/runtime-events.mjs")), "154/08 adds the pure observation owner; no lifecycle dependency");
+      assert.equal(sinkGraph.seen.size, 153, "the configured worker facade includes its native phase and question-ledger services");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

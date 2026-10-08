@@ -874,7 +874,7 @@ async function buildSessionItemIndex({ cwd = process.cwd() } = {}) {
   for (const row of await listItems(workDirOf(cwd))) {
     const ref = observeRefOf(row);
     for (const run of await readItemRuns(row)) {
-      if (typeof run?.sessionId === "string" && run.sessionId.length > 0) {
+      if (run.execution?.runtime !== "codex" && typeof run?.sessionId === "string" && run.sessionId.length > 0) {
         index.set(run.sessionId, ref);
       }
     }
@@ -1014,7 +1014,7 @@ function shortModel(m) {
   return match ? match[1].toLowerCase() : m.replace(/^claude-/, "").slice(0, 8);
 }
 
-function renderReportMarkdown({ id, folder, story = null, kind = "milestone", agents, sessions, generatedAt, stallMs, lostTime = null, concurrency = null, split = null, phaseRollup = null, unattributedAgentRuns = 0, unattributedAgents = [] }) {
+function renderReportMarkdown({ id, folder, story = null, kind = "milestone", agents, sessions, generatedAt, stallMs, lostTime = null, concurrency = null, split = null, phaseRollup = null, nativeRuns = [], unattributedAgentRuns = 0, unattributedAgents = [] }) {
   const totalOut = agents.reduce((a, x) => a + x.tokens.out, 0);
   const sumActive = agents.reduce((a, x) => a + x.activeMs, 0);
   const stalled = agents.filter((a) => a.stalls.length);
@@ -1033,7 +1033,7 @@ function renderReportMarkdown({ id, folder, story = null, kind = "milestone", ag
   L.push("");
   L.push(`_Generated ${gen} · stall threshold ${fmtDur(stallMs)} · ${agents.length} agent run(s) across ${sessions.length} session(s)._`);
   L.push("");
-  L.push("This folder is auto-derived from Claude Code session transcripts. It is a");
+  L.push(nativeRuns.length ? "This folder is derived from runtime run facts and Claude Code session transcripts. It is a" : "This folder is auto-derived from Claude Code session transcripts. It is a");
   L.push("diagnostic, not a work record — safe to delete or `.gitignore`.");
   L.push("");
   L.push("## Summary");
@@ -1048,10 +1048,10 @@ function renderReportMarkdown({ id, folder, story = null, kind = "milestone", ag
   // and not guessed into an item (ADR-006). A 0 here is a true zero.
   L.push(`- **Unattributed agent runs** (session matched no run record): **${unattributedAgentRuns}**`);
   // The per-phase breakdown over the item's run records (68/04, ADR-002).
-  if (phaseRollup) {
+  if (phaseRollup && (!nativeRuns.length || phaseRollup.total.runCount)) {
     const t = phaseRollup.total;
     L.push("");
-    L.push(`- **Run records:** **${t.runCount}** across **${phaseRollup.phases.length}** declared phase(s)`);
+    L.push(`- **${nativeRuns.length ? "Claude run records" : "Run records"}:** **${t.runCount}** across **${phaseRollup.phases.length}** declared phase(s)`);
     L.push(`- **Run active time** (created→updated, summed): **${fmtDur(t.activeMs)}**`);
     L.push(`- **Run tokens** (spend): **${fmtK(t.tokens)}** · **cost:** ${t.costUsd != null ? `$${t.costUsd.toFixed(4)}` : "—"} · **unmeasured spend:** ${t.unmeasuredSpend}`);
   }
@@ -1145,6 +1145,17 @@ function renderReportMarkdown({ id, folder, story = null, kind = "milestone", ag
         `| ${a.id} | ${a.agentType} | ${String(a.sessionId).slice(0, 8)} | ${a.firstTs ? fmtClock(a.firstTs) : "—"} | ${a.lastTs ? fmtClock(a.lastTs) : "—"} | ${fmtDur(a.activeMs)} | ${a.outputTokens == null ? "—" : fmtK(a.outputTokens)} |`,
       );
     }
+    L.push("");
+  }
+
+  if (nativeRuns.length) {
+    L.push("## Codex run observations", "");
+    L.push("Usage is joined by run, native thread and turn. Cache and reasoning counts are subsets of input and output; they are not added again.");
+    L.push("Monetary cost is unavailable: the native protocol reports no monetary cost. Subscription access does not imply zero dollars.");
+    L.push("Transcript-derived active time, tool wait, stalls and Claude cache-ratio verdicts are unavailable for Codex.", "");
+    L.push("| item | run | thread | turns | input | output | total | recent activity | cost |", "|------|-----|--------|-------|-------|--------|-------|-----------------|------|");
+    for (const run of nativeRuns) L.push(`| ${run.attributedTo} | ${run.runId} | ${run.sessionId ?? "unavailable"} | ${run.turns.map(turn => turn.turnId).join(", ") || "unavailable"} | ${fmtK(run.tokens?.input)} | ${fmtK(run.tokens?.output)} | ${fmtK(run.tokens?.total)} | ${run.lastActivityAt ?? "no productive activity recorded"} | unavailable |`);
+    if (nativeRuns.some(run => run.usageUnavailable)) L.push("", "Unavailable usage means no native measurement or no attributable resume baseline; it is not a zero-token run.");
     L.push("");
   }
 
@@ -1830,7 +1841,22 @@ async function observeMilestone({
   // item's OWN folder — a story's runs under the story, never pooled at the milestone.
   const item = { ref: kind === "story" ? `${id}/${story}` : id, dir: path.join(cwd, "wiki", "work", folder) };
   const runs = await readItemRuns(item);
-  const phaseRollup = applyCacheTarget(rollupRunsByPhase(runs), cacheRatioTarget, { configured: cacheRatioTargetConfigured });
+  const nativeRuns = [];
+  for (const row of await listItems(workDirOf(cwd))) {
+    if (!targetItemRefs.has(observeRefOf(row))) continue;
+    for (const run of await readItemRuns(row)) {
+      if (run.execution?.runtime !== "codex") continue;
+      const observation = run.brief?.runtimeObservation;
+      const itemRef = typeof run.itemRef === "string" && run.itemRef.length ? run.itemRef : null;
+      nativeRuns.push({ runId: run.runId, attributedTo: itemRef, runtime: "codex", sessionId: run.sessionId ?? null,
+        state: run.state, heartbeatAt: run.heartbeatAt ?? null,
+        turns: observation?.turns ?? [], tokens: observation?.tokens ?? null, lastActivityAt: observation?.lastActivityAt ?? null,
+        costUsd: null, costUnavailable: "native-cost-not-reported", usageUnavailable: observation?.usageUnavailable ?? (observation?.tokens == null ? "native-usage-not-reported" : null),
+        unavailable: ["transcript-active-time", "tool-wait", "stalls", "claude-cache-ratio"] });
+    }
+  }
+  const phaseRollup = applyCacheTarget(rollupRunsByPhase(runs.filter(run => run.execution?.runtime !== "codex")), cacheRatioTarget, { configured: cacheRatioTargetConfigured });
+  if (nativeRuns.length && phaseRollup.total.runCount === 0) Object.assign(phaseRollup.total, { costUsd: null, tokens: null, activeMs: null });
   const unattributedCount = await countUnattributedRuns({ cwd });
   const firsts = agents.map((a) => a.firstTs).filter((t) => t != null);
   const lasts = agents.map((a) => a.lastTs).filter((t) => t != null);
@@ -1853,7 +1879,7 @@ async function observeMilestone({
     : { infraKills: [], quietGaps: [], humanWaits: [], deadAir: [], humanTurns: [], blockedOnHumanMs: 0, deadAirMs: 0, blockedAfterInfraKillMs: 0 };
   const concurrency = analyzeWaves(agents);
   const split = tokenSplit(agents);
-  const report = renderReportMarkdown({ id, folder, story, kind, agents, sessions, generatedAt, stallMs, lostTime, concurrency, split, phaseRollup, unattributedAgentRuns, unattributedAgents });
+  const report = renderReportMarkdown({ id, folder, story, kind, agents, sessions, generatedAt, stallMs, lostTime, concurrency, split, phaseRollup, nativeRuns, unattributedAgentRuns, unattributedAgents });
   const json = {
     milestone: id,
     story,
@@ -1865,11 +1891,13 @@ async function observeMilestone({
     transcriptsFound: found,
     projectsDir,
     sessions,
+    ...(nativeRuns.length ? { nativeRuns } : {}),
     // 96/ADR-003 — the body behind `summary.unattributedAgentRuns`. The count is
     // `unattributedAgents.length` by construction, so the two can never drift.
     unattributedAgents,
     runs: {
       count: runs.length,
+      ...(nativeRuns.length ? { measurementScope: "claude", nativeCount: nativeRuns.length } : {}),
       unattributedCount,
       cacheTarget: phaseRollup.cacheTarget,
       total: phaseRollup.total,

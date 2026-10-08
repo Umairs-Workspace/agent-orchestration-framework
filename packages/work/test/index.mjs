@@ -1,3 +1,4 @@
+import { runtimeObserveTests } from "./runtime-observe.suite.mjs";
 import { diagramLayoutTests } from "./diagram-layout.suite.mjs";
 import { gradeRecordVocabulariesTests } from "./grade-record-vocabularies.suite.mjs";
 import { loopReadyScoreTests } from "./loop-ready-score.suite.mjs";
@@ -27,6 +28,7 @@ import { memoryVocabularyTests } from "./memory-vocabulary.suite.mjs";
 import { lessonMetaHoldTests } from "./lesson-meta-hold.suite.mjs";
 
 export const tests = [
+  ...runtimeObserveTests,
   ...diagramLayoutTests,
   ...gradeRecordVocabulariesTests,
   ...loopReadyScoreTests,

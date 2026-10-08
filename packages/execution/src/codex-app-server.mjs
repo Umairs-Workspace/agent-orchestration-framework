@@ -3,6 +3,7 @@ import path from "node:path";
 import { resolveStartToCloseMs } from "@aof/contracts/loop-bounds";
 import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection.mjs";
 import { CODEX_PROFILE, CODEX_RESULT_SCHEMA, parseCodexPhaseResult, permissionReply, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
+import { normalizeCodexActivity } from "./runtime-events.mjs";
 
 const named = value => typeof value === "string" && value.trim().length > 0;
 const positive = (value, fallback) => Number.isSafeInteger(value) && value > 0 ? value : fallback;
@@ -94,7 +95,8 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         turnId = params.turn.id;
       }
       if (params.threadId !== sessionId || (params.turnId && params.turnId !== turnId)) return;
-      await persist(options.onActivity, { type: "protocol", method: ["turn/started", "item/completed", "turn/completed", "thread/tokenUsage/updated"].includes(method) ? method : "notification", sessionId });
+      const activity = normalizeCodexActivity(method, params, sessionId, turnId, new Date().toISOString());
+      if (activity) await persist(options.onActivity, activity);
       if (method === "thread/tokenUsage/updated") {
         const usage = nativeUsage(params, sessionId, turnId);
         if (!usage) { fail("usage_invalid"); return; }

@@ -293,7 +293,10 @@ export const archTests = [
         // the existing ask ledger; native session writes can stamp an explicit cold-fix
         // reason, and native settlement excludes Claude transcripts. Legacy record
         // keys and state edges remain unchanged and are exercised by the loop suites.
-        ["packages/execution/src/runs.mjs", "c6a7b7f2b3a32b34939272da7e5573d7788ee17c8f4e4b9416520cb90b8fe93b"],
+        // RE-PINNED by 154/08 (ADR-007): metadata in brief.runtimeObservation,
+        // retry-local facts and serialized item writes. Seventeen legacy keys and
+        // five state edges still pass; board/UI pins and Claude spend are unchanged.
+        ["packages/execution/src/runs.mjs", "c13360ed6a43dd1bf45474fae7aadf244785b7a61ecbf7563856f397a6b061f5"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that
