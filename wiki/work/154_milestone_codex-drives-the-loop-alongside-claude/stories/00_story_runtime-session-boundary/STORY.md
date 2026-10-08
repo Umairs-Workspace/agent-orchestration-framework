@@ -4,10 +4,10 @@ number: 0
 slug: runtime-session-boundary
 title: "A shared session boundary preserves Claude execution"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 depends: []
@@ -36,3 +36,7 @@ As an AOF maintainer, I want a runtime-neutral session boundary around the exist
   overlaps. Dependencies express delivered interfaces, not an assertion that all stories can run together.
 - Examples are proposed from the agreed milestone scope; there are no unanswered business questions.
   Build must implement executable traceability and register each new suite before reporting green.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. The shared-boundary and Claude regression cases pass; the actual default-Claude fixture completed all four phases and accepted its milestone. FF-15401 and its negative probes pass. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
