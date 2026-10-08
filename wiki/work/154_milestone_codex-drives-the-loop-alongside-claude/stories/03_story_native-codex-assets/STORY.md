@@ -4,10 +4,10 @@ number: 3
 slug: native-codex-assets
 title: "Codex discovers correctly scoped native assets"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 depends: []
@@ -49,3 +49,7 @@ As a project author, I want AOF assets rendered into Codex's supported formats a
 - Structural review repaired the read declaration for the existing ownership-debt entry.
   Its unowned-guidance overwrite was reproduced as a plan only; no user guidance was overwritten.
   Ownership-aware writes and migration remain the already-authored 154/04 outcome.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Native discovery, generated role/settings mapping and copied-distribution cases pass. Actual native phases discover the installed skills and use separate reviewer contexts. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
