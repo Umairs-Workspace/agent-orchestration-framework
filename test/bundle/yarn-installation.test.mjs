@@ -114,7 +114,7 @@ export const yarnInstallationTests = [
         'claude-screens.mjs': ['@aof/contracts/loop-bounds'],
         'claude-trust.mjs': ['node:os', 'node:path', 'node:fs/promises', 'node:crypto'],
         'worktrees.mjs': ['node:child_process', '@aof/foundation/git-args'],
-        'bounded-process.mjs': ['node:child_process', 'node:fs'],
+        'bounded-process.mjs': ['node:child_process', 'node:fs', 'node:path'],
       } : name === 'mesh' ? {
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
         "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","@aof/foundation/text","node:fs/promises"],

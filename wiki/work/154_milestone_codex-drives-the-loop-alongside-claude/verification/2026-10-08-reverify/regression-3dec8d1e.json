@@ -1,0 +1,44 @@
+{
+  "ref": "154",
+  "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\REGRESSION.md",
+  "commit": "3dec8d1e33fe95c2bda879996b7620ec02435b9b",
+  "instant": "2026-10-08T19:05:42.279Z",
+  "scope": "all",
+  "result": "red",
+  "detail": "workspace-boundaries/all actual owners are scanned and every owned array case is registered exactly once, yarn-installation/extracted kernels cannot import core, legacy source, providers or sibling internals · not isolated: work-ui-fleet-origin/01 a standalone `aof work ui` serves the resolved fleet origin and names it \"default\", work-ui-fleet-origin/01 an explicit fleet-origin configuration overrides the default verbatim (all eight rows), work-ui-fleet-origin/01 a standalone board neither starts nor waits for a fleet, and --json still answers its HEAD envelope without binding a port, work-ui-fleet-origin/01 the standalone default is the FLEET's documented default and none of the four other numbers in the port map, task04/38-06 (F-38.06d) while the worker is STREAMING live PTY bytes, the card resolves THAT stream's (nodeId, sessionId) from the REAL read shape, task04/38-06 (F-38.06e) when the worker's session ENDS, an open terminal-view stops reading `streaming` — a dead stream never keeps a live pulse, 53/00 task03 — a parent that finished over a still-writing subagent is never quiet: it settles only after the WHOLE tree stops moving · sharded --jobs 16 · 20.6 min · over budget (15 min)",
+  "satisfiesDoor": false,
+  "appended": true,
+  "run": {
+    "mode": "sharded",
+    "jobs": 16,
+    "minutes": 20.6,
+    "budgetMinutes": 15,
+    "overBudget": true
+  },
+  "notIsolated": [
+    "work-ui-fleet-origin/01 a standalone `aof work ui` serves the resolved fleet origin and names it \"default\"",
+    "work-ui-fleet-origin/01 an explicit fleet-origin configuration overrides the default verbatim (all eight rows)",
+    "work-ui-fleet-origin/01 a standalone board neither starts nor waits for a fleet, and --json still answers its HEAD envelope without binding a port",
+    "work-ui-fleet-origin/01 the standalone default is the FLEET's documented default and none of the four other numbers in the port map",
+    "task04/38-06 (F-38.06d) while the worker is STREAMING live PTY bytes, the card resolves THAT stream's (nodeId, sessionId) from the REAL read shape",
+    "task04/38-06 (F-38.06e) when the worker's session ENDS, an open terminal-view stops reading `streaming` — a dead stream never keeps a live pulse",
+    "53/00 task03 — a parent that finished over a still-writing subagent is never quiet: it settles only after the WHOLE tree stops moving"
+  ],
+  "slowest": [
+    "# slowest files (seconds summed across their chunks):",
+    "   2454s  50 cases  test/loop/loop-command-wave.test.mjs",
+    "    805s  18 cases  test/loop/loop-command-reconcile.test.mjs",
+    "    535s  96 cases  test/work/lifecycle/work-dispatch-lanes.test.mjs",
+    "    527s  78 cases  test/loop/loop-command-stops.test.mjs",
+    "    338s  14 cases  test/work/stream/work-this-tree-holds-what-is-live.test.mjs",
+    "    293s  0 cases  lanes (integration + cargo)",
+    "    258s  37 cases  test/grade/gate-propagation-refusals-leave-branch.test.mjs",
+    "    243s  20 cases  test/bundle/site-build.test.mjs",
+    "    227s  61 cases  test/work/stream/work-archive-is-a-move.test.mjs",
+    "    221s  12 cases  test/arch/audit/acd-control-derives-its-census.test.mjs",
+    "    214s  42 cases  test/assignment/blocked-run-parking.test.mjs",
+    "    208s  15 cases  test/loop/warm-fix-loop.test.mjs"
+  ],
+  "logs": ".tmp/test-sharded/2026-10-08T18-45-03-497Z",
+  "exit": 1
+}

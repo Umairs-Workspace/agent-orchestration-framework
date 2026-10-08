@@ -20,7 +20,7 @@
     "kind": "child-process",
     "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
     "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "49b68366beaa11c8ca5efea41c0b922e6b7bdb785bde9292545029cd963c4afb",
+    "sourceDigest": "b7d1d0c6c6691949caf04f6ee2fcba328cc241b74d76a69771bb5a31dafc5818",
     "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged."
   },
   {
@@ -892,7 +892,7 @@
     "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
     "file": "packages/execution/src/codex-app-server.mjs",
     "digest": "6a3d6136d5825d0005caf53afd2fb889aca533543cd1cdbc3be4da084b60935c",
-    "sourceDigest": "10b4439d3c29b3feeb62154f02c949c26b660bf795c75ca468c4de7f0ce55b41",
+    "sourceDigest": "b19e19931452f0383719e86c2d0436471a7f5f095f86b3cc57e54c1c4d59ace2",
     "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
   },
   {
@@ -900,7 +900,7 @@
     "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
     "file": "packages/execution/src/codex-app-server.mjs",
     "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
-    "sourceDigest": "10b4439d3c29b3feeb62154f02c949c26b660bf795c75ca468c4de7f0ce55b41",
+    "sourceDigest": "b19e19931452f0383719e86c2d0436471a7f5f095f86b3cc57e54c1c4d59ace2",
     "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
   }
 ]

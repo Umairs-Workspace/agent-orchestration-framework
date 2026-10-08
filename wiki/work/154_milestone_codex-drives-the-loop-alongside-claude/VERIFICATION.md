@@ -260,18 +260,40 @@ The required `aof test --scope impacted --story 154/06` resolved to the entire u
 after source fixes superseded that process, to replace duplicate whole-tree execution with the
 required clean sharded regression gate. No impacted or cancelled full run is reported green.
 
+### Native lifecycle and recovery after verification fixes
+
+`codex-live.json` records actual Codex continue, three native reviewer identities/results, story
+verify and milestone-loop completion. The isolated fixture reached `done` on 2026-10-08. The
+operator committed the fixture and executed its real clean gate at `8e73e1715af94a13ba37e5c46ec69f7a4f1df76d`;
+Codex consumed that recorded green row. Its native Git pipe restriction was not bypassed or granted.
+The earlier direct-adapter refine and the separately exercised native refine driver remain distinguished.
+
+`codex-question-recovery.json` records a genuinely unresolved fixture choice, a durable parked ask,
+closure of the first process, a new process reading that pending ask, and one acknowledged answer
+on the same native thread. The result used the structured question fallback. Its completed-turn
+interrupt warning is retained; the owned server processes closed. Warm-fix, operator-stop, worker
+reconnect and the frozen repeated prompt workload still require their own results.
+
+The clean gate at `3dec8d1e` executed **12,491/12,491 registered cases** in 1,213 units:
+20.6 minutes, two persistent failure units and seven cases that passed when rerun alone.
+The two persistent failures were the bounded capture module platform-import declaration and three
+stale source hashes in the runtime audit. Both are repaired; their exact units now pass 24/24 cases.
+The command-generated red row is retained in `REGRESSION.md`; the corrected commit needs a new gate.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
-| D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | Establish an operator-authorized native policy that permits fixture writes, then rerun the declared lifecycle, independent review and recovery workloads. Preserve the adapter's permission refusal. | 154/11 live acceptance; 154/02 remaining profile proof | open |
+| D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | The approved fixture policy now supports actual native build, independent review and acceptance; question/restart recovery passes. Finish warm-fix, stop, worker reconnect and repeated workload proof. Preserve permission refusal. | 154/11 live acceptance; 154/02 remaining profile proof | open |
 | D-02 | Fleet origin lacks the config API; the autonomous rerun started the real isolated AOF editor and passed 18 browser checks plus binding-checklist design review at three widths. | prerequisite-gap | Blocker | Responsive, keyboard and state evidence is now retained; no further URL input needed. | 154/10 manual verification | closed |
 | D-03 | The previous clean gate failed FF-7106 on generated siblings omitted from story 155's declarations. Elapsed time was 23.9 minutes; the 15-minute budget is advisory and did not cause the red result. | regression-gap | Blocker | Declaration and agent-mode changes are committed at a2846fce; 405 focused cases, 35 native-asset cases and 7 bundle checks pass. The obsolete a2846fce rerun was cancelled after native fixes changed the source; it is not evidence of a green gate. A final corrected snapshot still requires a recorded clean gate. | 155 declared write set; milestone 154 regression gate | open |
 | D-04 | Actual Codex continue thread 01a11cb6-4f9d-7c41-8445-b940552c24fb invoked run-start and received duplicate-run because the native phase driver omitted its run environment. | bug | Blocker | Lend the driver-owned run identity to native tool processes. Two ownership regression cases plus all 46 phase/question cases pass; mutation probe fails without the fix. Live confirmation now returns driven:true on the same run; the later test-launch refusal is D-05. Evidence: verification/2026-10-08-reverify/native-run-ownership.json. | 154/06 task00 | closed |
 
 | D-05 | The actual Codex sandbox allows fixture execution and file writes but refuses Node output pipes with EPERM. The required AOF test command cannot start its child. Print-only probes confirm inherited output and file-backed capture work; ordinary and overlapped pipes fail. | prerequisite-gap | Blocker | A synchronous Windows EPERM now retries the same executable with temporary file-backed capture when stdin has no cancel channel. All 45 affected cases pass, including output, deadline, abort and cleanup; the actual sandboxed AOF test command exits zero. No policy changed. Evidence: verification/2026-10-08-reverify/native-file-capture.json. | 154/11 native acceptance; bounded test execution | closed |
 
-| D-06 | The next actual native continue phase ran its test gate, then halted with protocol_queue_limit during validation. The adapter queues every notification, including events it never consumes, behind durable observation writes. | bug | Blocker | Filtering now drops ignorable notifications before queue admission. The new 512-notification case fails without the fix; all 81 protocol/loop cases pass with it. Scoped validate is empty and doctor has zero errors. Live confirmation is running. | 154/02 protocol transport | open |
+| D-06 | The next actual native continue phase ran its test gate, then halted with protocol_queue_limit during validation. The adapter queues every notification, including events it never consumes, behind durable observation writes. | bug | Blocker | Filtering now drops ignorable notifications before queue admission. The new 512-notification case fails without the fix; all 81 protocol/loop cases pass with it. Scoped validate is empty and doctor has zero errors. Actual native continue now completes with three independent reviewer threads; story and fixture milestone acceptance followed. | 154/02 protocol transport | closed |
+
+| D-07 | Clean full verification found node:path absent from bounded-process platform imports and stale source digests for unchanged process calls in config-inspect and codex-app-server. | declaration-drift | Blocker | Declare the capture module platform API and refresh only source hashes after confirming all three audited call expressions are unchanged. Exact failing units pass 24/24; the final clean gate is still required. | 154/11 regression declaration maintenance | closed |
 
 ## Accept decision
 
