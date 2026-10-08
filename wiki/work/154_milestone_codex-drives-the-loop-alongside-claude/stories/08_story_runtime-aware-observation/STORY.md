@@ -4,10 +4,10 @@ number: 8
 slug: runtime-aware-observation
 title: "Codex activity and usage are reported honestly"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-07
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 depends: [07]
@@ -79,3 +79,7 @@ As an operator, I want attributable Codex activity and usage, so that I can diag
 - Read-list repair during round 2: code-file fragments do not supply Markdown
   anchors. Removed the two invalid anchored entries; their narrow outside-read gaps
   remain reported above. No production code, test expectation or gate was changed.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Runtime observation, identity attribution and unavailable-measurement cases pass. Actual native usage is captured by session/turn, and monetary cost remains unavailable. FF-15406 and its negative probes pass. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
