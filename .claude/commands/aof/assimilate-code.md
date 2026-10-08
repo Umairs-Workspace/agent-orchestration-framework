@@ -21,8 +21,9 @@ working-tree changes) XOR `--committed` (the last commit, `HEAD`); optional **`-
 story under milestone NN instead of standalone); optional **`--skip-qa`** (skip the coverage lane).
 - **The source flag is mandatory and exclusive.** If neither — or both — is given, STOP and ask which:
   the command never guesses whether "done" means staged-but-uncommitted or already-committed.
-- Resolve execution mode from `work.agents.mode`: `"solo"` (or `--solo` in `$ARGUMENTS`) → play every
-  role inline in this session; any other value → orchestrated (spawn the role agents named below).
+- Resolve execution mode from `work.agents.mode`: `"orchestrated"` → orchestrated (spawn the role
+  agents named below); `"solo"`, unset or any other value (or `--solo` in `$ARGUMENTS`) → play every
+  role inline in this session. An unset `work.agents.mode` resolves to solo.
 </config>
 
 <process>

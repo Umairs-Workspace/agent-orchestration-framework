@@ -383,7 +383,16 @@
       "properties": {
         "loop": {
           "type": "object",
-          "properties": { "runtime": { "enum": ["claude", "codex"], "default": "claude" } },
+          "properties": {
+            "runtime": { "enum": ["claude", "codex"], "default": "claude" },
+            "agents": {
+              "type": "object",
+              "properties": {
+                "refine": { "type": "object", "properties": { "mode": { "type": "string", "description": "The role mode of every refine the loop drives: solo or orchestrated, composed onto the driven command as --solo or --orchestrated. Overrides work.agents.mode when set. An unset key, or any value that is not a mode, falls back to work.agents.mode, then to solo (the chain's home is packages/contracts/src/agent-mode.mjs)." } } },
+                "continue": { "type": "object", "properties": { "mode": { "type": "string", "description": "The role mode of every continue the loop drives: solo or orchestrated, composed onto the driven command as --solo or --orchestrated. Overrides work.agents.mode when set. An unset key, or any value that is not a mode, falls back to work.agents.mode, then to solo (the chain's home is packages/contracts/src/agent-mode.mjs)." } } }
+              }
+            }
+          },
           "additionalProperties": true
         },
         "dir": {
@@ -405,7 +414,7 @@
             },
             "mode": {
               "enum": ["orchestrated", "solo"],
-              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated. Governs the sessions an operator types only: a loop-driven session reads work.loop.agents.<phase>.mode, never this key."
+              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to solo for every command that reads a mode (verify reads none), and --solo / --orchestrated override it for one run. A loop-driven session uses work.loop.agents.<phase>.mode when set and this key otherwise."
             },
             "productOwner": {
               "enum": ["inline", "agent"],

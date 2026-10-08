@@ -35,6 +35,7 @@ import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { generatorIds } from "../../diagrams/generators.mjs";
 import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
+import { agentModeFromConfig } from "@aof/contracts/agent-mode";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices }) {
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
@@ -1497,17 +1498,31 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     }
 
     // Solo-mode inert map (task 03): a per-role map cannot bind when the main
-    // session plays every role. Conditional on BOTH mode=solo AND a non-empty map;
+    // session plays every role. Conditional on BOTH an effective solo mode AND a
+    // non-empty map — effective, so an unset mode (the default, solo — 155) counts;
     // surfaced as a NON-BLOCKING notice ("info"), so the config stays valid.
     const hasMap = Object.keys(rawMap).length > 0;
-    if (agents.mode === "solo" && hasMap) {
+    if (isEffectivelySolo(agents) && hasMap) {
       diagnostics.push(diagnostic(
         "info",
         AGENT_MODEL_MAP_PATH,
-        "Per-role model selection has no effect under work.agents.mode \"solo\": the main session plays every role inline, so no sub-agent is spawned to carry a per-role model. The map is ignored under solo mode.",
+        `Per-role model selection has no effect ${soloModeClause(agents)}: the main session plays every role inline, so no sub-agent is spawned to carry a per-role model. The map is ignored under solo mode.`,
         "model-map-inert-under-solo"
       ));
     }
+  }
+
+  // 155 — the inert-map notices follow the EFFECTIVE hand-run mode from the chain's one home, so
+  // an unset `work.agents.mode` (which resolves to solo) is reported, not only an explicit one.
+  const effectiveAgentMode = (agents) => agentModeFromConfig({ config: { work: { agents } } });
+  const isEffectivelySolo = (agents) => effectiveAgentMode(agents) === "solo";
+
+  // An explicit key is named as set; an unset or unrecognised one is named as the default.
+  function soloModeClause(agents) {
+    if (agents.mode === effectiveAgentMode(agents)) return "under work.agents.mode \"solo\"";
+    return agents.mode === undefined
+      ? "because the default mode is solo (work.agents.mode is unset)"
+      : "because the default mode is solo (work.agents.mode is not a known mode)";
   }
 
   const effortSpellings = () => EFFORT_SPELLINGS.join(", ");
@@ -1546,11 +1561,11 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
         ));
       }
     }
-    if (agents.mode === "solo" && Object.keys(rawMap).length > 0) {
+    if (isEffectivelySolo(agents) && Object.keys(rawMap).length > 0) {
       diagnostics.push(diagnostic(
         "info",
         AGENT_EFFORT_MAP_PATH,
-        "Per-role effort has no effect under work.agents.mode \"solo\": the main session plays every role inline, so no sub-agent is spawned to carry a per-role effort. The map is ignored under solo mode.",
+        `Per-role effort has no effect ${soloModeClause(agents)}: the main session plays every role inline, so no sub-agent is spawned to carry a per-role effort. The map is ignored under solo mode.`,
         "effort-map-inert-under-solo"
       ));
     }

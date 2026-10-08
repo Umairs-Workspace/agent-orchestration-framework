@@ -56,10 +56,11 @@ plus any flags (e.g. `--dry-run`) — every flag passes through to the CLI uncha
      read-only source rule survives into the agent lane.
 4. **Architect review of delivered work — at migrate time.** Only when the CLI produced a
    non-`not-started` item (delivered work present): review the source's delivered work per
-   `work.agents.mode` — any value other than `"solo"` → orchestrated: spawn `aof-architect` to
-   review; `"solo"` → the main session plays the role inline. The CLI's gap-derived rows in the
-   produced STATE.md `## Findings` are the floor the review builds on: the architect's rows upgrade
-   or extend the gap-derived rows into grounded structural findings — never duplicated, never
+   `work.agents.mode` — `"orchestrated"` → spawn `aof-architect` to review; `"solo"`, unset or any
+   other value → the main session plays the role inline. An unset `work.agents.mode` resolves to
+   solo. The CLI's gap-derived rows in the produced STATE.md `## Findings` are the floor the review
+   builds on: the architect's rows upgrade or extend the gap-derived rows into grounded structural
+   findings — never duplicated, never
    fabricated (no finding the delivered work does not actually exhibit). Each finding names what is
    wrong, where in the delivered work it shows, and what addressing it entails — actionable at
    `aof:continue` without re-deriving the review. **No delivered work → no review lane runs**, and

@@ -3,10 +3,10 @@ type: story
 number: 155
 slug: one-agent-mode-setting
 title: "One agent-mode setting governs every session"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 reads:
@@ -37,12 +37,23 @@ files:
   - .claude/commands/aof/autonomous.md
   - .claude/commands/aof/assimilate-code.md
   - .claude/commands/aof/migrate.md
-  - .codex/skills/aof-refine/SKILL.md
-  - .codex/skills/aof-continue/SKILL.md
-  - .codex/skills/aof-review/SKILL.md
-  - .codex/skills/aof-autonomous/SKILL.md
-  - .codex/skills/aof-assimilate-code/SKILL.md
-  - .codex/skills/aof-migrate/SKILL.md
+  - packages/core/assets/variants/codex/workflow.md
+  - .agents/skills/aof-refine/procedure.md
+  - .agents/skills/aof-continue/procedure.md
+  - .agents/skills/aof-review/procedure.md
+  - .agents/skills/aof-autonomous/SKILL.md
+  - .agents/skills/aof-assimilate-code/SKILL.md
+  - .agents/skills/aof-migrate/SKILL.md
+  - .agents/skills/aof-refine/SKILL.md
+  - .agents/skills/aof-refine/agents/openai.yaml
+  - .agents/skills/aof-continue/SKILL.md
+  - .agents/skills/aof-continue/agents/openai.yaml
+  - .agents/skills/aof-review/SKILL.md
+  - .agents/skills/aof-review/agents/openai.yaml
+  - .agents/skills/aof-autonomous/agents/openai.yaml
+  - .agents/skills/aof-assimilate-code/agents/openai.yaml
+  - .agents/skills/aof-migrate/agents/openai.yaml
+  - .codex/aof/workflows/workflow-contract.md
   - .opencode/commands/aof/refine.md
   - .opencode/commands/aof/continue.md
   - .opencode/commands/aof/review.md
@@ -50,6 +61,7 @@ files:
   - .opencode/commands/aof/assimilate-code.md
   - .opencode/commands/aof/migrate.md
   - .aof/aof.lock.json
+  - .aof/aof.apply-journal.json
   - schemas/aof.schema.json
   - test/loop/loop-bounds.test.mjs
   - test/loop/drive-command-phase-drivers.test.mjs
@@ -58,6 +70,10 @@ files:
   - test/session/agent-model-override.test.mjs
   - packages/core/test/agent-model-solo-inert.suite.mjs
   - test/arch/testing/acd-source-directory-budget.test.mjs
+  - test/arch/loop/acd-loop-concurrency-single-home.test.mjs
+  - test/arch/session/acd-session-driver-mesh-blind.test.mjs
+  - test/bundle/yarn-installation.test.mjs
+  - test/work/migrate-claude-command.test.mjs
 ---
 # 155 · One agent-mode setting governs every session
 
@@ -71,11 +87,11 @@ ignored by half the sessions it appears to cover.
 
 ## Tasks
 
-- [ ] `tasks/00_the-loop-falls-back-to-the-workspace-mode.feature` — R1: the drive composes loop key,
+- [x] `tasks/00_the-loop-falls-back-to-the-workspace-mode.feature` — R1: the drive composes loop key,
   else `work.agents.mode`, else `solo`; the chain and default live in `@aof/contracts/agent-mode`
-- [ ] `tasks/01_every-prompt-defaults-to-solo.feature` — R2: every role-spawning prompt states the
+- [x] `tasks/01_every-prompt-defaults-to-solo.feature` — R2: every role-spawning prompt states the
   solo default and the loop's chain; schema, renders, manifest and lock follow; verify untouched
-- [ ] `tasks/02_the-inert-map-notice-follows-the-default.feature` — R3: `aof config inspect` reports a
+- [x] `tasks/02_the-inert-map-notice-follows-the-default.feature` — R3: `aof config inspect` reports a
   per-role map inert under the effective solo mode, not only an explicit one
 
 ## Decisions taken at refine
@@ -118,6 +134,14 @@ ignored by half the sessions it appears to cover.
   lane off `main`, and expect a rebase on those files.
 
 ## Notes
+
+- Verification repair (2026-10-08, milestone 154 D-03): declared every tracked Codex sibling
+  of the edited bundle members, including native skill entries, launcher metadata and the shared
+  workflow contract. The actual FF-7106 failure was reproduced before the declaration repair.
+  Focused validation passed 405 mode/driver/prompt/control cases, seven manifest/install cases
+  and 35 directory/native-asset cases. Validate returned no findings; doctor is healthy with
+  zero errors and three existing metadata warnings. These are focused checks, not milestone
+  acceptance; the clean full gate will follow this committed batch.
 
 - **The rule.** Every session resolves its mode through one chain:
   1. `work.loop.agents.<phase>.mode`, for loop-driven sessions only, as an override;

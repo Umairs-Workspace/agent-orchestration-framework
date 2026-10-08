@@ -292,7 +292,10 @@ export const archTests = [
       // The measured assembly/import delta is 27 modules; the driver fences above are unchanged.
       for (const owner of ["packages/core/src/codex-settings.mjs", "packages/work-loop/src/commands/drive.mjs", "packages/work-loop/src/ask-request.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/execution/src/runtime-events.mjs")), "154/08 adds the pure observation owner; no lifecycle dependency");
-      assert.equal(sinkGraph.seen.size, 153, "the configured worker facade includes its native phase and question-ledger services");
+      // 155/00: the drive reads the session chain's leaf @aof/contracts/agent-mode (153 -> 154),
+      // which imports only the bounds home; no I/O, lifecycle or driver import.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/contracts/src/agent-mode.mjs")), "155/00 adds the agent-mode chain leaf");
+      assert.equal(sinkGraph.seen.size, 154, "the configured worker facade includes its native phase and question-ledger services");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

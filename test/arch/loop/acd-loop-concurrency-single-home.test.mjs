@@ -219,8 +219,8 @@ export const archTests = [
       assert.equal(loopBounds.resolveLoopConcurrency(undefined), "sequential", "unset is sequential");
 
       // 129/07 — the three self-contained keys map to the leaf's own resolvers by identity, sit
-      // AFTER the mode in the declared order, and answer null when unset (140: a mode's default is
-      // the phase's, applied by `loopAgentModeFromConfig`, never the key resolver's).
+      // AFTER the mode in the declared order, and answer null when unset (155: a mode's fallback is
+      // the session chain's, in `agent-mode.mjs`, never the key resolver's).
       assert.deepEqual(loopBounds.LOOP_BOUND_CONFIG_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "the three are appended after the mode, in order");
       assert.deepEqual(loopBounds.LOOP_BOUND_VALUE_KEYS.slice(9, 12), [...SELF_CONTAINED_LOOP_KEYS], "…in both maps");
       // 143/01 — the refine scope follows them, in both maps; 147/00 — the repair switch follows it, last.

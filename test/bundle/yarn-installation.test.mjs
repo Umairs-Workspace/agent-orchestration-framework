@@ -184,7 +184,8 @@ export const yarnInstallationTests = [
         'stop.mjs': ['@aof/contracts/loop-bounds'],
         'cycle.mjs': ['node:fs/promises', 'node:path', 'node:fs', '@aof/contracts/loop-bounds'],
         'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path'],
-        'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds'],
+        // 155/00: the drive composes its mode flag from the session chain's contract leaf.
+        'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/agent-mode'],
         'loop.mjs': ['node:crypto', 'node:child_process', 'node:fs/promises', 'node:os', 'node:path', 'node:util', '@aof/contracts/loop-bounds', '@aof/contracts/error'],
         'ask-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'stop-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],

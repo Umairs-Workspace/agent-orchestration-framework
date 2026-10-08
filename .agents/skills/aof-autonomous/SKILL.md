@@ -38,9 +38,9 @@ Read `.aof/aof.config.json` → `work.agents`. Parse
 - **--max-attempts N** — forward `N` to the shell as `--cap N`. This prompt does not count attempts
   or state a fallback ceiling.
 - **--solo** — force solo role execution for this wrapper session. Otherwise resolve the wrapper
-  session's role-execution mode from `work.agents.mode`. This setting governs only the roles this
-  session plays itself; it does not reach the sessions the shell drives, which resolve their own
-  configured mode.
+  session's role-execution mode from `work.agents.mode`; an unset `work.agents.mode` resolves to
+  solo. The flag governs only the roles this session plays itself; it does not reach the sessions
+  the shell drives, which resolve their own mode through the chain below.
 
 The argument hint and both admitted range forms remain unchanged.
 
@@ -53,9 +53,9 @@ sits the loop's own `work.loop.dispatch.concurrency` — the bound on the lanes 
 together, narrowing the workspace's `work.dispatch.concurrency` and never exceeding it — which
 falls back to its workspace twin `work.dispatch.concurrency` when unset. The role mode of each
 driven phase sits there too: `work.loop.agents.refine.mode` and `work.loop.agents.continue.mode`
-(`solo` or `orchestrated`, composed onto the phase command by the shell's drive) default to `solo`
-when unset and do not fall back to `work.agents.mode`, which governs only the sessions an operator
-types.
+(`solo` or `orchestrated`, composed onto the phase command by the shell's drive) override
+`work.agents.mode` when set, and when unset fall back to `work.agents.mode`, then to `solo` — the
+chain whose one home is `packages/contracts/src/agent-mode.mjs`.
 </config>
 
 <process>

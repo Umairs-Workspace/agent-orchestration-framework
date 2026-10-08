@@ -87,15 +87,61 @@ export const agentModelSoloInertTests = [
   },
 
   // ====================================================================
-  // Scenario: with a per-role map and no mode set, no solo-mode notice is surfaced.
+  // 155/02 — a per-role map is reported inert wherever the EFFECTIVE mode is solo.
+  // `155_story_one-agent-mode-setting/tasks/02_the-inert-map-notice-follows-the-default.feature`,
+  // superseding story 30's "with a per-role map and no mode set, no solo-mode notice is surfaced".
   // ====================================================================
   {
-    name: "agent-model-solo-inert: with a per-role map and no mode set, no solo-mode notice is surfaced",
+    name: "155/02 E9 an unset mode with a per-role model map is reported inert",
     run: async () => {
       const diagnostics = await diagnosticsForConfig({
-        work: { agents: { models: MODELS } }
+        work: { agents: { models: { "aof-qa": "opus" } } }
       });
-      assert.equal(soloNotice(diagnostics), undefined, "unset mode is not solo — the map is live, no notice fires");
+      const notices = diagnostics.filter((d) => d.code === "model-map-inert-under-solo");
+      assert.equal(notices.length, 1, "one inert notice");
+      assert.equal(notices[0].severity, "info");
+      assert.equal(notices[0].path, "work.agents.models");
+      assert.equal(hasError(diagnostics), false, "the config is still valid");
+      assert.match(notices[0].message, /no effect because the default mode is solo/u, "the message names the default");
+    }
+  },
+  {
+    name: "155/02 E10 an orchestrated mode raises no inert notice",
+    run: async () => {
+      const diagnostics = await diagnosticsForConfig({
+        work: { agents: { mode: "orchestrated", models: { "aof-qa": "opus" } } }
+      });
+      assert.equal(soloNotice(diagnostics), undefined);
+    }
+  },
+  ...[
+    [{ effort: { "aof-qa": "high" } }, "effort-map-inert-under-solo", true],
+    [{ mode: "solo", models: { "aof-qa": "opus" } }, "model-map-inert-under-solo", true],
+    [{ mode: "orchestrated", effort: { "aof-qa": "high" } }, "effort-map-inert-under-solo", false],
+    [{ models: {} }, "model-map-inert-under-solo", false],
+  ].map(([agents, code, carried]) => ({
+    name: `155/02 both maps follow the effective mode [${JSON.stringify(agents)} → ${carried ? "" : "no "}${code}]`,
+    run: async () => {
+      const diagnostics = await diagnosticsForConfig({ work: { agents } });
+      const hits = diagnostics.filter((d) => d.code === code);
+      assert.equal(hits.length, carried ? 1 : 0, JSON.stringify(diagnostics));
+      if (carried) assert.equal(hits[0].severity, "info");
+    }
+  })),
+  {
+    name: "155/02 the inspector reads the effective mode from its one home",
+    run: async () => {
+      const { readFile } = await import("node:fs/promises");
+      const source = await readFile(new URL("../src/application/bindings/config-inspect.mjs", import.meta.url), "utf8");
+      const code = source.replace(/\/\*[^]*?\*\//gu, "").replace(/(^|[^:"'`\\])\/\/.*$/gmu, "$1");
+      assert.match(code, /import \{ agentModeFromConfig \} from "@aof\/contracts\/agent-mode";/u);
+      for (const notice of ["model-map-inert-under-solo", "effort-map-inert-under-solo"]) {
+        const at = code.indexOf(`"${notice}"`);
+        const guard = code.lastIndexOf("if (", at);
+        assert.match(code.slice(guard, code.indexOf("{", guard)), /isEffectivelySolo\(agents\)/u, `${notice}: guarded by the effective mode`);
+      }
+      assert.match(code, /const effectiveAgentMode = \(agents\) => agentModeFromConfig\(/u, "the effective mode is the chain's answer");
+      assert.doesNotMatch(code, /agents\.mode === "solo"|"solo" === agents\.mode/u, "no raw agents.mode is compared against solo");
     }
   },
 

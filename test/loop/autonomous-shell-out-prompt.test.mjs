@@ -19,6 +19,8 @@ import {
 import { hashContent } from "../../packages/core/src/lock.mjs";
 import { executeApplyActions, planApplyActions } from "../../packages/core/src/render-plan.mjs";
 import { markedRegion } from "../support/source-slice.mjs";
+import { assignmentDirectiveCommand } from "@aof/mesh/assignment-directive";
+import { LOOP_BOUND_VALUE_RESOLVERS } from "@aof/contracts/loop-bounds";
 const readRuns = _aofApplication.execution.runs.readRuns;
 
 const repoRoot = fileURLToPath(new URL("../../", import.meta.url));
@@ -578,7 +580,7 @@ export const autonomousShellOutPromptTests = [
   //
   // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`
   // — the prompt-side rows (the drive's rows are in `drive-command-phase-drivers`). The row's
-  // "falling back to `work.agents.mode`" clause is superseded by 140/00, whose cases follow.
+  // "falling back to `work.agents.mode`" clause was superseded by 140/00, itself superseded by 155/01.
   ...["refine", "continue"].map((prompt) => ({
     name: `129/07 task02 ${prompt}.md parses --orchestrated as --solo's twin and names its loop key`,
     run: () => {
@@ -628,31 +630,131 @@ export const autonomousShellOutPromptTests = [
       ]);
     },
   },
-  // ── 140/00 — each prompt states its own default ──────────────────────────────
+  // ── 155/01 — every hand-run command defaults to solo, and says what the loop composes ──
   //
-  // `140_story_refine-defaults-to-solo/tasks/00_each-prompt-states-its-own-default.feature`.
-  // Supersedes 129/07 task 02's "…falling back to `work.agents.mode`" prompt rows.
+  // `155_story_one-agent-mode-setting/tasks/01_every-prompt-defaults-to-solo.feature`, superseding
+  // 140/00's "each prompt states its own default" and 140/01's "the loop does not fall back to
+  // `work.agents.mode`". 140/00's QA-agent case below still holds and keeps its name.
+  {
+    name: "155/01 E5 an unset work.agents.mode runs a hand-typed continue solo",
+    run: () => {
+      const config = configBlocksOf("continue");
+      assert.match(config, /An unset `work\.agents\.mode` resolves to solo\b/u, "the one default");
+      assert.match(config, /`work\.agents\.mode: "orchestrated"` resolves to orchestrated\b/u, "the set value still governs");
+      assert.doesNotMatch(config, /An unset `work\.agents\.mode` resolves to orchestrated/iu, "the old default is gone");
+    },
+  },
   ...[
-    ["refine", "solo", "orchestrated"],
-    ["continue", "orchestrated", "solo"],
-  ].map(([prompt, fallback, other]) => ({
-    name: `140/00 an unset work.agents.mode resolves to the command's own default [${prompt}: unset → ${fallback}, "${other}" → ${other}]`,
+    ["E6", "review"],
+    ["E6", "assimilate-code"],
+    ["", "migrate"],
+    ["", "refine"],
+    ["", "autonomous"],
+  ].map(([example, prompt]) => ({
+    name: `155/01 ${example ? `${example} ` : ""}every other role-spawning command defaults to solo [${prompt}.md]`,
     run: () => {
-      const config = configBlocksOf(prompt);
-      assert.match(config, new RegExp(`An unset \`work\\.agents\\.mode\` resolves to ${fallback}\\b`, "u"), `${prompt}: the unset default`);
-      assert.match(config, new RegExp(`\`work\\.agents\\.mode: "${other}"\` resolves to ${other}\\b`, "u"), `${prompt}: the set value still governs`);
+      const body = flattened(loadBundle().resources.find((entry) => entry.id === prompt).body);
+      assert.match(body, /an unset `work\.agents\.mode` resolves to solo\b/iu, `${prompt}: the unset default is solo`);
+      assert.doesNotMatch(body, /an unset `work\.agents\.mode` resolves to orchestrated/iu, `${prompt}: unset is never orchestrated`);
+      assert.doesNotMatch(body, /any (?:other )?value(?: other than `"solo"`)? → orchestrated/u, `${prompt}: an unrecognised value is never orchestrated`);
     },
   })),
+  {
+    name: "155/01 E7 a flag still overrides the configured mode for one run",
+    run: () => {
+      const config = configBlocksOf("continue");
+      assert.match(config, /`--orchestrated` OVERRIDES a solo config to orchestrated for this run/u);
+      assert.match(config, /`--solo` OVERRIDES an orchestrated config to solo for this run/u);
+      assert.match(config, /The two together are contradictory: STOP before any role runs/u);
+    },
+  },
+  {
+    name: "155/01 E8 the mesh worker's directive stays flagless",
+    run: () => {
+      assert.equal(assignmentDirectiveCommand("continue", "12/03"), "/aof:continue 12/03");
+    },
+  },
+  {
+    name: "155/01 E11 verify reads no mode and keeps spawning its roles",
+    run: () => {
+      const member = loadBundle().resources.find((entry) => entry.id === "verify");
+      const body = flattened(member.body);
+      assert.doesNotMatch(body, /work\.agents\.mode/u, "verify names no work.agents.mode");
+      assert.doesNotMatch(body, /--solo|--orchestrated/u, "nor a mode flag");
+      assert.equal(String(member.argumentHint).replace(/^"|"$/gu, ""), "<item ref> [--url <baseUrl>] [--thinking <level>]", "the argument hint is unchanged");
+    },
+  },
   ...["refine", "continue"].map((prompt) => ({
-    name: `140/00 ${prompt}.md names what the loop composes, and no fallback to work.agents.mode`,
+    name: `155/01 ${prompt}.md names the loop's chain and the default's home`,
     run: () => {
       const config = configBlocksOf(prompt);
-      assert.match(config, new RegExp(`The loop composes a flag on every ${prompt} it drives: \`work\\.loop\\.agents\\.${prompt}\\.mode\` when set, \`--solo\` when unset`, "u"));
-      assert.match(config, new RegExp(`A loop-driven ${prompt} therefore never reads \`work\\.agents\\.mode\``, "u"));
-      assert.doesNotMatch(config, /composes nothing when it is unset/u);
-      assert.match(config, /the loop's own default, whose home is `packages\/contracts\/src\/loop-bounds\.mjs`/u);
+      assert.match(config, new RegExp(`The loop composes a flag on every ${prompt} it drives: \`work\\.loop\\.agents\\.${prompt}\\.mode\` (?:\\([^)]*\\) )?when set, else \`work\\.agents\\.mode\`, else \`solo\``, "u"));
+      assert.match(config, /the one built-in default, whose home is `packages\/contracts\/src\/agent-mode\.mjs`/u);
+      assert.doesNotMatch(config, new RegExp(`A loop-driven ${prompt} therefore never reads \`work\\.agents\\.mode\``, "u"));
     },
   })),
+  {
+    name: "155/01 the autonomous prompt names the chain beside the loop's other keys",
+    run: async () => {
+      const { bundle, member } = bundleFacts();
+      const loopParagraph = (body) => String(body).replace(/<!--[^]*?-->/g, " ").split(/\n\s*\n/u).map((p) => p.replace(/\s+/g, " ").trim()).filter((p) => p.includes("work.loop.concurrency"));
+      const modes = /`work\.loop\.agents\.refine\.mode` and `work\.loop\.agents\.continue\.mode` \([^)]*\) override `work\.agents\.mode` when set, and when unset fall back to `work\.agents\.mode`, then to `solo`/u;
+      const bound = /`work\.loop\.dispatch\.concurrency` — [^—]*— which falls back to its workspace twin `work\.dispatch\.concurrency` when unset/u;
+      const [paragraph, ...more] = loopParagraph(member.body);
+      assert.equal(more.length, 0, "exactly one paragraph names the mode");
+      assert.match(paragraph, modes);
+      assert.match(paragraph, bound);
+      assert.doesNotMatch(paragraph, /do not fall back to `work\.agents\.mode`/u);
+      for (const key of [...paragraph.matchAll(/`(work\.loop\.[A-Za-z.]+)`/gu)].map((match) => match[1])) {
+        assert.ok(Object.hasOwn(LOOP_BOUND_VALUE_RESOLVERS, key), `${key} resolves through LOOP_BOUND_VALUE_RESOLVERS`);
+      }
+      const { sentences, statedValues, unitOf } = await import("../arch/command/acd-prompt-bounds-name-their-home.test.mjs");
+      const keys = ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"];
+      for (const sentence of sentences(paragraph)) {
+        for (const key of keys.filter((k) => sentence.includes(k))) assert.deepEqual(statedValues(sentence, unitOf(key)), [], `no value is stated for ${key}: ${sentence}`);
+      }
+      const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === "autonomous" || entry.resource.id === "aof-autonomous") && entry.resource.artifact !== "associated-file");
+      assert.equal(renders.length, 3, "three rendered files");
+      for (const render of renders) {
+        const [onDisk] = loopParagraph(readFileSync(installedBundlePath(render.path, repoRoot), "utf8"));
+        assert.match(onDisk ?? "", modes, `${render.path} carries the chain`);
+        assert.match(onDisk ?? "", bound, `${render.path} carries the lane bound's fallback`);
+      }
+    },
+  },
+  {
+    name: "155/01 the schema describes one default and the chain",
+    run: () => {
+      const schema = JSON.parse(readFileSync(path.join(repoRoot, "schemas", "aof.schema.json"), "utf8"));
+      const work = schema.$defs.work.properties;
+      const description = work.agents.properties.mode.description;
+      assert.match(description, /An unset key resolves to solo for every command that reads a mode/u);
+      assert.match(description, /A loop-driven session uses work\.loop\.agents\.<phase>\.mode when set and this key otherwise/u);
+      for (const phase of ["refine", "continue"]) {
+        const loopKey = work.loop.properties.agents.properties[phase].properties.mode.description;
+        assert.match(loopKey, /An unset key, or any value that is not a mode, falls back to work\.agents\.mode, then to solo/u, `work.loop.agents.${phase}.mode`);
+      }
+    },
+  },
+  {
+    name: "155/01 the renders, the manifest and the lock agree with the source",
+    run: () => {
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      assert.equal(dry.status, 0, dry.stderr);
+      const { summary } = JSON.parse(dry.stdout);
+      assert.deepEqual({ created: summary.created, updated: summary.updated, deleted: summary.deleted, drift: summary["drift-warning"] }, { created: 0, updated: 0, deleted: 0, drift: 0 });
+      const bundle = loadBundle();
+      for (const prompt of ["refine", "continue", "review", "assimilate-code", "migrate", "autonomous"]) {
+        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`) && entry.resource.artifact !== "associated-file");
+        assert.equal(renders.length, 3, `${prompt}: one render per runtime`);
+        for (const render of renders) {
+          const onDisk = flattened(readBundleProse(render.path, repoRoot));
+          assert.match(onDisk, /an unset `work\.agents\.mode` resolves to solo\b/iu, `${render.path} states the unset default`);
+        }
+      }
+      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(manifestPath(), "utf8"), "the shipped manifest is regenerated");
+    },
+  },
   {
     name: "140/00 an orchestrated refine gives each story one QA agent",
     run: () => {
@@ -662,65 +764,6 @@ export const autonomousShellOutPromptTests = [
       const step = body.slice(start, body.indexOf("**Gate check (before authoring):**", start));
       assert.match(step, /Under orchestrated mode, one `aof-qa` writes the Examples tables for all of the story's tasks/u);
       assert.match(step, /The QA pass is never split into one agent per task/u);
-    },
-  },
-  {
-    name: "140/00 the schema describes the per-command default and the loop's own key",
-    run: () => {
-      const schema = JSON.parse(readFileSync(path.join(repoRoot, "schemas", "aof.schema.json"), "utf8"));
-      const description = schema.$defs.work.properties.agents.properties.mode.description;
-      assert.match(description, /An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated\./u);
-      assert.match(description, /a loop-driven session reads work\.loop\.agents\.<phase>\.mode, never this key/u);
-    },
-  },
-  {
-    name: "140/00 the renders, the manifest and the lock agree with the source",
-    run: () => {
-      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
-      assert.equal(dry.status, 0, dry.stderr);
-      const { summary } = JSON.parse(dry.stdout);
-      assert.deepEqual({ created: summary.created, updated: summary.updated, deleted: summary.deleted, drift: summary["drift-warning"] }, { created: 0, updated: 0, deleted: 0, drift: 0 });
-      const bundle = loadBundle();
-      for (const [prompt, fallback] of [["refine", "solo"], ["continue", "orchestrated"]]) {
-        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`) && entry.resource.artifact !== "associated-file");
-        assert.equal(renders.length, 3, `${prompt}: one render per runtime`);
-        for (const render of renders) {
-          const onDisk = flattened(readBundleProse(render.path, repoRoot));
-          assert.match(onDisk, new RegExp(`An unset \`work\\.agents\\.mode\` resolves to ${fallback}\\b`, "u"), `${render.path} states the unset default`);
-        }
-      }
-      assert.equal(serializeBundleManifest(generateBundleManifest()), readFileSync(manifestPath(), "utf8"), "the shipped manifest is regenerated");
-    },
-  },
-  // ── 140/01 — the autonomous prompt names the loop's default beside the mode ────
-  {
-    name: "140/01 the autonomous prompt names the loop's default beside the mode, and the lane bound's fallback",
-    run: async () => {
-      const { bundle, member } = bundleFacts();
-      const loopParagraph = (body) => String(body).replace(/<!--[^]*?-->/g, " ").split(/\n\s*\n/u).map((p) => p.replace(/\s+/g, " ").trim()).filter((p) => p.includes("work.loop.concurrency"));
-      const modes = /`work\.loop\.agents\.refine\.mode` and `work\.loop\.agents\.continue\.mode` \([^)]*\) default to `solo` when unset and do not fall back to `work\.agents\.mode`/u;
-      const bound = /`work\.loop\.dispatch\.concurrency` — [^—]*— which falls back to its workspace twin `work\.dispatch\.concurrency` when unset/u;
-      const [paragraph, ...more] = loopParagraph(member.body);
-      assert.equal(more.length, 0, "exactly one paragraph names the mode");
-      assert.match(paragraph, modes);
-      assert.match(paragraph, bound);
-      const { sentences, statedValues, unitOf } = await import("../arch/command/acd-prompt-bounds-name-their-home.test.mjs");
-      const keys = ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"];
-      for (const sentence of sentences(paragraph)) {
-        for (const key of keys.filter((k) => sentence.includes(k))) assert.deepEqual(statedValues(sentence, unitOf(key)), [], `no value is stated for ${key}: ${sentence}`);
-      }
-      const configKeys = [...flattened(member.body).matchAll(/work\.[A-Za-z.]+/g)].map((match) => match[0]);
-      assert.deepEqual([...new Set(configKeys)].sort(), [
-        "work.agents", "work.agents.mode", "work.dispatch.concurrency",
-        "work.loop.agents.continue.mode", "work.loop.agents.refine.mode", "work.loop.concurrency", "work.loop.dispatch.concurrency",
-      ]);
-      const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === "autonomous" || entry.resource.id === "aof-autonomous") && entry.resource.artifact !== "associated-file");
-      assert.equal(renders.length, 3, "three rendered files");
-      for (const render of renders) {
-        const [onDisk] = loopParagraph(readFileSync(installedBundlePath(render.path, repoRoot), "utf8"));
-        assert.match(onDisk ?? "", modes, `${render.path} carries the modes' default`);
-        assert.match(onDisk ?? "", bound, `${render.path} carries the lane bound's fallback`);
-      }
     },
   },
   // ── 149/00 — a manual continue hands the operator a guide instead of a build ────

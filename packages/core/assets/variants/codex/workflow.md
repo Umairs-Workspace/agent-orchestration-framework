@@ -1231,8 +1231,9 @@ working-tree changes) XOR `--committed` (the last commit, `HEAD`); optional **`-
 story under milestone NN instead of standalone); optional **`--skip-qa`** (skip the coverage lane).
 - **The source flag is mandatory and exclusive.** If neither — or both — is given, STOP and ask which:
   the command never guesses whether "done" means staged-but-uncommitted or already-committed.
-- Resolve execution mode from `work.agents.mode`: `"solo"` (or `--solo` in `$ARGUMENTS`) → play every
-  role inline in this session; any other value → orchestrated (spawn the role agents named below).
+- Resolve execution mode from `work.agents.mode`: `"orchestrated"` → orchestrated (spawn the role
+  agents named below); `"solo"`, unset or any other value (or `--solo` in `$ARGUMENTS`) → play every
+  role inline in this session. An unset `work.agents.mode` resolves to solo.
 </config>
 
 <process>
@@ -1389,9 +1390,9 @@ Read `.aof/aof.config.json` → `work.agents`. Parse
 - **--max-attempts N** — forward `N` to the shell as `--cap N`. This prompt does not count attempts
   or state a fallback ceiling.
 - **--solo** — force solo role execution for this wrapper session. Otherwise resolve the wrapper
-  session's role-execution mode from `work.agents.mode`. This setting governs only the roles this
-  session plays itself; it does not reach the sessions the shell drives, which resolve their own
-  configured mode.
+  session's role-execution mode from `work.agents.mode`; an unset `work.agents.mode` resolves to
+  solo. The flag governs only the roles this session plays itself; it does not reach the sessions
+  the shell drives, which resolve their own mode through the chain below.
 
 The argument hint and both admitted range forms remain unchanged.
 
@@ -1404,9 +1405,9 @@ sits the loop's own `work.loop.dispatch.concurrency` — the bound on the lanes 
 together, narrowing the workspace's `work.dispatch.concurrency` and never exceeding it — which
 falls back to its workspace twin `work.dispatch.concurrency` when unset. The role mode of each
 driven phase sits there too: `work.loop.agents.refine.mode` and `work.loop.agents.continue.mode`
-(`solo` or `orchestrated`, composed onto the phase command by the shell's drive) default to `solo`
-when unset and do not fall back to `work.agents.mode`, which governs only the sessions an operator
-types.
+(`solo` or `orchestrated`, composed onto the phase command by the shell's drive) override
+`work.agents.mode` when set, and when unset fall back to `work.agents.mode`, then to `solo` — the
+chain whose one home is `packages/contracts/src/agent-mode.mjs`.
 </config>
 
 <process>
@@ -1495,9 +1496,10 @@ Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`**, **`--orchest
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
 `work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
-`work.agents.mode: "solo"` resolves to solo (play every role inline in this session). **An unset
-`work.agents.mode` resolves to orchestrated** — this command's own default, because a spawned
-reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
+`work.agents.mode: "solo"` resolves to solo (play every role inline in this session).
+**An unset `work.agents.mode` resolves to solo** — the one default every command that reads a mode
+shares. Reach for `--orchestrated` when an independent perspective is worth its cold starts: a
+spawned reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
 orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
 STOP before any role runs and report it. **`--manual` together with `--solo` or `--orchestrated` is
@@ -1505,10 +1507,10 @@ contradictory too** — `--manual` says the operator builds, which leaves no age
 before any role runs and before any run is minted, and report it. `--manual` is a per-run flag and
 never a `work.agents.mode` value, and the loop never composes it (`<manual_mode>` below).
 The loop composes a flag on every continue it drives: `work.loop.agents.continue.mode` when set,
-`--solo` when unset — the loop's own default, whose home is `packages/contracts/src/loop-bounds.mjs`.
-A loop-driven continue therefore never reads `work.agents.mode`. This command delegates to no other
-command, so the flag governs exactly one thing: which roles this session plays inline and which it
-spawns. It changes only WHO does the work, never WHAT is produced — the same build, the same review
+else `work.agents.mode`, else `solo` — the one built-in default, whose home is
+`packages/contracts/src/agent-mode.mjs`. A loop-driven continue therefore follows `work.agents.mode`
+unless the loop's own key overrides it. This command delegates to no other command, so the flag
+governs exactly one thing: which roles this session plays inline and which it spawns. It changes only WHO does the work, never WHAT is produced — the same build, the same review
 lanes, the same gates.
 
 Reach for it when the main session already holds the context a spawned agent would have to
@@ -2760,10 +2762,11 @@ plus any flags (e.g. `--dry-run`) — every flag passes through to the CLI uncha
      read-only source rule survives into the agent lane.
 4. **Architect review of delivered work — at migrate time.** Only when the CLI produced a
    non-`not-started` item (delivered work present): review the source's delivered work per
-   `work.agents.mode` — any value other than `"solo"` → orchestrated: spawn `aof-architect` to
-   review; `"solo"` → the main session plays the role inline. The CLI's gap-derived rows in the
-   produced STATE.md `## Findings` are the floor the review builds on: the architect's rows upgrade
-   or extend the gap-derived rows into grounded structural findings — never duplicated, never
+   `work.agents.mode` — `"orchestrated"` → spawn `aof-architect` to review; `"solo"`, unset or any
+   other value → the main session plays the role inline. An unset `work.agents.mode` resolves to
+   solo. The CLI's gap-derived rows in the produced STATE.md `## Findings` are the floor the review
+   builds on: the architect's rows upgrade or extend the gap-derived rows into grounded structural
+   findings — never duplicated, never
    fabricated (no finding the delivered work does not actually exhibit). Each finding names what is
    wrong, where in the delivered work it shows, and what addressing it entails — actionable at
    `$aof-continue` without re-deriving the review. **No delivered work → no review lane runs**, and
@@ -3265,17 +3268,19 @@ belongs where the operator is and is never dispatched to a worker.)
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the refine an operator types:
 `work.agents.mode: "solo"` resolves to solo (play every role inline in this session), and
-`work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents). **An unset
-`work.agents.mode` resolves to solo** — this command's own default, because a contract is cheapest
-written in one context that already holds the story, its ADRs and the code, and a single author
-keeps sibling tasks consistent. **`--solo` OVERRIDES an orchestrated config to solo for this run**
-— the same effect as `work.agents.mode: "solo"`, without editing config — and **`--orchestrated`
-OVERRIDES a solo config to orchestrated for this run**, its twin in the other direction. The two
-together are contradictory: STOP before any role runs and report it. The loop composes a flag on
-every refine it drives: `work.loop.agents.refine.mode` when set, `--solo` when unset — the loop's
-own default, whose home is `packages/contracts/src/loop-bounds.mjs`. A loop-driven refine therefore never reads
-`work.agents.mode`. Either flag changes only WHO does the work, never WHAT is produced: the same
-documents, the same contracts, the same gates.
+`work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents).
+**An unset `work.agents.mode` resolves to solo** — the one default every command that reads a mode
+shares, and the right one here because a contract is cheapest written in one context that already
+holds the story, its ADRs and the code, and a single author keeps sibling tasks consistent.
+**`--solo` OVERRIDES an orchestrated config to solo for this run** — the same effect as
+`work.agents.mode: "solo"`, without editing config — and **`--orchestrated` OVERRIDES a solo config
+to orchestrated for this run**, its twin in the other direction. The two together are
+contradictory: STOP before any role runs and report it. The loop composes a flag on every refine it
+drives: `work.loop.agents.refine.mode` (a key whose home is `packages/contracts/src/loop-bounds.mjs`)
+when set, else `work.agents.mode`, else `solo` — the one built-in default, whose home is
+`packages/contracts/src/agent-mode.mjs`. A loop-driven refine therefore follows `work.agents.mode`
+unless the loop's own key overrides it. Either flag changes only WHO does the work, never WHAT is
+produced: the same documents, the same contracts, the same gates.
 
 Solo is the default because the orchestration usually costs more than it buys: the main session
 already holds the context a fresh sub-agent would have to rediscover. A spawned agent starts cold:
@@ -3943,8 +3948,8 @@ chore** — name the ref and its type, mint nothing, and stop. A milestone's sto
 at a time, by their own refs.
 
 **Execution mode.** As continue resolves it: `work.agents.mode` governs, **an unset
-`work.agents.mode` resolves to orchestrated**, and `--solo` or `--orchestrated` overrides it for the
-run; the two together are contradictory, so STOP before any role runs. Orchestrated spawns the
+`work.agents.mode` resolves to solo**, and `--solo` or `--orchestrated` overrides it for the run;
+the two together are contradictory, so STOP before any role runs. Orchestrated spawns the
 review lenses; solo performs each lens in this session, in turn.
 </config>
 

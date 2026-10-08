@@ -27,17 +27,19 @@ belongs where the operator is and is never dispatched to a worker.)
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the refine an operator types:
 `work.agents.mode: "solo"` resolves to solo (play every role inline in this session), and
-`work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents). **An unset
-`work.agents.mode` resolves to solo** — this command's own default, because a contract is cheapest
-written in one context that already holds the story, its ADRs and the code, and a single author
-keeps sibling tasks consistent. **`--solo` OVERRIDES an orchestrated config to solo for this run**
-— the same effect as `work.agents.mode: "solo"`, without editing config — and **`--orchestrated`
-OVERRIDES a solo config to orchestrated for this run**, its twin in the other direction. The two
-together are contradictory: STOP before any role runs and report it. The loop composes a flag on
-every refine it drives: `work.loop.agents.refine.mode` when set, `--solo` when unset — the loop's
-own default, whose home is `packages/contracts/src/loop-bounds.mjs`. A loop-driven refine therefore never reads
-`work.agents.mode`. Either flag changes only WHO does the work, never WHAT is produced: the same
-documents, the same contracts, the same gates.
+`work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents).
+**An unset `work.agents.mode` resolves to solo** — the one default every command that reads a mode
+shares, and the right one here because a contract is cheapest written in one context that already
+holds the story, its ADRs and the code, and a single author keeps sibling tasks consistent.
+**`--solo` OVERRIDES an orchestrated config to solo for this run** — the same effect as
+`work.agents.mode: "solo"`, without editing config — and **`--orchestrated` OVERRIDES a solo config
+to orchestrated for this run**, its twin in the other direction. The two together are
+contradictory: STOP before any role runs and report it. The loop composes a flag on every refine it
+drives: `work.loop.agents.refine.mode` (a key whose home is `packages/contracts/src/loop-bounds.mjs`)
+when set, else `work.agents.mode`, else `solo` — the one built-in default, whose home is
+`packages/contracts/src/agent-mode.mjs`. A loop-driven refine therefore follows `work.agents.mode`
+unless the loop's own key overrides it. Either flag changes only WHO does the work, never WHAT is
+produced: the same documents, the same contracts, the same gates.
 
 Solo is the default because the orchestration usually costs more than it buys: the main session
 already holds the context a fresh sub-agent would have to rediscover. A spawned agent starts cold:

@@ -283,7 +283,7 @@ async function lane(overrides = {}) {
 }
 
 // The dry-run drive composes `command` from the fixture's `work` config, read in-process and
-// off a REAL child process with that config on disk (129/07 task 02, 140/01).
+// off a REAL child process with that config on disk (129/07 task 02, 155/00).
 async function assertDriveComposes(phase, work, command) {
   const fx = await fixture();
   try {
@@ -1755,7 +1755,7 @@ export const driveCommandPhaseDriverTests = [
   // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`.
   // The flag is composed from `work.loop.agents.<phase>.mode` through the bounds home. The rows
   // here are the ones a SET key answers. 129/07's unset rows (no flag) are superseded by
-  // 140/01, whose own table follows: an unset key composes the phase's default, `--solo`.
+  // 155/00, whose own table follows: an unset key composes the session chain's answer.
   ...[
     ["refine", { loop: { agents: { refine: { mode: "solo" } } } }, "/aof:refine 03/01 --solo"],
     ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
@@ -1765,30 +1765,33 @@ export const driveCommandPhaseDriverTests = [
     name: `129/07 task02 the phase drive composes the flag from the loop key [${phase}, ${JSON.stringify(work)} → ${command}]`,
     run: () => assertDriveComposes(phase, work, command),
   })),
-  // ── 140/01 — the loop drives both phases solo ─────────────────────────────────
+  // ── 155/00 — the loop falls back to work.agents.mode, then solo ───────────────
   //
-  // `140_story_refine-defaults-to-solo/tasks/01_the-loop-drives-both-phases-solo.feature`. An
-  // unset `work.loop.agents.<phase>.mode` composes the phase's default (`--solo`), never nothing,
-  // and `work.agents.mode` is never read by the loop.
+  // `155_story_one-agent-mode-setting/tasks/00_the-loop-falls-back-to-the-workspace-mode.feature`,
+  // superseding 140/01's "the loop never reads `work.agents.mode`". The drive composes the session
+  // chain: the loop key when set, else `work.agents.mode`, else solo — a flag on every refine and
+  // continue, none on verify. Each row runs in-process and off a real child process.
   ...[
-    ["refine", {}, "/aof:refine 03/01 --solo"],
-    ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
-    ["refine", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --solo"],
-    ["refine", { agents: { mode: "orchestrated" } }, "/aof:refine 03/01 --solo"],
-    ["continue", {}, "/aof:continue 03/01 --solo"],
-    ["continue", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:continue 03/01 --orchestrated"],
-    ["continue", { loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01 --solo"],
-    ["continue", { agents: { mode: "orchestrated" } }, "/aof:continue 03/01 --solo"],
-    ["verify", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:verify 03/01"],
-  ].map(([phase, work, command]) => ({
-    name: `140/01 the phase drive composes a flag for every refine and continue it drives [${phase}, ${JSON.stringify(work)} → ${command}]`,
+    ["E1", "continue", { agents: { mode: "orchestrated" } }, "/aof:continue 03/01 --orchestrated"],
+    ["E2", "continue", { agents: { mode: "orchestrated" }, loop: { agents: { continue: { mode: "solo" } } } }, "/aof:continue 03/01 --solo"],
+    ["E3", "refine", {}, "/aof:refine 03/01 --solo"],
+    ["E3", "continue", {}, "/aof:continue 03/01 --solo"],
+    ["E4", "continue", { agents: { mode: "orchestrated" }, loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01 --orchestrated"],
+    ["edge", "refine", { agents: { mode: "orchestrated" } }, "/aof:refine 03/01 --orchestrated"],
+    ["edge", "refine", { agents: { mode: "solo" }, loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
+    ["edge", "refine", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --solo"],
+    ["edge", "continue", { agents: { mode: "Orchestrated" } }, "/aof:continue 03/01 --solo"],
+    ["edge", "continue", { agents: { mode: "orchestrated" }, loop: { agents: { continue: { mode: "manual" } } } }, "/aof:continue 03/01 --orchestrated"],
+    ["edge", "verify", { agents: { mode: "orchestrated" } }, "/aof:verify 03/01"],
+  ].map(([example, phase, work, command]) => ({
+    name: `155/00 ${example} the drive composes the loop key, else work.agents.mode, else solo [${phase}, ${JSON.stringify(work)} → ${command}]`,
     run: () => assertDriveComposes(phase, work, command),
   })),
   // ── 149/01 — the loop never composes --manual ─────────────────────────────────
   //
   // `149_story_continue-manual-mode-guides-the-operator/tasks/01_manual-is-one-story-here-at-every-door.feature`.
   // `--manual` is a per-run flag an operator types; it is no loop mode, so a `"manual"` loop key is
-  // an unknown value and resolves to the phase's default.
+  // an unknown value and falls through the session chain (155/00) — here, to solo.
   {
     name: "149/01 the loop never composes --manual [continue, {\"loop\":{\"agents\":{\"continue\":{\"mode\":\"manual\"}}}} → /aof:continue 03/01 --solo]",
     async run() {
@@ -1797,13 +1800,18 @@ export const driveCommandPhaseDriverTests = [
     },
   },
   {
-    name: "140/01 the drive spells no mode of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS",
+    name: "155/00 the drive spells no default of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS, and the flag is composed from sessionAgentMode",
     async run() {
       const drive = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/drive.mjs", import.meta.url), "utf8"));
       const flagsLine = drive.split(/\r?\n/u).filter((line) => line.includes("PHASE_MODE_FLAGS = Object.freeze("));
       assert.equal(flagsLine.length, 1, "the flag map is declared on one line");
       const outside = drive.split(flagsLine[0]).join("");
-      assert.doesNotMatch(outside, /["'`](?:solo|orchestrated)["'`]/u, "no mode literal outside PHASE_MODE_FLAGS — the default is the bounds home's");
+      assert.doesNotMatch(outside, /["'`](?:solo|orchestrated)["'`]/u, "no mode literal outside PHASE_MODE_FLAGS — the default is the chain's home's");
+      assert.doesNotMatch(drive, /agents\??\.mode\b/u, "the drive reads no work.agents.mode of its own");
+      const composes = drive.match(/phaseCommand\(phase, item\.ref, [\w.]+\([^)]*\)/gu) ?? [];
+      assert.ok(composes.length > 0, "the drive composes a phase command");
+      for (const call of composes) assert.match(call, /sessionAgentMode\(ctx\.workspace, phase\)/u, `every composition reads the chain: ${call}`);
+      assert.match(drive, /import \{ sessionAgentMode \} from "@aof\/contracts\/agent-mode";/u);
     },
   },
   {

@@ -195,21 +195,15 @@ export function loopRepairFromConfig(workspace) {
 // holds the line), so no workspace twin is read here. An unset lane bound inherits
 // `work.dispatch.concurrency` at `work:dispatch`'s one resolution site, which narrows the
 // pool's bound by the number the loop hands it (129/ADR-006, amended). An unset phase mode
-// does NOT inherit: the loop has its own default per phase, `LOOP_AGENT_MODE_DEFAULTS` below,
-// applied at the phase level, so every refine and continue the loop drives carries a flag and
-// `work.agents.mode` governs hand-run sessions only (140, superseding 129/ADR-001 §5's fallback).
+// answers `null` here too: its fallback past the loop key is the session chain, whose one home
+// is `agent-mode.mjs` beside this leaf (155, superseding 140 and widening 129/ADR-001 §5).
 //
 // The range probe (`resolve(p) === p`) therefore admits exactly the members: a positive
 // integer for the bound, `solo` / `orchestrated` for a mode. A step on an UNSET key steps
 // from `null` — the per-key resolvers keep answering `null` for it, the default being the
-// phase's rather than the key's — and no loop record declares one of these as a ceiling, so
-// the tuner never meets that case.
+// session chain's rather than the key's — and no loop record declares one of these as a
+// ceiling, so the tuner never meets that case.
 export const LOOP_AGENT_MODES = Object.freeze(["solo", "orchestrated"]);
-
-// The mode each driven phase runs in when its `work.loop.agents.<phase>.mode` is unset (140).
-// Both are solo: a driven session holds the whole contract in one context, and a cold-start
-// agent per role re-reads it at a cost the operator measured.
-export const LOOP_AGENT_MODE_DEFAULTS = Object.freeze({ refine: "solo", continue: "solo" });
 
 export const resolveLoopDispatchConcurrency = (value) => positiveInteger(value, null);
 export const resolveLoopAgentMode = (value) => (LOOP_AGENT_MODES.includes(value) ? value : null);
@@ -236,11 +230,11 @@ export const LOOP_AGENT_MODE_RESOLVERS = Object.freeze({
   continue: loopAgentContinueModeFromConfig,
 });
 
-// The key's value when it is set, the phase's default when it is unset (140), `null` for a
-// phase that resolves no mode.
+// The loop key's member value, or `null` when it is unset or the phase resolves no mode. The
+// fallback past an unset key is `sessionAgentMode` in `agent-mode.mjs` (155).
 export function loopAgentModeFromConfig(workspace, phase) {
   if (!Object.prototype.hasOwnProperty.call(LOOP_AGENT_MODE_RESOLVERS, phase)) return null;
-  return LOOP_AGENT_MODE_RESOLVERS[phase](workspace) ?? LOOP_AGENT_MODE_DEFAULTS[phase];
+  return LOOP_AGENT_MODE_RESOLVERS[phase](workspace);
 }
 
 // The registry's config-pointer authority is derived from callable resolvers,

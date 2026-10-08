@@ -21,7 +21,8 @@ import { commandError } from "@aof/contracts/error";
 // `run.started`/`run.completed` and inherits none of the declared cascade. Ported to the
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 
-import { loopBoundsFromConfig, loopAgentModeFromConfig, loopRuntimeSettingFromConfig } from "@aof/contracts/loop-bounds";
+import { loopBoundsFromConfig, loopRuntimeSettingFromConfig } from "@aof/contracts/loop-bounds";
+import { sessionAgentMode } from "@aof/contracts/agent-mode";
 
 import { access, readFile } from "node:fs/promises";
 import os from "node:os";
@@ -102,7 +103,7 @@ export function createPhaseDrivers({
     const fixSource = answer == null ? (input.fix ? await readFixFile(input.fix) : ctx.loopDrive?.fix) : null;
     const fix = phase === "continue" && fixSource?.buildRun ? fixSource : null;
     const autonomous = input.autonomous === true || ctx.loopDrive?.autonomous === true;
-    const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous, halt }).replace(`/aof:${phase}`, `$aof-${phase}`);
+    const command = phaseCommand(phase, item.ref, sessionAgentMode(ctx.workspace, phase), { autonomous, halt }).replace(`/aof:${phase}`, `$aof-${phase}`);
     const choice = selected.phases[choicePhase];
     if (input.dryRun === true) return { ref: item.ref, phase, command, execution: selected, effort: { level: choice.effort, source: choice.effortSource }, model: { id: choice.model, source: choice.modelSource } };
     const briefItem = ctx.loopDrive?.briefItem ?? item;
@@ -228,12 +229,12 @@ export function createPhaseDrivers({
     return `${command}\n\n## REVIEW FINDINGS\n${findingText}${changeText.length > 0 ? `\n\n## CHANGE UNDER REVIEW\n${changeText}` : ""}`;
   }
 
-  // 129/07 (ADR-001 §5, amended) — the phase's role mode, composed from the loop's OWN key
-  // `work.loop.agents.<phase>.mode` through the bounds home: `solo` → `--solo`, `orchestrated` →
-  // `--orchestrated` (the twin the prompts gained in the same story). An unset key answers the
-  // phase's own default from the bounds home (140: `solo` for refine and continue), so every
-  // refine and continue the loop drives carries a flag; only `null` — a phase that resolves no
-  // mode, `verify` — composes none. The drive never reads the workspace twin `work.agents.mode`.
+  // 129/07 (ADR-001 §5), 155 — the phase's role mode, composed from the session chain in
+  // `@aof/contracts/agent-mode` (the loop's own key, then the workspace key, then the one built-in
+  // default): `solo` → `--solo`, `orchestrated` → `--orchestrated`. Every refine and continue the
+  // loop drives therefore carries a flag, so its narration shows the mode it ran in; only `null`
+  // — a phase that resolves no mode, `verify` — composes none. The drive reads no config key for
+  // the mode and spells no default of its own.
   const PHASE_MODE_FLAGS = Object.freeze({ solo: "--solo", orchestrated: "--orchestrated" });
 
   // 143/01 (ADR-002 §5) — a whole-item refine appends `--autonomous` AFTER the mode flag: the prompt
@@ -467,7 +468,7 @@ export function createPhaseDrivers({
         if (phase === "review") throw commandError("The independent native review driver requires Codex", "unsupported-runtime", 409);
         if (thinkingGiven != null && normalizeEffort(thinkingGiven) == null) throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
 
-        const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous, halt: haltGiven });
+        const command = phaseCommand(phase, item.ref, sessionAgentMode(ctx.workspace, phase), { autonomous, halt: haltGiven });
         // milestone 70 / story 01 (ADR-005), story 141 — the SESSION model and effort, resolved per
         // phase from `work.agents.session` (distinct from the render-time role maps
         // `work.agents.models` / `work.agents.effort`; see src/session-model.mjs), with `--thinking`

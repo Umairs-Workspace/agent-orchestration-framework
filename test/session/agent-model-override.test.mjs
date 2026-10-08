@@ -302,12 +302,13 @@ export const agentModelOverrideTests = [
       }
     }
   },
-  // Scenario Outline: project validate checks the role map as it checks the model map
+  // Scenario Outline: project validate checks the role map as it checks the model map. 155/02: an
+  // unset mode is the default solo, so a non-empty map under it also carries the inert notice.
   ...[
-    [{ "aof-qa": "extra-high" }, undefined, []],
-    [{ "aof-tester": "high" }, undefined, [["error", "effort-map-unknown-role", "work.agents.effort.aof-tester"]]],
-    [{ "aof-qa": "turbo" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"]]],
-    [{ "aof-qa": "" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"]]],
+    [{ "aof-qa": "extra-high" }, undefined, [["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+    [{ "aof-tester": "high" }, undefined, [["error", "effort-map-unknown-role", "work.agents.effort.aof-tester"], ["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+    [{ "aof-qa": "turbo" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"], ["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+    [{ "aof-qa": "" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"], ["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
     [[], undefined, [["error", null, "work.agents.effort"]]],
     [{ "aof-qa": "high" }, "solo", [["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
   ].map(([map, mode, expected]) => ({
