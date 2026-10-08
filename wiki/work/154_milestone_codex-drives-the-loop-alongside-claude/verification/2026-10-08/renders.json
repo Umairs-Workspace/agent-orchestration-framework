@@ -1,0 +1,33 @@
+{
+  "binary": "LOCALAPPDATA/ms-playwright/chromium-1243/chrome-win64/chrome.exe",
+  "pathRedaction": "User directory prefixes replaced; original absolute paths retained in ignored .tmp/154-verify-design/report.json",
+  "url": "http://127.0.0.1:4181/config",
+  "precondition": {
+    "executable": true,
+    "exit": 0,
+    "blankDocument": true
+  },
+  "renders": [
+    {
+      "width": 390,
+      "height": 1200,
+      "output": "CHECKOUT/.tmp/154-verify-design/config-390.png",
+      "exit": 0,
+      "bytes": 17802
+    },
+    {
+      "width": 768,
+      "height": 1200,
+      "output": "CHECKOUT/.tmp/154-verify-design/config-768.png",
+      "exit": 0,
+      "bytes": 20751
+    },
+    {
+      "width": 1280,
+      "height": 1200,
+      "output": "CHECKOUT/.tmp/154-verify-design/config-1280.png",
+      "exit": 0,
+      "bytes": 22612
+    }
+  ]
+}

@@ -1,7 +1,23 @@
 ---
 doc: state
+updated: 2026-10-08
 ---
 # 154 · Codex drives the AOF loop alongside Claude — State
+
+## Verification attempt — 2026-10-08
+
+Acceptance is withheld; see VERIFICATION.md and verification/2026-10-08/ for observed native
+protocol evidence, screenshots and prerequisite findings D-01 through D-03. Real Codex create,
+resume, structured question fallback and token usage worked; governed refine stopped at
+operator_action_required. Claude connectivity worked but is not its governed lifecycle.
+The supplied Fleet URL lacks the configuration API, so the form review is inconclusive.
+Concurrent story 155 edits prevent a clean acceptance regression gate and temporarily broke
+test registry loading. No other-session edits were reset, staged or accepted by verification.
+All story acceptance and repeated prompt measurements remain pending; no delivered outcome is claimed.
+Owned verification run 20261008T140206632Z-0003 settled failed with
+verification-prerequisites-unavailable; both completion effects finished. Its automatic failure
+rollback changed the milestone to not-started, so the status CLI restored in-progress immediately.
+No status frontmatter was edited by hand.
 
 ## Progress
 
