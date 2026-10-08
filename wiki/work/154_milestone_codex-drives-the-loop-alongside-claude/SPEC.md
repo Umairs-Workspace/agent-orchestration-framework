@@ -113,3 +113,10 @@ Shared test registries and renderer/config files deliberately serialize overlapp
 - A supported installed Codex CLI and authorized access are required for live verification.
 - Coordinate with ongoing memory work where interfaces overlap; this milestone consumes the
   shared memory contracts and does not require a second vocabulary or retrospective ledger.
+
+## Accept decision
+
+2026-10-08 autonomous reverification: **NOT ACCEPTED**. The execution UI passed its browser and
+design checks, but the clean regression gate is red (D-03) and the full Codex lifecycle/recovery
+and repeated prompt workload lack native write-permission prerequisites (D-01). See VERIFICATION.md
+and the command-authored REGRESSION.md row. All story acceptance boxes remain unchecked.

@@ -1,0 +1,166 @@
+{
+  "healthy": true,
+  "strict": false,
+  "errors": 0,
+  "warnings": 15,
+  "findings": [
+    {
+      "code": "numbering-gap",
+      "severity": "warn",
+      "path": "wiki\\work",
+      "message": "the top-level driver sequence has a gap: number 122 is missing between 00 and 155"
+    },
+    {
+      "code": "control-runner-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\ARCHITECTURE.md",
+      "message": "6 declared control(s) here, and no \"work.controls.runners\" is configured — leg B (does a runner name this file?) did not run, so no control here is known to be registered"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\00_story_runtime-session-boundary",
+      "message": "154/00: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\01_story_runtime-choice-is-durable",
+      "message": "154/01: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\02_story_codex-session-protocol",
+      "message": "154/02: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\03_story_native-codex-assets",
+      "message": "154/03: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\04_story_codex-upgrades-preserve-user-files",
+      "message": "154/04: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\05_story_runtime-specific-workflow-variants",
+      "message": "154/05: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\06_story_codex-drives-and-recovers-loop-phases",
+      "message": "154/06: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\07_story_runtime-survives-worker-handoff",
+      "message": "154/07: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\08_story_runtime-aware-observation",
+      "message": "154/08: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\09_story_memory-dependencies-are-explicit",
+      "message": "154/09: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\10_story_runtime-config-editor",
+      "message": "154/10: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "rubric-join-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\11_story_prove-both-assistants-end-to-end",
+      "message": "154/11: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+    },
+    {
+      "code": "depends-edges-unchecked",
+      "severity": "warn",
+      "path": "wiki\\work",
+      "message": "this run considered 333 resolved `depends:` edge(s) — 132 witnessed by the two contracts, 13 unwitnessed, 131 unchecked because an endpoint is not a story, and 57 unchecked because a story has declared no contract. An endpoint that is not a story can NEVER be evaluated — `reads:`/`files:` exist only on `STORY.md`, so every milestone, uat, spike and chore endpoint is permanently outside this check's domain. An undeclared contract CAN be evaluated, once that story declares `reads:`/`files:`; that count falls as the convention spreads. The two are reported apart because they have different remedies."
+    }
+  ],
+  "loopReady": {
+    "score": 80,
+    "passed": 8,
+    "applicable": 10,
+    "clears": "L1",
+    "registry": {
+      "present": true,
+      "composed": true,
+      "error": 0,
+      "warn": 33
+    },
+    "checks": [
+      {
+        "id": "stream-coherent",
+        "state": "pass",
+        "evidence": "0 error-severity doctor findings in scope."
+      },
+      {
+        "id": "cap-declared",
+        "state": "pass",
+        "evidence": "work.autonomous.maxAttempts is declared as 3."
+      },
+      {
+        "id": "memory-on",
+        "state": "pass",
+        "evidence": "memory backend resolves to \"graphify\"."
+      },
+      {
+        "id": "tasks-authored",
+        "state": "pass",
+        "evidence": "12 of 12 in-scope stories carry task payloads."
+      },
+      {
+        "id": "grounding",
+        "state": "fail",
+        "evidence": "The loop registry check reported 11 findings."
+      },
+      {
+        "id": "anchor-grounding",
+        "state": "fail",
+        "evidence": "The loop registry check reported 4 findings."
+      },
+      {
+        "id": "pairing",
+        "state": "pass",
+        "evidence": "The loop registry check reported 0 findings."
+      },
+      {
+        "id": "reference-ownership",
+        "state": "pass",
+        "evidence": "The loop registry check reported 0 findings."
+      },
+      {
+        "id": "actuator-arbitration",
+        "state": "pass",
+        "evidence": "The loop registry check reported 0 findings."
+      },
+      {
+        "id": "timescale",
+        "state": "pass",
+        "evidence": "The loop registry check reported 0 findings."
+      }
+    ],
+    "blocking": [
+      "grounding",
+      "anchor-grounding"
+    ]
+  }
+}

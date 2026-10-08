@@ -29,7 +29,7 @@ At readiness close, code matched successful full-gate snapshot `7beccabff552c266
 by tag `verification/154-11-build-review`: 12,466/12,466 registered cases, zero failures/flakes.
 Raw gate evidence is retained at `.tmp/154-evidence/test-sharded/2026-10-08T11-43-25-992Z/`.
 
-## Verification evidence — 2026-10-08
+## Earlier verification attempt — 2026-10-08, 14:02 UTC
 
 This session used solo, inline verification lenses. No independent root-session review is claimed.
 Evidence is retained under `verification/2026-10-08/`; native probes used existing authorized
@@ -138,18 +138,136 @@ Scoped `work validate 154 --json` returned `[]`; subsequent `work doctor 154 --j
 healthy, zero errors and 15 metadata warnings. There were no `control-unresolved` findings at
 either severity. These structural checks do not discharge the manual or regression gates.
 
+## Autonomous reverification — 2026-10-08, 14:41 UTC
+
+Run `20261008T144112971Z-0004` used solo, inline roles. The operator's instruction to resolve
+prerequisites autonomously authorized starting the local configuration editor. No root subagents
+were launched. This attempt supersedes the earlier missing-URL conclusion above.
+
+### Frozen source and actual regression gate
+
+Created a clean detached checkout of `53b99b1cd81c1896fa7bfed251fb0ae9f6f27706`, with its own
+dependencies and an isolated `AOF_GLOBAL_HOME`. The active verification phase required dependency
+preparation: the checked-in worktree helper used pinned Yarn, immutable resolution and skipped
+lifecycle builds; dependency versions and lockfiles were unchanged. Supply-chain audit passed with
+zero warnings. UI production build passed. Neither the other session's story 155 edits nor its index
+were stashed, committed or included in this snapshot.
+
+Ran the actual accept-door command in that checkout:
+`node packages/core/bin/aof.mjs work regression-gate 154 --jobs 8 --json`.
+All **12,466 registered cases executed** in 1,210 units, with **one persistently failing case** and
+zero load flakes; integration and cargo lanes passed. Elapsed time was **23.9 minutes**, exceeding
+the gate's 15-minute budget. The recorded result is **red**, not an overridden or inferred pass.
+The command-authored `REGRESSION.md` row is copied unchanged from the detached checkout.
+
+The failure is `arch/71 FF-7106`: the committed, open story **155** declares bundle members without
+all their tracked generated siblings. The original and isolated retry name the same 22 omissions,
+including Codex skill entries, `agents/openai.yaml` and the shared workflow contract. This is a
+planning write-set failure in the frozen revision, not evidence that the new runtime transport failed.
+The other writer's current changes require their own completed, committed gate; this run cannot
+certify those bytes.
+
+Evidence: `verification/2026-10-08-reverify/{regression.json,SUMMARY.txt,u0802.log,retry-800.log,u0005.log}`.
+All raw sharded logs are retained locally at `.tmp/154-reverify-evidence/test-sharded/`.
+Scoped validate returned `[]`; doctor was healthy, zero errors and 15 warnings, with no
+`control-unresolved` at either severity. The registered fitness cases ran in the full suite;
+the six observed negative probes remain recorded in the fitness register above.
+
+### Actual configuration UI, design and keyboard checks
+
+Started the frozen AOF CLI's `work ui` server at `http://127.0.0.1:4180/config`, targeting a separate
+disposable UI project and AOF home. The supplied Fleet server on port 4181 was left untouched.
+The UI fixture contains the generated context asset required for valid configuration saves; browser
+edits do not touch either live assistant fixture or the operator's project settings.
+
+The cached Chromium 1243 passed the bounded executable preflight. Three direct renderer invocations
+at 390 / 768 / 1280 exited zero and wrote nonempty images. These entry-route images prove shell
+rendering; the browser harness then selected **Settings** and captured the actual execution form.
+Used the existing Python Playwright installation and cached browser; added no browser dependency.
+
+**QA: 18/18 checks passed.** Actual DOM and keyboard interaction proved visible focus, labelled
+controls, retained edits and associated field errors for invalid Claude effort, preservation of the
+other assistant's draft, a successful real API save, inherited defaults and explanatory global scope.
+Browser-transport 503 injections proved retained edits after save failure and load-error/retry
+behavior; delayed GET proved the loading state has no stale execution-save control. These injected
+faults exercise the real component, not a mocked form or claimed live server outage. Long saved
+model identifiers wrap in the resolved preview and document width stays within all three viewports.
+An unadvertised Codex model is explicitly shown as unproven, not claimed launchable.
+
+**Inline designer verdict: CONFORMS to the binding DESIGN checklist for the execution form.**
+Region review: existing shell/navigation preserved; project heading and assistant select lead;
+phase model/effort rows stack on mobile and align on desktop; role overrides expand; resolved
+value/source cards follow; save, error and result treatments remain visible and use existing tokens.
+Inherited, populated, loading, invalid, failed, saved and global states were rendered and exercised.
+Viewport screenshots avoid the fixed-header overlap present in full-page/element capture artifacts.
+These are reviewed baseline evidence; no pre-existing pixel baseline comparison or new
+`toHaveScreenshot` test is claimed.
+
+Evidence: `verification/2026-10-08-reverify/ui/` contains both browser reports and rendered states;
+`entry-renders.json` records direct renderer preflight/results. User-directory prefixes in textual
+evidence are redacted; original commands remain in ignored local logs.
+
+verifies → `154/10/tasks/01_accessible-runtime-form.feature`: responsive, keyboard and state checks
+pass. D-02 is discharged. This resolves that lane without accepting the whole milestone.
+
+### Real native execution and diagnosed prerequisite
+
+Prepared separate Codex and Claude projects using the frozen `scripts/verify-runtime-loop.mjs
+--prepare-live` path. Preparation is not counted as assistant execution.
+
+Actual Codex 0.160.0 initialized, selected advertised `gpt-6.1-sol` at high effort and started thread
+`01a11bfa-9756-7a00-acf7-26010353e383`. Its native policy was `on-request` / `readOnly` with network
+disabled. Governed refine stopped at `operator_action_required` when the adapter correctly declined
+the native shell permission request. The model-selected Microsoft Store PowerShell could not start.
+
+A separate **native, model-free read-only** `command/exec` diagnostic established the distinction:
+Node and system Windows PowerShell could read the fixture, while Store PowerShell returned
+`CreateProcessAsUserW failed: 5 (Access is denied.)`. Retried the real adapter with a process-local
+PATH excluding WindowsApps shell candidates, leaving native sandbox and approval policy unchanged.
+Thread `01a11c0d-0bb7-7731-849b-e183cb319513` then read the skill through system PowerShell, but stopped
+at the required `work run-start` write because native policy remained **read-only**. No native
+approval was granted, no sandbox was weakened, and no host security/authentication setting was edited.
+This isolates shell discovery from the remaining write-permission prerequisite.
+
+Evidence: `codex-default.json`, `native-shell-preflight.json` and `codex-system-shell.json` in the
+reverification evidence folder. Token usage is actual native usage; monetary cost remains unavailable.
+This is additional refusal/diagnostic proof, not a successful Codex workflow or prompt optimization.
+
+The real default-Claude AOF PTY driver completed refine, then the foreground `work loop 07 --level L2`
+completed continue and story verify in distinct native sessions. The actual module changed from
+`answer: 0` to `answer: 42`; its real two-case runner passed and story 07/01 was accepted with outcome
+and retrospective records. Milestone verify refused the dirty fixture regression gate and persisted
+its question rather than accepting without evidence. The loop acknowledged an AOF drain request,
+halted on `operator-interrupt`, and preserved that pending question. A local fixture-operator answer
+authorized a separate fixture branch/commit and the loop was resumed; final results are recorded in
+`claude-live.json`. The same milestone session `c2e7060d-87a7-4039-bb59-704c09a56ea3` resumed,
+committed fixture branch `verification/154-claude-live`, ran a clean green gate at
+`48f2d01d898d2df049bafd8f10befc6e3b6af2a7`, and accepted fixture milestone 07. The foreground
+loop exited zero with `Accepted milestone 07` / `07 — loop done`; all four actual phase runs settled
+done. This is a synthetic fixture decision, not genuine human UAT.
+Default Claude folder trust was established by the ordinary AOF driver; earlier non-launch statements
+above apply only to the earlier attempt. ConPTY cleanup emitted `AttachConsole failed` diagnostics;
+they are retained as a limitation rather than described as flawless process cleanup.
+
+verifies → `154/11/tasks/01_live-lifecycle-acceptance.feature`: default-Claude build, story and
+milestone acceptance, same-session question resume and drain behavior observed. Full Codex lifecycle, independent role review,
+all five Codex recovery checkpoints and worker reconnect remain unverified. The repeated frozen
+baseline/candidate workload in `154/11/tasks/02_prompt-behavior-evaluation.feature` remains pending;
+no speed, cost, correctness or template-optimization benefit is claimed from partial samples.
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
-| D-01 | Real Codex governed refine stopped at a declined native permission; equivalent trusted Claude lifecycle and worker recovery prerequisites are not established. | prerequisite-gap | Blocker | Keep lifecycle and recovery acceptance pending; obtain approved existing native execution/worker prerequisites, then rerun the declared fixtures. No permission bypass or invented bug scenario for an environmental stop. | 154/11 live acceptance; 154/02 remaining profile proof | open |
-| D-02 | Supplied Fleet origin cannot serve the configuration API; intended execution form is absent at every rendered width. | prerequisite-gap | Blocker | Obtain an already-running configuration editor URL and rerun responsive, keyboard and state checks. | 154/10 manual verification | open |
-| D-03 | Concurrent story 155 writes prevent the clean whole-tree gate; registry loading also encountered a missing export during those writes. | verification-environment | Blocker | Wait for the other writer's completed, committed work; run the recorded clean gate against the intended frozen revision. | milestone 154 regression gate | open |
+| D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | Establish an operator-authorized native policy that permits fixture writes, then rerun the declared lifecycle, independent review and recovery workloads. Preserve the adapter's permission refusal. | 154/11 live acceptance; 154/02 remaining profile proof | open |
+| D-02 | Fleet origin lacks the config API; the autonomous rerun started the real isolated AOF editor and passed 18 browser checks plus binding-checklist design review at three widths. | prerequisite-gap | Blocker | Responsive, keyboard and state evidence is now retained; no further URL input needed. | 154/10 manual verification | closed |
+| D-03 | The clean frozen gate actually ran: FF-7106 fails on 22 omitted generated siblings in story 155's committed write set; 23.9 minutes also exceeds the 15-minute gate budget. | regression-gap | Blocker | Route the complete declaration list to story 155's owner, preserve concurrent edits, and rerun the recorded clean gate after that work is committed. Address the budget result through supported runner configuration; do not override a slow gate. | 155 declared write set; milestone 154 regression gate | open |
 
 ## Accept decision
 
-**NOT ACCEPTED.** Native protocol evidence advanced, but the full lifecycle, recovery, repeated
-prompt evaluation, visual/keyboard lane and recorded clean whole-tree gate are incomplete.
+**NOT ACCEPTED after autonomous reverification.** The visual/keyboard lane now passes, default-Claude
+workflow evidence advanced, and the clean whole-tree gate actually ran. That gate is red; native
+Codex write permissions, full recovery and repeated prompt evaluation remain incomplete.
 No story was marked done and no milestone story checkbox was ticked. Milestone remains
 in-progress, its twelve stories remain in-review, and no acceptance OUTCOME or retrospective
 was fabricated. No genuine human UAT scenarios are declared in this milestone.

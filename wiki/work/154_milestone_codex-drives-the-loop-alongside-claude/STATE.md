@@ -462,6 +462,14 @@ No status frontmatter was edited by hand.
 
 ## Feedback (for retro)
 
+- A supplied Fleet URL need not host the configuration editor. Resolve the actual AOF server
+  capability and start an isolated editor when the operator has authorized doing so; a missing
+  URL is not itself a reason to stop autonomous verification.
+- A frozen acceptance gate includes open work-item declarations as well as source bytes. Earlier
+  code-equivalent green evidence cannot certify a later snapshot whose planning contracts changed.
+- Diagnose native shell executability separately from native write policy. A functioning read-only
+  shell does not establish the permission needed to run a writing workflow.
+
 - 154/06 verification repairs: the first full gate ran all 12,383 cases and failed 20 units;
   its 27 failing cases were reproduced and repaired. Changes preserve existing settlement order,
   canonical configuration readers, notification/narration sites and legacy run shapes. Strict
@@ -1022,3 +1030,30 @@ Next is $aof-verify 154; native/manual/visual evidence remains pending, never in
 - The separately framed 155 work item and refinement run are preserved in commit 8e5000a5;
   no 155 implementation or acceptance is claimed. The milestone branch's code remains exactly
   the successful 154/11 snapshot; only planning/evidence/run metadata follows that full gate.
+
+## Autonomous reverification — 2026-10-08
+
+- Reverified in solo mode. Started the real configuration editor in an isolated project instead
+  of requiring another URL from the operator. Eighteen browser checks and the binding DESIGN
+  review passed at 390/768/1280; UI build and supply-chain audit also passed. D-02 is closed.
+- Ran the actual clean regression gate at 53b99b1cd81c1896fa7bfed251fb0ae9f6f27706 with isolated
+  dependencies/global state: 12,466 registered cases executed, one persistent FF-7106 failure,
+  zero load flakes, integration/cargo green, 23.9 minutes against a 15-minute budget. The failure
+  names story 155's incomplete generated-sibling declarations; concurrent 155 edits were preserved.
+  The actual red REGRESSION row and failure/retry evidence are retained, without a gate override.
+- Real Codex native diagnostics distinguished the inaccessible Store PowerShell executable from
+  native read-only write policy. Process-local shell selection allowed reads, then the actual
+  run-start write required native approval and was declined. D-01 remains open; no security policy
+  was weakened and no prompt-performance improvement is claimed.
+- Real default-Claude execution built answer 42 and accepted the fixture story, then persisted a
+  milestone dirty-gate question. AOF drain, local fixture answer and resume were exercised. The
+  native summary records final results and limits; these are fixture facts, not milestone acceptance.
+- Scoped validate is clean; doctor is healthy with 15 warnings and no unresolved controls.
+  D-03 remains open on the red gate. Milestone 154 and its stories are not accepted.
+- The resumed default-Claude fixture reached milestone acceptance on a real green gate, reusing
+  native session c2e7060d-87a7-4039-bb59-704c09a56ea3. All four phase runs settled done; the loop
+  exited zero. No independent role-review claim is inferred from its solo execution.
+- The owned UI server was stopped and the detached reverification worktree removed after archiving
+  its actual gate row and raw logs. The external worktrees and the other writer's 155 files remain
+  untouched. This verification run settled failed with reason verification-gates-incomplete, and
+  the status CLI restored milestone 154 to in-progress after completion's rollback effect.
