@@ -105,7 +105,8 @@ export function createPhaseDrivers({
     const command = phaseCommand(phase, item.ref, loopAgentModeFromConfig(ctx.workspace, phase), { autonomous, halt }).replace(`/aof:${phase}`, `$aof-${phase}`);
     const choice = selected.phases[choicePhase];
     if (input.dryRun === true) return { ref: item.ref, phase, command, execution: selected, effort: { level: choice.effort, source: choice.effortSource }, model: { id: choice.model, source: choice.modelSource } };
-    const context = await compileBriefForItem({ itemRef: item.ref, phase, itemType: item.type, itemDir: item.dir, milestoneDir: item.type === "story" ? path.dirname(path.dirname(item.dir)) : item.dir });
+    const briefItem = ctx.loopDrive?.briefItem ?? item;
+    const context = await compileBriefForItem({ itemRef: briefItem.ref, phase, itemType: briefItem.type, itemDir: briefItem.dir, milestoneDir: briefItem.type === "story" ? path.dirname(path.dirname(briefItem.dir)) : briefItem.dir });
     let resumeSessionId = answer?.sessionId ?? null, coldStartReason;
     const pendingDecision = [recorded, fix?.buildRun].some(run => run?.asks?.some(ask => ask.answeredAt == null));
     if (answer == null && pendingDecision) throw commandError("Answer the pending native question before starting another phase or cold fix", "native-question-pending", 409);
@@ -797,6 +798,7 @@ export function createPhaseDrivers({
   const reviewDriverCommand = createPhaseDriverCommand("review");
 
   return Object.freeze({
+    driveNativePhase: driveNative,
     PHASE_MODE_FLAGS,
     composeFixInput,
     continueDriverCommand,

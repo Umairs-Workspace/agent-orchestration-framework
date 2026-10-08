@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
 
 // Core supplies work discovery, configured worktrees, locking and effect delivery.
-export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock }) {
+export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope }) {
 // src/work/dispatch.mjs — THE LOCAL CONCURRENT-DISPATCH LANE (story 65 / task 02).
 //
 // WHAT THIS MODULE IS FOR, in one measured sentence. `aof work next` now answers with the
@@ -236,6 +236,7 @@ const nativePath = (value) => (typeof value === "string" && value.length > 0 ? p
 const OBJECT_NAME = /^[0-9a-f]{7,64}$/iu;
 
 async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
+  const execution = options.execution == null ? null : validateExecutionEnvelope(options.execution);
   const advanceTo = typeof options.advanceTo === "string" && options.advanceTo.length > 0 ? options.advanceTo : null;
   if (advanceTo != null && !OBJECT_NAME.test(advanceTo)) {
     const error = new Error(`resolveDispatchLane: advanceTo must be a commit sha resolved in the primary (git rev-parse HEAD there), never a ref — got ${JSON.stringify(advanceTo)}`);
@@ -244,8 +245,12 @@ async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     throw error;
   }
   const lane = await openDispatchLane(projectRoot, itemRef, options);
-  await inheritIgnoredClaudeFiles(projectRoot, lane.worktree, { exec: options.exec });
-  if (advanceTo == null) return lane;
+  const prepareNative = async () => {
+    if (typeof prepareRuntimeAssets !== "function") throw Object.assign(new Error("Codex lane asset preparation is unavailable"), { code: "runtime-assets-unavailable" });
+    await prepareRuntimeAssets(projectRoot, lane.worktree);
+  };
+  if (execution?.runtime !== "codex") await inheritIgnoredClaudeFiles(projectRoot, lane.worktree, { exec: options.exec });
+  if (advanceTo == null) { if (execution?.runtime === "codex") await prepareNative(); return lane; }
   const advance = await advanceBranchToBase(lane.worktree, advanceTo, { exec: options.exec });
   // EVERY refusal is `lane-open-failed` (PO ruling, 129/03 fix round, I3): a lane that cannot be
   // brought to HEAD cannot be handed out, whichever door refused — a conflict or a dirty tree
@@ -253,6 +258,7 @@ async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
   const advanced = advance.outcome === "refused"
     ? { ...advance, code: "lane-open-failed", cause: advance.code }
     : advance;
+  if (advanced.outcome !== "refused" && execution?.runtime === "codex") await prepareNative();
   return { ...lane, advanced };
 }
 
@@ -354,7 +360,7 @@ async function openDispatchLane(projectRoot, itemRef, options = {}) {
 
   // Door 3 — materialise it.
   try {
-    return lane(await addDispatchWorktree(projectRoot, itemRef, options.commitish ?? "HEAD", { exec: options.exec }), true);
+    return lane(await addDispatchWorktree(projectRoot, itemRef, options.commitish ?? "HEAD", { exec: options.exec, ...(options.execution == null ? {} : { execution: options.execution }) }), true);
   } catch (error) {
     // The concurrent-`add` race: the loser reads the winner's tree.
     if (existsSync(lanePath)) {

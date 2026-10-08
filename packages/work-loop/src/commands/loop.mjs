@@ -76,8 +76,7 @@ import {
 // rule) ride the same move: the one consumer of `ADVISORY_CODES`/`GRADE_VERDICTS` is the ladder.
 
 import { commandError } from "@aof/contracts/error";
-import { createRuntimeInvocation } from "./runtime-invocation.mjs";
-
+import { createRuntimeInvocation, decodeExecutionHandoff } from "./runtime-invocation.mjs";
 // 54/03 review finding D3 — "was a rubric DECLARED" is `work:grade`'s own predicate, and it
 // is read here rather than re-derived, so a declared-but-unrunnable grade cannot be mistaken
 // for an unconfigured repository at the one door that tells them apart.
@@ -501,7 +500,7 @@ export function createLoopShell({
     if (input.runtime !== undefined && !["claude", "codex"].includes(input.runtime)) throw commandError("--runtime must be claude or codex", "unsupported-runtime", 400);
     const requested = requestedSettings(input, ctx);
     // 141, 143/03 — refused with the other vocabulary guards, before any registered read.
-    const native = input.runtime === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
+    const native = input.runtime === "codex" || ctx.executionHandoff?.runtime === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
     const sessionRequest = requestedSessions(input, native);
     const thinking = sessionRequest.thinking;
     // 143/01 — refused with them too.
@@ -2167,6 +2166,7 @@ export function createLoopShell({
           // announces the log's path on stderr, so the printer below stays the one it was.
           const diag = installLoopDiagnostics({ argv: process.argv.slice(2) });
           return runLoopLaunch(input, {
+            executionHandoff: decodeExecutionHandoff(process.env.AOF_MESH_EXECUTION, sessions.resolveExecutionResume),
             // 131/03 — this invocation's own log, which the death report of the loop it resumes skips.
             diagLogPath: diag?.logPath ?? null,
             config: faceCtx.options.config,

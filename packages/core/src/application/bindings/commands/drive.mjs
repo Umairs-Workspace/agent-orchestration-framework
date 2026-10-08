@@ -64,5 +64,5 @@ export function assembleCommandsDrive({ runtimeSessionServices, loopAskServices,
   const resolvePhaseResumeTarget = implementation.resolvePhaseResumeTarget;
   const verifyDriverCommand = implementation.verifyDriverCommand;
 
-  return { PHASE_MODE_FLAGS, composeFixInput, continueDriverCommand, createPhaseDriverCommand, phaseCommand, refineDriverCommand, repairDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand, reviewDriverCommand: implementation.reviewDriverCommand };
+  return { PHASE_MODE_FLAGS, composeFixInput, continueDriverCommand, createPhaseDriverCommand, phaseCommand, refineDriverCommand, repairDriverCommand, resolvePhaseResumeTarget, verifyDriverCommand, reviewDriverCommand: implementation.reviewDriverCommand, driveNativePhase: implementation.driveNativePhase };
 }

@@ -1,3 +1,14 @@
+import { createApplication } from "../src/application/assemble.mjs";
+import { createBaseServices } from "../src/application/base.mjs";
+import { createRuntimeSession } from "@aof/execution/runtime-session";
+import { resolveExecution } from "@aof/execution/runtime-selection";
+import { codexFixture } from "../../execution/test/codex-app-server.suite.mjs";
+import { withMeshWorkerExecFixture, markRepoPublished, seedNodeWorkspaceMembership, createStatusRecorder, scriptedPushExec } from "../../../test/support/mesh-worker-exec-fixture.mjs";
+import { assembleAssignmentRecord, insertAssignment } from "@aof/mesh/assignment-record";
+import { setAssignmentPhase } from "@aof/mesh/assignment-directive";
+import { bundledFrozenSet, compileFrozenSet } from "../src/frozen-set.mjs";
+import { decodeExecutionHandoff } from "../../work-loop/src/commands/runtime-invocation.mjs";
+import { resolveExecutionResume } from "@aof/execution/runtime-selection";
 // 154/04: both task features and every outline row exercise the shipped planner/writer.
 import assert from "node:assert/strict";
 import path from "node:path";
@@ -7,7 +18,7 @@ import { writeText } from "@aof/foundation/fs";
 import { existsSync } from "node:fs";
 import { createRenderPlan, planApplyActions, executeApplyActions, createLockManifest, formatFriendlyApplyAction } from "../src/render-plan.mjs";
 import { hashContent, readLock, writeLock } from "../src/lock.mjs";
-import { codexJournalPath, recordCodexApply } from "../src/codex-settings.mjs";
+import { prepareCodexWorktree, codexJournalPath, recordCodexApply } from "../src/codex-settings.mjs";
 import { assets } from "./support/assets-services.mjs";
 import { updateWork } from "../src/work/update.mjs";
 import { applyConfig } from "../src/adapters.mjs";
@@ -313,3 +324,230 @@ export const codexOwnershipTests = [
       assert.ok(!existsSync(path.join(root, ".agents/skills/aof-refine/SKILL.md")));
     }) }
 ];
+
+{
+// 154/07 task01: real render ownership and lane files, including operator neighbours.
+
+const put = async (root, file, text) => { const target = path.join(root, file); await mkdir(path.dirname(target), { recursive: true }); await writeFile(target, text); };
+const read = (root, file) => readFile(path.join(root, file), "utf8");
+async function fixture(run) {
+  const dir = await mkdtemp(path.join(os.tmpdir(), "aof-native-lane-"));
+  const root = path.join(dir, "primary"), lane = path.join(dir, "lane");
+  await mkdir(root); await mkdir(lane);
+  try {
+    const config = { resources: [
+      { id: "aof-continue", kind: "skill", runtimes: ["codex"], body: "Use the native procedure." },
+      { id: "reviewer", kind: "agent", runtimes: ["codex"], body: "Review this workspace." },
+      { id: "policy", kind: "rule", runtimes: ["codex"], body: "Read .agents/skills/aof-continue/SKILL.md." },
+    ], workflows: [], packages: [], hooks: [], settings: {}, mcpServers: [{ id: "local", transport: "stdio", command: "aof", args: ["graph", "serve"], runtimes: ["codex"] }] };
+    const desiredOutputs = await createRenderPlan(config, { targetDir: root, runtimes: ["codex"] });
+    const actions = await planApplyActions(desiredOutputs, null, { targetDir: root });
+    await executeApplyActions(actions);
+    const lock = createLockManifest({ actions, desiredOutputs, config, runtimes: ["codex"] });
+    await writeLock(path.join(root, ".aof/aof.lock.json"), lock);
+    await run({ root, lane, lock });
+  } finally { await rm(dir, { recursive: true, force: true }); }
+}
+
+const codexWorktreeHandoffTests = [
+  { name: "154/07 task01 — lane inherits only lock-owned native assets and shared fragments, preserving destination neighbours", run: () => fixture(async ({ root, lane }) => {
+    await put(root, "AGENTS.md", (await read(root, "AGENTS.md")) + "Primary operator prose must stay here.\n");
+    await put(root, ".codex/config.toml", 'approval_policy = "on-request"\n' + await read(root, ".codex/config.toml"));
+    await put(root, ".codex/auth.json", '{"fixture":"never copied"}');
+    await put(root, ".claude/settings.local.json", '{"fixture":"Claude consent"}');
+    await put(lane, "AGENTS.md", "Lane operator prose.\n");
+    await put(lane, ".codex/config.toml", 'sandbox_mode = "workspace-write"\n');
+    await prepareCodexWorktree(root, lane);
+    assert.ok(existsSync(path.join(lane, ".agents/skills/aof-continue/SKILL.md")));
+    assert.ok(existsSync(path.join(lane, ".codex/agents/reviewer.toml")));
+    const guidance = await read(lane, "AGENTS.md"), config = await read(lane, ".codex/config.toml");
+    assert.ok(guidance.startsWith("Lane operator prose.")); assert.ok(!guidance.includes("Primary operator prose"));
+    assert.ok(config.includes('sandbox_mode = "workspace-write"')); assert.ok(!config.includes("approval_policy")); assert.ok(config.includes("mcp_servers.local"));
+    assert.equal(existsSync(path.join(lane, ".codex/auth.json")), false); assert.equal(existsSync(path.join(lane, ".claude/settings.local.json")), false);
+    const baseline = await read(lane, ".aof/aof.lock.json");
+    await prepareCodexWorktree(root, lane);
+    assert.equal(await read(lane, ".aof/aof.lock.json"), baseline); assert.equal(await read(lane, "AGENTS.md"), guidance);
+  }) },
+  ...["missing source", "source drift", "unowned matching destination", "destination drift"].map(scenario => ({ name: `154/07 task01 — preflight refuses ${scenario} before copying any asset`, run: () => fixture(async ({ root, lane, lock }) => {
+    const agent = lock.files.find(entry => entry.path.endsWith("reviewer.toml"));
+    if (scenario === "missing source") await rm(path.join(root, agent.path));
+    if (scenario === "source drift") await put(root, agent.path, "Edited source");
+    if (scenario === "unowned matching destination") await put(lane, agent.path, await read(root, agent.path));
+    if (scenario === "destination drift") { await prepareCodexWorktree(root, lane); await put(lane, agent.path, "Edited lane"); }
+    const before = await readLock(path.join(lane, ".aof/aof.lock.json"));
+    await assert.rejects(prepareCodexWorktree(root, lane), error => ["runtime-asset-missing", "codex-output-conflict"].includes(error.code));
+    assert.deepEqual(await readLock(path.join(lane, ".aof/aof.lock.json")), before);
+    if (scenario !== "destination drift") assert.equal(existsSync(path.join(lane, ".agents/skills/aof-continue/SKILL.md")), false);
+  }) })),
+];
+
+codexOwnershipTests.push(...codexWorktreeHandoffTests);
+}
+
+{
+// 154/07 tasks00–01: assembled production handlers/stores/phase driver; fake only native transport.
+
+async function fixture(run, { scenario = "complete", available = true, version } = {}) {
+  return withMeshWorkerExecFixture(async fx => {
+    await markRepoPublished(fx.root, { workspaceId: fx.workspaceId });
+    await seedNodeWorkspaceMembership(fx, { workspaceId: fx.workspaceId, nodeId: "worker-a" });
+    const probes = [];
+    let current = scenario;
+    const make = () => { const p = codexFixture({ scenario: current, version }); probes.push(p); return p; };
+    const runtimeSession = createRuntimeSession({ adapters: { codex: {
+      inspectCapabilities: async options => { const p = make(); return p.adapter.inspectCapabilities({ ...p.options, ...options }); },
+      canResume: async () => available,
+      drive: async (brief, options) => { const p = make(); return p.adapter.drive(brief, { ...p.options, ...options }); },
+    } } });
+    const env = { ...process.env, ...fx.env };
+    const base = createBaseServices({ env });
+    const forbidden = () => { throw new Error("Claude execution, transcript or trust path reached"); };
+    base.runtimeSession = runtimeSession;
+    base.agentSessionDriver = { ...base.agentSessionDriver, defaultSpawnRuntime: forbidden, driveInteractiveClaudeSession: forbidden };
+    base.claudeTrust = { ...base.claudeTrust, ensureWorktreeTrusted: forbidden };
+    base.workObserve = { ...base.workObserve, claudeProjectsDir: forbidden, readAskQuestion: forbidden, readPendingAsk: forbidden };
+    const a = createApplication({ base, env });
+    try {
+      const ws = await base.work.loadWorkspace(fx.root, undefined, { env });
+      const config = { resources: ["refine", "continue", "verify"].map(phase => ({ id: `aof-${phase}`, kind: "skill", runtimes: ["codex"], body: "Complete the native fixture procedure." })), workflows: [], hooks: [], mcpServers: [], packages: [], settings: {} };
+      const desiredOutputs = await createRenderPlan(config, { targetDir: fx.root, runtimes: ["codex"] });
+      const actions = await planApplyActions(desiredOutputs, null, { targetDir: fx.root }); await executeApplyActions(actions);
+      await writeLock(path.join(fx.root, ".aof/aof.lock.json"), createLockManifest({ actions, desiredOutputs, config, runtimes: ["codex"] }));
+      await writeFile(path.join(fx.root, ".gitignore"), ".aof/\n.codex/\n.agents/\n");
+      fx.git(["add", ".gitignore"]); fx.git(["commit", "-qm", "ignore generated assets"]);
+      const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: codexFixture().fixture.models } } });
+      const recorder = createStatusRecorder();
+      const options = { loadWs: async () => ws, nodeId: "worker-a", globalWorkStoreOptions: { env }, env, pushExec: scriptedPushExec(), sendAssignmentStatus: recorder.sendAssignmentStatus, sendEffectStep: recorder.sendEffectStep };
+      const assignmentId = "native-assignment";
+      const directive = { kind: "directive", assignmentId, itemRef: fx.itemRef, workspaceId: fx.workspaceId, command: `/aof:continue ${fx.itemRef}`, execution };
+      const handler = a.mesh.worker.createMeshWorkerExecutionHandler(options);
+      const item = (await base.work.findWork(ws.workDir, fx.itemRef))[0];
+      await run({ ...fx, a, ws, options, recorder, directive, execution, probes, handler, item, assignmentId, setScenario: value => { current = value; } });
+    } finally { await a.close(); }
+  }, { milestoneNumber: "154", storyNumber: "07", storySlug: "native-handoff" });
+}
+
+const codexWorkerHandoffTests = [
+  { name: "154/07 task00 — spawned loop CLI consumes handoff through its configured resolver and refuses an empty envelope", run: () => fixture(async f => {
+    for (const transport of [undefined, JSON.stringify(f.execution), "null"]) {
+      const env = { ...process.env, ...f.env, AOF_LOOP_DIAG: "0" };
+      delete env.AOF_MESH_EXECUTION;
+      if (transport !== undefined) env.AOF_MESH_EXECUTION = transport;
+      const result = spawnCliSync(process.execPath, [cli, "work", "loop", "invalid/scope"], { cwd: f.root, env, encoding: "utf8", windowsHide: true, timeout: 30000 });
+      assert.equal(typeof result.status, "number", String(result.error));
+      assert.notEqual(result.status, 0);
+      assert.ok(!result.stderr.includes("is not defined"), result.stderr);
+      assert.ok(result.stderr.includes(transport === "null" ? "must be a versioned execution envelope" : "scope matched neither admitted loop scope form"), result.stderr);
+    }
+  }) },
+  { name: "154/07 task00 — unattended worker hands the exact pinned envelope to the declared loop launch", run: () => fixture(async f => {
+    const calls = [];
+    const handler = f.a.mesh.worker.createMeshWorkerExecutionHandler({ ...f.options, spawnRuntime: async (brief, options) => {
+      assert.ok(existsSync(path.join(brief.worktreeCwd, ".agents/skills/aof-verify/SKILL.md")));
+      calls.push({ brief, options }); return { outcome: "done", processStarted: true };
+    } });
+    const { command, ...directive } = f.directive;
+    await handler({ ...directive, launch: { kind: "loop", scope: "154" } });
+    assert.equal(calls.length, 1);
+    const declared = compileFrozenSet(bundledFrozenSet()).unattendedLaunch;
+    assert.equal(calls[0].options.unattended.program, declared.program);
+    assert.deepEqual(calls[0].options.unattended.args, [...declared.args, "154"]);
+    assert.deepEqual(decodeExecutionHandoff(calls[0].options.env.AOF_MESH_EXECUTION, resolveExecutionResume), f.execution);
+    const run = (await f.a.execution.runs.readRuns(f.item))[0];
+    assert.deepEqual(run.execution, f.execution);
+    assert.equal(f.probes.some(p => p.calls.some(call => call.method === "turn/start")), false);
+  }) },
+  { name: "154/07 task00 — assembled controller resolves project Codex and the worker launches that exact wire envelope", run: () => fixture(async f => {
+    const filename = path.join(f.root, ".aof/aof.config.json");
+    const config = JSON.parse(await readFile(filename, "utf8")); config.work.loop = { runtime: "codex" };
+    await writeFile(filename, JSON.stringify(config));
+    const store = await f.a.mesh.store.openGlobalWorkProjectionStore(f.options.globalWorkStoreOptions);
+    try {
+      insertAssignment(store, assembleAssignmentRecord({ assignmentId: f.assignmentId, itemRef: f.itemRef, workspaceId: f.workspaceId, targetNodeId: "worker-a", issuer: "control", state: "assigned", now: "2026-10-07T00:00:00Z" }));
+      setAssignmentPhase(store, f.assignmentId, "continue");
+    } finally { store.close(); }
+    const frames = [];
+    await f.a.mesh.assignmentReclaim.runControlDispatchReclaimTick(f.ws, { directiveTargets: { get: () => ({}) }, dispatchDirective: frame => { frames.push(frame); return { sent: true }; } }, {
+      workspaceId: f.workspaceId, now: "2026-10-07T00:00:01Z", storeOptions: f.options.globalWorkStoreOptions, buildDirectiveFrame: f.a.mesh.controlStreamServer.buildDirectiveFrame,
+    });
+    assert.equal(frames.length, 1); assert.equal(frames[0].execution.runtime, "codex"); assert.equal(frames[0].execution.runtimeSource, "project");
+    await f.handler(frames[0]); const run = (await f.a.execution.runs.readRuns(f.item))[0];
+    assert.equal(run.state, "done"); assert.deepEqual(run.execution, frames[0].execution);
+    assert.equal(run.sessionId, codexFixture().fixture.nativeThreadId);
+  }) },
+  { name: "154/07 task00 E1 — worker default Claude executes pinned Codex and reports its durable native identity once", run: () => fixture(async f => {
+    assert.equal(f.ws.config.work.loop?.runtime, undefined);
+    await f.handler(f.directive);
+    const run = (await f.a.execution.runs.readRuns(f.item))[0];
+    assert.equal(run.state, "done"); assert.deepEqual(run.execution, f.execution);
+    assert.equal(run.sessionId, codexFixture().fixture.nativeThreadId);
+    const drive = f.probes.find(p => p.calls.some(call => call.method === "turn/start"));
+    const turn = drive.calls.find(call => call.method === "turn/start");
+    assert.equal(turn.params.model, f.execution.phases.continue.model); assert.equal(turn.params.effort, f.execution.phases.continue.effort);
+    assert.ok(turn.params.input[0].text.includes(`$aof-continue ${f.itemRef}`));
+    assert.equal(f.recorder.frames.filter(frame => frame.state === "running" && frame.sessionId === run.sessionId).length, 1);
+    assert.equal(f.recorder.frames.at(-1).state, "done"); assert.equal(f.recorder.frames.at(-1).sessionId, run.sessionId);
+  }) },
+  { name: "154/07 task00 E2 — unsupported worker profile refuses before acceptance or either assistant launch", run: () => fixture(async f => {
+    await f.handler(f.directive);
+    assert.equal(f.recorder.frames.some(frame => frame.state === "accepted"), false);
+    assert.equal(f.recorder.frames.at(-1).code, "unsupported_profile");
+    assert.equal(f.probes.flatMap(p => p.children).length, 0); assert.deepEqual(await f.a.execution.runs.readRuns(f.item), []);
+  }, { version: "9.0.0" }) },
+  { name: "154/07 task01 — reconnect and native answer continue the same run/thread after worker configuration changes", run: () => fixture(async f => {
+    await f.handler(f.directive);
+    const before = (await f.a.execution.runs.readRuns(f.item))[0];
+    assert.equal(before.state, "running"); assert.equal(before.asks.at(-1).runtime, "codex");
+    const preserved = await f.a.mesh.worker.settleStrandedRunRecords([{ assignmentId: f.assignmentId, worktreePath: f.a.mesh.worktree.meshWorktreePath(f.root, f.assignmentId) }], f.options);
+    assert.ok(preserved.has(f.assignmentId));
+    assert.deepEqual((await f.a.execution.runs.readRuns(f.item))[0], before);
+    const count = f.probes.length, frames = f.recorder.frames.length;
+    await f.handler(f.directive); assert.equal(f.probes.length, count); assert.equal(f.recorder.frames.length, frames);
+    f.ws.config.work.loop = { runtime: "claude" }; f.setScenario("complete");
+    const resume = f.a.mesh.worker.createMeshWorkerTerminalResumeHandler(f.options);
+    await resume({ assignmentId: f.assignmentId, workspaceId: f.workspaceId, itemRef: f.itemRef, sessionId: before.sessionId, answer: { text: "First", by: { actor: "operator", via: "mesh", node: "control" } } });
+    const runs = await f.a.execution.runs.readRuns(f.item);
+    assert.equal(runs.length, 1); assert.equal(runs[0].state, "done"); assert.equal(runs[0].runId, before.runId);
+    assert.equal(runs[0].sessionId, before.sessionId); assert.deepEqual(runs[0].execution, before.execution);
+    assert.equal(runs[0].asks.at(-1).answer, "First");
+    const resumed = f.probes.find(p => p.calls.some(call => call.method === "thread/resume")); assert.ok(resumed);
+    assert.equal(resumed.calls.some(call => call.method === "thread/start"), false);
+  }, { scenario: "structured-question" }) },
+  { name: "154/07 task01 — missing native thread refuses resume and retains its run and pending decision", run: () => fixture(async f => {
+    await f.handler(f.directive); const before = (await f.a.execution.runs.readRuns(f.item))[0];
+    const resume = f.a.mesh.worker.createMeshWorkerTerminalResumeHandler(f.options);
+    await resume({ assignmentId: f.assignmentId, workspaceId: f.workspaceId, itemRef: f.itemRef, sessionId: before.sessionId, answer: { text: "First" } });
+    assert.deepEqual((await f.a.execution.runs.readRuns(f.item))[0], before);
+    assert.equal(f.probes.filter(p => p.calls.some(call => call.method === "turn/start")).length, 1);
+  }, { scenario: "structured-question", available: false }) },
+  { name: "154/07 task01 — a recorded skill missing on the worker refuses before any phase turn", run: () => fixture(async f => {
+    await rm(path.join(f.root, ".agents/skills/aof-continue/SKILL.md"));
+    await f.handler(f.directive);
+    assert.equal(f.recorder.frames.at(-1).code, "runtime-asset-missing");
+    assert.equal(f.probes.some(p => p.calls.some(call => call.method === "turn/start")), false);
+    assert.deepEqual(await f.a.execution.runs.readRuns(f.item), []);
+  }) },
+  ...[["unknown runtime", value => { value.runtime = "future"; }, "invalid-record"], ["unknown profile version", value => { value.profileVersion = 99; }, "unsupported-profile"], ["malformed envelope", value => { delete value.phases; }, "invalid-record"]].map(([label, mutate, code]) => ({ name: `154/07 task00 wire — ${label} refuses before acceptance`, run: () => fixture(async f => {
+    mutate(f.directive.execution); await f.handler(f.directive);
+    assert.equal(f.recorder.frames.at(-1).code, code); assert.equal(f.recorder.frames.some(frame => frame.state === "accepted"), false);
+    assert.equal(f.probes.length, 0); assert.deepEqual(await f.a.execution.runs.readRuns(f.item), []);
+  }) })),
+  { name: "154/07 task01 — operator withdrawal interrupts the owned native turn, cleans up, and cancels the same run", run: () => fixture(async f => {
+    const pending = f.handler(f.directive);
+    const started = Date.now();
+    while (!f.probes.some(p => p.calls.some(call => call.method === "turn/start"))) {
+      if (Date.now() - started > 5000) throw new Error("native turn did not start");
+      await new Promise(resolve => setImmediate(resolve));
+    }
+    await f.a.mesh.worker.createMeshWorkerWithdrawHandler(f.options)({ assignmentId: f.assignmentId, workspaceId: f.workspaceId, itemRef: f.itemRef });
+    await pending;
+    const run = (await f.a.execution.runs.readRuns(f.item))[0];
+    assert.equal(run.state, "cancelled"); assert.deepEqual(run.execution, f.execution);
+    const drive = f.probes.find(p => p.calls.some(call => call.method === "turn/start"));
+    assert.ok(drive.calls.some(call => call.method === "turn/interrupt")); assert.ok(drive.events.includes("closed"));
+    assert.ok(Date.now() - started < 5000);
+  }, { scenario: "active" }) },
+];
+
+codexOwnershipTests.push(...codexWorkerHandoffTests);
+}

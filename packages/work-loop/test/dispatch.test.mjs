@@ -4,6 +4,27 @@ import { createDispatchLanes } from "@aof/work-loop/dispatch";
 import { createDispatchCommand } from "@aof/work-loop/commands/dispatch";
 import { createDispatchContribution } from "@aof/work-loop/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
+import { resolveExecution, validateExecutionEnvelope } from "@aof/execution/runtime-selection";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+test("Codex dispatch validates its envelope and prepares reused lanes after advancement without Claude consent", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "native-dispatch-"));
+  const calls = [];
+  const api = createDispatchLanes({ validateExecutionEnvelope, meshItemBranchName: () => "item", meshDispatchWorktreePath: () => root,
+    findItemWorktree: async () => root, prepareRuntimeAssets: async () => { calls.push("native-assets"); },
+    advanceBranchToBase: async () => { calls.push("advance"); return { outcome: "already-current" }; },
+    resolveExec: () => { throw Error("Claude ignored-file/consent lookup reached"); },
+  });
+  try {
+    const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+    const lane = await api.resolveDispatchLane(root, "154/07", { advanceTo: "a".repeat(40), execution });
+    assert.equal(lane.reused, true); assert.deepEqual(calls, ["advance", "native-assets"]);
+    await assert.rejects(api.resolveDispatchLane(root, "154/07", { execution: { ...execution, runtime: "future" } }), { code: "invalid-record" });
+    assert.equal(calls.length, 2);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 test("dispatch admission releases its supplied repository lock after an operation throws", async () => {
   const calls = [];

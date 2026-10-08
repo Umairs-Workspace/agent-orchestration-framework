@@ -4,6 +4,7 @@ import path from "node:path";
 import { lstat, readFile, realpath } from "node:fs/promises";
 import { hashContent, readLock, writeLock } from "./lock.mjs";
 import { runtimeAssetRoot } from "./model.mjs";
+import { writeText } from "@aof/foundation/fs";
 import { CODEX_PROFILE } from "@aof/execution/codex-protocol-profile";
 
 const START = "<!-- aof-managed:begin -->";
@@ -22,6 +23,75 @@ export function codexOwnershipBaseline(lock) {
 export function codexSharedOutput(output) {
   const name = portable(output.path);
   return output.runtime === "codex" && (name.endsWith("/config.toml") || name.endsWith("/hooks.json") || path.basename(name) === "AGENTS.md");
+}
+
+// A lane inherits only recorded AOF fragments, never the operator's neighbours.
+// Read every source and preflight every destination before the first write.
+export async function prepareCodexWorktree(projectRoot, worktree) {
+  if (path.resolve(projectRoot) === path.resolve(worktree)) return;
+  const sourceLock = await readLock(path.join(projectRoot, ".aof/aof.lock.json"));
+  const entries = [...(sourceLock?.files ?? []), ...(sourceLock?.work?.files ?? [])].filter(entry => entry.runtime === "codex");
+  if (entries.length === 0) throw Object.assign(new Error("No lock-owned Codex assets are available for the worktree"), { code: "runtime-assets-unavailable" });
+  const destinationLock = await readLock(path.join(worktree, ".aof/aof.lock.json"));
+  const prior = new Map([...(destinationLock?.files ?? []), ...(destinationLock?.work?.files ?? [])].map(entry => [portable(entry.path), entry]));
+  const outputs = [];
+  await checkCodexTarget({ path: ".aof/aof.lock.json", absolutePath: path.join(worktree, ".aof/aof.lock.json") }, { targetDir: worktree });
+  for (const entry of entries) {
+    const source = { ...entry, absolutePath: path.resolve(projectRoot, entry.path) };
+    await checkCodexTarget(source, { targetDir: projectRoot });
+    let current;
+    try { current = await readFile(source.absolutePath, "utf8"); }
+    catch (error) { if (error.code !== "ENOENT") throw error; throw refusal(source, "recorded source asset is missing", "runtime-asset-missing"); }
+    let content = current;
+    if (entry.ownership?.kind === "guidance") {
+      const start = current.indexOf(START), end = current.indexOf(END);
+      const finish = end + END.length + (current[end + END.length] === "\r" ? 2 : current[end + END.length] === "\n" ? 1 : 0);
+      if (start < 0 || end < start || current.indexOf(START, start + START.length) >= 0 || current.indexOf(END, end + END.length) >= 0 || hashContent(current.slice(start, finish)) !== entry.ownership.hash) throw refusal(source, "source guidance drifted");
+      content = current.slice(start + START.length, end).replace(/^\r?\n/u, "");
+    } else if (entry.ownership?.kind === "toml") {
+      const found = tomlIndex(source, current);
+      const sections = new Map();
+      for (const [key, hash] of Object.entries(entry.ownership.entries ?? {})) {
+        const owned = found.entries.get(key);
+        if (!owned || hashContent(owned.raw) !== hash || protectedKey(owned.keys)) throw refusal(source, "source settings drifted or contain protected keys");
+        const table = JSON.stringify(owned.keys.slice(0, -1));
+        const lines = sections.get(table) ?? [];
+        lines.push(owned.raw.trimEnd()); sections.set(table, lines);
+      }
+      content = [...sections].sort(([a], [b]) => JSON.parse(a).length - JSON.parse(b).length).map(([table, lines]) => {
+        const keys = JSON.parse(table);
+        return (keys.length ? `[${keys.map(key => JSON.stringify(key)).join(".")}]\n` : "") + lines.join("\n") + "\n";
+      }).join("\n");
+    } else if (entry.ownership?.kind === "hooks") {
+      const found = parseHooks(source, current), hooks = {};
+      for (const [event, hashes] of Object.entries(entry.ownership.groups ?? {})) {
+        const selected = (found.hooks?.[event] ?? []).filter(group => hashes.includes(hashContent(JSON.stringify(group))));
+        if (selected.length !== hashes.length) throw refusal(source, "source hooks drifted");
+        hooks[event] = selected;
+      }
+      content = `${JSON.stringify({ hooks }, null, 2)}\n`;
+    } else if (hashContent(current) !== entry.hash) throw refusal(source, "source exclusive output drifted");
+    let output = { ...entry, content, absolutePath: path.resolve(worktree, entry.path) };
+    await checkCodexTarget(output, { targetDir: worktree });
+    let existing;
+    try { existing = await readFile(output.absolutePath, "utf8"); } catch (error) { if (error.code !== "ENOENT") throw error; }
+    const recorded = existing === undefined ? null : prior.get(portable(entry.path));
+    if (codexSharedOutput(output)) output = await mergeCodexOutput(output, recorded);
+    else if (existing !== undefined && (recorded?.runtime !== "codex" || hashContent(existing) !== recorded.hash || existing !== content)) throw refusal(output, "worktree output is edited or unowned");
+    outputs.push({ ...output, hash: hashContent(output.content) });
+  }
+  for (const output of outputs) await writeText(output.absolutePath, output.content);
+  const copied = new Map(outputs.map(({ absolutePath, content, ...entry }) => [portable(entry.path), entry]));
+  const inWork = new Set([...(sourceLock.work?.files ?? []), ...(destinationLock?.work?.files ?? [])].map(entry => portable(entry.path)));
+  const accounted = new Set();
+  const merge = (existing, work) => {
+    const entries = existing.map(entry => { const key = portable(entry.path); accounted.add(key); return copied.get(key) ?? entry; });
+    for (const [key, entry] of copied) if (!accounted.has(key) && inWork.has(key) === work) { entries.push(entry); accounted.add(key); }
+    return entries;
+  };
+  const files = merge(destinationLock?.files ?? [], false);
+  const work = destinationLock?.work == null && !outputs.some(entry => inWork.has(portable(entry.path))) ? undefined : { ...(destinationLock?.work ?? {}), files: merge(destinationLock?.work?.files ?? [], true) };
+  await writeLock(path.join(worktree, ".aof/aof.lock.json"), { ...(destinationLock ?? {}), version: sourceLock.version, files, ...(work === undefined ? {} : { work }) });
 }
 
 function refusal(output, message, code = "codex-output-conflict") {

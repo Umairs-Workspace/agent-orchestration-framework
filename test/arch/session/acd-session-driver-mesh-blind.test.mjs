@@ -287,7 +287,10 @@ export const archTests = [
       // model leaf. Neither adds I/O, mesh lifecycle or a driver import.
       for (const file of ["packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-model.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
       for (const file of ["packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
-      assert.equal(sinkGraph.seen.size, 125, "the 123-module worker closure plus the native Codex transport and profile");
+      // 154/07: native worker phases reuse the configured drive and pending-question owners.
+      // The measured assembly/import delta is 27 modules; the driver fences above are unchanged.
+      for (const owner of ["packages/core/src/codex-settings.mjs", "packages/work-loop/src/commands/drive.mjs", "packages/work-loop/src/ask-request.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 152, "the configured worker facade includes its native phase and question-ledger services");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

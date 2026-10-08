@@ -183,3 +183,16 @@ export function resolveExecutionResume(record, { runtime, choices = {}, executio
   if (execution !== undefined && JSON.stringify(validateExecutionEnvelope(execution)) !== JSON.stringify(pinned)) fail("execution-resume-conflict", "execution", "flag", "recorded envelope cannot be replaced on resume");
   return pinned;
 }
+
+// Recheck the recorded choices on the receiving machine; preserve their original provenance.
+export function validateExecutionCapabilities(value, capabilities) {
+  const pinned = validateExecutionEnvelope(value);
+  if (pinned.runtime === "codex" && (capabilities?.profile !== pinned.profile || capabilities?.profileVersion !== pinned.profileVersion)) fail("unsupported-profile", "execution.profile", "native", "worker does not support the recorded native profile");
+  const choices = Object.fromEntries(Object.entries(pinned.phases).map(([phase, choice]) => [phase, { ...(choice.model == null ? {} : { model: choice.model }), effort: choice.effort }]));
+  const config = { work: { agents: { runtimes: { [pinned.runtime]: {
+    models: Object.fromEntries(Object.entries(pinned.roles).filter(([, choice]) => choice.model != null).map(([role, choice]) => [role, choice.model])),
+    effort: Object.fromEntries(Object.entries(pinned.roles).filter(([, choice]) => choice.effort != null).map(([role, choice]) => [role, choice.effort])),
+  } } } } };
+  resolveExecution(config, { runtime: pinned.runtime, choices, capabilities: { [pinned.runtime]: capabilities } });
+  return pinned;
+}

@@ -362,7 +362,8 @@ export function createWaveOrchestration({
           }
         }
       }
-      return await resolveDispatchLane(primaryRoot, ref, { ...(advance ? { advanceTo: baseCommit } : {}), exec });
+      const execution = declarationFor({ ...resolved, loopRunId, phase: "continue", cycle: 1, startedAt }).execution;
+      return await resolveDispatchLane(primaryRoot, ref, { ...(advance ? { advanceTo: baseCommit } : {}), ...(execution == null ? {} : { execution }), exec });
     }
 
     // ---- one lane, open → mint → child → settle → ladder → commit ----

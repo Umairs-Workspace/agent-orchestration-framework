@@ -300,7 +300,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
     "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "871b3ede39a6a8d2c7448d25cdfd6cf24110b2d43d85221d1cb5c923123cd1f8",
+    "sourceDigest": "2afc88bf089fdb11ceabba01c1719d4beb8b288a51d75dba3d5202fcf8e46cb4",
     "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
   },
   {
@@ -308,7 +308,7 @@
     "kind": "child-process",
     "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
     "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
-    "sourceDigest": "871b3ede39a6a8d2c7448d25cdfd6cf24110b2d43d85221d1cb5c923123cd1f8",
+    "sourceDigest": "2afc88bf089fdb11ceabba01c1719d4beb8b288a51d75dba3d5202fcf8e46cb4",
     "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
   },
   {
@@ -332,7 +332,7 @@
     "kind": "child-process",
     "expression": "exec([\"worktree\", \"remove\", worktreePath], { cwd: projectRoot })",
     "digest": "c8d88362cfa72c1d798d3cfd63425371dd015b4a2ed93e5f411b35af858942fa",
-    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
+    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -340,7 +340,7 @@
     "kind": "child-process",
     "expression": "exec([\"branch\", \"-d\", branch], { cwd: projectRoot })",
     "digest": "06995bb30dac9aef43eaf1f1c466b3fe2e6b02f5085dd21c1f2379eda57586af",
-    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
+    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -348,7 +348,7 @@
     "kind": "child-process",
     "expression": "exec([\"worktree\", \"remove\", \"--force\", worktreePath], { cwd: projectRoot })",
     "digest": "a258c3c4046f7d4e721740187b9a07f510223e1c747afd70e5aa68bc8f73ac24",
-    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
+    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -356,7 +356,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: projectRoot })",
     "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
+    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -364,7 +364,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: projectRoot })",
     "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "d11071ea34a2fdcbe9af525e89af888e205aa9f69e9adf460af3c43d4c5ad608",
+    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
     "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
   },
   {
@@ -380,7 +380,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "e057617e0cb9146086129e2e9df710bbab1f83b1fbea3cddebabb05f3ed85ccc",
+    "sourceDigest": "f668d69d3e614fec22dceb2154f39a0628e840aaf5e1a5bb9dacf7959daf96b1",
     "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
   },
   {
@@ -388,7 +388,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
     "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -396,7 +396,7 @@
     "kind": "child-process",
     "expression": "exec([\"check-ignore\", \"--\", ...missing], { cwd: worktree })",
     "digest": "a9f702f4ad3d700af554a87070689ab08b2b183fafd386e73ba82b72fde5485a",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -404,7 +404,7 @@
     "kind": "child-process",
     "expression": "exec([\"status\", \"--porcelain\"], { cwd: worktreePath })",
     "digest": "8be2ba95885104b4384bcc190e15f937600713418b334c75e20d9d8fd767f3a5",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -412,7 +412,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
     "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -420,7 +420,7 @@
     "kind": "child-process",
     "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
     "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -428,7 +428,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
     "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -436,7 +436,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: primaryRoot })",
     "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
-    "sourceDigest": "caab291a84816c48e8eeeba3bded9345875336cdb3d4f8efe155701258664faa",
+    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {

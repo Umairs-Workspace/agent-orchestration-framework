@@ -18,7 +18,7 @@ export const HEARTBEAT_QUEUE_PATHSPECS = Object.freeze([
 
 // Mesh owns lane paths, naming, retention, staging and preparation policy.
 // Composition is inert; the application supplies workspace loading and the lazy toolchain port.
-export function createMeshWorktrees({ reportDegrade, loadWorkspace, toolchain }) {
+export function createMeshWorktrees({ reportDegrade, loadWorkspace, toolchain, prepareRuntimeAssets }) {
   for (const [name, service] of Object.entries({ reportDegrade, loadWorkspace, toolchain })) {
     if (typeof service !== "function") throw new TypeError(`createMeshWorktrees: ${name} is required`);
   }
@@ -539,6 +539,13 @@ async function discardWorktree(projectRoot, worktreePath, options) {
 }
 
 async function prepareWorktree(projectRoot, worktreePath, options = {}, fault = {}) {
+  if (options.execution != null) {
+    try {
+      if (typeof prepareRuntimeAssets !== "function") throw gitError("Runtime asset preparation is unavailable", "runtime-assets-unavailable");
+      await prepareRuntimeAssets(projectRoot, worktreePath, options.execution);
+    }
+    catch (error) { await discardWorktree(projectRoot, worktreePath, options); throw error; }
+  }
   const compiled = await compilePrepare(projectRoot, options);
 
   if (compiled.ok !== true) {
