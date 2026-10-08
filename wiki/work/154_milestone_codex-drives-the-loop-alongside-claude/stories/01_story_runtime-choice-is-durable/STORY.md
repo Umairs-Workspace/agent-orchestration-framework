@@ -4,10 +4,10 @@ number: 1
 slug: runtime-choice-is-durable
 title: "Runtime and model choices survive resume"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 depends: [00]
@@ -36,3 +36,7 @@ As an operator, I want explicit assistant selection and durable resolved setting
   overlaps. Dependencies express delivered interfaces, not an assertion that all stories can run together.
 - Examples are proposed from the agreed milestone scope; there are no unanswered business questions.
   Build must implement executable traceability and register each new suite before reporting green.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Runtime/model/effort resolution, retained provenance, conflicting-resume refusal and legacy Claude cases pass. Live same-thread recovery and the worker reconnect preserve the captured execution choice. FF-15402 passes. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
