@@ -59,7 +59,7 @@ As an operator, I want reproducible evidence and upgrade guidance for both assis
   public impacted widened to all; configured eight-worker sharded gate executed 12,466/12,466
   registered cases in 1,199 units, zero failing units and zero load flakes, 21.5 minutes.
   Integration/cargo passed, including all four new lifecycle scenarios. Snapshot UI build passes.
-  Summary: .tmp/154-verification/.tmp/test-sharded/2026-10-08T11-43-25-992Z/SUMMARY.txt.
+  Summary: .tmp/154-evidence/test-sharded/2026-10-08T11-43-25-992Z/SUMMARY.txt.
 - Gate ladder: validate 154/11 returned []; doctor 154/11 is healthy, zero errors and three
   existing metadata warnings. All nine delivered source/documentation paths match the snapshot.
 - Inline self-review round 1: structural CONFORMS, behavioural PASS, automated craft PASS;

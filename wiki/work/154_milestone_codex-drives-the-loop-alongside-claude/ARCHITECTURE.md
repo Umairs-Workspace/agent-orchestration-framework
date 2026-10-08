@@ -1,5 +1,6 @@
 ---
 doc: architecture
+updated: 2026-10-08
 ---
 # 154 · Architecture decisions
 
@@ -135,14 +136,14 @@ using existing schema validation and shows resolved provenance; no apply/launch 
 
 ## Fitness functions
 
-Each pending test is registered through its family index and `scripts/test-unit.mjs` by the owning
-story. Red-probe evidence is owed in VERIFICATION at delivery, not fabricated at refine.
+Each control is registered through its family index and `scripts/test-unit.mjs` by the owning
+story. Actual red-probe evidence is recorded in VERIFICATION during readiness preparation.
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-15401 | Loop engine contains no vendor protocol/transcript policy | `test/arch/session/acd-runtime-session-boundary.test.mjs` — pending | ADR-001 |
-| FF-15402 | Runtime resolution has one owner and retains legacy semantics | `test/arch/session/acd-runtime-choice-owner.test.mjs` — pending | ADR-002 |
-| FF-15403 | Codex execution cannot bypass permissions or fall back silently | `test/arch/session/acd-codex-permission-boundary.test.mjs` — pending | ADR-003, ADR-004 |
+| FF-15401 | Loop engine contains no vendor protocol/transcript policy | `test/arch/session/acd-runtime-session-boundary.test.mjs` | ADR-001 |
+| FF-15402 | Runtime resolution has one owner and retains legacy semantics | `test/arch/session/acd-runtime-choice-owner.test.mjs` | ADR-002 |
+| FF-15403 | Codex execution cannot bypass permissions or fall back silently | `test/arch/session/acd-codex-permission-boundary.test.mjs` | ADR-003, ADR-004 |
 | FF-15404 | Codex generated paths and co-authored writes have one owner | `test/arch/store/acd-codex-output-ownership.test.mjs` | ADR-005 |
 | FF-15405 | Bundle runtime variants resolve references before rendering | `test/arch/command/acd-bundle-runtime-variants.test.mjs` | ADR-006 |
-| FF-15406 | Runtime observation never fabricates identity or cost | `test/arch/session/acd-runtime-observation-facts.test.mjs` — pending | ADR-007 |
+| FF-15406 | Runtime observation never fabricates identity or cost | `test/arch/session/acd-runtime-observation-facts.test.mjs` | ADR-007 |

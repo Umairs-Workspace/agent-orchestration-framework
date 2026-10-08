@@ -6,7 +6,7 @@ title: "Codex drives the AOF loop alongside Claude"
 status: in-progress
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 ---
