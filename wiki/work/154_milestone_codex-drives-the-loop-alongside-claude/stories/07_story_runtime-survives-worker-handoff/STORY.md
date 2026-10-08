@@ -4,7 +4,7 @@ number: 7
 slug: runtime-survives-worker-handoff
 title: "Workers retain the selected runtime and assets"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -44,3 +44,7 @@ As an operator, I want local worktree and mesh execution to honor the recorded a
   the build evidence. The exact sink census records these admitted services; the session
   driver import set, lifecycle denylist and reach ceiling remain unchanged. Worker and
   loop implementation line ceilings are preserved through extraction, without headroom.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Eighteen focused cases, the actual status-command regression and its red mutation pass. The live WebSocket disconnect/reconnect retains the Codex assignment across store reopen and ambient Claude selection, completes native work, pushes to the local origin and cleans its lane. This is local transport proof, not a cross-host tailnet soak. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
