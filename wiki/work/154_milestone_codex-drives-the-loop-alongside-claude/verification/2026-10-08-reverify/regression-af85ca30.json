@@ -1,0 +1,39 @@
+{
+  "ref": "154",
+  "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\REGRESSION.md",
+  "commit": "af85ca30d50408395d0b7cb3256145ff1112c323",
+  "instant": "2026-10-08T20:39:40.470Z",
+  "scope": "all",
+  "result": "green",
+  "detail": "not isolated: headroom-wrap-routing/02 an off plugin contributes nothing to the spawn binary or args, 81/00 a runner that outlasts the derived deadline is killed and graded, not reaped · sharded --jobs 8 · 33.6 min · over budget (15 min)",
+  "satisfiesDoor": true,
+  "appended": true,
+  "run": {
+    "mode": "sharded",
+    "jobs": 8,
+    "minutes": 33.6,
+    "budgetMinutes": 15,
+    "overBudget": true
+  },
+  "notIsolated": [
+    "headroom-wrap-routing/02 an off plugin contributes nothing to the spawn binary or args",
+    "81/00 a runner that outlasts the derived deadline is killed and graded, not reaped"
+  ],
+  "slowest": [
+    "# slowest files (seconds summed across their chunks):",
+    "   1238s  50 cases  test/loop/loop-command-wave.test.mjs",
+    "    558s  18 cases  test/loop/loop-command-reconcile.test.mjs",
+    "    404s  78 cases  test/loop/loop-command-stops.test.mjs",
+    "    383s  14 cases  test/work/stream/work-this-tree-holds-what-is-live.test.mjs",
+    "    350s  61 cases  test/work/stream/work-archive-is-a-move.test.mjs",
+    "    343s  96 cases  test/work/lifecycle/work-dispatch-lanes.test.mjs",
+    "    301s  36 cases  test/examples/doctor-examples-lane.test.mjs",
+    "    274s  35 cases  test/loop/lane-is-local-slot.test.mjs",
+    "    248s  20 cases  test/bundle/site-build.test.mjs",
+    "    234s  4 cases  test/arch/work/acd-work-command-cli-bijection.test.mjs",
+    "    230s  37 cases  test/grade/gate-propagation-refusals-leave-branch.test.mjs",
+    "    228s  0 cases  lanes (integration + cargo)"
+  ],
+  "logs": ".tmp/test-sharded/2026-10-08T20-06-06-280Z",
+  "exit": 0
+}

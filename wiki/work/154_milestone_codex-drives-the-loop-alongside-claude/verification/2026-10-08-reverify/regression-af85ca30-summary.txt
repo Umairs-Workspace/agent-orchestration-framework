@@ -1,0 +1,19 @@
+# sharded run 2026-10-08T20-06-06-280Z
+# 12492 of 12492 registered cases executed in 1218 units; wall 33.6 min, summed 259.6 min, 8 workers
+# failures: 0 unit(s); not isolated (red in the pool, green alone): 2 unit(s)
+# not isolated - headroom-wrap-routing/02 an off plugin contributes nothing to the spawn binary or args
+# not isolated - 81/00 a runner that outlasts the derived deadline is killed and graded, not reaped
+# slowest files (seconds summed across their chunks):
+   1238s  50 cases  test/loop/loop-command-wave.test.mjs
+    558s  18 cases  test/loop/loop-command-reconcile.test.mjs
+    404s  78 cases  test/loop/loop-command-stops.test.mjs
+    383s  14 cases  test/work/stream/work-this-tree-holds-what-is-live.test.mjs
+    350s  61 cases  test/work/stream/work-archive-is-a-move.test.mjs
+    343s  96 cases  test/work/lifecycle/work-dispatch-lanes.test.mjs
+    301s  36 cases  test/examples/doctor-examples-lane.test.mjs
+    274s  35 cases  test/loop/lane-is-local-slot.test.mjs
+    248s  20 cases  test/bundle/site-build.test.mjs
+    234s  4 cases  test/arch/work/acd-work-command-cli-bijection.test.mjs
+    230s  37 cases  test/grade/gate-propagation-refusals-leave-branch.test.mjs
+    228s  0 cases  lanes (integration + cargo)
+# logs: .tmp/test-sharded/2026-10-08T20-06-06-280Z

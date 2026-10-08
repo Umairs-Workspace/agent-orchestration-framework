@@ -4,6 +4,10 @@ updated: 2026-10-08
 ---
 # 154 · Verification
 
+**Accepted on 2026-10-08 through AOF.** All twelve stories are done; the final clean regression
+gate is green and every blocker finding is closed. The final result and limits are under
+“Accept decision” and “Final clean regression gate”; earlier attempts below remain historical.
+
 ## Fitness functions
 
 Automated readiness evidence recorded on 2026-10-08. All six controls are implemented and
@@ -288,7 +292,7 @@ Warm-fix and operator-stop evidence is retained in `verification/2026-10-08-reve
 |---|---|---|---|---|---|---|
 | D-01 | Native Codex defaults the fixture to read-only. Process-local shell selection resolves the Store PowerShell access error, then the required AOF run-record write is refused. Full Codex lifecycle/recovery and repeated prompt workload remain unverified. | prerequisite-gap | Blocker | The approved fixture policy now supports actual native build, independent review and acceptance; question/restart recovery passes. The complete native loop, warm fix, tool cancellation, process restart and real worker reconnect pass. All 24 frozen prompt attempts are recorded, including two protected permission stops; no overall performance optimization is accepted. Native permissions remain explicit. | 154/11 live acceptance | closed |
 | D-02 | Fleet origin lacks the config API; the autonomous rerun started the real isolated AOF editor and passed 18 browser checks plus binding-checklist design review at three widths. | prerequisite-gap | Blocker | Responsive, keyboard and state evidence is now retained; no further URL input needed. | 154/10 manual verification | closed |
-| D-03 | The previous clean gate failed FF-7106 on generated siblings omitted from story 155's declarations. Elapsed time was 23.9 minutes; the 15-minute budget is advisory and did not cause the red result. | regression-gap | Blocker | Declaration and agent-mode changes are committed at a2846fce; 405 focused cases, 35 native-asset cases and 7 bundle checks pass. The obsolete a2846fce rerun was cancelled after native fixes changed the source; it is not evidence of a green gate. The corrected af85ca30 snapshot is now running the actual clean detached gate with eight workers and isolated global state. | 155 declared write set; milestone 154 regression gate | open |
+| D-03 | Earlier clean gates were red on generated declarations and exact source-boundary admissions. | regression-gap | Blocker | The corrected af85ca30 clean detached gate is green: 12,492/12,492 registered cases, zero persistent failures, integration/cargo pass; two timing failures pass isolated retry. 33.6 minutes exceeds the advisory budget only. Actual command-authored row and logs retained. | milestone 154 regression gate | closed |
 | D-04 | Actual Codex continue thread 01a11cb6-4f9d-7c41-8445-b940552c24fb invoked run-start and received duplicate-run because the native phase driver omitted its run environment. | bug | Blocker | Lend the driver-owned run identity to native tool processes. Two ownership regression cases plus all 46 phase/question cases pass; mutation probe fails without the fix. Live confirmation now returns driven:true on the same run; the later test-launch refusal is D-05. Evidence: verification/2026-10-08-reverify/native-run-ownership.json. | 154/06 task00 | closed |
 | D-05 | The actual Codex sandbox allows fixture execution and file writes but refuses Node output pipes with EPERM. The required AOF test command cannot start its child. Print-only probes confirm inherited output and file-backed capture work; ordinary and overlapped pipes fail. | prerequisite-gap | Blocker | A synchronous Windows EPERM now retries the same executable with temporary file-backed capture when stdin has no cancel channel. All 45 affected cases pass, including output, deadline, abort and cleanup; the actual sandboxed AOF test command exits zero. No policy changed. Evidence: verification/2026-10-08-reverify/native-file-capture.json. | 154/11 native acceptance; bounded test execution | closed |
 | D-06 | The next actual native continue phase ran its test gate, then halted with protocol_queue_limit during validation. The adapter queues every notification, including events it never consumes, behind durable observation writes. | bug | Blocker | Filtering now drops ignorable notifications before queue admission. The new 512-notification case fails without the fix; all 81 protocol/loop cases pass with it. Scoped validate is empty and doctor has zero errors. Actual native continue now completes with three independent reviewer threads; story and fixture milestone acceptance followed. | 154/02 protocol transport | closed |
@@ -297,11 +301,17 @@ Warm-fix and operator-stop evidence is retained in `verification/2026-10-08-reve
 
 ## Accept decision
 
-**Milestone acceptance pending the final clean regression gate.** Native lifecycle and recovery,
-UI/design, fitness probes and the frozen prompt evaluation are complete. Individual stories are
-accepted through the CLI with their own outcomes and conditional retrospectives. D-03 remains
-open until the actual af85ca30 whole-tree run settles; no override is used. No genuine human
-UAT scenarios are declared.
+**PASS — accepted through `aof work status 154 done`.** All twelve stories are accepted through the CLI, all eight
+verification findings are closed, all six declared controls have actual negative probes, and
+the final clean whole-tree gate is green without an override. Scoped validate is empty; doctor
+reports zero errors and zero unresolved controls. Eighteen warnings comprise the existing
+metadata/runner advisories plus three intentional skipped-clean retrospectives (00, 01, 03),
+following the skill rule not to invent lessons. Actual UI/design and native lifecycle/recovery
+proof is recorded below. No genuine human UAT scenarios are declared.
+
+The prompt evaluation retains both permission stops and accepts no overall speed or cost
+optimization. Native question-tool availability, monetary cost and cross-host tailnet soak
+are not inferred from the supported fallback/local-transport evidence.
 
 ## Complete native loop — 2026-10-08
 
@@ -339,3 +349,25 @@ or monetary-cost optimization is accepted. See PROMPT-AUDIT.md and
 verifies → `154/11/tasks/02_prompt-behavior-evaluation.feature`: frozen workload, three
 repetitions per arm/case, rejected unsupported benefit claims and separately retained Claude
 regression proof. Protected permission failures remain visible rather than waived.
+
+## Final clean regression gate — 2026-10-08, 20:39 UTC
+
+Ran `work regression-gate 154 --jobs 8 --json` from a clean detached af85ca30 checkout with
+isolated AOF global state and the pinned prepared dependencies. The actual command recorded
+**green / satisfiesDoor: true**: 12,492/12,492 registered cases in 1,218 units; zero persistent
+failures; integration and cargo pass. Both initial timing failures passed the runner's isolated
+retry and remain named in the row and summary. Elapsed 33.6 minutes exceeds the advisory
+15-minute budget, which is not an acceptance refusal. No override was used.
+
+`REGRESSION.md` is copied unchanged from the command-authored checkout record. The source-match
+artifact confirms subsequent commits change only work records. Durable gate JSON, summary and
+both original/retry failure logs live in `verification/2026-10-08-reverify/`; full raw sharded
+logs are preserved under `.tmp/154-final-evidence/test-sharded/` before checkout cleanup.
+
+Retrospectives are authored per story where there was a lesson; 00/01/03 are skipped-clean.
+The milestone retrospective records integration-preflight and verification-order lessons.
+Actual observe commands refreshed story 11 and milestone snapshots, and final memory ingest indexed
+3,273 records. Unmeasured primary-session spend is not interpreted as zero cost.
+
+The owned detached verification checkout was removed after its command-authored evidence and
+all raw sharded logs were archived. The unrelated external worktrees were preserved.

@@ -3,7 +3,7 @@ type: milestone
 number: 154
 slug: codex-drives-the-loop-alongside-claude
 title: "Codex drives the AOF loop alongside Claude"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-06
 updated: 2026-10-08
@@ -87,18 +87,18 @@ Out of scope:
 
 ## Stories
 
-- [ ] [00 · A shared session boundary preserves Claude execution](stories/00_story_runtime-session-boundary/STORY.md)
-- [ ] [01 · Runtime and model choices survive resume](stories/01_story_runtime-choice-is-durable/STORY.md)
-- [ ] [02 · Codex executes a bounded phase through App Server](stories/02_story_codex-session-protocol/STORY.md)
-- [ ] [03 · Codex discovers correctly scoped native assets](stories/03_story_native-codex-assets/STORY.md)
-- [ ] [04 · Codex upgrades preserve operator-owned files](stories/04_story_codex-upgrades-preserve-user-files/STORY.md)
-- [ ] [05 · Shared workflows render assistant-specific instructions](stories/05_story_runtime-specific-workflow-variants/STORY.md)
-- [ ] [06 · Codex drives and recovers the existing work loop](stories/06_story_codex-drives-and-recovers-loop-phases/STORY.md)
-- [ ] [07 · Workers retain the selected runtime and assets](stories/07_story_runtime-survives-worker-handoff/STORY.md)
-- [ ] [08 · Codex activity and usage are reported honestly](stories/08_story_runtime-aware-observation/STORY.md)
-- [ ] [09 · Codex projects can choose an explicit memory backend](stories/09_story_memory-dependencies-are-explicit/STORY.md)
-- [ ] [10 · The config editor explains effective assistant settings](stories/10_story_runtime-config-editor/STORY.md)
-- [ ] [11 · Live acceptance proves Codex and preserves Claude](stories/11_story_prove-both-assistants-end-to-end/STORY.md)
+- [x] [00 · A shared session boundary preserves Claude execution](stories/00_story_runtime-session-boundary/STORY.md)
+- [x] [01 · Runtime and model choices survive resume](stories/01_story_runtime-choice-is-durable/STORY.md)
+- [x] [02 · Codex executes a bounded phase through App Server](stories/02_story_codex-session-protocol/STORY.md)
+- [x] [03 · Codex discovers correctly scoped native assets](stories/03_story_native-codex-assets/STORY.md)
+- [x] [04 · Codex upgrades preserve operator-owned files](stories/04_story_codex-upgrades-preserve-user-files/STORY.md)
+- [x] [05 · Shared workflows render assistant-specific instructions](stories/05_story_runtime-specific-workflow-variants/STORY.md)
+- [x] [06 · Codex drives and recovers the existing work loop](stories/06_story_codex-drives-and-recovers-loop-phases/STORY.md)
+- [x] [07 · Workers retain the selected runtime and assets](stories/07_story_runtime-survives-worker-handoff/STORY.md)
+- [x] [08 · Codex activity and usage are reported honestly](stories/08_story_runtime-aware-observation/STORY.md)
+- [x] [09 · Codex projects can choose an explicit memory backend](stories/09_story_memory-dependencies-are-explicit/STORY.md)
+- [x] [10 · The config editor explains effective assistant settings](stories/10_story_runtime-config-editor/STORY.md)
+- [x] [11 · Live acceptance proves Codex and preserves Claude](stories/11_story_prove-both-assistants-end-to-end/STORY.md)
 
 The shared session boundary and native asset mapping are independent starting points. Runtime
 selection precedes the Codex protocol proof; that live proof must pass before loop integration.
@@ -116,7 +116,12 @@ Shared test registries and renderer/config files deliberately serialize overlapp
 
 ## Accept decision
 
-2026-10-08 autonomous reverification: **NOT ACCEPTED**. The execution UI passed its browser and
-design checks, but the clean regression gate is red (D-03) and the full Codex lifecycle/recovery
-and repeated prompt workload lack native write-permission prerequisites (D-01). See VERIFICATION.md
-and the command-authored REGRESSION.md row. All story acceptance boxes remain unchecked.
+2026-10-08 — **ACCEPTED** through `aof work status 154 done`, after all twelve stories were
+accepted. The clean af85ca30 regression gate executed 12,492/12,492 cases with zero persistent
+failures; two timing cases passed isolated retry. Integration/cargo, scoped validation, declared
+fitness controls and negative probes pass. Actual native Claude/Codex lifecycle, recovery and
+UI/design evidence is recorded in VERIFICATION.md. All blocker findings are closed.
+
+The 24-sample native prompt evaluation is recorded with both permission stops retained; no
+overall speed or monetary-cost optimization is accepted. See PROMPT-AUDIT.md and OUTCOME.md
+for the measured result and supported-host assumptions. No gate override or human UAT was used.
