@@ -4,10 +4,10 @@ number: 4
 slug: codex-upgrades-preserve-user-files
 title: "Codex upgrades preserve operator-owned files"
 parent: 154
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-06
-updated: 2026-10-07
+updated: 2026-10-08
 schema: 1
 aofVersion: 0.1.0
 depends: [03]
@@ -52,3 +52,7 @@ As an operator, I want safe repeatable application of Codex assets, so that upgr
   the existing force/drift scenario exercises Claude, retaining its outcomes. New Codex CLI
   cases exercise forced refusal. No delivered work-item task feature is changed. The hook
   capability list is checked against the exact upstream rust-v0.160.0 source tag.
+
+## Accept decision
+
+2026-10-08 — **ACCEPTED** by the main governing session after scoped verification. Ownership, drift, collision, idempotence and legacy-output cases pass across public writer doors. FF-15404 red probes preserve operator-owned neighbors. Evidence and limitations are recorded in the parent `VERIFICATION.md` and its dated artifacts. Scoped validate is clean and doctor reports no errors or unresolved controls. Required build review is already recorded above.
