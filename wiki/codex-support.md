@@ -159,6 +159,13 @@ launcher/model/effort combination. A missing prerequisite stays pending and leav
 milestone unaccepted. Public schema support alone does not prove live recovery or mesh parity.
 
 Permission requests stop for operator action. A business answer is not execution approval.
+On Windows, Store PowerShell can fail to start inside the native sandbox with
+`CreateProcessAsUserW failed: 5`. When Store PowerShell is the first `pwsh` on PATH
+and an ordinary PowerShell remains available, AOF omits the Store shell directories
+(including their execution aliases) from its Codex child's PATH. Other entries keep
+their order; host PATH, Codex settings and sandbox permissions are unchanged.
+Commands available only through those omitted Store directories must use their
+installed executable path.
 Persisted asks carry durable question tokens and native identity, not replayable RPC ids.
 Recovery resumes the thread and delivers the recorded authorized answer in a new turn.
 Unavailable usage/cost stays null; a subscription is not measured API cost.

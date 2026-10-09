@@ -5,6 +5,7 @@ import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection
 import { CODEX_PROFILE, CODEX_RESULT_SCHEMA, parseCodexPhaseResult, permissionReply, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
 import { normalizeCodexActivity } from "./runtime-events.mjs";
 import { selectCodexExecutable } from "./codex-executable.mjs";
+import { codexProcessEnvironment } from "./codex-process-environment.mjs";
 
 const named = value => typeof value === "string" && value.trim().length > 0;
 const positive = (value, fallback) => Number.isSafeInteger(value) && value > 0 ? value : fallback;
@@ -160,7 +161,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       cliVersion = selected.cliVersion;
       if (terminal) return { ...terminal, sessionId, processStarted: false };
       if (!CODEX_PROFILE.supportedVersions.includes(cliVersion)) throw failure("unsupported_profile");
-      child = spawnChild(command.bin, command.args, { cwd: brief.worktreeCwd, env: options.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, detached: true, shell: false });
+      child = spawnChild(command.bin, command.args, { cwd: brief.worktreeCwd, env: codexProcessEnvironment(options.env), stdio: ["pipe", "pipe", "pipe"], windowsHide: true, detached: true, shell: false });
       child.stdout.on("data", data);
       child.stderr.resume(); // Drain without retaining or publishing potentially sensitive diagnostics.
       child.stderr.on("error", () => fail("protocol_disconnected"));

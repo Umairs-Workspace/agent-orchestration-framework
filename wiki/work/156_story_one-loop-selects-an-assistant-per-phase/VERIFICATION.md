@@ -7,6 +7,35 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Windows sandbox shell correction — 2026-10-09
+
+The language-tutor item 16 attempt at 19:44 UTC reached native thread
+`01a12232-7fee-76f3-940d-0f7e5d3650be`. Its first skill-read command failed with
+`CreateProcessAsUserW failed: 5 (Access is denied)` while launching Store `pwsh.exe`.
+The subsequent unsandboxed retry requested approval and was correctly declined.
+The active policy was `on-request` with `workspace-write` and no network access.
+
+A bounded native `command/exec` probe reproduced the Store shell failure in the
+project's read-only sandbox; built-in Windows PowerShell successfully checked the
+same skill under the same policy. AOF now filters the Store shell directories from
+only the owned Codex child's PATH when an ordinary shell remains available.
+Execution aliases require `lstat`: following the alias returns EACCES on this host.
+Preferred ordinary PowerShell, non-Windows environments and sole-shell environments
+are unchanged. The host's saved settings, trust, permissions and PATH were not edited.
+
+Verification: 87 focused adapter, phase and permission/architecture cases passed.
+A real Astra/high turn with the production adapter and no test transport completed
+eight tool activity events: scratch input read, scratch output written and checked,
+the real project's skill header read as data, and `aof --version` executed.
+The scratch directory was removed. This supersedes the earlier no-tool native smoke
+test for shell readiness; it does not claim a complete mixed project loop.
+Evidence: `.tmp/156-sandbox-shell-evidence.json`,
+`.tmp/156-native-tools-evidence.json`, `.tmp/156-shell-tests.log`.
+
+The [official App Server documentation](https://learn.chatgpt.com/docs/app-server#command-execution)
+defines `command/exec` as sandboxed execution and distinguishes approval requests
+from normal tool execution. The correction changes shell discovery, not that boundary.
+
 ## Existing-project asset preflight correction — 2026-10-09
 
 The language-tutor item 16 failure at 19:37 UTC occurred before Codex started:

@@ -52,3 +52,10 @@ Feature: One loop selects and preserves native execution per phase
     And phases selected for Claude do not require Codex procedures
 
   # Verification commands and evidence are in VERIFICATION.md.
+  Scenario: Windows Store PowerShell cannot launch in the native sandbox
+    Given the first pwsh on PATH is a Windows Store executable or execution alias
+    And an ordinary PowerShell is available on PATH
+    When AOF launches its Codex child
+    Then the child discovers the ordinary shell without changing host PATH
+    And native sandbox permissions and approval refusals remain unchanged
+    And a preferred ordinary pwsh or the only available shell is not removed

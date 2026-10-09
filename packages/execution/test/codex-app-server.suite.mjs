@@ -6,6 +6,7 @@ import path from "node:path";
 import { createCodexAppServerAdapter } from "../src/codex-app-server.mjs";
 import { createRuntimeSession } from "../src/runtime-session.mjs";
 import { codexExecutables, selectCodexExecutable } from "../src/codex-executable.mjs";
+import { codexProcessEnvironment } from "../src/codex-process-environment.mjs";
 import { CODEX_PROFILE } from "../src/codex-protocol-profile.mjs";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/codex-app-server-v1.json", import.meta.url), "utf8"));
@@ -72,6 +73,23 @@ function released(probe) {
   assert.equal(probe.children.length, 1);
 }
 export const codexAppServerTests = [
+  { name: "156 — Windows Codex child avoids Store PowerShell without changing host PATH or sandbox policy", async run() {
+    const store = 'C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7\\';
+    const aliases = 'C:\\Users\\fixture\\AppData\\Local\\Microsoft\\WindowsApps';
+    const system = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0';
+    const env = { Path: `C:\\tools;"${store}";${aliases};${system}`, KEEP: "unchanged" };
+    const files = [path.win32.join(store, "pwsh.exe"), path.win32.join(aliases, "pwsh.exe"), path.win32.join(system, "powershell.exe")];
+    const exists = file => files.includes(file);
+    const selected = codexProcessEnvironment(env, { platform: "win32", exists });
+    assert.deepEqual(selected, { Path: `C:\\tools;${system}`, KEEP: "unchanged" });
+    assert.ok(env.Path.includes(store));
+    assert.equal(codexProcessEnvironment(env, { platform: "linux", exists }), env);
+    assert.equal(codexProcessEnvironment(env, { platform: "win32", exists: file => files.slice(0, 2).includes(file) }), env, "retain the only installed shell");
+    const preferred = { Path: `C:\\portable;${env.Path}` };
+    assert.equal(codexProcessEnvironment(preferred, { platform: "win32", exists: file => file === 'C:\\portable\\pwsh.exe' || exists(file) }), preferred);
+    const unrelated = { PATH: `C:\\WindowsApps;${system}` };
+    assert.equal(codexProcessEnvironment(unrelated, { platform: "win32", exists }), unrelated, "unrelated app directories are untouched");
+  } },
   ...["x64", "arm64"].map(arch => ({ name: `156 Windows Codex discovery resolves npm ${arch} launchers and compatible desktop without a shell`, async run() {
     const root = "C:\\Program Files\\nodejs";
     const manifest = `${root}\\node_modules\\@openai\\codex\\node_modules\\@openai\\codex-win32-${arch}\\package.json`;
