@@ -47,7 +47,7 @@ you are the architect, the QA and the developer in turn.
 **Session effort is fixed at launch.** If --thinking is supplied to this skill, stop before minting.
 Restart the Codex session/client with the requested native reasoning effort and rerun this skill
 without the flag. Never claim the running effort changed. For a driven launch use the existing
-aof work loop --runtime codex --thinking door, which validates native advertised levels.
+aof work loop <ref> --model <native-model>:<effort> door, which infers Codex from the model and validates native advertised levels.
 An explicitly configured role setting must be passed by its native launcher or refused.
 
 </config>
