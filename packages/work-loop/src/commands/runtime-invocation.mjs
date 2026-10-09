@@ -44,7 +44,13 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
       resolved.execution = pinned; resolved.sessions = pinned.phases;
     } else if (hasRuntime) {
       const preview = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, allowUnproven: true });
-      const capabilities = executionRuntimes(preview).includes("codex") ? { codex: await runtimeSession.inspectCapabilities("codex", { ...(ctx.agentSessionDriverOptions ?? {}), cwd: ctx.workspace.projectRoot }) } : {};
+      let capabilities = {};
+      try {
+        if (executionRuntimes(preview).includes("codex")) capabilities = { codex: await runtimeSession.inspectCapabilities("codex", { ...(ctx.agentSessionDriverOptions ?? {}), cwd: ctx.workspace.projectRoot }) };
+      } catch (error) {
+        if (["runtime_unavailable", "unsupported_profile"].includes(error.code)) throw commandError(error.message, error.code, 409);
+        throw error;
+      }
       resolved.execution = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, capabilities });
       resolved.sessions = resolved.execution.phases;
     }

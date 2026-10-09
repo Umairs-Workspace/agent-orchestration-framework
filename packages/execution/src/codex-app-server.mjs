@@ -4,6 +4,7 @@ import { resolveStartToCloseMs } from "@aof/contracts/loop-bounds";
 import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection.mjs";
 import { CODEX_PROFILE, CODEX_RESULT_SCHEMA, parseCodexPhaseResult, permissionReply, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
 import { normalizeCodexActivity } from "./runtime-events.mjs";
+import { selectCodexExecutable } from "./codex-executable.mjs";
 
 const named = value => typeof value === "string" && value.trim().length > 0;
 const positive = (value, fallback) => Number.isSafeInteger(value) && value > 0 ? value : fallback;
@@ -13,7 +14,7 @@ function probeVersion(bin, options) {
   return new Promise((resolve, reject) => {
     execFile(bin, ["--version"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {
       if (error) reject(failure("runtime_unavailable"));
-      else { const match = /^codex-cli (\d+\.\d+\.\d+)\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure("unsupported_profile")); }
+      else { const match = /^codex-cli (\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure("unsupported_profile")); }
     });
   });
 }
@@ -26,8 +27,8 @@ async function terminateOwned(child) {
   } else child.kill("SIGKILL");
 }
 
-// One owned server per operation. No shell, permission override, auth mutation or fallback.
-export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = probeVersion, terminate = terminateOwned, composePhaseBriefInput = null } = {}) {
+// One owned server per operation. No shell, permission override, auth mutation or provider fallback.
+export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = probeVersion, selectExecutable = selectCodexExecutable, terminate = terminateOwned, composePhaseBriefInput = null } = {}) {
   async function operate(brief, options, readOnly = false) {
     let child, sessionId = null, turnId = null, cliVersion = null, execution = null, terminal = null;
     let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "";
@@ -36,6 +37,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     const turnReady = new Promise(resolve => { releaseTurn = resolve; });
     const pending = new Map();
     const cleanupWarnings = [];
+    let detectedVersions = [];
     const decoder = new TextDecoder("utf-8", { fatal: true });
     const requestMs = positive(options.requestTimeoutMs, CODEX_PROFILE.requestMs);
     const interruptMs = positive(options.interruptMs, CODEX_PROFILE.interruptMs);
@@ -153,8 +155,9 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     try {
       if (options.signal?.aborted) { abort(); return { ...terminal, sessionId, processStarted: false }; }
       if (!named(brief.worktreeCwd) || !path.isAbsolute(brief.worktreeCwd)) throw failure("invalid_worktree");
-      const command = codexServerCommand(options.codexBin);
-      cliVersion = await readVersion(command.bin, { cwd: brief.worktreeCwd, env: options.env, signal: options.signal });
+      const selected = await selectExecutable({ codexBin: options.codexBin, cwd: brief.worktreeCwd, env: options.env, signal: options.signal }, { readVersion, supportedVersions: CODEX_PROFILE.supportedVersions });
+      const command = codexServerCommand(selected.bin);
+      cliVersion = selected.cliVersion;
       if (terminal) return { ...terminal, sessionId, processStarted: false };
       if (!CODEX_PROFILE.supportedVersions.includes(cliVersion)) throw failure("unsupported_profile");
       child = spawnChild(command.bin, command.args, { cwd: brief.worktreeCwd, env: options.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true, detached: true, shell: false });
@@ -209,6 +212,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         await settled; await events;
       }
     } catch (error) {
+      detectedVersions = (error.detectedVersions ?? []).filter(value => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(value));
       // Never expose error.message, stderr, arbitrary server codes or payloads.
       const allowed = ["runtime_unavailable", "unsupported_profile", "invalid_worktree", "unsupported_runtime", "invalid_phase", "resume_unavailable", "protocol_identity_mismatch", "protocol_initialization_invalid", "runtime_capabilities_unavailable", "phase_input_too_large", "phase_input_invalid", "persistence_failed", "protocol_timeout", "protocol_rpc_error", "protocol_disconnected", "protocol_frame_too_large", "protocol_request_limit"];
       fail(allowed.includes(error?.code) ? error.code : "execution_invalid");
@@ -235,7 +239,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       }
       for (const entry of pending.values()) { clearTimeout(entry.timer); entry.reject(failure("operation_settled")); } pending.clear();
     }
-    return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
+    return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(detectedVersions.length ? { detectedVersions } : {}), ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
   }
   return Object.freeze({ capabilities: Object.freeze({ transport: "app-server-stdio", profile: CODEX_PROFILE.name, profileVersion: 1,
     compatibility: "live-probed", cliVersions: CODEX_PROFILE.supportedVersions, nativeIdentity: true, resume: true, usage: true,
@@ -243,7 +247,12 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     drive: (brief, options = {}) => operate(brief, options),
     async inspectCapabilities(options = {}) {
       const result = await operate({ worktreeCwd: options.cwd }, options, "catalog");
-      if (result.outcome !== "done") throw failure(result.failureReason);
+      if (result.outcome !== "done") {
+        const error = failure(result.failureReason);
+        if (result.failureReason === "runtime_unavailable") error.message = "Codex could not be started. Check that Codex is installed and executable; AOF checks PATH, npm launchers and the Windows Codex desktop app.";
+        if (result.failureReason === "unsupported_profile") error.message = `No compatible Codex CLI was found. Detected: ${result.detectedVersions?.join(", ") || result.cliVersion || "unrecognized version"}. Supported: ${CODEX_PROFILE.supportedVersions.join(", ")}.`;
+        throw error;
+      }
       return { models: result.models, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version };
     },
     async canResume(sessionId, options = {}) {

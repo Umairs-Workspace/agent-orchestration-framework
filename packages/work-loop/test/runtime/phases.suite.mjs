@@ -66,6 +66,14 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  { name: "156 — unavailable Codex preflight becomes an actionable command refusal", async run() {
+    for (const code of ["runtime_unavailable", "unsupported_profile"]) {
+      const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: { inspectCapabilities: async () => { throw Object.assign(new Error("Codex installation requires attention"), {code}); } } });
+      const input = { model: ["gpt-6-astra:high", "continue=sonnet:high"] };
+      const ctx = { workspace: { config: {}, projectRoot: path.resolve(".tmp") } };
+      await assert.rejects(resolver.resolveRuntimeInvocation({input,ctx,resolved:{},resume:{},sessionRequest:resolver.requestedRuntimeSessions(input,ctx)}), error => error.code === code && error.status === 409 && error.message === "Codex installation requires attention");
+    }
+  } },
   { name: "156 — mixed invocation preflights Codex once and lends only each phase's native settings", async run() {
     const f = await nativePhaseFixture();
     try {

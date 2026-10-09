@@ -35,4 +35,13 @@ Feature: One loop selects and preserves native execution per phase
     And both runtime asset sets are prepared when required
     And existing single-runtime envelopes retain their previous behavior
 
+  Scenario: Windows terminal has an older npm launcher and a compatible desktop installation
+    Given PATH exposes a Codex npm launcher whose CLI profile is unsupported
+    And the registered Codex desktop app has an admitted profile and advertises Astra with high effort
+    When the model-only loop performs its native preflight
+    Then AOF launches the compatible native executable directly without a shell
+    And no PATH changes or runtime flags are required
+    And an explicit executable override is never silently replaced
+    And missing or incompatible installations produce actionable diagnostics
+
   # Verification commands and evidence are in VERIFICATION.md.

@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { createCodexAppServerAdapter } from "../src/codex-app-server.mjs";
 import { createRuntimeSession } from "../src/runtime-session.mjs";
+import { codexExecutables, selectCodexExecutable } from "../src/codex-executable.mjs";
+import { CODEX_PROFILE } from "../src/codex-protocol-profile.mjs";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/codex-app-server-v1.json", import.meta.url), "utf8"));
 const secret = "FIXTURE_CREDENTIAL_MUST_NOT_APPEAR";
@@ -59,7 +61,7 @@ export function codexFixture({ scenario = "complete", delivery = "ordinary", ver
       });
     }
   });
-  const adapter = adapterFactory({ readVersion: async () => version, spawnChild: (bin, args, options) => { children.push({ bin, args, options }); return child; }, terminate: async owned => { assert.equal(owned, child); owned.kill(); }, composePhaseBriefInput: (command, context) => `${command}\n${context?.text ?? ""}` });
+  const adapter = adapterFactory({ selectExecutable: async () => ({ bin: "codex.exe", cliVersion: version }), readVersion: async () => version, spawnChild: (bin, args, options) => { children.push({ bin, args, options }); return child; }, terminate: async owned => { assert.equal(owned, child); owned.kill(); }, composePhaseBriefInput: (command, context) => `${command}\n${context?.text ?? ""}` });
   const brief = { worktreeCwd: path.resolve(".tmp"), itemRef: "154/02", phase: "continue", procedure: "aof-continue", arguments: ["154/02", "--solo"], command: "$aof-continue 154/02 --solo", context: { text: "BOUNDED_CONTEXT" } };
   const options = { requestTimeoutMs: 100, timeoutMs: 1000, closeMs: 20, interruptMs: 20 };
   return { adapter, brief, options, calls, events, children, child, fixture };
@@ -70,6 +72,50 @@ function released(probe) {
   assert.equal(probe.children.length, 1);
 }
 export const codexAppServerTests = [
+  ...["x64", "arm64"].map(arch => ({ name: `156 Windows Codex discovery resolves npm ${arch} launchers and compatible desktop without a shell`, async run() {
+    const root = "C:\\Program Files\\nodejs";
+    const manifest = `${root}\\node_modules\\@openai\\codex\\node_modules\\@openai\\codex-win32-${arch}\\package.json`;
+    const native = path.win32.join(path.win32.dirname(manifest), "vendor", arch === "x64" ? "x86_64-pc-windows-msvc" : "aarch64-pc-windows-msvc", "codex", "codex.exe");
+    const desktopRoot = "C:\\Program Files\\WindowsApps\\OpenAI.Codex_fixture";
+    const desktop = path.win32.join(desktopRoot, "app", "resources", "codex.exe");
+    const files = new Set([`${root}\\codex.cmd`, `${root}\\codex.ps1`, native, desktop]);
+    let discoveries = 0;
+    const dependencies = { platform: "win32", arch, exists: name => files.has(name), resolvePackage: () => manifest,
+      installedDesktopLocations: async () => { discoveries++; return [desktopRoot]; } };
+    const candidates = options => codexExecutables(options, dependencies);
+    const options = { env: { Path: `"${root}"` } };
+    const first = await selectCodexExecutable(options, { candidates, supportedVersions: CODEX_PROFILE.supportedVersions, readVersion: async () => "0.160.0" });
+    assert.equal(first.bin, native); assert.equal(discoveries, 0, "compatible PATH installation avoids desktop discovery");
+    const selected = await selectCodexExecutable(options, { candidates, supportedVersions: CODEX_PROFILE.supportedVersions, readVersion: async bin => bin === native ? "0.130.0" : "0.162.0-alpha.2" });
+    assert.equal(selected.bin, desktop); assert.equal(discoveries, 1);
+    await assert.rejects(selectCodexExecutable({ ...options, codexBin: `${root}\\codex.cmd` }, { candidates, supportedVersions: CODEX_PROFILE.supportedVersions, readVersion: async () => "0.130.0" }), { code: "unsupported_profile", detectedVersions: ["0.130.0"] });
+    assert.equal(discoveries, 1, "explicit executable never falls back to another installation");
+  } })),
+  { name: "156 Codex executable discovery preserves direct PATH and POSIX launches and refuses missing installations", async run() {
+    const collect = async generator => { const values = []; for await (const value of generator) values.push(value); return values; };
+    assert.deepEqual(await collect(codexExecutables({}, { platform: "linux" })), ["codex"]);
+    assert.deepEqual(await collect(codexExecutables({ codexBin: "/opt/codex" }, { platform: "darwin" })), ["/opt/codex"]);
+    const win = { platform: "win32", exists: value => value === "C:\\bin\\codex.exe", installedDesktopLocations: async () => [] };
+    assert.deepEqual(await collect(codexExecutables({env:{PATH:"C:\\bin"}}, win)), ["C:\\bin\\codex.exe"]);
+    await assert.rejects(selectCodexExecutable({}, { candidates: async function* () {}, readVersion: async () => {}, supportedVersions: CODEX_PROFILE.supportedVersions }), { code: "runtime_unavailable" });
+    await assert.rejects(selectCodexExecutable({}, { candidates: async function* () { yield "codex"; }, readVersion: async () => { throw Object.assign(new Error(secret), {code:"unsupported_profile"}); }, supportedVersions: CODEX_PROFILE.supportedVersions }), { code: "unsupported_profile" });
+  } },
+  { name: "156 Codex preflight reports missing or incompatible executables without leaking subprocess diagnostics", async run() {
+    for (const code of ["runtime_unavailable", "unsupported_profile"]) {
+      const adapter = createCodexAppServerAdapter({ selectExecutable: async () => { throw Object.assign(new Error(secret), {code,detectedVersions:["0.130.0",secret]}); } });
+      await assert.rejects(adapter.inspectCapabilities({cwd:path.resolve(".tmp")}), error => error.code === code && !error.message.includes(secret) && (code !== "unsupported_profile" || error.message.includes("0.130.0")));
+    }
+  } },
+  { name: "156 admitted desktop Codex profile retains result, usage, resume and permission semantics", async run() {
+    for (const scenario of ["complete", "native-question", "permission:item/commandExecution/requestApproval", "permission:item/fileChange/requestApproval", "permission:item/permissions/requestApproval"]) {
+      const p = codexFixture({version:"0.162.0-alpha.2",scenario});
+      const result = await p.adapter.drive(p.brief,p.options);
+      assert.equal(result.cliVersion,"0.162.0-alpha.2");
+      assert.equal(result.outcome, scenario === "complete" ? "done" : scenario === "native-question" ? "needs-input" : "failed");
+      if (scenario.startsWith("permission:")) assert.equal(result.failureReason,"operator_action_required");
+      released(p);
+    }
+  } },
   ...["ordinary", "split", "coalesced", "interleaved", "unknown", "notification-burst"].map(delivery => ({ name: `154/02 task00 — attributable phase input and completed result: ${delivery}`, async run() {
     const p = codexFixture({ delivery }); const identities = [], usage = [];
     const result = await p.adapter.drive(p.brief, { ...p.options, onIdentity: async id => identities.push(id), onUsage: async value => usage.push(value) });

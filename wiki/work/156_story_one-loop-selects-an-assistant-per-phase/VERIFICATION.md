@@ -7,6 +7,43 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Windows Codex startup correction — 2026-10-09
+
+The reported `runtime_unavailable` was reproduced as an executable-discovery gap:
+normal Windows terminals expose the npm `codex.cmd`, while the adapter tried only
+`codex.exe`. The npm installation is 0.130.0 and advertises the older model catalogue.
+The registered desktop installation is 0.162.0-alpha.2 and advertises gpt-6-astra/high.
+
+AOF now resolves npm launchers to native executables and checks admitted versions.
+If PATH contains no compatible installation, it discovers the registered Windows
+desktop application. Explicit binary choices never fall back. Native processes
+still launch directly with `shell: false`. Failure diagnostics distinguish missing
+executables from unsupported versions. The prerelease version parser and allowlist
+admit exactly 0.162.0-alpha.2 alongside 0.160.0, rather than admitting arbitrary versions.
+
+Evidence:
+
+- Live Astra/high structured completion through the production adapter passed on
+  0.162.0-alpha.2, including identity and usage callbacks.
+- Native thread read and a second live turn resuming the same identity passed.
+- Seven request/question/usage/permission-refusal payloads match JSON schemas
+  emitted by that installed CLI. Its blocking question shape includes `isBlocking`;
+  the older 0.130.0 shape does not, and remains unsupported.
+- Native model preflight in `language-tutor`, with IDE paths removed from PATH,
+  resolved the user's exact flags to Astra/high, Sonnet/high, Astra/high.
+- The same project command with `--dry-run --json` returned success. Because that
+  item is a backlog target, this is a promotion preview, not a driven loop.
+- All 75 focused executable-discovery, protocol, phase and architecture checks passed.
+
+The schema-generation method follows the [official App Server documentation](https://learn.chatgpt.com/docs/app-server#message-schema).
+No CLI was installed, no PATH or credentials were changed, and no actual work loop
+was started on the user's project. Live protocol checks used an empty temporary
+directory with a no-tools/no-file-changes prompt. Full mixed-loop acceptance remains separate.
+
+Raw evidence: `.tmp/156-native-live-evidence.json`, `.tmp/156-native-schema-evidence.json`,
+`.tmp/156-language-tutor-native-preflight.json`, `.tmp/156-language-tutor-preflight.json`,
+and `.tmp/156-codex-launch-tests.log`.
+
 ## Model-only routing correction — 2026-10-09
 
 The operator now selects only models and effort. The loop and standalone drive
@@ -91,11 +128,8 @@ Local raw evidence: `.tmp/156-focused-tests.log`, `.tmp/156-final-unit-tests.log
 ## Remaining acceptance
 
 - A live Astra/high → Sonnet/high loop has not been run for this change.
-- A read-only local capability preflight found the current IDE/npm Codex CLI is
-  `0.130.0`; the installed desktop app bundles `0.162.0-alpha.2`. The existing AOF
-  profile admits only `0.160.0`, so both currently available binaries are refused
-  before a model turn. No compatibility allowlist was widened or CLI installed.
-  A supported CLI or separately proven profile update is required for live testing.
+- The earlier CLI compatibility blocker is resolved by the Windows startup
+  correction above; full mixed-loop acceptance still requires its own evidence.
 - The updated configuration editor has build and API roundtrip evidence, not a new
   browser visual acceptance run.
 - The repository-wide clean-worktree sharded gate has not been rerun for story 156.
