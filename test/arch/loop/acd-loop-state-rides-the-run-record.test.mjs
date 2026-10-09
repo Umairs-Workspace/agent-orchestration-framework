@@ -34,14 +34,16 @@ async function modulesUnder(dir) {
   return out;
 }
 
-function trackedFilesUnder(dir) {
+function sourceFilesUnder(dir) {
   const rel = path.relative(root, dir).replaceAll("\\", "/");
   // Account for unstaged deletions too. Removing a file changes the pinned digest below;
   // the check must measure that change rather than fail while opening the retired lockfile.
   const deleted = new Set(execFileSync('git', ['ls-files', '--deleted', '-z', '--', rel], {
     cwd: root, encoding: 'utf8', windowsHide: true,
   }).split('\0').filter(Boolean));
-  return execFileSync("git", ["ls-files", "-z", "--", rel], {
+  // 154/10: new source is part of the working tree before it is staged too.
+  // Otherwise a new component is invisible here until the verification snapshot.
+  return execFileSync("git", ["ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", rel], {
     cwd: root,
     encoding: "utf8",
     windowsHide: true,
@@ -54,8 +56,8 @@ async function normalizedDigest(file) {
 }
 
 // THE `ui/` FREEZE, lifted into one assertion over (path, content) pairs (131/05 task 03), so a case
-// can hand it an edited tree in memory and watch it refuse. The tree is git's TRACKED list read from
-// the working tree: path then LF-normalised content, in path order.
+// can hand it an edited tree in memory and watch it refuse. The tree is git's tracked and new files read from
+// the working tree, including new nonignored source: path then LF-normalised content, in path order.
 async function uiTreePairs() {
   const manifest = JSON.parse(await readFile(path.join(root, "apps/ui/package.json"), "utf8"));
   // Include the new public development helper before it enters the Git index too.
@@ -64,7 +66,7 @@ async function uiTreePairs() {
   // They are excluded, not re-pinned: the digest below is the one pinned before the tests moved in, and every file
   // under `apps/ui/src/` plus the manifest is still hashed.
   const uiTests = path.join(root, "apps", "ui", "test") + path.sep;
-  const frozen = trackedFilesUnder(path.join(root, "apps", "ui")).filter((file) => !file.startsWith(uiTests));
+  const frozen = sourceFilesUnder(path.join(root, "apps", "ui")).filter((file) => !file.startsWith(uiTests));
   const files = [...new Set([...frozen, ...publicFiles])].sort((left, right) => left < right ? -1 : left > right ? 1 : 0);
   return Promise.all(files.map(async (file) => [path.relative(root, file).replaceAll("\\", "/"), await readFile(file, "utf8")]));
 }
@@ -187,10 +189,25 @@ function assertUiFrozen(pairs) {
   // `TasksTab.tsx` (new, 134: the TASKS tab moved out whole, with its rule grouping), `DetailPanel.tsx` (+2 −96:
   // the import and the mount stay) and `api.ts` (+3 −1: `TaskScenario.rule`). What it reads is a scenario's
   // rule title on the tasks route. No run-record key, cycle, level or loop state is read.
-  assert.equal(hash.digest("hex"), "af02d79e4a94520bd3d4b1895b70e5702999edb8b5d51edbd791bc619c92c390", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 154/10 (ADR-008; DESIGN /config), measured against 154/09:
+  // exactly App.tsx (+scope-load guard, settings mount and global explanation)
+  // and RuntimeSettings.tsx (new configuration-only form with checked load/save payloads), both under apps/ui/src/config/.
+  // No board, fleet, manifest, style, run-record read or execution route changes.
+  // Native inputs save only /api/config/sections; no loop face or sidecar store.
+  // The new component is in the census before staging, and the existing one-character
+  // mutation probe still checks every source, including this new region.
+  assert.equal(hash.digest("hex"), "68c869f3b3cd884595d9926e07f3f3945dad05a52d1aa2f211446d9833b07237", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
+  {
+    name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): 154/10 the new execution config region is in the frozen source census before staging",
+    run: async () => {
+      const pairs = await uiTreePairs();
+      assert.ok(pairs.some(([rel]) => rel === "apps/ui/src/config/RuntimeSettings.tsx"));
+      assertUiFrozen(pairs);
+    },
+  },
   {
     name: "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): brief.loop round-trips unchanged through work:run-status with exactly ten keys",
     run: async () => {
@@ -285,7 +302,18 @@ export const archTests = [
         // Plan 01 moves only the strict freshness predicate to contracts; the store returns the same function.
         // 142/06 exports the existing pure retry predicates by identity for framework module ceilings.
         // Their bodies and the run writer are unchanged; the public factory returns those same functions.
-        ["packages/execution/src/runs.mjs", "812a7624917cdc50fa7aeec3a0dd1985d99486956d170cdcb8c1b53eb98685e1"],
+        // RE-PINNED by 154/01 (ADR-002): an opt-in execution envelope is validated before mint,
+        // preserved on read, and pinned on retry. Absence retains the seventeen-key legacy
+        // record and original native identity; actual-store scenarios prove that shape and
+        // refused retries preserve prior bytes. No state edge, board reader or UI file changed.
+        // RE-PINNED by 154/06 (ADR-001/004): native question tokens and choices ride
+        // the existing ask ledger; native session writes can stamp an explicit cold-fix
+        // reason, and native settlement excludes Claude transcripts. Legacy record
+        // keys and state edges remain unchanged and are exercised by the loop suites.
+        // RE-PINNED by 154/08 (ADR-007): metadata in brief.runtimeObservation,
+        // retry-local facts and serialized item writes. Seventeen legacy keys and
+        // five state edges still pass; board/UI pins and Claude spend are unchanged.
+        ["packages/execution/src/runs.mjs", "c13360ed6a43dd1bf45474fae7aadf244785b7a61ecbf7563856f397a6b061f5"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

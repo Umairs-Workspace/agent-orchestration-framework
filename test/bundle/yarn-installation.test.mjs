@@ -68,8 +68,11 @@ export const yarnInstallationTests = [
         'graph-normalize.mjs': ['node:path', 'node:fs'],
         'graphify.mjs': ['node:child_process', 'node:fs', 'node:path'],
         'memory.mjs': ['@aof/contracts/error'],
-        'memory/local-retrieval.mjs': ['@aof/work/ref-scope'],
-        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
+        // 154/09: the pure extractor catalog raises the shared coded error; no I/O/provider port.
+        'graphify-backends.mjs': ['@aof/contracts/error'],
+        'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
+        // 148/ADR-001: the lesson grammar and its vocabulary have one home, in @aof/work.
+        'memory/local-indexing.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/work/declared-id', '@aof/work/memory-vocabulary', '@aof/work/ref-scope', '@aof/foundation/fs', '@aof/foundation/markdown', '@aof/foundation/text'],
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],
@@ -102,12 +105,16 @@ export const yarnInstallationTests = [
         'terminal-sessions.mjs': ['node:fs/promises', 'node:path'],
         'pty.mjs': ['node:module', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
+        'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
+        'runtime-selection.mjs': ['@aof/contracts/loop-bounds'],
+        // 154/ADR-001: the session adapter owns native availability and bounded ANSI decoding.
+        'runtime-session.mjs': ['node:fs/promises', 'node:path', 'node:util'],
         'screen.mjs': ['@xterm/headless'],
         'session-screen.mjs': ['@aof/contracts/loop-bounds'],
         'claude-screens.mjs': ['@aof/contracts/loop-bounds'],
         'claude-trust.mjs': ['node:os', 'node:path', 'node:fs/promises', 'node:crypto'],
         'worktrees.mjs': ['node:child_process', '@aof/foundation/git-args'],
-        'bounded-process.mjs': ['node:child_process', 'node:fs'],
+        'bounded-process.mjs': ['node:child_process', 'node:fs', 'node:path'],
       } : name === 'mesh' ? {
         "artifact-sync.mjs": ["node:fs/promises","node:path","@aof/work/artifacts"],
         "node-identity.mjs": ["node:path","node:crypto","@aof/foundation/fs","@aof/foundation/text","node:fs/promises"],
@@ -164,6 +171,9 @@ export const yarnInstallationTests = [
         'terminal-mirror.mjs': ['ws'],
         'worktrees.mjs': ['node:path', '@aof/execution/worktrees', '@aof/foundation/git-args', '@aof/foundation/text'],
       } : name === 'work-loop' ? {
+        // 154/06: the extracted invocation helper reuses the shell's contract leaves;
+        // this exact file gains no platform, provider or assembled-core permission.
+        'commands/runtime-invocation.mjs': ['@aof/contracts/error', '@aof/contracts/loop-bounds'],
         'dispatch.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
         'commands/dispatch.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
         'trigger/declaration.mjs': ['node:path', 'node:fs/promises'],
@@ -174,7 +184,8 @@ export const yarnInstallationTests = [
         'stop.mjs': ['@aof/contracts/loop-bounds'],
         'cycle.mjs': ['node:fs/promises', 'node:path', 'node:fs', '@aof/contracts/loop-bounds'],
         'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path'],
-        'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds'],
+        // 155/00: the drive composes its mode flag from the session chain's contract leaf.
+        'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/agent-mode'],
         'loop.mjs': ['node:crypto', 'node:child_process', 'node:fs/promises', 'node:os', 'node:path', 'node:util', '@aof/contracts/loop-bounds', '@aof/contracts/error'],
         'ask-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'stop-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
@@ -221,6 +232,8 @@ export const yarnInstallationTests = [
         'commands/item-status.mjs': ['node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs'],
         'commands/continue.mjs': ['@aof/contracts/error'],
         'commands/resume.mjs': ['@aof/contracts/error', '@aof/contracts/loop-bounds'],
+        // 152: the promote candidate list reads the backlog record docs it ranks.
+        'promote/candidates.mjs': ['node:path', 'node:fs/promises'],
         'commands/regression-gate.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error', '@aof/foundation/fs'],
         'regression-record.mjs': ['node:path'],
         'acceptor/source-units.mjs': ['node:path', 'node:fs/promises', 'picomatch'],
@@ -264,6 +277,7 @@ export const yarnInstallationTests = [
         'rubric.mjs': ['node:path'],
         'loop-record.mjs': ['node:path'],
         'depends.mjs': ['node:path'],
+        'lesson-meta.mjs': ['node:path'],
         'diagrams.mjs': ['node:path'],
         'controls.mjs': ['node:path'],
         'census.mjs': ['node:path', 'node:fs/promises'],

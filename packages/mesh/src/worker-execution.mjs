@@ -1,3 +1,4 @@
+import { executionForPhase } from "@aof/contracts/loop-bounds";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { rename, readdir, stat } from "node:fs/promises";
@@ -6,7 +7,7 @@ import { loopBoundsFromConfig } from "@aof/contracts/loop-bounds";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createWorkerExecutionServices({ findWork, listItems, loadWorkspace, readRuns, buildRunAttribution, captureSessionIdOnRecord, transitionRunComplete, transitionRunStart, reportAssignmentSettled, reportTerminalResumeRefused, createMeshParkResume, directivePhase, readWorkerAsk, addWorktree, reuseWorktreeOnBranch, removeWorktree, meshWorktreesRoot, meshWorktreePath, meshItemBranchName, localBranchExists, remoteBranchExists, adoptRemoteBranch, ensureCommitAvailable, advanceBranchToBase, commitWorktreeChanges, resolveRefInWorktree, worktreeWorkDir, resolveWorkspaceId, defaultResolveWorkspaceCloneUrl, defaultSpawnRuntime, driveInteractiveClaudeSession, compileBriefForItem, reportDegrade, consumeHeartbeatQueue, readConsumedHeartbeatAt, composeDirectiveLaunchOptions, readDirectiveCommand, readDirectiveLaunch, admitWorkspaceRepo, resolveScopedCheckout, meshCheckoutPath, meshCheckoutsRoot, buildAskpassShim, redactCredentialFromText }) {
+export function createWorkerExecutionServices({ settleStrandedRuns, nativeExecution, findWork, listItems, loadWorkspace, readRuns, buildRunAttribution, captureSessionIdOnRecord, transitionRunComplete, transitionRunStart, reportAssignmentSettled, reportTerminalResumeRefused, createMeshParkResume, directivePhase, readWorkerAsk, addWorktree, reuseWorktreeOnBranch, removeWorktree, meshWorktreesRoot, meshWorktreePath, meshItemBranchName, localBranchExists, remoteBranchExists, adoptRemoteBranch, ensureCommitAvailable, advanceBranchToBase, commitWorktreeChanges, resolveRefInWorktree, worktreeWorkDir, resolveWorkspaceId, defaultResolveWorkspaceCloneUrl, defaultSpawnRuntime, driveInteractiveClaudeSession, compileBriefForItem, reportDegrade, consumeHeartbeatQueue, readConsumedHeartbeatAt, composeDirectiveLaunchOptions, readDirectiveCommand, readDirectiveLaunch, admitWorkspaceRepo, resolveScopedCheckout, meshCheckoutPath, meshCheckoutsRoot, buildAskpassShim, redactCredentialFromText }) {
 // src/mesh/worker-execution.mjs — the worker's ACCEPTED-DIRECTIVE handler (milestone
 // 35 / story 02, ADR-004; tasks 00-03). This is the handler `client.onDirective(...)`
 // registers (worker-stream-client.mjs, story 01): given a PARSED `{ kind:"directive",
@@ -662,7 +663,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
     // running+needs-input, uses the durable path too because applying it releases
     // capacity; it is never published while the PTY is alive.
     sendEffectStep,
-    spawnRuntime = defaultSpawnRuntime,
+    spawnRuntime: spawnSelectedRuntime = defaultSpawnRuntime,
     now = () => new Date().toISOString(),
     exec,
     driver,
@@ -894,6 +895,22 @@ function createMeshWorkerExecutionHandler(options = {}) {
     }
     ws = admission.ws;
 
+    let execution = null;
+    let scopedEarly = null;
+    if (directive.execution !== undefined) {
+      try {
+        scopedEarly = await resolveScopedCheckout(ws, { workspaceId, globalWorkStoreOptions });
+        if (scopedEarly.refused === true) throw assignmentError(scopedEarly.code, scopedEarly.detail);
+        ws = scopedEarly.ws;
+        if (typeof nativeExecution?.preflight !== "function") throw assignmentError("runtime-capabilities-unavailable", "worker cannot inspect execution envelopes");
+        execution = await nativeExecution.preflight(directive.execution, ws, options);
+      } catch (error) {
+        reportAssignmentFailure(assignmentId, error.code ?? "invalid-record", error.message);
+        await reportSettled(assignmentId, "failed", { code: error.code ?? "invalid-record" });
+        return;
+      }
+    }
+
     // accepted — the repo guard passed; the directive is genuinely being acted on.
     await sendAssignmentStatus?.(assignmentId, "accepted", {});
 
@@ -901,7 +918,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
     // 2026-07-24 two-machine soak, VERIFICATION F23 — the reasoning is at the seam now). Sent
     // AFTER the `accepted` frame above, exactly as it was: a checkout that cannot be loaded
     // settles `accepted -> failed`, which is why this is a second call and not one.
-    const scoped = await resolveScopedCheckout(ws, { workspaceId, globalWorkStoreOptions });
+    const scoped = scopedEarly ?? await resolveScopedCheckout(ws, { workspaceId, globalWorkStoreOptions });
     if (scoped.refused === true) {
       reportAssignmentFailure(assignmentId, scoped.code, scoped.detail);
       await reportSettled(assignmentId, "failed", { code: scoped.code });
@@ -1000,7 +1017,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
       }
       worktreePath = reuseDoor
         ? await reuseWorktreeOnBranch(ws.projectRoot, assignmentId, branch, { exec })
-        : await addWorktree(ws.projectRoot, assignmentId, commitish, { exec, branch });
+        : await addWorktree(ws.projectRoot, assignmentId, commitish, { exec, branch, ...(execution == null ? {} : { execution }) });
       // 2026-07-27 (the wrong-base dispatch) — the worker's OWN half of the
       // decision record: which base this worktree was actually built from. Rides
       // the launcher's log channel (durable sink + the control's node_logs ring),
@@ -1107,6 +1124,8 @@ function createMeshWorkerExecutionHandler(options = {}) {
       }
 
       const nowIso = resolveNow();
+      const nativePhase = execution == null ? null : await nativeExecution.preparePhase({ item, worktreeItem, worktreePath, ws, execution, command: directiveCommand, launchDeclared }, options);
+      if (!launchDeclared && execution != null) execution = executionForPhase(execution, nativePhase);
       // The mint rides the transition seam (m42 wave (d) leg d4, port 1 — the
       // sweep's second half, matching d2's completeRun sweep): `run.started` is
       // journaled beside the fact. NO `workspace` is passed, exactly as the
@@ -1120,7 +1139,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
       // workspaceId — never a cwd-derived one (TECH_DEBT item 4).
       ({ record: runRecord } = await transitionRunStart(
         item,
-        { now: nowIso, node: nodeId, brief: { assignmentId, itemRef } },
+        { now: nowIso, node: nodeId, brief: { assignmentId, itemRef, ...(execution == null ? {} : { phase: nativePhase }), ...(execution?.runtime !== "codex" ? {} : { nativeAskContext: { workspaceId } }) }, ...(execution == null ? {} : { execution }) },
         {
           lock: { workspaceId, byAssignment: assignmentId, globalWorkStoreOptions: globalWorkStoreOptions ?? {} },
           journalOptions: { env: globalWorkStoreOptions?.env },
@@ -1156,6 +1175,10 @@ function createMeshWorkerExecutionHandler(options = {}) {
       // terminal-FOR-THIS-INVOCATION state (fully exited, OR a detected NEEDS_INPUT
       // sentinel that this invocation deliberately ends on) — cleanup below never
       // races a live child whose cwd is inside the worktree.
+      const spawnRuntime = execution?.runtime === "codex" && !launchDeclared
+        ? (_brief, driverOptions) => nativeExecution.drive({ item, worktreeItem, worktreePath, ws, runRecord, phase: nativePhase }, driverOptions)
+        : spawnSelectedRuntime;
+      const runtimeOptions = execution == null ? {} : nativeExecution.launchOptions(execution, nativePhase, { options, globalWorkStoreOptions, launchDeclared });
       const outcome = await spawnRuntime(
         { itemRef, worktreeCwd: worktreePath, task: item?.title ?? itemRef, command: directiveCommand, ...(await phaseBriefContext(itemRef, worktreeItem, directiveCommand)) },
         {
@@ -1166,6 +1189,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
           // nothing else moves. Terminal spawn, output chunking, completion detection and
           // the withdraw/reclaim paths all sit above `{ bin, args, env }` and are untouched.
           ...launchOptions,
+          ...runtimeOptions,
           driver,
           ptySpawn,
           which,
@@ -1281,7 +1305,8 @@ function createMeshWorkerExecutionHandler(options = {}) {
         // This transition releases scheduler capacity. Put it on the existing
         // durable assignment-report outbox so {sent:false} means "still owed",
         // never "parked anyway".
-        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input", ask: await readWorkerAsk({ worktreePath, sessionId, phase: directivePhase(directiveCommand), now: resolveNow, env: options.env, itemDir: item?.dir ?? null, since: runRecord.createdAt ?? null }) });
+        const ask = outcome.native === true ? outcome.nativeAsk ?? null : await readWorkerAsk({ worktreePath, sessionId, phase: directivePhase(directiveCommand), now: resolveNow, env: options.env, itemDir: item?.dir ?? null, since: runRecord.createdAt ?? null });
+        await reportSettled(assignmentId, "running", { runId: runRecord.runId, sessionId, code: "needs-input", ask });
         onCleanup(assignmentId, "needs-input", worktreePath);
         return;
       }
@@ -1373,55 +1398,9 @@ function createMeshWorkerExecutionHandler(options = {}) {
   };
 }
 
-// settleStrandedRunRecords(stranded, options) — 2026-07-27, the ghost-record
-// family's LAST member (measured the same day, on the first daemon restart after
-// the withdraw fix shipped): the startup reclaim reported a stranded assignment
-// `failed/daemon-restarted` and left its run record `running` — the duplicate-run
-// guard then walls the item exactly as the withdraw case did. Run-record
-// settlement is part of EVERY terminal path, and this is the startup path's
-// settle: for each stranded worktree, resolve its checkout, find the running run
-// record minted for that assignmentId (the bracket stamps brief.assignmentId),
-// and complete it failed/runtime_offline — the retryable infra classification, the
-// same one the autonomous loop's own reclaim uses for a crashed host. Idempotent
-// (an absent or already-terminal record is a logged no-op) and NEVER throws — a
-// settle fault is reported per entry and the next entry still settles.
+// Startup settlement shares the parked-run owner; the public worker facade stays stable.
 async function settleStrandedRunRecords(stranded, options = {}) {
-  const { globalWorkStoreOptions, now, onLog } = options;
-  const resolveNow = () => (typeof now === "function" ? now() : now ?? new Date().toISOString());
-  const log = (level, message) => {
-    try {
-      onLog?.({ code: "startup-reclaim", level, message });
-    } catch (error) {
-      reportDegrade("mesh-worker-execution", error);
-    }
-  };
-  for (const entry of Array.isArray(stranded) ? stranded : []) {
-    const assignmentId = entry?.assignmentId;
-    if (typeof assignmentId !== "string" || assignmentId.length === 0) continue;
-    try {
-      const checkoutRoot = checkoutRootForWorktree(entry.worktreePath);
-      const ws = await loadWorkspace(checkoutRoot, undefined, { env: globalWorkStoreOptions?.env });
-      const items = await listItems(ws.workDir);
-      let settled = false;
-      for (const item of items) {
-        const ghost = (await readRuns(item)).find(
-          (run) => run.state === "running" && run?.brief?.assignmentId === assignmentId,
-        ) ?? null;
-        if (ghost == null) continue;
-        await transitionRunComplete(
-          item,
-          { runId: ghost.runId, outcome: "failed", failureReason: "runtime_offline", now: resolveNow() },
-          { journalOptions: { env: globalWorkStoreOptions?.env } },
-        );
-        log("info", `stranded assignment ${assignmentId}: run ${ghost.runId} settled failed/runtime_offline (daemon restarted) — the duplicate-run guard is clear`);
-        settled = true;
-        break;
-      }
-      if (!settled) log("info", `stranded assignment ${assignmentId}: no running run record to settle`);
-    } catch (error) {
-      log("warn", `stranded assignment ${assignmentId}: settling its run record failed: ${String(error?.message ?? error)}`);
-    }
-  }
+  return settleStrandedRuns(stranded, { ...options, checkoutRootForWorktree });
 }
 
 // createMeshWorkerWithdrawHandler(options) → handler(frame) — the function
@@ -1698,6 +1677,22 @@ function createMeshWorkerTerminalResumeHandler(options = {}) {
       }
       // A continued run mints nothing (and raises no run.started fact).
       runRecord = priorRunning;
+      let nativeResumeItem = null;
+      if (Object.hasOwn(runRecord, "execution")) {
+        try {
+          await nativeExecution.preflight(runRecord.execution, ws, options);
+          if (runRecord.execution.runtime === "codex") {
+            await nativeExecution.prepare(ws.projectRoot, worktreePath);
+            nativeResumeItem = await resolveRefInWorktree(ws.projectRoot, ws.workDir, worktreePath, itemRef);
+            if (nativeResumeItem == null) throw assignmentError("assignment-ref-unresolved", "native phase subject is missing in the worktree");
+            await nativeExecution.inspectPhase({ item, worktreeItem: nativeResumeItem, worktreePath, ws, execution: runRecord.execution, phase: runRecord.brief.phase ?? "continue" }, options);
+            if (!await nativeExecution.canResume(sessionId, worktreePath, options)) throw assignmentError("native-resume-unavailable", "recorded native thread is unavailable");
+          }
+        } catch (error) {
+          await resume.refuse(runRecord, error.code ?? "runtime-capabilities-unavailable", error.message);
+          return;
+        }
+      }
       if (!await resume.claim(runRecord)) {
         log("info", `session ${sessionId}: duplicate answer for park ${parkId} is a no-op; assignment ${assignmentId} already handled it`);
         return;
@@ -1716,7 +1711,11 @@ function createMeshWorkerTerminalResumeHandler(options = {}) {
       log("info", `session ${sessionId} RESUMING (assignment ${assignmentId}, item ${itemRef}, run ${runRecord.runId}): claude --resume in ${worktreePath}`);
 
       if (await checkpointCrashes("before-spawn")) return;
-      const outcome = await spawnRuntime(
+      const nativeResume = runRecord.execution?.runtime === "codex";
+      const launchRuntime = nativeResume
+        ? (_brief, driverOptions) => nativeExecution.drive({ item, worktreeItem: nativeResumeItem, worktreePath, ws, runRecord, phase: runRecord.brief.phase ?? "continue", answer: frame.answer }, driverOptions)
+        : spawnRuntime;
+      const outcome = await launchRuntime(
         // A resume re-attaches to the conversation; the operator's answer (131/04), when the frame
         // carries one, is the only thing typed. Without one the driver's null-guarded write is idle.
         { itemRef, worktreeCwd: worktreePath, task: item?.title ?? itemRef, command: frame.answer?.text ?? null },
@@ -1724,6 +1723,7 @@ function createMeshWorkerTerminalResumeHandler(options = {}) {
           ptySpawn: options.ptySpawn,
           which: options.which,
           env: options.env,
+          ...(nativeResume ? { codexBin: options.codexBin } : {}),
           resumeSessionId: sessionId,
           heartbeat: { itemDir: item.dir, runId: runRecord.runId },
           deadlinePolicy: options.deadlinePolicy ?? loopBoundsFromConfig(ws),
@@ -1746,13 +1746,14 @@ function createMeshWorkerTerminalResumeHandler(options = {}) {
           watchTranscriptSessionId: async () => sessionId,
           watchTranscriptCompletion: options.watchTranscriptCompletion,
           onPtyLive: (kill, write) => {
-            resume.markProcessStarted(item, runRecord);
+            if (!nativeResume) resume.markProcessStarted(item, runRecord);
             livePtyKills.set(assignmentId, kill);
             if (typeof write === "function") livePtyWrites.set(assignmentId, write);
             Promise.resolve(
               sendAssignmentStatus?.(assignmentId, "running", { runId: runRecord.runId, code: "resumed" }),
             ).catch((error) => reportDegrade("mesh-worker-execution", error));
           },
+          ...(nativeResume ? { onTurnStarted: () => resume.markProcessStarted(item, runRecord) } : {}),
           // Fires immediately with the RESUMED id (injected above) — bind input
           // and re-affirm the id on the row's running frame.
           onSessionIdCaptured: (sid) => {

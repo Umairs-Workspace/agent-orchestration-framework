@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Install ACD into this repo and give it a config — runs `aof work init` (the CLI render) first, then analyses the project to author `.aof/aof.config.json`: the graphify memory backend active by default, and a `work.tags` vocabulary inferred from what this repo actually contains.
+argument-hint: "[dir] [--force] [--runtime claude,codex]"
 aof-invocation: /aof:init
 aof-runtime: claude
 ---

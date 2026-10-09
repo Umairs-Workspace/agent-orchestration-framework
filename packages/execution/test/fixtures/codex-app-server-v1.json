@@ -1,0 +1,11 @@
+{
+  "cliVersion": "0.160.0",
+  "profile": "codex-app-server-v1",
+  "nativeThreadId": "native-thread-α",
+  "nativeTurnId": "native-turn-1",
+  "initialize": { "userAgent": "codex-cli/0.160.0", "platformFamily": "windows", "platformOs": "windows", "codexHome": "fixture-only" },
+  "models": [{ "id": "native-fixture", "model": "native-fixture", "isDefault": true, "defaultReasoningEffort": "low", "supportedReasoningEfforts": [{ "reasoningEffort": "high", "description": "Fixture level" }] }],
+  "complete": { "status": "complete", "question": null, "failureReason": null },
+  "question": { "isBlocking": true, "itemId": "native-question-item", "threadId": "native-thread-α", "turnId": "native-turn-1", "questions": [{ "id": "business-choice", "header": "Choice", "question": "Which behaviour should this phase produce?", "isOther": true, "isSecret": false, "options": [{ "label": "First", "description": "First behaviour" }, { "label": "Second", "description": "Second behaviour" }] }] },
+  "usage": { "threadId": "native-thread-α", "turnId": "native-turn-1", "tokenUsage": { "total": { "inputTokens": 21, "cachedInputTokens": 7, "outputTokens": 5, "reasoningOutputTokens": 2, "totalTokens": 26 }, "last": { "inputTokens": 21, "cachedInputTokens": 7, "outputTokens": 5, "reasoningOutputTokens": 2, "totalTokens": 26 }, "modelContextWindow": 1000 } }
+}

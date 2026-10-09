@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Scan the work stream chronologically — recent items to catch up on delivery, or filter by type / status / milestone.
+argument-hint: "[N] [--type milestone|story|task] [--status X] [--milestone NN]"
 aof-invocation: /aof:recent
 aof-runtime: claude
 ---

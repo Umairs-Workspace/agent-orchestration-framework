@@ -28,6 +28,7 @@ export function assembleSync({ dslServices, workspaceServices }) {
     });
     const actions = await planApplyActions(desiredOutputs, previousLock, {
       targetDir: projectDir,
+      global: Boolean(options.global),
       force: Boolean(options.force)
     });
     const manifest = createLockManifest({

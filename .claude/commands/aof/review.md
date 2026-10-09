@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Review the operator's own build of a story — run its tests, walk continue's gate ladder and review lanes over the change, and hand every finding back. Builds nothing and fixes nothing; a clean review moves the story to in-review for aof:verify.
+argument-hint: "<story or task ref> [--solo | --orchestrated]"
 aof-invocation: /aof:review
 aof-runtime: claude
 ---
@@ -21,8 +22,8 @@ chore** — name the ref and its type, mint nothing, and stop. A milestone's sto
 at a time, by their own refs.
 
 **Execution mode.** As continue resolves it: `work.agents.mode` governs, **an unset
-`work.agents.mode` resolves to orchestrated**, and `--solo` or `--orchestrated` overrides it for the
-run; the two together are contradictory, so STOP before any role runs. Orchestrated spawns the
+`work.agents.mode` resolves to solo**, and `--solo` or `--orchestrated` overrides it for the run;
+the two together are contradictory, so STOP before any role runs. Orchestrated spawns the
 review lenses; solo performs each lens in this session, in turn.
 </config>
 

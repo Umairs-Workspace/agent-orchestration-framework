@@ -10,6 +10,7 @@
 // that four suites in this tree export, which a one-binding-per-file index would halve.
 
 import { archTests as acdNoClobberWithoutForceTests } from "./acd-no-clobber-without-force.test.mjs";
+import { archTests as codexOutputOwnershipTests } from "./acd-codex-output-ownership.test.mjs";
 import { archTests as acdUnifiedLockSectionsTests } from "./acd-unified-lock-sections.test.mjs";
 // milestone 12 — managed tool provisioning (story 04: the FIVE provisioning fitness
 // functions of ADR-005 — store-first resolution, AOF_GLOBAL_HOME-honoured/no-hardcoded
@@ -53,6 +54,7 @@ import { archTests as acdCacheStalenessSinglePredicateTests } from "./acd-cache-
 import { archTests as acdSqliteRuntimeHasOneHomeTests } from "./acd-sqlite-runtime-has-one-home.test.mjs";
 
 export const tests = [
+  ...codexOutputOwnershipTests,
   ...acdNoClobberWithoutForceTests,
   ...acdUnifiedLockSectionsTests,
   ...acdToolStoreResolutionOrderTests,

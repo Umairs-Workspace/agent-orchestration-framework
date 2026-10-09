@@ -23,9 +23,9 @@ import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 // FF-13102, structural then fixture. `readLastAssistantTurn` is defined in `packages/core/src/work/observe.mjs`
 // and imported by name by the driver; `ask.mjs` reaches it through `readAskQuestion`, imported
 // from `observe.mjs` by resolved specifier, and walks no transcript itself (task 00 ruling 2). No
-// other `packages/core/src/**` module both `JSON.parse`s and reads `stop_reason` — the driver's
-// `defaultSpawnRuntime` is cut out first and named: it parses the headless runtime's ONE stdout
-// document, never transcript lines. The driver's export set stays 17 (`53/FF-5302`), and
+// other runtime module both `JSON.parse`s and reads `stop_reason`. 154/02 retires the driver's
+// headless stdout parse, so the old exception is removed: the driver is scanned in full.
+// The driver's export set stays 17 (`53/FF-5302`), and
 // `NEEDS_INPUT_INSTRUCTION` keeps the sentinel, the four labels and the threshold sentence.
 //
 // FF-13103, fixture. A minted record carries 17 keys with `asks` last and `[]`, and a 16-key one
@@ -43,7 +43,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
 import { dependencySpecifiers } from "../../support/workspace/configured-source.mjs";
-import { functionBody, matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
+import { matchedParenSpan, stripComments, topLevelArguments } from "../../support/source-slice.mjs";
 const answerAsk = _aofApplication.loop.askRequest.answerAsk;
 const openAsk = _aofApplication.loop.askRequest.openAsk;
 const answerRunAsk = _aofApplication.execution.runs.answerRunAsk;
@@ -80,8 +80,6 @@ const OBSERVE = "packages/work/src/observe.mjs";
 const OBSERVE_ADAPTER = "packages/core/src/application/bindings/work/observe.mjs";
 const DRIVER = "packages/execution/src/session-driver.mjs";
 const ASK = "packages/core/src/application/bindings/loop/ask.mjs";
-// The driver's one non-transcript parse: the headless runtime's stdout document (a codex run).
-const STDOUT_PARSER = "function defaultSpawnRuntime(";
 const DRIVER_EXPORTS = 17; // 53/FF-5302
 const FOUR_LABELS = Object.freeze(["Decision needed:", "Options:", "I would pick:", "What the answer changes:"]);
 const THRESHOLD = "genuine judgment call";
@@ -352,20 +350,19 @@ export const archTests = [
     },
   },
   {
-    name: "arch/131 FF-13102 (acd-loop-ask-single-home): no other src/** module both JSON.parses transcript lines and reads stop_reason — the driver's headless stdout parse is cut out by name",
+    name: "arch/131 FF-13102 (acd-loop-ask-single-home): no other src/** module both JSON.parses transcript lines and reads stop_reason — the retired stdout parser has no exemption",
     run: async () => {
       const units = await srcUnits();
       assertRead("the src/** sweep", units.length, 150);
       const driver = unitOf(units, DRIVER);
-      const stdout = functionBody(driver.code, STDOUT_PARSER);
-      assert.ok(stdout != null && /\bJSON\s*\.\s*parse\s*\(/u.test(stdout), `NOT FOUND: ${STDOUT_PARSER} — the one allowed parse has moved, so the cut would exempt nothing`);
-      const scanners = [];
-      for (const { rel, code } of units) {
-        if (rel === OBSERVE) continue;
-        const body = rel === DRIVER ? code.replace(stdout, "") : code;
-        if (/\bJSON\s*\.\s*parse\s*\(/u.test(body) && /stop_reason/u.test(body)) scanners.push(rel);
-      }
-      assert.deepEqual(scanners, [], `no other src/** module both JSON.parses transcript lines and reads stop_reason — found in: ${scanners.join(", ")}. The transcript has one reader (ADR-002): readLastAssistantTurn in packages/core/src/work/observe.mjs`);
+      assert.match(driver.code, /function\s+defaultSpawnRuntime\s*\(/u, "the legacy dispatch was actually read");
+      assert.doesNotMatch(driver.code, /\bJSON\s*\.\s*parse\s*\(/u, "154/02 removes the old Codex stdout parser");
+      const scanners = entries => entries.filter(({ rel, code }) => rel !== OBSERVE
+        && /\bJSON\s*\.\s*parse\s*\(/u.test(code) && /stop_reason/u.test(code)).map(({ rel }) => rel);
+      assert.deepEqual(scanners(units), [], "the transcript has one reader; no runtime module receives a parser exemption");
+      const planted = units.map(unit => unit.rel === DRIVER
+        ? { ...unit, code: unit.code + '\nfunction rogue(line) { return JSON.parse(line).stop_reason; }' } : unit);
+      assert.deepEqual(scanners(planted), [DRIVER], "the original single-reader claim catches a parser copied into the actual driver");
     },
   },
   {

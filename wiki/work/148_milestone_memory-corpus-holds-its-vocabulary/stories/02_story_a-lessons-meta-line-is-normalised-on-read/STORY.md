@@ -4,10 +4,10 @@ number: 02
 slug: a-lessons-meta-line-is-normalised-on-read
 title: "A lesson's meta line is normalised on read — one vocabulary, the enum token indexed, the qualifier kept as a tag"
 parent: 148
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-06
 schema: 1
 aofVersion: 0.1.0
 adrs: [ADR-001, ADR-002, ADR-003]
@@ -39,7 +39,7 @@ files:
   - .aof/templates/work/shared/OUTCOME.md
   - packages/work/test/memory-vocabulary.suite.mjs
   - packages/work/test/index.mjs
-  - packages/knowledge/test/lesson-meta-normalised.suite.mjs
+  - packages/knowledge/test/memory-meta-normalised.suite.mjs
   - packages/knowledge/test/index.mjs
   - packages/knowledge/test/memory-retrieval.suite.mjs
   - packages/knowledge/test/gap-carries-discharge.suite.mjs
@@ -69,9 +69,9 @@ prompt and the template.
 
 ## Tasks
 
-- [ ] 00 [a lesson's meta value is indexed as its vocabulary word, with the rest as a tag](tasks/00_a-lessons-meta-value-is-indexed-as-its-vocabulary-word-with-the-rest-as-a-tag.feature)
-- [ ] 01 [a gap's status is one of three, and its date and cause are tags](tasks/01_a-gaps-status-is-one-of-three-and-its-date-and-cause-are-tags.feature)
-- [ ] 02 [every record carries tags, and a store before version 2 is stale](tasks/02_every-record-carries-tags-and-a-store-before-version-2-is-stale.feature)
+- [x] 00 [a lesson's meta value is indexed as its vocabulary word, with the rest as a tag](tasks/00_a-lessons-meta-value-is-indexed-as-its-vocabulary-word-with-the-rest-as-a-tag.feature)
+- [x] 01 [a gap's status is one of three, and its date and cause are tags](tasks/01_a-gaps-status-is-one-of-three-and-its-date-and-cause-are-tags.feature)
+- [x] 02 [every record carries tags, and a store before version 2 is stale](tasks/02_every-record-carries-tags-and-a-store-before-version-2-is-stale.feature)
 
 ## Notes
 

@@ -1,0 +1,21 @@
+{
+  "failure": {
+    "sessionId": "01a11cc8-4f65-7f40-bbd0-e75938cafe2b",
+    "reason": "protocol_queue_limit",
+    "nativeTestCommand": "executed successfully before the later validation halt"
+  },
+  "regression": {
+    "notifications": 512,
+    "withoutFix": "failed instead of done",
+    "withFix": "done with native identity and usage retained",
+    "cases": 81,
+    "failed": 0
+  },
+  "validate": [],
+  "doctor": {
+    "healthy": true,
+    "errors": 0,
+    "warnings": 3
+  },
+  "liveConfirmation": "pending"
+}

@@ -34,6 +34,6 @@
      record field with no writer). `**Status:**` stays `open` until a producer/discharge exists. -->
 
 ### <declared-but-unfilled surface, e.g. "warnings_delivered field">
-- **Status:** open            <!-- open | discharged -->
+- **Status:** open            <!-- open | discharged | open-by-decision -->
 - **Discharge condition:** <what makes this gap stop being true — the criterion for promoting it to scheduled work>
 <the gap statement — what is declared and what does not fill it, as product state>

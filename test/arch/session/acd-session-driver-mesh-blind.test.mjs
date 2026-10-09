@@ -130,10 +130,12 @@ export const archTests = [
       // nine nodes previously reached through the core work facade (37 -> 29).
       // Plan 02 adds the explicit per-application path policy, which imports the existing workspace paths.
       // Plan 03 adds the pure core manifest locator, with only builtin imports.
-      assert.ok(graph.seen.size <= 31, `root-inclusive driver reach ${graph.seen.size} exceeds the 142 assembly census of 31`);
+      // 154/02 adds exactly the Codex transport/profile and shared selection/model leaves.
+      assert.ok(graph.seen.has(path.join(root, "packages/execution/src/runtime-events.mjs")), "154/08 adds one pure observation leaf, without a lifecycle import");
+      assert.equal(graph.seen.size, 36, "the 31-module assembly plus five explicitly owned Codex/policy and observation leaves");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/session-driver.mjs"], "the driver package has no transport, work, mesh or core import");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -282,7 +284,22 @@ export const archTests = [
       // 142 security fixes add two leaf helpers, MEASURED by diffing this walker's closure per commit:
       // @aof/foundation/git-args (via execution/worktrees, d0b83a39) and @aof/foundation/text (via mesh
       // node-identity, 5a677e4e). Both import nothing; the driver isolation is unchanged.
-      assert.equal(sinkGraph.seen.size, 121, "Plans 02/03 add the application path policy and pure core manifest locator to the 117-module worker closure; 142 adds git-args and text");
+      // 154/01: runs imports the pure execution policy and its existing session
+      // model leaf. Neither adds I/O, mesh lifecycle or a driver import.
+      for (const file of ["packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-model.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
+      for (const file of ["packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, file)), file);
+      // 154/07: native worker phases reuse the configured drive and pending-question owners.
+      // The measured assembly/import delta is 27 modules; the driver fences above are unchanged.
+      for (const owner of ["packages/core/src/codex-settings.mjs", "packages/work-loop/src/commands/drive.mjs", "packages/work-loop/src/ask-request.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/execution/src/runtime-events.mjs")), "154/08 adds the pure observation owner; no lifecycle dependency");
+      // 155/00: the drive reads the session chain's leaf @aof/contracts/agent-mode (153 -> 154),
+      // which imports only the bounds home; no I/O, lifecycle or driver import.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/contracts/src/agent-mode.mjs")), "155/00 adds the agent-mode chain leaf");
+      // 154/07 D-08: the materialized lane uses the existing guarded item-status
+      // transition. Comparing this walker against ea99c42d adds exactly its binding
+      // and implementation; no driver import or lifecycle denylist changes.
+      for (const owner of ["packages/core/src/application/bindings/effects/item-transitions.mjs", "packages/work/src/item-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 156, "the configured worker facade includes the lane status transition alongside native phases and questions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

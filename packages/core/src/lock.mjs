@@ -1,7 +1,6 @@
-import { createHash, randomUUID } from "node:crypto";
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import path from "node:path";
-import { readJson } from "@aof/foundation/fs";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import { readJson, writeText } from "@aof/foundation/fs";
 
 export const LOCK_VERSION = 2;
 
@@ -51,22 +50,9 @@ export async function mergeLock(lockPath, patch) {
 
 export async function writeLock(lockPath, manifest) {
   const content = `${JSON.stringify(manifest, null, 2)}\n`;
-  await mkdir(path.dirname(lockPath), { recursive: true });
-  const tempPath = path.join(path.dirname(lockPath), `.tmp-${path.basename(lockPath)}-${process.pid}-${Date.now()}-${randomUUID()}`);
-  await writeFile(tempPath, content, "utf8");
-  await renameWithRetry(tempPath, lockPath);
-}
-
-async function renameWithRetry(source, target) {
-  for (let attempt = 0; attempt < 6; attempt += 1) {
-    try {
-      await rename(source, target);
-      return;
-    } catch (error) {
-      if (!["EACCES", "EPERM"].includes(error.code) || attempt === 5) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 25 * (attempt + 1)));
-    }
-  }
+  try { if (await readFile(lockPath, "utf8") === content) return; }
+  catch (error) { if (error.code !== "ENOENT") throw error; }
+  await writeText(lockPath, content);
 }
 
 // ADR-009 (unified lock): read-merge-write — SPREAD the current lock and replace

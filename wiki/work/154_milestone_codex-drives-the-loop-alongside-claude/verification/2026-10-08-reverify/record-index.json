@@ -1,0 +1,34 @@
+{
+  "initialRefresh": [
+    {
+      "args": [
+        "observe",
+        "154/11",
+        "--write",
+        "--if-enabled"
+      ],
+      "status": 0,
+      "stderr": ""
+    },
+    {
+      "args": [
+        "observe",
+        "154",
+        "--write",
+        "--if-enabled"
+      ],
+      "status": 0,
+      "stderr": ""
+    },
+    {
+      "args": [
+        "memory",
+        "ingest"
+      ],
+      "status": 0,
+      "stderr": ""
+    }
+  ],
+  "finalIngest": "reindex: 3273 record(s)",
+  "finalObserve": "CLI-authored milestone snapshot after run completion and milestone acceptance; primary-session spend remains unmeasured."
+}

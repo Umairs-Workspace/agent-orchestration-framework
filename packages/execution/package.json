@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./runtime-events": "./src/runtime-events.mjs",
     "./runs": "./src/runs.mjs",
     "./spend": "./src/spend.mjs",
     "./heartbeats": "./src/heartbeats.mjs",
@@ -12,6 +13,10 @@
     "./terminal-sessions": "./src/terminal-sessions.mjs",
     "./pty": "./src/pty.mjs",
     "./session-driver": "./src/session-driver.mjs",
+    "./runtime-session": "./src/runtime-session.mjs",
+    "./runtime-selection": "./src/runtime-selection.mjs",
+    "./codex-app-server": "./src/codex-app-server.mjs",
+    "./codex-protocol-profile": "./src/codex-protocol-profile.mjs",
     "./terminal/screen": "./src/terminal/screen.mjs",
     "./terminal/session-screen": "./src/terminal/session-screen.mjs",
     "./claude-trust": "./src/claude-trust.mjs",

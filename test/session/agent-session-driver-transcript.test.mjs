@@ -398,10 +398,10 @@ function readerAndProducerTests() {
       run: async () => {
         const driver = stripLikeTheDriverControl(await readFile(DRIVER_SOURCE, "utf8"));
         assert.match(driver, /const\s*\{[^}]*\breadLastAssistantTurn\b[^}]*\}\s*=\s*transcripts/u);
-        const spawnRuntime = driver.slice(driver.indexOf("function defaultSpawnRuntime("));
-        assert.equal(occurrences(driver, "JSON.parse("), occurrences(spawnRuntime, "JSON.parse("), "the one JSON.parse left is the codex stdout parse in defaultSpawnRuntime");
-        assert.equal(occurrences(driver, "stop_reason"), 1, "one stop_reason read is left in the driver");
-        assert.equal(occurrences(spawnRuntime, "stop_reason"), 1, "…and it is defaultSpawnRuntime's, which is not a transcript scan");
+        // 154/02 retires Codex's stdout parser. The whole driver now has no parse
+        // or native stop_reason reader, rather than exempting the old one-shot.
+        assert.equal(occurrences(driver, "JSON.parse("), 0, "no JSON parser is left in the legacy driver");
+        assert.equal(occurrences(driver, "stop_reason"), 0, "no native stop_reason read is left in the driver");
 
         const { readRuntimeFiles } = await import("../support/read-src-files.mjs");
         const files = await readRuntimeFiles(repoRoot);

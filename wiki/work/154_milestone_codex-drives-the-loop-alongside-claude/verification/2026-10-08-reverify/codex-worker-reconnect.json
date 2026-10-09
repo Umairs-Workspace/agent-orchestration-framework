@@ -1,0 +1,409 @@
+{
+  "started": "2026-10-08T19:37:20.269Z",
+  "sourceRevision": "ea99c42d5a1287d765db8d3a7dd14ffb53d979f1",
+  "fixture": {
+    "root": "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh",
+    "projectDir": "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\project",
+    "globalDir": "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\global-aof",
+    "revision": "87a51ad0c36657da83c25581921944316bd35d81",
+    "cliPath": "<workspace>\\packages\\core\\bin\\aof.mjs",
+    "evidence": "prepared-only",
+    "accepted": false,
+    "launched": false,
+    "runtime": "codex",
+    "commands": [
+      {
+        "command": "project migrate",
+        "status": 0
+      },
+      {
+        "command": "work init --runtime claude,codex --json",
+        "status": 0
+      }
+    ],
+    "profile": {
+      "name": "codex-app-server-v1",
+      "version": 1,
+      "supportedVersions": [
+        "0.160.0"
+      ],
+      "hookEvents": [
+        "PreToolUse",
+        "PermissionRequest",
+        "PostToolUse",
+        "PreCompact",
+        "PostCompact",
+        "SessionStart",
+        "SessionEnd",
+        "UserPromptSubmit",
+        "SubagentStart",
+        "SubagentStop",
+        "Stop",
+        "Interrupt"
+      ],
+      "frameBytes": 1048576,
+      "resultBytes": 65536,
+      "queuedMessages": 128,
+      "requestMs": 15000,
+      "interruptMs": 1000,
+      "closeMs": 1000
+    }
+  },
+  "peerAuthentication": "isolated loopback fixture identity; not tailnet authentication",
+  "events": [
+    {
+      "type": "spawn",
+      "pid": 79964,
+      "cwd": "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\project",
+      "at": "2026-10-08T19:37:21.505Z"
+    },
+    {
+      "type": "process-closed",
+      "pid": 79964,
+      "code": 0,
+      "at": "2026-10-08T19:37:22.805Z"
+    },
+    {
+      "type": "stream-drop",
+      "at": "2026-10-08T19:37:23.094Z"
+    },
+    {
+      "type": "assignment-reopened",
+      "assignmentId": "live-154-reconnect",
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    {
+      "type": "stream-reconnected",
+      "at": "2026-10-08T19:37:24.193Z"
+    },
+    {
+      "type": "spawn",
+      "pid": 35048,
+      "cwd": "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\project",
+      "at": "2026-10-08T19:37:24.635Z"
+    },
+    {
+      "type": "process-closed",
+      "pid": 35048,
+      "code": 0,
+      "at": "2026-10-08T19:37:25.366Z"
+    },
+    {
+      "type": "spawn",
+      "pid": 8056,
+      "cwd": "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\project\\.aof\\mesh\\worktrees\\live-154-reconnect",
+      "at": "2026-10-08T19:37:34.100Z"
+    },
+    {
+      "type": "thread",
+      "id": "01a11d05-6483-7443-8fd0-fa735f530aee",
+      "policy": {
+        "type": "workspaceWrite",
+        "writableRoots": [
+          "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\global-aof"
+        ],
+        "networkAccess": false,
+        "excludeTmpdirEnvVar": true,
+        "excludeSlashTmp": true
+      }
+    },
+    {
+      "type": "process-closed",
+      "pid": 8056,
+      "code": 0,
+      "at": "2026-10-08T19:42:48.248Z"
+    },
+    {
+      "type": "native-ended",
+      "id": "01a11d05-6483-7443-8fd0-fa735f530aee"
+    },
+    {
+      "type": "cleanup",
+      "args": [
+        "live-154-reconnect",
+        "done",
+        "<workspace>\\.tmp\\154-worker-temp\\aof-live-runtime-7RkSDh\\project\\.aof\\mesh\\worktrees\\live-154-reconnect"
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "type": "received",
+      "kind": "directive",
+      "to": "worker-a",
+      "assignmentId": "live-154-reconnect",
+      "itemRef": "07/01",
+      "workspaceId": "fixture-154-worker",
+      "at": "2026-10-08T19:37:24.199Z",
+      "command": "/aof:continue 07/01",
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    {
+      "assignmentId": "live-154-reconnect",
+      "state": "accepted"
+    },
+    {
+      "assignmentId": "live-154-reconnect",
+      "state": "running",
+      "runId": "20261008T193731187Z-0000"
+    }
+  ],
+  "launches": [
+    {
+      "phase": "continue",
+      "task": "continue",
+      "command": "$aof-continue 07/01 --solo",
+      "at": "2026-10-08T19:37:33.212Z",
+      "result": {
+        "outcome": "done",
+        "sessionId": "01a11d05-6483-7443-8fd0-fa735f530aee",
+        "processStarted": true,
+        "cliVersion": "0.160.0",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "execution": {
+          "version": 1,
+          "runtime": "codex",
+          "runtimeSource": "flag",
+          "transport": "app-server-stdio",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "phases": {
+            "refine": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+            },
+            "continue": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+            },
+            "verify": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+            }
+          },
+          "roles": {}
+        }
+      },
+      "ended": "2026-10-08T19:42:48.249Z"
+    }
+  ],
+  "execution": {
+    "version": 1,
+    "runtime": "codex",
+    "runtimeSource": "flag",
+    "transport": "app-server-stdio",
+    "profile": "codex-app-server-v1",
+    "profileVersion": 1,
+    "phases": {
+      "refine": {
+        "model": "gpt-6.1-sol",
+        "modelSource": "runtime-default",
+        "effort": "high",
+        "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+      },
+      "continue": {
+        "model": "gpt-6.1-sol",
+        "modelSource": "runtime-default",
+        "effort": "high",
+        "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+      },
+      "verify": {
+        "model": "gpt-6.1-sol",
+        "modelSource": "runtime-default",
+        "effort": "high",
+        "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+      }
+    },
+    "roles": {}
+  },
+  "dispatch": {
+    "sent": true
+  },
+  "sessionId": "01a11d05-6483-7443-8fd0-fa735f530aee",
+  "assignment": {
+    "assignment_id": "live-154-reconnect",
+    "item_ref": "07/01",
+    "workspace_id": "fixture-154-worker",
+    "target_node_id": "worker-a",
+    "issuer": "control-a",
+    "state": "done",
+    "run_id": "20261008T193731187Z-0000",
+    "assigned_at": "2026-10-08T19:37:23.027Z",
+    "updated_at": "2026-10-08T19:42:52.872Z",
+    "reclaimed_at": null,
+    "session_id": "01a11d05-6483-7443-8fd0-fa735f530aee",
+    "code": null,
+    "ask": null
+  },
+  "runs": [
+    {
+      "runId": "20261008T193731187Z-0000",
+      "itemRef": "07/01",
+      "state": "done",
+      "attempt": 1,
+      "outcome": "done",
+      "sessionId": "01a11d05-6483-7443-8fd0-fa735f530aee",
+      "brief": {
+        "assignmentId": "live-154-reconnect",
+        "itemRef": "07/01",
+        "phase": "continue",
+        "nativeAskContext": {
+          "workspaceId": "fixture-154-worker"
+        },
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11d05-6483-7443-8fd0-fa735f530aee",
+              "turnId": "01a11d05-90f7-7231-817d-97a902bc192d",
+              "baseline": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheCreate": 0,
+                "reasoningOutput": 0,
+                "total": 0
+              },
+              "latest": {
+                "input": 750451,
+                "output": 3191,
+                "cacheRead": 707328,
+                "cacheCreate": 0,
+                "reasoningOutput": 657,
+                "total": 753642
+              },
+              "tokens": {
+                "input": 750451,
+                "output": 3191,
+                "cacheRead": 707328,
+                "cacheCreate": 0,
+                "reasoningOutput": 657,
+                "total": 753642
+              },
+              "lastActivityAt": "2026-10-08T19:42:47.758Z"
+            }
+          ],
+          "tokens": {
+            "input": 750451,
+            "output": 3191,
+            "cacheRead": 707328,
+            "cacheCreate": 0,
+            "reasoningOutput": 657,
+            "total": 753642
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T19:42:47.758Z"
+        }
+      },
+      "createdAt": "2026-10-08T19:37:31.187Z",
+      "updatedAt": "2026-10-08T19:42:48.252Z",
+      "failureReason": null,
+      "heartbeatAt": "2026-10-08T19:42:34.115Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": "worker-a",
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    }
+  ],
+  "output": "module.exports = { answer: 42 };",
+  "sentinel": "unrelated scope remains unchanged",
+  "passed": true,
+  "ended": "2026-10-08T19:42:54.628Z"
+}

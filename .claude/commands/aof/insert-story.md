@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Insert a story at a target position under a milestone — scaffold SS_story_slug at --at P and re-index sibling stories ≥ P up by one, keeping the stream valid. The placement twin of add-story.
+argument-hint: "<story description> at <position P> under milestone <NN>"
 aof-invocation: /aof:insert-story
 aof-runtime: claude
 ---

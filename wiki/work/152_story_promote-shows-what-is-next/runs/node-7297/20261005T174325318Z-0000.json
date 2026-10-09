@@ -1,0 +1,64 @@
+{
+  "runId": "20261005T174325318Z-0000",
+  "itemRef": "152",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "9c6e952d-6c66-43b5-a1db-456f04f6da19",
+  "brief": {
+    "answers": [
+      {
+        "token": "152 Q1",
+        "question": "152 Q1 · Should a backlog item count as a candidate when the work it depends on is already in the stream but not finished yet? Today `promote` accepts that. Example: memory-closes-the-loop depends on 148, which is in the stream and still being worked.",
+        "answer": "Yes, same as promote (Recommended)",
+        "toolUseId": "toolu_01JhnDdfFVef5fYFUQY26zZb",
+        "sessionId": "9c6e952d-6c66-43b5-a1db-456f04f6da19",
+        "at": "2026-10-05T17:59:23.512Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "152 Q2",
+        "question": "152 Q2 · In what order should candidates be listed? `--next-item` promotes the first one.",
+        "answer": "Unblocks most, then oldest (Recommended)",
+        "toolUseId": "toolu_01JhnDdfFVef5fYFUQY26zZb",
+        "sessionId": "9c6e952d-6c66-43b5-a1db-456f04f6da19",
+        "at": "2026-10-05T17:59:23.512Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "152 Q3",
+        "question": "152 Q3 · Should `--show-candidates` also list the backlog items that can't be promoted yet, and what each one is waiting on?",
+        "answer": "Yes, in a section below (Recommended)",
+        "toolUseId": "toolu_01JhnDdfFVef5fYFUQY26zZb",
+        "sessionId": "9c6e952d-6c66-43b5-a1db-456f04f6da19",
+        "at": "2026-10-05T17:59:23.512Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-05T17:43:25.318Z",
+  "updatedAt": "2026-10-05T18:05:57.288Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 178,
+      "output": 68302,
+      "cacheRead": 9639106,
+      "cacheCreate": 224910
+    },
+    "costUsd": 4.7602083,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 89,
+    "toolCalls": 49,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

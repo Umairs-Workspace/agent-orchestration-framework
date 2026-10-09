@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Assimilate already-done work into a governed story — from your description + the real change set (pending or last commit), author a story with acceptance criteria, review the delivered code (architect standards + QA coverage), and capture the lessons to memory. No research, no build; the code is left exactly as-is. Resistance is futile.
+argument-hint: "<description> (--pending | --committed) [--under NN] [--skip-qa]"
 aof-invocation: /aof:assimilate-code
 aof-runtime: claude
 ---
@@ -20,8 +21,9 @@ working-tree changes) XOR `--committed` (the last commit, `HEAD`); optional **`-
 story under milestone NN instead of standalone); optional **`--skip-qa`** (skip the coverage lane).
 - **The source flag is mandatory and exclusive.** If neither — or both — is given, STOP and ask which:
   the command never guesses whether "done" means staged-but-uncommitted or already-committed.
-- Resolve execution mode from `work.agents.mode`: `"solo"` (or `--solo` in `$ARGUMENTS`) → play every
-  role inline in this session; any other value → orchestrated (spawn the role agents named below).
+- Resolve execution mode from `work.agents.mode`: `"orchestrated"` → orchestrated (spawn the role
+  agents named below); `"solo"`, unset or any other value (or `--solo` in `$ARGUMENTS`) → play every
+  role inline in this session. An unset `work.agents.mode` resolves to solo.
 </config>
 
 <process>

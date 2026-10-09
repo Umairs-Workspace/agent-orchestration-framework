@@ -344,7 +344,9 @@ export const outcomeIndexAnyItemTests = [
   default: _aofApplication.knowledge.memory.graphifyBackend.default,
 }));
       assert.equal(INDEX_VERSION, GRAPHIFY_INDEX_VERSION, "INDEX_VERSION and GRAPHIFY_INDEX_VERSION are equal");
-      assert.equal(INDEX_VERSION, 1, "…and unchanged — this story alters no record shape");
+      // Story 80 altered no record shape and left the version at 1; 148/ADR-003 added `tags` and
+      // moved both constants to 2 together. What story 80 pins is that they move in lockstep.
+      assert.equal(INDEX_VERSION, 2, "…and at 2 since 148/ADR-003 added tags");
     },
   },
   {

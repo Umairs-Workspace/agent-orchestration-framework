@@ -6,6 +6,7 @@
     "intake": "backlog",
     "agents": {
       "productOwner": "inline",
+      "mode": "solo",
       "session": {
         "effort": {
           "refine": "high",
@@ -111,6 +112,7 @@
     },
     "loop": {
       "concurrency": "refine_first",
+      "refine": "whole-item",
       "startToCloseMs": 14400000,
       "scheduleToCloseMs": 43200000
     },

@@ -15,6 +15,7 @@ import {
 export function assembleConfigEditor({ configInspectServices, dslServices, fsServices, workspaceServices }) {
   const { validateConfig } = configInspectServices;
   const { validateGlobalConfig } = configInspectServices;
+  const { inspectConfig, inspectExecutionSettings } = configInspectServices;
 
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
@@ -61,6 +62,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
         hooks: [],
         projectDocs: [],
         settings: {},
+        ...(scope === "project" ? { executionSettings: { runtime: null, runtimes: {} }, ...inspectExecutionSettings({}, options), assetRuntimes: [] } : {}),
         diagnostics: [],
         adapterWarnings: [],
         capabilities: capabilitiesPayload(),
@@ -79,6 +81,8 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       ? await referencedEditableResources(configPath, options)
       : [];
     const projectRefs = await readProjectGlobalRefs(projectDir, options);
+    const raw = scope === "project" ? await readRawConfig(configPath) : null;
+    const inspection = raw ? await inspectConfig(projectDir, { ...options, config: configPath }) : null;
 
     return {
       scope,
@@ -98,6 +102,11 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       hooks: config.hooks ?? [],
       projectDocs: config.projectDocs ?? [],
       settings: config.settings ?? {},
+      ...(raw ? {
+        executionSettings: { ...(raw.work?.agents?.session == null ? {} : { session: raw.work.agents.session }), ...(raw.work?.loop?.runtimes == null ? {} : { phaseRuntimes: raw.work.loop.runtimes }), runtime: raw.work?.loop?.runtime ?? null, runtimes: raw.work?.agents?.runtimes ?? {} },
+        ...inspectExecutionSettings(raw, options),
+        assetRuntimes: inspection.assetRuntimes,
+      } : {}),
       diagnostics,
       adapterWarnings,
       capabilities: capabilitiesPayload(),
@@ -226,6 +235,30 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       ...(Object.hasOwn(input, "settings") ? { settings: input.settings } : existing.settings ? { settings: existing.settings } : {})
     };
 
+    if (Object.hasOwn(input, "executionSettings")) {
+      const edit = input.executionSettings;
+      if (!edit || typeof edit !== "object" || Array.isArray(edit) || Object.keys(edit).some(key => !["runtime", "runtimes", "phaseRuntimes", "session"].includes(key))) {
+        return { ok: false, diagnostics: [diagnostic("error", "executionSettings", "Expected runtime and runtime-scoped settings.")] };
+      }
+      const work = structuredClone(existing.work ?? {});
+      if (Object.hasOwn(edit, "runtime")) {
+        work.loop = { ...work.loop };
+        if (edit.runtime === null) delete work.loop.runtime;
+        else work.loop.runtime = edit.runtime;
+      }
+      if (Object.hasOwn(edit, "phaseRuntimes")) {
+        work.loop = { ...work.loop };
+        if (edit.phaseRuntimes === null) delete work.loop.runtimes;
+        else work.loop.runtimes = edit.phaseRuntimes;
+      }
+      if (Object.hasOwn(edit, "runtimes")) work.agents = { ...work.agents, runtimes: edit.runtimes };
+      if (Object.hasOwn(edit, "session")) work.agents = { ...work.agents, session: edit.session };
+      config.work = work;
+      const inspection = inspectExecutionSettings(config, options);
+      const errors = [...inspection.diagnostics, ...Object.values(inspection.executionByRuntime).flatMap(value => value.diagnostics)];
+      if (errors.length) return { ok: false, diagnostics: errors.map(value => ({ severity: "error", blocking: true, ...value })) };
+    }
+
     const validationPath = path.join(paths.workspaceDir, "aof.config.validate.json");
     await writeText(validationPath, `${JSON.stringify(config, null, 2)}\n`);
     const diagnostics = await validateConfig(projectDir, { ...options, config: validationPath });
@@ -347,6 +380,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
 
   function baseConfig(existing, projectDir, scope, overrides = {}) {
     return {
+      ...existing,
       $schema: existing.$schema ?? "https://aof.local/schemas/aof.schema.json",
       name: existing.name ?? defaultConfigName(projectDir, scope),
       resources: overrides.resources ?? existing.resources ?? [],

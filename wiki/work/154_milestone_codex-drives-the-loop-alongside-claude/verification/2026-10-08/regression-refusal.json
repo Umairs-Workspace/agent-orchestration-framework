@@ -1,0 +1,22 @@
+{
+  "ok": false,
+  "error": "The regression gate refuses a dirty checkout: packages/contracts/package.json, packages/contracts/src/loop-bounds.mjs, packages/core/assets/commands/assimilate-code.md, packages/core/assets/commands/autonomous.md, packages/core/assets/commands/continue.md, packages/core/assets/commands/migrate.md, packages/core/assets/commands/refine.md, packages/core/assets/commands/review.md, packages/core/src/application/bindings/config-inspect.mjs, packages/work-loop/src/commands/drive.mjs, schemas/aof.schema.json, packages/contracts/src/agent-mode.mjs, wiki/work/154_milestone_codex-drives-the-loop-alongside-claude/runs/node-7297/20261008T140206632Z-0003.json, wiki/work/155_story_one-agent-mode-setting/runs/node-7297/20261008T140305570Z-0001.json. The gate runs where nothing else is writing (ADR-008 §2) — a run inside whichever lane happens to hold the tree measures that lane, not the milestone. Commit or stash the above, or run the gate in a clean checkout.",
+  "code": "regression-gate-dirty-tree",
+  "ref": "154",
+  "dirty": [
+    "packages/contracts/package.json",
+    "packages/contracts/src/loop-bounds.mjs",
+    "packages/core/assets/commands/assimilate-code.md",
+    "packages/core/assets/commands/autonomous.md",
+    "packages/core/assets/commands/continue.md",
+    "packages/core/assets/commands/migrate.md",
+    "packages/core/assets/commands/refine.md",
+    "packages/core/assets/commands/review.md",
+    "packages/core/src/application/bindings/config-inspect.mjs",
+    "packages/work-loop/src/commands/drive.mjs",
+    "schemas/aof.schema.json",
+    "packages/contracts/src/agent-mode.mjs",
+    "wiki/work/154_milestone_codex-drives-the-loop-alongside-claude/runs/node-7297/20261008T140206632Z-0003.json",
+    "wiki/work/155_story_one-agent-mode-setting/runs/node-7297/20261008T140305570Z-0001.json"
+  ]
+}

@@ -470,12 +470,15 @@ export const doctorExamplesLaneTests = [
       assert.ok(line, "the row exists");
       const rowData = JSON.parse(line.trim().replace(/^Object\.freeze\(/, "").replace(/\),?$/, ""));
       const children = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).length;
-      assert.equal(children, 10);
-      assert.equal(rowData.ceiling, 10);
+      // 148/04 raised the row again, 10 -> 11, for its own lesson-meta lane; the examples lane's
+      // raise and give-back are still stated beside it.
+      assert.equal(children, 11);
+      assert.equal(rowData.ceiling, 11);
       assert.match(rowData.why, /tenth doctor lane/);
-      assert.match(rowData.why, /10 -> 11/);
+      assert.match(rowData.why, /134\/04: 10 -> 11/);
       assert.match(rowData.why, /11 -> 10/);
       assert.match(rowData.why, /@aof\/specification-by-example/);
+      assert.match(rowData.why, /148\/04: 10 -> 11 for lesson-meta\.mjs/);
       await readFile(LANE_SOURCE, "utf8");
     },
   },

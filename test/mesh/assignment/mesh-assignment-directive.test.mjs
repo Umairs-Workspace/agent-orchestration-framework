@@ -1,3 +1,7 @@
+import { globalWorkStoreServices, controlStreamServerServices } from "../../../packages/mesh/test/support/mesh-services.mjs";
+import { readAssignmentExecution, pinAssignmentExecution } from "@aof/mesh/assignment-directive";
+import { resolveExecution, resolveExecutionResume } from "@aof/execution/runtime-selection";
+import { decodeExecutionHandoff, createRuntimeInvocation } from "../../../packages/work-loop/src/commands/runtime-invocation.mjs";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // test/mesh/assignment/mesh-assignment-directive.test.mjs — VERIFICATION (UI phase selection,
@@ -415,3 +419,61 @@ export const meshAssignmentDirectiveTests = [
     }),
   },
 ];
+
+{
+
+const envelope = () => resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+const runtimeHandoffTests = [
+  { name: "154/07 task00 — assignment pin survives a store reopen and phase changes, while legacy wire stays unchanged", async run() {
+    const home = await mkdtemp(path.join(os.tmpdir(), "aof-native-directive-"));
+    const open = () => globalWorkStoreServices().openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
+    let store = await open();
+    try {
+      const selected = envelope();
+      assert.equal(readAssignmentExecution(store, "native"), undefined);
+      pinAssignmentExecution(store, "native", selected); setAssignmentPhase(store, "native", "continue");
+      store.close(); store = await open();
+      assert.deepEqual(readAssignmentExecution(store, "native"), selected); assert.equal(readAssignmentPhase(store, "native"), "continue");
+      assert.deepEqual(pinAssignmentExecution(store, "native", resolveExecution({}, { runtime: "claude" })), selected);
+      pinAssignmentExecution(store, "legacy", null); assert.equal(readAssignmentExecution(store, "legacy"), null);
+      const { buildDirectiveFrame } = controlStreamServerServices();
+      const fields = { assignmentId: "native", itemRef: "154/07", workspaceId: "fixture", at: "2026-10-07T00:00:00Z" };
+      const legacy = buildDirectiveFrame("worker", fields);
+      assert.deepEqual(Object.keys(legacy), ["kind", "to", "assignmentId", "itemRef", "workspaceId", "at"]);
+      const wire = JSON.parse(JSON.stringify(buildDirectiveFrame("worker", { ...fields, execution: selected })));
+      assert.deepEqual(wire.execution, selected);
+    } finally { store.close(); await rm(home, { force: true, recursive: true }); }
+  } },
+  { name: "154/07 task00 — declared loop process consumes its pinned transport without consulting worker settings", async run() {
+    const selected = envelope();
+    const invocation = createRuntimeInvocation({ resolveExecution, resolveExecutionResume: (await import("@aof/execution/runtime-selection")).resolveExecutionResume });
+    const resolved = {};
+    const ctx = { workspace: { config: { work: { loop: { runtime: "claude" } } } }, executionHandoff: decodeExecutionHandoff(JSON.stringify(selected), resolveExecutionResume) };
+    await invocation.resolveRuntimeInvocation({ input: {}, ctx, resume: {}, resolved, sessionRequest: { choices: {} } });
+    assert.deepEqual(resolved.execution, selected);
+    assert.throws(() => decodeExecutionHandoff("{broken", resolveExecutionResume), { code: "invalid-record" });
+    assert.throws(() => decodeExecutionHandoff("null", resolveExecutionResume), { code: "invalid-record" });
+    assert.throws(() => decodeExecutionHandoff(JSON.stringify({ ...selected, profileVersion: 99 }), resolveExecutionResume), { code: "unsupported-profile" });
+    await assert.rejects(invocation.resolveRuntimeInvocation({ input: { runtime: "claude" }, ctx, resume: {}, resolved: {}, sessionRequest: { choices: {} } }), { code: "execution-resume-conflict" });
+  } },
+];
+
+meshAssignmentDirectiveTests.push(...runtimeHandoffTests);
+}
+
+meshAssignmentDirectiveTests.push({
+  name: "154/07 task00 — controller dispatch pins before a failed send and replays the same envelope after configuration changes",
+  run: () => withIsolatedStore(async ({ store }) => {
+    const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+    seedAssigned(store, { assignmentId: "native-retry", itemRef: "154/07" });
+    setAssignmentPhase(store, "native-retry", "continue");
+    const frames = [], seen = new Set(); let choices = 0;
+    const server = { directiveTargets: { get: () => ({}) }, dispatchDirective: frame => { frames.push(frame); return { sent: frames.length > 1 }; } };
+    const options = { workspaceId: "ws-1", now: "2026-07-25T09:00:05.000Z", openStore: async () => noClose(store), buildDirectiveFrame, dispatchedIds: seen,
+      resolveAssignmentExecution: async () => { choices++; return choices === 1 ? execution : resolveExecution({}, { runtime: "claude" }); } };
+    const ws = { workDir: "/tmp/none", projectRoot: "/tmp/none" };
+    await runControlDispatchReclaimTick(ws, server, options); await runControlDispatchReclaimTick(ws, server, options);
+    assert.equal(choices, 1); assert.equal(frames.length, 2); assert.deepEqual(frames[0].execution, execution); assert.deepEqual(frames[1].execution, execution);
+    assert.ok(seen.has("native-retry"));
+  }),
+});

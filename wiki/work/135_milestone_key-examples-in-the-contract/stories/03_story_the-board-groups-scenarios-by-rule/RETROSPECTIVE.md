@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-03
+updated: 2026-10-06
 ---
 # 03 · The board groups scenarios by rule — Retrospective
 
 ## R1 — the story went to review with three UI controls red
 
-- **Kind:** mistake · **Area:** test · **Stage:** build · **Owner:** developer
+- **Kind:** mistake · **Area:** process (test) · **Stage:** build · **Owner:** developer
 - **Raised by:** 04's build (the budget), and `aof:verify 135` (the other two)
 
 **What happened.** The rule grouping took `DetailPanel.tsx` from 997 to 1,031 lines, over its
@@ -27,7 +27,7 @@ surface within 50 lines of its ceiling gets new UI as a child component from the
 
 ## R2 — the surface was designed with no route to render it
 
-- **Kind:** near-miss · **Area:** design · **Stage:** refine · **Owner:** designer
+- **Kind:** near-miss · **Area:** contract (design) · **Stage:** refine · **Owner:** designer
 - **Raised by:** 03's review
 
 **What happened.** DESIGN.md's task-card surface declares no `Route`, and `work.ui.baseUrl` is

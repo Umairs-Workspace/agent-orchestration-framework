@@ -129,6 +129,10 @@ const DOCTOR_LANE_MODULES = Object.freeze([
   // a person gave, both carried on the snapshot, and executes nothing. Since 135/01 it is
   // @aof/specification-by-example's module, appended through the spine's `extensionGroups` seam.
   "@aof/specification-by-example/doctor-lane",
+  // THE ELEVENTH — milestone 148 / story 04's archived lesson-meta lane, named in the change that
+  // lands it. A doctor lane on the same reading as the eighth: it judges an archived retrospective's
+  // meta lines, carried on the snapshot, against the vocabulary module, and executes nothing.
+  "./lesson-meta.mjs",
 ]);
 
 // The two INJECTED lanes (the diagrams lane, 133/03; the examples lane, 134/04) reach the spine as

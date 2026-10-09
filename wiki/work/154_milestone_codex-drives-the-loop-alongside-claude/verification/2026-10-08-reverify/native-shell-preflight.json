@@ -1,0 +1,31 @@
+{
+  "purpose": "Native shell preflight, no model, no approval, no network, read-only sandbox",
+  "started": "2026-10-08T15:05:30.265Z",
+  "pid": 30236,
+  "probes": [
+    {
+      "executable": "C:\\Program Files\\nodejs\\node.exe",
+      "response": {
+        "exitCode": 0,
+        "stdout": "AOF_NATIVE_SHELL_READY",
+        "stderr": ""
+      }
+    },
+    {
+      "executable": "C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\\pwsh.exe",
+      "error": {
+        "code": -32603,
+        "message": "exec failed: windows sandbox: CreateProcessAsUserW failed: 5 (Access is denied.) | cwd=CHECKOUT\\.tmp\\154-reverify-temp\\aof-live-runtime-dcDM6K\\project | cmd=\"C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\\pwsh.exe\" -NoProfile -Command \"Get-Content -LiteralPath .agents/skills/aof-refine/SKILL.md -TotalCount 2\" | env_u16_len=6902 | si_flags=256 | creation_flags=134743040"
+      }
+    },
+    {
+      "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "response": {
+        "exitCode": 0,
+        "stdout": "---\r\nname: \"aof-refine\"\r\n",
+        "stderr": ""
+      }
+    }
+  ],
+  "ended": "2026-10-08T15:05:31.644Z"
+}

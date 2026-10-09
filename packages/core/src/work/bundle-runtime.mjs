@@ -1,4 +1,4 @@
-import { CAPABILITIES, CAPABILITY_STATUS } from "../model.mjs";
+import { CAPABILITIES, CAPABILITY_STATUS, mergeRuntimeOverride } from "../model.mjs";
 
 export const ACD_BUNDLE_CAPABILITIES = {
   ...CAPABILITIES,
@@ -54,17 +54,35 @@ export function partitionByCapability(resources, runtimes) {
 
       const mapping = mappingFor(resource.kind, runtime);
       if (mapping) {
-        installable.push(mappedResource(resource, runtime, mapping));
+        installable.push(mappedResource(resolveBundleVariant(resource, runtime), runtime, mapping));
         continue;
       }
 
-      if (declaredRuntimes.includes(runtime)) renderRuntimes.push(runtime);
+      if (declaredRuntimes.includes(runtime)) {
+        if (resource.runtimeVariants || resource.overrides) {
+          installable.push({ ...resolveBundleVariant(resource, runtime), runtimes: [runtime] });
+        } else renderRuntimes.push(runtime);
+      }
     }
     if (renderRuntimes.length > 0) {
       installable.push({ ...resource, runtimes: renderRuntimes });
     }
   }
   return { installable, notInstallable };
+}
+
+// Resolve logical identity before the adapter changes a command into a skill.
+// Common metadata/body → authored runtime variant → existing project override.
+export function resolveBundleVariant(resource, runtime) {
+  let resolved = resource;
+  if (resource.runtimeVariants) {
+    if (!Object.hasOwn(resource.runtimeVariants, runtime)) {
+      throw new Error(`Missing bundle variant for ${resource.kind}:${resource.id} (${runtime}).`);
+    }
+    resolved = mergeRuntimeOverride({ ...resource, overrides: resource.runtimeVariants }, runtime);
+  }
+  resolved = mergeRuntimeOverride({ ...resolved, overrides: resource.overrides }, runtime);
+  return { ...resolved, overrides: undefined, _aofNativeVariant: Boolean(resource.runtimeVariants) };
 }
 
 export function installableBundleResources(resources, runtimes) {
@@ -79,7 +97,9 @@ function mappedResource(resource, runtime, mapping) {
     kind: mapping.kind,
     name: id,
     runtimes: [runtime],
-    body: mappedBody(resource, mapping),
+    body: resource._aofNativeVariant
+      ? `${normalizeArgumentHint(resource.argumentHint) ? `Arguments: ${normalizeArgumentHint(resource.argumentHint)}\n\n` : ""}${resource.body}`
+      : mappedBody(resource, mapping),
     _aofMappedFrom: { id: resource.id, kind: resource.kind }
   };
 }

@@ -1,0 +1,41 @@
+{
+  "checks": [
+    {
+      "name": "loading state has status and no stale save",
+      "pass": true
+    },
+    {
+      "name": "load failure visible with retry",
+      "pass": true
+    },
+    {
+      "name": "load retry recovers actual form",
+      "pass": true
+    },
+    {
+      "name": "long saved model wraps at 390",
+      "pass": true,
+      "bounds": {
+        "width": 390,
+        "scroll": 390
+      }
+    },
+    {
+      "name": "long saved model wraps at 768",
+      "pass": true,
+      "bounds": {
+        "width": 768,
+        "scroll": 768
+      }
+    },
+    {
+      "name": "long saved model wraps at 1280",
+      "pass": true,
+      "bounds": {
+        "width": 1280,
+        "scroll": 1280
+      }
+    }
+  ],
+  "stateInjection": "GET loading/failure are browser transport faults against the real component; ordinary rendering/save uses the live AOF server."
+}

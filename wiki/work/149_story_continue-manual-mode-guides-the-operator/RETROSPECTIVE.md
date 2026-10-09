@@ -5,7 +5,7 @@ number: 149
 slug: continue-manual-mode-guides-the-operator
 title: "Retrospective — manual mode: continue guides the operator"
 created: 2026-10-05
-updated: 2026-10-05
+updated: 2026-10-06
 ---
 # 149 · Retrospective
 
@@ -68,7 +68,7 @@ can hide among the inherited ones.
 
 ## R5 — A real repository finds what the fixture tree cannot
 
-- **Kind:** near-miss · **Area:** verification · **Stage:** verify · **Owner:** product-owner · **Raised by:** product-owner
+- **Kind:** near-miss · **Area:** process (verification) · **Stage:** verify · **Owner:** product-owner · **Raised by:** product-owner
 
 **What happened.** Task 04's walk ran in the test-bed, which declares no `work.test` runner and does
 not ignore `graphify-out/`. In both sessions `aof test --scope impacted` refused, and the prompts fell

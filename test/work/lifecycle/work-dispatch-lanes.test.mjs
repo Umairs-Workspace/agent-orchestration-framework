@@ -1247,13 +1247,13 @@ export const workDispatchLaneTests = [
       laneA: "appends `- A's note` after `- base note`", laneB: "appends `- B's note` after `- base note`",
       a: `${STATE_BASE}- A's note\n`, b: `${STATE_BASE}- B's note\n`,
       result: "ends `- base note`, `- A's note`, `- B's note` in that order",
-      check: (lines) => assert.deepEqual(lines.slice(-3), ["- base note", "- A's note", "- B's note"]),
+      check: (lines) => assert.equal(lines.slice(-3).join(" | "), "- base note | - A's note | - B's note"),
     },
     {
       laneA: "appends `- same` after `- base note`", laneB: "appends `- same` after `- base note`",
       a: `${STATE_BASE}- same\n`, b: `${STATE_BASE}- same\n`,
       result: "ends `- base note`, `- same` — one copy",
-      check: (lines) => { assert.deepEqual(lines.slice(-2), ["- base note", "- same"]); assert.equal(lines.filter((l) => l === "- same").length, 1, "one copy"); },
+      check: (lines) => { assert.equal(lines.slice(-2).join(" | "), "- base note | - same"); assert.equal(lines.filter((l) => l === "- same").length, 1, "one copy"); },
     },
     {
       laneA: "appends `- A's note` under `## Notes`", laneB: "appends `- B's feedback` under a new `## Feedback (for retro)`",

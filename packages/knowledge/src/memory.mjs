@@ -1,6 +1,7 @@
 import noneBackend from "./memory/none-backend.mjs";
+import { statusPartition } from "./memory/local-retrieval.mjs";
 import { commandError } from "@aof/contracts/error";
-
+import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
 // `aof work memory <verb>` — the memory SEAM (milestone 05, story 00).
@@ -92,37 +93,6 @@ const BACKEND_REGISTRY = {
   graphify: () => loadGraphifyBackend()
 };
 
-// The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory
-// (or absent backend) is equivalent to "none".
-function selectBackendName(config) {
-  return declaredBackendName(config) ?? "none";
-}
-
-// declaredBackendName(config) — THE single textual read of the selection key in the
-// whole of `src/`, and the reason it is separate from `selectBackendName`: the two
-// callers need DIFFERENT answers about an absent value. Dispatch wants "none" (an
-// unconfigured project runs the no-op backend); the scaffold below needs to tell
-// "nothing is declared" apart from "`none` was chosen deliberately", because it must
-// write the default over the first and never over the second. Collapsing both into one
-// function is what would force a second spelling of the key somewhere else.
-// A falsy declaration (empty string) is "not declared" — the scaffold's original rule.
-function declaredBackendName(config) {
-  const declared = config?.memory?.backend;
-  return typeof declared === "string" && declared.length > 0 ? declared : null;
-}
-
-// MEMORY_BACKEND_CONFIG_PATH — the selection's dotted config path, as PROSE. A face
-// that prints "memory.backend: graphify (set)" was spelling the key a second time, in
-// a string, where nothing kept it honest if the key ever moved. It reads from here now,
-// so the key has one home in code AND in the text a user sees.
-// Spelled as its two path SEGMENTS, and the reason is worth stating rather than
-// leaving as a curiosity: `acd-memory-backend-selection` detects a property ACCESS of
-// `.backend` off a `.memory` access, textually. This constant is PROSE — the label a
-// face prints — not a read, and as one literal it tripped that control as a seventh
-// reader. The segments are what the path actually is, so writing them this way makes
-// the source match the rule the control's own comment states, rather than dodging it.
-const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
-
 // applyDefaultBackendSelection(config, defaultBackend) — the WRITE half of the same
 // invariant, and it lives here for the same reason the read does.
 //
@@ -160,6 +130,7 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
   if (!loader) {
     throw new Error(`Unknown memory backend "${name}". Registered: ${Object.keys(registry).join(", ")}.`);
   }
+  if (name === 'graphify') resolveGraphifyExtraction(config?.memory);
   return loader();
 }
 
@@ -269,7 +240,8 @@ const HOOK_LIMIT = 5;
 // Shape: one line PER record (already scope-filtered + highest-score-first by
 // recall), capped at `limit` (default HOOK_LIMIT), each line exactly:
 //   `${id} (m${item}) · ${kind || recordType} · ${area} · ${title} · ${source}`
-// joined by "\n" with a trailing "\n". `kind || recordType` so an adr (whose
+// joined by "\n" with a trailing "\n" — and, for a record with tags, `· [t1; t2]` between the
+// title and the source (148/ADR-003). `kind || recordType` so an adr (whose
 // `kind` is "") shows "adr" while a lesson shows its kind (e.g. "near-miss"). The
 // id field carries its milestone (`(m<item>)`) — ids COLLIDE across milestones
 // (`R1`, `ADR-002` recur every milestone), so a bare id leaves an agent unable to
@@ -285,7 +257,12 @@ function renderRecallBlock(recallResult, { limit } = {}) {
   if (records.length === 0) return "";
   const lines = records.map((record) => {
     const id = record.item ? `${record.id} (m${record.item})` : record.id;
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title} · ${record.source}`;
+    // 148/ADR-003 — a record's tags (`recurring`, `caught at review`, a gap's discharge date) are
+    // ONE field, `[t1; t2]`, inserted before the source so the source stays last. An untagged
+    // record, and one from a store before index version 2 that carries no `tags`, renders the
+    // five-field line unchanged.
+    const tags = Array.isArray(record.tags) && record.tags.length > 0 ? ` · [${record.tags.join("; ")}]` : "";
+    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${tags} · ${record.source}`;
   });
   return lines.join("\n") + "\n";
 }
@@ -296,7 +273,8 @@ function renderRecallBlock(recallResult, { limit } = {}) {
 // `cli.json` call these; `defaultRender` below (the collector-based renderer `runMemory`'s
 // direct callers get) calls the SAME two. Three consumers parse this output without a
 // human in the loop — the bundle prompts paste `recall … --block` into agent context, the
-// hooks read the `--json` records ARRAY, `status`/`reindex` are one line each — so a second
+// hooks read the `--json` records ARRAY, `status`/`reindex` are one line each (status adds a
+// second only to name the ingest a stale store owes, 148/ADR-003) — so a second
 // copy of either projection is exactly the byte drift the one home exists to prevent.
 
 // The human projection: the string the face prints, or `null` when there is NOTHING to
@@ -318,9 +296,39 @@ function renderMemory(verb, result, { block = false, limit, help = false } = {})
     // digest).
     return result.text ?? "";
   }
-  if (verb === "status") return `memory: backend=${result.backend} records=${result.recordCount}`;
-  if (verb === "reindex" || verb === "ingest") return `reindex: ${result.recordCount} record(s)`;
+  if (verb === "status") {
+    const lines = [`memory: backend=${result.backend} records=${result.recordCount}`];
+    // 148/ADR-004 §3 — the first line is unchanged; the seam's composition adds the layers each
+    // record type serves and the vocabulary's conformance, one line each.
+    if (result.layers) {
+      lines.push(`layers: ${Object.entries(result.layers).map(([layer, count]) => `${layer} ${count}`).join(" · ")}`);
+    }
+    if (result.conformance) lines.push(`conformance: ${conformanceText(result.conformance)}`);
+    // 148/ADR-003 — a store built before the current index version is named, with the verb that
+    // rebuilds it, rather than reported as if its numbers were current.
+    const index = result.index;
+    if (index?.stale) {
+      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof work memory ingest\` to rebuild it`);
+    }
+    return lines.join("\n");
+  }
+  if (verb === "reindex" || verb === "ingest") {
+    const headline = `reindex: ${result.recordCount} record(s)`;
+    return result.graph?.source === "project setting" && result.graph.built === false ? `${headline}\n${result.graph.reason}` : headline;
+  }
   return typeof result === "string" ? result : JSON.stringify(result, null, 2);
+}
+
+// The conformance line's body: `kind blank 1 non-enum 1 · … · owner blank 0 · gap status non-enum 0`.
+const CONFORMANCE_LABELS = { gapStatus: "gap status" };
+const COUNT_LABELS = { blank: "blank", nonEnum: "non-enum" };
+function conformanceText(conformance) {
+  return Object.entries(conformance)
+    .map(([field, counts]) => [
+      CONFORMANCE_LABELS[field] ?? field,
+      ...Object.entries(counts).map(([key, count]) => `${COUNT_LABELS[key] ?? key} ${count}`),
+    ].join(" "))
+    .join(" · ");
 }
 
 // The --json projection: the VALUE the face serialises. ADR-004: recall emits the
@@ -476,7 +484,15 @@ async function executeMemoryVerb({ verb, query = "", only = null, scope = {}, op
   }
   // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): same interface method.
   if (verb === "reindex" || verb === "ingest") return backend.reindex(only, ctx);
-  if (verb === "status") return backend.status(ctx);
+  if (verb === "status") {
+    // 148/ADR-004 §2 — status is COMPOSED here, the way brief is: the backend's own facts,
+    // unchanged, then one unbounded recall, over which the seam adds `types`, `layers` and
+    // `conformance`. Counting at the seam rather than per backend is what keeps the two backends
+    // from disagreeing about what the store holds (m40/R3: graphify's own split names two types).
+    const base = await backend.status(ctx);
+    const recalled = await backend.recall("", {}, { limit: Infinity }, ctx);
+    return { ...base, ...statusPartition(recalled?.records ?? []) };
+  }
   return undefined;
 }
 
@@ -491,7 +507,7 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
   if (input?.help === true) return memoryUsage();
   gateMemoryVerb(input?.verb);
   const backend = await resolveBackend(config);
-  return executeMemoryVerb(input, { backend, ctx });
+  return executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
 }
 
 // THE IN-PROCESS ENTRY over ARGV — a thin composition of the same path the routed door
@@ -516,4 +532,52 @@ async function runMemory(argv, { config, resolveBackend, render = defaultRender,
 }
 
 return { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, briefDigest, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
+}
+
+// The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory
+// (or absent backend) is equivalent to "none".
+export function selectBackendName(config) {
+  return declaredBackendName(config) ?? "none";
+}
+
+// declaredBackendName(config) — THE single textual read of the selection key in the
+// whole of `src/`, and the reason it is separate from `selectBackendName`: the two
+// callers need DIFFERENT answers about an absent value. Dispatch wants "none" (an
+// unconfigured project runs the no-op backend); the scaffold below needs to tell
+// "nothing is declared" apart from "`none` was chosen deliberately", because it must
+// write the default over the first and never over the second. Collapsing both into one
+// function is what would force a second spelling of the key somewhere else.
+// A falsy declaration (empty string) is "not declared" — the scaffold's original rule.
+export function declaredBackendName(config) {
+  const declared = config?.memory?.backend;
+  return typeof declared === "string" && declared.length > 0 ? declared : null;
+}
+
+// MEMORY_BACKEND_CONFIG_PATH — the selection's dotted config path, as PROSE. A face
+// that prints "memory.backend: graphify (set)" was spelling the key a second time, in
+// a string, where nothing kept it honest if the key ever moved. It reads from here now,
+// so the key has one home in code AND in the text a user sees.
+// Spelled as its two path SEGMENTS, and the reason is worth stating rather than
+// leaving as a curiosity: `acd-memory-backend-selection` detects a property ACCESS of
+// `.backend` off a `.memory` access, textually. This constant is PROSE — the label a
+// face prints — not a read, and as one literal it tripped that control as a seventh
+// reader. The segments are what the path actually is, so writing them this way makes
+// the source match the rule the control's own comment states, rather than dodging it.
+export const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
+
+
+// Pure inspection shares dispatch's single selection reader. It never probes a tool,
+// reads credentials, mutates configuration or opens a record store.
+export function inspectMemoryConfiguration(config) {
+  const declared = declaredBackendName(config);
+  const backend = selectBackendName(config);
+  resolveGraphifyExtraction(config?.memory); // validate an authored nested setting even when inactive
+  if (!['none', 'local', 'graphify'].includes(backend)) {
+    const error = commandError(`Unknown memory backend "${backend}". Registered: none, local, graphify.`, 'invalid-memory-backend', 400);
+    error.path = MEMORY_BACKEND_CONFIG_PATH;
+    throw error;
+  }
+  const extraction = backend === 'graphify' ? resolveGraphifyExtraction(config?.memory) : null;
+  return { backend, source: declared === null ? 'default' : 'project setting', path: MEMORY_BACKEND_CONFIG_PATH,
+    dependencies: extraction?.dependencies ?? [], extraction };
 }

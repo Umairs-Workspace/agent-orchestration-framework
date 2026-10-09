@@ -44,7 +44,6 @@ import {
   resolvedDependsEdges,
 } from "@aof/work/doctor/depends";
 import { resolveDeclaredSet } from "@aof/work/story-contract";
-const isDependNumber = _aofWorkspace.work.isDependNumber;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const validateWork = _aofApplication.work.commandTools.validate.validateWork;
 import { stripComments } from "../../support/source-slice.mjs";
@@ -377,7 +376,10 @@ export const archTests = [
       // never by number, and 139 ruled the doctor's depends lane numeric ("keeps its parseInt"). So
       // it is outside the lane's domain by decision, exactly as a parentless story's `depends:` is
       // (measured at 138's door: seven slug edges across four shattered backlog milestones).
-      const inLaneDomain = (item, entry) => item.number != null || isDependNumber(entry);
+      // A backlog row's NUMERIC edge is outside it too: 127/ADR-002 §3 makes a backlog row never a
+      // source, whatever its `depends:` names (measured at 148's door: the three backlog rows 148's
+      // refine shattered name 148 and 153 by number).
+      const inLaneDomain = (item) => item.number != null;
       const authored = snapshot.items.filter(isSource).reduce((total, item) => total + asList(item.meta?.depends).filter((entry) => inLaneDomain(item, entry)).length, 0);
       assert.equal(census.considered, authored - unresolved.length, "the lane's domain IS the edge set validateWork resolves by number");
 

@@ -3,7 +3,9 @@ import { stripHtmlComments } from "@aof/foundation/markdown";
 import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { headingSplitRe, headingCaptureRe } from "@aof/work/declared-id";
+import { lessonSections, readLessonMeta, normaliseLessonMeta, normaliseGapStatus, collectTags } from "@aof/work/memory-vocabulary";
 import { refInScope } from "@aof/work/ref-scope";
+import { indexVersionReport } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { trimRun } from "@aof/foundation/text";
 
@@ -48,7 +50,9 @@ export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, repor
 // it, and a third would be the copy that drifts.
 
 // The index-format version (ADR-005). Bump on a breaking record-shape change.
-const INDEX_VERSION = 1;
+// 148/ADR-003 — 2: every record gained `tags`. No migration: the index is derived, and a store
+// built before this version is reported stale by `status` until an ingest rebuilds it.
+const INDEX_VERSION = 2;
 
 // The fixed, git-ignored store location (ADR-005), relative to the project root
 // (the directory holding `.aof/`). The index is the only persistent artifact the
@@ -123,7 +127,9 @@ function inlineField(body, label) {
 // and the capture head, and a re-home reaching only one of them is half done).
 // Byte-identical to the literals they replace: `parseArchitecture` takes the `ADR` form
 // and `parseRetrospective` the `R` form, which is unhyphenated because that is what the
-// corpus writes (261 bare, 0 hyphenated) — a hyphenated pattern returns 0 lessons.
+// corpus writes (261 bare, 0 hyphenated) — a hyphenated pattern returns 0 lessons. The `R`
+// pair now lives in `@aof/work/memory-vocabulary` with the rest of the lesson grammar (148/ADR-001),
+// built from the same `ID_FORMS` entry.
 // Built at module scope so the `headerRe.test(line)` loop in `splitSections` reuses one
 // non-global regex per parser, exactly as the literals did.
 //
@@ -134,41 +140,24 @@ function inlineField(body, label) {
 // same id, then only optional trailing groups), so a section header always matches it.
 // Measured over the real corpus: 604 headings matched by the splits, the fallback
 // branch reached 0 times. FF-6604's scan now includes `#{2,3}`, so a re-spelling fails.
-const RETRO_HEADER_RE = headingSplitRe("R");
-const RETRO_HEAD_CAPTURE_RE = headingCaptureRe("R");
 const ADR_HEADER_RE = headingSplitRe("ADR");
 const ADR_HEAD_CAPTURE_RE = headingCaptureRe("ADR");
 
 // ----------------------------------------------------- RETROSPECTIVE parser ----
 
-// One `lesson` MemoryRecord per `## R<n>` heading (ADR-007). The meta line
-// "- **Kind:** … · **Area:** … · **Stage:** … · **Owner:** … · **Raised by:** …"
-// drives area/stage/kind/owner; the heading drives id and title; status (an
-// adr-only field) is present-as-"" (ADR-005), never omitted.
+// One `lesson` MemoryRecord per `## R<n>` heading (ADR-007). The meta line drives
+// area/stage/kind/owner; the heading drives id and title; status (an adr-only field) is
+// present-as-"" (ADR-005), never omitted.
+//
+// 148/ADR-001 + ADR-002 — the section split and the meta-line reader live in
+// `@aof/work/memory-vocabulary`, the vocabulary's one home, and so does the rule that turns a
+// written value into an indexed one: `near-miss (recurring)` is indexed as kind `near-miss` with
+// the tag `recurring`, a value outside the vocabulary is kept as written, and a blank stays blank.
+// Only kind, area, stage and tags are touched; title, summary, text, owner and source are as read.
 function parseRetrospective(text, { item, itemSlug, workRelPath }) {
-  return splitSections(text, RETRO_HEADER_RE).map((section) => {
-    // Heading shape: `## R<n> <sep> Title`, authored at h2 or h3 with a `—`/`–`/`-`,
-    // `:`, `·`, or bare-whitespace separator. Accept the variants (or none) so a
-    // stream's lessons are not lost to a heading-level or separator choice.
-    const [, id = "", rawTitle = ""] = section.header.match(RETRO_HEAD_CAPTURE_RE) ?? [];
-    const title = cleanTitle(rawTitle);
-
-    // The meta fields (Kind/Area/Stage/Owner) live on ONE OR MORE `- **Label:** v`
-    // lines, each a `·`-separated run of segments. Scan EVERY meta-labelled line and
-    // accumulate (first value wins) so a meta split across lines — common in real
-    // streams — still populates all four fields, not only those on the first line.
-    // Keying off any one label (`Kind:` alone) silently zeroed the rest.
-    const meta = {};
-    for (const line of section.body) {
-      if (!/\*\*(?:Kind|Area|Stage|Owner|Raised by):\*\*/i.test(line)) continue;
-      for (const part of line.split("·")) {
-        const m = part.match(/\*\*([^:]+):\*\*\s*(.+)/);
-        if (m) {
-          const key = m[1].trim().toLowerCase();
-          if (!(key in meta)) meta[key] = m[2].trim();
-        }
-      }
-    }
+  return lessonSections(text).map((section) => {
+    const title = cleanTitle(section.rawTitle);
+    const { kind, area, stage, owner, tags } = normaliseLessonMeta(readLessonMeta(section.body));
 
     const what = inlineField(section.body, "What happened");
     const why = inlineField(section.body, "Why");
@@ -176,15 +165,16 @@ function parseRetrospective(text, { item, itemSlug, workRelPath }) {
 
     return {
       recordType: "lesson",
-      id,
+      id: section.id,
       item,
       itemSlug,
       title,
-      area: meta.area ?? "",
-      stage: meta.stage ?? "",
-      kind: meta.kind ?? "",
-      owner: meta.owner ?? "",
+      area,
+      stage,
+      kind,
+      owner,
       status: "", // adr-only field; present-as-"" on a lesson (ADR-005), never omitted
+      tags, // 148/ADR-003: the qualifiers the vocabulary split off, in field order
       summary: lesson, // the one-line lesson gist — the short display line
       text: [title, what, why, lesson].filter(Boolean).join(" \n "), // searchable blob
       source: `${workRelPath}:${section.line}`,
@@ -225,6 +215,7 @@ function parseArchitecture(text, { item, itemSlug, workRelPath }) {
       kind: "",
       owner: "",
       status,
+      tags: [], // 148/ADR-003: present on every record, [] when there is none
       summary: decision || invariant, // the decision/invariant gist — the short display line
       text: [title, context, decision, invariant].filter(Boolean).join(" \n "), // searchable blob
       source: `${workRelPath}:${section.line}`,
@@ -265,6 +256,7 @@ function parseAof(text, { item, itemSlug, workRelPath }) {
         kind: "",
         owner: "",
         status: "",
+        tags: [],
         summary,
         text: [title, body].filter(Boolean).join(" \n "), // searchable blob
         source: `${workRelPath}:${section.line}`,
@@ -354,12 +346,15 @@ function extractGapParts(bodyLines) {
   }
   const statusLine = fieldLines.find((l) => /\*\*Status[:.]\*\*/i.test(l)) ?? "";
   const statusMatch = stripHtmlComments(statusLine).match(/\*\*Status[:.]\*\*\s*(.+)/i);
-  const status = (statusMatch ? statusMatch[1].trim() : "") || "open"; // default open (ADR-001)
+  // 148/ADR-002 §5 — the written status is normalised by the vocabulary's rule: its leading word is
+  // the status (open, discharged or open-by-decision), and a date or cause written after it is a
+  // tag. No Status line is open (39/ADR-001).
+  const { value: status, tag: statusTag } = normaliseGapStatus(statusMatch ? statusMatch[1] : "");
   const dischargeLine = fieldLines.find((l) => /\*\*Discharge condition[:.]\*\*/i.test(l)) ?? "";
   const dischargeMatch = dischargeLine.match(/\*\*Discharge condition[:.]\*\*\s*(.+)/i);
   const discharge = dischargeMatch ? dischargeMatch[1].trim() : "";
   const statement = proseLines.map((l) => l.trim()).join(" ");
-  return { status, discharge, statement };
+  return { status, tags: collectTags([statusTag]), discharge, statement };
 }
 
 // Fold "## Assumptions" bullets into one searchable string — each "- " bullet is
@@ -422,6 +417,7 @@ function parseOutcome(text, { item, itemSlug, workRelPath }) {
         kind: "",
         owner: "",
         status: "", // a capability is a standing fact — no lifecycle token
+        tags: [],
         summary: statement, // the one-line delivered statement — the display gist
         text: [title, statement].filter(Boolean).join(" \n "), // searchable blob
         source: `${workRelPath}:${sub.line}`,
@@ -447,7 +443,7 @@ function parseOutcome(text, { item, itemSlug, workRelPath }) {
   const gapRecords = gapSubs
     .map((sub) => {
       const title = cleanTitle(sub.header.replace(/^###\s+/, ""));
-      const { status, discharge, statement } = extractGapParts(sub.body);
+      const { status, tags, discharge, statement } = extractGapParts(sub.body);
       return {
         recordType: "gap",
         id: slugifyHeading(title),
@@ -458,7 +454,8 @@ function parseOutcome(text, { item, itemSlug, workRelPath }) {
         stage: "",
         kind: "",
         owner: "",
-        status, // the REUSED status field (ADR-001): open|discharged, default open
+        status, // the REUSED status field (ADR-001), held to the vocabulary's GAP_STATUSES (148/ADR-002)
+        tags,
         summary: [statement, discharge].filter(Boolean).join(" — "), // gap statement + discharge gist
         text: [title, statement, discharge].filter(Boolean).join(" \n "), // searchable blob
         source: `${workRelPath}:${sub.line}`,
@@ -656,10 +653,14 @@ async function buildRecords(only, ctx) {
   // loop appended after this one would have produced the same record SET while moving
   // every delivery record behind every ADR/lesson, silently re-breaking those ties.
   //
-  //   milestone-scoped — RETROSPECTIVE / ARCHITECTURE / AOF: unchanged, still
-  //     top-level milestones only, still filtered by a bare-number `only`.
-  //   ANY item — OUTCOME.md: the widening this story exists for. It used to ride the
-  //     milestone set, so a story's or a chore's outcome was never opened: `buildRecords`
+  //   milestone-scoped — ARCHITECTURE / AOF: unchanged, still top-level milestones only, still
+  //     filtered by a bare-number `only`.
+  //   ANY item — RETROSPECTIVE.md and OUTCOME.md. 148/ADR-006 moved the retrospective onto this
+  //     leg for the reason story 80 moved the outcome: which types are entitled to one is decided
+  //     at authoring, and the retrospective prompt writes one for a story too (284 story lessons
+  //     were measured unindexed on 2026-10-04). OUTCOME.md was the widening story 80 exists
+  //     for. It used to ride the milestone set, so a story's or a chore's outcome was never
+  //     opened: `buildRecords`
   //     DID join OUTCOME.md onto `item.dir` type-agnostically, but the SET it walked was
   //     `type === "milestone" && parent == null`.
   //   127/ADR-002 §3 — memory ingest is a RESOLVING reader: it filters on neither root, so an
@@ -674,7 +675,7 @@ async function buildRecords(only, ctx) {
   // rebuild drops the very story outcomes this story exists to index. `refInScope`
   // answers `null` for an unresolvable (slug) scope, which correctly matches nothing —
   // exactly what the `Number.parseInt` compare above yields for the same input.
-  const isOutcomeSource = (item) => !only || refInScope(item.ref, only) === true;
+  const isItemSource = (item) => !only || refInScope(item.ref, only) === true;
 
   const records = [];
   // AOF.md paths the work-stream loop indexes (ITEM_RE milestones) — excluded from the
@@ -687,14 +688,21 @@ async function buildRecords(only, ctx) {
     // item `ref === number`, so every record that exists today is unmoved.
     const meta = { item: item.ref, itemSlug: item.slug };
 
-    if (isMilestoneSource(item)) {
+    // RETROSPECTIVE.md → lesson records, for ANY item (148/ADR-006). Read first, so a milestone's
+    // records keep today's order (lessons, then ADRs and the digest, then deliveries) and a story's
+    // lessons sit at the story's place in the walk. Path-driven like the OUTCOME read below: what
+    // is on disk is read, and no list of entitled types is kept here.
+    if (isItemSource(item)) {
       const retroPath = path.join(item.dir, "RETROSPECTIVE.md");
-      const archPath = path.join(item.dir, "ARCHITECTURE.md");
-      const aofPath = path.join(item.dir, "AOF.md");
       if (existsSync(retroPath)) {
         const text = await readFile(retroPath, "utf8");
         records.push(...parseRetrospective(text, { ...meta, workRelPath: toWorkRel(workDir, retroPath) }));
       }
+    }
+
+    if (isMilestoneSource(item)) {
+      const archPath = path.join(item.dir, "ARCHITECTURE.md");
+      const aofPath = path.join(item.dir, "AOF.md");
       if (existsSync(archPath)) {
         const text = await readFile(archPath, "utf8");
         records.push(...parseArchitecture(text, { ...meta, workRelPath: toWorkRel(workDir, archPath) }));
@@ -719,7 +727,7 @@ async function buildRecords(only, ctx) {
     //
     // An item without one indexes exactly as before — the scan is conditional — and this
     // stays a work-stream-only discovery (imports never carry an OUTCOME.md).
-    if (isOutcomeSource(item)) {
+    if (isItemSource(item)) {
       const outcomePath = path.join(item.dir, "OUTCOME.md");
       if (existsSync(outcomePath)) {
         const text = await readFile(outcomePath, "utf8");
@@ -811,6 +819,8 @@ async function status(ctx) {
     summaries: countOf("summary"),
     capabilities: countOf("capability"),
     gaps: countOf("gap"),
+    // 148/ADR-003 — a store built before INDEX_VERSION is stale until an ingest rebuilds it.
+    index: indexVersionReport(index?.version, INDEX_VERSION, Boolean(index)),
   };
 }
 

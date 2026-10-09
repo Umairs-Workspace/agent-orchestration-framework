@@ -14,6 +14,8 @@ export const RUNTIMES = {
     name: "Codex",
     localRoot: ".codex",
     globalRoot: path.join(os.homedir(), ".codex"),
+    assetRoots: { skill: ".agents", agent: ".codex", rule: "." },
+    globalAssetRoots: { skill: path.join(os.homedir(), ".agents") },
     commandPrefix: "$"
   },
   opencode: {
@@ -134,6 +136,31 @@ export function supportedRuntimes() {
   return Object.keys(RUNTIMES);
 }
 
+// Native discovery roots are per asset kind; runtime configuration keeps its own root.
+export function runtimeAssetRoot(runtime, kind, { global = false } = {}) {
+  const adapter = RUNTIMES[runtime];
+  if (!adapter) throw new Error(`Unsupported runtime "${runtime}".`);
+  return global ? adapter.globalAssetRoots?.[kind] ?? adapter.globalRoot
+    : adapter.assetRoots?.[kind] ?? adapter.localRoot;
+}
+
+// Claude aliases are not native Codex model ids. Omission means native inheritance,
+// with the capability gap reported by the warning collector, never an alias translation.
+export function codexAgentModel(model) {
+  return ["opus", "sonnet", "haiku", "inherit"].includes(model) ? undefined : model;
+}
+
+export function codexGuidanceScope(paths = []) {
+  if (!Array.isArray(paths)) return { path: null, unsafe: true, advisory: false };
+  const scopes = paths.map(scope => typeof scope === "string" ? scope.replaceAll("\\", "/").trim() : "");
+  const unsafe = scopes.some(scope => !scope || /[\x00-\x1f\x7f:]/u.test(scope)
+    || scope.startsWith("/") || scope.split("/").includes(".."));
+  if (unsafe) return { path: null, unsafe: true, advisory: false };
+  const advisory = scopes.length > 1 || scopes.some(scope => /[*?[\]{}]/u.test(scope));
+  const directory = !advisory && scopes.length ? path.posix.normalize(scopes[0]) : ".";
+  return { path: path.posix.join(directory, "AGENTS.md"), unsafe: false, advisory };
+}
+
 export function supportedResourceKinds() {
   return Object.keys(RESOURCE_KINDS);
 }
@@ -174,9 +201,32 @@ export function defaultWorkflowBodyFile() {
   return WORKFLOW_KIND.defaultBodyFile;
 }
 
+// One override-file resolver for DSL assets and bundled project customizations.
+// The existing JSON reader is lent by the caller; this model owns no filesystem.
+export async function resolveResourceOverrides(resource, baseDir, readJson) {
+  const overrides = {};
+  const configured = resource.overrides ?? {};
+  for (const runtime of supportedRuntimes()) {
+    const value = configured[runtime];
+    if (typeof value === "string") {
+      overrides[runtime] = await readJson(path.resolve(baseDir, value));
+    } else if (value && typeof value === "object") {
+      overrides[runtime] = value;
+    } else if (resource.path) {
+      const overridePath = path.resolve(baseDir, path.dirname(resource.path), "overrides", `${runtime}.json`);
+      try { overrides[runtime] = await readJson(overridePath); }
+      catch (error) { if (error.code !== "ENOENT") throw error; }
+    }
+  }
+  return overrides;
+}
+
 export function mergeRuntimeOverride(resource, runtime) {
   const override = resource.overrides?.[runtime];
   if (!override) return resource;
+  if (typeof override !== "object" || Array.isArray(override)) {
+    throw new Error(`Runtime override for "${resource.id}" (${runtime}) must be a resolved object.`);
+  }
 
   for (const field of IDENTITY_FIELDS) {
     if (Object.hasOwn(override, field) && override[field] !== resource[field]) {

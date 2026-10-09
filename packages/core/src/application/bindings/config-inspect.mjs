@@ -27,12 +27,15 @@ import {
 } from "../../model.mjs";
 import { readDescriptor, agentModelMap, AGENT_MODEL_MAP_PATH, AGENT_EFFORT_MAP_PATH } from "../../work/bundle.mjs";
 import { EFFORT_SPELLINGS, normalizeEffort } from "@aof/execution/session-model";
+import { inspectExecution, validateRuntimeSettings } from "@aof/execution/runtime-selection";
+import { readDelegation, readDelegationModel } from "../../work/delegation.mjs";
 import { resolveManagedBinary, toolDescriptors } from "../../tool-store.mjs";
 import { delimiter } from "node:path";
 import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
 import { generatorIds } from "../../diagrams/generators.mjs";
-
+import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
+import { agentModeFromConfig } from "@aof/contracts/agent-mode";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices }) {
   const { loadConfig } = dslServices;
   const { loadProjectConfig } = dslServices;
@@ -77,15 +80,29 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     const diagnostics = await validateConfig(projectDir, options);
     let config = null;
     let adapterWarnings = [];
+    let executionConfig = null;
+    let assetRuntimes = [];
 
     if (!diagnostics.some((item) => item.severity === "error")) {
       config = await loadProjectConfig(configPath, options);
+      // Asset normalization intentionally drops the work subtree. Execution uses
+      // the validated source configuration, and installation uses its own lock.
+      executionConfig = await readJsonWithDiagnostic(configPath);
+      try {
+        const lock = await readLock(paths.lockPath);
+        assetRuntimes = [...new Set([...(Array.isArray(lock?.runtimes) ? lock.runtimes : []), ...(Array.isArray(lock?.work?.runtimes) ? lock.work.runtimes : [])])];
+      } catch {
+        diagnostics.push({ severity: "error", code: "invalid-install-lock", path: paths.lockPath, message: "Installed runtime metadata could not be read." });
+      }
       adapterWarnings = collectAdapterWarnings(config, {
         targetDir: projectDir,
         runtimes: options.runtimes ?? supportedRuntimes(),
         global: Boolean(options.global)
       });
     }
+
+    const executionInspection = executionConfig ? inspectExecution(executionConfig, { ...options, roles: [...acdRoleSet()] }) : null;
+    if (executionInspection) diagnostics.push(...executionInspection.diagnostics.map(value => ({ severity: "error", ...value })));
 
     return {
       configPath,
@@ -112,7 +129,12 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       projectDocs: config?.projectDocs?.map((doc) => ({ id: doc.id, targets: doc.targets, runtimes: doc.runtimes })) ?? [],
       settings: config?.settings ?? {},
       diagnostics,
-      adapterWarnings
+      adapterWarnings,
+      memory: executionConfig ? inspectMemoryConfiguration(executionConfig) : null,
+      execution: executionInspection?.execution ?? null,
+      executionByRuntime: executionConfig ? Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(executionConfig, { ...options, runtime, roles: [...acdRoleSet()] })])) : {},
+      assetRuntimes,
+      delegation: executionConfig ? { enabled: readDelegation(executionConfig), model: readDelegationModel(executionConfig) } : null,
     };
   }
 
@@ -253,6 +275,8 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     await validateProjectDocs(Array.isArray(raw.projectDocs) ? raw.projectDocs : [], baseDir, diagnostics);
     validateSettings(raw.settings, diagnostics);
     validateWork(raw.work, diagnostics);
+    try { inspectMemoryConfiguration(raw); }
+    catch (error) { diagnostics.push(diagnostic("error", error.path, error.message, error.code)); }
 
     return diagnostics;
   }
@@ -1213,6 +1237,8 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
       return;
     }
     validateWorkAgents(work.agents, diagnostics);
+    try { validateRuntimeSettings({ work }, { roles: [...acdRoleSet()] }); }
+    catch (error) { diagnostics.push({ ...diagnostic("error", error.path, error.message, error.code), source: error.source }); }
     validateWorkPlan(work.plan, diagnostics);
     validateWorkExamples(work.examples, diagnostics);
     validateWorkDiagrams(work.diagrams, diagnostics);
@@ -1472,17 +1498,31 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     }
 
     // Solo-mode inert map (task 03): a per-role map cannot bind when the main
-    // session plays every role. Conditional on BOTH mode=solo AND a non-empty map;
+    // session plays every role. Conditional on BOTH an effective solo mode AND a
+    // non-empty map — effective, so an unset mode (the default, solo — 155) counts;
     // surfaced as a NON-BLOCKING notice ("info"), so the config stays valid.
     const hasMap = Object.keys(rawMap).length > 0;
-    if (agents.mode === "solo" && hasMap) {
+    if (isEffectivelySolo(agents) && hasMap) {
       diagnostics.push(diagnostic(
         "info",
         AGENT_MODEL_MAP_PATH,
-        "Per-role model selection has no effect under work.agents.mode \"solo\": the main session plays every role inline, so no sub-agent is spawned to carry a per-role model. The map is ignored under solo mode.",
+        `Per-role model selection has no effect ${soloModeClause(agents)}: the main session plays every role inline, so no sub-agent is spawned to carry a per-role model. The map is ignored under solo mode.`,
         "model-map-inert-under-solo"
       ));
     }
+  }
+
+  // 155 — the inert-map notices follow the EFFECTIVE hand-run mode from the chain's one home, so
+  // an unset `work.agents.mode` (which resolves to solo) is reported, not only an explicit one.
+  const effectiveAgentMode = (agents) => agentModeFromConfig({ config: { work: { agents } } });
+  const isEffectivelySolo = (agents) => effectiveAgentMode(agents) === "solo";
+
+  // An explicit key is named as set; an unset or unrecognised one is named as the default.
+  function soloModeClause(agents) {
+    if (agents.mode === effectiveAgentMode(agents)) return "under work.agents.mode \"solo\"";
+    return agents.mode === undefined
+      ? "because the default mode is solo (work.agents.mode is unset)"
+      : "because the default mode is solo (work.agents.mode is not a known mode)";
   }
 
   const effortSpellings = () => EFFORT_SPELLINGS.join(", ");
@@ -1521,11 +1561,11 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
         ));
       }
     }
-    if (agents.mode === "solo" && Object.keys(rawMap).length > 0) {
+    if (isEffectivelySolo(agents) && Object.keys(rawMap).length > 0) {
       diagnostics.push(diagnostic(
         "info",
         AGENT_EFFORT_MAP_PATH,
-        "Per-role effort has no effect under work.agents.mode \"solo\": the main session plays every role inline, so no sub-agent is spawned to carry a per-role effort. The map is ignored under solo mode.",
+        `Per-role effort has no effect ${soloModeClause(agents)}: the main session plays every role inline, so no sub-agent is spawned to carry a per-role effort. The map is ignored under solo mode.`,
         "effort-map-inert-under-solo"
       ));
     }
@@ -2020,5 +2060,15 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     }
   }
 
-  return { inspectConfig, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
+  // The editor uses this same resolver for absent configuration and save validation.
+  // Inspection cannot prove a native model catalog that has not been supplied.
+  function inspectExecutionSettings(config, options = {}) {
+    const settings = { ...options, roles: [...acdRoleSet()] };
+    return {
+      ...inspectExecution(config, settings),
+      executionByRuntime: Object.fromEntries(["claude", "codex"].map(runtime => [runtime, inspectExecution(config, { ...settings, runtime })])),
+    };
+  }
+
+  return { inspectConfig, inspectExecutionSettings, inspectGlobalConfig, adapterWarningsForConfig, validateConfig, validateGlobalConfig, doctorConfig, notionAuthCheck, managedToolChecks, providerPrereqCheck, toolPlatformCheckFor, toolPlatformChecks, resolveWorkDiagrams, planEnabledFromConfig, examplesEnabledFromConfig };
 }

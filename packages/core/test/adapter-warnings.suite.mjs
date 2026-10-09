@@ -26,7 +26,7 @@ export const adapterWarningTests = [
     run: warnsForNeutralSettingGaps
   },
   {
-    name: "warns when codex agent model metadata is omitted",
+    name: "retains codex-native agent model metadata without a lossy warning",
     run: warnsForLossyCodexAgentModel
   },
   {
@@ -133,12 +133,7 @@ async function warnsForLossyCodexAgentModel() {
   });
   const warnings = collectAdapterWarnings(config, { runtimes: ["codex"] });
 
-  assert.equal(warnings.length, 1);
-  assert.equal(warnings[0].code, ADAPTER_WARNING_CODES.lossyRuntimeMapping);
-  assert.equal(warnings[0].kind, "agent");
-  assert.equal(warnings[0].path, "resources[0].model");
-  assert.equal(warnings[0].generatedPath, ".codex/agents/reviewer.md");
-  assert.match(warnings[0].reason, /omitted/);
+  assert.deepEqual(warnings, []);
 }
 
 async function warnsForLossyCodexAgentTools() {
@@ -153,7 +148,7 @@ async function warnsForLossyCodexAgentTools() {
   assert.equal(warnings[0].code, ADAPTER_WARNING_CODES.lossyRuntimeMapping);
   assert.equal(warnings[0].kind, "agent");
   assert.equal(warnings[0].path, "resources[0].tools");
-  assert.equal(warnings[0].generatedPath, ".codex/agents/reviewer.md");
+  assert.equal(warnings[0].generatedPath, ".codex/agents/reviewer.toml");
   assert.match(warnings[0].reason, /Claude tool allow-list is omitted/);
 }
 

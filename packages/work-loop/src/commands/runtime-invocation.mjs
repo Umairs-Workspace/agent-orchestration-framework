@@ -1,0 +1,60 @@
+// The loop's runtime invocation boundary: grammar and pinned resolution, never phase sequencing.
+import { commandError } from '@aof/contracts/error';
+import { loopRuntimeSettingFromConfig, executionRuntimes, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
+
+// Internal mesh transport, consumed only by the CLI launch context. It is not a setting.
+export function decodeExecutionHandoff(text, resolveExecutionResume) {
+  if (text === undefined) return null;
+  if (typeof text !== "string" || Buffer.byteLength(text) > 65536) throw commandError("Invalid mesh execution transport", "invalid-record", 409);
+  let value;
+  try { value = JSON.parse(text); } catch { throw commandError("Invalid mesh execution transport", "invalid-record", 409); }
+  return resolveExecutionResume({ execution: value });
+}
+
+export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, resolveExecution, resolveExecutionResume, runtimeSession }) {
+  const flagValues = (value) => (Array.isArray(value) ? value : typeof value === "string" && value.length > 0 ? [value] : []);
+  function requestedSessions(input, native = false) {
+    const model = flagValues(input?.model);
+    const thinking = flagValues(input?.thinking);
+    const effortLevels = native ? [...new Set(["low", "medium", "high", "xhigh", "max", ...thinking.map(value => value.split("=").at(-1)), ...model.filter(value => value.includes(":")).map(value => value.split(":").at(-1)).filter(value => /^[a-z][a-z-]*$/.test(value))])] : undefined;
+    const parsed = parseSessionChoices({ model, thinking }, effortLevels == null ? {} : { effortLevels });
+    if (parsed.refusal) throw commandError(parsed.refusal.message, parsed.refusal.code, 400);
+    const unphased = thinking.find((value) => typeof value === "string" && !value.includes("="));
+    return { choices: parsed.choices, explicit: model.length + thinking.length > 0, thinking: unphased === undefined ? null : normalizeEffort(unphased) };
+  }
+
+
+  function requestedRuntimeSessions(input, ctx) {
+    const flags = parseRuntimeChoices(input.runtime);
+    const native = Object.values(flags).includes("codex") || Object.values(ctx.workspace.config?.work?.loop?.runtimes ?? {}).includes("codex")
+      || flagValues(input.model).length > 0 || Object.keys(ctx.workspace.config?.work?.agents?.session?.models ?? {}).length > 0
+      || executionRuntimes(ctx.executionHandoff).includes("codex") || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
+    return requestedSessions(input, native);
+  }
+
+  async function resolveRuntimeInvocation({ input, ctx, resume, resolved, sessionRequest }) {
+    const configured = loopRuntimeSettingFromConfig(ctx.workspace);
+    const hasRuntime = input.runtime !== undefined || configured.present || ctx.workspace.config?.work?.loop?.runtimes !== undefined
+      || Object.values(sessionRequest.choices).some(choice => choice.model !== undefined) || Object.keys(ctx.workspace.config?.work?.agents?.session?.models ?? {}).length > 0;
+    if (input.resume === true && resume.lastDeclaration != null) {
+      const pinned = resolveExecutionResume?.(resume.lastDeclaration, { runtime: input.runtime, choices: sessionRequest.choices, ...(ctx.executionHandoff == null ? {} : { execution: ctx.executionHandoff }) });
+      if (pinned != null) { resolved.execution = pinned; resolved.sessions = pinned.phases; }
+    } else if (ctx.executionHandoff != null) {
+      const pinned = resolveExecutionResume({ execution: ctx.executionHandoff }, { runtime: input.runtime, choices: sessionRequest.choices });
+      resolved.execution = pinned; resolved.sessions = pinned.phases;
+    } else if (hasRuntime) {
+      const preview = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, allowUnproven: true });
+      let capabilities = {};
+      try {
+        if (executionRuntimes(preview).includes("codex")) capabilities = { codex: await runtimeSession.inspectCapabilities("codex", { ...(ctx.agentSessionDriverOptions ?? {}), cwd: ctx.workspace.projectRoot }) };
+      } catch (error) {
+        if (["runtime_unavailable", "unsupported_profile"].includes(error.code)) throw commandError(error.message, error.code, 409);
+        throw error;
+      }
+      resolved.execution = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, capabilities });
+      resolved.sessions = resolved.execution.phases;
+    }
+
+  }
+  return Object.freeze({ requestedSessions, requestedRuntimeSessions, resolveRuntimeInvocation });
+}

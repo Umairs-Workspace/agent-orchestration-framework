@@ -129,6 +129,10 @@ import { archTests as acdIntakeWriteSideOnlyTests } from "./acd-intake-write-sid
 // link syntax only (driven over a scratch text whose `number:` line must stay byte-identical), and
 // the face calls the seam rather than the engine.
 import { archTests as acdArchiveNeverRenumbersTests } from "./acd-archive-never-renumbers.test.mjs";
+// milestone 148 / story 02 — FF-14802: the meta-label grammar and the gap-status token are spelled
+// only in `@aof/work/memory-vocabulary`, and the retrospective prompt and the OUTCOME template name
+// exactly its enums (ADR-001).
+import { archTests as acdMemoryVocabularyOneHomeTests } from "./acd-memory-vocabulary-one-home.test.mjs";
 
 export const tests = [
   ...acdPhaseDoorNotADriverTests,
@@ -186,4 +190,6 @@ export const tests = [
   ...acdIntakeWriteSideOnlyTests,
   // milestone 127 / story 03 — FF-12705 (see the import note).
   ...acdArchiveNeverRenumbersTests,
+  // milestone 148 / story 02 — FF-14802 (see the import note).
+  ...acdMemoryVocabularyOneHomeTests,
 ];

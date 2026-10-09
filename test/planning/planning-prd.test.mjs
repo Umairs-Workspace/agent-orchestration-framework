@@ -1,3 +1,4 @@
+import { installedBundlePath } from "../support/cli-spawn.mjs";
 // Traceability wiring for milestone 02 / story 01 `shatter-consumes-prd`.
 //
 // These tests prove every @executable scenario/row of the story's task features
@@ -477,7 +478,7 @@ export const planningPrdTests = [
   // Scenario Outline: every tracked render of the promote prompt matches a fresh render
   ...[
     { rel: ".claude/commands/aof/promote.md", why: "`acd-bundle-manifest-hashes` hashes the re-render, never the disk" },
-    { rel: ".codex/skills/aof-promote/SKILL.md", why: "the same" },
+    { rel: ".agents/skills/aof-promote/SKILL.md", why: "the same" },
     { rel: ".opencode/commands/aof/promote.md", why: "the manifest holds no `.opencode/` entry at all" },
   ].map(({ rel, why }) => ({
     name: `shatter/139-03 outline: the tracked render ${rel} matches a fresh render (${why})`,
@@ -485,7 +486,7 @@ export const planningPrdTests = [
       const outputs = renderBundleOutputs(await loadBundle(), { runtimes: ["claude", "codex", "opencode"] });
       const rendered = outputs.find((output) => String(output.path).split("\\").join("/") === rel);
       assert.ok(rendered != null, `${rel} is in the render set`);
-      const onDisk = await readFile(path.join(REPO_ROOT, ...rel.split("/")), "utf8");
+      const onDisk = await readFile(installedBundlePath(rel, REPO_ROOT), "utf8");
       assert.equal(
         hashContent(onDisk.replace(/\r\n/gu, "\n")),
         hashContent(String(rendered.content).replace(/\r\n/gu, "\n")),

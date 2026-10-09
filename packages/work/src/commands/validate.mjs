@@ -9,8 +9,20 @@ import {
 import { archivedCitationOf, resolveCitedPath } from "../cited-path-resolve.mjs";
 import { itemInScope } from "../ref-scope.mjs";
 import { ARCHIVE_ROOT } from "../identity.mjs";
-import { listItems } from "../discovery.mjs";
+import { isLiveStreamRow, listItems } from "../discovery.mjs";
 import { recordDoc } from "../records.mjs";
+import { LESSON_QUALIFIER_EXAMPLE, lessonMetaProblems } from "../memory-vocabulary.mjs";
+
+const RETROSPECTIVE = "RETROSPECTIVE.md";
+
+// One finding's problem text for one field of one lesson (148/ADR-007 §2): the R<n>, the field, the
+// value and the legal values. A value outside the vocabulary is shown kept as a qualifier, because
+// that is the legal way to keep what the author wrote.
+function lessonMetaProblemText({ id, field, label, value, missing, legal }) {
+  if (missing && legal == null) return `lesson ${id} is missing its ${label} — name the role or lane that owns the lesson`;
+  if (missing) return `lesson ${id} is missing its ${label} — write one of ${legal.join(" | ")}`;
+  return `lesson ${id} ${label} "${value}" is not one of ${legal.join(" | ")} — a qualifier goes after the word, as "${LESSON_QUALIFIER_EXAMPLE[field]} (${value})"`;
+}
 
 // Application composition supplies shared runtime services and transition policy.
 export function createValidateCommand({ declaredAdrsInStory, extractAdrBlocks, readRenameMap, validateCoreWork }) {
@@ -198,6 +210,21 @@ async function validateWork(workDir, config, scopeRef, { projectRoot } = {}) {
           ? `ADR declaration "${id}" does not resolve: story ${item.ref} has no parent milestone architecture`
           : `ADR declaration "${id}" does not resolve in ${owner.ref}/ARCHITECTURE.md`,
       });
+    }
+  }
+
+  // milestone 148 / ADR-007 — A LIVE LESSON'S META LINE IS HELD. Every live row's retrospective,
+  // whatever the row's type: a lesson whose Kind, Area or Stage starts with no vocabulary word, or
+  // whose Owner is blank, is a finding per field. An archived row is never read here — its sources
+  // are never back-filled, so an error on one would be a red no legal act clears; doctor's
+  // `lesson-meta-archived` lane reports those instead. The rule is the vocabulary module's.
+  for (const item of items) {
+    if (item.dir == null || !isLiveStreamRow(item) || !itemInScope(item, scopeRef)) continue;
+    const retrospective = path.join(item.dir, RETROSPECTIVE);
+    const text = await readFile(retrospective, "utf8").catch(() => null);
+    if (text == null) continue;
+    for (const problem of lessonMetaProblems(text)) {
+      findings.push({ path: retrospective, problem: lessonMetaProblemText(problem) });
     }
   }
 

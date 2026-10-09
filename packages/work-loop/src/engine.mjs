@@ -1477,6 +1477,7 @@ export function buildLoopDeclaration(input = {}) {
     // and where each came from — `{ refine | continue | verify: { model, modelSource, effort,
     // effortSource } }`, resolved once by the shell — or `null` when the caller passes none.
     sessions: declaredSessions(input.sessions),
+    ...(Object.prototype.hasOwnProperty.call(input, "execution") ? { execution: copyPlain(input.execution) } : {}),
   };
 }
 
@@ -1518,6 +1519,12 @@ function recordedSessionChoices(declaration, phases = []) {
 // (ADR-004 §4): the FLAG parts of its own phase's recorded choice, and nothing else, so "with no flag
 // the loop passes nothing" (141) stays true. A declaration with no `sessions` lends 141's `thinking`.
 export function sessionLendFor(declaration, phase) {
+  if (declaration?.execution != null) {
+    const selected = phase === "repair" || phase === "review" ? "continue" : phase;
+    const execution = declaration.execution.version === 2 ? declaration.execution.phaseExecutions[selected] : declaration.execution;
+    const entry = execution.phases[selected];
+    return { runtime: execution.runtime, ...(entry.model == null ? {} : { model: entry.model }), thinking: entry.effort };
+  }
   const sessions = declaration?.sessions;
   if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
     // 147/02 — the repair session runs on the CONTINUE phase's resolved model and effort, so it is
@@ -1572,6 +1579,7 @@ function recoverableDeclaration(loop) {
     refine: declaredString(loop.refine),
     // THE TENTH PROJECTED KEY (143/03), for the same reason; absent reads as `null`.
     sessions: declaredSessions(loop.sessions),
+    ...(Object.prototype.hasOwnProperty.call(loop, "execution") ? { execution: copyPlain(loop.execution) } : {}),
   };
 }
 
@@ -1732,6 +1740,20 @@ export function resolveLoopResume(input = {}) {
   const scope = decideLoopScope(input.scope);
   if (!scope.admitted) return scope;
   const recovered = recoverableDeclaration(input.declaration ?? readLoopDeclaration(input.runs));
+  let execution;
+  if (Object.prototype.hasOwnProperty.call(recovered ?? {}, "execution")) {
+    if (typeof input.resolveExecutionResume !== "function") return refusal("invalid-record", { message: "Execution resume policy is required for this record." });
+    try {
+      execution = input.resolveExecutionResume(recovered, { runtime: input.runtime, choices: input.sessionChoices, execution: input.execution });
+    } catch (error) { return refusal(error.code ?? "invalid-record", { message: error.message }); }
+  } else if (input.runtime !== undefined) {
+    if (typeof input.resolveExecutionResume === "function") {
+      try { input.resolveExecutionResume(recovered ?? {}, { runtime: input.runtime }); }
+      catch (error) { return refusal(error.code ?? "invalid-record", { message: error.message }); }
+    } else if (input.runtime !== "claude") {
+      return refusal("execution-resume-conflict", { message: "Legacy declarations resume on Claude; start a fresh run to change runtime." });
+    }
+  }
   const explicitLevel = input.level !== null && input.level !== undefined;
   const explicitCap = input.cap !== null && input.cap !== undefined;
   const level = resolveLoopLevel(explicitLevel ? input.level : recovered?.level);
@@ -1779,5 +1801,6 @@ export function resolveLoopResume(input = {}) {
     },
     lastDeclaration: recoverableDeclaration(recovered),
     message: recovered ? null : `No prior loop declaration exists for scope ${scope.scope}.`,
+    ...(execution === undefined ? {} : { execution }),
   };
 }

@@ -33,6 +33,64 @@
 import { existsSync } from "node:fs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
+import { resolveExecution } from "@aof/execution/runtime-selection";
+import { reviewRoundsFromConfig } from "@aof/contracts/loop-bounds";
+import { readDelegation } from "./delegation.mjs";
+import { loadBundle, projectBundleResources } from "./bundle.mjs";
+import { resolveBundleVariant } from "./bundle-runtime.mjs";
+
+// Host integration seam: native providers supply the actual role launch operation
+// and advertised model catalog. The caller lends the dispatch envelope's resolved
+// bound; this does not choose another concurrency setting or shell out to a CLI.
+export function createWorkflowRoleLauncher(config, { profiles, bound, bundle = loadBundle() }) {
+  const refuse = (code, message) => { throw Object.assign(new Error(message), { code }); };
+  if (!Number.isSafeInteger(bound) || bound < 1) refuse("invalid-role-bound", "A native role launcher requires the resolved dispatch bound.");
+  let active = 0;
+  return async function launch({ primary, role, phase = "continue", crossRuntime, delegationRequested = false, reviewRound = 1, independent = true, prompt }) {
+    if (!["claude", "codex"].includes(primary)) refuse("unsupported-runtime", `Unknown primary runtime ${primary}.`);
+    const runtime = crossRuntime ?? primary;
+    if (runtime !== primary && (!delegationRequested || readDelegation(config) !== "on")) {
+      refuse("cross-assistant-delegation-disabled", "Cross-assistant work requires a separate request and enabled delegation.");
+    }
+    const profile = profiles?.[runtime];
+    if (!profile || typeof profile.launch !== "function" || (independent && (profile.independentRoles !== true || !profile.roles?.includes(role)))) {
+      refuse("native-role-capability-unavailable", `${runtime} cannot supply an independent ${role}; inline self-review is not independent review.`);
+    }
+    const rounds = reviewRoundsFromConfig({ config });
+    if (!Number.isSafeInteger(reviewRound) || reviewRound < 1 || reviewRound > rounds) refuse("role-review-bound", `Review round ${reviewRound} exceeds the configured bound ${rounds}.`);
+    if (active >= bound) refuse("role-concurrency-bound", `Native roles have reached the dispatch bound ${bound}.`);
+    const roles = bundle.resources.filter(member => member.kind === "agent").map(member => member.id);
+    if (!roles.includes(role)) refuse("unknown-workflow-role", `Unknown AOF role ${role}.`);
+    const authored = resolveBundleVariant(projectBundleResources(bundle.resources, config).find(resource => resource.id === role && resource.kind === "agent"), runtime);
+    // Preserve an authored role default (e.g. Claude's researcher uses sonnet),
+    // while Codex's native variant explicitly inherits. Compatibility stays with
+    // the existing execution resolver; no alias is translated at this seam.
+    const modelPinned = config?.work?.agents?.runtimes?.[runtime]?.models?.[role]
+      ?? (runtime === "claude" ? config?.work?.agents?.models?.[role] : null);
+    const defaultModel = modelPinned ? null : authored.model;
+    const effective = defaultModel ? { ...config, work: { ...config?.work, agents: { ...config?.work?.agents,
+      runtimes: { ...config?.work?.agents?.runtimes, [runtime]: { ...config?.work?.agents?.runtimes?.[runtime],
+        models: { ...config?.work?.agents?.runtimes?.[runtime]?.models, [role]: defaultModel }
+      } }
+    } } } : config;
+    const execution = resolveExecution(effective, { runtime, capabilities: { [runtime]: profile.capabilities ?? {} }, roles });
+    const inherited = execution.phases[phase];
+    if (!inherited) refuse("unsupported-role-phase", `Unknown role phase ${phase}.`);
+    const selected = execution.roles[role];
+    const model = selected.model ?? inherited.model;
+    const effort = selected.effort ?? inherited.effort;
+    // The provider must explicitly support sending each chosen native setting.
+    // There is no silent model translation or effort drop at this seam.
+    if ((model && profile.modelSelection !== true) || (effort && profile.effortSelection !== true)) {
+      refuse("native-role-setting-unsupported", `${runtime} cannot pass the selected model/effort to ${role}.`);
+    }
+    active += 1;
+    try { return await profile.launch({ runtime, role, model, effort, independent, prompt, reviewRound, bound,
+      modelSource: defaultModel ? "bundle-role-default" : selected.modelSource,
+      effortSource: selected.effortSource }); }
+    finally { active -= 1; }
+  };
+}
 
 // A core never prints: it REPORTS through the collector its caller injects, and the
 // face turns the collected lines into the one stdout document (m42 wave (d) leg d1,

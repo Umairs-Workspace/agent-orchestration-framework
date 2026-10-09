@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, readBundleProse } from "../support/cli-spawn.mjs";
 // Traceability wiring for story 146 — a capture can skip the backlog.
 //
 // Covers EVERY @executable scenario in
@@ -19,7 +20,7 @@ import { archTests as oneMintTests } from "../arch/work/acd-one-mint.test.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
+const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
 const flat = (text) => text.replace(/\s+/g, " ");
 
 const COMMANDS = "packages/core/assets/commands";
@@ -27,7 +28,7 @@ const DRIVERS = ["add-milestone", "add-story", "add-chore", "add-spike", "add-ua
 const PROMPTS = DRIVERS.map((name) => `${COMMANDS}/${name}.md`);
 const COPIES = DRIVERS.flatMap((name) => [
   `.claude/commands/aof/${name}.md`,
-  `.codex/skills/aof-${name}/SKILL.md`,
+  `.agents/skills/aof-${name}/SKILL.md`,
   `.opencode/commands/aof/${name}.md`,
 ]);
 const PROMOTE = "`aof work promote <slug> --json`";
@@ -58,7 +59,7 @@ const outputOf = (text) => flat(text.slice(text.indexOf("<output>"), text.indexO
 let dryRun = null;
 function freshRenderActions() {
   if (dryRun) return dryRun;
-  const result = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+  const result = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
   assert.equal(result.status, 0, result.stderr);
   dryRun = new Map(JSON.parse(result.stdout).actions.map((action) => [action.path, action.action]));
   return dryRun;

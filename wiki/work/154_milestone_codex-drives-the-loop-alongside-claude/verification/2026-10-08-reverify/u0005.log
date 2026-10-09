@@ -1,0 +1,294 @@
+# unit
+# executed 0 cases; failures 0
+# integration
+ok - AOF adapter policy: Adapter warnings appear in diagnostics and render previews
+ok - AOF adapter policy: Strict adapter warnings fail before side effects
+ok - AOF adapter policy: Adapter warnings stay out of lock manifests
+ok - Command spine — one route table, one face, one envelope: a registry-routed work verb dispatches through the generic face
+ok - Command spine — one route table, one face, one envelope: a migrated group verb keeps its human rendering byte-for-byte
+ok - Command spine — one route table, one face, one envelope: a migrated verb answers --json with the command result verbatim
+ok - Command spine — one route table, one face, one envelope: an undeclared flag is refused loudly, never silently absorbed
+ok - Command spine — one route table, one face, one envelope: a command failure under --json is one structured envelope on stdout
+ok - Command spine — one route table, one face, one envelope: input-contract failures are coded and precede any write
+ok - Command spine — one route table, one face, one envelope: a non-json failure propagates to stderr with a non-zero exit
+ok - Command spine — one route table, one face, one envelope: a routed nested mesh verb refuses bad input with the one envelope
+ok - Command spine — one route table, one face, one envelope: a three-word route dispatches through the same face
+ok - Command spine — one route table, one face, one envelope: a launcher verb's --json is the non-blocking probe, never the daemon
+ok - Command spine — one route table, one face, one envelope: a launcher verb registered on the seam answers --json with its probe
+ok - Command spine — one route table, one face, one envelope: every launcher family answers --json with its non-blocking probe
+ok - Command spine — one route table, one face, one envelope: the desktop verbs ride three-word routes with the one envelope
+ok - Command spine — one route table, one face, one envelope: the desktop no-verb shim still owns the refusal a route cannot express
+ok - Command spine — one route table, one face, one envelope: a routed read keeps its bare-array --json document and read-miss exit split
+ok - Command spine — one route table, one face, one envelope: a CLI-only config verb rides the route table with one json document
+ok - Command spine — one route table, one face, one envelope: a write verb's refusal ends the stdout document and keeps its retired json shape
+ok - Command spine — one route table, one face, one envelope: a class-B face copy retires onto its route (provision)
+ok - Command spine — one route table, one face, one envelope: the model-config trio rides the route table with --show as the read probe
+ok - Command spine — one route table, one face, one envelope: a bad orchestrator model is refused in the face, before any write
+ok - Command spine — one route table, one face, one envelope: planning init previews through the route table with one json document
+ok - Command spine — one route table, one face, one envelope: top-level init rides the one-word route — coded guard, dry-run plan
+ok - Command spine — one route table, one face, one envelope: work doctor's advisory gate — warns pass bare, fail under --strict, same findings
+ok - Config family — assets, packages, project through the spine: a scaffolded asset shows back with its body present
+ok - Config family — assets, packages, project through the spine: removing an asset in dry-run changes nothing
+ok - Config family — assets, packages, project through the spine: assets validate answers --json with the report envelope
+ok - Config family — assets, packages, project through the spine: a malformed package intent fails packages validate with exit 1
+ok - Config family — assets, packages, project through the spine: the package intent lifecycle roundtrips through the spine
+ok - Config family — assets, packages, project through the spine: project validate and doctor report health with exit 0
+ok - Config family — assets, packages, project through the spine: a legacy root config migrates into the workspace layout
+ok - Config family — assets, packages, project through the spine: the global-ref verbs refuse a non-global invocation loudly
+ok - AOF DSL rendering: Apply the project config to Codex only
+ok - AOF DSL rendering: Apply file-backed .aof assets
+ok - AOF DSL rendering: Apply expanded DSL primitives
+ok - AOF DSL rendering: Preview expanded DSL primitives before applying
+ok - AOF DSL rendering: Apply runtime override for a file-backed asset
+ok - AOF DSL rendering: Reject runtime override identity changes
+ok - AOF DSL rendering: Render natural-language rule guidance per runtime
+ok - AOF DSL rendering: Merge multiple Codex rules into one AGENTS file
+ok - Effects ledger — consequences are declared, not remembered: a failed completion pays its declared cascade in order
+ok - Effects ledger — consequences are declared, not remembered: a clean completion runs the same cascade without rolling back
+ok - Effects ledger — consequences are declared, not remembered: the cascade is journaled durably beside the fact
+ok - Effects ledger — consequences are declared, not remembered: minting a run raises its declared event — publishing is no longer the verb's own import
+ok - Effects ledger — consequences are declared, not remembered: recording feedback raises its declared event beside the record-doc write
+ok - Effects ledger — consequences are declared, not remembered: a completion in a Notion-configured workspace leaves the owed sync durable in the ledger
+ok - Effects ledger — consequences are declared, not remembered: a completion in an unconfigured workspace owes no Notion step
+ok - Effects ledger — consequences are declared, not remembered: a crashed cascade is paid by the next CLI invocation
+ok - Effects ledger — consequences are declared, not remembered: the doctor explains a declared cascade with its loci
+ok - Effects ledger — consequences are declared, not remembered: the doctor converges a crashed cascade on demand
+ok - AOF CLI lifecycle: 154/11 Claude retains the isolated default lifecycle and failure bound
+ok - AOF CLI lifecycle: 154/11 Codex retains the isolated native lifecycle and failure bound
+ok - AOF CLI lifecycle: 154/11 live fixture preparation is not live acceptance
+ok - AOF CLI lifecycle: 154/11 an unsupported Codex profile is not a passing lifecycle
+ok - AOF CLI lifecycle: Show command help
+ok - AOF CLI lifecycle: Removed install command does not start the setup UI
+ok - AOF CLI lifecycle: Initialize an empty AOF project
+ok - AOF CLI lifecycle: Init only creates project workspace and guidance
+ok - AOF CLI lifecycle: Refuse to overwrite an existing project config
+ok - AOF CLI lifecycle: Add a file-backed skill from the CLI
+ok - AOF CLI lifecycle: Add refuses scaffold collisions unless forced
+ok - AOF CLI lifecycle: Add scaffolds non-skill kinds
+ok - AOF CLI lifecycle: Interactively add a project asset
+ok - AOF CLI lifecycle: Add and inspect global assets
+ok - AOF CLI lifecycle: List and remove project assets
+ok - AOF CLI lifecycle: Use and unuse global asset references
+ok - AOF CLI lifecycle: Interactively add a global asset
+ok - AOF CLI lifecycle: Validate global assets
+ok - AOF CLI lifecycle: Report malformed global asset config
+ok - AOF CLI lifecycle: Render referenced global assets
+ok - AOF CLI lifecycle: Assets apply rejects global runtime output scope
+ok - AOF CLI lifecycle: Sync referenced global assets
+ok - AOF CLI lifecycle: Render referenced global skill helper files
+ok - AOF CLI lifecycle: Preview referenced global skill helper files
+ok - AOF CLI lifecycle: Render referenced global skill helper file placeholders
+ok - AOF CLI lifecycle: Preview referenced global skill helper file placeholders
+ok - AOF CLI lifecycle: Render command helper files beside command markdown
+ok - AOF CLI lifecycle: Reject Codex command assets during validation
+ok - AOF CLI lifecycle: Reject Codex command assets before apply writes
+ok - AOF CLI lifecycle: Render Claude command assets without Codex command output
+ok - AOF CLI lifecycle: Render OpenCode command assets into .opencode/commands
+ok - AOF CLI lifecycle: Reject argument markers in simple assets
+ok - AOF CLI lifecycle: Render workflow-backed Claude commands and Codex skills
+ok - AOF CLI lifecycle: Render asset reference placeholders
+ok - AOF CLI lifecycle: Reject invalid workflow references and argument overrides
+ok - AOF CLI lifecycle: Reject invalid asset reference placeholders
+ok - AOF CLI lifecycle: Report invalid global skill helper file placeholders
+ok - AOF CLI lifecycle: Report unsafe global skill helper files
+ok - AOF CLI lifecycle: Report invalid global references
+ok - AOF CLI lifecycle: Refuse to silently migrate a legacy root config during init
+ok - AOF CLI lifecycle: Explicitly migrate a legacy root config into .aof
+ok - AOF CLI lifecycle: Preview apply without writing runtime files or lock state
+ok - AOF CLI lifecycle: Protect drifted generated files unless forced
+ok - AOF CLI lifecycle: Prune stale owned generated files
+ok - AOF CLI lifecycle: Show project inspection in human and JSON formats
+ok - AOF CLI lifecycle: Validate invalid config for automation
+ok - AOF CLI lifecycle: Doctor reports package intent and stale legacy config
+ok - AOF CLI lifecycle: Clean previews and removes matching lock-owned outputs
+ok - AOF CLI lifecycle: Clean preserves drifted lock-owned outputs
+ok - AOF CLI lifecycle: Catalog storage is disabled
+ok - AOF CLI lifecycle: Reject catalog-backed init items
+ok - AOF CLI lifecycle: Removed legacy asset commands fail without executing
+ok - AOF package semantics: Packages add GSD records intent only
+ok - AOF package semantics: Packages add dry-run does not write package intent
+ok - AOF package semantics: Packages list show validate and remove GSD intent
+ok - AOF package semantics: Packages validate reports malformed package descriptors
+ok - AOF package semantics: Record managed framework intent in apply lock state
+ok - AOF package semantics: Refuse package resource output conflicts before writes
+ok - AOF package semantics: Validate npm git and file package descriptors
+ok - AOF package semantics: Record package dependency and resolution metadata in lock
+ok - AOF package semantics: Packages install GSD dry-run previews without network
+ok - AOF package semantics: Packages install all configured installable packages
+ok - AOF package semantics: Packages install records successful GSD install attempts
+ok - AOF package semantics: Packages install records partial GSD failure and retry commands
+ok - AOF package semantics: Packages install refuses unknown packages with a structured JSON error
+ok - AOF package semantics: Packages install from lock requires a lock file
+ok - AOF package semantics: Packages install replays framework install intent from lock
+ok - AOF package semantics: Removed top-level package install command points to packages namespace
+ok - AOF package semantics: Removed top-level package replay command points to packages namespace
+ok - AOF package semantics: Assets apply previews package intent and generated outputs without writes
+ok - AOF package semantics: Assets apply writes outputs and package lock metadata without running installers
+ok - AOF package semantics: Removed sync installer command fails without executing installers
+ok - AOF package semantics: Assets apply rejects package installer execution
+ok - AOF setup UI API: Save a command resource through the setup UI API
+ok - AOF setup UI API: Save expanded config sections through the setup UI API
+ok - AOF setup UI API: Save workflow-backed resource through the setup UI API
+ok - AOF setup UI API: Reject invalid expanded setup UI sections
+ok - AOF setup UI API: Reject malformed JSON and route payload mismatches
+ok - AOF setup UI API: Serve adapter warning review payloads
+ok - AOF setup UI API: Load project and global setup UI scopes
+ok - AOF setup UI API: Create global assets through the setup UI API
+ok - AOF setup UI API: Edit global skill associated files through the setup UI API
+ok - AOF setup UI API: Add and remove project global references through the setup UI API
+ok - Work memory — the seam's door rides the route table: the status verb renders its one line on a bare fixture
+ok - Work memory — the seam's door rides the route table: the status verb answers --json with the seam's status object
+ok - Work memory — the seam's door rides the route table: an unknown verb is the seam's refusal, naming the verb, at exit 1
+# cargo (apps/desktop)
+   Compiling proc-macro2 v1.0.106
+   Compiling unicode-ident v1.0.24
+   Compiling quote v1.0.46
+   Compiling serde_core v1.0.228
+   Compiling zmij v1.0.21
+   Compiling getrandom v0.4.3
+   Compiling serde_json v1.0.150
+   Compiling serde v1.0.228
+   Compiling itoa v1.0.18
+   Compiling cfg-if v1.0.4
+   Compiling windows-link v0.2.1
+   Compiling memchr v2.8.3
+   Compiling once_cell v1.21.4
+   Compiling fastrand v2.4.1
+   Compiling windows-sys v0.61.2
+   Compiling tempfile v3.27.0
+   Compiling syn v2.0.118
+   Compiling serde_derive v1.0.228
+   Compiling mesh-desktop-core v0.1.0 (CHECKOUT\.tmp\154-reverify-checkout\apps\desktop\crates\core)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 18.86s
+     Running unittests src\lib.rs (apps\desktop\target\debug\deps\mesh_desktop_core-de835306f97d2b39.exe)
+
+running 118 tests
+test icon::tests::degraded_all_online_server_restarting ... ok
+test icon::tests::degraded_some_stale_server_running ... ok
+test icon::tests::healthy_all_online_and_server_running_no_badge ... ok
+test icon::tests::silent_repoll_failure_holds_last_good_state_not_stopped ... ok
+test icon::tests::stale_only_fleet_never_escalates_to_stopped_or_alarm ... ok
+test icon::tests::exactly_one_state_never_both_healthy_and_degraded_badges ... ok
+test icon::tests::degraded_one_stale_server_running ... ok
+test read_only_inventory::tests::no_affordance_spawns_a_fleet_mutating_verb ... ok
+test icon::tests::state_and_badge_are_theme_invariant ... ok
+test read_only_inventory::tests::local_process_toggle_spawns_are_lifecycle_not_mutation_or_data_read ... ok
+test poll::tests::the_flagged_poll_adds_one_flag_to_the_same_command_never_a_second_verb ... ok
+test poll::tests::the_only_fleet_data_command_issued_is_mesh_status_json ... ok
+test read_only_inventory::tests::render_path_issues_exactly_one_data_verb ... ok
+test poll::tests::how_many_of_a_runs_polls_carry_the_declarations_flag ... ok
+test render_state::tests::failed_silent_repoll_keeps_last_good_populated_body ... ok
+test poll::tests::three_cadence_ticks_issue_exactly_three_status_invocations ... ok
+test icon::tests::stopped_all_online_server_stopped ... ok
+test read_only_inventory::tests::only_write_controls_are_local_process_toggles ... ok
+test icon::tests::stopped_no_nodes_server_stopped ... ok
+test render_state::tests::empty_fleet_invite_copy_reflects_role ... ok
+test render_state::tests::failed_fetch_no_prior_good_selects_error_state ... ok
+test render_state::tests::loading_state_is_selected_on_first_pending_fetch ... ok
+test render_state::tests::populated_mixed_fleet_selects_populated_state ... ok
+test icon::tests::stopped_all_online_app_stopped ... ok
+test render_state::tests::four_state_selection_matrix ... ok
+test status::tests::exactly_one_node_reads_local_true_the_rest_read_false ... ok
+test status::tests::a_reconcile_runs_only_on_a_document_that_answered ... ok
+test status::tests::a_dropped_row_never_reaches_the_composed_set ... ok
+test status::tests::a_surviving_row_carries_its_id_argv_and_cwd_and_labels_itself_when_it_must ... ok
+test status::tests::full_measured_document_shape_parses_end_to_end ... ok
+test status::tests::node_with_presence_but_no_sessions_key_reads_empty_sessions ... ok
+test status::tests::node_with_presence_reads_nested_active_runs_and_aof_version ... ok
+test status::tests::node_with_presence_reads_nested_sessions ... ok
+test status::tests::node_without_presence_reads_idle_unknown_without_crashing ... ok
+test status::tests::stale_deserializes_as_boolean_false ... ok
+test status::tests::the_fleet_document_is_never_lost_to_the_new_key ... ok
+test status::tests::stale_deserializes_as_boolean_true ... ok
+test status::tests::top_level_boards_array_and_is_control_node_flag_parse_at_document_root ... ok
+test supervision::tests::a_child_built_from_a_declaration_row_carries_its_id_label_argv_and_cwd ... ok
+test supervision::tests::a_child_that_exited_zero_and_one_that_did_not_reconcile_identically ... ok
+test supervision::tests::a_crash_is_not_named_raises_no_notice_and_places_no_hold ... ok
+test supervision::tests::a_declaration_whose_row_has_gone_is_stopped_hold_or_no_hold ... ok
+test supervision::tests::a_hold_survives_every_tick_until_its_row_goes ... ok
+test status::tests::which_supplied_rows_become_declarations ... ok
+test supervision::tests::a_refused_stop_request_is_the_labelled_last_non_empty_line_or_a_fixed_sentence ... ok
+test supervision::tests::clean_exit_with_named_reason_maps_to_the_stopped_design_ramp_signal ... ok
+test supervision::tests::composing_no_rows_still_yields_the_two_seeded_daemons ... ok
+test supervision::tests::an_exit_zero_surfaces_its_last_non_empty_line_and_places_no_hold ... ok
+test supervision::tests::a_reserved_daemon_id_is_named_in_neither_direction ... ok
+test supervision::tests::an_exit_zero_with_no_output_raises_no_notice ... ok
+test supervision::tests::crash_then_restart_maps_to_the_restarting_design_ramp_signal ... ok
+test supervision::tests::controllers_come_and_go_with_rows_across_successive_ticks ... ok
+test supervision::tests::crash_transitions_running_to_restarting_with_a_nonzero_delayed_backoff ... ok
+test supervision::tests::named_clean_exit_reasons_classify_from_their_message ... ok
+test supervision::tests::duplicate_run_is_the_fourth_named_clean_exit_in_both_spellings ... ok
+test supervision::tests::named_clean_exit_transitions_to_clean_exit_state_and_is_not_restarting ... ok
+test supervision::tests::one_plan_carries_every_outcome_and_a_hold_does_not_reach_a_sibling ... ok
+test supervision::tests::only_an_unpressed_declarations_duplicate_run_attaches ... ok
+test supervision::tests::only_the_child_a_notice_names_clears_it_when_it_starts ... ok
+test supervision::tests::reconcile_retains_a_held_id_whether_or_not_it_is_desired ... ok
+test supervision::tests::stop_argv_forms_the_verb_from_the_rows_own_admitted_prefix ... ok
+test supervision::tests::stop_step_decides_the_rung_from_presses_the_cancel_clock_the_grace_and_the_exit ... ok
+test supervision::tests::successive_crashes_grow_the_backoff_delay_and_carry_jitter ... ok
+test supervision::tests::the_grace_is_a_named_constant_and_its_boundary_is_stated_through_it ... ok
+test supervision::tests::the_ladder_is_total ... ok
+test supervision::tests::the_plan_for_one_supplied_declaration_id ... ok
+test supervision::tests::the_plan_is_a_pure_function_of_what_it_is_handed ... ok
+test supervision::tests::the_set_is_composed_daemons_first_then_the_rows_in_row_order ... ok
+test supervision::tests::the_two_daemon_constructors_return_owned_children_with_reserved_ids_and_no_cwd ... ok
+test supervision::tests::the_three_existing_named_clean_exits_are_unchanged_but_for_the_hold_they_now_place ... ok
+test tray_menu::tests::control_node_server_running_renders_full_menu_in_order ... ok
+test tray_menu::tests::header_shows_fleet_presence_roll_up_calm_in_every_state ... ok
+test tray_menu::tests::open_web_ui_present_but_disabled_when_ui_stopped ... ok
+test tray_menu::tests::quit_is_always_last_below_a_separator ... ok
+test tray_menu::tests::show_hide_window_reflects_current_visibility ... ok
+test tray_menu::tests::start_stop_mesh_is_single_state_labelled_item ... ok
+test tray_menu::tests::worker_node_omits_server_control_entirely ... ok
+test view_model::tests::a_row_is_titled_with_the_machine_name_and_keeps_the_id ... ok
+test view_model::tests::body_dot_and_local_pill_are_independent_ramps ... ok
+test view_model::tests::current_work_idle_when_no_presence ... ok
+test view_model::tests::current_work_running_from_active_runs ... ok
+test view_model::tests::current_work_idle_when_active_runs_empty ... ok
+test resolve::tests::resolution_mode_is_co_located_when_sibling_present ... ok
+test view_model::tests::dg2_repo_list_order_is_independent_of_wire_order_three_repos ... ok
+test view_model::tests::dg2_repo_list_sorted_alphabetically_even_when_wire_order_is_not ... ok
+test view_model::tests::f7_no_presence_degrades_cleanly_no_error ... ok
+test view_model::tests::f7_live_session_no_run_renders_working_line ... ok
+test view_model::tests::f7_run_wins_the_line_over_a_live_session ... ok
+test view_model::tests::f7_publisher_already_dropped_session_falls_back_to_idle ... ok
+test view_model::tests::f7_node_rows_end_to_end_ipc_shape_on_the_real_captured_payload ... ok
+test view_model::tests::f7_two_repos_show_both_comma_joined ... ok
+test view_model::tests::f8_active_runs_examples_outline ... ok
+test view_model::tests::f8_active_runs_object_shaped_element_is_a_parse_error_not_a_silent_empty_read ... ok
+test view_model::tests::health_dot_offline_absent_presence ... ok
+test resolve::tests::the_spawn_form_a_child_produces ... ok
+test view_model::tests::health_dot_online_present_not_stale ... ok
+test view_model::tests::health_dot_stale_present_and_stale ... ok
+test view_model::tests::health_dot_stale_takes_precedence_over_absent_presence ... ok
+test view_model::tests::m48_a_session_stamped_workspace_has_run_still_renders_the_run_line ... ok
+test view_model::tests::m49_a_run_still_wins_the_line_so_nothing_is_counted_behind_it ... ok
+test resolve::tests::forms_a_shell_less_argv_for_mesh_status ... ok
+test view_model::tests::m49_the_sign_is_u00d7_and_a_count_of_one_is_never_written ... ok
+test view_model::tests::m49_two_sessions_in_one_repo_render_the_repo_once_with_a_count ... ok
+test view_model::tests::m49_the_grouping_key_is_the_raw_repo_string ... ok
+test view_model::tests::m49_grouping_counting_and_ordering_examples_outline ... ok
+test resolve::tests::resolution_never_crashes_even_when_nothing_is_found_anywhere ... ok
+test view_model::tests::node_rows_maps_every_node_in_a_mixed_fleet_none_dropped ... ok
+test view_model::tests::node_with_no_presence_renders_whole_without_crashing ... ok
+test view_model::tests::role_badge_and_nested_version_worker ... ok
+test view_model::tests::role_badge_and_nested_version_control ... ok
+test view_model::tests::this_node_tag_absent_when_local_absent ... ok
+test view_model::tests::this_node_tag_does_not_change_the_health_dot ... ok
+test view_model::tests::version_unknown_when_no_presence ... ok
+test view_model::tests::this_node_tag_present_when_local_true ... ok
+test resolve::tests::the_fleet_polls_spawn_form_is_unmoved_and_sets_no_working_directory ... ok
+test resolve::tests::never_resolves_to_the_earlier_path_hijack_when_co_located_sibling_exists ... ok
+test resolve::tests::resolution_mode_is_path_then_pinned_fallback_when_sibling_absent_dev_run ... ok
+test resolve::tests::resolves_co_located_sibling_by_absolute_path_with_no_path_search ... ok
+
+test result: ok. 118 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+   Doc-tests mesh_desktop_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+ok - cargo test (apps/desktop)
+ok - cargo check (apps/desktop shell)

@@ -37,7 +37,7 @@ import {
 } from "./engine.mjs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig } from "@aof/contracts/loop-bounds";
+import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
 
 import { existsSync } from "node:fs";
 
@@ -63,7 +63,7 @@ export function createStoryCycle({
 }) {
   const { resolveItemExact, requireLocalCheckout } = items;
   const { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, loopRepairFilePath } = childDrive;
-  const { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks } = asks;
+  const { askContext, askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks } = asks;
   const { readAsk } = askRequests;
   const { resolveRefInWorktree } = dispatch;
   const { meshDispatchWorktreePath } = worktrees;
@@ -536,11 +536,13 @@ export function createStoryCycle({
     if (answer != null && retryRecord == null) throw new TypeError("drivePhase: an answer re-drives the run that waited for it, so it needs that run as retryRecord");
     const item = requireLocalCheckout(await resolveItemExact(ctx, ref), ref);
     const opts = transitionOptionsFor(ctx);
+    if (declaration.execution != null) brief = { ...brief, nativeAskContext: ctx.nativeAskContext ?? askContext({ ctx, scope: declaration.scope, loopRunId: declaration.loopRunId }).site };
     const { record } = retryRecord == null
       ? await transitionRunStart(
         item,
         {
           brief,
+          ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, declaration.phase) }),
           node: meshNodeIdOf(ctx.workspace.config),
           now,
         },
@@ -562,6 +564,7 @@ export function createStoryCycle({
         runId: record.runId,
         thinking,
         model,
+        ...(lend.runtime == null ? {} : { runtime: lend.runtime }),
         // 143/01 (ADR-002 §5) — the whole-item cascade crosses the process boundary on the argv.
         autonomous: autonomous === true,
         fix: answer == null ? fix : null,
@@ -579,6 +582,7 @@ export function createStoryCycle({
         ...ctx,
         loopDrive: {
           runId: record.runId,
+          ...(record.execution == null ? {} : { execution: record.execution }),
           ...(thinking == null ? {} : { thinking }),
           ...(model == null ? {} : { model }),
           // 143/01 (ADR-002 §5) — and in-process, on the lend.
@@ -604,6 +608,7 @@ export function createStoryCycle({
     fix,
     thinking = null,
     model = null,
+    runtime = null,
     autonomous = false,
     answerFile = null,
     haltFile = null,
@@ -628,6 +633,7 @@ export function createStoryCycle({
         ...(haltFile == null ? {} : { haltFile }),
         ...(thinking == null ? {} : { thinking }),
         ...(model == null ? {} : { model }),
+        ...(runtime == null ? {} : { runtime }),
         ...(autonomous === true ? { autonomous: true } : {}),
         env: {
           ...(typeof process.env.AOF_GLOBAL_HOME === "string" ? { AOF_GLOBAL_HOME: process.env.AOF_GLOBAL_HOME } : {}),
@@ -679,8 +685,8 @@ export function createStoryCycle({
     const declaration = declare();
     let record;
     try {
-      const brief = { ...runBrief(declaration), halt: { stop: act.stop, producer: act.producer ?? null } };
-      ({ record } = await transitionRunStart(item, { brief, node: meshNodeIdOf(ctx.workspace.config), now }, transitionOptionsFor(ctx)));
+      const brief = { ...runBrief(declaration), halt: { stop: act.stop, producer: act.producer ?? null }, ...(declaration.execution == null ? {} : { nativeAskContext: askContext({ ctx, scope, loopRunId }).site }) };
+      ({ record } = await transitionRunStart(item, { brief, node: meshNodeIdOf(ctx.workspace.config), now, ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, declaration.phase) }) }, transitionOptionsFor(ctx)));
     } catch (error) {
       return { decision: "stop", facts: { repair: `refused:${error?.code ?? "run-start-error"}` } };
     }
@@ -702,10 +708,11 @@ export function createStoryCycle({
       scope,
     };
     await narrate(`Driving ${ref} — repair of ${act.stop}, run ${record.runId}.`);
-    const driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
-    const outcome = driven.outcome.outcome === "needs-input" ? { ...driven.outcome, outcome: "failed", failureReason: "needs-input" } : driven.outcome;
-    const settled = await settleDriven({ ...driven, outcome }, ctx, { now, narrate });
-    const terminal = settled.record?.state ?? outcome.outcome;
+    let driven = await drivePhase({ ref, phase: "repair", cycle: 1, declaration, retryRecord: record, halt: handOver, now }, ctx);
+    if (driven.outcome.outcome === "needs-input" && driven.record.execution == null) driven = { ...driven, outcome: { ...driven.outcome, outcome: "failed", failureReason: "needs-input" } };
+    driven = await settleDriven(driven, ctx, { now, narrate });
+    if (driven.outcome.outcome === "needs-input") return { decision: "stop", facts: { repair: record.runId, repairOutcome: "needs-input" } };
+    const terminal = driven.record?.state ?? driven.outcome.outcome;
     return terminal === "done"
       ? { decision: "resume", runId: record.runId }
       : { decision: "stop", facts: { repair: record.runId, repairOutcome: terminal } };

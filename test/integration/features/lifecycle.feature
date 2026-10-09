@@ -1,6 +1,33 @@
 Feature: AOF CLI lifecycle
   User-facing lifecycle commands should stay stable across refactors.
 
+  Scenario: 156 one loop refines with Codex and implements and verifies with Claude
+    Given a deterministic runtime regression for "mixed"
+    Then its real CLI, phase gates and settled runs pass
+    And a persistently failing task stops within the recorded bound
+
+  Scenario: 156 a mixed loop resumes the recorded phase selections after configuration changes
+    Given a mixed loop resumed after refinement and changed configuration
+    Then its real CLI, phase gates and settled runs pass
+
+  Scenario: 154/11 Claude retains the isolated default lifecycle and failure bound
+    Given a deterministic runtime regression for "claude"
+    Then its real CLI, phase gates and settled runs pass
+    And a persistently failing task stops within the recorded bound
+
+  Scenario: 154/11 Codex retains the isolated native lifecycle and failure bound
+    Given a deterministic runtime regression for "codex"
+    Then its real CLI, phase gates and settled runs pass
+    And a persistently failing task stops within the recorded bound
+
+  Scenario: 154/11 live fixture preparation is not live acceptance
+    Given a prepared live runtime fixture for "codex"
+    Then it has native assets and an isolated global home without launching or accepting
+
+  Scenario: 154/11 an unsupported Codex profile is not a passing lifecycle
+    Given an unsupported Codex runtime regression
+    Then its profile refusal precedes phase work
+
   Scenario: Show command help
     Given an empty project
     When I run `--help`
@@ -32,7 +59,7 @@ Feature: AOF CLI lifecycle
     And file `.aof/aof.config.json` should contain `"https://aof.local/schemas/aof.schema.json"`
     And file `.aof/aof.config.json` should contain `"resources": []`
     And file `.aof/.gitignore` should contain `/work/`
-    And file `.codex/skills/project-context/SKILL.md` should not exist
+    And file `.agents/skills/project-context/SKILL.md` should not exist
     And file `.codex/commands/prime.md` should not exist
     And JSON file `.aof/aof.lock.json` should contain runtime `codex`
 
@@ -174,10 +201,10 @@ Feature: AOF CLI lifecycle
     Given a project with referenced global assets
     When I run `assets apply --codex`
     Then the command should succeed
-    And file `.codex/skills/shared-review/SKILL.md` should exist
-    And file `.codex/skills/shared-review/SKILL.md` should contain `Codex global override body`
-    And file `.codex/AGENTS.md` should exist
-    And file `.codex/AGENTS.md` should contain `Follow team standards`
+    And file `.agents/skills/shared-review/SKILL.md` should exist
+    And file `.agents/skills/shared-review/SKILL.md` should contain `Codex global override body`
+    And file `AGENTS.md` should exist
+    And file `AGENTS.md` should contain `Follow team standards`
     And file `.aof/assets/skills/shared-review/SKILL.md` should not exist
     And JSON file `.aof/aof.lock.json` should contain global resource `shared-review`
     When I run `project show`
@@ -197,39 +224,39 @@ Feature: AOF CLI lifecycle
     When I run `assets apply --codex --dry-run`
     Then the command should succeed
     And stdout should contain `Would create`
-    And file `.codex/skills/shared-review/SKILL.md` should not exist
+    And file `.agents/skills/shared-review/SKILL.md` should not exist
     When I run `assets apply --codex`
     Then the command should succeed
-    And file `.codex/skills/shared-review/SKILL.md` should exist
+    And file `.agents/skills/shared-review/SKILL.md` should exist
     And JSON file `.aof/aof.lock.json` should contain global resource `shared-review`
 
   Scenario: Render referenced global skill helper files
     Given a project with referenced global skill helper files
     When I run `assets apply --codex`
     Then the command should succeed
-    And file `.codex/skills/research-helper/search.py` should exist
-    And file `.codex/skills/research-helper/search.py` should contain `print('search')`
+    And file `.agents/skills/research-helper/search.py` should exist
+    And file `.agents/skills/research-helper/search.py` should contain `print('search')`
     And file `.aof/assets/skills/research-helper/search.py` should not exist
-    And JSON file `.aof/aof.lock.json` should contain generated file `.codex/skills/research-helper/search.py`
+    And JSON file `.aof/aof.lock.json` should contain generated file `.agents/skills/research-helper/search.py`
     And JSON file `.aof/aof.lock.json` should contain global resource `research-helper`
 
   Scenario: Preview referenced global skill helper files
     Given a project with referenced global skill helper files
     When I run `assets apply --codex --dry-run`
     Then the command should succeed
-    And stdout should contain `.codex`
+    And stdout should contain `.agents`
     And stdout should contain `search.py`
-    And file `.codex/skills/research-helper/search.py` should not exist
+    And file `.agents/skills/research-helper/search.py` should not exist
 
   Scenario: Render referenced global skill helper file placeholders
     Given a project with referenced global skill helper file placeholders
     When I run `assets apply`
     Then the command should succeed
-    And file `.codex/skills/research-helper/SKILL.md` should contain `Codex helper .codex/skills/research-helper/search.py`
+    And file `.agents/skills/research-helper/SKILL.md` should contain `Codex helper search.py`
     And file `.claude/skills/research-helper/SKILL.md` should contain `Base helper .claude/skills/research-helper/search.py`
-    And file `.codex/skills/research-helper/SKILL.md` should not contain `{{`
+    And file `.agents/skills/research-helper/SKILL.md` should not contain `{{`
     And file `.claude/skills/research-helper/SKILL.md` should not contain `{{`
-    And file `.codex/skills/research-helper/search.py` should exist
+    And file `.agents/skills/research-helper/search.py` should exist
     And file `.claude/skills/research-helper/search.py` should exist
     And JSON file `.aof/aof.lock.json` should contain global resource `research-helper`
 
@@ -237,10 +264,10 @@ Feature: AOF CLI lifecycle
     Given a project with referenced global skill helper file placeholders
     When I run `assets apply --codex --dry-run`
     Then the command should succeed
-    And stdout should contain `.codex/skills/research-helper/SKILL.md`
-    And stdout should contain `.codex/skills/research-helper/search.py`
-    And file `.codex/skills/research-helper/SKILL.md` should not exist
-    And file `.codex/skills/research-helper/search.py` should not exist
+    And stdout should contain `.agents/skills/research-helper/SKILL.md`
+    And stdout should contain `search.py`
+    And file `.agents/skills/research-helper/SKILL.md` should not exist
+    And file `.agents/skills/research-helper/search.py` should not exist
 
   Scenario: Render command helper files beside command markdown
     Given a project with command helper file placeholders
@@ -301,20 +328,20 @@ Feature: AOF CLI lifecycle
     And file `.codex/aof/workflows/audit.md` should contain `Audit the milestone`
     And file `.claude/commands/audit.md` should contain `.claude/aof/workflows/audit.md`
     And file `.claude/commands/audit.md` should contain `Argument hint`
-    And file `.codex/skills/audit/SKILL.md` should contain `.codex/aof/workflows/audit.md`
+    And file `.agents/skills/audit/SKILL.md` should contain `.codex/aof/workflows/audit.md`
     And JSON file `.aof/aof.lock.json` should contain generated file `.codex/aof/workflows/audit.md`
 
   Scenario: Render asset reference placeholders
     Given a project with asset reference placeholders
     When I run `assets apply`
     Then the command should succeed
-    And file `.codex/aof/workflows/audit.md` should contain `.codex/skills/ci/SKILL.md`
+    And file `.codex/aof/workflows/audit.md` should contain `.agents/skills/ci/SKILL.md`
     And file `.claude/commands/review.md` should contain `.claude/skills/ci/SKILL.md`
     And file `.claude/commands/review.md` should contain `.claude/aof/workflows/audit.md`
-    And file `.codex/skills/review/SKILL.md` should contain `.codex/skills/ci/SKILL.md`
-    And file `.codex/skills/review/SKILL.md` should contain `.codex/aof/workflows/audit.md`
-    And file `.codex/skills/shared-ref/SKILL.md` should contain `.codex/skills/ci/SKILL.md`
-    And file `.codex/skills/review/SKILL.md` should not contain `{{`
+    And file `.agents/skills/review/SKILL.md` should contain `.agents/skills/ci/SKILL.md`
+    And file `.agents/skills/review/SKILL.md` should contain `.codex/aof/workflows/audit.md`
+    And file `.agents/skills/shared-ref/SKILL.md` should contain `.agents/skills/ci/SKILL.md`
+    And file `.agents/skills/review/SKILL.md` should not contain `{{`
 
   Scenario: Reject invalid workflow references and argument overrides
     Given a project with invalid workflow-backed assets
@@ -378,21 +405,21 @@ Feature: AOF CLI lifecycle
     Then the command should succeed
     And stdout should contain `Would create`
     And stdout should contain `Would update .aof/aof.lock.json`
-    And file `.codex/skills/file-backed/SKILL.md` should not exist
+    And file `.agents/skills/file-backed/SKILL.md` should not exist
     And file `.aof/aof.lock.json` should not exist
 
   Scenario: Protect drifted generated files unless forced
     Given a project with .aof file-backed config
-    When I run `assets apply --codex`
+    When I run `assets apply --claude`
     Then the command should succeed
-    When I replace file `.codex/skills/file-backed/SKILL.md` with `Manual edit`
-    And I run `assets apply --codex`
+    When I replace file `.claude/skills/file-backed/SKILL.md` with `Manual edit`
+    And I run `assets apply --claude`
     Then the command should succeed
     And stdout should contain `drift-warning`
-    And file `.codex/skills/file-backed/SKILL.md` should contain `Manual edit`
-    When I run `assets apply --codex --force`
+    And file `.claude/skills/file-backed/SKILL.md` should contain `Manual edit`
+    When I run `assets apply --claude --force`
     Then the command should succeed
-    And file `.codex/skills/file-backed/SKILL.md` should contain `File-backed body`
+    And file `.claude/skills/file-backed/SKILL.md` should contain `File-backed body`
 
   Scenario: Prune stale owned generated files
     Given a project with .aof file-backed config
@@ -402,7 +429,7 @@ Feature: AOF CLI lifecycle
     And I run `assets apply --codex`
     Then the command should succeed
     And stdout should contain `Removed`
-    And file `.codex/skills/file-backed/SKILL.md` should not exist
+    And file `.agents/skills/file-backed/SKILL.md` should not exist
 
   Scenario: Show project inspection in human and JSON formats
     Given a project with .aof package config
@@ -449,30 +476,30 @@ Feature: AOF CLI lifecycle
     Given a project with .aof file-backed config
     When I run `assets apply --codex`
     Then the command should succeed
-    And stdout should contain `Created .codex/skills/file-backed/SKILL.md`
+    And stdout should contain `Created .agents/skills/file-backed/SKILL.md`
     And stdout should not contain `reason=file does not exist`
-    And file `.codex/.gitignore` should contain `!.gitignore`
+    And file `.codex/.gitignore` should not exist
     When I run `assets clean --dry-run`
     Then the command should succeed
     And stdout should contain `dry-run: no generated files`
     And stdout should contain `delete:`
-    And file `.codex/skills/file-backed/SKILL.md` should exist
+    And file `.agents/skills/file-backed/SKILL.md` should exist
     When I run `assets clean`
     Then the command should succeed
     And stdout should contain `delete:`
-    And file `.codex/skills/file-backed/SKILL.md` should not exist
-    And JSON file `.aof/aof.lock.json` should not contain generated file `.codex/skills/file-backed/SKILL.md`
+    And file `.agents/skills/file-backed/SKILL.md` should not exist
+    And JSON file `.aof/aof.lock.json` should not contain generated file `.agents/skills/file-backed/SKILL.md`
 
   Scenario: Clean preserves drifted lock-owned outputs
     Given a project with .aof file-backed config
     When I run `assets apply --codex`
     Then the command should succeed
-    When I replace file `.codex/skills/file-backed/SKILL.md` with `Manual edit`
+    When I replace file `.agents/skills/file-backed/SKILL.md` with `Manual edit`
     And I run `assets clean`
     Then the command should succeed
     And stdout should contain `drift-warning`
-    And file `.codex/skills/file-backed/SKILL.md` should contain `Manual edit`
-    And JSON file `.aof/aof.lock.json` should contain generated file `.codex/skills/file-backed/SKILL.md`
+    And file `.agents/skills/file-backed/SKILL.md` should contain `Manual edit`
+    And JSON file `.aof/aof.lock.json` should contain generated file `.agents/skills/file-backed/SKILL.md`
 
   Scenario: Catalog storage is disabled
     Given an empty project

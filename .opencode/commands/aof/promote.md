@@ -19,6 +19,21 @@ needs no promotion.
 
 <process>
 For: "$ARGUMENTS"
+0. **Two modes name no slug — the verb chooses, never you.**
+   - `--show-candidates` → run `aof work promote --show-candidates --json`. It reports `candidates`
+     in order, then `waiting` with what each waits on, and writes nothing. Report both lists as the
+     verb answered them — `candidates` in their order with each one's `unblocks`, and each `waiting`
+     item with its `waitsOn` entries — then stop.
+   - `--next-item [at <P>]` → run `aof work promote --next-item [--at <P>] --json`. It promotes the
+     first candidate and reports the minted ref, exactly as a named promote does: the same
+     envelope, the same refusals, the same edge rewiring. Carry on from step 3 with that envelope.
+
+   **Never choose a candidate by reading the backlog or its `depends:` lines.** Which items are
+   ready, and in what order (the one that unblocks the most first, then the oldest), is the verb's
+   answer and nothing else's. `promote-no-candidates` is a stop to report — the backlog is empty, or
+   nothing in it can go yet — never a reason to search the backlog for something to promote.
+   `promote-flag-conflict` means a slug, `--next-item` and `--show-candidates` were mixed, or
+   `--show-candidates` was given a position: pass exactly one mode.
 1. **Resolve the slug + the optional position.** Slug = the backlog item's slug, verbatim (the ref
    `aof work find` answered with). `at <P>` — optional — is the position the operator named. With no
    position the item is APPENDED at the tail, which shifts nothing.

@@ -42,10 +42,11 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const { reportDegrade } = degradeServices;
   const { settleSpendFromTranscript } = runSpendIngestServices;
 
+  const asks = { askContext: loopAskServices.askContext, askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks };
   const implementation = createStoryCycle({
     items: { resolveItemExact, requireLocalCheckout },
     childDrive: { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, loopRepairFilePath },
-    asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks },
+    asks,
     askRequests: { readAsk },
     dispatch: { resolveRefInWorktree },
     worktrees: { meshDispatchWorktreePath },

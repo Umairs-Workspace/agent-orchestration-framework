@@ -7,8 +7,10 @@ import { createRunStore } from "@aof/execution/runs";
 import { createRunSpendIngest } from "@aof/execution/spend";
 import { createRunHeartbeats } from "@aof/execution/heartbeats";
 import { createRunSessionCapture } from "@aof/execution/session-capture";
+import { resolveExecution } from "@aof/execution/runtime-selection";
 
 const at = "2026-09-28T10:00:00.000Z";
+const codexExecution = () => resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native-test", model: "native-test", isDefault: true, supportedReasoningEfforts: [{ reasoningEffort: "high" }] }] } } });
 const unexpected = () => assert.fail("unexpected collaborator call");
 const store = (overrides = {}) => createRunStore({ reportDegrade: unexpected, getAnswerTokens: unexpected, readSessionAnswers: unexpected, ...overrides });
 async function fixture(run) {
@@ -95,3 +97,50 @@ test("session capture waits for persistence while retaining the caller hook resu
   assert.equal(await pending, "hook-result");
   assert.deepEqual(calls, [[item, { runId: "r1", sessionId: "s1" }]]);
 });
+
+test("154/01 task01 — actual run mint/read/retry pins execution and native identity, preserving prior bytes", () => fixture(async ({ item }) => {
+  const runs = store();
+  const execution = codexExecution();
+  const original = await runs.startRun(item, { now: at, sessionId: "native-154", execution });
+  execution.phases.continue.model = "caller-mutated";
+  assert.equal((await runs.readRuns(item))[0].execution.phases.continue.model, "native-test");
+  await runs.completeRun(item, { runId: original.runId, outcome: "failed", failureReason: "timeout", now: at });
+  const file = runs.runRecordPath(item, original.runId);
+  const bytes = await readFile(file, "utf8");
+  for (const options of [{ runtime: "claude" }, { choices: { continue: { model: "different", modelFlag: "--model" } } }]) {
+    await assert.rejects(runs.retryRun(item, options), error => error.code === "execution-resume-conflict");
+    assert.equal(await readFile(file, "utf8"), bytes);
+    assert.equal((await runs.readRuns(item)).length, 1);
+  }
+  const resumed = await runs.retryRun(item, { now: "2026-09-28T10:00:01.000Z" });
+  assert.deepEqual(resumed.execution, original.execution); assert.equal(resumed.sessionId, "native-154");
+  assert.equal(await readFile(file, "utf8"), bytes);
+  await runs.completeRun(item, { runId: resumed.runId, outcome: "done", now: at });
+  const fresh = await runs.startRun(item, { now: "2026-09-28T10:00:02.000Z", execution: resolveExecution({}), attempt: 99 });
+  assert.equal(fresh.execution.runtime, "claude"); assert.equal(fresh.sessionId, null); assert.equal(fresh.attempt, 1);
+  assert.equal(await readFile(file, "utf8"), bytes);
+}));
+
+test("154/01 task01 — malformed present metadata survives read and refuses retry without writes; invalid mint writes nothing", () => fixture(async ({ item }) => {
+  const runs = store();
+  await assert.rejects(runs.startRun(item, { execution: null, now: at }), error => error.code === "invalid-record");
+  assert.deepEqual(await runs.readRuns(item), []);
+  const run = await runs.startRun(item, { now: at });
+  await runs.completeRun(item, { runId: run.runId, outcome: "failed", failureReason: "timeout", now: at });
+  const file = runs.runRecordPath(item, run.runId);
+  const raw = JSON.parse(await readFile(file, "utf8")); raw.execution = null;
+  await writeFile(file, JSON.stringify(raw));
+  assert.equal((await runs.readRuns(item))[0].execution, null);
+  const bytes = await readFile(file, "utf8");
+  await assert.rejects(runs.retryRun(item), error => error.code === "invalid-record");
+  assert.equal(await readFile(file, "utf8"), bytes);
+}));
+
+test("154/01 task01 — actual legacy retry preserves seventeen-key shape and native identity", () => fixture(async ({ item }) => {
+  const runs = store();
+  const original = await runs.startRun(item, { now: at, sessionId: "legacy-native" });
+  assert.equal(Object.keys(original).length, 17); assert.equal(Object.hasOwn(original, "execution"), false);
+  await runs.completeRun(item, { runId: original.runId, outcome: "failed", failureReason: "timeout", now: at });
+  const resumed = await runs.retryRun(item, { now: "2026-09-28T10:00:01.000Z" });
+  assert.equal(resumed.sessionId, "legacy-native"); assert.equal(Object.keys(resumed).length, 17);
+}));

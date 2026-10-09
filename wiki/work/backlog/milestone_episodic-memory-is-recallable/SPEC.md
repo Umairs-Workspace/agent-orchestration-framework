@@ -8,7 +8,7 @@ owner: product-owner
 created: 2026-09-27
 updated: 2026-09-27
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
-depends: [148, memory-closes-the-loop]
+depends: [148, 153]
 schema: 1
 aofVersion: 0.1.0
 ---

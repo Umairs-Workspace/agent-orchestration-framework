@@ -195,21 +195,15 @@ export function loopRepairFromConfig(workspace) {
 // holds the line), so no workspace twin is read here. An unset lane bound inherits
 // `work.dispatch.concurrency` at `work:dispatch`'s one resolution site, which narrows the
 // pool's bound by the number the loop hands it (129/ADR-006, amended). An unset phase mode
-// does NOT inherit: the loop has its own default per phase, `LOOP_AGENT_MODE_DEFAULTS` below,
-// applied at the phase level, so every refine and continue the loop drives carries a flag and
-// `work.agents.mode` governs hand-run sessions only (140, superseding 129/ADR-001 §5's fallback).
+// answers `null` here too: its fallback past the loop key is the session chain, whose one home
+// is `agent-mode.mjs` beside this leaf (155, superseding 140 and widening 129/ADR-001 §5).
 //
 // The range probe (`resolve(p) === p`) therefore admits exactly the members: a positive
 // integer for the bound, `solo` / `orchestrated` for a mode. A step on an UNSET key steps
 // from `null` — the per-key resolvers keep answering `null` for it, the default being the
-// phase's rather than the key's — and no loop record declares one of these as a ceiling, so
-// the tuner never meets that case.
+// session chain's rather than the key's — and no loop record declares one of these as a
+// ceiling, so the tuner never meets that case.
 export const LOOP_AGENT_MODES = Object.freeze(["solo", "orchestrated"]);
-
-// The mode each driven phase runs in when its `work.loop.agents.<phase>.mode` is unset (140).
-// Both are solo: a driven session holds the whole contract in one context, and a cold-start
-// agent per role re-reads it at a cost the operator measured.
-export const LOOP_AGENT_MODE_DEFAULTS = Object.freeze({ refine: "solo", continue: "solo" });
 
 export const resolveLoopDispatchConcurrency = (value) => positiveInteger(value, null);
 export const resolveLoopAgentMode = (value) => (LOOP_AGENT_MODES.includes(value) ? value : null);
@@ -236,11 +230,11 @@ export const LOOP_AGENT_MODE_RESOLVERS = Object.freeze({
   continue: loopAgentContinueModeFromConfig,
 });
 
-// The key's value when it is set, the phase's default when it is unset (140), `null` for a
-// phase that resolves no mode.
+// The loop key's member value, or `null` when it is unset or the phase resolves no mode. The
+// fallback past an unset key is `sessionAgentMode` in `agent-mode.mjs` (155).
 export function loopAgentModeFromConfig(workspace, phase) {
   if (!Object.prototype.hasOwnProperty.call(LOOP_AGENT_MODE_RESOLVERS, phase)) return null;
-  return LOOP_AGENT_MODE_RESOLVERS[phase](workspace) ?? LOOP_AGENT_MODE_DEFAULTS[phase];
+  return LOOP_AGENT_MODE_RESOLVERS[phase](workspace);
 }
 
 // The registry's config-pointer authority is derived from callable resolvers,
@@ -269,6 +263,8 @@ export const LOOP_BOUND_CONFIG_RESOLVERS = Object.freeze({
   "work.loop.refine": loopRefineFromConfig,
   // 147/00 — the repair switch, appended last with the same discipline.
   "work.loop.repair": loopRepairFromConfig,
+  "work.loop.runtimes": loopPhaseRuntimesFromConfig,
+  "work.loop.runtime": loopRuntimeFromConfig,
 });
 
 export const LOOP_BOUND_CONFIG_KEYS = Object.freeze(Object.keys(LOOP_BOUND_CONFIG_RESOLVERS));
@@ -332,6 +328,8 @@ export const LOOP_BOUND_VALUE_RESOLVERS = Object.freeze({
   "work.loop.refine": resolveLoopRefine,
   // 147/00 — its value-shaped twin, in the same position.
   "work.loop.repair": resolveLoopRepair,
+  "work.loop.runtimes": resolveLoopPhaseRuntimes,
+  "work.loop.runtime": resolveLoopRuntime,
 });
 
 export const LOOP_BOUND_VALUE_KEYS = Object.freeze(Object.keys(LOOP_BOUND_VALUE_RESOLVERS));
@@ -408,4 +406,56 @@ export function deadlineApplicability(policy, attemptElapsedMs) {
     startToClose: true,
     scheduleToClose: true,
   });
+}
+
+// 154/ADR-002: execution reads the declared runtime through this same config
+// owner. Presence is retained so provenance and malformed values cannot default.
+export const EXECUTION_RUNTIMES = Object.freeze(["claude", "codex"]);
+export const DEFAULT_EXECUTION_RUNTIME = "claude";
+export function resolveLoopRuntime(value) {
+  return value === undefined ? DEFAULT_EXECUTION_RUNTIME : EXECUTION_RUNTIMES.includes(value) ? value : null;
+}
+export function loopRuntimeSettingFromConfig(workspace) {
+  const loop = loopConfig(workspace);
+  return { present: Object.prototype.hasOwnProperty.call(loop ?? {}, "runtime"), value: loop?.runtime };
+}
+export function loopRuntimeFromConfig(workspace) {
+  return resolveLoopRuntime(loopRuntimeSettingFromConfig(workspace).value);
+}
+export function resolveLoopPhaseRuntimes(value) {
+  if (value === undefined) return {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  return Object.entries(value).every(([phase, runtime]) => ["refine", "continue", "verify"].includes(phase) && EXECUTION_RUNTIMES.includes(runtime)) ? value : null;
+}
+export function loopPhaseRuntimesFromConfig(workspace) {
+  return resolveLoopPhaseRuntimes(loopConfig(workspace)?.runtimes);
+}
+
+// A loop owns the complete plan; a driven session owns one native envelope.
+export function executionForPhase(execution, phase) {
+  const selected = phase === "repair" || phase === "review" || phase === "build" ? "continue" : phase;
+  return execution?.version === 2 ? execution.phaseExecutions[selected] : execution;
+}
+export function executionRuntimes(execution) {
+  return execution == null ? [] : [...new Set(execution.version === 2
+    ? Object.values(execution.phaseExecutions).map(value => value.runtime) : [execution.runtime])];
+}
+
+export function parseRuntimeChoices(value) {
+  const result = {};
+  const named = value => typeof value === "string" && value.length > 0;
+  const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+  const SESSION_PHASES = ["refine", "continue", "verify"];
+  const fail = (code, path, source, message) => { throw Object.assign(new Error(message), { code, path, source }); };
+  if (value === undefined) return result;
+  for (const raw of Array.isArray(value) ? value : [value]) {
+    if (!named(raw)) fail("unsupported-runtime", "--runtime", "flag", "expected [PHASE=]claude or codex");
+    const parts = raw.split("=");
+    const phase = parts.length === 1 ? "default" : parts[0];
+    const runtime = parts.at(-1);
+    if (parts.length > 2 || (parts.length === 2 && phase === "default") || !["default", ...SESSION_PHASES].includes(phase) || !EXECUTION_RUNTIMES.includes(runtime)) fail("unsupported-runtime", "--runtime", "flag", "expected [refine|continue|verify=]claude or codex");
+    if (own(result, phase)) fail("unsupported-runtime", "--runtime", "flag", `duplicate ${phase} runtime`);
+    result[phase] = runtime;
+  }
+  return result;
 }

@@ -77,13 +77,18 @@ export const archTests = [
         assert.equal(summaries.length, 3, "the digest's three ## sections yield three summary records (h1/h3 excluded)");
 
         for (const record of summaries) {
-          // Frozen MemoryRecord shape: exactly the 13 fields, every value a string.
+          // Frozen MemoryRecord shape: exactly its fields, every value a string but `tags`.
           assert.deepEqual(
             Object.keys(record).filter((k) => k !== "score").sort(),
             [...MEMORY_RECORD_FIELDS].sort(),
             `summary ${record.id} carries exactly the frozen MemoryRecord fields`,
           );
+          // 148/ADR-003: `tags` is the one non-string field — an array of strings, [] when there is none.
           for (const field of MEMORY_RECORD_FIELDS) {
+            if (field === "tags") {
+              assert.deepEqual(record.tags, [], `summary ${record.id} carries tags []`);
+              continue;
+            }
             assert.equal(typeof record[field], "string", `summary ${record.id} field "${field}" is a string`);
           }
 

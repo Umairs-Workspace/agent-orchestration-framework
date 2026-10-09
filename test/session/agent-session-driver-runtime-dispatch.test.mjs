@@ -1,3 +1,4 @@
+// 154/02 supersedes historical Codex one-shot expectations; Claude and the seventeen-member surface remain compatible.
 import { defaultSessionDriver as _aofSessions } from "aof/session-services";
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // test/session/agent-session-driver-runtime-dispatch.test.mjs — milestone 53 / story 00, task 04
@@ -45,7 +46,7 @@ const sinkDefaultSpawnRuntime = _aofApplication.mesh.worker.defaultSpawnRuntime;
 const sinkBuildDriverCommand = _aofApplication.mesh.worker.buildDriverCommand;
 import { createFakeWhich, createFakePtySpawn } from "../support/mesh-worker-terminal-fixture.mjs";
 
-const CODEX_ARGV_HEAD = ["exec", "--json", "-o", "last-message.txt", "--sandbox", "workspace-write", "--ask-for-approval", "never"];
+const CODEX_ARGV_HEAD = ["app-server", "--listen", "stdio://"];
 
 // withRemovedWorktree(fn) — a path that EXISTED and no longer does. The child fails on
 // its working directory before any binary lookup, which is what makes every codex lane
@@ -86,7 +87,7 @@ export const agentSessionDriverRuntimeDispatchTests = [
     run: async () => {
       const b = brief("/tmp/wt");
       const codex = buildDriverCommand("codex", b);
-      assert.equal(codex.bin, "codex");
+      assert.equal(codex.bin, process.platform === "win32" ? "codex.exe" : "codex");
       assert.ok(Array.isArray(codex.args), "and an args array");
       for (const driver of ["claude", "gemini", "no-such-provider", "", undefined, null, 0]) {
         assert.equal(buildDriverCommand(driver, b), null, `buildDriverCommand(${JSON.stringify(driver)}) is null`);
@@ -94,28 +95,11 @@ export const agentSessionDriverRuntimeDispatchTests = [
     },
   },
   {
-    name: "53/00 task04 — the codex argv is the pre-existing headless one-shot, unchanged by the move, with the prompt last so the flags cannot be reordered around it",
+    name: "154/02 supersedes 53/00 task04 — Codex uses owned App Server stdio with no approval or sandbox overrides",
     run: async () => {
       const { args } = buildDriverCommand("codex", brief("/tmp/wt"));
-      assert.deepEqual(args.slice(0, CODEX_ARGV_HEAD.length), CODEX_ARGV_HEAD, "exec --json -o last-message.txt --sandbox workspace-write --ask-for-approval never");
-      assert.equal(args.length, CODEX_ARGV_HEAD.length + 1, "followed by exactly one more element");
-      assert.equal(typeof args[args.length - 1], "string", "and the prompt is the last element");
-    },
-  },
-  {
-    name: "53/00 task04 — the codex prompt is composed from the brief: it names the itemRef, ends with the task when one is supplied, and has no trailing whitespace when it is not",
-    run: async () => {
-      const withTask = buildDriverCommand("codex", { itemRef: "53/00", worktreeCwd: "/tmp/wt", task: "extract the driver" });
-      const prompt = withTask.args[withTask.args.length - 1];
-      assert.ok(prompt.includes("53/00"), "it names the itemRef");
-      assert.ok(prompt.endsWith("extract the driver"), "and ends with the brief's task");
-
-      for (const task of [undefined, null, ""]) {
-        const built = buildDriverCommand("codex", { itemRef: "53/00", worktreeCwd: "/tmp/wt", task });
-        const p = built.args[built.args.length - 1];
-        assert.equal(p, p.trim(), `task ${JSON.stringify(task)}: no trailing whitespace`);
-        assert.ok(p.includes("53/00"), `task ${JSON.stringify(task)}: still names the itemRef`);
-      }
+      assert.deepEqual(args, CODEX_ARGV_HEAD);
+      for (const token of ["exec", "--sandbox", "--ask-for-approval", "--dangerously-bypass-approvals-and-sandbox"]) assert.equal(args.includes(token), false);
     },
   },
   {
@@ -134,7 +118,7 @@ export const agentSessionDriverRuntimeDispatchTests = [
     run: async () => withRemovedWorktree(async (worktreeCwd) => {
       const settled = await settles(defaultSpawnRuntime(brief(worktreeCwd), { driver: "codex" }));
       assert.equal(settled.rejected, false, "nothing is thrown out of the seam");
-      assert.deepEqual(settled.value, { outcome: "failed", failureReason: "agent_error" });
+      assert.equal(settled.value.outcome, "failed"); assert.equal(settled.value.failureReason, "runtime_unavailable"); assert.equal(settled.value.processStarted, false);
     }),
   },
   {
@@ -148,7 +132,7 @@ export const agentSessionDriverRuntimeDispatchTests = [
       };
       const settled = await settles(defaultSpawnRuntime(brief(worktreeCwd), { driver: "codex", ...overrides }));
       assert.deepEqual(called, [], "none of the overrides is called — the branch owns its execFile outright");
-      assert.deepEqual(settled.value, { outcome: "failed", failureReason: "agent_error" }, "the outcome is the same coded failure as without them");
+      assert.equal(settled.value.outcome, "failed"); assert.equal(settled.value.failureReason, "runtime_unavailable");
       // `options = {}` is a DEFAULTED second parameter, so Function.length reads 1 —
       // the (brief, options) shape ADR-001 §1 froze, with no exec seam bolted on.
       assert.equal(defaultSpawnRuntime.length, 1, "the signature is still (brief, options)");
@@ -192,7 +176,7 @@ export const agentSessionDriverRuntimeDispatchTests = [
     name: "53/00 task04 — THE DISPATCH: five driver ids, each entering exactly one of the two branches, and the codex path and the claude path never both run for one drive",
     run: async () => withRemovedWorktree(async (removedCwd) => {
       const rows = [
-        { driver: "codex", command: "{bin, args}", branch: "execFile", ptySpawns: 0, whichCalls: 0, outcome: "failed", failureReason: "agent_error", cwd: removedCwd },
+        { driver: "codex", command: "{bin, args}", branch: "app-server", ptySpawns: 0, whichCalls: 0, outcome: "failed", failureReason: "runtime_unavailable", cwd: removedCwd },
         { driver: undefined, command: null, branch: "PTY session", ptySpawns: 1, whichAtLeast: 1, outcome: "done", cwd: "/tmp/wt" },
         { driver: "claude", command: null, branch: "PTY session", ptySpawns: 1, whichAtLeast: 1, outcome: "done", cwd: "/tmp/wt" },
         { driver: "", command: null, branch: "PTY session", ptySpawns: 1, whichAtLeast: 1, outcome: "done", cwd: "/tmp/wt" },
@@ -202,14 +186,14 @@ export const agentSessionDriverRuntimeDispatchTests = [
         const label = `driver ${JSON.stringify(row.driver)}`;
         const built = buildDriverCommand(row.driver, brief(row.cwd));
         if (row.command === null) assert.equal(built, null, `${label}: buildDriverCommand is null`);
-        else assert.ok(built != null && built.bin === "codex", `${label}: buildDriverCommand returns {bin, args}`);
+        else assert.ok(built != null && built.bin === (process.platform === "win32" ? "codex.exe" : "codex"), `${label}: buildDriverCommand returns {bin, args}`);
 
         const { which, calls } = countingWhich(["claude"]);
         const { spawn, spawnCalls } = createFakePtySpawn({ onWrite: ({ emitExit }) => emitExit(0) });
         const settled = await settles(defaultSpawnRuntime(brief(row.cwd), { driver: row.driver, ptySpawn: spawn, which, watchTranscriptSessionId: async () => null, commandDelayMs: 0 }));
         assert.equal(settled.rejected, false, `${label}: resolves rather than rejecting`);
         assert.equal(spawnCalls.length, row.ptySpawns, `${label}: ${row.ptySpawns} PTY spawns`);
-        if (row.branch === "execFile") {
+        if (row.branch === "app-server") {
           assert.deepEqual(calls, [], `${label}: entered the codex branch, so the provider gate was never consulted`);
           assert.equal(spawnCalls.length, 0, `${label}: and recorded zero PTY spawns`);
         } else {

@@ -1,0 +1,621 @@
+{
+  "fixtureRevision": "1df233ef329557aa69f4ca6d0fdfc7488f366d0c",
+  "ask": {
+    "started": "2026-10-08T18:57:08.726Z",
+    "ended": "2026-10-08T18:58:00.643Z",
+    "result": {
+      "ref": "07/01",
+      "phase": "refine",
+      "command": "$aof-refine 07/01 --solo",
+      "outcome": "needs-input",
+      "question": {
+        "token": "07/01 Q1",
+        "text": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+        "choices": [
+          "Alpha (42)",
+          "Beta (43)"
+        ],
+        "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9"
+      },
+      "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+      "processStarted": true,
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      },
+      "cleanupWarnings": [
+        "interrupt_failed"
+      ],
+      "settlementContext": {
+        "runtime": "codex",
+        "projectsDir": null,
+        "transcriptBaseline": null,
+        "spendBaselineAvailable": false,
+        "reason": "runtime-spend-unavailable"
+      }
+    },
+    "run": {
+      "runId": "20261008T185710087Z-0000",
+      "itemRef": "07/01",
+      "state": "running",
+      "attempt": 1,
+      "outcome": null,
+      "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+      "brief": {
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+              "turnId": "01a11ce0-747a-7b82-a854-2af23fc67ddd",
+              "baseline": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheCreate": 0,
+                "reasoningOutput": 0,
+                "total": 0
+              },
+              "latest": {
+                "input": 169333,
+                "output": 710,
+                "cacheRead": 144384,
+                "cacheCreate": 0,
+                "reasoningOutput": 106,
+                "total": 170043
+              },
+              "tokens": {
+                "input": 169333,
+                "output": 710,
+                "cacheRead": 144384,
+                "cacheCreate": 0,
+                "reasoningOutput": 106,
+                "total": 170043
+              },
+              "lastActivityAt": "2026-10-08T18:58:00.436Z"
+            }
+          ],
+          "tokens": {
+            "input": 169333,
+            "output": 710,
+            "cacheRead": 144384,
+            "cacheCreate": 0,
+            "reasoningOutput": 106,
+            "total": 170043
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T18:58:00.436Z"
+        }
+      },
+      "createdAt": "2026-10-08T18:57:10.087Z",
+      "updatedAt": "2026-10-08T18:58:00.627Z",
+      "failureReason": null,
+      "heartbeatAt": "2026-10-08T18:57:11.090Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": null,
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [
+        {
+          "question": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+          "phase": "refine",
+          "askedAt": "2026-10-08T18:58:00.480Z",
+          "parkedAt": "2026-10-08T18:58:00.627Z",
+          "answer": null,
+          "answeredAt": null,
+          "by": null,
+          "runtime": "codex",
+          "questionToken": "07/01 Q1",
+          "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+          "choices": [
+            "Alpha (42)",
+            "Beta (43)"
+          ],
+          "workspaceId": "c9ee70ad425f70a1"
+        }
+      ],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "projection": {
+      "runId": "20261008T185710087Z-0000",
+      "ref": "07/01",
+      "workspaceId": "c9ee70ad425f70a1",
+      "loopRunId": null,
+      "scope": null,
+      "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+      "phase": "refine",
+      "node": null,
+      "question": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+      "askedAt": "2026-10-08T18:58:00.480Z",
+      "state": "parked",
+      "parkedAt": "2026-10-08T18:58:00.602Z",
+      "answer": null,
+      "answeredAt": null,
+      "by": null,
+      "runtime": "codex",
+      "questionToken": "07/01 Q1",
+      "choices": [
+        "Alpha (42)",
+        "Beta (43)"
+      ],
+      "delivery": {
+        "version": 1,
+        "state": "pending"
+      }
+    },
+    "processes": [
+      {
+        "type": "process-closed",
+        "pid": 79388,
+        "code": 0
+      },
+      {
+        "type": "thread",
+        "id": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+        "policy": {
+          "type": "workspaceWrite",
+          "writableRoots": [
+            "<workspace>\\.tmp\\154-recovery-temp\\aof-live-runtime-iIPZkg\\global-aof"
+          ],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": true,
+          "excludeSlashTmp": true
+        }
+      },
+      {
+        "type": "process-closed",
+        "pid": 78012,
+        "code": 0
+      }
+    ]
+  },
+  "restarted": {
+    "started": "2026-10-08T19:00:26.704Z",
+    "ended": "2026-10-08T19:01:21.729Z",
+    "before": {
+      "run": {
+        "runId": "20261008T185710087Z-0000",
+        "itemRef": "07/01",
+        "state": "running",
+        "attempt": 1,
+        "outcome": null,
+        "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+        "brief": {
+          "runtimeObservation": {
+            "version": 1,
+            "runtime": "codex",
+            "turns": [
+              {
+                "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+                "turnId": "01a11ce0-747a-7b82-a854-2af23fc67ddd",
+                "baseline": {
+                  "input": 0,
+                  "output": 0,
+                  "cacheRead": 0,
+                  "cacheCreate": 0,
+                  "reasoningOutput": 0,
+                  "total": 0
+                },
+                "latest": {
+                  "input": 169333,
+                  "output": 710,
+                  "cacheRead": 144384,
+                  "cacheCreate": 0,
+                  "reasoningOutput": 106,
+                  "total": 170043
+                },
+                "tokens": {
+                  "input": 169333,
+                  "output": 710,
+                  "cacheRead": 144384,
+                  "cacheCreate": 0,
+                  "reasoningOutput": 106,
+                  "total": 170043
+                },
+                "lastActivityAt": "2026-10-08T18:58:00.436Z"
+              }
+            ],
+            "tokens": {
+              "input": 169333,
+              "output": 710,
+              "cacheRead": 144384,
+              "cacheCreate": 0,
+              "reasoningOutput": 106,
+              "total": 170043
+            },
+            "costUsd": null,
+            "costUnavailable": "native-cost-not-reported",
+            "usageUnavailable": null,
+            "lastActivityAt": "2026-10-08T18:58:00.436Z"
+          }
+        },
+        "createdAt": "2026-10-08T18:57:10.087Z",
+        "updatedAt": "2026-10-08T18:58:00.627Z",
+        "failureReason": null,
+        "heartbeatAt": "2026-10-08T18:57:11.090Z",
+        "retryOf": null,
+        "reclaimedAt": null,
+        "node": null,
+        "resumeAfter": null,
+        "spend": null,
+        "asks": [
+          {
+            "question": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+            "phase": "refine",
+            "askedAt": "2026-10-08T18:58:00.480Z",
+            "parkedAt": "2026-10-08T18:58:00.627Z",
+            "answer": null,
+            "answeredAt": null,
+            "by": null,
+            "runtime": "codex",
+            "questionToken": "07/01 Q1",
+            "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+            "choices": [
+              "Alpha (42)",
+              "Beta (43)"
+            ],
+            "workspaceId": "c9ee70ad425f70a1"
+          }
+        ],
+        "execution": {
+          "version": 1,
+          "runtime": "codex",
+          "runtimeSource": "flag",
+          "transport": "app-server-stdio",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "phases": {
+            "refine": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+            },
+            "continue": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+            },
+            "verify": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+            }
+          },
+          "roles": {}
+        }
+      },
+      "ask": {
+        "runId": "20261008T185710087Z-0000",
+        "ref": "07/01",
+        "workspaceId": "c9ee70ad425f70a1",
+        "loopRunId": null,
+        "scope": null,
+        "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+        "phase": "refine",
+        "node": null,
+        "question": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+        "askedAt": "2026-10-08T18:58:00.480Z",
+        "state": "parked",
+        "parkedAt": "2026-10-08T18:58:00.602Z",
+        "answer": null,
+        "answeredAt": null,
+        "by": null,
+        "runtime": "codex",
+        "questionToken": "07/01 Q1",
+        "choices": [
+          "Alpha (42)",
+          "Beta (43)"
+        ],
+        "delivery": {
+          "version": 1,
+          "state": "pending"
+        }
+      }
+    },
+    "result": {
+      "ref": "07/01",
+      "phase": "refine",
+      "command": "$aof-refine 07/01 --solo",
+      "outcome": "done",
+      "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+      "processStarted": true,
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      },
+      "settlementContext": {
+        "runtime": "codex",
+        "projectsDir": null,
+        "transcriptBaseline": null,
+        "spendBaselineAvailable": false,
+        "reason": "runtime-spend-unavailable"
+      }
+    },
+    "run": {
+      "runId": "20261008T185710087Z-0000",
+      "itemRef": "07/01",
+      "state": "done",
+      "attempt": 1,
+      "outcome": "done",
+      "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+      "brief": {
+        "runtimeObservation": {
+          "version": 1,
+          "runtime": "codex",
+          "turns": [
+            {
+              "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+              "turnId": "01a11ce0-747a-7b82-a854-2af23fc67ddd",
+              "baseline": {
+                "input": 0,
+                "output": 0,
+                "cacheRead": 0,
+                "cacheCreate": 0,
+                "reasoningOutput": 0,
+                "total": 0
+              },
+              "latest": {
+                "input": 169333,
+                "output": 710,
+                "cacheRead": 144384,
+                "cacheCreate": 0,
+                "reasoningOutput": 106,
+                "total": 170043
+              },
+              "tokens": {
+                "input": 169333,
+                "output": 710,
+                "cacheRead": 144384,
+                "cacheCreate": 0,
+                "reasoningOutput": 106,
+                "total": 170043
+              },
+              "lastActivityAt": "2026-10-08T18:58:00.436Z"
+            },
+            {
+              "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+              "turnId": "01a11ce3-7214-7d72-b729-439329dbdbef",
+              "baseline": {
+                "input": 169333,
+                "output": 710,
+                "cacheRead": 144384,
+                "cacheCreate": 0,
+                "reasoningOutput": 106,
+                "total": 170043
+              },
+              "latest": {
+                "input": 338099,
+                "output": 1698,
+                "cacheRead": 306944,
+                "cacheCreate": 0,
+                "reasoningOutput": 324,
+                "total": 339797
+              },
+              "tokens": {
+                "input": 168766,
+                "output": 988,
+                "cacheRead": 162560,
+                "cacheCreate": 0,
+                "reasoningOutput": 218,
+                "total": 169754
+              },
+              "lastActivityAt": "2026-10-08T19:01:21.431Z"
+            }
+          ],
+          "tokens": {
+            "input": 338099,
+            "output": 1698,
+            "cacheRead": 306944,
+            "cacheCreate": 0,
+            "reasoningOutput": 324,
+            "total": 339797
+          },
+          "costUsd": null,
+          "costUnavailable": "native-cost-not-reported",
+          "usageUnavailable": null,
+          "lastActivityAt": "2026-10-08T19:01:21.431Z"
+        }
+      },
+      "createdAt": "2026-10-08T18:57:10.087Z",
+      "updatedAt": "2026-10-08T19:01:21.572Z",
+      "failureReason": null,
+      "heartbeatAt": "2026-10-08T19:00:27.448Z",
+      "retryOf": null,
+      "reclaimedAt": null,
+      "node": null,
+      "resumeAfter": null,
+      "spend": null,
+      "asks": [
+        {
+          "question": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+          "phase": "refine",
+          "askedAt": "2026-10-08T18:58:00.480Z",
+          "parkedAt": "2026-10-08T18:58:00.627Z",
+          "answer": "Alpha (42)",
+          "answeredAt": "2026-10-08T19:00:26.716Z",
+          "by": "fixture-operator",
+          "runtime": "codex",
+          "questionToken": "07/01 Q1",
+          "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+          "choices": [
+            "Alpha (42)",
+            "Beta (43)"
+          ],
+          "workspaceId": "c9ee70ad425f70a1"
+        }
+      ],
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "projection": {
+      "runId": "20261008T185710087Z-0000",
+      "ref": "07/01",
+      "workspaceId": "c9ee70ad425f70a1",
+      "loopRunId": null,
+      "scope": null,
+      "sessionId": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+      "phase": "refine",
+      "node": null,
+      "question": "07/01 Q1 — Discovery question — rule R1: return the operator-selected numeric answer; settles the authorized value.\nDecision needed: Which answer should the fixture return?\nOptions: Alpha (42) or Beta (43).\nI would pick: Neither; the story explicitly requires your choice with no default.\nWhat the answer changes: Locks the contract to your chosen numeric value.",
+      "askedAt": "2026-10-08T18:58:00.480Z",
+      "state": "answered",
+      "parkedAt": "2026-10-08T18:58:00.602Z",
+      "answer": "Alpha (42)",
+      "answeredAt": "2026-10-08T19:00:26.716Z",
+      "by": {
+        "actor": "fixture-operator"
+      },
+      "runtime": "codex",
+      "questionToken": "07/01 Q1",
+      "choices": [
+        "Alpha (42)",
+        "Beta (43)"
+      ],
+      "delivery": {
+        "version": 1,
+        "state": "acknowledged",
+        "turnId": "01a11ce3-7214-7d72-b729-439329dbdbef"
+      }
+    },
+    "processes": [
+      {
+        "type": "thread",
+        "id": "01a11ce0-6883-7371-8736-b92bdf15bdb9",
+        "policy": {
+          "type": "workspaceWrite",
+          "writableRoots": [
+            "<workspace>\\.tmp\\154-recovery-temp\\aof-live-runtime-iIPZkg\\global-aof"
+          ],
+          "networkAccess": false,
+          "excludeTmpdirEnvVar": true,
+          "excludeSlashTmp": true
+        }
+      },
+      {
+        "type": "process-closed",
+        "pid": 42948,
+        "code": 0
+      }
+    ]
+  },
+  "answerAuthority": "Predetermined synthetic fixture operator choice, not human UAT",
+  "questionTransport": "structured result fallback; no native question RPC observed"
+}

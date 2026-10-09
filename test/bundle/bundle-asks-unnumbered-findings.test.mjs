@@ -14,6 +14,8 @@
 // and being left EXPECTING no number — an effect two literally compatible sentences can still
 // produce together) is agent-run at `aof:verify`.
 import assert from "node:assert/strict";
+import { loadBundle } from "../../packages/core/src/work/bundle.mjs";
+import { resolveBundleVariant } from "../../packages/core/src/work/bundle-runtime.mjs";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -185,9 +187,16 @@ export const bundleAsksUnnumberedFindingsTests = [
       });
       assert.deepEqual(
         restaters.sort(),
-        [...restating, "templates/milestone/VERIFICATION.md"].sort(),
-        "the files restating the seven are the two prompts plus the template that freezes them",
+        [...restating, "templates/milestone/VERIFICATION.md", "variants/codex/workflow.md"].sort(),
+        "the legacy prompts, their native variants and the template are the whole population",
       );
+      const resources = loadBundle().resources;
+      for (const id of ["aof-qa", "verify"]) {
+        const native = resolveBundleVariant(resources.find(resource => resource.id === id), "codex");
+        const text = [native.body, ...(native.associatedFiles ?? []).map(file => file.content)].join("\n").replace(/\s+/gu, " ");
+        for (const column of columns) assert.ok(text.includes(column), `${id}: native context retains ${column}`);
+        assert.match(text, /at the moment of landing|at the moment the finding lands/u, `${id}: native context identifies the writer's allocation moment`);
+      }
     },
   },
 

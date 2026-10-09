@@ -4,10 +4,10 @@ number: 03
 slug: story-retrospectives-are-indexed
 title: "Story retrospectives are indexed — every item's RETROSPECTIVE.md is read, so a story's lessons answer to its ref"
 parent: 148
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-06
 schema: 1
 aofVersion: 0.1.0
 depends: [01, 02]
@@ -45,7 +45,7 @@ ref (`134/01`), and `--item 134` reaches them. FF-14801 (story 01) guards the la
 
 ## Tasks
 
-- [ ] 00 [a story's retrospective is recalled under its ref](tasks/00_a-storys-retrospective-is-recalled-under-its-ref.feature)
+- [x] 00 [a story's retrospective is recalled under its ref](tasks/00_a-storys-retrospective-is-recalled-under-its-ref.feature)
 
 ## Notes
 

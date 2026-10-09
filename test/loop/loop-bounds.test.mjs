@@ -26,7 +26,6 @@ import {
   LOOP_CONCURRENCY_MODES,
   LOOP_REFINE_MODES,
   LOOP_AGENT_MODES,
-  LOOP_AGENT_MODE_DEFAULTS,
   LOOP_AGENT_MODE_RESOLVERS,
   NO_DECLARED_RANGE,
   OUTSIDE_DECLARED_RANGE,
@@ -51,6 +50,8 @@ import {
   stepProbe,
   stepProbeFromConfig,
 } from "@aof/contracts/loop-bounds";
+import * as loopBoundsModule from "@aof/contracts/loop-bounds";
+import { AGENT_MODE_DEFAULT, agentModeFromConfig, sessionAgentMode } from "@aof/contracts/agent-mode";
 const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = _aofApplication.mesh.assignmentReclaim.DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS;
 const dispatchConcurrencyFromConfig = _aofApplication.loop.work.dispatch.dispatchConcurrencyFromConfig;
 // 61/00 — the clamp is asked for at the doors it actually binds, not only at its
@@ -671,9 +672,9 @@ export const clampTests = [
       assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.concurrency"], resolveLoopConcurrency);
       assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.concurrency"], loopConcurrencyFromConfig);
       assert.deepEqual([...LOOP_BOUND_VALUE_KEYS].sort(), [...LOOP_BOUND_CONFIG_KEYS].sort());
-      // 147/00 appended the fourteenth, `work.loop.repair`.
-      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 14);
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 14);
+      // 147/00 added repair, 154 the default runtime, and 156 phase runtimes.
+      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 16);
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 16);
       // THE NINTH: the eight keys 69 and 61 declared keep their order in both lists, the mode
       // follows them, and 129/07's three follow the mode.
       assert.equal(LOOP_BOUND_CONFIG_KEYS[8], "work.loop.concurrency");
@@ -684,12 +685,12 @@ export const clampTests = [
   },
   // ── 129/07 task 00 — the three self-contained keys ───────────────────────────
   {
-    name: "129/07 task00 both maps carry exactly twelve keys, the three appended last in order, each resolving its config key",
+    name: "129/07 task00 both maps retain the three ordered mode keys alongside later phase policy keys",
     run() {
       const three = ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"];
       // 143/01 appended a thirteenth, `work.loop.refine`, after the three; 147/00 a fourteenth, `work.loop.repair`.
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 14);
-      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 14);
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 16);
+      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 16);
       assert.deepEqual([...LOOP_BOUND_VALUE_KEYS].sort(), [...LOOP_BOUND_CONFIG_KEYS].sort());
       assert.deepEqual(LOOP_BOUND_CONFIG_KEYS.slice(9, 12), three, "indices 9–11 are the three, in order");
       assert.deepEqual(LOOP_BOUND_VALUE_KEYS.slice(9, 12), three, "…in both lists");
@@ -763,28 +764,39 @@ export const clampTests = [
       assert.deepEqual(Object.keys(LOOP_AGENT_MODE_RESOLVERS), ["refine", "continue"]);
     },
   },
-  // ── 140/01 — the loop's default has one home ─────────────────────────────────
+  // ── 155/00 — the chain and its default have one home ────────────────────────
   //
-  // `140_story_refine-defaults-to-solo/tasks/01_the-loop-drives-both-phases-solo.feature`. The
-  // default is applied at the PHASE level: the per-key resolvers keep answering null for unset,
-  // so the range probe and the tuner still step from null. Supersedes 129/07 task 00's
-  // "unset is null" leg of `loopAgentModeFromConfig`.
+  // `155_story_one-agent-mode-setting/tasks/00_the-loop-falls-back-to-the-workspace-mode.feature`,
+  // superseding 140/01's LOOP_AGENT_MODE_DEFAULTS. The bounds home answers the loop key alone; the
+  // fallback to work.agents.mode and then to solo is agent-mode.mjs's. The per-key resolvers keep
+  // answering null for unset, so the range probe and the tuner still step from null.
   {
-    name: "140/01 the loop's default has one home — LOOP_AGENT_MODE_DEFAULTS, applied by loopAgentModeFromConfig when the key is unset",
+    name: "155/00 the chain and its default have one home — agent-mode.mjs, over the bounds home's loop key",
     run() {
-      assert.deepEqual(LOOP_AGENT_MODE_DEFAULTS, { refine: "solo", continue: "solo" });
-      assert.equal(Object.isFrozen(LOOP_AGENT_MODE_DEFAULTS), true, "frozen");
-      assert.deepEqual(Object.keys(LOOP_AGENT_MODE_DEFAULTS), Object.keys(LOOP_AGENT_MODE_RESOLVERS), "one default per phase that resolves a mode — the two phase maps cannot drift apart");
-      for (const mode of Object.values(LOOP_AGENT_MODE_DEFAULTS)) assert.ok(LOOP_AGENT_MODES.includes(mode), `${mode} is a member of LOOP_AGENT_MODES`);
-      const set = { config: { work: { loop: { agents: { refine: { mode: "orchestrated" }, continue: { mode: "orchestrated" } } } } } };
-      const unset = { config: { work: {} } };
-      assert.equal(loopAgentModeFromConfig(set, "refine"), "orchestrated", "a set key answers its value");
-      assert.equal(loopAgentModeFromConfig(set, "continue"), "orchestrated");
-      assert.equal(loopAgentModeFromConfig(unset, "refine"), "solo", "an unset key answers the phase's default");
-      assert.equal(loopAgentModeFromConfig(unset, "continue"), "solo");
-      assert.equal(loopAgentModeFromConfig({ config: { work: { loop: { agents: { continue: { mode: "Solo" } } } } } }, "continue"), "solo", "a non-member is unset");
-      assert.equal(loopAgentModeFromConfig(unset, "verify"), null, "verify resolves no mode");
-      assert.equal(loopAgentModeFromConfig(set, "verify"), null);
+      assert.equal(AGENT_MODE_DEFAULT, "solo");
+      assert.ok(LOOP_AGENT_MODES.includes(AGENT_MODE_DEFAULT), "the default is a member of LOOP_AGENT_MODES");
+      assert.equal(Object.hasOwn(loopBoundsModule, "LOOP_AGENT_MODE_DEFAULTS"), false, "the bounds home exports no per-phase default");
+      const ws = (work) => ({ config: { work } });
+      const unset = ws({});
+      assert.equal(agentModeFromConfig(unset), "solo", "unset → the default");
+      assert.equal(agentModeFromConfig(ws({ agents: { mode: "orchestrated" } })), "orchestrated");
+      assert.equal(agentModeFromConfig(ws({ agents: { mode: "solo" } })), "solo");
+      assert.equal(agentModeFromConfig(ws({ agents: { mode: "Orchestrated" } })), "solo", "a non-member answers the default");
+      assert.equal(agentModeFromConfig(undefined), "solo", "no workspace answers the default");
+      const loopSet = ws({ agents: { mode: "solo" }, loop: { agents: { refine: { mode: "orchestrated" }, continue: { mode: "orchestrated" } } } });
+      assert.equal(loopAgentModeFromConfig(loopSet, "refine"), "orchestrated", "a set loop key answers its value");
+      assert.equal(loopAgentModeFromConfig(loopSet, "continue"), "orchestrated");
+      assert.equal(loopAgentModeFromConfig(unset, "refine"), null, "an unset loop key answers null — no default here");
+      assert.equal(loopAgentModeFromConfig(ws({ agents: { mode: "orchestrated" } }), "continue"), null, "the bounds home never reads the workspace key");
+      assert.equal(loopAgentModeFromConfig(ws({ loop: { agents: { continue: { mode: "Solo" } } } }), "continue"), null, "a non-member is unset");
+      assert.equal(loopAgentModeFromConfig(loopSet, "verify"), null, "verify resolves no mode");
+      for (const phase of ["refine", "continue"]) {
+        assert.equal(sessionAgentMode(loopSet, phase), "orchestrated", `${phase}: the loop key wins`);
+        assert.equal(sessionAgentMode(ws({ agents: { mode: "orchestrated" } }), phase), "orchestrated", `${phase}: else work.agents.mode`);
+        assert.equal(sessionAgentMode(unset, phase), "solo", `${phase}: else the default`);
+        assert.equal(sessionAgentMode(ws({ agents: { mode: "orchestrated" }, loop: { agents: { [phase]: { mode: "Solo" } } } }), phase), "orchestrated", `${phase}: a misspelt loop key falls through`);
+      }
+      assert.equal(sessionAgentMode(ws({ agents: { mode: "orchestrated" } }), "verify"), null, "verify resolves no mode");
       assert.equal(resolveLoopAgentMode(undefined), null, "the value resolver still answers null for unset");
       assert.equal(loopAgentRefineModeFromConfig(unset), null, "…and so do the per-key config resolvers");
       assert.equal(loopAgentContinueModeFromConfig(unset), null);
@@ -792,7 +804,7 @@ export const clampTests = [
     },
   },
   {
-    name: "140/01 the loop never reads the workspace twin — neither the bounds home nor the drive reads work.agents.mode",
+    name: "155/00 the bounds home and the drive spell no default of their own — neither reads work.agents.mode",
     async run() {
       for (const file of ["packages/contracts/src/loop-bounds.mjs", "packages/work-loop/src/commands/drive.mjs"]) {
         const code = stripComments(await readFile(new URL(`../../${file}`, import.meta.url), "utf8"));
@@ -917,15 +929,19 @@ loopBoundsTests.push(
     },
   })),
   {
-    name: "143/01 task00 the refine scope is a member of both resolver maps, last, and nowhere numeric",
+    name: "143/01 task00 the refine scope remains in both resolver maps before repair and runtime settings",
     run() {
       assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.refine"], loopRefineFromConfig);
       assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.refine"], resolveLoopRefine);
-      // 147/00 appended the repair switch after it, so the refine scope is the thirteenth and the switch is last.
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-2), "work.loop.refine");
-      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-2), "work.loop.refine");
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-1), "work.loop.repair");
-      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-1), "work.loop.repair");
+      // The original refine/repair positions remain; 156 adds the phase map before the default runtime.
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-4), "work.loop.refine");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-4), "work.loop.refine");
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-3), "work.loop.repair");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-3), "work.loop.repair");
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-2), "work.loop.runtimes");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-2), "work.loop.runtimes");
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-1), "work.loop.runtime");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-1), "work.loop.runtime");
       assert.deepEqual([...LOOP_REFINE_MODES], ["per-story", "whole-item"]);
       assert.equal(Object.isFrozen(LOOP_REFINE_MODES), true);
     },

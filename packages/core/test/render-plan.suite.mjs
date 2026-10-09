@@ -29,7 +29,7 @@ export const renderPlanTests = [
     run: preservesDriftedLockEntries
   },
   {
-    name: "overwrites drifted generated files when force is enabled",
+    name: "154/04 Codex force cannot overwrite a drifted generated file",
     run: forceOverwritesDrift
   },
   {
@@ -129,11 +129,11 @@ async function plansCreateUpdateDeleteAndDrift() {
 
     await writeFile(desired[0].absolutePath, "Manual edit.\n", "utf8");
     actions = await planApplyActions(changedDesired, prior, { targetDir });
-    assert.equal(actions[0].action, "drift-warning");
+    assert.equal(actions[0].action, "conflict");
 
     const removedDesired = [];
     actions = await planApplyActions(removedDesired, prior, { targetDir });
-    assert.equal(actions[0].action, "drift-warning");
+    assert.equal(actions[0].action, "conflict");
 
     await writeFile(desired[0].absolutePath, desired[0].content, "utf8");
     actions = await planApplyActions(removedDesired, prior, { targetDir });
@@ -155,8 +155,8 @@ async function mergesCodexRulesDeterministically() {
     });
 
     const desired = await createRenderPlan(config, { targetDir, runtimes: ["codex"] });
-    const codexAgents = desired.find((item) => item.path === path.join(".codex", "AGENTS.md"));
-    assert.equal(desired.length, 2);
+    const codexAgents = desired.find((item) => item.path === "AGENTS.md");
+    assert.equal(desired.length, 1);
     assert.ok(codexAgents);
     assert.ok(codexAgents.content.indexOf("## alpha") < codexAgents.content.indexOf("## zeta"));
   } finally {
@@ -177,9 +177,9 @@ async function createsLockManifest() {
     const manifest = createLockManifest({ actions, desiredOutputs: desired, config, runtimes: ["codex"] });
 
     assert.equal(manifest.version, 2);
-    assert.equal(manifest.files.length, 2);
+    assert.equal(manifest.files.length, 1);
     assert.ok(manifest.files.some((file) => file.resource.id === "context"));
-    assert.ok(manifest.files.some((file) => file.path === path.join(".codex", ".gitignore")));
+    assert.ok(manifest.files.some((file) => file.path === path.join(".agents", "skills", "context", "SKILL.md")));
     assert.equal(manifest.packages[0].id, "gsd");
     assert.equal(manifest.packages[0].namespace, "gsd");
     assert.equal(manifest.packages[0].sourceDescriptor.type, "npm");
@@ -206,8 +206,8 @@ async function preservesDriftedLockEntries() {
     await writeFile(desired[0].absolutePath, "Manual edit.\n", "utf8");
     actions = await planApplyActions(desired, prior, { targetDir });
     const manifest = createLockManifest({ actions, desiredOutputs: desired, previousLock: prior, config, runtimes: ["codex"] });
-    assert.equal(actions[0].action, "drift-warning");
-    assert.equal(manifest.files.length, 2);
+    assert.equal(actions[0].action, "conflict");
+    assert.equal(manifest.files.length, 1);
     const contextFile = manifest.files.find((file) => file.resource.id === "context");
     const priorContextFile = prior.files.find((file) => file.resource.id === "context");
     assert.equal(contextFile.hash, priorContextFile.hash);
@@ -229,8 +229,9 @@ async function forceOverwritesDrift() {
     const prior = createLockManifest({ actions, desiredOutputs: desired, config, runtimes: ["codex"] });
     await writeFile(desired[0].absolutePath, "Manual edit.\n", "utf8");
     actions = await planApplyActions(desired, prior, { targetDir, force: true });
-    assert.equal(actions[0].action, "update");
-    assert.match(actions[0].reason, /--force/);
+    assert.equal(actions[0].action, "conflict");
+    assert.match(actions[0].reason, /modified/);
+    await assert.rejects(executeApplyActions(actions), /modified/);
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -287,7 +288,7 @@ async function tracksExpandedDslRootOutputDrift() {
 
     await writeFile(path.join(targetDir, "AGENTS.md"), "Manual edit.\n", "utf8");
     actions = await planApplyActions(desired, prior, { targetDir });
-    assert.equal(actions[0].action, "drift-warning");
+    assert.equal(actions[0].action, "conflict");
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -313,8 +314,8 @@ async function rendersPackageResourcesWithNamespace() {
     });
 
     const desired = await createRenderPlan(config, { targetDir, runtimes: ["codex"] });
-    const packageSkill = desired.find((item) => item.path === path.join(".codex", "skills", "vendor-context", "SKILL.md"));
-    assert.equal(desired.length, 2);
+    const packageSkill = desired.find((item) => item.path === path.join(".agents", "skills", "vendor-context", "SKILL.md"));
+    assert.equal(desired.length, 1);
     assert.ok(packageSkill);
     assert.equal(packageSkill.resource.package.id, "assistant-pack");
     assert.equal(packageSkill.resource.package.namespace, "vendor");
@@ -366,7 +367,7 @@ async function tracksWorkflowFilesThroughLockDriftProtection() {
 
     await writeFile(stalePath, "Manual edit.\n", "utf8");
     actions = await planApplyActions(desired, prior, { targetDir });
-    assert.ok(actions.some((item) => item.path === path.join(".codex", "aof", "workflows", "audit.md") && item.action === "drift-warning"));
+    assert.ok(actions.some((item) => item.path === path.join(".codex", "aof", "workflows", "audit.md") && item.action === "conflict"));
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -445,7 +446,7 @@ async function rendersAssociatedSkillFiles() {
     }, targetDir);
 
     const desired = await createRenderPlan(config, { targetDir, runtimes: ["codex"] });
-    const helper = desired.find((item) => item.path === path.join(".codex", "skills", "context", "helper.py"));
+    const helper = desired.find((item) => item.path === path.join(".agents", "skills", "context", "helper.py"));
     assert.ok(helper);
     assert.equal(helper.content, "print('helper')\n");
     assert.equal(helper.resource.artifact, "associated-file");
@@ -488,7 +489,7 @@ async function protectsDriftedAssociatedSkillFiles() {
     await writeFile(helper.absolutePath, "manual edit\n", "utf8");
 
     const nextActions = await planApplyActions(desired, prior, { targetDir });
-    assert.ok(nextActions.some((item) => item.path === helper.path && item.action === "drift-warning"));
+    assert.ok(nextActions.some((item) => item.path === helper.path && item.action === "conflict"));
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }
@@ -589,7 +590,7 @@ async function deletesStaleCodexCommandFilesAfterCorrection() {
 
     await writeFile(stalePath, "Manual edit.\n", "utf8");
     actions = await planApplyActions(desired, prior, { targetDir });
-    assert.ok(actions.some((item) => item.path === path.join(".codex", "commands", "ci.md") && item.action === "drift-warning"));
+    assert.ok(actions.some((item) => item.path === path.join(".codex", "commands", "ci.md") && item.action === "conflict"));
   } finally {
     await rm(targetDir, { recursive: true, force: true });
   }

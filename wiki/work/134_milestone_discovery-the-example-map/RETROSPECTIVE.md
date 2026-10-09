@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-02
+updated: 2026-10-06
 ---
 # 134 · Discovery before formulation — Retrospective
 
 ## R1 — every suite was green while the behaviour failed its first real use
 
-- **Kind:** misunderstanding · **Area:** product · **Stage:** verify · **Owner:** product-owner
+- **Kind:** misunderstanding · **Area:** contract (product) · **Stage:** verify · **Owner:** product-owner
 - **Raised by:** the operator, at the live run (F-134-01)
 
 **What happened.** All five stories were in review with 90 cases and four controls green. The first
@@ -19,7 +19,7 @@ its stories reach review, so what the run finds can still change the contract.
 
 ## R2 — a restructure landed between refine and build
 
-- **Kind:** process · **Area:** planning · **Stage:** continue · **Owner:** architect
+- **Kind:** blocker (process) · **Area:** process (planning) · **Stage:** build (continue) · **Owner:** architect
 - **Raised by:** the 03 re-gate and the 04 build
 
 **What happened.** 142 moved `src/` into Yarn workspaces while 03 and 04 were in flight. 03's
@@ -31,7 +31,7 @@ m134/03/R4, m134/04/R1.
 
 ## R3 — the whole-tree gate still cannot record itself
 
-- **Kind:** process · **Area:** testing · **Stage:** verify · **Owner:** product-owner
+- **Kind:** blocker (process) · **Area:** process (testing) · **Stage:** verify · **Owner:** product-owner
 - **Raised by:** aof:verify 134
 
 **What happened.** `aof work regression-gate` runs the serial suite, which cannot finish here, so

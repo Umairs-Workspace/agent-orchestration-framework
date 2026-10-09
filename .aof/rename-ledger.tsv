@@ -12,6 +12,25 @@
 # match are ignored. Git's live records are read FIRST (newest first), this ledger after them, so
 # a name renamed again after the cut resolves through its most recent life. A rename recorded
 # here that git also records is harmless: the first record for a `from` wins.
+# 134–136/143–146 SQUASH (148/VERIFICATION F-148-03). PR #6 landed on main as ONE squash, 678c3a52,
+# whose whole-commit diff reads 135/01's move of the examples modules into
+# `packages/specification-by-example` as D + A, so every citation of the old paths went dark. Its 70
+# unsquashed commits record each step. The block below is those records, DERIVED ONCE with the
+# resolver's own argv over PR #6 and never hand-edited:
+#
+#   git fetch origin pull/6/head:refs/remotes/pr/6
+#   git log --diff-filter=R -M --name-status --format= 88ebd022..refs/remotes/pr/6
+#
+# (9 records, newest first, at 96763b19.) It sits ABOVE the 142 block because it is newer.
+R058	wiki/work/145_story_loop-diagram/tasks/02_diagram-export-loop-writes-the-svg-and-png.feature	wiki/work/145_story_loop-diagram/tasks/02_diagram-export-loop-writes-the-png.feature
+R100	packages/work/src/examples/answers.mjs	packages/specification-by-example/src/answers.mjs
+R086	packages/work/src/doctor/examples.mjs	packages/specification-by-example/src/doctor-lane.mjs
+R100	packages/work/src/examples/map.mjs	packages/specification-by-example/src/map.mjs
+R099	packages/work/test/example-map-parse.suite.mjs	packages/specification-by-example/test/example-map-parse.suite.mjs
+R075	wiki/work/backlog/milestone_the-loop-starts-from-the-backlog-on-chosen-models/SPEC.md	wiki/work/143_milestone_the-loop-starts-from-the-backlog-on-chosen-models/SPEC.md
+R095	wiki/work/backlog/story_the-whole-tree-run-signs-off-in-minutes/STORY.md	wiki/work/144_story_the-whole-tree-run-signs-off-in-minutes/STORY.md
+R100	wiki/work/backlog/story_the-whole-tree-run-signs-off-in-minutes/tasks/.gitkeep	wiki/work/144_story_the-whole-tree-run-signs-off-in-minutes/tasks/.gitkeep
+R075	wiki/work/backlog/milestone_the-loop-starts-from-the-backlog-on-chosen-models/SPEC.md	wiki/work/143_milestone_the-loop-starts-from-the-backlog-on-chosen-models/SPEC.md
 # 142 SQUASH (136/VERIFICATION F-136-01). The modularisation (PR #5) landed on main as ONE squash,
 # 88ebd022, whose whole-commit diff records only 767 renames: a module that moved AND changed past
 # git's 50% similarity in one step reads as D + A there, so every citation of it went dark. Its 134

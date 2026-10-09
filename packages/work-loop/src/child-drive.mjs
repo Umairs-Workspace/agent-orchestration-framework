@@ -140,6 +140,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     haltFile,
     thinking,
     model,
+    runtime,
     autonomous,
     env,
     deadlineMs,

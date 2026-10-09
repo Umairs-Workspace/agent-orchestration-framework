@@ -64,6 +64,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ID_FORMS, headingCaptureRe, headingSplitRe } from "@aof/work/declared-id";
+import { normaliseLessonMeta } from "@aof/work/memory-vocabulary";
 const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
 const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 
@@ -158,7 +159,7 @@ export function goldenRecords(text, kind, { item, itemSlug, workRelPath }) {
       const invariant = inlineField(section.body, "Invariant");
       return {
         recordType: "adr", id, item, itemSlug, title,
-        area: "architecture", stage: "", kind: "", owner: "", status,
+        area: "architecture", stage: "", kind: "", owner: "", status, tags: [],
         summary: decision || invariant,
         text: [title, context, decision, invariant].filter(Boolean).join(" \n "),
         source,
@@ -178,10 +179,15 @@ export function goldenRecords(text, kind, { item, itemSlug, workRelPath }) {
     const what = inlineField(section.body, "What happened");
     const why = inlineField(section.body, "Why");
     const lesson = inlineField(section.body, "Lesson");
+    // 148/ADR-002 — the RAW meta above is still this golden's own reading; the indexed kind, area
+    // and stage are that raw value under the vocabulary's rule, with the qualifiers as `tags`.
+    // Every other field stays an independent byte-for-byte reading of the pre-extraction parser,
+    // which is ADR-002 §6's claim: normalisation changes only kind, area, stage and tags.
+    const indexed = normaliseLessonMeta(meta);
     return {
       recordType: "lesson", id, item, itemSlug, title,
-      area: meta.area ?? "", stage: meta.stage ?? "", kind: meta.kind ?? "", owner: meta.owner ?? "",
-      status: "",
+      area: indexed.area, stage: indexed.stage, kind: indexed.kind, owner: meta.owner ?? "",
+      status: "", tags: indexed.tags,
       summary: lesson,
       text: [title, what, why, lesson].filter(Boolean).join(" \n "),
       source,
@@ -375,7 +381,7 @@ export const archTests = [
     },
   },
   {
-    name: "arch/FF-6604: THE DIFFERENTIAL — over the real wiki/work, the shipped composition cuts the same sections and yields records identical at ALL 13 FIELDS",
+    name: "arch/FF-6604: THE DIFFERENTIAL — over the real wiki/work, the shipped composition cuts the same sections and yields records identical at EVERY FIELD",
     run: async () => {
       const corpus = await memoryCorpus();
       assert.ok(corpus.length > 80, `non-vacuity: the walk found the corpus (${corpus.length} RETROSPECTIVE/ARCHITECTURE files under wiki/work)`);
@@ -399,9 +405,9 @@ export const archTests = [
         const records = (kind === "lesson" ? parseRetrospective : parseArchitecture)(text, meta);
         const golden = goldenRecords(text, kind, meta);
         assert.deepEqual(records, golden, `${file}: a record moved across the extraction`);
-        // The field set is frozen at 13 (ADR-005), and asserting it here is what makes
-        // "all 13" a checked claim rather than a comment.
-        for (const record of records) assert.equal(Object.keys(record).length, 13, `${file}: ${record.id} carries the frozen 13 fields`);
+        // The field set is frozen (ADR-005), and asserting it here is what makes "all of them" a
+        // checked claim rather than a comment. 13 until 148/ADR-003 added `tags`, under index v2.
+        for (const record of records) assert.equal(Object.keys(record).length, 14, `${file}: ${record.id} carries the frozen 14 fields`);
         compared += records.length;
       }
       assert.equal(compared, totals.adr + totals.lesson, `every record was compared field for field (${compared})`);

@@ -1,3 +1,5 @@
+import { archTests as runtimeObservationFactsTests } from "./acd-runtime-observation-facts.test.mjs";
+import { archTests as codexPermissionTests } from "./acd-codex-permission-boundary.test.mjs";
 // THE ARCH/SESSION SUITES — this directory's index, and the ONE place its membership is
 // written down (119/03, ADR-010). The registry names directories; a directory names its own
 // suites. A new suite here is one import and one spread IN THIS FILE, and `scripts/test.mjs`
@@ -11,6 +13,8 @@
 
 // milestone 53 / story 05 — architectural fitness functions (FF-5301…FF-5311).
 import { archTests as acdSessionDriverMeshBlindTests } from "./acd-session-driver-mesh-blind.test.mjs";
+import { archTests as runtimeSessionBoundaryTests } from "./acd-runtime-session-boundary.test.mjs";
+import { archTests as runtimeChoiceOwnerTests } from "./acd-runtime-choice-owner.test.mjs";
 import { archTests as acdSessionDriverSingleHomeTests } from "./acd-session-driver-single-home.test.mjs";
 import { archTests as acdRawCaptureBeforeClassificationTests } from "./acd-raw-capture-before-classification.test.mjs";
 import { archTests as acdSessionVerbBootsNoRegistryTests } from "./acd-session-verb-boots-no-registry.test.mjs";
@@ -172,6 +176,10 @@ import { archTests as acdSessionProducerFactSurvivesTheWireTests } from "./acd-s
 import { archTests as acdAttributionIsCapturedOrAbsentTests } from "./acd-attribution-is-captured-or-absent.test.mjs";
 
 export const tests = [
+  ...runtimeObservationFactsTests,
+  ...runtimeSessionBoundaryTests,
+  ...codexPermissionTests,
+  ...runtimeChoiceOwnerTests,
   // milestone 53 / story 05 — architectural fitness functions (FF-5301…FF-5311)
   ...acdSessionDriverMeshBlindTests,
   ...acdSessionDriverSingleHomeTests,
