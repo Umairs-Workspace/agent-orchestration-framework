@@ -103,7 +103,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       projectDocs: config.projectDocs ?? [],
       settings: config.settings ?? {},
       ...(raw ? {
-        executionSettings: { ...(raw.work?.loop?.runtimes == null ? {} : { phaseRuntimes: raw.work.loop.runtimes }), runtime: raw.work?.loop?.runtime ?? null, runtimes: raw.work?.agents?.runtimes ?? {} },
+        executionSettings: { ...(raw.work?.agents?.session == null ? {} : { session: raw.work.agents.session }), ...(raw.work?.loop?.runtimes == null ? {} : { phaseRuntimes: raw.work.loop.runtimes }), runtime: raw.work?.loop?.runtime ?? null, runtimes: raw.work?.agents?.runtimes ?? {} },
         ...inspectExecutionSettings(raw, options),
         assetRuntimes: inspection.assetRuntimes,
       } : {}),
@@ -237,7 +237,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
 
     if (Object.hasOwn(input, "executionSettings")) {
       const edit = input.executionSettings;
-      if (!edit || typeof edit !== "object" || Array.isArray(edit) || Object.keys(edit).some(key => !["runtime", "runtimes", "phaseRuntimes"].includes(key))) {
+      if (!edit || typeof edit !== "object" || Array.isArray(edit) || Object.keys(edit).some(key => !["runtime", "runtimes", "phaseRuntimes", "session"].includes(key))) {
         return { ok: false, diagnostics: [diagnostic("error", "executionSettings", "Expected runtime and runtime-scoped settings.")] };
       }
       const work = structuredClone(existing.work ?? {});
@@ -252,6 +252,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
         else work.loop.runtimes = edit.phaseRuntimes;
       }
       if (Object.hasOwn(edit, "runtimes")) work.agents = { ...work.agents, runtimes: edit.runtimes };
+      if (Object.hasOwn(edit, "session")) work.agents = { ...work.agents, session: edit.session };
       config.work = work;
       const inspection = inspectExecutionSettings(config, options);
       const errors = [...inspection.diagnostics, ...Object.values(inspection.executionByRuntime).flatMap(value => value.diagnostics)];

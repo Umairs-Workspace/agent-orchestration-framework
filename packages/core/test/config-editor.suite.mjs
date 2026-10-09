@@ -14,7 +14,7 @@ const validateEditableResource = assets.configEditor.validateEditableResource;
 
 export const configEditorTests = [
   { name: "156 — phase assistant settings roundtrip without replacing unrelated loop settings", run: async () => withExecutionProject(async ({ root, configPath, options }) => {
-    const edit = { runtime: "claude", phaseRuntimes: { refine: "codex", continue: "claude", verify: "claude" }, runtimes: { codex: { session: { models: { refine: "gpt-6-astra" }, effort: { refine: "high" } } }, claude: { session: { models: { continue: "sonnet", verify: "sonnet" } } } } };
+    const edit = { runtime: null, session: { models: { refine: "gpt-6-astra", continue: "sonnet", verify: "sonnet" }, effort: { refine: "high", continue: "high", verify: "high" } }, runtimes: {} };
     const result = await saveEditableSections(root, { executionSettings: edit }, options);
     assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
     const loaded = await loadEditableConfig(root, options);
@@ -31,6 +31,8 @@ export const configEditorTests = [
   { name: "154/10 task00 E2 — execution roundtrip preserves memory, assets, overrides and legacy Claude without processes", run: executionRoundtrip },
   ...[
     ["unknown execution runtime", { runtime: "other" }, "work.loop.runtime"],
+    ["malformed neutral model settings", { session: { models: [] } }, "work.agents.session.models"],
+    ["unsupported neutral effort", { session: { models: { continue: "gpt-fixture" }, effort: { continue: "no-such-effort" } } }, "work.agents.session.effort.continue"],
     ["malformed phase settings", { runtimes: { codex: { session: { models: [] } } } }, "work.agents.runtimes.codex.session.models"],
     ["unsupported effort for the selected model", { runtime: "codex", runtimes: { codex: { session: { models: { continue: "fixture" }, effort: { continue: "low" } } } } }, "work.agents.runtimes.codex.session.effort.continue"],
     ["invalid runtime-scoped model map", { runtimes: { codex: { models: [] } } }, "work.agents.runtimes.codex.models"],
@@ -81,7 +83,7 @@ async function withExecutionProject(run) {
     name: "execution-editor", resources: [{ kind: "skill", id: "context", body: "Keep context", runtimes: ["claude", "codex"] }], packages: [],
     memory: { backend: "local" }, runtimes: { codex: { config: { model: "asset-model" } } },
     settings: { claude: { permissions: { allow: ["Read"] } } },
-    work: { dir: "./delivery", loop: { reviewRounds: 2 }, agents: { mode: "solo", session: { models: { continue: "legacy-claude" }, effort: { continue: "high" } }, runtimes: { claude: { models: { "aof-architect": "claude-role" } } } } },
+    work: { dir: "./delivery", loop: { reviewRounds: 2 }, agents: { mode: "solo", session: { models: { continue: "sonnet" }, effort: { continue: "high" } }, runtimes: { claude: { models: { "aof-architect": "claude-role" } } } } },
   };
   const options = { env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } };
   try {
@@ -97,7 +99,7 @@ async function executionDefaults() {
     const original = await readFile(configPath, "utf8");
     const payload = await loadEditableConfig(root, options);
     assert.equal(payload.execution.runtime, "claude");
-    assert.equal(payload.execution.runtimeSource, "default");
+    assert.equal(payload.execution.runtimeSource, "model");
     assert.deepEqual(payload.assetRuntimes, ["claude", "codex"]);
     assert.equal(payload.execution.phases.continue.modelSource, "work.agents.session.models.continue");
     assert.equal(payload.execution.roles["aof-architect"].modelSource, "work.agents.runtimes.claude.models.aof-architect");
@@ -126,16 +128,16 @@ async function executionRoundtrip() {
       assert.equal(saved.work.loop.reviewRounds, 2);
       assert.equal(saved.work.agents.mode, "solo");
       const loaded = await loadEditableConfig(root, options);
-      assert.deepEqual(loaded.executionSettings, edit);
-      assert.equal(loaded.execution.runtime, "codex");
-      assert.equal(loaded.execution.runtimeSource, "project");
-      assert.equal(loaded.execution.phases.continue.model, "codex-model");
-      assert.equal(loaded.execution.phases.continue.modelSource, "work.agents.runtimes.codex.session.models.continue");
-      assert.equal(loaded.execution.roles["aof-architect"].model, "codex-role");
+      assert.deepEqual(loaded.executionSettings, { ...edit, session: config.work.agents.session });
+      assert.equal(loaded.execution.runtime, "mixed");
+      assert.equal(loaded.execution.runtimeSource, "phase-map");
+      assert.equal(loaded.execution.phases.continue.model, "sonnet");
+      assert.equal(loaded.execution.phases.continue.modelSource, "work.agents.session.models.continue");
+      assert.equal(loaded.execution.phaseExecutions.refine.roles["aof-architect"].model, "codex-role");
       assert.deepEqual(calls, []);
       assert.deepEqual((await readdir(root)).sort(), [".aof"]);
       assert.equal((await saveEditableSections(root, { executionSettings: { runtime: null } }, options)).ok, true);
-      assert.equal((await loadEditableConfig(root, options)).execution.runtimeSource, "default");
+      assert.equal((await loadEditableConfig(root, options)).execution.runtimeSource, "model");
       assert.equal((await saveEditableSections(root, { settings: config.settings }, options)).ok, true);
       assert.deepEqual(JSON.parse(await readFile(configPath, "utf8")).memory, config.memory);
     } finally { Object.assign(childProcess, originals); syncBuiltinESMExports(); }

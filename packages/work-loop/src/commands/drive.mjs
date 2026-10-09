@@ -21,7 +21,7 @@ import { commandError } from "@aof/contracts/error";
 // `run.started`/`run.completed` and inherits none of the declared cascade. Ported to the
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 
-import { loopBoundsFromConfig, loopRuntimeSettingFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
+import { loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
 import { sessionAgentMode } from "@aof/contracts/agent-mode";
 
 import { access, readFile } from "node:fs/promises";
@@ -433,7 +433,9 @@ export function createPhaseDrivers({
           : typeof ctx.loopDrive?.thinking === "string" && ctx.loopDrive.thinking.length > 0
             ? ctx.loopDrive.thinking
             : null;
-        const nativeHint = input.runtime === "codex" || ctx.loopDrive?.execution?.runtime === "codex" || ctx.workspace.config?.work?.loop?.runtimes?.[sessionPhaseOf(phase)] === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.run != null || ctx.loopDrive?.runId != null;
+        const inferRuntime = () => execution.resolvePhaseRuntimes(ctx.workspace.config, input.runtime, { choices: { [sessionPhaseOf(phase)]: { model: input.model ?? ctx.loopDrive?.model } }, allowUnproven: true })[sessionPhaseOf(phase)].runtime;
+        const inferredRuntime = input.run != null || ctx.loopDrive?.runId != null ? null : ctx.loopDrive?.execution?.runtime ?? inferRuntime();
+        const nativeHint = inferredRuntime === "codex" || input.run != null || ctx.loopDrive?.runId != null;
         const thinking = thinkingGiven == null ? undefined : nativeHint ? thinkingGiven : normalizeEffort(thinkingGiven);
         if (thinking === null) {
           throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
@@ -461,7 +463,7 @@ export function createPhaseDrivers({
 
         const managed = input.run ?? ctx.loopDrive?.runId ?? null;
         const recorded = managed == null ? null : (await readRuns(item)).find(run => run.runId === managed);
-        const runtime = recorded == null ? input.runtime ?? ctx.loopDrive?.execution?.runtime ?? ctx.workspace.config?.work?.loop?.runtimes?.[sessionPhaseOf(phase)] ?? loopRuntimeSettingFromConfig(ctx.workspace).value ?? "claude" : recorded.execution?.runtime ?? "claude";
+        const runtime = recorded == null ? ctx.loopDrive?.execution?.runtime ?? input.runtime ?? inferredRuntime ?? inferRuntime() : recorded.execution?.runtime ?? "claude";
         if (runtime === "codex" && managed != null && recorded == null) throw commandError("The native lent run has no durable record", "drive-run-not-found", 409);
         if (!["claude", "codex"].includes(input.runtime ?? runtime)) throw commandError("Unsupported runtime", "unsupported-runtime", 400);
         if (recorded != null && input.runtime != null && input.runtime !== runtime) throw commandError("The requested runtime differs from this run", "execution-resume-conflict", 409);
@@ -486,9 +488,9 @@ export function createPhaseDrivers({
         const explicitChoice = { ...(input.model == null ? {} : { model: input.model }), ...(input.thinking == null ? {} : { effort: normalizeEffort(input.thinking) }) };
         const selectedExecution = recorded?.execution != null
           ? execution.resolveExecutionResume(recorded, { runtime: input.runtime, choices: { [sessionPhaseOf(phase)]: explicitChoice } })
-          : input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null || ctx.workspace?.config?.work?.loop?.runtimes != null
+          : ctx.loopDrive?.execution ?? (input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null || ctx.workspace?.config?.work?.loop?.runtimes != null
             ? execution.resolveExecution(ctx.workspace.config, { runtime: input.runtime ?? "claude", choices: { [sessionPhaseOf(phase)]: explicitChoice } })
-            : null;
+            : null);
         const pinnedChoice = selectedExecution?.phases[sessionPhaseOf(phase)];
         const session = pinnedChoice == null ? resolveSessionLaunch(ctx.workspace?.config, sessionPhaseOf(phase), { thinking, choice }) : { ...pinnedChoice, model: pinnedChoice.model ?? undefined };
         const effort = { level: session.effort, source: session.effortSource };
@@ -763,7 +765,6 @@ export function createPhaseDrivers({
             ? "aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]"
             : `aof work drive ${phase} <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]`,
           flags: {
-            runtime: { type: "string", description: "the execution runtime (claude or codex); a lent run keeps its recorded choice" },
             dryRun: { type: "boolean", description: "report the phase directive without starting an agent session" },
             run: { type: "string", description: "the lent run id: mint and settle nothing, heartbeat this record, and take stdin's end as the stop (a loop's child drive)" },
             fix: { type: "string", description: "a JSON file holding the fix transport; honoured by continue only" },
@@ -776,7 +777,6 @@ export function createPhaseDrivers({
         },
         argv: (positionals, options) => ({
           ref: positionals[0],
-          ...(typeof options.runtime === "string" ? { runtime: options.runtime } : {}),
           ...(options.dryRun === true ? { dryRun: true } : {}),
           ...(typeof options.run === "string" ? { run: options.run } : {}),
           ...(typeof options.fix === "string" ? { fix: options.fix } : {}),

@@ -259,7 +259,7 @@ export const archTests = [
       assert.ok(!("verbose" in schema.properties), "`verbose` is an additional key on a closed schema");
 
       const flags = loopCommand.cli.spec.flags;
-      assert.equal(Object.keys(flags).length, 14, "fourteen flags (154/06 adds --runtime): --quiet here, --supervised from 126/02, --stop from 130/02, --hand-off from 131/11, --thinking from 141, --refine from 143/01, --model from 143/03 and --no-repair from 147/00");
+      assert.equal(Object.keys(flags).length, 13, "assistant inferred from --model; execution exposes no runtime flag");
       assert.equal(flags.quiet.type, "boolean");
       assert.ok(typeof flags.quiet.description === "string" && flags.quiet.description.length > 0);
       assert.match(loopCommand.cli.spec.usage, /\[--quiet\]/u);

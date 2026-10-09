@@ -457,11 +457,11 @@
             },
             "session": {
               "type": "object",
-              "description": "The model and effort of the claude session aof itself spawns for a loop-driven phase (refine / continue / verify). Distinct from the per-role maps work.agents.models and work.agents.effort, which render into the agent files.",
+              "description": "Model and effort for each loop phase (refine / continue / verify). AOF infers Claude or Codex from the selected model. Distinct from per-role maps, which configure sub-agents.",
               "properties": {
                 "models": {
                   "type": "object",
-                  "description": "Phase -> model. An unset phase passes no --model, so the session runs on claude's own default. aof work loop --model [PHASE=]MODEL and aof work drive --model override it for one run.",
+                  "description": "Phase -> model, which selects its assistant automatically. Unset phases retain configured defaults. aof work loop --model [PHASE=]MODEL and aof work drive --model override it for one run; no execution runtime flag is needed.",
                   "additionalProperties": {
                     "type": "string",
                     "minLength": 1,

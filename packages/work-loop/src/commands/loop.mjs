@@ -2115,7 +2115,7 @@ export function createLoopShell({
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--runtime [PHASE=]claude|codex]... [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
@@ -2127,7 +2127,6 @@ export function createLoopShell({
           quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
           supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
           thinking: { type: "string", repeatable: true, description: "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it" },
-          runtime: { type: "string", repeatable: true, description: "[PHASE=]claude or codex; repeat for refine, continue and verify; resume preserves each phase selection" },
           model: { type: "string", repeatable: true, description: "repeatable: [PHASE=][MODEL][:EFFORT] — the model (and effort) a phase's sessions run on, every phase when no PHASE= is given (refine, continue, verify); overrides the configured per-phase session model and effort for this run, and a resume inherits it" },
           refine: { type: "string", description: "per-story (one story's contract per refine drive) or whole-item (a milestone's break-down drive authors every contract in one session); overrides work.loop.refine, and a resume inherits it" },
           noRepair: { type: "boolean", description: "do not hand a lane halt (lane-open-failed, lane-merge-refused, lane-merge-conflict) to a repair session; stop for the operator as before. work.loop.repair: false is the standing form" },
@@ -2146,7 +2145,6 @@ export function createLoopShell({
         ...(options.supervised === true ? { supervised: true } : {}),
         ...(options.thinking !== undefined ? { thinking: options.thinking } : {}),
         ...(options.model !== undefined ? { model: options.model } : {}),
-        ...(options.runtime !== undefined ? { runtime: options.runtime } : {}),
         ...(typeof options.refine === "string" ? { refine: options.refine } : {}),
         ...(options.noRepair === true ? { noRepair: true } : {}),
       }),

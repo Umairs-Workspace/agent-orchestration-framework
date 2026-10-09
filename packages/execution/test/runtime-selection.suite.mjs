@@ -10,6 +10,36 @@ const codex = (options = {}) => resolveExecution({}, { runtime: "codex", capabil
 const refusal = (code, path) => error => error.code === code && (!path || error.path === path) && typeof error.source === "string";
 
 export const runtimeSelectionTests = [
+  { name: "156 — model-only choices infer assistants and preserve exact model, effort and recovery", run() {
+    const catalog = { codex: { profile: "codex-app-server-v1", profileVersion: 1, models: [model("gpt-6-astra", ["high"], true)] } };
+    const { choices } = parseSessionChoices({ model: ["refine=gpt-6-astra:high", "continue=sonnet:high", "verify=sonnet:high"] });
+    for (const config of [{}, { work: { loop: { runtime: "codex", runtimes: { refine: "claude" } } } }]) {
+      const plan = resolveExecution(config, { choices, capabilities: catalog });
+      assert.deepEqual(Object.values(plan.phases).map(entry => [entry.runtime, entry.model, entry.effort]), [["codex", "gpt-6-astra", "high"], ["claude", "sonnet", "high"], ["claude", "sonnet", "high"]]);
+      assert.equal(plan.phaseExecutions.refine.runtimeSource, "model");
+      assert.deepEqual(validateExecutionCapabilities(plan, catalog), plan);
+      assert.deepEqual(resolveExecutionResume({ execution: plan }, { choices }), plan);
+      assert.throws(() => resolveExecutionResume({ execution: plan }, { choices: { refine: { model: "sonnet" } } }), refusal("execution-resume-conflict"));
+    }
+    const config = { work: { agents: { session: { models: { refine: "gpt-6-astra", continue: "sonnet", verify: "sonnet" }, effort: { refine: "high", continue: "high", verify: "high" } } } } };
+    const plan = resolveExecution(config, { capabilities: catalog });
+    assert.equal(plan.phases.refine.runtime, "codex");
+    assert.equal(plan.phases.continue.runtime, "claude");
+    assert.equal(plan.phases.refine.modelSource, "work.agents.session.models.refine");
+    assert.equal(plan.phases.refine.effortSource, "work.agents.session.effort.refine");
+  } },
+  { name: "156 — model inference refuses unknown, ambiguous and unavailable choices without provider fallback", run() {
+    const choices = { refine: { model: "unknown", modelFlag: "--model" } };
+    assert.throws(() => resolveExecution({}, { choices, capabilities }), refusal("unsupported-model", "--model"));
+    assert.throws(() => resolveExecution({}, { choices: { refine: { model: "sonnet" } }, capabilities: { codex: { models: [model("sonnet")] } } }), refusal("ambiguous-model"));
+    assert.throws(() => resolveExecution({}, { choices: { refine: { model: "gpt-6-astra" } }, capabilities }), refusal("unsupported-model"));
+    assert.throws(() => resolveExecution({}, { choices: { refine: { model: "gpt-6-astra" } } }), refusal("runtime-capabilities-unavailable"));
+    assert.throws(() => resolveExecution({}, { choices: { refine: { model: "gpt-6-astra", effort: "max" } }, capabilities: { codex: { models: [model("gpt-6-astra", ["high"], true)] } } }), refusal("unsupported-effort"));
+    assert.equal(resolveExecution({}, { choices: { continue: { model: "native-small" } }, capabilities }).phases.continue.runtime, "codex", "exact catalogue IDs need no naming convention");
+    assert.equal(resolveExecution({}, { choices: parseSessionChoices({ model: "sonnet:high" }).choices }).runtime, "claude");
+    assert.equal(resolveExecution({}).runtime, "claude");
+    assert.throws(() => resolveExecutionResume({}, { choices: { refine: { model: "gpt-6-astra" } } }), refusal("execution-resume-conflict"));
+  } },
   { name: "156 — one loop pins Astra refinement and Sonnet implementation and verification", run() {
     const catalog = { codex: { profile: "codex-app-server-v1", profileVersion: 1, models: [model("gpt-6-astra", ["high"], true)] } };
     const config = { work: { loop: { runtime: "claude", runtimes: { refine: "codex" } }, agents: { mode: "solo", runtimes: {

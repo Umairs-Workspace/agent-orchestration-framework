@@ -10,8 +10,8 @@ does not establish those claims.
 - Installed assets: `aof work init --runtime claude,codex` installs both native bundles.
   Claude uses `.claude/commands/aof/` and `.claude/agents/`; Codex uses
   `.agents/skills/aof-*/` and `.codex/agents/*.toml`. Both share contracts under `.aof`.
-- Primary execution: a new loop resolves `--runtime`, then `work.loop.runtime`, then
-  Claude. Installed Codex assets and the delegation toggle do not select Codex.
+- Phase execution: the selected model identifies the assistant. AOF validates native
+  capabilities before launch. Installed assets and agent mode do not select a model.
 - Role execution: `work.agents.mode: "solo"` runs inline. Orchestrated work requires
   the native role launcher and requested model/effort capabilities. Optional Claude
   cross-assistant delegation remains separately opt-in.
@@ -24,7 +24,7 @@ Project overrides retain their final precedence over the selected bundled varian
 Install both bundles with `aof work init --runtime claude,codex`, then start one loop:
 
 ```powershell
-aof work loop 07 --level L2 --runtime claude --runtime refine=codex --model refine=gpt-6-astra:high --model continue=sonnet:high --model verify=sonnet:high
+aof work loop 07 --level L2 --model refine=gpt-6-astra:high --model continue=sonnet:high --model verify=sonnet:high
 ```
 
 This selects Codex/Astra for refinement and Claude/Sonnet for implementation and
@@ -32,16 +32,21 @@ verification. Replace `07` with the project work item. Codex must advertise the
 requested native model and effort. `--dry-run --json` inspects the invocation without
 starting model work. Solo operation uses `work.agents.mode: "solo"`.
 
-For a standing configuration, merge `"runtime": "claude", "runtimes": { "refine":
-"codex" }` into `work.loop`. Keep phase models/efforts under the corresponding
-`work.agents.runtimes.codex.session` and `work.agents.runtimes.claude.session` maps.
-The configuration editor also exposes an assistant selector for each phase.
+For standing choices, set `work.agents.session.models` and `.effort`, keyed by
+`refine`, `continue`, and `verify`. The configuration editor accepts these same
+model/effort choices and shows the saved inferred assistants.
 
-A phase-specific `--runtime PHASE=RUNTIME` overrides an unqualified `--runtime`,
-which overrides the configured phase runtime, then `work.loop.runtime`, then Claude.
-Duplicate runtime flags for the same phase are rejected. Models and effort retain
-their existing precedence, resolved against the runtime selected for that phase.
-Review and repair use the implementation (`continue`) runtime and settings.
+A phase-specific `--model` overrides an unqualified `--model`, then configured phase
+choices. Neither `work loop` nor `work drive` accepts a runtime flag. Known Claude
+aliases/model IDs select Claude; OpenAI model IDs select Codex, and other native
+IDs are resolved through the advertised catalogue. Unknown or ambiguous IDs and
+unsupported model/effort pairs refuse before launch; there is no provider fallback.
+Review and repair use the implementation (`continue`) model and settings.
+
+Existing `work.loop.runtime` and `work.loop.runtimes` settings remain defaults for
+phases with no neutral model choice, including older runtime-scoped configuration.
+They cannot override an explicitly selected phase model. Asset-install commands
+still use `--runtime` to choose which bundles to install.
 
 The loop records the complete phase plan; each session records only its own native
 execution envelope. `aof work loop 07 --resume` retains that plan even after config
@@ -64,11 +69,11 @@ Merge these settings into the existing `.aof/aof.config.json`; preserve its othe
   "memory": { "enabled": true, "backend": "local" },
   "work": {
     "dir": "wiki/work",
-    "loop": { "runtime": "codex" },
     "agents": {
       "mode": "solo",
-      "runtimes": {
-        "codex": { "session": { "effort": { "continue": "high" } } }
+      "session": {
+        "models": { "refine": "gpt-6-astra", "continue": "sonnet", "verify": "sonnet" },
+        "effort": { "refine": "high", "continue": "high", "verify": "high" }
       }
     }
   }
@@ -100,18 +105,17 @@ The `/config` editor shows saved resolved values. Saving updates configuration o
 For a declared fixture milestone numbered 07:
 
 ```sh
-aof work loop 07 --runtime codex --level L2
+aof work loop 07 --model sonnet:high --model refine=gpt-6-astra:high --level L2
 aof work loop 07 --resume
 ```
 
 The initial declaration and runs pin runtime, transport, profile and settings. Resume
-uses those recorded choices even after configuration edits. A conflicting runtime or
+uses those recorded choices even after configuration edits. A conflicting
 model/effort resume flag refuses before mutation. Native thread identity stays in the
 existing `sessionId`; it is never synthesized from a run id.
 
-To return new work to Claude, remove `work.loop.runtime` or set it to `claude`, validate
-and inspect, then start a fresh run on eligible work. `--runtime claude` selects it for
-one new invocation. Existing Codex runs remain Codex; changing configuration cannot
+To use Claude for all phases of new work, select a Claude model, for example
+`aof work loop 07 --model sonnet:high --level L2`. Existing Codex runs remain Codex; changing configuration cannot
 convert their sessions. Keep both installed bundles if both assistants are still used.
 
 Owned unchanged legacy `.codex/skills/` files migrate to `.agents/skills/`. Drifted old
@@ -179,7 +183,7 @@ This creates and retains an isolated project and global home, installs native as
 and prints their paths. It performs **no assistant launch** and reports `prepared-only`,
 `launched: false`, `accepted: false`. Use its project as the working directory and its
 `globalDir` as `AOF_GLOBAL_HOME`. Invoke the same source CLI revision (or its matching
-installed executable) for `work loop 07 --runtime codex --level L2`. Use the operator's
+installed executable) for `work loop 07 --level L2` (the prepared fixture retains its Codex default). Use the operator's
 explicitly authorized existing native access; do not copy credentials into the fixture.
 Prepare a separate comparable Claude fixture with `--runtime claude`. Prepared live
 fixtures request orchestrated roles so independent review must be supported or refused;

@@ -9,7 +9,7 @@ import {
 } from "@aof/execution/session-model";
 import { buildRunAttribution } from "@aof/execution/otel-attribution";
 
-import { resolveExecution, resolveExecutionResume, validateExecutionEnvelope } from "@aof/execution/runtime-selection";
+import { resolveExecution, resolveExecutionResume, validateExecutionEnvelope, resolvePhaseRuntimes } from "@aof/execution/runtime-selection";
 
 export function assembleCommandsDrive({ runtimeSessionServices, loopAskServices, agentSessionDriverServices, claudeTrustServices, degradeServices, runStoreServices, loopAskRequestServices, runHeartbeatConsumptionServices, effectsRunTransitionsServices, runSessionCaptureServices, commandsResolveServices, workObserveServices, runSpendIngestServices }) {
   // Core composition; @aof/work-loop owns the implementation.
@@ -37,7 +37,7 @@ export function assembleCommandsDrive({ runtimeSessionServices, loopAskServices,
   const implementation = createPhaseDrivers({
     runtimeSession: runtimeSessionServices,
     nativeAsks: loopAskServices,
-    execution: { resolveExecution, resolveExecutionResume, validateExecutionEnvelope },
+    execution: { resolveExecution, resolveExecutionResume, validateExecutionEnvelope, resolvePhaseRuntimes },
     sessionDriver: { driveInteractiveClaudeSession, INTERACTIVE_COMMAND_READY_DELAY_MS },
     trust: { ensureWorktreeTrusted },
     briefCompiler: { compileBriefForItem },

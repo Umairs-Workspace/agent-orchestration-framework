@@ -71,10 +71,13 @@ export const runtimePhaseTests = [
     try {
       const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: f.runtimeSession });
       const command = a.getCommand("work:loop");
-      const parsed = a.cli.parseSpecArgv(["154", "--runtime", "claude", "--runtime", "refine=codex", "--model", "refine=" + f.selected.phases.refine.model, "--model", "continue=sonnet", "--model", "verify=sonnet", "--thinking", "high"], command.cli.spec, command.id);
+      delete f.workspace.config.work.loop.runtime;
+      assert.equal(command.cli.spec.flags.runtime, undefined);
+      assert.throws(() => a.cli.parseSpecArgv(["154", "--runtime", "codex"], command.cli.spec, command.id));
+      const parsed = a.cli.parseSpecArgv(["154", "--model", "refine=" + f.selected.phases.refine.model + ":high", "--model", "continue=sonnet:high", "--model", "verify=sonnet:high"], command.cli.spec, command.id);
       const input = command.cli.argv(parsed._, parsed);
       const resolved = {};
-      await resolver.resolveRuntimeInvocation({ input, ctx: f.ctx, resolved, resume: {}, sessionRequest: resolver.requestedSessions(input, true) });
+      await resolver.resolveRuntimeInvocation({ input, ctx: f.ctx, resolved, resume: {}, sessionRequest: resolver.requestedRuntimeSessions(input, f.ctx) });
       assert.equal(f.probes.length, 1);
       const declaration = { execution: resolved.execution };
       assert.deepEqual(sessionLendFor(declaration, "continue"), { runtime: "claude", model: "sonnet", thinking: "high" });
@@ -86,6 +89,29 @@ export const runtimePhaseTests = [
       assert.deepEqual(resumed.execution, resolved.execution);
       assert.equal(f.probes.length, 1, "resume reads the pinned plan rather than re-resolving project settings");
     } finally { await f.cleanup(); }
+  } },
+  { name: "156 — standalone native drive infers its assistant from the model without a runtime flag", async run() {
+    const f = await nativePhaseFixture();
+    try {
+      delete f.workspace.config.work.loop.runtime;
+      assert.equal(f.drivers.refineDriverCommand.cli.spec.flags.runtime, undefined);
+      await assert.rejects(f.drivers.refineDriverCommand.run({ ref: f.item.ref, run: "missing-native-record", model: f.selected.phases.refine.model }, f.ctx), { code: "drive-run-not-found" });
+      assert.equal(f.probes.length, 0, "a lost native run never falls back to Claude");
+      const result = await f.drivers.refineDriverCommand.run({ ref: f.item.ref, model: f.selected.phases.refine.model, thinking: "high" }, f.ctx);
+      assert.equal(result.outcome, "done");
+      assert.equal((await a.execution.runs.readRuns(f.item))[0].execution.runtime, "codex");
+    } finally { await f.cleanup(); }
+  } },
+  { name: "156 — model routing preserves provider-qualified model IDs and unphased model overrides", async run() {
+    const resolver = createRuntimeInvocation({ ...sessions, ...execution });
+    const ctx = { workspace: { config: {} } };
+    const id = "arn:aws:bedrock:us-east-1:123:inference-profile/us.anthropic.claude-sonnet-v1:0";
+    const request = resolver.requestedRuntimeSessions({ model: [id] }, ctx);
+    assert.equal(request.choices.continue.model, id);
+    assert.equal(execution.resolveExecution({}, { choices: request.choices }).runtime, "claude");
+    const mixed = resolver.requestedRuntimeSessions({ model: ["sonnet:high", "refine=gpt-6-astra:high"] }, ctx);
+    assert.equal(mixed.choices.verify.model, "sonnet");
+    assert.equal(mixed.choices.refine.model, "gpt-6-astra");
   } },
   ...[false, true].map(managed => ({ name: `154/06 task00 — native ${managed ? "loop-managed" : "standalone"} phase lends run ownership to child bookkeeping`, async run() {
     const f = await nativePhaseFixture();
@@ -257,7 +283,7 @@ export const runtimePhaseTests = [
       let args;
       const child = createChildDrive({ getRuntimeRoot: () => f.root, isPackaged: () => false, getCliEntry: () => "aof.mjs", runBounded: async input => { args = input.args; return { outcome: "done", exitCode: 0, stdout: JSON.stringify({ outcome: "done", sessionId: "thread-native" }), stderr: "" }; } });
       await child.spawnLaneDrive({ ref: f.item.ref, phase: "repair", runId: "run-native", lane: f.root, ...lend });
-      assert.equal(args[args.indexOf("--runtime") + 1], "codex"); assert.equal(args[args.indexOf("--model") + 1], lend.model);
+      assert.equal(args.includes("--runtime"), false); assert.equal(args[args.indexOf("--model") + 1], lend.model);
       assert.equal(args[args.indexOf("--thinking") + 1], lend.thinking);
     } finally { await f.cleanup(); }
   } },

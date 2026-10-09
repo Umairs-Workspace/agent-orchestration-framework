@@ -78,7 +78,7 @@ async function validateGuide(context, commands) {
   try { await writeFile(file, JSON.stringify(sample)); await cli(context, "project validate --json", commands); }
   finally { await writeFile(file, before); }
   const command = app.getCommand("work:loop");
-  for (const argv of [["07", "--runtime", "codex", "--level", "L2"], ["07", "--resume"], ["07", "--runtime", "claude"]]) {
+  for (const argv of [["07", "--model", "refine=gpt-6-astra:high", "--model", "continue=sonnet:high", "--model", "verify=sonnet:high", "--level", "L2"], ["07", "--resume"], ["07", "--model", "sonnet"]]) {
     app.cli.parseSpecArgv(argv, command.cli.spec, command.id);
   }
 }
@@ -198,7 +198,7 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
       assert.deepEqual(phases, ["refine"]);
       delete ctx.executionHandoff;
       fx.workspace.config.work.loop.runtimes = { continue: "codex", refine: "claude" };
-      fx.workspace.config.work.agents.runtimes.claude.session.models.continue = "changed-after-start";
+      fx.workspace.config.work.agents.session.models.continue = "changed-after-start";
       ctx.stopSource = fakeStopSource();
       state = await app.loop.commandTools.loop.runLoopBody({ scope: "07", resume: true }, ctx);
     }
@@ -229,7 +229,7 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
       assert.ok(runs.every(run => run.execution?.version === 1));
     } else { assert.ok(pty.spawnCalls.length > 0); assert.equal(probes.length, 0); assert.ok(typed.some(text => text.includes("/aof:continue"))); }
     return { runtime, evidence: "deterministic-scripted-transports", accepted: false, profile: runtime === "codex" ? CODEX_PROFILE : null, commands, phases, gates: calls.filter(call => ["work:grade", "work:validate", "work:doctor"].includes(call.id)), state: state.state, stop: state.act.stop ?? null, buildLimit, runs: runs.map(run => ({ state: run.state, outcome: run.outcome, runtime: run.execution?.runtime ?? "claude", sessionId: run.sessionId, spend: run.spend })), globalStateIsolated: true };
-  }, { stories: [{ number: "01", files: ["src/s01.cjs"] }], config: runtime === "mixed" ? { ...configFor("codex"), loop: { concurrency: "sequential", runtime: "claude", runtimes: { refine: "codex" } }, agents: { mode: "solo", runtimes: { codex: { session: { models: { refine: codexFixture().fixture.models[0].model }, effort: { refine: "high" } } }, claude: { session: { models: { continue: "sonnet", verify: "sonnet" }, effort: { continue: "high", verify: "high" } } } } } } : configFor(runtime), commit: { "runner.cjs": runner } }));
+  }, { stories: [{ number: "01", files: ["src/s01.cjs"] }], config: runtime === "mixed" ? { ...configFor("codex"), loop: { concurrency: "sequential" }, agents: { mode: "solo", session: { models: { refine: codexFixture().fixture.models[0].model, continue: "sonnet", verify: "sonnet" }, effort: { refine: "high", continue: "high", verify: "high" } } } } : configFor(runtime), commit: { "runner.cjs": runner } }));
 }
 
 export async function prepareLiveRuntimeFixture(runtime) {

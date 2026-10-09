@@ -7,7 +7,43 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
-## Evidence
+## Model-only routing correction — 2026-10-09
+
+The operator now selects only models and effort. The loop and standalone drive
+infer the assistant; their CLI parsers no longer expose `--runtime`. Child drives
+use the persisted run envelope instead of carrying a runtime flag. Phase models
+in `work.agents.session` select the assistant even when older defaults disagree.
+The editor saves those neutral settings and removes phase-assistant selectors.
+Bundled Codex workflow guidance and its generated manifest were updated together.
+
+The AC now explicitly uses `--model sonnet:high --model refine=gpt-6-astra:high`.
+It includes ownership/capability refusals and no provider fallback. Live acceptance
+is a separate unchecked task rather than an implicit caveat on completed tasks.
+
+| Correction check | Result |
+| --- | --- |
+| Runtime/model resolution, native phase/CLI boundaries and configuration editor | 78 cases passed |
+| Legacy configuration, local drive, resume and session grammar | 119 cases passed |
+| Loop probe, mixed worker lanes, shell boundaries, native assets and bundle manifest | 52 cases passed |
+| Native dispatch | 5 cases passed |
+| CLI lifecycle, including model-only mixed loop and edited-config resume | 54 scenarios passed |
+| Drive and CLI architecture | 97/100 initially passed; three obsolete fictitious-model cases corrected, all 8 affected model cases passed on rerun |
+| UI TypeScript and production build | Passed; existing large-chunk advisory |
+| Work validation | No findings |
+
+Raw evidence: `.tmp/156-model-tests.log`, `.tmp/156-model-legacy.log`,
+`.tmp/156-model-boundary.log`, `.tmp/156-model-dispatch.log`, `.tmp/156-model-ui.log`,
+`.tmp/156-model-lifecycle-final.log`, `.tmp/156-model-drive-checks.log`,
+`.tmp/156-model-drive-rerun.log`.
+The older drive fixtures used `fable` as an arbitrary Claude model. With model
+ownership now meaningful, those precedence/argv cases use the real `haiku` alias.
+An initial stricter missing-run guard also exposed the older Claude lending contract;
+that behavior was preserved, while a missing native record still refuses before launch.
+The browser tool reported the in-app browser unavailable and returned an empty
+browser inventory. No browser visual acceptance is claimed. Live assistant
+execution and the full clean-worktree sharded gate remain pending below.
+
+## Earlier implementation evidence
 
 All command tests used isolated `AOF_GLOBAL_HOME` directories or the fixture's own
 temporary home. The working tree is based on `6af4635d` with the story-156 changes.

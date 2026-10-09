@@ -3,10 +3,11 @@ Feature: Configure and prove mixed execution
 
   Scenario: Configure each phase without changing unrelated settings
     Given an existing project configuration
-    When phase assistants and runtime-scoped models and efforts are saved
+    When phase models and efforts are saved without selecting assistants
     Then inspection reports the effective assistant for each phase
     And unrelated configuration is preserved
-    And malformed runtime selections are rejected without writing
+    And malformed model or effort settings are rejected without writing
+    And the editor shows model and effort fields without phase-assistant selectors
 
   Scenario: A red implementation cannot pass verification
     Given refinement uses Codex and implementation uses Claude

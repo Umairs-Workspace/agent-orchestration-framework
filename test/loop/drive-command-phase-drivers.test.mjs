@@ -1169,7 +1169,7 @@ export const driveCommandPhaseDriverTests = [
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
         assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "runtime", "halt"], `${command.id}: the closed schema adds runtime in 154/06`);
-        assert.equal(command.cli.spec.flags.runtime.type, "string");
+        assert.equal(command.cli.spec.flags.runtime, undefined, "assistant is inferred from the model or recorded run");
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);
@@ -2384,9 +2384,9 @@ function driveModelTests() {
   return [
     ...[
       [{}, null, { id: "opus", source: "config" }],
-      [{ model: "fable" }, null, { id: "fable", source: "--model" }],
+      [{ model: "haiku" }, null, { id: "haiku", source: "--model" }],
       [{}, "sonnet", { id: "sonnet", source: "--model" }],
-      [{ model: "fable" }, "sonnet", { id: "fable", source: "--model" }],
+      [{ model: "haiku" }, "sonnet", { id: "haiku", source: "--model" }],
     ].map(([flags, lent, model]) => ({
       name: `143/03 task01 the drive's own --model resolves over the lend and the config [${JSON.stringify(flags)}, lent ${lent ?? "nothing"} → ${model.id} (${model.source})]`,
       async run() {
@@ -2395,7 +2395,7 @@ function driveModelTests() {
           const workspace = withConfig(fx, { models: { verify: "opus" } });
           const result = await verifyDriverCommand.run({ ref: "03/01", dryRun: true, ...flags }, { workspace, ...(lent == null ? {} : { loopDrive: { model: lent } }) });
           assert.deepEqual(result.model, model);
-          if (flags.model) assert.deepEqual(verifyDriverCommand.cli.argv(["03/01"], { model: "fable", dryRun: true }), { ref: "03/01", dryRun: true, model: "fable" });
+          if (flags.model) assert.deepEqual(verifyDriverCommand.cli.argv(["03/01"], { model: "haiku", dryRun: true }), { ref: "03/01", dryRun: true, model: "haiku" });
         } finally {
           await fx.cleanup();
         }
@@ -2416,10 +2416,10 @@ function driveModelTests() {
       },
     },
     ...[
-      // `aof work loop 143 --model refine=opus:xhigh --model verify=fable`, continue effort "medium" in config.
+      // `aof work loop 143 --model refine=opus:xhigh --model verify=haiku`, continue effort "medium" in config.
       ["refine", { model: "opus", thinking: "xhigh" }, ["--model", "opus", "--thinking", "xhigh"], { model: { id: "opus", source: "--model" }, effort: { level: "xhigh", source: "--thinking" } }],
       ["continue", {}, [], { model: null, effort: { level: "medium", source: "config" } }],
-      ["verify", { model: "fable" }, ["--model", "fable"], { model: { id: "fable", source: "--model" }, effort: { level: "high", source: "default" } }],
+      ["verify", { model: "haiku" }, ["--model", "haiku"], { model: { id: "haiku", source: "--model" }, effort: { level: "high", source: "default" } }],
     ].map(([phase, lend, argv, launch]) => ({
       name: `143/03 task01 a ${phase} drive is lent its own phase's flag parts and nothing else — argv ${JSON.stringify(argv)}`,
       async run() {

@@ -16,7 +16,7 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
   function requestedSessions(input, native = false) {
     const model = flagValues(input?.model);
     const thinking = flagValues(input?.thinking);
-    const effortLevels = native ? [...new Set(["low", "medium", "high", "xhigh", "max", ...thinking.map(value => value.split("=").at(-1)), ...model.filter(value => value.includes(":")).map(value => value.split(":").at(-1))])] : undefined;
+    const effortLevels = native ? [...new Set(["low", "medium", "high", "xhigh", "max", ...thinking.map(value => value.split("=").at(-1)), ...model.filter(value => value.includes(":")).map(value => value.split(":").at(-1)).filter(value => /^[a-z][a-z-]*$/.test(value))])] : undefined;
     const parsed = parseSessionChoices({ model, thinking }, effortLevels == null ? {} : { effortLevels });
     if (parsed.refusal) throw commandError(parsed.refusal.message, parsed.refusal.code, 400);
     const unphased = thinking.find((value) => typeof value === "string" && !value.includes("="));
@@ -27,13 +27,15 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
   function requestedRuntimeSessions(input, ctx) {
     const flags = parseRuntimeChoices(input.runtime);
     const native = Object.values(flags).includes("codex") || Object.values(ctx.workspace.config?.work?.loop?.runtimes ?? {}).includes("codex")
+      || flagValues(input.model).length > 0 || Object.keys(ctx.workspace.config?.work?.agents?.session?.models ?? {}).length > 0
       || executionRuntimes(ctx.executionHandoff).includes("codex") || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
     return requestedSessions(input, native);
   }
 
   async function resolveRuntimeInvocation({ input, ctx, resume, resolved, sessionRequest }) {
     const configured = loopRuntimeSettingFromConfig(ctx.workspace);
-    const hasRuntime = input.runtime !== undefined || configured.present || ctx.workspace.config?.work?.loop?.runtimes !== undefined;
+    const hasRuntime = input.runtime !== undefined || configured.present || ctx.workspace.config?.work?.loop?.runtimes !== undefined
+      || Object.values(sessionRequest.choices).some(choice => choice.model !== undefined) || Object.keys(ctx.workspace.config?.work?.agents?.session?.models ?? {}).length > 0;
     if (input.resume === true && resume.lastDeclaration != null) {
       const pinned = resolveExecutionResume?.(resume.lastDeclaration, { runtime: input.runtime, choices: sessionRequest.choices, ...(ctx.executionHandoff == null ? {} : { execution: ctx.executionHandoff }) });
       if (pinned != null) { resolved.execution = pinned; resolved.sessions = pinned.phases; }
