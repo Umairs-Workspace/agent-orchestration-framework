@@ -22,6 +22,7 @@ import { commandError } from "@aof/contracts/error";
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 
 import { loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
+import { validateNativeAssets } from "./runtime-assets.mjs";
 import { sessionAgentMode } from "@aof/contracts/agent-mode";
 
 import { access, readFile } from "node:fs/promises";
@@ -71,20 +72,8 @@ export function createPhaseDrivers({
     const base = ctx.agentSessionDriverOptions ?? {};
     const cwd = ctx.workspace.projectRoot, env = base.env ?? process.env;
     const choicePhase = sessionPhaseOf(phase);
-    const role = phase === "review" ? "aof-qa" : null;
-    let roleInstructions = "";
-    if (role != null) {
-      try { roleInstructions = await readFile(path.join(cwd, ".codex", "agents", `${role}.toml`), "utf8"); }
-      catch { throw commandError("Missing native review role: aof-qa", "runtime-asset-missing", 409); }
-    }
+    const { procedure, role, roleInstructions } = await validateNativeAssets(cwd, phase);
     const supplied = { ...(input.model == null ? {} : { model: input.model }), ...(input.thinking == null ? {} : { effort: input.thinking === "extra-high" ? "xhigh" : input.thinking }) };
-    const procedure = path.join(cwd, ".agents", "skills", `aof-${phase}`, "SKILL.md");
-    let skill;
-    try { skill = await readFile(procedure, "utf8"); } catch { throw commandError(`Missing native procedure: ${procedure}`, "runtime-asset-missing", 409); }
-    if (!skill.includes("aof-runtime: codex")) throw commandError("The installed procedure is not a Codex variant", "runtime-asset-incompatible", 409);
-    for (const [mention, target] of [["procedure.md", path.join(path.dirname(procedure), "procedure.md")], ["workflow-contract.md", path.join(cwd, ".codex/aof/workflows/workflow-contract.md")]]) {
-      if (skill.includes(mention)) try { await access(target); } catch { throw commandError(`Missing native reference: ${target}`, "runtime-asset-missing", 409); }
-    }
     let selected = recorded == null ? ctx.loopDrive?.execution ?? null : execution.resolveExecutionResume(recorded, { ...(input.runtime == null ? {} : { runtime: input.runtime }), choices: { [choicePhase]: supplied } });
     if (selected == null) {
       const capabilities = await runtimeSession.inspectCapabilities("codex", { ...base, cwd, env });

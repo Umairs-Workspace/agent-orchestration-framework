@@ -7,6 +7,33 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Existing-project asset preflight correction — 2026-10-09
+
+The language-tutor item 16 failure at 19:37 UTC occurred before Codex started:
+the recorded attempt had no session identity, and the same child command with
+`--dry-run --json` returned `runtime-asset-missing` for
+`.agents/skills/aof-refine/SKILL.md`. The project still had the older
+`.codex/skills` bundle. The parent had reduced that child refusal to `agent_error`.
+
+The loop now shares the driver's native asset validation and performs it during
+invocation resolution, before a phase run is minted. New launches, resumes and
+worker handoffs check only phases assigned to Codex. Missing or incompatible
+procedures and their referenced files produce a named command refusal with the
+`aof work update` remedy; the child repeats validation in its own checkout.
+
+The project's normal `aof work update` completed after a dry-run showed no drift
+warnings: 81 created, 38 updated, 46 skipped, 39 obsolete generated files deleted.
+The recorded Astra/high refinement now passes the actual child dry-run. The
+existing failed attempt was preserved; it remains non-retryable and a fresh loop
+launch is the recovery path. No full project loop was started for this correction.
+
+Verification: 86 adapter/phase/architecture cases and 18 mesh assignment cases
+passed. The phase suite includes a real CLI resume that refuses a missing skill
+with the update remedy and leaves the run records unchanged, plus fresh/resume/
+handoff cases for missing, incompatible and incomplete assets and a mixed-phase
+case that requires no Codex files for the Claude phases. Raw evidence:
+`.tmp/156-asset-preflight-tests.log` and `.tmp/156-asset-mesh-tests.log`.
+
 ## Windows Codex startup correction — 2026-10-09
 
 The reported `runtime_unavailable` was reproduced as an executable-discovery gap:

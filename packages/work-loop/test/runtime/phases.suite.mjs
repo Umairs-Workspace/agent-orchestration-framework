@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import { defaultApplication as a } from "aof/default-application";
 import { assembleCommandsDrive } from "../../../core/src/application/bindings/commands/drive.mjs";
 import { createRuntimeSession } from "../../../execution/src/runtime-session.mjs";
@@ -66,6 +68,59 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  { name: "156 — real resumed loop reports missing assets without creating another attempt", async run() {
+    const f = await nativePhaseFixture();
+    try {
+      await mkdir(path.join(f.root, ".aof"), { recursive: true });
+      await writeFile(path.join(f.root, ".aof/aof.config.json"), JSON.stringify(f.workspace.config));
+      await writeFile(path.join(f.root, "wiki/work/154_milestone_fixture/SPEC.md"), "---\ntype: milestone\nnumber: 154\nslug: fixture\ntitle: Fixture\nstatus: in-progress\n---\n# Fixture\n");
+      const declaration = buildLoopDeclaration({ id: "loop:autonomous-cascade", loopRunId: "asset-preflight", scope: "154", level: "L2", cap: 3, phase: "refine", cycle: 1, startedAt: new Date().toISOString(), execution: f.selected });
+      const record = await f.mint({ brief: { loop: declaration } });
+      await a.execution.runs.completeRun(f.item, { runId: record.runId, outcome: "failed", failureReason: "agent_error", settleSpend: false });
+      const before = await a.execution.runs.readRuns(f.item);
+      await rm(path.join(f.root, ".agents/skills/aof-refine/SKILL.md"));
+      const child = spawnSync(process.execPath, [fileURLToPath(new URL("../../../core/bin/aof.mjs", import.meta.url)), "work", "loop", "154", "--resume", "--json"], { cwd: f.root, env: { ...process.env, AOF_GLOBAL_HOME: path.join(f.root, "global") }, encoding: "utf8", timeout: 30000, windowsHide: true });
+      assert.equal(child.status, 1, child.stderr);
+      const answer = JSON.parse(child.stdout);
+      assert.equal(answer.code, "runtime-asset-missing");
+      assert.match(answer.error, /aof work update/);
+      assert.deepEqual(await a.execution.runs.readRuns(f.item), before);
+    } finally { await f.cleanup(); }
+  } },
+  ...["fresh", "resume", "handoff"].flatMap(mode => ["missing", "incompatible", "reference"].map(condition => ({ name: `156 — ${mode} loop rejects ${condition} native assets before a run is minted`, async run() {
+    const f = await nativePhaseFixture();
+    try {
+      const file = path.join(f.root, ".agents/skills/aof-verify/SKILL.md");
+      if (condition === "missing") await rm(file);
+      else if (condition === "incompatible") await writeFile(file, "Claude-only procedure");
+      else await rm(path.join(path.dirname(file), "procedure.md"));
+      const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: f.runtimeSession });
+      const input = mode === "resume" ? { resume: true } : {};
+      const ctx = { ...f.ctx, ...(mode === "handoff" ? { executionHandoff: f.selected } : {}) };
+      await assert.rejects(resolver.resolveRuntimeInvocation({ input, ctx, resolved: {}, resume: mode === "resume" ? { lastDeclaration: { execution: f.selected } } : {}, sessionRequest: { choices: {} } }), error => {
+        assert.equal(error.code, condition === "incompatible" ? "runtime-asset-incompatible" : "runtime-asset-missing");
+        assert.match(error.message, /aof work update/);
+        assert.match(error.message, /aof-verify/);
+        return true;
+      });
+      assert.deepEqual(await a.execution.runs.readRuns(f.item), []);
+      assert.ok(f.probes.every(probe => probe.calls.every(call => call.method !== "thread/start")));
+    } finally { await f.cleanup(); }
+  } }))),
+  { name: "156 — loop asset preflight checks only phases assigned to Codex", async run() {
+    const f = await nativePhaseFixture();
+    try {
+      await rm(path.join(f.root, ".agents/skills/aof-continue"), { recursive: true });
+      await rm(path.join(f.root, ".agents/skills/aof-verify"), { recursive: true });
+      const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: f.runtimeSession });
+      const input = { model: ["refine=" + f.selected.phases.refine.model, "continue=sonnet", "verify=sonnet"] };
+      const resolved = {};
+      await resolver.resolveRuntimeInvocation({ input, ctx: f.ctx, resolved, resume: {}, sessionRequest: resolver.requestedRuntimeSessions(input, f.ctx) });
+      assert.equal(resolved.execution.phases.refine.runtime, "codex");
+      assert.equal(resolved.execution.phases.continue.runtime, "claude");
+      assert.equal(resolved.execution.phases.verify.runtime, "claude");
+    } finally { await f.cleanup(); }
+  } },
   { name: "156 — unavailable Codex preflight becomes an actionable command refusal", async run() {
     for (const code of ["runtime_unavailable", "unsupported_profile"]) {
       const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: { inspectCapabilities: async () => { throw Object.assign(new Error("Codex installation requires attention"), {code}); } } });

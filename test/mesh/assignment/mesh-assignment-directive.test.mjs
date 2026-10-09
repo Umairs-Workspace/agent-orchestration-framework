@@ -446,7 +446,7 @@ const runtimeHandoffTests = [
   } },
   { name: "154/07 task00 — declared loop process consumes its pinned transport without consulting worker settings", async run() {
     const selected = envelope();
-    const invocation = createRuntimeInvocation({ resolveExecution, resolveExecutionResume: (await import("@aof/execution/runtime-selection")).resolveExecutionResume });
+    const invocation = createRuntimeInvocation({ resolveExecution, resolveExecutionResume: (await import("@aof/execution/runtime-selection")).resolveExecutionResume, validateAssets: async () => {} });
     const resolved = {};
     const ctx = { workspace: { config: { work: { loop: { runtime: "claude" } } } }, executionHandoff: decodeExecutionHandoff(JSON.stringify(selected), resolveExecutionResume) };
     await invocation.resolveRuntimeInvocation({ input: {}, ctx, resume: {}, resolved, sessionRequest: { choices: {} } });

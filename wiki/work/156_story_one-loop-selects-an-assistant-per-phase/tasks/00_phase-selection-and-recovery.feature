@@ -44,4 +44,11 @@ Feature: One loop selects and preserves native execution per phase
     And an explicit executable override is never silently replaced
     And missing or incompatible installations produce actionable diagnostics
 
+  Scenario: An existing project has stale or incomplete Codex assets
+    Given a selected Codex phase has a missing procedure, incompatible procedure or missing reference
+    When a loop starts, resumes or receives a worker handoff
+    Then the invocation refuses before minting a phase attempt or starting a native thread
+    And the diagnostic names the asset and tells the operator to run aof work update
+    And phases selected for Claude do not require Codex procedures
+
   # Verification commands and evidence are in VERIFICATION.md.

@@ -90,6 +90,10 @@ aof work update --json
 ```
 
 `work update` reads the installed runtime manifest; it has no `--runtime` flag.
+After upgrading AOF, run it in existing projects to migrate the older
+`.codex/skills` procedures into the native `.agents/skills` bundle. The loop checks
+the assets for every Codex phase before minting an attempt, including on resume
+and worker handoff, and names `aof work update` when an asset is missing or incompatible.
 Use `project migrate` first only for a legacy root `aof.config.json`. Migration keeps
 the old file for inspection and makes `.aof/aof.config.json` authoritative.
 

@@ -1,6 +1,7 @@
 // The loop's runtime invocation boundary: grammar and pinned resolution, never phase sequencing.
 import { commandError } from '@aof/contracts/error';
-import { loopRuntimeSettingFromConfig, executionRuntimes, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
+import { loopRuntimeSettingFromConfig, executionRuntimes, executionForPhase, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
+import { validateNativeAssets } from './runtime-assets.mjs';
 
 // Internal mesh transport, consumed only by the CLI launch context. It is not a setting.
 export function decodeExecutionHandoff(text, resolveExecutionResume) {
@@ -11,7 +12,7 @@ export function decodeExecutionHandoff(text, resolveExecutionResume) {
   return resolveExecutionResume({ execution: value });
 }
 
-export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, resolveExecution, resolveExecutionResume, runtimeSession }) {
+export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, resolveExecution, resolveExecutionResume, runtimeSession, validateAssets = validateNativeAssets }) {
   const flagValues = (value) => (Array.isArray(value) ? value : typeof value === "string" && value.length > 0 ? [value] : []);
   function requestedSessions(input, native = false) {
     const model = flagValues(input?.model);
@@ -54,7 +55,9 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
       resolved.execution = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, capabilities });
       resolved.sessions = resolved.execution.phases;
     }
-
+    for (const phase of ["refine", "continue", "verify"]) {
+      if (resolved.execution != null && executionForPhase(resolved.execution, phase).runtime === "codex") await validateAssets(ctx.workspace.projectRoot, phase);
+    }
   }
   return Object.freeze({ requestedSessions, requestedRuntimeSessions, resolveRuntimeInvocation });
 }
