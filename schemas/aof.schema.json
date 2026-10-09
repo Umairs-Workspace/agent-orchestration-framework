@@ -385,6 +385,7 @@
           "type": "object",
           "properties": {
             "runtime": { "enum": ["claude", "codex"], "default": "claude" },
+            "runtimes": { "type": "object", "additionalProperties": false, "properties": { "refine": { "enum": ["claude", "codex"] }, "continue": { "enum": ["claude", "codex"] }, "verify": { "enum": ["claude", "codex"] } } },
             "agents": {
               "type": "object",
               "properties": {

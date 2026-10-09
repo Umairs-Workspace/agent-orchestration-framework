@@ -51,6 +51,7 @@ import {
 
 // Core supplies application services; creating this interface starts no work.
 export function createWaveOrchestration({
+  executionForPhase,
   work,
   runs,
   heartbeats,
@@ -266,7 +267,7 @@ export function createWaveOrchestration({
       const baseCommit = await headCommit(primaryRoot, { exec });
       const declaration = declarationFor({ ...resolved, loopRunId, phase: "continue", cycle: 1, startedAt });
       const brief = { ...runBrief(declaration, { wave: { members, baseCommit, bound } }), ...(declaration.execution == null ? {} : { nativeAskContext: laneAsk.site }) };
-      const { record } = await transitionRunStart(milestoneItem, { brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, laneTransitionOptionsFor(ctx.workspace));
+      const { record } = await transitionRunStart(milestoneItem, { brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, "continue") }) }, laneTransitionOptionsFor(ctx.workspace));
       const row = { ref: milestoneItem.ref, phase: "continue", runId: record.runId, outcome: "running", attempt: record.attempt, cycle: 1, wave: { members: [...members], bound } };
       driven.push(row);
       waveRun = { item: milestoneItem, record, row, members: [...members] };
@@ -487,11 +488,11 @@ export function createWaveOrchestration({
               if (resumeDeadline.act === "halt") {
                 return halt({ ...resumeDeadline, ref }, { deadline: resumeDeadline.deadline, ceilingMs: resumeDeadline.ceilingMs, elapsedMs: resumeDeadline.elapsedMs, disposition: resumeDeadline.disposition });
               }
-              ({ record } = await transitionRunStart(laneItem, { mode: "retry", runId: retry.prior.runId, maxAttempts: cap, brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, laneOpts));
+              ({ record } = await transitionRunStart(laneItem, { mode: "retry", runId: retry.prior.runId, maxAttempts: cap, brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, "continue") }) }, laneOpts));
               laneRetries.delete(ref);
               await narrate(`Resumed ${ref} — attempt ${record.attempt} of ${cap} on run ${record.runId}.`);
             } else {
-              ({ record } = await transitionRunStart(laneItem, { brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, laneOpts));
+              ({ record } = await transitionRunStart(laneItem, { brief, node, now: clock(), ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, "continue") }) }, laneOpts));
             }
           } catch (error) {
             if (error?.code === "duplicate-run") return halt(haltDecision("lane-open-failed", ref, "run-store:duplicate-run"), { lane: open.worktree, branch: open.branch });

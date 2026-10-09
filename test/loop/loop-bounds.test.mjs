@@ -672,9 +672,9 @@ export const clampTests = [
       assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.concurrency"], resolveLoopConcurrency);
       assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.concurrency"], loopConcurrencyFromConfig);
       assert.deepEqual([...LOOP_BOUND_VALUE_KEYS].sort(), [...LOOP_BOUND_CONFIG_KEYS].sort());
-      // 147/00 appended the fourteenth, `work.loop.repair`.
-      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 15);
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 15);
+      // 147/00 added repair, 154 the default runtime, and 156 phase runtimes.
+      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 16);
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 16);
       // THE NINTH: the eight keys 69 and 61 declared keep their order in both lists, the mode
       // follows them, and 129/07's three follow the mode.
       assert.equal(LOOP_BOUND_CONFIG_KEYS[8], "work.loop.concurrency");
@@ -685,12 +685,12 @@ export const clampTests = [
   },
   // ── 129/07 task 00 — the three self-contained keys ───────────────────────────
   {
-    name: "129/07 task00 both maps carry exactly twelve keys, the three appended last in order, each resolving its config key",
+    name: "129/07 task00 both maps retain the three ordered mode keys alongside later phase policy keys",
     run() {
       const three = ["work.loop.dispatch.concurrency", "work.loop.agents.refine.mode", "work.loop.agents.continue.mode"];
       // 143/01 appended a thirteenth, `work.loop.refine`, after the three; 147/00 a fourteenth, `work.loop.repair`.
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 15);
-      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 15);
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.length, 16);
+      assert.equal(LOOP_BOUND_VALUE_KEYS.length, 16);
       assert.deepEqual([...LOOP_BOUND_VALUE_KEYS].sort(), [...LOOP_BOUND_CONFIG_KEYS].sort());
       assert.deepEqual(LOOP_BOUND_CONFIG_KEYS.slice(9, 12), three, "indices 9–11 are the three, in order");
       assert.deepEqual(LOOP_BOUND_VALUE_KEYS.slice(9, 12), three, "…in both lists");
@@ -929,15 +929,17 @@ loopBoundsTests.push(
     },
   })),
   {
-    name: "143/01 task00 the refine scope is a member of both resolver maps, last, and nowhere numeric",
+    name: "143/01 task00 the refine scope remains in both resolver maps before repair and runtime settings",
     run() {
       assert.equal(LOOP_BOUND_CONFIG_RESOLVERS["work.loop.refine"], loopRefineFromConfig);
       assert.equal(LOOP_BOUND_VALUE_RESOLVERS["work.loop.refine"], resolveLoopRefine);
-      // 147/00 appended the repair switch after it, so the refine scope is the thirteenth and the switch is last.
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-3), "work.loop.refine");
-      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-3), "work.loop.refine");
-      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-2), "work.loop.repair");
-      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-2), "work.loop.repair");
+      // The original refine/repair positions remain; 156 adds the phase map before the default runtime.
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-4), "work.loop.refine");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-4), "work.loop.refine");
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-3), "work.loop.repair");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-3), "work.loop.repair");
+      assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-2), "work.loop.runtimes");
+      assert.equal(LOOP_BOUND_VALUE_KEYS.at(-2), "work.loop.runtimes");
       assert.equal(LOOP_BOUND_CONFIG_KEYS.at(-1), "work.loop.runtime");
       assert.equal(LOOP_BOUND_VALUE_KEYS.at(-1), "work.loop.runtime");
       assert.deepEqual([...LOOP_REFINE_MODES], ["per-story", "whole-item"]);

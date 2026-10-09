@@ -37,7 +37,7 @@ import {
 } from "./engine.mjs";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig } from "@aof/contracts/loop-bounds";
+import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
 
 import { existsSync } from "node:fs";
 
@@ -542,7 +542,7 @@ export function createStoryCycle({
         item,
         {
           brief,
-          ...(declaration.execution == null ? {} : { execution: declaration.execution }),
+          ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, declaration.phase) }),
           node: meshNodeIdOf(ctx.workspace.config),
           now,
         },
@@ -686,7 +686,7 @@ export function createStoryCycle({
     let record;
     try {
       const brief = { ...runBrief(declaration), halt: { stop: act.stop, producer: act.producer ?? null }, ...(declaration.execution == null ? {} : { nativeAskContext: askContext({ ctx, scope, loopRunId }).site }) };
-      ({ record } = await transitionRunStart(item, { brief, node: meshNodeIdOf(ctx.workspace.config), now, ...(declaration.execution == null ? {} : { execution: declaration.execution }) }, transitionOptionsFor(ctx)));
+      ({ record } = await transitionRunStart(item, { brief, node: meshNodeIdOf(ctx.workspace.config), now, ...(declaration.execution == null ? {} : { execution: executionForPhase(declaration.execution, declaration.phase) }) }, transitionOptionsFor(ctx)));
     } catch (error) {
       return { decision: "stop", facts: { repair: `refused:${error?.code ?? "run-start-error"}` } };
     }

@@ -1520,8 +1520,10 @@ function recordedSessionChoices(declaration, phases = []) {
 // the loop passes nothing" (141) stays true. A declaration with no `sessions` lends 141's `thinking`.
 export function sessionLendFor(declaration, phase) {
   if (declaration?.execution != null) {
-    const entry = declaration.execution.phases[phase === "repair" ? "continue" : phase];
-    return { runtime: declaration.execution.runtime, ...(entry.model == null ? {} : { model: entry.model }), thinking: entry.effort };
+    const selected = phase === "repair" || phase === "review" ? "continue" : phase;
+    const execution = declaration.execution.version === 2 ? declaration.execution.phaseExecutions[selected] : declaration.execution;
+    const entry = execution.phases[selected];
+    return { runtime: execution.runtime, ...(entry.model == null ? {} : { model: entry.model }), thinking: entry.effort };
   }
   const sessions = declaration?.sessions;
   if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {
@@ -1744,8 +1746,13 @@ export function resolveLoopResume(input = {}) {
     try {
       execution = input.resolveExecutionResume(recovered, { runtime: input.runtime, choices: input.sessionChoices, execution: input.execution });
     } catch (error) { return refusal(error.code ?? "invalid-record", { message: error.message }); }
-  } else if (input.runtime !== undefined && input.runtime !== "claude") {
-    return refusal("execution-resume-conflict", { message: "Legacy declarations resume on Claude; start a fresh run to change runtime." });
+  } else if (input.runtime !== undefined) {
+    if (typeof input.resolveExecutionResume === "function") {
+      try { input.resolveExecutionResume(recovered ?? {}, { runtime: input.runtime }); }
+      catch (error) { return refusal(error.code ?? "invalid-record", { message: error.message }); }
+    } else if (input.runtime !== "claude") {
+      return refusal("execution-resume-conflict", { message: "Legacy declarations resume on Claude; start a fresh run to change runtime." });
+    }
   }
   const explicitLevel = input.level !== null && input.level !== undefined;
   const explicitCap = input.cap !== null && input.cap !== undefined;

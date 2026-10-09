@@ -6,7 +6,8 @@ import { runRuntimeRegression, prepareLiveRuntimeFixture } from "../../support/r
 import { runCli } from "../support/cli-context.mjs";
 
 export async function runStep(context, step) {
-  let match = step.match(/^a deterministic runtime regression for "(claude|codex)"$/);
+  if (step === "a mixed loop resumed after refinement and changed configuration") { context.runtimeProof = await runRuntimeRegression("mixed", { resumeAfterRefine: true }); return; }
+  let match = step.match(/^a deterministic runtime regression for "(claude|codex|mixed)"$/);
   if (match) { context.runtime = match[1]; context.runtimeProof = await runRuntimeRegression(context.runtime); return; }
   if (step === "its real CLI, phase gates and settled runs pass") {
     assert.equal(context.runtimeProof.state, "done"); assert.equal(context.runtimeProof.globalStateIsolated, true);

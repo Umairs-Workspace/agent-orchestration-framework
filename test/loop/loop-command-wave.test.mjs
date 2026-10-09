@@ -87,6 +87,26 @@ const waveRows = (state) => state.driven.filter((row) => row.wave != null);
 const laneRunsOf = async (fx, ref) => await readRuns(await resolveItemExact({ workspace: fx.workspace }, ref));
 
 export const loopCommandWaveTests = [
+  { name: "156 — mixed phase plans survive refine-first wave lanes with native per-session records", async run() {
+    const { resolveExecution } = await import("@aof/execution/runtime-selection");
+    const { runCli } = await import("../integration/support/cli-context.mjs");
+    await withLaneRepo(async fx => {
+      const installed = await runCli({ projectDir: fx.root, globalDir: process.env.AOF_GLOBAL_HOME, dataDir: path.join(process.env.AOF_GLOBAL_HOME, "data") }, "work init --runtime claude,codex --json");
+      assert.equal(installed.status, 0, installed.stderr);
+      await git(["add", "-A"], fx.root); await git(["commit", "-qm", "fixture: both runtime assets"], fx.root);
+      const execution = resolveExecution({}, { runtime: ["claude", "refine=codex"], choices: { continue: { model: "sonnet", effort: "high" }, verify: { model: "sonnet", effort: "high" } }, capabilities: { codex: { models: [{ id: "astra", model: "astra", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+      const child = fakeLaneChild(fx, { onSpawn: async input => {
+        assert.equal(input.runtime, "claude"); assert.equal(input.model, "sonnet"); assert.equal(input.thinking, "high");
+        const item = await resolveRefInWorktree(fx.root, fx.workDir, input.lane, input.ref);
+        const run = (await readRuns(item)).find(value => value.runId === input.runId);
+        assert.equal(run.execution.version, 1); assert.equal(run.execution.runtime, "claude");
+        assert.deepEqual(run.brief.loop.execution, execution);
+      } });
+      const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), extra: { executionHandoff: execution } });
+      assert.equal(state.state, "done", report.lines.join("\n"));
+      assert.ok(child.calls.length > 0);
+    });
+  } },
   // ── task 00 · the ladder is extracted ────────────────────────────────────────────────
   {
     name: "129/04 task00 settleStoryCycle is the one home of the ladder — the shell reaches work:grade and the sampler only through it",
@@ -1259,7 +1279,7 @@ export const loopCommandWaveTests = [
           });
           const ctx = { now: null };
           const { state } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())), timers, now: undefined, extra: { now: () => timers.now ?? new Date().toISOString() } });
-          assert.equal(state.state, "done");
+          assert.equal(state.state, "done", JSON.stringify({ row, act: state.act }));
           if (row.lanes === 0) {
             assert.equal(timers.armed.size, 0, "no interval keeps the process alive after the last lane closed");
             return;

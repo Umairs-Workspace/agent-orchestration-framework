@@ -1,3 +1,4 @@
+import { executionRuntimes } from "@aof/contracts/loop-bounds";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
@@ -249,8 +250,8 @@ async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
     if (typeof prepareRuntimeAssets !== "function") throw Object.assign(new Error("Codex lane asset preparation is unavailable"), { code: "runtime-assets-unavailable" });
     await prepareRuntimeAssets(projectRoot, lane.worktree);
   };
-  if (execution?.runtime !== "codex") await inheritIgnoredClaudeFiles(projectRoot, lane.worktree, { exec: options.exec });
-  if (advanceTo == null) { if (execution?.runtime === "codex") await prepareNative(); return lane; }
+  if (execution == null || executionRuntimes(execution).includes("claude")) await inheritIgnoredClaudeFiles(projectRoot, lane.worktree, { exec: options.exec });
+  if (advanceTo == null) { if (executionRuntimes(execution).includes("codex")) await prepareNative(); return lane; }
   const advance = await advanceBranchToBase(lane.worktree, advanceTo, { exec: options.exec });
   // EVERY refusal is `lane-open-failed` (PO ruling, 129/03 fix round, I3): a lane that cannot be
   // brought to HEAD cannot be handed out, whichever door refused — a conflict or a dirty tree
@@ -258,7 +259,7 @@ async function resolveDispatchLane(projectRoot, itemRef, options = {}) {
   const advanced = advance.outcome === "refused"
     ? { ...advance, code: "lane-open-failed", cause: advance.code }
     : advance;
-  if (advanced.outcome !== "refused" && execution?.runtime === "codex") await prepareNative();
+  if (advanced.outcome !== "refused" && executionRuntimes(execution).includes("codex")) await prepareNative();
   return { ...lane, advanced };
 }
 

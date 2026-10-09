@@ -1,4 +1,4 @@
-import { EXECUTION_RUNTIMES, resolveLoopRuntime, loopRuntimeSettingFromConfig } from "@aof/contracts/loop-bounds";
+import { EXECUTION_RUNTIMES, resolveLoopRuntime, loopRuntimeSettingFromConfig, executionForPhase, parseRuntimeChoices } from "@aof/contracts/loop-bounds";
 import { EFFORT_LEVELS, SESSION_PHASES, normalizeEffort, resolveSessionLaunch } from "./session-model.mjs";
 
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object ?? {}, key);
@@ -27,6 +27,12 @@ export function validateRuntimeSettings(config, { roles = null } = {}) {
   if (configuredRuntime.present && resolveLoopRuntime(configuredRuntime.value) === null) {
     fail("unsupported-runtime", "work.loop.runtime", "project", "expected claude or codex");
   }
+  if (own(config?.work?.loop, "runtimes")) {
+    closed(config.work.loop.runtimes, SESSION_PHASES, "work.loop.runtimes");
+    for (const [phase, runtime] of Object.entries(config.work.loop.runtimes)) {
+      if (!EXECUTION_RUNTIMES.includes(runtime)) fail("unsupported-runtime", `work.loop.runtimes.${phase}`, "project", "expected claude or codex");
+    }
+  }
   if (!own(agents, "runtimes")) return;
   const root = "work.agents.runtimes";
   closed(agents.runtimes, EXECUTION_RUNTIMES, root);
@@ -53,9 +59,43 @@ export function validateRuntimeSettings(config, { roles = null } = {}) {
   }
 }
 
-export function resolveExecution(config, { runtime: flagged, choices = {}, capabilities = {}, roles = null, allowUnproven = false } = {}) {
+export { parseRuntimeChoices };
+
+export function resolvePhaseRuntimes(config, flagged) {
+  validateRuntimeSettings(config);
+  const flags = parseRuntimeChoices(flagged);
+  const configured = loopRuntimeSettingFromConfig({ config });
+  return Object.fromEntries(SESSION_PHASES.map(phase => [phase, {
+    runtime: flags[phase] ?? flags.default ?? config?.work?.loop?.runtimes?.[phase] ?? configured.value ?? "claude",
+    source: flags[phase] !== undefined || flags.default !== undefined ? "flag" : config?.work?.loop?.runtimes?.[phase] !== undefined || configured.present ? "project" : "default",
+  }]));
+}
+
+export function resolveExecution(config, { runtime: flagged, choices = {}, capabilities = {}, roles = null, allowUnproven = false, singleRuntime = false } = {}) {
   validateRuntimeSettings(config, { roles });
   closed(choices, SESSION_PHASES, "choices", "flag");
+  if (!singleRuntime) {
+    const selected = resolvePhaseRuntimes(config, flagged);
+    if (new Set(Object.values(selected).map(value => value.runtime)).size > 1) {
+      const phaseExecutions = {};
+      for (const phase of SESSION_PHASES) {
+        const selection = selected[phase];
+        const phaseChoices = Object.fromEntries(Object.entries(choices).filter(([key]) => selected[key]?.runtime === selection.runtime));
+        // The native record keeps all of its runtime's settings, never another provider's aliases.
+        phaseExecutions[phase] = resolveExecution(config, { runtime: selection.runtime, choices: phaseChoices, capabilities, roles, allowUnproven, singleRuntime: true });
+        phaseExecutions[phase].runtimeSource = selection.source;
+      }
+      const diagnostics = SESSION_PHASES.flatMap(phase => (phaseExecutions[phase].diagnostics ?? []).map(entry => ({ ...entry, phase })));
+      return { version: 2, runtime: "mixed", runtimeSource: "phase-map",
+        phases: Object.fromEntries(SESSION_PHASES.map(phase => [phase, { ...phaseExecutions[phase].phases[phase], runtime: selected[phase].runtime }])),
+        phaseExecutions, ...(diagnostics.length ? { unproven: true, diagnostics } : {}) };
+    }
+    // Phase-only flags/config can also resolve to one runtime; retain the v1 wire format.
+    const choice = selected.continue;
+    const resolved = resolveExecution(config, { runtime: choice.runtime, choices, capabilities, roles, allowUnproven, singleRuntime: true });
+    resolved.runtimeSource = choice.source;
+    return resolved;
+  }
   for (const [phase, choice] of Object.entries(choices)) {
     closed(choice, ["model", "modelFlag", "effort", "effortFlag"], `choices.${phase}`, "flag");
     for (const part of ["model", "effort"]) if (own(choice, part) && !named(choice[part])) fail(`unsupported-${part}`, choice[`${part}Flag`] ?? `choices.${phase}.${part}`, "flag", "must be a non-empty choice");
@@ -143,6 +183,19 @@ export function inspectExecution(config, options = {}) {
 export function validateExecutionEnvelope(value) {
   const invalid = (path, message) => fail("invalid-record", `execution.${path}`, "recorded", message);
   if (!object(value)) invalid("", "must be a versioned execution envelope");
+  if (value.version === 2) {
+    const keys = ["version", "runtime", "runtimeSource", "phases", "phaseExecutions"];
+    if (Object.keys(value).length !== keys.length || keys.some(key => !own(value, key)) || value.runtime !== "mixed" || value.runtimeSource !== "phase-map") invalid("", "invalid phase execution plan");
+    for (const field of ["phases", "phaseExecutions"]) if (!object(value[field]) || Object.keys(value[field]).length !== SESSION_PHASES.length || SESSION_PHASES.some(phase => !own(value[field], phase))) invalid(field, "all three phases are required");
+    for (const phase of SESSION_PHASES) {
+      if (value.phaseExecutions[phase]?.version !== 1) invalid(`phaseExecutions.${phase}`, "a phase requires a native v1 envelope");
+      const native = validateExecutionEnvelope(value.phaseExecutions[phase]);
+      const expected = { ...native.phases[phase], runtime: native.runtime };
+      const entry = value.phases[phase];
+      if (!object(entry) || Object.keys(entry).length !== Object.keys(expected).length || Object.entries(expected).some(([key, item]) => entry[key] !== item)) invalid(`phases.${phase}`, "phase settings differ from their native envelope");
+    }
+    return structuredClone(value);
+  }
   const keys = ["version", "runtime", "runtimeSource", "transport", "profile", "profileVersion", "phases", "roles"];
   if (Object.keys(value).some(key => !keys.includes(key)) || keys.some(key => !own(value, key))) invalid("", "missing or unknown envelope field");
   if (value.version !== 1 || !EXECUTION_RUNTIMES.includes(value.runtime)) invalid("version", "unknown execution version or runtime");
@@ -168,12 +221,16 @@ export function validateExecutionEnvelope(value) {
 
 export function resolveExecutionResume(record, { runtime, choices = {}, execution } = {}) {
   if (!own(record, "execution")) {
-    if (runtime !== undefined && runtime !== "claude") fail("execution-resume-conflict", "--runtime", "flag", "legacy records resume on Claude; start a fresh run to change runtime");
+    if (Object.values(parseRuntimeChoices(runtime)).some(value => value !== "claude")) fail("execution-resume-conflict", "--runtime", "flag", "legacy records resume on Claude; start a fresh run to change runtime");
     if (execution !== undefined) fail("execution-resume-conflict", "execution", "flag", "legacy record has no execution envelope to replace");
     return null;
   }
   const pinned = validateExecutionEnvelope(record.execution);
-  if (runtime !== undefined && runtime !== pinned.runtime) fail("execution-resume-conflict", "--runtime", "flag", "runtime differs from the recorded choice");
+  const runtimeFlags = parseRuntimeChoices(runtime);
+  for (const phase of SESSION_PHASES) {
+    const requested = runtimeFlags[phase] ?? runtimeFlags.default;
+    if (requested !== undefined && requested !== executionForPhase(pinned, phase).runtime) fail("execution-resume-conflict", "--runtime", "flag", `${phase} runtime differs from the recorded choice`);
+  }
   for (const [phase, choice] of Object.entries(choices)) {
     if (!SESSION_PHASES.includes(phase)) fail("execution-resume-conflict", `choices.${phase}`, "flag", "unknown phase");
     for (const part of ["model", "effort"]) {
@@ -187,6 +244,13 @@ export function resolveExecutionResume(record, { runtime, choices = {}, executio
 // Recheck the recorded choices on the receiving machine; preserve their original provenance.
 export function validateExecutionCapabilities(value, capabilities) {
   const pinned = validateExecutionEnvelope(value);
+  if (pinned.version === 2) {
+    for (const phase of SESSION_PHASES) {
+      const native = executionForPhase(pinned, phase);
+      validateExecutionCapabilities(native, capabilities?.[native.runtime]);
+    }
+    return pinned;
+  }
   if (pinned.runtime === "codex" && (capabilities?.profile !== pinned.profile || capabilities?.profileVersion !== pinned.profileVersion)) fail("unsupported-profile", "execution.profile", "native", "worker does not support the recorded native profile");
   const choices = Object.fromEntries(Object.entries(pinned.phases).map(([phase, choice]) => [phase, { ...(choice.model == null ? {} : { model: choice.model }), effort: choice.effort }]));
   const config = { work: { agents: { runtimes: { [pinned.runtime]: {

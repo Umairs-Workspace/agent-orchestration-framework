@@ -453,23 +453,24 @@ const codexWorkerHandoffTests = [
       assert.ok(result.stderr.includes(transport === "null" ? "must be a versioned execution envelope" : "scope matched neither admitted loop scope form"), result.stderr);
     }
   }) },
-  { name: "154/07 task00 — unattended worker hands the exact pinned envelope to the declared loop launch", run: () => fixture(async f => {
+  ...[false, true].map(mixed => ({ name: `${mixed ? "156 mixed loop" : "154/07 task00"} — unattended worker hands the exact pinned envelope to the declared loop launch`, run: () => fixture(async f => {
+    const execution = mixed ? resolveExecution({}, { runtime: ["claude", "refine=codex"], choices: { continue: { model: "sonnet", effort: "high" } }, capabilities: { codex: { models: codexFixture().fixture.models } } }) : f.execution;
     const calls = [];
     const handler = f.a.mesh.worker.createMeshWorkerExecutionHandler({ ...f.options, spawnRuntime: async (brief, options) => {
       assert.ok(existsSync(path.join(brief.worktreeCwd, ".agents/skills/aof-verify/SKILL.md")));
       calls.push({ brief, options }); return { outcome: "done", processStarted: true };
     } });
     const { command, ...directive } = f.directive;
-    await handler({ ...directive, launch: { kind: "loop", scope: "154" } });
+    await handler({ ...directive, execution, launch: { kind: "loop", scope: "154" } });
     assert.equal(calls.length, 1);
     const declared = compileFrozenSet(bundledFrozenSet()).unattendedLaunch;
     assert.equal(calls[0].options.unattended.program, declared.program);
     assert.deepEqual(calls[0].options.unattended.args, [...declared.args, "154"]);
-    assert.deepEqual(decodeExecutionHandoff(calls[0].options.env.AOF_MESH_EXECUTION, resolveExecutionResume), f.execution);
+    assert.deepEqual(decodeExecutionHandoff(calls[0].options.env.AOF_MESH_EXECUTION, resolveExecutionResume), execution);
     const run = (await f.a.execution.runs.readRuns(f.item))[0];
-    assert.deepEqual(run.execution, f.execution);
+    assert.deepEqual(run.execution, execution);
     assert.equal(f.probes.some(p => p.calls.some(call => call.method === "turn/start")), false);
-  }) },
+  }) })),
   { name: "154/07 task00 — assembled controller resolves project Codex and the worker launches that exact wire envelope", run: () => fixture(async f => {
     const filename = path.join(f.root, ".aof/aof.config.json");
     const config = JSON.parse(await readFile(filename, "utf8")); config.work.loop = { runtime: "codex" };

@@ -13,6 +13,20 @@ const saveEditableSections = assets.configEditor.saveEditableSections;
 const validateEditableResource = assets.configEditor.validateEditableResource;
 
 export const configEditorTests = [
+  { name: "156 — phase assistant settings roundtrip without replacing unrelated loop settings", run: async () => withExecutionProject(async ({ root, configPath, options }) => {
+    const edit = { runtime: "claude", phaseRuntimes: { refine: "codex", continue: "claude", verify: "claude" }, runtimes: { codex: { session: { models: { refine: "gpt-6-astra" }, effort: { refine: "high" } } }, claude: { session: { models: { continue: "sonnet", verify: "sonnet" } } } } };
+    const result = await saveEditableSections(root, { executionSettings: edit }, options);
+    assert.equal(result.ok, true, JSON.stringify(result.diagnostics));
+    const loaded = await loadEditableConfig(root, options);
+    assert.deepEqual(loaded.executionSettings, edit);
+    assert.equal(loaded.execution.runtime, "mixed");
+    assert.equal(loaded.execution.phases.refine.runtime, "codex");
+    assert.equal(loaded.execution.phases.continue.model, "sonnet");
+    assert.equal(JSON.parse(await readFile(configPath, "utf8")).work.loop.reviewRounds, 2);
+    const before = await readFile(configPath, "utf8");
+    assert.equal((await saveEditableSections(root, { executionSettings: { phaseRuntimes: { refine: "unknown" } } }, options)).ok, false);
+    assert.equal(await readFile(configPath, "utf8"), before);
+  }) },
   { name: "154/10 task00 E1 — installed assets remain separate from the inherited Claude execution and provenance", run: executionDefaults },
   { name: "154/10 task00 E2 — execution roundtrip preserves memory, assets, overrides and legacy Claude without processes", run: executionRoundtrip },
   ...[

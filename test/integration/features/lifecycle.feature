@@ -1,6 +1,15 @@
 Feature: AOF CLI lifecycle
   User-facing lifecycle commands should stay stable across refactors.
 
+  Scenario: 156 one loop refines with Codex and implements and verifies with Claude
+    Given a deterministic runtime regression for "mixed"
+    Then its real CLI, phase gates and settled runs pass
+    And a persistently failing task stops within the recorded bound
+
+  Scenario: 156 a mixed loop resumes the recorded phase selections after configuration changes
+    Given a mixed loop resumed after refinement and changed configuration
+    Then its real CLI, phase gates and settled runs pass
+
   Scenario: 154/11 Claude retains the isolated default lifecycle and failure bound
     Given a deterministic runtime regression for "claude"
     Then its real CLI, phase gates and settled runs pass

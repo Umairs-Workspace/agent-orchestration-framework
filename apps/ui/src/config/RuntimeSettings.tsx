@@ -3,13 +3,13 @@ import { isConfigPayload, loadScope } from "./config-load.mjs";
 
 type Runtime = "claude" | "codex";
 type Diagnostic = { path: string; message: string };
-type Entry = { model: string | null; effort: string | null; modelSource: string | null; effortSource: string | null };
-type Execution = { runtime: Runtime; runtimeSource: string; phases: Record<string, Entry>; roles: Record<string, Entry>; diagnostics?: Diagnostic[] };
+type Entry = { runtime?: Runtime; model: string | null; effort: string | null; modelSource: string | null; effortSource: string | null };
+type Execution = { runtime: Runtime | "mixed"; runtimeSource: string; phases: Record<string, Entry>; roles: Record<string, Entry>; diagnostics?: Diagnostic[] };
 type Scoped = { session?: { models?: Record<string, string>; effort?: Record<string, string> }; models?: Record<string, string>; effort?: Record<string, string> };
-type Settings = { runtime: Runtime | null; runtimes: Partial<Record<Runtime, Scoped>> };
+type Settings = { phaseRuntimes?: Partial<Record<string, Runtime>>; runtime: Runtime | null; runtimes: Partial<Record<Runtime, Scoped>> };
 type Payload = { executionSettings: Settings; execution: Execution | null; executionByRuntime: Partial<Record<Runtime, { execution: Execution | null; diagnostics: Diagnostic[] }>>; assetRuntimes: string[]; diagnostics: Diagnostic[] };
 const phases = ["refine", "continue", "verify"];
-const names = { claude: "Claude Code", codex: "Codex" };
+const names = { claude: "Claude Code", codex: "Codex", mixed: "By phase" };
 const control = "min-w-0 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
 const action = "rounded-md border border-border bg-primary px-4 py-2 text-sm text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
 
@@ -59,14 +59,14 @@ export function RuntimeSettings({ scope = "project" }: { scope?: "project" | "gl
   const preview = data.executionByRuntime?.[runtime]?.execution;
   const roleNames = [...new Set([...Object.keys(preview?.roles ?? {}), ...Object.keys(scoped.models ?? {}), ...Object.keys(scoped.effort ?? {})])];
 
-  function change(key: string, part: "models" | "effort", value: string, phase: boolean) {
+  function change(key: string, part: "models" | "effort", value: string, phase: boolean, selectedRuntime: Runtime = runtime) {
     setDraft(previous => {
-      const current = previous.runtimes?.[runtime] ?? {};
+      const current = previous.runtimes?.[selectedRuntime] ?? {};
       const map = { ...(phase ? current.session?.[part] : current[part]) };
       if (value.trim()) map[key] = value;
       else delete map[key];
       const next = phase ? { ...current, session: { ...current.session, [part]: map } } : { ...current, [part]: map };
-      return { ...previous, runtimes: { ...previous.runtimes, [runtime]: next } };
+      return { ...previous, runtimes: { ...previous.runtimes, [selectedRuntime]: next } };
     });
     setMessage("");
   }
@@ -94,21 +94,22 @@ export function RuntimeSettings({ scope = "project" }: { scope?: "project" | "gl
     } finally { setSaving(false); }
   }
 
-  function field(key: string, part: "models" | "effort", phase: boolean) {
-    const path = `work.agents.runtimes.${runtime}.${phase ? "session." : ""}${part}.${key}`;
-    const id = `execution-${runtime}-${phase ? "phase" : "role"}-${part}-${key}`;
+  function field(key: string, part: "models" | "effort", phase: boolean, selectedRuntime: Runtime = runtime) {
+    const selectedScoped = draft.runtimes?.[selectedRuntime] ?? {};
+    const path = `work.agents.runtimes.${selectedRuntime}.${phase ? "session." : ""}${part}.${key}`;
+    const id = `execution-${selectedRuntime}-${phase ? "phase" : "role"}-${part}-${key}`;
     const error = errors.filter(value => value.path === path || path.startsWith(`${value.path}.`));
-    const value = (phase ? scoped.session?.[part]?.[key] : scoped[part]?.[key]) ?? "";
+    const value = (phase ? selectedScoped.session?.[part]?.[key] : selectedScoped[part]?.[key]) ?? "";
     return <div key={part} className="min-w-0 space-y-1">
       <label htmlFor={id} className="text-sm font-medium">{key} {part === "models" ? "model" : "effort"}</label>
-      <input id={id} className={control} value={value} placeholder="Inherited" disabled={saving} onChange={event => change(key, part, event.target.value, phase)} aria-invalid={error.length ? true : undefined} aria-describedby={error.length ? `${id}-error` : undefined} />
+      <input id={id} className={control} value={value} placeholder="Inherited" disabled={saving} onChange={event => change(key, part, event.target.value, phase, selectedRuntime)} aria-invalid={error.length ? true : undefined} aria-describedby={error.length ? `${id}-error` : undefined} />
       {error.length ? <p id={`${id}-error`} role="alert" className="break-words text-sm text-accent">{error.map(value => value.message).join(" ")}</p> : null}
     </div>;
   }
 
   function resolved(label: string, entry: Entry) {
     return <div key={label} className="min-w-0 rounded-md border border-border p-3 text-sm">
-      <h4 className="font-medium">{label}</h4>
+      <h4 className="font-medium">{label}{entry.runtime ? ` � ${names[entry.runtime]}` : ""}</h4>
       <p className="break-words">Model: {entry.model ?? "Inherited runtime model"} · source: {entry.modelSource ?? "runtime default"}</p>
       <p className="break-words">Effort: {entry.effort ?? "Inherited session effort"} · source: {entry.effortSource ?? "runtime default"}</p>
     </div>;
@@ -125,13 +126,24 @@ export function RuntimeSettings({ scope = "project" }: { scope?: "project" | "gl
         </select>
         {runtimeErrors.length ? <p id="execution-runtime-error" role="alert">{runtimeErrors.map(value => value.message).join(" ")}</p> : null}
       </div>
-      <fieldset disabled={saving} className="min-w-0 space-y-3"><legend className="font-semibold">{names[runtime]} phase settings</legend><p className="text-sm text-muted-foreground">Leave fields empty to inherit. Other assistant settings are preserved.</p>
-        {phases.map(phase => <div key={phase} className="grid min-w-0 gap-3 rounded-md border border-border p-3 md:grid-cols-2">{field(phase, "models", true)}{field(phase, "effort", true)}</div>)}
+      <fieldset disabled={saving} className="min-w-0 space-y-3"><legend className="font-semibold">Phase settings</legend><p className="text-sm text-muted-foreground">Leave fields empty to inherit. Other assistant settings are preserved.</p>
+        {phases.map(phase => {
+          const selected = draft.phaseRuntimes?.[phase] ?? runtime;
+          return <div key={phase} className="grid min-w-0 gap-3 rounded-md border border-border p-3 md:grid-cols-3">
+            <div className="space-y-1"><label htmlFor={`execution-assistant-${phase}`} className="text-sm font-medium">{phase} assistant</label>
+              <select id={`execution-assistant-${phase}`} className={control} value={draft.phaseRuntimes?.[phase] ?? ""} onChange={event => {
+                const next = { ...draft.phaseRuntimes };
+                if (event.target.value) next[phase] = event.target.value as Runtime; else delete next[phase];
+                setDraft({ ...draft, phaseRuntimes: next }); setMessage("");
+              }}><option value="">Default ({names[runtime]})</option><option value="claude">Claude Code</option><option value="codex">Codex</option></select>
+            </div>{field(phase, "models", true, selected)}{field(phase, "effort", true, selected)}
+          </div>;
+        })}
       </fieldset>
       <details className="min-w-0 rounded-md border border-border p-3"><summary className="cursor-pointer font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Role overrides</summary><div className="mt-3 space-y-3">{roleNames.map(role => <div key={role} className="grid min-w-0 gap-3 md:grid-cols-2">{field(role, "models", false)}{field(role, "effort", false)}</div>)}</div></details>
-      <section className="min-w-0 space-y-3" aria-label="Saved resolved choices"><h3 className="font-semibold">Saved resolved choices</h3><p className="text-sm text-muted-foreground">Preview for {names[runtime]} from the last saved configuration. Save edits to refresh.</p>
+      <section className="min-w-0 space-y-3" aria-label="Saved resolved choices"><h3 className="font-semibold">Saved resolved choices</h3><p className="text-sm text-muted-foreground">Phase choices from the last saved configuration. Save edits to refresh.</p>
         <p className="break-words text-sm">Primary execution assistant: {data.execution ? names[data.execution.runtime] : "Unavailable"} · source: {data.execution?.runtimeSource ?? "invalid configuration"}</p>
-        <div className="grid min-w-0 gap-3 md:grid-cols-2">{Object.entries(preview?.phases ?? {}).map(([name, entry]) => resolved(name, entry))}{Object.entries(preview?.roles ?? {}).map(([name, entry]) => resolved(name, entry))}</div>
+        <div className="grid min-w-0 gap-3 md:grid-cols-2">{Object.entries(data.execution?.phases ?? {}).map(([name, entry]) => resolved(name, entry))}{Object.entries(preview?.roles ?? {}).map(([name, entry]) => resolved(name, entry))}</div>
         {(preview?.diagnostics ?? []).map(value => <p key={value.path} className="break-words text-sm text-muted-foreground">{value.message}</p>)}
       </section>
       {errors.length ? <div role="alert" className="space-y-1 text-sm text-accent">{errors.map((value, index) => <p key={index} className="break-words">{value.path}: {value.message}</p>)}</div> : null}

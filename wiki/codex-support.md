@@ -19,6 +19,40 @@ does not establish those claims.
 Runtime variants are selected automatically. There is no independent template picker.
 Project overrides retain their final precedence over the selected bundled variant.
 
+## Use different assistants in one loop
+
+Install both bundles with `aof work init --runtime claude,codex`, then start one loop:
+
+```powershell
+aof work loop 07 --level L2 --runtime claude --runtime refine=codex --model refine=gpt-6-astra:high --model continue=sonnet:high --model verify=sonnet:high
+```
+
+This selects Codex/Astra for refinement and Claude/Sonnet for implementation and
+verification. Replace `07` with the project work item. Codex must advertise the
+requested native model and effort. `--dry-run --json` inspects the invocation without
+starting model work. Solo operation uses `work.agents.mode: "solo"`.
+
+For a standing configuration, merge `"runtime": "claude", "runtimes": { "refine":
+"codex" }` into `work.loop`. Keep phase models/efforts under the corresponding
+`work.agents.runtimes.codex.session` and `work.agents.runtimes.claude.session` maps.
+The configuration editor also exposes an assistant selector for each phase.
+
+A phase-specific `--runtime PHASE=RUNTIME` overrides an unqualified `--runtime`,
+which overrides the configured phase runtime, then `work.loop.runtime`, then Claude.
+Duplicate runtime flags for the same phase are rejected. Models and effort retain
+their existing precedence, resolved against the runtime selected for that phase.
+Review and repair use the implementation (`continue`) runtime and settings.
+
+The loop records the complete phase plan; each session records only its own native
+execution envelope. `aof work loop 07 --resume` retains that plan even after config
+edits. Conflicting resume flags are refused. Worker handoff carries the complete
+plan and prepares both runtime asset sets when needed. Existing single-runtime
+records retain their version-1 format; mixed plans use version 2.
+
+Story 156 corrects milestone 154's original single-runtime scope. Its mixed-loop
+regression uses scripted assistant transports through the real loop and records;
+that is not a claim of a live Astra/Sonnet model acceptance run.
+
 ## Select, inspect and apply
 
 Merge these settings into the existing `.aof/aof.config.json`; preserve its other fields:

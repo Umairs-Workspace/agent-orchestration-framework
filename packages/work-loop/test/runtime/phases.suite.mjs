@@ -66,6 +66,27 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  { name: "156 — mixed invocation preflights Codex once and lends only each phase's native settings", async run() {
+    const f = await nativePhaseFixture();
+    try {
+      const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: f.runtimeSession });
+      const command = a.getCommand("work:loop");
+      const parsed = a.cli.parseSpecArgv(["154", "--runtime", "claude", "--runtime", "refine=codex", "--model", "refine=" + f.selected.phases.refine.model, "--model", "continue=sonnet", "--model", "verify=sonnet", "--thinking", "high"], command.cli.spec, command.id);
+      const input = command.cli.argv(parsed._, parsed);
+      const resolved = {};
+      await resolver.resolveRuntimeInvocation({ input, ctx: f.ctx, resolved, resume: {}, sessionRequest: resolver.requestedSessions(input, true) });
+      assert.equal(f.probes.length, 1);
+      const declaration = { execution: resolved.execution };
+      assert.deepEqual(sessionLendFor(declaration, "continue"), { runtime: "claude", model: "sonnet", thinking: "high" });
+      assert.equal(sessionLendFor(declaration, "refine").runtime, "codex");
+      assert.equal(sessionLendFor(declaration, "repair").runtime, "claude");
+      f.workspace.config.work.loop.runtime = "invalid-current-config";
+      const resumed = {};
+      await resolver.resolveRuntimeInvocation({ input: { resume: true }, ctx: f.ctx, resolved: resumed, resume: { lastDeclaration: declaration }, sessionRequest: { choices: {} } });
+      assert.deepEqual(resumed.execution, resolved.execution);
+      assert.equal(f.probes.length, 1, "resume reads the pinned plan rather than re-resolving project settings");
+    } finally { await f.cleanup(); }
+  } },
   ...[false, true].map(managed => ({ name: `154/06 task00 — native ${managed ? "loop-managed" : "standalone"} phase lends run ownership to child bookkeeping`, async run() {
     const f = await nativePhaseFixture();
     try {

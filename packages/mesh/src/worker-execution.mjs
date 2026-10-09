@@ -1,3 +1,4 @@
+import { executionForPhase } from "@aof/contracts/loop-bounds";
 import path from "node:path";
 import { execFile } from "node:child_process";
 import { rename, readdir, stat } from "node:fs/promises";
@@ -1124,6 +1125,7 @@ function createMeshWorkerExecutionHandler(options = {}) {
 
       const nowIso = resolveNow();
       const nativePhase = execution == null ? null : await nativeExecution.preparePhase({ item, worktreeItem, worktreePath, ws, execution, command: directiveCommand, launchDeclared }, options);
+      if (!launchDeclared && execution != null) execution = executionForPhase(execution, nativePhase);
       // The mint rides the transition seam (m42 wave (d) leg d4, port 1 — the
       // sweep's second half, matching d2's completeRun sweep): `run.started` is
       // journaled beside the fact. NO `workspace` is passed, exactly as the

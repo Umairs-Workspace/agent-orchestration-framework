@@ -1,3 +1,4 @@
+import { executionForPhase, executionRuntimes } from "@aof/contracts/loop-bounds";
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createWorkerExecutionServices } from "@aof/mesh/worker-execution";
 import { buildRunAttribution } from "@aof/execution/otel-attribution";
@@ -58,27 +59,30 @@ export function assembleMeshWorkerExecution({ workServices, runStoreServices, ru
   const nativeExecution = {
     async preflight(value, ws, options = {}) {
       const execution = validateExecutionEnvelope(value);
-      if (execution.runtime === "codex") validateExecutionCapabilities(execution, await runtimeSessionServices.inspectCapabilities("codex", { ...options, cwd: ws.projectRoot }));
+      if (executionRuntimes(execution).includes("codex")) {
+        const capabilities = await runtimeSessionServices.inspectCapabilities("codex", { ...options, cwd: ws.projectRoot });
+        validateExecutionCapabilities(execution, execution.version === 2 ? { codex: capabilities } : capabilities);
+      }
       return execution;
     },
     prepare: prepareCodexWorktree,
     launchOptions(execution, phase, { options, globalWorkStoreOptions, launchDeclared }) {
       return {
         env: { ...process.env, ...globalWorkStoreOptions?.env, ...options.env, ...(launchDeclared ? { AOF_MESH_EXECUTION: JSON.stringify(execution) } : {}) },
-        ...(execution.runtime === "codex" ? { codexBin: options.codexBin } : { session: execution.phases[phase ?? "continue"] }),
+        ...(executionRuntimes(execution).includes("codex") ? { codexBin: options.codexBin } : { session: execution.phases[phase ?? "continue"] }),
       };
     },
     async preparePhase({ item, worktreeItem, worktreePath, ws, execution, command, launchDeclared }, options) {
       const phase = directivePhase(command) === "build" ? "continue" : directivePhase(command);
-      if (execution.runtime === "codex") {
+      if (executionRuntimes(execution).includes("codex")) {
         await prepareCodexWorktree(ws.projectRoot, worktreePath);
         if (!launchDeclared && phase == null) throw Object.assign(new Error("Codex assignment names no supported phase"), { code: "native-phase-unavailable" });
-        for (const selected of launchDeclared ? ["refine", "continue", "verify"] : [phase]) await nativeExecution.inspectPhase({ item, worktreeItem, worktreePath, ws, execution, phase: selected }, options);
+        for (const selected of launchDeclared ? ["refine", "continue", "verify"] : [phase]) if (executionForPhase(execution, selected)?.runtime === "codex") await nativeExecution.inspectPhase({ item, worktreeItem, worktreePath, ws, execution, phase: selected }, options);
       }
       return phase;
     },
     canResume: (sessionId, cwd, options) => runtimeSessionServices.canResume("codex", sessionId, { ...options, cwd }),
-    inspectPhase: ({ item, worktreeItem, worktreePath, ws, execution, phase }, options) => commandsDriveServices.driveNativePhase(phase, item, { dryRun: true }, { workspace: { ...ws, projectRoot: worktreePath }, agentSessionDriverOptions: options, loopDrive: { execution, briefItem: worktreeItem } }),
+    inspectPhase: ({ item, worktreeItem, worktreePath, ws, execution, phase }, options) => commandsDriveServices.driveNativePhase(phase, item, { dryRun: true }, { workspace: { ...ws, projectRoot: worktreePath }, agentSessionDriverOptions: options, loopDrive: { execution: executionForPhase(execution, phase), briefItem: worktreeItem } }),
     async drive({ item, worktreeItem, worktreePath, ws, runRecord, phase, answer }, options = {}) {
       // The worker mints its one run in the primary AFTER materializing the lane.
       // That run starts the primary item; the lane still has its pre-mint status.

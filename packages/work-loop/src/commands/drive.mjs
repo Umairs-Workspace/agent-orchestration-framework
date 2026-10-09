@@ -21,7 +21,7 @@ import { commandError } from "@aof/contracts/error";
 // `run.started`/`run.completed` and inherits none of the declared cascade. Ported to the
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 
-import { loopBoundsFromConfig, loopRuntimeSettingFromConfig } from "@aof/contracts/loop-bounds";
+import { loopBoundsFromConfig, loopRuntimeSettingFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
 import { sessionAgentMode } from "@aof/contracts/agent-mode";
 
 import { access, readFile } from "node:fs/promises";
@@ -90,7 +90,7 @@ export function createPhaseDrivers({
       const capabilities = await runtimeSession.inspectCapabilities("codex", { ...base, cwd, env });
       selected = execution.resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: { [choicePhase]: supplied }, capabilities: { codex: capabilities } });
     }
-    selected = execution.validateExecutionEnvelope(selected);
+    selected = executionForPhase(execution.validateExecutionEnvelope(selected), choicePhase);
     if (selected.runtime !== "codex") throw commandError("The native drive differs from the recorded runtime", "execution-resume-conflict", 409);
     const halt = input.halt ?? null;
     if (phase === "repair") {
@@ -433,7 +433,7 @@ export function createPhaseDrivers({
           : typeof ctx.loopDrive?.thinking === "string" && ctx.loopDrive.thinking.length > 0
             ? ctx.loopDrive.thinking
             : null;
-        const nativeHint = input.runtime === "codex" || ctx.loopDrive?.execution?.runtime === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.run != null || ctx.loopDrive?.runId != null;
+        const nativeHint = input.runtime === "codex" || ctx.loopDrive?.execution?.runtime === "codex" || ctx.workspace.config?.work?.loop?.runtimes?.[sessionPhaseOf(phase)] === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.run != null || ctx.loopDrive?.runId != null;
         const thinking = thinkingGiven == null ? undefined : nativeHint ? thinkingGiven : normalizeEffort(thinkingGiven);
         if (thinking === null) {
           throw commandError(thinkingUnknownLevelMessage(thinkingGiven), THINKING_UNKNOWN_LEVEL, 400);
@@ -461,7 +461,7 @@ export function createPhaseDrivers({
 
         const managed = input.run ?? ctx.loopDrive?.runId ?? null;
         const recorded = managed == null ? null : (await readRuns(item)).find(run => run.runId === managed);
-        const runtime = recorded == null ? input.runtime ?? ctx.loopDrive?.execution?.runtime ?? loopRuntimeSettingFromConfig(ctx.workspace).value ?? "claude" : recorded.execution?.runtime ?? "claude";
+        const runtime = recorded == null ? input.runtime ?? ctx.loopDrive?.execution?.runtime ?? ctx.workspace.config?.work?.loop?.runtimes?.[sessionPhaseOf(phase)] ?? loopRuntimeSettingFromConfig(ctx.workspace).value ?? "claude" : recorded.execution?.runtime ?? "claude";
         if (runtime === "codex" && managed != null && recorded == null) throw commandError("The native lent run has no durable record", "drive-run-not-found", 409);
         if (!["claude", "codex"].includes(input.runtime ?? runtime)) throw commandError("Unsupported runtime", "unsupported-runtime", 400);
         if (recorded != null && input.runtime != null && input.runtime !== runtime) throw commandError("The requested runtime differs from this run", "execution-resume-conflict", 409);
@@ -486,7 +486,7 @@ export function createPhaseDrivers({
         const explicitChoice = { ...(input.model == null ? {} : { model: input.model }), ...(input.thinking == null ? {} : { effort: normalizeEffort(input.thinking) }) };
         const selectedExecution = recorded?.execution != null
           ? execution.resolveExecutionResume(recorded, { runtime: input.runtime, choices: { [sessionPhaseOf(phase)]: explicitChoice } })
-          : input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null
+          : input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null || ctx.workspace?.config?.work?.loop?.runtimes != null
             ? execution.resolveExecution(ctx.workspace.config, { runtime: input.runtime ?? "claude", choices: { [sessionPhaseOf(phase)]: explicitChoice } })
             : null;
         const pinnedChoice = selectedExecution?.phases[sessionPhaseOf(phase)];

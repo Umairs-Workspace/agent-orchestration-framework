@@ -263,6 +263,7 @@ export const LOOP_BOUND_CONFIG_RESOLVERS = Object.freeze({
   "work.loop.refine": loopRefineFromConfig,
   // 147/00 — the repair switch, appended last with the same discipline.
   "work.loop.repair": loopRepairFromConfig,
+  "work.loop.runtimes": loopPhaseRuntimesFromConfig,
   "work.loop.runtime": loopRuntimeFromConfig,
 });
 
@@ -327,6 +328,7 @@ export const LOOP_BOUND_VALUE_RESOLVERS = Object.freeze({
   "work.loop.refine": resolveLoopRefine,
   // 147/00 — its value-shaped twin, in the same position.
   "work.loop.repair": resolveLoopRepair,
+  "work.loop.runtimes": resolveLoopPhaseRuntimes,
   "work.loop.runtime": resolveLoopRuntime,
 });
 
@@ -419,4 +421,41 @@ export function loopRuntimeSettingFromConfig(workspace) {
 }
 export function loopRuntimeFromConfig(workspace) {
   return resolveLoopRuntime(loopRuntimeSettingFromConfig(workspace).value);
+}
+export function resolveLoopPhaseRuntimes(value) {
+  if (value === undefined) return {};
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return null;
+  return Object.entries(value).every(([phase, runtime]) => ["refine", "continue", "verify"].includes(phase) && EXECUTION_RUNTIMES.includes(runtime)) ? value : null;
+}
+export function loopPhaseRuntimesFromConfig(workspace) {
+  return resolveLoopPhaseRuntimes(loopConfig(workspace)?.runtimes);
+}
+
+// A loop owns the complete plan; a driven session owns one native envelope.
+export function executionForPhase(execution, phase) {
+  const selected = phase === "repair" || phase === "review" || phase === "build" ? "continue" : phase;
+  return execution?.version === 2 ? execution.phaseExecutions[selected] : execution;
+}
+export function executionRuntimes(execution) {
+  return execution == null ? [] : [...new Set(execution.version === 2
+    ? Object.values(execution.phaseExecutions).map(value => value.runtime) : [execution.runtime])];
+}
+
+export function parseRuntimeChoices(value) {
+  const result = {};
+  const named = value => typeof value === "string" && value.length > 0;
+  const own = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
+  const SESSION_PHASES = ["refine", "continue", "verify"];
+  const fail = (code, path, source, message) => { throw Object.assign(new Error(message), { code, path, source }); };
+  if (value === undefined) return result;
+  for (const raw of Array.isArray(value) ? value : [value]) {
+    if (!named(raw)) fail("unsupported-runtime", "--runtime", "flag", "expected [PHASE=]claude or codex");
+    const parts = raw.split("=");
+    const phase = parts.length === 1 ? "default" : parts[0];
+    const runtime = parts.at(-1);
+    if (parts.length > 2 || (parts.length === 2 && phase === "default") || !["default", ...SESSION_PHASES].includes(phase) || !EXECUTION_RUNTIMES.includes(runtime)) fail("unsupported-runtime", "--runtime", "flag", "expected [refine|continue|verify=]claude or codex");
+    if (own(result, phase)) fail("unsupported-runtime", "--runtime", "flag", `duplicate ${phase} runtime`);
+    result[phase] = runtime;
+  }
+  return result;
 }

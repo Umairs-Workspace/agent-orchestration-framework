@@ -45,7 +45,7 @@ import {
   resolveLoopResume,
 } from "../engine.mjs";
 import {
-  MAX_REVIEW_ROUNDS, loopRuntimeSettingFromConfig,
+  MAX_REVIEW_ROUNDS,
   buildNoProgressRoundsFromConfig,
   REFINE_FIRST_CONCURRENCY,
   heartbeatFromConfig,
@@ -119,7 +119,7 @@ export function createLoopShell({
   const { CONTROL_FINDING_CODES } = doctor;
   const { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt } = cycle;
   const { resolveSessionTable, SESSION_PHASES, sessionTableLine } = sessions;
-  const { requestedSessions, resolveRuntimeInvocation } = createRuntimeInvocation(sessions);
+  const { requestedSessions, requestedRuntimeSessions, resolveRuntimeInvocation } = createRuntimeInvocation(sessions);
   const { resolveItemExact } = items;
   const { declaredRubric } = gradeCommand;
   const { meshNodeIdOf } = placement;
@@ -497,11 +497,8 @@ export function createLoopShell({
   // resolveInvocation(input, ctx, { promote }) — `promote: true` is the LAUNCH's alone. Every other
   // caller is read-only, and a backlog slug answers it `wouldPromote` with nothing written.
   async function resolveInvocation(input, ctx, { promote = false } = {}) {
-    if (input.runtime !== undefined && !["claude", "codex"].includes(input.runtime)) throw commandError("--runtime must be claude or codex", "unsupported-runtime", 400);
+    const sessionRequest = requestedRuntimeSessions(input, ctx);
     const requested = requestedSettings(input, ctx);
-    // 141, 143/03 — refused with the other vocabulary guards, before any registered read.
-    const native = input.runtime === "codex" || ctx.executionHandoff?.runtime === "codex" || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
-    const sessionRequest = requestedSessions(input, native);
     const thinking = sessionRequest.thinking;
     // 143/01 — refused with them too.
     const refine = requestedRefine(input);
@@ -558,6 +555,8 @@ export function createLoopShell({
         // The phases a pre-143 declaration's `thinking` is spread over — the leaf's one list.
         sessionPhases: SESSION_PHASES,
         sessionChoices: sessionRequest.choices,
+        runtime: input.runtime,
+        resolveExecutionResume: sessions.resolveExecutionResume,
         refine,
         declaration: resume.lastDeclaration,
       });
@@ -2097,7 +2096,7 @@ export function createLoopShell({
         thinking: { type: ["array", "string"] },
         // 143/03 ADR-004 §1 — the per-phase model and effort, in the same three homes.
         model: { type: ["array", "string"] },
-        runtime: { type: "string" },
+        runtime: { type: ["array", "string"] },
         // 143/01 ADR-002 §2 — the refine mode for this run, in the same three homes.
         refine: { type: "string" },
         // 147/00 R1 — repair off for this run, in the same three homes.
@@ -2116,7 +2115,7 @@ export function createLoopShell({
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--runtime [PHASE=]claude|codex]... [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
@@ -2128,7 +2127,7 @@ export function createLoopShell({
           quiet: { type: "boolean", description: "silence the in-flight progress lines; the terminal account is printed unchanged" },
           supervised: { type: "boolean", description: "declare this loop supervised, so a restarted node relaunches it; off by default" },
           thinking: { type: "string", repeatable: true, description: "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it" },
-          runtime: { type: "string", description: "claude or codex; resumed runs retain their recorded runtime" },
+          runtime: { type: "string", repeatable: true, description: "[PHASE=]claude or codex; repeat for refine, continue and verify; resume preserves each phase selection" },
           model: { type: "string", repeatable: true, description: "repeatable: [PHASE=][MODEL][:EFFORT] — the model (and effort) a phase's sessions run on, every phase when no PHASE= is given (refine, continue, verify); overrides the configured per-phase session model and effort for this run, and a resume inherits it" },
           refine: { type: "string", description: "per-story (one story's contract per refine drive) or whole-item (a milestone's break-down drive authors every contract in one session); overrides work.loop.refine, and a resume inherits it" },
           noRepair: { type: "boolean", description: "do not hand a lane halt (lane-open-failed, lane-merge-refused, lane-merge-conflict) to a repair session; stop for the operator as before. work.loop.repair: false is the standing form" },

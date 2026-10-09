@@ -1,6 +1,6 @@
 // The loop's runtime invocation boundary: grammar and pinned resolution, never phase sequencing.
 import { commandError } from '@aof/contracts/error';
-import { loopRuntimeSettingFromConfig } from '@aof/contracts/loop-bounds';
+import { loopRuntimeSettingFromConfig, executionRuntimes, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
 
 // Internal mesh transport, consumed only by the CLI launch context. It is not a setting.
 export function decodeExecutionHandoff(text, resolveExecutionResume) {
@@ -24,9 +24,16 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
   }
 
 
+  function requestedRuntimeSessions(input, ctx) {
+    const flags = parseRuntimeChoices(input.runtime);
+    const native = Object.values(flags).includes("codex") || Object.values(ctx.workspace.config?.work?.loop?.runtimes ?? {}).includes("codex")
+      || executionRuntimes(ctx.executionHandoff).includes("codex") || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
+    return requestedSessions(input, native);
+  }
+
   async function resolveRuntimeInvocation({ input, ctx, resume, resolved, sessionRequest }) {
     const configured = loopRuntimeSettingFromConfig(ctx.workspace);
-    const hasRuntime = input.runtime !== undefined || configured.present;
+    const hasRuntime = input.runtime !== undefined || configured.present || ctx.workspace.config?.work?.loop?.runtimes !== undefined;
     if (input.resume === true && resume.lastDeclaration != null) {
       const pinned = resolveExecutionResume?.(resume.lastDeclaration, { runtime: input.runtime, choices: sessionRequest.choices, ...(ctx.executionHandoff == null ? {} : { execution: ctx.executionHandoff }) });
       if (pinned != null) { resolved.execution = pinned; resolved.sessions = pinned.phases; }
@@ -34,12 +41,12 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
       const pinned = resolveExecutionResume({ execution: ctx.executionHandoff }, { runtime: input.runtime, choices: sessionRequest.choices });
       resolved.execution = pinned; resolved.sessions = pinned.phases;
     } else if (hasRuntime) {
-      const runtime = input.runtime ?? configured.value;
-      const capabilities = runtime === "codex" ? { codex: await runtimeSession.inspectCapabilities("codex", { ...(ctx.agentSessionDriverOptions ?? {}), cwd: ctx.workspace.projectRoot }) } : {};
+      const preview = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, allowUnproven: true });
+      const capabilities = executionRuntimes(preview).includes("codex") ? { codex: await runtimeSession.inspectCapabilities("codex", { ...(ctx.agentSessionDriverOptions ?? {}), cwd: ctx.workspace.projectRoot }) } : {};
       resolved.execution = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, capabilities });
       resolved.sessions = resolved.execution.phases;
     }
 
   }
-  return Object.freeze({ requestedSessions, resolveRuntimeInvocation });
+  return Object.freeze({ requestedSessions, requestedRuntimeSessions, resolveRuntimeInvocation });
 }

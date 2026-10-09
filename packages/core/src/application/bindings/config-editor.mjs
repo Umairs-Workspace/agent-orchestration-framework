@@ -103,7 +103,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
       projectDocs: config.projectDocs ?? [],
       settings: config.settings ?? {},
       ...(raw ? {
-        executionSettings: { runtime: raw.work?.loop?.runtime ?? null, runtimes: raw.work?.agents?.runtimes ?? {} },
+        executionSettings: { ...(raw.work?.loop?.runtimes == null ? {} : { phaseRuntimes: raw.work.loop.runtimes }), runtime: raw.work?.loop?.runtime ?? null, runtimes: raw.work?.agents?.runtimes ?? {} },
         ...inspectExecutionSettings(raw, options),
         assetRuntimes: inspection.assetRuntimes,
       } : {}),
@@ -237,7 +237,7 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
 
     if (Object.hasOwn(input, "executionSettings")) {
       const edit = input.executionSettings;
-      if (!edit || typeof edit !== "object" || Array.isArray(edit) || Object.keys(edit).some(key => !["runtime", "runtimes"].includes(key))) {
+      if (!edit || typeof edit !== "object" || Array.isArray(edit) || Object.keys(edit).some(key => !["runtime", "runtimes", "phaseRuntimes"].includes(key))) {
         return { ok: false, diagnostics: [diagnostic("error", "executionSettings", "Expected runtime and runtime-scoped settings.")] };
       }
       const work = structuredClone(existing.work ?? {});
@@ -245,6 +245,11 @@ export function assembleConfigEditor({ configInspectServices, dslServices, fsSer
         work.loop = { ...work.loop };
         if (edit.runtime === null) delete work.loop.runtime;
         else work.loop.runtime = edit.runtime;
+      }
+      if (Object.hasOwn(edit, "phaseRuntimes")) {
+        work.loop = { ...work.loop };
+        if (edit.phaseRuntimes === null) delete work.loop.runtimes;
+        else work.loop.runtimes = edit.phaseRuntimes;
       }
       if (Object.hasOwn(edit, "runtimes")) work.agents = { ...work.agents, runtimes: edit.runtimes };
       config.work = work;

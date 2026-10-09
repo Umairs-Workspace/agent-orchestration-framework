@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { resolveExecution, resolveExecutionResume, inspectExecution, validateExecutionEnvelope } from "../src/runtime-selection.mjs";
+import { resolveExecution, resolveExecutionResume, inspectExecution, validateExecutionEnvelope, validateExecutionCapabilities } from "../src/runtime-selection.mjs";
+import { executionForPhase, executionRuntimes, parseRuntimeChoices } from "@aof/contracts/loop-bounds";
 import { normalizeEffort, parseSessionChoices, resolveSessionLaunch } from "../src/session-model.mjs";
 import { loopRuntimeFromConfig, resolveLoopRuntime, LOOP_BOUND_CONFIG_KEYS, LOOP_BOUND_VALUE_KEYS } from "@aof/contracts/loop-bounds";
 
@@ -9,6 +10,41 @@ const codex = (options = {}) => resolveExecution({}, { runtime: "codex", capabil
 const refusal = (code, path) => error => error.code === code && (!path || error.path === path) && typeof error.source === "string";
 
 export const runtimeSelectionTests = [
+  { name: "156 — one loop pins Astra refinement and Sonnet implementation and verification", run() {
+    const catalog = { codex: { profile: "codex-app-server-v1", profileVersion: 1, models: [model("gpt-6-astra", ["high"], true)] } };
+    const config = { work: { loop: { runtime: "claude", runtimes: { refine: "codex" } }, agents: { mode: "solo", runtimes: {
+      codex: { session: { models: { refine: "gpt-6-astra" }, effort: { refine: "high" } } },
+      claude: { session: { models: { continue: "sonnet", verify: "sonnet" }, effort: { continue: "high", verify: "high" } } },
+    } } } };
+    const plan = resolveExecution(config, { capabilities: catalog });
+    assert.equal(plan.version, 2);
+    assert.deepEqual(executionRuntimes(plan), ["codex", "claude"]);
+    assert.deepEqual(Object.values(plan.phases).map(entry => [entry.runtime, entry.model, entry.effort]), [["codex", "gpt-6-astra", "high"], ["claude", "sonnet", "high"], ["claude", "sonnet", "high"]]);
+    assert.equal(executionForPhase(plan, "review").runtime, "claude");
+    assert.equal(executionForPhase(plan, "repair").phases.continue.model, "sonnet");
+    assert.deepEqual(validateExecutionEnvelope(plan), plan);
+    assert.deepEqual(validateExecutionCapabilities(plan, catalog), plan);
+    config.work.loop.runtimes.refine = "claude";
+    config.work.agents.runtimes.codex.session.models.refine = "changed-model";
+    assert.deepEqual(resolveExecutionResume({ execution: plan }), plan, "resume must not re-resolve current config");
+    assert.deepEqual(resolveExecutionResume({ execution: plan }, { runtime: ["refine=codex", "continue=claude"] }), plan);
+    assert.throws(() => resolveExecutionResume({ execution: plan }, { runtime: "claude" }), refusal("execution-resume-conflict"));
+    assert.throws(() => resolveExecutionResume({ execution: plan }, { choices: { refine: { model: "sonnet" } } }), refusal("execution-resume-conflict"));
+    const corrupt = structuredClone(plan); corrupt.phases.refine.runtime = "claude";
+    assert.throws(() => validateExecutionEnvelope(corrupt), refusal("invalid-record"));
+    assert.throws(() => validateExecutionCapabilities(plan, { codex: { ...catalog.codex, models: [model("unavailable", ["high"], true)] } }), refusal("unsupported-model"));
+  } },
+  { name: "156 — phase runtime flags override defaults without validating Sonnet as a Codex model", run() {
+    const config = { work: { loop: { runtime: "codex", runtimes: { verify: "codex" } } } };
+    const result = resolveExecution(config, { runtime: ["claude", "refine=codex"], capabilities, choices: { refine: { model: "native-small", effort: "high" }, continue: { model: "sonnet", effort: "high" }, verify: { model: "sonnet", effort: "high" } } });
+    assert.equal(result.phases.refine.model, "native-small");
+    assert.equal(result.phases.verify.runtime, "claude");
+    assert.equal(executionForPhase(result, "continue").version, 1);
+    assert.equal(resolveExecution(config, { runtime: "claude" }).version, 1);
+    for (const runtime of [["refine=codex", "refine=claude"], "build=codex", "refine=unknown", ["claude", "codex"]]) assert.throws(() => parseRuntimeChoices(runtime), refusal("unsupported-runtime"));
+    assert.throws(() => resolveExecution({ work: { loop: { runtimes: { repair: "codex" } } } }), refusal("invalid-runtime-settings"));
+    assert.throws(() => resolveExecution(config, { runtime: ["claude", "refine=codex"], choices: { repair: {} }, capabilities }), refusal("invalid-runtime-settings"));
+  } },
   {
     name: "154/01 task00 — advertised native model ids canonicalize phase and role values without aliases",
     run() {
