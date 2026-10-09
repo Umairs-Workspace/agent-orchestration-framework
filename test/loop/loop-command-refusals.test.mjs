@@ -196,7 +196,7 @@ export const loopCommandBacklogScopeTests = [{
 }, {
   name: "143/00 task00 — the usage and the operator guide name the backlog-slug scope form",
   async run() {
-    assert.match(loopCommand.cli.spec.usage, /^aof work loop <driver\|NN-MM\|backlog-slug> /u);
+    assert.match(loopCommand.cli.spec.usage, /^aof work loop <driver\|NN-MM\|backlog-slug\|backlog-path> /u);
     const guide = await readFile(new URL("../../docs/acd.md", import.meta.url), "utf8");
     assert.match(guide, /aof work loop <backlog-slug>` promotes/u);
     assert.match(guide, /a later `--resume` names that number/u);
@@ -257,6 +257,38 @@ export const loopCommandBacklogScopeTests = [{
       for (const declaration of after.slice(before.length)) assert.equal(declaration.promotedFrom, "widget-sync");
       const promoted = (await readdir(fx.workDir)).filter((name) => name.endsWith("_milestone_widget-sync"));
       assert.deepEqual(promoted, ["04_milestone_widget-sync"]);
+    } finally {
+      await fx.cleanup();
+    }
+  },
+}, {
+  name: "loop-scope/backlog-path — a path to a backlog item's folder (or its record doc) is the item, so the loop promotes it",
+  async run() {
+    const fx = await backlogFixture();
+    try {
+      // Windows-typed and relative to the shell, as an operator types it; plus the absolute record doc.
+      const typed = path.relative(process.cwd(), fx.backlogDir).replaceAll("/", "\\");
+      const probe = await loopCommand.run({ scope: path.join(fx.backlogDir, "SPEC.md"), dryRun: true }, fx.ctx);
+      assert.equal(probe.wouldPromote, "widget-sync");
+      const { commands } = await launch(fx, { scope: typed });
+      assert.equal(existsSync(fx.promotedDir), true, "promoted to 04");
+      assert.match(commands[0], /^\/aof:refine 04(\s|$)/u);
+      for (const declaration of await declarationsOn(fx, "04")) assert.equal(declaration.promotedFrom, "widget-sync");
+    } finally {
+      await fx.cleanup();
+    }
+  },
+}, {
+  name: "loop-scope/backlog-path — a path naming no item's folder (the backlog root, a missing folder) refuses, and nothing is written",
+  async run() {
+    const fx = await backlogFixture();
+    try {
+      const before = await treeFiles(fx.projectRoot);
+      for (const scope of [path.dirname(fx.backlogDir), path.join(path.dirname(fx.backlogDir), "milestone_nonesuch")]) {
+        await refusal(() => launch(fx, { scope }), "loop-scope-unsupported");
+        await refusal(() => loopCommand.run({ scope, dryRun: true }, fx.ctx), "loop-scope-unsupported");
+      }
+      assert.deepEqual(await treeFiles(fx.projectRoot), before);
     } finally {
       await fx.cleanup();
     }

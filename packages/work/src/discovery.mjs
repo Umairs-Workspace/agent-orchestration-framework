@@ -161,7 +161,7 @@ export async function findWork(workDir, query, { view, cwd = process.cwd() } = {
           && Number.parseInt(item.number, 10) >= span.lo
           && Number.parseInt(item.number, 10) <= span.hi)
         .sort((a, b) => Number.parseInt(a.number, 10) - Number.parseInt(b.number, 10));
-    } else if (/[\\/]/.test(ref)) {
+    } else if (isFolderPathQuery(ref)) {
       const folder = folderOfPath(ref, cwd);
       matches = items.filter((item) => item.dir != null && samePath(path.resolve(cwd, item.dir), folder));
     } else {
@@ -198,6 +198,14 @@ export async function findWork(workDir, query, { view, cwd = process.cwd() } = {
     rows.push(row);
   }
   return rows;
+}
+
+// isFolderPathQuery(query) — whether `findWork` reads `query` through THE PATH BRANCH above: it
+// holds a separator and is not a story span (`NN/SS` or `NN/SS-TT`). A path answers by folder
+// identity (at most one row), so an exact resolver may accept it as it accepts a ref.
+export function isFolderPathQuery(query) {
+  const ref = (query ?? "").trim();
+  return /[\\/]/.test(ref) && parseStorySpan(ref) == null;
 }
 
 // Either separator on every platform: no item folder name holds a backslash, so reading one

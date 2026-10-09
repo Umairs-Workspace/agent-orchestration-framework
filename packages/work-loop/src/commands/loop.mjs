@@ -2115,7 +2115,7 @@ export function createLoopShell({
     cli: {
       route: ["work", "loop"],
       spec: {
-        usage: "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        usage: "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         flags: {
           level: { type: "string", description: "loop level (L1 report-only, L2 assisted, or L3 unattended when its computed gate passes)" },
           cap: { type: "string", description: "override the per-(ref, phase) drive ceiling" },
