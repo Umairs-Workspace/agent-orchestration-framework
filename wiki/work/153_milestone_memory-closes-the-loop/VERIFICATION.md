@@ -65,3 +65,9 @@ or an L2 execution readiness gate have passed. Build and acceptance still owe th
 Executable checks, agent-run manual scenarios and human UAT must have separate evidence at build
 and verify. A pending control is not acceptance; no item can close until the controls land and
 their red probes have actual observed messages.
+
+## Verification recovery — 2026-10-10
+
+The live 153/01 Astra/high verification run `20261010T212005453Z-0004` successfully used Codex, then stopped when Windows denied test child processes with `spawn EPERM`. The native request to rerun `node test/integration/cli.mjs memory-recall-ledger` with elevated permission was declined by AOF's unattended adapter (`operator_action_required`). The runtime handoff correction is confirmed; native permission handling remains a live acceptance blocker.
+
+The governing recovery session ran that exact scoped command through the host's approved execution tool: exit 0, every selected memory-recall-ledger scenario passed. This is executable evidence only; no story or milestone acceptance is claimed, and remaining review, fitness/manual checks and the regression gate remain required. The failed run is preserved. A bare `--resume` cannot retry this reason.
