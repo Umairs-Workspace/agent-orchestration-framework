@@ -174,9 +174,9 @@
     }
   },
   "createdAt": "2026-10-10T12:58:23.516Z",
-  "updatedAt": "2026-10-10T12:58:23.516Z",
+  "updatedAt": "2026-10-10T14:03:49.397Z",
   "failureReason": null,
-  "heartbeatAt": null,
+  "heartbeatAt": "2026-10-10T14:03:49.397Z",
   "retryOf": null,
   "reclaimedAt": null,
   "node": "node-7297",
