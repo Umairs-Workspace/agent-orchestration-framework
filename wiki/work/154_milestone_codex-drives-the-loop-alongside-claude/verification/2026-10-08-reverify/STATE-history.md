@@ -995,7 +995,9 @@ Next is $aof-verify 154; native/manual/visual evidence remains pending, never in
   154/09 7f1102f2, 154/10 a3ab0e54 and 154/11 4422c8bb. The code tree (excluding planning/run
   metadata and local AOF configuration) is identical to the successful 154/11 detached snapshot
   7beccabff552c266d7dc6e6071427389056151d8. No repeated full gate is needed for a metadata-only commit.
-- Successful 07–11 snapshots are retained by annotated verification/154-NN-build-review tags.
+- Successful 07–11 snapshots were temporarily retained by annotated verification/154-NN-build-review tags.
+  Cleanup on 2026-10-11 removed those five tags; the work-item commits above and committed AOF
+  verification records remain the source of code history and recorded results.
   Raw gate reports, all sharded round logs, UI-build output and the impacted helper are preserved
   under .tmp/154-evidence/ before removing the temporary detached worktree. Evidence paths in
   current records are updated; original JSON command reports retain their original execution paths.

@@ -29,8 +29,10 @@ all six controls exercised. Captured output: `.tmp/154-readiness-red-probes.json
 The helper observes the existing expected throws/rejections with their original matchers intact
 and reports the existing ownership/reference detectors' actual findings. It uses an isolated
 temporary AOF home, scripted transports and no paid assistant execution.
-At readiness close, code matched successful full-gate snapshot `7beccabff552c266d7dc6e6071427389056151d8`, retained
-by tag `verification/154-11-build-review`: 12,466/12,466 registered cases, zero failures/flakes.
+At readiness close, code matched temporary full-gate snapshot `7beccabff552c266d7dc6e6071427389056151d8`:
+12,466/12,466 registered cases, zero failures/flakes. The code is preserved in the normal
+work-item commits listed in `verification/2026-10-08-reverify/STATE-history.md`.
+The temporary build/review tags were removed on 2026-10-11; detached snapshots are not retained separately.
 Raw gate evidence is retained at `.tmp/154-evidence/test-sharded/2026-10-08T11-43-25-992Z/`.
 
 ## Earlier verification attempt — 2026-10-08, 14:02 UTC
