@@ -334,6 +334,18 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      be off) `aof work memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
      considers the surfaced gotchas, recording at `aof:verify` (in `VERIFICATION.md`) any that shaped the
      build. An **empty block means nothing to surface** (memory may be off) — proceed unchanged.
+     **Keep the result; capture it once, when the build decision is made.** The developer retains
+     the recall's actual result unchanged — the exact query text and, for every returned line, its
+     `item`, `id` and `recordType` (a lesson kind such as `near-miss` means `lesson`; any other word,
+     such as `adr`, is the record type itself) — and never re-runs the recall to rebuild it. At the
+     build's terminator, having decided what the surfaced gotchas changed, it writes the observation
+     to a scratch file outside every work folder: `id` (a fresh UUID minted once for this recall — a
+     retry reuses it and `at`), `at` (the ISO instant of the recall), `edge` `continue-developer`,
+     `actor` `developer`, `query` (verbatim), `scope` `{"kind":"near-miss"}` and `records` — one
+     `{item, id, recordType, verdict}` per returned line, each with an explicit verdict `honoured`,
+     `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
+     `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
+     submitted, as `"records": []` — no verdict and no extra retrieval is invented.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
 
      <gate_ladder>

@@ -59,11 +59,25 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
      must be present. A lesson with no meta line fails on all four. An archived item's lessons are
      flagged by `aof work doctor` and never rewritten.
    - **What happened** *(factual)* · **Why** *(root cause)* · **Lesson** *(what to do differently)* · **Refs:** the VERIFICATION `@finding-<id>` / ADR / commit / `observability/report.md` — **reference, never restate**
-5. **Conditional.** If a milestone surfaced nothing worth a lesson, **write no doc** and say so
-   (absence is information). Never manufacture entries to fill the page. The `observability/` folder
-   (when the opt-in is on) is written regardless — it is a diagnostic, not a lesson doc.
-6. **Index the authored records.** Run `aof work memory ingest` after the target's lesson pass;
-   this is safe when memory is off. Keep the shared Kind / Area / Stage / Owner vocabulary above.
+   - **Watermark first.** Before the first new `R<n>` is appended to a document, write
+     `promotionFrom: <the next R number>` in its frontmatter (`1` for a new document). Lessons
+     below it are legacy: never rewritten, never backfilled.
+   - **Match before you write.** For each NEW lesson, run `aof work memory recurrence "<the
+     lesson's what-happened and lesson text>" --exclude <new lesson id> --json`, where `<new lesson id>` (`<item>/R<n>`) is
+     the identity the new lesson is about to take. When `qualifying` names a reference, the meta
+     line carries `**Recurs:** <item>/R<n>`; when it is null, the lesson has no Recurs field. The
+     new incident keeps its own factual evidence and identity, and the prior lesson is not touched.
+   - **Promoted to, always.** Every new lesson's meta line carries `**Promoted to:**` — `none`,
+     `control:<qualified-id>`, `rule:<repo-path>` or `prompt:<repo-path>`, naming only a prevention
+     that exists. A lesson with no completed promotion says `none`; never claim a planned control.
+5. **Conditional.** If a milestone surfaced nothing worth a lesson, **write no doc** and say so —
+   report no new lesson, leave every existing lesson body byte-identical, and invent no recurrence
+   or promotion (absence is information). Never manufacture entries to fill the page. The
+   `observability/` folder (when the opt-in is on) is written regardless — it is a diagnostic, not
+   a lesson doc.
+6. **Index the authored records.** Run `aof work memory ingest` only AFTER the lesson pass has
+   authored `promotionFrom`, `Recurs` and `Promoted to`; this is safe when memory is off. Keep the
+   shared Kind / Area / Stage / Owner vocabulary above.
 </process>
 
 <output>

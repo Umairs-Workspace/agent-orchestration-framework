@@ -1786,6 +1786,18 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      be off) `aof work memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
      considers the surfaced gotchas, recording at `$aof-verify` (in `VERIFICATION.md`) any that shaped the
      build. An **empty block means nothing to surface** (memory may be off) — proceed unchanged.
+     **Keep the result; capture it once, when the build decision is made.** The developer retains
+     the recall's actual result unchanged — the exact query text and, for every returned line, its
+     `item`, `id` and `recordType` (a lesson kind such as `near-miss` means `lesson`; any other word,
+     such as `adr`, is the record type itself) — and never re-runs the recall to rebuild it. At the
+     build's terminator, having decided what the surfaced gotchas changed, it writes the observation
+     to a scratch file outside every work folder: `id` (a fresh UUID minted once for this recall — a
+     retry reuses it and `at`), `at` (the ISO instant of the recall), `edge` `continue-developer`,
+     `actor` `developer`, `query` (verbatim), `scope` `{"kind":"near-miss"}` and `records` — one
+     `{item, id, recordType, verdict}` per returned line, each with an explicit verdict `honoured`,
+     `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
+     `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
+     submitted, as `"records": []` — no verdict and no extra retrieval is invented.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
 
      <gate_ladder>
@@ -3410,6 +3422,22 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      **near-miss** relevant to a decision — honoured, or consciously departed from, in `ARCHITECTURE.md`
      (or `STATE.md`). An **empty block means nothing to surface** (memory may be off) — proceed
      unchanged.
+     **Keep each role's result; capture each recall once, at the decision it informed.** Each role
+     retains its OWN recall's actual result unchanged — the exact query text and, for every returned
+     line, its `item`, `id` and `recordType` (a lesson kind such as `near-miss` means `lesson`; any
+     other word, such as `adr`, is the record type itself) — and never re-runs the recall to rebuild
+     it. When the role has recorded the decision its recall informed, it writes its observation to a
+     scratch file outside every work folder: `id` (a fresh UUID minted once per recall — two roles,
+     two ids; a retry reuses its id and `at`), `at` (the ISO instant of the recall), `edge`, `actor`,
+     `query` (verbatim), `scope` (the filter that recall really used) and `records` — one `{item, id,
+     recordType, verdict}` per returned line, each with an explicit verdict `honoured`, `departed`
+     or `irrelevant`, never a default. The architect uses edge `refine-architect`, actor
+     `architect` and scope `{"area":"architecture"}`, then submits
+     `aof work memory record-recall <ref> --input <architect observation file>`. The PO uses edge
+     `refine-po`, actor `product-owner` and scope `{"item":"<ref>"}`, then submits
+     `aof work memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
+     on the item being refined. An empty block is still submitted, as `"records": []`, with no
+     verdict invented. The prose that acknowledges a near-miss cites the recall id it explains.
   2. **Break down** (with `aof-architect`): partition into **independent** stories — minimise
      cross-story coupling to maximise parallelism. For each, create `stories/<SS>_story_<slug>/`
      (`STORY.md`, `parent:` this milestone) and list it in the milestone `SPEC.md` `## Stories`.
@@ -3901,11 +3929,25 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
      must be present. A lesson with no meta line fails on all four. An archived item's lessons are
      flagged by `aof work doctor` and never rewritten.
    - **What happened** *(factual)* · **Why** *(root cause)* · **Lesson** *(what to do differently)* · **Refs:** the VERIFICATION `@finding-<id>` / ADR / commit / `observability/report.md` — **reference, never restate**
-5. **Conditional.** If a milestone surfaced nothing worth a lesson, **write no doc** and say so
-   (absence is information). Never manufacture entries to fill the page. The `observability/` folder
-   (when the opt-in is on) is written regardless — it is a diagnostic, not a lesson doc.
-6. **Index the authored records.** Run `aof work memory ingest` after the target's lesson pass;
-   this is safe when memory is off. Keep the shared Kind / Area / Stage / Owner vocabulary above.
+   - **Watermark first.** Before the first new `R<n>` is appended to a document, write
+     `promotionFrom: <the next R number>` in its frontmatter (`1` for a new document). Lessons
+     below it are legacy: never rewritten, never backfilled.
+   - **Match before you write.** For each NEW lesson, run `aof work memory recurrence "<the
+     lesson's what-happened and lesson text>" --exclude <new lesson id> --json`, where `<new lesson id>` (`<item>/R<n>`) is
+     the identity the new lesson is about to take. When `qualifying` names a reference, the meta
+     line carries `**Recurs:** <item>/R<n>`; when it is null, the lesson has no Recurs field. The
+     new incident keeps its own factual evidence and identity, and the prior lesson is not touched.
+   - **Promoted to, always.** Every new lesson's meta line carries `**Promoted to:**` — `none`,
+     `control:<qualified-id>`, `rule:<repo-path>` or `prompt:<repo-path>`, naming only a prevention
+     that exists. A lesson with no completed promotion says `none`; never claim a planned control.
+5. **Conditional.** If a milestone surfaced nothing worth a lesson, **write no doc** and say so —
+   report no new lesson, leave every existing lesson body byte-identical, and invent no recurrence
+   or promotion (absence is information). Never manufacture entries to fill the page. The
+   `observability/` folder (when the opt-in is on) is written regardless — it is a diagnostic, not
+   a lesson doc.
+6. **Index the authored records.** Run `aof work memory ingest` only AFTER the lesson pass has
+   authored `promotionFrom`, `Recurs` and `Promoted to`; this is safe when memory is off. Keep the
+   shared Kind / Area / Stage / Owner vocabulary above.
 </process>
 
 <output>
@@ -4100,6 +4142,21 @@ the PRD:
    declares: a milestone's `## Scope` (a boundary) or `## Dependencies` (an edge); a spike's
    `## Question` (what the unknown is) or `## Outcome / Next`. An **empty block means nothing to
    surface** (memory may be off) — proceed unchanged.
+   **Keep the result; capture it once, owned by the first driver.** Retain the recall's actual
+   result unchanged until step 3 has created the drivers — the exact query text and, for every
+   returned line, its `item`, `id` and `recordType` (a lesson kind such as `near-miss` means
+   `lesson`; any other word, such as `adr`, is the record type itself). Never re-run the recall to
+   rebuild it. Once the first driver in PRD order exists and you have decided what the result
+   changed, write the observation to a scratch file outside every work folder: `id` (a fresh UUID
+   minted once for this recall — a retry reuses it and `at`), `at` (the ISO instant of the recall),
+   `edge` `shatter-po`, `actor` `product-owner`, `query` (verbatim), `scope` `{}` (the original
+   unscoped query) and `records` — one `{item, id, recordType, verdict}` per returned line, each
+   with an explicit verdict `honoured`, `departed` or `irrelevant`, never a default. Submit it ONCE:
+   `aof work memory record-recall <first driver ref> --input <observation file>`. Every other
+   driver's recall prose cites that owner's ref and recall id and records nothing of its own — the
+   recall is never replayed per driver. An empty block is still submitted, as `"records": []`, with
+   no verdict invented. If shatter stops before any driver exists, report that no ledger capture
+   was completed and create no placeholder item or recall store.
 2. **Identify the drivers — and each one's TYPE.** Partition the initiative into framed, independently-
    deliverable units, and for each decide **milestone** vs **spike** (ADR-004):
    - **Deliverable behaviour** → a **milestone** (shatter's core job — objective + scope + stories).
