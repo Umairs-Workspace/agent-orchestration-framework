@@ -38,6 +38,14 @@ cases pass. Real native probes pass 3/3. Evidence:
 `.tmp/156-recovery-full.log`; `node --test packages/execution/test/driver.test.mjs`.
 Story validation reports no findings. Full repository gates were not rerun.
 
+Live recovery: resumed milestone 153 after committing these fixes. All five
+stories remained in review; refinement and build were not repeated. Verification
+run `20261010T212005453Z-0004` started at attempt 1 with no retryOf, runtime Codex,
+model gpt-6-astra, effort high, native thread
+`01a127b0-0566-7f52-a8c9-3a58ae5caaa8`, and observed heartbeat/token activity.
+The old malformed failed run remains in history. This proves the repaired
+verification handoff; milestone acceptance remains pending while it runs.
+
 ## Retained-branch reopen ordering — 2026-10-10
 
 Resume at 12:40 UTC still failed on `.agents/skills/aof-add-chore/SKILL.md`.
