@@ -77,7 +77,10 @@ export async function prepareCodexWorktree(projectRoot, worktree) {
     try { existing = await readFile(output.absolutePath, "utf8"); } catch (error) { if (error.code !== "ENOENT") throw error; }
     const recorded = existing === undefined ? null : prior.get(portable(entry.path));
     if (codexSharedOutput(output)) output = await mergeCodexOutput(output, recorded);
-    else if (existing !== undefined && (recorded?.runtime !== "codex" || hashContent(existing) !== recorded.hash || existing !== content)) throw refusal(output, "worktree output is edited or unowned");
+    // A clean destination can be an older installed version (for example a lane
+    // cut from HEAD after work update in the primary). Its own lock establishes
+    // ownership; equality with the newer source is not an ownership condition.
+    else if (existing !== undefined && (recorded?.runtime !== "codex" || hashContent(existing) !== recorded.hash)) throw refusal(output, "worktree output is edited or unowned");
     outputs.push({ ...output, hash: hashContent(output.content) });
   }
   for (const output of outputs) await writeText(output.absolutePath, output.content);

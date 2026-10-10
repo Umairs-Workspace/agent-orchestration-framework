@@ -35,6 +35,14 @@ Feature: One loop selects and preserves native execution per phase
     And both runtime asset sets are prepared when required
     And existing single-runtime envelopes retain their previous behavior
 
+  Scenario: A lane inherits a newer version of an owned generated asset
+    Given the primary has refreshed its Codex assets and recorded their hashes
+    And the lane contains older assets that match its own ownership lock
+    When the mixed loop prepares the lane
+    Then it installs the refreshed assets and updates the lane ownership lock
+    And repeated preparation succeeds without further changes
+    And edited or unowned destination assets still refuse before any asset is written
+
   Scenario: Windows terminal has an older npm launcher and a compatible desktop installation
     Given PATH exposes a Codex npm launcher whose CLI profile is unsupported
     And the registered Codex desktop app has an admitted profile and advertises Astra with high effort

@@ -350,6 +350,33 @@ async function fixture(run) {
 }
 
 const codexWorktreeHandoffTests = [
+  ...["files", "work"].map(section => ({ name: `156 — lane refreshes older lock-owned exclusive assets in ${section}`, run: () => fixture(async ({ root, lane, lock }) => {
+    if (section === "work") {
+      lock.work = { files: lock.files };
+      lock.files = [];
+      await writeLock(path.join(root, ".aof/aof.lock.json"), lock);
+    }
+    await prepareCodexWorktree(root, lane);
+    const entries = section === "work" ? lock.work.files : lock.files;
+    const agent = entries.find(entry => entry.path.endsWith("reviewer.toml"));
+    const skill = entries.find(entry => entry.path.endsWith("SKILL.md"));
+    for (const entry of [agent, skill]) {
+      const updated = (await read(root, entry.path)) + "\n# Updated generated instructions\n";
+      await put(root, entry.path, updated);
+      entry.hash = hashContent(updated);
+    }
+    await writeLock(path.join(root, ".aof/aof.lock.json"), lock);
+    await prepareCodexWorktree(root, lane);
+    const installed = await readLock(path.join(lane, ".aof/aof.lock.json"));
+    const installedEntries = section === "work" ? installed.work.files : installed.files;
+    for (const entry of [agent, skill]) {
+      assert.equal(await read(lane, entry.path), await read(root, entry.path));
+      assert.equal(installedEntries.find(item => item.path === entry.path).hash, entry.hash);
+    }
+    const baseline = await read(lane, ".aof/aof.lock.json");
+    await prepareCodexWorktree(root, lane);
+    assert.equal(await read(lane, ".aof/aof.lock.json"), baseline);
+  }) })),
   { name: "154/07 task01 — lane inherits only lock-owned native assets and shared fragments, preserving destination neighbours", run: () => fixture(async ({ root, lane }) => {
     await put(root, "AGENTS.md", (await read(root, "AGENTS.md")) + "Primary operator prose must stay here.\n");
     await put(root, ".codex/config.toml", 'approval_policy = "on-request"\n' + await read(root, ".codex/config.toml"));
@@ -367,6 +394,24 @@ const codexWorktreeHandoffTests = [
     const baseline = await read(lane, ".aof/aof.lock.json");
     await prepareCodexWorktree(root, lane);
     assert.equal(await read(lane, ".aof/aof.lock.json"), baseline); assert.equal(await read(lane, "AGENTS.md"), guidance);
+  }) },
+  { name: "156 — refreshing owned assets refuses destination edits before writing any update", run: () => fixture(async ({ root, lane, lock }) => {
+    await prepareCodexWorktree(root, lane);
+    const agent = lock.files.find(entry => entry.path.endsWith("reviewer.toml"));
+    const skill = lock.files.find(entry => entry.path.endsWith("SKILL.md"));
+    const oldSkill = await read(lane, skill.path);
+    const oldLock = await read(lane, ".aof/aof.lock.json");
+    for (const entry of [agent, skill]) {
+      const updated = (await read(root, entry.path)) + "\n# Updated generated instructions\n";
+      await put(root, entry.path, updated);
+      entry.hash = hashContent(updated);
+    }
+    await writeLock(path.join(root, ".aof/aof.lock.json"), lock);
+    await put(lane, agent.path, "Operator edited this lane agent\n");
+    await assert.rejects(prepareCodexWorktree(root, lane), { code: "codex-output-conflict" });
+    assert.equal(await read(lane, skill.path), oldSkill);
+    assert.equal(await read(lane, agent.path), "Operator edited this lane agent\n");
+    assert.equal(await read(lane, ".aof/aof.lock.json"), oldLock);
   }) },
   ...["missing source", "source drift", "unowned matching destination", "destination drift"].map(scenario => ({ name: `154/07 task01 — preflight refuses ${scenario} before copying any asset`, run: () => fixture(async ({ root, lane, lock }) => {
     const agent = lock.files.find(entry => entry.path.endsWith("reviewer.toml"));

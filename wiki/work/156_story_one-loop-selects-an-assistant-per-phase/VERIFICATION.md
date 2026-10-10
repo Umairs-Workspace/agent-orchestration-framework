@@ -7,6 +7,37 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Owned lane refresh and checkout hashes — 2026-10-10
+
+The live AOF milestone 153 run completed refinement (commit `8d25af05`) and
+reached the continue wave. Lane admission for 153/01 then refused the architect
+asset with `codex-output-conflict`; repair run `20261010T121938091Z-0000`
+returned needs-input. This is evidence of live refinement, not completed mixed
+loop acceptance or a successful Sonnet execution turn.
+
+`prepareCodexWorktree` compared an exclusive destination both with its own lock
+and with the latest source content. The latter check rejected legitimate older
+owned outputs. It now permits refresh when the destination matches its own
+Codex ownership record; source drift, destination edits and unowned files still
+refuse during preflight before any writes. Two new cases (flat and work lock
+sections) failed with the reported conflict before the fix and pass afterward.
+A third case proves that a later edited destination prevents earlier pending
+updates and leaves the lane lock unchanged.
+
+A disposable detached checkout of actual AOF HEAD exposed a second issue:
+the installed lock recorded CRLF/mixed output hashes while Git checks out LF.
+The Codex variant source still had CRLF working bytes despite its existing LF
+attribute. Restoring its LF bytes and running ordinary `aof work update` (no
+force, no drift warnings) regenerated matching outputs and ownership records.
+Those outputs and records are committed together in `2f4c9f91`. Preparation
+against that actual checkout now succeeds twice, including the architect asset
+comparison. The scratch worktree is removed after verification.
+
+Checks: 58 ownership/worker cases, 5 dispatch cases and 69 bundle/context/native
+permission cases passed (132 total). Evidence: `.tmp/156-lane-refresh-tests.log`,
+`.tmp/156-lane-bundle-checks.log`, `.tmp/156-lane-refresh-probe.mjs`.
+Full live loop acceptance and the repository-wide sharded gate remain pending.
+
 ## Advisory graph spawn failure — 2026-10-10
 
 The language-tutor run at 2026-10-09 20:46 UTC reached native thread
