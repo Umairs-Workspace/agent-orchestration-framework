@@ -3,10 +3,10 @@ type: milestone
 number: 153
 slug: memory-closes-the-loop
 title: "Memory closes the loop — every recall and its verdict is accounted, a lesson that recurs is caught at the retrospective, and each lesson names where it was promoted"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-10-10
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
 depends: [148]
 schema: 1
@@ -80,14 +80,19 @@ Out of scope:
 
 ## Stories
 
-To be broken down (`aof:refine`, once promoted).
+- [ ] [01 · Recalls have complete verdict records](stories/01_story_recalls-have-complete-verdict-records/STORY.md)
+- [ ] [02 · Lessons name recurrence and promotion](stories/02_story_lessons-name-recurrence-and-promotion/STORY.md)
+- [ ] [03 · Memory reports effectiveness and health](stories/03_story_memory-reports-effectiveness-and-health/STORY.md)
+- [ ] [04 · Workflow edges close their memory observations](stories/04_story_workflow-edges-close-their-memory-observations/STORY.md)
+- [ ] [05 · Tune proposes promoted prompt corrections](stories/05_story_tune-proposes-promoted-prompt-corrections/STORY.md)
 
 ## Dependencies
 
 `memory-corpus-holds-its-vocabulary`, for four reasons:
 
-- The recurrence recall filters by `--kind`, so it reaches only the lessons the vocabulary hold
-  makes reachable.
+- Recurrence consumes normalized lesson metadata. The named junction pair crosses Kind values
+  (45/R13 is mistake; 68/R10 is near-miss), so ADR-002 searches lessons across kinds to satisfy
+  the whole-index outcome; ordinary recall retains its `--kind` filter.
 - `**Recurs:**` is indexed into the tags that milestone adds.
 - The two new meta fields extend that milestone's validate rule rather than adding a second one.
 - The whole-index dedup covers story-level lessons only once that milestone indexes them.
