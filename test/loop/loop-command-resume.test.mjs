@@ -60,6 +60,36 @@ const declaration = {
 const capThree = { ...declaration, cap: 3 };
 
 export const loopCommandResumeTests = [
+  { name: "156 drive — initial permission failure names the operator action without retrying", async run() {
+    const fx = await loopFixture();
+    try {
+      const driver = cancellableDriver(fx, { script: [{ outcome: "failed", failureReason: "operator_action_required" }] });
+      const lines = [];
+      const state = await runLoopBody({ scope: "03", level: "L2" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: line => lines.push(line) });
+      assert.equal(state.act.producer, "run-store:not-retryable");
+      assert.match(state.act.remedy, /Native permission approval is required/);
+      assert.doesNotMatch(lines.at(-1), /Resume with:/);
+      assert.equal(driver.spawnCalls.length, 1);
+    } finally { await fx.cleanup(); }
+  } },
+  { name: "156 resume — permission failures explain the operator action instead of recommending another resume", async run() {
+    const fx = await loopFixture();
+    try {
+      const item = await resolveItemExact(fx.ctx, "03/01");
+      const prior = await startRun(item, { brief: { loop: declaration }, now: "2026-08-15T00:00:00.000Z" });
+      await completeRun(item, { runId: prior.runId, outcome: "failed", failureReason: "operator_action_required", now: "2026-08-15T00:00:01.000Z" });
+      const driver = completingDriver(fx);
+      const lines = [];
+      const state = await runLoopBody({ scope: "03", resume: true, now: "2026-08-15T00:00:02.000Z" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: line => lines.push(line) });
+      assert.equal(state.act.producer, "run-store:not-retryable");
+      assert.match(state.act.remedy, /Native permission approval is required/);
+      assert.match(lines.at(-1), /omit --resume/);
+      assert.doesNotMatch(lines.at(-1), /Resume with:/);
+      assert.equal(driver.spawnCalls.length, 0);
+      assert.equal((await readRuns(item)).filter(run => run.retryOf === prior.runId).length, 0);
+      assert.equal((await readRuns(item)).find(run => run.runId === prior.runId).failureReason, "operator_action_required");
+    } finally { await fx.cleanup(); }
+  } },
   { name: "156 resume — a failed repair is not retried as a build phase", async run() {
     const fx = await loopFixture();
     try {

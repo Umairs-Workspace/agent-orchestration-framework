@@ -931,6 +931,9 @@ export function createLoopShell({
   }
 
   async function reportLine(report, state, details = {}) {
+    if (state.act?.producer === "run-store:not-retryable" && details.failureReason === "operator_action_required") {
+      state.act.remedy = "Native permission approval is required. AOF's unattended adapter declines these requests. Resolve the blocked operation in an interactive assistant session, then start a new loop with the same model flags (omit --resume). A bare --resume cannot retry this run.";
+    }
     for (const row of state.driven) {
       await report(`Driven ${row.ref} — ${row.phase} (${row.outcome}).`);
     }
@@ -1919,6 +1922,8 @@ export function createLoopShell({
               await reportLine(report, state, {
                 readyAt: error.readyAt,
                 attempt: resumedLineage.prior.attempt,
+                failureReason: resumedLineage.prior.failureReason,
+                sessionId: resumedLineage.prior.sessionId,
               });
               return state;
             }
@@ -2046,6 +2051,9 @@ export function createLoopShell({
     }
     if (state.act.act === "done") return `${state.scope} — loop done.`;
     if (state.act.act === "halt") {
+      if (state.act.remedy != null && state.act.producer === "run-store:not-retryable") {
+        return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer}). ${state.act.remedy}`;
+      }
       return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${loopResumeCommand(state)}`;
     }
     const target = state.act.ref ? ` ${state.act.ref}` : "";

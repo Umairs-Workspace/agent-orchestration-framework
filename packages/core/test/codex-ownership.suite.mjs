@@ -63,6 +63,19 @@ async function legacy(root, edited = false) {
 }
 
 export const codexOwnershipTests = [
+  { name: "156 — preparing a work-only install does not add an empty top-level files array", run: () => fixture(async root => {
+    const source = path.join(root, "source"), lane = path.join(root, "lane");
+    await apply(source, config());
+    const lock = JSON.parse(await read(source, ".aof/aof.lock.json"));
+    lock.work = { ...(lock.work ?? {}), files: [...(lock.work?.files ?? []), ...lock.files] };
+    delete lock.files;
+    await put(source, ".aof/aof.lock.json", JSON.stringify(lock, null, 2) + "\n");
+    await cp(source, lane, { recursive: true });
+    const baseline = await read(lane, ".aof/aof.lock.json");
+    await prepareCodexWorktree(source, lane);
+    await prepareCodexWorktree(source, lane);
+    assert.equal(await read(lane, ".aof/aof.lock.json"), baseline);
+  }) },
   { name: "156 — preparing already committed native hooks does not dirty the ownership lock", run: () => fixture(async root => {
     const source = path.join(root, "source"), lane = path.join(root, "lane");
     await apply(source, config());

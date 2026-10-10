@@ -102,3 +102,18 @@ Feature: One loop selects and preserves native execution per phase
     Then the child discovers the ordinary shell without changing host PATH
     And native sandbox permissions and approval refusals remain unchanged
     And a preferred ordinary pwsh or the only available shell is not removed
+
+  Scenario: A native permission request needs an operator rather than an automatic retry
+    Given a phase fails with operator_action_required
+    When the loop reports the initial failure or the operator tries --resume
+    Then the halt explains that unattended native permission requests are declined
+    And it requires resolving the blocked operation before a new loop attempt
+    And it does not recommend an ineffective bare --resume or mint a retry
+    And the original failure record remains unchanged
+
+  Scenario: Preparing a current work-only installation leaves a clean lane
+    Given all generated Codex assets are current and tracked under work.files
+    And the ownership lock has no top-level files key
+    When AOF prepares the same lane twice
+    Then the ownership lock remains byte-identical
+    And no empty top-level files array or transient hook diagnostics prevent lane cleanup

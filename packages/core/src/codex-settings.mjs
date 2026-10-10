@@ -99,7 +99,7 @@ export async function prepareCodexWorktree(projectRoot, worktree) {
   };
   const files = merge(destinationLock?.files ?? [], false);
   const work = destinationLock?.work == null && !outputs.some(entry => inWork.has(portable(entry.path))) ? undefined : { ...(destinationLock?.work ?? {}), files: merge(destinationLock?.work?.files ?? [], true) };
-  await writeLock(path.join(worktree, ".aof/aof.lock.json"), { ...(destinationLock ?? {}), version: sourceLock.version, files, ...(work === undefined ? {} : { work }) });
+  await writeLock(path.join(worktree, ".aof/aof.lock.json"), { ...(destinationLock ?? {}), version: sourceLock.version, ...(destinationLock?.files != null || files.length > 0 ? { files } : {}), ...(work === undefined ? {} : { work }) });
 }
 
 function refusal(output, message, code = "codex-output-conflict") {

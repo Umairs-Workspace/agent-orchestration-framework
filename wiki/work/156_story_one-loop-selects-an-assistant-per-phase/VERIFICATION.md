@@ -322,3 +322,15 @@ Local raw evidence: `.tmp/156-focused-tests.log`, `.tmp/156-final-unit-tests.log
 Milestone 154's earlier acceptance remains evidence of its single-runtime behavior,
 not acceptance of this mixed-runtime correction. Its scope now explicitly points
 to this story.
+
+## Language-tutor verification and cleanup recovery — 2026-10-10
+
+The mixed loop completed and merged language-tutor's four builds. Its 16/01 Astra/high verification failed because Node test child processes were denied (`spawn EPERM`), followed by a native permission request that the unattended adapter declines. AOF 153/01 reached the same failure. Both affected scoped test commands passed when run through the governing session's approved host execution tool (language-tutor: 99/99; AOF: all selected memory-recall-ledger integration scenarios). Native approvals remain a blocker to claiming unattended end-to-end acceptance; a successful handoff alone does not satisfy it.
+
+The initial and resumed permission halt now explain the required operator action and do not recommend another ineffective `--resume`. Regression checks assert no automatic retry or rewritten failure history. The adapter still declines native permission requests; no permission policy or runtime/model choice changed.
+
+Language-tutor also exposed work-only ownership locks with no top-level `files` key. Preparing a current lane must preserve that absence, rather than write `files: []` and prevent cleanup. A byte-stability regression covers two preparations. The prior retained lanes' only changes were that empty field and transient hook-render metadata; their lock files were backed up under the project's `.aof/mesh/recovery/16-lock-cleanup-20261010/` after verifying both tips were merged.
+
+Focused recovery checks: 12 cases, zero failures, including initial/resumed permission failures and work-only locks. The complete ownership and loop-resume suites then passed: 87 cases, zero failures (`.tmp/156-permission-recovery-tests.log`). `aof work validate 156 --json` returned no findings. This does not replace the outstanding broad regression gate or live acceptance.
+
+Both language-tutor dispatch worktrees and their merged branches (`16/03`, `16/04`) are removed. Git first unregistered the worktrees but failed to remove their Windows directories; the recovery checked exact resolved paths, absent `.git` markers and absent Git registrations before deleting only those two directories. The metadata backups and all merged code remain intact.
