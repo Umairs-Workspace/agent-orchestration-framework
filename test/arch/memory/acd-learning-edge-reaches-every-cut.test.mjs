@@ -55,7 +55,7 @@ const joined = (text) => text.replace(/\r?\n\s*/gu, " ");
 // One invocation: `aof work memory <verb> …` up to the terminator that ends a command in prose.
 // The trailing set is deliberately narrow — a backtick closes an inline code span, and `.`/`;`/`—`
 // end the sentence that carries it.
-const INVOCATION = /aof work memory\s+([a-z]+)((?:\s+(?:--[a-z-]+(?:=[^\s`]+)?|"[^"]*"|`[^`]*`|<[^>]*>|[A-Za-z0-9_./-]+))*)/gu;
+const INVOCATION = /aof work memory\s+([a-z-]+)((?:\s+(?:--[a-z-]+(?:=[^\s`]+)?|"[^"]*"|`[^`]*`|<[^>]*>|[A-Za-z0-9_./-]+))*)/gu;
 
 function invocationsIn(text) {
   return [...joined(text).matchAll(INVOCATION)].map((match) => ({
@@ -148,14 +148,134 @@ const EXCLUDED = Object.freeze({
   "verify.md": "accepts an item; its memory calls are `ingest`",
 });
 
+// ───────────────────────────────────────────── FF-15303 · the capture protocol, per edge ──
+//
+// 153/04, ADR-004. Every declared decision-recall edge records its OWN completed observation, so the
+// control is stated per EDGE and every failure names the edge it belongs to. An edge is a block of
+// shipped prose cut structurally (from its bolded lead to the next numbered step), then read as
+// invocations over the joined body — never as a grep for a new verb. The checks a protocol owes:
+//   - the recall keeps its existing filters, exactly (the retrieval is unchanged);
+//   - the observation is retained from the ACTUAL result and never re-retrieved;
+//   - every returned record carries an explicit verdict (honoured / departed / irrelevant), no default;
+//   - ONE record-recall submission, AFTER the recall, with the edge's own attribution and scope;
+//   - the empty result is still submitted (`"records": []`), with no verdict or retrieval invented.
+const EDGES = Object.freeze({
+  "shatter-po": {
+    file: SHATTER,
+    lead: "**Recall prior lessons first — ONCE",
+    recallFlags: ["--block"],
+    capture: "<observation file>",
+    refPlaceholder: "<first driver ref>",
+    must: [
+      [/`edge` `shatter-po`/u, "names its edge"],
+      [/`actor` `product-owner`/u, "attributes the product owner"],
+      [/`scope` `\{\}`/u, "keeps the original unscoped query"],
+      [/first driver in PRD order/u, "assigns the single ledger owner"],
+      [/cites that owner/u, "has every other driver cite the owner"],
+      [/never replayed per driver/u, "never replays the recall per driver"],
+      [/no ledger capture\s+was completed/u, "reports an incomplete capture when no driver exists"],
+      [/placeholder item or recall store/u, "invents no placeholder item or sibling store"],
+    ],
+  },
+  "refine-architect": {
+    file: REFINE,
+    lead: "**Recall prior lessons first (before",
+    recallFlags: ["--area", "--block"],
+    capture: "<architect observation file>",
+    refPlaceholder: "<ref>",
+    must: [
+      [/edge\s+`refine-architect`/u, "names its edge"],
+      [/actor\s+`architect`/u, "attributes the architect"],
+      [/scope `\{"area":"architecture"\}`/u, "keeps the architect's area filter in the scope"],
+    ],
+  },
+  "refine-po": {
+    file: REFINE,
+    lead: "**Recall prior lessons first (before",
+    recallFlags: ["--block", "--item"],
+    capture: "<PO observation file>",
+    refPlaceholder: "<ref>",
+    must: [
+      [/edge\s+`refine-po`/u, "names its edge"],
+      [/actor\s+`product-owner`/u, "attributes the product owner"],
+      [/scope `\{"item":"<ref>"\}`/u, "keeps the PO's item filter in the scope"],
+    ],
+  },
+  "continue-developer": {
+    file: `${COMMANDS_DIR}/continue.md`,
+    lead: "**Recall prior gotchas first",
+    recallFlags: ["--block", "--kind"],
+    capture: "<observation file>",
+    refPlaceholder: "<ref>",
+    must: [
+      [/`edge` `continue-developer`/u, "names its edge"],
+      [/`actor` `developer`/u, "attributes the developer"],
+      [/`scope` `\{"kind":"near-miss"\}`/u, "keeps the existing near-miss filter in the scope"],
+      [/no verdict and no extra retrieval is invented/u, "invents no verdict and no second retrieval"],
+    ],
+  },
+});
+
+/** The edge's own block: from its bolded lead to the next numbered step heading, joined. */
+function edgeBlock(text, lead) {
+  const lines = text.split(/\r?\n/u);
+  const start = lines.findIndex((line) => line.includes(lead));
+  if (start < 0) return null;
+  const end = lines.findIndex((line, index) => index > start && /^\s*\d+\. \*\*/u.test(line));
+  if (end < 0) return null;
+  return joined(lines.slice(start, end).join("\n"));
+}
+
+/** Every protocol failure of ONE edge over a rendered procedure body; empty when the edge is whole. */
+function edgeFailures(text, edge) {
+  const spec = EDGES[edge];
+  const block = edgeBlock(text, spec.lead);
+  if (block == null) return [`${edge}: the recall block was not found by its lead`];
+  const failures = [];
+  const calls = invocationsIn(block);
+  const recall = calls.filter((call) => call.verb === "recall" && sameFlags(call.flags, spec.recallFlags));
+  const captures = calls.filter((call) => call.verb === "record-recall" && call.tail.includes(spec.capture));
+  if (recall.length !== 1) failures.push(`${edge}: expected exactly one recall spelling ${spec.recallFlags.join(" ")} (found ${recall.length})`);
+  if (captures.length !== 1) failures.push(`${edge}: expected exactly one record-recall submission (found ${captures.length})`);
+  else {
+    if (!captures[0].flags.includes("--input") || captures[0].flags.length !== 1) failures.push(`${edge}: the submission spells --input alone`);
+    if (!captures[0].tail.includes(spec.refPlaceholder)) failures.push(`${edge}: the submission names ${spec.refPlaceholder}`);
+    if (recall.length === 1 && block.indexOf(recall[0].whole) > block.indexOf(captures[0].whole)) failures.push(`${edge}: the recall must precede its capture`);
+  }
+  const checks = [
+    [/actual result/u, "retains the recall's actual result"],
+    [/never re-runs? the recall/iu, "never re-runs the recall to rebuild the result"],
+    [/explicit verdict `honoured`,\s+`departed`\s+or `irrelevant`/u, "requires an explicit per-record verdict"],
+    [/never a default/u, "allows no default verdict"],
+    [/`item`, `id` and\s+`recordType`/u, "retains each returned identity"],
+    [/empty block is still\s+submitted, as `"records": \[\]`/u, "submits an empty result as an empty observation"],
+    [/fresh UUID/u, "mints one id per recall"],
+    ...spec.must,
+  ];
+  for (const [pattern, what] of checks) if (!pattern.test(block)) failures.push(`${edge}: ${what}`);
+  return failures;
+}
+
+const sameFlags = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+
+/** The same body with ONE edge's capture obligation removed — the red probe. */
+function withoutCapture(text, edge) {
+  const spec = EDGES[edge];
+  // Whitespace inside a placeholder may wrap across lines, so every space is read as `\s+`.
+  const literal = (value) => value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&").replace(/ /gu, "\\s+");
+  const capture = new RegExp(`aof work memory\\s+record-recall\\s+${literal(spec.refPlaceholder)}\\s+--input\\s+${literal(spec.capture)}`, "u");
+  assert.ok(capture.test(text), `guard: ${edge}'s capture invocation was located in the body it is being removed from`);
+  return text.replace(capture, "aof work memory (capture removed)");
+}
+
 export const archTests = [
   {
     name: "arch/124/02 FF-12405 leg 1 (task 00): shatter carries exactly ONE memory invocation, it is a PO recall, and it runs before the cut",
     run: () => {
       const text = read(SHATTER);
       const calls = invocationsIn(text);
-      assert.equal(calls.length, 1, `shatter spells exactly one \`aof work memory\` invocation (found ${calls.length})`);
-      assert.equal(calls[0].verb, "recall", "…and its verb is `recall`, never `ingest`");
+      // 153/04 — the recall is still the ONE retrieval; the second invocation is the capture of its result.
+      assert.deepEqual(calls.map((call) => call.verb), ["recall", "record-recall"], `shatter spells exactly one recall and then its one capture, never an \`ingest\` (found ${calls.map((call) => call.verb).join(", ")})`);
 
       // THE ROLE. The block names the role that runs it, and it is the one the `<process>` spawns.
       const lines = text.split(/\r?\n/u);
@@ -235,7 +355,7 @@ export const archTests = [
     name: "arch/124/02 FF-12405 leg 3 (task 00): the query is keyed to the seam, and refine is read rather than written",
     run: () => {
       const shatter = read(SHATTER);
-      const call = invocationsIn(shatter)[0];
+      const call = invocationsIn(shatter).find((each) => each.verb === "recall");
       const query = /"([^"]*)"/u.exec(call.whole)?.[1] ?? "";
       assert.ok(query.length > 0, "the invocation carries a quoted query");
       assert.ok(/objective/iu.test(query) && /scope/iu.test(query), "…keyed to the PRD's objective and scope words — the read-out `readSeam` pins");
@@ -254,8 +374,8 @@ export const archTests = [
       // than a control — red for every uncommitted legitimate edit to the file (a story's Step 0, a
       // driving-shell hunk) and trivially green after ANY commit, so it guarded nothing (127/02,
       // 2026-09-13). What shatter must not do is take one of these two away or add a third.
-      const refineCalls = invocationsIn(read(REFINE));
-      assert.equal(refineCalls.length, 2, "refine.md carries exactly its two invocations");
+      const refineCalls = invocationsIn(read(REFINE)).filter((call2) => call2.verb === "recall");
+      assert.equal(refineCalls.length, 2, "refine.md carries exactly its two recalls");
       assert.ok(refineCalls.some((call2) => call2.flags.includes("--area")), "the architect's, with `--area`");
       assert.ok(refineCalls.some((call2) => call2.flags.includes("--item")), "and the PO's, with `--item`");
     },
@@ -321,15 +441,15 @@ export const archTests = [
         const rel = `${COMMANDS_DIR}/${name}`;
         for (const call of invocationsIn(read(rel))) found.push({ rel, ...call });
       }
-      // 154/05 adds retrospective's recall and ingest edge, retaining the seven existing calls.
-      assert.equal(found.length, 9, `the bundle carries nine memory invocations (found ${found.length}: ${found.map((f) => f.rel).join(", ")})`);
+      // 154/05 adds retrospective's recall and ingest edge, retaining the seven existing calls; 153/04 adds
+      // four captures (one per declared decision-recall edge) and retrospective's recurrence match.
+      assert.equal(found.length, 14, `the bundle carries fourteen memory invocations (found ${found.length}: ${found.map((f) => f.rel).join(", ")})`);
       assert.ok(found.length > 1, "the count it examined is reported and is greater than one");
 
       // THE TWO THAT MARKDOWN WRAPPED MID-COMMAND are each read as ONE invocation with a real verb
       // — the property a per-line regex loses.
       const refineFound = found.filter((call) => call.rel === REFINE);
-      assert.equal(refineFound.length, 2, "refine's two wrapped invocations are each read as one");
-      for (const call of refineFound) assert.equal(call.verb, "recall", "…with its verb intact across the wrap");
+      assert.deepEqual(refineFound.map((call) => call.verb), ["recall", "recall", "record-recall", "record-recall"], "refine's wrapped invocations are each read as one, with their verbs intact across the wrap");
 
       // EVERY verb and EVERY flag, not only shatter's.
       for (const call of found) {
@@ -350,15 +470,15 @@ export const archTests = [
   {
     name: "arch/124/02 FF-12405 leg 6 (task 00, 02): the flags shatter's form spells, and the two it must not",
     run: () => {
-      const call = invocationsIn(read(SHATTER))[0];
-      assert.deepEqual(call.flags, ["--block"], "shatter's invocation spells `--block` alone");
+      const call = invocationsIn(read(SHATTER)).find((each) => each.verb === "recall");
+      assert.deepEqual(call.flags, ["--block"], "shatter's recall spells `--block` alone");
       for (const forbidden of ["--item", "--area", "--kind"]) {
         assert.equal(call.flags.includes(forbidden), false, `${forbidden} is absent from the invocation`);
       }
       // The two carriers' FORMS DIFFER, and that is ADR-007's decision rather than an
       // inconsistency — a control asserting one shared shape would red the very form it decided.
-      const refineCalls = invocationsIn(read(REFINE));
-      assert.equal(refineCalls.length, 2, "refine carries two invocations, for two roles");
+      const refineCalls = invocationsIn(read(REFINE)).filter((each) => each.verb === "recall");
+      assert.equal(refineCalls.length, 2, "refine carries two recalls, for two roles");
       assert.deepEqual(
         refineCalls.map((each) => [...each.flags].sort()),
         [["--area", "--block"], ["--block", "--item"]],
@@ -431,7 +551,7 @@ export const archTests = [
         );
         // THE NEW BLOCK REACHED IT, exactly once, as a RENDER of the source rather than a
         // separately worded copy.
-        const calls = invocationsIn(onDisk);
+        const calls = invocationsIn(onDisk).filter((each) => each.verb === "recall");
         assert.equal(calls.length, 1, `${rel} carries the recall exactly once`);
         assert.equal(calls[0].verb, "recall");
         assert.deepEqual(calls[0].flags, ["--block"], `${rel}'s invocation is the source's, flag for flag`);
@@ -533,6 +653,109 @@ export const archTests = [
         assert.match(attrs, new RegExp(`${rel.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}: eol: lf`, "u"), `${rel} is pinned \`eol=lf\``);
         assert.equal(read(rel).includes("\r\n"), false, `${rel} holds no CRLF on disk`);
       }
+    },
+  },
+
+  {
+    name: "arch/153/04 FF-15303 leg 1: every declared decision-recall edge binds the complete capture protocol in the authored source, and the roster is exactly the four edges",
+    run: () => {
+      assert.deepEqual(Object.keys(EDGES), ["shatter-po", "refine-architect", "refine-po", "continue-developer"], "guard: the edge roster is the four declared decision-recall edges");
+      for (const edge of Object.keys(EDGES)) {
+        const failures = edgeFailures(read(EDGES[edge].file), edge);
+        assert.deepEqual(failures, [], `${edge}'s capture protocol is whole in ${EDGES[edge].file}`);
+      }
+      // Every recall in the bundle belongs to a declared edge, or to retrospective's own matching recall —
+      // a fifth decision-recall edge cannot arrive without a roster entry.
+      const recalls = [];
+      for (const name of commandFiles()) {
+        for (const call of invocationsIn(read(`${COMMANDS_DIR}/${name}`))) if (call.verb === "recall") recalls.push(name);
+      }
+      assert.deepEqual(recalls.sort(), ["continue.md", "refine.md", "refine.md", "retrospective.md", "shatter.md"], "five recalls exist: four declared edges and retrospective's matching recall");
+      const submissions = [];
+      for (const name of commandFiles()) {
+        for (const call of invocationsIn(read(`${COMMANDS_DIR}/${name}`))) if (call.verb === "record-recall") submissions.push(name);
+      }
+      assert.deepEqual(submissions.sort(), ["continue.md", "refine.md", "refine.md", "shatter.md"], "one submission per declared edge, and none anywhere else");
+    },
+  },
+
+  {
+    name: "arch/153/04 FF-15303 leg 2: removing one edge's capture obligation fails the control naming THAT edge and no other",
+    run: () => {
+      for (const edge of Object.keys(EDGES)) {
+        const mutated = withoutCapture(read(EDGES[edge].file), edge);
+        const failures = edgeFailures(mutated, edge);
+        assert.ok(failures.length > 0, `${edge}: removing its capture is detected`);
+        assert.ok(failures.every((failure) => failure.startsWith(`${edge}:`)), `${edge}: every failure names the edge`);
+        for (const other of Object.keys(EDGES)) {
+          if (other === edge || EDGES[other].file !== EDGES[edge].file) continue;
+          assert.deepEqual(edgeFailures(mutated, other), [], `${edge}'s removal does not red its sibling ${other} in the same file`);
+        }
+      }
+      // Weakening the protocol without deleting the invocation is caught too: a defaulted verdict, a re-run, a dropped filter.
+      const shatter = read(SHATTER);
+      assert.ok(edgeFailures(shatter.replace("never a default", "defaulting to honoured"), "shatter-po").some((failure) => failure.includes("allows no default verdict")), "a default verdict is detected");
+      assert.ok(edgeFailures(shatter.replace("Never re-run the recall", "Re-run the recall"), "shatter-po").some((failure) => failure.includes("never re-runs the recall")), "a second retrieval is detected");
+      const refine = read(REFINE);
+      assert.ok(edgeFailures(refine.replace("--area architecture --block", "--block"), "refine-architect").some((failure) => failure.includes("recall spelling")), "a dropped area filter is detected");
+    },
+  },
+
+  {
+    name: "arch/153/04 FF-15303 leg 3: Claude, Codex and OpenCode renders each carry every edge's protocol — on disk and freshly rendered — and removing capture from one render is detected",
+    run: async () => {
+      const bundle = await loadBundle();
+      const outputs = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] });
+      const byPath = new Map(outputs.map((output) => [slash(output.path), output]));
+      const bodyOf = (runtime, member) => {
+        const candidates = {
+          claude: [`.claude/commands/aof/${member}.md`],
+          codex: [`.agents/skills/aof-${member}/procedure.md`, `.agents/skills/aof-${member}/SKILL.md`],
+          opencode: [`.opencode/commands/aof/${member}.md`],
+        }[runtime];
+        for (const rel of candidates) {
+          const rendered = byPath.get(rel);
+          if (rendered != null && String(rendered.content).includes("Recall prior")) return { rel, rendered: String(rendered.content) };
+        }
+        return null;
+      };
+      let checked = 0;
+      for (const edge of Object.keys(EDGES)) {
+        const member = path.basename(EDGES[edge].file, ".md");
+        for (const runtime of ["claude", "codex", "opencode"]) {
+          const found = bodyOf(runtime, member);
+          assert.ok(found != null, `${edge}: the ${runtime} render of ${member} carries the recall block`);
+          assert.deepEqual(edgeFailures(found.rendered, edge), [], `${edge}: the ${runtime} render (${found.rel}) carries the whole protocol`);
+          assert.deepEqual(edgeFailures(read(found.rel), edge), [], `${edge}: the ${runtime} file on disk (${found.rel}) carries the whole protocol`);
+          // THE RED PROBE: capture removed from ONE render is detected, naming the edge.
+          const probe = edgeFailures(withoutCapture(found.rendered, edge), edge);
+          assert.ok(probe.length > 0 && probe.every((failure) => failure.startsWith(`${edge}:`)), `${edge}: removing capture from the ${runtime} render is detected by name`);
+          checked += 1;
+        }
+      }
+      assert.equal(checked, 12, "four edges across three runtimes were each checked");
+    },
+  },
+
+  {
+    name: "arch/153/04 FF-15303 leg 4: retrospective matches before it writes and indexes after — recurrence precedes ingest, the watermark and both lesson fields are authored first, and a clean pass invents nothing",
+    run: () => {
+      const text = read(`${COMMANDS_DIR}/retrospective.md`);
+      const calls = invocationsIn(text);
+      assert.deepEqual(calls.map((call) => call.verb), ["recall", "recurrence", "ingest"], "recall, then the whole-index recurrence match, then ingest — in that order");
+      const recurrence = calls[1];
+      assert.deepEqual([...recurrence.flags].sort(), ["--exclude", "--json"], "the match excludes the lesson's own identity and reads JSON");
+      const body = joined(text);
+      assert.ok(body.indexOf("promotionFrom: <the next R number>") < body.indexOf("aof work memory ingest"), "the watermark is established before ingest");
+      for (const needle of ["`**Recurs:** <item>/R<n>`", "`**Promoted to:**`", "`none`", "`control:<qualified-id>`", "`rule:<repo-path>`", "`prompt:<repo-path>`"]) {
+        assert.ok(body.includes(needle), `retrospective names ${needle}`);
+      }
+      assert.match(body, /when it is null, the lesson has no Recurs field/u, "an unmatched lesson carries no Recurs field");
+      assert.match(body, /never claim a planned control/u, "an unmatched lesson never claims a planned control");
+      assert.match(body, /the prior lesson is not touched/u, "the prior lesson is never rewritten");
+      assert.match(body, /report no new lesson, leave every existing lesson body byte-identical, and invent no recurrence\s+or promotion/u, "a clean pass reports no lesson and invents nothing");
+      assert.match(body, /only AFTER the lesson pass has authored `promotionFrom`, `Recurs` and `Promoted to`/u, "ingest runs only after the fields are authored");
+      assert.equal(body.includes("aof work memory record-recall"), false, "retrospective's recurrence match is not a decision-recall edge, so it records no observation");
     },
   },
 ];

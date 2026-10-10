@@ -1,0 +1,265 @@
+{
+  "runId": "20261010T163038520Z-0001",
+  "itemRef": "153/04",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "882a201e-5db1-4281-b7bb-0a98525a39a9",
+  "brief": {
+    "loop": {
+      "loopRunId": "fee61acf-0876-4d2f-96a1-bd055457848b",
+      "scope": "153",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-10-09T19:44:39.981Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "sonnet",
+          "modelSource": "--model",
+          "runtime": "claude"
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        }
+      },
+      "execution": {
+        "phaseExecutions": {
+          "continue": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              }
+            },
+            "profile": "claude-pty-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "claude",
+            "runtimeSource": "model",
+            "transport": "pty",
+            "version": 1
+          },
+          "refine": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          },
+          "verify": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          }
+        },
+        "phases": {
+          "continue": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "sonnet",
+            "modelSource": "--model",
+            "runtime": "claude"
+          },
+          "refine": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          },
+          "verify": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          }
+        },
+        "runtime": "mixed",
+        "runtimeSource": "phase-map",
+        "version": 2
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-10-10T16:19:25.441Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/ADR-002: every shipped manifest entry hash equals hashContent of the re-rendered member",
+        "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member",
+        "arch/53 FF-5312: source, installed dogfood and retired work-stream home are exact",
+        "arch/53 FF-5313: every delivered loop record is installed in aof's own registry, byte-identical",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): 154/10 the new execution config region is in the frozen source census before staging",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): a one-character edit to any file under apps/ui/src turns the ui/ freeze red",
+        "arch/69 FF-6901 extension (acd-loop-cap-single-home): work.loop deadlines and caps have one leaf while maxAttempts and dispatch concurrency stay put",
+        "arch/61 FF-6111 (acd-loop-cap-single-home): the one missing clamp lands at its own funnel, and the value-shaped resolvers are DERIVED from the callables rather than a parallel allow-list",
+        "FF-6302/7 the eol RATCHET: every .aof/** asset the bundle declares is pinned eol=lf, and its two copies agree byte for byte",
+        "arch/126/02 FF-12604 leg 5: every declaration already on disk stays readable, and recovers unsupervised",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
+        "arch/131 FF-13105 (acd-loop-ask-waits-in-place): fixture — one lane asks and the other merges while it waits; the waiting record carries the ask and a newer heartbeat, waiting on you is narrated, and the answer re-drives the same run with --answer and clears the file",
+        "arch/131 FF-13105 (acd-loop-ask-waits-in-place): fixture — with an immediate-park wait the lane closes parked and unmerged, session-parked-unanswered is posted once, and the halt is session-needs-input only after the other lane merged",
+        "arch/124/02 FF-12405 leg 9 (task 03): the manifest is a true content address, and it agrees with the lock on every path they both name",
+        "arch/53 FF-5301 (acd-session-driver-mesh-blind): frozen direct imports, lifecycle denylist, named admissions, and reach ceilings stay exact",
+        "arch/53 FF-5302 (acd-session-driver-single-home): the assignment sink carries a non-vacuous shrink-only line-count ratchet",
+        "arch/119 FF-11907 (acd-session-driver-single-home, extended): the ceiling FELL to the post-split measured count, carries the command that produced it, and the floor is untouched",
+        "arch/143 FF-14303 (acd-agent-model-source-map, extended): parseSessionChoices and resolveSessionLaunch have one home, and the loop reads no session config",
+        "arch/119 FF-11904: the real src/ and test/ trees are inside every declared ceiling, and the table and the tree agree in BOTH directions",
+        "arch/119 FF-11904: the ceiling EQUALS the delivered count in every row — every allowance is declared, every one is zero, and every row states what the next growth should do instead",
+        "arch/119 FF-11904: the detector FIRES on a synthesized sibling in a budgeted layer, and is quiet on the clean listing in the same lane — with nothing written to disk",
+        "arch/119 FF-11904: a renamed budgeted directory REDS its row rather than emptying it, and a shrunk layer must lower its row",
+        "arch/119 FF-11904: an unentered layer and an exemption that has outgrown its claim both fire on the shipped detector",
+        "138/00 task01 — terminal exemptions remain declared; 154/04 adds one owned Codex settings module without allowance",
+        "arch/15 ADR-005: aof work <sub> --json runs cleanly and emits parseable JSON for every registry-derived work:* subcommand"
+      ],
+      "baseCommit": "e51719c90d5f9f2810699054eb9232bf39b6712b"
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-153-04",
+      "branch": "aof/mesh/153-04",
+      "baseCommit": "e51719c90d5f9f2810699054eb9232bf39b6712b"
+    },
+    "nativeAskContext": {
+      "scope": "153",
+      "loopRunId": "fee61acf-0876-4d2f-96a1-bd055457848b",
+      "workspaceId": "9db1fd84f5895e38"
+    }
+  },
+  "createdAt": "2026-10-10T16:30:38.520Z",
+  "updatedAt": "2026-10-10T16:43:06.152Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 360,
+      "output": 169328,
+      "cacheRead": 28938937,
+      "cacheCreate": 400659
+    },
+    "costUsd": 12.725152349999998,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 180,
+    "toolCalls": 99,
+    "exitReason": "final_output"
+  },
+  "asks": [],
+  "execution": {
+    "phases": {
+      "continue": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "sonnet",
+        "modelSource": "--model"
+      },
+      "refine": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      },
+      "verify": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      }
+    },
+    "profile": "claude-pty-v1",
+    "profileVersion": 1,
+    "roles": {},
+    "runtime": "claude",
+    "runtimeSource": "model",
+    "transport": "pty",
+    "version": 1
+  }
+}

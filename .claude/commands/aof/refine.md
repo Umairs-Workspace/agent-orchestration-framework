@@ -173,6 +173,22 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      **near-miss** relevant to a decision — honoured, or consciously departed from, in `ARCHITECTURE.md`
      (or `STATE.md`). An **empty block means nothing to surface** (memory may be off) — proceed
      unchanged.
+     **Keep each role's result; capture each recall once, at the decision it informed.** Each role
+     retains its OWN recall's actual result unchanged — the exact query text and, for every returned
+     line, its `item`, `id` and `recordType` (a lesson kind such as `near-miss` means `lesson`; any
+     other word, such as `adr`, is the record type itself) — and never re-runs the recall to rebuild
+     it. When the role has recorded the decision its recall informed, it writes its observation to a
+     scratch file outside every work folder: `id` (a fresh UUID minted once per recall — two roles,
+     two ids; a retry reuses its id and `at`), `at` (the ISO instant of the recall), `edge`, `actor`,
+     `query` (verbatim), `scope` (the filter that recall really used) and `records` — one `{item, id,
+     recordType, verdict}` per returned line, each with an explicit verdict `honoured`, `departed`
+     or `irrelevant`, never a default. The architect uses edge `refine-architect`, actor
+     `architect` and scope `{"area":"architecture"}`, then submits
+     `aof work memory record-recall <ref> --input <architect observation file>`. The PO uses edge
+     `refine-po`, actor `product-owner` and scope `{"item":"<ref>"}`, then submits
+     `aof work memory record-recall <ref> --input <PO observation file>`. Each submits exactly once,
+     on the item being refined. An empty block is still submitted, as `"records": []`, with no
+     verdict invented. The prose that acknowledges a near-miss cites the recall id it explains.
   2. **Break down** (with `aof-architect`): partition into **independent** stories — minimise
      cross-story coupling to maximise parallelism. For each, create `stories/<SS>_story_<slug>/`
      (`STORY.md`, `parent:` this milestone) and list it in the milestone `SPEC.md` `## Stories`.
