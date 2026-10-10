@@ -108,7 +108,9 @@ const HUMAN_GOLDENS = [
     invocation: ["status"],
     stdout: "memory: backend=local records=2\n"
       + "layers: episodic 0 · semantic 1 · procedural 1\n"
-      + "conformance: kind blank 0 non-enum 0 · area blank 0 non-enum 1 · stage blank 0 non-enum 0 · owner blank 0 · gap status non-enum 0\n",
+      + "conformance: kind blank 0 non-enum 0 · area blank 0 non-enum 1 · stage blank 0 non-enum 0 · owner blank 0 · gap status non-enum 0\n"
+      // 153/03 — observed effectiveness follows conformance; this fixture has no ledger and no recurrence.
+      + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n",
   },
   { invocation: ["reindex"], stdout: "reindex: 2 record(s)\n" },
   { invocation: ["ingest"], stdout: "reindex: 2 record(s)\n" },
@@ -239,6 +241,21 @@ const JSON_GOLDENS = [
       + "    },\n"
       + "    \"gapStatus\": {\n"
       + "      \"nonEnum\": 0\n"
+      + "    }\n"
+      + "  },\n"
+      // 153/03 — the work-owned accounting reader's nested block; the legacy fields above are untouched.
+      + "  \"effectiveness\": {\n"
+      + "    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n"
+      + "    \"complete\": true,\n"
+      + "    \"diagnostics\": [],\n"
+      + "    \"types\": {\n"
+      + "      \"lesson\": {\n"
+      + "        \"surfaced\": 0,\n"
+      + "        \"honoured\": 0,\n"
+      + "        \"departed\": 0,\n"
+      + "        \"irrelevant\": 0,\n"
+      + "        \"recurred\": 0\n"
+      + "      }\n"
       + "    }\n"
       + "  }\n"
       + "}\n",
@@ -572,6 +589,13 @@ export const workMemoryCommandTests = [
             stage: { blank: 0, nonEnum: 0 },
             owner: { blank: 0 },
             gapStatus: { nonEnum: 0 },
+          },
+          // 153/03 — none has no index, but the ledgers and retrospectives are still read: all zero here.
+          effectiveness: {
+            basis: "observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake",
+            complete: true,
+            diagnostics: [],
+            types: { lesson: { surfaced: 0, honoured: 0, departed: 0, irrelevant: 0, recurred: 0 } },
           },
         }, "the none backend's honest status");
         assert.equal(probe.stdout, `${JSON.stringify(doc, null, 2)}\n`, "and nothing else on stdout");

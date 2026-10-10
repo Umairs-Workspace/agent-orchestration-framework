@@ -26,6 +26,9 @@ import { memoryVocabularyTests } from "./memory-vocabulary.suite.mjs";
 // milestone 148 / story 04 — a live lesson's meta line is held by validate; an archived one is
 // flagged by doctor's lesson-meta lane and never failed.
 import { lessonMetaHoldTests } from "./lesson-meta-hold.suite.mjs";
+// milestone 153 / story 03 — memory effectiveness: the accounting read model and doctor's advisory lane.
+import { memoryAccountingTests } from "./memory-accounting.suite.mjs";
+import { memoryEffectivenessTests } from "./memory-effectiveness.suite.mjs";
 
 export const tests = [
   ...runtimeObserveTests,
@@ -54,4 +57,6 @@ export const tests = [
   ...workTests,
   ...memoryVocabularyTests,
   ...lessonMetaHoldTests,
+  ...memoryAccountingTests,
+  ...memoryEffectivenessTests,
 ];

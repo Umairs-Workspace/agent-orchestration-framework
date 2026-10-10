@@ -13,6 +13,8 @@ import { storyRetrospectivesIndexedTests } from "./story-retrospectives-indexed.
 import { memoryBackendConfigTests } from "./memory-backend-config.suite.mjs";
 // milestone 153 / story 02 — the calibrated recurrence decision, through the real seam and both backends.
 import { memoryRecurrenceTests } from "./memory-recurrence.suite.mjs";
+// milestone 153 / story 03 — `memory status` reports observed effectiveness, identically across backends.
+import { memoryEffectivenessTests } from "./memory-effectiveness.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -27,4 +29,5 @@ export const tests = [
   ...memoryMetaNormalisedTests,
   ...storyRetrospectivesIndexedTests,
   ...memoryRecurrenceTests,
+  ...memoryEffectivenessTests,
 ];
