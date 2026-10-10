@@ -9,12 +9,17 @@ import {
   LESSON_ENUM_FIELDS,
   LESSON_KINDS,
   LESSON_STAGES,
+  canonicalRecurrence,
+  forwardLessonMeta,
+  lessonMetaProblems,
   lessonSections,
   normaliseField,
   normaliseGapStatus,
   normaliseLessonMeta,
   normaliseValue,
+  promotionBoundary,
   readLessonMeta,
+  readPromotion,
 } from "@aof/work/memory-vocabulary";
 
 export const memoryVocabularyTests = [
@@ -89,6 +94,92 @@ export const memoryVocabularyTests = [
       assert.deepEqual(normaliseGapStatus(""), { value: "open", tag: null });
       assert.deepEqual(normaliseGapStatus(undefined), { value: "open", tag: null });
       assert.deepEqual(normaliseGapStatus("discharged (by story `86`, 2026-09-04)"), { value: "discharged", tag: "by story 86, 2026-09-04" });
+    },
+  },
+
+  // ------------------------------------------------------------------ 153/02 ----
+  // The forward fields (ADR-002): `Promoted to` and `Recurs` ride the same meta reader and the same hold.
+  {
+    name: "153/02 E1: a promotionFrom watermark of 4 owes R4 a promotion and leaves R1 through R3 alone",
+    run: () => {
+      const meta = "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer";
+      const retro = (r4) => ["---", "promotionFrom: 4", "---", "# Retrospective", "", ...[1, 2, 3].flatMap((n) => [`## R${n} — legacy ${n}`, meta, ""]), "## R4 — new", meta, ...r4, ""].join("\n");
+      assert.deepEqual(lessonMetaProblems(retro(["- **Promoted to:** none"])), [], "R4 with Promoted to none conforms, R1..R3 owe nothing");
+      const missing = lessonMetaProblems(retro([]));
+      assert.deepEqual(missing.map(({ id, field, missing: isMissing }) => ({ id, field, isMissing })), [{ id: "R4", field: "promotion", isMissing: true }]);
+      assert.equal(missing[0].label, "Promoted to", "the finding names the field an author writes");
+    },
+  },
+  {
+    name: "153/02 E2: with no watermark a lesson is legacy, and a watermark never exempts a later lesson",
+    run: () => {
+      const meta = "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer";
+      const at = (from) => [...(from ? ["---", `promotionFrom: ${from}`, "---"] : []), "# R", "", "## R1 — a", meta, "", "## R9 — b", meta, ""].join("\n");
+      assert.deepEqual(lessonMetaProblems(at(null)), [], "a document with no watermark stays legacy");
+      assert.deepEqual(lessonMetaProblems(at(5)).map((problem) => problem.id), ["R9"], "R9 is above the watermark of 5; R1 is below it");
+      assert.deepEqual(lessonMetaProblems(at(1)).map((problem) => problem.id), ["R1", "R9"], "a watermark of 1 owes every lesson");
+    },
+  },
+  {
+    name: "153/02 E3: Promoted to is kept verbatim as the record's status and Recurs becomes one canonical tag",
+    run: () => {
+      const meta = readLessonMeta(["- **Kind:** near-miss (recurring) · **Promoted to:** prompt:packages/core/assets/commands/refine.md · **Recurs:** m45/R13"]);
+      assert.deepEqual(forwardLessonMeta(meta), { status: "prompt:packages/core/assets/commands/refine.md", recursTag: "recurs:45/R13" });
+      assert.deepEqual(forwardLessonMeta({}), { status: "", recursTag: null }, "a legacy lesson carries neither");
+      assert.deepEqual(forwardLessonMeta({ recurs: "nonsense" }), { status: "", recursTag: null }, "a malformed reference is not indexed");
+      assert.equal(canonicalRecurrence("45/R13"), "45/R13");
+      assert.equal(canonicalRecurrence("m45/R13"), "45/R13", "the m prefix is optional and dropped");
+      assert.equal(canonicalRecurrence("148/02/R1"), "148/02/R1", "a story's lesson is addressed by its story ref");
+      assert.equal(canonicalRecurrence("R13"), null);
+    },
+  },
+  {
+    name: "153/02 outline: new metadata syntax is checked by the shared hold — none | rule: | control: | prompt: and one canonical reference",
+    run: () => {
+      const rows = [
+        ["none", null, "conforming"],
+        ["rule:.aof/rules/cleanup.md", "45/R13", "conforming"],
+        ["control:153/FF-15301", "45/R13", "conforming"],
+        ["prompt:packages/core/assets/commands/continue.md", "45/R13", "conforming"],
+        ["prompt:", null, "promotion"],
+        ["invented:value", null, "promotion"],
+        ["none", "nonsense", "recurs"],
+      ];
+      for (const [promotion, recurrence, result] of rows) {
+        const lines = ["---", "promotionFrom: 4", "---", "## R4 — x", "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** dev", `- **Promoted to:** ${promotion}`, ...(recurrence ? [`- **Recurs:** ${recurrence}`] : [])];
+        const fields = lessonMetaProblems(lines.join("\n")).map((problem) => problem.field);
+        assert.deepEqual(fields, result === "conforming" ? [] : [result], `${promotion} / ${recurrence ?? "absent"}`);
+      }
+      assert.equal(readPromotion("`rule:.aof/rules/a.md`").value, "rule:.aof/rules/a.md", "emphasis around a value is not part of it");
+    },
+  },
+  {
+    name: "153/02: inline and separate meta lines give the same promotion and recurrence, and the first value wins",
+    run: () => {
+      const inline = readLessonMeta(["- **Kind:** mistake · **Promoted to:** rule:.aof/rules/a.md · **Recurs:** 45/R13"]);
+      const separate = readLessonMeta(["- **Kind:** mistake", "- **Promoted to:** rule:.aof/rules/a.md", "- **Recurs:** 45/R13"]);
+      assert.equal(inline["promoted to"], separate["promoted to"]);
+      assert.equal(inline.recurs, separate.recurs);
+      const repeated = readLessonMeta(["- **Promoted to:** none", "- **Promoted to:** rule:.aof/rules/a.md", "- **Recurs:** 1/R1 · **Recurs:** 2/R2"]);
+      assert.equal(repeated["promoted to"], "none", "the first Promoted to wins");
+      assert.equal(repeated.recurs, "1/R1", "the first Recurs wins");
+    },
+  },
+  {
+    name: "153/02: a malformed forward boundary is reported, never read as legacy — and nothing is rewritten",
+    run: () => {
+      const body = ["## R4 — x", "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** dev"];
+      for (const value of ["0", "-3", "four", "4.5", "", "4 5"]) {
+        const text = ["---", `promotionFrom: ${value}`, "---", ...body].join("\n");
+        const before = text;
+        const problems = lessonMetaProblems(text);
+        assert.equal(promotionBoundary(text).state, "invalid", `"${value}" is an invalid boundary`);
+        assert.deepEqual(problems.map((problem) => problem.field), ["promotionFrom"], `"${value}" is the one finding`);
+        assert.equal(problems[0].boundary, true);
+        assert.equal(text, before, "the reader is pure");
+      }
+      assert.deepEqual(promotionBoundary("# no frontmatter\n"), { state: "absent" });
+      assert.equal(promotionBoundary("---\npromotionFrom: '7'\n---\n").from, 7, "a quoted integer is an integer");
     },
   },
 ];

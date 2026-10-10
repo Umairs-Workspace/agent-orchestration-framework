@@ -1,5 +1,7 @@
 import noneBackend from "./memory/none-backend.mjs";
 import { statusPartition } from "./memory/local-retrieval.mjs";
+import { evaluateRecurrence } from "./memory/recurrence.mjs";
+import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
 import { commandError } from "@aof/contracts/error";
 import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
@@ -64,7 +66,11 @@ const NO_PRINT = () => {};
 // completed decision observation to the work-owned ledger through an injected capability, so it
 // resolves no backend, builds no index and works identically with memory off.
 const RECORD_RECALL_VERB = "record-recall";
-const MEMORY_VERBS = ["recall", RECORD_RECALL_VERB, "ingest", "reindex", "status"];
+// `recurrence` (153/ADR-002) is a backend-INDEPENDENT decision over a backend's recall: it asks the
+// active backend for whole-index lesson candidates and scores them with the calibrated matcher, so
+// local and graphify reach the same answer and memory off answers "no candidates".
+const RECURRENCE_VERB = "recurrence";
+const MEMORY_VERBS = ["recall", RECORD_RECALL_VERB, RECURRENCE_VERB, "ingest", "reindex", "status"];
 
 // Scope flags are first-class filters (ADR-006) that parse into the `scope`
 // object handed to the backend. `--limit` is an OPTION (parses into `opts`,
@@ -144,6 +150,8 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 // Parse `aof work memory <verb> [query] [<ref>] [--scope-flags] [--limit N] [--json]`.
 //   recall : a free-text query string (first positional).
 //   record-recall : the owning item's <ref> (first positional) and `--input <json-file>`.
+//   recurrence : the new lesson's text (the positionals, as recall's query) and `--exclude <item>/R<n>`,
+//                the lesson being written, which is never its own candidate.
 //   ingest/reindex : an optional milestone ref (e.g. "01"); `--all` / `--item NN`
 //                    also name the scope of the rebuild (mapped to `only`).
 // Returns { verb, query, only, ref, inputFile, scope, opts, json, block, help }.
@@ -158,7 +166,7 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 // unknown verb, refused — rather than a second spelling of `-h`. The help shape carries no
 // verb and no `json`: help prints the usage text whatever else was asked, as it always has.
 function parseMemoryArgv(argv) {
-  if (memoryHelpRequested(argv)) return { verb: null, query: "", only: null, ref: null, inputFile: null, scope: {}, opts: {}, json: false, block: false, help: true };
+  if (memoryHelpRequested(argv)) return { verb: null, query: "", only: null, ref: null, inputFile: null, exclude: null, scope: {}, opts: {}, json: false, block: false, help: true };
   const positionals = [];
   const scope = {};
   const opts = {};
@@ -167,6 +175,7 @@ function parseMemoryArgv(argv) {
   let all = false;
   let itemFlag;
   let inputFile = null;
+  let exclude = null;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -204,6 +213,12 @@ function parseMemoryArgv(argv) {
       if (value !== undefined) inputFile = value;
       continue;
     }
+    if (key === "exclude") {
+      // recurrence's identity to leave out. A trailing flag with no value excludes nothing.
+      const value = inlineValue ?? argv[++i];
+      if (value !== undefined) exclude = value;
+      continue;
+    }
     if (key === "limit") {
       const value = inlineValue ?? argv[++i];
       const n = Number.parseInt(value, 10);
@@ -239,7 +254,7 @@ function parseMemoryArgv(argv) {
   // record-recall names its owning item by the first positional after the verb.
   const ref = verb === RECORD_RECALL_VERB ? (restPositionals[0] ?? null) : null;
 
-  return { verb, query, only, ref, inputFile, scope, opts, json, block, help: false };
+  return { verb, query, only, ref, inputFile, exclude, scope, opts, json, block, help: false };
 }
 
 // --------------------------------------------------- injection block render ----
@@ -312,6 +327,7 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     // The pre-rendered text view: a projection of the records.
     return result.text ?? "";
   }
+  if (verb === RECURRENCE_VERB) return recurrenceText(result);
   if (verb === RECORD_RECALL_VERB) {
     const head = result.replayed
       ? `recall ${result.id} was already recorded on ${result.ref} — unchanged`
@@ -339,6 +355,18 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     return result.graph?.source === "project setting" && result.graph.built === false ? `${headline}\n${result.graph.reason}` : headline;
   }
   return typeof result === "string" ? result : JSON.stringify(result, null, 2);
+}
+
+// The recurrence decision as text: the verdict line, then each candidate the matcher scored.
+function recurrenceText(result) {
+  const basis = `threshold ${result.threshold}, calibration ${result.calibration}`;
+  const head = result.qualifying !== null
+    ? `recurrence: ${result.qualifying} (score ${result.score} > ${basis})`
+    : result.score === null
+      ? `recurrence: none (no lesson candidates; ${basis})`
+      : `recurrence: none (best score ${result.score} is not above ${basis})`;
+  const lines = result.candidates.map((candidate) => `  ${candidate.ref} · ${candidate.score} · ${candidate.kind || "lesson"} · ${candidate.title} · ${candidate.source}`);
+  return [head, ...lines].join("\n");
 }
 
 // The conformance line's body: `kind blank 1 non-enum 1 · … · owner blank 0 · gap status non-enum 0`.
@@ -388,7 +416,7 @@ function defaultRender(verb, result, { json, block, limit, help }, log) {
 // this same constant — two spellings of the flag vocabulary had already drifted once
 // (`--all`/`--block` present in one and absent from the other), and a usage line that
 // disagrees with itself is the seam saying two things about its own surface.
-const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--input <file>] [--json]";
+const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--input <file>] [--exclude <item>/R<n>] [--json]";
 
 function memoryUsage() {
   return [
@@ -397,6 +425,7 @@ function memoryUsage() {
     `Verbs: ${MEMORY_VERBS.join(", ")}`,
     "  recall <query>     recall prior lessons/ADRs matching a query (scoped by flags)",
     "  record-recall <ref> --input <file>   record a completed recall and its verdicts on an item's ledger",
+    "  recurrence <lesson text> [--exclude <item>/R<n>]   does a new lesson repeat an earlier one? (calibrated, whole index)",
     "  ingest [ref]       (re)build the memory index — alias of reindex",
     "  reindex [ref]      rebuild the derived memory index from the work stream",
     "  status             report the active backend and record count"
@@ -437,12 +466,20 @@ function gateMemoryVerb(verb) {
 //
 // Routing (ADR-003):
 //   recall  -> backend.recall(query, scope, opts, ctx)
+//   recurrence -> backend.recall(query, {}, { limit: Infinity }, ctx), scored by the calibrated matcher
 //   reindex -> backend.reindex(only, ctx)
 //   ingest  -> backend.reindex(only, ctx)  ALIAS (no `ingest` interface method)
 //   status  -> backend.status(ctx)
 // The verb is the caller's to gate; an unknown one reaches no method and yields undefined.
-async function executeMemoryVerb({ verb, query = "", only = null, scope = {}, opts = {} } = {}, { backend, ctx = {} } = {}) {
+async function executeMemoryVerb({ verb, query = "", only = null, exclude = null, scope = {}, opts = {} } = {}, { backend, ctx = {} } = {}) {
   if (verb === "recall") return backend.recall(query, scope, opts, ctx);
+  if (verb === RECURRENCE_VERB) {
+    // 153/ADR-002 — whole-index candidates (no scope: recall's kind filter is NOT applied, because a
+    // recurrence crosses kinds), then the matcher's own score. Retrieval only nominates; the order,
+    // the threshold and the qualifying reference are the matcher's, so both backends agree.
+    const recalled = await backend.recall(query, {}, { limit: Infinity }, ctx);
+    return evaluateRecurrence({ text: query, records: recalled?.records ?? [], exclude });
+  }
   // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): same interface method.
   if (verb === "reindex" || verb === "ingest") return backend.reindex(only, ctx);
   if (verb === "status") {
@@ -475,6 +512,16 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
     }
     return recordRecall(ctx, { ref: input.ref, inputPath: input.inputFile });
   }
+  if (input.verb === RECURRENCE_VERB) {
+    // Refused BEFORE a backend is resolved: a blank lesson has nothing to match, and a malformed
+    // --exclude would silently exclude nothing — so the lesson being written could match itself.
+    if (String(input.query ?? "").trim() === "") throw commandError("recurrence needs the new lesson's text.", "missing-lesson-text", 400);
+    if (input.exclude != null) {
+      const canonical = canonicalRecurrence(input.exclude);
+      if (canonical === null) throw commandError(`--exclude "${input.exclude}" is not an <item>/R<n> reference.`, "invalid-exclude", 400);
+      input = { ...input, exclude: canonical };
+    }
+  }
   const backend = await resolveBackend(config);
   return executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
 }
@@ -500,7 +547,7 @@ async function runMemory(argv, { config, resolveBackend, render = defaultRender,
   return { ok: true, exitCode: 0, result };
 }
 
-return { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, RECORD_RECALL_VERB, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
+return { MEMORY_VERBS, RECURRENCE_VERB, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, RECORD_RECALL_VERB, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
 }
 
 // The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory

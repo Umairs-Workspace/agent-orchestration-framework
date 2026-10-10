@@ -55,6 +55,8 @@ import { archTests as acdMemoryLayerMapTotalTests } from "./acd-memory-layer-map
 // milestone 153 / story 01 — FF-15301: a mixed ledger (raw, classification, recall) keeps the raw
 // denominator, and every ledger reader is classified; replay cannot double-count (ADR-001).
 import { archTests as acdRecallLedgerConsumersTests } from "./acd-recall-ledger-consumers.test.mjs";
+// milestone 153 / story 02 — FF-15302 (see the import note).
+import { archTests as acdMemoryRecurrenceCalibrationTests } from "./acd-memory-recurrence-calibration.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -83,4 +85,6 @@ export const tests = [
   ...acdMemoryLayerMapTotalTests,
   // milestone 153 / story 01 — FF-15301 (see the import note).
   ...acdRecallLedgerConsumersTests,
+  // milestone 153 / story 02 — FF-15302 (see the import note).
+  ...acdMemoryRecurrenceCalibrationTests,
 ];

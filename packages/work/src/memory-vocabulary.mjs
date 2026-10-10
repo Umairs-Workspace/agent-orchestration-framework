@@ -36,7 +36,7 @@ export const LESSON_ENUM_FIELDS = Object.freeze({
   stage: LESSON_STAGES,
 });
 
-const META_LINE_RE = /\*\*(?:Kind|Area|Stage|Owner|Raised by):\*\*/i;
+const META_LINE_RE = /\*\*(?:Kind|Area|Stage|Owner|Raised by|Promoted to|Recurs):\*\*/i;
 const META_SEGMENT_RE = /\*\*([^:]+):\*\*\s*(.+)/;
 
 // ----------------------------------------------------------- the R<n> reader ----
@@ -164,6 +164,64 @@ export function collectTags(tags) {
   return [...new Set(tags.filter((tag) => typeof tag === "string" && tag !== ""))];
 }
 
+// ----------------------------------------------------- the forward fields ----
+//
+// 153/ADR-002 — a NEW lesson names where its prevention went (`Promoted to`) and, when it repeats an
+// earlier lesson, which one (`Recurs`). Both ride the same meta-line reader as Kind and Area, and the
+// same hold: no second parser. A lesson written before the watermark owes neither field, and its
+// bytes are never touched.
+
+// What a `Promoted to` value may be: nothing yet, a control, a rule file, or a prompt file.
+export const PROMOTION_FORMS = Object.freeze(["none", "control:<qualified-id>", "rule:<repo-path>", "prompt:<repo-path>"]);
+export const RECURRENCE_FORM = "<item>/R<n>";
+
+const PROMOTION_RE = /^(?:none|(?:control|rule|prompt):\S+)$/i;
+// The item part of a reference: a milestone number, or a story's `<milestone>/<story>`. The lesson part
+// is split off by position rather than matched, because the heading grammar of an `R<n>` has one home
+// (`declared-id.mjs`) and a second spelling of it here would be a second home.
+const RECURS_ITEM_RE = /^\d+(?:\/\d+)?$/;
+const DIGITS_RE = /^[0-9]+$/;
+
+// A written `Promoted to` → `{ value, conforms }`. The value is kept as written (emphasis stripped),
+// so the indexed `status` is what the author named; a blank is "" and does not conform.
+export function readPromotion(raw) {
+  const value = String(raw ?? "").replace(EMPHASIS_RE, "").trim();
+  return { value, conforms: PROMOTION_RE.test(value) };
+}
+
+// A written `Recurs` → its canonical `<item>/R<n>` reference (the optional `m` prefix dropped), or
+// null when it is not one.
+export function canonicalRecurrence(raw) {
+  const written = String(raw ?? "").replace(EMPHASIS_RE, "").trim().replace(/^m/i, "");
+  const cut = written.lastIndexOf("/");
+  if (cut < 1) return null;
+  const item = written.slice(0, cut);
+  const lesson = written.slice(cut + 1);
+  return RECURS_ITEM_RE.test(item) && lesson.charAt(0).toUpperCase() === "R" && DIGITS_RE.test(lesson.slice(1)) ? `${item}/R${lesson.slice(1)}` : null;
+}
+
+// A lesson's raw meta → the forward fields the index carries: `status` (the promotion, "" for a
+// legacy lesson) and the `recurs:<ref>` tag (null when absent or not a reference).
+export function forwardLessonMeta(meta = {}) {
+  const ref = canonicalRecurrence(meta.recurs);
+  return { status: readPromotion(meta["promoted to"]).value, recursTag: ref == null ? null : `recurs:${ref}` };
+}
+
+// A retrospective's `promotionFrom:` watermark, read from its frontmatter: the first `R<n>` that owes
+// a promotion. `absent` is a legacy document; `invalid` is a boundary that is not a positive integer
+// — reported, never read as legacy, so a typo cannot exempt every lesson.
+const FRONTMATTER_RE = /^﻿?---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/;
+export function promotionBoundary(text) {
+  const block = String(text ?? "").match(FRONTMATTER_RE);
+  if (!block) return { state: "absent" };
+  const lines = block[1].split(/\r?\n/);
+  const index = lines.findIndex((line) => /^promotionFrom\s*:/.test(line));
+  if (index < 0) return { state: "absent" };
+  const value = lines[index].replace(/^promotionFrom\s*:/, "").trim().replace(/^(["'])(.*)\1$/, "$2").trim();
+  const line = index + 2; // frontmatter opens on line 1
+  return /^[1-9]\d*$/.test(value) ? { state: "valid", from: Number(value), value, line } : { state: "invalid", value, line };
+}
+
 // ------------------------------------------------------------------- the hold ----
 //
 // milestone 148 / ADR-007 — the rule validate holds a live lesson to, and the one doctor's archived
@@ -186,8 +244,17 @@ export const LESSON_QUALIFIER_EXAMPLE = Object.freeze({ kind: "near-miss", area:
 // `{ id, line, field, label, value, missing, legal }`. `missing` is a blank or absent value;
 // otherwise `value` is the value as written and `legal` the vocabulary it is not in (null for Owner,
 // which is only ever missing). An empty array means every lesson conforms, or there are none.
+//
+// 153/ADR-002 — two forward fields join it. `Promoted to` is REQUIRED on every lesson at or above
+// the document's `promotionFrom` watermark and checked wherever supplied; `Recurs` is optional and
+// checked wherever supplied. A malformed watermark is itself a problem (`field: "promotionFrom"`,
+// reported against the frontmatter line) and exempts nothing.
 export function lessonMetaProblems(text) {
   const problems = [];
+  const boundary = promotionBoundary(text);
+  if (boundary.state === "invalid") {
+    problems.push({ id: "promotionFrom", line: boundary.line, field: "promotionFrom", label: "promotionFrom", legal: null, value: boundary.value, missing: false, boundary: true });
+  }
   for (const section of lessonSections(text)) {
     const meta = readLessonMeta(section.body);
     for (const { field, label, vocabulary } of LESSON_HELD_FIELDS) {
@@ -195,6 +262,18 @@ export function lessonMetaProblems(text) {
       const base = { id: section.id, line: section.line, field, label, legal: vocabulary };
       if (written === "") problems.push({ ...base, value: "", missing: true });
       else if (vocabulary && !normaliseValue(written, vocabulary).conforms) problems.push({ ...base, value: written, missing: false });
+    }
+    const owed = boundary.state === "valid" && Number(section.id.replace(/\D/g, "")) >= boundary.from;
+    const base = { id: section.id, line: section.line };
+    const promotion = readPromotion(meta["promoted to"]);
+    if (promotion.value === "") {
+      if (owed) problems.push({ ...base, field: "promotion", label: "Promoted to", legal: PROMOTION_FORMS, value: "", missing: true });
+    } else if (!promotion.conforms) {
+      problems.push({ ...base, field: "promotion", label: "Promoted to", legal: PROMOTION_FORMS, value: promotion.value, missing: false });
+    }
+    const recurs = String(meta.recurs ?? "").trim();
+    if (recurs !== "" && canonicalRecurrence(recurs) == null) {
+      problems.push({ ...base, field: "recurs", label: "Recurs", legal: [RECURRENCE_FORM], value: recurs, missing: false });
     }
   }
   return problems;

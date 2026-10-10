@@ -240,4 +240,57 @@ export const lessonMetaHoldTests = [
       assert.ok(doctor.CHECK_GROUPS.includes(lessonMetaLane), "the lane is registered in CHECK_GROUPS");
     },
   },
+
+  // ------------------------------------------------------------------ 153/02 ----
+  {
+    name: "153/02 E1: a live retrospective at promotionFrom 4 accepts R4 with Promoted to none, owes R1 through R3 nothing, and is not rewritten",
+    run: () => scratch(async (root) => {
+      const { workDir, dirs } = await liveStream(root);
+      const meta = "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer";
+      const text = ["---", "promotionFrom: 4", "---", "# Retrospective", "", ...[1, 2, 3].flatMap((n) => [`## R${n} — legacy ${n}`, meta, ""]), "## R4 — new", meta, "- **Promoted to:** none", ""].join("\n");
+      await writeRetro(dirs[144], text);
+      const { findings } = await validate(root, workDir);
+      assert.deepEqual(problemsFor(findings, dirs[144]), []);
+      assert.equal(await readFile(path.join(dirs[144], "RETROSPECTIVE.md"), "utf8"), text, "validate reads and never rewrites");
+    }),
+  },
+  {
+    name: "153/02 E2: a live R4 at the watermark with no Promoted to is an error naming R4 and the field; the archived copy is only a warning",
+    run: () => scratch(async (root) => {
+      const { workDir, dirs } = await archivedStream(root);
+      const meta = "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer";
+      const text = ["---", "promotionFrom: 4", "---", "# Retrospective", "", "## R4 — new", meta, ""].join("\n");
+      await writeRetro(dirs[144], text);
+      const { findings, exit } = await validate(root, workDir);
+      assert.notEqual(exit, 0);
+      const problems = problemsFor(findings, dirs[144]);
+      assert.equal(problems.length, 1, problems.join("\n"));
+      for (const word of ["R4", "Promoted to", "missing", "none | control:<qualified-id> | rule:<repo-path> | prompt:<repo-path>"]) assert.ok(problems[0].includes(word), `${problems[0]} names ${word}`);
+      await writeRetro(dirs[1], text);
+      assert.deepEqual(problemsFor((await validate(root, workDir)).findings, dirs[1]), [], "validate never reads an archived retrospective");
+      const archived = archivedFindings(await runDoctor(workDir, root), dirs[1]);
+      assert.equal(archived.length, 1);
+      assert.equal(archived[0].severity, "warn", "an archived problem is advisory");
+      assert.ok(archived[0].message.includes("R4"), archived[0].message);
+    }),
+  },
+  {
+    name: "153/02: a supplied malformed Promoted to or Recurs is an error on a legacy lesson too, and a bad promotionFrom exempts nothing",
+    run: () => scratch(async (root) => {
+      const { workDir, dirs } = await liveStream(root);
+      const meta = "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer";
+      await writeRetro(dirs[144], retro(lesson("## R1 — legacy", meta, "- **Promoted to:** invented:value", "- **Recurs:** nonsense")));
+      const problems = problemsFor((await validate(root, workDir)).findings, dirs[144]);
+      assert.equal(problems.length, 2, problems.join("\n"));
+      assert.ok(problems.some((problem) => problem.includes("Promoted to") && problem.includes("invented:value")));
+      assert.ok(problems.some((problem) => problem.includes("Recurs") && problem.includes("nonsense")));
+
+      const bad = ["---", "promotionFrom: four", "---", "# Retrospective", "", "## R4 — new", meta, ""].join("\n");
+      await writeRetro(dirs[146], bad);
+      const boundary = problemsFor((await validate(root, workDir)).findings, dirs[146]);
+      assert.equal(boundary.length, 1, boundary.join("\n"));
+      assert.match(boundary[0], /promotionFrom "four" .* not a positive integer/);
+      assert.equal(await readFile(path.join(dirs[146], "RETROSPECTIVE.md"), "utf8"), bad, "no retrospective is rewritten");
+    }),
+  },
 ];

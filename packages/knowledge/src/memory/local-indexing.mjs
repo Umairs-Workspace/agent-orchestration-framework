@@ -3,7 +3,7 @@ import { stripHtmlComments } from "@aof/foundation/markdown";
 import { existsSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { headingSplitRe, headingCaptureRe } from "@aof/work/declared-id";
-import { lessonSections, readLessonMeta, normaliseLessonMeta, normaliseGapStatus, collectTags } from "@aof/work/memory-vocabulary";
+import { lessonSections, readLessonMeta, normaliseLessonMeta, forwardLessonMeta, normaliseGapStatus, collectTags } from "@aof/work/memory-vocabulary";
 import { refInScope } from "@aof/work/ref-scope";
 import { indexVersionReport } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
@@ -157,7 +157,13 @@ const ADR_HEAD_CAPTURE_RE = headingCaptureRe("ADR");
 function parseRetrospective(text, { item, itemSlug, workRelPath }) {
   return lessonSections(text).map((section) => {
     const title = cleanTitle(section.rawTitle);
-    const { kind, area, stage, owner, tags } = normaliseLessonMeta(readLessonMeta(section.body));
+    const meta = readLessonMeta(section.body);
+    const { kind, area, stage, owner, tags: fieldTags } = normaliseLessonMeta(meta);
+    // 153/ADR-002 — the forward fields ride the frozen slots: `Promoted to` is the record's `status`
+    // (a lesson had none) and `Recurs` is one `recurs:<ref>` tag after the field tags. A legacy lesson
+    // carries neither, so its record is byte-identical to the one indexed before.
+    const { status, recursTag } = forwardLessonMeta(meta);
+    const tags = collectTags([...fieldTags, recursTag]);
 
     const what = inlineField(section.body, "What happened");
     const why = inlineField(section.body, "Why");
@@ -173,8 +179,8 @@ function parseRetrospective(text, { item, itemSlug, workRelPath }) {
       stage,
       kind,
       owner,
-      status: "", // adr-only field; present-as-"" on a lesson (ADR-005), never omitted
-      tags, // 148/ADR-003: the qualifiers the vocabulary split off, in field order
+      status, // 153/ADR-002: the lesson's `Promoted to` ("" when none is written — a legacy lesson)
+      tags, // 148/ADR-003: the qualifiers the vocabulary split off, in field order, then `recurs:<ref>`
       summary: lesson, // the one-line lesson gist — the short display line
       text: [title, what, why, lesson].filter(Boolean).join(" \n "), // searchable blob
       source: `${workRelPath}:${section.line}`,

@@ -10,7 +10,7 @@
 // folder, the graph build is refused (so the graphify backend reports it skipped), and no global
 // store is opened.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { createLocalIndexing } from "@aof/knowledge/memory/local-indexing";
@@ -428,5 +428,44 @@ export const memoryMetaNormalisedTests = [
       );
       assert.equal(perType.reduce((sum, [, n]) => sum + n, 0), result.recordCount, "they sum to recordCount");
     }),
+  },
+
+  // ── 153/02 · the forward fields ride the frozen record slots ─────────────────
+  ...["local", "graphify"].map((backend) => ({
+    name: `153/02 E3 outline: Promoted to is the lesson's status and Recurs one recurs: tag, kept beside the existing qualifier — ${backend}`,
+    run: () => withStream(async (s) => {
+      const file = path.join(s.ctx.workDir, "39_milestone_delivery", "RETROSPECTIVE.md");
+      const authored = [
+        "---", "promotionFrom: 2", "---", "# 39 · Retrospective", "",
+        "## R1 — A legacy lesson", "",
+        "- **Kind:** near-miss (recurring) · **Area:** code · **Stage:** build · **Owner:** developer",
+        "- **What happened:** x", "- **Why:** y", "- **Lesson:** z", "",
+        "## R2 — A new lesson", "",
+        "- **Kind:** mistake (recurring) · **Area:** process · **Stage:** verify · **Owner:** verifier",
+        "- **Promoted to:** prompt:packages/core/assets/commands/refine.md",
+        "- **Recurs:** m45/R13",
+        "- **What happened:** x", "- **Why:** y", "- **Lesson:** z", "",
+      ].join("\n");
+      await writeFile(file, authored);
+      await s.backends[backend].reindex(null, s.ctx);
+      assert.equal(await readFile(file, "utf8"), authored, "ingest preserves the source bytes");
+      const recalled = await s.backends[backend].recall("lesson", { }, { limit: Infinity }, s.ctx);
+      const byId = Object.fromEntries(recalled.records.filter((r) => r.recordType === "lesson").map((r) => [r.id, r]));
+      assert.equal(byId.R2.status, "prompt:packages/core/assets/commands/refine.md");
+      assert.deepEqual(byId.R2.tags, ["recurring", "recurs:45/R13"], "the existing qualifier is retained and the recurrence appears exactly once");
+      assert.equal(byId.R1.status, "", "a legacy lesson has no promotion");
+      assert.deepEqual(byId.R1.tags, ["recurring"], "and no recurrence tag: its compact representation is unchanged");
+    }),
+  })),
+  {
+    name: "153/02 E3: the forward fields change the status and tags of the record and nothing else about it",
+    run: () => {
+      const plain = lessonOf(["- **Kind:** mistake (recurring) · **Area:** process · **Stage:** verify · **Owner:** verifier"]);
+      const forward = lessonOf(["- **Kind:** mistake (recurring) · **Area:** process · **Stage:** verify · **Owner:** verifier", "- **Promoted to:** none", "- **Recurs:** 45/R13"]);
+      assert.deepEqual(Object.keys(forward), Object.keys(plain), "the record field set is the frozen one");
+      for (const field of ["title", "summary", "text", "source", "kind", "area", "stage", "owner"]) assert.equal(forward[field], plain[field], field);
+      assert.equal(forward.status, "none");
+      assert.deepEqual(forward.tags, ["recurring", "recurs:45/R13"]);
+    },
   },
 ];
