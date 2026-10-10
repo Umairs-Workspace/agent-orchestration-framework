@@ -4,7 +4,7 @@ number: 01
 slug: recalls-have-complete-verdict-records
 title: "Recalls have complete verdict records"
 parent: 153
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-10
 updated: 2026-10-10
@@ -23,8 +23,8 @@ As an AOF operator, I want to retain each decision recall and every returned rec
 
 ## Tasks
 
-- [ ] `tasks/01_capture-recall.feature`
-- [ ] `tasks/02_preserve-feedback-and-retire-brief.feature`
+- [x] `tasks/01_capture-recall.feature`
+- [x] `tasks/02_preserve-feedback-and-retire-brief.feature`
 
 ## Notes
 

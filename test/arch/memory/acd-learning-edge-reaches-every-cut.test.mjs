@@ -279,7 +279,7 @@ export const archTests = [
       assert.ok(parse.length > 0, "guard: the parse function was located");
       const branchFlags = [...parse.matchAll(/key === "([a-z-]+)"/gu)].map((match) => `--${match[1]}`);
 
-      assert.deepEqual([...MEMORY_VERBS], ["recall", "brief", "ingest", "reindex", "status"], "guard: the verb vocabulary is non-empty and is the module's own");
+      assert.deepEqual([...MEMORY_VERBS], ["recall", "record-recall", "ingest", "reindex", "status"], "guard: the verb vocabulary is non-empty and is the module's own");
       assert.equal(SCOPE_FLAGS.length, 6, "guard: six scope flags");
       assert.ok(branchFlags.includes("--block"), "guard: `--block` is a real branch of the parser");
 

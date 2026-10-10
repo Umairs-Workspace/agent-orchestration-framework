@@ -16,14 +16,12 @@
 //   02_recall-result-shape.feature  — recall returns { query, scope, records[],
 //        text } over a fixture; scope echoed; each record a MemoryRecord + numeric
 //        score; the text view projects the same records.
-//   03_brief-digest.feature      — brief surfaces the lesson/adr split (counts) +
-//        a recent-lessons-by-area digest; --item NN scopes it to one milestone.
+//   (03_brief-digest.feature — retired with the brief verb by 153/ADR-001; its scenarios left with it.)
 import assert from "node:assert/strict";
 import {
   rankRecords,
   applyScope,
   recall,
-  brief,
   renderRecallText,
   MEMORY_RECORD_FIELDS
 } from "@aof/knowledge/memory/local-retrieval";
@@ -199,16 +197,6 @@ const SHAPE_FIXTURE = [
     text: "content addressed manifest membership content addressed hash",
     source: "01_milestone_acd-asset-bundle/ARCHITECTURE.md:66"
   })
-];
-
-// ── 03_brief-digest fixture (the feature Background) ─────────────────────────
-const BRIEF_FIXTURE = [
-  record({ id: "R1", recordType: "lesson", item: "01", area: "architecture" }),
-  record({ id: "R2", recordType: "lesson", item: "01", area: "tooling" }),
-  record({ id: "R3", recordType: "lesson", item: "04", area: "architecture" }),
-  record({ id: "ADR-002", recordType: "adr", item: "01", area: "architecture" }),
-  record({ id: "ADR-007", recordType: "adr", item: "01", area: "architecture" }),
-  record({ id: "ADR-009", recordType: "adr", item: "04", area: "architecture" })
 ];
 
 // rank position of an id within a ranked record list.
@@ -491,104 +479,6 @@ export const memoryRetrievalTests = [
       );
       assert.ok(result.records.length > 0, "records loaded via ctx.loadIndex()");
       assert.deepEqual(Object.keys(result).sort(), ["query", "records", "scope", "text"]);
-    }
-  },
-
-  // ===================================================================
-  // 03_brief-digest.feature
-  // ===================================================================
-  {
-    name: "brief: reports the lesson/adr split for the whole corpus",
-    run: async () => {
-      const digest = await brief({}, {}, { records: BRIEF_FIXTURE });
-      assert.equal(digest.lessonCount, 3, "3 lessons");
-      assert.equal(digest.adrCount, 3, "3 adrs");
-    }
-  },
-  {
-    name: "brief: surfaces a recent-lessons-by-area digest grouped by area",
-    run: async () => {
-      const digest = await brief({}, {}, { records: BRIEF_FIXTURE });
-      assert.deepEqual(
-        (digest.lessonsByArea.architecture || []).map((l) => l.id),
-        ["R1", "R3"],
-        'area "architecture" lists lessons R1, R3'
-      );
-      assert.deepEqual(
-        (digest.lessonsByArea.tooling || []).map((l) => l.id),
-        ["R2"],
-        'area "tooling" lists lessons R2'
-      );
-    }
-  },
-  {
-    name: "brief: the lesson/adr split makes an adr-heavy corpus visible (1 lesson, 5 adrs)",
-    run: async () => {
-      const adrHeavy = [
-        record({ id: "R1", recordType: "lesson", item: "01", area: "architecture" }),
-        record({ id: "ADR-001", recordType: "adr", item: "01", area: "architecture" }),
-        record({ id: "ADR-002", recordType: "adr", item: "01", area: "architecture" }),
-        record({ id: "ADR-003", recordType: "adr", item: "01", area: "architecture" }),
-        record({ id: "ADR-004", recordType: "adr", item: "01", area: "architecture" }),
-        record({ id: "ADR-005", recordType: "adr", item: "01", area: "architecture" })
-      ];
-      const digest = await brief({}, {}, { records: adrHeavy });
-      assert.equal(digest.lessonCount, 1, "1 lesson");
-      assert.equal(digest.adrCount, 5, "5 adrs");
-    }
-  },
-  {
-    name: "brief: --item NN scopes the brief to one milestone (item 01 → 2 lessons, 2 adrs)",
-    run: async () => {
-      const digest = await brief({ item: "01" }, {}, { records: BRIEF_FIXTURE });
-      assert.equal(digest.lessonCount, 2, "milestone 01: 2 lessons");
-      assert.equal(digest.adrCount, 2, "milestone 01: 2 adrs");
-      // only records from milestone 01 are counted: no item-04 lesson/adr in groups.
-      for (const lessons of Object.values(digest.lessonsByArea)) {
-        for (const l of lessons) assert.equal(l.item, "01", "every counted lesson is from milestone 01");
-      }
-    }
-  },
-  {
-    name: "brief: --item NN scopes the recent-lessons digest to that milestone (item 04)",
-    run: async () => {
-      const digest = await brief({ item: "04" }, {}, { records: BRIEF_FIXTURE });
-      assert.deepEqual(
-        (digest.lessonsByArea.architecture || []).map((l) => l.id),
-        ["R3"],
-        'item 04: area "architecture" lists lesson R3'
-      );
-      // no lesson from another milestone appears in the digest.
-      for (const lessons of Object.values(digest.lessonsByArea)) {
-        for (const l of lessons) assert.equal(l.item, "04", "no lesson from another milestone in the digest");
-      }
-    }
-  },
-  // Scenario Outline: brief reports the lesson/adr counts for the scoped corpus.
-  {
-    name: "brief: outline — item scope → lesson/adr counts (all Examples rows)",
-    run: async () => {
-      const rows = [
-        { item: "(none)", lessons: 3, adrs: 3 },
-        { item: "01", lessons: 2, adrs: 2 },
-        { item: "04", lessons: 1, adrs: 1 }
-      ];
-      for (const row of rows) {
-        const scope = row.item === "(none)" ? {} : { item: row.item };
-        const digest = await brief(scope, {}, { records: BRIEF_FIXTURE });
-        assert.equal(digest.lessonCount, row.lessons, `item ${row.item}: ${row.lessons} lessons`);
-        assert.equal(digest.adrCount, row.adrs, `item ${row.item}: ${row.adrs} adrs`);
-      }
-    }
-  },
-  {
-    // brief also renders a text projection (JSON-is-contract / text-is-projection).
-    name: "brief: renders a text view surfacing the lesson/adr counts",
-    run: async () => {
-      const digest = await brief({}, {}, { records: BRIEF_FIXTURE });
-      assert.equal(typeof digest.text, "string", "brief carries a rendered text view");
-      assert.ok(digest.text.includes("3 lesson"), "text reports the lesson count");
-      assert.ok(digest.text.includes("3 adr"), "text reports the adr count");
     }
   },
 

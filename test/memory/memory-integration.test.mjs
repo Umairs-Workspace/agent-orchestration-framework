@@ -126,16 +126,13 @@ export const memoryIntegrationTests = [
     }
   },
   {
-    name: "memory-integration: brief through the real stack renders the lesson/adr digest, not a recall dump",
+    name: "memory-integration: brief is retired — the real stack refuses it as an unknown verb and reaches no backend",
     run: async () => {
       const ctx = await freshCtx();
       await runRealIn(ctx, ["reindex", "--all"]);
-      const { outcome, output } = await runRealIn(ctx, ["brief"]);
-      assert.equal(outcome.ok, true);
-      assert.ok(outcome.result.lessonCount > 0, "the digest counts lessons");
-      assert.ok(outcome.result.adrCount > 0, "the digest counts adrs");
-      assert.ok(/lesson\(s\), .* adr\(s\)/.test(output), "the rendered text is the digest, not a recall record list");
-      assert.ok(!("records" in outcome.result), "brief returns a digest, not a RecallResult records array");
+      const refused = await runRealIn(ctx, ["brief"]);
+      assert.equal(refused.outcome.ok, false, "brief is no longer a verb");
+      assert.equal(refused.outcome.exitCode, 1, "…and the refusal exits non-zero");
     }
   },
   {

@@ -52,6 +52,9 @@ import { archTests as acdMemoryRetrievalEvalTests } from "./acd-memory-retrieval
 // milestone 148 / story 05 — FF-14803: every emitted record type has a layer, and the composed
 // status accounts for every record on both backends.
 import { archTests as acdMemoryLayerMapTotalTests } from "./acd-memory-layer-map-total.test.mjs";
+// milestone 153 / story 01 — FF-15301: a mixed ledger (raw, classification, recall) keeps the raw
+// denominator, and every ledger reader is classified; replay cannot double-count (ADR-001).
+import { archTests as acdRecallLedgerConsumersTests } from "./acd-recall-ledger-consumers.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -78,4 +81,6 @@ export const tests = [
   ...acdMemoryRetrievalEvalTests,
   // milestone 148 / story 05 — FF-14803 (see the import note).
   ...acdMemoryLayerMapTotalTests,
+  // milestone 153 / story 01 — FF-15301 (see the import note).
+  ...acdRecallLedgerConsumersTests,
 ];

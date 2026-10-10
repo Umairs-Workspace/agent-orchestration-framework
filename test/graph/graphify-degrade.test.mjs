@@ -26,7 +26,6 @@ const GRAPH_SIGNAL_UNAVAILABLE = _aofApplication.knowledge.memory.graphifyBacken
 const GRAPH_STATE_BINARY_ABSENT = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT;
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
-const briefDigest = _aofApplication.knowledge.work.memory.briefDigest;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
@@ -250,25 +249,6 @@ export const graphifyDegradeTests = [
     },
   },
   {
-    name: "graphify/degrade: brief inherits the same degrade — populated, un-graph-ranked, no throw",
-    run: async () => {
-      const { ctx } = await backgroundReindexed();
-      // brief is COMPOSED seam-side over recall (no separate interface method): reach
-      // backend.recall the same way the seam does, then derive the digest.
-      let recalled;
-      await assert.doesNotReject(async () => {
-        recalled = await graphifyBackend.recall("", {}, { limit: Infinity }, ctx);
-      }, "brief's underlying recall never throws when the binary is absent");
-      const digest = briefDigest(recalled.records ?? [], {});
-
-      // The digest is POPULATED from the un-graph-ranked recall (lessons + adrs present).
-      assert.ok(digest.lessonCount + digest.adrCount > 0, "the brief digest is populated from the recall records");
-      assert.ok(typeof digest.text === "string" && digest.text.length > 0, "the brief digest renders a non-empty text view");
-      // The recall it inherited from is un-graph-ranked (the diagnostic rides the recall).
-      assert.equal(recalled.graphSignal, GRAPH_SIGNAL_UNAVAILABLE, "the inherited recall is un-graph-ranked (graphSignal=unavailable)");
-    },
-  },
-  {
     name: "graphify/degrade: reindex rebuilds the records and skips the graph with a clear binary-absent hint",
     run: async () => {
       const { ctx } = await backgroundReindexed();
@@ -343,7 +323,6 @@ export const graphifyDegradeTests = [
   // Scenario Outline: every verb degrades to its shape with the binary absent, exiting 0.
   //   | verb    | args                          | shape                                                            |
   //   | recall  | "derived index invariant"     | non-empty 05 records, un-graph-ranked, + graph-unavailable diag  |
-  //   | brief   |                               | a populated un-graph-ranked digest                               |
   //   | reindex |                               | records rebuilt, graph skipped (binary absent + install hint)    |
   //   | status  |                               | { backend: "graphify", recordCount, graphState: binary-absent }  |
   {
@@ -358,16 +337,6 @@ export const graphifyDegradeTests = [
       // The diagnostic rides the RecallResult returned to the seam (the records --json
       // projection is the frozen contract; the diagnostic is on the result object).
       assert.equal(outcome.result.graphSignal, GRAPH_SIGNAL_UNAVAILABLE, "the RecallResult carries graphSignal=unavailable");
-    },
-  },
-  {
-    name: "graphify/degrade: outline — brief exits 0 with a populated un-graph-ranked digest",
-    run: async () => {
-      const { ctx } = await backgroundReindexed();
-      const { outcome, output } = await runVerb(["brief"], ctx);
-      assert.equal(outcome.exitCode, 0, "brief exits 0 with the binary absent");
-      assert.ok(output.length > 0, "brief renders a populated digest");
-      assert.match(output, /lesson\(s\), \d+ adr\(s\)/, "the digest reports lesson/adr counts");
     },
   },
   {

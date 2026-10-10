@@ -42,3 +42,7 @@ no product execution or acceptance evidence is claimed. Next: `$aof-continue 153
 Pre-existing edits in runtime procedures/agents, .aof lock/journal, this SPEC, and unrelated
 backlog/157 work were left intact. Story 04 declares the eventual render outputs and warns its
 builder to preserve these changes during normal regeneration.
+
+## Feedback (for retro)
+
+- 153/01 review (solo): record-recall reuses the existing feedback.recorded event so it publishes through the existing cascade; the acceptor census sweep observations:feedback-recorded (packages/work/src/acceptor/observations.mjs) counts that event by name, so recall observations will be counted as recorded feedback. The census is a floor so it over-counts rather than under-counts, but the label is wrong. Route: recorded finding (a payload-level exclusion on recallId changes census semantics and is not cheaper than the driver). Also: the remote-only owner row is covered by test/command/work-memory-command.test.mjs (cache fixture), not by the CLI feature, because a cache-only item cannot be fabricated through the spawned CLI fixture. — Raised by: developer

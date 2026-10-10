@@ -3,7 +3,7 @@ import { GAP_STATUSES, LESSON_ENUM_FIELDS } from "@aof/work/memory-vocabulary";
 // Local memory backend — RETRIEVAL (milestone 05 / story 02).
 //
 // This module owns the READ path of the local memory backend: ranking, scope
-// filtering, the frozen `RecallResult`, and the `brief` digest. It reads the
+// filtering, and the frozen `RecallResult`. It reads the
 // frozen index format (ADR-005) and is a PURE function of (records, query,
 // scope, opts) — it never touches disk or argv. The seam (story 00) and the
 // indexer (story 01) couple to this module only through the frozen contracts:
@@ -17,10 +17,9 @@ import { GAP_STATUSES, LESSON_ENUM_FIELDS } from "@aof/work/memory-vocabulary";
 //            is length-normalised (BM25-lite) + IDF + a title-match boost + a
 //            record-type boost that lifts `lesson` over `adr` ONLY at equal
 //            relevance (a tiebreaker, never a relevance override).
-//   ADR-007  `brief` surfaces the lesson/adr split + a recent-lessons-by-area
-//            digest, scopable to one milestone via scope.item.
+//   (ADR-007's `brief` digest was retired by 153/ADR-001 — no procedure invoked it.)
 //
-// `recall`/`brief` obtain their records from an INJECTABLE source on `ctx` so the
+// `recall` obtains its records from an INJECTABLE source on `ctx` so the
 // fixture tests need no disk file and no story-01 parser code: `ctx.records` (an
 // array) is used directly when present; otherwise `ctx.loadIndex()` is awaited
 // and its `.records` used. The orchestrator's glue (`local-backend.mjs`) wires
@@ -306,7 +305,7 @@ function typeBoost(record, capabilityIntent) {
 //
 // With no query terms (a scope-only recall) every survivor scores equally on
 // content, so the type boost orders lessons ahead of adrs and the result is the
-// scope-filtered set (capped at the limit) — useful for the brief/scoped views.
+// scope-filtered set (capped at the limit) — useful for scoped views.
 export function rankRecords(records, query, scope = {}, opts = {}) {
   const survivors = applyScope(records, scope);
   const terms = tokenize(query);
@@ -365,46 +364,6 @@ export async function recall(query, scope = {}, opts = {}, ctx = {}) {
   return result;
 }
 
-// ── brief (ADR-007 lesson/adr split + recent-lessons-by-area digest) ─────────
-// A digest over the scope-filtered records: lesson/adr counts and a
-// recent-lessons-by-area map. `scope.item` (the seam's --item NN) scopes the
-// brief to one milestone. Returns a structured digest plus a rendered `text`
-// view, mirroring the RecallResult JSON-is-contract / text-is-projection split.
-export async function brief(scope = {}, opts = {}, ctx = {}) {
-  const records = await resolveRecords(ctx);
-  // brief scopes by item only (the situational "what does milestone NN hold");
-  // the other scope dimensions are recall's concern.
-  const itemScope = scope?.item === undefined || scope?.item === null ? {} : { item: scope.item };
-  const scoped = applyScope(records, itemScope);
-
-  const lessons = scoped.filter((r) => r.recordType === "lesson");
-  const adrs = scoped.filter((r) => r.recordType === "adr");
-
-  // Recent-lessons-by-area: area → lessons in that area (most recent last in the
-  // fixture order; we keep source order so "recent" tracks index order). Each
-  // entry is a light projection so the seam/agent can render without re-reading.
-  const lessonsByArea = {};
-  for (const lesson of lessons) {
-    const area = lesson.area || "";
-    (lessonsByArea[area] ||= []).push({
-      id: lesson.id,
-      item: lesson.item,
-      title: lesson.title,
-      summary: lesson.summary ?? ""
-    });
-  }
-
-  const digest = {
-    scope: normalizeScope(itemScope),
-    lessonCount: lessons.length,
-    adrCount: adrs.length,
-    lessonsByArea,
-    text: ""
-  };
-  digest.text = renderBriefText(digest);
-  return digest;
-}
-
 // ── text rendering (the human projection of a RecallResult) ──────────────────
 // Surfaces every record id in `result.records` and NO id absent from it (ADR-004:
 // text is a projection of the same records the agent path reads).
@@ -426,27 +385,6 @@ export function renderRecallText(result) {
     const gist = (record.summary || record.text || "").replace(/\s+/g, " ").trim().slice(0, 180);
     if (gist) lines.push(`    ${gist}`);
     if (record.source) lines.push(`    ↳ ${record.source}`);
-  }
-  return lines.join("\n") + "\n";
-}
-
-// The human projection of a brief digest (the lesson/adr split + recent lessons
-// grouped by area). Surfaces each lesson id under its area.
-export function renderBriefText(digest) {
-  const { scope, lessonCount, adrCount, lessonsByArea } = digest;
-  const where = scope?.item ? ` · milestone ${scope.item}` : " · whole stream";
-  const lines = [];
-  lines.push(`memory brief${where}`);
-  lines.push(`  ${lessonCount} lesson(s), ${adrCount} adr(s)`);
-  lines.push(`  recent lessons by area:`);
-  const areas = Object.keys(lessonsByArea);
-  if (areas.length === 0) {
-    lines.push(`    —`);
-  } else {
-    for (const area of areas) {
-      const ids = lessonsByArea[area].map((l) => l.id).join(", ");
-      lines.push(`    ${area || "(no area)"}: ${ids}`);
-    }
   }
   return lines.join("\n") + "\n";
 }

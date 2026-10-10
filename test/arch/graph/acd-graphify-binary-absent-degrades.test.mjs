@@ -23,7 +23,6 @@ import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 const GRAPH_SIGNAL_UNAVAILABLE = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_SIGNAL_UNAVAILABLE;
 const GRAPH_STATE_BINARY_ABSENT = _aofApplication.knowledge.memory.graphifyBackend.GRAPH_STATE_BINARY_ABSENT;
-const briefDigest = _aofApplication.knowledge.work.memory.briefDigest;
 
 const MEMORY_RECORD_KEYS = [
   "recordType", "id", "item", "itemSlug", "title",
@@ -157,23 +156,6 @@ export const archTests = [
       // The VISIBLE degrade diagnostic (ADR-004 — the degrade must not be silent).
       assert.equal(result.graphSignal, GRAPH_SIGNAL_UNAVAILABLE, "the result carries graphSignal=unavailable (the graph signal was unavailable)");
       assert.match(result.text, /graph signal unavailable/i, "the human text view notes the un-graph-ranked fallback");
-    },
-  },
-  {
-    name: "arch/graphify-binary-absent: brief does NOT throw and inherits the same degrade — a populated, un-graph-ranked digest",
-    run: async () => {
-      const { ctx } = await backgroundReindexed();
-      // brief is composed seam-side over recall (no separate interface method): reach
-      // backend.recall the same way the seam does, then derive the digest.
-      let recalled;
-      await assert.doesNotReject(
-        async () => { recalled = await graphifyBackend.recall("", {}, { limit: Infinity }, ctx); },
-        "brief's underlying recall never throws when the binary is absent"
-      );
-      const digest = briefDigest(recalled.records ?? [], {});
-      assert.ok(digest.lessonCount + digest.adrCount > 0, "the brief digest is populated from the un-graph-ranked recall");
-      assert.ok(typeof digest.text === "string" && digest.text.length > 0, "the digest renders a non-empty text view");
-      assert.equal(recalled.graphSignal, GRAPH_SIGNAL_UNAVAILABLE, "the inherited recall is un-graph-ranked (graphSignal=unavailable)");
     },
   },
   {
