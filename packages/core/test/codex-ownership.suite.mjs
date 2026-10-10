@@ -13,7 +13,7 @@ import { resolveExecutionResume } from "@aof/execution/runtime-selection";
 import assert from "node:assert/strict";
 import path from "node:path";
 import os from "node:os";
-import { mkdtemp, mkdir, readFile, writeFile, rm, stat, readdir } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, writeFile, rm, stat, readdir, cp } from "node:fs/promises";
 import { writeText } from "@aof/foundation/fs";
 import { existsSync } from "node:fs";
 import { createRenderPlan, planApplyActions, executeApplyActions, createLockManifest, formatFriendlyApplyAction } from "../src/render-plan.mjs";
@@ -63,6 +63,16 @@ async function legacy(root, edited = false) {
 }
 
 export const codexOwnershipTests = [
+  { name: "156 — preparing already committed native hooks does not dirty the ownership lock", run: () => fixture(async root => {
+    const source = path.join(root, "source"), lane = path.join(root, "lane");
+    await apply(source, config());
+    await cp(source, lane, { recursive: true });
+    const baseline = await read(lane, ".aof/aof.lock.json");
+    await prepareCodexWorktree(source, lane);
+    assert.equal(await read(lane, ".aof/aof.lock.json"), baseline);
+    await prepareCodexWorktree(source, lane);
+    assert.equal(await read(lane, ".aof/aof.lock.json"), baseline);
+  }) },
   { name: "154/04 ownership: upgrading legacy configuration preserves protected profile values in their original table",
     run: () => fixture(async root => {
       const text = '[profiles.operator]\napproval_policy = "on-request"\nsandbox_mode = "workspace-write"\n';

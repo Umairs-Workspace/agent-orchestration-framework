@@ -1389,11 +1389,7 @@
             ]
           }
         },
-        "generatedAt": "2026-10-10T16:39:34.751Z",
-        "activation": "requires-native-hook-review",
-        "profile": "codex-app-server-v1",
-        "active": false,
-        "unsupportedEvents": []
+        "generatedAt": "2026-10-10T16:39:34.751Z"
       },
       {
         "path": ".aof/templates/work/chore/CHORE.md",

@@ -7,6 +7,37 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Phase retry, Windows teardown and lane cleanup — 2026-10-10
+
+The live 153 builds completed on Sonnet. Verification run
+`20261010T170634590Z-0003` was instead minted as a retry of a prior Claude repair,
+inheriting its execution envelope despite its verify-phase Astra declaration.
+Resolving its verify model reproduced `execution-resume-conflict`. Retry lookup
+now separates item and phase; mismatched historical phase/runtime/model records
+remain untouched and are not reused for a fresh correctly selected phase.
+
+The Windows shutdown repro produced `AttachConsole failed` in 3/3 cases: AOF's
+successful taskkill was followed by node-pty 1.1's dead-console enumeration.
+The owned terminal release now skips that enumeration only after successful
+tree termination, retaining handle release and exit confirmation. The instance
+compatibility seam is restored even on exceptions; native library files and
+dependency versions are unchanged. The shipped helper passed 3/3 real Windows
+probes with confirmed exit and no console-list errors. A DLL-mode alternative
+was rejected because the probe lost exit confirmation.
+
+Native preparation no longer copies render-only activation/profile diagnostics
+into the persisted ownership lock. A real hooks fixture proves first and repeat
+preparation preserve the lock byte-for-byte. Residual generated files in the
+actual 153/04 and 153/05 lanes were committed and merged, including the memory
+loop update; their completed worktrees and merged branches were then removed.
+Git's Windows directory-removal failure left residual files after unregistering
+the worktrees; only those two verified lane directories were removed afterward.
+
+Verification: 135 ownership/worker/resume/session-driver cases and 3 PTY unit
+cases pass. Real native probes pass 3/3. Evidence:
+`.tmp/156-recovery-full.log`; `node --test packages/execution/test/driver.test.mjs`.
+Story validation reports no findings. Full repository gates were not rerun.
+
 ## Retained-branch reopen ordering — 2026-10-10
 
 Resume at 12:40 UTC still failed on `.agents/skills/aof-add-chore/SKILL.md`.

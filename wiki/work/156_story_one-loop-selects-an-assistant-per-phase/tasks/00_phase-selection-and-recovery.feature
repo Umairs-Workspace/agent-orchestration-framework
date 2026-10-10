@@ -28,6 +28,26 @@ Feature: One loop selects and preserves native execution per phase
     Then the recorded selections remain authoritative
     And conflicting resume flags are refused
 
+  Scenario: A failed repair does not own a later phase's retry
+    Given the loop has a failed repair run and is ready for verification
+    When the operator resumes the mixed loop
+    Then verification starts with its recorded phase model and assistant
+    And it does not reuse the repair's attempt or session
+    And a historical verification record carrying the wrong assistant is preserved without being retried
+
+  Scenario: Completed native lanes do not acquire transient render metadata
+    Given a lane contains the current installed Codex assets and ownership lock
+    When the loop prepares the lane
+    Then the ownership lock remains byte-identical
+    And hook activation diagnostics do not become new persisted ownership fields
+
+  Scenario: Windows releases a Claude terminal after confirmed tree termination
+    Given the process tree has been successfully terminated by the operating system
+    When AOF releases the non-DLL ConPTY terminal
+    Then it releases the terminal handles and observes exit
+    And it does not enumerate the dead console or schedule a delayed bare-PID kill
+    And a failed tree termination retains the normal terminal kill behavior
+
   Scenario: Worker handoff and existing records
     Given a worker receives a pinned mixed loop plan
     When it launches the declared loop

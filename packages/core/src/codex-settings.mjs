@@ -84,7 +84,12 @@ export async function prepareCodexWorktree(projectRoot, worktree) {
     outputs.push({ ...output, hash: hashContent(output.content) });
   }
   for (const output of outputs) await writeText(output.absolutePath, output.content);
-  const copied = new Map(outputs.map(({ absolutePath, content, ...entry }) => [portable(entry.path), entry]));
+  // Persist ownership, not transient render diagnostics (hook activation/profile
+  // fields). A checkout whose assets are already current must stay clean.
+  const copied = new Map(outputs.map(output => {
+    const source = entries.find(entry => portable(entry.path) === portable(output.path));
+    return [portable(output.path), { ...source, hash: output.hash, ...(output.ownership === undefined ? {} : { ownership: output.ownership }) }];
+  }));
   const inWork = new Set([...(sourceLock.work?.files ?? []), ...(destinationLock?.work?.files ?? [])].map(entry => portable(entry.path)));
   const accounted = new Set();
   const merge = (existing, work) => {
