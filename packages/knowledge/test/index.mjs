@@ -11,6 +11,8 @@ import { memoryMetaNormalisedTests } from "./memory-meta-normalised.suite.mjs";
 // milestone 148 / story 03 — every item's RETROSPECTIVE.md is read, so a story's lessons answer to its ref.
 import { storyRetrospectivesIndexedTests } from "./story-retrospectives-indexed.suite.mjs";
 import { memoryBackendConfigTests } from "./memory-backend-config.suite.mjs";
+// milestone 153 / story 02 — the calibrated recurrence decision, through the real seam and both backends.
+import { memoryRecurrenceTests } from "./memory-recurrence.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -24,4 +26,5 @@ export const tests = [
   ...gapCarriesDischargeTests,
   ...memoryMetaNormalisedTests,
   ...storyRetrospectivesIndexedTests,
+  ...memoryRecurrenceTests,
 ];

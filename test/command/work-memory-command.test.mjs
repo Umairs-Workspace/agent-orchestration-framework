@@ -415,6 +415,8 @@ export const workMemoryCommandTests = [
         { argv: ["recall", "q", "--limit", "0"], check: (input) => assert.equal(input.opts.limit, undefined, "--limit 0 sets no limit, so the backend default applies") },
         { argv: ["recall", "q", "--limit", "abc"], check: (input) => assert.equal(input.opts.limit, undefined, "a non-numeric --limit sets no limit, so the backend default applies") },
         { argv: ["recall", "q", "--block"], check: (input) => assert.equal(input.block, true, "--block is carried as block: true") },
+        { argv: ["recurrence", "a", "b", "--exclude", "68/R10"], check: (input) => { assert.equal(input.query, "a b", "the positionals are the new lesson's text"); assert.equal(input.exclude, "68/R10", "--exclude is carried as exclude"); } },
+        { argv: ["recurrence", "a"], check: (input) => assert.equal(input.exclude, null, "no --exclude excludes nothing") },
       ];
       for (const { argv, check } of rows) {
         const input = adapt(argv);
@@ -480,7 +482,7 @@ export const workMemoryCommandTests = [
         assert.equal(bogus.status, 1, "an unknown verb exits 1");
         assert.ok(bogus.stderr.includes("Unknown memory verb \"bogus\"."), `stderr names the verb (stderr: ${bogus.stderr.slice(0, 200)})`);
         assert.ok(bogus.stderr.includes("Usage: aof work memory <verb>"), "and carries the seam's usage text");
-        assert.ok(bogus.stderr.includes("Verbs: recall, record-recall, ingest, reindex, status"), "…including the verb vocabulary");
+        assert.ok(bogus.stderr.includes("Verbs: recall, record-recall, recurrence, ingest, reindex, status"), "…including the verb vocabulary");
         assert.equal(bogus.stdout, "", "nothing on stdout");
 
         const missing = runCli(root, ["work", "memory"]);
@@ -674,5 +676,39 @@ export const workMemoryCommandTests = [
       const { existsSync } = await import("node:fs");
       assert.ok(!existsSync(itemDirOf(fx, "07/01")), "no folder was created for the cache-only ref");
     }, { stream: [{ number: "06", stories: [] }, { number: "07", stories: [] }] }),
+  },
+
+  {
+    name: "153/02 the recurrence verb is routed: through the real CLI it scores the whole lesson index, honours --exclude, and answers a null decision with memory off",
+    run: async () => {
+      const text = "Pin line endings on every generated file a generated file shipped with CRLF and the diff was every line nothing pinned the line endings at the writer pin line endings at the writer, never at the reviewer";
+      const on = await makeRoot({ backend: "local" });
+      const off = await makeRoot();
+      try {
+        buildIndex(on);
+        const hit = runCli(on, ["work", "memory", "recurrence", text, "--json"]);
+        assert.equal(hit.status, 0, hit.stderr);
+        const decision = JSON.parse(hit.stdout);
+        assert.equal(decision.qualifying, "07/R1");
+        assert.deepEqual(Object.keys(decision).sort(), ["calibration", "candidates", "qualifying", "score", "threshold"]);
+
+        const self = JSON.parse(runCli(on, ["work", "memory", "recurrence", text, "--exclude", "07/R1", "--json"]).stdout);
+        assert.deepEqual([self.qualifying, self.score, self.candidates], [null, null, []], "the lesson being written is never its own candidate");
+
+        const human = runCli(on, ["work", "memory", "recurrence", text]);
+        assert.match(human.stdout, /^recurrence: 07\/R1 \(score [0-9.]+ > threshold [0-9.]+, calibration /);
+
+        const none = runCli(off, ["work", "memory", "recurrence", text, "--json"]);
+        assert.equal(none.status, 0, none.stderr);
+        assert.deepEqual([JSON.parse(none.stdout).qualifying, JSON.parse(none.stdout).candidates], [null, []]);
+
+        const bad = runCli(on, ["work", "memory", "recurrence", text, "--exclude", "R1", "--json"]);
+        assert.notEqual(bad.status, 0);
+        assert.match(bad.stdout + bad.stderr, /invalid-exclude/);
+      } finally {
+        await rm(on, { recursive: true, force: true });
+        await rm(off, { recursive: true, force: true });
+      }
+    },
   },
 ];

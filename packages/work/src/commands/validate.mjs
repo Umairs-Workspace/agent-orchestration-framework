@@ -18,10 +18,12 @@ const RETROSPECTIVE = "RETROSPECTIVE.md";
 // One finding's problem text for one field of one lesson (148/ADR-007 §2): the R<n>, the field, the
 // value and the legal values. A value outside the vocabulary is shown kept as a qualifier, because
 // that is the legal way to keep what the author wrote.
-function lessonMetaProblemText({ id, field, label, value, missing, legal }) {
+function lessonMetaProblemText({ id, field, label, value, missing, legal, boundary }) {
+  if (boundary) return `${label} "${value}" in the retrospective frontmatter is not a positive integer — write the number of the first lesson that owes a promotion`;
   if (missing && legal == null) return `lesson ${id} is missing its ${label} — name the role or lane that owns the lesson`;
   if (missing) return `lesson ${id} is missing its ${label} — write one of ${legal.join(" | ")}`;
-  return `lesson ${id} ${label} "${value}" is not one of ${legal.join(" | ")} — a qualifier goes after the word, as "${LESSON_QUALIFIER_EXAMPLE[field]} (${value})"`;
+  const hint = LESSON_QUALIFIER_EXAMPLE[field] ? ` — a qualifier goes after the word, as "${LESSON_QUALIFIER_EXAMPLE[field]} (${value})"` : "";
+  return `lesson ${id} ${label} "${value}" is not one of ${legal.join(" | ")}${hint}`;
 }
 
 // Application composition supplies shared runtime services and transition policy.

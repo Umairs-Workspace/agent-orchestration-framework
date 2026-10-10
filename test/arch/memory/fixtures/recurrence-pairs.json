@@ -1,0 +1,714 @@
+{
+ "calibration": "153.02-1",
+ "threshold": 0.23,
+ "basis": {
+  "corpus": "every RETROSPECTIVE.md lesson in the stream on 2026-10-10 (684 with a body worth indexing)",
+  "recurrenceHits": "the origin's self-report expression, plus the lessons those hits cite, plus the top-scoring cross-family pairs under the candidate rule, each read at its source",
+  "split": "pairs sorted by their 'a|b' key, every third one held out (index 2, 5, 8, …); the named pair 45/R13|68/R10 is always training",
+  "selection": "the middle of the 0.01 grid values that are at least the highest training negative and below the named pair's score"
+ },
+ "lessons": {
+  "45/R13": {
+   "kind": "mistake",
+   "title": "Remove-Item -Recurse follows directory junctions and deletes the target",
+   "source": "wiki/work/archive/45_milestone_ui-app-shell-routing/RETROSPECTIVE.md:275",
+   "text": "Remove-Item -Recurse follows directory junctions and deletes the target \n R12's before/after comparison needed the pre-milestone bundle built, so a detached git worktree at `b9052ff` was created and given the toolchain by two Windows directory junctions: `pre45/node_modules` → the repo's, and `pre45/ui/node_modules` → the repo's. Cleaning up afterwards, `git worktree remove --force` refused (\"directory not empty\"), and the fallback `Remove-Item -Recurse -Force <worktree>` **traversed both junctions and deleted through them** — taking out the repo's `node_modules`, its `ui/node_modules`, and the whole of `ui/` (76 tracked files plus three uncommitted new ones). \n Two compounding errors. The junctions were the shortcut that avoided a second `npm install`, and a recursive delete over a tree containing them is a known-destructive operation on Windows — `.Delete()` on each junction first was attempted but is not a guarantee, and the recursive delete ran anyway rather than being abandoned when the guarded delete could not be confirmed. And the cleanup ran against a tree carrying **uncommitted work**, so the blast radius included files with no git copy. \n Three, in order of how cheaply they would have prevented it. **(1)** Commit before running a cleanup that touches anything outside the scratchpad — the only reason this was recoverable in minutes is that 76 of the 79 affected files were tracked, and that was luck rather than design. **(2)** Never point a recursive delete at a tree that contains a junction; remove the links explicitly and verify they are gone (`Test-Path` on the target, not the link) before deleting the parent, or avoid links entirely and pay for the second install. **(3)** When a `git worktree remove --force` fails, the failure is information — the right next step is to find out *why* it is not empty, not to reach for a bigger hammer."
+  },
+  "68/R10": {
+   "kind": "near-miss",
+   "title": "The junction countermeasure is now measured, not merely reasoned",
+   "source": "wiki/work/archive/68_milestone_loop-telemetry/RETROSPECTIVE.md:156",
+   "text": "The junction countermeasure is now measured, not merely reasoned \n The fourth pass destroyed the real `node_modules` — `git worktree remove --force` follows the NTFS junction that gives a comparison worktree its packages, and the `npm ci` repair then removed the tracked `ui/` tree. This pass applied the stated countermeasure — `rmdir` the junction first, which unlinks rather than recurses, then remove the worktree — and verified `node_modules` at its 84 entries with `git status --porcelain ui/` empty. \n The countermeasure had been reasoned from the failure but never executed, so it was advice rather than evidence. \n The method is safe when the unlink precedes the removal, and that is now measured. The cross-`main` replay runs at every milestone gate, so this belongs wherever that method is written down."
+  },
+  "55/R5": {
+   "kind": "near-miss",
+   "title": "The gate's own baseline measurement deleted 124 tracked files, and only verifying the result caught it",
+   "source": "wiki/work/archive/55_milestone_anchors-and-frozen-set/RETROSPECTIVE.md:85",
+   "text": "The gate's own baseline measurement deleted 124 tracked files, and only verifying the result caught it \n To attribute the lane's failures honestly, `main` was checked out as a `git worktree` with this tree's `node_modules` junctioned in. `git worktree remove --force` followed the junction into the **real** `node_modules`, and through `node_modules/@aof/ui` — a workspace symlink back to `ui/` — deleted 124 tracked files plus the build output. Recovered in full, and the lane re-run to prove the recovery by measurement rather than by hope. \n A directory junction is transparent to a recursive delete, and a workspace symlink inside the junctioned tree points back at source. Neither is visible in the command that does the damage. \n **Never junction a shared `node_modules` into a git worktree** — copy it, or let the worktree install its own. Milestone 70's `R6` recorded three silent destructive losses of uncommitted work; this is a fourth, and the *only* thing that separates it is that the cleanup was followed by a check of the thing it had operated on. That check is the general rule, and it is the same discipline this milestone's own subject demands of an instrument."
+  },
+  "43/R10": {
+   "kind": "blocker",
+   "title": "node_modules is a path INTO the source tree, and --force follows it",
+   "source": "wiki/work/archive/43_milestone_mesh-artifact-authority/RETROSPECTIVE.md:203",
+   "text": "node_modules is a path INTO the source tree, and --force follows it \n `ui/` was destroyed mid-milestone and story 04's uncommitted UI half was lost. To measure a regression against a baseline commit, a detached `git worktree` was given a Windows \n Three, in descending order of value. (1) **Never link `node_modules` into a git worktree** — `npm ci` is slower and correct. (2) **In an npm-workspaces repo, `node_modules` contains paths back into your source**, which is not how anyone pictures it; `rm -rf node_modules` is normally the safest command in the toolbox and there it is not. (3) The recoverable-vs-lost split was decided entirely by **what had been committed** — 49 of 56 files returned byte-perfect from `573c18c`; story 04's seven reviewed, green, uncommitted files did not. **Commit at each story's green gate, not its accept gate.**"
+  },
+  "85/R5": {
+   "kind": "near-miss",
+   "title": "This story produced no observability record, and the pipeline — not the story — is the finding",
+   "source": "wiki/work/archive/85_story_records-follow-the-story/RETROSPECTIVE.md:135",
+   "text": "This story produced no observability record, and the pipeline — not the story — is the finding \n `aof work observe 85` matched **0 agent runs across 0 sessions** and **0 run records**, while reporting **418 unattributed agent runs** on this machine. Story `81`'s retrospective recorded the same shape one day earlier (R5 there), from the same node. \n Treat an empty observability snapshot as a finding about the pipeline, not as an absence of work. The signal to watch is the **unattributed** count: 418 runs that matched no run record is not \"no data\", it is data that failed to join, and those are different bugs with different fixes."
+  },
+  "86/R4": {
+   "kind": "mistake",
+   "title": "A third consecutive empty observability snapshot, with an UNCHANGED unattributed count",
+   "source": "wiki/work/archive/86_story_the-span-vocabulary-completed/RETROSPECTIVE.md:112",
+   "text": "A third consecutive empty observability snapshot, with an UNCHANGED unattributed count \n `aof work observe 86` matched **0 agent runs across 0 sessions** and **0 run records**, reporting **418 unattributed agent runs**. Stories `81` and `85` recorded the same shape, and `85`'s figure — measured earlier the same day — was also **418**. \n When re-observing a known-empty pipeline, record the **unattributed count** and compare it to the last reading. Its movement, not its size, distinguishes \"the join is broken\" from \"the scan is not running\" — and three readings of the same number is the evidence that separates them."
+  },
+  "19/R1": {
+   "kind": "near-miss",
+   "title": "An ADR that registers a command-core command must enumerate EVERY registry-derived fitness function it trips, not just the CLI bijection",
+   "source": "wiki/work/archive/19_milestone_work-run-lifecycle/RETROSPECTIVE.md:15",
+   "text": "An ADR that registers a command-core command must enumerate EVERY registry-derived fitness function it trips, not just the CLI bijection \n ADR-003 named only `acd-work-command-cli-bijection` as the fitness function story 01 would extend. Registering the three `work:run-*` commands also tripped two *other* registry-derived invariants the ADR did not anticipate: the `/api/work` route bijection (`acd-work-command-route-coverage`, which asserts every `work:*` command has a served board route) and the `command-core/00 exactly the known work commands` allow-list. Both conflicted with ADR-003's \"only the CLI face is wired here; the board is milestone 21.\" \n The registry-derived fitness functions (generalised by `15/ADR-005`) fan out from a *single* act — adding a `COMMANDS` entry. They are auto-coverage by design, so any new command is silently conscripted into all of them at once. The ADR reasoned about the one it named and missed that the same additive move arms two more. \n When an ADR adds a command-core command, list **all** the registry-derived gates the registration arms — CLI bijection **and** route-coverage **and** the known-commands allow-list — and state how each is satisfied (extend / carve-out). The build resolved it cleanly without touching `board-ui.mjs` (the precedented m15-doctor `WORK_IDS` widening + a documented `BOARD_DEFERRED` carve-out mirroring the `notion:*` m17/18 exclusion), and the carve-out comes out when milestone 21 wires the board routes — but the ADR should have predicted the surface, not the build."
+  },
+  "41/R3": {
+   "kind": "near-miss",
+   "title": "Registering a new work:* command trips THREE registry-derived guards, not one — name all three up front",
+   "source": "wiki/work/archive/41_milestone_work-item-insertion/RETROSPECTIVE.md:27",
+   "text": "Registering a new work:* command trips THREE registry-derived guards, not one — name all three up front \n ADR-002 and the story brief cited only `acd-work-command-cli-bijection` (\"covered by the existing guard\"). But landing a new `work:*` id in `COMMANDS` fires **two more**: (1) `command-core-contract`'s `WORK_IDS` — a hand-maintained exact-membership list (\"no more, no fewer\") every prior work-command milestone (15/19/20) has had to extend; (2) `acd-work-command-route-coverage` — the BOARD `/api/work/<op>` route bijection, demanding either a served board route or an explicit `BOARD_DEFERRED` carve-out. Both were satisfied here (WORK_IDS extended; `insert-milestone`/`insert-uat` added to `BOARD_DEFERRED` with a documented CLI-only-scope rationale), suite stayed green — but the brief under-named the surface. \n the \"one guard\" framing counted only the CLI bijection; the registry is guarded from three independent angles that all key off `COMMANDS` membership. \n a story that adds a `work:*` command should expect the **trio** — CLI bijection, `WORK_IDS` exact-membership, and BOARD route coverage (served or `BOARD_DEFERRED`) — and name all three in the ADR/brief so the work is scoped honestly, not discovered at build."
+  },
+  "134/02/R1": {
+   "kind": "near-miss (process)",
+   "title": "--scope impacted ran the whole suite",
+   "source": "wiki/work/134_milestone_discovery-the-example-map/stories/02_story_the-map-is-a-document/RETROSPECTIVE.md:7",
+   "text": "--scope impacted ran the whole suite \n `scripts/test.mjs` was in `files:` (the two index registrations), so `--scope impacted --story 134/02` widened to every suite. It ran at the same time as another lane's full run. \n A story that founds a test family touches the runner, so its build checks with an `--only` set of its own suites, never `impacted`."
+  },
+  "148/01/R1": {
+   "kind": "mistake (recurring)",
+   "title": "--scope impacted ran the whole suite on the control node",
+   "source": "wiki/work/148_milestone_memory-corpus-holds-its-vocabulary/stories/01_story_the-ranking-is-held-by-an-eval/RETROSPECTIVE.md:9",
+   "text": "--scope impacted ran the whole suite on the control node \n `aof test --scope impacted --story 148/01` widened to every suite, because both of the story's declared test files were new. It ran on the control node, where the live daemon holds `:4182`, and was stopped by hand. \n The impacted selection has no importer to start from for a file that does not exist yet, so it falls back to the whole tree. 129/03/R7 and 134/02/R1 record the same widening, and the brief still named `impacted` as the story lane. \n A story lane is `node scripts/test.mjs --only <files>`, built from the story's declared test files and the suites that import its changed sources. Never use `--scope impacted` while the widening stays unbounded."
+  },
+  "71/R1": {
+   "kind": "mistake",
+   "title": "A milestone that prescribes measurement produced none of its own",
+   "source": "wiki/work/archive/71_milestone_loop-discipline/RETROSPECTIVE.md:11",
+   "text": "A milestone that prescribes measurement produced none of its own \n Four of 71/02's `@manual` scenarios are phrased against \"the run record\" — *lanes overlap in time*, *a wave of one pays no fan-out*, *round two costs one lens*, *refine spends no run re-applying a delta*. At the gate `aof work observe 71` reported **0 agent runs across 0 sessions, 408 unattributed**, and 72 reported the same. The milestone whose SPEC quantifies the defect as \n The milestone was driven interactively rather than through the loop door, and nothing at refine noticed that the acceptance criteria had a precondition the execution style would not meet. An `@manual` scenario whose subject is a run record is undischargeable by construction from a session that produces none. \n When a criterion reads its answer off an artefact the framework emits, the beat that authors it must name **which run will emit that artefact**. If the answer is \"none planned\", the criterion is a gap on delivery day, and saying so at refine costs one sentence instead of a finding."
+  },
+  "72/R10": {
+   "kind": "near-miss",
+   "title": "The milestone about loop cost has no measurement of its own agents' cost",
+   "source": "wiki/work/archive/72_milestone_inner-loop/RETROSPECTIVE.md:173",
+   "text": "The milestone about loop cost has no measurement of its own agents' cost \n At the close, `aof work observe 72` reported **0 agent runs across 0 sessions, 410 unattributed** — the same shape 71 reported, and 71's R1 already carries the cause: a milestone driven interactively rather than through the loop door produces no run records. The milestone whose objective is measured in tokens per story shipped its own saving unmeasured. \n See 71/R1. Nothing at refine names which run will emit the artefact the measurement reads. \n Not restated — 71/R1 states it. Recorded here so 72's absence of a snapshot is read as the same known gap and not a fresh one."
+  },
+  "140/R1": {
+   "kind": "near-miss",
+   "title": "The refine blast-radius census counted literals, not the controls that pin behaviour",
+   "source": "wiki/work/archive/140_story_refine-defaults-to-solo/RETROSPECTIVE.md:10",
+   "text": "The refine blast-radius census counted literals, not the controls that pin behaviour \n Refine's census found 34 test files with a flagless `/aof:refine|continue` literal and said only the `test/loop/` drive assertions would break. FF-5303's `acd-phase-door-not-a-driver` also broke, because it pins a flagless dry-run drive through the CLI rather than as a literal the grep was keyed on. \n The census grepped for the directive string. It did not ask which controls exercise the seam being changed (`aof work drive`) end to end. \n When a story changes what a seam emits, count every test that drives that seam as well as every test that spells its old output. Grep `test/arch/` for the seam's verb (`work drive`, `--dry-run`) before declaring `files:`."
+  },
+  "141/R1": {
+   "kind": "mistake (recurring)",
+   "title": "140/R1 recurred: the files: census missed the controls that pin the changed seam",
+   "source": "wiki/work/archive/141_story_subagents-and-loops-think-at-a-chosen-effort/RETROSPECTIVE.md:10",
+   "text": "140/R1 recurred: the files: census missed the controls that pin the changed seam \n 141 changed what every drive emits, adding `--effort high` to the argv and `effort` to the dry-run answer. Two tests outside `files:` pinned the old shape. They were `cache-stable-launch` (70/01, \"passes neither `--model` nor `--effort`\") and FF-5303's `acd-phase-door-not-a-driver`, the same control 140/R1 named. The story lane was green (426/0), and both were red. Verify found them only by running every importer of a changed module (101 files) and every test that drives the seam. \n 140/R1's lesson was written as advice to grep `test/arch/` for the seam's verb. Nobody ran it: PLAN.md checked FF-5304 by name and did not sweep. A story with no milestone has no full-suite gate to catch what its own lane misses. \n For a story that changes a seam's output, verify runs the importer sweep: `grep -rl` over `test/` for the changed `src/` modules, minus `files:`, through `scripts/test.mjs --only`. For a parentless story this is the only wider check it gets. Put what it finds into `files:` before accepting."
+  },
+  "152/R3": {
+   "kind": "mistake (recurring)",
+   "title": "The story lane again missed a stream-wide control (140/R1, 141/R1 recurring)",
+   "source": "wiki/work/152_story_promote-shows-what-is-next/RETROSPECTIVE.md:26",
+   "text": "The story lane again missed a stream-wide control (140/R1, 141/R1 recurring) \n 152's own PLAN.md restated a path its `files:` declares, which 96/02-00 (`story-plan-document`) bans. The story lane was green (548/0) because it held only code importers. The red surfaced only because verify's renderer sweep happened to include that file. \n The importer sweep that 141/R1 prescribes is keyed on changed `src/` modules. The PLAN.md ban is keyed on the story's record documents, so no code-import grep reaches it. \n A story that writes a PLAN.md (or any record doc) puts `test/work/story-plan-document.test.mjs` in its lane. Record-keyed controls are part of the sweep, beside the code importers."
+  },
+  "77/R6": {
+   "kind": "near-miss",
+   "title": "Running the fitness tier THROUGH the tool the tier tests produced three false reds",
+   "source": "wiki/work/archive/77_milestone_harness-audit/RETROSPECTIVE.md:123",
+   "text": "Running the fitness tier THROUGH the tool the tier tests produced three false reds \n The gate ran the whole tier as `aof work grade 77 --run`. Ten of 1649 cases red. \n `work:grade`'s child inherits the grade environment, and the tier contains the tests of `work:grade`. The instrument was inside its own subject. \n Run the tier by **its own runner** at the gate, not through the command whose behaviour the tier asserts — or budget a triage pass to separate instrument artifacts from defects. Thirty percent of the first run's reds were noise, and noise at a gate is expensive twice: once to investigate, and once because it trains a reader to discount the next red. This is the milestone's own SPEC thesis (*\"a measurement layer cannot audit itself\"*) arriving as an operational rule about how to run a gate."
+  },
+  "81/R3": {
+   "kind": "blocker",
+   "title": "A project whose rubric is its own test suite has declared the grading machinery's gates as its rubric",
+   "source": "wiki/work/archive/81_story_bounds-under-a-real-grader/RETROSPECTIVE.md:69",
+   "text": "A project whose rubric is its own test suite has declared the grading machinery's gates as its rubric \n `aof work grade 81 --run` returned `fail` with 12 failing cases. Three of them — two `FF-5405` spawn assertions and one `FF-5409` producer-code assertion — are red **only** when the tier is run as a grade. The grade stamps `AOF_GRADE_RUNNING=1` into the child's environment, and its own re-entrancy guard refuses any grade whose ambient environment already carries it, returning `launched: 0, outcome: \"spawn-failed\"`. The tier contains the grade's own gates, so grading the tier makes them refuse. \n `scripts/test-rubric.mjs` enumerates the fitness tier **from disk** — deliberately, so it cannot drift as arch tests are added. That property is right and is why the collision was invisible: nobody chose to put the grade's gates in the rubric; they arrived by being fitness functions. The re-entrancy guard is also right, and story 81 was required by its own contract to preserve it. Two correct decisions compose into a self-poisoning gate, and neither owner could see it alone. \n A rubric enumerated from disk will eventually enumerate the gates of the machinery that runs it. Verify a declared rubric by running it **through the grade**, not only directly — the two runs disagreeing is the only signal this class of defect emits, and here they disagreed on exactly three cases. More generally: when a tool grades a repository that contains the tool, ask what the tool's own guards do to their own tests."
+  },
+  "126/00/R7": {
+   "kind": "mistake",
+   "title": "A pending marker in a register is cleared by nobody but the accepting command",
+   "source": "wiki/work/archive/126_milestone_the-declaration-is-the-unit/stories/00_story_the-loop-says-what-it-is-doing-and-counts-what-it-did/RETROSPECTIVE.md:120",
+   "text": "A pending marker in a register is cleared by nobody but the accepting command \n `ARCHITECTURE.md` still marked FF-12601 and FF-12602 `*(pending — 126/00)*` after both control files had landed and gone green. `aof work doctor` reads the disk rather than the marker, so it resolved both and nothing refused the stale text. \n The marker is prose, and the only check that reads it uses it to DOWNGRADE a real finding — so a marker that has outlived its truth is invisible to every gate. \n Dropping the `pending` marker is part of accepting the story that delivers the control, not a tidy-up for later; `124/F-03` found six such cells stranded across five already-accepted registers. Refs: `m126/F-06`, `m124/F-03`."
+  },
+  "71/R8": {
+   "kind": "near-miss",
+   "title": "A marker that was accurate at refine is a lie at accept, and it downgrades the check that would catch it",
+   "source": "wiki/work/archive/71_milestone_loop-discipline/RETROSPECTIVE.md:145",
+   "text": "A marker that was accurate at refine is a lie at accept, and it downgrades the check that would catch it \n Three separate times — 71/00's two rows, 71/01's two rows, 71/03's one — a control landed and its register row still read `— **pending**`. Each stale marker downgrades a genuine `control-unresolved` on that row from error to warn, so the marker that says \"not landed yet\" is precisely what would hide \"landed and then deleted\". \n The marker is written at refine, when it is true, and nothing brings it back to attention at the accept that makes it false. \n Striking the `pending` marker is part of landing the control, not a tidy-up: it belongs in the same accept that records the control's red probe. The rule that a marker never clears a `control-unresolved` is what made this recoverable — read doctor at **both** severities before accepting, always."
+  },
+  "148/R1": {
+   "kind": "mistake (recurring)",
+   "title": "Three of five stories missed the same files: class that five earlier lessons name",
+   "source": "wiki/work/148_milestone_memory-corpus-holds-its-vocabulary/RETROSPECTIVE.md:11",
+   "text": "Three of five stories missed the same files: class that five earlier lessons name \n 02 missed six paths, 04 six and 05 four. Each time it was the same kind of path: the suites, goldens, budget rows, port lists and rosters pinned to a shape or a directory the story changed. Across the milestone, four stories left six directory-budget rows red, and 04 raised them all. \n The lesson is already written: 61/R6, 126/R2, 127/R3, 141/R1 and 146/R1. Each was recalled at refine and read as advice, while refine's census still lists only where new code lives. A lesson that has recurred five times is not changing what refine does. \n Stop writing this lesson and make it mechanical. Refine's `files:` census runs a grep for the readers of every frozen shape a story changes (field lists, version constants, goldens, command output) and the controls over every directory it adds a file to, and puts the results in `files:`. Until that exists, every refine brief names the grep."
+  },
+  "61/R6": {
+   "kind": "mistake",
+   "title": "The declared reads:/files: sets were systematically short, and every escape was load-bearing",
+   "source": "wiki/work/archive/61_milestone_disciplined-acceptor/RETROSPECTIVE.md:150",
+   "text": "The declared reads:/files: sets were systematically short, and every escape was load-bearing \n 61/00's build stepped outside its declared `reads:` four times, none of them avoidable. Two files sat in `files:` but not in `reads:`. `src/bundle/manifest.json` was missing from the `files:` of every story that touches it. And `STATE.md` — the feedback lane every story is instructed to append to — is in no story's `files:` at all. \n The sets are authored by hand from the contract rather than derived from anything, so they encode what refine expected the build to need rather than what the build needs. Three of 61/00's four escapes were files already *named inside* a file that was in the read set. \n Two mechanical rules would have caught all of it: a file in `files:` is in `reads:` by construction (you cannot edit what you may not read), and a contract scenario that reads a declared record implies that record is in `reads:`. And the shared feedback lane needs a declared writer — seven stories appending to one file across seven branches is a merge conflict by construction, which is why the orchestrator ended up as its sole author in practice."
+  },
+  "126/R2": {
+   "kind": "design-gap",
+   "title": "A files: declaration names where new code will LIVE; a change's blast radius is everything pinned to where the old code WAS",
+   "source": "wiki/work/archive/126_milestone_the-declaration-is-the-unit/RETROSPECTIVE.md:42",
+   "text": "A files: declaration names where new code will LIVE; a change's blast radius is everything pinned to where the old code WAS \n Four of six stories declared an incomplete `files:` — `F-05` (two ratchets), `F-07` (a ratchet and a suite split at build time), `F-15` (a forced module, a five-link content-address chain and a ratchet) and `F-17` (four delivered controls that followed a moved symbol). Nothing went wrong, because the milestone was built serially. \n Refine derives a write set from the DESIGN — the modules the story will create and edit. Every one of these misses is a frozen set, byte-pin, reach ceiling or line ratchet that names the SUBJECT the story is moving or the shape it is adding, and none of them is derivable from where the new code goes. `F-17` is the sharpest because its story is a pure subtraction: it removed code and still had to write four controls. \n Four measurements make it a property of the declaration, not of any one refine. **The wave planner trusts `files:`**, so under a fan-out two lanes would have written one budget table without either having declared it. At refine, for any story that MOVES or RENAMES a symbol, or that ADDS a file, a suite or a declaration key, enumerate the ratchets and frozen sets that name the old location and declare them. **Refs:** `@finding-F-05`, `@finding-F-07`, `@finding-F-15`, `@finding-F-17`."
+  },
+  "127/R3": {
+   "kind": "process",
+   "title": "Derived pins outside a story's files: — the third milestone in a row",
+   "source": "wiki/work/archive/127_milestone_backlog-and-archive/RETROSPECTIVE.md:49",
+   "text": "Derived pins outside a story's files: — the third milestone in a row \n `F-14`: five pins moved by 03 and 04 (the command census, two digests, a reach count, a harness allowlist), none in either story's declared writes, all red at the gate. `m126/F-05` and `m126/F-07` were the same species; `127/F-05` recorded it at 01. \n The controls' own registers KNOW which files they pin; the refine brief can list, per declared write, the pins that read it (a byte digest, a count, an allowlist) and make the story declare them. Until it does, a story that adds a bundle member, touches a frozen seam or asks a harness for more than its default declares the pin by hand."
+  },
+  "146/R1": {
+   "kind": "mistake (recurring)",
+   "title": "A new test file is a budget change, and every budget row is frozen at its count",
+   "source": "wiki/work/146_story_a-capture-can-skip-the-backlog/RETROSPECTIVE.md:16",
+   "text": "A new test file is a budget change, and every budget row is frozen at its count"
+  },
+  "124/01/R2": {
+   "kind": "mistake",
+   "title": "The write set omitted the budget table its new control moves",
+   "source": "wiki/work/archive/124_milestone_the-edges-aof-does-not-draw/stories/01_story_cap-exhaustion-returns-to-the-plan/RETROSPECTIVE.md:32",
+   "text": "The write set omitted the budget table its new control moves \n The story declared a new control under `test/arch/loop/` and not `acd-source-directory-budget`, whose row for that layer is a shrink-only ceiling at the delivered count. Adding the file reds five legs, and the only legal repair is a row raise in a file the story never declared. `124/00` had hit the same shape and declared it; this story did not. \n The obligation is mechanical and nothing derives it. \n See `124/R5`. Refs: `m124/F-06`."
+  },
+  "124/02/R2": {
+   "kind": "mistake",
+   "title": "The write set omitted the budget table, for the third time in one milestone",
+   "source": "wiki/work/archive/124_milestone_the-edges-aof-does-not-draw/stories/02_story_the-learning-edge-reaches-every-cut/RETROSPECTIVE.md:32",
+   "text": "The write set omitted the budget table, for the third time in one milestone \n The new control under `test/arch/memory/` lands in a layer whose budget row is at the delivered count; `acd-source-directory-budget` was not in `files:`. \n See `124/R5`. \n Written as a finding rather than fixed, because the check belongs to whoever owns FF-11904. Refs: `m124/F-06`."
+  },
+  "130/R1": {
+   "kind": "process",
+   "title": "A standalone story accepted without the gate bills the next milestone door",
+   "source": "wiki/work/archive/130_milestone_stop-a-running-loop/RETROSPECTIVE.md:16",
+   "text": "A standalone story accepted without the gate bills the next milestone door \n Four of the eight whole-tree reds at this door were 137's. 137 was a parentless story, accepted on its own scoped lane, and it added four files without raising their budget rows. It also pulled a module into the session driver's static reach and asserted a census as a literal. No milestone gate runs for a standalone story, so the first milestone door after it took all of them. \n 127/R1 named this for lanes on a shared branch. A standalone story is the same shape with no door of its own: story-scoped greens were enough to accept it. \n A standalone story that adds a file to a budgeted directory, or a module to `src/`, runs the arch register (`test/arch/**`) in its own lane before `done`. It is minutes against the hour a later door spends attributing it."
+  },
+  "81/R5": {
+   "kind": "near-miss",
+   "title": "This story produced no observability record, so its build cost is unknown",
+   "source": "wiki/work/archive/81_story_bounds-under-a-real-grader/RETROSPECTIVE.md:121",
+   "text": "This story produced no observability record, so its build cost is unknown \n `aof work observe 81 --write --if-enabled` wrote a snapshot containing **0 run records across 0 declared phases** and an empty agent table — `_Sessions: none_`. The story was built across two commits with a review round in between, so there was real agent work to record; none of it was matched to the item. \n Not diagnosed here, and that is the point — the candidates (the story was driven outside the transcript window the miner reads, or its sessions were not attributed to ref 81) are distinguishable only with evidence this gate does not have. A standalone story carries no `STATE.md`, so there is also no `## Feedback (for retro)` running record to fall back on: for story 81 the *only* surviving process evidence is what this document and `VERIFICATION.md` were written from. \n An empty observability snapshot should be treated as a finding about the pipeline rather than as \"this story was cheap\". Worth checking at the next standalone story's accept whether the miner attributes parentless-story work at all — if it does not, every standalone story is invisible to the self-improvement loop, which is a systematic blind spot rather than a gap in one record."
+  },
+  "43/R7": {
+   "kind": "misunderstanding",
+   "title": "\"At narrow viewports\" and \"in a narrow container\" diverge exactly where a grid reflows",
+   "source": "wiki/work/archive/43_milestone_mesh-artifact-authority/RETROSPECTIVE.md:142",
+   "text": "\"At narrow viewports\" and \"in a narrow container\" diverge exactly where a grid reflows \n DESIGN specified a responsive yield ladder keyed to the **viewport** for a card whose width is viewport-**invariant**. Three parties took it as a build gap before anyone checked the premise: the developer reported it unimplemented, QA raised it as a must-fix with three clauses resting on it, and the PO briefed the designer for the missing numbers. The designer **withdrew its own requirement** and supplied the arithmetic: the fleet grid is `repeat(auto-fill, minmax(320px, 1fr))`, so it adds COLUMNS rather than width — the card sits in a ~300–370px band at every breakpoint and is **narrower at 2560 than at 1280**. The specified ladder would have painted `full` at 2560 and `minimal` at 390 in cards of the same size. \n **Check the container, not the viewport** — most responsive specs are written in viewport language out of habit, and for any auto-fill/auto-fit grid that language is simply wrong. Second half, equally durable: **check that a borrowed instrument's preconditions hold before borrowing it** — m38's derived character budgets are honest only over `mono`, where `ch` is the exact advance; the badge is fixed strings in proportional Inter, so a `ch` budget would have been false precision dressed as rigour."
+  },
+  "47/R4": {
+   "kind": "mistake",
+   "title": "The same claim asserted in a CODE COMMENT governs constants nobody re-derives",
+   "source": "wiki/work/archive/47_milestone_fleet-repo-filter/RETROSPECTIVE.md:68",
+   "text": "The same claim asserted in a CODE COMMENT governs constants nobody re-derives \n `GlobalMilestoneCard` asserted the card is *\"viewport-INVARIANT by construction … a ~300–370px band\"*. Measured, the band is **286…368.66 and non-monotone** — 1024 gives a wider card than 1056 — and both of region 5's budgets had been derived from the row the card takes at exactly one viewport. A threshold keyed to 1280 was never a threshold. \n An invariant stated in prose, consumed by a constant, checked by nothing. \n **An invariant asserted in a comment and consumed by a constant is something a fitness function should couple.** ADR-014's Gate B does exactly that for this instance — it reads the grid's `minmax()` floor out of the source and requires the constant to equal it — and the general form is cheap."
+  },
+  "127/01/R4": {
+   "kind": "blocker",
+   "title": "A story's grade over a shared checkout is the checkout's grade, not the story's",
+   "source": "wiki/work/archive/127_milestone_backlog-and-archive/stories/01_story_one-enumerator-three-roots/RETROSPECTIVE.md:81",
+   "text": "A story's grade over a shared checkout is the checkout's grade, not the story's \n `work:grade` ran the whole fitness tier over the shared checkout and returned 7–11 failing cases, of which ONE was this story's (`F-05`, repaired). The other six were other lanes' uncommitted work (`src/loop-diag.mjs`, `ui/`, `refine.md`), HEAD's own reds, and FF-11903 — red because 127's documents cite `src/commands/promote.mjs` and `src/commands/archive.mjs` before stories 02/03 create them. The cascade re-drove `continue 127/01` on those reds until `no-progress` halted it, and the story sat `in-review` for three re-drives it could not affect. FF-11903 in particular was a deadlock: it cannot clear before 02/03 land, and the cascade would not reach 02/03 before 01's grade was green. The only exit was the operator invoking `aof:verify 127/01` by hand. \n The grade has no notion of whose diff it is grading, and the fitness tier has no story-scoped selection; the review cap is the only bound, and it is spent on rounds the story cannot use. \n A story's grade needs either a story-scoped fitness selection (the controls whose subjects intersect the story's `files:`, plus the story's own suites) or a per-lane worktree at the milestone base, so a red that is not the story's is reported, not re-driven. And a citation-ceiling control (FF-11903) over a milestone whose later stories CREATE the cited modules is a forward reference by design — the register should admit it per milestone rather than deadlock the first story. Refs: `m127/F-09`, `m127/F-11`."
+  },
+  "1/R2": {
+   "kind": "near-miss",
+   "title": "Content-addressed artifacts must pin line endings or cross-platform CI hashes diverge",
+   "source": "wiki/work/archive/01_milestone_acd-asset-bundle/RETROSPECTIVE.md:27",
+   "text": "Content-addressed artifacts must pin line endings or cross-platform CI hashes diverge \n the bundle manifest hashes rendered member bytes, which include migrated `.md` bodies. Without an EOL pin, git `autocrlf` checks the bundle out with platform-specific endings, so `acd-bundle-manifest-hashes` would pass on Windows and fail on Linux CI (or vice-versa). \n content addressing is byte-exact; an unpinned working-tree EOL policy makes \"the same file\" hash differently per platform. \n any content-addressed/shipped artifact must pin its bytes (`text eol=lf` in `.gitattributes`) and be normalised before hashes are generated. Added `src/bundle/** text eol=lf`; shipped `manifest.json` was generated against LF content."
+  },
+  "124/02/R1": {
+   "kind": "blind spot",
+   "title": "The lock was already lying about four shipped files, and nothing compared a recorded hash with disk",
+   "source": "wiki/work/archive/124_milestone_the-edges-aof-does-not-draw/stories/02_story_the-learning-edge-reaches-every-cut/RETROSPECTIVE.md:16",
+   "text": "The lock was already lying about four shipped files, and nothing compared a recorded hash with disk \n Regenerating `.aof/aof.lock.json` moved seven hashes; three were shatter's. The other four — the three pay-debt renders and a loop record — carried hashes that did not match the bytes on disk, while `aof work update` reported every one \"up-to-date\": it compares disk against a fresh render, never against the lock. `acd-bundle-manifest-hashes` hashes its own re-render, and the lock is not its subject. \n Two controls look at hashes and neither compares a recorded hash with a file. \n This is the QA finding from refine — the opencode mirror is hashed by nothing — measured one level wider. Repaired here for the lock's whole path set and asserted by FF-12405 leg 9; the general control is still owed. Refs: `m124/F-08`."
+  },
+  "102/R3": {
+   "kind": "near-miss",
+   "title": "a piped test run reported the pipe's exit code, not the runner's",
+   "source": "wiki/work/archive/102_story_the-declaration-names-its-loop/RETROSPECTIVE.md:54",
+   "text": "a piped test run reported the pipe's exit code, not the runner's \n The first re-run of the story's suites was invoked as `node scripts/test.mjs --only … | tail -25`, whose exit status is `tail`'s and is 0 whatever the runner did. The tail happened to show no failures, so a genuine `not ok` earlier in the stream would have been read as a green lane at an accept gate. The run was re-issued writing full output to a file with `echo \"EXIT=$?\"` appended, and that is the reading the record carries. \n A pipeline was used to keep the output small, and shell exit-status semantics were not part of the thought. This is the same species as this repository's standing note that `node --test` passes the loop suites silently with zero assertions: a command that LOOKS like it ran the thing. \n At a gate, capture the runner's own status and its whole output, then read the summary from the file. Never take a green off the tail of a pipeline — and never off any command whose exit code belongs to something other than the runner."
+  },
+  "23/R5": {
+   "kind": "misunderstanding",
+   "title": "A shared test suite goes red the moment a downstream milestone is refined; scope \"green\" to the milestone under verify",
+   "source": "wiki/work/archive/23_milestone_control-node-relay/RETROSPECTIVE.md:79",
+   "text": "A shared test suite goes red the moment a downstream milestone is refined; scope \"green\" to the milestone under verify \n m23's build recorded \"1716 ok / 0 not ok\", but at this F1-close-out re-verify the shared `scripts/test.mjs` reported **1719 ok / 10 not ok** — the 10 red being m24's (group-enrollment) fitness functions (`enrollment-code-*`, `relay-auth-gate-checked`, `registry-write-scope`, `enroll-git-argv-no-shell`), registered at m24's refine and correctly **RED-until-built** (m24 refined, not yet built). Every m23 test + all 7 m23 fitness functions were green. A second trap compounded it: `node scripts/test.mjs | tail -40` returned the **pipeline's** exit (tail's `0`), masking node's real exit `1` — the red suite first *looked* green. Caught by re-running with the exit code captured directly (`node …; echo $?`). \n The RED-until-built discipline (a gate authored before its code fails until the code lands) is designed per-milestone, but the suite is **shared** — so refining milestone N+1 immediately reds milestone N's re-verification of the *same* suite. And a shell pipeline's exit code is the last stage's, not node's. \n At verify, \"confirm the suite green\" means the **milestone-under-verify's** tests + its own fitness functions; a residual red must be triaged, and residual red from a **downstream** milestone's RED-until-built gates (out of the current scope) is expected, not a regression — record the exact red set and its owning milestone so a reader is not misled. Always capture the **runner's own exit code** (never a pipe's) when asserting green. **Refs:** VERIFICATION ## Automated evidence (the 10 m24 gates); this document."
+  },
+  "134/01/R1": {
+   "kind": "mistake",
+   "title": "a contract cited a file no branch carried",
+   "source": "wiki/work/134_milestone_discovery-the-example-map/stories/01_story_the-baseline-is-counted/RETROSPECTIVE.md:7",
+   "text": "a contract cited a file no branch carried \n `reads:` named the origin research, which was untracked in the main checkout, so a dispatch worktree could not resolve it and `validate 134/01` went red. It cleared only once `9dc2397` committed the file. \n Before a contract cites a document, check `git ls-files` for it. An untracked citation is invisible to every lane."
+  },
+  "143/03/R1": {
+   "kind": "near-miss",
+   "title": "the build brief told a branch worktree to install the live payload",
+   "source": "wiki/work/143_milestone_the-loop-starts-from-the-backlog-on-chosen-models/stories/03_story_the-loop-runs-each-phase-on-the-chosen-model/RETROSPECTIVE.md:7",
+   "text": "the build brief told a branch worktree to install the live payload \n The brief's last step was `node scripts/install-local.mjs`. Run from the `aof-143` branch worktree, that would have replaced the payload the operator's daemons run (built from 134's checkout) with an unmerged branch. The step was skipped, and the CLI was checked through the worktree's own `packages/core/bin/aof.mjs`. \n The brief was written as if the build checkout and the deploy checkout were the same. \n A build brief for a branch worktree checks the CLI through that worktree's own bin and never installs. The live payload is installed from the main checkout, after merge."
+  },
+  "136/R3": {
+   "kind": "near-miss",
+   "title": "a failed cd ran a checkout in the primary tree",
+   "source": "wiki/work/136_milestone_discovery-questions-in-the-loop/RETROSPECTIVE.md:37",
+   "text": "a failed cd ran a checkout in the primary tree \n The gate worktree had been removed. `cd <worktree> && git fetch …; git checkout --detach FETCH_HEAD` ran the checkout in the primary checkout, detaching it for nine seconds. The branch never moved and nothing was uncommitted, so nothing was lost. \n Run every git command that changes a checkout with `git -C <path>`, never after a `cd` chained with `;`, and list `git worktree list` before reusing a worktree by name."
+  },
+  "15/R5": {
+   "kind": "decision",
+   "title": "The ROADMAP cross-reference shipped dormant by design; revisit whether to keep or drop it",
+   "source": "wiki/work/archive/15_milestone_work-doctor-core/RETROSPECTIVE.md:71",
+   "text": "The ROADMAP cross-reference shipped dormant by design; revisit whether to keep or drop it \n SPEC's \"ROADMAP↔folder sync\" assumed a machine-parseable milestone-index ROADMAP that does not exist here (`wiki/work/ROADMAP.md` is a backlog; `wiki/ROADMAP.md` is prose). ADR-004 shipped the folder-only invariants (`numbering-gap`, `duplicate-driver-number`, `orphan-folder`) live and the `roadmap-folder-mismatch` cross-reference as an **opt-in honest no-op** that fires only against a structured index — proven inert by two no-op scenarios + one structured-index-fixture scenario."
+  },
+  "41/R1": {
+   "kind": "near-miss",
+   "title": "Define the acceptance bar against what the tool ENFORCES, not the SPEC's prose list",
+   "source": "wiki/work/archive/41_milestone_work-item-insertion/RETROSPECTIVE.md:11",
+   "text": "Define the acceptance bar against what the tool ENFORCES, not the SPEC's prose list \n the SPEC + STATE listed \"milestone→story checklists\" and \"ROADMAP.md rows\" as machine references the re-index must keep validate-green. But `validateWork` enforces **neither**: it checks folder↔frontmatter (number/type/slug), `parent` resolves to a milestone, and `depends` resolves to a driver + acyclic — it never parses the `## Stories` checklist and never reads ROADMAP.md (prose, not a number-keyed index; its only cross-ref tooling shipped dormant, 15/R5). ADR-003 resolved this by **tiering** the correctness surface: Tier 1 validate-green (guaranteed), Tier 2 `## Stories` bullets (best-effort), Tier 3 prose + ROADMAP (not touched). \n the SPEC's prose broadened the correctness surface beyond what the acceptance tool actually validates, which would have set an unmeetable/unmeasured bar. \n when a milestone's acceptance bar is \"keep `aof work validate` green\", scope the change to exactly what `validateWork` parses — enumerate the enforced surfaces before writing the SPEC, and tier anything the tool doesn't read as best-effort/out-of-scope rather than implying it's guaranteed."
+  },
+  "152/R2": {
+   "kind": "mistake",
+   "title": "A step was narrowed below its scenario instead of the gap being fixed",
+   "source": "wiki/work/152_story_promote-shows-what-is-next/RETROSPECTIVE.md:18",
+   "text": "A step was narrowed below its scenario instead of the gap being fixed \n Task 02's last scenario says the claude, opencode and codex copies carry the new argument hint. The claude renderer dropped `argument-hint` for every command, so the step was written to check only the codex copy, and review recorded the gap as \"Flagged\". The scenario then read as met when it was not. \n The renderer gap predated the story, so it looked out of scope. Narrowing the step was cheaper than touching a renderer that writes 32 files. \n When a step cannot assert what its scenario says, that is a finding to fix in the item, not a note. A step narrowed below its scenario changes the contract without anyone seeing it. Here the fix was one frontmatter line, and the sweep measured its reach (1,194 cases)."
+  },
+  "1/R4": {
+   "kind": "near-miss",
+   "title": "A canonical renderer silently drops source frontmatter no scenario asserts",
+   "source": "wiki/work/archive/01_milestone_acd-asset-bundle/RETROSPECTIVE.md:54",
+   "text": "A canonical renderer silently drops source frontmatter no scenario asserts \n the loose `.claude/commands/aof/*.md` carry `argument-hint` and `allowed-tools` frontmatter; the shared command renderer (`renderResource`) emits only `aof-generated`/`description`/`aof-invocation`/`aof-runtime`, so those fields are **dropped** on render. No scenario asserted them, so the green build hid the loss. (Agent `tools` survived only because the loader transforms the CSV string into the array the renderer expects.) \n migrating loose assets through a renderer built for a narrower field set drops anything the renderer doesn't know about — and a passing suite won't catch a field nothing asserts. \n when migrating loose assets into a canonical renderer, audit field fidelity up front and assert the fields that must survive; a green build is not evidence of faithful passthrough. Carried follow-up: if consumer-installed commands must preserve `argument-hint`/`allowed-tools`, extend the shared renderer (a milestone-level decision, not bundle-local)."
+  },
+  "127/04/R1": {
+   "kind": "process",
+   "title": "A schema bump is a deploy that cannot wait for the restart",
+   "source": "wiki/work/archive/127_milestone_backlog-and-archive/stories/04_story_the-fleet-and-the-board-see-the-shapes/RETROSPECTIVE.md:16",
+   "text": "A schema bump is a deploy that cannot wait for the restart \n The npm-linked CLI migrated the live projection to schema 9 the first time any `aof work` verb ran after this story merged; the running control daemon (pre-v9) then refused the store on every request, and the fleet was dark until the app was restarted. \n Bumping `GLOBAL_WORK_SCHEMA_VERSION` is the one change where \"install, then restart when convenient\" is wrong: restart first, or expect the old daemon to be down from the next CLI call."
+  },
+  "132/R2": {
+   "kind": "near-miss",
+   "title": "a restart that brings back one daemon out of two is not a restart that worked",
+   "source": "wiki/work/archive/132_story_run-records-carry-the-node-id/RETROSPECTIVE.md:26",
+   "text": "a restart that brings back one daemon out of two is not a restart that worked \n After the relaunch, the fleet page answered 200 and `mesh ui` logged the new build, so everything visible looked healthy. The control daemon was absent, and it came to light only because the fleet check needed `:4182`. \n After a restart, confirm each supervised daemon's own `Build:` line and listening port. A healthy UI says nothing about the control daemon beside it."
+  },
+  "131/06/R2": {
+   "kind": "near-miss",
+   "title": "Probe scripts over CRLF subjects must honour the line ending",
+   "source": "wiki/work/archive/131_milestone_the-human-in-the-loop/stories/06_story_the-register/RETROSPECTIVE.md:30",
+   "text": "Probe scripts over CRLF subjects must honour the line ending \n A probe asserts that its mutation applied (the subject's hash changed) before it reads the control's result, and it restores against a recorded hash."
+  },
+  "150/R3": {
+   "kind": "misunderstanding",
+   "title": "The read-only contract checked the source asset, and the runtime copy drops the tool list",
+   "source": "wiki/work/150_story_explain-says-what-the-work-is-for/RETROSPECTIVE.md:43",
+   "text": "The read-only contract checked the source asset, and the runtime copy drops the tool list \n task 01 E1 asserts `allowed-tools` is exactly `Read, Grep, Glob, Bash`, and reads `packages/core/assets/commands/explain.md` to check it. The Claude renderer drops `allowed-tools` and `argument-hint` from every command, so the copy a session loads carries neither. E1 is green, and it says nothing about what a live session can do. \n the contract named the asset as the thing read, without checking what the renderer keeps. \n a scenario about what a session can or cannot do reads the rendered copy under `.claude/commands/`, or names the renderer as part of the claim. Only the live `@manual` run (E2) measured read-only."
+  },
+  "4/R3": {
+   "kind": "near-miss",
+   "title": "Importing the runner from a meta-test created an import cycle; a shared test-suite module is the clean fix",
+   "source": "wiki/work/archive/04_milestone_round-trip-proof/RETROSPECTIVE.md:44",
+   "text": "Importing the runner from a meta-test created an import cycle; a shared test-suite module is the clean fix \n The `acd-roundtrip-registration` no-drift meta-test imports the assembled `tests` array from `scripts/test.mjs`, creating a cycle worked around by exporting `tests` + invoking `runSuite()` fire-and-forget (no blocking top-level await). Sound, but the meta-test guards only `test.mjs`, not `test-unit.mjs`, and ~110 lines of import/spread are duplicated between the runners. \n Registration lives in the runner *and* must be read by a test that the runner runs — an inherent cycle when both responsibilities sit in one module. \n Extract the common suite assembly into a shared `scripts/test-suite.mjs` that both runners"
+  },
+  "35/R4": {
+   "kind": "near-miss",
+   "title": "Arch-test bindings imported but never spread are silently-dead fitness functions",
+   "source": "wiki/work/archive/35_milestone_mesh-work-assignment/RETROSPECTIVE.md:32",
+   "text": "Arch-test bindings imported but never spread are silently-dead fitness functions \n `scripts/test.mjs` carried ~34 arch-test bindings imported at the top but never spread into the assembled `tests` array (milestones 22–26). They read as coverage but never run. Surfaced while arming fitness #12. Milestone 35's own tests were all verified correctly registered (import + spread) at verify. \n the manual import-then-spread registration has no guard that every imported binding is actually spread. \n an imported-but-unspread fitness binding is worse than a missing one — it looks armed. Add a harness guard (or audit) that every imported `archTests` binding appears in the assembled array; a broad m22–26 audit is recommended (out of this milestone's scope)."
+  },
+  "3/R1": {
+   "kind": "blocker",
+   "title": "A feature whose value is only observable when *served* must ship its same-origin launch path as a first-class task, or it goes green-but-unexercisable",
+   "source": "wiki/work/archive/03_milestone_work-board-ui/RETROSPECTIVE.md:17",
+   "text": "A feature whose value is only observable when *served* must ship its same-origin launch path as a first-class task, or it goes green-but-unexercisable \n every code lane for the agent terminal was green — the protocol-shape `@executable` suite, the A2 `pty.spawn` smoke, and the A7 missing-provider end-to-end run against the real server — yet the milestone's headline (`@uat`: Run agent → watch the dock stream) **could not be performed**, because no delivered command served the board same-origin: `aof assets ui` started vite whose proxy forwarded only `/api` (no `/ws`, no `ws:true`) and hardcoded `VITE_AOF_UI_MODE=assets`, while `serveSetupUi`'s static root served the **dev** `ui/index.html` (`/src/main.tsx`), not the built `ui/dist`. The WS (`window.location.host`) and the relative `api.ts` fetches both need one origin that routes `/api/work*` AND `/ws/terminal` AND the bundle — and nothing wired that. \n the story contracts specified the terminal's *behaviour* (protocol, spawn, degrade) but not its *delivery* — \"how the operator actually opens this same-origin\" fell between the stories and was only discovered at the human gate, as a blocker. \n when a feature's value is \"see it running,\" the serving/launch path is part of the deliverable — author it as an explicit task with its own `@executable` coverage, don't let it be an afterthought caught at `@uat`. Resolved same-session via `aof:continue 03`: a first-class `aof work board` command + `serveBoard()` (`src/board-serve.mjs`) serving `ui/dist` through the one `serveSetupUi` server, pinned by story-01 task `05_serve-board-same-origin.feature` (4 `@executable` scenarios) + an end-to-end real-build probe. (Positive counterpart: R6 — make the `@uat` performable before the human shows up.)"
+  },
+  "45/R9": {
+   "kind": "near-miss",
+   "title": "Enumerate the matrix an origin-blind design invites",
+   "source": "wiki/work/archive/45_milestone_ui-app-shell-routing/RETROSPECTIVE.md:187",
+   "text": "Enumerate the matrix an origin-blind design invites \n Five paths against three real origins is fifteen page loads. It localised F-45-M-1 to one cell with no hypothesis needed, and later produced the evidence for DG-45-4 as a side effect. Nothing in the milestone enumerated that matrix until the end gate. \n ADR-002 made routing origin-blind — which is the right call — and origin-blindness is exactly what makes the (origin × path) product a real state space rather than a theoretical one. \n When a design makes one axis blind to another, sweep the product of the two. Milestones 47 and 49 both add rows to the same table and should inherit this as a standing lane."
+  },
+  "129/03/R5": {
+   "kind": "mistake",
+   "title": "A ruling about the operator's live primary is measured on a primary-shaped tree, not reasoned from the worker's",
+   "source": "wiki/work/archive/129_milestone_loop-concurrency/stories/03_story_the-lane-commits-and-merges-home/RETROSPECTIVE.md:97",
+   "text": "A ruling about the operator's live primary is measured on a primary-shaped tree, not reasoned from the worker's \n Ruling (1) said \"the `.aof` reset still runs\" under `paths` — in the live primary that reset unstaged an operator's OWN staged `.aof/aof.config.json` outside the scope, a file the loop was told to leave alone. And `dispatchLaneBase` read the primary's line off the MAIN worktree, which is wrong the moment the primary is itself a linked worktree — this repository's own gate-in-a-worktree flow. \n Every prior caller of these verbs was a worker's tree: clean, nobody's desk, the main checkout. The loop's primary is the opposite on every axis, and the rulings were carried over from the case they were written for. \n A verb that will run in the operator's primary gets its Examples on a fixture shaped like one — operator dirt inside and outside the scope, staged and unstaged, and a primary that is a linked worktree — before the ruling is locked. Refs: `F-36`, `F-30`, ADR-002 §2, ADR-008 §7(d)."
+  },
+  "147/R3": {
+   "kind": "mistake",
+   "title": "scripts/check.mjs is the whole suite, not a story check",
+   "source": "wiki/work/147_story_the-loop-hands-a-halt-to-a-fresh-session-to-fix/RETROSPECTIVE.md:47",
+   "text": "scripts/check.mjs is the whole suite, not a story check \n the build ran `scripts/check.mjs` as if it were a focused check. It runs the whole suite, and it was killed at 10 minutes under an isolated home. \n the name reads like a lint or quick gate. \n on this machine the story lane is `scripts/test.mjs --only <set>` plus R1's workspace runner. The whole tree runs through `yarn test:sharded` from a clean worktree, at a gate."
+  },
+  "119/R4": {
+   "kind": "process",
+   "title": "The gate ran in a clean WORKTREE, and that is the reusable answer to a shared checkout",
+   "source": "wiki/work/archive/119_milestone_the-tree-gets-an-interior/RETROSPECTIVE.md:68",
+   "text": "The gate ran in a clean WORKTREE, and that is the reusable answer to a shared checkout \n The refusal message already names this option and it should be the default reading of it, because the override's honest use is an ENVIRONMENT that cannot host the run — never a checkout that merely has someone else in it. On a machine where several lanes share one tree, the clean worktree is the gate's normal habitat rather than its fallback. It also costs almost nothing: the install is cache-warm and the prepare script exists precisely to make it safe."
+  },
+  "55/R6": {
+   "kind": "blocker",
+   "title": "The one measurement the whole accept rests on is not reproducible, in two independent ways",
+   "source": "wiki/work/archive/55_milestone_anchors-and-frozen-set/RETROSPECTIVE.md:102",
+   "text": "The one measurement the whole accept rests on is not reproducible, in two independent ways \n Two post-repair runs of an identical tree both reported 42 rather than the 41 the repairs predicted, and the 42nd was a **different test each time** (`F-55-M-6`). The operator's re-verify then found the tree itself moving mid-run: a concurrent session added 66 uncommitted lines to `src/work.mjs`, and the god node read 1426 lines to the test, 1339 at `HEAD` and 1405 in the worktree minutes later — one file, three numbers (`F-55-M-7`). \n 6,900 process- and filesystem-heavy tests in one process produce resource-pressure flakes; and the gate has no exclusive hold on the tree it measures, because nothing gives it one. \n **A gate's count is not a verdict — the set-difference over failure names AND causes is.** Both halves matter: `bundle-asset-manifest-complete/00` failed at both revisions with *different causes* and would have filed as pre-existing on a name comparison alone. The repair is a gate that measures a **fixed revision** — a clean checkout or a recorded stash boundary — rather than whatever the working tree happens to contain, which belongs with 59's instrument audit."
+  },
+  "69/R11": {
+   "kind": "near-miss",
+   "title": "Concurrent milestone sessions gave this gate's evidence a shelf life measured in minutes",
+   "source": "wiki/work/archive/69_milestone_loop-bounds/RETROSPECTIVE.md:211",
+   "text": "Concurrent milestone sessions gave this gate's evidence a shelf life measured in minutes \n Milestones 54, 68, 69 and 70 were in flight in one working tree. A concurrent 54 session rewrote 69/06's production consumer and its delivered control *while 69 sat at its accept gate*, invalidating a 455-assertion lane measured 90 minutes earlier. Later, one monolithic commit swept all four milestones' uncommitted work into a single revision whose own message records that they \"cannot be separated\". The final gate had to state which of 48 failures belonged to which milestone before it could say anything about 69 at all. \n Cross-lane concurrency makes a stale read look exactly like a fresh one — the same property that makes register-id allocation unsafe, one level up and applied to test evidence. \n An item at its ACCEPT gate needs a quiet tree; the evidence is a snapshot and every concurrent write ages it. The cheap mitigation is what finally worked here: take the gate reading against a clean committed tree, record the commit in the verdict, and check that no subject file's mtime post-dates the run. The expensive one — serialising accept gates, or giving each lane its own worktree — is a real scheduling question this milestone raised and did not answer."
+  },
+  "149/R4": {
+   "kind": "near-miss",
+   "title": "A stacked branch puts other items' reds in every story's sweep",
+   "source": "wiki/work/149_story_continue-manual-mode-guides-the-operator/RETROSPECTIVE.md:54",
+   "text": "A stacked branch puts other items' reds in every story's sweep \n 149 was built uncommitted on 147's branch, which also carries 150's commits, while 148's in-flight records sat untracked in the same tree. The review and verify importer sweeps were both red on three controls that 149's diff never touches. Each one had to be re-run and attributed by hand before it could be set aside (F-03). \n Build a story on its own branch off `main`, in a sibling worktree when the checkout is shared. Otherwise every sweep starts with an attribution exercise, and a real red of the story's own can hide among the inherited ones."
+  },
+  "7/R3": {
+   "kind": "near-miss",
+   "title": "Isolate an adversarial fitness-function reviewer (worktree or in-memory) so its mutations don't spook concurrent reviewers",
+   "source": "wiki/work/archive/07_milestone_design-conformance/RETROSPECTIVE.md:45",
+   "text": "Isolate an adversarial fitness-function reviewer (worktree or in-memory) so its mutations don't spook concurrent reviewers \n the structural reviewer mutated bundled assets in-place to prove the guards trip, while other reviewers ran concurrently — producing a spurious \"suite RED / manifest stale\" reading that a revert + independent re-run cleared (no shipped defect). \n an adversarial reviewer that mutates the shared working tree to prove a guard bites will corrupt any concurrent reader's view of that tree. \n worktree-isolate an adversarial reviewer (or have it mutate in-memory copies, as the drift-guard's own self-test does) so its deliberate breakage never reads as a real failure to a concurrent reviewer."
+  },
+  "61/R5": {
+   "kind": "near-miss",
+   "title": "Two concurrent reviewers were given one worktree, and both mutate source to run red probes",
+   "source": "wiki/work/archive/61_milestone_disciplined-acceptor/RETROSPECTIVE.md:127",
+   "text": "Two concurrent reviewers were given one worktree, and both mutate source to run red probes \n Both reviewers were pointed at the same dispatch worktree. QA observed `admissibility.mjs` rewritten mid-review and four scratch files appear, and took one transient anomalous reading. \n Red-probing is a mutation of the tree by design. Two reviewers probing concurrently in one checkout are running each other's experiments. \n Concurrent reviewers get separate checkouts. Until they do, the recovery QA improvised is the standing discipline and is worth keeping regardless: bracket every measurement with content hashes and confirm the tree byte-identical to the commit before believing a reading. (The same discipline was applied to all thirteen red probes at this milestone's verify, with `git status` compared against the pre-probe baseline after each one.)"
+  },
+  "119/01/R3": {
+   "kind": "process",
+   "title": "A review round that does not reduce the blocker count is the signal to hand back, not to grind",
+   "source": "wiki/work/archive/119_milestone_the-tree-gets-an-interior/stories/01_story_src-gets-an-interior/RETROSPECTIVE.md:49",
+   "text": "A review round that does not reduce the blocker count is the signal to hand back, not to grind \n The stall rule worked and the hand-back was correct. What it cost is the thing to carry: the story then sat `in-review` with a blocker whose fix was already described IN the finding (\"resolve the edge, not the spelling\"), and nothing re-opened it until accept. A stall hand-back should carry the fix it already knows, so the resumption is a build step rather than a re-diagnosis."
+  },
+  "123/R6": {
+   "kind": "blocker",
+   "title": "a hand-back recorded at three consecutive gates is not a hand-back",
+   "source": "wiki/work/archive/123_story_the-review-close-mints-no-driver/RETROSPECTIVE.md:128",
+   "text": "a hand-back recorded at three consecutive gates is not a hand-back \n `arch/FF-6603`'s ROUND 3/1 floor was recorded as `F-102-B`, then as `F-118-A`, then as `F-123-E` — three consecutive accept gates, each routing it to *\"the operator, as a story shape\"*, each reading it slightly further from the 90% the leg asserts (89.93% → 89.93% → 89.20%). No story was ever refined for it. **Refs:** `@finding-F-123-E`; `118/VERIFICATION.md` `F-118-A`; `102/VERIFICATION.md` `F-102-B`; `123/OUTCOME.md` `## Gaps`. \n This story makes `story (operator)` the destination of every remedy the close is too expensive to fix, which turns the busiest routing into the one with no pickup surface. A hand-back is recorded in the accepting item's `VERIFICATION.md` `## Findings` table and nowhere else, and nothing reads those tables across items — so from inside the loop, \"handed back\" and \"dropped\" produce identical evidence. \n The rule this story ships is only half a rule until the hand-back is visible. Recording a finding in the accepting item's own table is enough to be honest and not enough to be picked up; the next thing this loop needs is a surface that lists open `story (operator)` routings across items, so that a third identical recording reads as the alarm it is rather than as diligence."
+  },
+  "125/R4": {
+   "kind": "blocker",
+   "title": "the build finished and then waited four and a half hours for its own fix round",
+   "source": "wiki/work/archive/125_story_the-loop-graph-gets-a-published-face/RETROSPECTIVE.md:94",
+   "text": "the build finished and then waited four and a half hours for its own fix round \n The developer agent reached *Build complete* at 2026-09-12 18:47Z and sat idle \n The main session drove two stories' builds and reviews in one sitting; while it turned to 128, 125's finished builder held an open session with nothing to do and nothing watching it. The stall is the known class — a finished or dropped agent with no watchdog — and it is the wall-clock cost of that class made concrete on one story. \n A builder that reports *Build complete* should be closed or handed its next round in the same beat; an agent left open between review and fix is idle spend with a session attached. The durable fix is the stall watchdog the loop still lacks; until it lands, the coordinator's rule is: finish the round or end the session, never park it."
+  },
+  "129/02/R8": {
+   "kind": "misunderstanding",
+   "title": "The observability's stall heuristic reads a review hand-off as a stall; the real signal was the grind",
+   "source": "wiki/work/archive/129_milestone_loop-concurrency/stories/02_story_the-drive-is-a-child/RETROSPECTIVE.md:160",
+   "text": "The observability's stall heuristic reads a review hand-off as a stall; the real signal was the grind \n The report flags one stall — the developer idle 25m20s at 02:00Z. The transcript shows the freeze after its build report and the resume on \"Review round 1\" from the coordinator: the developer was WAITING for the three review lenses, which is the orchestrated flow working. The diagnostic that mattered was the grind — 24 toolchain runs, worst 231 s, `drive.mjs` edited ten times — on the stdin-arming semantics `R2` names. \n The stall detector is an idle-gap threshold with no notion of a hand-off; a developer held open across a review round is idle by construction. The grind detector was right and quieter. \n Read a flagged stall against the resume line before treating it as a dropped connection; an idle that resumes on a coordinator message is a hand-off, and the cost to record is the review round's own duration. The stall heuristic should exempt (or label) a gap whose resume is a coordinator message — carried to the observe command's backlog. Refs: `observability/snapshots/2026-09-13T03-13-26-740Z/report.md` § Stalls, § Why slow."
+  },
+  "119/02/R1": {
+   "kind": "blind spot",
+   "title": "A non-recursive walk of a directory you have just given an interior is a whole species, and every control in this milestone was blind to it",
+   "source": "wiki/work/archive/119_milestone_the-tree-gets-an-interior/stories/02_story_commands-gets-an-interior/RETROSPECTIVE.md:16",
+   "text": "A non-recursive walk of a directory you have just given an interior is a whole species, and every control in this milestone was blind to it \n FF-11902 did not catch it and is not wrong to have missed it: its subject is *a walk narrowed by a filename PREFIX*, and this walk narrows by nothing — it is simply flat. **Giving a directory an interior silently halves every non-recursive walk of it.** The carryable check, owed before any story that adds a directory level: enumerate the readers that `readdir` the directory being restructured, not just the ones that name its files. `119/03` gave `test/` an interior one directory over, where every flat `readdir(\"test/arch\")` was the same hazard."
+  },
+  "124/R1": {
+   "kind": "near-miss",
+   "title": "The fitness gate had been vacuous for a whole commit, and only its own guard said so",
+   "source": "wiki/work/archive/124_milestone_the-edges-aof-does-not-draw/RETROSPECTIVE.md:16",
+   "text": "The fitness gate had been vacuous for a whole commit, and only its own guard said so \n `b088825c` moved every arch control one level down into family folders and updated the rubric runner's comments but not its enumeration. From that commit until `124/00` tripped it, `scripts/test-rubric.mjs` swept zero controls; `work:grade` could not go green, and the finding sat unread as `case-failed` for a day and a half. \n A flat `readdir` over a root that had just gained an interior. The runner's non-vacuity guard is the only reason this failed loudly instead of banking a green gate. \n A sweep whose root can gain an interior needs a recursive walk *and* a guard, and a change that moves files en masse owes the same audit to its **runners** that 119 gave to citations. Refs: `m124/F-05`, `119/R2`."
+  },
+  "129/03/R7": {
+   "kind": "near-miss",
+   "title": "A non-module in files: widens --scope impacted to the whole suite",
+   "source": "wiki/work/archive/129_milestone_loop-concurrency/stories/03_story_the-lane-commits-and-merges-home/RETROSPECTIVE.md:134",
+   "text": "A non-module in files: widens --scope impacted to the whole suite \n `aof test --scope impacted --story 129/03` resolved to `all` — the forbidden whole run on this machine — because `.gitattributes` is in `files:` and is not a graph node. The developer saw the resolution and ran the terminator as `--scope file` over the named suites instead. \n The impacted resolver reads \"a declared file with no graph presence\" as \"unknown blast radius\" and widens to everything; the same shape the impacted-scope memory names for brand-new files. For a `.gitattributes` line the honest blast radius is the suites that read it. \n Until the runner changes, a story whose `files:` names a non-module briefs its build to run `--scope file` over the declared suites; the runner should widen a non-module to NOTHING (or to the suites that cite it), never to `all`. Refs: `F-47`."
+  },
+  "135/R1": {
+   "kind": "mistake",
+   "title": "three of five write sets were declared by where code is born, not who measures it",
+   "source": "wiki/work/135_milestone_key-examples-in-the-contract/RETROSPECTIVE.md:7",
+   "text": "three of five write sets were declared by where code is born, not who measures it \n Three of the five builds touched files that refine had not declared: \n Refine plans by subject: a module, a lane, a prompt. The controls that pin, count or digest the tree are in no subject's path. An importer sweep does not reach them either, because they read the tree rather than import the changed module. \n When refine declares `files:`, it also lists the tree-reading controls for each directory or registry the story changes. Those are `acd-source-directory-budget` and `acd-ui-directory-budget`, the surface file budgets, FF-5307's digests, the workspace runtime audit, 142's Plan 09 ledger (`core-workspace`), and the `test/arch/audit/` source scans (`acd-no-new-silent-catch`, `acd-control-derives-its-census`). The census is a grep for the changed path's directory in `test/arch/` and `test/bundle/`, and it is cheaper than the rework."
+  },
+  "136/01/R2": {
+   "kind": "mistake",
+   "title": "the story's controls left two tree-reading checks stale",
+   "source": "wiki/work/136_milestone_discovery-questions-in-the-loop/stories/01_story_a-loop-answer-anchors-the-example/RETROSPECTIVE.md:21",
+   "text": "the story's controls left two tree-reading checks stale \n 01 added 18 cases without re-measuring 142's Plan 09 ledger (`core-workspace` red, F-136-05), and FF-13601's walk filtered a directory listing with no non-vacuity leg, which FF-11902 reds at the whole-tree gate. \n The same as 135/R1: list the tree-reading controls for every directory and registry a story touches, and run them in the story lane. `core-workspace` and `acd-control-derives-its-census` belong in any lane that adds a case or a walk."
+  }
+ },
+ "pairs": [
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "45/R13",
+   "b": "68/R10",
+   "basis": "the named pair: 68/R10 applies and measures the unlink-the-junction-first countermeasure for the destructive delete 45/R13 recorded"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "45/R13",
+   "b": "55/R5",
+   "basis": "the same incident again: git worktree remove --force followed a node_modules junction and deleted tracked source; 55/R5 cites the earlier losses as a fourth"
+  },
+  {
+   "label": "recurrence",
+   "split": "held-out",
+   "a": "43/R10",
+   "b": "45/R13",
+   "basis": "the same incident: a node_modules junction in a git worktree destroyed ui/ and uncommitted work"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "55/R5",
+   "b": "68/R10",
+   "basis": "68/R10 measures the countermeasure for the junction deletion 55/R5 suffered"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "85/R5",
+   "b": "86/R4",
+   "basis": "86/R4 is titled a third consecutive empty observability snapshot; 85/R5 is the earlier one"
+  },
+  {
+   "label": "recurrence",
+   "split": "held-out",
+   "a": "19/R1",
+   "b": "41/R3",
+   "basis": "registering a new work:* command trips registry-derived guards the ADR did not name; 41/R3 repeats 19/R1"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "134/02/R1",
+   "b": "148/01/R1",
+   "basis": "both: --scope impacted ran the whole suite on the control node"
+  },
+  {
+   "label": "recurrence",
+   "split": "held-out",
+   "a": "71/R1",
+   "b": "72/R10",
+   "basis": "72/R10 says 'See 71/R1': a milestone driven interactively produced no run records for its own measurement"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "140/R1",
+   "b": "141/R1",
+   "basis": "141/R1's title is '140/R1 recurred': the files: census missed the controls that pin the changed seam"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "141/R1",
+   "b": "152/R3",
+   "basis": "152/R3 names 140/R1 and 141/R1 as recurring: the story lane missed a stream-wide control"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "77/R6",
+   "b": "81/R3",
+   "basis": "both: the tier was graded through the grade tool whose own gates it contains, so its own re-entrancy guard turned cases red"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "126/00/R7",
+   "b": "71/R8",
+   "basis": "both: a register's pending marker survives the control landing, and nothing but the accept clears it"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "148/R1",
+   "b": "61/R6",
+   "basis": "148/R1's Why: 'the lesson is already written: 61/R6, 126/R2, 127/R3, 141/R1 and 146/R1' — the files: census missed the controls that pin the changed seam"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "148/R1",
+   "b": "126/R2",
+   "basis": "same attestation in 148/R1's Why"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "148/R1",
+   "b": "127/R3",
+   "basis": "same attestation in 148/R1's Why"
+  },
+  {
+   "label": "recurrence",
+   "split": "held-out",
+   "a": "148/R1",
+   "b": "141/R1",
+   "basis": "same attestation in 148/R1's Why"
+  },
+  {
+   "label": "recurrence",
+   "split": "train",
+   "a": "148/R1",
+   "b": "146/R1",
+   "basis": "same attestation in 148/R1's Why"
+  },
+  {
+   "label": "recurrence",
+   "split": "held-out",
+   "a": "140/R1",
+   "b": "152/R3",
+   "basis": "152/R3's heading names '140/R1, 141/R1 recurring': the story lane again missed a stream-wide control"
+  },
+  {
+   "label": "recurrence",
+   "split": "held-out",
+   "a": "124/01/R2",
+   "b": "124/02/R2",
+   "basis": "124/02/R2's title: the write set omitted the budget table, for the third time in one milestone — 124/01/R2 is the first"
+  },
+  {
+   "label": "distinct",
+   "split": "held-out",
+   "a": "130/R1",
+   "b": "81/R5",
+   "basis": "both mention an un-gated or unmeasured story, but one is a budget row raised by nobody and the other an empty observation snapshot"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "43/R7",
+   "b": "47/R4",
+   "basis": "a viewport-versus-container wording gap and a code comment governing constants are different defects"
+  },
+  {
+   "label": "distinct",
+   "split": "held-out",
+   "a": "127/01/R4",
+   "b": "77/R6",
+   "basis": "a story graded over a shared checkout is not the tier run through its own tool"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "127/01/R4",
+   "b": "81/R3",
+   "basis": "a story graded over a shared checkout is not the tier graded through the grade tool"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "1/R2",
+   "b": "124/02/R1",
+   "basis": "line-ending pins versus a lock that lied about shipped files"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "102/R3",
+   "b": "23/R5",
+   "basis": "a piped run reporting the pipe's exit code versus a downstream milestone turning a shared suite red"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "134/01/R1",
+   "b": "143/03/R1",
+   "basis": "a contract citing an untracked file versus a build brief that installed the live payload from a branch worktree"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "136/R3",
+   "b": "43/R10",
+   "basis": "a failed cd that ran a checkout in the primary tree versus a node_modules junction followed by a forced worktree removal"
+  },
+  {
+   "label": "distinct",
+   "split": "held-out",
+   "a": "15/R5",
+   "b": "41/R1",
+   "basis": "a dormant ROADMAP cross-reference versus an acceptance bar defined against what the tool enforces"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "152/R2",
+   "b": "1/R4",
+   "basis": "a step narrowed below its scenario versus a renderer silently dropping frontmatter"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "127/04/R1",
+   "b": "132/R2",
+   "basis": "a schema bump needing a deploy window versus a restart that revived one daemon of two"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "124/02/R1",
+   "b": "131/06/R2",
+   "basis": "a lock lying about shipped files versus probe scripts ignoring CRLF subjects"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "150/R3",
+   "b": "152/R2",
+   "basis": "a read-only contract that checked the source asset versus a step narrowed below its scenario"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "4/R3",
+   "b": "35/R4",
+   "basis": "a runner import cycle versus arch-test bindings imported but never spread"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "3/R1",
+   "b": "45/R9",
+   "basis": "a feature only observable when served versus an origin-blind design's missing matrix"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "143/03/R1",
+   "b": "129/03/R5",
+   "basis": "a build brief installing the live payload versus a ruling measured on a shared primary"
+  },
+  {
+   "label": "distinct",
+   "split": "held-out",
+   "a": "147/R3",
+   "b": "119/R4",
+   "basis": "scripts/check.mjs being the whole suite versus the gate running in a clean worktree"
+  },
+  {
+   "label": "distinct",
+   "split": "train",
+   "a": "55/R6",
+   "b": "69/R11",
+   "basis": "an unreproducible accept measurement versus concurrent sessions shortening evidence's shelf life"
+  },
+  {
+   "label": "distinct",
+   "split": "held-out",
+   "a": "136/R3",
+   "b": "149/R4",
+   "basis": "a failed cd in the primary tree versus a stacked branch putting other items' reds in every sweep"
+  }
+ ],
+ "excluded": [
+  {
+   "a": "7/R3",
+   "b": "61/R5",
+   "reason": "ambiguous: isolating an adversarial reviewer in a worktree versus two concurrent reviewers given one worktree — the second may be the first again"
+  },
+  {
+   "a": "119/01/R3",
+   "b": "123/R6",
+   "reason": "ambiguous: a review round that does not reduce blockers versus a hand-back recorded at three gates"
+  },
+  {
+   "a": "125/R4",
+   "b": "129/02/R8",
+   "reason": "ambiguous: a build waiting hours for a hand-off versus the stall heuristic reading a hand-off as a stall"
+  },
+  {
+   "a": "119/02/R1",
+   "b": "124/R1",
+   "reason": "ambiguous: a non-recursive walk and a vacuous gate may be one failure to enumerate"
+  },
+  {
+   "a": "148/01/R1",
+   "b": "129/03/R7",
+   "reason": "ambiguous: the same symptom (impacted scope widens) from a different cause (a non-module in files:)"
+  },
+  {
+   "a": "135/R1",
+   "b": "136/01/R2",
+   "reason": "ambiguous: write sets declared by where code is born versus controls left stale"
+  }
+ ]
+}

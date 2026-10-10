@@ -4,7 +4,7 @@ number: 02
 slug: lessons-name-recurrence-and-promotion
 title: "Lessons name recurrence and promotion"
 parent: 153
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-10
 updated: 2026-10-10
@@ -23,8 +23,8 @@ As an AOF operator, I want to identify when a new lesson repeats an existing one
 
 ## Tasks
 
-- [ ] `tasks/01_preserve-forward-lesson-metadata.feature`
-- [ ] `tasks/02_match-recurrences-from-labelled-evidence.feature`
+- [x] `tasks/01_preserve-forward-lesson-metadata.feature`
+- [x] `tasks/02_match-recurrences-from-labelled-evidence.feature`
 
 ## Notes
 
