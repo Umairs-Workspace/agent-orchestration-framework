@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
-import { createTerminalSpawn } from "./pty.mjs";
+import { createTerminalSpawn, releasePtyAfterTreeTermination } from "./pty.mjs";
 import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
 
 // Execution owns the driver. Core supplies transcript readers, launch policy, screen
@@ -1268,15 +1268,16 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     // this driver never enumerated, the loop process is what dies. So: on win32 the session's
     // process tree is terminated FIRST through the OS's own tree kill (`taskkill /T /F` on
     // the pty's pid — what node-pty's list is trying to approximate), and only THEN is the
-    // pty released, so the console-list path runs against a tree that is already gone. Every
+    // pty released without enumerating the now-dead console after confirmed termination. Every
     // step reports through `options.onSessionStop` (optional, best-effort; the loop wires it
     // to its exit-reason recorder), so the next death — if there is one — is bracketed to
     // the line rather than to the minute. Defaults: an INJECTED `ptySpawn` is a test double
     // whose pid is fiction, so the tree kill is off unless `terminateTree` says otherwise;
     // the real spawner turns it on. `terminateTreeExec` is the injectable runner.
-    const releasePty = () => {
+    const releasePty = (treeTerminated = false) => {
       try {
-        term.kill();
+        if (treeTerminated) releasePtyAfterTreeTermination(term);
+        else term.kill();
         stopBreadcrumb("pty-released");
       } catch (error) {
         reportDegrade("mesh-worker-execution", error);
@@ -1319,7 +1320,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
         if (released) return;
         released = true;
         stopBreadcrumb("tree-terminated", detail);
-        releasePty();
+        releasePty(detail.ok === true);
       };
       try {
         terminateTreeExec("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true }, (error, stdout, stderr) => {

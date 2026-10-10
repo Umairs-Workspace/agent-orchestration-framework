@@ -1,7 +1,21 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createSessionDriver } from "@aof/execution/session-driver";
-import { createNodePtyLoader, createTerminalSpawn } from "@aof/execution/pty";
+import { createNodePtyLoader, createTerminalSpawn, releasePtyAfterTreeTermination } from "@aof/execution/pty";
+
+test("confirmed tree termination releases ConPTY without enumerating dead/reused PIDs", async () => {
+  const original = () => { throw Error("must not enumerate dead console"); };
+  const agent = { _useConpty: true, _useConptyDll: false, _getConsoleProcessList: original };
+  let list;
+  const term = { _agent: agent, kill() { list = agent._getConsoleProcessList(); } };
+  releasePtyAfterTreeTermination(term);
+  assert.deepEqual(await list, []);
+  assert.equal(agent._getConsoleProcessList, original);
+  const failure = Error("release failure");
+  term.kill = () => { throw failure; };
+  assert.throws(() => releasePtyAfterTreeTermination(term), error => error === failure);
+  assert.equal(agent._getConsoleProcessList, original);
+});
 
 test("session driver composes without I/O and uses supplied launch and transcript services", async () => {
   let loads = 0;
