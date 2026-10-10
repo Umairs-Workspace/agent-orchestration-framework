@@ -1,5 +1,9 @@
 import { formCandidates } from "../tune/formation.mjs";
-import { emitProposals as resolveProvenance } from "../tune/provenance.mjs";
+import fs from "node:fs";
+import path from "node:path";
+import { emitProposals as resolveProvenance, pathIsWithinRoot } from "../tune/provenance.mjs";
+import { ACCOUNTING_COUNTERS } from "../memory-accounting.mjs";
+import { promotionPointers } from "../memory-vocabulary.mjs";
 import { attachProposalDistances } from "../tune/distance.mjs";
 import { tunableSet } from "../acceptor/admissibility.mjs";
 import { commandError } from "@aof/contracts/error";
@@ -78,12 +82,13 @@ function sourceFact(source, field) {
   return undefined;
 }
 
-function evidenceOn(candidate) {
+function evidenceOn(candidate, memory = null) {
   return freeze({
     count: candidate.provenanceResolution.distinctSourceDocumentCount,
     distinctSourceDocumentCount: candidate.provenanceResolution.distinctSourceDocumentCount,
     sourceDocuments: list(candidate.provenanceResolution.sourceDocuments),
     citations: list(candidate.provenanceResolution.resolved),
+    ...(memory == null ? {} : { memory }),
   });
 }
 
@@ -97,6 +102,10 @@ function factsOn(candidate, tunableKeys) {
     if (values.length > 1) conflicts.push(freeze({ field: field.name, values: list(values) }));
     else if (values.length === 1) facts[field.name] = values[0];
   }
+  const promotedPrompts = unique((candidate.sources ?? []).flatMap((source) => promotionPointers(source?.status)
+    .filter((pointer) => pointer.kind === "prompt")
+    .map((pointer) => pointer.raw)));
+  if (promotedPrompts.length > 1) conflicts.push(freeze({ field: "promotion-target", values: list(promotedPrompts) }));
   if (!own(facts, "target")) facts.target = candidate.target;
   const sourceTarget = facts.target;
   const declaredClass = proposalClassForTarget(sourceTarget);
@@ -115,6 +124,88 @@ function factsOn(candidate, tunableKeys) {
     sourceTarget,
     conflicts: list(conflicts),
   });
+}
+
+// The lessons a candidate is made of, as the accounting reader names them: `<item>/<id>`.
+const identityOf = (source) => `${source.item}/${source.id}`;
+const lessonSources = (candidate) => (candidate.sources ?? [])
+  .filter((source) => source != null && source.recordType === "lesson" && source.item != null && source.id != null);
+const naturalOrder = (left, right) => left.localeCompare(right, "en", { numeric: true });
+
+// The observed verdicts and explicit recurrences of a candidate's lessons, joined from the corpus's
+// memory evidence and cited to the rows they came from. Nothing is inferred from wording: a lesson the
+// accounting never saw has zero counts, and its absence is visible beside the ledger rows that exist.
+function memoryOn(candidate, memory) {
+  const sources = lessonSources(candidate);
+  if (memory == null || sources.length === 0) return null;
+  const identities = [...new Set(sources.map(identityOf))].sort(naturalOrder);
+  const lessons = {};
+  const totals = Object.fromEntries(ACCOUNTING_COUNTERS.map((counter) => [counter, 0]));
+  const rows = new Set();
+  const recurrences = new Set();
+  const recurrers = new Set();
+  for (const identity of identities) {
+    const entry = memory.lessons?.[identity];
+    const counts = Object.fromEntries(ACCOUNTING_COUNTERS.map((counter) => [counter, entry?.[counter] ?? 0]));
+    lessons[identity] = freeze(counts);
+    for (const counter of ACCOUNTING_COUNTERS) totals[counter] += counts[counter];
+    for (const row of entry?.evidence?.observations ?? []) rows.add(`${row.source}:${row.line}`);
+    for (const row of entry?.evidence?.recurrences ?? []) {
+      recurrences.add(`${row.source}:${row.line}`);
+      recurrers.add(row.identity);
+    }
+  }
+  return freeze({
+    lane: memory.lane,
+    basis: memory.basis,
+    complete: memory.complete,
+    lessons: freeze(lessons),
+    totals: freeze(totals),
+    ledgerRows: list([...rows].sort(naturalOrder)),
+    recurrences: list([...recurrences].sort(naturalOrder)),
+    sourceLessons: list([...new Set([...identities, ...recurrers])].sort(naturalOrder)),
+  });
+}
+
+// The lessons whose own promotion names this prompt, and which of them the patch quotes: the one the
+// most distinct later lessons repeat, then the earliest. Only a promoted lesson's Lesson field is a source
+// of replacement text.
+function promptFactsOn(candidate, target, memory) {
+  if (typeof target !== "string" || !target.startsWith("prompt:")) return {};
+  const promoted = lessonSources(candidate)
+    .filter((source) => promotionPointers(source.status).some((pointer) => pointer.raw === target));
+  if (promoted.length === 0) return {};
+  const recurred = (identity) => memory?.lessons?.[identity]?.recurred ?? 0;
+  const canonical = [...new Set(promoted.map(identityOf))]
+    .sort((left, right) => recurred(right) - recurred(left) || naturalOrder(left, right))[0];
+  return {
+    promptLessons: list(promoted.map((source) => freeze({ ref: identityOf(source), text: String(source.summary ?? "") }))),
+    canonicalLesson: canonical,
+  };
+}
+
+// The authored prompt behind a `prompt:<path>` target, read only after its real location is known to be
+// inside the repository. A symlink or junction that leaves it is refused before a byte is read.
+function promptTargetReader(root, deps) {
+  const realpath = deps.realpath ?? fs.realpathSync;
+  const readContent = deps.readContent ?? ((file) => fs.readFileSync(file, "utf8"));
+  return (target) => {
+    const base = path.resolve(root);
+    let real;
+    let realBase;
+    try {
+      realBase = realpath(base);
+      real = realpath(path.resolve(base, ...String(target.id).split(/[\\/]/u)));
+    } catch (error) {
+      return { readable: false, error: error?.code === "ENOENT" ? `no such file: ${target.id}` : String(error?.message ?? error) };
+    }
+    if (!pathIsWithinRoot(realBase, real)) return { readable: false, error: "target-boundary" };
+    try {
+      return { present: true, value: readContent(real), source: target.id };
+    } catch (error) {
+      return { readable: false, error: String(error?.message ?? error) };
+    }
+  };
 }
 
 function conflictFinding(candidate, answer) {
@@ -358,11 +449,13 @@ async function buildTuneReport(input = {}, ctx = {}) {
       candidateFindings.push(conflictFinding(candidate, answer));
       continue;
     }
-    const evidence = evidenceOn(candidate);
+    const memory = memoryOn(candidate, corpus?.memory);
+    const evidence = evidenceOn(candidate, memory);
     const { from: _sourceFrom, ...proposalFacts } = answer.leafFacts;
     const groundedCandidate = freeze({
       ...candidate,
       ...proposalFacts,
+      ...promptFactsOn(candidate, answer.sourceTarget, corpus?.memory),
       ...(own(answer.facts, "from") ? { assumedFrom: answer.facts.from } : {}),
       evidence,
       ...(typeof answer.sourceTarget === "string" && tunableKeys.includes(answer.sourceTarget)
@@ -387,6 +480,7 @@ async function buildTuneReport(input = {}, ctx = {}) {
   const resolveCommand = deps.resolveCommand ?? registry?.getCommand;
   const invokeCommand = deps.invoke ?? registry?.invoke;
 
+  const readPromptTarget = promptTargetReader(workspace.projectRoot, deps);
   const advisory = [];
   const tunable = [];
   const shapingFindings = [];
@@ -410,6 +504,7 @@ async function buildTuneReport(input = {}, ctx = {}) {
       config: workspace.config,
       projectConfig: workspace.config,
       resolveCommand,
+      ...(Array.isArray(entry.leafCandidate.promptLessons) ? { readTarget: readPromptTarget } : {}),
     });
     if (result.finding != null) {
       shapingFindings.push(proposalFinding(entry.leafCandidate, result.finding));
@@ -495,8 +590,15 @@ async function buildTuneReport(input = {}, ctx = {}) {
     })),
   ]);
   const headline = headlineFor(proposals, corpus);
+  const memoryFindings = (corpus?.memory?.diagnostics ?? []).map((diagnostic) => freeze({
+    code: "memory-evidence-defect",
+    kind: "memory-evidence-defect",
+    message: `${diagnostic.source}${diagnostic.line == null ? "" : `:${diagnostic.line}`}: ${diagnostic.defect}`,
+    ...diagnostic,
+  }));
   const findings = list([
     ...(resolved.findings ?? []),
+    ...memoryFindings,
     ...candidateFindings,
     ...shapingFindings,
     ...consolidated.findings,
@@ -536,6 +638,10 @@ function render(result) {
     if (lane.lane === "observations") {
       lines.push(`  series ${lane.raw.series}; readings ${lane.raw.readings}; attributed ${lane.raw.attributed}`);
     }
+  }
+  if (result.corpus.memory != null) {
+    const memory = result.corpus.memory;
+    lines.push(`Corpus memory (${memory.lane}): ${memory.ledgers.length} ledger(s), ${memory.retrospectives.length} retrospective(s) of ${memory.items.length} selected item(s); ${memory.diagnostics.length} diagnostic(s).`);
   }
   if (result.acceptor != null) lines.push(`Acceptor answer: ${JSON.stringify(result.acceptor)}`);
   for (const proposal of result.proposals) {

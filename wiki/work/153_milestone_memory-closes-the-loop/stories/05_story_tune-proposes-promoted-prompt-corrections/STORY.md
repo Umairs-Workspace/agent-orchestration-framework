@@ -4,7 +4,7 @@ number: 05
 slug: tune-proposes-promoted-prompt-corrections
 title: "Tune proposes promoted prompt corrections"
 parent: 153
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-10
 updated: 2026-10-10
@@ -23,8 +23,8 @@ As an AOF operator, I want to receive a computable prompt change for a recurring
 
 ## Tasks
 
-- [ ] `tasks/01_use-memory-evidence.feature`
-- [ ] `tasks/02_compute-read-only-prompt-patches.feature`
+- [x] `tasks/01_use-memory-evidence.feature`
+- [x] `tasks/02_compute-read-only-prompt-patches.feature`
 
 ## Notes
 

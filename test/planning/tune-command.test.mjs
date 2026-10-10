@@ -1,5 +1,7 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
+import os from "node:os";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const buildTuneReport = _aofApplication.work.commandTools.tune.buildTuneReport;
@@ -99,6 +101,59 @@ function context(tune = {}) {
 }
 
 const registry = { getCommand: (id) => (id === "work:acceptor" ? { id } : undefined) };
+
+// 153/05 — promoted prompt lessons through the registered face.
+const PROMPT_TARGET = "prompt:packages/core/assets/commands/refine.md";
+const LESSON_TEXT = "Declare the existing counter's owning suite before drawing the write set.";
+const TARGET_BYTES = "# refine\nstep one\n";
+const lessonRecord = (item, id, source, overrides = {}) => record(source, {
+  recordType: "lesson",
+  item,
+  id,
+  summary: LESSON_TEXT,
+  status: PROMPT_TARGET,
+  target: PROMPT_TARGET,
+  ...overrides,
+});
+const READ = "packages/work/src/content-read.mjs:1";
+const READ_TWO = "packages/work/src/read.mjs:1";
+const ledgerFile = (item) => `wiki/work/${item}_milestone_m${item}/FEEDBACK.ndjson`;
+const counts = (surfaced, honoured, departed, irrelevant, recurred) => ({ surfaced, honoured, departed, irrelevant, recurred });
+const memoryEvidence = (lessons = {}, extra = {}) => Object.freeze({
+  lane: "recall-ledger",
+  basis: "observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake",
+  complete: true,
+  diagnostics: Object.freeze([]),
+  lessons: Object.freeze(lessons),
+  ...extra,
+});
+const e1Memory = () => memoryEvidence({
+  "45/R13": {
+    ...counts(3, 1, 2, 0, 1),
+    provenance: "indexed",
+    evidence: {
+      observations: [1, 2, 3].map((line) => ({ source: ledgerFile("45"), line })),
+      recurrences: [{ source: "wiki/work/68_milestone_m68/RETROSPECTIVE.md", line: 3, identity: "68/R10" }],
+    },
+  },
+});
+
+async function promptReport({ records, memory = null, tune = {}, invoke = async () => acceptorReport() } = {}) {
+  const base = corpus({ records });
+  const reads = [];
+  const report = await buildTuneReport({}, context({
+    corpus: memory == null ? base : Object.freeze({ ...base, memory }),
+    registry,
+    invoke,
+    realpath: (file) => file,
+    readContent: (file) => {
+      reads.push(file);
+      return TARGET_BYTES;
+    },
+    ...tune,
+  }));
+  return { report, reads, prompt: report.proposals.find((proposal) => proposal.class === "prompt-or-brief-revision") };
+}
 
 export const tuneCommandTests = [
   {
@@ -498,6 +553,170 @@ export const tuneCommandTests = [
       assert.deepEqual(report.proposals, []);
       assert.match(report.headline.summary, /matched no work items/u);
       assert.equal(tuneCommand.cli.exit(report), 0);
+    },
+  },
+  // ---------------------------------------------------------------------------------------------
+  // 153/05 — the report joins observed verdicts and explicit recurrence, and computes the prompt patch.
+  // ---------------------------------------------------------------------------------------------
+  {
+    name: "tune/153-05 E1: the candidate exposes surfaced, honoured, departed and recurred, citing the ledger rows and both lessons",
+    async run() {
+      const { prompt } = await promptReport({
+        records: [lessonRecord("45", "R13", READ), lessonRecord("68", "R10", READ_TWO, { summary: "A later wording that is not quoted." })],
+        memory: e1Memory(),
+      });
+      const memory = prompt.evidence.memory;
+      assert.deepEqual(memory.totals, counts(3, 1, 2, 0, 1));
+      assert.deepEqual(memory.lessons["45/R13"], counts(3, 1, 2, 0, 1));
+      assert.deepEqual(memory.lessons["68/R10"], counts(0, 0, 0, 0, 0), "a lesson the accounting never saw is zero, not borrowed");
+      assert.deepEqual(memory.ledgerRows, [1, 2, 3].map((line) => `${ledgerFile("45")}:${line}`));
+      assert.deepEqual(memory.recurrences, ["wiki/work/68_milestone_m68/RETROSPECTIVE.md:3"]);
+      assert.deepEqual(memory.sourceLessons, ["45/R13", "68/R10"]);
+      assert.equal(memory.lane, "recall-ledger");
+      assert.match(memory.basis, /not proof/u);
+      assert.equal(prompt.patch.lesson, "45/R13", "the lesson the most later lessons repeat is the one quoted");
+      assert.ok(prompt.patch.to.includes(LESSON_TEXT));
+      assert.equal(prompt.patch.to.includes("A later wording"), false, "only the canonical lesson's text is quoted");
+    },
+  },
+  {
+    name: "tune/153-05 E1: no count is inferred from repeated wording in prose",
+    async run() {
+      const { prompt } = await promptReport({
+        records: [
+          lessonRecord("45", "R13", READ, { text: "this recurs from 45/R13 again, and again, honoured, honoured" }),
+          lessonRecord("68", "R10", READ_TWO, { text: "recurs recurs recurs: surfaced surfaced surfaced" }),
+        ],
+        memory: memoryEvidence({}),
+      });
+      assert.deepEqual(prompt.evidence.memory.totals, counts(0, 0, 0, 0, 0));
+      assert.deepEqual(prompt.evidence.memory.ledgerRows, []);
+      assert.deepEqual(prompt.evidence.memory.recurrences, []);
+    },
+  },
+  {
+    name: "tune/153-05 E2: extra observations do not counterfeit a second source document",
+    async run() {
+      const { report, prompt } = await promptReport({
+        records: [
+          lessonRecord("45", "R13", "packages/work/src/read.mjs:1"),
+          lessonRecord("45", "R14", "packages/work/src/read.mjs:2"),
+        ],
+        memory: e1Memory(),
+      });
+      assert.equal(prompt, undefined, "one source document is below the floor of two, however many rows were observed");
+      const finding = report.findings.find((entry) => entry.code === "below-evidence-floor");
+      assert.ok(finding, "the insufficient-evidence finding is retained");
+      assert.equal(finding.distinctSourceDocumentCount, 1);
+    },
+  },
+  {
+    name: "tune/153-05: two conflicting prompt destinations are a candidate fact conflict, with no patch and no read",
+    async run() {
+      const { report, reads, prompt } = await promptReport({
+        records: [
+          lessonRecord("45", "R13", READ, { status: "prompt:a.md prompt:b.md", target: null }),
+          lessonRecord("68", "R10", READ_TWO, { status: "none", target: null }),
+        ],
+      });
+      assert.equal(prompt, undefined);
+      const finding = report.findings.find((entry) => entry.code === "candidate-fact-conflict");
+      assert.ok(finding);
+      assert.deepEqual(finding.conflicts.map((entry) => entry.field), ["promotion-target"]);
+      assert.deepEqual(finding.conflicts[0].values, ["prompt:a.md", "prompt:b.md"]);
+      assert.deepEqual(reads, []);
+    },
+  },
+  {
+    name: "tune/153-05 E5: a target that resolves outside the repository is refused before a byte is read",
+    async run() {
+      const outside = path.join(os.tmpdir(), "aof-outside-the-repository", "refine.md");
+      const { report, reads, prompt } = await promptReport({
+        records: [lessonRecord("45", "R13", READ), lessonRecord("68", "R10", READ_TWO)],
+        tune: { realpath: (file) => (path.resolve(file) === path.resolve(root) ? file : outside) },
+      });
+      assert.equal(prompt.patch, null);
+      assert.equal(prompt.reason.code, "target-boundary");
+      assert.deepEqual(reads, [], "the instrumented content reader was never called");
+      assert.equal(JSON.stringify(report).includes(outside), false, "the outside location is not echoed");
+    },
+  },
+  {
+    name: "tune/153-05: a target that cannot be found is unreadable, and a reader that throws is unreadable too",
+    async run() {
+      const missing = await promptReport({
+        records: [lessonRecord("45", "R13", READ), lessonRecord("68", "R10", READ_TWO)],
+        tune: { realpath: () => { throw Object.assign(new Error("gone"), { code: "ENOENT" }); } },
+      });
+      assert.equal(missing.prompt.reason.code, "target-unreadable");
+      assert.match(missing.prompt.reason.error, /no such file/u);
+      const failing = await promptReport({
+        records: [lessonRecord("45", "R13", READ), lessonRecord("68", "R10", READ_TWO)],
+        tune: { readContent: () => { throw new Error("EISDIR: illegal operation on a directory"); } },
+      });
+      assert.equal(failing.prompt.reason.code, "target-unreadable");
+      assert.match(failing.prompt.reason.error, /EISDIR/u);
+    },
+  },
+  {
+    name: "tune/153-05: an already-present lesson block is already-in-force, with no duplicate patch, every time",
+    async run() {
+      const block = `<!-- aof:lesson 45/R13 -->\n${LESSON_TEXT}\n<!-- /aof:lesson 45/R13 -->\n`;
+      const options = {
+        records: [lessonRecord("45", "R13", READ), lessonRecord("68", "R10", READ_TWO)],
+        memory: e1Memory(),
+        tune: { readContent: () => `${TARGET_BYTES}\n${block}` },
+      };
+      const first = await promptReport(options);
+      const second = await promptReport(options);
+      assert.equal(first.prompt, undefined);
+      const found = first.report.findings.filter((entry) => entry.code === "already-in-force");
+      assert.equal(found.length, 1);
+      assert.equal(found[0].lesson, "45/R13");
+      assert.deepEqual(second.report.findings, first.report.findings, "repeated reports are deterministic");
+    },
+  },
+  {
+    name: "tune/153-05: a cap adjustment and a recurring prompt candidate in one run keep their separate paths",
+    async run() {
+      const calls = [];
+      const { report } = await promptReport({
+        records: [
+          tunable("packages/work/src/commands/audit.mjs:1"),
+          tunable("packages/work/src/commands/observe.mjs:1"),
+          lessonRecord("45", "R13", READ),
+          lessonRecord("68", "R10", READ_TWO),
+        ],
+        invoke: async (id, input) => {
+          calls.push({ id, input });
+          return acceptorReport();
+        },
+      });
+      assert.equal(calls.length, 1, "the acceptor is consulted once");
+      assert.deepEqual(calls[0].input.proposals.map((entry) => entry.key), [key], "and only about the ordinal key");
+      const cap = report.proposals.find((proposal) => proposal.lane === "tunable");
+      assert.equal(cap.verdict, "report-only", "the cap adjustment keeps its acceptor assessment");
+      const prompt = report.proposals.find((proposal) => proposal.class === "prompt-or-brief-revision");
+      assert.equal(prompt.lane, "advisory");
+      assert.equal(Object.prototype.hasOwnProperty.call(prompt, "verdict"), false, "the prompt candidate is never assessed");
+      assert.equal(prompt.applier, null);
+      assert.ok(prompt.patch, "and it still carries its computed patch");
+      assert.match(tuneCommand.cli.render(report), /^advisory packages\/core\/assets\/commands\/refine\.md: /mu);
+    },
+  },
+  {
+    name: "tune/153-05: memory diagnostics are findings naming their source, beside valid counts",
+    async run() {
+      const diagnostics = Object.freeze([Object.freeze({ source: ledgerFile("46"), defect: "malformed ledger JSON", line: 2 })]);
+      const { report } = await promptReport({
+        records: [lessonRecord("45", "R13", READ), lessonRecord("68", "R10", READ_TWO)],
+        memory: memoryEvidence({ "45/R13": { ...counts(1, 1, 0, 0, 0), evidence: { observations: [{ source: ledgerFile("45"), line: 1 }], recurrences: [] } } }, { complete: false, diagnostics, ledgers: [], retrospectives: [], items: [] }),
+      });
+      const finding = report.findings.find((entry) => entry.code === "memory-evidence-defect");
+      assert.equal(finding.source, ledgerFile("46"));
+      assert.equal(finding.line, 2);
+      assert.equal(report.findings.filter((entry) => entry.code === "memory-evidence-defect").length, 1, "only the defective source is described as corrupt");
+      assert.match(tuneCommand.cli.render(report), /Corpus memory \(recall-ledger\)/u);
     },
   },
 ];

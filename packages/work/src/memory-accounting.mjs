@@ -69,6 +69,7 @@ export function retrospectiveLessons(ownerRef, text) {
 // recall is a defect and contributes nothing. An empty `records` array is a valid observation.
 export function readLedgerText(text) {
   const observations = [];
+  const lines = []; // the 1-based ledger line each observation came from, parallel to `observations`
   const defects = [];
   String(text ?? "").split(/\r?\n/).forEach((line, index) => {
     if (line.trim() === "") return;
@@ -86,11 +87,12 @@ export function readLedgerText(text) {
     if (parsed.kind !== "recall") return;
     try {
       observations.push(compileRecallObservation(parsed));
+      lines.push(index + 1);
     } catch (error) {
       defects.push({ defect: `invalid recall observation: ${error.message}`, line: index + 1 });
     }
   });
-  return { observations, defects };
+  return { observations, defects, lines };
 }
 
 // ---------------------------------------------------------------- the model ----
@@ -100,14 +102,21 @@ export function readLedgerText(text) {
 //   retrospectives   [{ owner, source, text?, error? }]   one per item retrospective that exists
 //   indexed          [{ item, id, title? }] | null        the current index's lessons, when known
 //   lessons          boolean                              also return the per-lesson table
+//   evidence         boolean                              with `lessons`, each lesson also names the ledger rows
+//                                                         and the distinct new lessons its counts came from
 // An `error` is an unreadable file: it is a diagnostic, and the report is then `complete: false`.
-export function buildAccounting({ ledgers = [], retrospectives = [], indexed = null, lessons = false } = {}) {
+export function buildAccounting({ ledgers = [], retrospectives = [], indexed = null, lessons = false, evidence = false } = {}) {
   const diagnostics = [];
   const diagnose = (source, defect, line = null) => diagnostics.push(line == null ? { source, defect } : { source, defect, line });
 
   const seenObservations = new Map();
   const types = {};
   const byLesson = new Map();
+  const cited = new Map(); // identity → { observations: [{source, line}], recurrences: [{source, line, identity}] }
+  const citedFor = (identity) => {
+    if (!cited.has(identity)) cited.set(identity, { observations: [], recurrences: [] });
+    return cited.get(identity);
+  };
   const countsFor = (map, key) => {
     if (!map.has(key)) map.set(key, emptyCounts());
     return map.get(key);
@@ -118,9 +127,9 @@ export function buildAccounting({ ledgers = [], retrospectives = [], indexed = n
       diagnose(ledger.source, "unreadable ledger file");
       continue;
     }
-    const { observations, defects } = readLedgerText(ledger.text);
+    const { observations, defects, lines } = readLedgerText(ledger.text);
     for (const { defect, line } of defects) diagnose(ledger.source, defect, line);
-    for (const observation of observations) {
+    for (const [at, observation] of observations.entries()) {
       const key = `${ledger.owner}\0${observation.id}`;
       const payload = JSON.stringify(observation);
       if (seenObservations.has(key)) {
@@ -136,7 +145,12 @@ export function buildAccounting({ ledgers = [], retrospectives = [], indexed = n
           counts[counter] += 1;
         };
         apply(types[record.recordType] ??= emptyCounts());
-        if (record.recordType === "lesson") apply(countsFor(byLesson, lessonIdentity(record.item, record.id)));
+        if (record.recordType === "lesson") {
+          const identity = lessonIdentity(record.item, record.id);
+          apply(countsFor(byLesson, identity));
+          const rows = citedFor(identity).observations;
+          if (!rows.some((row) => row.source === ledger.source && row.line === lines[at])) rows.push({ source: ledger.source, line: lines[at] });
+        }
       }
     }
   }
@@ -152,6 +166,7 @@ export function buildAccounting({ ledgers = [], retrospectives = [], indexed = n
       if (lesson.recurs == null || lesson.recurs === lesson.identity || seenNewLessons.has(lesson.identity)) continue;
       seenNewLessons.add(lesson.identity);
       countsFor(byLesson, lesson.recurs).recurred += 1;
+      citedFor(lesson.recurs).recurrences.push({ source: retrospective.source, line: lesson.line, identity: lesson.identity });
     }
   }
 
@@ -175,6 +190,7 @@ export function buildAccounting({ ledgers = [], retrospectives = [], indexed = n
         ...(byLesson.get(identity) ?? emptyCounts()),
         provenance: record == null ? "unresolved" : "indexed",
         ...(record?.title ? { title: record.title } : {}),
+        ...(evidence ? { evidence: cited.get(identity) ?? { observations: [], recurrences: [] } } : {}),
       }];
     }));
   }
@@ -194,12 +210,13 @@ async function readSource(file, owner, workDir) {
 }
 
 // Every item the stream enumerates — live, story and archived — with its ledger and retrospective
-// when it has them. A missing file is no evidence, not a defect.
-export async function readAccountingSources(workDir) {
+// when it has them. A missing file is no evidence, not a defect. `items` narrows the read to the
+// ones a caller already selected (tune's scope): an unselected item's files are never opened.
+export async function readAccountingSources(workDir, { items = null } = {}) {
   const ledgers = [];
   const retrospectives = [];
   const seen = new Set();
-  for (const item of await listItems(workDir)) {
+  for (const item of items ?? await listItems(workDir)) {
     if (item.number == null || item.dir == null || seen.has(item.dir)) continue;
     seen.add(item.dir);
     const ledger = await readSource(path.join(item.dir, FEEDBACK_RECORD_FILE), item.ref, workDir);
@@ -212,8 +229,8 @@ export async function readAccountingSources(workDir) {
 
 // accountMemory — read the stream and build the report. `indexed` is the current index's records
 // (lesson rows are picked from them); `null` when the backend has none to offer.
-export async function accountMemory(workDir, { indexed = null, lessons = false } = {}) {
-  const sources = await readAccountingSources(workDir);
+export async function accountMemory(workDir, { indexed = null, lessons = false, items = null } = {}) {
+  const sources = await readAccountingSources(workDir, { items });
   const lessonRecords = Array.isArray(indexed) ? indexed.filter((record) => record?.recordType === "lesson") : null;
   return buildAccounting({ ...sources, indexed: lessonRecords, lessons });
 }

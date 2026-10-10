@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import os from "node:os";
 import path from "node:path";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { resolveCitationAtEmit } from "@aof/work/tune/provenance";
 
 const CORPUS_LANES = _aofApplication.work.tune.corpus.CORPUS_LANES;
 const assembleCorpus = _aofApplication.work.tune.corpus.assembleCorpus;
@@ -26,6 +27,22 @@ async function fixture(run) {
 }
 
 const lowFloors = () => CORPUS_LANES.map((entry) => Object.freeze({ ...entry, floor: 1 }));
+
+// 153/05 — promoted lessons, recall ledgers and recurrence stamps in the corpus.
+const META = "- **Kind:** mistake · **Area:** process · **Stage:** build · **Owner:** developer";
+const promotedLesson = (id, ...extra) => [`## ${id} — a lesson`, META, ...extra, "", "- **Lesson:** Keep it.", ""].join("\n");
+const recall = (id, item, lessonId, verdict) => JSON.stringify({
+  kind: "recall", id, at: "2026-10-10T10:00:00.000Z", edge: "refine.architect", actor: "architect", query: "junction", scope: {},
+  records: [{ item, id: lessonId, recordType: "lesson", verdict }],
+});
+const ledgerOf = (...rows) => `${rows.join("\n")}\n`;
+async function addMilestone(workDir, number, { retro = null, ledger = null } = {}) {
+  const dir = await addItem(workDir, number);
+  if (retro != null) await put(path.join(dir, "RETROSPECTIVE.md"), `# Retrospective\n\n${retro}`);
+  if (ledger != null) await put(path.join(dir, "FEEDBACK.ndjson"), ledger);
+  return dir;
+}
+const lessonsOf = (corpus) => corpus.lanes.find((entry) => entry.lane === "lessons").contribution;
 
 async function addItem(workDir, number, slug = `item-${number}`) {
   const dir = path.join(workDir, `${number}_milestone_${slug}`);
@@ -225,6 +242,115 @@ export const tuneCorpusTests = [
         (error) => error?.code === "work-tune-workdir-unsupported" && /cwd\/wiki\/work/u.test(error.message),
         "an alternate work root is explicitly refused before readers can mix trees",
       );
+    }),
+  },
+  {
+    name: "work tune corpus 153/05: a lesson's own promotion is its target — one prompt outranks prose, several choose nothing",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      await addMilestone(workDir, "10", {
+        retro: [
+          promotedLesson("R1", "- **Promoted to:** prompt:packages/core/assets/commands/refine.md"),
+          promotedLesson("R2", "- **Promoted to:** prompt:a.md prompt:b.md"),
+          promotedLesson("R3", "- **Promoted to:** rule:.aof/rules/x.md"),
+          promotedLesson("R4", "- **Promoted to:** none"),
+          promotedLesson("R5", "- **Promoted to:** prompt:a.md", "- **What happened:** it declares `config:work.loop.reviewRounds` in prose."),
+          promotedLesson("R6", "- **Promoted to:** none", "- **What happened:** it declares `config:work.loop.reviewRounds` in prose."),
+          promotedLesson("R7", "- **Promoted to:** rule:.aof/rules/x.md", "- **What happened:** it declares `config:work.loop.reviewRounds` in prose."),
+          promotedLesson("R8"),
+        ].join("\n"),
+      });
+      const byId = Object.fromEntries(lessonsOf(await assembleCorpus({ cwd, lanes: lowFloors() })).map((lesson) => [lesson.id, lesson]));
+      assert.equal(byId.R1.target, "prompt:packages/core/assets/commands/refine.md");
+      assert.equal(byId.R2.target, null, "two destinations are ambiguous, not a pick");
+      assert.equal(byId.R3.target, "rule:.aof/rules/x.md", "a rule destination is carried so it can be named, not mistaken for a prompt");
+      assert.equal(byId.R4.target, null);
+      assert.equal(byId.R5.target, "prompt:a.md", "an explicit prompt destination outranks a pointer the prose mentions");
+      assert.equal(byId.R6.target, "config:work.loop.reviewRounds", "an unpromoted lesson keeps its prose-derived target");
+      assert.equal(byId.R7.target, "config:work.loop.reviewRounds", "a non-prompt destination does not displace a config pointer");
+      assert.equal(byId.R8.target, null, "a legacy lesson is untouched");
+      assert.equal(byId.R8.status, "", "and still carries the empty promotion it always had");
+    }),
+  },
+  {
+    name: "work tune corpus 153/05: an explicit Recurs is cited as a second document, and resolves through the retrospective's own id",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      await addMilestone(workDir, "45", { retro: promotedLesson("R13", "- **Promoted to:** none") });
+      await addMilestone(workDir, "68", { retro: promotedLesson("R10", "- **Promoted to:** none", "- **Recurs:** 45/R13") });
+      const lesson = lessonsOf(await assembleCorpus({ cwd, scope: "68", lanes: lowFloors() }))[0];
+      assert.ok(lesson.citations.includes("45/R13"), "the earlier lesson is cited by its qualified reference");
+      assert.ok(lesson.citations.some((citation) => citation.startsWith("wiki/work/68_")));
+      const resolved = resolveCitationAtEmit("45/R13", { rootDir: cwd });
+      assert.equal(resolved.ok, true, "a retrospective lesson id is declared by its heading");
+      assert.match(resolved.resolved.document, /^wiki\/work\/45_milestone_item-45\/RETROSPECTIVE\.md$/u);
+    }),
+  },
+  {
+    name: "work tune corpus 153/05: memory evidence reads only the selected items, and names the lane it read",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      await addMilestone(workDir, "45", {
+        retro: promotedLesson("R13", "- **Promoted to:** none"),
+        ledger: ledgerOf(recall("a", "45", "R13", "honoured"), recall("b", "45", "R13", "departed")),
+      });
+      await addMilestone(workDir, "68", {
+        retro: promotedLesson("R10", "- **Promoted to:** none", "- **Recurs:** 45/R13"),
+        ledger: ledgerOf(recall("c", "45", "R13", "honoured")),
+      });
+      const all = await assembleCorpus({ cwd, lanes: lowFloors() });
+      assert.equal(all.memory.lessons["45/R13"].surfaced, 3);
+      assert.equal(all.memory.lessons["45/R13"].recurred, 1);
+      assert.deepEqual(all.memory.items, ["45", "68"]);
+
+      const scoped = await assembleCorpus({ cwd, scope: "68", lanes: lowFloors() });
+      assert.deepEqual(scoped.memory.items, ["68"]);
+      assert.deepEqual(scoped.memory.ledgers, ["wiki/work/68_milestone_item-68/FEEDBACK.ndjson"], "the unselected item's ledger is not opened");
+      assert.equal(scoped.memory.lessons["45/R13"].surfaced, 1, "only the selected item's observation counts");
+      assert.equal(scoped.memory.lessons["45/R13"].honoured, 1);
+      assert.equal(scoped.memory.lessons["45/R13"].departed, 0, "the unrelated incident does not leak in");
+      assert.equal(scoped.memory.lessons["45/R13"].recurred, 1, "the selected retrospective's explicit recurrence counts");
+      assert.deepEqual(scoped.memory.lessons["45/R13"].evidence.observations, [{ source: "wiki/work/68_milestone_item-68/FEEDBACK.ndjson", line: 1 }]);
+      assert.equal(scoped.memory.lane, "recall-ledger");
+      assert.equal(scoped.lanes.length, 3, "memory is evidence beside the three declared lanes, not a fourth lane");
+      assert.match(renderCorpusReport(scoped), /memory: read 1 ledger\(s\) and 1 retrospective\(s\) of 1 selected item\(s\) \(recall-ledger\)/u);
+    }),
+  },
+  {
+    name: "work tune corpus 153/05: a missing ledger is zero, a corrupt row is diagnosed with its source, and valid evidence is not called corrupt",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      await addMilestone(workDir, "45", { retro: promotedLesson("R13", "- **Promoted to:** none") });
+      await addMilestone(workDir, "46", {
+        retro: promotedLesson("R1", "- **Promoted to:** none"),
+        ledger: ledgerOf(recall("ok", "46", "R1", "honoured"), JSON.stringify({ kind: "recall", id: "bad" })),
+      });
+      await addMilestone(workDir, "47", { ledger: ledgerOf(recall("fine", "47", "R7", "departed")) });
+      const corpus = await assembleCorpus({ cwd, lanes: lowFloors() });
+      assert.deepEqual(corpus.memory.ledgers, ["wiki/work/46_milestone_item-46/FEEDBACK.ndjson", "wiki/work/47_milestone_item-47/FEEDBACK.ndjson"], "the item with no ledger contributes none");
+      assert.equal(corpus.memory.diagnostics.length, 1);
+      assert.equal(corpus.memory.diagnostics[0].source, "wiki/work/46_milestone_item-46/FEEDBACK.ndjson");
+      assert.equal(corpus.memory.diagnostics[0].line, 2);
+      assert.match(corpus.memory.diagnostics[0].defect, /invalid recall observation/u);
+      assert.equal(corpus.memory.complete, false);
+      assert.equal(corpus.memory.lessons["46/R1"].honoured, 1, "the valid row beside the corrupt one still counts");
+      assert.equal(corpus.memory.lessons["47/R7"].departed, 1, "an unrelated valid ledger is intact");
+      assert.equal(corpus.memory.diagnostics.some((entry) => entry.source.includes("47_")), false);
+      assert.equal(corpus.memory.lessons["45/R13"], undefined, "no ledger, no observation — and no invented zero row");
+    }),
+  },
+  {
+    name: "work tune corpus 153/05: the promotion destination is where a fix goes, not what happened — it is not cited as evidence",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      await put(path.join(cwd, "docs", "incident.md"), "# an incident\n");
+      await addMilestone(workDir, "10", {
+        retro: [
+          promotedLesson("R1", "- **Promoted to:** prompt:packages/core/assets/commands/refine.md", "- **What happened:** see docs/incident.md and packages/core/assets/commands/refine.md"),
+          promotedLesson("R2", "- **Promoted to:** prompt:/etc/aof-refine.md"),
+          promotedLesson("R3", "- **Promoted to:** none", "- **What happened:** see docs/incident.md and packages/core/assets/commands/refine.md"),
+        ].join("\n"),
+      });
+      const byId = Object.fromEntries(lessonsOf(await assembleCorpus({ cwd, lanes: lowFloors() })).map((lesson) => [lesson.id, lesson]));
+      assert.ok(byId.R1.citations.includes("docs/incident.md"), "what happened is still cited");
+      assert.equal(byId.R1.citations.some((citation) => citation.includes("refine.md")), false, "the file the patch edits is not evidence for the patch");
+      assert.equal(byId.R2.citations.some((citation) => citation.includes("aof-refine")), false, "an absolute destination is matched by its tail");
+      assert.ok(byId.R3.citations.some((citation) => citation.includes("refine.md")), "a lesson that promoted nowhere keeps every path it mentions");
     }),
   },
 ];

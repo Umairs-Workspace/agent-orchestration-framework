@@ -188,4 +188,48 @@ export const memoryAccountingTests = [
       assert.deepEqual(effectiveness.diagnostics.map((diagnostic) => diagnostic.defect), ["unreadable ledger file"]);
     }),
   },
+  {
+    name: "153/05: with evidence on, each lesson names the ledger lines and the distinct new lessons its counts came from",
+    run: () => {
+      const effectiveness = buildAccounting({
+        ledgers: [sourceLedger(ledger(observation("r1", [returned("45", "R13", "honoured")]), "", observation("r2", [returned("45", "R13", "departed")]), observation("r1", [returned("45", "R13", "honoured")])))],
+        retrospectives: [sourceRetro("68", retro(["## R10 — repeat", META, "- **Recurs:** 45/R13"]))],
+        lessons: true,
+        evidence: true,
+      });
+      const cited = effectiveness.lessons["45/R13"].evidence;
+      assert.deepEqual(cited.observations, [{ source: "45/FEEDBACK.ndjson", line: 1 }, { source: "45/FEEDBACK.ndjson", line: 3 }], "a blank line is counted in the numbering and an identical replay is cited once");
+      assert.deepEqual(cited.recurrences, [{ source: "68/RETROSPECTIVE.md", line: 3, identity: "68/R10" }]);
+      assert.deepEqual(pick(effectiveness.lessons["45/R13"]), counts(2, 1, 1, 0, 1));
+      const without = buildAccounting({ ledgers: [sourceLedger(ledger(observation("r1", [returned("45", "R13", "honoured")])))], lessons: true });
+      assert.equal("evidence" in without.lessons["45/R13"], false, "the extra is opt-in; the status face is unchanged");
+    },
+  },
+  {
+    name: "153/05: readLedgerText reports the line of each observation beside it",
+    run: () => {
+      const { observations, lines, defects } = readLedgerText(ledger("{not json", observation("r1", [returned("45", "R13", "honoured")]), { kind: "raw", id: "a" }, observation("r2", [])));
+      assert.equal(observations.length, 2);
+      assert.deepEqual(lines, [2, 4]);
+      assert.deepEqual(defects.map((defect) => defect.line), [1]);
+    },
+  },
+  {
+    name: "153/05: the stream walk can be narrowed to selected items, and never opens the others",
+    run: () => scratch(async (root) => {
+      const workDir = path.join(root, "wiki", "work");
+      const fields = (number) => ({ type: "milestone", number: `"${number}"`, slug: `m${number}`, status: "done" });
+      const row = (id, item) => `${JSON.stringify(observation(id, [returned(item, "R13", "honoured")]))}\n`;
+      const dirs = { 45: path.join(workDir, "45_milestone_m45"), 68: path.join(workDir, "68_milestone_m68") };
+      await writeItem(dirs[45], "SPEC.md", fields(45), { "FEEDBACK.ndjson": "{not json\n" });
+      await writeItem(dirs[68], "SPEC.md", fields(68), { "FEEDBACK.ndjson": row("c", "45") });
+      const { listItems } = await import("../src/discovery.mjs");
+      const selected = (await listItems(workDir)).filter((item) => item.ref === "68");
+      const narrowed = await accountMemory(workDir, { items: selected, lessons: true });
+      assert.equal(narrowed.complete, true, "the unselected item's corrupt ledger is neither read nor diagnosed");
+      assert.deepEqual(pick(narrowed.lessons["45/R13"]), counts(1, 1, 0, 0, 0));
+      const everything = await accountMemory(workDir, { lessons: true });
+      assert.equal(everything.complete, false, "unnarrowed, the same stream still reports it");
+    }),
+  },
 ];

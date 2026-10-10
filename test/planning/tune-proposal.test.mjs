@@ -60,6 +60,21 @@ const context = (overrides = {}) => ({
 
 const emitted = (candidate, options = {}) => emitProposal(candidate, context(options)).proposal;
 
+// 153/05 — fixtures for a promoted lesson's prompt revision.
+const PROMPT = "prompt:packages/core/assets/commands/refine.md";
+const LESSON_TEXT = "Declare the existing counter's owning suite before drawing the write set.";
+const TARGET_BYTES = "# refine\nstep one\n";
+const BLOCK = `<!-- aof:lesson 45/R13 -->\n${LESSON_TEXT}\n<!-- /aof:lesson 45/R13 -->\n`;
+const promptCandidate = (overrides = {}) => ({
+  class: PROPOSAL_CLASSES.PROMPT_REVISION,
+  target: PROMPT,
+  evidence: [{ source: "one.md" }, { source: "two.md" }],
+  promptLessons: [{ ref: "45/R13", text: LESSON_TEXT }],
+  canonicalLesson: "45/R13",
+  ...overrides,
+});
+const promptContext = (bytes) => context({ readTarget: (target) => ({ present: true, value: bytes, source: target.id }) });
+
 export const tuneProposalTests = [
   {
     name: "tune proposal 62/01 target schemes have one deterministic class map",
@@ -442,6 +457,115 @@ export const tuneProposalTests = [
       const moved = emitted(cap(), { acceptorReport: { valueAt: 4 } });
       const prompt = emitted({ class: PROPOSAL_CLASSES.PROMPT_REVISION, target: { kind: "prompt", path: "p.md" } });
       assert.notEqual(moved.reason.code, prompt.reason.code);
+    },
+  },
+  // ---------------------------------------------------------------------------------------------
+  // 153/05 — a promoted lesson's prompt revision is a computed, advisory, read-only patch.
+  // ---------------------------------------------------------------------------------------------
+  {
+    name: "tune proposal 153/05 E3: a prompt destination makes the replacement text computable, advisory and unapplied",
+    run: () => {
+      const proposal = emitProposal(promptCandidate(), promptContext(TARGET_BYTES)).proposal;
+      assert.equal(proposal.lane, PROPOSAL_LANES.ADVISORY);
+      assert.equal(proposal.applier, null, "no automatic applier is registered or invoked");
+      assert.notEqual(proposal.reason?.code, PROPOSAL_REASONS.REPLACEMENT_PROSE_NOT_COMPUTABLE);
+      assert.equal(proposal.reason.code, PROPOSAL_REASONS.APPLIER_NOT_REGISTERED);
+      assert.equal(proposal.reason.handEdit, true, "the operator applies it by hand");
+      assert.equal(proposal.patch.from, TARGET_BYTES, "from is the exact current bytes");
+      assert.equal(proposal.patch.to, `${TARGET_BYTES}\n${BLOCK}`, "to appends one deterministic block");
+      assert.match(proposal.patch.to, /<!-- aof:lesson 45\/R13 -->/u, "the block names the canonical lesson");
+      assert.ok(proposal.patch.to.includes(LESSON_TEXT), "the block carries the exact Lesson text");
+      assert.equal(proposal.patch.target.raw, PROMPT);
+    },
+  },
+  {
+    name: "tune proposal 153/05 E3: the block is a pure function of the lesson and the bytes — repeated generation is identical",
+    run: () => {
+      const first = emitProposal(promptCandidate(), promptContext(TARGET_BYTES)).proposal;
+      const second = emitProposal(promptCandidate(), promptContext(TARGET_BYTES)).proposal;
+      assert.deepEqual(second, first);
+      const noTrailingNewline = emitProposal(promptCandidate(), promptContext("# refine")).proposal;
+      assert.equal(noTrailingNewline.patch.to, `# refine\n\n${BLOCK}`, "a missing final newline is supplied, not doubled");
+      const empty = emitProposal(promptCandidate(), promptContext("")).proposal;
+      assert.equal(empty.patch.to, BLOCK, "an empty file gets the block alone");
+      const crlf = emitProposal(promptCandidate(), promptContext("# refine\r\nstep\r\n")).proposal;
+      assert.equal(crlf.patch.to, `# refine\r\nstep\r\n\r\n${BLOCK.replace(/\n/gu, "\r\n")}`, "the file's own line ending is kept");
+    },
+  },
+  {
+    name: "tune proposal 153/05 E4: a lesson block already in force is a finding, not a duplicate patch",
+    run: () => {
+      const inForce = `${TARGET_BYTES}\n${BLOCK}`;
+      const first = emitProposal(promptCandidate(), promptContext(inForce));
+      assert.equal(first.proposal, null);
+      assert.equal(first.finding.code, PROPOSAL_REASONS.ALREADY_IN_FORCE);
+      assert.equal(first.finding.lesson, "45/R13");
+      assert.deepEqual(emitProposal(promptCandidate(), promptContext(inForce)), first, "repeated reports are deterministic");
+      const result = emitProposals([promptCandidate()], promptContext(inForce));
+      assert.deepEqual(result.proposals, []);
+      assert.equal(result.findings.length, 1);
+    },
+  },
+  ...[
+    ["no promotion target", { target: null, class: PROPOSAL_CLASSES.STORY_SIZING }, TARGET_BYTES, PROPOSAL_REASONS.NO_TARGET_TO_CHANGE],
+    ["a rule target", { target: "rule:.aof/rules/x.md", class: undefined }, TARGET_BYTES, PROPOSAL_REASONS.NO_PROMPT_REVISION],
+    ["a control target", { target: "control:FF-1", class: undefined }, TARGET_BYTES, PROPOSAL_REASONS.NO_PROMPT_REVISION],
+    ["conflicting lesson text for one ref", { promptLessons: [{ ref: "45/R13", text: "one" }, { ref: "45/R13", text: "two" }] }, TARGET_BYTES, PROPOSAL_REASONS.CONFLICTING_REPLACEMENT_TEXT],
+    ["an empty Lesson field", { promptLessons: [{ ref: "45/R13", text: "" }] }, TARGET_BYTES, PROPOSAL_REASONS.REPLACEMENT_TEXT_MISSING],
+    ["a whitespace-only Lesson field", { promptLessons: [{ ref: "45/R13", text: "  " }] }, TARGET_BYTES, PROPOSAL_REASONS.REPLACEMENT_TEXT_MISSING],
+    ["a missing target file", {}, undefined, PROPOSAL_REASONS.TARGET_UNREADABLE],
+    ["an absolute target path", { target: "prompt:/etc/refine.md" }, TARGET_BYTES, PROPOSAL_REASONS.TARGET_BOUNDARY],
+    ["a drive-letter target path", { target: "prompt:C:/x/refine.md" }, TARGET_BYTES, PROPOSAL_REASONS.TARGET_BOUNDARY],
+    ["a parent traversal target path", { target: "prompt:../outside/refine.md" }, TARGET_BYTES, PROPOSAL_REASONS.TARGET_BOUNDARY],
+    ["a backslash traversal target path", { target: "prompt:docs\\..\\..\\refine.md" }, TARGET_BYTES, PROPOSAL_REASONS.TARGET_BOUNDARY],
+    ["a generated .claude command target", { target: "prompt:.claude/commands/aof/refine.md" }, TARGET_BYTES, PROPOSAL_REASONS.AUTHORED_TARGET_REQUIRED],
+    ["a generated .codex target", { target: "prompt:./.codex/prompts/refine.md" }, TARGET_BYTES, PROPOSAL_REASONS.AUTHORED_TARGET_REQUIRED],
+  ].map(([condition, overrides, bytes, code]) => ({
+    name: `tune proposal 153/05 outline: ${condition} is an explicit finding with no applicable patch and no read it should not make`,
+    run: () => {
+      let reads = 0;
+      const readTarget = (target) => {
+        reads += 1;
+        return bytes === undefined ? { readable: false, error: "no such file" } : { present: true, value: bytes, source: target.id };
+      };
+      const proposal = emitProposal(promptCandidate(overrides), context({ readTarget })).proposal;
+      assert.equal(proposal.patch, null);
+      assert.equal(proposal.reason.code, code);
+      assert.equal(proposal.applier, null);
+      if ([PROPOSAL_REASONS.TARGET_BOUNDARY, PROPOSAL_REASONS.AUTHORED_TARGET_REQUIRED, PROPOSAL_REASONS.NO_PROMPT_REVISION, PROPOSAL_REASONS.NO_TARGET_TO_CHANGE].includes(code)) {
+        assert.equal(reads, 0, "a refused destination is never opened");
+      }
+    },
+  })),
+  {
+    name: "tune proposal 153/05: a changed target invalidates the earlier premise — premise-moved, never a silent rebase",
+    run: () => {
+      const proposal = emitProposal(promptCandidate({ assumedFrom: TARGET_BYTES }), promptContext(`${TARGET_BYTES}an operator edit\n`)).proposal;
+      assert.equal(proposal.patch, null);
+      assert.equal(proposal.reason.code, PROPOSAL_REASONS.PREMISE_MOVED);
+      assert.equal(proposal.reason.assumed, TARGET_BYTES);
+      assert.equal(proposal.reason.inForce, `${TARGET_BYTES}an operator edit\n`);
+      const unmoved = emitProposal(promptCandidate({ assumedFrom: TARGET_BYTES }), promptContext(TARGET_BYTES)).proposal;
+      assert.equal(unmoved.reason.code, PROPOSAL_REASONS.APPLIER_NOT_REGISTERED, "an unmoved premise still yields the patch");
+      assert.ok(unmoved.patch);
+    },
+  },
+  {
+    name: "tune proposal 153/05: a prompt candidate carrying no lesson to quote keeps the legacy uncomputable reason",
+    run: () => {
+      const legacy = emitProposal({ class: PROPOSAL_CLASSES.PROMPT_REVISION, target: PROMPT }, promptContext(TARGET_BYTES)).proposal;
+      assert.equal(legacy.reason.code, PROPOSAL_REASONS.REPLACEMENT_PROSE_NOT_COMPUTABLE);
+      assert.equal(legacy.patch, null);
+    },
+  },
+  {
+    name: "tune proposal 153/05: a cap adjustment beside a prompt candidate keeps its own lane and acceptor-facing shape",
+    run: () => {
+      const lanes = laneProposals([cap(), promptCandidate()], { model: model(), assessTunable: (candidate) => ({ assessed: candidate.class }) });
+      assert.equal(lanes.acceptorConsulted, 1, "only the ordinal candidate is assessed");
+      assert.deepEqual(lanes.tunable.map((entry) => entry.candidate.class), [PROPOSAL_CLASSES.CAP_ADJUSTMENT]);
+      assert.deepEqual(lanes.advisory.map((entry) => entry.candidate.class), [PROPOSAL_CLASSES.PROMPT_REVISION]);
+      assert.equal(lanes.advisory[0].ground.code, PROPOSAL_REASONS.REPLACEMENT_PROSE_NOT_COMPUTABLE, "the lane ground is unchanged; computability is the patch's");
     },
   },
 ];
