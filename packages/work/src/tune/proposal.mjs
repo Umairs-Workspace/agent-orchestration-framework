@@ -33,6 +33,11 @@ const PROPOSAL_REASONS = Object.freeze({
   PROPOSED_VALUE_UNEXPECTED_SHAPE: "proposed-value-unexpected-shape",
   PROPOSED_MODEL_UNEXPECTED_SHAPE: "proposed-model-unexpected-shape",
   ALREADY_IN_FORCE: "already-in-force",
+  NO_PROMPT_REVISION: "no-prompt-revision",
+  TARGET_BOUNDARY: "target-boundary",
+  AUTHORED_TARGET_REQUIRED: "authored-target-required",
+  CONFLICTING_REPLACEMENT_TEXT: "conflicting-replacement-text",
+  REPLACEMENT_TEXT_MISSING: "replacement-text-missing",
 });
 
 // `"absent"` is the report/patch representation, not the in-memory sentinel. A
@@ -258,11 +263,87 @@ function missingPatchReason(parts) {
   });
 }
 
+// A prompt revision appends one delimited block per canonical lesson to an AUTHORED prompt file. The
+// block is a pure function of the lesson's reference and Lesson text, so the same evidence over the same
+// bytes yields the same patch, and a block already present is the answer "already in force".
+const LF = "\n";
+const CRLF = "\r\n";
+// The markers are plain strings, not template literals: a template carrying a slash-command token is what
+// the assignment-directive control reads as authoring a phase command, and this is a comment delimiter.
+const BLOCK_OPEN = "<!-- aof:lesson ";
+const BLOCK_CLOSE = "<!-- /aof:lesson ";
+const BLOCK_END = " -->";
+const lessonBlock = (ref, text, eol) => [BLOCK_OPEN + ref + BLOCK_END, text, BLOCK_CLOSE + ref + BLOCK_END].join(eol);
+
+// Runtime folders are rendered FROM the authored assets; a patch to one would be overwritten by the next
+// render, so the authored source is the only admitted destination.
+const GENERATED_RUNTIME_ROOTS = freeze([".claude", ".codex"]);
+
+function lexicalTargetProblem(raw) {
+  const written = String(raw ?? "");
+  const segments = written.split(/[\\/]/u);
+  if (written === "" || /^(?:[\\/]|[A-Za-z]:)/u.test(written) || segments.includes("..")) return PROPOSAL_REASONS.TARGET_BOUNDARY;
+  if (GENERATED_RUNTIME_ROOTS.includes(segments.find((segment) => segment !== "" && segment !== ".") ?? "")) {
+    return PROPOSAL_REASONS.AUTHORED_TARGET_REQUIRED;
+  }
+  return null;
+}
+
+function promptPatchFor(candidate, context, target) {
+  const refuse = (code, extra = {}) => ({ patch: null, reason: freeze({ code, target: target?.raw ?? null, ...extra }) });
+  if (target == null || target.kind == null) return refuse(PROPOSAL_REASONS.NO_TARGET_TO_CHANGE);
+  if (target.kind !== "prompt") return refuse(PROPOSAL_REASONS.NO_PROMPT_REVISION);
+  const lexical = lexicalTargetProblem(target.id);
+  if (lexical != null) return refuse(lexical);
+
+  const entries = (candidate.promptLessons ?? []).filter((entry) => entry.ref === candidate.canonicalLesson);
+  const texts = [...new Set(entries.map((entry) => String(entry.text ?? "").trim()))];
+  if (texts.length > 1) return refuse(PROPOSAL_REASONS.CONFLICTING_REPLACEMENT_TEXT, { lesson: candidate.canonicalLesson, texts: freeze(texts) });
+  if (texts.length === 0 || texts[0] === "") return refuse(PROPOSAL_REASONS.REPLACEMENT_TEXT_MISSING, { lesson: candidate.canonicalLesson });
+
+  const current = normalizeReading(typeof context.readTarget === "function" ? context.readTarget(target, candidate) : undefined, "target-accessor");
+  if (!current.readable) {
+    const boundary = current.error === PROPOSAL_REASONS.TARGET_BOUNDARY;
+    return boundary
+      ? refuse(PROPOSAL_REASONS.TARGET_BOUNDARY)
+      : refuse(PROPOSAL_REASONS.TARGET_UNREADABLE, { error: current.error });
+  }
+  if (typeof current.value !== "string") {
+    return refuse(PROPOSAL_REASONS.UNEXPECTED_VALUE_SHAPE, { found: typeof current.value });
+  }
+  const assumed = assumedValue(candidate);
+  if (assumed.known && !valuesEqual(assumed.value, current.value)) {
+    return refuse(PROPOSAL_REASONS.PREMISE_MOVED, { assumed: refusalValue(assumed.value), inForce: refusalValue(current.value) });
+  }
+  const eol = current.value.includes(CRLF) ? CRLF : LF;
+  const block = lessonBlock(candidate.canonicalLesson, texts[0], eol);
+  if (current.value.includes(block)) {
+    return {
+      patch: null,
+      finding: freeze({ code: PROPOSAL_REASONS.ALREADY_IN_FORCE, target: target.raw, lesson: candidate.canonicalLesson }),
+    };
+  }
+  const separator = current.value === "" ? "" : current.value.endsWith(LF) ? eol : `${eol}${eol}`;
+  return {
+    patch: freeze({ target, from: current.value, to: `${current.value}${separator}${block}${eol}`, fromSource: current.source, lesson: candidate.canonicalLesson }),
+    reason: null,
+  };
+}
+
 function patchFor(candidate, context, laneInfo) {
   const kind = classOf(candidate);
   const target = laneInfo.target;
   if (kind === PROPOSAL_CLASSES.PROMPT_REVISION) {
-    return { patch: null, reason: freeze({ code: PROPOSAL_REASONS.REPLACEMENT_PROSE_NOT_COMPUTABLE }) };
+    // A candidate that carries no lesson to quote (a hand-built brief, a legacy record) has no replacement
+    // text to compute; only a promoted lesson's own Lesson field is a source for one.
+    if (!Array.isArray(candidate?.promptLessons)) {
+      return { patch: null, reason: freeze({ code: PROPOSAL_REASONS.REPLACEMENT_PROSE_NOT_COMPUTABLE }) };
+    }
+    return promptPatchFor(candidate, context, target);
+  }
+  // A lesson promoted to a rule or a control has its prevention elsewhere: there is no prompt to revise.
+  if (kind == null && (target?.kind === "rule" || target?.kind === "control")) {
+    return { patch: null, reason: freeze({ code: PROPOSAL_REASONS.NO_PROMPT_REVISION, target: target.raw }) };
   }
   if (kind === PROPOSAL_CLASSES.STORY_SIZING) {
     return { patch: null, reason: freeze({ code: PROPOSAL_REASONS.NO_TARGET_TO_CHANGE }) };

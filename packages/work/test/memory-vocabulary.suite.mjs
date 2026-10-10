@@ -18,6 +18,7 @@ import {
   normaliseLessonMeta,
   normaliseValue,
   promotionBoundary,
+  promotionPointers,
   readLessonMeta,
   readPromotion,
 } from "@aof/work/memory-vocabulary";
@@ -180,6 +181,21 @@ export const memoryVocabularyTests = [
       }
       assert.deepEqual(promotionBoundary("# no frontmatter\n"), { state: "absent" });
       assert.equal(promotionBoundary("---\npromotionFrom: '7'\n---\n").from, 7, "a quoted integer is an integer");
+    },
+  },
+  {
+    name: "153/05: promotionPointers names every destination a Promoted to value carries, distinct and in written order",
+    run: () => {
+      assert.deepEqual(promotionPointers("prompt:packages/core/assets/commands/refine.md"), [
+        { kind: "prompt", path: "packages/core/assets/commands/refine.md", raw: "prompt:packages/core/assets/commands/refine.md" },
+      ]);
+      assert.deepEqual(promotionPointers("`rule:.aof/rules/x.md`").map((pointer) => pointer.raw), ["rule:.aof/rules/x.md"], "emphasis is stripped, as readPromotion strips it");
+      assert.deepEqual(promotionPointers("prompt:a.md prompt:b.md prompt:a.md").map((pointer) => pointer.raw), ["prompt:a.md", "prompt:b.md"], "several destinations are returned, not chosen between; a repeat is one");
+      assert.deepEqual(promotionPointers("control:FF-1 and rule:r.md").map((pointer) => pointer.kind), ["control", "rule"]);
+      assert.deepEqual(promotionPointers("none"), []);
+      assert.deepEqual(promotionPointers(""), []);
+      assert.deepEqual(promotionPointers(undefined), []);
+      assert.deepEqual(promotionPointers("see subprompt:x.md and noprompt:y"), [], "a pointer must start a word, so a longer word that ends in one names nothing");
     },
   },
 ];

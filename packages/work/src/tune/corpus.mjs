@@ -4,7 +4,9 @@ import { readFile } from "node:fs/promises";
 import { SWEEP_BASES, readRecord, sweepDeclarationProblems } from "../audit/reads.mjs";
 import { itemInScope } from "../ref-scope.mjs";
 import { listItems } from "../discovery.mjs";
-import { pathCitationsIn } from "../audit/controls.mjs";
+import { pathCitationsIn, splitPathLocator } from "../audit/controls.mjs";
+import { buildAccounting, readAccountingSources, ACCOUNTING_BASIS } from "../memory-accounting.mjs";
+import { promotionPointers } from "../memory-vocabulary.mjs";
 
 // Core supplies application assets and cross-domain readers.
 export function createTuneCorpus({ parseRetrospective, readRuns, runNodeRecordPath, runRecordPath, readLatestSnapshot, loopPointersIn }) {
@@ -96,12 +98,37 @@ async function readLessons(items, cwd) {
       const targets = [...new Set(loopPointersIn(section)
         .filter((pointer) => pointer.scheme === "config")
         .map((pointer) => pointer.raw))];
+      // The lesson's own `Promoted to` is an explicit statement of where its prevention went. One
+      // prompt destination outranks a pointer the prose happens to mention; any other single
+      // destination (a rule, a control) is only a fallback when the prose names no config pointer.
+      // A value naming several destinations picks none — the candidate reports the disagreement.
+      const promoted = promotionPointers(lesson.status);
+      const promotedTarget = promoted.length === 1 ? promoted[0] : null;
+      const target = promotedTarget?.kind === "prompt"
+        ? promotedTarget.raw
+        : targets.length === 1
+          ? targets[0]
+          : targets.length === 0 && promotedTarget != null ? promotedTarget.raw : null;
+      // An explicit recurrence names the earlier lesson, which is a second document the later one
+      // stands on. It is cited by its qualified reference and resolved by the provenance resolver,
+      // exactly as any other cited lesson is.
+      // The destination is where the prevention goes, not what happened: citing it would count the file the
+      // patch edits as evidence for the patch, and would demote a lesson whose destination does not exist yet
+      // before the missing target could be reported as such.
+      const destinations = new Set(promoted.map((pointer) => splitPathLocator(pointer.path).path));
+      // The citation grammar drops a leading separator, so an absolute destination is matched by its tail.
+      const isDestination = (citation) => {
+        const cited = splitPathLocator(citation).path;
+        return [...destinations].some((destination) => destination === cited || destination.endsWith(`/${cited}`));
+      };
+      const evidencePaths = pathCitationsIn(section).filter((citation) => !isDestination(citation));
+      const recurs = (lesson.tags ?? []).filter((tag) => tag.startsWith("recurs:")).map((tag) => tag.slice("recurs:".length));
       records.push(Object.freeze({
         ...lesson,
-        citations: Object.freeze([...new Set([lesson.source, ...pathCitationsIn(section)])]),
+        citations: Object.freeze([...new Set([lesson.source, ...evidencePaths, ...recurs])]),
         // The loop grammar owns pointer validity. The corpus only joins the
-        // one unambiguous structured config pointer to its owning lesson.
-        target: targets.length === 1 ? targets[0] : null,
+        // one unambiguous structured pointer to its owning lesson.
+        target,
       }));
     }
   }
@@ -170,6 +197,30 @@ async function readObservations(items, cwd) {
   return Object.freeze({ entries: Object.freeze(entries), series, readings, attributed });
 }
 
+// The recall ledger and the retrospectives' `Recurs` stamps of the SELECTED items, counted by the one
+// accounting reader memory status uses. This is evidence beside the three lanes, not a fourth lane: it has
+// no floor of its own, because an item with no ledger is a valid zero. It reads only what the scope selected,
+// so another item's incidents are neither counted nor diagnosed here.
+async function readMemory(items, workDir, cwd) {
+  const sources = await readAccountingSources(workDir, { items });
+  const repoRelative = (source) => workRelative(cwd, path.join(workDir, source));
+  const lift = (entry) => ({ ...entry, source: repoRelative(entry.source) });
+  const ledgers = sources.ledgers.map(lift);
+  const retrospectives = sources.retrospectives.map(lift);
+  const accounting = buildAccounting({ ledgers, retrospectives, lessons: true, evidence: true });
+  return Object.freeze({
+    lane: "recall-ledger",
+    what: "recall observations on the selected items' ledgers and the Recurs stamps of their retrospectives",
+    basis: ACCOUNTING_BASIS,
+    items: Object.freeze(items.map((item) => item.ref)),
+    ledgers: Object.freeze(ledgers.map((entry) => entry.source)),
+    retrospectives: Object.freeze(retrospectives.map((entry) => entry.source)),
+    complete: accounting.complete,
+    diagnostics: Object.freeze(accounting.diagnostics.map((entry) => Object.freeze({ ...entry }))),
+    lessons: Object.freeze(accounting.lessons),
+  });
+}
+
 function laneResult(declaration, count, root, raw) {
   const read = readRecord(declaration, count, root);
   const finding = corpusFinding(read);
@@ -216,10 +267,11 @@ async function assembleCorpus(options = {}) {
 
   const byId = new Map(lanes.map((entry) => [entry.id, entry]));
   const root = scopedRoot(workDir, scopeLabel);
-  const [lessons, lineage, observations] = await Promise.all([
+  const [lessons, lineage, observations, memory] = await Promise.all([
     readLessons(items, cwd),
     readLineage(items, cwd),
     readObservations(items, cwd),
+    readMemory(items, workDir, cwd),
   ]);
   const results = Object.freeze([
     laneResult(byId.get("lessons"), lessons.length, root, Object.freeze(lessons)),
@@ -231,6 +283,7 @@ async function assembleCorpus(options = {}) {
     matched: true,
     items: Object.freeze(items.map((item) => item.ref)),
     lanes: results,
+    memory,
     reads: Object.freeze(results.map((result) => result.read)),
     findings: Object.freeze(results.flatMap((result) => result.findings)),
   });
@@ -248,6 +301,13 @@ function renderCorpusReport(corpus) {
       lines.push(`  series ${result.raw.series}; readings ${result.raw.readings}; attributed ${result.raw.attributed}`);
     }
     for (const finding of result.findings) lines.push(`  ${finding.code}: ${finding.message}`);
+  }
+  if (corpus.memory != null) {
+    const { memory } = corpus;
+    lines.push(`- memory: read ${memory.ledgers.length} ledger(s) and ${memory.retrospectives.length} retrospective(s) of ${memory.items.length} selected item(s) (${memory.lane}); ${memory.diagnostics.length} diagnostic(s)`);
+    for (const diagnostic of memory.diagnostics) {
+      lines.push(`  ${diagnostic.source}${diagnostic.line == null ? "" : `:${diagnostic.line}`}: ${diagnostic.defect}`);
+    }
   }
   return lines.join("\n");
 }

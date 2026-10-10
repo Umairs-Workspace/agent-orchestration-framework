@@ -37,15 +37,26 @@ export const archTests = [
         await mkdir(path.join(root, ".aof"), { recursive: true });
         await writeFile(path.join(root, "one.md"), "one\n", "utf8");
         await writeFile(path.join(root, "two.md"), "two\n", "utf8");
+        // 153/05 — a promoted prompt lesson yields a CONCRETE patch against a real authored file, so the
+        // byte comparison below is over a run that had a target to write and did not write it.
+        await mkdir(path.join(root, "docs"), { recursive: true });
+        await writeFile(path.join(root, "docs", "three.md"), "three\n", "utf8");
+        await writeFile(path.join(root, "docs", "four.md"), "four\n", "utf8");
+        await mkdir(path.join(root, "prompts"), { recursive: true });
+        await writeFile(path.join(root, "prompts", "handoff.md"), "# handoff\nstep\n", "utf8");
         const corpus = Object.freeze({
           scope: null,
           matched: true,
           items: Object.freeze(["01"]),
-          reads: Object.freeze([{ sweep: "lessons", count: 2, floor: 1, what: "fixture", root }]),
+          reads: Object.freeze([{ sweep: "lessons", count: 4, floor: 1, what: "fixture", root }]),
           findings: Object.freeze([]),
           lanes: Object.freeze([{ lane: "lessons", contribution: Object.freeze([
             { source: "one.md:1", title: "prompt handoff", text: "prompt handoff", kind: "mistake", area: "process", stage: "build", owner: "developer" },
             { source: "two.md:1", title: "prompt handoff", text: "prompt handoff", kind: "mistake", area: "process", stage: "build", owner: "developer" },
+            ...["three", "four"].map((name, index) => ({
+              source: `docs/${name}.md:1`, recordType: "lesson", item: "01", id: `R${index + 1}`, title: "promoted", text: "promoted", summary: "Quote this lesson.",
+              status: "prompt:prompts/handoff.md", target: "prompt:prompts/handoff.md", kind: "blocker", area: "security", stage: "verify", owner: "qa",
+            })),
           ]) }]),
         });
         const ctx = { workspace: { projectRoot: root, workDir: path.join(root, "wiki", "work"), config: {} }, tune: { model, corpus } };
@@ -53,6 +64,9 @@ export const archTests = [
         const first = await buildTuneReport({}, ctx);
         const middle = await snapshot(root);
         const second = await buildTuneReport({}, ctx);
+        const prompt = first.proposals.find((proposal) => proposal.class === "prompt-or-brief-revision");
+        assert.ok(prompt?.patch, "the control runs over a non-null prompt patch, so a target write would be a real regression");
+        assert.equal(prompt.patch.from, "# handoff\nstep\n");
         const after = await snapshot(root);
         sameSnapshot(before, middle);
         sameSnapshot(before, after);

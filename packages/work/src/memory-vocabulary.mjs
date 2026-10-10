@@ -189,6 +189,22 @@ export function readPromotion(raw) {
   return { value, conforms: PROMOTION_RE.test(value) };
 }
 
+// Every pointer a written `Promoted to` names, distinct and in written order: `{ kind, path, raw }`.
+// A well-formed value names one; a value that names several is ambiguous and is returned as such, so
+// a reader that cannot pick (tune) can say so instead of choosing. `none` and prose name no pointer.
+export function promotionPointers(raw) {
+  const seen = new Set();
+  const pointers = [];
+  for (const match of String(raw ?? "").replace(EMPHASIS_RE, "").matchAll(/(?<![\w:])(control|rule|prompt):(\S+)/gi)) {
+    const kind = match[1].toLowerCase();
+    const pointer = `${kind}:${match[2]}`;
+    if (seen.has(pointer)) continue;
+    seen.add(pointer);
+    pointers.push({ kind, path: match[2], raw: pointer });
+  }
+  return pointers;
+}
+
 // A written `Recurs` → its canonical `<item>/R<n>` reference (the optional `m` prefix dropped), or
 // null when it is not one.
 export function canonicalRecurrence(raw) {

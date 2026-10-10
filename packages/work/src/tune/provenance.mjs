@@ -68,7 +68,8 @@ function documentDeclarations(text, file) {
   for (const line of String(text).split(/\r?\n/)) {
     const id = declaredIdOn(line);
     if (id == null) continue;
-    const form = ID_FORMS.find((candidate) => id.startsWith(`${candidate.name}-`));
+    // The form is the id's own grammar, not its name plus a hyphen: a retrospective lesson's `R13` has none.
+    const form = ID_FORMS.find((candidate) => new RegExp(`^${candidate.id}$`).test(id));
     if (form?.scope === "document") declared.add(id);
   }
   return declared;
