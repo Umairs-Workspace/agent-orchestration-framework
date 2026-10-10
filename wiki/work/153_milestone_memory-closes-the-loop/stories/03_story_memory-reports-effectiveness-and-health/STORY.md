@@ -4,7 +4,7 @@ number: 03
 slug: memory-reports-effectiveness-and-health
 title: "Memory reports effectiveness and health"
 parent: 153
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-10
 updated: 2026-10-10
@@ -23,8 +23,8 @@ As an AOF operator, I want to see how often lessons were surfaced, honoured and 
 
 ## Tasks
 
-- [ ] `tasks/01_account-for-memory-effectiveness.feature` — report per-type and optional per-lesson observations and recurrences
-- [ ] `tasks/02_report-recurring-and-unpromoted-lessons.feature` — report advisory recurrence and default age-five promotion warnings
+- [x] `tasks/01_account-for-memory-effectiveness.feature` — report per-type and optional per-lesson observations and recurrences
+- [x] `tasks/02_report-recurring-and-unpromoted-lessons.feature` — report advisory recurrence and default age-five promotion warnings
 
 ## Notes
 

@@ -133,6 +133,11 @@ const DOCTOR_LANE_MODULES = Object.freeze([
   // lands it. A doctor lane on the same reading as the eighth: it judges an archived retrospective's
   // meta lines, carried on the snapshot, against the vocabulary module, and executes nothing.
   "./lesson-meta.mjs",
+  // THE TWELFTH — milestone 153 / story 03's memory-effectiveness lane, named in the change that lands
+  // it. A doctor lane on the same reading as the eleventh: it judges the retrospectives' lessons
+  // (recurrence stamps and promotion state) against the stream's acceptance facts, all carried on the
+  // snapshot, and executes nothing.
+  "./memory-effectiveness.mjs",
 ]);
 
 // The two INJECTED lanes (the diagrams lane, 133/03; the examples lane, 134/04) reach the spine as

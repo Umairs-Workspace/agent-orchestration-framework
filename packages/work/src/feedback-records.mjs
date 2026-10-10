@@ -16,6 +16,9 @@ import { setTimeout as sleep } from "node:timers/promises";
 // the ledger lock so two concurrent submissions of one observation leave exactly one row.
 
 export const FEEDBACK_RECORD_FILE = "FEEDBACK.ndjson";
+// Every row kind the ledger admits. A consumer that must recognise a kind it does not interpret (the
+// accounting reader skips raw and classification rows) names them from here rather than respelling them.
+export const FEEDBACK_RECORD_KINDS = Object.freeze(["raw", "classification", "recall"]);
 export const RAW_FEEDBACK_KEYS = Object.freeze(["kind", "id", "text", "actor", "refs", "at"]);
 export const FEEDBACK_CLASSIFICATION_KEYS = Object.freeze(["kind", "id", "raw", "at", "classification"]);
 export const RECALL_OBSERVATION_KEYS = Object.freeze(["kind", "id", "at", "edge", "actor", "query", "scope", "records"]);

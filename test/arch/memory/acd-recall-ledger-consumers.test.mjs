@@ -81,6 +81,7 @@ const LEDGER_READERS = {
   "packages/work/src/commands/feedback.mjs": "raw capture door (refuses recall fields) and the recall recorder",
   "packages/work/src/commands/counters.mjs": "hands the whole ledger to the counter",
   "packages/work/src/counters.mjs": 'selects kind === "raw" before counting',
+  "packages/work/src/memory-accounting.mjs": 'selects kind === "recall" and skips raw and classification rows; a bad row is a diagnostic, never a count',
 };
 
 async function sourceFiles(dir) {

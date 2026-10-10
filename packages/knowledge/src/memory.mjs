@@ -2,6 +2,7 @@ import noneBackend from "./memory/none-backend.mjs";
 import { statusPartition } from "./memory/local-retrieval.mjs";
 import { evaluateRecurrence } from "./memory/recurrence.mjs";
 import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
+import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
 import { commandError } from "@aof/contracts/error";
 import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
@@ -154,7 +155,8 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 //                the lesson being written, which is never its own candidate.
 //   ingest/reindex : an optional milestone ref (e.g. "01"); `--all` / `--item NN`
 //                    also name the scope of the rebuild (mapped to `only`).
-// Returns { verb, query, only, ref, inputFile, scope, opts, json, block, help }.
+//   status : `--lessons` adds the per-lesson effectiveness table.
+// Returns { verb, query, only, ref, inputFile, scope, opts, json, block, lessons, help }.
 //
 // HELP IS PARSED, NOT GUARDED LATER. `--help`/`-h` ANYWHERE in argv answers `help: true`,
 // checked FIRST and before any other token is read: ingest/reindex start the record rebuild
@@ -166,12 +168,13 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 // unknown verb, refused — rather than a second spelling of `-h`. The help shape carries no
 // verb and no `json`: help prints the usage text whatever else was asked, as it always has.
 function parseMemoryArgv(argv) {
-  if (memoryHelpRequested(argv)) return { verb: null, query: "", only: null, ref: null, inputFile: null, exclude: null, scope: {}, opts: {}, json: false, block: false, help: true };
+  if (memoryHelpRequested(argv)) return { verb: null, query: "", only: null, ref: null, inputFile: null, exclude: null, scope: {}, opts: {}, json: false, block: false, lessons: false, help: true };
   const positionals = [];
   const scope = {};
   const opts = {};
   let json = false;
   let block = false;
+  let lessons = false;
   let all = false;
   let itemFlag;
   let inputFile = null;
@@ -204,6 +207,11 @@ function parseMemoryArgv(argv) {
     }
     if (key === "all") {
       all = true;
+      continue;
+    }
+    if (key === "lessons") {
+      // status only: also return the per-lesson effectiveness table (153/ADR-003).
+      lessons = true;
       continue;
     }
     if (key === "input") {
@@ -254,7 +262,7 @@ function parseMemoryArgv(argv) {
   // record-recall names its owning item by the first positional after the verb.
   const ref = verb === RECORD_RECALL_VERB ? (restPositionals[0] ?? null) : null;
 
-  return { verb, query, only, ref, inputFile, exclude, scope, opts, json, block, help: false };
+  return { verb, query, only, ref, inputFile, exclude, scope, opts, json, block, lessons, help: false };
 }
 
 // --------------------------------------------------- injection block render ----
@@ -342,6 +350,7 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
       lines.push(`layers: ${Object.entries(result.layers).map(([layer, count]) => `${layer} ${count}`).join(" · ")}`);
     }
     if (result.conformance) lines.push(`conformance: ${conformanceText(result.conformance)}`);
+    if (result.effectiveness) lines.push(...effectivenessLines(result.effectiveness));
     // 148/ADR-003 — a store built before the current index version is named, with the verb that
     // rebuilds it, rather than reported as if its numbers were current.
     const index = result.index;
@@ -355,6 +364,20 @@ function renderMemory(verb, result, { block = false, limit, help = false, render
     return result.graph?.source === "project setting" && result.graph.built === false ? `${headline}\n${result.graph.reason}` : headline;
   }
   return typeof result === "string" ? result : JSON.stringify(result, null, 2);
+}
+
+// The effectiveness block as text: one line per record type, then the per-lesson table when it was
+// asked for, then each diagnostic. An incomplete read says so rather than showing counts as final.
+function effectivenessLines(effectiveness) {
+  const counts = (entry) => ACCOUNTING_COUNTERS.map((counter) => `${counter} ${entry[counter]}`).join(" ");
+  const lines = [`effectiveness${effectiveness.complete ? "" : " (incomplete)"}: ${Object.entries(effectiveness.types).map(([type, entry]) => `${type} ${counts(entry)}`).join(" · ")}`];
+  for (const [identity, entry] of Object.entries(effectiveness.lessons ?? {})) {
+    lines.push(`  ${identity} · ${counts(entry)}${entry.provenance === "unresolved" ? " · provenance unresolved" : ""}`);
+  }
+  for (const diagnostic of effectiveness.diagnostics) {
+    lines.push(`effectiveness diagnostic: ${diagnostic.source}${diagnostic.line ? `:${diagnostic.line}` : ""} — ${diagnostic.defect}`);
+  }
+  return lines;
 }
 
 // The recurrence decision as text: the verdict line, then each candidate the matcher scored.
@@ -416,7 +439,7 @@ function defaultRender(verb, result, { json, block, limit, help }, log) {
 // this same constant — two spellings of the flag vocabulary had already drifted once
 // (`--all`/`--block` present in one and absent from the other), and a usage line that
 // disagrees with itself is the seam saying two things about its own surface.
-const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--input <file>] [--exclude <item>/R<n>] [--json]";
+const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]";
 
 function memoryUsage() {
   return [
@@ -428,7 +451,7 @@ function memoryUsage() {
     "  recurrence <lesson text> [--exclude <item>/R<n>]   does a new lesson repeat an earlier one? (calibrated, whole index)",
     "  ingest [ref]       (re)build the memory index — alias of reindex",
     "  reindex [ref]      rebuild the derived memory index from the work stream",
-    "  status             report the active backend and record count"
+    "  status [--lessons] report the active backend, record count and observed effectiveness (per lesson with --lessons)"
   ].join("\n");
 }
 
@@ -471,7 +494,7 @@ function gateMemoryVerb(verb) {
 //   ingest  -> backend.reindex(only, ctx)  ALIAS (no `ingest` interface method)
 //   status  -> backend.status(ctx)
 // The verb is the caller's to gate; an unknown one reaches no method and yields undefined.
-async function executeMemoryVerb({ verb, query = "", only = null, exclude = null, scope = {}, opts = {} } = {}, { backend, ctx = {} } = {}) {
+async function executeMemoryVerb({ verb, query = "", only = null, exclude = null, scope = {}, opts = {}, lessons = false } = {}, { backend, ctx = {} } = {}) {
   if (verb === "recall") return backend.recall(query, scope, opts, ctx);
   if (verb === RECURRENCE_VERB) {
     // 153/ADR-002 — whole-index candidates (no scope: recall's kind filter is NOT applied, because a
@@ -489,7 +512,13 @@ async function executeMemoryVerb({ verb, query = "", only = null, exclude = null
     // from disagreeing about what the store holds (m40/R3: graphify's own split names two types).
     const base = await backend.status(ctx);
     const recalled = await backend.recall("", {}, { limit: Infinity }, ctx);
-    return { ...base, ...statusPartition(recalled?.records ?? []) };
+    const records = recalled?.records ?? [];
+    const status = { ...base, ...statusPartition(records) };
+    // 153/ADR-003 — observed effectiveness is the work-owned accounting reader's, over the ledgers and
+    // retrospectives rather than the index, so every backend (and none) reports the same totals. The
+    // index only decides which lessons exist and whether a counted lesson still resolves.
+    if (ctx.workDir) status.effectiveness = await accountMemory(ctx.workDir, { indexed: records, lessons });
+    return status;
   }
   return undefined;
 }

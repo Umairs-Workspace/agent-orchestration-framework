@@ -98,6 +98,7 @@ const memoryCommand = {
         additionalProperties: false,
       },
       block: { type: "boolean" },
+      lessons: { type: "boolean" },
       help: { type: "boolean" },
     },
     required: ["verb"],
@@ -131,6 +132,7 @@ const memoryCommand = {
       flags: {
         block: { type: "boolean", description: "recall only: render the compact injection block a read hook pastes into agent context" },
         all: { type: "boolean", description: "reindex/ingest: rebuild over the whole stream" },
+        lessons: { type: "boolean", description: "status only: also report observed effectiveness per lesson" },
         input: { type: "string", description: "record-recall only: the JSON file holding the completed recall observation" },
         exclude: { type: "string", description: "recurrence only: the <item>/R<n> lesson being written, never its own candidate" },
         limit: { type: "string", description: "recall: cap the records returned (a non-positive or non-numeric value means the backend default)" },
@@ -148,14 +150,15 @@ const memoryCommand = {
       const argv = [...positionals];
       if (options.block === true) argv.push("--block");
       if (options.all === true) argv.push("--all");
+      if (options.lessons === true) argv.push("--lessons");
       if (typeof options.limit === "string") argv.push("--limit", options.limit);
       if (typeof options.input === "string") argv.push("--input", options.input);
       if (typeof options.exclude === "string") argv.push("--exclude", options.exclude);
       for (const flag of SCOPE_FLAGS) {
         if (typeof options[flag] === "string") argv.push(`--${flag}`, options[flag]);
       }
-      const { verb, query, only, ref, inputFile, exclude, scope, opts, block, help } = parseMemoryArgv(argv);
-      return { verb, query, only, ref, inputFile, exclude, scope, opts, block, help };
+      const { verb, query, only, ref, inputFile, exclude, scope, opts, block, lessons, help } = parseMemoryArgv(argv);
+      return { verb, query, only, ref, inputFile, exclude, scope, opts, block, lessons, help };
     },
 
     // The seam's human projection, per verb — `null` for an empty block, which the face
