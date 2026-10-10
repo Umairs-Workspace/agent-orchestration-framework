@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { commandError } from "@aof/contracts/error";
+import { compileRecallObservation } from "../feedback-records.mjs";
 
 // Core supplies execution, resolution and shared transition services.
 export function createFeedbackCommand({ resolveItemExact, requireLocalCheckout, transitionFeedbackAppended, renderWithPropagationWarnings, threadPropagationWarnings }) {
@@ -119,4 +122,55 @@ const feedbackCommand = {
 };
 
 return { feedbackCommand };
+}
+
+// createRecallRecorder — the work-owned half of `aof work memory record-recall` (153/ADR-001).
+//
+// The memory seam (knowledge) must not import work, so core injects THIS capability into it:
+// `recordRecall(ctx, { ref, inputPath })` consumes the completed observation an agent retained
+// from its actual recall and routes it to the ledger transition. It never re-runs retrieval and
+// never touches a memory backend, so it behaves identically with memory off.
+//
+// The order is the contract: the observation is read and VALIDATED first (a malformed one
+// touches nothing), the owner is then resolved by EXACT ref with the local-checkout guard — any
+// local driver qualifies, backlog spike or story — and only then does the transition write.
+export function createRecallRecorder({ resolveItemExact, requireLocalCheckout, transitionRecallRecorded, threadPropagationWarnings }) {
+  async function recordRecall(ctx, { ref, inputPath } = {}) {
+    const target = typeof ref === "string" ? ref.trim() : "";
+    if (!target) throw commandError("A target ref is required.", "missing-ref", 400);
+    if (typeof inputPath !== "string" || inputPath.trim() === "") {
+      throw commandError("record-recall needs --input <json-file> holding the completed observation.", "missing-input", 400);
+    }
+
+    let parsed;
+    try {
+      parsed = JSON.parse(await readFile(path.resolve(inputPath), "utf8"));
+    } catch (error) {
+      throw commandError(`Recall observation refused: ${inputPath} is not readable JSON (${error.message}).`, "invalid-observation", 400);
+    }
+    // The writer adds `kind`; a non-object is handed to the validator as-is so it names the defect.
+    const isObject = parsed != null && typeof parsed === "object" && !Array.isArray(parsed);
+    const recall = compileRecallObservation(isObject ? { kind: "recall", ...parsed } : parsed);
+
+    const item = await resolveItemExact(ctx, target);
+    if (!item) throw commandError(`No item resolves to ref "${target}".`, "ref-not-found", 404);
+    requireLocalCheckout(item, target);
+
+    const at = typeof ctx.now === "function" ? ctx.now() : new Date().toISOString();
+    const { record, replayed, effects } = await transitionRecallRecorded(item, { recall, now: at }, {
+      workspace: ctx.workspace,
+      publisherOptions: ctx,
+      journalOptions: ctx.effectsJournalOptions ?? {},
+    });
+    return threadPropagationWarnings({
+      ok: true,
+      ref: item.ref,
+      id: record.id,
+      recordedAt: record.at,
+      replayed,
+      verdicts: record.records.length,
+    }, effects);
+  }
+
+  return { recordRecall };
 }

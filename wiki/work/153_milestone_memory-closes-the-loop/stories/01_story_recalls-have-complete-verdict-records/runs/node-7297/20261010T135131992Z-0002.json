@@ -1,0 +1,308 @@
+{
+  "runId": "20261010T135131992Z-0002",
+  "itemRef": "153/01",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "3d9d76fc-50d3-46c4-868d-d331bf507f42",
+  "brief": {
+    "loop": {
+      "loopRunId": "fee61acf-0876-4d2f-96a1-bd055457848b",
+      "scope": "153",
+      "level": "L2",
+      "cap": 3,
+      "phase": "continue",
+      "cycle": 1,
+      "startedAt": "2026-10-09T19:44:39.981Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "sonnet",
+          "modelSource": "--model",
+          "runtime": "claude"
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        }
+      },
+      "execution": {
+        "phaseExecutions": {
+          "continue": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              }
+            },
+            "profile": "claude-pty-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "claude",
+            "runtimeSource": "model",
+            "transport": "pty",
+            "version": 1
+          },
+          "refine": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          },
+          "verify": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          }
+        },
+        "phases": {
+          "continue": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "sonnet",
+            "modelSource": "--model",
+            "runtime": "claude"
+          },
+          "refine": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          },
+          "verify": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          }
+        },
+        "runtime": "mixed",
+        "runtimeSource": "phase-map",
+        "version": 2
+      }
+    },
+    "grade": {
+      "ref": "153/01",
+      "verdict": "fail",
+      "codes": [
+        "case-failed"
+      ],
+      "runner": {
+        "command": [
+          "node",
+          "scripts/test-rubric.mjs"
+        ],
+        "cwd": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-153-01",
+        "exit": 1,
+        "durationMs": 635751
+      },
+      "report": {
+        "format": "tap",
+        "path": null,
+        "floor": 500
+      },
+      "cases": {
+        "total": 2144,
+        "failed": 1,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "case": "arch/130 FF-13001 (acd-loop-stop-request-single-home): the request has ONE home — the segment literal and the state words are spelled in src/loop/stop-request.mjs and nowhere else under src/**, and no loop store exists",
+          "message": "  error: \"the literal \\\"loop-stops\\\" and the state literals \\\"requested\\\"/\\\"honoured\\\" (as a stop-request state) appear only in packages/core/src/loop/stop-request.mjs — packages/work/src/feedback-records.mjs spells \\\"honoured\\\". Read the word through STOP_STATES (130/01's export) rather than spelling it\\n+ actual - expected\\n\\n+ [\\n+   'packages/work/src/feedback-records.mjs spells \\\"honoured\\\"'\\n+ ]\\n- []\\n\"",
+          "scenario": null
+        }
+      ],
+      "gradedAt": "2026-10-10T13:40:55.937Z",
+      "provenance": {
+        "node": "node-7297",
+        "run": "20261010T131326217Z-0001",
+        "commit": "3cfe7f8524650f02f4a573c9844f175bfd57a938",
+        "at": "2026-10-10T13:40:55.937Z"
+      }
+    },
+    "gradeBaseline": {
+      "measuredAt": "2026-10-10T12:58:49.521Z",
+      "priorDrives": 0,
+      "failures": [
+        "arch/ADR-002: every shipped manifest entry hash equals hashContent of the re-rendered member",
+        "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member",
+        "arch/FF-5405 the registered run() spawns nothing unless run === true",
+        "arch/FF-5405 the spawn sets the re-entrancy stamp, and an already-stamped environment is refused",
+        "arch/54 FF-5409 (acd-loop-probe-contract, extended): grade-indeterminate is a closed-set member whose producer is DRAWN FROM a GRADE_CODES member, never from a message match",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): 154/10 the new execution config region is in the frozen source census before staging",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): frozen store and board read surfaces remain byte-identical to the milestone base",
+        "arch/53 FF-5307 (acd-loop-state-rides-the-run-record): a one-character edit to any file under apps/ui/src turns the ui/ freeze red",
+        "arch/69 FF-6901 extension (acd-loop-cap-single-home): work.loop deadlines and caps have one leaf while maxAttempts and dispatch concurrency stay put",
+        "arch/61 FF-6111 (acd-loop-cap-single-home): the one missing clamp lands at its own funnel, and the value-shaped resolvers are DERIVED from the callables rather than a parallel allow-list",
+        "arch/126/02 FF-12604 leg 5: every declaration already on disk stays readable, and recovers unsupervised",
+        "arch/129/05 FF-12903 fixture leg: over a real two-member wave the primary's story dirs hold no runs/ record until the merge, each lane holds its own, and the merge brings the same run home done",
+        "arch/129/05 FF-12907 fixture leg: every lane run's brief.loop equals the wave run's except cycle, and decideSupervisedDeclarations over the merged milestone yields exactly one row carrying the loop's id",
+        "arch/131 FF-13105 (acd-loop-ask-waits-in-place): fixture — one lane asks and the other merges while it waits; the waiting record carries the ask and a newer heartbeat, waiting on you is narrated, and the answer re-drives the same run with --answer and clears the file",
+        "arch/131 FF-13105 (acd-loop-ask-waits-in-place): fixture — with an immediate-park wait the lane closes parked and unmerged, session-parked-unanswered is posted once, and the halt is session-needs-input only after the other lane merged",
+        "arch/124/02 FF-12405 leg 9 (task 03): the manifest is a true content address, and it agrees with the lock on every path they both name",
+        "arch/53 FF-5301 (acd-session-driver-mesh-blind): frozen direct imports, lifecycle denylist, named admissions, and reach ceilings stay exact",
+        "arch/53 FF-5302 (acd-session-driver-single-home): the assignment sink carries a non-vacuous shrink-only line-count ratchet",
+        "arch/119 FF-11907 (acd-session-driver-single-home, extended): the ceiling FELL to the post-split measured count, carries the command that produced it, and the floor is untouched",
+        "arch/143 FF-14303 (acd-agent-model-source-map, extended): parseSessionChoices and resolveSessionLaunch have one home, and the loop reads no session config",
+        "arch/119 FF-11904: the real src/ and test/ trees are inside every declared ceiling, and the table and the tree agree in BOTH directions",
+        "arch/119 FF-11904: the ceiling EQUALS the delivered count in every row — every allowance is declared, every one is zero, and every row states what the next growth should do instead",
+        "arch/119 FF-11904: the detector FIRES on a synthesized sibling in a budgeted layer, and is quiet on the clean listing in the same lane — with nothing written to disk",
+        "arch/119 FF-11904: a renamed budgeted directory REDS its row rather than emptying it, and a shrunk layer must lower its row",
+        "arch/119 FF-11904: an unentered layer and an exemption that has outgrown its claim both fire on the shipped detector",
+        "138/00 task01 — terminal exemptions remain declared; 154/04 adds one owned Codex settings module without allowance",
+        "arch/15 ADR-005: aof work <sub> --json runs cleanly and emits parseable JSON for every registry-derived work:* subcommand"
+      ],
+      "baseCommit": "3cfe7f8524650f02f4a573c9844f175bfd57a938"
+    },
+    "progress": {
+      "resets": 0,
+      "attemptRunId": "20261010T131326217Z-0001",
+      "summary": null,
+      "continuation": true
+    },
+    "lane": {
+      "worktree": "C:\\Source\\umair\\aof\\.aof\\mesh\\dispatch-worktrees\\dispatch-153-01",
+      "branch": "aof/mesh/153-01",
+      "baseCommit": "3cfe7f8524650f02f4a573c9844f175bfd57a938"
+    },
+    "nativeAskContext": {
+      "scope": "153",
+      "loopRunId": "fee61acf-0876-4d2f-96a1-bd055457848b",
+      "workspaceId": "9db1fd84f5895e38"
+    }
+  },
+  "createdAt": "2026-10-10T13:51:31.992Z",
+  "updatedAt": "2026-10-10T13:56:58.436Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 26,
+      "output": 10566,
+      "cacheRead": 4578247,
+      "cacheCreate": 26267
+    },
+    "costUsd": 1.63054335,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 13,
+    "toolCalls": 5,
+    "exitReason": "final_output"
+  },
+  "asks": [],
+  "execution": {
+    "phases": {
+      "continue": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "sonnet",
+        "modelSource": "--model"
+      },
+      "refine": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      },
+      "verify": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      }
+    },
+    "profile": "claude-pty-v1",
+    "profileVersion": 1,
+    "roles": {},
+    "runtime": "claude",
+    "runtimeSource": "model",
+    "transport": "pty",
+    "version": 1
+  }
+}

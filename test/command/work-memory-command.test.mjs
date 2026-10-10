@@ -56,6 +56,7 @@ const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 import { parseFeature } from "../integration/support/feature-runner.mjs";
+import { withCacheReadFixture, plantCacheRow, refuseCommand, runCommand, itemDirOf, WORKER_NODE, SYNCED_AT } from "../support/cache-read-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
@@ -128,14 +129,6 @@ const HUMAN_GOLDENS = [
       + "ADR-001 (m07) · adr · architecture · The fixture keeps one decision · 07_milestone_fixture/ARCHITECTURE.md:6\n"
       + "\n",
   },
-  {
-    invocation: ["brief"],
-    stdout: "memory brief · whole stream\n"
-      + "  1 lesson(s), 1 adr(s)\n"
-      + "  lessons by area:\n"
-      + "    tooling: R1\n"
-      + "\n",
-  },
 ];
 
 // What HEAD's ladder door printed for each --json row: `JSON.stringify(projection, null, 2)`
@@ -181,26 +174,6 @@ const JSON_GOLDENS = [
       + "  }\n"
       + "]\n",
     check: (doc) => { assert.ok(Array.isArray(doc), "recall --json is an ARRAY"); assert.equal(doc[0].id, "R1"); },
-  },
-  {
-    invocation: ["brief"],
-    shape: "the digest without its rendered `text`",
-    stdout: "{\n"
-      + "  \"scope\": {},\n"
-      + "  \"lessonCount\": 1,\n"
-      + "  \"adrCount\": 1,\n"
-      + "  \"lessonsByArea\": {\n"
-      + "    \"tooling\": [\n"
-      + "      {\n"
-      + "        \"id\": \"R1\",\n"
-      + "        \"item\": \"07\",\n"
-      + "        \"title\": \"Pin line endings on every generated file\",\n"
-      + "        \"summary\": \"pin line endings at the writer, never at the reviewer.\"\n"
-      + "      }\n"
-      + "    ]\n"
-      + "  }\n"
-      + "}\n",
-    check: (doc) => { assert.equal("text" in doc, false, "brief --json carries no `text`"); assert.equal(doc.lessonCount, 1); },
   },
   {
     invocation: ["reindex"],
@@ -345,7 +318,7 @@ export const workMemoryCommandTests = [
   },
 
   {
-    name: "work-memory/00 every verb's human render is byte-identical to the ladder's — outline: status | reindex | ingest | recall \"pin line endings\" | recall … --block | brief (literal goldens captured from HEAD's workMemoryCommand over this fixture)",
+    name: "work-memory/00 every verb's human render is byte-identical to the ladder's — outline: status | reindex | ingest | recall \"pin line endings\" | recall … --block (literal goldens captured from HEAD's workMemoryCommand over this fixture)",
     run: async () => {
       const root = await makeRoot({ backend: "local" });
       try {
@@ -365,7 +338,7 @@ export const workMemoryCommandTests = [
   },
 
   {
-    name: "work-memory/00 every verb's --json document is the projection the seam defined — outline: recall → the records ARRAY | brief → the digest sans `text` | reindex → the summary sans `records` | status → { backend, recordCount } (one document each, byte-identical to the ladder's goldens)",
+    name: "work-memory/00 every verb's --json document is the projection the seam defined — outline: recall → the records ARRAY | reindex → the summary sans `records` | status → { backend, recordCount } (one document each, byte-identical to the ladder's goldens)",
     run: async () => {
       const root = await makeRoot({ backend: "local" });
       try {
@@ -507,7 +480,7 @@ export const workMemoryCommandTests = [
         assert.equal(bogus.status, 1, "an unknown verb exits 1");
         assert.ok(bogus.stderr.includes("Unknown memory verb \"bogus\"."), `stderr names the verb (stderr: ${bogus.stderr.slice(0, 200)})`);
         assert.ok(bogus.stderr.includes("Usage: aof work memory <verb>"), "and carries the seam's usage text");
-        assert.ok(bogus.stderr.includes("Verbs: recall, brief, ingest, reindex, status"), "…including the verb vocabulary");
+        assert.ok(bogus.stderr.includes("Verbs: recall, record-recall, ingest, reindex, status"), "…including the verb vocabulary");
         assert.equal(bogus.stdout, "", "nothing on stdout");
 
         const missing = runCli(root, ["work", "memory"]);
@@ -625,5 +598,81 @@ export const workMemoryCommandTests = [
       const steps_ = await import(new URL("../integration/steps/work-memory.steps.mjs", import.meta.url));
       assert.equal(typeof steps_.runStep, "function", "steps/work-memory.steps.mjs exports runStep");
     },
+  },
+
+  {
+    name: "153/01 E7 brief is retired through BOTH doors — the routed door and the in-process door each refuse it as the normal unknown verb before any backend is resolved, help no longer advertises it, and recall keeps its public shape",
+    run: async () => {
+      const root = await makeRoot({ backend: "local" });
+      try {
+        const routed = runCli(root, ["work", "memory", "brief"]);
+        assert.equal(routed.status, 1, "the routed door refuses brief at exit 1");
+        assert.ok(routed.stderr.includes('Unknown memory verb "brief".'), `stderr names the verb (stderr: ${routed.stderr.slice(0, 200)})`);
+        const envelope = runCli(root, ["work", "memory", "brief", "--json"]);
+        assert.equal(JSON.parse(envelope.stdout).code, "unknown-verb", "under --json it is the unknown-verb envelope");
+
+        // The in-process door: the gate answers before the backend resolver is ever called.
+        let resolved = 0;
+        const refusal = await runMemory(["brief"], { config: {}, resolveBackend: async () => { resolved += 1; return {}; }, log: () => {} });
+        assert.deepEqual({ ok: refusal.ok, exitCode: refusal.exitCode }, { ok: false, exitCode: 1 }, "runMemory refuses brief");
+        assert.equal(resolved, 0, "…before resolving a backend");
+        await assert.rejects(
+          () => memoryCommand.run(adapt(["brief"]), { workspace: { config: { memory: { backend: "no-such-backend" } } } }),
+          (error) => error.code === "unknown-verb",
+          "the routed command refuses with the coded unknown-verb — a backend name the registry does not carry proves none was resolved",
+        );
+
+        assert.ok(!memoryUsage().includes("brief"), "help no longer advertises brief");
+        assert.ok(!("briefDigest" in _aofApplication.knowledge.work.memory), "the digest export is gone with the verb");
+        assert.ok(memoryUsage().includes("record-recall"), "…and names the verb that replaced the unwired surface");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+
+  {
+    name: "153/01 record-recall resolves no backend through either door — the routed command and runMemory hand the observation to the injected ledger capability even when the configured backend does not exist",
+    run: async () => {
+      const calls = [];
+      const stub = async (ctx, request) => { calls.push(request); return { ok: true, ref: request.ref, id: "c1", replayed: false, verdicts: 2 }; };
+      let resolved = 0;
+      const outcome = await runMemory(["record-recall", "153", "--input", "obs.json"], {
+        config: { memory: { backend: "no-such-backend" } },
+        resolveBackend: async () => { resolved += 1; return {}; },
+        recordRecall: stub,
+        log: () => {},
+      });
+      assert.equal(outcome.ok, true);
+      assert.equal(resolved, 0, "no backend was resolved for a ledger write");
+      assert.deepEqual(calls, [{ ref: "153", inputPath: "obs.json" }], "the parsed ref and --input reach the capability");
+
+      const unwired = await runMemory(["record-recall", "153", "--input", "obs.json"], { config: {}, resolveBackend: async () => ({}), log: () => {} }).then(
+        () => null,
+        (error) => error,
+      );
+      assert.equal(unwired?.code, "record-recall-unavailable", "a door without the capability refuses by code rather than falling through to a backend");
+
+      const input = adapt(["record-recall", "153", "--input", "obs.json"]);
+      assert.deepEqual([input.verb, input.ref, input.inputFile], ["record-recall", "153", "obs.json"], "the routed adapter carries the ref and the --input file");
+      assert.equal(adapt(["recall", "q"]).ref, null, "other verbs carry no ref");
+    },
+  },
+
+  {
+    name: "153/01 a remote-only item is refused with the local-checkout code and nothing is written — record-recall resolves exactly and locally",
+    run: () => withCacheReadFixture(async (fx) => {
+      await plantCacheRow(fx, "07/01", { status: "done", title: "The readers migrate", slug: "cache-read-surface", parent: "07", node: WORKER_NODE, at: SYNCED_AT });
+      const file = path.join(fx.root, "observation.json");
+      await writeFile(file, JSON.stringify({
+        id: "c1", at: "2026-10-10T12:00:00Z", edge: "refine-architect", actor: "architect", query: "q", scope: {},
+        records: [{ item: "45", id: "R13", recordType: "lesson", verdict: "honoured" }],
+      }), "utf8");
+      const error = await refuseCommand(() => runCommand(fx, "work:memory", { verb: "record-recall", ref: "07/01", inputFile: file }));
+      assert.equal(error.code, "item-not-local", "the refusal names the absent local checkout");
+      assert.equal(error.status, 409);
+      const { existsSync } = await import("node:fs");
+      assert.ok(!existsSync(itemDirOf(fx, "07/01")), "no folder was created for the cache-only ref");
+    }, { stream: [{ number: "06", stories: [] }, { number: "07", stories: [] }] }),
   },
 ];

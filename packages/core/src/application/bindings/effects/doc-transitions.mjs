@@ -11,7 +11,7 @@ export function assembleEffectsDocTransitions({ effectsTableServices, effectsJou
   const { runEffectsEphemeral } = effectsDispatchServices;
   const { reportDegrade } = degradeServices;
 
-  const { FEEDBACK_HEADING, transitionFeedbackAppended } = createDocumentTransitions({ applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade });
+  const { FEEDBACK_HEADING, transitionFeedbackAppended, transitionRecallRecorded } = createDocumentTransitions({ applicableReactors, openEffectsJournal, appendEvent, drainEffects, runEffectsEphemeral, reportDegrade });
 
-  return { FEEDBACK_HEADING, transitionFeedbackAppended };
+  return { FEEDBACK_HEADING, transitionFeedbackAppended, transitionRecallRecorded };
 }

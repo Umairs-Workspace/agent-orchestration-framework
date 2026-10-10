@@ -1,7 +1,7 @@
 
 
 // Configured application services are supplied by core; construction performs no I/O.
-export function createMemoryCommand({ MEMORY_USAGE, SCOPE_FLAGS, memoryJson, parseMemoryArgv, renderMemory, resolveConfiguredBackend, runMemoryVerb }) {
+export function createMemoryCommand({ MEMORY_USAGE, RECORD_RECALL_VERB, SCOPE_FLAGS, memoryJson, parseMemoryArgv, recordRecall, renderMemory, renderWithPropagationWarnings, resolveConfiguredBackend, runMemoryVerb }) {
 // src/commands/work/memory.mjs — `work:memory`, the registered door onto the memory seam
 // (story 128). WAVE-D class A by 42's own definition — an unregistered ladder verb becomes a
 // new registry Command and its branch is deleted: a Command that declares its route, its flag
@@ -84,6 +84,8 @@ const memoryCommand = {
       verb: { type: ["string", "null"] },
       query: { type: "string" },
       only: { type: ["string", "null"] },
+      ref: { type: ["string", "null"] },
+      inputFile: { type: ["string", "null"] },
       scope: {
         type: "object",
         properties: Object.fromEntries(SCOPE_FLAGS.map((flag) => [flag, { type: "string" }])),
@@ -111,7 +113,12 @@ const memoryCommand = {
     // THE SEAM'S ONE CORE PATH: the verb gate (a coded `unknown-verb` refusal the face turns
     // into its one envelope — 05/ADR-003's gate, kept, and it precedes any backend
     // resolution), help answered before a backend is resolved, then resolve and dispatch.
-    const result = await runMemoryVerb(input, { config, resolveBackend: resolveConfiguredBackend, ctx: memoryCtx });
+    //
+    // record-recall (153/ADR-001) is the exception to the backend ctx: it is handed the COMMAND's
+    // own ctx, because the ledger transition publishes through the same options feedback does
+    // (journal, global-store). It resolves no backend and works with memory off.
+    const recording = input.verb === RECORD_RECALL_VERB;
+    const result = await runMemoryVerb(input, { config, resolveBackend: resolveConfiguredBackend, ctx: recording ? ctx : memoryCtx, recordRecall });
     return { verb: input.verb, help: input.help === true, block: input.block === true, limit: input.opts?.limit, result };
   },
 
@@ -123,6 +130,7 @@ const memoryCommand = {
       flags: {
         block: { type: "boolean", description: "recall only: render the compact injection block a read hook pastes into agent context" },
         all: { type: "boolean", description: "reindex/ingest: rebuild over the whole stream" },
+        input: { type: "string", description: "record-recall only: the JSON file holding the completed recall observation" },
         limit: { type: "string", description: "recall: cap the records returned (a non-positive or non-numeric value means the backend default)" },
         ...SCOPE_FLAG_SPECS,
       },
@@ -139,19 +147,20 @@ const memoryCommand = {
       if (options.block === true) argv.push("--block");
       if (options.all === true) argv.push("--all");
       if (typeof options.limit === "string") argv.push("--limit", options.limit);
+      if (typeof options.input === "string") argv.push("--input", options.input);
       for (const flag of SCOPE_FLAGS) {
         if (typeof options[flag] === "string") argv.push(`--${flag}`, options[flag]);
       }
-      const { verb, query, only, scope, opts, block, help } = parseMemoryArgv(argv);
-      return { verb, query, only, scope, opts, block, help };
+      const { verb, query, only, ref, inputFile, scope, opts, block, help } = parseMemoryArgv(argv);
+      return { verb, query, only, ref, inputFile, scope, opts, block, help };
     },
 
     // The seam's human projection, per verb — `null` for an empty block, which the face
     // prints as nothing; the usage text for `help`.
-    render: (outcome) => renderMemory(outcome.verb, outcome.result, { block: outcome.block, limit: outcome.limit, help: outcome.help }),
+    render: (outcome) => renderMemory(outcome.verb, outcome.result, { block: outcome.block, limit: outcome.limit, help: outcome.help, renderWarnings: renderWithPropagationWarnings }),
 
-    // The seam's --json projection, per verb: recall → the records ARRAY; brief → the digest
-    // sans `text`; reindex/ingest → the summary sans `records`; status → the object;
+    // The seam's --json projection, per verb: recall → the records ARRAY; record-recall → its
+    // result envelope (propagation warnings included); reindex/ingest → the summary sans `records`; status → the object;
     // help → `{ usage }`.
     json: (outcome) => memoryJson(outcome.verb, outcome.result, { help: outcome.help }),
   },

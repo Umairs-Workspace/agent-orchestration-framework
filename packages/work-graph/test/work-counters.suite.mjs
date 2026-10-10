@@ -208,4 +208,23 @@ export const workCountersTests = [
       assert.equal(countFindingEscapes([]).value, null);
     },
   },
+  {
+    name: "153/01 E6: recall rows in a mixed ledger never enter the raw denominator or the escape count",
+    run() {
+      const recall = (id) => ({
+        kind: "recall", id, at: "2026-08-22T09:00:00.000Z", edge: "refine-architect", actor: "architect",
+        query: "junction cleanup", scope: {}, records: [{ item: "45", id: "R13", recordType: "lesson", verdict: "honoured" }],
+      });
+      const ledger = [
+        raw("before", "2026-08-20T11:59:00.000Z"),
+        raw("after", "2026-08-21T09:00:00.000Z"),
+        { kind: "classification", id: "class-a", raw: "after", at: "2026-08-21T10:00:00.000Z", classification: { type: "mistake" } },
+        recall("c1"), recall("c2"), recall("c3"),
+      ];
+      const result = countFindingEscapes([accepted("153/01", ledger)]);
+      assert.equal(result.feedbackRecords, 2, "the raw denominator is the 2 raw rows — not 3 recalls, not the classification");
+      assert.equal(result.count, 1, "and only the post-acceptance RAW row is an escape — a recall dated after acceptance is not");
+      assert.deepEqual(result.items[0].escapes.map((entry) => entry.id), ["after"]);
+    },
+  },
 ];

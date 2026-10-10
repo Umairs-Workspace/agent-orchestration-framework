@@ -403,7 +403,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workUpgrade = assembleWorkUpgrade({  });
   const commandsUpgrade = assembleCommandsUpgrade({ workUpgradeServices: workUpgrade });
   const commandsValidate = assembleCommandsValidate({ commandsDoctorServices: commandsDoctor, workServices: work });
-  const commandsWorkMemory = assembleCommandsWorkMemory({ workMemoryServices: workMemory });
+  const commandsWorkMemory = assembleCommandsWorkMemory({ workMemoryServices: workMemory, commandsResolveServices: commandsResolve, effectsDocTransitionsServices: effectsDocTransitions, globalWorkPublisherServices: globalWorkPublisher });
   const commandsWorkUi = assembleCommandsWorkUi({ boardServeServices: boardServe, meshUiServeServices: meshUiServe });
   const discordCommands = assembleDiscordCommands({ degradeServices: degrade, notifyAskMessagesServices: notifyAskMessages, loopStopRequestServices: loopStopRequest, provideLoopStop: async () => { lifetime.assertReady(); return loopStop; } });
   const discordGateway = assembleDiscordGateway({ degradeServices: degrade });

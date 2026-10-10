@@ -22,8 +22,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   in five unrelated vocabularies (a recover-push state, a resync state, a package state, a
 //   continue-phase word — measured 2026-09-21), so the state sweep is scoped to the modules that
 //   CARRY the request — the home and every module that imports it, or that spells the segment
-//   literal — while `"honoured"` (a word only this vocabulary uses) is swept over the whole of
-//   `packages/core/src/**`. A consumer that reads `record.state === "honoured"` instead of `STOP_STATES.honoured`
+//   literal — while `"honoured"` (a word this vocabulary uses, bar the one declared recall-verdict home
+//   below) is swept over the whole of `packages/core/src/**`. A consumer that reads `record.state === "honoured"` instead of `STOP_STATES.honoured`
 //   is the defect this leg exists to name (130/01's review close, the reason `STOP_STATES` exists).
 //
 // FF-13003, fixture then structural. Over the loop fixture with a live declaration,
@@ -74,6 +74,12 @@ const CONFIGURED_READERS = Object.freeze(["packages/mesh/src/declarations.mjs", 
 const SHELL = "packages/work-loop/src/commands/loop.mjs";
 const CORE = "packages/core/src/application/bindings/loop/stop.mjs";
 const CORE_IMPORTERS = Object.freeze(["packages/core/src/application/bindings/commands/loop.mjs", "packages/core/src/application/bindings/mesh/ui-serve.mjs"]);
+// 153/ADR-001 — a recall's verdict vocabulary (honoured / departed / irrelevant) is a SECOND, unrelated use
+// of the word "honoured": the decision-recall ledger row, not a stop request. Its one home is the ledger
+// parser. The exemption is exactly this file and exactly the "honoured" word: it still reds if the file
+// ever spells the segment or carries the request (it would then be in `carriers`), and every other
+// module is swept as before.
+const RECALL_VERDICT_HOME = "packages/work/src/feedback-records.mjs";
 const STATE_WORDS = Object.freeze(['"requested"', '"honoured"', "'requested'", "'honoured'"]);
 // The seven keys of the verb's document (ADR-002 §4) and the ten of the probe (FF-5304).
 const DOCUMENT_KEYS = Object.freeze(["ok", "loopRunId", "scope", "live", "request", "state", "path"]);
@@ -154,10 +160,13 @@ export const archTests = [
       // measured only over the modules that carry the request (see the file comment).
       const carriers = new Set([HOME, ...importersOf(units, HOME), ...segmentSpellers]);
       const stateSpellers = [];
+      const verdictHome = units.find(({ rel }) => rel === RECALL_VERDICT_HOME);
+      assert.ok(verdictHome != null && verdictHome.code.includes('"honoured"'), `NOT FOUND: ${RECALL_VERDICT_HOME} no longer spells the recall verdict — drop the exemption rather than leave it standing`);
+      assert.ok(!carriers.has(RECALL_VERDICT_HOME), `${RECALL_VERDICT_HOME} carries the stop request — it is no longer only the recall verdict's home`);
       for (const { rel, code } of units) {
         const spelled = STATE_WORDS.filter((word) => code.includes(word));
         if (spelled.length === 0 || rel === HOME) continue;
-        const honoured = spelled.some((word) => word.includes("honoured"));
+        const honoured = spelled.some((word) => word.includes("honoured")) && rel !== RECALL_VERDICT_HOME;
         if (honoured || carriers.has(rel)) stateSpellers.push(`${rel} spells ${spelled.join(" and ")}`);
       }
       assert.deepEqual(stateSpellers, [], `the literal ${JSON.stringify(SEGMENT)} and the state literals "requested"/"honoured" (as a stop-request state) appear only in packages/core/src/loop/stop-request.mjs — ${stateSpellers.join("; ")}. Read the word through STOP_STATES (130/01's export) rather than spelling it`);
