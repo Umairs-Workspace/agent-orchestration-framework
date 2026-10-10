@@ -226,6 +226,10 @@ refine cascades through every sub-stage of the item and stops once, at the end, 
      no usable graph was produced — note the graph is unavailable and draw boundaries from reading the
      source exactly as before: no block, no crash, no noise, and no reading of a stale artifact as if it
      were this build's output.
+     A `graphify-spawn-failed`, `graphify-timeout`, or sandbox permission failure (including `EPERM`)
+     has the same advisory fallback. Record the unavailable graph and reason, then inspect source
+     files to ground the boundaries. Do not request elevated access, change permissions, install
+     tools, or retry outside the sandbox just to obtain this advisory graph.
 
 - **story — Contract (Three Amigos):** author the task `.feature` files under `tasks/`, opening with
   the discovery beat below when the project has turned it on.

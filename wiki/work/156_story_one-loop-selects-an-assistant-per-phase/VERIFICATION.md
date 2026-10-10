@@ -7,6 +7,37 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Advisory graph spawn failure — 2026-10-10
+
+The language-tutor run at 2026-10-09 20:46 UTC reached native thread
+`01a1226a-8091-7892-9b85-817521129899`. Shell startup, skill reading and driven
+run bookkeeping proceeded. The later codebase graph build failed to spawn
+Graphify with EPERM; the assistant requested an elevated retry and AOF declined.
+
+A no-model native sandbox probe reproduced the actual operation: standalone
+`graphify --version` succeeded, while `aof graph build . --json` failed with
+`graphify-spawn-failed`. The correction does not claim to repair that host-level
+nested process restriction. Instead it completes the intended advisory-graph
+contract: spawn errors, timeout and sandbox denial now explicitly take the same
+source-inspection fallback as a missing or unusable graph, without requesting
+escalation, changing permissions or installing tools. A stale graph is not evidence.
+The canonical Claude procedures/architect and the Codex variants were updated.
+
+The project's `aof work update` refreshed six generated assets, skipped 159 and
+reported no drift warnings. The original failed run remains unchanged.
+The focused render/contract/permission suite passed 69 cases, including both
+assistants' rendered refine/review/architect instructions. Evidence:
+`.tmp/156-graph-sandbox-evidence.json`, `.tmp/156-graph-fallback-tests.log`.
+
+A live Astra/high turn then consumed the updated installed graph-grounding
+instructions and ran the real `aof graph build` in language-tutor under the default
+sandbox. It completed with eight tool activity events, recorded the graph as
+unavailable after the spawn failure, and read package.json as source context;
+no permission request stopped the turn. Its scratch evidence file was checked
+and the scratch directory removed. Evidence:
+`.tmp/156-native-graph-fallback-evidence.json`. This verifies the reported failing
+operation and its fallback, not an end-to-end milestone loop.
+
 ## Windows sandbox shell correction — 2026-10-09
 
 The language-tutor item 16 attempt at 19:44 UTC reached native thread

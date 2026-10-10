@@ -52,6 +52,13 @@ Feature: One loop selects and preserves native execution per phase
     And phases selected for Claude do not require Codex procedures
 
   # Verification commands and evidence are in VERIFICATION.md.
+  Scenario: Advisory graph extraction cannot spawn inside the native sandbox
+    Given refinement or review attempts the code-only codebase graph build
+    When Graphify cannot spawn, times out or is denied by the sandbox
+    Then the assistant records the unavailable graph and its failure reason
+    And it continues grounding decisions in source files without stale graph evidence
+    And it does not request elevated access or install tools for the advisory graph
+
   Scenario: Windows Store PowerShell cannot launch in the native sandbox
     Given the first pwsh on PATH is a Windows Store executable or execution alias
     And an ordinary PowerShell is available on PATH

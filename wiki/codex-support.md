@@ -159,6 +159,10 @@ launcher/model/effort combination. A missing prerequisite stays pending and leav
 milestone unaccepted. Public schema support alone does not prove live recovery or mesh parity.
 
 Permission requests stop for operator action. A business answer is not execution approval.
+Graph grounding is advisory: when the code-only graph build cannot spawn, times out,
+or is denied by the sandbox, refinement and review record the unavailable graph and
+continue from source inspection. They do not request elevated access solely for
+graph extraction, or treat a surviving stale graph as current evidence.
 On Windows, Store PowerShell can fail to start inside the native sandbox with
 `CreateProcessAsUserW failed: 5`. When Store PowerShell is the first `pwsh` on PATH
 and an ordinary PowerShell remains available, AOF omits the Store shell directories

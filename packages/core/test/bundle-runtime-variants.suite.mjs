@@ -33,6 +33,21 @@ const highRisk = {
 };
 
 export const bundleRuntimeVariantTests = [
+  ...runtimes.map(runtime => caseOf(`156 advisory graph launch failures remain non-blocking in rendered ${runtime} procedures`, () => {
+    const outputs = renderBundleOutputs(loadBundle(), { runtimes: [runtime] });
+    const paths = runtime === 'codex'
+      ? ['.agents/skills/aof-refine/procedure.md', '.agents/skills/aof-review/procedure.md', '.codex/agents/aof-architect.toml']
+      : ['.claude/commands/aof/refine.md', '.claude/commands/aof/review.md', '.claude/agents/aof-architect.md'];
+    for (const file of paths) {
+      const body = output(outputs, file)?.content;
+      assert.ok(body, file);
+      assert.match(body, /graphify-spawn-failed.*graphify-timeout/);
+      assert.match(body, /sandbox permission failure[^\n]*EPERM/);
+      assert.match(body, /Record the unavailable graph and reason/);
+      assert.match(body, /Do not request elevated access/);
+      assert.match(body, /outside the[\s\S]{0,20}sandbox just to obtain this advisory graph/);
+    }
+  })),
   caseOf('00 E2 common → bundled variant → project override stays runtime-local', () => {
     const source = command('helper', 'common contract', { runtimeVariants: {
       claude: { body: 'bundled Claude body' }, codex: { body: 'native Codex contract' }
