@@ -3,6 +3,22 @@ import { commandError } from '@aof/contracts/error';
 import { loopRuntimeSettingFromConfig, executionRuntimes, executionForPhase, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
 import { validateNativeAssets } from './runtime-assets.mjs';
 
+export const phaseRetryKey = (ref, phase) => `${ref}:${phase}`;
+
+// Old loops could relabel a repair retry as verify while keeping its Claude
+// envelope. Preserve that failed record, but start a correctly selected phase.
+export function compatiblePhaseRetry(entry, phase, execution) {
+  const record = entry?.prior;
+  if (record?.brief?.loop?.phase !== phase) return null;
+  if (execution != null && record.execution != null) {
+    const wanted = executionForPhase(execution, phase);
+    const prior = executionForPhase(record.execution, phase);
+    const choice = phase === 'repair' || phase === 'review' ? 'continue' : phase;
+    if (wanted.runtime !== prior.runtime || ['model', 'effort'].some(key => wanted.phases[choice][key] !== prior.phases[choice][key])) return null;
+  }
+  return entry;
+}
+
 // Internal mesh transport, consumed only by the CLI launch context. It is not a setting.
 export function decodeExecutionHandoff(text, resolveExecutionResume) {
   if (text === undefined) return null;

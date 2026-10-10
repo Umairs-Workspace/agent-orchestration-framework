@@ -76,7 +76,7 @@ import {
 // rule) ride the same move: the one consumer of `ADVISORY_CODES`/`GRADE_VERDICTS` is the ladder.
 
 import { commandError } from "@aof/contracts/error";
-import { createRuntimeInvocation, decodeExecutionHandoff } from "./runtime-invocation.mjs";
+import { createRuntimeInvocation, decodeExecutionHandoff, phaseRetryKey, compatiblePhaseRetry } from "./runtime-invocation.mjs";
 // 54/03 review finding D3 — "was a rubric DECLARED" is `work:grade`'s own predicate, and it
 // is read here rather than re-derived, so a declared-but-unrunnable grade cannot be mistaken
 // for an unconfigured repository at the one door that tells them apart.
@@ -1319,16 +1319,16 @@ export function createLoopShell({
           // A RECLAIMED WAVE RUN IS NEVER RETRIED AS THE MILESTONE'S ACT (129/04): it carried the
           // loop's liveness for a wave (ADR-007 §2), not a drive of the milestone; the BUILD phase
           // mints a NEW one before its first dispatch. Announced like every reclaim, retried by none.
-          if (entry.record?.brief?.wave == null) resumeRetries.set(entry.item.ref, { item: entry.item, prior: entry.record });
+          if (entry.record?.brief?.wave == null) resumeRetries.set(phaseRetryKey(entry.item.ref, entry.record?.brief?.loop?.phase), { item: entry.item, prior: entry.record });
           await narrate(`Reclaimed ${entry.item.ref} — run ${entry.record.runId} (${entry.record.failureReason}).`);
         }
         for (const item of resolved.resume.items) {
           const itemRuns = await readRuns(item);
-          const failed = [...itemRuns].reverse().find((record) =>
+          const failed = itemRuns.filter((record) =>
             record.state === "failed"
             && record.brief?.wave == null
             && record.brief?.loop?.loopRunId === resolved.resume.lastDeclaration?.loopRunId);
-          if (failed) resumeRetries.set(item.ref, { item, prior: failed });
+          for (const record of failed) resumeRetries.set(phaseRetryKey(item.ref, record.brief.loop.phase), { item, prior: record });
 
           // A completed continue plus still-current findings is enough persisted lineage
           // to reconstruct a pending fix after interruption. The exact findings are read
@@ -1875,7 +1875,8 @@ export function createLoopShell({
         const progressBaseCommit = typeof roundBaseline === "object" ? roundBaseline?.commit ?? null : null;
 
         let retryRecord = null;
-        const resumedLineage = resumeRetries.get(act.ref);
+        const retryKey = phaseRetryKey(act.ref, act.phase);
+        const resumedLineage = compatiblePhaseRetry(resumeRetries.get(retryKey), act.phase, declaration.execution);
         if (resumedLineage) {
           try {
             const resumeDeadline = decideScheduleToClose({
@@ -1909,7 +1910,7 @@ export function createLoopShell({
             // AFTER the store admits the mint, never before it: a retry the store refuses
             // (`not-retryable`, `retry-parked`, `attempts-exhausted`) must not announce itself.
             await narrate(`Resumed ${act.ref} — attempt ${resumed.record.attempt} of ${resolved.cap} on run ${resumed.record.runId}.`);
-            resumeRetries.delete(act.ref);
+            resumeRetries.delete(retryKey);
           } catch (error) {
             const stop = storeStop(error);
             if (stop != null) {
@@ -1921,7 +1922,7 @@ export function createLoopShell({
               });
               return state;
             }
-            resumeRetries.delete(act.ref);
+            resumeRetries.delete(retryKey);
             continue;
           }
         }

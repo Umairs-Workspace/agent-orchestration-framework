@@ -13,6 +13,7 @@ const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemEx
 const loopCommand = _aofApplication.getCommand("work:loop");
 const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { lineageElapsedMs } from "../../packages/work-loop/src/engine.mjs";
+import { compatiblePhaseRetry } from "../../packages/work-loop/src/commands/runtime-invocation.mjs";
 const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
 const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
@@ -59,6 +60,31 @@ const declaration = {
 const capThree = { ...declaration, cap: 3 };
 
 export const loopCommandResumeTests = [
+  { name: "156 resume — a failed repair is not retried as a build phase", async run() {
+    const fx = await loopFixture();
+    try {
+      const item = await resolveItemExact(fx.ctx, "03/01");
+      replaceStatus(path.join(fx.storyDir, "STORY.md"), "review");
+      const old = await startRun(item, { brief: { loop: { ...declaration, phase: "repair" } }, now: "2026-08-15T00:00:00.000Z" });
+      await completeRun(item, { runId: old.runId, outcome: "failed", failureReason: "runtime_offline", now: "2026-08-15T00:00:01.000Z" });
+      const driver = completingDriver(fx, { onCommand: closing(fx) });
+      const state = await runLoopBody({ scope: "03", resume: true, now: "2026-08-15T00:16:00.000Z" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: () => {} });
+      assert.equal(state.driven[0].phase, "continue");
+      const build = (await readRuns(item)).find(run => run.runId === state.driven[0].runId);
+      assert.equal(build.attempt, 1);
+      assert.ok(!build.retryOf);
+      assert.equal((await readRuns(item)).find(run => run.runId === old.runId).state, "failed");
+    } finally { await fx.cleanup(); }
+  } },
+  { name: "156 resume — a verification record polluted with a repair runtime is preserved but not retried", run() {
+    const phase = (runtime, model) => ({ version: 1, runtime, phases: { verify: { model, effort: "high" } } });
+    const execution = phase("codex", "gpt-6-astra");
+    const entry = { prior: { brief: { loop: { phase: "verify" } }, execution: phase("claude", null) } };
+    assert.equal(compatiblePhaseRetry(entry, "verify", execution), null);
+    entry.prior.execution = execution;
+    assert.equal(compatiblePhaseRetry(entry, "verify", execution), entry);
+    assert.equal(compatiblePhaseRetry(entry, "continue", execution), null);
+  } },
   {
     name: "loop command resume — the probe recovers the newest declaration and reports stranded without settling it",
     async run() {
