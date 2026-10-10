@@ -1,9 +1,11 @@
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { activeScopeHolders, restoreParkedAssignmentResume } from "./assignment-record.mjs";
+import { isMeshLaneTree } from "./worktrees.mjs";
 
 export const MESH_GLOBAL_DISABLED_CODE = "mesh-global-disabled";
 export const MESH_WORKSPACE_UNCONFIGURED_CODE = "mesh-workspace-unconfigured";
+export const MESH_WORKSPACE_LANE_CODE = "mesh-workspace-is-lane";
 
 // Application policy enters explicitly; constructing the service opens no stores or timers.
 export function createGlobalWorkPublisher({ globalMeshPaths, openGlobalWorkProjectionStore, publishWorkspaceSnapshot, recordWorkspaceProjectionError, workspaceIdFor, readWorkspaceProjectionItems, readWorkspaceContentRecords, publishGlobalRegistryDescriptorsToStore, resolveWorkspaceId, reportDegrade }) {
@@ -49,6 +51,17 @@ function meshGlobalPropagationDecision(workspaceOrConfig) {
     // committed .aof/aof.config.json (or the legacy root aof.config.json). A pure
     // config-shaped argument (no projectRoot to check) keeps the enable-arm behaviour.
     const projectRoot = typeof workspaceOrConfig?.projectRoot === "string" ? workspaceOrConfig.projectRoot : null;
+    // …nor is a LANE: a dispatch, session or assignment checkout carries the repository's own
+    // committed config, so the test below admits it, and every verb its session ran registered it
+    // as a separate fleet workspace (2026-10-06). The lane's work reaches the fleet through its
+    // repository, once it merges home.
+    if (projectRoot != null && isMeshLaneTree(projectRoot)) {
+      return {
+        enabled: false,
+        code: MESH_WORKSPACE_LANE_CODE,
+        guidance: `Not publishing ${projectRoot}: it is a mesh lane, not a workspace.`,
+      };
+    }
     if (projectRoot != null && projectRoot.length > 0) {
       const hasOwnConfig = existsSync(path.join(projectRoot, ".aof", "aof.config.json"))
         || existsSync(path.join(projectRoot, "aof.config.json"));

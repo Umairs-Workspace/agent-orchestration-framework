@@ -979,6 +979,22 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
   // per (code, key), so a daemon hosting several sessions keeps every session's screen.
   const screenKey = randomUUID();
 
+  // ONE RELEASE PER PTY (2026-10-06). node-pty's Windows `kill()` forks a console-list agent; once
+  // the session's processes are gone (the OS tree kill succeeded, or the pty already reported its
+  // exit) that agent can only crash onto stderr (`Error: AttachConsole failed` and its stack, on
+  // every lane's narration) and leave a five-second stale-pid `process.kill` behind. So a gone
+  // process is released without enumeration (`releasePtyAfterTreeTermination`), a live one through `term.kill()`, and
+  // the withdraw kill, the stop and the settle's cleanup all release through here: a pty is never
+  // released twice, which is what put the agent back after the stop had avoided it.
+  let ptyReleased = false;
+  let ptyExited = false;
+  const releaseTerminal = (processGone) => {
+    if (ptyReleased) return;
+    ptyReleased = true;
+    if (processGone) releasePtyAfterTreeTermination(term);
+    else term?.kill?.();
+  };
+
   // 2026-07-27 (withdraw notify) — hand the caller a kill for THIS live PTY the
   // moment it exists, so a control-side withdrawal can end the run instead of
   // leaving it grinding with a run record stuck `running`. The kill routes through
@@ -989,7 +1005,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     options.onPtyLive?.(
       () => {
         try {
-          term.kill();
+          releaseTerminal(ptyExited);
         } catch (error) {
           reportDegrade("mesh-worker-execution", error);
         }
@@ -1175,8 +1191,8 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
       }
       // A Windows ConPTY launched through a command shim can report onExit while
       // its native PTY handle still keeps the child's cwd open. Close that handle
-      // at the single settle point as well; kill is idempotent/already-exited safe.
-      try { term?.kill?.(); } catch (error) { /* already-exited guard (win32) */
+      // at the single settle point as well, unless the stop already released it (`releaseTerminal`).
+      try { releaseTerminal(ptyExited); } catch (error) { /* already-exited guard (win32) */
       reportDegrade("mesh-worker-execution", error); }
       // never let a queued command write land in an already-exited/settled PTY.
       if (commandWriteTimer != null) { clearTimeout(commandWriteTimer); commandWriteTimer = null; }
@@ -1273,11 +1289,11 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     // to its exit-reason recorder), so the next death — if there is one — is bracketed to
     // the line rather than to the minute. Defaults: an INJECTED `ptySpawn` is a test double
     // whose pid is fiction, so the tree kill is off unless `terminateTree` says otherwise;
-    // the real spawner turns it on. `terminateTreeExec` is the injectable runner.
+    // the real spawner turns it on. `terminateTreeExec` is the injectable runner. Release goes
+    // through `releaseTerminal`, the one release per pty.
     const releasePty = (treeTerminated = false) => {
       try {
-        if (treeTerminated) releasePtyAfterTreeTermination(term);
-        else term.kill();
+        releaseTerminal(treeTerminated || ptyExited);
         stopBreadcrumb("pty-released");
       } catch (error) {
         reportDegrade("mesh-worker-execution", error);
@@ -1426,6 +1442,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     }) ?? null;
 
     exitSub = term.onExit?.(({ exitCode }) => {
+      ptyExited = true;
       const requested = requestedStopOutcome;
       requestedStopOutcome = null;
       if (requested != null) {

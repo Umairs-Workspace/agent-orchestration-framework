@@ -536,7 +536,10 @@ export function createWaveOrchestration({
             const outcome = childDriveOutcome(answer);
             const tail = Array.isArray(answer?.stderrTail) ? answer.stderrTail : [];
             await narrate(`Lane ${ref} — drive: ${outcome.sessionId ? `session ${outcome.sessionId}` : "no session id"} (${answer?.outcome ?? "died"}${outcome.refusal ? `, ${outcome.refusal}` : ""}).`);
-            for (const line of tail) await narrate(`Lane ${ref} — stderr: ${line}`);
+            // The tail narrates a drive that went wrong (`stderrTail`'s purpose, child-drive.mjs); a
+            // drive that settled `done` has nothing to explain, and printing its stderr put a library's
+            // stack trace in the middle of a green lane's narration.
+            if (outcome.outcome !== "done") for (const line of tail) await narrate(`Lane ${ref} — stderr: ${line}`);
             return {
               item: laneItem,
               record: driveRecord,

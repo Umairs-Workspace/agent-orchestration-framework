@@ -110,6 +110,28 @@ async function drive(options = {}, brief = BRIEF) {
   return settled;
 }
 
+// conptyShapedSpawn({ onWrite }) — the fixture's scripted PTY dressed in node-pty 1.1.0's Windows
+// conpty shape (`_agent` with a non-DLL conpty), so `releasePtyAfterTreeTermination` applies. Its
+// `kill()` enumerates the console the way node-pty 1.1's does, so a test counts the releases and
+// the enumerations that actually reached the console-list agent.
+function conptyShapedSpawn({ onWrite } = {}) {
+  let kills = 0;
+  let enumerations = 0;
+  const { spawn: fakeSpawn, ptys } = createFakePtySpawn({ onWrite });
+  const spawn = async (...args) => {
+    const pty = await fakeSpawn(...args);
+    const kill = pty.kill.bind(pty);
+    pty._agent = {
+      _useConpty: true,
+      _useConptyDll: false,
+      _getConsoleProcessList: () => { enumerations += 1; return Promise.resolve([]); },
+    };
+    pty.kill = () => { kills += 1; pty._agent._getConsoleProcessList(); return kill(); };
+    return pty;
+  };
+  return { spawn, ptys, released: () => ({ kills, enumerations }) };
+}
+
 // THE RESUME SHAPE'S ONE ADAPTER. The fixture's scripted PTY emits only from inside
 // `term.write(...)` — deliberately, so a test can script the agent's reply to the exact
 // line the driver typed with no race. A `command: null` brief writes NOTHING, so there
@@ -857,6 +879,43 @@ export const agentSessionDriverDrivesTests = [
       assert.equal(settled.value.outcome, "needs-input", "the settle is unaffected by a faulting hook");
       assert.deepEqual(kills, [], "a test double's pid is fiction: no tree kill was attempted");
       assert.equal(ptys[0].killed, true, "the pty is still released");
+    },
+  },
+  // 2026-10-06 — after a SUCCESSFUL tree kill, `term.kill()` forked node-pty's console-list agent at
+  // a console that was gone: `Error: AttachConsole failed` and its stack on every lane's stderr, and a
+  // five-second fallback `process.kill` of a dead pid. The pty is now released without enumerating
+  // (`releasePtyAfterTreeTermination`); a failed tree kill still enumerates through `term.kill()`; and
+  // the settle's own cleanup never releases the pty a second time (it did, and the agent came back).
+  ...[
+    ["succeeds", null, { kills: 1, enumerations: 0 }],
+    ["fails", new Error("taskkill failed"), { kills: 1, enumerations: 1 }],
+  ].map(([how, treeError, expected]) => ({
+    name: `stop — on win32, when the tree kill ${how}, the pty is released once, ${expected.enumerations ? "through term.kill()" : "without node-pty's console-list agent"}`,
+    run: async () => {
+      const events = [];
+      const conpty = conptyShapedSpawn({ onWrite: ({ emitData }) => { emitData("NEEDS_INPUT\n"); } });
+      const settled = await drive({
+        ptySpawn: conpty.spawn,
+        terminateTree: true,
+        terminateTreeExec: (bin, args, opts, callback) => callback(treeError, treeError ? "" : "SUCCESS", ""),
+        onSessionStop: (event) => { events.push(event); },
+      });
+      assert.equal(settled.value.outcome, "needs-input");
+      if (process.platform !== "win32") {
+        assert.deepEqual(conpty.released(), { kills: 1, enumerations: 1 }, "no tree kill off win32, so term.kill() as before");
+        return;
+      }
+      assert.deepEqual(conpty.released(), expected);
+      assert.deepEqual(events.map((event) => event.phase), ["stop-requested", "tree-terminated", "pty-released", "exit-confirmed"]);
+    },
+  })),
+  {
+    name: "settle — a session that exits by itself is released once, without enumeration: its processes are gone, so node-pty's console-list agent is never forked",
+    run: async () => {
+      const conpty = conptyShapedSpawn({ onWrite: ({ emitExit }) => { emitExit(0); } });
+      const settled = await drive({ ptySpawn: conpty.spawn });
+      assert.equal(settled.value.outcome, "done");
+      assert.deepEqual(conpty.released(), { kills: 1, enumerations: 0 });
     },
   },
   {

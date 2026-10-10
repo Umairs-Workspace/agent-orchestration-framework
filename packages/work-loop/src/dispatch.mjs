@@ -4,7 +4,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir, readFile, stat } from "node:fs/promises";
 
 // Core supplies work discovery, configured worktrees, locking and effect delivery.
-export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope }) {
+export function createDispatchLanes({ meshDispatchWorktreePath, isUnderMeshDispatchWorktreesRoot, addDispatchWorktree, removeDispatchWorktree, meshItemBranchName, findItemWorktree, listWorktrees, advanceBranchToBase, commitWorktreeChanges, parsePorcelainStatus, isHeartbeatQueuePath, resolveExec, findWork, reportDegrade, acquireMeshLauncherLock, prepareRuntimeAssets, validateExecutionEnvelope }) {
 // src/work/dispatch.mjs — THE LOCAL CONCURRENT-DISPATCH LANE (story 65 / task 02).
 //
 // WHAT THIS MODULE IS FOR, in one measured sentence. `aof work next` now answers with the
@@ -440,17 +440,21 @@ async function dispatchReadySet(members, runLane, options = {}) {
 // laneChanges(worktreePath, options) — the files this lane has touched, from
 // `git status --porcelain` inside the lane's OWN tree. Both halves matter: it is how a lane
 // says whether it holds uncommitted work (so the sweep never removes one that does) and it
-// is the input to the overlap report.
+// is the input to the overlap report. A heartbeat queue is neither (mesh's
+// `isHeartbeatQueuePath`): the commit door never stages one, so counting it would refuse
+// the cleanup of every lane the loop just merged. `--untracked-files=all` lists each untracked
+// file by its own path; the default folds a new directory into one `dir/` entry, which would hide
+// a queue under a story's first `runs/` and count the directory as work.
 async function laneChanges(worktreePath, options = {}) {
   const exec = resolveExec(options);
   try {
-    const result = await exec(["status", "--porcelain"], { cwd: worktreePath });
+    const result = await exec(["status", "--porcelain", "--untracked-files=all"], { cwd: worktreePath });
     if (result.status !== 0) return [];
     // Through the ONE porcelain parser (`parsePorcelainStatus`, worktree.mjs — 129/03 fix round,
     // I4a): a rename is `XY <old> -> <new>`, and the NEW path is the one this lane now holds.
     return parsePorcelainStatus(result.stdout)
       .map(({ paths }) => paths[paths.length - 1])
-      .filter(Boolean);
+      .filter((relpath) => Boolean(relpath) && !isHeartbeatQueuePath(relpath));
   } catch (error) {
     reportDegrade("work-dispatch", error);
     return [];

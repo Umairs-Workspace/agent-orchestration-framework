@@ -119,6 +119,32 @@ export const globalWorkPropagationTests = [
       }
     },
   },
+  ...["dispatch-worktrees", "session-worktrees", "worktrees"].map((laneRoot) => ({
+    // 2026-10-06 (operator-found): a lane is a full checkout, committed config and all, so the
+    // own-config test above admitted it, and every verb its session ran registered it as a fleet
+    // workspace of its own (43 of 55 cards were dispatch lanes). The lane's repository is the one
+    // workspace; the lane is refused even with its config on disk.
+    name: `global-work-propagation/00 a mesh lane is not a workspace, though it carries the repository's config [${laneRoot}]`,
+    async run() {
+      const repo = await mkdtemp(path.join(os.tmpdir(), "aof-lane-is-not-a-workspace-"));
+      try {
+        const lane = path.join(repo, ".aof", "mesh", laneRoot, "dispatch-13-01");
+        for (const root of [repo, lane]) {
+          await mkdir(path.join(root, ".aof"), { recursive: true });
+          await writeFile(path.join(root, ".aof", "aof.config.json"), JSON.stringify({ name: "r", mesh: { enabled: true } }), "utf8");
+        }
+        const config = { name: "r", mesh: { enabled: true } };
+        const decision = meshGlobalPropagationDecision({ config, projectRoot: lane, workDir: path.join(lane, "wiki", "work") });
+        assert.deepEqual({ enabled: decision.enabled, code: decision.code }, { enabled: false, code: "mesh-workspace-is-lane" });
+        let calls = 0;
+        const result = await publishGlobalWorkSnapshot({ config, projectRoot: lane, workDir: path.join(lane, "wiki", "work") }, { globalPublisher: async () => { calls += 1; } });
+        assert.deepEqual({ code: result.code, calls }, { code: "mesh-workspace-is-lane", calls: 0 }, "a lane never reaches the publisher");
+        assert.equal(meshGlobalPropagationDecision({ config, projectRoot: repo, workDir: path.join(repo, "wiki", "work") }).enabled, true, "…and its repository still publishes");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  })),
   {
     name: "global-work-propagation/00 enabled workspaces call the injected publisher once",
     async run() {

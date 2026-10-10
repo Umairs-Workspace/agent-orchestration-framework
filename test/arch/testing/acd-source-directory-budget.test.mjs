@@ -656,7 +656,7 @@ export const SOURCE_DIRECTORY_EXEMPTIONS = Object.freeze([
   
   Object.freeze({ directory: "test/terminal", why: "milestone 138's screen suites (138/ADR-001): `index.mjs`, `screen-model`, `session-screen-ready`, `session-screen-verdicts` and `session-screen-evidence` (story 00), and story 01's `claude-screens-registry` — six members, under the threshold." }),
   Object.freeze({ directory: "test/arch/terminal", why: "milestone 138's screen controls (138/ADR-001): `index.mjs`, FF-13801 `acd-screen-has-one-reader` (story 00) and story 01's FF-13802 `acd-screen-registry-is-recorded` — three members, under the threshold." }),
-  Object.freeze({ directory: "test/fixtures/claude-screens", why: "the recorded claude screens (138/ADR-001 §6, ADR-003 §7) — data the screen suites replay, not a layer of modules: `ready`, `first-run` and `usage-limit` (story 00), story 01's `trust`, `mcp-approval` and `login`, and `ready.classic` (the classic renderer's box, recorded at 138's verify) — seven `.json` recordings, under the threshold." }),
+  Object.freeze({ directory: "test/fixtures/claude-screens", why: "the recorded claude screens (138/ADR-001 §6, ADR-003 §7) — data the screen suites replay, not a layer of modules: `ready`, `first-run` and `usage-limit` (story 00), story 01's `trust`, `mcp-approval` and `login`, `ready.classic` (the classic renderer's box, recorded at 138's verify), and `mcp-approval.multi` (the two-or-more-server checklist, recorded 2026-10-06) — eight `.json` recordings, at the threshold." }),
   // milestone 131 — the notify family (ADR-005 §2), founded by story 02 as TWO exemptions on 133's
   // precedent, each naming its members so no later story edits a budget line to land one.
   
@@ -1018,7 +1018,7 @@ export const archTests = [
         "packages/execution/src/terminal": ["screen.mjs", "session-screen.mjs", "claude-screens.mjs"],
         "test/terminal": ["index.mjs", "screen-model", "session-screen-ready", "session-screen-verdicts", "session-screen-evidence", "claude-screens-registry"],
         "test/arch/terminal": ["index.mjs", "acd-screen-has-one-reader", "acd-screen-registry-is-recorded"],
-        "test/fixtures/claude-screens": ["ready", "first-run", "usage-limit", "trust", "mcp-approval", "login", "ready.classic"],
+        "test/fixtures/claude-screens": ["ready", "first-run", "usage-limit", "trust", "mcp-approval", "login", "ready.classic", "mcp-approval.multi"],
       };
       for (const [directory, members] of Object.entries(planned)) {
         const exemption = SOURCE_DIRECTORY_EXEMPTIONS.find((entry) => entry.directory === directory);
