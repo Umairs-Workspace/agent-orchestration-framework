@@ -361,7 +361,10 @@ async function openDispatchLane(projectRoot, itemRef, options = {}) {
 
   // Door 3 — materialise it.
   try {
-    return lane(await addDispatchWorktree(projectRoot, itemRef, options.commitish ?? "HEAD", { exec: options.exec, ...(options.execution == null ? {} : { execution: options.execution }) }), true);
+    // resolveDispatchLane owns native asset preparation AFTER advancement, for
+    // every door. Passing execution here also prepares the retained branch at
+    // its old commit, before its corrected assets/ownership lock can arrive.
+    return lane(await addDispatchWorktree(projectRoot, itemRef, options.commitish ?? "HEAD", { exec: options.exec }), true);
   } catch (error) {
     // The concurrent-`add` race: the loser reads the winner's tree.
     if (existsSync(lanePath)) {

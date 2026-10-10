@@ -350,6 +350,57 @@ async function fixture(run) {
 }
 
 const codexWorktreeHandoffTests = [
+  ...[false, true].map(diverged => ({ name: `156 — retained ${diverged ? "diverged" : "ancestor"} lane advances before native asset preparation`, run: () => fixture(async ({ root, lock }) => {
+    const git = (args, cwd = root) => {
+      const result = spawnCliSync("git", args, { cwd, encoding: "utf8" });
+      assert.equal(result.status, 0, result.stderr);
+      return result.stdout.trim();
+    };
+    git(["init", "-q"]);
+    git(["config", "user.name", "AOF test"]);
+    git(["config", "user.email", "aof-test@example.invalid"]);
+    await put(root, ".gitattributes", "* text eol=lf\n");
+    await put(root, ".gitignore", ".aof/mesh/\n");
+    const skill = lock.files.find(entry => entry.path.endsWith("SKILL.md"));
+    const original = await read(root, skill.path);
+    const old = original.replace(/\r?\n/g, "\r\n");
+    await put(root, skill.path, old);
+    skill.hash = hashContent(old);
+    await writeLock(path.join(root, ".aof/aof.lock.json"), lock);
+    git(["add", "."]); git(["commit", "-qm", "old generated lock"]);
+    const main = git(["branch", "--show-current"]);
+    const a = createApplication({ base: createBaseServices() });
+    const branch = a.mesh.worktree.meshItemBranchName("156/01");
+    let retained;
+    try {
+      git(["branch", branch]);
+      if (diverged) {
+        git(["switch", branch]);
+        await put(root, "retained-work.txt", "Worker work survives advancement.\n");
+        git(["add", "retained-work.txt"]); git(["commit", "-qm", "retained worker work"]);
+        retained = git(["rev-parse", "HEAD"]);
+        git(["switch", main]);
+      }
+      const refreshed = original + "\nUpdated source instructions.\n";
+      await put(root, skill.path, refreshed);
+      skill.hash = hashContent(refreshed);
+      await writeLock(path.join(root, ".aof/aof.lock.json"), lock);
+      git(["add", "."]); git(["commit", "-qm", "refresh generated lock and assets"]);
+      const head = git(["rev-parse", "HEAD"]);
+      const execution = resolveExecution({}, { runtime: ["claude", "refine=codex"], capabilities: { codex: { models: codexFixture().fixture.models } } });
+      const lane = await a.loop.work.dispatch.resolveDispatchLane(root, "156/01", { advanceTo: head, execution });
+      assert.notEqual(lane.advanced.outcome, "refused");
+      assert.equal(git(["merge-base", "HEAD", head], lane.worktree), head);
+      if (retained) assert.equal(git(["merge-base", "HEAD", retained], lane.worktree), retained);
+      assert.equal(await read(lane.worktree, skill.path), refreshed);
+      await prepareCodexWorktree(root, lane.worktree);
+      assert.equal(git(["status", "--porcelain"], lane.worktree), "");
+    } finally {
+      const trees = await a.mesh.worktree.listWorktrees(root);
+      for (const tree of trees) if (path.resolve(tree.path) !== path.resolve(root)) git(["worktree", "remove", "--force", tree.path]);
+      await a.close();
+    }
+  }) })),
   ...["files", "work"].map(section => ({ name: `156 — lane refreshes older lock-owned exclusive assets in ${section}`, run: () => fixture(async ({ root, lane, lock }) => {
     if (section === "work") {
       lock.work = { files: lock.files };

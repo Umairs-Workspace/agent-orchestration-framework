@@ -7,6 +7,34 @@ Implementation is ready for review. This is not live Astra/Sonnet acceptance.
 Work and review were performed inline in solo mode. No subagents, dependencies,
 standing project runtime settings, or persistent branches/worktrees were added.
 
+## Retained-branch reopen ordering — 2026-10-10
+
+Resume at 12:40 UTC still failed on `.agents/skills/aof-add-chore/SKILL.md`.
+The retained `aof/mesh/153-01` branch remained at `c58718d4` with no worktree.
+The earlier fresh-HEAD probe did not cover this state: materialization received
+the execution envelope and prepared native assets inside the lower mesh door,
+before dispatch could advance the retained branch to the corrected primary.
+
+Dispatch now owns native preparation once, after its optional branch advancement,
+for recreated lanes as it already did for reused lanes. Mesh assignment/session
+callers keep their existing preparation. The declared dependency preparation is
+unchanged; no asset ownership or approval check is relaxed.
+
+Two regression cases use real Git and assembled application services to retain
+an older branch with checkout-mismatched hashes, commit corrected assets in the
+primary, then recreate and advance the lane. Both failed before the fix and pass
+afterward. The second retains a divergent worker commit and proves it survives.
+The complete ownership/worker suite passes 60 cases, dispatch passes 5, and mesh
+worktree preparation passes 5 (70 total).
+
+A diagnostic also reopened the actual 153/01 branch using its persisted mixed
+execution plan. It fast-forwarded to `4859ef69`, prepared the actual assets, and
+passed repeated native preparation. The diagnostic omitted dependency setup and
+launched no assistant. Its newly created worktree was removed; the existing
+story branch retains the safe fast-forward. This verifies admission, not Sonnet
+execution. Evidence: `.tmp/156-retained-lane-full.log`,
+`.tmp/156-worktree-prepare-tests.log`, `.tmp/156-reopen-actual-lane.mjs`.
+
 ## Owned lane refresh and checkout hashes — 2026-10-10
 
 The live AOF milestone 153 run completed refinement (commit `8d25af05`) and

@@ -43,6 +43,14 @@ Feature: One loop selects and preserves native execution per phase
     And repeated preparation succeeds without further changes
     And edited or unowned destination assets still refuse before any asset is written
 
+  Scenario: Resume recreates a retained lane from an older branch
+    Given a mixed loop retains a story branch after removing its worktree
+    And the primary commits corrected generated assets and ownership records
+    When resume recreates and advances the lane to the primary base
+    Then native assets are prepared after the branch advancement
+    And retained worker commits survive advancement
+    And the reopened lane is ready for its recorded phase selection
+
   Scenario: Windows terminal has an older npm launcher and a compatible desktop installation
     Given PATH exposes a Codex npm launcher whose CLI profile is unsupported
     And the registered Codex desktop app has an admitted profile and advertises Astra with high effort
