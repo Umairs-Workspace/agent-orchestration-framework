@@ -290,7 +290,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:a1f04d099140da8b7b0e9a9f2ff67b7fd876759164cd1857182a7535c1bdb902"
+      "hash": "sha256:da2af0ea6708c75b53a36167f6820abdff321b453dd704266f45cfbf9ebaef1b"
     },
     {
       "path": ".agents\\skills\\aof-continue\\agents\\openai.yaml",
@@ -650,7 +650,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:ea4a468fba24f71d51a9af72b0f92a723eb51ccf2996d8e3327af1ee760e647f"
+      "hash": "sha256:e5fceb57335c0727b8d78f14d9ce5bc647cb5e0d7505eab511d2ff7597871bbe"
     },
     {
       "path": ".agents\\skills\\aof-refine\\agents\\openai.yaml",
@@ -716,7 +716,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:7064a6f38ac387c457089a4f3bd37109b3d05d468b60d75630883c1494e663bf"
+      "hash": "sha256:82153e3b71aad953a799209a9a9a07d1dc665124862f5f9468db31d0f730c310"
     },
     {
       "path": ".agents\\skills\\aof-retrospective\\agents\\openai.yaml",
@@ -770,7 +770,7 @@
         "id": "aof-shatter",
         "kind": "skill"
       },
-      "hash": "sha256:245e88a5029b227990defa80617609960dfde68a8127d5e8ea13a5377953c6a5"
+      "hash": "sha256:5419a581007b4ff9ea333c44f9fe1440f5e234cc05a36de957f4aacd2d717bbd"
     },
     {
       "path": ".agents\\skills\\aof-shatter\\agents\\openai.yaml",
