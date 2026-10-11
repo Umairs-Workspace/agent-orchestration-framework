@@ -64,7 +64,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { ID_FORMS, headingCaptureRe, headingSplitRe } from "@aof/work/declared-id";
-import { normaliseLessonMeta } from "@aof/work/memory-vocabulary";
+import { normaliseLessonMeta, forwardLessonMeta, collectTags } from "@aof/work/memory-vocabulary";
 const parseArchitecture = _aofApplication.knowledge.memory.localIndexing.parseArchitecture;
 const parseRetrospective = _aofApplication.knowledge.memory.localIndexing.parseRetrospective;
 
@@ -184,10 +184,14 @@ export function goldenRecords(text, kind, { item, itemSlug, workRelPath }) {
     // Every other field stays an independent byte-for-byte reading of the pre-extraction parser,
     // which is ADR-002 §6's claim: normalisation changes only kind, area, stage and tags.
     const indexed = normaliseLessonMeta(meta);
+    // 153/ADR-002, the same discipline: the raw `Promoted to` and `Recurs` above are this golden's own
+    // reading; the indexed `status` and the trailing `recurs:<ref>` tag are the vocabulary's rule over
+    // them. A legacy lesson writes neither, so its record is unchanged.
+    const forward = forwardLessonMeta(meta);
     return {
       recordType: "lesson", id, item, itemSlug, title,
       area: indexed.area, stage: indexed.stage, kind: indexed.kind, owner: meta.owner ?? "",
-      status: "", tags: indexed.tags,
+      status: forward.status, tags: collectTags([...indexed.tags, forward.recursTag]),
       summary: lesson,
       text: [title, what, why, lesson].filter(Boolean).join(" \n "),
       source,
