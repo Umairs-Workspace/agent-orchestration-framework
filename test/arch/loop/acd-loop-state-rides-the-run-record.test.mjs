@@ -196,7 +196,14 @@ function assertUiFrozen(pairs) {
   // Native inputs save only /api/config/sections; no loop face or sidecar store.
   // The new component is in the census before staging, and the existing one-character
   // mutation probe still checks every source, including this new region.
-  assert.equal(hash.digest("hex"), "68c869f3b3cd884595d9926e07f3f3945dad05a52d1aa2f211446d9833b07237", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 156 at `aof:verify 153` (156 changed the tree without re-pinning). Measured:
+  // `git diff --numstat af85ca30 -- apps/ui/src` is ONE file, `apps/ui/src/config/RuntimeSettings.tsx`
+  // (+33 −22): phase models and effort move to `work.agents.session`, the assistant is shown per phase
+  // as inferred from its model, and the default assistant folds into a disclosure. It reads the
+  // configuration preview only. No board, fleet, run-record key, cycle, level or loop state is read.
+  // The same verify gives the new `Default assistant` disclosure the form's focus-ring tokens (154/10's
+  // accessible-form contract), a class-only change to the same file.
+  assert.equal(hash.digest("hex"), "9babbd10aee801bb728efb9f4a197ca1abbd298dbf07a5fd92edc5107af2c04f", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

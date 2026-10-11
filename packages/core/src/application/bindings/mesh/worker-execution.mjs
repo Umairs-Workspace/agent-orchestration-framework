@@ -79,7 +79,8 @@ export function assembleMeshWorkerExecution({ workServices, runStoreServices, ru
         if (!launchDeclared && phase == null) throw Object.assign(new Error("Codex assignment names no supported phase"), { code: "native-phase-unavailable" });
         for (const selected of launchDeclared ? ["refine", "continue", "verify"] : [phase]) if (executionForPhase(execution, selected)?.runtime === "codex") await nativeExecution.inspectPhase({ item, worktreeItem, worktreePath, ws, execution, phase: selected }, options);
       }
-      return phase;
+      // A declared launch carries the whole plan; a single-phase directive runs on its phase's envelope.
+      return { phase, execution: launchDeclared ? execution : executionForPhase(execution, phase) };
     },
     canResume: (sessionId, cwd, options) => runtimeSessionServices.canResume("codex", sessionId, { ...options, cwd }),
     inspectPhase: ({ item, worktreeItem, worktreePath, ws, execution, phase }, options) => commandsDriveServices.driveNativePhase(phase, item, { dryRun: true }, { workspace: { ...ws, projectRoot: worktreePath }, agentSessionDriverOptions: options, loopDrive: { execution: executionForPhase(execution, phase), briefItem: worktreeItem } }),

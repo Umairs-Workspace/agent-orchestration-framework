@@ -67,7 +67,8 @@ export const yarnInstallationTests = [
         'commands/import-milestone.mjs': ['node:path', '@aof/contracts/error'],
         'graph-normalize.mjs': ['node:path', 'node:fs'],
         'graphify.mjs': ['node:child_process', 'node:fs', 'node:path'],
-        'memory.mjs': ['@aof/contracts/error'],
+        // 153/02-03: recurrence reads the canonical Recurs form and status reads the shared accounting.
+        'memory.mjs': ['@aof/contracts/error', '@aof/work/memory-vocabulary', '@aof/work/memory-accounting'],
         // 154/09: the pure extractor catalog raises the shared coded error; no I/O/provider port.
         'graphify-backends.mjs': ['@aof/contracts/error'],
         'memory/local-retrieval.mjs': ['@aof/work/ref-scope', '@aof/work/memory-vocabulary'],
@@ -106,6 +107,9 @@ export const yarnInstallationTests = [
         'pty.mjs': ['node:module', 'node-pty'],
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
+        // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
+        'codex-executable.mjs': ['node:fs', 'node:child_process', 'node:module', 'node:path'],
+        'codex-process-environment.mjs': ['node:fs', 'node:path'],
         'runtime-selection.mjs': ['@aof/contracts/loop-bounds'],
         // 154/ADR-001: the session adapter owns native availability and bounded ANSI decoding.
         'runtime-session.mjs': ['node:fs/promises', 'node:path', 'node:util'],
@@ -174,8 +178,11 @@ export const yarnInstallationTests = [
         // 154/06: the extracted invocation helper reuses the shell's contract leaves;
         // this exact file gains no platform, provider or assembled-core permission.
         'commands/runtime-invocation.mjs': ['@aof/contracts/error', '@aof/contracts/loop-bounds'],
-        'dispatch.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
+        // 156: a lane names the runtimes whose assets it carries, read from the contract leaf.
+        'dispatch.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/contracts/loop-bounds'],
         'commands/dispatch.mjs': ['node:path', 'node:fs', '@aof/contracts/error'],
+        // 156: the native-asset preflight reads the installed runtime assets before an attempt exists.
+        'commands/runtime-assets.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error'],
         'trigger/declaration.mjs': ['node:path', 'node:fs/promises'],
         'commands/trigger.mjs': ['@aof/contracts/error'],
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],

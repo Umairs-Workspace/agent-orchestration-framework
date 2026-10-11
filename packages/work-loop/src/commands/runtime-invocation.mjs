@@ -1,9 +1,27 @@
 // The loop's runtime invocation boundary: grammar and pinned resolution, never phase sequencing.
 import { commandError } from '@aof/contracts/error';
-import { loopRuntimeSettingFromConfig, executionRuntimes, executionForPhase, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
+import { loopRuntimeSettingFromConfig, loopPhaseRuntimesSettingFromConfig, executionRuntimes, executionForPhase, parseRuntimeChoices } from '@aof/contracts/loop-bounds';
 import { validateNativeAssets } from './runtime-assets.mjs';
 
 export const phaseRetryKey = (ref, phase) => `${ref}:${phase}`;
+
+// A native permission halt (156): the unattended adapter declined an approval, so the run is not
+// retryable and a bare --resume cannot help. The halt carries this remedy instead of a resume command.
+const PERMISSION_HALT_REMEDY = "Native permission approval is required. AOF's unattended adapter declines these requests. Resolve the blocked operation in an interactive assistant session, then start a new loop with the same model flags (omit --resume). A bare --resume cannot retry this run.";
+export function notePermissionHalt(act, details) {
+  if (act?.producer === "run-store:not-retryable" && details.failureReason === "operator_action_required") act.remedy = PERMISSION_HALT_REMEDY;
+}
+export function permissionHaltLine(state) {
+  if (state.act.remedy == null || state.act.producer !== "run-store:not-retryable") return null;
+  return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer}). ${state.act.remedy}`;
+}
+
+// The loop's `sessions` table speaks 143/03's provenance words: a value read from configuration is
+// `config`. The execution envelope keeps the exact config path it came from (154/ADR-002); only the
+// table the loop declares and probes is mapped back, so neither record loses what it promised.
+const tableSource = (source) => (typeof source === "string" && source.startsWith("work.agents.") ? "config" : source);
+export const loopSessionTable = (phases) => Object.fromEntries(Object.entries(phases).map(([phase, entry]) =>
+  [phase, { ...entry, modelSource: tableSource(entry.modelSource), effortSource: tableSource(entry.effortSource) }]));
 
 // Old loops could relabel a repair retry as verify while keeping its Claude
 // envelope. Preserve that failed record, but start a correctly selected phase.
@@ -28,7 +46,7 @@ export function decodeExecutionHandoff(text, resolveExecutionResume) {
   return resolveExecutionResume({ execution: value });
 }
 
-export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, resolveExecution, resolveExecutionResume, runtimeSession, validateAssets = validateNativeAssets }) {
+export function createRuntimeInvocation({ claudeModelFamily, configuredSessionModels, normalizeEffort, parseSessionChoices, resolveExecution, resolveExecutionResume, runtimeSession, validateAssets = validateNativeAssets }) {
   const flagValues = (value) => (Array.isArray(value) ? value : typeof value === "string" && value.length > 0 ? [value] : []);
   function requestedSessions(input, native = false) {
     const model = flagValues(input?.model);
@@ -41,24 +59,33 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
   }
 
 
+  // 156 widens the effort words for Codex's own levels. Only a model that is not a Claude alias or id
+  // (flagged or configured) can route a phase to Codex, so a Claude-only request keeps 143/03's door:
+  // an unknown level is refused before any registered read.
+  function codexEligibleModels(input, ctx) {
+    const flagged = Object.values(requestedSessions(input, true).choices).map(choice => choice.model);
+    const configured = Object.values(configuredSessionModels(ctx.workspace.config));
+    return [...flagged, ...configured].some(model => typeof model === "string" && model.trim() !== "" && !claudeModelFamily(model));
+  }
+
   function requestedRuntimeSessions(input, ctx) {
     const flags = parseRuntimeChoices(input.runtime);
-    const native = Object.values(flags).includes("codex") || Object.values(ctx.workspace.config?.work?.loop?.runtimes ?? {}).includes("codex")
-      || flagValues(input.model).length > 0 || Object.keys(ctx.workspace.config?.work?.agents?.session?.models ?? {}).length > 0
+    const native = Object.values(flags).includes("codex") || Object.values(loopPhaseRuntimesSettingFromConfig(ctx.workspace).value ?? {}).includes("codex")
+      || codexEligibleModels(input, ctx)
       || executionRuntimes(ctx.executionHandoff).includes("codex") || loopRuntimeSettingFromConfig(ctx.workspace).value === "codex" || input.resume === true;
     return requestedSessions(input, native);
   }
 
   async function resolveRuntimeInvocation({ input, ctx, resume, resolved, sessionRequest }) {
     const configured = loopRuntimeSettingFromConfig(ctx.workspace);
-    const hasRuntime = input.runtime !== undefined || configured.present || ctx.workspace.config?.work?.loop?.runtimes !== undefined
-      || Object.values(sessionRequest.choices).some(choice => choice.model !== undefined) || Object.keys(ctx.workspace.config?.work?.agents?.session?.models ?? {}).length > 0;
+    const hasRuntime = input.runtime !== undefined || configured.present || loopPhaseRuntimesSettingFromConfig(ctx.workspace).value !== undefined
+      || Object.values(sessionRequest.choices).some(choice => choice.model !== undefined) || Object.keys(configuredSessionModels(ctx.workspace.config)).length > 0;
     if (input.resume === true && resume.lastDeclaration != null) {
       const pinned = resolveExecutionResume?.(resume.lastDeclaration, { runtime: input.runtime, choices: sessionRequest.choices, ...(ctx.executionHandoff == null ? {} : { execution: ctx.executionHandoff }) });
-      if (pinned != null) { resolved.execution = pinned; resolved.sessions = pinned.phases; }
+      if (pinned != null) { resolved.execution = pinned; resolved.sessions = loopSessionTable(pinned.phases); }
     } else if (ctx.executionHandoff != null) {
       const pinned = resolveExecutionResume({ execution: ctx.executionHandoff }, { runtime: input.runtime, choices: sessionRequest.choices });
-      resolved.execution = pinned; resolved.sessions = pinned.phases;
+      resolved.execution = pinned; resolved.sessions = loopSessionTable(pinned.phases);
     } else if (hasRuntime) {
       const preview = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, allowUnproven: true });
       let capabilities = {};
@@ -69,7 +96,7 @@ export function createRuntimeInvocation({ normalizeEffort, parseSessionChoices, 
         throw error;
       }
       resolved.execution = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, capabilities });
-      resolved.sessions = resolved.execution.phases;
+      resolved.sessions = loopSessionTable(resolved.execution.phases);
     }
     for (const phase of ["refine", "continue", "verify"]) {
       if (resolved.execution != null && executionForPhase(resolved.execution, phase).runtime === "codex") await validateAssets(ctx.workspace.projectRoot, phase);

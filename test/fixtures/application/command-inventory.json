@@ -3881,7 +3881,10 @@
           ]
         },
         "runtime": {
-          "type": "string"
+          "type": [
+            "array",
+            "string"
+          ]
         },
         "refine": {
           "type": "string"
@@ -3901,7 +3904,7 @@
         "loop"
       ],
       "spec": {
-        "usage": "aof work loop <driver|NN-MM|backlog-slug> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
+        "usage": "aof work loop <driver|NN-MM|backlog-slug|backlog-path> [--level L1|L2|L3] [--cap N] [--review-claims JSON] [--resume] [--stop] [--hand-off] [--dry-run] [--quiet] [--supervised] [--model [PHASE=][MODEL][:EFFORT]]... [--thinking [PHASE=]LEVEL]... [--refine per-story|whole-item] [--no-repair] [--json]",
         "flags": {
           "level": {
             "type": "string",
@@ -3943,10 +3946,6 @@
             "type": "string",
             "repeatable": true,
             "description": "repeatable: [PHASE=]LEVEL — the effort a phase's sessions think at (low, medium, high, xhigh, max; extra-high is xhigh); with no PHASE= it overrides every phase for this run, and a resume inherits it"
-          },
-          "runtime": {
-            "type": "string",
-            "description": "claude or codex; resumed runs retain their recorded runtime"
           },
           "model": {
             "type": "string",
@@ -4015,10 +4014,6 @@
       "spec": {
         "usage": "aof work drive refine <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
         "flags": {
-          "runtime": {
-            "type": "string",
-            "description": "the execution runtime (claude or codex); a lent run keeps its recorded choice"
-          },
           "dryRun": {
             "type": "boolean",
             "description": "report the phase directive without starting an agent session"
@@ -4105,10 +4100,6 @@
       "spec": {
         "usage": "aof work drive continue <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
         "flags": {
-          "runtime": {
-            "type": "string",
-            "description": "the execution runtime (claude or codex); a lent run keeps its recorded choice"
-          },
           "dryRun": {
             "type": "boolean",
             "description": "report the phase directive without starting an agent session"
@@ -4195,10 +4186,6 @@
       "spec": {
         "usage": "aof work drive verify <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
         "flags": {
-          "runtime": {
-            "type": "string",
-            "description": "the execution runtime (claude or codex); a lent run keeps its recorded choice"
-          },
           "dryRun": {
             "type": "boolean",
             "description": "report the phase directive without starting an agent session"
@@ -4285,10 +4272,6 @@
       "spec": {
         "usage": "aof work drive repair <ref> --run <id> --halt <file> [--thinking LEVEL] [--model ID] [--dry-run] [--json]",
         "flags": {
-          "runtime": {
-            "type": "string",
-            "description": "the execution runtime (claude or codex); a lent run keeps its recorded choice"
-          },
           "dryRun": {
             "type": "boolean",
             "description": "report the phase directive without starting an agent session"
@@ -4375,10 +4358,6 @@
       "spec": {
         "usage": "aof work drive review <ref> [--run <id>] [--fix <file>] [--answer <file>] [--thinking LEVEL] [--model ID] [--autonomous] [--dry-run] [--json]",
         "flags": {
-          "runtime": {
-            "type": "string",
-            "description": "the execution runtime (claude or codex); a lent run keeps its recorded choice"
-          },
           "dryRun": {
             "type": "boolean",
             "description": "report the phase directive without starting an agent session"

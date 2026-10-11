@@ -126,7 +126,7 @@ export function RuntimeSettings({ scope = "project" }: { scope?: "project" | "gl
     <form onSubmit={save} className="min-w-0 space-y-5" aria-label="Project execution settings">
       <div><h2 className="text-2xl font-semibold">Project execution</h2><p className="text-sm text-muted-foreground">Choose each phase's model and effort. AOF infers the assistant from the model. Saving changes configuration only.</p></div>
       <p className="break-words text-sm">Installed asset runtimes: {data.assetRuntimes.length ? data.assetRuntimes.join(", ") : "None recorded"}. Asset targets and delegation are configured separately.</p>
-      <details className="space-y-2"><summary className="cursor-pointer text-sm font-medium">Default assistant</summary><label htmlFor="execution-runtime" className="text-sm font-medium">Used when no phase model is selected</label>
+      <details className="space-y-2"><summary className="cursor-pointer text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Default assistant</summary><label htmlFor="execution-runtime" className="text-sm font-medium">Used when no phase model is selected</label>
         <select id="execution-runtime" className={control} value={draft.runtime ?? ""} disabled={saving} onChange={event => { setDraft({ ...draft, runtime: (event.target.value || null) as Runtime | null }); setMessage(""); }} aria-invalid={runtimeErrors.length ? true : undefined} aria-describedby={runtimeErrors.length ? "execution-runtime-error" : undefined}>
           <option value="">Inherited default (Claude Code)</option><option value="claude">Claude Code</option><option value="codex">Codex</option>
         </select>

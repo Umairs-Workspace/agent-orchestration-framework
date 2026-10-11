@@ -15,7 +15,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // already on disk becomes unusable.
 import assert from "node:assert/strict";
 import path from "node:path";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
 import { decideSupervisedDeclarations, readLoopDeclaration } from "../../../packages/work-loop/src/engine.mjs";
@@ -30,18 +30,13 @@ const read = async (rel) => await readFile(path.join(root, rel), "utf8");
 const source = async (rel) => stripComments(await read(rel));
 
 /** Every `brief.loop` this repository's own run records carry. */
+// One frozen record per declaration shape the stream has written: the pre-supervision eight keys
+// (124), the supervised nine (134) and the 141/143/154 envelope with `execution` (153). Frozen, not
+// read from `wiki/work`, so this control never depends on another item's records: a new shape is
+// added here when a story writes one.
 async function declarationsOnDisk() {
-  const dir = path.join(root, "wiki", "work");
-  const found = [];
-  for (const entry of await readdir(dir, { recursive: true })) {
-    const rel = String(entry).replaceAll("\\", "/");
-    if (!rel.endsWith(".json") || !rel.includes("/runs/")) continue;
-    try {
-      const record = JSON.parse(await readFile(path.join(dir, entry), "utf8"));
-      if (record?.brief?.loop != null) found.push({ rel, loop: record.brief.loop, record });
-    } catch { /* a torn record is not this control's subject */ }
-  }
-  return found;
+  const shapes = JSON.parse(await readFile(path.join(root, "test", "arch", "loop", "fixtures", "declaration-shapes.json"), "utf8"));
+  return shapes.map(({ shape, record }) => ({ rel: `${record.runId} (${shape})`, loop: record.brief.loop, record }));
 }
 
 export const archTests = [
@@ -159,14 +154,15 @@ export const archTests = [
     name: "arch/126/02 FF-12604 leg 5: every declaration already on disk stays readable, and recovers unsupervised",
     run: async () => {
       const found = await declarationsOnDisk();
-      assert.ok(found.length >= 8, `this leg has a subject: ${found.length} records carry a brief.loop`);
+      assert.ok(found.length >= 3, `this leg has a subject: ${found.length} frozen shapes carry a brief.loop`);
       for (const { rel, loop, record } of found) {
         const recovered = readLoopDeclaration([record]);
         assert.ok(recovered != null, `${rel}: still usable — the five-key requirement was not widened`);
+        // 154/ADR-002 appends the additive `execution` envelope, projected only when recorded.
         assert.deepEqual(
           Object.keys(recovered),
-          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom", "refine", "sessions"],
-          `${rel}: eight projected keys (141 appended thinking, 143/00 promotedFrom)`,
+          ["loopRunId", "scope", "level", "cap", "startedAt", "supervised", "thinking", "promotedFrom", "refine", "sessions", ...(loop.execution == null ? [] : ["execution"])],
+          `${rel}: the projected keys (141 appended thinking, 143/00 promotedFrom, 154 execution)`,
         );
         if (loop.thinking == null) assert.equal(recovered.thinking, null, `${rel}: a record naming no thinking recovers with no override`);
         if (loop.supervised !== true) {

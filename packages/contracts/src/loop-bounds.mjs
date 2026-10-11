@@ -430,6 +430,12 @@ export function resolveLoopPhaseRuntimes(value) {
 export function loopPhaseRuntimesFromConfig(workspace) {
   return resolveLoopPhaseRuntimes(loopConfig(workspace)?.runtimes);
 }
+// The raw `work.loop.runtimes` setting, unresolved, for the readers that validate it or only ask
+// whether it is set, so no module outside this leaf reads `work.loop` itself (FF-6901).
+export function loopPhaseRuntimesSettingFromConfig(workspace) {
+  const loop = loopConfig(workspace);
+  return { present: Object.prototype.hasOwnProperty.call(loop ?? {}, "runtimes"), value: loop?.runtimes };
+}
 
 // A loop owns the complete plan; a driven session owns one native envelope.
 export function executionForPhase(execution, phase) {

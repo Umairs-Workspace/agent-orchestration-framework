@@ -76,7 +76,7 @@ import {
 // rule) ride the same move: the one consumer of `ADVISORY_CODES`/`GRADE_VERDICTS` is the ladder.
 
 import { commandError } from "@aof/contracts/error";
-import { createRuntimeInvocation, decodeExecutionHandoff, phaseRetryKey, compatiblePhaseRetry } from "./runtime-invocation.mjs";
+import { createRuntimeInvocation, decodeExecutionHandoff, phaseRetryKey, compatiblePhaseRetry, notePermissionHalt, permissionHaltLine } from "./runtime-invocation.mjs";
 // 54/03 review finding D3 — "was a rubric DECLARED" is `work:grade`'s own predicate, and it
 // is read here rather than re-derived, so a declared-but-unrunnable grade cannot be mistaken
 // for an unconfigured repository at the one door that tells them apart.
@@ -931,9 +931,7 @@ export function createLoopShell({
   }
 
   async function reportLine(report, state, details = {}) {
-    if (state.act?.producer === "run-store:not-retryable" && details.failureReason === "operator_action_required") {
-      state.act.remedy = "Native permission approval is required. AOF's unattended adapter declines these requests. Resolve the blocked operation in an interactive assistant session, then start a new loop with the same model flags (omit --resume). A bare --resume cannot retry this run.";
-    }
+    notePermissionHalt(state.act, details);
     for (const row of state.driven) {
       await report(`Driven ${row.ref} — ${row.phase} (${row.outcome}).`);
     }
@@ -2050,12 +2048,7 @@ export function createLoopShell({
       return `${state.scope} — stop requested (${state.request}) for loop ${state.loopRunId}, ${state.live === true ? "live" : "not live"}. ${state.path}`;
     }
     if (state.act.act === "done") return `${state.scope} — loop done.`;
-    if (state.act.act === "halt") {
-      if (state.act.remedy != null && state.act.producer === "run-store:not-retryable") {
-        return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer}). ${state.act.remedy}`;
-      }
-      return `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${loopResumeCommand(state)}`;
-    }
+    if (state.act.act === "halt") return permissionHaltLine(state) ?? `${state.scope} — halted on ${state.act.stop} at ${state.act.ref ?? state.scope} (producer ${state.act.producer ?? "unknown"}). Resume with: ${loopResumeCommand(state)}`;
     const target = state.act.ref ? ` ${state.act.ref}` : "";
     const phase = state.act.phase ? ` ${state.act.phase}` : "";
     return `${state.scope} — ${state.level}, cap ${state.cap}: ${state.act.act}${phase}${target}.`;

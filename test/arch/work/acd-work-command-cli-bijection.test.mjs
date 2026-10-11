@@ -231,8 +231,9 @@ function argsFor(sub) {
     // 147/02 — the fourth phase driver; its dry run reports the directive and reads no hand-over.
     case "drive-repair": return ["work", "drive", "repair", "03/01", "--dry-run", "--json"];
     // Native review has no installed asset in this fixture: exercise its coded
-    // preflight refusal without starting an assistant or probing a real CLI.
-    case "drive-review": return ["work", "drive", "review", "03/01", "--runtime", "codex", "--dry-run", "--json"];
+    // preflight refusal without starting an assistant or probing a real CLI. 156 removed --runtime:
+    // a Codex model selects the native runtime.
+    case "drive-review": return ["work", "drive", "review", "03/01", "--model", "gpt-5-codex", "--dry-run", "--json"];
     case "list": return ["work", "list", "--json"];
     // work:debt reads the ledger at the work directory root. The fixture has never accrued one,
     // so this probe exercises the `present: false` answer — the healthy state for most

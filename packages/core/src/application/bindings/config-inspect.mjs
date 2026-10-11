@@ -1238,7 +1238,13 @@ export function assembleConfigInspect({ dslServices, fsServices, workspaceServic
     }
     validateWorkAgents(work.agents, diagnostics);
     try { validateRuntimeSettings({ work }, { roles: [...acdRoleSet()] }); }
-    catch (error) { diagnostics.push({ ...diagnostic("error", error.path, error.message, error.code), source: error.source }); }
+    catch (error) {
+      // One defect, one diagnostic: a path the shape checks above already reported (141's
+      // effort-bad-value) is not reported a second time by the execution resolver.
+      if (!diagnostics.some((existing) => existing.path === error.path)) {
+        diagnostics.push({ ...diagnostic("error", error.path, error.message, error.code), source: error.source });
+      }
+    }
     validateWorkPlan(work.plan, diagnostics);
     validateWorkExamples(work.examples, diagnostics);
     validateWorkDiagrams(work.diagrams, diagnostics);

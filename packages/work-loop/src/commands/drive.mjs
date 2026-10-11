@@ -21,7 +21,7 @@ import { commandError } from "@aof/contracts/error";
 // `run.started`/`run.completed` and inherits none of the declared cascade. Ported to the
 // same doors the sibling caller (`src/mesh/worker-execution.mjs`) has always used.
 
-import { loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
+import { loopBoundsFromConfig, loopPhaseRuntimesSettingFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
 import { validateNativeAssets } from "./runtime-assets.mjs";
 import { sessionAgentMode } from "@aof/contracts/agent-mode";
 
@@ -477,7 +477,7 @@ export function createPhaseDrivers({
         const explicitChoice = { ...(input.model == null ? {} : { model: input.model }), ...(input.thinking == null ? {} : { effort: normalizeEffort(input.thinking) }) };
         const selectedExecution = recorded?.execution != null
           ? execution.resolveExecutionResume(recorded, { runtime: input.runtime, choices: { [sessionPhaseOf(phase)]: explicitChoice } })
-          : ctx.loopDrive?.execution ?? (input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null || ctx.workspace?.config?.work?.loop?.runtimes != null
+          : ctx.loopDrive?.execution ?? (input.runtime !== undefined || ctx.workspace?.config?.work?.agents?.runtimes?.claude != null || loopPhaseRuntimesSettingFromConfig(ctx.workspace).value != null
             ? execution.resolveExecution(ctx.workspace.config, { runtime: input.runtime ?? "claude", choices: { [sessionPhaseOf(phase)]: explicitChoice } })
             : null);
         const pinnedChoice = selectedExecution?.phases[sessionPhaseOf(phase)];

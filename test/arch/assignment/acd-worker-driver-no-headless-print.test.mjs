@@ -470,7 +470,8 @@ export const archTests = [
       assert.match(driver, /startToCloseTimer\s*=\s*setTimeout/u);
       assert.match(driver, /heartbeatTimer\s*=\s*setTimeout/u);
       assert.match(driver, /stopForOutcome\(\{\s*outcome:\s*["']failed["'],\s*failureReason:\s*["']timeout["']\s*\}\)/u);
-      assert.match(driver, /term\.kill\(\)/u, "expiry reaches the process handle held by this driver");
+      // The one release path calls the live handle as `term?.kill?.()` (2026-10-06, one release per PTY).
+      assert.match(driver, /term\??\.kill\??\.?\(\)/u, "expiry reaches the process handle held by this driver");
 
       const planted = `${driver}\nconst plantedBound = ["--max-turns"];`;
       assert.equal(/--max-turns|--max-budget-usd/.test(planted), true, "a planted model-bound argv trips the detector");

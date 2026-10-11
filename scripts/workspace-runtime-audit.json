@@ -16,14 +16,6 @@
     "reason": "The dev-only assets UI launcher lazily imports the declared @aof/ui development dependency through its explicit vite-cli public export. That owner resolves its own Vite executable. Normal CLI startup and packaged built-UI serving never load Vite. UI remains at its Plan 04 location."
   },
   {
-    "file": "packages/core/src/application/bindings/config-inspect.mjs",
-    "kind": "child-process",
-    "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
-    "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
-    "sourceDigest": "b7d1d0c6c6691949caf04f6ee2fcba328cc241b74d76a69771bb5a31dafc5818",
-    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged."
-  },
-  {
     "file": "packages/core/src/application/bindings/work/loops.mjs",
     "kind": "computed-require",
     "expression": "createRequire(path.join(root, \"package.json\")).resolve(factories[0][2])",
@@ -296,22 +288,6 @@
     "reason": "Reads repository identity through Git; no JavaScript child entry."
   },
   {
-    "file": "packages/mesh/src/worker-execution.mjs",
-    "kind": "child-process",
-    "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
-    "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
-    "sourceDigest": "2afc88bf089fdb11ceabba01c1719d4beb8b288a51d75dba3d5202fcf8e46cb4",
-    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
-  },
-  {
-    "file": "packages/mesh/src/worker-execution.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
-    "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
-    "sourceDigest": "2afc88bf089fdb11ceabba01c1719d4beb8b288a51d75dba3d5202fcf8e46cb4",
-    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
-  },
-  {
     "file": "packages/mesh/src/worker-repo-admission.mjs",
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
@@ -328,124 +304,12 @@
     "reason": "The exec port wraps Git clone of the admitted repository using the explicit credential environment."
   },
   {
-    "file": "packages/mesh/src/worktrees.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"worktree\", \"remove\", worktreePath], { cwd: projectRoot })",
-    "digest": "c8d88362cfa72c1d798d3cfd63425371dd015b4a2ed93e5f411b35af858942fa",
-    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
-    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
-  },
-  {
-    "file": "packages/mesh/src/worktrees.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"branch\", \"-d\", branch], { cwd: projectRoot })",
-    "digest": "06995bb30dac9aef43eaf1f1c466b3fe2e6b02f5085dd21c1f2379eda57586af",
-    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
-    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
-  },
-  {
-    "file": "packages/mesh/src/worktrees.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"worktree\", \"remove\", \"--force\", worktreePath], { cwd: projectRoot })",
-    "digest": "a258c3c4046f7d4e721740187b9a07f510223e1c747afd70e5aa68bc8f73ac24",
-    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
-    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
-  },
-  {
-    "file": "packages/mesh/src/worktrees.mjs",
-    "kind": "child-process",
-    "expression": "exec(args, { cwd: projectRoot })",
-    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
-    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
-  },
-  {
-    "file": "packages/mesh/src/worktrees.mjs",
-    "kind": "child-process",
-    "expression": "exec(args, { cwd: projectRoot })",
-    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "a07b17820b08afa82aaf867bfa63c08f52e07c079dab78e90f1168c6c9c9018f",
-    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
-  },
-  {
     "file": "packages/server/src/terminal-ws.mjs",
     "kind": "child-process",
     "expression": "spawn(launch.bin, launch.args, {\n      name: \"xterm-256color\",\n      cols: 80,\n      rows: 24,\n      cwd,\n      env,\n    })",
     "digest": "19ce3775ec42a3b4a9640efb74d6e8a9ee14529c71e8e08668a1a713c1da97f0",
     "sourceDigest": "1321e5f572467e448f272d2a41d78e32e24a6f021d246649a14f649a5c7580c1",
     "reason": "This is node-pty spawn, using the launch declaration provided by execution services; terminal byte transport does not locate application modules."
-  },
-  {
-    "file": "packages/work-loop/src/commands/loop.mjs",
-    "kind": "child-process",
-    "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
-    "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "f668d69d3e614fec22dceb2154f39a0628e840aaf5e1a5bb9dacf7959daf96b1",
-    "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
-    "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"check-ignore\", \"--\", ...missing], { cwd: worktree })",
-    "digest": "a9f702f4ad3d700af554a87070689ab08b2b183fafd386e73ba82b72fde5485a",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"status\", \"--porcelain\"], { cwd: worktreePath })",
-    "digest": "8be2ba95885104b4384bcc190e15f937600713418b334c75e20d9d8fd767f3a5",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
-    "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
-    "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
-    "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/dispatch.mjs",
-    "kind": "child-process",
-    "expression": "exec(args, { cwd: primaryRoot })",
-    "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
-    "sourceDigest": "c0421bdf002a8276fca018162d2b74dc5f639af5442b0a2209882705d9215c62",
-    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
-  },
-  {
-    "file": "packages/work-loop/src/progress.mjs",
-    "kind": "child-process",
-    "expression": "execFileAsync(\"git\", args, { cwd: worktreePath, windowsHide: true, encoding: \"utf8\" })",
-    "digest": "d9e1cea848566821da082d4dcfdf75824971a0101504cbd3404f3cf11c1107f8",
-    "sourceDigest": "b43866052db98138df1406b26027df9330abc85a38d05bb15b7098b23ff43fc6",
-    "reason": "Git-only progress snapshot read, bounded by the command edge."
   },
   {
     "file": "packages/work/src/audit/census.mjs",
@@ -888,19 +752,179 @@
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   },
   {
-    "kind": "child-process",
-    "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
     "file": "packages/execution/src/codex-app-server.mjs",
-    "digest": "6a3d6136d5825d0005caf53afd2fb889aca533543cd1cdbc3be4da084b60935c",
-    "sourceDigest": "b19e19931452f0383719e86c2d0436471a7f5f095f86b3cc57e54c1c4d59ace2",
+    "kind": "child-process",
+    "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
+    "digest": "9749c22c7c9ead00c79711cf188834c5c57c73962fe5b45e04253cee366c8e3c",
+    "sourceDigest": "de0b07baf139b49cee4d1f7c50d0e9e242e95427a044b294b1d6beb95fa26d08",
+    "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import."
+  },
+  {
+    "file": "packages/execution/src/codex-app-server.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
+    "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
+    "sourceDigest": "de0b07baf139b49cee4d1f7c50d0e9e242e95427a044b294b1d6beb95fa26d08",
     "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
   },
   {
+    "file": "packages/execution/src/codex-executable.mjs",
+    "kind": "computed-require",
+    "expression": "createRequire(path.join(root, \"package.json\")).resolve(`${name}/package.json`)",
+    "digest": "53209288242f86278b9dba6eef2b628c5b8c40e99c026dbfa99f9dcbf3ebfbba",
+    "sourceDigest": "d85d438a91e4b18247b3b11c329250daf1d4b1686ce17e3d71344d8cc3e35f9e",
+    "reason": "156: resolves an installed Codex package's package.json from a fixed package-name list to find its bin. It reads a path and executes no module; the name is a constant, not operator input."
+  },
+  {
+    "file": "packages/execution/src/codex-executable.mjs",
     "kind": "child-process",
-    "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
-    "file": "packages/execution/src/codex-app-server.mjs",
-    "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
-    "sourceDigest": "b19e19931452f0383719e86c2d0436471a7f5f095f86b3cc57e54c1c4d59ace2",
-    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
+    "expression": "execFile(\"powershell.exe\", [\"-NoProfile\", \"-NonInteractive\", \"-Command\", \"Get-AppxPackage -Name OpenAI.Codex | Select-Object -ExpandProperty InstallLocation\"],\n      { env, signal, windowsHide: true, timeout: 5000, maxBuffer: 65536 }, (error, stdout) => {\n        resolve(error ? [] : String(stdout).split(/\\r?\\n/u).map(value => value.trim()).filter(Boolean));\n      })",
+    "digest": "7e5282ceb6fd7481870a5d9fdfa253096b22ca4342bcdcfb527d6dca55d0ddeb",
+    "sourceDigest": "d85d438a91e4b18247b3b11c329250daf1d4b1686ce17e3d71344d8cc3e35f9e",
+    "reason": "156: asks Windows for the Store Codex install location with a fixed PowerShell command. No operator input reaches the argv; it is time- and buffer-bounded, and a failure yields no candidate."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"clean\", \"-f\", \"-x\", \"-q\", \"--\", ...HEARTBEAT_QUEUE_PATHSPECS], { cwd: worktreePath })",
+    "digest": "ba28086972eba8adef73fe23c09fd72fe414042bfeb8193010376d029f2cc1be",
+    "sourceDigest": "9bde36e83523880da1c362a4adeab6c7e718462d06522d1fe13b88fcf7a5bea3",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"worktree\", \"remove\", worktreePath], { cwd: projectRoot })",
+    "digest": "c8d88362cfa72c1d798d3cfd63425371dd015b4a2ed93e5f411b35af858942fa",
+    "sourceDigest": "9bde36e83523880da1c362a4adeab6c7e718462d06522d1fe13b88fcf7a5bea3",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"branch\", \"-d\", branch], { cwd: projectRoot })",
+    "digest": "06995bb30dac9aef43eaf1f1c466b3fe2e6b02f5085dd21c1f2379eda57586af",
+    "sourceDigest": "9bde36e83523880da1c362a4adeab6c7e718462d06522d1fe13b88fcf7a5bea3",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"worktree\", \"remove\", \"--force\", worktreePath], { cwd: projectRoot })",
+    "digest": "a258c3c4046f7d4e721740187b9a07f510223e1c747afd70e5aa68bc8f73ac24",
+    "sourceDigest": "9bde36e83523880da1c362a4adeab6c7e718462d06522d1fe13b88fcf7a5bea3",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: projectRoot })",
+    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
+    "sourceDigest": "9bde36e83523880da1c362a4adeab6c7e718462d06522d1fe13b88fcf7a5bea3",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/mesh/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: projectRoot })",
+    "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
+    "sourceDigest": "9bde36e83523880da1c362a4adeab6c7e718462d06522d1fe13b88fcf7a5bea3",
+    "reason": "Injected exec port wraps Git worktree/branch operations; argument vectors carry no private module entry."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
+    "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"check-ignore\", \"--\", ...missing], { cwd: worktree })",
+    "digest": "a9f702f4ad3d700af554a87070689ab08b2b183fafd386e73ba82b72fde5485a",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"status\", \"--porcelain\", \"--untracked-files=all\"], { cwd: worktreePath })",
+    "digest": "e68e6401169425f7da5489d2f94a58cc4229b7fbc82bf0d6552be1ed21a6f8a3",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
+    "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
+    "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
+    "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/work-loop/src/dispatch.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, { cwd: primaryRoot })",
+    "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
+    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
+  },
+  {
+    "file": "packages/core/src/application/bindings/config-inspect.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(locator, [binary], { encoding: \"utf8\" })",
+    "digest": "dc5db708145856b8186e5cca621b17108ba30b7c9b88167999c0d2962c14ec42",
+    "sourceDigest": "95016b782390edc8b937a4e5696eb5be0e60dbc7cbe63b7f37fc537acceb5555",
+    "reason": "The platform locator (where/which) probes the requested external tool; no application module entry is constructed. 154/01 adds runtime execution inspection; the platform binary locator call and its argv are unchanged."
+  },
+  {
+    "file": "packages/mesh/src/worker-execution.mjs",
+    "kind": "child-process",
+    "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) => {\n      if (error && (error.code === \"ENOENT\" || error.killed || error.signal)) {\n        reject(error);\n        return;\n      }\n      resolve({ stdout: String(stdout ?? \"\"), stderr: String(stderr ?? \"\"), status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0 });\n    })",
+    "digest": "9ad28354e3ccdef15c04c6e9e272c1aa2a84311b4eb4902c9671f8f6552abae6",
+    "sourceDigest": "f7c51fc981854025101f287f1a4be1b8fa7b38b8bbc8b2dcc34b56caa6b8b552",
+    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
+  },
+  {
+    "file": "packages/mesh/src/worker-execution.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"-c\", \"credential.helper=\", \"push\", \"origin\", branch], { cwd: worktreePath, env: pushEnv })",
+    "digest": "c394dc1a235712fd4874d2d8271378638a054af8b5dfa11aa9ef9a6d6a391f39",
+    "sourceDigest": "f7c51fc981854025101f287f1a4be1b8fa7b38b8bbc8b2dcc34b56caa6b8b552",
+    "reason": "The exec port wraps Git publication of the admitted worker branch; the worker driver is injected separately."
+  },
+  {
+    "file": "packages/work-loop/src/commands/loop.mjs",
+    "kind": "child-process",
+    "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
+    "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
+    "sourceDigest": "a9732d699a8abbe485b95b4f1ec5aff11f6a87ec3a89d2cef98482d64b74937a",
+    "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
+  },
+  {
+    "file": "packages/work-loop/src/progress.mjs",
+    "kind": "child-process",
+    "expression": "execFileAsync(\"git\", args, { cwd: worktreePath, windowsHide: true, encoding: \"utf8\" })",
+    "digest": "d9e1cea848566821da082d4dcfdf75824971a0101504cbd3404f3cf11c1107f8",
+    "sourceDigest": "8317555be8508befe3317083ab2bc62fa2cae5d257d1827ffb7486055616a85e",
+    "reason": "Git-only progress snapshot read, bounded by the command edge."
   }
 ]

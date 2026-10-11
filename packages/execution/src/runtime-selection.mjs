@@ -1,4 +1,4 @@
-import { EXECUTION_RUNTIMES, resolveLoopRuntime, loopRuntimeSettingFromConfig, executionForPhase, parseRuntimeChoices } from "@aof/contracts/loop-bounds";
+import { EXECUTION_RUNTIMES, resolveLoopRuntime, loopRuntimeSettingFromConfig, loopPhaseRuntimesSettingFromConfig, executionForPhase, parseRuntimeChoices } from "@aof/contracts/loop-bounds";
 import { EFFORT_LEVELS, SESSION_PHASES, normalizeEffort, resolveSessionLaunch } from "./session-model.mjs";
 
 const own = (object, key) => Object.prototype.hasOwnProperty.call(object ?? {}, key);
@@ -36,9 +36,10 @@ export function validateRuntimeSettings(config, { roles = null } = {}) {
   if (configuredRuntime.present && resolveLoopRuntime(configuredRuntime.value) === null) {
     fail("unsupported-runtime", "work.loop.runtime", "project", "expected claude or codex");
   }
-  if (own(config?.work?.loop, "runtimes")) {
-    closed(config.work.loop.runtimes, SESSION_PHASES, "work.loop.runtimes");
-    for (const [phase, runtime] of Object.entries(config.work.loop.runtimes)) {
+  const phaseRuntimes = loopPhaseRuntimesSettingFromConfig({ config });
+  if (phaseRuntimes.present) {
+    closed(phaseRuntimes.value, SESSION_PHASES, "work.loop.runtimes");
+    for (const [phase, runtime] of Object.entries(phaseRuntimes.value)) {
       if (!EXECUTION_RUNTIMES.includes(runtime)) fail("unsupported-runtime", `work.loop.runtimes.${phase}`, "project", "expected claude or codex");
     }
   }
@@ -72,9 +73,13 @@ export { parseRuntimeChoices };
 
 // Model ownership selects the transport; native capabilities still decide whether
 // that exact model/effort can launch. Unknown names require catalogue discovery.
+// A Claude alias or id, known without any capability catalogue. The loop's door asks this before
+// any read, to keep Claude's effort vocabulary strict when no model could route to Codex.
+export const claudeModelFamily = (model) => /^(?:sonnet|opus|haiku|fable)(?:\[1m\])?$|^opusplan$|^claude-|(?:^|[.:/])(?:anthropic\.)?claude[-.]/.test(model);
+
 export function runtimeForModel(model, capabilities = {}, { allowUnproven = false, path = "--model", source = "flag" } = {}) {
   const matches = EXECUTION_RUNTIMES.filter(runtime => Array.isArray(capabilities[runtime]?.models) && capabilities[runtime].models.some(entry => entry?.id === model || entry?.model === model));
-  const family = /^(?:sonnet|opus|haiku)(?:\[1m\])?$|^opusplan$|^claude-|(?:^|[.:/])(?:anthropic\.)?claude[-.]/.test(model) ? "claude"
+  const family = claudeModelFamily(model) ? "claude"
     : /^(?:gpt-|o\d+(?:-|$))/.test(model) ? "codex" : null;
   const owners = [...new Set([...matches, ...(family == null ? [] : [family])])];
   if (owners.length > 1) fail("ambiguous-model", path, source, "model is advertised by more than one assistant; choose a unique model id");
@@ -87,14 +92,15 @@ export function resolvePhaseRuntimes(config, flagged, { choices = {}, capabiliti
   validateRuntimeSettings(config);
   const flags = parseRuntimeChoices(flagged);
   const configured = loopRuntimeSettingFromConfig({ config });
+  const phaseRuntimes = loopPhaseRuntimesSettingFromConfig({ config }).value;
   return Object.fromEntries(SESSION_PHASES.map(phase => {
     const model = choices[phase]?.model ?? config?.work?.agents?.session?.models?.[phase];
     if (flags[phase] === undefined && flags.default === undefined && named(model)) return [phase, {
       runtime: runtimeForModel(model, capabilities, { allowUnproven, path: choices[phase]?.modelFlag ?? `work.agents.session.models.${phase}`, source: choices[phase]?.model ? "flag" : "project" }), source: "model",
     }];
     return [phase, {
-      runtime: flags[phase] ?? flags.default ?? config?.work?.loop?.runtimes?.[phase] ?? configured.value ?? "claude",
-      source: flags[phase] !== undefined || flags.default !== undefined ? "flag" : config?.work?.loop?.runtimes?.[phase] !== undefined || configured.present ? "project" : "default",
+      runtime: flags[phase] ?? flags.default ?? phaseRuntimes?.[phase] ?? configured.value ?? "claude",
+      source: flags[phase] !== undefined || flags.default !== undefined ? "flag" : phaseRuntimes?.[phase] !== undefined || configured.present ? "project" : "default",
     }];
   }));
 }

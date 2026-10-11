@@ -110,6 +110,13 @@ export function resolveSessionLaunch(config, phase, { thinking, choice, effortLe
 
 // The loop's phases, in the order a refusal names them.
 export const SESSION_PHASES = Object.freeze(["refine", "continue", "verify"]);
+
+// The `work.agents.session.models` map as configured, read here so the loop never reads session
+// config itself (FF-14303). Whether a model is usable stays resolveSessionLaunch's answer.
+export function configuredSessionModels(config) {
+  const models = config?.work?.agents?.session?.models;
+  return models && typeof models === "object" && !Array.isArray(models) ? { ...models } : {};
+}
 export const SESSION_CHOICE_UNKNOWN_PHASE = "session-choice-unknown-phase";
 export const SESSION_CHOICE_EMPTY = "session-choice-empty";
 export const SESSION_CHOICE_CONFLICT = "session-choice-conflict";

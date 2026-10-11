@@ -1523,7 +1523,14 @@ export function sessionLendFor(declaration, phase) {
     const selected = phase === "repair" || phase === "review" ? "continue" : phase;
     const execution = declaration.execution.version === 2 ? declaration.execution.phaseExecutions[selected] : declaration.execution;
     const entry = execution.phases[selected];
-    return { runtime: execution.runtime, ...(entry.model == null ? {} : { model: entry.model }), thinking: entry.effort };
+    // A native (Codex) drive is pinned to every resolved part (154/06). A Claude drive is lent only
+    // its flag-chosen parts and resolves configured ones itself, as 143/03 promised.
+    if (execution.runtime !== "claude") return { runtime: execution.runtime, ...(entry.model == null ? {} : { model: entry.model }), thinking: entry.effort };
+    return {
+      runtime: execution.runtime,
+      ...(entry.modelSource === "--model" && entry.model != null ? { model: entry.model } : {}),
+      ...(fromFlag(entry.effortSource) && entry.effort != null ? { thinking: entry.effort } : {}),
+    };
   }
   const sessions = declaration?.sessions;
   if (sessions !== null && typeof sessions === "object" && !Array.isArray(sessions)) {

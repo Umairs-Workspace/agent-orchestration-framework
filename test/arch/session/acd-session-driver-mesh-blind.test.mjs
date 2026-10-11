@@ -132,10 +132,15 @@ export const archTests = [
       // Plan 03 adds the pure core manifest locator, with only builtin imports.
       // 154/02 adds exactly the Codex transport/profile and shared selection/model leaves.
       assert.ok(graph.seen.has(path.join(root, "packages/execution/src/runtime-events.mjs")), "154/08 adds one pure observation leaf, without a lifecycle import");
-      assert.equal(graph.seen.size, 36, "the 31-module assembly plus five explicitly owned Codex/policy and observation leaves");
+      // 156 adds two builtin-only leaves under the Codex transport: executable discovery and the
+      // sandboxed child's PATH (36 -> 38). Neither imports a lifecycle, provider or mesh module.
+      for (const leaf of ["codex-executable.mjs", "codex-process-environment.mjs"]) {
+        assert.ok(graph.seen.has(path.join(root, "packages/execution/src", leaf)), `156 adds ${leaf}, a builtin-only leaf`);
+      }
+      assert.equal(graph.seen.size, 38, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
-      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
+      assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
       assert.deepEqual(deniedPaths(graph), [], "mesh lifecycle import chains are forbidden from the local session driver");
 
       const terminalWs = path.join(root, "packages/server/src/terminal-ws.mjs");
@@ -299,7 +304,9 @@ export const archTests = [
       // transition. Comparing this walker against ea99c42d adds exactly its binding
       // and implementation; no driver import or lifecycle denylist changes.
       for (const owner of ["packages/core/src/application/bindings/effects/item-transitions.mjs", "packages/work/src/item-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 156, "the configured worker facade includes the lane status transition alongside native phases and questions");
+      // 156 adds the two builtin-only Codex leaves and the drive's native-asset preflight (156 -> 159).
+      for (const owner of ["packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/work-loop/src/commands/runtime-assets.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 159, "the configured worker facade includes the lane status transition alongside native phases and questions");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

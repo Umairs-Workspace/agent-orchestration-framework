@@ -1,6 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { resolveExecution, validateExecutionEnvelope } from "@aof/execution/runtime-selection";
-import { loopRuntimeSettingFromConfig, executionRuntimes } from "@aof/contracts/loop-bounds";
+import { loopRuntimeSettingFromConfig, loopPhaseRuntimesSettingFromConfig, executionRuntimes } from "@aof/contracts/loop-bounds";
 import { createAssignmentReclaim } from "@aof/mesh/assignment-reclaim";
 import { existsSync } from "node:fs";
 
@@ -26,7 +26,7 @@ export function assembleMeshAssignmentReclaim({ runtimeSessionServices, workServ
     if (typeof root !== "string" || !existsSync(root)) return null;
     const ws = await workServices.loadWorkspace(root);
     const setting = loopRuntimeSettingFromConfig(ws);
-    if (!setting.present && ws.config?.work?.loop?.runtimes === undefined) return null;
+    if (!setting.present && loopPhaseRuntimesSettingFromConfig(ws).value === undefined) return null;
     const capabilities = executionRuntimes(resolveExecution(ws.config, { allowUnproven: true })).includes("codex") ? { codex: await runtimeSessionServices.inspectCapabilities("codex", { cwd: root }) } : {};
     return resolveExecution(ws.config, { capabilities });
   };

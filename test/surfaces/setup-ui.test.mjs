@@ -68,7 +68,7 @@ async function withRuntimeApi(run, { legacy = false, failure = null } = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-runtime-form-"));
   const configPath = path.join(root, ".aof", "aof.config.json");
   const config = { name: "runtime-form", resources: [], packages: [], memory: { backend: "local" },
-    work: { agents: { session: { models: { continue: "legacy-model" } }, ...(legacy ? {} : { runtimes: { codex: { session: { models: { continue: "saved-codex" }, effort: { continue: "high" } } }, claude: { session: { models: { continue: "saved-claude" } } } } }) } } };
+    work: { agents: { session: { models: { continue: "opus" } }, ...(legacy ? {} : { runtimes: { codex: { session: { models: { continue: "saved-codex" }, effort: { continue: "high" } } }, claude: { session: { models: { continue: "saved-claude" } } } } }) } } };
   await mkdir(path.dirname(configPath));
   await writeFile(configPath, JSON.stringify(config));
   const { server, url } = await serveSetupUi({ listItems: () => [], upsertItem: () => {} }, { port: 0, projectDir: root, env: { ...process.env, AOF_GLOBAL_HOME: path.join(root, "global") } });
@@ -93,43 +93,42 @@ async function mountedExecutionLoading() {
       assert.match(textOf(app.tree()), /Loading project execution settings/);
       assert.equal(findAll(app.tree(), node => node.type === "form").length, 0);
       app.startHolds()[0].release(); await app.flush();
-      assert.match(textOf(app.tree()), /Primary execution assistant: Claude Code.*source: default/);
+      // 156: a legacy session model is a Claude alias, so every phase infers Claude Code; the phase
+      // field reads the shared `work.agents.session` value and its source names that key.
+      assert.match(textOf(app.tree()), /Primary execution assistant: Claude Code/);
       assert.match(textOf(app.tree()), /work.agents.session.models.continue/);
       assert.equal(inputById(app, "execution-runtime").props.value, "");
+      assert.equal(inputById(app, "execution-claude-phase-models-continue").props.value, "opus");
     });
   }, { legacy: true });
 }
 
 async function mountedExecutionRoundtrip() {
   await withRuntimeApi(async ({ url, configPath, config }) => {
+    // 156: phase models and efforts are one shared map (`work.agents.session`) and the assistant is
+    // inferred from each model, so the form has no per-assistant phase fields. Both providers' saved
+    // scoped settings are preserved untouched by a phase edit.
     await withMountedApp({ entry: runtimeEntry, exportName: "RuntimeSettings", url }, async app => {
-      await editRuntime(app, "codex");
-      assert.equal(inputById(app, "execution-codex-phase-models-continue").props.value, "saved-codex");
-      await editContinue(app, "codex", "models", "edited-codex");
-      await editRuntime(app, "claude");
-      assert.equal(inputById(app, "execution-claude-phase-models-continue").props.value, "saved-claude");
-      await editContinue(app, "claude", "models", "edited-claude");
-      await editRuntime(app, "codex");
-      assert.equal(inputById(app, "execution-codex-phase-models-continue").props.value, "edited-codex");
+      assert.equal(inputById(app, "execution-claude-phase-models-continue").props.value, "opus");
+      await editContinue(app, "claude", "models", "gpt-5-codex");
       await submitRuntime(app);
       assert.match(textOf(app.tree()), /Saved execution settings/);
-      assert.match(textOf(app.tree()), /Primary execution assistant: Codex.*source: project/);
+      assert.match(textOf(app.tree()), /continue · Codex/);
       const saved = JSON.parse(await readFile(configPath, "utf8"));
       assert.deepEqual(saved.memory, config.memory);
-      assert.deepEqual(saved.work.agents.session, config.work.agents.session);
-      assert.equal(saved.work.agents.runtimes.claude.session.models.continue, "edited-claude");
-      assert.equal(saved.work.agents.runtimes.codex.session.models.continue, "edited-codex");
+      assert.equal(saved.work.agents.session.models.continue, "gpt-5-codex");
+      assert.deepEqual(saved.work.agents.runtimes, config.work.agents.runtimes);
       assert.deepEqual(app.requests().map(value => new URL(value.url).pathname), ["/api/config/project", "/api/config/sections"]);
     });
     await withMountedApp({ entry: runtimeEntry, exportName: "RuntimeSettings", url }, async app => {
-      assert.equal(inputById(app, "execution-runtime").props.value, "codex");
-      assert.equal(inputById(app, "execution-codex-phase-models-continue").props.value, "edited-codex");
-      assert.match(textOf(app.tree()), /work.agents.runtimes.codex.session.models.continue/);
-      assert.match(textOf(app.tree()), /unproven/);
-      await editRuntime(app, "");
-      assert.equal(inputById(app, "execution-claude-phase-models-continue").props.value, "edited-claude");
+      assert.equal(inputById(app, "execution-claude-phase-models-continue").props.value, "gpt-5-codex");
+      assert.match(textOf(app.tree()), /work.agents.session.models.continue/);
+      await editContinue(app, "claude", "models", "");
       await submitRuntime(app);
-      assert.match(textOf(app.tree()), /Primary execution assistant: Claude Code.*source: default/);
+      const saved = JSON.parse(await readFile(configPath, "utf8"));
+      assert.equal(saved.work.agents.session?.models?.continue, undefined);
+      assert.deepEqual(saved.work.agents.runtimes, config.work.agents.runtimes);
+      assert.match(textOf(app.tree()), /Primary execution assistant: Claude Code/);
     });
   });
 }
@@ -151,7 +150,7 @@ async function mountedExecutionValidation() {
       const field = inputById(app, "execution-claude-phase-effort-continue");
       assert.equal(field.props.value, "invalid-effort");
       assert.equal(field.props["aria-invalid"], true);
-      assert.match(textOf(inputById(app, field.props["aria-describedby"])), /unsupported effort/);
+      assert.match(textOf(inputById(app, field.props["aria-describedby"])), /must be one of|unsupported effort/);
       assert.equal(await readFile(configPath, "utf8"), original);
       await editContinue(app, "claude", "effort", "high");
       await submitRuntime(app);

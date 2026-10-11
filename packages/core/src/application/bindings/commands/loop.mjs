@@ -2,6 +2,7 @@
 import { createLoopShell } from "@aof/work-loop/commands/loop";
 import { CONTROL_FINDING_CODES } from "@aof/work/audit/controls";
 import {
+  configuredSessionModels,
   normalizeEffort,
   parseSessionChoices,
   resolveSessionTable,
@@ -10,7 +11,7 @@ import {
 } from "@aof/execution/session-model";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 
-import { resolveExecution, resolveExecutionResume } from "@aof/execution/runtime-selection";
+import { claudeModelFamily, resolveExecution, resolveExecutionResume } from "@aof/execution/runtime-selection";
 
 export function assembleCommandsLoop({ runtimeSessionServices, workServices, loopProgressServices, loopCycleServices, commandsResolveServices, commandsGradeServices, runStoreServices, effectsRunTransitionsServices, degradeServices, meshWorktreeServices, loopWaveServices, loopChildDriveServices, loopAskServices, loopDiagServices, notifyNotifyServices, loopStopServices, loopStopRequestServices, provideCommandCore }) {
   // Core composition; @aof/work-loop owns the implementation.
@@ -89,7 +90,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     progress: { decideBuildProgress, evaluateProgressPolicy, readProgressSamples },
     doctor: { CONTROL_FINDING_CODES },
     cycle: { LOOP_FIX_TRANSPORT_KEYS, accumulatedRecord, admitResumeBuildRun, applyGradeBaseline, budgetElapsedMs, drivePhase, drivenRow, failingCountFromGrade, fixTransport, gradeFindings, gradeRoute, gradeStopCode, gradeStopProducer, gradeSummary, measureGradeBaseline, mergeGateFindings, progressReportFacts, readGradeBaseline, recordBuildProgress, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor, reenterPrimaryAsks, repairLaneHalt },
-    sessions: { normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine, resolveExecution, resolveExecutionResume, runtimeSession: runtimeSessionServices },
+    sessions: { claudeModelFamily, configuredSessionModels, normalizeEffort, parseSessionChoices, resolveSessionTable, SESSION_PHASES, sessionTableLine, resolveExecution, resolveExecutionResume, runtimeSession: runtimeSessionServices },
     items: { resolveItemExact },
     gradeCommand: { declaredRubric },
     placement: { meshNodeIdOf },
