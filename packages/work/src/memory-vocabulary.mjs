@@ -37,7 +37,9 @@ export const LESSON_ENUM_FIELDS = Object.freeze({
 });
 
 const META_LINE_RE = /\*\*(?:Kind|Area|Stage|Owner|Raised by|Promoted to|Recurs):\*\*/i;
-const META_SEGMENT_RE = /\*\*([^:]+):\*\*\s*(.+)/;
+// The label excludes `*` as well as `:`: a label never holds one, and admitting it let the label
+// and the closing `**` compete for the same characters (polynomial backtracking, CodeQL js/polynomial-redos).
+const META_SEGMENT_RE = /\*\*([^:*]+):\*\*\s*(.+)/;
 
 // ----------------------------------------------------------- the R<n> reader ----
 

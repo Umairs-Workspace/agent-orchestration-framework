@@ -48,7 +48,7 @@ export function createAssetReferenceIndex(resources = [], workflows = []) {
 
 export function extractAssetReferencePlaceholders(text) {
   const references = [];
-  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*?)\s*\}\}/g;
+  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*)\}\}/g; // greedy id, trimmed below (js/polynomial-redos)
   for (const match of String(text ?? "").matchAll(pattern)) {
     const namespace = match[1];
     const rawId = match[2].trim();
@@ -64,7 +64,7 @@ export function extractAssetReferencePlaceholders(text) {
 
 export function extractInvalidAssetReferencePlaceholders(text) {
   const invalid = [];
-  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*?)\s*\}\}/g;
+  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*)\}\}/g; // greedy id, trimmed below (js/polynomial-redos)
   for (const match of String(text ?? "").matchAll(pattern)) {
     const namespace = match[1];
     const rawId = match[2].trim();
@@ -91,7 +91,9 @@ export function extractInvalidAssetReferencePlaceholders(text) {
 
 export function expandAssetReferences(content, runtime, index) {
   if (typeof content !== "string" || !/\{\{\s*(skills|workflows|procedures|roles|references)\./.test(content)) return content;
-  return content.replace(/\{\{\s*(skills|workflows|procedures|roles|references)\.([^}]+?)\s*\}\}/g, (match, namespace, rawId) => {
+  // The id runs greedily to `}}` and is trimmed below; a lazy id followed by `\s*` let both match the
+  // same whitespace (polynomial backtracking, CodeQL js/polynomial-redos).
+  return content.replace(/\{\{\s*(skills|workflows|procedures|roles|references)\.([^}]+)\}\}/g, (match, namespace, rawId) => {
     const reference = referenceFromParts(namespace, rawId.trim(), match);
     const target = getAssetReference(index, reference);
     if (!target) {
