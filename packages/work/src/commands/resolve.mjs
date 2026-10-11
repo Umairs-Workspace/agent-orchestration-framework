@@ -1,4 +1,5 @@
 import { commandError } from "@aof/contracts/error";
+import { isFolderPathQuery } from "../discovery.mjs";
 
 // Core supplies cache, execution and mesh collaborators explicitly.
 export function createWorkResolvers({ findWorkCacheFirst, readRuns }) {
@@ -53,10 +54,15 @@ async function resolveItem(ctx, ref) {
 // EXACT-ref resolver for the WRITE commands (feedback/run-start/run-retry/run-complete):
 // there is NO slug fallback, so a typo'd/partial ref returns null (→ ref-not-found)
 // rather than appending the bullet to the first free-text slug match (the wrong item).
+// A folder path is exact too: `findWork` answers it by folder identity, never by substring,
+// so the one row it returns is the item whose folder the path names
+// (`aof work loop wiki/work/backlog/milestone_x`).
 async function resolveItemExact(ctx, ref) {
   if (!ref) return null;
   const rows = await findWorkCacheFirst(ctx.workspace, ref, seamOptions(ctx));
-  return rows.find((row) => row.ref === ref) ?? null;
+  const exact = rows.find((row) => row.ref === ref);
+  if (exact) return exact;
+  return isFolderPathQuery(ref) && rows.length === 1 ? rows[0] : null;
 }
 
 // requireLocalCheckout(item) — THE WRITE DOORS' guard (ADR-010/R6.4), stated once so the

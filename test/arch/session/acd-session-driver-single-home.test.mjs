@@ -68,7 +68,8 @@ const MOVED = Object.freeze([
 // lowering it to accommodate a larger cut would turn this ratchet's one non-vacuity check into
 // decoration.
 // 142: imports/re-exports move to the composition adapter; measured implementation: 1871.
-const SINK_CEILING = 1871;
+// 154/07: native launch preparation stays in core; the measured sink falls to 1870.
+const SINK_CEILING = 1870;
 const SINK_FLOOR = 1500;
 
 function setDelta(actual, expected) {

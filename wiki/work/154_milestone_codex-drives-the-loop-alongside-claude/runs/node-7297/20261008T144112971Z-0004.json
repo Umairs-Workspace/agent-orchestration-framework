@@ -1,0 +1,19 @@
+{
+  "runId": "20261008T144112971Z-0004",
+  "itemRef": "154",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": "01a11159-bf11-7fd0-8002-0b3dd7dad6de",
+  "brief": {},
+  "createdAt": "2026-10-08T14:41:12.971Z",
+  "updatedAt": "2026-10-08T15:18:38.548Z",
+  "failureReason": "verification-gates-incomplete",
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

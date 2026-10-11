@@ -20,6 +20,11 @@ export function createLoopProgress({
 
   const execFileAsync = promisify(execFile);
 
+  // The run store is the loop's own bookkeeping, not the build's work: every round writes a run
+  // record, appends this ledger and may queue heartbeats. Since lanes list untracked files one by one
+  // (`laneChanges`, `--untracked-files=all`), counting them would read every stalled round as progress.
+  const RUN_STORE_FILE = /(?:^|\/)runs\/(?:[^/]+\/)?(?:\d{8}T\d{9}Z-\d{4}(?:\.progress\.ndjson|\.json)|\.heartbeats\.ndjson(?:\.batch)?)$/u;
+
   const SAMPLE_KEYS = Object.freeze([
     "at",
     "runId",
@@ -79,7 +84,8 @@ export function createLoopProgress({
   }
 
   async function sampleWorktreeProgress(input, options = {}) {
-    const filesTouched = await laneChanges(input.worktreePath, { exec: options.exec });
+    const filesTouched = (await laneChanges(input.worktreePath, { exec: options.exec }))
+      .filter((relpath) => !RUN_STORE_FILE.test(String(relpath).replaceAll("\\", "/")));
     const numstat = await gitOutput(input.worktreePath, ["diff", "--numstat", "HEAD", "--"], options);
     const linesChanged = numstat.split(/\r?\n/u).reduce((total, line) => {
       const [added, removed] = line.split("\t");

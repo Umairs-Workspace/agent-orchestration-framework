@@ -23,7 +23,8 @@ export async function writeText(filePath, content, { dryRun = false } = {}) {
   }
 
   await mkdir(path.dirname(filePath), { recursive: true });
-  const tempPath = path.join(path.dirname(filePath), `.tmp-${path.basename(filePath)}-${process.pid}-${Date.now()}-${randomUUID()}`);
+  // Bound the diagnostic echo so any legal target component remains writable.
+  const tempPath = path.join(path.dirname(filePath), `.tmp-${path.basename(filePath).slice(0, 20)}-${process.pid}-${Date.now()}-${randomUUID()}`);
   await writeFile(tempPath, content, "utf8");
   try {
     await renameWithRetry(tempPath, filePath);

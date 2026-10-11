@@ -7,12 +7,12 @@ import {
   phaseRunsOnItemBranch,
   readItemBranch,
   DEFAULT_ASSIGNMENT_PHASE,
+  readAssignmentExecution, pinAssignmentExecution,
 } from "./assignment-directive.mjs";
 import { existsSync } from "node:fs";
 export const DEFAULT_ASSIGNMENT_HEARTBEAT_STALE_MS = DEFAULT_HEARTBEAT_MS;
-
 // Core supplies configured services and deferred application loaders. Construction is inert.
-export function createAssignmentReclaim({ isNodeStale, readPresenceRecord, DEFAULT_PRESENCE_STALENESS_SECONDS, isStale, readRuns, consumeHeartbeatQueue, findWorkCacheFirst, transitionAssignmentState, transitionRunReclaimed, openGlobalWorkProjectionStore, readWorkItemRuns, headCommit, reportDegrade, dispatchConcurrencyFromConfig }) {
+export function createAssignmentReclaim({ isNodeStale, readPresenceRecord, DEFAULT_PRESENCE_STALENESS_SECONDS, isStale, readRuns, consumeHeartbeatQueue, findWorkCacheFirst, transitionAssignmentState, transitionRunReclaimed, openGlobalWorkProjectionStore, readWorkItemRuns, headCommit, reportDegrade, dispatchConcurrencyFromConfig, resolveAssignmentExecution, validateExecutionEnvelope }) {
 // src/mesh/assignment-reclaim.mjs — the CONTROL-side dual-staleness reclaim path
 // (milestone 35 / story 02, ADR-005, task 04). A non-terminal assignment is
 // reclaimed to `reclaimed` ONLY when BOTH clocks agree the target worker is gone:
@@ -295,6 +295,7 @@ async function runControlDispatchReclaimTick(ws, streamServer, options = {}) {
   const buildDirectiveFrame = (to, fields) => {
     const frame = buildBaseDirectiveFrame(to, fields);
     if (fields?.launch != null) frame.launch = fields.launch;
+    if (fields?.execution != null) frame.execution = fields.execution;
     return frame;
   };
 
@@ -441,6 +442,20 @@ async function runControlDispatchReclaimTick(ws, streamServer, options = {}) {
       // the worker keeps its HEAD fallback — degraded, and said so in the
       // decision log below.
       const commit = await resolveDispatchCommit(row);
+      let execution;
+      try {
+        execution = readAssignmentExecution(store, row.assignmentId);
+        if (execution === undefined) {
+          const root = row.workspaceId === workspaceId ? ws.projectRoot : store.db.prepare("SELECT project_root FROM global_workspace_descriptors WHERE workspace_id = ?").get(row.workspaceId)?.project_root;
+          const chosen = await (options.resolveAssignmentExecution ?? resolveAssignmentExecution)?.(root);
+          execution = pinAssignmentExecution(store, row.assignmentId, chosen == null ? null : validateExecutionEnvelope(chosen));
+        }
+        if (execution != null) execution = validateExecutionEnvelope(execution);
+      } catch (error) {
+        pickupEscalatedIds.add(row.assignmentId);
+        options.onDispatchLog?.({ code: error.code ?? "runtime-capabilities-unavailable", level: "warn", message: `assignment ${row.assignmentId}: ${error.message}` });
+        continue;
+      }
       const result = streamServer.dispatchDirective(buildDirectiveFrame(row.targetNodeId, {
         assignmentId: row.assignmentId,
         itemRef: row.itemRef,
@@ -450,6 +465,7 @@ async function runControlDispatchReclaimTick(ws, streamServer, options = {}) {
         baseBranch,
         commit,
         launch,
+        execution,
       }));
       if (result?.sent) {
         dispatchedIds.add(row.assignmentId);

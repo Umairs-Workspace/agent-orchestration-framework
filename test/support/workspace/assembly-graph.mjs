@@ -19,6 +19,17 @@ export async function applicationConstructionDetails(repoRoot) {
       factories.set(match[1], path.posix.normalize(path.posix.join(path.posix.dirname(rel), match[2])));
     }
     const used = new Set();
+    // The native session boundary is constructed with its adapters in this
+    // composition file, rather than in an assemble binding. Follow that source
+    // owner so injected runtime ports retain their real adapter dependencies.
+    for (const match of source.matchAll(/const\s+(\w+)\s*=\s*createRuntimeSession\s*\(/g)) {
+      assert.match(source, /import\s*\{\s*createRuntimeSession\b[^}]*\}\s*from\s*['"]@aof\/execution\/runtime-session['"]/u);
+      assert.ok(!instances.has(match[1]), `${rel}: native service has one construction`);
+      const span = matchedParenSpan(source, source.indexOf('(', match.index));
+      assert.ok(span, `${rel}: native adapter construction can be read`);
+      instances.set(match[1], rel);
+      calls.push({ file: rel, factory: 'createRuntimeSession', body: span.body });
+    }
     for (const match of source.matchAll(/const\s+(\w+)\s*=\s*(assemble\w+)\s*\(/g)) {
       const file = factories.get(match[2]);
       assert.ok(file, `${rel}: constructor ${match[2]} resolves to an imported factory`);

@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Archive an accepted driver — move its folder, name verbatim, under archive/ so the root of the work tree reads as what is live. One verb moves; nothing is renumbered and every reader that resolves by ref still answers.
+argument-hint: "<NN> | --done"
 aof-invocation: /aof:archive
 aof-runtime: claude
 ---

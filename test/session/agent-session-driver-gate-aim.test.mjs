@@ -107,9 +107,10 @@ const AIM = [
     invariant: "invariant 1",
     marker: "invariant 1 — no `claude -p`",
     reads: ["DRIVER_SOURCE"],
-    subject: "buildDriverCommand's `bin: \"codex\"` argv form — the only launch shape left",
-    present: (s) => /bin\s*:\s*["']codex["'][\s\S]{0,120}args\s*:\s*\[/.test(s.driver.body),
-    absent: (s) => /bin\s*:\s*["']codex["'][\s\S]{0,120}args\s*:\s*\[/.test(s.handler.body) === false,
+    subject: "154/02: the actual Claude launch resolver and declared program/argv return",
+    present: (s) => /function\s+resolveInteractiveDriverLaunch\s*\(/.test(s.driver.body)
+      && /return\s*\{\s*bin:\s*declared\.program,\s*args:\s*\[\.\.\.args\]/.test(s.driver.body),
+    absent: (s) => /function\s+resolveInteractiveDriverLaunch\s*\(/.test(s.handler.body) === false,
   },
   {
     invariant: "invariant 2",
@@ -286,8 +287,8 @@ export const agentSessionDriverGateAimTests = [
       assert.ok(/hasDriverLaunchShape\s*\(/.test(body), "invariant 1's own body proves the source it read carries a launch shape before asserting the absence");
       assert.ok(body.indexOf("hasDriverLaunchShape") < body.indexOf("hasClaudeHeadlessPrintShape"), "and it does so FIRST — an absence is only evidence when measured over a source with presences in it");
 
-      const launchShape = /bin\s*:\s*["']codex["'][\s\S]{0,120}args\s*:\s*\[/;
-      assert.equal(launchShape.test(s.driver.body), true, "the file invariant 1 reads contains buildDriverCommand's `bin: \"codex\"` argv form");
+      const launchShape = /return\s*\{\s*bin:\s*declared\.program,\s*args:\s*\[\.\.\.args\]/;
+      assert.equal(launchShape.test(s.driver.body), true, "the file invariant 1 reads contains the actual Claude launch's declared program/argv return");
       assert.equal(launchShape.test(s.handler.body), false, "the file invariant 1 does NOT read contains no launch shape at all");
       assert.equal(/bin\s*:\s*["']claude["']/.test(s.handler.body), false, "…not a claude one either — which is exactly why a mis-aimed invariant 1 would pass while checking nothing");
 

@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-02
+updated: 2026-10-06
 ---
 # 02 · The map is a document — Retrospective
 
 ## R1 — `--scope impacted` ran the whole suite
 
-- **Kind:** process · **Area:** testing · **Stage:** build · **Owner:** developer
+- **Kind:** near-miss (process) · **Area:** process (testing) · **Stage:** build · **Owner:** developer
 - **Raised by:** the 02 build
 
 **What happened.** `scripts/test.mjs` was in `files:` (the two index registrations), so
@@ -18,7 +18,7 @@ full run.
 
 ## R2 — the loop re-dispatched a story already in review
 
-- **Kind:** defect · **Area:** loop · **Stage:** build · **Owner:** developer
+- **Kind:** mistake (defect) · **Area:** code (loop) · **Stage:** build · **Owner:** developer
 - **Raised by:** loop cycle 3
 
 **What happened.** Cycle 3 dispatched `continue` on 134/02 while it was `in-review`. The worktree's

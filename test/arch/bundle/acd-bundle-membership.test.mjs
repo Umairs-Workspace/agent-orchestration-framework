@@ -26,6 +26,23 @@ const ACD_AGENT_IDS = [
 // Files in the bundle root that are bundle MACHINERY, not declared members.
 const NON_MEMBER_FILES = new Set(["bundle.json", "manifest.json"]);
 
+function declaredBundleFiles(descriptor, root) {
+  const files = new Set();
+  const add = file => files.add(file.replaceAll("\\", "/"));
+  for (const member of descriptor.members) {
+    if (member.file) add(member.file);
+    else if (member.dir) for (const name of readdirSync(path.join(root, member.dir))) add(`${member.dir}/${name}`);
+    else throw new Error(`declared member ${member.id} names neither a file nor a dir`);
+    for (const variant of Object.values(member.variants ?? {})) {
+      if (!variant) continue;
+      add(variant.file);
+      for (const attached of variant.associatedFiles ?? []) add(attached.file);
+    }
+  }
+  for (const reference of descriptor.references ?? []) add(reference.file);
+  return [...files].sort();
+}
+
 // Recursively collect every file under the bundle root, relative + forward-slashed.
 function bundleFiles(root) {
   const files = [];
@@ -56,30 +73,18 @@ export const archTests = [
     name: "arch/ADR-001/002: declared-member set equals the set of member files in the bundle root (no undeclared file, no missing member)",
     run: async () => {
       const root = bundleRoot();
-      const members = readDescriptor().members;
-
-      // Every declared member's file (resource) or directory contents (template)
-      // must exist on disk.
-      const declaredFiles = new Set();
-      for (const member of members) {
-        if (member.file) {
-          declaredFiles.add(member.file.replaceAll("\\", "/"));
-        } else if (member.dir) {
-          const dirAbs = path.join(root, member.dir);
-          for (const name of readdirSync(dirAbs)) {
-            declaredFiles.add(`${member.dir.replaceAll("\\", "/")}/${name}`);
-          }
-        } else {
-          throw new Error(`declared member ${member.id} names neither a file nor a dir`);
-        }
-      }
+      const descriptor = readDescriptor();
 
       // Every file on disk (minus machinery) must be a declared member file.
       const onDisk = bundleFiles(root).filter((rel) => !NON_MEMBER_FILES.has(rel));
 
-      const declaredSorted = [...declaredFiles].sort();
+      const declaredSorted = declaredBundleFiles(descriptor, root);
       const onDiskSorted = [...onDisk].sort();
       assert.deepEqual(onDiskSorted, declaredSorted, "bundle root files == declared member files");
+      const missingNativeDeclarations = structuredClone(descriptor);
+      for (const member of missingNativeDeclarations.members) delete member.variants;
+      delete missingNativeDeclarations.references;
+      assert.throws(() => assert.deepEqual(onDiskSorted, declaredBundleFiles(missingNativeDeclarations, root), "native inputs must be declared"), /native inputs must be declared/u);
     }
   },
   {

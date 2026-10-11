@@ -272,7 +272,10 @@ export const archTests = [
       const lines = [];
       const outcome = await seam.runMemory(["status"], { config: {}, resolveBackend: (config) => seam.resolveConfiguredBackend(config), log: (line) => lines.push(line) });
       assert.deepEqual({ ok: outcome.ok, exitCode: outcome.exitCode }, { ok: true, exitCode: 0 });
-      assert.deepEqual(lines, ["memory: backend=none records=0"], "the collector received the one status line");
+      // One rendered document; 148/05 added the layers and conformance lines under its unchanged
+      // first line.
+      assert.equal(lines.length, 1, "the collector received the one status document");
+      assert.equal(lines[0].split("\n")[0], "memory: backend=none records=0", "…whose first line is the status line");
     },
   },
 

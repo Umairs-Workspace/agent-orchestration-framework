@@ -71,6 +71,7 @@ packages/core/assets/** text eol=lf
 # endings. Guarded by acd-bundle-install-eol-pinned.)
 .claude/** text eol=lf
 .codex/** text eol=lf
+.agents/** text eol=lf
 .opencode/** text eol=lf
 
 # The git-tracked mesh records (milestone 22 / story 00 partition; milestone 23 /

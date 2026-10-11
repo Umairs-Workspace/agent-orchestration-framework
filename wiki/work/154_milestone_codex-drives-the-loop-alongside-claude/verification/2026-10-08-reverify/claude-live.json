@@ -1,0 +1,157 @@
+{
+  "evidence": "real-native-AOF-PTY-and-foreground-loop",
+  "sourceCommit": "53b99b1cd81c1896fa7bfed251fb0ae9f6f27706",
+  "runtime": "claude",
+  "defaultModel": "claude-opus-5-5",
+  "rootSubagents": 0,
+  "fixtureBranch": "verification/154-claude-live",
+  "runs": [
+    {
+      "runId": "20261008T145407634Z-0000",
+      "itemRef": "07/01",
+      "state": "done",
+      "outcome": "done",
+      "failureReason": null,
+      "sessionId": "4cadd76f-b066-43ef-a576-40171134a5b9",
+      "phase": "standalone-refine",
+      "loopRunId": null,
+      "createdAt": "2026-10-08T14:54:07.634Z",
+      "updatedAt": "2026-10-08T14:56:17.312Z",
+      "spend": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "tokens": {
+          "input": 26,
+          "output": 5077,
+          "cacheRead": 878140,
+          "cacheCreate": 76796
+        },
+        "costUsd": 0.62766,
+        "costSource": "priced",
+        "priceTable": "price-table-2026-08-v1",
+        "turns": 13,
+        "toolCalls": 6,
+        "exitReason": "final_output"
+      }
+    },
+    {
+      "runId": "20261008T150253511Z-0001",
+      "itemRef": "07/01",
+      "state": "done",
+      "outcome": "done",
+      "failureReason": null,
+      "sessionId": "e2d1e533-6d53-43e4-9dcc-67003f6ea006",
+      "phase": "continue",
+      "loopRunId": "3a4ce4bc-627f-4ef4-b0d9-ffe7cffec176",
+      "createdAt": "2026-10-08T15:02:53.511Z",
+      "updatedAt": "2026-10-08T15:05:02.927Z",
+      "spend": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "tokens": {
+          "input": 42,
+          "output": 8411,
+          "cacheRead": 1613772,
+          "cacheCreate": 85580
+        },
+        "costUsd": 0.9313475999999999,
+        "costSource": "priced",
+        "priceTable": "price-table-2026-08-v1",
+        "turns": 21,
+        "toolCalls": 12,
+        "exitReason": "final_output"
+      }
+    },
+    {
+      "runId": "20261008T150504631Z-0002",
+      "itemRef": "07/01",
+      "state": "done",
+      "outcome": "done",
+      "failureReason": null,
+      "sessionId": "ed04e8fa-b5e4-4b52-bb80-b39611caa5c3",
+      "phase": "verify",
+      "loopRunId": "3a4ce4bc-627f-4ef4-b0d9-ffe7cffec176",
+      "createdAt": "2026-10-08T15:05:04.631Z",
+      "updatedAt": "2026-10-08T15:07:28.832Z",
+      "spend": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "tokens": {
+          "input": 48,
+          "output": 14361,
+          "cacheRead": 1771191,
+          "cacheCreate": 86153
+        },
+        "costUsd": 1.06999005,
+        "costSource": "priced",
+        "priceTable": "price-table-2026-08-v1",
+        "turns": 24,
+        "toolCalls": 13,
+        "exitReason": "final_output"
+      }
+    },
+    {
+      "runId": "20261008T150728921Z-0000",
+      "itemRef": "07",
+      "state": "done",
+      "outcome": "done",
+      "failureReason": null,
+      "sessionId": "c2e7060d-87a7-4039-bb59-704c09a56ea3",
+      "phase": "verify",
+      "loopRunId": "3a4ce4bc-627f-4ef4-b0d9-ffe7cffec176",
+      "createdAt": "2026-10-08T15:07:28.921Z",
+      "updatedAt": "2026-10-08T15:17:19.944Z",
+      "spend": {
+        "model": "claude-opus-5-5",
+        "effort": "high",
+        "tokens": {
+          "input": 54,
+          "output": 16164,
+          "cacheRead": 2371100,
+          "cacheCreate": 33597
+        },
+        "costUsd": 1.07994075,
+        "costSource": "priced",
+        "priceTable": "price-table-2026-08-v1",
+        "turns": 27,
+        "toolCalls": 14,
+        "exitReason": "final_output"
+      }
+    }
+  ],
+  "answer": "module.exports = { answer: 42 };\n",
+  "story": "---\ntype: story\nnumber: 01\nslug: s01\nparent: 07\nstatus: done\ntitle: \"Story 01\"\ncreated: 2026-09-01\nupdated: 2026-10-08\nschema: 1\nreads: [\"src/s01.cjs\",\"runner.cjs\"]\nfiles: [src/s01.cjs]\n---\n# Story 01\n\n## Tasks\n\n- [x] [00_ready](tasks/00_ready.feature) — fixture module answer is 42 (`@executable`)\n",
+  "milestone": "---\ntype: milestone\nnumber: 07\nslug: wave\nstatus: done\ntitle: \"Wave\"\ncreated: 2026-09-01\nupdated: 2026-10-08\nschema: 1\n---\n# 07 · Wave\n\n## Stories\n\n- [x] [01 · Story 01](stories/01_story_s01/STORY.md)\n",
+  "gate": "<!-- The regression gate's evidence (96/ADR-008). Appended by the gate command; never hand-written. -->\n# Regression gate\n\n## Gate runs\n\nOne row per gate run, appended by `aof work regression-gate <ref>`. A rerun APPENDS: the newest row is the one\nthe accept door reads, and the earlier rows are the milestone's history. A row whose commit,\ninstant, scope or result is missing makes this document UNREADABLE rather than green — repair it\nby hand rather than deleting the row, because a row nobody can read and a gate nobody ran are the\nsame fact. A `override` row is a recorded reason for accepting WITHOUT a green gate\n(ADR-008 §4), never a gate result.\n\n| commit | instant | scope | result | detail |\n|---|---|---|---|---|\n| 48f2d01d898d2df049bafd8f10befc6e3b6af2a7 | 2026-10-08T15:14:44.527Z | all | green | serial · 0.0 min |\n",
+  "stop": {
+    "ok": true,
+    "loopRunId": "3a4ce4bc-627f-4ef4-b0d9-ffe7cffec176",
+    "scope": "07",
+    "live": true,
+    "request": "drain",
+    "state": "requested",
+    "path": "CHECKOUT\\.tmp\\154-reverify-temp\\aof-live-runtime-DlKQHw\\global-aof\\mesh\\loop-stops\\3a4ce4bc-627f-4ef4-b0d9-ffe7cffec176.json"
+  },
+  "operatorAnswer": {
+    "ok": true,
+    "ref": "07",
+    "runId": "20261008T150728921Z-0000",
+    "delivery": "parked",
+    "state": "answered",
+    "by": {
+      "actor": "you",
+      "via": "cli",
+      "node": "node-9137"
+    },
+    "answeredAt": "2026-10-08T15:13:49.746Z",
+    "resume": "aof work loop 07 --resume"
+  },
+  "initialLoop": "Driven 07/01 — continue (done).\nDriven 07/01 — verify (done).\nDriven 07 — verify (needs-input).\n07 — halted on operator-interrupt at 07 (producer stop-request). Resume with: aof work loop 07 --resume Details: signal=stop-request; level=1; request=CHECKOUT\\.tmp\\154-reverify-temp\\aof-live-runtime-DlKQHw\\global-aof\\mesh\\loop-stops\\3a4ce4bc-627f-4ef4-b0d9-ffe7cffec176.json; by=node-9137:59096; sessionId=c2e7060d-87a7-4039-bb59-704c09a56ea3; parked=[{\"ref\":\"07\",\"runId\":\"20261008T150728921Z-0000\",\"sessionId\":\"c2e7060d-87a7-4039-bb59-704c09a56ea3\",\"askedAt\":\"2026-10-08T15:09:21.856Z\"}].\n  Milestone 07 passes everything except the regression gate, which refused to run because the checkout has uncommitted changes. I have not accepted it.\n\n  **Results so far:**\n  - **Tests:** `node runner.cjs` passed 2 of 2 (exit 0). Story 07/01 is the milestone's only story, so this run is also the full test suite.\n  - **Validate:** `aof work validate 07` → PASS.\n  - **Doctor:** warnings only. The milestone has no `ARCHITECTURE.md`, and the existing F-01 test-name warnings remain. No `control-unresolved` finding at either severity.\n  - **Other checks:** no `@manual` or `@uat` scenarios, no UI and no declared fitness functions, so none of those reviews applied and no human sign-off is needed.\n  - **Findings:** only F-01, which is low severity and not a blocker. It stays deferred to the backlog: no test case is named after the scenario \"Return the declared answer\".\n  - **Blocked:** `aof work regression-gate 07` refuses because the story's code change (`src/s01.cjs`, `answer: 0 → 42`) and all the 07 records are uncommitted on `main`. Stashing won't work: the code at HEAD still has `answer: 0`, so the gate would fail. A `--gate-override` is only for a machine that can't run the tests, so it doesn't fit here.\n\n  I've added this milestone-gate evidence to `VERIFICATION.md`. Accepting the milestone, plus its `OUTCOME.md`, retrospective, memory ingest and `STATE.md` compaction, is waiting on the gate.\n\n  Decision needed: May I commit the uncommitted 07 work (the `src/s01.cjs` change plus the 07 records) so the regression gate can run on a clean tree?\n  Options: (a) commit on a new branch, then run the gate and accept; (b) commit directly on `main`, which is the fixture's current branch; (c) leave it uncommitted; 07 stays in-progress until someone commits it.\n  I would pick: (a). It's a local commit that's easy to undo, and it follows the \"branch first, commit only when asked\" rule. Every other check is already green.\n  What the answer changes: whether `aof work regression-gate 07` runs and writes its `REGRESSION.md` row; `aof work status 07 done`; the milestone `OUTCOME.md`, retrospective, `aof work memory ingest` and `STATE.md` compaction, all in `wiki/work/07_milestone_wave/`.\n  answer: aof work answer 07 \"…\"\n",
+  "resumedLoop": "Driven 07 — verify (done).\nAccepted milestone 07.\n07 — loop done.\n",
+  "limits": [
+    "No independent native role review proved in this solo loop.",
+    "ConPTY helper emitted AttachConsole failed during initial standalone refine cleanup.",
+    "Priced spend is accounting, not proof of a charged bill.",
+    "Fixture acceptance does not accept milestone 154."
+  ]
+}

@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Capture a spike — a top-level de-risk driver scaffolded on the project's intake as spike_slug/SPIKE.md. Groups no stories, carries no .feature; its deliverable is a recorded finding. Numbered by aof work promote, resolved later by aof:verify.
+argument-hint: "<the unknown / risk to de-risk> [in <group/path>] [timebox 1d|2d|…] [depends NN[,NN…]] [--in-stream]"
 aof-invocation: /aof:add-spike
 aof-runtime: claude
 ---

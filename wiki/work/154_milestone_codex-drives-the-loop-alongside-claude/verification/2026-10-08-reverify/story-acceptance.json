@@ -1,0 +1,290 @@
+[
+  {
+    "ref": "154/00",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/00 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/01",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/01 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/02",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/02 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/03",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/03 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/04",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/04 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/05",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/05 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/07",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/07 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/08",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/08 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/09",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/09 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/10",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/10 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/06",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/06 — in-review → done. Next legal moves: none (terminal).\n"
+  },
+  {
+    "ref": "154/11",
+    "validation": [],
+    "doctor": {
+      "healthy": true,
+      "errors": 0,
+      "warnings": 3,
+      "findings": [
+        {
+          "code": "numbering-gap",
+          "severity": "warn"
+        },
+        {
+          "code": "rubric-join-unchecked",
+          "severity": "warn"
+        },
+        {
+          "code": "depends-edges-unchecked",
+          "severity": "warn"
+        }
+      ]
+    },
+    "status": "154/11 — in-review → done. Next legal moves: none (terminal).\n"
+  }
+]

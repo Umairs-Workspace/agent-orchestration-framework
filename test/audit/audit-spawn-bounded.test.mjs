@@ -20,7 +20,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //   result reports are the ones observed; a command is passed as an argument vector and a shell
 //   never sees it; a child that cannot be started is reported rather than swallowed.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile, readdir } from "node:fs/promises";
+import { spawn } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -120,6 +121,45 @@ function spawnDouble({ stdout = "", stderr = "", exit = { code: 0, signal: null 
 }
 
 export const auditSpawnBoundedTests = [
+  ...["exit", "deadline", "abort", "refused"].map(mode => ({
+    name: `154/11 D-05 — Windows pipe refusal preserves bounded file capture: ${mode}`,
+    async run() {
+      const dir = await mkdtemp(path.join(os.tmpdir(), "aof-capture-test-"));
+      const controller = new AbortController(); let attempts = 0, cancelTimer;
+      try {
+        const result = await runBounded({ command: process.execPath,
+          args: ["-e", mode === "exit" ? "process.stdout.write('out');process.stderr.write('err');process.exitCode=7" : "setInterval(()=>{},1000)"],
+          cwd: dir, platform: "win32", deadlineMs: mode === "deadline" ? 100 : 5000,
+          signal: controller.signal, graceMs: 10,
+          spawnChild: (command, args, options) => {
+            attempts++;
+            assert.equal(options.shell, undefined);
+            if (attempts === 1 || mode === "refused") throw Object.assign(Error("pipe refused"), { code: "EPERM" });
+            assert.equal(options.stdio[0], "ignore");
+            assert.ok(options.stdio.slice(1).every(Number.isInteger));
+            if (mode === "abort") cancelTimer = setTimeout(() => controller.abort(), 100);
+            return spawn(command, args, options);
+          },
+        });
+        assert.equal(attempts, 2);
+        assert.equal(result.outcome, { exit: "exited", deadline: "deadline-expired", abort: "aborted", refused: "not-started" }[mode]);
+        if (mode === "exit") {
+          assert.equal(result.exitCode, 7); assert.equal(result.stdout, "out"); assert.equal(result.stderr, "err");
+        }
+        assert.deepEqual(await readdir(dir), [], "temporary capture files and handles are released");
+      } finally { clearTimeout(cancelTimer); await rm(dir, { recursive: true, force: true }); }
+    },
+  })),
+  ...[{ platform: "linux", stdin: "ignore", code: "EPERM" }, { platform: "win32", stdin: "pipe", code: "EPERM" }, { platform: "win32", stdin: "ignore", code: "EACCES" }].map(options => ({
+    name: `154/11 D-05 — file capture does not retry ${JSON.stringify(options)}`,
+    async run() {
+      let attempts = 0;
+      const result = await runBounded({ command: process.execPath, ...options,
+        spawnChild: () => { attempts++; throw Object.assign(Error(options.code), { code: options.code }); },
+      });
+      assert.equal(result.outcome, "not-started"); assert.equal(attempts, 1);
+    },
+  })),
   // ══ Scenario: the runner's assembled suite is obtained without importing it ══════════
   {
     name: "audit-spawn/03 the runner's assembled suite comes from a child process, and no project module is imported into the audit's own process",
@@ -149,11 +189,17 @@ export const auditSpawnBoundedTests = [
     name: "audit-spawn/03 a child that will not finish within its deadline is killed, and the result reports the expiry and names the deadline that was applied",
     async run() {
       const started = Date.now();
+      let observedOutput = "";
       const result = await runBounded({
         command: process.execPath,
         // A child that would outlive the audit by a wide margin if nothing bounded it.
         args: ["-e", "setInterval(() => {}, 1000); process.stdout.write('alive');"],
         deadlineMs: 400,
+        spawnChild: (...args) => {
+          const child = spawn(...args);
+          child.stdout.on("data", chunk => { observedOutput += chunk; });
+          return child;
+        },
       });
       const elapsed = Date.now() - started;
 
@@ -165,7 +211,7 @@ export const auditSpawnBoundedTests = [
       // The kill is a DIFFERENT outcome from a failure. "It failed" and "it never finished" are
       // two findings and an audit must not conflate them.
       assert.notEqual(result.outcome, "exited", "an expired child is not reported as an ordinary exit");
-      assert.ok(result.stdout.includes("alive"), "and the output observed before the kill is still handed back");
+      assert.equal(result.stdout, observedOutput, "all output actually emitted before the kill is retained; startup may consume the deadline under load");
     },
   },
 

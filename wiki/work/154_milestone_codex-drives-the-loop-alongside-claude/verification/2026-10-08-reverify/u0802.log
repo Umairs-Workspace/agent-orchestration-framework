@@ -1,0 +1,39 @@
+# unit
+not ok - arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member
+AssertionError [ERR_ASSERTION]: a story that lands a bundle member lands its manifest and its tracked renders with it
++ actual - expected
+
++ [
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/assimilate-code.md and must also declare its tracked render .agents/skills/aof-assimilate-code/SKILL.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/assimilate-code.md and must also declare its tracked render .agents/skills/aof-assimilate-code/agents/openai.yaml',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/assimilate-code.md and must also declare its tracked render .codex/aof/workflows/workflow-contract.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/autonomous.md and must also declare its tracked render .agents/skills/aof-autonomous/SKILL.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/autonomous.md and must also declare its tracked render .agents/skills/aof-autonomous/agents/openai.yaml',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/autonomous.md and must also declare its tracked render .codex/aof/workflows/workflow-contract.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/continue.md and must also declare its tracked render .agents/skills/aof-continue/SKILL.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/continue.md and must also declare its tracked render .agents/skills/aof-continue/agents/openai.yaml',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/continue.md and must also declare its tracked render .agents/skills/aof-continue/procedure.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/continue.md and must also declare its tracked render .codex/aof/workflows/workflow-contract.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/migrate.md and must also declare its tracked render .agents/skills/aof-migrate/SKILL.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/migrate.md and must also declare its tracked render .agents/skills/aof-migrate/agents/openai.yaml',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/migrate.md and must also declare its tracked render .codex/aof/workflows/workflow-contract.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/refine.md and must also declare its tracked render .agents/skills/aof-refine/SKILL.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/refine.md and must also declare its tracked render .agents/skills/aof-refine/agents/openai.yaml',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/refine.md and must also declare its tracked render .agents/skills/aof-refine/procedure.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/refine.md and must also declare its tracked render .codex/aof/workflows/workflow-contract.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/review.md and must also declare its tracked render .agents/skills/aof-review/SKILL.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/review.md and must also declare its tracked render .agents/skills/aof-review/agents/openai.yaml',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/review.md and must also declare its tracked render .agents/skills/aof-review/procedure.md',
++   'wiki/work/155_story_one-agent-mode-setting/STORY.md: declares bundle member packages/core/assets/commands/review.md and must also declare its tracked render .codex/aof/workflows/workflow-contract.md'
++ ]
+- []
+
+    at run (file:///CHECKOUT/.tmp/154-reverify-checkout/test/arch/bundle/acd-declared-writes-include-generated-siblings.test.mjs:244:14)
+    at async runCases (file:///CHECKOUT/.tmp/154-reverify-checkout/scripts/test-harness.mjs:22:7)
+    at async file:///CHECKOUT/.tmp/154-reverify-checkout/scripts/test-shard.mjs:38:18
+ok - arch/71 FF-7106: non-vacuity — an open story declaring a bundle member WITHOUT the manifest is reported, naming the story and the missing sibling
+ok - arch/71 FF-7106: non-vacuity — an open story declaring a bundle member without its TRACKED RENDERED copies is reported, one finding per missing render
+ok - arch/71 FF-7106: the horizon really excludes a done item — including the CRLF checkout, the read whose first draft reported 33 false violations
+ok - arch/71 FF-7106: membership is DERIVED from the bundle, never a `src/bundle/` prefix — and the render set is tracked-only
+ok - arch/71 FF-7106: the registration leg is DELIBERATELY ABSENT — a complete write set is not asked for the test runner it does not change
+# executed 6 cases; failures 1

@@ -1,0 +1,32 @@
+{
+  "binary": "USERPROFILE/AppData/Local/ms-playwright/chromium-1243/chrome-win64/chrome.exe",
+  "url": "http://127.0.0.1:4180/config",
+  "precondition": {
+    "executable": true,
+    "exit": 0,
+    "blankDocument": true
+  },
+  "renders": [
+    {
+      "width": 390,
+      "height": 1200,
+      "output": "CHECKOUT/.tmp/154-reverify-entry-renders/config-390.png",
+      "exit": 0,
+      "bytes": 28606
+    },
+    {
+      "width": 768,
+      "height": 1200,
+      "output": "CHECKOUT/.tmp/154-reverify-entry-renders/config-768.png",
+      "exit": 0,
+      "bytes": 35836
+    },
+    {
+      "width": 1280,
+      "height": 1200,
+      "output": "CHECKOUT/.tmp/154-reverify-entry-renders/config-1280.png",
+      "exit": 0,
+      "bytes": 52459
+    }
+  ]
+}

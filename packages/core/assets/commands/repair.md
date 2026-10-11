@@ -4,6 +4,8 @@ argument-hint: "<halted ref> <hand-over file>"
 allowed-tools: [Read, Grep, Glob, Bash, Edit, Write]
 ---
 <objective>
+Repair is bounded to the handover's named cause: diagnose it, apply its local remedy and run
+the named proof once. A failed or inconclusive proof is a handback, not an unbounded retry loop.
 A loop (`aof work loop`) halted on one of its three LANE stops — `lane-open-failed`,
 `lane-merge-refused` or `lane-merge-conflict` — and handed the halt to you. A lane halt is about the
 loop's OWN bookkeeping (a dispatch worktree that will not merge home, or will not reopen), never about

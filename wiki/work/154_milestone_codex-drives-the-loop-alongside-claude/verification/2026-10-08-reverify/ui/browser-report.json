@@ -1,0 +1,128 @@
+{
+  "url": "http://127.0.0.1:4180/config",
+  "engine": "existing Python Playwright and cached Chromium 1243",
+  "checks": [
+    {
+      "name": "runtime form exists",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "no horizontal overflow at 390",
+      "pass": true,
+      "detail": {
+        "viewport": 390,
+        "document": 390,
+        "body": 390,
+        "form": {
+          "x": 40,
+          "y": 821,
+          "width": 310,
+          "height": 2739,
+          "top": 821,
+          "right": 350,
+          "bottom": 3560,
+          "left": 40
+        }
+      }
+    },
+    {
+      "name": "no horizontal overflow at 768",
+      "pass": true,
+      "detail": {
+        "viewport": 768,
+        "document": 768,
+        "body": 768,
+        "form": {
+          "x": 40,
+          "y": 805,
+          "width": 688,
+          "height": 1667,
+          "top": 805,
+          "right": 728,
+          "bottom": 2472,
+          "left": 40
+        }
+      }
+    },
+    {
+      "name": "no horizontal overflow at 1280",
+      "pass": true,
+      "detail": {
+        "viewport": 1280,
+        "document": 1280,
+        "body": 1280,
+        "form": {
+          "x": 320,
+          "y": 88,
+          "width": 920,
+          "height": 1427,
+          "top": 88,
+          "right": 1240,
+          "bottom": 1515,
+          "left": 320
+        }
+      }
+    },
+    {
+      "name": "runtime keyboard focus visible",
+      "pass": true,
+      "detail": {
+        "active": true,
+        "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgb(19, 118, 109) 0px 0px 0px 2px, rgba(0, 0, 0, 0) 0px 0px 0px 0px",
+        "outline": "none"
+      }
+    },
+    {
+      "name": "invalid effort retained and associated",
+      "pass": true,
+      "detail": {
+        "value": "invalid-native-effort",
+        "invalid": "true",
+        "describedBy": "execution-claude-phase-effort-continue-error",
+        "error": "work.agents.runtimes.claude.session.effort.continue (work.agents.runtimes.claude.session.effort.continue): unsupported effort invalid-native-effort work.agents.runtimes.claude.session.effort.continue (work.agents.runtimes.claude.session.effort.continue): unsupported effort invalid-native-effort"
+      }
+    },
+    {
+      "name": "failed request retains edit",
+      "pass": true,
+      "detail": "503 injected at browser transport; real component state"
+    },
+    {
+      "name": "Codex fields reachable",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "switch retains Claude draft",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "real save confirms next-run configuration",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "inherited default shown",
+      "pass": true,
+      "detail": null
+    },
+    {
+      "name": "global scope is explanatory",
+      "pass": true,
+      "detail": null
+    }
+  ],
+  "screenshots": [
+    "form-populated-390.png",
+    "form-populated-768.png",
+    "form-populated-1280.png",
+    "form-invalid-effort.png",
+    "form-save-failure.png",
+    "form-saved.png",
+    "form-role-overrides.png",
+    "form-inherited.png",
+    "form-global.png"
+  ]
+}

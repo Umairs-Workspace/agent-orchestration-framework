@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Capture feedback the instant it's noticed — a mistake, misunderstanding, blocker, or (on a UAT session) an acceptance observation — as a raw, attributed entry in the right log. Low-friction: it never classifies or asks how to file; triage does that later. Any actor can raise it.
+argument-hint: "[ref] <feedback>   (ref optional — defaults to the active item)"
 aof-invocation: /aof:feedback
 aof-runtime: claude
 ---

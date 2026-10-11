@@ -27,7 +27,7 @@ export function assembleLoopAsk({ loopAskRequestServices, runStoreServices, runH
   const { reportDegrade } = degradeServices;
 
   const implementation = createAskOrchestration({
-    askRequests: { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks },
+    askRequests: { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks, normalizeNativeQuestion: loopAskRequestServices.normalizeNativeQuestion, acknowledgeNativeDelivery: loopAskRequestServices.acknowledgeNativeDelivery },
     runs: { answerRunAsk, isStale, openRunAsk, parkRunAsk, readRuns },
     heartbeats: { enqueueHeartbeat: enqueueHeartbeatDefault },
     transcripts: { readAskQuestion, readPendingAsk },
@@ -52,5 +52,5 @@ export function assembleLoopAsk({ loopAskRequestServices, runStoreServices, runH
   const standingAsk = implementation.standingAsk;
   const sweepStaleAsks = implementation.sweepStaleAsks;
 
-  return { PHASE_WORDS, askBlockLines, askContext, askEnvFor, askFileFor, awaitAnswer, defaultAskWait, isParkedHalt, liveOwnerHolds, parkedHalt, phaseWord, reenterStandingAsks, standingAsk, sweepStaleAsks };
+  return { PHASE_WORDS, askBlockLines, askContext, askEnvFor, askFileFor, awaitAnswer, defaultAskWait, isParkedHalt, liveOwnerHolds, parkedHalt, phaseWord, reenterStandingAsks, standingAsk, sweepStaleAsks, persistNativeQuestion: implementation.persistNativeQuestion, acknowledgeNativeAnswer: implementation.acknowledgeNativeAnswer };
 }

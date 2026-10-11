@@ -36,10 +36,10 @@ import { existsSync } from "node:fs";
 // non-consumer the graph flagged.
 import { writeText } from "@aof/foundation/fs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
-
 import { assertStampedClaim, compileProvenance } from "@aof/contracts/claim-provenance";
 import { createRunSpendIngest } from "./spend.mjs";
-
+import { resolveExecutionResume, validateExecutionEnvelope } from "./runtime-selection.mjs";
+import { reduceRuntimeObservation } from "./runtime-events.mjs";
 // ------------------------------------------- failure classification (20) ----
 
 // The CLOSED retryable/non-retryable classification (20/ADR-002), the
@@ -548,7 +548,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // answeredAt, by }`, written only by the run's owner through the three ask writers below. A
   // sixteen-key record, and any non-array `asks`, reads forward as `[]`. The record keeps the
   // human's decision and its instants and never a derived wait (119/ADR-003).
-  function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null }) {
+  function buildRecord({ runId, itemRef, sessionId, brief, createdAt, attempt = 1, retryOf = null, node = null, execution }) {
     return {
       runId,
       itemRef,
@@ -567,6 +567,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       resumeAfter: null,
       spend: null,
       asks: [],
+      ...(execution === undefined ? {} : { execution }),
     };
   }
 
@@ -595,6 +596,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       resumeAfter: raw.resumeAfter ?? null,
       spend: raw.spend ?? null,
       asks: Array.isArray(raw.asks) ? raw.asks : [],
+      ...(Object.prototype.hasOwnProperty.call(raw, "execution") ? { execution: structuredClone(raw.execution) } : {}),
     };
   }
 
@@ -606,7 +608,8 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // collision bumps seq and retries rather than the second mint silently overwriting
   // the first), and the ATOMIC persist (20/ADR-007). attempt/retryOf carry the retry
   // lineage (20/ADR-003); a fresh start passes the defaults (attempt 1, retryOf null).
-  async function mintRun(item, { sessionId = null, brief = {}, now, attempt = 1, retryOf = null, node = null } = {}) {
+  async function mintRun(item, { sessionId = null, brief = {}, now, attempt = 1, retryOf = null, node = null, ...additional } = {}) {
+    const execution = Object.prototype.hasOwnProperty.call(additional, "execution") ? validateExecutionEnvelope(additional.execution) : undefined;
     // New durable claims must already carry the stamp produced at their command edge.
     // Validate before reading the store, so refusal cannot infer or write anything.
     if (brief?.grade != null) assertStampedClaim(brief.grade);
@@ -634,7 +637,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
         seq += 1;
         continue;
       }
-      const record = buildRecord({ runId, itemRef: item.ref, sessionId, brief, createdAt, attempt, retryOf, node });
+      const record = buildRecord({ runId, itemRef: item.ref, sessionId, brief, createdAt, attempt, retryOf, node, execution });
       await persist(item, record);
       return record;
     }
@@ -647,8 +650,9 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // INJECTED DATA — the COMMAND layer passes config.mesh.nodeId when mesh is
   // configured (story 02's pass-through); the store never reads config, and the
   // no-node mint stays the flat single-node behaviour, byte-identical to today.
-  async function startRun(item, { sessionId = null, brief = {}, now, node = null } = {}) {
-    return mintRun(item, { sessionId, brief, now, node });
+  async function startRun(item, { sessionId = null, brief = {}, now, node = null, ...additional } = {}) {
+    return mintRun(item, { sessionId, brief, now, node,
+      ...(Object.prototype.hasOwnProperty.call(additional, "execution") ? { execution: additional.execution } : {}) });
   }
 
   // Read an item's runs — the UNION of flat entries + ONE level of node subdirs
@@ -885,6 +889,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       targetRunId = running[0].runId;
     }
     const settled = await applyTransition(item, targetRunId, outcome, { failureReason, resumeAfter, now });
+    if (settled.execution?.runtime === "codex") return settled;
     if (typeof projectsDir !== "string" || projectsDir.length === 0) return settled;
     // One degrade event carries every unread stamp: the reporter throttles per code, so a second
     // `run-store` event inside the window would be dropped.
@@ -964,7 +969,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // exactly as they are. A non-string/empty id is recorded as null (a run whose
   // session never reports an id stays honest). Target resolution matches completeRun /
   // settleRun: a supplied runId wins, else the item's single in-flight `running` run.
-  async function recordSessionId(item, { runId, sessionId = null, now } = {}) {
+  async function recordSessionId(item, { runId, sessionId = null, coldStartReason, now } = {}) {
     if (typeof sessionId !== "string" || sessionId.length === 0) sessionId = null;
     let targetRunId = runId;
     if (!targetRunId) {
@@ -978,11 +983,13 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       targetRunId = running[0].runId;
     }
     const record = await readRun(item, targetRunId);
+    if (coldStartReason !== undefined && (record.execution?.runtime !== "codex" || coldStartReason !== "native-thread-unavailable")) throw runError("invalid native cold start reason", "invalid-record", 400);
     // Byte-identical id → no rewrite: the id is written once and not churned.
     if (record.sessionId === sessionId) return record;
     const updated = {
       ...record,
       sessionId,
+      ...(coldStartReason === undefined ? {} : { brief: { ...record.brief, coldStartReason } }),
     };
     await persist(item, updated);
     return updated;
@@ -1047,11 +1054,12 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   // then refuse its own.
   function carriedBrief(prior) {
     if (prior == null || typeof prior !== "object") return {};
-    const { loop: _loop, answers: _answers, ...rest } = prior;
+    const { loop: _loop, answers: _answers, runtimeObservation: _observation, ...rest } = prior;
     return rest;
   }
 
-  async function retryRun(item, { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = {}) {
+  async function retryRun(item, options = {}) {
+    const { runId, maxAttempts = Infinity, brief, now, node = null, sessionId, force = false } = options;
     const runs = await readRuns(item);
     let prior;
     if (runId) {
@@ -1062,6 +1070,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
     if (!prior) {
       throw runError("no retryable failed run for this item", "no-retryable-run", 409);
     }
+    const execution = resolveExecutionResume(prior, options);
     // The two distinct gates (kept separate so the codes stay distinct): a
     // non-retryable reason (agent_error / unknown / null) vs a retryable reason already
     // at/over the ceiling. The classifier (ADR-002) is the single authority.
@@ -1097,6 +1106,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       attempt: prior.attempt + 1,
       retryOf: prior.runId,
       node,
+      ...(execution === null ? {} : { execution }),
     });
   }
 
@@ -1114,6 +1124,15 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
   }
 
   // ---------------------------------------------------- the run's asks (131) ----
+  // Driver facts ride the opaque brief. Lifecycle timestamps and legacy spend stay intact.
+  async function recordRuntimeEvent(item, { runId, event } = {}) {
+    const record = await readRunningRun(item, runId);
+    const observation = reduceRuntimeObservation(record, await readRuns(item), event);
+    if (JSON.stringify(observation) === JSON.stringify(record.brief?.runtimeObservation ?? null)) return record;
+    const updated = { ...record, brief: { ...record.brief, runtimeObservation: observation } };
+    await persist(item, updated);
+    return updated;
+  }
   //
   // THE THREE ASK WRITERS (131/ADR-003 §3) — no-state-change persists shaped like `heartbeat`,
   // and the run's OWNER is their single writer (the answering verb writes the ask file, never the
@@ -1137,13 +1156,19 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
 
   // openRunAsk(item, runId, { question, phase, now }) — appends a new, open entry. Refused
   // `run-ask-open` while the last entry is still unanswered: one question at a time.
-  async function openRunAsk(item, runId, { question = null, phase = null, now } = {}) {
+  async function openRunAsk(item, runId, { question = null, phase = null, native = null, now } = {}) {
     const record = await readRunningRun(item, runId);
     if (openLastAsk(record.asks) != null) {
+      const pending = openLastAsk(record.asks);
+      if (native !== null && pending.runtime === "codex" && pending.questionToken === native.questionToken && pending.question === question && pending.sessionId === native.sessionId && JSON.stringify(pending.choices) === JSON.stringify(native.choices)) return record;
       throw runError(`run ${runId} already has a question waiting on an answer`, "run-ask-open", 409);
     }
     const stamp = now ?? new Date().toISOString();
     const entry = { question, phase, askedAt: stamp, parkedAt: null, answer: null, answeredAt: null, by: null };
+    if (native !== null) {
+      if (record.execution?.runtime !== "codex" || typeof native.questionToken !== "string" || !native.questionToken || native.sessionId !== record.sessionId || !Array.isArray(native.choices)) throw runError("native ask requires this run's recorded thread and token", "invalid-record", 400);
+      Object.assign(entry, { runtime: "codex", questionToken: native.questionToken, sessionId: native.sessionId, choices: structuredClone(native.choices), workspaceId: native.workspaceId ?? null });
+    }
     const updated = { ...record, asks: [...record.asks, entry], updatedAt: stamp };
     await persist(item, updated);
     return updated;
@@ -1203,9 +1228,11 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
     const nowIso = now ?? new Date().toISOString();
     const reclaimed = [];
     for (const item of items) {
-      for (const run of await staleRunningRuns([item], { now: nowIso, stalenessThreshold })) {
-        reclaimed.push({ item, run: await reclaimRun(item, run.runId, { now: nowIso }) });
-      }
+      await serialized(async current => {
+        for (const run of await staleRunningRuns([current], { now: nowIso, stalenessThreshold })) {
+          reclaimed.push({ item: current, run: await reclaimRun(current, run.runId, { now: nowIso }) });
+        }
+      })(item);
     }
     return reclaimed;
   }
@@ -1286,5 +1313,19 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
     }
   }
 
-  return Object.freeze({ COST_SOURCES, DEFAULT_PARK_MINUTES, EXIT_REASONS, PRICE_TABLE_VERSION, SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, answerRunAsk, applyTransition, completeRun, heartbeat, isLegalTransition, isRetryable, isRunning, isStale, mapVendorTokensToBuckets, openRunAsk, parkRunAsk, parseResumeAfter, priceVendorTokens, pruneRun, readRuns, reclaimRun, reclaimStaleRuns, recordAnchorReading, recordAnswers, recordSessionId, retryReadiness, retryRun, rewriteRunItemRef, runNodeRecordPath, runRecordPath, runsDir, settleRun, settleRunFromVendor, shouldRetry, staleRunningRuns, startRun });
+  // Serialize exported record mutations per item. A driver beat cannot overwrite
+  // usage with a stale read; internal calls stay within their caller's transaction.
+  const writes = new Map();
+  const serialized = operation => (item, ...args) => {
+    const prior = writes.get(item.dir) ?? Promise.resolve();
+    const pending = prior.then(() => operation(item, ...args));
+    // This private sequencing sentinel recovers the queue; the returned pending
+    // promise still rejects for the caller. It never converts a failed write to success.
+    const tail = pending.catch(() => null);
+    writes.set(item.dir, tail);
+    tail.finally(() => { if (writes.get(item.dir) === tail) writes.delete(item.dir); });
+    return pending;
+  };
+
+  return Object.freeze({ COST_SOURCES, DEFAULT_PARK_MINUTES, EXIT_REASONS, PRICE_TABLE_VERSION, SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, answerRunAsk: serialized(answerRunAsk), applyTransition: serialized(applyTransition), completeRun: serialized(completeRun), heartbeat: serialized(heartbeat), isLegalTransition, isRetryable, isRunning, isStale, mapVendorTokensToBuckets, openRunAsk: serialized(openRunAsk), parkRunAsk: serialized(parkRunAsk), parseResumeAfter, priceVendorTokens, pruneRun: serialized(pruneRun), readRuns, reclaimRun: serialized(reclaimRun), reclaimStaleRuns, recordAnchorReading: serialized(recordAnchorReading), recordAnswers: serialized(recordAnswers), recordSessionId: serialized(recordSessionId), recordRuntimeEvent: serialized(recordRuntimeEvent), retryReadiness, retryRun: serialized(retryRun), rewriteRunItemRef: serialized(rewriteRunItemRef), runNodeRecordPath, runRecordPath, runsDir, settleRun: serialized(settleRun), settleRunFromVendor: serialized(settleRunFromVendor), shouldRetry, staleRunningRuns, startRun: serialized(startRun) });
 }

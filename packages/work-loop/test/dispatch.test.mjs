@@ -4,6 +4,46 @@ import { createDispatchLanes } from "@aof/work-loop/dispatch";
 import { createDispatchCommand } from "@aof/work-loop/commands/dispatch";
 import { createDispatchContribution } from "@aof/work-loop/commands";
 import { createCommandRegistry } from "@aof/contracts/commands";
+import { resolveExecution, validateExecutionEnvelope } from "@aof/execution/runtime-selection";
+import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+
+test("156 mixed dispatch preserves Claude settings and prepares Codex assets on a reused lane", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "mixed-dispatch-"));
+  const lane = path.join(root, "lane"), calls = [];
+  try {
+    await mkdir(path.join(root, ".claude")); await mkdir(lane);
+    await writeFile(path.join(root, ".claude/settings.local.json"), "{}");
+    const api = createDispatchLanes({ validateExecutionEnvelope, meshItemBranchName: () => "item", meshDispatchWorktreePath: () => lane,
+      findItemWorktree: async () => lane,
+      resolveExec: () => async () => { throw Error("unexpected Git lookup"); }, reportDegrade: (_scope, error) => { throw error; },
+      prepareRuntimeAssets: async () => { assert.equal(await readFile(path.join(lane, ".claude/settings.local.json"), "utf8"), "{}"); calls.push("codex-assets"); },
+      advanceBranchToBase: async () => { calls.push("advance"); return { outcome: "already-current" }; },
+    });
+    const execution = resolveExecution({}, { runtime: ["claude", "refine=codex"], capabilities: { codex: { models: [{ id: "astra", model: "astra", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+    const result = await api.resolveDispatchLane(root, "156", { advanceTo: "a".repeat(40), execution });
+    assert.equal(result.reused, true);
+    assert.deepEqual(calls, ["advance", "codex-assets"]);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("Codex dispatch validates its envelope and prepares reused lanes after advancement without Claude consent", async () => {
+  const root = await mkdtemp(path.join(os.tmpdir(), "native-dispatch-"));
+  const calls = [];
+  const api = createDispatchLanes({ validateExecutionEnvelope, meshItemBranchName: () => "item", meshDispatchWorktreePath: () => root,
+    findItemWorktree: async () => root, prepareRuntimeAssets: async () => { calls.push("native-assets"); },
+    advanceBranchToBase: async () => { calls.push("advance"); return { outcome: "already-current" }; },
+    resolveExec: () => { throw Error("Claude ignored-file/consent lookup reached"); },
+  });
+  try {
+    const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true, supportedReasoningEfforts: ["high"] }] } } });
+    const lane = await api.resolveDispatchLane(root, "154/07", { advanceTo: "a".repeat(40), execution });
+    assert.equal(lane.reused, true); assert.deepEqual(calls, ["advance", "native-assets"]);
+    await assert.rejects(api.resolveDispatchLane(root, "154/07", { execution: { ...execution, runtime: "future" } }), { code: "invalid-record" });
+    assert.equal(calls.length, 2);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
 
 test("dispatch admission releases its supplied repository lock after an operation throws", async () => {
   const calls = [];

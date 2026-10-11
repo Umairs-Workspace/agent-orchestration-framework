@@ -1,9 +1,24 @@
+import { runtimeEventsTests } from "../packages/execution/test/runtime-events.suite.mjs";
+import { runtimeObserveTests } from "../packages/work/test/runtime-observe.suite.mjs";
+import { archTests as runtimeObservationFactsTests } from "../test/arch/session/acd-runtime-observation-facts.test.mjs";
+import { archTests as codexPermissionTests } from "../test/arch/session/acd-codex-permission-boundary.test.mjs";
 import { adapterTests } from "../test/bundle/adapters.test.mjs";
+import { runtimeSessionTests } from "../packages/execution/test/runtime-session.suite.mjs";
+import { runtimeSelectionTests } from "../packages/execution/test/runtime-selection.suite.mjs";
+import { codexAppServerTests } from "../packages/execution/test/codex-app-server.suite.mjs";
+import { archTests as runtimeChoiceOwnerTests } from "../test/arch/session/acd-runtime-choice-owner.test.mjs";
+import { archTests as runtimeSessionBoundaryTests } from "../test/arch/session/acd-runtime-session-boundary.test.mjs";
 import { opencodeHookTests } from "../packages/core/test/opencode-hooks.suite.mjs";
 import { catalogTests } from "../packages/core/test/catalog.suite.mjs";
 import { pathTests } from "../packages/core/test/paths.suite.mjs";
 import { promptTests } from "../packages/core/test/prompt.suite.mjs";
 import { modelTests } from "../packages/core/test/model.suite.mjs";
+import { codexNativeAssetTests } from "../packages/core/test/codex-native-assets.suite.mjs";
+import { codexOwnershipTests } from "../packages/core/test/codex-ownership.suite.mjs";
+import { bundleRuntimeVariantTests } from "../packages/core/test/bundle-runtime-variants.suite.mjs";
+import { archTests as bundleRuntimeVariantArchTests } from "../test/arch/command/acd-bundle-runtime-variants.test.mjs";
+import { archTests as codexOutputOwnershipTests } from "../test/arch/store/acd-codex-output-ownership.test.mjs";
+import { assetReferenceTests } from "../packages/core/test/asset-references.suite.mjs";
 import { workspaceTests } from "../packages/core/test/workspace.suite.mjs";
 import { renderPlanTests } from "../packages/core/test/render-plan.suite.mjs";
 import { configInspectTests } from "../test/command/config-inspect.test.mjs";
@@ -81,6 +96,7 @@ import { archTests as acdUnifiedLockSectionsTests } from "../test/arch/store/acd
 import { workMemorySeamTests } from "../test/work/lifecycle/work-memory-seam.test.mjs";
 import { memoryIndexingTests } from "../test/memory/memory-indexing.test.mjs";
 import { memoryRetrievalTests } from "../packages/knowledge/test/memory-retrieval.suite.mjs";
+import { memoryBackendConfigTests } from "../packages/knowledge/test/memory-backend-config.suite.mjs";
 import { archTests as acdMemoryBackendSelectionTests } from "../test/arch/memory/acd-memory-backend-selection.test.mjs";
 import { archTests as acdMemoryDerivedIndexTests } from "../test/arch/memory/acd-memory-derived-index.test.mjs";
 import { archTests as acdMemoryIndexLocationTests } from "../test/arch/memory/acd-memory-index-location.test.mjs";
@@ -111,6 +127,16 @@ import { installProofTests } from "../test/work/roundtrip-install-proof.test.mjs
 import { loopProofTests } from "../test/work/roundtrip-loop-proof.test.mjs";
 
 const tests = [
+  ...memoryBackendConfigTests,
+  ...runtimeEventsTests,
+  ...runtimeObserveTests,
+  ...runtimeObservationFactsTests,
+  ...runtimeSessionTests,
+  ...runtimeSelectionTests,
+  ...codexAppServerTests,
+  ...runtimeChoiceOwnerTests,
+  ...runtimeSessionBoundaryTests,
+  ...codexPermissionTests,
   ...adapterWarningTests,
   ...packageTests,
   ...workTests,
@@ -205,6 +231,12 @@ const tests = [
   ...setupUiTests,
   ...schemaTests,
   ...modelTests,
+  ...codexNativeAssetTests,
+  ...codexOwnershipTests,
+  ...bundleRuntimeVariantTests,
+  ...bundleRuntimeVariantArchTests,
+  ...codexOutputOwnershipTests,
+  ...assetReferenceTests,
   ...workspaceTests,
   ...pathTests,
   ...promptTests,

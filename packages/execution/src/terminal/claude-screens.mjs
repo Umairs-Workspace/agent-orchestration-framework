@@ -48,13 +48,14 @@ function isInputBox(snapshot) {
 // A DIALOG (§3), recorded from claude 2.1.283 (RESEARCH Q2, Q5): drawn on the NORMAL buffer, with a
 // select menu whose `❯` is indented, and one line of the dialog's own words. Each is keyed on all
 // three, and none holds where the input box does, so a working session that quotes a dialog's words
-// above a live box is never that dialog (01/01, ruling 4).
+// above a live box is never that dialog (01/01, ruling 4). A dialog claude words more than one way
+// takes every recorded wording, and any one of them is its line.
 const INDENTED_MENU_CURSOR = /^\s+❯\s/u;
-function dialog(words) {
+function dialog(...wordings) {
   return (snapshot) => snapshot?.buffer === "normal"
     && !isInputBox(snapshot)
     && (snapshot.rows ?? []).some((row) => INDENTED_MENU_CURSOR.test(row))
-    && (snapshot.rows ?? []).some((row) => row.includes(words));
+    && (snapshot.rows ?? []).some((row) => wordings.some((words) => row.includes(words)));
 }
 
 // usage-limit (§6, 129/06 F-58) — the provider's own wait, anywhere on screen. Answers the row.
@@ -69,10 +70,14 @@ function providerWaitRow(snapshot) {
 // checkout is the operator's answer, which `ensureWorktreeTrusted` pre-writes, so the dialog means
 // the pre-write lost (F24). claude opens it on `No, exit`, and the door walks to the option by the
 // screen (ADR-003 §4 as amended 2026-09-27). The three fails are screens no retry can get past.
+// `mcp-approval` has two wordings: one server is a three-option menu (`mcp-approval.json`); two or
+// more are a checklist headed `N new MCP servers found in this project` (`mcp-approval.multi.json`,
+// claude 2.1.292, 2026-10-06), which the singular words missed, so a downstream lane timed out on it
+// three times instead of stopping by name.
 export const CLAUDE_SCREENS = Object.freeze([
   Object.freeze({ id: "ready", action: "type", recognise: isInputBox }),
   Object.freeze({ id: "trust", action: "consent", option: "Yes, I trust this folder", recognise: dialog("Quick safety check") }),
-  Object.freeze({ id: "mcp-approval", action: "fail", recognise: dialog("New MCP server found in this project") }),
+  Object.freeze({ id: "mcp-approval", action: "fail", recognise: dialog("New MCP server found in this project", "new MCP servers found in this project") }),
   Object.freeze({ id: "first-run", action: "fail", recognise: dialog("Choose the text style that looks best with your terminal") }),
   Object.freeze({ id: "login", action: "fail", recognise: dialog("Select login method") }),
   Object.freeze({ id: "usage-limit", action: "wait", recognise: providerWaitRow }),

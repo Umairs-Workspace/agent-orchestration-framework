@@ -283,7 +283,7 @@ async function lane(overrides = {}) {
 }
 
 // The dry-run drive composes `command` from the fixture's `work` config, read in-process and
-// off a REAL child process with that config on disk (129/07 task 02, 140/01).
+// off a REAL child process with that config on disk (129/07 task 02, 155/00).
 async function assertDriveComposes(phase, work, command) {
   const fx = await fixture();
   try {
@@ -1168,7 +1168,8 @@ export const driveCommandPhaseDriverTests = [
     run() {
       for (const command of [refineDriverCommand, continueDriverCommand, verifyDriverCommand]) {
         // 131/03 (ADR-003 §7) appended the fifth, `answer`, in the same three homes.
-        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "halt"], `${command.id}: the schema's properties are exactly the nine (141 added thinking, 143/01 autonomous, 143/03 model, 147/02 halt)`);
+        assert.deepEqual(Object.keys(command.input.properties), ["ref", "dryRun", "run", "fix", "answer", "thinking", "autonomous", "model", "runtime", "halt"], `${command.id}: the closed schema adds runtime in 154/06`);
+        assert.equal(command.cli.spec.flags.runtime, undefined, "assistant is inferred from the model or recorded run");
         assert.deepEqual(command.input.properties.answer, { type: "string" }, `${command.id}: answer is a string`);
         assert.equal(command.cli.spec.flags.answer.type, "string", `${command.id}: --answer is a string flag`);
         assert.deepEqual(command.input.properties.run, { type: "string" }, `${command.id}: run is a string`);
@@ -1754,7 +1755,7 @@ export const driveCommandPhaseDriverTests = [
   // `…/07_story_the-loop-settings-are-self-contained/tasks/02_the-drive-carries-the-phase-mode.feature`.
   // The flag is composed from `work.loop.agents.<phase>.mode` through the bounds home. The rows
   // here are the ones a SET key answers. 129/07's unset rows (no flag) are superseded by
-  // 140/01, whose own table follows: an unset key composes the phase's default, `--solo`.
+  // 155/00, whose own table follows: an unset key composes the session chain's answer.
   ...[
     ["refine", { loop: { agents: { refine: { mode: "solo" } } } }, "/aof:refine 03/01 --solo"],
     ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
@@ -1764,30 +1765,33 @@ export const driveCommandPhaseDriverTests = [
     name: `129/07 task02 the phase drive composes the flag from the loop key [${phase}, ${JSON.stringify(work)} → ${command}]`,
     run: () => assertDriveComposes(phase, work, command),
   })),
-  // ── 140/01 — the loop drives both phases solo ─────────────────────────────────
+  // ── 155/00 — the loop falls back to work.agents.mode, then solo ───────────────
   //
-  // `140_story_refine-defaults-to-solo/tasks/01_the-loop-drives-both-phases-solo.feature`. An
-  // unset `work.loop.agents.<phase>.mode` composes the phase's default (`--solo`), never nothing,
-  // and `work.agents.mode` is never read by the loop.
+  // `155_story_one-agent-mode-setting/tasks/00_the-loop-falls-back-to-the-workspace-mode.feature`,
+  // superseding 140/01's "the loop never reads `work.agents.mode`". The drive composes the session
+  // chain: the loop key when set, else `work.agents.mode`, else solo — a flag on every refine and
+  // continue, none on verify. Each row runs in-process and off a real child process.
   ...[
-    ["refine", {}, "/aof:refine 03/01 --solo"],
-    ["refine", { loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
-    ["refine", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --solo"],
-    ["refine", { agents: { mode: "orchestrated" } }, "/aof:refine 03/01 --solo"],
-    ["continue", {}, "/aof:continue 03/01 --solo"],
-    ["continue", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:continue 03/01 --orchestrated"],
-    ["continue", { loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01 --solo"],
-    ["continue", { agents: { mode: "orchestrated" } }, "/aof:continue 03/01 --solo"],
-    ["verify", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:verify 03/01"],
-  ].map(([phase, work, command]) => ({
-    name: `140/01 the phase drive composes a flag for every refine and continue it drives [${phase}, ${JSON.stringify(work)} → ${command}]`,
+    ["E1", "continue", { agents: { mode: "orchestrated" } }, "/aof:continue 03/01 --orchestrated"],
+    ["E2", "continue", { agents: { mode: "orchestrated" }, loop: { agents: { continue: { mode: "solo" } } } }, "/aof:continue 03/01 --solo"],
+    ["E3", "refine", {}, "/aof:refine 03/01 --solo"],
+    ["E3", "continue", {}, "/aof:continue 03/01 --solo"],
+    ["E4", "continue", { agents: { mode: "orchestrated" }, loop: { agents: { continue: { mode: "Solo" } } } }, "/aof:continue 03/01 --orchestrated"],
+    ["edge", "refine", { agents: { mode: "orchestrated" } }, "/aof:refine 03/01 --orchestrated"],
+    ["edge", "refine", { agents: { mode: "solo" }, loop: { agents: { refine: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --orchestrated"],
+    ["edge", "refine", { loop: { agents: { continue: { mode: "orchestrated" } } } }, "/aof:refine 03/01 --solo"],
+    ["edge", "continue", { agents: { mode: "Orchestrated" } }, "/aof:continue 03/01 --solo"],
+    ["edge", "continue", { agents: { mode: "orchestrated" }, loop: { agents: { continue: { mode: "manual" } } } }, "/aof:continue 03/01 --orchestrated"],
+    ["edge", "verify", { agents: { mode: "orchestrated" } }, "/aof:verify 03/01"],
+  ].map(([example, phase, work, command]) => ({
+    name: `155/00 ${example} the drive composes the loop key, else work.agents.mode, else solo [${phase}, ${JSON.stringify(work)} → ${command}]`,
     run: () => assertDriveComposes(phase, work, command),
   })),
   // ── 149/01 — the loop never composes --manual ─────────────────────────────────
   //
   // `149_story_continue-manual-mode-guides-the-operator/tasks/01_manual-is-one-story-here-at-every-door.feature`.
   // `--manual` is a per-run flag an operator types; it is no loop mode, so a `"manual"` loop key is
-  // an unknown value and resolves to the phase's default.
+  // an unknown value and falls through the session chain (155/00) — here, to solo.
   {
     name: "149/01 the loop never composes --manual [continue, {\"loop\":{\"agents\":{\"continue\":{\"mode\":\"manual\"}}}} → /aof:continue 03/01 --solo]",
     async run() {
@@ -1796,13 +1800,18 @@ export const driveCommandPhaseDriverTests = [
     },
   },
   {
-    name: "140/01 the drive spells no mode of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS",
+    name: "155/00 the drive spells no default of its own — solo and orchestrated appear only in PHASE_MODE_FLAGS, and the flag is composed from sessionAgentMode",
     async run() {
       const drive = stripComments(await readFile(new URL("../../packages/work-loop/src/commands/drive.mjs", import.meta.url), "utf8"));
       const flagsLine = drive.split(/\r?\n/u).filter((line) => line.includes("PHASE_MODE_FLAGS = Object.freeze("));
       assert.equal(flagsLine.length, 1, "the flag map is declared on one line");
       const outside = drive.split(flagsLine[0]).join("");
-      assert.doesNotMatch(outside, /["'`](?:solo|orchestrated)["'`]/u, "no mode literal outside PHASE_MODE_FLAGS — the default is the bounds home's");
+      assert.doesNotMatch(outside, /["'`](?:solo|orchestrated)["'`]/u, "no mode literal outside PHASE_MODE_FLAGS — the default is the chain's home's");
+      assert.doesNotMatch(drive, /agents\??\.mode\b/u, "the drive reads no work.agents.mode of its own");
+      const composes = drive.match(/phaseCommand\(phase, item\.ref, [\w.]+\([^)]*\)/gu) ?? [];
+      assert.ok(composes.length > 0, "the drive composes a phase command");
+      for (const call of composes) assert.match(call, /sessionAgentMode\(ctx\.workspace, phase\)/u, `every composition reads the chain: ${call}`);
+      assert.match(drive, /import \{ sessionAgentMode \} from "@aof\/contracts\/agent-mode";/u);
     },
   },
   {
@@ -2375,9 +2384,9 @@ function driveModelTests() {
   return [
     ...[
       [{}, null, { id: "opus", source: "config" }],
-      [{ model: "fable" }, null, { id: "fable", source: "--model" }],
+      [{ model: "haiku" }, null, { id: "haiku", source: "--model" }],
       [{}, "sonnet", { id: "sonnet", source: "--model" }],
-      [{ model: "fable" }, "sonnet", { id: "fable", source: "--model" }],
+      [{ model: "haiku" }, "sonnet", { id: "haiku", source: "--model" }],
     ].map(([flags, lent, model]) => ({
       name: `143/03 task01 the drive's own --model resolves over the lend and the config [${JSON.stringify(flags)}, lent ${lent ?? "nothing"} → ${model.id} (${model.source})]`,
       async run() {
@@ -2386,7 +2395,7 @@ function driveModelTests() {
           const workspace = withConfig(fx, { models: { verify: "opus" } });
           const result = await verifyDriverCommand.run({ ref: "03/01", dryRun: true, ...flags }, { workspace, ...(lent == null ? {} : { loopDrive: { model: lent } }) });
           assert.deepEqual(result.model, model);
-          if (flags.model) assert.deepEqual(verifyDriverCommand.cli.argv(["03/01"], { model: "fable", dryRun: true }), { ref: "03/01", dryRun: true, model: "fable" });
+          if (flags.model) assert.deepEqual(verifyDriverCommand.cli.argv(["03/01"], { model: "haiku", dryRun: true }), { ref: "03/01", dryRun: true, model: "haiku" });
         } finally {
           await fx.cleanup();
         }
@@ -2407,10 +2416,10 @@ function driveModelTests() {
       },
     },
     ...[
-      // `aof work loop 143 --model refine=opus:xhigh --model verify=fable`, continue effort "medium" in config.
+      // `aof work loop 143 --model refine=opus:xhigh --model verify=haiku`, continue effort "medium" in config.
       ["refine", { model: "opus", thinking: "xhigh" }, ["--model", "opus", "--thinking", "xhigh"], { model: { id: "opus", source: "--model" }, effort: { level: "xhigh", source: "--thinking" } }],
       ["continue", {}, [], { model: null, effort: { level: "medium", source: "config" } }],
-      ["verify", { model: "fable" }, ["--model", "fable"], { model: { id: "fable", source: "--model" }, effort: { level: "high", source: "default" } }],
+      ["verify", { model: "haiku" }, ["--model", "haiku"], { model: { id: "haiku", source: "--model" }, effort: { level: "high", source: "default" } }],
     ].map(([phase, lend, argv, launch]) => ({
       name: `143/03 task01 a ${phase} drive is lent its own phase's flag parts and nothing else — argv ${JSON.stringify(argv)}`,
       async run() {

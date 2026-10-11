@@ -1,18 +1,34 @@
 import { normalizeId } from "@aof/foundation/fs";
-import { RUNTIMES, supportedRuntimes } from "./model.mjs";
+import { runtimeAssetRoot, supportedRuntimes } from "./model.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./application/default-foundation.mjs";
 
-const VALID_NAMESPACES = new Set(["skills", "workflows"]);
+const KINDS = { skills: "skill", workflows: "workflow", procedures: "procedure", roles: "role", references: "reference" };
+const VALID_NAMESPACES = new Set(Object.keys(KINDS));
 const UNSUPPORTED_NAMESPACES = new Set(["skill", "workflow", "command", "commands"]);
 
 export function createAssetReferenceIndex(resources = [], workflows = []) {
-  const index = { skill: new Map(), workflow: new Map() };
+  const index = Object.fromEntries(Object.values(KINDS).map(kind => [kind, new Map()]));
+  const add = (kind, id, target) => {
+    const old = index[kind].get(id);
+    const paths = { ...old?.paths };
+    for (const runtime of effectiveRuntimes(target)) {
+      const actualKind = kind === "role" ? "agent" : target.kind ?? "workflow";
+      const nativePath = assetRuntimePath(actualKind, target.id, runtime, target);
+      if (paths[runtime] && paths[runtime] !== nativePath) throw new Error(`Conflicting asset reference ${kind}:${id} (${runtime}).`);
+      paths[runtime] = nativePath;
+    }
+    index[kind].set(id, { kind, id, paths, runtimes: Object.keys(paths) });
+  };
   for (const resource of resources ?? []) {
-    if (resource?.kind !== "skill" || typeof resource.id !== "string") continue;
+    if (typeof resource?.id !== "string") continue;
     try {
       const id = normalizeId(resource.id);
-      index.skill.set(id, { kind: "skill", id, runtimes: effectiveRuntimes(resource) });
+      if (resource.kind === "skill") add("skill", id, resource);
+      if (resource.kind === "agent") add("role", id, resource);
+      if (resource.kind === "command" || resource._aofMappedFrom?.kind === "command") {
+        add("procedure", normalizeId(resource._aofMappedFrom?.id ?? id), resource);
+      }
     } catch (error) {
       // Invalid ids are reported by schema validation.
       reportDegrade("asset-references", error); }
@@ -21,7 +37,8 @@ export function createAssetReferenceIndex(resources = [], workflows = []) {
     if (typeof workflow?.id !== "string") continue;
     try {
       const id = normalizeId(workflow.id);
-      index.workflow.set(id, { kind: "workflow", id, runtimes: effectiveRuntimes(workflow) });
+      add("workflow", id, { ...workflow, kind: "workflow" });
+      add("reference", id, { ...workflow, kind: "workflow" });
     } catch (error) {
       // Invalid ids are reported by workflow validation.
       reportDegrade("asset-references", error); }
@@ -31,7 +48,7 @@ export function createAssetReferenceIndex(resources = [], workflows = []) {
 
 export function extractAssetReferencePlaceholders(text) {
   const references = [];
-  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*?)\s*\}\}/g;
+  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*)\}\}/g; // greedy id, trimmed below (js/polynomial-redos)
   for (const match of String(text ?? "").matchAll(pattern)) {
     const namespace = match[1];
     const rawId = match[2].trim();
@@ -47,7 +64,7 @@ export function extractAssetReferencePlaceholders(text) {
 
 export function extractInvalidAssetReferencePlaceholders(text) {
   const invalid = [];
-  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*?)\s*\}\}/g;
+  const pattern = /\{\{\s*([A-Za-z][A-Za-z0-9_-]*)\.([^}]*)\}\}/g; // greedy id, trimmed below (js/polynomial-redos)
   for (const match of String(text ?? "").matchAll(pattern)) {
     const namespace = match[1];
     const rawId = match[2].trim();
@@ -73,8 +90,11 @@ export function extractInvalidAssetReferencePlaceholders(text) {
 }
 
 export function expandAssetReferences(content, runtime, index) {
-  if (typeof content !== "string" || !/\{\{\s*(skills|workflows)\./.test(content)) return content;
-  return content.replace(/\{\{\s*(skills|workflows)\.([^}]+?)\s*\}\}/g, (match, namespace, rawId) => {
+  if (typeof content !== "string" || !/\{\{\s*(skills|workflows|procedures|roles|references)\./.test(content)) return content;
+  // The id runs greedily to `}}` and is trimmed below; a lazy id followed by `\s*` let both match the
+  // same whitespace. It also excludes `{`, which no id holds, so an unclosed `{{roles.` run cannot make
+  // every start position scan to the end (CodeQL js/polynomial-redos).
+  return content.replace(/\{\{\s*(skills|workflows|procedures|roles|references)\.([^{}]+)\}\}/g, (match, namespace, rawId) => {
     const reference = referenceFromParts(namespace, rawId.trim(), match);
     const target = getAssetReference(index, reference);
     if (!target) {
@@ -83,7 +103,7 @@ export function expandAssetReferences(content, runtime, index) {
     if (!target.runtimes.includes(runtime)) {
       throw new Error(`Asset reference ${match} does not target runtime "${runtime}".`);
     }
-    return assetRuntimePath(reference.kind, reference.id, runtime);
+    return target.paths?.[runtime] ?? assetRuntimePath(reference.kind, reference.id, runtime);
   });
 }
 
@@ -91,10 +111,12 @@ export function getAssetReference(index, reference) {
   return index?.[reference.kind]?.get(reference.id) ?? null;
 }
 
-export function assetRuntimePath(kind, id, runtime) {
-  const root = RUNTIMES[runtime]?.localRoot?.replaceAll("\\", "/") ?? `.${runtime}`;
+export function assetRuntimePath(kind, id, runtime, resource = {}) {
+  const root = runtimeAssetRoot(runtime, kind).replaceAll("\\", "/");
   if (kind === "skill") return `${root}/skills/${id}/SKILL.md`;
   if (kind === "workflow") return `${root}/aof/workflows/${id}.md`;
+  if (kind === "agent") return `${root}/agents/${id}.${runtime === "codex" ? "toml" : "md"}`;
+  if (kind === "command") return `${root}/commands/${resource.commandNamespace ? `${resource.commandNamespace}/` : ""}${id}.md`;
   throw new Error(`Unsupported asset reference kind "${kind}".`);
 }
 
@@ -106,7 +128,7 @@ function referenceFromParts(namespace, rawId, raw) {
   return {
     raw,
     namespace,
-    kind: namespace === "skills" ? "skill" : "workflow",
+    kind: KINDS[namespace],
     id: normalizeId(rawId)
   };
 }

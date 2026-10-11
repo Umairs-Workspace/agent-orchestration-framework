@@ -28,7 +28,7 @@ import { mkdtemp, mkdir, writeFile, readFile } from "node:fs/promises";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 const rerank = _aofApplication.knowledge.memory.graphifyBackend.rerank;
-import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
+import { MEMORY_RECORD_FIELDS, withTags } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const FIXTURE_DIR = path.join(
@@ -172,7 +172,8 @@ export const archTests = [
       // graph NULL, the record-id SET is identical — the graph re-orders/re-scores the
       // 05 records, it never adds, removes, or synthesises a record. (If the graph were
       // the record source, the present-graph set could differ from the null-graph set.)
-      const RECORDS = loadFixture("reranking-records.json").records;
+      // A version-1 store's records, read as recall reads them: missing `tags` is [] (148/ADR-003).
+      const RECORDS = loadFixture("reranking-records.json").records.map(withTags);
       const GRAPH = loadFixture("reranking-graph.normalized.json");
       const QUERY = "derived index invariant";
       const SCOPE = { area: "architecture" };

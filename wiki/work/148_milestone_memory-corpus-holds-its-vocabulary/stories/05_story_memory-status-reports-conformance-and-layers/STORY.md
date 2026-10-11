@@ -4,10 +4,10 @@ number: 05
 slug: memory-status-reports-conformance-and-layers
 title: "Memory status reports conformance and layers — every record type with its layer, the blank and non-enum counts on both backends, and tags in the block"
 parent: 148
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-06
 schema: 1
 aofVersion: 0.1.0
 depends: [02]
@@ -37,6 +37,10 @@ files:
   - test/memory/memory-integration.test.mjs
   - test/arch/memory/acd-memory-layer-map-total.test.mjs
   - test/arch/memory/index.mjs
+  - test/command/work-memory-command.test.mjs
+  - test/arch/command/acd-work-memory-routed.test.mjs
+  - test/bundle/yarn-installation.test.mjs
+  - test/arch/testing/acd-source-directory-budget.test.mjs
 ---
 # 05 · Memory status reports conformance and layers
 
@@ -58,8 +62,8 @@ emitted type has a layer and that the counts sum to `recordCount` on both backen
 
 ## Tasks
 
-- [ ] 00 [status accounts for every record by type and layer](tasks/00_status-accounts-for-every-record-by-type-and-layer.feature)
-- [ ] 01 [status reports blank and non-enum counts, and the block shows tags](tasks/01_status-reports-blank-and-non-enum-counts-and-the-block-shows-tags.feature)
+- [x] 00 [status accounts for every record by type and layer](tasks/00_status-accounts-for-every-record-by-type-and-layer.feature)
+- [x] 01 [status reports blank and non-enum counts, and the block shows tags](tasks/01_status-reports-blank-and-non-enum-counts-and-the-block-shows-tags.feature)
 
 ## Notes
 

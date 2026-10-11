@@ -254,9 +254,12 @@ export const migrateClaudeCommandTests = [
       assert.ok(hasExact(raw, ".planning/**"), ".planning/** trees are an inference target");
       assert.ok(hasExact(raw, "ARCHITECTURE.md"), "a plain ARCHITECTURE.md by name is an inference target");
       assert.ok(has(raw, "names its source document"), "grounded content names its source document");
-      // Architect review at migrate time, branched on work.agents.mode.
+      // Architect review at migrate time, branched on work.agents.mode. 155/01: only an explicit
+      // "orchestrated" spawns; unset or any other value plays the role inline (the solo default).
       assert.ok(hasExact(raw, "work.agents.mode"), "the review branches on work.agents.mode");
-      assert.ok(hasExact(raw, 'other than `"solo"`'), "anything other than solo → orchestrated");
+      assert.ok(hasExact(raw, '`"orchestrated"` → spawn `aof-architect` to review'), "only orchestrated → spawn");
+      assert.ok(hasExact(raw, '`"solo"`, unset or any'), "unset or anything else → inline");
+      assert.ok(!hasExact(raw, 'other than `"solo"`'), "an unrecognised value is no longer orchestrated");
       assert.ok(hasExact(raw, "spawn `aof-architect`"), "orchestrated spawns aof-architect");
       assert.ok(has(raw, "the main session plays the role inline"), "solo → the main session plays the role inline");
       assert.ok(has(raw, "No delivered work → no review lane runs"), "no delivered work → no review lane runs");

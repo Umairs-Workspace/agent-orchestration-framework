@@ -19,8 +19,8 @@ chore** — name the ref and its type, mint nothing, and stop. A milestone's sto
 at a time, by their own refs.
 
 **Execution mode.** As continue resolves it: `work.agents.mode` governs, **an unset
-`work.agents.mode` resolves to orchestrated**, and `--solo` or `--orchestrated` overrides it for the
-run; the two together are contradictory, so STOP before any role runs. Orchestrated spawns the
+`work.agents.mode` resolves to solo**, and `--solo` or `--orchestrated` overrides it for the run;
+the two together are contradictory, so STOP before any role runs. Orchestrated spawns the
 review lenses; solo performs each lens in this session, in turn.
 </config>
 
@@ -61,6 +61,10 @@ as written. This file holds only what differs from them.
    the verdict. A file reported `present: false` is ranked UNKNOWN, never zero. A
    `graphify-missing`, `graphify-build-failed` or `graphify-no-persist` answer means the review runs
    unranked, with no block; a build reporting `unchanged: true` is a current graph, so rank with it.
+   A `graphify-spawn-failed`, `graphify-timeout`, or sandbox permission failure (including `EPERM`)
+   has the same advisory fallback. Record the unavailable graph and reason, then review the source
+   without graph ranking. Do not request elevated access, change permissions, install tools, or
+   retry outside the sandbox just to obtain this advisory graph.
 6. **Run the review lanes** — continue's review step and its `<review_rounds>` region, over the
    change named in step 3, with these differences and no others:
    - **`aof-developer` is never spawned, and no review lens applies a fix.** A lens reports; the

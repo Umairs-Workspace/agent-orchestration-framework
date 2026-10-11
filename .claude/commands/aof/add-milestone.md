@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Capture a new ACD milestone — scaffold its self-contained folder (SPEC + STATE, spine only) on the project's intake. Un-numbered in the backlog, or appended to the stream through `aof work promote`.
+argument-hint: "<short milestone description> [in <group/path>] [--in-stream]"
 aof-invocation: /aof:add-milestone
 aof-runtime: claude
 ---

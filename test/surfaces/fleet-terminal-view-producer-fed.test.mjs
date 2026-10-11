@@ -120,6 +120,9 @@ const NOW = "2026-07-23T10:00:00.000Z";
 const LIVE_SESSION = "sess-live-1";
 
 const tick = (ms = 10) => new Promise((resolve) => setTimeout(resolve, ms));
+// A precondition wait polls until its condition holds, so a generous bound costs nothing when the
+// worker is fast. 600 ms (60 ticks) was below a worker's git worktree setup under a 16-worker pool.
+const SPAWN_WAIT_TICKS = 500;
 
 // The control node, in process: every frame the worker's own status emitter would
 // put on the wire is built by the REAL builder and applied by the REAL handler over
@@ -268,7 +271,7 @@ export const fleetTerminalViewProducerFedTests = [
         workspaceId: fx.workspaceId, at: NOW, command: "/aof:refine 38/06 --autonomous",
       });
 
-      for (let i = 0; i < 60 && emitData == null; i += 1) await tick();
+      for (let i = 0; i < SPAWN_WAIT_TICKS && emitData == null; i += 1) await tick();
       assert.ok(emitData != null, "precondition: the interactive session was spawned and handed its command");
       await tick();
 
@@ -412,11 +415,11 @@ export const fleetTerminalViewProducerFedTests = [
         await new Promise((resolve, reject) => { socket.on("open", resolve); socket.on("error", reject); });
 
         try {
-          for (let i = 0; i < 60 && emitData == null; i += 1) await tick();
+          for (let i = 0; i < SPAWN_WAIT_TICKS && emitData == null; i += 1) await tick();
           assert.ok(emitData != null, "precondition: the interactive session was spawned and handed its command");
           await tick();
           emitData("working …\r\n");
-          for (let i = 0; i < 60 && view.state !== TERMINAL_VIEW_STATES.STREAMING; i += 1) await tick();
+          for (let i = 0; i < SPAWN_WAIT_TICKS && view.state !== TERMINAL_VIEW_STATES.STREAMING; i += 1) await tick();
           assert.equal(view.state, TERMINAL_VIEW_STATES.STREAMING, "precondition: live bytes reached the open view, which reads streaming");
           assert.equal(describeTerminalViewState(view).live, true);
 
@@ -507,11 +510,11 @@ export const fleetTerminalViewProducerFedTests = [
         await new Promise((resolve, reject) => { socket.on("open", resolve); socket.on("error", reject); });
 
         try {
-          for (let i = 0; i < 60 && emitData == null; i += 1) await tick();
+          for (let i = 0; i < SPAWN_WAIT_TICKS && emitData == null; i += 1) await tick();
           assert.ok(emitData != null, "precondition: the interactive session was spawned and handed its command");
           await tick();
           emitData("thinking about the ADR …\r\n");
-          for (let i = 0; i < 60 && view.state !== TERMINAL_VIEW_STATES.STREAMING; i += 1) await tick();
+          for (let i = 0; i < SPAWN_WAIT_TICKS && view.state !== TERMINAL_VIEW_STATES.STREAMING; i += 1) await tick();
           assert.equal(view.state, TERMINAL_VIEW_STATES.STREAMING, "precondition: live bytes reached the open view, which reads streaming");
 
           // The agent asks a blocking question and prints the sentinel: THIS

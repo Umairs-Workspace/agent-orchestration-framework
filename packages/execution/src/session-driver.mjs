@@ -3,7 +3,8 @@ import { execFile } from "node:child_process";
 import { readdir, stat } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
-import { createTerminalSpawn } from "./pty.mjs";
+import { createTerminalSpawn, releasePtyAfterTreeTermination } from "./pty.mjs";
+import { createCodexAppServerAdapter, codexServerCommand } from "./codex-app-server.mjs";
 
 // Execution owns the driver. Core supplies transcript readers, launch policy, screen
 // observation and diagnostics; this module imports no application or transport layer.
@@ -16,6 +17,7 @@ export function createSessionDriver({ transcripts, launch, reportDegrade }) {
   for (const [name, value] of Object.entries({ claudeProjectsDir, readLastAssistantTurn, resolveProvider, loadNodePty, openSessionScreen, ensureWorktreeTrusted, buildOtelResourceAttributes, composePhaseBriefInput, reportDegrade })) {
     if (typeof value !== "function") throw new TypeError(`createSessionDriver: ${name} is required`);
   }
+  const codexAdapter = createCodexAppServerAdapter({ composePhaseBriefInput });
 
 // src/agent-session-driver.mjs — THE SESSION DRIVER, given a home (milestone 53 /
 // story 00, ADR-001). Everything here was `src/mesh/worker-execution.mjs:835-1851`
@@ -74,21 +76,13 @@ export function createSessionDriver({ transcripts, launch, reportDegrade }) {
 // ADR-013): the interactive PTY path below (resolveInteractiveDriverLaunch /
 // driveInteractiveClaudeSession) replaces the old `claude -p <prompt>
 // --output-format json` one-shot entirely — `defaultSpawnRuntime` below never calls
-// this function for the `claude` driver any more. `codex` keeps its OWN pre-existing
-// headless-print form UNCHANGED (ADR-013 is scoped to `claude`; codex was never the
-// §4.3 problem — it never had a subscription-billing / human-in-the-loop story to
-// begin with, and no task in this story touches it). Any OTHER driver name resolves
+// this function for the `claude` driver any more. 154/02 replaces Codex's former
+// headless-print command with its owned App Server stdio command. Any OTHER driver name resolves
 // to `null` — a caller must route it through the interactive path or fail closed,
 // never silently fall back to a headless print form for `claude`.
 function buildDriverCommand(driver, brief) {
-  const prompt = `Drive work item ${brief.itemRef} to a terminal state (done or failed) in this worktree. ${brief.task ?? ""}`.trim();
-  if (driver === "codex") {
-    return {
-      bin: "codex",
-      args: ["exec", "--json", "-o", "last-message.txt", "--sandbox", "workspace-write", "--ask-for-approval", "never", prompt],
-    };
-  }
-  return null;
+  // 154/02 supersedes the historical one-shot; phase input travels in turn/start.
+  return driver === "codex" ? codexServerCommand() : null;
 }
 
 // ============================================================================
@@ -985,6 +979,22 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
   // per (code, key), so a daemon hosting several sessions keeps every session's screen.
   const screenKey = randomUUID();
 
+  // ONE RELEASE PER PTY (2026-10-06). node-pty's Windows `kill()` forks a console-list agent; once
+  // the session's processes are gone (the OS tree kill succeeded, or the pty already reported its
+  // exit) that agent can only crash onto stderr (`Error: AttachConsole failed` and its stack, on
+  // every lane's narration) and leave a five-second stale-pid `process.kill` behind. So a gone
+  // process is released without enumeration (`releasePtyAfterTreeTermination`), a live one through `term.kill()`, and
+  // the withdraw kill, the stop and the settle's cleanup all release through here: a pty is never
+  // released twice, which is what put the agent back after the stop had avoided it.
+  let ptyReleased = false;
+  let ptyExited = false;
+  const releaseTerminal = (processGone) => {
+    if (ptyReleased) return;
+    ptyReleased = true;
+    if (processGone) releasePtyAfterTreeTermination(term);
+    else term?.kill?.();
+  };
+
   // 2026-07-27 (withdraw notify) — hand the caller a kill for THIS live PTY the
   // moment it exists, so a control-side withdrawal can end the run instead of
   // leaving it grinding with a run record stuck `running`. The kill routes through
@@ -995,7 +1005,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     options.onPtyLive?.(
       () => {
         try {
-          term.kill();
+          releaseTerminal(ptyExited);
         } catch (error) {
           reportDegrade("mesh-worker-execution", error);
         }
@@ -1181,8 +1191,8 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
       }
       // A Windows ConPTY launched through a command shim can report onExit while
       // its native PTY handle still keeps the child's cwd open. Close that handle
-      // at the single settle point as well; kill is idempotent/already-exited safe.
-      try { term?.kill?.(); } catch (error) { /* already-exited guard (win32) */
+      // at the single settle point as well, unless the stop already released it (`releaseTerminal`).
+      try { releaseTerminal(ptyExited); } catch (error) { /* already-exited guard (win32) */
       reportDegrade("mesh-worker-execution", error); }
       // never let a queued command write land in an already-exited/settled PTY.
       if (commandWriteTimer != null) { clearTimeout(commandWriteTimer); commandWriteTimer = null; }
@@ -1274,15 +1284,16 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     // this driver never enumerated, the loop process is what dies. So: on win32 the session's
     // process tree is terminated FIRST through the OS's own tree kill (`taskkill /T /F` on
     // the pty's pid — what node-pty's list is trying to approximate), and only THEN is the
-    // pty released, so the console-list path runs against a tree that is already gone. Every
+    // pty released without enumerating the now-dead console after confirmed termination. Every
     // step reports through `options.onSessionStop` (optional, best-effort; the loop wires it
     // to its exit-reason recorder), so the next death — if there is one — is bracketed to
     // the line rather than to the minute. Defaults: an INJECTED `ptySpawn` is a test double
     // whose pid is fiction, so the tree kill is off unless `terminateTree` says otherwise;
-    // the real spawner turns it on. `terminateTreeExec` is the injectable runner.
-    const releasePty = () => {
+    // the real spawner turns it on. `terminateTreeExec` is the injectable runner. Release goes
+    // through `releaseTerminal`, the one release per pty.
+    const releasePty = (treeTerminated = false) => {
       try {
-        term.kill();
+        releaseTerminal(treeTerminated || ptyExited);
         stopBreadcrumb("pty-released");
       } catch (error) {
         reportDegrade("mesh-worker-execution", error);
@@ -1325,7 +1336,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
         if (released) return;
         released = true;
         stopBreadcrumb("tree-terminated", detail);
-        releasePty();
+        releasePty(detail.ok === true);
       };
       try {
         terminateTreeExec("taskkill", ["/PID", String(pid), "/T", "/F"], { windowsHide: true }, (error, stdout, stderr) => {
@@ -1431,6 +1442,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
     }) ?? null;
 
     exitSub = term.onExit?.(({ exitCode }) => {
+      ptyExited = true;
       const requested = requestedStopOutcome;
       requestedStopOutcome = null;
       if (requested != null) {
@@ -1761,11 +1773,8 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
 }
 
 // defaultSpawnRuntime(brief, options) — the PRODUCTION runtime-spawn default.
-// `codex` keeps its UNCHANGED headless one-shot child-process form (a real child,
-// cwd = brief.worktreeCwd; the returned promise resolves only once that child has
-// FULLY EXITED — execFile's callback fires on process exit, never merely on stdout
-// drain, the invariant task 03/milestone-35 cleanup-after-terminal safety depends
-// on). Every OTHER driver (`claude`, the default) routes through
+// 154/02 routes Codex through the owned App Server adapter, with bounded cleanup
+// before its result is returned. Every OTHER driver (`claude`, the default) routes through
 // driveInteractiveClaudeSession above — the ADR-013 interactive PTY path, which
 // resolves under the SAME "child fully exited or a detected NEEDS_INPUT sentinel
 // before any cleanup runs" discipline. Never exercised against a REAL binary by
@@ -1775,25 +1784,7 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
 function defaultSpawnRuntime(brief, options = {}) {
   const driver = options.driver ?? "claude";
   if (driver === "codex") {
-    const { bin, args } = buildDriverCommand(driver, brief);
-    return new Promise((resolve) => {
-      execFile(bin, args, { cwd: brief.worktreeCwd, windowsHide: true, timeout: options.timeoutMs ?? 10 * 60 * 1000 }, (error, stdout) => {
-        // A non-zero exit or a spawn fault is a `failed` outcome (never an unhandled
-        // rejection out of this seam) — the caller completes the run accordingly.
-        if (error) {
-          resolve({ outcome: "failed", failureReason: "agent_error" });
-          return;
-        }
-        try {
-          const parsed = JSON.parse(String(stdout ?? ""));
-          const terminal = parsed.terminal_reason ?? parsed.stop_reason ?? null;
-          const ok = terminal === "completed" || terminal === "end_turn";
-          resolve(ok ? { outcome: "done" } : { outcome: "failed", failureReason: "agent_error" });
-        } catch {
-          resolve({ outcome: "failed", failureReason: "agent_error" });
-        }
-      });
-    });
+    return codexAdapter.drive(brief, options);
   }
   return driveInteractiveClaudeSession(brief, options);
 }

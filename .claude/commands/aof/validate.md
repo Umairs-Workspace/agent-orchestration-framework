@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Validate the work stream — runs the structural and loop-registry gates, then layers the agent-only checks (test-traceability, litmus) and advisory health.
+argument-hint: "[item ref — omit for the whole stream]"
 aof-invocation: /aof:validate
 aof-runtime: claude
 ---

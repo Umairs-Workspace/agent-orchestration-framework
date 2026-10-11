@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Diagnose why a work item took as long as it did — run the transcript telemetry, then rank the causes by hours burned and name the fix for each. Read-only by default; runnable mid-run, not just at the close.
+argument-hint: "<milestone ref> [--write]"
 aof-invocation: /aof:observe
 aof-runtime: claude
 ---

@@ -1,0 +1,285 @@
+{
+  "build": {
+    "started": "2026-10-08T18:39:17.928Z",
+    "ended": "2026-10-08T18:42:47.716Z",
+    "result": {
+      "ref": "07/01",
+      "phase": "continue",
+      "command": "$aof-continue 07/01 --orchestrated",
+      "outcome": "done",
+      "sessionId": "01a11cd0-0fae-7b41-aa11-49b10e0fdaae",
+      "processStarted": true,
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      },
+      "settlementContext": {
+        "runtime": "codex",
+        "projectsDir": null,
+        "transcriptBaseline": null,
+        "spendBaselineAvailable": false,
+        "reason": "runtime-spend-unavailable"
+      }
+    }
+  },
+  "reviews": [
+    {
+      "name": "structure",
+      "sessionId": "01a11cd2-1605-75d3-a206-1724988a8af9",
+      "results": [
+        {
+          "status": "completed",
+          "final": "Conforms. No structural or codebase-health findings.\n\n- `src/s01.cjs:1` exports numeric `42`, satisfying the task scenario. Syntax check passed.\n- Impacted test command resolved to **scope all**, with one widening: `src/s01.cjs (no-graph)`. It ran **0/0 suites** and explicitly cannot stand as a verdict.\n- Supplemental `node runner.cjs` passed **2/2 TAP checks**, including the answer requirement.\n- Graph build failed with `graphify.exe EPERM`; impact reported no graph. Graph-derived coupling remains unknown. Reading shows the runner requires the source module.\n- Health measurements: `src` contains one file, 33 bytes and one line; runner is six lines. The change adds no files, lines, or dependencies. Debt query found no ledger.\n- No additional implementation files were needed beyond the declared reads. One review round completed; no code, contracts, status, or review records edited."
+        }
+      ]
+    },
+    {
+      "name": "behaviour",
+      "sessionId": "01a11cd2-2d2c-77c2-ad41-0de7f14633ad",
+      "results": [
+        {
+          "status": "completed",
+          "final": "Behavioural verdict: PASS for `00_ready.feature:3` (“Return the declared answer”). No findings.\n\n- Impacted test resolved to **scope all**, **0/0 suites**, graph unknown; widened for `src/s01.cjs` (`no-graph`). This command alone cannot support a verdict.\n- Fallback `node runner.cjs` passed both TAP checks.\n- Direct public-export assertion passed: `answer` has type `number` and equals `42`.\n\nNo production, contract, run, or status edits. Runner generated `report.tap`."
+        }
+      ]
+    },
+    {
+      "name": "craft",
+      "sessionId": "01a11cd2-45ec-7ca0-b8e8-824515d00eb2",
+      "results": [
+        {
+          "status": "completed",
+          "final": "Craft review round 1: PASS. No findings.\n\n- `node --check` passed for `src/s01.cjs` and `runner.cjs`.\n- `git diff --check -- src/s01.cjs` passed.\n- The one-line change correctly exports `answer: 42`.\n- Impacted review lane exited 0 but ran 0/0 suites, resolved to scope `all`, and reported one `no-graph` widening for `src/s01.cjs`; it explicitly cannot stand as a verdict.\n- Supplemental `node runner.cjs` passed 2/2 TAP checks.\n\nNo source, workflow-record, run, or status edits made. The runner generated `report.tap`."
+        }
+      ]
+    }
+  ],
+  "loop": {
+    "started": "2026-10-08T18:44:17.552Z",
+    "ended": "2026-10-08T18:49:28.322Z",
+    "driven": [
+      {
+        "ref": "07/01",
+        "phase": "verify",
+        "runId": "20261008T184418800Z-0005",
+        "outcome": "done",
+        "attempt": 1,
+        "cycle": 1
+      },
+      {
+        "ref": "07",
+        "phase": "verify",
+        "runId": "20261008T184820958Z-0000",
+        "outcome": "failed",
+        "attempt": 1,
+        "cycle": 1
+      }
+    ],
+    "permissionRefusals": [
+      {
+        "method": "item/commandExecution/requestApproval",
+        "reason": "Allow the required milestone regression gate to inspect Git and run its configured tests outside the sandbox?",
+        "command": "\"C:\\\\WINDOWS\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\" -NoProfile -Command 'aof work regression-gate 07 --json'"
+      }
+    ]
+  },
+  "operatorGate": {
+    "ref": "07",
+    "path": "wiki\\work\\07_milestone_wave\\REGRESSION.md",
+    "commit": "8e73e1715af94a13ba37e5c46ec69f7a4f1df76d",
+    "instant": "2026-10-08T18:51:58.605Z",
+    "scope": "all",
+    "result": "green",
+    "detail": "serial · 0.0 min",
+    "satisfiesDoor": true,
+    "appended": true,
+    "run": {
+      "mode": "serial",
+      "jobs": null,
+      "minutes": 0,
+      "budgetMinutes": null,
+      "overBudget": false
+    },
+    "notIsolated": [],
+    "slowest": [],
+    "logs": null,
+    "exit": 0
+  },
+  "acceptance": {
+    "started": "2026-10-08T18:53:00.986Z",
+    "ended": "2026-10-08T18:55:36.829Z",
+    "result": {
+      "scope": "07",
+      "level": "L2",
+      "cap": 3,
+      "loopRunId": "4ed8c3c8-b736-4de4-b046-c11fa2cf5edb",
+      "state": "done",
+      "next": {
+        "state": "done",
+        "readySet": [],
+        "skipped": [],
+        "wave": [],
+        "heldSet": []
+      },
+      "act": {
+        "act": "done"
+      },
+      "stops": [
+        "uat-gate",
+        "dependency-blocked",
+        "cap-exhausted",
+        "deadline-exhausted",
+        "progress-exhausted",
+        "no-progress",
+        "grade-indeterminate",
+        "session-needs-input",
+        "run-not-retryable",
+        "retry-parked",
+        "unmapped-item-type",
+        "operator-interrupt",
+        "lane-open-failed",
+        "lane-merge-refused",
+        "lane-merge-conflict"
+      ],
+      "resumable": {
+        "stranded": [],
+        "lastDeclaration": {
+          "loopRunId": "67a402b8-24bb-4d91-9908-971a8ec2bde5",
+          "scope": "07",
+          "level": "L2",
+          "cap": 3,
+          "startedAt": "2026-10-08T18:11:08.025Z",
+          "supervised": false,
+          "thinking": null,
+          "promotedFrom": null,
+          "refine": "per-story",
+          "sessions": {
+            "continue": {
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.continue",
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default"
+            },
+            "refine": {
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.refine",
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default"
+            },
+            "verify": {
+              "effort": "high",
+              "effortSource": "work.agents.runtimes.codex.session.effort.verify",
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default"
+            }
+          },
+          "execution": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "work.agents.runtimes.codex.session.effort.continue",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "work.agents.runtimes.codex.session.effort.refine",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "work.agents.runtimes.codex.session.effort.verify",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "project",
+            "transport": "app-server-stdio",
+            "version": 1
+          }
+        }
+      },
+      "driven": [
+        {
+          "ref": "07",
+          "phase": "verify",
+          "runId": "20261008T185302466Z-0001",
+          "outcome": "done",
+          "attempt": 1,
+          "cycle": 1
+        }
+      ],
+      "refine": "per-story",
+      "sessions": {
+        "refine": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+        },
+        "continue": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+        },
+        "verify": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+        }
+      }
+    }
+  },
+  "policy": {
+    "approvalPolicy": "on-request",
+    "sandbox": {
+      "type": "workspaceWrite",
+      "writableRoots": [
+        "<workspace>\\.tmp\\154-reverify-temp\\aof-live-runtime-dcDM6K\\global-aof"
+      ],
+      "networkAccess": false,
+      "excludeTmpdirEnvVar": true,
+      "excludeSlashTmp": true
+    }
+  },
+  "limits": [
+    "The first refine used the production native adapter directly; native refine-driver create/resume is separately evidenced by the question-recovery fixture.",
+    "The operator made the clean fixture commit and ran the actual gate outside the native sandbox; native permissions were not expanded.",
+    "Native role instructions are not enforced read-only isolation."
+  ]
+}

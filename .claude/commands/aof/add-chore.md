@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Capture a chore — a top-level housekeeping driver scaffolded on the project's intake as chore_slug/CHORE.md. Groups no stories, carries no .feature; its deliverable is a ticked checklist. Numbered by aof work promote, resolved later by aof:verify.
+argument-hint: "<the housekeeping to do> [in <group/path>] [depends NN[,NN…]] [--in-stream]"
 aof-invocation: /aof:add-chore
 aof-runtime: claude
 ---

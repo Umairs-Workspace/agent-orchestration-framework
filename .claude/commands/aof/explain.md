@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Say what one or more work items are for — by stream number or backlog folder path, briefly or in depth with --verbose. Read-only; the answer is printed, never stored.
+argument-hint: "<ref…> [--verbose]"
 aof-invocation: /aof:explain
 aof-runtime: claude
 ---

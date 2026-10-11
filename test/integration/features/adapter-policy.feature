@@ -28,12 +28,12 @@ Feature: AOF adapter policy
     When I run `assets apply --strict`
     Then the command should fail
     And stdout should contain `strict:`
-    And file `.codex/skills/file-backed/SKILL.md` should not exist
+    And file `.agents/skills/file-backed/SKILL.md` should not exist
     And file `.aof/aof.lock.json` should not exist
     When I run `assets apply --strict --force`
     Then the command should fail
     And stdout should contain `strict:`
-    And file `.codex/skills/file-backed/SKILL.md` should not exist
+    And file `.agents/skills/file-backed/SKILL.md` should not exist
     And file `.aof/aof.lock.json` should not exist
 
   Scenario: Adapter warnings stay out of lock manifests

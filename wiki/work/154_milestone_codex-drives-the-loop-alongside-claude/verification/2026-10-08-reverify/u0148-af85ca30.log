@@ -1,0 +1,41 @@
+# unit
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-IeoQYj
+ok - headroom-wrap-routing/00 an enabled routable claude session spawns headroom wrap claude
+terminal: codex started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-DTQfTp
+ok - headroom-wrap-routing/00 an enabled routable codex session spawns headroom wrap codex
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-g8OOhk
+ok - headroom-wrap-routing/01 enabled but headroom absent degrades to the raw provider with no error frame
+terminal: gemini started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-PrCCk7
+ok - headroom-wrap-routing/01 gemini is never wrapped even when headroom is on PATH
+ok - headroom-wrap-routing/01 a missing PROVIDER binary still fires the existing error control-frame (not the degrade path)
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-W8gzOe
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=present headroomOnPath=yes] -> spawnBin=headroom wrapArgs=yes errorFrame=no
+terminal: codex started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-CrOgMf
+ok - headroom-wrap-routing/01 launch matrix [provider=codex providerOnPath=present headroomOnPath=yes] -> spawnBin=headroom wrapArgs=yes errorFrame=no
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-gm18tX
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=present headroomOnPath=no] -> spawnBin=raw claude wrapArgs=no errorFrame=no
+terminal: codex started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-QhbJUM
+ok - headroom-wrap-routing/01 launch matrix [provider=codex providerOnPath=present headroomOnPath=no] -> spawnBin=raw codex wrapArgs=no errorFrame=no
+terminal: gemini started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-xKZ8U9
+ok - headroom-wrap-routing/01 launch matrix [provider=gemini providerOnPath=present headroomOnPath=yes] -> spawnBin=raw gemini wrapArgs=no errorFrame=no
+terminal: gemini started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-hB1ucM
+ok - headroom-wrap-routing/01 launch matrix [provider=gemini providerOnPath=present headroomOnPath=no] -> spawnBin=raw gemini wrapArgs=no errorFrame=no
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=absent headroomOnPath=yes] -> spawnBin=(none) wrapArgs=no errorFrame=yes
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=absent headroomOnPath=no] -> spawnBin=(none) wrapArgs=no errorFrame=yes
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-ooBfj2
+ok - headroom-wrap-routing/02 no work.headroom config spawns the raw provider even when headroom is on PATH
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-9maK2e
+ok - headroom-wrap-routing/02 work.headroom.enabled:false spawns the raw provider even when headroom is on PATH
+not ok - headroom-wrap-routing/02 an off plugin contributes nothing to the spawn binary or args
+AssertionError [ERR_ASSERTION]: exactly one launch was spawned
+
+0 !== 1
+
+    at run (file:///<workspace>/.tmp/154-fix-checkout/test/planning/headroom-wrap-routing.test.mjs:330:14)
+    at async runCases (file:///<workspace>/.tmp/154-fix-checkout/scripts/test-harness.mjs:22:7)
+    at async file:///<workspace>/.tmp/154-fix-checkout/scripts/test-shard.mjs:38:18
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-8VOjYE
+ok - headroom-wrap-routing/02 an off plugin (has no "work.headroom" key) spawns the raw provider unwrapped
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-QctpKz
+ok - headroom-wrap-routing/02 an off plugin (is '{ "work": { "headroom": { "enabled": false } } }') spawns the raw provider unwrapped
+# executed 18 cases; failures 1

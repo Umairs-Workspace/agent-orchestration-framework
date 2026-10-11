@@ -1,0 +1,126 @@
+{
+  "started": "2026-10-08T14:46:08.113Z",
+  "ended": "2026-10-08T14:46:29.128Z",
+  "fixtureRevision": "e1323a16da0e34d6115c175ad826238bb41c7072",
+  "result": {
+    "outcome": "failed",
+    "failureReason": "operator_action_required",
+    "sessionId": "01a11bfa-9756-7a00-acf7-26010353e383",
+    "processStarted": true,
+    "cliVersion": "0.160.0",
+    "profile": "codex-app-server-v1",
+    "profileVersion": 1,
+    "execution": {
+      "version": 1,
+      "runtime": "codex",
+      "runtimeSource": "flag",
+      "transport": "app-server-stdio",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "phases": {
+        "refine": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "default"
+        },
+        "continue": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "default"
+        },
+        "verify": {
+          "model": "gpt-6.1-sol",
+          "modelSource": "runtime-default",
+          "effort": "high",
+          "effortSource": "default"
+        }
+      },
+      "roles": {}
+    }
+  },
+  "events": [
+    {
+      "method": "thread-response",
+      "id": "01a11bfa-9756-7a00-acf7-26010353e383",
+      "approvalPolicy": "on-request",
+      "sandbox": {
+        "type": "readOnly",
+        "networkAccess": false
+      }
+    },
+    {
+      "method": "item/commandExecution/requestApproval",
+      "keys": [
+        "kind",
+        "threadId",
+        "turnId",
+        "itemId",
+        "startedAtMs",
+        "environmentId",
+        "reason",
+        "command",
+        "cwd",
+        "commandActions",
+        "proposedExecpolicyAmendment",
+        "availableDecisions"
+      ],
+      "cwd": "CHECKOUT\\.tmp\\154-reverify-temp\\aof-live-runtime-dcDM6K\\project",
+      "command": "\"C:\\\\Program Files\\\\WindowsApps\\\\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\\\\pwsh.exe\" -Command \"Get-Content -LiteralPath '.agents/skills/aof-refine/procedure.md'; Get-Content -LiteralPath '.codex/aof/workflows/workflow-contract.md'; Get-ChildItem -Path . -Filter AGENTS.md -Force\"",
+      "reason": "The native shell was denied access before the fixture instructions could be read. Allow this read-only command outside the sandbox?"
+    }
+  ],
+  "usage": [
+    {
+      "sessionId": "01a11bfa-9756-7a00-acf7-26010353e383",
+      "turnId": "01a11bfa-a456-7c11-b1c4-d4b9c00bba47",
+      "total": {
+        "totalTokens": 22305,
+        "inputTokens": 22171,
+        "cachedInputTokens": 20480,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 134,
+        "reasoningOutputTokens": 26
+      },
+      "last": {
+        "totalTokens": 22305,
+        "inputTokens": 22171,
+        "cachedInputTokens": 20480,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 134,
+        "reasoningOutputTokens": 26
+      },
+      "modelContextWindow": 258400
+    },
+    {
+      "sessionId": "01a11bfa-9756-7a00-acf7-26010353e383",
+      "turnId": "01a11bfa-a456-7c11-b1c4-d4b9c00bba47",
+      "total": {
+        "totalTokens": 44957,
+        "inputTokens": 44710,
+        "cachedInputTokens": 42496,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 247,
+        "reasoningOutputTokens": 95
+      },
+      "last": {
+        "totalTokens": 22652,
+        "inputTokens": 22539,
+        "cachedInputTokens": 22016,
+        "cacheWriteInputTokens": 0,
+        "outputTokens": 113,
+        "reasoningOutputTokens": 69
+      },
+      "modelContextWindow": 258400
+    }
+  ],
+  "identities": [
+    "01a11bfa-9756-7a00-acf7-26010353e383",
+    {
+      "sessionId": "01a11bfa-9756-7a00-acf7-26010353e383",
+      "turnId": "01a11bfa-a456-7c11-b1c4-d4b9c00bba47"
+    }
+  ],
+  "accepted": false
+}

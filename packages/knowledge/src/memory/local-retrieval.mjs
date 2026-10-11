@@ -1,8 +1,9 @@
 import { refInScope } from "@aof/work/ref-scope";
+import { GAP_STATUSES, LESSON_ENUM_FIELDS } from "@aof/work/memory-vocabulary";
 // Local memory backend — RETRIEVAL (milestone 05 / story 02).
 //
 // This module owns the READ path of the local memory backend: ranking, scope
-// filtering, the frozen `RecallResult`, and the `brief` digest. It reads the
+// filtering, and the frozen `RecallResult`. It reads the
 // frozen index format (ADR-005) and is a PURE function of (records, query,
 // scope, opts) — it never touches disk or argv. The seam (story 00) and the
 // indexer (story 01) couple to this module only through the frozen contracts:
@@ -16,10 +17,9 @@ import { refInScope } from "@aof/work/ref-scope";
 //            is length-normalised (BM25-lite) + IDF + a title-match boost + a
 //            record-type boost that lifts `lesson` over `adr` ONLY at equal
 //            relevance (a tiebreaker, never a relevance override).
-//   ADR-007  `brief` surfaces the lesson/adr split + a recent-lessons-by-area
-//            digest, scopable to one milestone via scope.item.
+//   (ADR-007's `brief` digest was retired by 153/ADR-001 — no procedure invoked it.)
 //
-// `recall`/`brief` obtain their records from an INJECTABLE source on `ctx` so the
+// `recall` obtains its records from an INJECTABLE source on `ctx` so the
 // fixture tests need no disk file and no story-01 parser code: `ctx.records` (an
 // array) is used directly when present; otherwise `ctx.loadIndex()` is awaited
 // and its `.records` used. The orchestrator's glue (`local-backend.mjs`) wires
@@ -41,10 +41,86 @@ export const MEMORY_RECORD_FIELDS = [
   "kind",
   "owner",
   "status",
+  "tags",
   "summary",
   "text",
   "source"
 ];
+
+// 148/ADR-004 — THE ONE PARTITION OF RECORD TYPES INTO MEMORY LAYERS (origin §2.3, §5). Every type
+// the indexer emits is a key here, mapped to the layer it serves: a lesson is procedural (the
+// operator's ruling, 148/05 Q1), and decisions, capabilities, gaps and digests are semantic. The
+// episodic layer holds no type yet; `episodic-memory-is-recallable` adds its types TO THIS MAP rather
+// than partitioning a second time — m40/R3 is the consumer that was left behind when a kind was
+// added and nobody updated the split. `memory status` counts a type missing from the map as
+// `unmapped`, never drops it, and FF-14803 reds when an emitted type has no layer.
+export const MEMORY_LAYERS = Object.freeze(["episodic", "semantic", "procedural"]);
+export const UNMAPPED_LAYER = "unmapped";
+export const RECORD_TYPE_LAYERS = Object.freeze({
+  lesson: "procedural",
+  adr: "semantic",
+  capability: "semantic",
+  gap: "semantic",
+  summary: "semantic",
+});
+
+// The layer a record type serves, or `unmapped` for a type the map does not name.
+export function layerOf(recordType) {
+  return Object.hasOwn(RECORD_TYPE_LAYERS, recordType) ? RECORD_TYPE_LAYERS[recordType] : UNMAPPED_LAYER;
+}
+
+// 148/ADR-004 §2 — what the seam adds to a backend's `status`, computed over every record:
+//   types       { <type>: { count, layer } } — a type the map does not name is counted, `unmapped`;
+//   layers      { episodic, semantic, procedural } counts, plus `unmapped` only when one occurs;
+//   conformance kind/area/stage `{ blank, nonEnum }` over lessons, owner `{ blank }`, and
+//               gapStatus `{ nonEnum }` over gaps.
+// Records arrive normalised (148/ADR-002): a value that starts with a vocabulary word IS that word,
+// so a value outside the vocabulary is non-enum and "" is blank. Every number is nested, so status
+// gains no top-level number (a suite sums those against `recordCount`).
+export function statusPartition(records = []) {
+  const types = {};
+  const layers = Object.fromEntries(MEMORY_LAYERS.map((layer) => [layer, 0]));
+  const conformance = {
+    ...Object.fromEntries(Object.keys(LESSON_ENUM_FIELDS).map((field) => [field, { blank: 0, nonEnum: 0 }])),
+    owner: { blank: 0 },
+    gapStatus: { nonEnum: 0 },
+  };
+  for (const record of records) {
+    const type = record?.recordType || "";
+    const layer = layerOf(type);
+    types[type] ??= { count: 0, layer };
+    types[type].count += 1;
+    layers[layer] = (layers[layer] ?? 0) + 1;
+    if (type === "lesson") {
+      for (const [field, vocabulary] of Object.entries(LESSON_ENUM_FIELDS)) {
+        const value = String(record[field] ?? "");
+        if (value === "") conformance[field].blank += 1;
+        else if (!vocabulary.includes(value)) conformance[field].nonEnum += 1;
+      }
+      if (String(record.owner ?? "").trim() === "") conformance.owner.blank += 1;
+    } else if (type === "gap" && !GAP_STATUSES.includes(String(record.status ?? ""))) {
+      conformance.gapStatus.nonEnum += 1;
+    }
+  }
+  // Types in name order, so the document does not depend on the order recall happened to rank in.
+  const sorted = Object.fromEntries(Object.keys(types).sort().map((type) => [type, types[type]]));
+  return { types: sorted, layers, conformance };
+}
+
+// 148/ADR-003 — `tags` is an ARRAY of strings, present on every record and `[]` when there is
+// none. A store built before index version 2 carries no `tags`; its records are read as `[]`
+// rather than refused, because the index is derived and an ingest rebuilds it.
+export function withTags(record) {
+  return Array.isArray(record?.tags) ? record : { ...record, tags: [] };
+}
+
+// 148/ADR-003 — each backend's `status` reports its store's index version against the version
+// this build writes. Nested under `index`, so status gains no top-level number. An absent store
+// has no version and is not stale: it is not built, which `present` already says.
+export function indexVersionReport(storedVersion, current, present) {
+  const version = Number.isInteger(storedVersion) ? storedVersion : null;
+  return { version, current, stale: Boolean(present) && version !== current };
+}
 
 // The scope dimensions (ADR-006). `item` is a SUBTREE ref match (story 80 — `39`
 // reaches 39 and every story under it; `39/02` that story alone); the
@@ -229,7 +305,7 @@ function typeBoost(record, capabilityIntent) {
 //
 // With no query terms (a scope-only recall) every survivor scores equally on
 // content, so the type boost orders lessons ahead of adrs and the result is the
-// scope-filtered set (capped at the limit) — useful for the brief/scoped views.
+// scope-filtered set (capped at the limit) — useful for scoped views.
 export function rankRecords(records, query, scope = {}, opts = {}) {
   const survivors = applyScope(records, scope);
   const terms = tokenize(query);
@@ -263,10 +339,10 @@ export function rankRecords(records, query, scope = {}, opts = {}) {
 // retrieval and the indexer/store: the glue passes the on-disk loader as
 // `ctx.loadIndex`; tests pass a fixture array as `ctx.records`.
 async function resolveRecords(ctx = {}) {
-  if (Array.isArray(ctx.records)) return ctx.records;
+  if (Array.isArray(ctx.records)) return ctx.records.map(withTags);
   if (typeof ctx.loadIndex === "function") {
     const index = await ctx.loadIndex();
-    return Array.isArray(index?.records) ? index.records : [];
+    return Array.isArray(index?.records) ? index.records.map(withTags) : [];
   }
   return [];
 }
@@ -286,46 +362,6 @@ export async function recall(query, scope = {}, opts = {}, ctx = {}) {
   };
   result.text = renderRecallText(result);
   return result;
-}
-
-// ── brief (ADR-007 lesson/adr split + recent-lessons-by-area digest) ─────────
-// A digest over the scope-filtered records: lesson/adr counts and a
-// recent-lessons-by-area map. `scope.item` (the seam's --item NN) scopes the
-// brief to one milestone. Returns a structured digest plus a rendered `text`
-// view, mirroring the RecallResult JSON-is-contract / text-is-projection split.
-export async function brief(scope = {}, opts = {}, ctx = {}) {
-  const records = await resolveRecords(ctx);
-  // brief scopes by item only (the situational "what does milestone NN hold");
-  // the other scope dimensions are recall's concern.
-  const itemScope = scope?.item === undefined || scope?.item === null ? {} : { item: scope.item };
-  const scoped = applyScope(records, itemScope);
-
-  const lessons = scoped.filter((r) => r.recordType === "lesson");
-  const adrs = scoped.filter((r) => r.recordType === "adr");
-
-  // Recent-lessons-by-area: area → lessons in that area (most recent last in the
-  // fixture order; we keep source order so "recent" tracks index order). Each
-  // entry is a light projection so the seam/agent can render without re-reading.
-  const lessonsByArea = {};
-  for (const lesson of lessons) {
-    const area = lesson.area || "";
-    (lessonsByArea[area] ||= []).push({
-      id: lesson.id,
-      item: lesson.item,
-      title: lesson.title,
-      summary: lesson.summary ?? ""
-    });
-  }
-
-  const digest = {
-    scope: normalizeScope(itemScope),
-    lessonCount: lessons.length,
-    adrCount: adrs.length,
-    lessonsByArea,
-    text: ""
-  };
-  digest.text = renderBriefText(digest);
-  return digest;
 }
 
 // ── text rendering (the human projection of a RecallResult) ──────────────────
@@ -349,27 +385,6 @@ export function renderRecallText(result) {
     const gist = (record.summary || record.text || "").replace(/\s+/g, " ").trim().slice(0, 180);
     if (gist) lines.push(`    ${gist}`);
     if (record.source) lines.push(`    ↳ ${record.source}`);
-  }
-  return lines.join("\n") + "\n";
-}
-
-// The human projection of a brief digest (the lesson/adr split + recent lessons
-// grouped by area). Surfaces each lesson id under its area.
-export function renderBriefText(digest) {
-  const { scope, lessonCount, adrCount, lessonsByArea } = digest;
-  const where = scope?.item ? ` · milestone ${scope.item}` : " · whole stream";
-  const lines = [];
-  lines.push(`memory brief${where}`);
-  lines.push(`  ${lessonCount} lesson(s), ${adrCount} adr(s)`);
-  lines.push(`  recent lessons by area:`);
-  const areas = Object.keys(lessonsByArea);
-  if (areas.length === 0) {
-    lines.push(`    —`);
-  } else {
-    for (const area of areas) {
-      const ids = lessonsByArea[area].map((l) => l.id).join(", ");
-      lines.push(`    ${area || "(no area)"}: ${ids}`);
-    }
   }
   return lines.join("\n") + "\n";
 }

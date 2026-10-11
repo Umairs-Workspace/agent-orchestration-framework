@@ -2341,23 +2341,10 @@ function repairTests() {
       }, { stories: ["01"], config: { loop: { repair: value } } }),
     })),
     {
-      name: "147/00 E5 + E6 — a UAT gate and a red grade stop the loop with no repair session, as before; a halt that parked asks is never handed over",
+      // E6, the red-grade half of this rule, is in `loop-command-wave` (grade/01 keeps this suite
+      // naming the grade nowhere).
+      name: "147/00 E5 — a UAT gate stops the loop with no repair session, as before; a halt that parked asks is never handed over",
       run: async () => {
-        // E6 — the grade of the lane's code stays red
-        await withRepairRepo(async (h) => {
-          const phase = phaseChild(h.fx);
-          const report = collector();
-          const ctx = {
-            ...laneCtx(h.fx, { child: fakeLaneChild(h.fx), rubric: stubRubric([emits(passingTap()), emits("", 0)]), report, driver: primaryDriver(h.fx), timers: fakeTimers(), signals: fakeSignals() }),
-            spawnPhaseDrive: phase,
-            notifyOptions: { env: { HOOK }, fetch: h.fetch },
-          };
-          const state = await runLoopLaunch({ scope: h.fx.milestone }, ctx);
-          assert.equal(state.act.stop, "grade-indeterminate");
-          assert.equal(phase.repairs().length, 0, "no repair drive is spawned");
-          assert.equal(h.posts.length, 1, "the account and the notification are as before");
-          assert.equal(report.lines.some((line) => /Repair/u.test(line)), false);
-        }, { stories: ["01"] });
         // a halt that parked asks
         await withRepairRepo(async (h) => {
           const phase = phaseChild(h.fx);

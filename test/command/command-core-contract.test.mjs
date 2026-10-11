@@ -171,6 +171,8 @@ const WORK_IDS = [
   "work:drive-refine",
   // 147/02 — the fourth phase driver, the lane-halt repair session's.
   "work:drive-repair",
+  // 154/06 — the native independent review executor, in the same CLI-only family.
+  "work:drive-review",
   "work:drive-continue",
   "work:drive-verify",
   // PRE-EXISTING STALENESS, found at milestone 53's gate and recorded rather than

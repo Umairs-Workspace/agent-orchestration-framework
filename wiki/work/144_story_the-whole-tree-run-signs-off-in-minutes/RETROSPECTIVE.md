@@ -1,6 +1,6 @@
 ---
 doc: retrospective
-updated: 2026-10-03
+updated: 2026-10-06
 ---
 # 144 · The whole-tree test run signs off in minutes — Retrospective
 
@@ -17,7 +17,7 @@ gate it built ran twice at verify, and that is where both lessons surfaced.
 
 ## R2 — A gate that can never be green is an override with extra steps
 
-- **Kind:** risk · **Area:** process · **Stage:** verify · **Owner:** product owner · **Raised by:** verifier
+- **Kind:** near-miss (risk) · **Area:** process · **Stage:** verify · **Owner:** product owner · **Raised by:** verifier
 - **What happened:** The sharded gate does what 144 set out to do: 26.6 min instead of a 2 h kill, no case lost, every not-isolated case named. But both runs were red on the same 8 inherited cases (m134/F-134-03, plus 134 held at the root), which were already red at the parent. 134 was accepted on an override for the same 8. Until they are repaired, every milestone's door needs `--gate-override`, and 144's row still lands red.
 - **Why:** F-134-03 was triaged as a non-blocker for 134, correctly for that item. Nobody owns it as a blocker for the door it now holds shut.
 - **Lesson:** Schedule F-134-03 (and archive 134) before the next milestone reaches its door. An override that cites "the same 8 inherited reds" is the silent override 96/ADR-008 warns about, accumulating one milestone at a time.

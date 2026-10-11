@@ -1,0 +1,227 @@
+{
+  "runId": "20261010T160146137Z-0000",
+  "itemRef": "153/04",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "38340b34-0085-498d-91e2-97df1a94dc3b",
+  "brief": {
+    "loop": {
+      "loopRunId": "fee61acf-0876-4d2f-96a1-bd055457848b",
+      "scope": "153",
+      "level": "L2",
+      "cap": 3,
+      "phase": "repair",
+      "cycle": 1,
+      "startedAt": "2026-10-09T19:44:39.981Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "sonnet",
+          "modelSource": "--model",
+          "runtime": "claude"
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        }
+      },
+      "execution": {
+        "phaseExecutions": {
+          "continue": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              }
+            },
+            "profile": "claude-pty-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "claude",
+            "runtimeSource": "model",
+            "transport": "pty",
+            "version": 1
+          },
+          "refine": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          },
+          "verify": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          }
+        },
+        "phases": {
+          "continue": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "sonnet",
+            "modelSource": "--model",
+            "runtime": "claude"
+          },
+          "refine": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          },
+          "verify": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          }
+        },
+        "runtime": "mixed",
+        "runtimeSource": "phase-map",
+        "version": 2
+      }
+    },
+    "halt": {
+      "stop": "lane-open-failed",
+      "producer": "work:dispatch:at-capacity"
+    },
+    "nativeAskContext": {
+      "scope": "153",
+      "loopRunId": "fee61acf-0876-4d2f-96a1-bd055457848b",
+      "workspaceId": "9db1fd84f5895e38"
+    }
+  },
+  "createdAt": "2026-10-10T16:01:46.137Z",
+  "updatedAt": "2026-10-10T16:01:46.137Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 38,
+      "output": 7454,
+      "cacheRead": 1324014,
+      "cacheCreate": 52907
+    },
+    "costUsd": 0.70752945,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 19,
+    "toolCalls": 9,
+    "exitReason": "final_output"
+  },
+  "asks": [],
+  "execution": {
+    "phases": {
+      "continue": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "sonnet",
+        "modelSource": "--model"
+      },
+      "refine": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      },
+      "verify": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      }
+    },
+    "profile": "claude-pty-v1",
+    "profileVersion": 1,
+    "roles": {},
+    "runtime": "claude",
+    "runtimeSource": "model",
+    "transport": "pty",
+    "version": 1
+  }
+}

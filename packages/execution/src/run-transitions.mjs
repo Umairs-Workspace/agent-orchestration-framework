@@ -61,8 +61,8 @@ async function transitionRunStart(item, edge = {}, opts = {}) {
   // (1) The FACT — the store's own guarded mint. A refusal here means no event.
   const record =
     mode === "retry"
-      ? await retryRun(item, { runId, maxAttempts, brief, now, node, sessionId, force })
-      : await startRun(item, { sessionId: sessionId ?? null, brief: brief ?? {}, now, node });
+      ? await retryRun(item, { runId, maxAttempts, brief, now, node, sessionId, force, ...(Object.hasOwn(edge, "execution") ? { execution: edge.execution } : {}) })
+      : await startRun(item, { sessionId: sessionId ?? null, brief: brief ?? {}, now, node, ...(Object.hasOwn(edge, "execution") ? { execution: edge.execution } : {}) });
 
   // (2) The EVENT — past tense, carrying its own evidence.
   const payload = {
@@ -156,6 +156,7 @@ async function transitionRunComplete(item, { runId, outcome, failureReason = nul
 // dispatch worktree, whose slug is the one its session wrote under. A caller that names neither —
 // the mesh callers, whose sessions ran elsewhere — reads nothing, as before.
 function settleProjectsDir({ projectsDir, workspace, env, home }) {
+  if (projectsDir === null) return undefined;
   if (typeof projectsDir === "string" && projectsDir.length > 0) return projectsDir;
   if (typeof workspace?.projectRoot !== "string" || workspace.projectRoot.length === 0) return undefined;
   return claudeProjectsDir({ cwd: workspace.projectRoot, env, ...(home ? { home } : {}) });

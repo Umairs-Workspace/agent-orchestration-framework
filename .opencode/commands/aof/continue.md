@@ -42,9 +42,10 @@ Parse `$ARGUMENTS` into the item **ref**, an optional **`--solo`**, **`--orchest
 
 **Execution mode.** Resolve from `work.agents.mode`, which governs the continue an operator types:
 `work.agents.mode: "orchestrated"` resolves to orchestrated (spawn the role agents), and
-`work.agents.mode: "solo"` resolves to solo (play every role inline in this session). **An unset
-`work.agents.mode` resolves to orchestrated** — this command's own default, because a spawned
-reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
+`work.agents.mode: "solo"` resolves to solo (play every role inline in this session).
+**An unset `work.agents.mode` resolves to solo** — the one default every command that reads a mode
+shares. Reach for `--orchestrated` when an independent perspective is worth its cold starts: a
+spawned reviewer did not write the code and cannot be talked into liking it. **`--solo` OVERRIDES an
 orchestrated config to solo for this run**, and **`--orchestrated` OVERRIDES a solo config to
 orchestrated for this run** — its twin in the other direction. The two together are contradictory:
 STOP before any role runs and report it. **`--manual` together with `--solo` or `--orchestrated` is
@@ -52,10 +53,10 @@ contradictory too** — `--manual` says the operator builds, which leaves no age
 before any role runs and before any run is minted, and report it. `--manual` is a per-run flag and
 never a `work.agents.mode` value, and the loop never composes it (`<manual_mode>` below).
 The loop composes a flag on every continue it drives: `work.loop.agents.continue.mode` when set,
-`--solo` when unset — the loop's own default, whose home is `packages/contracts/src/loop-bounds.mjs`.
-A loop-driven continue therefore never reads `work.agents.mode`. This command delegates to no other
-command, so the flag governs exactly one thing: which roles this session plays inline and which it
-spawns. It changes only WHO does the work, never WHAT is produced — the same build, the same review
+else `work.agents.mode`, else `solo` — the one built-in default, whose home is
+`packages/contracts/src/agent-mode.mjs`. A loop-driven continue therefore follows `work.agents.mode`
+unless the loop's own key overrides it. This command delegates to no other command, so the flag
+governs exactly one thing: which roles this session plays inline and which it spawns. It changes only WHO does the work, never WHAT is produced — the same build, the same review
 lanes, the same gates.
 
 Reach for it when the main session already holds the context a spawned agent would have to
@@ -332,6 +333,18 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      be off) `aof work memory recall "<milestone domain / story keywords>" --kind near-miss --block` and
      considers the surfaced gotchas, recording at `aof:verify` (in `VERIFICATION.md`) any that shaped the
      build. An **empty block means nothing to surface** (memory may be off) — proceed unchanged.
+     **Keep the result; capture it once, when the build decision is made.** The developer retains
+     the recall's actual result unchanged — the exact query text and, for every returned line, its
+     `item`, `id` and `recordType` (a lesson kind such as `near-miss` means `lesson`; any other word,
+     such as `adr`, is the record type itself) — and never re-runs the recall to rebuild it. At the
+     build's terminator, having decided what the surfaced gotchas changed, it writes the observation
+     to a scratch file outside every work folder: `id` (a fresh UUID minted once for this recall — a
+     retry reuses it and `at`), `at` (the ISO instant of the recall), `edge` `continue-developer`,
+     `actor` `developer`, `query` (verbatim), `scope` `{"kind":"near-miss"}` and `records` — one
+     `{item, id, recordType, verdict}` per returned line, each with an explicit verdict `honoured`,
+     `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
+     `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
+     submitted, as `"records": []` — no verdict and no extra retrieval is invented.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
 
      <gate_ladder>

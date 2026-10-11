@@ -4,6 +4,8 @@ import { writeText } from "@aof/foundation/fs";
 import { hashContent, hashFileIfExists, LOCK_VERSION } from "./lock.mjs";
 import { renderConfigOutputs } from "./adapters.mjs";
 import { resolvedPackageEntry } from "./packages.mjs";
+import { codexGuidanceScope } from "./model.mjs";
+import { checkCodexTarget, codexJournalPath, codexSharedOutput, mergeCodexOutput, readCodexJournal, recordCodexApply } from "./codex-settings.mjs";
 
 export async function createRenderPlan(config, options = {}) {
   const outputs = renderConfigOutputs(config, options);
@@ -12,13 +14,52 @@ export async function createRenderPlan(config, options = {}) {
 
 export async function planApplyActions(desiredOutputs, previousLock, options = {}) {
   const priorEntries = new Map(lockFiles(previousLock).map((entry) => [normalizePath(entry.path), entry]));
+  const journal = desiredOutputs.some(output => output.runtime === "codex")
+    ? await readCodexJournal(options.targetDir ?? process.cwd()) : null;
+  const journalEntries = new Map(lockFiles(journal).map(entry => [normalizePath(entry.path), entry]));
   const desiredEntries = new Map(desiredOutputs.map((output) => [normalizePath(output.path), output]));
   const actions = [];
 
   for (const output of desiredOutputs) {
     const key = normalizePath(output.path);
-    const prior = priorEntries.get(key);
+    let prior = priorEntries.get(key);
+    if (output.runtime === "codex") {
+      try { await checkCodexTarget(output, options); }
+      catch (error) { actions.push({ ...action("conflict", output, error.message), code: error.code }); continue; }
+    }
     const currentHash = await hashFileIfExists(output.absolutePath);
+
+    if (output.runtime === "codex") {
+      try {
+        const recovery = journalEntries.get(key);
+        if (recovery?.hash === currentHash) prior = recovery;
+        let prepared = output;
+        if (codexSharedOutput(output)) prepared = await mergeCodexOutput(output, prior);
+        else if (currentHash && !prior) {
+          throw new Error(`unowned target collides with ${output.path}; --force cannot adopt it`);
+        } else if (currentHash && prior && currentHash !== prior.hash) {
+          throw new Error(`AOF-owned target ${output.path} was modified; it cannot be replaced`);
+        }
+        const planned = action(!currentHash ? "create" : currentHash === prepared.hash ? "skip" : "update", prepared,
+          codexSharedOutput(output) ? "merge only recorded Codex ownership; preserve operator content" : !currentHash ? "file does not exist" : currentHash === prepared.hash ? "content already matches desired output" : "generated content changed");
+        planned.expectedCurrentHash = currentHash;
+        planned.journalPath = codexJournalPath(options.targetDir ?? process.cwd());
+        planned.targetDir = options.targetDir ?? process.cwd();
+        planned.global = Boolean(options.global);
+        if (prepared.ownership) planned.ownership = prepared.ownership;
+        if (prepared.activation) planned.activation = prepared.activation;
+        if (prepared.activation) {
+          planned.active = false;
+          planned.profile = prepared.profile;
+          planned.unsupportedEvents = prepared.unsupportedEvents;
+          if (prepared.unsupportedEvents?.length) planned.reason += `; inactive hook events for ${prepared.profile}: ${prepared.unsupportedEvents.join(", ")}`;
+        }
+        actions.push(planned);
+      } catch (error) {
+        actions.push({ ...action("conflict", output, error.message), code: error.code ?? "codex-output-conflict" });
+      }
+      continue;
+    }
 
     if (!currentHash) {
       actions.push(action("create", output, "file does not exist"));
@@ -53,7 +94,6 @@ export async function planApplyActions(desiredOutputs, previousLock, options = {
     if (desiredEntries.has(priorPath)) continue;
 
     const absolutePath = path.resolve(options.targetDir ?? process.cwd(), prior.path);
-    const currentHash = await hashFileIfExists(absolutePath);
     const staleOutput = {
       absolutePath,
       path: prior.path,
@@ -62,23 +102,68 @@ export async function planApplyActions(desiredOutputs, previousLock, options = {
       hash: prior.hash
     };
 
+    if (prior.runtime === "codex") {
+      try { await checkCodexTarget(staleOutput, options); }
+      catch (error) { actions.push({ ...action("conflict", staleOutput, error.message), code: error.code }); continue; }
+    }
+    const currentHash = await hashFileIfExists(absolutePath);
+    if (prior.runtime === "codex") {
+      if (prior.ownership) {
+        try {
+          const empty = { ...staleOutput, content: normalizePath(prior.path).endsWith("/hooks.json") ? '{"hooks":{}}' : "" };
+          const merged = await mergeCodexOutput(empty, prior);
+          actions.push({ ...action(currentHash === merged.hash ? "skip" : "update", merged, "retract only recorded Codex ownership"), ownership: merged.ownership,
+            expectedCurrentHash: currentHash, targetDir: options.targetDir ?? process.cwd(), global: Boolean(options.global) });
+        } catch (error) { actions.push({ ...action("conflict", staleOutput, error.message), code: error.code ?? "codex-output-conflict" }); }
+        continue;
+      }
+    }
+
     if (!currentHash) {
       actions.push(action("skip", staleOutput, "previously generated file is already absent"));
       continue;
     }
 
     if (currentHash === prior.hash) {
-      actions.push(action("delete", staleOutput, "previously generated file is no longer desired"));
+      actions.push({ ...action("delete", staleOutput, "previously generated file is no longer desired"),
+        ...(prior.runtime === "codex" ? { expectedCurrentHash: currentHash, targetDir: options.targetDir ?? process.cwd(), global: Boolean(options.global) } : {}) });
       continue;
     }
 
-    actions.push(action("drift-warning", staleOutput, "stale generated file was modified; not deleting"));
+    actions.push(action(prior.runtime === "codex" ? "conflict" : "drift-warning", staleOutput, "stale generated file was modified; not deleting"));
+  }
+
+  // Migration is one preflight: any drift in a legacy skill blocks the native
+  // copies of that skill too, before a shared-file merge or target write occurs.
+  for (const blocked of actions.filter(item => item.action === "conflict" && normalizePath(item.path).startsWith(".codex/skills/"))) {
+    const oldRoot = normalizePath(blocked.path).split("/").slice(0, 3).join("/");
+    const newRoot = oldRoot.replace(".codex/skills/", ".agents/skills/");
+    for (const item of actions.filter(candidate => normalizePath(candidate.path).startsWith(`${newRoot}/`))) {
+      item.action = "conflict";
+      item.reason = `legacy skill drift blocks duplicate discovery: ${normalizePath(blocked.path)} -> ${normalizePath(item.path)}`;
+      item.code = "codex-migration-drift";
+    }
+    blocked.reason += `; native target ${newRoot}/SKILL.md was not installed`;
   }
 
   return actions;
 }
 
 export async function executeApplyActions(actions) {
+  const conflicts = actions.filter(item => item.action === "conflict");
+  if (conflicts.length) {
+    const error = new Error(conflicts.map(item => `${item.code ?? "codex-output-conflict"}: ${item.path}: ${item.reason}`).join("\n"));
+    error.code = conflicts[0].code ?? "codex-output-conflict";
+    error.conflicts = conflicts;
+    throw error;
+  }
+  // Recheck every Codex target together before the first mutation. A file changed
+  // since dry planning is a refusal, never permission to overwrite the new bytes.
+  for (const item of actions.filter(item => item.runtime === "codex" && item.expectedCurrentHash !== undefined)) {
+    await checkCodexTarget(item, { targetDir: item.targetDir, global: item.global });
+    if (await hashFileIfExists(item.absolutePath) !== item.expectedCurrentHash) throw new Error(`codex-output-conflict: ${item.path}: target changed after planning`);
+  }
+  await recordCodexApply(actions);
   const results = [];
   for (const item of actions) {
     if (item.action === "create" || item.action === "update") {
@@ -96,7 +181,10 @@ export async function executeApplyActions(actions) {
 }
 
 export function createLockManifest({ actions, desiredOutputs, previousLock, config, runtimes, global = false, generatedAt = new Date().toISOString() }) {
-  const blocked = new Set(actions.filter((item) => item.action === "drift-warning").map((item) => normalizePath(item.path)));
+  const unchangedCodex = runtimes?.includes("codex") && actions.every(item => item.action === "skip");
+  if (unchangedCodex && previousLock?.generatedAt) generatedAt = previousLock.generatedAt;
+  const blocked = new Set(actions.filter((item) => ["drift-warning", "conflict"].includes(item.action)).map((item) => normalizePath(item.path)));
+  const plannedByPath = new Map(actions.map(item => [normalizePath(item.path), item]));
   const priorByPath = new Map(lockFiles(previousLock).map((entry) => [normalizePath(entry.path), entry]));
   const preservedDrift = [...blocked]
     .map((filePath) => priorByPath.get(filePath))
@@ -120,8 +208,9 @@ export function createLockManifest({ actions, desiredOutputs, previousLock, conf
           path: output.path,
           runtime: output.runtime,
           resource: output.resource,
-          hash: output.hash,
-          generatedAt
+          hash: plannedByPath.get(normalizePath(output.path))?.hash ?? output.hash,
+          ...(plannedByPath.get(normalizePath(output.path))?.ownership ? { ownership: plannedByPath.get(normalizePath(output.path)).ownership } : {}),
+          generatedAt: unchangedCodex ? priorByPath.get(normalizePath(output.path))?.generatedAt ?? generatedAt : generatedAt
         })),
       ...preservedDrift
     ],
@@ -149,6 +238,7 @@ export function formatApplyAction(item) {
 // imported by the remaining inline work-init/work-update/planning-init faces.
 export function formatFriendlyApplyAction(item, options = {}) {
   const displayPath = relativeDisplayPath(item.path, options.targetDir);
+  if (item.action === "conflict") return `refusal[${item.code ?? "codex-output-conflict"}]: ${displayPath} — ${item.reason}`;
   if (options.dryRun) {
     const verbs = {
       create: "Would create",
@@ -223,6 +313,7 @@ function mergeCodexAgents(group) {
       "",
       output.source.description ? `> ${output.source.description}` : null,
       Array.isArray(output.source.paths) && output.source.paths.length > 0 ? `Applies to: ${output.source.paths.join(", ")}` : null,
+      codexGuidanceScope(output.source.paths).advisory ? "Advisory condition only: apply this guidance when the listed paths match. Codex does not enforce these path selectors." : null,
       "",
       output.body.trim(),
       ""

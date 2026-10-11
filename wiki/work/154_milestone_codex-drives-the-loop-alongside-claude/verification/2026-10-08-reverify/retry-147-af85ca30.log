@@ -1,0 +1,35 @@
+# unit
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-g0LuIN
+ok - headroom-wrap-routing/00 an enabled routable claude session spawns headroom wrap claude
+terminal: codex started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-VGiqnx
+ok - headroom-wrap-routing/00 an enabled routable codex session spawns headroom wrap codex
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-UfRoTR
+ok - headroom-wrap-routing/01 enabled but headroom absent degrades to the raw provider with no error frame
+terminal: gemini started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-HhyGPh
+ok - headroom-wrap-routing/01 gemini is never wrapped even when headroom is on PATH
+ok - headroom-wrap-routing/01 a missing PROVIDER binary still fires the existing error control-frame (not the degrade path)
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-4gSicG
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=present headroomOnPath=yes] -> spawnBin=headroom wrapArgs=yes errorFrame=no
+terminal: codex started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-11n9aY
+ok - headroom-wrap-routing/01 launch matrix [provider=codex providerOnPath=present headroomOnPath=yes] -> spawnBin=headroom wrapArgs=yes errorFrame=no
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-kQ6W5G
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=present headroomOnPath=no] -> spawnBin=raw claude wrapArgs=no errorFrame=no
+terminal: codex started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-2EfK45
+ok - headroom-wrap-routing/01 launch matrix [provider=codex providerOnPath=present headroomOnPath=no] -> spawnBin=raw codex wrapArgs=no errorFrame=no
+terminal: gemini started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-BuDT7N
+ok - headroom-wrap-routing/01 launch matrix [provider=gemini providerOnPath=present headroomOnPath=yes] -> spawnBin=raw gemini wrapArgs=no errorFrame=no
+terminal: gemini started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-IF9AuG
+ok - headroom-wrap-routing/01 launch matrix [provider=gemini providerOnPath=present headroomOnPath=no] -> spawnBin=raw gemini wrapArgs=no errorFrame=no
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=absent headroomOnPath=yes] -> spawnBin=(none) wrapArgs=no errorFrame=yes
+ok - headroom-wrap-routing/01 launch matrix [provider=claude providerOnPath=absent headroomOnPath=no] -> spawnBin=(none) wrapArgs=no errorFrame=yes
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-Kmsva2
+ok - headroom-wrap-routing/02 no work.headroom config spawns the raw provider even when headroom is on PATH
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-X1q2io
+ok - headroom-wrap-routing/02 work.headroom.enabled:false spawns the raw provider even when headroom is on PATH
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-IXQveX
+ok - headroom-wrap-routing/02 an off plugin contributes nothing to the spawn binary or args
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-Ld2Exl
+ok - headroom-wrap-routing/02 an off plugin (has no "work.headroom" key) spawns the raw provider unwrapped
+terminal: claude started · pid=1234 · ref=06/02 · cwd=<user>\AppData\Local\Temp\aof-headroom-XX6yYe
+ok - headroom-wrap-routing/02 an off plugin (is '{ "work": { "headroom": { "enabled": false } } }') spawns the raw provider unwrapped
+# executed 18 cases; failures 0

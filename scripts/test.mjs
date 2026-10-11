@@ -6,6 +6,7 @@ import { tests as ownedWorkGraphTests } from "../packages/work-graph/test/index.
 import { tests as ownedSpecificationByExampleTests } from "../packages/specification-by-example/test/index.mjs";
 import { tests as ownedUiTests } from "../apps/ui/test/index.mjs";
 import { tests as ownedWorkLoopTests } from "../packages/work-loop/test/index.mjs";
+import { tests as ownedWorkLoopRuntimeTests } from "../packages/work-loop/test/runtime/index.mjs";
 import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
 import { tests as ownedKnowledgeTests } from "../packages/knowledge/test/index.mjs";
 import { tests as ownedFoundationTests } from "../packages/foundation/test/index.mjs";
@@ -100,6 +101,7 @@ export const tests = [
   ...ownedSpecificationByExampleTests,
   ...ownedUiTests,
   ...ownedWorkLoopTests,
+  ...ownedWorkLoopRuntimeTests,
   ...ownedWorkTests,
   ...ownedKnowledgeTests,
   ...ownedFoundationTests,

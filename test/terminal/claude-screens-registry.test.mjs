@@ -110,6 +110,7 @@ export const claudeScreensRegistryTests = [
     ["ready.json", ["ready"]],
     ["trust.json", ["trust"]],
     ["mcp-approval.json", ["mcp-approval"]],
+    ["mcp-approval.multi.json", ["mcp-approval"]],
     ["first-run.json", ["first-run"]],
     ["login.json", ["login"]],
     ["usage-limit.json", ["ready", "usage-limit"]],
@@ -123,6 +124,7 @@ export const claudeScreensRegistryTests = [
   ...[
     ["trust", "Quick safety check: Is this a project you created or one you trust?"],
     ["mcp-approval", "New MCP server found in this project: probe-mcp"],
+    ["mcp-approval.multi", "2 new MCP servers found in this project"],
     ["first-run", "Choose the text style that looks best with your terminal"],
     ["login", "Select login method:"],
   ].map(([entry, words]) => ({
@@ -234,15 +236,16 @@ export const claudeScreensRegistryTests = [
       assert.deepEqual(run.pty.writes, [pasteOf(BRIEF.command), SUBMIT_KEY]);
     },
   },
-  ...["mcp-approval", "first-run", "login"].map((id) => ({
-    name: `138/01 task02 outline — a screen the operator's consent does not cover stops the session by name [${id}.json]`,
+  ...["mcp-approval", "mcp-approval.multi", "first-run", "login"].map((fixture) => ({
+    name: `138/01 task02 outline — a screen the operator's consent does not cover stops the session by name [${fixture}.json]`,
     run: async () => {
+      const id = fixture.split(".")[0];
       const sink = captureDegrades();
       try {
         const { pty, pending, stops } = drive();
         await waitUntil(() => pty.subscribed);
         const emittedAt = Date.now();
-        pty.emitAll(await chunksOf(id));
+        pty.emitAll(await chunksOf(fixture));
         await waitUntil(() => stops.some((event) => event.phase === "stop-requested"), 1000);
         assert.ok(Date.now() - emittedAt < 1000, "within a frame");
         assert.equal(stops.find((event) => event.phase === "stop-requested").failureReason, "blocked_screen");
@@ -251,7 +254,7 @@ export const claudeScreensRegistryTests = [
         const events = sink.events.filter((event) => event.screen != null);
         assert.equal(events.length, 1);
         assert.equal(events[0].code, "session-screen");
-        const frame = (await replay(await loadFixture(id))).rows;
+        const frame = (await replay(await loadFixture(fixture))).rows;
         while (frame.length > 0 && frame.at(-1) === "") frame.pop();
         assert.deepEqual(events[0].screen.rows, frame, "the event's rows are the recording's frame");
       } finally {

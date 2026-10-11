@@ -1797,7 +1797,18 @@ async function startLauncher(ws, options = {}) {
     // never a daemon-startup crash.
     (async () => {
       const stranded = await listStrandedWorktreeAssignments({ globalWorkStoreOptions: options?.globalWorkStoreOptions });
+      // A native pending question survives the daemon; settle other dead runs before reporting.
+      const preserved = await settleStrandedRunRecords(stranded, {
+        globalWorkStoreOptions: options?.globalWorkStoreOptions,
+        // NOT `nowFn` — that const lives in the worker-branch block ABOVE, out of
+        // scope here: referencing it threw `nowFn is not defined` on EVERY worker
+        // restart (measured on the Mac 2026-07-27 13:49Z), so the ghost-record
+        // settle this block exists for never once ran in production.
+        now: () => resolveNow(options),
+        onLog: (entry) => emitWarning(launcherWarnings, { code: entry.code ?? "startup-reclaim", message: entry.message ?? "", path: null, level: entry.level ?? "info" }, options),
+      });
       for (const entry of stranded) {
+        if (preserved?.has(entry.assignmentId)) continue;
         emitWarning(launcherWarnings, {
           code: "startup-reclaim",
           message: `reporting stranded worktree assignment ${entry.assignmentId} as failed (daemon restarted — its run cannot be alive)`,
@@ -1822,19 +1833,7 @@ async function startLauncher(ws, options = {}) {
           },
         );
       }
-      // 2026-07-27 (the ghost-record family, last member) — the report above flips
-      // the ASSIGNMENT; this settles each stranded run's RECORD (failed/
-      // runtime_offline), so the duplicate-run guard never walls the item behind a
-      // record whose process died with the previous daemon.
-      await settleStrandedRunRecords(stranded, {
-        globalWorkStoreOptions: options?.globalWorkStoreOptions,
-        // NOT `nowFn` — that const lives in the worker-branch block ABOVE, out of
-        // scope here: referencing it threw `nowFn is not defined` on EVERY worker
-        // restart (measured on the Mac 2026-07-27 13:49Z), so the ghost-record
-        // settle this block exists for never once ran in production.
-        now: () => resolveNow(options),
-        onLog: (entry) => emitWarning(launcherWarnings, { code: entry.code ?? "startup-reclaim", message: entry.message ?? "", path: null, level: entry.level ?? "info" }, options),
-      });
+
     })().catch((error) => {
       emitWarning(launcherWarnings, { code: "startup-reclaim-failed", message: error?.message ?? String(error), path: null }, options);
     });

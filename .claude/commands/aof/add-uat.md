@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Capture a UAT session — a cross-milestone acceptance gate over the delivery so far. Scaffolds a self-contained uat_slug folder (SESSION + STATE) on the project's intake, depending on the milestones it accepts. Numbered by aof work promote, run/accepted later by aof:verify.
+argument-hint: "<short session description> [in <group/path>] [accepting NN[,NN…]] [--in-stream]   (accepting optional — defaults to the delivered span)"
 aof-invocation: /aof:add-uat
 aof-runtime: claude
 ---

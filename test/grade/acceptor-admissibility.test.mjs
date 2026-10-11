@@ -356,21 +356,28 @@ export const acceptorAdmissibilityTests = [
     },
   },
   {
-    name: "61/03 task 00 — every knob the registry declares tunable is refused today, and the count is reported",
+    name: "61/03 task 00 — declared knobs are admitted only with an executed consumer and a readable harness, and the count is reported",
     run: async () => {
       const { units, model, harness } = await repository();
       const report = assessTunableSet({ model, units, harness });
       assert.ok(report.considered >= 3, `the shipped registry declared knobs to consider: ${report.considered}`);
-      assert.equal(report.admittedCount, 0);
-      assert.equal(report.refusedCount, report.considered);
+      // 154/05 makes the review-round bound a real role-launch consumer. The
+      // remaining declared knobs still have no executed consumer.
+      assert.deepEqual(report.proposals.filter(proposal => proposal.admitted).map(proposal => proposal.key), ["work.loop.reviewRounds"]);
+      assert.equal(report.admittedCount, 1);
+      assert.equal(report.refusedCount, report.considered - 1);
       for (const proposal of report.proposals) {
+        if (proposal.key === "work.loop.reviewRounds") {
+          assert.deepEqual(proposal.codes, []);
+          continue;
+        }
         assert.ok(
           proposal.codes.includes(NOT_ADMISSIBLE),
           `${proposal.key}: refused for want of an executed consumer (${proposal.codes.join(", ")})`,
         );
       }
       // A COUNT, not an absence of findings.
-      assert.ok(report.refusals.length >= report.considered);
+      assert.ok(report.refusals.length >= report.refusedCount);
       assert.equal(report.ranOnNothing, false);
     },
   },
@@ -600,13 +607,14 @@ export const acceptorAdmissibilityTests = [
       // `acd-progress-ledger-consumed`'s FF-6109 leg was written to anticipate — so the row is
       // stated against the RULE instead, and no longer re-reddens the day the prompt names another
       // key. Both grounds are still exercised in full by feature 01's own scenarios.
-      assert.equal(proposal.admitted, false);
+      const consumed = key === "work.loop.reviewRounds";
+      assert.equal(proposal.admitted, consumed);
       assert.deepEqual(
         proposal.codes.filter((code) => code !== NOT_ADMISSIBLE && code !== HARNESS_NOT_INTROSPECTABLE),
         [],
         "every ground it is judged on is one of the other two — membership is not among them",
       );
-      assert.equal(proposal.codes.includes(NOT_ADMISSIBLE), true, "want of an executed consumer, which this tree still fails for every declared knob");
+      assert.equal(proposal.codes.includes(NOT_ADMISSIBLE), !consumed, "the newly consumed review-round bound lifts only the consumption refusal");
 
       // …and the harness ground applies exactly when the harness of record does not name the key.
       // Read off the document's own TEXT rather than from `harnessRefusal`, so this is a check on

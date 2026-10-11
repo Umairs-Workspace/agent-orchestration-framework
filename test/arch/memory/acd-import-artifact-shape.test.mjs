@@ -125,7 +125,12 @@ export const archTests = [
             [...MEMORY_RECORD_FIELDS].sort(),
             `record ${record.id} carries EXACTLY the frozen MemoryRecord fields (no new record shape)`
           );
+          // 148/ADR-003: `tags` is the one non-string field — an array of strings, [] when there is none.
           for (const field of MEMORY_RECORD_FIELDS) {
+            if (field === "tags") {
+              assert.ok(Array.isArray(record.tags) && record.tags.every((tag) => typeof tag === "string"), `record ${record.id} field "tags" is an array of strings`);
+              continue;
+            }
             assert.equal(typeof record[field], "string", `record ${record.id} field "${field}" is a string`);
           }
         }

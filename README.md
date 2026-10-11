@@ -83,7 +83,7 @@ The unit of independence is the **story** — boundaries follow real coupling so
 
 ### Assistant commands and skills (`/aof:*`, `$aof-*`)
 
-`aof work init --runtime claude` renders the lifecycle as Claude slash-commands into `.claude/commands/aof/`; `--runtime codex` renders the same ACD procedures as Codex skills under `.codex/skills/aof-*/`. Codex also receives project lifecycle hooks in `.codex/hooks.json`: `SessionStart` starts AOF session presence, while `UserPromptSubmit` and `Stop` refresh it. Codex has no native `SessionEnd` hook, so presence expires through AOF's idle TTL after the thread closes. Review and trust project hooks with `/hooks` before relying on them. Drive a milestone from a planning PRD all the way to accepted:
+`aof work init --runtime claude` renders the lifecycle as Claude slash-commands into `.claude/commands/aof/`; `--runtime codex` renders native Codex skills under `.agents/skills/aof-*/` and TOML roles under `.codex/agents/`. Project hooks remain subject to native review/trust and the tested protocol profile. Drive a milestone from a planning PRD all the way to accepted:
 
 | Claude command / Codex skill | What it does |
 |---|---|
@@ -102,9 +102,19 @@ The unit of independence is the **story** — boundaries follow real coupling so
 | `/aof:insert-milestone` · `/aof:insert-story` · `/aof:insert-chore` · `/aof:insert-uat` / `$aof-insert-milestone` · `$aof-insert-story` · `$aof-insert-chore` · `$aof-insert-uat` | insert a work item before or after an existing item while preserving stream ordering and references |
 | `/aof:delegate` | set the two model decisions — toggle gpt-5.6 delegation on/off (default off), then always choose the orchestrator model (Fable 5 or Opus 4.8) |
 
-The commands/skills spawn a team of read-/write-scoped **subagents** (rendered into `.claude/agents/` and `.codex/agents/`):
+In orchestrated mode, commands/skills use native **subagents** (rendered into `.claude/agents/` and `.codex/agents/`). `work.agents.mode: "solo"` performs the roles inline and spawns none. Role instructions describe scope; the host's tools, approval and sandbox capabilities determine enforcement:
 
 `aof-product-owner` (SPEC, stories, finding triage) · `aof-architect` (ADRs, fitness-function arch-tests, structural review) · `aof-developer` (implements a story's tasks) · `aof-qa` (test-case design, behavioural review, Playwright browser harness, `@uat` brokering) · `aof-designer` (DESIGN.md, read-only fidelity judge) · `aof-researcher` (RESEARCH.md) · `aof-security` / `aof-compliance` (conditional tiers).
+
+### Primary assistant and native runtime settings
+
+Install both bundles with `aof work init --runtime claude,codex`. New execution selects
+`--runtime`, then `work.loop.runtime`, then Claude. Scoped phase and role choices live
+under `work.agents.runtimes.<runtime>`; installed assets and optional delegation are
+separate choices. Resume retains recorded runtime/settings. See the
+[Codex upgrade and proof guide](wiki/codex-support.md) for validated commands, ownership
+conflicts, rollback, explicit memory choices and the limits of deterministic evidence.
+Live lifecycle and repeated prompt-performance acceptance remain pending.
 
 ### Model selection (orchestrator, roles, and gpt-5.6-sol)
 

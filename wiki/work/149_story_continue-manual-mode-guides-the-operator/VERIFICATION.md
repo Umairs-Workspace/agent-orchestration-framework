@@ -28,7 +28,7 @@ doc: verification
 ### Task 04 — a real manual story walks guide → review (`@manual`)
 
 Run in the standing test-bed (`aof-test-repo`) against fixture story `07/00` (`double`). The fixture
-was refined and red (no `src/double.mjs`, no test) and stood at `not-started`. The bundle was rendered
+was refined and red (no `aof-test-repo/src/double.mjs`, no test) and stood at `not-started`. The bundle was rendered
 from this tree with `aof work update` (1 created, 4 updated, `code-review.md` deleted). Each command ran
 in a fresh headless session: `claude -p` with `CLAUDE_*` stripped and stream-json captured. The tree
 was already dirty, so `git status --porcelain -uall` and each entry's sha1 were snapshotted before and
@@ -44,7 +44,7 @@ after each command. The fixture was torn down afterwards, back to `not-started`.
   aof:review 07/00`. Status delta: only `STORY.md` (`status: not-started → in-progress`) and the new
   run record, both inside the story folder. `aof work status 07/00` answered `in-progress`.
   `verifies → tasks/04_a-real-manual-story-walks-guide-review-verify.feature` (R1)
-- **Operator build.** `src/double.mjs` and `test/double.test.mjs` were written by hand from the guide.
+- **Operator build.** `aof-test-repo/src/double.mjs` and `test/double.test.mjs` were written by hand from the guide.
   `node --test test/double.test.mjs` passed 2 of 2.
 - **R3 · `/aof:review 07/00`.** The session minted a run and ran the story's tests. It then ran the gate
   ladder: validate PASS, doctor with no admitted findings, the graph build and the blast-radius ranking.

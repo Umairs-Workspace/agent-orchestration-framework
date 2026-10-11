@@ -2,7 +2,7 @@
 
 
 // Core supplies configured services and deferred application loaders. Construction is inert.
-export function createMeshParkResumeServices({ answerRunAsk, heartbeat, openRunAsk, readAskQuestion, readPendingAsk = null, claimAssignmentParkResume, completeAssignmentParkResume, reportAssignmentSettled, reportTerminalResumeRefused, transitionRunComplete, reportDegrade, loadPresence, loadWork, loadNotifications }) {
+export function createMeshParkResumeServices({ readRuns, answerRunAsk, heartbeat, openRunAsk, readAskQuestion, readPendingAsk = null, claimAssignmentParkResume, completeAssignmentParkResume, reportAssignmentSettled, reportTerminalResumeRefused, transitionRunComplete, reportDegrade, loadPresence, loadWork, loadNotifications }) {
 // The parked-run resume protocol's worker-side orchestration. This lives beside
 // the assignment effect seam rather than growing mesh-worker-execution's already
 // guarded sink: one durable park identity claims one resume, the first real PTY
@@ -77,6 +77,7 @@ function createMeshParkResume({
   // one only when something else wrote it; then nothing is stamped on an entry this worker did not
   // open. A failed write is one degrade and never fails the session. The text is never logged.
   async function recordAnswer(item, runRecord) {
+    if (runRecord.execution?.runtime === "codex") return; // Native delivery is acknowledged by turn/start.
     if (answer == null || typeof answer.text !== "string") return;
     const askedAt = typeof answer.askedAt === "string" && Number.isFinite(Date.parse(answer.askedAt)) ? answer.askedAt : null;
     const by = answer.by != null && typeof answer.by === "object" && !Array.isArray(answer.by)
@@ -155,7 +156,7 @@ function createMeshParkResume({
       return;
     }
     if (outcome.outcome === "needs-input") {
-      const ask = worktreePath == null ? null : await readWorkerAsk({ worktreePath, sessionId: forkedSessionId, now, itemDir: item?.dir ?? null });
+      const ask = outcome.native === true ? outcome.nativeAsk ?? null : worktreePath == null ? null : await readWorkerAsk({ worktreePath, sessionId: forkedSessionId, now, itemDir: item?.dir ?? null });
       await report("running", { runId: runRecord.runId, sessionId: forkedSessionId, code: "needs-input", ...(ask == null ? {} : { ask }) });
       await complete(runRecord);
       log("info", `session ${sessionId}: resumed session parked needs-input (run ${runRecord.runId} stays running; resume it again to continue)`);
@@ -288,5 +289,65 @@ async function announceWorkerAsk(row, ask, ctx = {}) {
   }
 }
 
-return { createMeshParkResume, directivePhase, readWorkerAsk, announceWorkerAsk };
+// settleStrandedRunRecords(stranded, options) — 2026-07-27, the ghost-record
+// family's LAST member (measured the same day, on the first daemon restart after
+// the withdraw fix shipped): the startup reclaim reported a stranded assignment
+// `failed/daemon-restarted` and left its run record `running` — the duplicate-run
+// guard then walls the item exactly as the withdraw case did. Run-record
+// settlement is part of EVERY terminal path, and this is the startup path's
+// settle: for each stranded worktree, resolve its checkout, find the running run
+// record minted for that assignmentId (the bracket stamps brief.assignmentId),
+// and complete it failed/runtime_offline — the retryable infra classification, the
+// same one the autonomous loop's own reclaim uses for a crashed host. Idempotent
+// (an absent or already-terminal record is a logged no-op) and NEVER throws — a
+// settle fault is reported per entry and the next entry still settles.
+async function settleStrandedRuns(stranded, options = {}) {
+  const { globalWorkStoreOptions, now, onLog, checkoutRootForWorktree } = options;
+  const { loadWorkspace, listItems } = await loadWork();
+  const preserved = new Set();
+  const resolveNow = () => (typeof now === "function" ? now() : now ?? new Date().toISOString());
+  const log = (level, message) => {
+    try {
+      onLog?.({ code: "startup-reclaim", level, message });
+    } catch (error) {
+      reportDegrade("mesh-worker-execution", error);
+    }
+  };
+  for (const entry of Array.isArray(stranded) ? stranded : []) {
+    const assignmentId = entry?.assignmentId;
+    if (typeof assignmentId !== "string" || assignmentId.length === 0) continue;
+    try {
+      const checkoutRoot = checkoutRootForWorktree(entry.worktreePath);
+      const ws = await loadWorkspace(checkoutRoot, undefined, { env: globalWorkStoreOptions?.env });
+      const items = await listItems(ws.workDir);
+      let settled = false;
+      for (const item of items) {
+        const ghost = (await readRuns(item)).find(
+          (run) => run.state === "running" && run?.brief?.assignmentId === assignmentId,
+        ) ?? null;
+        if (ghost == null) continue;
+        if (ghost.execution?.runtime === "codex" && ghost.asks?.some(ask => ask.runtime === "codex" && ask.answeredAt == null)) {
+          preserved.add(assignmentId);
+          log("info", `stranded assignment ${assignmentId}: run ${ghost.runId} retains its pending native decision`);
+          settled = true;
+          break;
+        }
+        await transitionRunComplete(
+          item,
+          { runId: ghost.runId, outcome: "failed", failureReason: "runtime_offline", now: resolveNow() },
+          { journalOptions: { env: globalWorkStoreOptions?.env } },
+        );
+        log("info", `stranded assignment ${assignmentId}: run ${ghost.runId} settled failed/runtime_offline (daemon restarted) — the duplicate-run guard is clear`);
+        settled = true;
+        break;
+      }
+      if (!settled) log("info", `stranded assignment ${assignmentId}: no running run record to settle`);
+    } catch (error) {
+      log("warn", `stranded assignment ${assignmentId}: settling its run record failed: ${String(error?.message ?? error)}`);
+    }
+  }
+  return preserved;
+}
+
+return { settleStrandedRuns, createMeshParkResume, directivePhase, readWorkerAsk, announceWorkerAsk };
 }

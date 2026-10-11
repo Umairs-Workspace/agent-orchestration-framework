@@ -963,7 +963,7 @@ async function writeExpandedAofProject(context) {
     ],
     settings: {
       claude: { permissions: { allow: ["Bash(npm test)"] } },
-      codex: { model: "gpt-5.4", approval_policy: "on-request" }
+      codex: { model: "gpt-5.4" }
     }
   }, null, 2)}\n`, "utf8");
 }

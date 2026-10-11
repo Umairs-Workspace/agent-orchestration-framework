@@ -1,0 +1,86 @@
+{
+  "before": {
+    "started": "2026-10-08T18:11:06.700Z",
+    "ended": "2026-10-08T18:12:11.433Z",
+    "result": [
+      {
+        "ref": "07/01",
+        "phase": "continue",
+        "runId": "20261008T181111010Z-0001",
+        "outcome": "failed",
+        "attempt": 1,
+        "cycle": 1
+      }
+    ],
+    "thread": "01a11cb6-4f9d-7c41-8445-b940552c24fb",
+    "observed": "run-start returned duplicate-run"
+  },
+  "after": {
+    "started": "2026-10-08T18:19:00.417Z",
+    "ended": "2026-10-08T18:20:36.269Z",
+    "result": {
+      "ref": "07/01",
+      "phase": "continue",
+      "command": "$aof-continue 07/01 --orchestrated",
+      "outcome": "failed",
+      "failureReason": "operator_action_required",
+      "sessionId": "01a11cbd-7af7-7021-ada9-89418cfbb226",
+      "processStarted": true,
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "profileVersion": 1,
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      },
+      "settlementContext": {
+        "runtime": "codex",
+        "projectsDir": null,
+        "transcriptBaseline": null,
+        "spendBaselineAvailable": false,
+        "reason": "runtime-spend-unavailable"
+      }
+    },
+    "observed": "run-start returned driven:true for 20261008T181901373Z-0002; implementation changed answer to 42; later test launch requested permission and was declined"
+  },
+  "focused": {
+    "cases": 46,
+    "failed": 0
+  },
+  "mutation": {
+    "change": "remove native run environment",
+    "exit": 1,
+    "observed": "phase result failed instead of done"
+  },
+  "validate": [],
+  "doctor": {
+    "healthy": true,
+    "errors": 0,
+    "warnings": 3
+  }
+}

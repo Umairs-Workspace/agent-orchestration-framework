@@ -38,6 +38,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { loadScope } from "./config-load.mjs";
+import { RuntimeSettings } from "./RuntimeSettings";
 import { ConfigLoadFailed, ConfigLoading } from "./ConfigLoadFailed";
 
 type RuntimeId = "claude" | "codex";
@@ -256,11 +257,11 @@ export function App() {
   // THE SURFACE'S OWN ERROR STATE (F-45-M-1). Checked BEFORE the loading state: with no
   // payload and a failed load, "Loading AOF..." would spin forever on an origin that is never
   // going to answer.
-  if (loadError && !payload) {
+  if (loadError && (!payload || payload.scope !== scope)) {
     return <ConfigLoadFailed reason={loadError} onRetry={() => void refreshConfig(scope)} />;
   }
 
-  if (!payload) {
+  if (!payload || payload.scope !== scope) {
     return <ConfigLoading />;
   }
 
@@ -311,9 +312,9 @@ export function App() {
                 <span className="mono text-xs">{activeCount(payload, kind.id, scope)}</span>
               </button>
             ))}
-            {scope === "project" ? <div className="pt-3">
+            {<div className="pt-3">
               <p className="mb-2 px-3 text-xs font-medium text-muted-foreground">Expanded DSL</p>
-              {sections.map((section) => (
+              {sections.filter(section => scope === "project" || section.id === "settings").map((section) => (
                 <button
                   key={section.id}
                   type="button"
@@ -330,7 +331,7 @@ export function App() {
                   <span className="mono text-xs">{sectionCount(payload, section.id)}</span>
                 </button>
               ))}
-            </div> : null}
+            </div>}
             <button
               type="button"
               onClick={() => {
@@ -357,8 +358,8 @@ export function App() {
 
         {activeKind === "review" ? (
           <ReviewPanel payload={payload} />
-        ) : isSectionKind(activeKind) && scope === "project" ? (
-          <SectionEditor activeSection={activeKind} payload={payload} refreshConfig={refreshConfig} />
+        ) : isSectionKind(activeKind) ? (
+          scope === "global" ? <RuntimeSettings scope="global" /> : <SectionEditor activeSection={activeKind} payload={payload} refreshConfig={refreshConfig} />
         ) : isResourceKind(activeKind) ? (
           <section className="grid min-h-[calc(100dvh_-_var(--aof-shell-chrome-height,0px))] grid-cols-[320px_minmax(0,1fr)] max-[1050px]:grid-cols-1">
             <div className="border-r border-border p-5 max-[1050px]:border-b max-[1050px]:border-r-0">
@@ -869,6 +870,7 @@ function SectionEditor({ activeSection, payload, refreshConfig }: { activeSectio
 
   return (
     <section className="p-5">
+      {activeSection === "settings" ? <RuntimeSettings /> : null}
       <form className="mx-auto max-w-5xl space-y-5" onSubmit={saveSection}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>

@@ -367,7 +367,6 @@ const reviewCommandTests = [
     ["the blast-radius ranking", /Rank the review by blast radius, before the architect lens\.\*\* Run `aof graph build \.`[^]*Then run `aof graph impact <the changed files>`\. Rank the changed files by their dependents/u],
     ["advisory, UNKNOWN never zero", /The ranking is advisory and never a gate\.\*\*[^]*? A file reported `present: false` is ranked UNKNOWN, never zero/u],
     ["unranked on a graph miss", /A `graphify-missing`, `graphify-build-failed` or `graphify-no-persist` answer means the review runs unranked, with no block/u],
-    ["the execution mode", /an unset `work\.agents\.mode` resolves to orchestrated\*\*, and `--solo` or `--orchestrated` overrides it for the run/u],
     ["one round per run", /Each run is one review round, and the next round is the operator's re-run after a fix/u],
   ].map(([label, rule]) => ({
     name: `149/02 the review command holds each rule a review of the operator's build needs [${label}]`,
@@ -375,6 +374,13 @@ const reviewCommandTests = [
       assert.match(await reviewText(), rule);
     },
   })),
+  // 155/01 E6 — re-points 149/02's "the execution mode" row: an unset mode now resolves to solo.
+  {
+    name: "155/01 E6 the review command resolves an unset work.agents.mode to solo, and a flag overrides it for the run",
+    async run() {
+      assert.match(await reviewText(), /an unset `work\.agents\.mode` resolves to solo\*\*, and `--solo` or `--orchestrated` overrides it for the run/u);
+    },
+  },
   {
     name: "149/02 the docs name the manual walk",
     async run() {

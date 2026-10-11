@@ -56,6 +56,7 @@ const memoryUsage = _aofApplication.knowledge.work.memory.memoryUsage;
 const runMemory = _aofApplication.knowledge.work.memory.runMemory;
 const resolveConfiguredBackend = _aofApplication.knowledge.work.memory.resolveConfiguredBackend;
 import { parseFeature } from "../integration/support/feature-runner.mjs";
+import { withCacheReadFixture, plantCacheRow, refuseCommand, runCommand, itemDirOf, WORKER_NODE, SYNCED_AT } from "../support/cache-read-fixture.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
@@ -102,7 +103,15 @@ const FIXTURE_ARCH = [
 // What HEAD's ladder door printed for each human row, over the fixture above with its index
 // built. Captured as described in the header; `\n` is what `console.log` appended.
 const HUMAN_GOLDENS = [
-  { invocation: ["status"], stdout: "memory: backend=local records=2\n" },
+  // 148/05 — the first line is unchanged; the layers and conformance lines follow it (148/ADR-004 §3).
+  {
+    invocation: ["status"],
+    stdout: "memory: backend=local records=2\n"
+      + "layers: episodic 0 · semantic 1 · procedural 1\n"
+      + "conformance: kind blank 0 non-enum 0 · area blank 0 non-enum 1 · stage blank 0 non-enum 0 · owner blank 0 · gap status non-enum 0\n"
+      // 153/03 — observed effectiveness follows conformance; this fixture has no ledger and no recurrence.
+      + "effectiveness: lesson surfaced 0 honoured 0 departed 0 irrelevant 0 recurred 0\n",
+  },
   { invocation: ["reindex"], stdout: "reindex: 2 record(s)\n" },
   { invocation: ["ingest"], stdout: "reindex: 2 record(s)\n" },
   {
@@ -120,14 +129,6 @@ const HUMAN_GOLDENS = [
     invocation: ["recall", "pin line endings", "--block"],
     stdout: "R1 (m07) · near-miss · tooling · Pin line endings on every generated file · 07_milestone_fixture/RETROSPECTIVE.md:6\n"
       + "ADR-001 (m07) · adr · architecture · The fixture keeps one decision · 07_milestone_fixture/ARCHITECTURE.md:6\n"
-      + "\n",
-  },
-  {
-    invocation: ["brief"],
-    stdout: "memory brief · whole stream\n"
-      + "  1 lesson(s), 1 adr(s)\n"
-      + "  lessons by area:\n"
-      + "    tooling: R1\n"
       + "\n",
   },
 ];
@@ -150,6 +151,7 @@ const JSON_GOLDENS = [
       + "    \"kind\": \"near-miss\",\n"
       + "    \"owner\": \"developer\",\n"
       + "    \"status\": \"\",\n"
+      + "    \"tags\": [],\n"
       + "    \"summary\": \"pin line endings at the writer, never at the reviewer.\",\n"
       + "    \"text\": \"Pin line endings on every generated file \\n a generated file shipped with CRLF and the diff was every line. \\n nothing pinned the line endings at the writer. \\n pin line endings at the writer, never at the reviewer.\",\n"
       + "    \"source\": \"07_milestone_fixture/RETROSPECTIVE.md:6\",\n"
@@ -166,6 +168,7 @@ const JSON_GOLDENS = [
       + "    \"kind\": \"\",\n"
       + "    \"owner\": \"\",\n"
       + "    \"status\": \"Accepted\",\n"
+      + "    \"tags\": [],\n"
       + "    \"summary\": \"One ADR, so the brief's split has an adr to count.\",\n"
       + "    \"text\": \"The fixture keeps one decision \\n One ADR, so the brief's split has an adr to count.\",\n"
       + "    \"source\": \"07_milestone_fixture/ARCHITECTURE.md:6\",\n"
@@ -175,39 +178,21 @@ const JSON_GOLDENS = [
     check: (doc) => { assert.ok(Array.isArray(doc), "recall --json is an ARRAY"); assert.equal(doc[0].id, "R1"); },
   },
   {
-    invocation: ["brief"],
-    shape: "the digest without its rendered `text`",
-    stdout: "{\n"
-      + "  \"scope\": {},\n"
-      + "  \"lessonCount\": 1,\n"
-      + "  \"adrCount\": 1,\n"
-      + "  \"lessonsByArea\": {\n"
-      + "    \"tooling\": [\n"
-      + "      {\n"
-      + "        \"id\": \"R1\",\n"
-      + "        \"item\": \"07\",\n"
-      + "        \"title\": \"Pin line endings on every generated file\",\n"
-      + "        \"summary\": \"pin line endings at the writer, never at the reviewer.\"\n"
-      + "      }\n"
-      + "    ]\n"
-      + "  }\n"
-      + "}\n",
-    check: (doc) => { assert.equal("text" in doc, false, "brief --json carries no `text`"); assert.equal(doc.lessonCount, 1); },
-  },
-  {
     invocation: ["reindex"],
     shape: "the build summary without the `records` dump",
     stdout: "{\n"
       + "  \"backend\": \"local\",\n"
       + "  \"recordCount\": 2,\n"
       + "  \"store\": \"<STORE>\",\n"
-      + "  \"version\": 1\n"
+      + "  \"version\": 2\n"
       + "}\n",
     check: (doc) => { assert.equal("records" in doc, false, "reindex --json carries no `records`"); assert.equal(doc.recordCount, 2); },
   },
   {
     invocation: ["status"],
     shape: "the { backend, recordCount } object",
+    // 148/05 — the seam composes `types`, `layers` and `conformance` after the backend's own facts
+    // (148/ADR-004); the fixture lesson's Area `tooling` is the one non-enum value.
     stdout: "{\n"
       + "  \"backend\": \"local\",\n"
       + "  \"recordCount\": 2,\n"
@@ -217,7 +202,62 @@ const JSON_GOLDENS = [
       + "  \"adrs\": 1,\n"
       + "  \"summaries\": 0,\n"
       + "  \"capabilities\": 0,\n"
-      + "  \"gaps\": 0\n"
+      + "  \"gaps\": 0,\n"
+      + "  \"index\": {\n"
+      + "    \"version\": 2,\n"
+      + "    \"current\": 2,\n"
+      + "    \"stale\": false\n"
+      + "  },\n"
+      + "  \"types\": {\n"
+      + "    \"adr\": {\n"
+      + "      \"count\": 1,\n"
+      + "      \"layer\": \"semantic\"\n"
+      + "    },\n"
+      + "    \"lesson\": {\n"
+      + "      \"count\": 1,\n"
+      + "      \"layer\": \"procedural\"\n"
+      + "    }\n"
+      + "  },\n"
+      + "  \"layers\": {\n"
+      + "    \"episodic\": 0,\n"
+      + "    \"semantic\": 1,\n"
+      + "    \"procedural\": 1\n"
+      + "  },\n"
+      + "  \"conformance\": {\n"
+      + "    \"kind\": {\n"
+      + "      \"blank\": 0,\n"
+      + "      \"nonEnum\": 0\n"
+      + "    },\n"
+      + "    \"area\": {\n"
+      + "      \"blank\": 0,\n"
+      + "      \"nonEnum\": 1\n"
+      + "    },\n"
+      + "    \"stage\": {\n"
+      + "      \"blank\": 0,\n"
+      + "      \"nonEnum\": 0\n"
+      + "    },\n"
+      + "    \"owner\": {\n"
+      + "      \"blank\": 0\n"
+      + "    },\n"
+      + "    \"gapStatus\": {\n"
+      + "      \"nonEnum\": 0\n"
+      + "    }\n"
+      + "  },\n"
+      // 153/03 — the work-owned accounting reader's nested block; the legacy fields above are untouched.
+      + "  \"effectiveness\": {\n"
+      + "    \"basis\": \"observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake\",\n"
+      + "    \"complete\": true,\n"
+      + "    \"diagnostics\": [],\n"
+      + "    \"types\": {\n"
+      + "      \"lesson\": {\n"
+      + "        \"surfaced\": 0,\n"
+      + "        \"honoured\": 0,\n"
+      + "        \"departed\": 0,\n"
+      + "        \"irrelevant\": 0,\n"
+      + "        \"recurred\": 0\n"
+      + "      }\n"
+      + "    }\n"
+      + "  }\n"
       + "}\n",
     check: (doc) => { assert.equal(doc.backend, "local"); assert.equal(doc.recordCount, 2); },
   },
@@ -295,7 +335,7 @@ export const workMemoryCommandTests = [
   },
 
   {
-    name: "work-memory/00 every verb's human render is byte-identical to the ladder's — outline: status | reindex | ingest | recall \"pin line endings\" | recall … --block | brief (literal goldens captured from HEAD's workMemoryCommand over this fixture)",
+    name: "work-memory/00 every verb's human render is byte-identical to the ladder's — outline: status | reindex | ingest | recall \"pin line endings\" | recall … --block (literal goldens captured from HEAD's workMemoryCommand over this fixture)",
     run: async () => {
       const root = await makeRoot({ backend: "local" });
       try {
@@ -315,7 +355,7 @@ export const workMemoryCommandTests = [
   },
 
   {
-    name: "work-memory/00 every verb's --json document is the projection the seam defined — outline: recall → the records ARRAY | brief → the digest sans `text` | reindex → the summary sans `records` | status → { backend, recordCount } (one document each, byte-identical to the ladder's goldens)",
+    name: "work-memory/00 every verb's --json document is the projection the seam defined — outline: recall → the records ARRAY | reindex → the summary sans `records` | status → { backend, recordCount } (one document each, byte-identical to the ladder's goldens)",
     run: async () => {
       const root = await makeRoot({ backend: "local" });
       try {
@@ -392,6 +432,8 @@ export const workMemoryCommandTests = [
         { argv: ["recall", "q", "--limit", "0"], check: (input) => assert.equal(input.opts.limit, undefined, "--limit 0 sets no limit, so the backend default applies") },
         { argv: ["recall", "q", "--limit", "abc"], check: (input) => assert.equal(input.opts.limit, undefined, "a non-numeric --limit sets no limit, so the backend default applies") },
         { argv: ["recall", "q", "--block"], check: (input) => assert.equal(input.block, true, "--block is carried as block: true") },
+        { argv: ["recurrence", "a", "b", "--exclude", "68/R10"], check: (input) => { assert.equal(input.query, "a b", "the positionals are the new lesson's text"); assert.equal(input.exclude, "68/R10", "--exclude is carried as exclude"); } },
+        { argv: ["recurrence", "a"], check: (input) => assert.equal(input.exclude, null, "no --exclude excludes nothing") },
       ];
       for (const { argv, check } of rows) {
         const input = adapt(argv);
@@ -457,7 +499,7 @@ export const workMemoryCommandTests = [
         assert.equal(bogus.status, 1, "an unknown verb exits 1");
         assert.ok(bogus.stderr.includes("Unknown memory verb \"bogus\"."), `stderr names the verb (stderr: ${bogus.stderr.slice(0, 200)})`);
         assert.ok(bogus.stderr.includes("Usage: aof work memory <verb>"), "and carries the seam's usage text");
-        assert.ok(bogus.stderr.includes("Verbs: recall, brief, ingest, reindex, status"), "…including the verb vocabulary");
+        assert.ok(bogus.stderr.includes("Verbs: recall, record-recall, recurrence, ingest, reindex, status"), "…including the verb vocabulary");
         assert.equal(bogus.stdout, "", "nothing on stdout");
 
         const missing = runCli(root, ["work", "memory"]);
@@ -527,7 +569,7 @@ export const workMemoryCommandTests = [
   },
 
   {
-    name: "work-memory/00 the bijection probe answers one document at exit 0: `aof work memory status --json` on a bare fixture (no memory.backend ⇒ none) is exactly { backend: \"none\", recordCount: 0 }",
+    name: "work-memory/00 the bijection probe answers one document at exit 0: `aof work memory status --json` on a bare fixture (no memory.backend ⇒ none) is the none backend's status: zero records and an empty partition",
     run: async () => {
       const root = await makeRoot();
       try {
@@ -535,7 +577,27 @@ export const workMemoryCommandTests = [
         assert.equal(probe.status, 0, `the probe exits 0 (stderr: ${probe.stderr})`);
         let doc;
         assert.doesNotThrow(() => { doc = JSON.parse(probe.stdout); }, "exactly one parseable JSON document");
-        assert.deepEqual(doc, { backend: "none", recordCount: 0 }, "the none backend's honest status");
+        // 148/05 — the seam's composition over no records: an empty partition, every count zero.
+        assert.deepEqual(doc, {
+          backend: "none",
+          recordCount: 0,
+          types: {},
+          layers: { episodic: 0, semantic: 0, procedural: 0 },
+          conformance: {
+            kind: { blank: 0, nonEnum: 0 },
+            area: { blank: 0, nonEnum: 0 },
+            stage: { blank: 0, nonEnum: 0 },
+            owner: { blank: 0 },
+            gapStatus: { nonEnum: 0 },
+          },
+          // 153/03 — none has no index, but the ledgers and retrospectives are still read: all zero here.
+          effectiveness: {
+            basis: "observed decisions and repeats; a verdict is not proof that a lesson prevented a mistake",
+            complete: true,
+            diagnostics: [],
+            types: { lesson: { surfaced: 0, honoured: 0, departed: 0, irrelevant: 0, recurred: 0 } },
+          },
+        }, "the none backend's honest status");
         assert.equal(probe.stdout, `${JSON.stringify(doc, null, 2)}\n`, "and nothing else on stdout");
       } finally {
         await rm(root, { recursive: true, force: true });
@@ -561,6 +623,116 @@ export const workMemoryCommandTests = [
       // And the steps module the runner resolves by convention exists and exports the runner.
       const steps_ = await import(new URL("../integration/steps/work-memory.steps.mjs", import.meta.url));
       assert.equal(typeof steps_.runStep, "function", "steps/work-memory.steps.mjs exports runStep");
+    },
+  },
+
+  {
+    name: "153/01 E7 brief is retired through BOTH doors — the routed door and the in-process door each refuse it as the normal unknown verb before any backend is resolved, help no longer advertises it, and recall keeps its public shape",
+    run: async () => {
+      const root = await makeRoot({ backend: "local" });
+      try {
+        const routed = runCli(root, ["work", "memory", "brief"]);
+        assert.equal(routed.status, 1, "the routed door refuses brief at exit 1");
+        assert.ok(routed.stderr.includes('Unknown memory verb "brief".'), `stderr names the verb (stderr: ${routed.stderr.slice(0, 200)})`);
+        const envelope = runCli(root, ["work", "memory", "brief", "--json"]);
+        assert.equal(JSON.parse(envelope.stdout).code, "unknown-verb", "under --json it is the unknown-verb envelope");
+
+        // The in-process door: the gate answers before the backend resolver is ever called.
+        let resolved = 0;
+        const refusal = await runMemory(["brief"], { config: {}, resolveBackend: async () => { resolved += 1; return {}; }, log: () => {} });
+        assert.deepEqual({ ok: refusal.ok, exitCode: refusal.exitCode }, { ok: false, exitCode: 1 }, "runMemory refuses brief");
+        assert.equal(resolved, 0, "…before resolving a backend");
+        await assert.rejects(
+          () => memoryCommand.run(adapt(["brief"]), { workspace: { config: { memory: { backend: "no-such-backend" } } } }),
+          (error) => error.code === "unknown-verb",
+          "the routed command refuses with the coded unknown-verb — a backend name the registry does not carry proves none was resolved",
+        );
+
+        assert.ok(!memoryUsage().includes("brief"), "help no longer advertises brief");
+        assert.ok(!("briefDigest" in _aofApplication.knowledge.work.memory), "the digest export is gone with the verb");
+        assert.ok(memoryUsage().includes("record-recall"), "…and names the verb that replaced the unwired surface");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+
+  {
+    name: "153/01 record-recall resolves no backend through either door — the routed command and runMemory hand the observation to the injected ledger capability even when the configured backend does not exist",
+    run: async () => {
+      const calls = [];
+      const stub = async (ctx, request) => { calls.push(request); return { ok: true, ref: request.ref, id: "c1", replayed: false, verdicts: 2 }; };
+      let resolved = 0;
+      const outcome = await runMemory(["record-recall", "153", "--input", "obs.json"], {
+        config: { memory: { backend: "no-such-backend" } },
+        resolveBackend: async () => { resolved += 1; return {}; },
+        recordRecall: stub,
+        log: () => {},
+      });
+      assert.equal(outcome.ok, true);
+      assert.equal(resolved, 0, "no backend was resolved for a ledger write");
+      assert.deepEqual(calls, [{ ref: "153", inputPath: "obs.json" }], "the parsed ref and --input reach the capability");
+
+      const unwired = await runMemory(["record-recall", "153", "--input", "obs.json"], { config: {}, resolveBackend: async () => ({}), log: () => {} }).then(
+        () => null,
+        (error) => error,
+      );
+      assert.equal(unwired?.code, "record-recall-unavailable", "a door without the capability refuses by code rather than falling through to a backend");
+
+      const input = adapt(["record-recall", "153", "--input", "obs.json"]);
+      assert.deepEqual([input.verb, input.ref, input.inputFile], ["record-recall", "153", "obs.json"], "the routed adapter carries the ref and the --input file");
+      assert.equal(adapt(["recall", "q"]).ref, null, "other verbs carry no ref");
+    },
+  },
+
+  {
+    name: "153/01 a remote-only item is refused with the local-checkout code and nothing is written — record-recall resolves exactly and locally",
+    run: () => withCacheReadFixture(async (fx) => {
+      await plantCacheRow(fx, "07/01", { status: "done", title: "The readers migrate", slug: "cache-read-surface", parent: "07", node: WORKER_NODE, at: SYNCED_AT });
+      const file = path.join(fx.root, "observation.json");
+      await writeFile(file, JSON.stringify({
+        id: "c1", at: "2026-10-10T12:00:00Z", edge: "refine-architect", actor: "architect", query: "q", scope: {},
+        records: [{ item: "45", id: "R13", recordType: "lesson", verdict: "honoured" }],
+      }), "utf8");
+      const error = await refuseCommand(() => runCommand(fx, "work:memory", { verb: "record-recall", ref: "07/01", inputFile: file }));
+      assert.equal(error.code, "item-not-local", "the refusal names the absent local checkout");
+      assert.equal(error.status, 409);
+      const { existsSync } = await import("node:fs");
+      assert.ok(!existsSync(itemDirOf(fx, "07/01")), "no folder was created for the cache-only ref");
+    }, { stream: [{ number: "06", stories: [] }, { number: "07", stories: [] }] }),
+  },
+
+  {
+    name: "153/02 the recurrence verb is routed: through the real CLI it scores the whole lesson index, honours --exclude, and answers a null decision with memory off",
+    run: async () => {
+      const text = "Pin line endings on every generated file a generated file shipped with CRLF and the diff was every line nothing pinned the line endings at the writer pin line endings at the writer, never at the reviewer";
+      const on = await makeRoot({ backend: "local" });
+      const off = await makeRoot();
+      try {
+        buildIndex(on);
+        const hit = runCli(on, ["work", "memory", "recurrence", text, "--json"]);
+        assert.equal(hit.status, 0, hit.stderr);
+        const decision = JSON.parse(hit.stdout);
+        assert.equal(decision.qualifying, "07/R1");
+        assert.deepEqual(Object.keys(decision).sort(), ["calibration", "candidates", "qualifying", "score", "threshold"]);
+
+        const self = JSON.parse(runCli(on, ["work", "memory", "recurrence", text, "--exclude", "07/R1", "--json"]).stdout);
+        assert.deepEqual([self.qualifying, self.score, self.candidates], [null, null, []], "the lesson being written is never its own candidate");
+
+        const human = runCli(on, ["work", "memory", "recurrence", text]);
+        assert.match(human.stdout, /^recurrence: 07\/R1 \(score [0-9.]+ > threshold [0-9.]+, calibration /);
+
+        const none = runCli(off, ["work", "memory", "recurrence", text, "--json"]);
+        assert.equal(none.status, 0, none.stderr);
+        assert.deepEqual([JSON.parse(none.stdout).qualifying, JSON.parse(none.stdout).candidates], [null, []]);
+
+        const bad = runCli(on, ["work", "memory", "recurrence", text, "--exclude", "R1", "--json"]);
+        assert.notEqual(bad.status, 0);
+        assert.match(bad.stdout + bad.stderr, /invalid-exclude/);
+      } finally {
+        await rm(on, { recursive: true, force: true });
+        await rm(off, { recursive: true, force: true });
+      }
     },
   },
 ];

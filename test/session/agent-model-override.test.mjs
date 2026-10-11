@@ -284,25 +284,31 @@ export const agentModelOverrideTests = [
     }
   },
   {
-    name: "141/02 the codex and opencode agent renders carry no effort key even for a pinned role",
+    name: "154/03 native Codex agent effort is retained and OpenCode remains unchanged (supersedes 141/02)",
     run: async () => {
       const bundle = loadBundle();
-      const config = { work: { agents: { effort: { "aof-architect": "extra-high" } } } };
+      const config = { work: { agents: { effort: { "aof-architect": "extra-high" }, runtimes: { codex: {
+        effort: { "aof-architect": "extra-high" }
+      } } } } };
       for (const runtime of ["codex", "opencode"]) {
         const pinned = renderBundleOutputsWithConfig(bundle, config, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");
         const plain = renderBundleOutputsWithConfig(bundle, {}, { runtimes: [runtime] }).filter((o) => o.resource?.kind === "agent" && o.resource.id === "aof-architect");
         assert.equal(pinned.length, 1, runtime);
         assert.doesNotMatch(pinned[0].content, /^effort:/mu, `${runtime}: no effort line`);
-        assert.equal(pinned[0].content, plain[0].content, `${runtime}: the render is unchanged`);
+        if (runtime === "codex") {
+          assert.match(pinned[0].content, /^model_reasoning_effort = "xhigh"$/m);
+          assert.doesNotMatch(plain[0].content, /^model_reasoning_effort =/m);
+        } else assert.equal(pinned[0].content, plain[0].content, `${runtime}: the render is unchanged`);
       }
     }
   },
-  // Scenario Outline: project validate checks the role map as it checks the model map
+  // Scenario Outline: project validate checks the role map as it checks the model map. 155/02: an
+  // unset mode is the default solo, so a non-empty map under it also carries the inert notice.
   ...[
-    [{ "aof-qa": "extra-high" }, undefined, []],
-    [{ "aof-tester": "high" }, undefined, [["error", "effort-map-unknown-role", "work.agents.effort.aof-tester"]]],
-    [{ "aof-qa": "turbo" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"]]],
-    [{ "aof-qa": "" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"]]],
+    [{ "aof-qa": "extra-high" }, undefined, [["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+    [{ "aof-tester": "high" }, undefined, [["error", "effort-map-unknown-role", "work.agents.effort.aof-tester"], ["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+    [{ "aof-qa": "turbo" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"], ["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
+    [{ "aof-qa": "" }, undefined, [["error", "effort-map-bad-value", "work.agents.effort.aof-qa"], ["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
     [[], undefined, [["error", null, "work.agents.effort"]]],
     [{ "aof-qa": "high" }, "solo", [["info", "effort-map-inert-under-solo", "work.agents.effort"]]],
   ].map(([map, mode, expected]) => ({

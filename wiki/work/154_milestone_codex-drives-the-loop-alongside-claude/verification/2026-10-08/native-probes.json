@@ -1,0 +1,723 @@
+{
+  "evidence": "observed-native-protocol-and-prerequisite-stops",
+  "accepted": false,
+  "sourceCommit": "c08a75471137d81c9239f581d69d26c81cf048bc",
+  "sourceTreeClean": false,
+  "caveat": "Concurrent story 155 edits occurred during verification. This report is not a frozen full lifecycle or acceptance gate.",
+  "codex": {
+    "fixtureRevision": "2c101e970695e1f2b65a64b334bfc719895e0983",
+    "probes": [
+      {
+        "name": "create",
+        "started": "2026-10-08T14:07:26.265Z",
+        "ended": "2026-10-08T14:07:40.593Z",
+        "result": {
+          "outcome": "done",
+          "sessionId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+          "processStarted": true,
+          "cliVersion": "0.160.0",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "execution": {
+            "version": 1,
+            "runtime": "codex",
+            "runtimeSource": "flag",
+            "transport": "app-server-stdio",
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "phases": {
+              "refine": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              },
+              "continue": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "--model",
+                "effort": "low",
+                "effortSource": "--model"
+              },
+              "verify": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              }
+            },
+            "roles": {}
+          }
+        },
+        "identities": [
+          "01a11bd7-2565-7922-9742-863d8aa0535b",
+          {
+            "sessionId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-2c99-7091-b16b-d47c8a2b24fb"
+          }
+        ],
+        "usage": [
+          {
+            "sessionId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-2c99-7091-b16b-d47c8a2b24fb",
+            "total": {
+              "totalTokens": 21530,
+              "inputTokens": 21506,
+              "cachedInputTokens": 0,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 24,
+              "reasoningOutputTokens": 0
+            },
+            "last": {
+              "totalTokens": 21530,
+              "inputTokens": 21506,
+              "cachedInputTokens": 0,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 24,
+              "reasoningOutputTokens": 0
+            },
+            "modelContextWindow": 258400
+          }
+        ],
+        "questions": [],
+        "pids": [
+          72380
+        ],
+        "observedTerminalFrames": [
+          {
+            "method": "item/started",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "item",
+              "threadId",
+              "turnId",
+              "startedAtMs"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-2c99-7091-b16b-d47c8a2b24fb",
+            "status": null,
+            "itemType": "agentMessage",
+            "phase": "final_answer"
+          },
+          {
+            "method": "item/completed",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "item",
+              "threadId",
+              "turnId",
+              "completedAtMs"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-2c99-7091-b16b-d47c8a2b24fb",
+            "status": null,
+            "itemType": "agentMessage",
+            "phase": "final_answer"
+          },
+          {
+            "method": "turn/completed",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "threadId",
+              "turn"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-2c99-7091-b16b-d47c8a2b24fb",
+            "status": "completed",
+            "itemType": null,
+            "phase": null
+          }
+        ]
+      },
+      {
+        "name": "resume",
+        "started": "2026-10-08T14:07:40.596Z",
+        "ended": "2026-10-08T14:07:48.156Z",
+        "result": {
+          "outcome": "done",
+          "sessionId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+          "processStarted": true,
+          "cliVersion": "0.160.0",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "execution": {
+            "version": 1,
+            "runtime": "codex",
+            "runtimeSource": "flag",
+            "transport": "app-server-stdio",
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "phases": {
+              "refine": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              },
+              "continue": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "--model",
+                "effort": "low",
+                "effortSource": "--model"
+              },
+              "verify": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              }
+            },
+            "roles": {}
+          }
+        },
+        "identities": [
+          "01a11bd7-2565-7922-9742-863d8aa0535b",
+          {
+            "sessionId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-6659-7d50-9edc-4869e56aa65d"
+          }
+        ],
+        "usage": [
+          {
+            "sessionId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-6659-7d50-9edc-4869e56aa65d",
+            "total": {
+              "totalTokens": 43188,
+              "inputTokens": 43140,
+              "cachedInputTokens": 21376,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 48,
+              "reasoningOutputTokens": 0
+            },
+            "last": {
+              "totalTokens": 21658,
+              "inputTokens": 21634,
+              "cachedInputTokens": 21376,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 24,
+              "reasoningOutputTokens": 0
+            },
+            "modelContextWindow": 258400
+          }
+        ],
+        "questions": [],
+        "pids": [
+          38404
+        ],
+        "observedTerminalFrames": [
+          {
+            "method": "item/started",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "item",
+              "threadId",
+              "turnId",
+              "startedAtMs"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-6659-7d50-9edc-4869e56aa65d",
+            "status": null,
+            "itemType": "agentMessage",
+            "phase": "final_answer"
+          },
+          {
+            "method": "item/completed",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "item",
+              "threadId",
+              "turnId",
+              "completedAtMs"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-6659-7d50-9edc-4869e56aa65d",
+            "status": null,
+            "itemType": "agentMessage",
+            "phase": "final_answer"
+          },
+          {
+            "method": "turn/completed",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "threadId",
+              "turn"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-2565-7922-9742-863d8aa0535b",
+            "turnId": "01a11bd7-6659-7d50-9edc-4869e56aa65d",
+            "status": "completed",
+            "itemType": null,
+            "phase": null
+          }
+        ]
+      },
+      {
+        "name": "structured-question-fallback",
+        "started": "2026-10-08T14:07:48.158Z",
+        "ended": "2026-10-08T14:07:56.561Z",
+        "result": {
+          "outcome": "needs-input",
+          "question": {
+            "token": "live-profile-colour",
+            "text": "Which colour?",
+            "choices": [
+              "blue",
+              "green"
+            ],
+            "sessionId": "01a11bd7-79f8-7552-8f31-e975c26b95b0"
+          },
+          "sessionId": "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+          "processStarted": true,
+          "cliVersion": "0.160.0",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "execution": {
+            "version": 1,
+            "runtime": "codex",
+            "runtimeSource": "flag",
+            "transport": "app-server-stdio",
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "phases": {
+              "refine": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              },
+              "continue": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "--model",
+                "effort": "low",
+                "effortSource": "--model"
+              },
+              "verify": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              }
+            },
+            "roles": {}
+          },
+          "cleanupWarnings": [
+            "interrupt_failed"
+          ]
+        },
+        "identities": [
+          "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+          {
+            "sessionId": "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+            "turnId": "01a11bd7-8420-7782-83e4-a79952ae8320"
+          }
+        ],
+        "usage": [
+          {
+            "sessionId": "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+            "turnId": "01a11bd7-8420-7782-83e4-a79952ae8320",
+            "total": {
+              "totalTokens": 21591,
+              "inputTokens": 21548,
+              "cachedInputTokens": 20480,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 43,
+              "reasoningOutputTokens": 0
+            },
+            "last": {
+              "totalTokens": 21591,
+              "inputTokens": 21548,
+              "cachedInputTokens": 20480,
+              "cacheWriteInputTokens": 0,
+              "outputTokens": 43,
+              "reasoningOutputTokens": 0
+            },
+            "modelContextWindow": 258400
+          }
+        ],
+        "questions": [
+          {
+            "token": "live-profile-colour",
+            "text": "Which colour?",
+            "choices": [
+              "blue",
+              "green"
+            ],
+            "sessionId": "01a11bd7-79f8-7552-8f31-e975c26b95b0"
+          }
+        ],
+        "pids": [
+          10624
+        ],
+        "observedTerminalFrames": [
+          {
+            "method": "item/started",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "item",
+              "threadId",
+              "turnId",
+              "startedAtMs"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+            "turnId": "01a11bd7-8420-7782-83e4-a79952ae8320",
+            "status": null,
+            "itemType": "agentMessage",
+            "phase": "final_answer"
+          },
+          {
+            "method": "item/completed",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "item",
+              "threadId",
+              "turnId",
+              "completedAtMs"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+            "turnId": "01a11bd7-8420-7782-83e4-a79952ae8320",
+            "status": null,
+            "itemType": "agentMessage",
+            "phase": "final_answer"
+          },
+          {
+            "method": "turn/completed",
+            "responseId": null,
+            "keys": [
+              "method",
+              "params",
+              "emittedAtMs"
+            ],
+            "parameterKeys": [
+              "threadId",
+              "turn"
+            ],
+            "resultKeys": [],
+            "errorCode": null,
+            "threadId": "01a11bd7-79f8-7552-8f31-e975c26b95b0",
+            "turnId": "01a11bd7-8420-7782-83e4-a79952ae8320",
+            "status": "completed",
+            "itemType": null,
+            "phase": null
+          },
+          {
+            "method": null,
+            "responseId": 5,
+            "keys": [
+              "error",
+              "id"
+            ],
+            "parameterKeys": [],
+            "resultKeys": [],
+            "errorCode": -32600,
+            "threadId": null,
+            "turnId": null,
+            "status": null,
+            "itemType": null,
+            "phase": null
+          }
+        ]
+      },
+      {
+        "name": "operator-stop",
+        "started": "2026-10-08T14:07:56.563Z",
+        "ended": "2026-10-08T14:07:59.615Z",
+        "result": {
+          "outcome": "failed",
+          "failureReason": "abort",
+          "sessionId": "01a11bd7-992f-70f3-a563-059f90511eec",
+          "processStarted": true,
+          "cliVersion": "0.160.0",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "execution": {
+            "version": 1,
+            "runtime": "codex",
+            "runtimeSource": "flag",
+            "transport": "app-server-stdio",
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "phases": {
+              "refine": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              },
+              "continue": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "--model",
+                "effort": "low",
+                "effortSource": "--model"
+              },
+              "verify": {
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default",
+                "effort": "high",
+                "effortSource": "default"
+              }
+            },
+            "roles": {}
+          },
+          "cleanupWarnings": [
+            "interrupt_failed"
+          ]
+        },
+        "identities": [
+          "01a11bd7-992f-70f3-a563-059f90511eec"
+        ],
+        "usage": [],
+        "questions": [],
+        "pids": [
+          19308
+        ],
+        "observedTerminalFrames": [
+          {
+            "method": null,
+            "responseId": 5,
+            "keys": [
+              "error",
+              "id"
+            ],
+            "parameterKeys": [],
+            "resultKeys": [],
+            "errorCode": -32600,
+            "threadId": null,
+            "turnId": null,
+            "status": null,
+            "itemType": null,
+            "phase": null
+          }
+        ]
+      }
+    ],
+    "questionAvailability": {
+      "started": "2026-10-08T14:10:58.152Z",
+      "ended": "2026-10-08T14:11:07.750Z",
+      "result": {
+        "outcome": "needs-input",
+        "question": {
+          "token": "availability-colour",
+          "text": "Which colour?",
+          "choices": [
+            "blue",
+            "green"
+          ],
+          "sessionId": "01a11bda-6051-7261-863b-7080151ddcf1"
+        },
+        "sessionId": "01a11bda-6051-7261-863b-7080151ddcf1",
+        "processStarted": true,
+        "cliVersion": "0.160.0",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "execution": {
+          "version": 1,
+          "runtime": "codex",
+          "runtimeSource": "flag",
+          "transport": "app-server-stdio",
+          "profile": "codex-app-server-v1",
+          "profileVersion": 1,
+          "phases": {
+            "refine": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "default"
+            },
+            "continue": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "--model",
+              "effort": "low",
+              "effortSource": "--model"
+            },
+            "verify": {
+              "model": "gpt-6.1-sol",
+              "modelSource": "runtime-default",
+              "effort": "high",
+              "effortSource": "default"
+            }
+          },
+          "roles": {}
+        },
+        "cleanupWarnings": [
+          "interrupt_failed"
+        ]
+      },
+      "serverRequests": [],
+      "nativeQuestionObserved": false,
+      "nativeQuestionSupport": "unproven",
+      "structuredFallbackObserved": true
+    },
+    "governedRefine": {
+      "ref": "07/01",
+      "phase": "refine",
+      "command": "$aof-refine 07/01 --orchestrated",
+      "outcome": "failed",
+      "failureReason": "operator_action_required",
+      "sessionId": "01a11bd9-5165-7113-a407-60147f42a587",
+      "cliVersion": "0.160.0",
+      "profile": "codex-app-server-v1",
+      "execution": {
+        "version": 1,
+        "runtime": "codex",
+        "runtimeSource": "flag",
+        "transport": "app-server-stdio",
+        "profile": "codex-app-server-v1",
+        "profileVersion": 1,
+        "phases": {
+          "refine": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.refine"
+          },
+          "continue": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.continue"
+          },
+          "verify": {
+            "model": "gpt-6.1-sol",
+            "modelSource": "runtime-default",
+            "effort": "high",
+            "effortSource": "work.agents.runtimes.codex.session.effort.verify"
+          }
+        },
+        "roles": {}
+      }
+    },
+    "ownedProbeProcessesAliveAtCheck": [],
+    "processCheck": "All four captured protocol-probe PIDs were absent after completion; interruption warnings are retained in results.",
+    "monetaryCost": null,
+    "monetaryCostReason": "Native Codex protocol supplies token usage, not monetary cost."
+  },
+  "claude": {
+    "started": "2026-10-08T14:11:50.102Z",
+    "ended": "2026-10-08T14:12:01.258Z",
+    "cliVersion": "2.1.292",
+    "fixtureRevision": "9d40e6217166414bd6fc969cb1453a06834461f9",
+    "exit": 0,
+    "sessionId": "0cc61e10-62c9-4fc7-86e4-9eb99ecac8a0",
+    "isError": false,
+    "subtype": "success",
+    "resultMatches": true,
+    "usage": {
+      "input_tokens": 2,
+      "cache_creation_input_tokens": 122957,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 4,
+      "output_tokens_details": {
+        "thinking_tokens": 0
+      },
+      "server_tool_use": {
+        "web_search_requests": 0,
+        "web_fetch_requests": 0
+      },
+      "service_tier": "standard",
+      "cache_creation": {
+        "ephemeral_1h_input_tokens": 122957,
+        "ephemeral_5m_input_tokens": 0
+      },
+      "inference_geo": "not_available",
+      "iterations": [
+        {
+          "input_tokens": 2,
+          "output_tokens": 4,
+          "cache_read_input_tokens": 0,
+          "cache_creation_input_tokens": 122957,
+          "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 122957
+          },
+          "type": "message"
+        }
+      ],
+      "speed": "standard",
+      "fallback_credit": null
+    },
+    "totalCostUsd": 0.983744,
+    "modelUsage": {
+      "claude-opus-5-5": {
+        "inputTokens": 2,
+        "outputTokens": 4,
+        "cacheReadInputTokens": 0,
+        "cacheCreationInputTokens": 122957,
+        "webSearchRequests": 0,
+        "costUSD": 0.983744,
+        "contextWindow": 1000000,
+        "maxOutputTokens": 128000,
+        "thinkingTokens": 0,
+        "canonicalModel": "claude-opus-5-5",
+        "provider": "firstParty",
+        "costBasis": "list"
+      }
+    },
+    "accepted": false,
+    "evidence": "native-connectivity-only-not-AOF-lifecycle"
+  },
+  "unverified": [
+    "governed lifecycle for both assistants",
+    "independent native review",
+    "question/answer recovery through AOF run store",
+    "warm fix",
+    "operator stop during tool execution",
+    "mesh worker reconnect",
+    "three repetitions per frozen prompt case and variant",
+    "runtime form visual and keyboard conformance",
+    "clean recorded whole-tree regression gate"
+  ]
+}

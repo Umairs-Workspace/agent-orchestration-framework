@@ -44,7 +44,7 @@ const RECORD_FILE_RE = /^[a-z0-9][a-z0-9-_.]*\.json$/iu;
 const ASK_STATE_WORDS = new Set(Object.values(ASK_STATES));
 
 // Application policy is supplied once; construction performs no I/O.
-export function createAskRequests({ getRuntimeRoot, reportDegrade }) {
+export function createAskRequests({ getRuntimeRoot, reportDegrade, acquireLock = null }) {
   if (typeof getRuntimeRoot !== "function") throw new TypeError("createAskRequests: getRuntimeRoot is required");
   if (typeof reportDegrade !== "function") throw new TypeError("createAskRequests: reportDegrade is required");
 
@@ -93,6 +93,49 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade }) {
     error.code = code;
     error.status = status;
     return error;
+  }
+
+  // Native delivery is a compare-and-write operation across owner processes. The
+  // existing atomic owner lock is loaned by core; no second durable ledger is made.
+  async function nativeWrite(dir, runId, write) {
+    segmentOf(runId);
+    if (typeof acquireLock !== "function") throw askError("native ask lock is unavailable", "ask-lock-unavailable", 409);
+    const lock = await acquireLock({ paths: { meshRoot: dir }, lockName: `${runId}.ask.lock` });
+    if (!lock?.acquired) throw askError("another owner is writing this ask", "ask-write-busy", 409);
+    try { return await write(); } finally { await lock.release(); }
+  }
+
+  function normalizeNativeQuestion(value) {
+    if (value == null || typeof value !== "object" || typeof value.sessionId !== "string" || !value.sessionId || typeof value.token !== "string" || !value.token || typeof value.text !== "string" || !value.text.trim() || !Array.isArray(value.choices) || Buffer.byteLength(JSON.stringify(value)) > 32768) throw askError("native question requires a bounded token, text, choices and thread", "question-invalid", 400);
+    if (value.choices.some(choice => typeof choice !== "string" && (choice == null || typeof choice.label !== "string" || typeof choice.description !== "string"))) throw askError("native question choices are invalid", "question-invalid", 400);
+    return { runtime: "codex", questionToken: value.token, question: value.text, choices: structuredClone(value.choices), sessionId: value.sessionId };
+  }
+
+  async function beginNativeDelivery(dir, runId, { sessionId, questionToken }) {
+    return nativeWrite(dir, runId, async () => {
+      const record = await readAsk(dir, runId);
+      if (record?.runtime !== "codex" || record.sessionId !== sessionId || record.questionToken !== questionToken || record.state !== ASK_STATES.answered) throw askError("the native answer is not this run's standing question", "drive-answer-not-own", 409);
+      if (record.delivery?.state === "acknowledged") throw askError("the native answer was already acknowledged", "ask-delivery-acknowledged", 409);
+      if (record.delivery?.state === "sending") throw askError("answer delivery has no durable acknowledgment; reconcile before resending", "ask-delivery-ambiguous", 409);
+      const updated = { ...record, delivery: { version: 1, state: "sending" } };
+      await writeRecord(askRequestPath(dir, runId), updated);
+      return updated;
+    });
+  }
+
+  async function acknowledgeNativeDelivery(dir, runId, { sessionId, questionToken, turnId }) {
+    return nativeWrite(dir, runId, async () => {
+      const record = await readAsk(dir, runId);
+      if (record?.runtime !== "codex" || record.sessionId !== sessionId || record.questionToken !== questionToken || typeof turnId !== "string" || !turnId) throw askError("native acknowledgment identity differs", "drive-answer-not-own", 409);
+      if (record.delivery?.state === "acknowledged") {
+        if (record.delivery.turnId !== turnId) throw askError("native acknowledgment conflicts", "ask-delivery-conflict", 409);
+        return record;
+      }
+      if (record.delivery?.state !== "sending") throw askError("no native delivery is in flight", "ask-delivery-conflict", 409);
+      const updated = { ...record, delivery: { version: 1, state: "acknowledged", turnId } };
+      await writeRecord(askRequestPath(dir, runId), updated);
+      return updated;
+    });
   }
 
   // readAsk(dir, runId) → the record, or `null` for an absent file (no event) and for anything that
@@ -153,6 +196,17 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade }) {
   // — the OWNER's, when its session stops to ask. Writes a whole `waiting` record over whatever the
   // file held, answered or not: a resumed session that asks again is a new question.
   async function openAsk(dir, { now = () => new Date(), ...fields } = {}) {
+    if (fields.runtime === "codex") return nativeWrite(dir, fields.runId, async () => {
+      const native = normalizeNativeQuestion({ token: fields.questionToken, text: fields.question, choices: fields.choices, sessionId: fields.sessionId });
+      const existing = await readAsk(dir, fields.runId);
+      if (existing?.runtime === "codex" && existing.delivery?.state !== "acknowledged") {
+        if (existing.questionToken === native.questionToken && existing.question === native.question && existing.sessionId === native.sessionId && JSON.stringify(existing.choices) === JSON.stringify(native.choices)) return existing;
+        throw askError("a different or conflicting native question is already pending", "ask-question-conflict", 409);
+      }
+      const record = shapeRecord({ ...fields, ...native, askedAt: fields.askedAt ?? instant(now), state: ASK_STATES.waiting, parkedAt: null, answer: null, answeredAt: null, by: null, delivery: { version: 1, state: "pending" } });
+      await writeRecord(askRequestPath(dir, fields.runId), record);
+      return record;
+    });
     const filePath = askRequestPath(dir, fields.runId);
     const record = shapeRecord({
       ...fields,
@@ -169,6 +223,13 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade }) {
   async function parkAsk(dir, runId, { now = () => new Date() } = {}) {
     const filePath = askRequestPath(dir, runId);
     const existing = await readAsk(dir, runId);
+    if (existing?.runtime === "codex") return nativeWrite(dir, runId, async () => {
+      const current = await readAsk(dir, runId);
+      if (current?.state !== ASK_STATES.waiting) return current;
+      const record = shapeRecord({ ...current, state: ASK_STATES.parked, parkedAt: instant(now) });
+      await writeRecord(filePath, record);
+      return record;
+    });
     if (existing == null || existing.state !== ASK_STATES.waiting) return existing;
     const record = shapeRecord({ ...existing, state: ASK_STATES.parked, parkedAt: instant(now) });
     await writeRecord(filePath, record);
@@ -210,11 +271,19 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade }) {
   // mesh leg. A `waiting` or `parked` ask moves to `answered`, stamping `answer` verbatim,
   // `answeredAt` and `by`; an `answered` one is refused `ask-already-answered` (409) naming who
   // gave the first answer — the first answer wins.
-  async function answerAsk(dir, { workspaceId, ref, text, by = null, now = () => new Date() } = {}) {
+  async function answerAsk(dir, { workspaceId, ref, runId, text, by = null, now = () => new Date() } = {}) {
     refuseBadAnswer(text);
     const asks = (await readAsks(dir, { workspaceId })).filter((record) => record.ref === ref);
     if (asks.length === 0) return null;
     const existing = asks[asks.length - 1];
+    if (runId !== undefined && existing.runId !== runId) throw askError("the answer names a different run", "drive-answer-not-own", 409);
+    if (existing.runtime === "codex") return nativeWrite(dir, existing.runId, async () => {
+      const current = await readAsk(dir, existing.runId);
+      if (current?.questionToken !== existing.questionToken || current.state === ASK_STATES.answered) throw askError("the native question changed or was answered", "ask-already-answered", 409);
+      const record = shapeRecord({ ...current, state: ASK_STATES.answered, answer: text, answeredAt: instant(now), by, delivery: { version: 1, state: "recorded" } });
+      await writeRecord(askRequestPath(dir, existing.runId), record);
+      return record;
+    });
     if (existing.state === ASK_STATES.answered) {
       const who = existing.by?.actor ?? "someone";
       throw askError(`${ref} was already answered by ${who} at ${existing.answeredAt}`, "ask-already-answered", 409);
@@ -258,5 +327,5 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade }) {
     return { ask: () => ask, poll, start, stop };
   }
 
-  return Object.freeze({ loopAsksDir, askRequestPath, readAsk, readAsks, openAsk, parkAsk, clearAsk, answerAsk, createAskPoll });
+  return Object.freeze({ loopAsksDir, askRequestPath, readAsk, readAsks, openAsk, parkAsk, clearAsk, answerAsk, createAskPoll, normalizeNativeQuestion, beginNativeDelivery, acknowledgeNativeDelivery });
 }

@@ -1,0 +1,22 @@
+{
+  "testedCommit": "af85ca30d50408395d0b7cb3256145ff1112c323",
+  "recordCommit": "31241fb10a0d2e0d3b4ae2e01695512c8e94801f",
+  "productionDiffPaths": [],
+  "checkedPaths": [
+    "packages",
+    "scripts",
+    "test",
+    ".aof",
+    ".agents",
+    ".codex",
+    ".claude",
+    "package.json",
+    "yarn.lock"
+  ],
+  "gate": {
+    "result": "green",
+    "scope": "all",
+    "instant": "2026-10-08T20:39:40.470Z"
+  },
+  "note": "Subsequent work-item commits contain acceptance records only; actual command-authored regression history copied unchanged."
+}

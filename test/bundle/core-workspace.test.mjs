@@ -13,8 +13,7 @@ import { installPayload } from '../../scripts/install-local.mjs';
 import { inspectBoundaries, dependencyCycles, moduleReferences } from '../../scripts/workspace-boundaries.mjs';
 import { workspaceTestInventory, assertNativeTestSource } from '../../scripts/workspace-tests.mjs';
 import { sourceFiles } from '../../scripts/source-inventory.mjs';
-import { runnerShapedExports, suiteCaseChunks } from '../../scripts/test-harness.mjs';
-import { createHash } from 'node:crypto';
+import { suiteCaseChunks } from '../../scripts/test-harness.mjs';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 function ownershipFixture(run) {
@@ -57,7 +56,10 @@ export const coreWorkspaceTests = [
       assert.throws(() => suiteCaseChunks(positions, { independentCases: true, splitSeconds }), /positive split threshold/u);
     }
   } },
-  { name: 'workspace-tests/Plan 09 ownership ledger parses and matches current files and registered case names', async run() {
+  // The ledger is 142's record of the migration as it was measured: a done item's evidence. It is
+  // held to its own consistency only, never re-measured against today's files or case names, so a
+  // later item's tests never have to edit an archived milestone's record (148/VERIFICATION F-148-06).
+  { name: 'workspace-tests/Plan 09 ownership ledger is a consistent record, and every registered case name is unique', async run() {
     const stream = path.join(repoRoot, 'wiki/work');
     const homes = [];
     for (const directory of [stream, path.join(stream, 'archive')]) {
@@ -75,19 +77,14 @@ export const coreWorkspaceTests = [
     assert.equal(new Set(ledger.entries.map(entry => entry.now)).size, ledger.entries.length);
     let cases = 0;
     for (const entry of ledger.entries) {
-      const file = path.resolve(repoRoot, entry.now);
-      const relative = path.relative(repoRoot, file);
+      const relative = path.relative(repoRoot, path.resolve(repoRoot, entry.now));
       assert.ok(relative && !relative.startsWith('..') && !path.isAbsolute(relative), entry.now);
-      await readFile(file); // Verify zero-case/native entries exist without executing their native tests here.
       if (!entry.cases) continue;
-      const names = runnerShapedExports(await import(pathToFileURL(file).href)).flat().map(test => test.name).sort();
-      assert.equal(names.length, entry.cases, entry.now);
-      assert.equal(createHash('sha256').update(names.join('\n')).digest('hex'), entry.namesSha256, entry.now);
-      for (const name of names) assert.equal(registrations.get(name), 1, name);
-      cases += names.length;
+      assert.match(entry.namesSha256, /^[0-9a-f]{64}$/u, entry.now);
+      cases += entry.cases;
     }
     assert.equal(cases, ledger.summary.namesInLedger);
-    assert.equal(tests.length, ledger.summary.registryCases);
+    for (const [name, count] of registrations) assert.equal(count, 1, name);
   } },
   { name: 'core-workspace/copied core runs without source aliases or optional app packages', async run() {
     const parent = await realpath(os.tmpdir());
@@ -160,7 +157,10 @@ export const coreWorkspaceTests = [
       assert.match(run([path.join(repoRoot, 'packages/core/bin/aof.mjs'), '--version']), new RegExp('^' + manifest.version.replaceAll('.', '\\.')));
       assert.equal(run([path.join(repoRoot, 'packages/core/bin/aof.mjs'), '--help']), run([path.join(payload, 'bin/aof.mjs'), '--help']));
       run([path.join(payload, 'bin/aof.mjs'), 'work', 'init', unrelated, '--runtime', 'claude,codex', '--json']);
-      assert.match(await readFile(path.join(unrelated, '.codex/skills/aof-continue/SKILL.md'), 'utf8'), /aof work/);
+      const nativeEntry = await readFile(path.join(unrelated, '.agents/skills/aof-continue/SKILL.md'), 'utf8');
+      assert.match(nativeEntry, /\$aof-continue/u);
+      assert.match(nativeEntry, /Read procedure\.md/u);
+      assert.match(await readFile(path.join(unrelated, '.agents/skills/aof-continue/procedure.md'), 'utf8'), /aof work/);
       for (const verb of ['start', 'ping', 'end']) {
         const hookOutput = run([path.join(payload, 'bin/aof.mjs'), 'session', verb,
           '--workspace', 'copied-workspace', '--repo', 'copied-repo', '--assistant', 'claude', '--json'], {

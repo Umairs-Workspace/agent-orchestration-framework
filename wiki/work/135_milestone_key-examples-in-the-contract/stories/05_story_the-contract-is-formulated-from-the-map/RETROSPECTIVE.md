@@ -1,12 +1,12 @@
 ---
 doc: retrospective
-updated: 2026-10-03
+updated: 2026-10-06
 ---
 # 05 · The contract is formulated from the map — Retrospective
 
 ## R1 — new cases landed without the ledger that counts them
 
-- **Kind:** mistake · **Area:** test · **Stage:** build · **Owner:** developer
+- **Kind:** mistake · **Area:** process (test) · **Stage:** build · **Owner:** developer
 - **Raised by:** `aof:verify 135`
 
 **What happened.** 05 added 12 registered cases to the discovery-beat suite. 142's Plan 09 ledger

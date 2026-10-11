@@ -98,10 +98,11 @@ function hasClaudeHeadlessPrintShape(code) {
 // self-check would still trip, because the plant is appended to whatever source the
 // test was handed: green primary, green self-check, zero information. So the invariant
 // first proves the source it read carries a driver launch shape at all. Post-move the
-// only one left is `buildDriverCommand`'s codex argv form — a control the handler
-// cannot satisfy.
+// 154/02 moves Codex argv into its adapter. Aim at the actual Claude launch resolver
+// and its declared program/argv return, which the handler cannot satisfy.
 function hasDriverLaunchShape(code) {
-  return /bin\s*:\s*["']codex["'][\s\S]{0,120}args\s*:\s*\[/.test(code);
+  return /function\s+resolveInteractiveDriverLaunch\s*\(/.test(code)
+    && /return\s*\{\s*bin:\s*declared\.program,\s*args:\s*\[\.\.\.args\]/.test(code);
 }
 
 // ---------------------------------------------------------------- invariant 2 ----
@@ -217,7 +218,7 @@ export const archTests = [
       assert.equal(
         hasDriverLaunchShape(stripped),
         true,
-        "the source this invariant reads genuinely carries a driver launch shape (buildDriverCommand's codex argv form) — otherwise this absence assertion is aimed at a file that could never violate it",
+        "the source carries the actual Claude launch resolver and its declared program/argv return; an unrelated handler cannot satisfy the positive control",
       );
       assert.equal(hasClaudeHeadlessPrintShape(stripped), false, "the real source names no claude -p ... --output-format one-shot");
 
@@ -469,7 +470,8 @@ export const archTests = [
       assert.match(driver, /startToCloseTimer\s*=\s*setTimeout/u);
       assert.match(driver, /heartbeatTimer\s*=\s*setTimeout/u);
       assert.match(driver, /stopForOutcome\(\{\s*outcome:\s*["']failed["'],\s*failureReason:\s*["']timeout["']\s*\}\)/u);
-      assert.match(driver, /term\.kill\(\)/u, "expiry reaches the process handle held by this driver");
+      // The one release path calls the live handle as `term?.kill?.()` (2026-10-06, one release per PTY).
+      assert.match(driver, /term\??\.kill\??\.?\(\)/u, "expiry reaches the process handle held by this driver");
 
       const planted = `${driver}\nconst plantedBound = ["--max-turns"];`;
       assert.equal(/--max-turns|--max-budget-usd/.test(planted), true, "a planted model-bound argv trips the detector");

@@ -291,7 +291,12 @@ function assertFrozenRecordShape(record, label) {
     [...MEMORY_RECORD_FIELDS].sort(),
     `${label}: record carries exactly the frozen MemoryRecord fields`
   );
+  // 148/ADR-003: `tags` is the one non-string field — an array of strings, [] when there is none.
   for (const field of MEMORY_RECORD_FIELDS) {
+    if (field === "tags") {
+      assert.ok(Array.isArray(record.tags) && record.tags.every((tag) => typeof tag === "string"), `${label}: field "tags" is an array of strings ([] when absent)`);
+      continue;
+    }
     assert.equal(typeof record[field], "string", `${label}: field "${field}" is a string (present-as-"" when absent)`);
   }
 }

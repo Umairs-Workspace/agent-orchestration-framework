@@ -8,6 +8,10 @@ aof-runtime: claude
 
 # Codex Implementation
 
+Cross-assistant work requires an explicit task request and `work.agents.delegation: on`.
+The toggle alone never requests implementation or changes the primary assistant. Native Claude
+roles remain Claude; this recipe is only a separately requested Codex task from Claude.
+
 > Optional accelerator. This skill only applies if you have the Codex CLI (gpt-5.6) installed and a gpt/Codex subscription. If Codex is not available, ignore this skill and implement the change directly — nothing here is a hard dependency.
 
 Use Codex as a separate implementation agent for bounded code changes. Claude remains responsible for scoping the task, reviewing the diff, running or checking verification, and explaining the final result.

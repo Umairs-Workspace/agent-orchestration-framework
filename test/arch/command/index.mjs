@@ -13,6 +13,7 @@
 // home (FF-5312), immutable bundle ownership (FF-5313), and the executable
 // install/update/drift matrix. Kept outside the mined `acd-loop-*` namespace.
 import { archTests as acdRegistrySingleHomeTests } from "./acd-registry-single-home.test.mjs";
+import { archTests as bundleRuntimeVariantArchTests } from "./acd-bundle-runtime-variants.test.mjs";
 import { archTests as acdRegistryFrameworkOwnedTests } from "./acd-registry-framework-owned.test.mjs";
 import { archTests as acdRegistryFixtureClosedTests } from "./acd-registry-fixture-closed.test.mjs";
 // (T1/T6) the relay ws auth-gate — milestone 33 / story 01 (ADR-002.consequence):
@@ -127,4 +128,5 @@ export const tests = [
   ...acdReadmeNamesWhatShipsTests,
   // story 128 — work memory joins the route table (task 01)
   ...acdWorkMemoryRoutedTests,
+  ...bundleRuntimeVariantArchTests,
 ];

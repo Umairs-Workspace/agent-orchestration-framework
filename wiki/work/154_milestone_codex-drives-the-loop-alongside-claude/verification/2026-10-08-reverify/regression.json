@@ -1,0 +1,36 @@
+{
+  "ref": "154",
+  "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\REGRESSION.md",
+  "commit": "53b99b1cd81c1896fa7bfed251fb0ae9f6f27706",
+  "instant": "2026-10-08T15:07:46.198Z",
+  "scope": "all",
+  "result": "red",
+  "detail": "arch/71 FF-7106: every OPEN story declaring a bundle member also declares the manifest and every git-tracked render of that member · sharded --jobs 8 · 23.9 min · over budget (15 min)",
+  "satisfiesDoor": false,
+  "appended": true,
+  "run": {
+    "mode": "sharded",
+    "jobs": 8,
+    "minutes": 23.9,
+    "budgetMinutes": 15,
+    "overBudget": true
+  },
+  "notIsolated": [],
+  "slowest": [
+    "# slowest files (seconds summed across their chunks):",
+    "   1655s  50 cases  test/loop/loop-command-wave.test.mjs",
+    "    583s  18 cases  test/loop/loop-command-reconcile.test.mjs",
+    "    434s  96 cases  test/work/lifecycle/work-dispatch-lanes.test.mjs",
+    "    317s  78 cases  test/loop/loop-command-stops.test.mjs",
+    "    220s  0 cases  lanes (integration + cargo)",
+    "    199s  14 cases  test/work/stream/work-this-tree-holds-what-is-live.test.mjs",
+    "    189s  37 cases  test/grade/gate-propagation-refusals-leave-branch.test.mjs",
+    "    163s  61 cases  test/work/stream/work-archive-is-a-move.test.mjs",
+    "    146s  12 cases  test/arch/audit/acd-control-derives-its-census.test.mjs",
+    "    135s  19 cases  test/loop/loop-cap-exhaustion-carries-the-record.test.mjs",
+    "    135s  42 cases  test/assignment/blocked-run-parking.test.mjs",
+    "    122s  20 cases  test/bundle/site-build.test.mjs"
+  ],
+  "logs": ".tmp/test-sharded/2026-10-08T14-43-54-283Z",
+  "exit": 1
+}

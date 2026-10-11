@@ -159,6 +159,23 @@ export function ensureAssignmentDirectiveTable(store) {
       created_at TEXT NOT NULL
     );
   `);
+  if (!store.db.prepare("PRAGMA table_info(global_assignment_directives)").all().some(column => column.name === "execution")) store.db.exec("ALTER TABLE global_assignment_directives ADD COLUMN execution TEXT");
+}
+
+export function readAssignmentExecution(store, assignmentId) {
+  ensureAssignmentDirectiveTable(store);
+  const text = store.db.prepare("SELECT execution FROM global_assignment_directives WHERE assignment_id = ?").get(assignmentId)?.execution;
+  return text == null ? undefined : JSON.parse(text);
+}
+
+export function pinAssignmentExecution(store, assignmentId, execution) {
+  ensureAssignmentDirectiveTable(store);
+  // Runtime policy is validated by the controller before this opaque pin is stored.
+  const pinned = execution ?? null;
+  store.db.prepare(`INSERT INTO global_assignment_directives (assignment_id, phase, created_at, execution) VALUES (?, ?, ?, ?)
+    ON CONFLICT(assignment_id) DO UPDATE SET execution = COALESCE(global_assignment_directives.execution, excluded.execution)`)
+    .run(assignmentId, DEFAULT_ASSIGNMENT_PHASE, new Date().toISOString(), JSON.stringify(pinned));
+  return readAssignmentExecution(store, assignmentId);
 }
 
 // setAssignmentPhase(store, assignmentId, phase, { now }) — records the chosen phase for

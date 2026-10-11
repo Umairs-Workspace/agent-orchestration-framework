@@ -16,9 +16,36 @@ export const HEARTBEAT_QUEUE_PATHSPECS = Object.freeze([
   ":(glob)**/runs/.heartbeats.ndjson.batch",
 ]);
 
+// isHeartbeatQueuePath(relpath) — the same two queues, as a test over one porcelain path. A queue
+// is never a lane's work: the commit door never stages one, so a lane's cleanup and the sweep must
+// not count one as uncommitted work either. In an install whose work dir predates 147/03's ignore
+// file, `git status` lists the queues, and counting them refused every finished lane's cleanup —
+// each kept tree held a dispatch slot until the loop halted at capacity (a downstream 009,
+// 2026-10-06).
+export function isHeartbeatQueuePath(relpath) {
+  return /(?:^|\/)runs\/\.heartbeats\.ndjson(?:\.batch)?$/u.test(String(relpath ?? "").replaceAll("\\", "/"));
+}
+
+// isMeshLaneTree(candidatePath) — is this path a lane tree (or inside one): a checkout under one of
+// a repository's three lane roots, `.aof/mesh/{worktrees,session-worktrees,dispatch-worktrees}/<lane>`?
+// A lane is a full checkout, committed `.aof/aof.config.json` and all, so it passes every "is this a
+// workspace" test a real repository does; every aof verb a lane's session ran published it to the
+// fleet as a workspace of its own (43 of 55 registered workspaces, 2026-10-06). Pure over the path,
+// so it answers for a lane whose repository is not at hand; matched case-insensitively on win32.
+const LANE_ROOT_NAMES = Object.freeze(["worktrees", "session-worktrees", "dispatch-worktrees"]);
+export function isMeshLaneTree(candidatePath) {
+  if (typeof candidatePath !== "string" || candidatePath.length === 0) return false;
+  const fold = (segment) => (process.platform === "win32" ? segment.toLowerCase() : segment);
+  const segments = path.resolve(candidatePath).split(/[\\/]+/u).filter(Boolean).map(fold);
+  for (let i = 0; i + 3 < segments.length; i += 1) {
+    if (segments[i] === ".aof" && segments[i + 1] === "mesh" && LANE_ROOT_NAMES.includes(segments[i + 2])) return true;
+  }
+  return false;
+}
+
 // Mesh owns lane paths, naming, retention, staging and preparation policy.
 // Composition is inert; the application supplies workspace loading and the lazy toolchain port.
-export function createMeshWorktrees({ reportDegrade, loadWorkspace, toolchain }) {
+export function createMeshWorktrees({ reportDegrade, loadWorkspace, toolchain, prepareRuntimeAssets }) {
   for (const [name, service] of Object.entries({ reportDegrade, loadWorkspace, toolchain })) {
     if (typeof service !== "function") throw new TypeError(`createMeshWorktrees: ${name} is required`);
   }
@@ -319,6 +346,11 @@ async function removeDispatchWorktree(projectRoot, itemRef, options = {}) {
   const exec = resolveExec(options);
   const worktreePath = meshDispatchWorktreePath(projectRoot, itemRef);
   const branch = typeof options.branch === "string" && options.branch.length > 0 ? options.branch : meshItemBranchName(itemRef);
+  // The heartbeat queues go first: plain `git worktree remove` refuses a tree holding an untracked
+  // file, and a queue is per-node runtime state no commit ever carries (HEARTBEAT_QUEUE_PATHSPECS),
+  // so removing it loses nothing. `-x` reaches a queue the work dir's ignore file already hides.
+  // Every other untracked file still refuses the remove, as above.
+  await exec(["clean", "-f", "-x", "-q", "--", ...HEARTBEAT_QUEUE_PATHSPECS], { cwd: worktreePath });
   const result = await exec(["worktree", "remove", worktreePath], { cwd: projectRoot });
   if (result.status !== 0) {
     throw gitError(`git worktree remove failed for dispatch item "${itemRef}": ${result.stderr || result.stdout}`, "dispatch-worktree-remove-failed", { itemRef, worktreePath, branch, stderr: result.stderr });
@@ -539,6 +571,13 @@ async function discardWorktree(projectRoot, worktreePath, options) {
 }
 
 async function prepareWorktree(projectRoot, worktreePath, options = {}, fault = {}) {
+  if (options.execution != null) {
+    try {
+      if (typeof prepareRuntimeAssets !== "function") throw gitError("Runtime asset preparation is unavailable", "runtime-assets-unavailable");
+      await prepareRuntimeAssets(projectRoot, worktreePath, options.execution);
+    }
+    catch (error) { await discardWorktree(projectRoot, worktreePath, options); throw error; }
+  }
   const compiled = await compilePrepare(projectRoot, options);
 
   if (compiled.ok !== true) {

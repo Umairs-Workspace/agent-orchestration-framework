@@ -115,6 +115,10 @@ reading — run-then-consider, a silent no-op when graphify is absent (mirrors t
    unavailable and infer from reading — never fall back onto the surviving artifact as if the build had
    succeeded. A build reporting `unchanged: true` is the OPPOSITE case and a success: graphify rewrites
    only on a topology change, so an untouched artifact means the graph is already current. Use it.
+   A `graphify-spawn-failed`, `graphify-timeout`, or sandbox permission failure (including `EPERM`)
+   has the same advisory fallback. Record the unavailable graph and reason, then inspect source
+   files. Do not request elevated access, change permissions, install tools, or retry outside the
+   sandbox just to obtain this advisory graph.
 </codebase-graph-grounding>
 
 <review_context>

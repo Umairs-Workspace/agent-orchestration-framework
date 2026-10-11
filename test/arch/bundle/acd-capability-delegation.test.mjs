@@ -95,8 +95,8 @@ export const archTests = [
         // No codex command file written; codex agents (native) DO render; claude
         // commands (native) render; and codex gets the mapped skill equivalent.
         assert.ok(!existsSync(path.join(repo, ".codex", "commands", "aof", "refine.md")), "codex command not written");
-        assert.ok(existsSync(path.join(repo, ".codex", "skills", "aof-refine", "SKILL.md")), "codex mapped skill rendered");
-        assert.ok(existsSync(path.join(repo, ".codex", "agents", "aof-architect.md")), "codex agent rendered (native)");
+        assert.ok(existsSync(path.join(repo, ".agents", "skills", "aof-refine", "SKILL.md")), "codex mapped skill rendered");
+        assert.ok(existsSync(path.join(repo, ".codex", "agents", "aof-architect.toml")), "codex agent rendered (native)");
         assert.ok(existsSync(path.join(repo, ".claude", "commands", "aof", "refine.md")), "claude command rendered (native)");
       } finally {
         await rm(repo, { recursive: true, force: true });

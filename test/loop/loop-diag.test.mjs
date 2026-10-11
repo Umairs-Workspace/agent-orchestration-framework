@@ -466,9 +466,9 @@ const stopRequestTests = [
       assert.ok(modules.includes(own), "the module is on disk");
       assert.ok(modules.length > 50, "the sweep is non-vacuous");
       // A module that speaks of a stop request at all: the token set the shell, the verb and the
-      // faces would use. `"requested"` names a recovery-push and a resync state elsewhere, so the
-      // word is refused only in a module that also speaks of the stop request; FF-13001 (story 05)
-      // is the sweep proper.
+      // faces would use. `"requested"` names a recovery-push and a resync state elsewhere, and
+      // `"honoured"` is a recall verdict (153/ADR-001), so each word is refused only in a module that
+      // also speaks of the stop request; FF-13001 (story 05) is the sweep proper.
       const speaksOfStops = /stop-request|stopRequest|StopRequest|loopStop|LoopStop|STOP_LEVELS/;
       for (const rel of modules) {
         const code = stripComments(await readFile(path.join(root, rel), "utf8"));
@@ -481,9 +481,10 @@ const stopRequestTests = [
           continue;
         }
         assert.ok(!code.includes("loop-stops"), `${rel} spells the loop-stops segment — the one home is ${own}`);
-        assert.ok(!/["']honoured["']/.test(code), `${rel} spells "honoured" — the state words live in ${own}`);
-        if (/["']requested["']/.test(code)) {
-          assert.ok(!speaksOfStops.test(code), `${rel} spells "requested" as a stop-request state — the state words live in ${own}`);
+        for (const word of ["requested", "honoured"]) {
+          if (new RegExp(`["']${word}["']`).test(code)) {
+            assert.ok(!speaksOfStops.test(code), `${rel} spells "${word}" as a stop-request state — the state words live in ${own}`);
+          }
         }
       }
     },
@@ -1278,7 +1279,7 @@ const askRequestTests = [
       const own = await readFile(path.join(root, home), "utf8");
       assert.match(own, /getRuntimeRoot\(env\)/u);
       assert.match(own, /import\s*\{[^}]*\bwriteText\b[^}]*\}\s*from\s*"@aof\/foundation\/fs"/u);
-      assert.match(own, /createAskRequests\(\{ getRuntimeRoot, reportDegrade \}\)/u);
+      assert.match(own, /createAskRequests\(\{ getRuntimeRoot, reportDegrade, acquireLock = null \}\)/u);
     },
   },
 

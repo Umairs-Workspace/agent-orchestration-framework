@@ -383,7 +383,7 @@ export const verificationTemplateTests = [
         const roots = new Set(
           renderBundleOutputs(loadBundle(), { runtimes: ["claude", "codex"] }).map((output) => String(output.path).replaceAll("\\", "/").split("/")[0]),
         );
-        assert.deepEqual([...roots].sort(), [".aof", ".claude", ".codex"]);
+        assert.deepEqual([...roots].sort(), [".agents", ".aof", ".claude", ".codex"]);
       } finally {
         await rm(repo, { recursive: true, force: true });
       }

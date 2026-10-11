@@ -151,7 +151,7 @@ const trimmedLines = async (file) => (await readFile(file, "utf8")).split(/\r?\n
 const holdsOnce = (lines, entries, label) => {
   for (const entry of entries) assert.equal(lines.filter((line) => line === entry).length, 1, `${label} holds ${entry} once`);
 };
-const REPAIR_RENDERS = [".claude/commands/aof/repair.md", ".codex/skills/aof-repair/SKILL.md", ".opencode/commands/aof/repair.md"];
+const REPAIR_RENDERS = [".claude/commands/aof/repair.md", ".agents/skills/aof-repair/SKILL.md", ".opencode/commands/aof/repair.md"];
 const REPAIR_SOURCE = path.join(repoRoot, "packages", "core", "assets", "commands", "repair.md");
 // The seven rules an unattended repair needs, as the feature's outline states them, each matched
 // against the command's prose (a line break inside a rule is whitespace).
@@ -215,20 +215,23 @@ export const claudeSettingsMergeTests = [
   },
   // ── 147/02 — the repair command reaches every runtime the bundle renders ─────────────────────
   {
-    name: "147/02 — a dry-run update at the repository root reports the three repair renders skip, and the bundle lists commands/repair.md",
+    name: "147/02 — a dry-run update after native installation reports the three repair renders skip, and the bundle lists commands/repair.md",
     run: async () => {
-      const result = await updateWork({ targetDir: repoRoot, dryRun: true });
-      assert.equal(result.dryRun, true);
-      assert.equal(result.manifestWritten, false, "a dry run writes nothing");
-      for (const rel of REPAIR_RENDERS) {
-        const action = result.actions.find((entry) => String(entry.path).replaceAll("\\", "/").endsWith(rel));
-        assert.ok(action, `${rel} is in the plan`);
-        assert.equal(action.action, "skip", `${rel}: ${action.action} (${action.reason ?? ""})`);
-      }
-      assert.ok(readDescriptor().members.some((member) => member.kind === "command" && member.id === "repair" && member.file === "commands/repair.md"), "the bundle descriptor lists commands/repair.md");
-      const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
-      assert.ok(manifest.entries.some((entry) => entry.path === ".claude/commands/aof/repair.md" && entry.resource.id === "repair" && entry.resource.kind === "command"), "the shipped manifest carries the claude render");
-      assert.ok(manifest.entries.some((entry) => entry.path === ".codex/skills/aof-repair/SKILL.md" && entry.resource.id === "aof-repair"), "…and the codex render");
+      return withFixture(async ({ dir }) => {
+        await initWork({ targetDir: dir, runtimes: ["claude", "codex", "opencode"] });
+        const result = await updateWork({ targetDir: dir, dryRun: true });
+        assert.equal(result.dryRun, true);
+        assert.equal(result.manifestWritten, false, "a dry run writes nothing");
+        for (const rel of REPAIR_RENDERS) {
+          const action = result.actions.find((entry) => String(entry.path).replaceAll("\\", "/").endsWith(rel));
+          assert.ok(action, `${rel} is in the plan`);
+          assert.equal(action.action, "skip", `${rel}: ${action.action} (${action.reason ?? ""})`);
+        }
+        assert.ok(readDescriptor().members.some((member) => member.kind === "command" && member.id === "repair" && member.file === "commands/repair.md"), "the bundle descriptor lists commands/repair.md");
+        const manifest = JSON.parse(await readFile(path.join(repoRoot, "packages", "core", "assets", "manifest.json"), "utf8"));
+        assert.ok(manifest.entries.some((entry) => entry.path === ".claude/commands/aof/repair.md" && entry.resource.id === "repair" && entry.resource.kind === "command"), "the shipped manifest carries the claude render");
+        assert.ok(manifest.entries.some((entry) => entry.path === ".agents/skills/aof-repair/SKILL.md" && entry.resource.id === "aof-repair"), "…and the codex render");
+      });
     },
   },
   ...REPAIR_RULES.map(([rule, pattern]) => ({

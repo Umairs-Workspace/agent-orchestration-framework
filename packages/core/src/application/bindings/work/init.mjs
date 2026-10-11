@@ -9,6 +9,7 @@ import { bundleVersion, summarizeActions, synthesizeBundleConfig } from "../../.
 import { ensureAofGitignore, ensureWorkDirGitFiles, workDirFor } from "../../../aof-gitignore.mjs";
 import { setHeadroomEnabled, readConfig, writeConfig } from "../../../work/headroom.mjs";
 import { applyClaudeSettingsMerge } from "../../../claude-settings.mjs";
+import { codexOwnershipBaseline } from "../../../codex-settings.mjs";
 
 export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
   // `aof work init` — render the shipped ACD bundle into a consumer repo
@@ -100,10 +101,10 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
     // update share this ONE implementation so their desired sets cannot drift.
     const { desiredOutputs, notInstallable } = await synthesizeBundleConfig(bundle, { runtimes, targetDir });
 
-    // First-install semantics: previousLock is ALWAYS null (ADR-003). --force does
-    // not pass a prior lock; it re-renders from scratch. The classification,
-    // create/update/skip/drift, is inherited from planApplyActions unchanged.
-    const actions = await planApplyActions(desiredOutputs, null, { force, targetDir });
+    // Claude retains first-install/force semantics. Codex force uses its recorded
+    // ownership so re-init cannot adopt an unowned file or erase operator edits.
+    const previousLock = codexOwnershipBaseline(existing?.work);
+    const actions = await planApplyActions(desiredOutputs, previousLock, { force, targetDir });
 
     if (dryRun) {
       return {
@@ -142,7 +143,7 @@ export function assembleWorkInit({ workspaceServices, workMemoryServices }) {
     const baseManifest = createLockManifest({
       actions,
       desiredOutputs,
-      previousLock: null,
+      previousLock,
       config: { packages: [] },
       runtimes
     });

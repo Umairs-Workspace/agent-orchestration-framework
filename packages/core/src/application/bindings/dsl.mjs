@@ -12,6 +12,7 @@ import {
   supportedRuntimes,
   supportedTrustModes
 } from "../../model.mjs";
+import { resolveResourceOverrides } from "../../model.mjs";
 
 export function assembleDsl({ fsServices, workspaceServices }) {
   const { readJson } = fsServices;
@@ -155,7 +156,7 @@ export function assembleDsl({ fsServices, workspaceServices }) {
     const id = normalizeId(resource.id);
     const runtimes = normalizeRuntimes(resource.runtimes);
     const body = await resolveBody(resource, baseDir);
-    const overrides = await resolveOverrides(resource, baseDir);
+    const overrides = await resolveResourceOverrides(resource, baseDir, readJson);
     const associatedFiles = await resolveAssociatedFiles(resource, baseDir);
 
     return {
@@ -357,35 +358,6 @@ export function assembleDsl({ fsServices, workspaceServices }) {
       throw new Error(`Project doc include escapes .aof: ${includePath}.`);
     }
     return resolved;
-  }
-
-  async function resolveOverrides(resource, baseDir) {
-    const overrides = {};
-    const configured = resource.overrides ?? {};
-
-    for (const runtime of VALID_RUNTIMES) {
-      const configuredOverride = configured[runtime];
-      if (typeof configuredOverride === "string") {
-        overrides[runtime] = await readJson(path.resolve(baseDir, configuredOverride));
-        continue;
-      }
-
-      if (configuredOverride && typeof configuredOverride === "object") {
-        overrides[runtime] = configuredOverride;
-        continue;
-      }
-
-      if (resource.path) {
-        const overridePath = path.resolve(baseDir, path.dirname(resource.path), "overrides", `${runtime}.json`);
-        try {
-          overrides[runtime] = await readJson(overridePath);
-        } catch (error) {
-          if (error.code !== "ENOENT") throw error;
-        }
-      }
-    }
-
-    return overrides;
   }
 
   async function resolveAssociatedFiles(resource, baseDir) {

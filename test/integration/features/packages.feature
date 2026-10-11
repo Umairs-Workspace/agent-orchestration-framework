@@ -67,7 +67,7 @@ Feature: AOF package semantics
     When I run `assets apply --codex`
     Then the command should fail
     And stderr should contain `Generated output conflict`
-    And file `.codex/skills/vendor-context/SKILL.md` should not exist
+    And file `.agents/skills/vendor-context/SKILL.md` should not exist
 
   Scenario: Validate npm git and file package descriptors
     Given a project with npm git and file package descriptors
@@ -170,7 +170,7 @@ Feature: AOF package semantics
     And stdout should contain `Would create`
     And stdout should contain `Would update .aof/aof.lock.json`
     And stdout should not contain `npx get-shit-done-cc@latest --codex --local`
-    And file `.codex/skills/file-backed/SKILL.md` should not exist
+    And file `.agents/skills/file-backed/SKILL.md` should not exist
     And file `.aof/aof.lock.json` should not exist
 
   Scenario: Assets apply writes outputs and package lock metadata without running installers
@@ -180,7 +180,7 @@ Feature: AOF package semantics
     And stdout should not contain `network: disabled`
     And stdout should not contain `npx get-shit-done-cc@latest --codex --local`
     And stdout should not contain `network-boundary`
-    And file `.codex/skills/file-backed/SKILL.md` should exist
+    And file `.agents/skills/file-backed/SKILL.md` should exist
     And JSON file `.aof/aof.lock.json` should contain framework `gsd`
 
   Scenario: Removed sync installer command fails without executing installers

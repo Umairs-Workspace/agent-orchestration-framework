@@ -23,7 +23,7 @@ import path from "node:path";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 const rerank = _aofApplication.knowledge.memory.graphifyBackend.rerank;
-import { MEMORY_RECORD_FIELDS } from "@aof/knowledge/memory/local-retrieval";
+import { MEMORY_RECORD_FIELDS, withTags } from "@aof/knowledge/memory/local-retrieval";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FIXTURE_DIR = path.join(
@@ -37,7 +37,9 @@ function loadFixture(name) {
 }
 
 // Background: the committed fixtures + the query + the area scope.
-const RECORDS = loadFixture("reranking-records.json").records;
+// The fixture is a version-1 store's records (no `tags`); recall reads them through `withTags`
+// before ranking (148/ADR-003), so this suite does too.
+const RECORDS = loadFixture("reranking-records.json").records.map(withTags);
 const NORMALIZED_GRAPH = loadFixture("reranking-graph.normalized.json");
 const QUERY = "derived index invariant";
 const SCOPE = { area: "architecture" };

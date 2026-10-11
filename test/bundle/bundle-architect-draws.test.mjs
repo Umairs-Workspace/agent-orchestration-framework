@@ -1,3 +1,4 @@
+import { bundleFixtureRoot, readBundleProse } from "../support/cli-spawn.mjs";
 
 import { defaultApplication as _aofApplication } from "aof/default-application";
 // milestone 133 / story 05 / task 00 — the architect's ADR rule and refine's Decide stage carry ONE
@@ -15,15 +16,15 @@ const parseSpecArgv = _aofApplication.cli.parseSpecArgv;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const cliPath = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
-const read = (rel) => readFile(path.join(repoRoot, rel), "utf8").then((text) => text.replace(/\r\n/g, "\n"));
+const read = async (rel) => readBundleProse(rel, repoRoot).replace(/\r\n/g, "\n");
 
 const ARCHITECT = "packages/core/assets/agents/aof-architect.md";
 const REFINE = "packages/core/assets/commands/refine.md";
 const COPIES = [
   ".claude/agents/aof-architect.md",
   ".claude/commands/aof/refine.md",
-  ".codex/agents/aof-architect.md",
-  ".codex/skills/aof-refine/SKILL.md",
+  ".codex/agents/aof-architect.toml",
+  ".agents/skills/aof-refine/SKILL.md",
   ".opencode/agents/aof-architect.md",
   ".opencode/commands/aof/refine.md",
 ];
@@ -110,7 +111,7 @@ export const bundleArchitectDrawsTests = [
     name: "133/05 task 00: every rendered copy carries the step and matches a fresh render",
     run: async () => {
       for (const copy of COPIES) assert.ok((await read(copy)).includes(PLAN), `${copy} carries the step`);
-      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: repoRoot, encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
+      const dry = spawnSync(process.execPath, [cliPath, "work", "update", "--dry-run", "--json"], { cwd: bundleFixtureRoot(repoRoot), encoding: "utf8", env: { ...process.env, NODE_NO_WARNINGS: "1" } });
       assert.equal(dry.status, 0, dry.stderr);
       const actions = new Map(JSON.parse(dry.stdout).actions.map((action) => [action.path, action.action]));
       for (const copy of COPIES) assert.equal(actions.get(copy), "skip", `${copy} is what a fresh render writes`);

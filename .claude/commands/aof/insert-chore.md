@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Insert a chore at a target position — scaffold NN_chore_slug at --at P and re-index every item ≥ P up by one, keeping the stream valid. The placement twin of add-chore.
+argument-hint: "<the housekeeping to do> at <position P> [depends NN[,NN…]]"
 aof-invocation: /aof:insert-chore
 aof-runtime: claude
 ---

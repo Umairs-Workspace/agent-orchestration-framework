@@ -168,7 +168,7 @@ export const archTests = [
       assert.ok(phases != null, "guard: `PHASES` was found in the phase-driver module");
       const admitted = [...phases.matchAll(/"([a-z]+)"/gu)].map((match) => match[1]);
       // 147/02 appended `repair`, the lane-halt repair session's driver; the hand-off never names it.
-      assert.deepEqual(admitted, ["refine", "continue", "verify", "repair"], "guard: the admitted phase set is the one the contract cites, plus 147/02's repair");
+      assert.deepEqual(admitted, ["refine", "continue", "verify", "repair", "review"], "guard: the admitted drivers add 147/02 repair and 154/06 native independent review; the cap decider still returns refine");
       assert.ok(admitted.includes(act.phase), "the hand-off's phase is one `createPhaseDriverCommand` admits");
       // …AND A REGISTERED COMMAND EXISTS FOR IT. The id is BUILT from the phase
       // (`work:drive-${phase}`, `drive.mjs:105`) and the phase's own driver is exported at

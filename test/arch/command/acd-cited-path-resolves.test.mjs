@@ -112,6 +112,15 @@ const CITATION = /(?<![A-Za-z0-9_./-])(?:src|packages\/[A-Za-z0-9_-]+\/src)\/[A-
 // a module that moved and changed in one squash reads as D + A, and a module split behind a forward
 // left only its original source on main. The rename ledger now records PR #5's 1,106 renames and its
 // 311 forwards (136/VERIFICATION F-136-01), and the same command printed `55 14614 866 2895`.
+// HELD at 55 through 148's accept (2026-10-06). PR #6's squash (678c3a52) read 135/01's move of the
+// examples modules as D + A, and 147 and 149 cited two test-bed files as bare `src/` paths, which
+// pushed the count to 60. The rename ledger now records PR #6's 9 renames (148/VERIFICATION
+// F-148-03), the test-bed paths are spelled `aof-test-repo/src/…`, and 148/02 removed two.
+// SCOPED TO LIVE WORK at 148's accept (F-148-06): the sweep reads only the documents of items that
+// are not done (`liveDocuments` above), and the same command printed `0 228 110 58`. All 55 were in
+// done records. The ceiling is NOT lowered to 0: an in-flight refine legitimately cites the modules
+// its stories will land (the 130 and 134 species above), and a ceiling of 0 would let one live item's
+// planned citations fail another item's sign-off.
 const UNRESOLVED_CEILING = 55;
 const HIGH_WATER = 77;
 
@@ -125,6 +134,40 @@ const HIGH_WATER = 77;
 // path cited in a DELIVERED DOCUMENT, and these two names are the subtrees the tooling writes; the
 // set is a decision (119/ADR-003 §2), so a third machine-written subtree has to come here and argue.
 const MACHINE_WRITTEN = new Set(["runs", "observability"]);
+
+// A DONE ITEM'S DOCUMENTS ARE HISTORY, AND HISTORY NEVER GATES NEW WORK (148/VERIFICATION F-148-06).
+// Code moves after an item is accepted, and the citations in its records go dark with it — a fact
+// about the record, never a defect of whichever later item happened to move the file. So the sweep
+// reads the documents of items that are not done: everything under `archive/` is skipped, and so is
+// any item folder whose record doc reads `status: done`. A citation in live work still resolves or
+// is reported, which is the control's point.
+const RECORD_DOCS = ["SPEC.md", "STORY.md", "CHORE.md", "SESSION.md", "SPIKE.md", "AOF.md"];
+const DONE_STATUS = /^status:\s*done\s*$/mu;
+
+async function isDoneItem(dir) {
+  for (const name of RECORD_DOCS) {
+    const file = path.join(dir, name);
+    if (existsSync(file)) return DONE_STATUS.test(await readFile(file, "utf8"));
+  }
+  return false;
+}
+
+async function liveDocuments(workDir) {
+  const out = [];
+  for (const entry of await readdir(workDir, { withFileTypes: true })) {
+    const full = path.join(workDir, entry.name);
+    if (!entry.isDirectory()) out.push(full);
+    else if (entry.name === "archive" || MACHINE_WRITTEN.has(entry.name)) continue;
+    else if (entry.name === "backlog") {
+      for (const row of await readdir(full, { withFileTypes: true })) {
+        const rowDir = path.join(full, row.name);
+        if (!row.isDirectory()) out.push(rowDir);
+        else if (!(await isDoneItem(rowDir))) await walk(rowDir, out, MACHINE_WRITTEN);
+      }
+    } else if (!(await isDoneItem(full))) await walk(full, out, MACHINE_WRITTEN);
+  }
+  return out;
+}
 
 async function walk(dir, out = [], skip = new Set()) {
   for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -186,7 +229,7 @@ export async function measure() {
 
 async function realSweep() {
   const documents = [];
-  for (const full of await walk(WORK_DIR, [], MACHINE_WRITTEN)) {
+  for (const full of await liveDocuments(WORK_DIR)) {
     let text;
     try {
       text = await readFile(full, "utf8");

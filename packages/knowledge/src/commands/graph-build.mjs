@@ -1,6 +1,6 @@
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-
+import { GRAPHIFY_BACKENDS } from "../graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath }) {
 // graph:build — build the queryable graph from a folder (ADR-001). Spawns the
@@ -39,8 +39,8 @@ export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuil
 // DOES cross the network (isNetworkBackend === true). It is NOT data-local; `ollama`
 // remains the ONLY data-resident (on-box) backend. Both still egress "docs-media"
 // (the doc/media hop ran) — locality is a separate privacy property (ADR-005).
-const NETWORK_BACKENDS = new Set(["claude", "claude-cli", "gemini", "openai", "kimi", "deepseek"]);
-const LOCAL_BACKENDS = new Set(["ollama"]);
+const NETWORK_BACKENDS = new Set(GRAPHIFY_BACKENDS.filter(entry => entry.network).map(entry => entry.backend));
+const LOCAL_BACKENDS = new Set(GRAPHIFY_BACKENDS.filter(entry => !entry.network).map(entry => entry.backend));
 
 // True when `backend` names a backend that crosses the network (a remote API).
 // null/absent/local (ollama) → false. A KNOWN network backend (NETWORK_BACKENDS,

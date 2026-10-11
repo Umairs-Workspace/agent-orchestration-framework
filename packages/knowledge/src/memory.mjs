@@ -1,11 +1,15 @@
 import noneBackend from "./memory/none-backend.mjs";
+import { statusPartition } from "./memory/local-retrieval.mjs";
+import { evaluateRecurrence } from "./memory/recurrence.mjs";
+import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
+import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
 import { commandError } from "@aof/contracts/error";
-
+import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
 // `aof work memory <verb>` — the memory SEAM (milestone 05, story 00).
 //
-// This module owns the agent-facing verb surface (recall / brief / ingest /
+// This module owns the agent-facing verb surface (recall / record-recall / ingest /
 // reindex / status), argv + scope-flag parsing, backend SELECTION from config,
 // and the --json-vs-text PROJECTIONS of a RecallResult. It calls a backend ONLY
 // through the frozen interface { name, recall, reindex, status } (ADR-003);
@@ -14,9 +18,9 @@ export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
 // Frozen contracts honoured here:
 //   ADR-002  selection lives at config.memory?.backend (read in ONE place below),
 //            absent memory ≡ "none".
-//   ADR-003  three interface methods {recall, reindex, status}; `brief` is
-//            COMPOSED over backend.recall, `ingest` is an ALIAS of reindex —
-//            neither is an interface method.
+//   ADR-003  three interface methods {recall, reindex, status}; `ingest` is an
+//            ALIAS of reindex — not an interface method. (`brief` was retired by
+//            153/ADR-001: no procedure ever invoked it.)
 //   ADR-004  recall returns { query, scope, records[], text }; the CLI prints
 //            `text` by default and the structured `records` array under --json.
 //
@@ -56,9 +60,18 @@ export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
 // silent-by-contract rather than a second printer.
 const NO_PRINT = () => {};
 
-// The verb spine the seam exposes (ADR-003). `brief`/`ingest` are conveniences
-// composed over the spine, not interface methods.
-const MEMORY_VERBS = ["recall", "brief", "ingest", "reindex", "status"];
+// The verb spine the seam exposes (ADR-003). `ingest` is a convenience composed over the
+// spine, not an interface method.
+//
+// `record-recall` (153/ADR-001) is the one verb that is NOT a backend verb: it routes a
+// completed decision observation to the work-owned ledger through an injected capability, so it
+// resolves no backend, builds no index and works identically with memory off.
+const RECORD_RECALL_VERB = "record-recall";
+// `recurrence` (153/ADR-002) is a backend-INDEPENDENT decision over a backend's recall: it asks the
+// active backend for whole-index lesson candidates and scores them with the calibrated matcher, so
+// local and graphify reach the same answer and memory off answers "no candidates".
+const RECURRENCE_VERB = "recurrence";
+const MEMORY_VERBS = ["recall", RECORD_RECALL_VERB, RECURRENCE_VERB, "ingest", "reindex", "status"];
 
 // Scope flags are first-class filters (ADR-006) that parse into the `scope`
 // object handed to the backend. `--limit` is an OPTION (parses into `opts`,
@@ -91,37 +104,6 @@ const BACKEND_REGISTRY = {
   // `local`; selection still happens only in `selectBackendName` above (ADR-002).
   graphify: () => loadGraphifyBackend()
 };
-
-// The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory
-// (or absent backend) is equivalent to "none".
-function selectBackendName(config) {
-  return declaredBackendName(config) ?? "none";
-}
-
-// declaredBackendName(config) — THE single textual read of the selection key in the
-// whole of `src/`, and the reason it is separate from `selectBackendName`: the two
-// callers need DIFFERENT answers about an absent value. Dispatch wants "none" (an
-// unconfigured project runs the no-op backend); the scaffold below needs to tell
-// "nothing is declared" apart from "`none` was chosen deliberately", because it must
-// write the default over the first and never over the second. Collapsing both into one
-// function is what would force a second spelling of the key somewhere else.
-// A falsy declaration (empty string) is "not declared" — the scaffold's original rule.
-function declaredBackendName(config) {
-  const declared = config?.memory?.backend;
-  return typeof declared === "string" && declared.length > 0 ? declared : null;
-}
-
-// MEMORY_BACKEND_CONFIG_PATH — the selection's dotted config path, as PROSE. A face
-// that prints "memory.backend: graphify (set)" was spelling the key a second time, in
-// a string, where nothing kept it honest if the key ever moved. It reads from here now,
-// so the key has one home in code AND in the text a user sees.
-// Spelled as its two path SEGMENTS, and the reason is worth stating rather than
-// leaving as a curiosity: `acd-memory-backend-selection` detects a property ACCESS of
-// `.backend` off a `.memory` access, textually. This constant is PROSE — the label a
-// face prints — not a read, and as one literal it tripped that control as a seventh
-// reader. The segments are what the path actually is, so writing them this way makes
-// the source match the rule the control's own comment states, rather than dodging it.
-const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
 
 // applyDefaultBackendSelection(config, defaultBackend) — the WRITE half of the same
 // invariant, and it lives here for the same reason the read does.
@@ -160,16 +142,21 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
   if (!loader) {
     throw new Error(`Unknown memory backend "${name}". Registered: ${Object.keys(registry).join(", ")}.`);
   }
+  if (name === 'graphify') resolveGraphifyExtraction(config?.memory);
   return loader();
 }
 
 // ----------------------------------------------------------------- argv ----
 
 // Parse `aof work memory <verb> [query] [<ref>] [--scope-flags] [--limit N] [--json]`.
-//   recall/brief : a free-text query string (first positional).
+//   recall : a free-text query string (first positional).
+//   record-recall : the owning item's <ref> (first positional) and `--input <json-file>`.
+//   recurrence : the new lesson's text (the positionals, as recall's query) and `--exclude <item>/R<n>`,
+//                the lesson being written, which is never its own candidate.
 //   ingest/reindex : an optional milestone ref (e.g. "01"); `--all` / `--item NN`
 //                    also name the scope of the rebuild (mapped to `only`).
-// Returns { verb, query, only, scope, opts, json, block, help }.
+//   status : `--lessons` adds the per-lesson effectiveness table.
+// Returns { verb, query, only, ref, inputFile, scope, opts, json, block, lessons, help }.
 //
 // HELP IS PARSED, NOT GUARDED LATER. `--help`/`-h` ANYWHERE in argv answers `help: true`,
 // checked FIRST and before any other token is read: ingest/reindex start the record rebuild
@@ -181,14 +168,17 @@ async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
 // unknown verb, refused — rather than a second spelling of `-h`. The help shape carries no
 // verb and no `json`: help prints the usage text whatever else was asked, as it always has.
 function parseMemoryArgv(argv) {
-  if (memoryHelpRequested(argv)) return { verb: null, query: "", only: null, scope: {}, opts: {}, json: false, block: false, help: true };
+  if (memoryHelpRequested(argv)) return { verb: null, query: "", only: null, ref: null, inputFile: null, exclude: null, scope: {}, opts: {}, json: false, block: false, lessons: false, help: true };
   const positionals = [];
   const scope = {};
   const opts = {};
   let json = false;
   let block = false;
+  let lessons = false;
   let all = false;
   let itemFlag;
+  let inputFile = null;
+  let exclude = null;
 
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -217,6 +207,24 @@ function parseMemoryArgv(argv) {
     }
     if (key === "all") {
       all = true;
+      continue;
+    }
+    if (key === "lessons") {
+      // status only: also return the per-lesson effectiveness table (153/ADR-003).
+      lessons = true;
+      continue;
+    }
+    if (key === "input") {
+      // record-recall's observation file. A trailing flag with no value sets nothing, and the
+      // verb then refuses the missing input by name.
+      const value = inlineValue ?? argv[++i];
+      if (value !== undefined) inputFile = value;
+      continue;
+    }
+    if (key === "exclude") {
+      // recurrence's identity to leave out. A trailing flag with no value excludes nothing.
+      const value = inlineValue ?? argv[++i];
+      if (value !== undefined) exclude = value;
       continue;
     }
     if (key === "limit") {
@@ -251,7 +259,10 @@ function parseMemoryArgv(argv) {
   // milestone ref to scope the rebuild; `--all` (whole stream) maps to null.
   const only = all ? null : (scope.item ?? restPositionals[0] ?? null);
 
-  return { verb, query, only, scope, opts, json, block, help: false };
+  // record-recall names its owning item by the first positional after the verb.
+  const ref = verb === RECORD_RECALL_VERB ? (restPositionals[0] ?? null) : null;
+
+  return { verb, query, only, ref, inputFile, exclude, scope, opts, json, block, lessons, help: false };
 }
 
 // --------------------------------------------------- injection block render ----
@@ -269,7 +280,8 @@ const HOOK_LIMIT = 5;
 // Shape: one line PER record (already scope-filtered + highest-score-first by
 // recall), capped at `limit` (default HOOK_LIMIT), each line exactly:
 //   `${id} (m${item}) · ${kind || recordType} · ${area} · ${title} · ${source}`
-// joined by "\n" with a trailing "\n". `kind || recordType` so an adr (whose
+// joined by "\n" with a trailing "\n" — and, for a record with tags, `· [t1; t2]` between the
+// title and the source (148/ADR-003). `kind || recordType` so an adr (whose
 // `kind` is "") shows "adr" while a lesson shows its kind (e.g. "near-miss"). The
 // id field carries its milestone (`(m<item>)`) — ids COLLIDE across milestones
 // (`R1`, `ADR-002` recur every milestone), so a bare id leaves an agent unable to
@@ -285,7 +297,12 @@ function renderRecallBlock(recallResult, { limit } = {}) {
   if (records.length === 0) return "";
   const lines = records.map((record) => {
     const id = record.item ? `${record.id} (m${record.item})` : record.id;
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title} · ${record.source}`;
+    // 148/ADR-003 — a record's tags (`recurring`, `caught at review`, a gap's discharge date) are
+    // ONE field, `[t1; t2]`, inserted before the source so the source stays last. An untagged
+    // record, and one from a store before index version 2 that carries no `tags`, renders the
+    // five-field line unchanged.
+    const tags = Array.isArray(record.tags) && record.tags.length > 0 ? ` · [${record.tags.join("; ")}]` : "";
+    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${tags} · ${record.source}`;
   });
   return lines.join("\n") + "\n";
 }
@@ -296,7 +313,8 @@ function renderRecallBlock(recallResult, { limit } = {}) {
 // `cli.json` call these; `defaultRender` below (the collector-based renderer `runMemory`'s
 // direct callers get) calls the SAME two. Three consumers parse this output without a
 // human in the loop — the bundle prompts paste `recall … --block` into agent context, the
-// hooks read the `--json` records ARRAY, `status`/`reindex` are one line each — so a second
+// hooks read the `--json` records ARRAY, `status`/`reindex` are one line each (status adds a
+// second only to name the ingest a stale store owes, 148/ADR-003) — so a second
 // copy of either projection is exactly the byte drift the one home exists to prevent.
 
 // The human projection: the string the face prints, or `null` when there is NOTHING to
@@ -307,34 +325,93 @@ function renderRecallBlock(recallResult, { limit } = {}) {
 // blank line), not a placeholder (the hook would paste it). The face's rule is that a
 // `null` render prints nothing; the hook injects nothing. `help` (the parse's boolean, never
 // a verb) renders the usage text `runMemoryVerb` answered.
-function renderMemory(verb, result, { block = false, limit, help = false } = {}) {
+function renderMemory(verb, result, { block = false, limit, help = false, renderWarnings = null } = {}) {
   if (help) return result;
   if (verb === "recall" && block) {
     const rendered = renderRecallBlock(result, { limit });
     return rendered ? rendered : null;
   }
-  if (verb === "recall" || verb === "brief") {
-    // The pre-rendered text view (recall: a projection of records; brief: the lesson/adr
-    // digest).
+  if (verb === "recall") {
+    // The pre-rendered text view: a projection of the records.
     return result.text ?? "";
   }
-  if (verb === "status") return `memory: backend=${result.backend} records=${result.recordCount}`;
-  if (verb === "reindex" || verb === "ingest") return `reindex: ${result.recordCount} record(s)`;
+  if (verb === RECURRENCE_VERB) return recurrenceText(result);
+  if (verb === RECORD_RECALL_VERB) {
+    const head = result.replayed
+      ? `recall ${result.id} was already recorded on ${result.ref} — unchanged`
+      : `recorded recall ${result.id} on ${result.ref} (${result.verdicts} verdict(s))`;
+    return renderWarnings ? renderWarnings(head, result) : head;
+  }
+  if (verb === "status") {
+    const lines = [`memory: backend=${result.backend} records=${result.recordCount}`];
+    // 148/ADR-004 §3 — the first line is unchanged; the seam's composition adds the layers each
+    // record type serves and the vocabulary's conformance, one line each.
+    if (result.layers) {
+      lines.push(`layers: ${Object.entries(result.layers).map(([layer, count]) => `${layer} ${count}`).join(" · ")}`);
+    }
+    if (result.conformance) lines.push(`conformance: ${conformanceText(result.conformance)}`);
+    if (result.effectiveness) lines.push(...effectivenessLines(result.effectiveness));
+    // 148/ADR-003 — a store built before the current index version is named, with the verb that
+    // rebuilds it, rather than reported as if its numbers were current.
+    const index = result.index;
+    if (index?.stale) {
+      lines.push(`memory: the index is version ${index.version}, this build writes ${index.current} — run \`aof work memory ingest\` to rebuild it`);
+    }
+    return lines.join("\n");
+  }
+  if (verb === "reindex" || verb === "ingest") {
+    const headline = `reindex: ${result.recordCount} record(s)`;
+    return result.graph?.source === "project setting" && result.graph.built === false ? `${headline}\n${result.graph.reason}` : headline;
+  }
   return typeof result === "string" ? result : JSON.stringify(result, null, 2);
+}
+
+// The effectiveness block as text: one line per record type, then the per-lesson table when it was
+// asked for, then each diagnostic. An incomplete read says so rather than showing counts as final.
+function effectivenessLines(effectiveness) {
+  const counts = (entry) => ACCOUNTING_COUNTERS.map((counter) => `${counter} ${entry[counter]}`).join(" ");
+  const lines = [`effectiveness${effectiveness.complete ? "" : " (incomplete)"}: ${Object.entries(effectiveness.types).map(([type, entry]) => `${type} ${counts(entry)}`).join(" · ")}`];
+  for (const [identity, entry] of Object.entries(effectiveness.lessons ?? {})) {
+    lines.push(`  ${identity} · ${counts(entry)}${entry.provenance === "unresolved" ? " · provenance unresolved" : ""}`);
+  }
+  for (const diagnostic of effectiveness.diagnostics) {
+    lines.push(`effectiveness diagnostic: ${diagnostic.source}${diagnostic.line ? `:${diagnostic.line}` : ""} — ${diagnostic.defect}`);
+  }
+  return lines;
+}
+
+// The recurrence decision as text: the verdict line, then each candidate the matcher scored.
+function recurrenceText(result) {
+  const basis = `threshold ${result.threshold}, calibration ${result.calibration}`;
+  const head = result.qualifying !== null
+    ? `recurrence: ${result.qualifying} (score ${result.score} > ${basis})`
+    : result.score === null
+      ? `recurrence: none (no lesson candidates; ${basis})`
+      : `recurrence: none (best score ${result.score} is not above ${basis})`;
+  const lines = result.candidates.map((candidate) => `  ${candidate.ref} · ${candidate.score} · ${candidate.kind || "lesson"} · ${candidate.title} · ${candidate.source}`);
+  return [head, ...lines].join("\n");
+}
+
+// The conformance line's body: `kind blank 1 non-enum 1 · … · owner blank 0 · gap status non-enum 0`.
+const CONFORMANCE_LABELS = { gapStatus: "gap status" };
+const COUNT_LABELS = { blank: "blank", nonEnum: "non-enum" };
+function conformanceText(conformance) {
+  return Object.entries(conformance)
+    .map(([field, counts]) => [
+      CONFORMANCE_LABELS[field] ?? field,
+      ...Object.entries(counts).map(([key, count]) => `${COUNT_LABELS[key] ?? key} ${count}`),
+    ].join(" "))
+    .join(" · ");
 }
 
 // The --json projection: the VALUE the face serialises. ADR-004: recall emits the
 // structured `records` array (the contract — an ARRAY, never an object wrapping it), never
-// the rendered text blob. brief emits its digest sans the rendered `text`; reindex/ingest
-// emit the build summary WITHOUT the full records dump (the index was just written to
+// the rendered text blob. record-recall emits its result envelope as-is (propagation warnings
+// included); reindex/ingest emit the build summary WITHOUT the full records dump (the index was just written to
 // disk — re-emitting it is noise); status is its own object.
 function memoryJson(verb, result, { help = false } = {}) {
   if (help) return { usage: result };
   if (verb === "recall") return result.records;
-  if (verb === "brief") {
-    const { text, ...digest } = result;
-    return digest;
-  }
   if (verb === "reindex" || verb === "ingest") {
     const { records, ...summary } = result;
     return summary;
@@ -355,52 +432,6 @@ function defaultRender(verb, result, { json, block, limit, help }, log) {
   if (rendered !== null) log(rendered);
 }
 
-// ---------------------------------------------------------------- brief ----
-
-// brief's seam-side digest (ADR-003 composition + ADR-007 shape): the lesson/adr
-// split plus a lessons-by-area map, derived from the records `recall` returns.
-// Backend-agnostic — the seam owns rendering, so every backend gets the same
-// digest without reimplementing it (and the frozen interface stays at 4 methods).
-function briefDigest(records = [], scope = {}) {
-  const lessons = records.filter((record) => record.recordType === "lesson");
-  const adrs = records.filter((record) => record.recordType === "adr");
-
-  const lessonsByArea = {};
-  for (const lesson of lessons) {
-    const area = lesson.area || "";
-    (lessonsByArea[area] ||= []).push({
-      id: lesson.id,
-      item: lesson.item,
-      title: lesson.title,
-      summary: lesson.summary ?? ""
-    });
-  }
-
-  const digest = {
-    scope,
-    lessonCount: lessons.length,
-    adrCount: adrs.length,
-    lessonsByArea,
-    text: ""
-  };
-  digest.text = renderBriefDigest(digest);
-  return digest;
-}
-
-function renderBriefDigest(digest) {
-  const where = digest.scope?.item ? ` · milestone ${digest.scope.item}` : " · whole stream";
-  const lines = [`memory brief${where}`, `  ${digest.lessonCount} lesson(s), ${digest.adrCount} adr(s)`];
-  const areas = Object.keys(digest.lessonsByArea);
-  if (areas.length > 0) {
-    lines.push("  lessons by area:");
-    for (const area of areas) {
-      const ids = digest.lessonsByArea[area].map((lesson) => lesson.id).join(", ");
-      lines.push(`    ${area || "(unspecified)"}: ${ids}`);
-    }
-  }
-  return `${lines.join("\n")}\n`;
-}
-
 // --------------------------------------------------------------- usage ----
 
 // THE ONE USAGE LINE. The routed command's `cli.spec.usage` (what the face prints on a
@@ -408,7 +439,7 @@ function renderBriefDigest(digest) {
 // this same constant — two spellings of the flag vocabulary had already drifted once
 // (`--all`/`--block` present in one and absent from the other), and a usage line that
 // disagrees with itself is the seam saying two things about its own surface.
-const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--json]";
+const MEMORY_USAGE = "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]";
 
 function memoryUsage() {
   return [
@@ -416,10 +447,11 @@ function memoryUsage() {
     "",
     `Verbs: ${MEMORY_VERBS.join(", ")}`,
     "  recall <query>     recall prior lessons/ADRs matching a query (scoped by flags)",
-    "  brief              a situational digest (composed over recall)",
+    "  record-recall <ref> --input <file>   record a completed recall and its verdicts on an item's ledger",
+    "  recurrence <lesson text> [--exclude <item>/R<n>]   does a new lesson repeat an earlier one? (calibrated, whole index)",
     "  ingest [ref]       (re)build the memory index — alias of reindex",
     "  reindex [ref]      rebuild the derived memory index from the work stream",
-    "  status             report the active backend and record count"
+    "  status [--lessons] report the active backend, record count and observed effectiveness (per lesson with --lessons)"
   ].join("\n");
 }
 
@@ -457,26 +489,37 @@ function gateMemoryVerb(verb) {
 //
 // Routing (ADR-003):
 //   recall  -> backend.recall(query, scope, opts, ctx)
-//   brief   -> backend.recall(...)  COMPOSED (no `brief` interface method)
+//   recurrence -> backend.recall(query, {}, { limit: Infinity }, ctx), scored by the calibrated matcher
 //   reindex -> backend.reindex(only, ctx)
 //   ingest  -> backend.reindex(only, ctx)  ALIAS (no `ingest` interface method)
 //   status  -> backend.status(ctx)
 // The verb is the caller's to gate; an unknown one reaches no method and yields undefined.
-async function executeMemoryVerb({ verb, query = "", only = null, scope = {}, opts = {} } = {}, { backend, ctx = {} } = {}) {
+async function executeMemoryVerb({ verb, query = "", only = null, exclude = null, scope = {}, opts = {}, lessons = false } = {}, { backend, ctx = {} } = {}) {
   if (verb === "recall") return backend.recall(query, scope, opts, ctx);
-  if (verb === "brief") {
-    // brief is COMPOSED over recall (ADR-003): it reaches backend.recall (no
-    // `brief` interface method), pulling the scope-filtered records (item scope
-    // only, unlimited), then derives the lesson/adr digest SEAM-SIDE. The digest is
-    // backend-agnostic (every backend yields MemoryRecords), so the seam owns this
-    // rendering — honouring "brief is a seam composition" without a 4th method.
-    const briefScope = scope.item ? { item: scope.item } : {};
-    const recalled = await backend.recall("", briefScope, { limit: Infinity }, ctx);
-    return briefDigest(recalled.records ?? [], briefScope);
+  if (verb === RECURRENCE_VERB) {
+    // 153/ADR-002 — whole-index candidates (no scope: recall's kind filter is NOT applied, because a
+    // recurrence crosses kinds), then the matcher's own score. Retrieval only nominates; the order,
+    // the threshold and the qualifying reference are the matcher's, so both backends agree.
+    const recalled = await backend.recall(query, {}, { limit: Infinity }, ctx);
+    return evaluateRecurrence({ text: query, records: recalled?.records ?? [], exclude });
   }
   // ingest is an ALIAS of reindex (ADR-003, FINDINGS §4): same interface method.
   if (verb === "reindex" || verb === "ingest") return backend.reindex(only, ctx);
-  if (verb === "status") return backend.status(ctx);
+  if (verb === "status") {
+    // 148/ADR-004 §2 — status is COMPOSED here: the backend's own facts,
+    // unchanged, then one unbounded recall, over which the seam adds `types`, `layers` and
+    // `conformance`. Counting at the seam rather than per backend is what keeps the two backends
+    // from disagreeing about what the store holds (m40/R3: graphify's own split names two types).
+    const base = await backend.status(ctx);
+    const recalled = await backend.recall("", {}, { limit: Infinity }, ctx);
+    const records = recalled?.records ?? [];
+    const status = { ...base, ...statusPartition(records) };
+    // 153/ADR-003 — observed effectiveness is the work-owned accounting reader's, over the ledgers and
+    // retrospectives rather than the index, so every backend (and none) reports the same totals. The
+    // index only decides which lessons exist and whether a counted lesson still resolves.
+    if (ctx.workDir) status.effectiveness = await accountMemory(ctx.workDir, { indexed: records, lessons });
+    return status;
+  }
   return undefined;
 }
 
@@ -487,11 +530,29 @@ async function executeMemoryVerb({ verb, query = "", only = null, scope = {}, op
 // either door: the routed command's `run` hands the face's input here, and `runMemory`
 // hands `parseMemoryArgv`'s. `resolveBackend(config)` is injectable so a test can register
 // a stub under any name; the default is the real registry.
-async function runMemoryVerb(input, { config, resolveBackend = resolveConfiguredBackend, ctx = {} } = {}) {
+async function runMemoryVerb(input, { config, resolveBackend = resolveConfiguredBackend, ctx = {}, recordRecall = null } = {}) {
   if (input?.help === true) return memoryUsage();
   gateMemoryVerb(input?.verb);
+  if (input.verb === RECORD_RECALL_VERB) {
+    // The ledger capability is injected by core (knowledge never imports work). It is reached
+    // BEFORE any backend is resolved: recording a completed observation is backend-independent.
+    if (typeof recordRecall !== "function") {
+      throw commandError("record-recall is not wired through this door.", "record-recall-unavailable", 501);
+    }
+    return recordRecall(ctx, { ref: input.ref, inputPath: input.inputFile });
+  }
+  if (input.verb === RECURRENCE_VERB) {
+    // Refused BEFORE a backend is resolved: a blank lesson has nothing to match, and a malformed
+    // --exclude would silently exclude nothing — so the lesson being written could match itself.
+    if (String(input.query ?? "").trim() === "") throw commandError("recurrence needs the new lesson's text.", "missing-lesson-text", 400);
+    if (input.exclude != null) {
+      const canonical = canonicalRecurrence(input.exclude);
+      if (canonical === null) throw commandError(`--exclude "${input.exclude}" is not an <item>/R<n> reference.`, "invalid-exclude", 400);
+      input = { ...input, exclude: canonical };
+    }
+  }
   const backend = await resolveBackend(config);
-  return executeMemoryVerb(input, { backend, ctx });
+  return executeMemoryVerb(input, { backend, ctx: { ...ctx, configMemory: config?.memory ?? ctx.configMemory ?? {} } });
 }
 
 // THE IN-PROCESS ENTRY over ARGV — a thin composition of the same path the routed door
@@ -501,11 +562,11 @@ async function runMemoryVerb(input, { config, resolveBackend = resolveConfigured
 // record, whose actuator is `module:src/work/memory.mjs#runMemory`. Returns
 // { ok, exitCode, result }; an unknown or missing verb is usage on stderr, exit non-zero,
 // and NO backend method invoked — the contract those callers pin, kept to the byte.
-async function runMemory(argv, { config, resolveBackend, render = defaultRender, log = NO_PRINT, ctx = {} } = {}) {
+async function runMemory(argv, { config, resolveBackend, render = defaultRender, log = NO_PRINT, ctx = {}, recordRecall = null } = {}) {
   const parsed = parseMemoryArgv(argv);
   let result;
   try {
-    result = await runMemoryVerb(parsed, { config, resolveBackend, ctx });
+    result = await runMemoryVerb(parsed, { config, resolveBackend, ctx, recordRecall });
   } catch (error) {
     if (error?.code !== "unknown-verb") throw error;
     console.error(error.message);
@@ -515,5 +576,53 @@ async function runMemory(argv, { config, resolveBackend, render = defaultRender,
   return { ok: true, exitCode: 0, result };
 }
 
-return { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, briefDigest, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
+return { MEMORY_VERBS, RECURRENCE_VERB, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, RECORD_RECALL_VERB, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
+}
+
+// The ONE place config.memory?.backend is read (ADR-002 invariant). Absent memory
+// (or absent backend) is equivalent to "none".
+export function selectBackendName(config) {
+  return declaredBackendName(config) ?? "none";
+}
+
+// declaredBackendName(config) — THE single textual read of the selection key in the
+// whole of `src/`, and the reason it is separate from `selectBackendName`: the two
+// callers need DIFFERENT answers about an absent value. Dispatch wants "none" (an
+// unconfigured project runs the no-op backend); the scaffold below needs to tell
+// "nothing is declared" apart from "`none` was chosen deliberately", because it must
+// write the default over the first and never over the second. Collapsing both into one
+// function is what would force a second spelling of the key somewhere else.
+// A falsy declaration (empty string) is "not declared" — the scaffold's original rule.
+export function declaredBackendName(config) {
+  const declared = config?.memory?.backend;
+  return typeof declared === "string" && declared.length > 0 ? declared : null;
+}
+
+// MEMORY_BACKEND_CONFIG_PATH — the selection's dotted config path, as PROSE. A face
+// that prints "memory.backend: graphify (set)" was spelling the key a second time, in
+// a string, where nothing kept it honest if the key ever moved. It reads from here now,
+// so the key has one home in code AND in the text a user sees.
+// Spelled as its two path SEGMENTS, and the reason is worth stating rather than
+// leaving as a curiosity: `acd-memory-backend-selection` detects a property ACCESS of
+// `.backend` off a `.memory` access, textually. This constant is PROSE — the label a
+// face prints — not a read, and as one literal it tripped that control as a seventh
+// reader. The segments are what the path actually is, so writing them this way makes
+// the source match the rule the control's own comment states, rather than dodging it.
+export const MEMORY_BACKEND_CONFIG_PATH = ["memory", "backend"].join(".");
+
+
+// Pure inspection shares dispatch's single selection reader. It never probes a tool,
+// reads credentials, mutates configuration or opens a record store.
+export function inspectMemoryConfiguration(config) {
+  const declared = declaredBackendName(config);
+  const backend = selectBackendName(config);
+  resolveGraphifyExtraction(config?.memory); // validate an authored nested setting even when inactive
+  if (!['none', 'local', 'graphify'].includes(backend)) {
+    const error = commandError(`Unknown memory backend "${backend}". Registered: none, local, graphify.`, 'invalid-memory-backend', 400);
+    error.path = MEMORY_BACKEND_CONFIG_PATH;
+    throw error;
+  }
+  const extraction = backend === 'graphify' ? resolveGraphifyExtraction(config?.memory) : null;
+  return { backend, source: declared === null ? 'default' : 'project setting', path: MEMORY_BACKEND_CONFIG_PATH,
+    dependencies: extraction?.dependencies ?? [], extraction };
 }

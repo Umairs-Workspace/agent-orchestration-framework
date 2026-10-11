@@ -8,6 +8,7 @@ import {
   resolveLoopResume,
 } from "../../packages/work-loop/src/engine.mjs";
 import { workLoopStoryFixturesFor } from "../../packages/work-loop/test/support/work-loop-story-fixtures.mjs";
+import { resolveExecution, resolveExecutionResume } from "@aof/execution/runtime-selection";
 
 const loop = (overrides = {}) => ({
   loopRunId: "lr-7",
@@ -29,6 +30,34 @@ const l3Gate = {
 };
 
 export const workLoopDeclarationTests = [
+  {
+    name: "154/01 task01 — declaration serialization and projection retain all execution choices; resume pins them",
+    run() {
+      const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native-test", model: "native-test", isDefault: true, supportedReasoningEfforts: [{ reasoningEffort: "high" }] }] } } });
+      const declaration = buildLoopDeclaration({ ...loop(), execution });
+      const records = JSON.parse(JSON.stringify([run("r1", "2026-10-06T00:00:00Z", declaration)]));
+      const recovered = readLoopDeclaration(records);
+      assert.deepEqual(recovered.execution, execution);
+      assert.equal(Object.keys(declaration).at(-1), "execution");
+      const resumed = resolveLoopResume({ scope: "53", runs: records, resolveExecutionResume });
+      assert.deepEqual(resumed.execution, execution);
+      const refused = resolveLoopResume({ scope: "53", runs: records, runtime: "claude", resolveExecutionResume });
+      assert.equal(refused.code, "execution-resume-conflict"); assert.equal(Object.hasOwn(refused, "execution"), false);
+      assert.equal(resolveLoopResume({ scope: "53", runs: records }).code, "invalid-record");
+      assert.deepEqual(records[0].brief.loop.execution, execution);
+    },
+  },
+  {
+    name: "154/01 task01 — malformed present declaration metadata remains visible and refuses; legacy shape is unchanged",
+    run() {
+      const declaration = buildLoopDeclaration({ ...loop(), execution: null });
+      const records = [run("r1", "2026-10-06T00:00:00Z", declaration)];
+      assert.equal(readLoopDeclaration(records).execution, null);
+      assert.equal(resolveLoopResume({ scope: "53", runs: records, resolveExecutionResume }).code, "invalid-record");
+      assert.equal(Object.hasOwn(buildLoopDeclaration(loop()), "execution"), false);
+      assert.equal(Object.hasOwn(readLoopDeclaration([run("r1", "2026-10-06T00:00:00Z")]), "execution"), false);
+    },
+  },
   {
     name: "loop declaration — the shared story fixtures stay executable",
     run() {

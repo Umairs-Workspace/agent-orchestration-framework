@@ -42,7 +42,8 @@
 // `aborted` (the caller asked for the stop and got it) with its real exit code. The FIRST of
 // the deadline and the abort to fire decides the outcome, and exactly one kill is ever sent.
 import { spawn as spawnChildProcess } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, openSync, closeSync, readFileSync, rmSync } from "node:fs";
+import path from "node:path";
 
 // The four terminal outcomes, frozen. Every result carries exactly one of them, and no
 // consumer has to infer "did it finish?" from a null exit code.
@@ -184,6 +185,7 @@ export async function runBounded({
   graceMs,
   stdin = "ignore",
   spawnChild = spawnChildProcess,
+  platform = process.platform,
   // 129/06 F-63 — THE CHILD'S OWN CONSOLE. On win32 a child spawned with piped stdio still
   // ATTACHES to its parent's console, and a console-scoped kill inside the child — node-pty's
   // ConPTY console-list agent, which enumerates and terminates every process of the console it
@@ -240,16 +242,32 @@ export async function runBounded({
     });
   }
 
-  let child;
-  try {
-    child = spawnChild(command, args, {
+  let child, captureDir;
+  const captureHandles = [];
+  const releaseCapture = () => {
+    for (const handle of captureHandles.splice(0)) closeSync(handle);
+    if (captureDir) rmSync(captureDir, { recursive: true, force: true });
+  };
+  const spawnWith = (stdio) => spawnChild(command, args, {
       cwd,
       env,
-      stdio: [stdin, "pipe", "pipe"],
+      stdio,
       windowsHide: true,
-      ...(ownConsole === true && process.platform === "win32" ? { detached: true } : {}),
+      ...(ownConsole === true && platform === "win32" ? { detached: true } : {}),
     });
+  try {
+    try { child = spawnWith([stdin, "pipe", "pipe"]); }
+    catch (error) {
+      // Windows sandbox policy can forbid named pipes while allowing this exact
+      // executable and ordinary workspace files. Retry only a synchronous refusal
+      // (no child ran), without changing permissions or the stdin cancel protocol.
+      if (platform !== "win32" || error?.code !== "EPERM" || stdin !== "ignore") throw error;
+      captureDir = mkdtempSync(path.join(cwd ?? process.cwd(), ".aof-spawn-"));
+      for (const name of ["stdout", "stderr"]) captureHandles.push(openSync(path.join(captureDir, name), "wx"));
+      child = spawnWith([stdin, ...captureHandles]);
+    }
   } catch (error) {
+    releaseCapture();
     return result({
       outcome: "not-started",
       command,
@@ -371,5 +389,8 @@ export async function runBounded({
       }
       settle({ outcome: "exited", exitCode: code, signal: exitSignal });
     });
-  });
+  }).then(observed => captureDir ? { ...observed,
+    stdout: readFileSync(path.join(captureDir, "stdout"), "utf8"),
+    stderr: readFileSync(path.join(captureDir, "stderr"), "utf8"),
+  } : observed).finally(releaseCapture);
 }

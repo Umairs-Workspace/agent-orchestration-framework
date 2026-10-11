@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Draw a milestone's loop plan — which stories `aof work loop` builds together under refine_first, which wait and why, and which are already built — through the project's diagram engine, into the milestone's execution/ folder.
+argument-hint: "<milestone ref>"
 aof-invocation: /aof:loop-diagram
 aof-runtime: claude
 ---

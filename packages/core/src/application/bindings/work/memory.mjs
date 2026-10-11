@@ -6,7 +6,7 @@ export function assembleWorkMemory({ provideMemoryLocalBackend, provideMemoryGra
 
   const loadLocalBackend = () => provideMemoryLocalBackend().then(m => m.default);
   const loadGraphifyBackend = () => provideMemoryGraphifyBackend().then(m => m.default);
-  const { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, briefDigest, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory } = createMemory({ loadLocalBackend, loadGraphifyBackend });
+  const { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, RECORD_RECALL_VERB, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory } = createMemory({ loadLocalBackend, loadGraphifyBackend });
 
-  return { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, briefDigest, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
+  return { MEMORY_VERBS, SCOPE_FLAGS, BACKEND_REGISTRY, selectBackendName, declaredBackendName, MEMORY_BACKEND_CONFIG_PATH, applyDefaultBackendSelection, resolveConfiguredBackend, parseMemoryArgv, HOOK_LIMIT, renderRecallBlock, renderMemory, memoryJson, RECORD_RECALL_VERB, MEMORY_USAGE, memoryUsage, memoryHelpRequested, memoryVerbRefusal, gateMemoryVerb, executeMemoryVerb, runMemoryVerb, runMemory };
 }

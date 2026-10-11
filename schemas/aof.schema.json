@@ -86,6 +86,35 @@
     }
   },
   "$defs": {
+    "runtimePhaseChoices": {
+      "type": "object",
+      "properties": {
+        "refine": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "continue": { "type": "string", "minLength": 1, "pattern": "\\S" },
+        "verify": { "type": "string", "minLength": 1, "pattern": "\\S" }
+      },
+      "additionalProperties": false
+    },
+    "runtimeRoleChoices": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1, "pattern": "\\S" }
+    },
+    "runtimeAgents": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "object",
+          "properties": {
+            "models": { "$ref": "#/$defs/runtimePhaseChoices" },
+            "effort": { "$ref": "#/$defs/runtimePhaseChoices" }
+          },
+          "additionalProperties": false
+        },
+        "models": { "$ref": "#/$defs/runtimeRoleChoices" },
+        "effort": { "$ref": "#/$defs/runtimeRoleChoices" }
+      },
+      "additionalProperties": false
+    },
     "globalRef": {
       "type": "object",
       "required": ["kind", "id"],
@@ -352,6 +381,21 @@
       "type": "object",
       "description": "Configuration for the ACD (Acceptance-Criteria Development) work stream: the flat, chronological stream of milestone / story / task / uat items.",
       "properties": {
+        "loop": {
+          "type": "object",
+          "properties": {
+            "runtime": { "enum": ["claude", "codex"], "default": "claude" },
+            "runtimes": { "type": "object", "additionalProperties": false, "properties": { "refine": { "enum": ["claude", "codex"] }, "continue": { "enum": ["claude", "codex"] }, "verify": { "enum": ["claude", "codex"] } } },
+            "agents": {
+              "type": "object",
+              "properties": {
+                "refine": { "type": "object", "properties": { "mode": { "type": "string", "description": "The role mode of every refine the loop drives: solo or orchestrated, composed onto the driven command as --solo or --orchestrated. Overrides work.agents.mode when set. An unset key, or any value that is not a mode, falls back to work.agents.mode, then to solo (the chain's home is packages/contracts/src/agent-mode.mjs)." } } },
+                "continue": { "type": "object", "properties": { "mode": { "type": "string", "description": "The role mode of every continue the loop drives: solo or orchestrated, composed onto the driven command as --solo or --orchestrated. Overrides work.agents.mode when set. An unset key, or any value that is not a mode, falls back to work.agents.mode, then to solo (the chain's home is packages/contracts/src/agent-mode.mjs)." } } }
+              }
+            }
+          },
+          "additionalProperties": true
+        },
         "dir": {
           "type": "string",
           "description": "Path, relative to the repo root, to the flat work-item stream (NN_type_slug folders)."
@@ -360,9 +404,18 @@
           "type": "object",
           "description": "How ACD role agents are orchestrated.",
           "properties": {
+            "runtimes": {
+              "type": "object",
+              "properties": {
+                "claude": { "$ref": "#/$defs/runtimeAgents" },
+                "codex": { "$ref": "#/$defs/runtimeAgents" }
+              },
+              "additionalProperties": false,
+              "description": "Runtime-specific phase and role choices. Claude inherits matching legacy settings; Codex never inherits Claude aliases. Model and effort compatibility is checked against native capabilities."
+            },
             "mode": {
               "enum": ["orchestrated", "solo"],
-              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to each command's own default: refine runs solo, and every other role-spawning command runs orchestrated. Governs the sessions an operator types only: a loop-driven session reads work.loop.agents.<phase>.mode, never this key."
+              "description": "orchestrated = the main session spawns role sub-agents; solo = the main session performs every role inline. An unset key resolves to solo for every command that reads a mode (verify reads none), and --solo / --orchestrated override it for one run. A loop-driven session uses work.loop.agents.<phase>.mode when set and this key otherwise."
             },
             "productOwner": {
               "enum": ["inline", "agent"],
@@ -404,11 +457,11 @@
             },
             "session": {
               "type": "object",
-              "description": "The model and effort of the claude session aof itself spawns for a loop-driven phase (refine / continue / verify). Distinct from the per-role maps work.agents.models and work.agents.effort, which render into the agent files.",
+              "description": "Model and effort for each loop phase (refine / continue / verify). AOF infers Claude or Codex from the selected model. Distinct from per-role maps, which configure sub-agents.",
               "properties": {
                 "models": {
                   "type": "object",
-                  "description": "Phase -> model. An unset phase passes no --model, so the session runs on claude's own default. aof work loop --model [PHASE=]MODEL and aof work drive --model override it for one run.",
+                  "description": "Phase -> model, which selects its assistant automatically. Unset phases retain configured defaults. aof work loop --model [PHASE=]MODEL and aof work drive --model override it for one run; no execution runtime flag is needed.",
                   "additionalProperties": {
                     "type": "string",
                     "minLength": 1,
@@ -703,6 +756,16 @@
         "backend": {
           "enum": ["local", "none", "graphify"],
           "description": "The memory backend that answers the `aof work memory` verbs. `local` = the cheap derived-index backend; `none` = a no-op so ACD runs unchanged when memory is absent; `graphify` = the graph-grounded backend (records from the 05 parsers, re-ranked by a work-stream graph built via invoke('graph:build'))."
+        },
+        "graphify": {
+          "type": "object",
+          "properties": {
+            "extractionBackend": {
+              "enum": ["claude", "claude-cli", "gemini", "openai", "kimi", "deepseek", "ollama"],
+              "description": "Existing Graphify extractor selected explicitly. Absent keeps claude-cli as the reported legacy default; the choice does not follow the primary coding assistant or silently fall back."
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false

@@ -1,6 +1,7 @@
 ---
 aof-generated: true
 description: Shatter a planning PRD into a framed roadmap — a milestone SPEC per deliverable chunk, plus a `spike` de-risk driver for any chunk that is a blocking unknown gating a milestone — the one batch session that lays out the roadmap and authors cross-milestone `depends` edges. Consumes a planning PRD (whatever produced it); never writes product strategy itself. One-directional — PRD → drivers, never back.
+argument-hint: "[PRD path — omit to auto-discover PRD-*.md] [in <group/path>]"
 aof-invocation: /aof:shatter
 aof-runtime: claude
 ---
@@ -60,6 +61,21 @@ the PRD:
    declares: a milestone's `## Scope` (a boundary) or `## Dependencies` (an edge); a spike's
    `## Question` (what the unknown is) or `## Outcome / Next`. An **empty block means nothing to
    surface** (memory may be off) — proceed unchanged.
+   **Keep the result; capture it once, owned by the first driver.** Retain the recall's actual
+   result unchanged until step 3 has created the drivers — the exact query text and, for every
+   returned line, its `item`, `id` and `recordType` (a lesson kind such as `near-miss` means
+   `lesson`; any other word, such as `adr`, is the record type itself). Never re-run the recall to
+   rebuild it. Once the first driver in PRD order exists and you have decided what the result
+   changed, write the observation to a scratch file outside every work folder: `id` (a fresh UUID
+   minted once for this recall — a retry reuses it and `at`), `at` (the ISO instant of the recall),
+   `edge` `shatter-po`, `actor` `product-owner`, `query` (verbatim), `scope` `{}` (the original
+   unscoped query) and `records` — one `{item, id, recordType, verdict}` per returned line, each
+   with an explicit verdict `honoured`, `departed` or `irrelevant`, never a default. Submit it ONCE:
+   `aof work memory record-recall <first driver ref> --input <observation file>`. Every other
+   driver's recall prose cites that owner's ref and recall id and records nothing of its own — the
+   recall is never replayed per driver. An empty block is still submitted, as `"records": []`, with
+   no verdict invented. If shatter stops before any driver exists, report that no ledger capture
+   was completed and create no placeholder item or recall store.
 2. **Identify the drivers — and each one's TYPE.** Partition the initiative into framed, independently-
    deliverable units, and for each decide **milestone** vs **spike** (ADR-004):
    - **Deliverable behaviour** → a **milestone** (shatter's core job — objective + scope + stories).

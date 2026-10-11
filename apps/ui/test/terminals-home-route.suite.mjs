@@ -526,7 +526,11 @@ export const terminalsHomeRouteTests = [
         // over its ceiling, so the whole TASKS tab moved out to `TasksTab.tsx` and only its import
         // and mount stay. Ninety-six lines of headroom.
         ["apps/ui/src/board/DetailPanel.tsx", 904, 1000, "127/04's move out and pill in, 133/04's tab, 131/05's ask card mount, then 135's TASKS tab moved out to its own module"],
-        ["apps/ui/src/config/App.tsx", 1298, 1300, "untouched"],
+        // 1298 -> 1300 by 154/10 (ADR-008): the execution region's import and mount.
+        // Its form lives in RuntimeSettings.tsx; the existing ceiling stays 1300.
+        // Scope-load guards/global explanation replace existing lines. No rationale
+        // was trimmed and the other surface counts/ceilings stay exactly as above.
+        ["apps/ui/src/config/App.tsx", 1300, 1300, "154/10's configuration-only execution region import and mount"],
       ];
       for (const [file, expected, ceiling, why] of untouched) {
         const lines = await gateLineCount(file);

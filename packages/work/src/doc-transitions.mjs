@@ -1,6 +1,6 @@
 import path from "node:path";
 import { readFile, writeFile, appendFile } from "node:fs/promises";
-import { appendRawFeedback } from "./feedback-records.mjs";
+import { appendRawFeedback, appendRecallObservation } from "./feedback-records.mjs";
 export const FEEDBACK_HEADING = "## Feedback (for retro)";
 
 // Domain transitions receive the configured effect runtime from core. Construction performs no I/O.
@@ -37,8 +37,6 @@ export function createDocumentTransitions({ applicableReactors, openEffectsJourn
 // and threads the publish reactor's warning back with
 // threadPropagationWarnings.
 async function transitionFeedbackAppended(item, { bullet, raw, now } = {}, opts = {}) {
-  const { workspace = null, publisherOptions = null, journalOptions = {}, drain = true } = opts;
-
   // (1) The FACT — raw evidence first, then the record-doc projection. A throw
   // before both writes complete means no event.
   // The immutable evidence is appended first. STATE.md remains its human-readable
@@ -48,13 +46,44 @@ async function transitionFeedbackAppended(item, { bullet, raw, now } = {}, opts 
   await appendFeedbackBullet(statePath, bullet);
 
   // (2) The EVENT — past tense, carrying its own evidence.
+  const { eventId, effects } = await raiseFeedbackRecorded(item, {
+    doc: "STATE.md",
+    bullet,
+    rawId: raw.id,
+  }, now, opts);
+  return { bullet, eventId, effects };
+}
+
+// transitionRecallRecorded(item, edge, opts) — append one completed decision recall to the
+// ledger and raise `feedback.recorded` so the item publishes through the existing cascade
+// (153/ADR-001). Unlike raw feedback it projects NO STATE bullet — a recall is evidence of a
+// decision, not a note — and its payload names `recallId` where a raw capture names `rawId`.
+//
+//   edge — { recall, now }  (recall: the observation; its `at` is the caller's retained instant)
+//
+// An identical replay is a no-op: the row is already there, so no second event is raised and
+// the caller is told it was a replay. A conflicting replay throws before anything is written.
+async function transitionRecallRecorded(item, { recall, now } = {}, opts = {}) {
+  const { record, replayed } = await appendRecallObservation(item, recall);
+  if (replayed) return { record, replayed: true, eventId: null, effects: [] };
+  const raised = await raiseFeedbackRecorded(item, {
+    doc: "FEEDBACK.ndjson",
+    bullet: null,
+    rawId: null,
+    recallId: record.id,
+  }, now, opts);
+  return { record, replayed: false, eventId: raised.eventId, effects: raised.effects };
+}
+
+// The event half both transitions share: build the payload, ask what applies, journal and drain.
+// Returns { eventId, effects }.
+async function raiseFeedbackRecorded(item, evidence, now, opts) {
+  const { workspace = null, publisherOptions = null, journalOptions = {}, drain = true } = opts;
   const payload = {
     ref: item.ref,
     itemDir: item.dir,
     itemType: item.type ?? null,
-    doc: "STATE.md",
-    bullet,
-    rawId: raw.id,
+    ...evidence,
     workspaceRoot: workspace?.projectRoot ?? null,
   };
   const name = "feedback.recorded";
@@ -74,13 +103,13 @@ async function transitionFeedbackAppended(item, { bullet, raw, now } = {}, opts 
 
   if (!journal) {
     const effects = drain ? await runEffectsEphemeral(name, payload, { reactors, ctx: reactorCtx }) : [];
-    return { bullet, eventId: null, effects };
+    return { eventId: null, effects };
   }
 
   try {
     const { eventId } = appendEvent(journal, { name, payload, source: "doc-transition", now }, reactors);
     const effects = drain ? await drainEffects({ journal, eventId, now, ctx: reactorCtx }) : [];
-    return { bullet, eventId, effects };
+    return { eventId, effects };
   } finally {
     journal.close();
   }
@@ -140,5 +169,5 @@ async function appendFeedbackBullet(statePath, bullet) {
   await writeFile(statePath, lines.join(newline), "utf8");
 }
 
-return { FEEDBACK_HEADING, transitionFeedbackAppended };
+return { FEEDBACK_HEADING, transitionFeedbackAppended, transitionRecallRecorded };
 }

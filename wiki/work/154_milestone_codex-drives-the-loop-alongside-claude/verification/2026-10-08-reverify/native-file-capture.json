@@ -1,0 +1,32 @@
+{
+  "policy": {
+    "approvalPolicy": "on-request",
+    "sandbox": {
+      "type": "workspaceWrite",
+      "writableRoots": [
+        "<workspace>\\.tmp\\154-reverify-temp\\aof-live-runtime-dcDM6K\\global-aof"
+      ],
+      "networkAccess": false,
+      "excludeTmpdirEnvVar": true,
+      "excludeSlashTmp": true
+    }
+  },
+  "started": "2026-10-08T18:29:00.228Z",
+  "ended": "2026-10-08T18:29:07.650Z",
+  "observed": {
+    "exitCode": 0,
+    "stdout": "0/0 suites · scope all (story 07/01) · graph built unknown · 1 widening: src/s01.cjs (no-graph) · may not stand as a verdict\n",
+    "stderr": ""
+  },
+  "comparison": {
+    "pipe": "EPERM",
+    "overlapped": "EPERM",
+    "inherit": "exit 0, stdout 42",
+    "file": "exit 0, captured stdout 42"
+  },
+  "focused": {
+    "cases": 45,
+    "failures": 0
+  },
+  "timingCorrection": "The existing 400ms timeout case now compares captured bytes with directly observed child stdout, without assuming Node emits output before that deadline under load. The deadline and kill assertions are unchanged."
+}

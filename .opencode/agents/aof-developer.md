@@ -82,6 +82,8 @@ and cost four times what it should.
 </rules>
 
 <model-delegation>
+- Native roles stay on the primary assistant. An enabled toggle is not a task request:
+  cross-assistant work requires a separate explicit request as well as enabled delegation.
 - GATED by the operator toggle `work.agents.delegation` (default **off**). When it is **off**, do EVERYTHING on your own Claude model — do not shell out to gpt-5.6/Codex (the `codex-*` skills are rendered non-auto-invocable in this state). Only when it is **on** may you delegate, and only when the Codex CLI is actually installed (if it isn't, do the work yourself and never block on its absence).
 - When delegation is **on**: bulk / mechanical / clear-spec implementation (scaffolds, migrations, wiring many similar step definitions) is its lane — hand it to `gpt-5.6-sol` via the **codex-implementation** skill, then review the diff and run verification yourself before reporting.
 - When delegation is **on**: app / UI verification that needs a running app, browser, simulator, or screenshots goes to `gpt-5.6-sol` via the **codex-computer-use** skill; never present its screenshots as proof of a behaviour it did not exercise.

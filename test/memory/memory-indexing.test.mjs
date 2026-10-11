@@ -230,10 +230,11 @@ export const memoryIndexingTests = [
   },
   // Scenario Outline: the four real lessons of milestone 01.
   ...[
-    { id: "R1", area: "architecture", stage: "build→verify", kind: "near-miss", owner: "architect" },
-    { id: "R2", area: "architecture", stage: "build", kind: "near-miss", owner: "developer" },
-    { id: "R3", area: "contract", stage: "refine→build", kind: "misunderstanding", owner: "contract authors (Three Amigos)" },
-    { id: "R4", area: "contract", stage: "build", kind: "near-miss", owner: "developer" },
+    // 148/ADR-002: a stage written "build→verify" is indexed as "build" with the tag "→verify".
+    { id: "R1", area: "architecture", stage: "build", kind: "near-miss", owner: "architect", tags: ["→verify"] },
+    { id: "R2", area: "architecture", stage: "build", kind: "near-miss", owner: "developer", tags: [] },
+    { id: "R3", area: "contract", stage: "refine", kind: "misunderstanding", owner: "contract authors (Three Amigos)", tags: ["→build"] },
+    { id: "R4", area: "contract", stage: "build", kind: "near-miss", owner: "developer", tags: [] },
   ].map((row) => ({
     name: `00/retro outline: ${row.id} maps to lesson fields (area=${row.area}, stage=${row.stage}, kind=${row.kind}, owner=${row.owner}, status="")`,
     run: async () => {
@@ -245,6 +246,7 @@ export const memoryIndexingTests = [
       assert.equal(rec.stage, row.stage, "stage");
       assert.equal(rec.kind, row.kind, "kind");
       assert.equal(rec.owner, row.owner, "owner");
+      assert.deepEqual(rec.tags, row.tags, "tags");
       assert.equal(rec.status, "", 'status ""');
     },
   })),

@@ -43,6 +43,12 @@ import { importDigestTests } from "./import-digest.test.mjs";
 
 // story 137 — the import renders every AOF.md through the shipped template (task 01).
 import { importDigestTemplateTests } from "./import-digest-template.test.mjs";
+// milestone 148 / story 01 — the retrieval eval's runner over small record sets, and the pair
+// table's shape, provenance and live-corpus hold (FF-14801's @executable face).
+import { retrievalEvalTests } from "./retrieval-eval.test.mjs";
+// milestone 148 / story 05 — status names every record type's layer and reports the vocabulary's
+// conformance, on every backend (ADR-004).
+import { memoryStatusTests } from "./memory-status.test.mjs";
 
 export const tests = [
   // milestone 55 / story 00 — anchor schema, compatibility, delivery and structural gate
@@ -55,4 +61,8 @@ export const tests = [
   ...importDigestTests,
   // story 137 — the import renders every AOF.md through the shipped template (task 01).
   ...importDigestTemplateTests,
+  // milestone 148 / story 01 — the retrieval eval (see the import note).
+  ...retrievalEvalTests,
+  // milestone 148 / story 05 — memory status (see the import note).
+  ...memoryStatusTests,
 ];

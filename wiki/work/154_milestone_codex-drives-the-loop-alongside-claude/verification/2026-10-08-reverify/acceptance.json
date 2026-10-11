@@ -1,0 +1,177 @@
+{
+  "steps": [
+    {
+      "args": [
+        "validate",
+        "154",
+        "--json"
+      ],
+      "status": 0,
+      "result": "[]\n"
+    },
+    {
+      "args": [
+        "doctor",
+        "154",
+        "--json"
+      ],
+      "status": 0,
+      "result": {
+        "healthy": true,
+        "errors": 0,
+        "warnings": 18,
+        "findings": [
+          {
+            "code": "story-record-missing",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\00_story_runtime-session-boundary",
+            "message": "story 154/00 is done and its own folder carries no RETROSPECTIVE.md — a delivered story states what the system now IS, and what building it taught, in its own folder — whichever door accepted it"
+          },
+          {
+            "code": "story-record-missing",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\01_story_runtime-choice-is-durable",
+            "message": "story 154/01 is done and its own folder carries no RETROSPECTIVE.md — a delivered story states what the system now IS, and what building it taught, in its own folder — whichever door accepted it"
+          },
+          {
+            "code": "story-record-missing",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\03_story_native-codex-assets",
+            "message": "story 154/03 is done and its own folder carries no RETROSPECTIVE.md — a delivered story states what the system now IS, and what building it taught, in its own folder — whichever door accepted it"
+          },
+          {
+            "code": "numbering-gap",
+            "severity": "warn",
+            "path": "wiki\\work",
+            "message": "the top-level driver sequence has a gap: number 122 is missing between 00 and 155"
+          },
+          {
+            "code": "control-runner-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\ARCHITECTURE.md",
+            "message": "6 declared control(s) here, and no \"work.controls.runners\" is configured — leg B (does a runner name this file?) did not run, so no control here is known to be registered"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\00_story_runtime-session-boundary",
+            "message": "154/00: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\01_story_runtime-choice-is-durable",
+            "message": "154/01: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\02_story_codex-session-protocol",
+            "message": "154/02: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\03_story_native-codex-assets",
+            "message": "154/03: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\04_story_codex-upgrades-preserve-user-files",
+            "message": "154/04: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\05_story_runtime-specific-workflow-variants",
+            "message": "154/05: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\06_story_codex-drives-and-recovers-loop-phases",
+            "message": "154/06: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\07_story_runtime-survives-worker-handoff",
+            "message": "154/07: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\08_story_runtime-aware-observation",
+            "message": "154/08: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\09_story_memory-dependencies-are-explicit",
+            "message": "154/09: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\10_story_runtime-config-editor",
+            "message": "154/10: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "rubric-join-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work\\154_milestone_codex-drives-the-loop-alongside-claude\\stories\\11_story_prove-both-assistants-end-to-end",
+            "message": "154/11: no \"work.rubric.report\" is configured, so there is no runner report to join against — set it to have the @executable scenarios checked against the cases a run actually emitted"
+          },
+          {
+            "code": "depends-edges-unchecked",
+            "severity": "warn",
+            "path": "wiki\\work",
+            "message": "this run considered 333 resolved `depends:` edge(s) — 132 witnessed by the two contracts, 13 unwitnessed, 131 unchecked because an endpoint is not a story, and 57 unchecked because a story has declared no contract. An endpoint that is not a story can NEVER be evaluated — `reads:`/`files:` exist only on `STORY.md`, so every milestone, uat, spike and chore endpoint is permanently outside this check's domain. An undeclared contract CAN be evaluated, once that story declares `reads:`/`files:`; that count falls as the convention spreads. The two are reported apart because they have different remedies."
+          }
+        ]
+      }
+    },
+    {
+      "args": [
+        "run-complete",
+        "154",
+        "--run",
+        "20261008T175925294Z-0005",
+        "--outcome",
+        "done",
+        "--json"
+      ],
+      "status": 0,
+      "result": "{\n  \"runId\": \"20261008T175925294Z-0005\",\n  \"itemRef\": \"154\",\n  \"state\": \"done\",\n  \"attempt\": 1,\n  \"outcome\": \"done\",\n  \"sessionId\": \"01a11159-bf11-7fd0-8002-0b3dd7dad6de\",\n  \"brief\": {},\n  \"createdAt\": \"2026-10-08T17:59:25.294Z\",\n  \"updatedAt\": \"2026-10-08T20:41:49.448Z\",\n  \"failureReason\": null,\n  \"heartbeatAt\": null,\n  \"retryOf\": null,\n  \"reclaimedAt\": null,\n  \"node\": \"node-7297\",\n  \"resumeAfter\": null,\n  \"spend\": null,\n  \"asks\": [],\n  \"effects\": [\n    {\n      \"event\": \"run.completed\",\n      \"key\": \"rollback-status\",\n      \"locus\": \"checkout\",\n      \"status\": \"done\"\n    },\n    {\n      \"event\": \"run.completed\",\n      \"key\": \"publish-projection\",\n      \"locus\": \"local\",\n      \"status\": \"done\"\n    }\n  ],\n  \"eventId\": \"20261008T204149477Z-78adef54\"\n}\n"
+    },
+    {
+      "args": [
+        "status",
+        "154",
+        "done"
+      ],
+      "status": 0,
+      "result": "154 — in-progress → done. Next legal moves: none (terminal).\n"
+    }
+  ],
+  "run": {
+    "runId": "20261008T175925294Z-0005",
+    "itemRef": "154",
+    "state": "done",
+    "attempt": 1,
+    "outcome": "done",
+    "sessionId": "01a11159-bf11-7fd0-8002-0b3dd7dad6de",
+    "brief": {},
+    "createdAt": "2026-10-08T17:59:25.294Z",
+    "updatedAt": "2026-10-08T20:41:49.448Z",
+    "failureReason": null,
+    "heartbeatAt": null,
+    "retryOf": null,
+    "reclaimedAt": null,
+    "node": "node-7297",
+    "resumeAfter": null,
+    "spend": null,
+    "asks": []
+  }
+}

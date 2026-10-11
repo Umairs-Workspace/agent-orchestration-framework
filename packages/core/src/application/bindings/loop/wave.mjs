@@ -1,5 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createWaveOrchestration } from "@aof/work-loop/wave";
+import { executionForPhase } from "@aof/contracts/loop-bounds";
 
 export function assembleLoopWave({ workServices, runStoreServices, runHeartbeatConsumptionServices, effectsRunTransitionsServices, degradeServices, workDispatchServices, meshWorktreeServices, loopChildDriveServices, loopAskServices, loopCycleServices, provideCommandCore }) {
   // Core composition; @aof/work-loop owns the implementation.
@@ -44,6 +45,7 @@ export function assembleLoopWave({ workServices, runStoreServices, runHeartbeatC
   const { transitionOptionsFor } = loopCycleServices;
 
   const implementation = createWaveOrchestration({
+    executionForPhase,
     work: { loadWorkspace },
     runs: { readRuns, isRunning, isStale },
     heartbeats: { consumeHeartbeatQueue, enqueueHeartbeat },
