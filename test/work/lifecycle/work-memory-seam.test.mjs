@@ -9,9 +9,9 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // records the call it received, echoes the scope/opts it was handed, and returns a
 // fixed RecallResult — so the seam never needs story 01/02's code or a real index.
 //
-//   00_verb-dispatch.feature            — the five verbs route through the frozen
-//        interface {recall, reindex, status}; brief→recall (composed), ingest→reindex
-//        (alias); unknown/missing verb prints usage and exits non-zero, invoking
+//   00_verb-dispatch.feature            — the verbs route through the frozen
+//        interface {recall, reindex, status}; ingest→reindex (alias); brief is
+//        retired (153/01 E7) and refused as an unknown verb; unknown/missing verb prints usage and exits non-zero, invoking
 //        NO backend method.
 //   01_backend-selection-and-schema.feature — config.memory?.backend selects the
 //        answering backend; absent memory ≡ none; $defs/memory makes {backend:local}
@@ -37,8 +37,8 @@ import noneBackend from "@aof/knowledge/memory/none-backend";
 // An in-memory STUB backend satisfying the frozen interface. It records every
 // call (so we can assert WHICH interface method a verb reached), echoes the
 // scope/opts it was handed, and returns a FIXED RecallResult. It deliberately
-// exposes NO `brief` or `ingest` method — those are seam compositions, not
-// interface methods (ADR-003).
+// exposes NO `ingest` method — that is a seam composition, not an interface
+// method (ADR-003).
 function makeStub({ backendName = "local" } = {}) {
   const calls = [];
   const fixedRecords = [
@@ -125,13 +125,12 @@ export const workMemorySeamTests = [
     }
   },
   {
-    name: "memory-seam/dispatch: brief is composed over recall (no `brief` interface method)",
+    name: "memory-seam/dispatch: brief is retired (153/01 E7) — refused as an unknown verb, invoking no backend",
     run: async () => {
       const r = await runWithStub(["brief"]);
-      assert.equal(r.exitCode, 0);
-      assert.ok(r.calls.some((c) => c.method === "recall"), "brief reaches backend.recall");
-      assert.ok(!r.calls.some((c) => c.method === "brief"), "no method named brief was reached");
-      assert.equal(typeof r.rig.backend.brief, "undefined", "the backend exposes no brief method");
+      assert.notEqual(r.exitCode, 0, "brief exits non-zero");
+      assert.equal(r.calls.length, 0, "no backend method was invoked");
+      assert.ok(!MEMORY_VERBS.includes("brief"), "brief is not a memory verb");
     }
   },
   {
@@ -197,7 +196,6 @@ export const workMemorySeamTests = [
     { verb: "recall", args: ["query"], method: "recall", composed: false },
     { verb: "reindex", args: [], method: "reindex", composed: false },
     { verb: "status", args: [], method: "status", composed: false },
-    { verb: "brief", args: [], method: "recall", composed: true },
     { verb: "ingest", args: ["01"], method: "reindex", composed: true }
   ].map((row) => ({
     name: `memory-seam/dispatch: outline — verb "${row.verb}" routes to interface method "${row.method}" (composed=${row.composed})`,
@@ -368,22 +366,11 @@ export const workMemorySeamTests = [
     }
   },
   {
-    name: "memory-seam/none: brief against none succeeds with an empty digest",
-    run: async () => {
-      const r = await runWithStub(["brief"], {
-        config: { memory: { backend: "none" } },
-        stub: { backend: noneBackend, calls: [] }
-      });
-      assert.equal(r.exitCode, 0, "brief against none exits 0");
-    }
-  },
-  {
     name: "memory-seam/none: every verb is a no-op when the memory key is absent",
     run: async () => {
       // Absent memory ≡ none (ADR-002) — every verb must exit 0 and not error.
       const verbsWithArgs = [
         ["recall", "q"],
-        ["brief"],
         ["ingest", "--all"],
         ["reindex"],
         ["status"]

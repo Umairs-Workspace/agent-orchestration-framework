@@ -2559,6 +2559,24 @@
             "null"
           ]
         },
+        "ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inputFile": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "exclude": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "scope": {
           "type": "object",
           "properties": {
@@ -2596,6 +2614,9 @@
         "block": {
           "type": "boolean"
         },
+        "lessons": {
+          "type": "boolean"
+        },
         "help": {
           "type": "boolean"
         }
@@ -2611,7 +2632,7 @@
         "memory"
       ],
       "spec": {
-        "usage": "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--json]",
+        "usage": "aof work memory <verb> [args] [--area --stage --kind --owner --item NN --status] [--limit N] [--all] [--block] [--lessons] [--input <file>] [--exclude <item>/R<n>] [--json]",
         "flags": {
           "block": {
             "type": "boolean",
@@ -2620,6 +2641,18 @@
           "all": {
             "type": "boolean",
             "description": "reindex/ingest: rebuild over the whole stream"
+          },
+          "lessons": {
+            "type": "boolean",
+            "description": "status only: also report observed effectiveness per lesson"
+          },
+          "input": {
+            "type": "string",
+            "description": "record-recall only: the JSON file holding the completed recall observation"
+          },
+          "exclude": {
+            "type": "string",
+            "description": "recurrence only: the <item>/R<n> lesson being written, never its own candidate"
           },
           "limit": {
             "type": "string",

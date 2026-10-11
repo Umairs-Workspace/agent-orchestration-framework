@@ -4,10 +4,10 @@ number: 02
 slug: lessons-name-recurrence-and-promotion
 title: "Lessons name recurrence and promotion"
 parent: 153
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-10
-updated: 2026-10-10
+updated: 2026-10-11
 depends: [153/01]
 schema: 1
 aofVersion: 0.1.0

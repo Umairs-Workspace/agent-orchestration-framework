@@ -6,7 +6,7 @@ title: "Memory closes the loop — every recall and its verdict is accounted, a 
 status: in-progress
 owner: product-owner
 created: 2026-09-27
-updated: 2026-10-10
+updated: 2026-10-11
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
 depends: [148]
 schema: 1
@@ -80,11 +80,11 @@ Out of scope:
 
 ## Stories
 
-- [ ] [01 · Recalls have complete verdict records](stories/01_story_recalls-have-complete-verdict-records/STORY.md)
-- [ ] [02 · Lessons name recurrence and promotion](stories/02_story_lessons-name-recurrence-and-promotion/STORY.md)
-- [ ] [03 · Memory reports effectiveness and health](stories/03_story_memory-reports-effectiveness-and-health/STORY.md)
-- [ ] [04 · Workflow edges close their memory observations](stories/04_story_workflow-edges-close-their-memory-observations/STORY.md)
-- [ ] [05 · Tune proposes promoted prompt corrections](stories/05_story_tune-proposes-promoted-prompt-corrections/STORY.md)
+- [x] [01 · Recalls have complete verdict records](stories/01_story_recalls-have-complete-verdict-records/STORY.md)
+- [x] [02 · Lessons name recurrence and promotion](stories/02_story_lessons-name-recurrence-and-promotion/STORY.md)
+- [x] [03 · Memory reports effectiveness and health](stories/03_story_memory-reports-effectiveness-and-health/STORY.md)
+- [x] [04 · Workflow edges close their memory observations](stories/04_story_workflow-edges-close-their-memory-observations/STORY.md)
+- [x] [05 · Tune proposes promoted prompt corrections](stories/05_story_tune-proposes-promoted-prompt-corrections/STORY.md)
 
 ## Dependencies
 

@@ -220,8 +220,14 @@ export const yarnInstallationTests = [
         'item-transitions.mjs': [],
         'stream-transitions.mjs': [],
         'toolchain.mjs': ['node:path', 'node:fs'],
-        'feedback-records.mjs': ['node:path', 'node:fs/promises'],
-        'commands/feedback.mjs': ['node:crypto', '@aof/contracts/error'],
+        // 153/01: the ledger lock backs off between attempts; record-recall reads its observation file.
+        'feedback-records.mjs': ['node:path', 'node:fs/promises', 'node:timers/promises'],
+        'commands/feedback.mjs': ['node:crypto', 'node:fs/promises', 'node:path', '@aof/contracts/error'],
+        // 153/03: accounting reads each item's ledger and retrospective; the doctor lane names their paths.
+        'memory-accounting.mjs': ['node:fs/promises', 'node:path'],
+        'doctor/memory-effectiveness.mjs': ['node:path'],
+        // 153/05: tune reads a prompt destination inside the repository to compute its patch.
+        'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/ratchet.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/audit.mjs': ['node:path', 'node:fs/promises'],

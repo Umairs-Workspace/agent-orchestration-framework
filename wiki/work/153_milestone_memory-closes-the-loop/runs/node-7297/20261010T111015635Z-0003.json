@@ -253,13 +253,13 @@
   "spend": null,
   "asks": [
     {
-      "question": "153/03 Q1 · Discovery question — R2 · Unpromoted-lesson warnings; settles E4.\nDecision needed: How many later accepted milestones should trigger a warning?\nOptions: At 5, at 10, or only with an explicit threshold.\nI would pick: At 5 milestones.\nWhat the answer changes: Doctor’s default and story 03’s contract. The other four contracts are authored and validated.\n\nThe [aof-refine skill](C:/Source/umair/aof/.agents/skills/aof-refine/SKILL.md) requires: “Business-rule questions require actual answers, never autonomous defaults or elapsed-time approval.”",
+      "question": "153/03 Q1 · Discovery question — R2 · Unpromoted-lesson warnings; settles E4.\nDecision needed: How many later accepted milestones should trigger a warning?\nOptions: At 5, at 10, or only with an explicit threshold.\nI would pick: At 5 milestones.\nWhat the answer changes: Doctor’s default and story 03’s contract. The other four contracts are authored and validated.\n\nThe [aof-refine skill](C:/Source/umami/aof/.agents/skills/aof-refine/SKILL.md) requires: “Business-rule questions require actual answers, never autonomous defaults or elapsed-time approval.”",
       "phase": "refine",
       "askedAt": "2026-10-10T11:29:00.625Z",
       "parkedAt": null,
       "answer": "Let’s go with your suggestion",
       "answeredAt": "2026-10-10T12:15:21.621Z",
-      "by": "@umair_b",
+      "by": "@umami_b",
       "runtime": "codex",
       "questionToken": "153/03 Q1",
       "sessionId": "01a12581-ac50-7ec2-af78-1bda680553ff",

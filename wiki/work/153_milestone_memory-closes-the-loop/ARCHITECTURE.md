@@ -137,6 +137,6 @@ Shared registration files are owned sequentially; 05 waits on 03, while 04 share
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-15301 | Mixed ledger preserves raw counters, classification and publication; replay cannot double-count | `test/arch/memory/acd-recall-ledger-consumers.test.mjs`, registered in `test/arch/memory/index.mjs`; pending | ADR-001 |
-| FF-15302 | Labelled recurrence decision catches the junction pair and rejects held-out negatives without altering base ranking | `test/arch/memory/acd-memory-recurrence-calibration.test.mjs`, registered in `test/arch/memory/index.mjs`; pending | ADR-002 |
-| FF-15303 | Every declared decision-recall edge has one complete verdict capture and runtime render parity | extend `test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs`, already registered in `test/arch/memory/index.mjs`; pending new assertions | ADR-004 |
+| FF-15301 | Mixed ledger preserves raw counters, classification and publication; replay cannot double-count | `test/arch/memory/acd-recall-ledger-consumers.test.mjs`, registered in `test/arch/memory/index.mjs` | ADR-001 |
+| FF-15302 | Labelled recurrence decision catches the junction pair and rejects held-out negatives without altering base ranking | `test/arch/memory/acd-memory-recurrence-calibration.test.mjs`, registered in `test/arch/memory/index.mjs` | ADR-002 |
+| FF-15303 | Every declared decision-recall edge has one complete verdict capture and runtime render parity | extend `test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs`, already registered in `test/arch/memory/index.mjs` | ADR-004 |

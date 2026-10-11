@@ -4,10 +4,10 @@ number: 03
 slug: memory-reports-effectiveness-and-health
 title: "Memory reports effectiveness and health"
 parent: 153
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-10
-updated: 2026-10-10
+updated: 2026-10-11
 depends: [153/02]
 schema: 1
 aofVersion: 0.1.0

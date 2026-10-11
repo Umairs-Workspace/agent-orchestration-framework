@@ -470,10 +470,10 @@ export const doctorExamplesLaneTests = [
       assert.ok(line, "the row exists");
       const rowData = JSON.parse(line.trim().replace(/^Object\.freeze\(/, "").replace(/\),?$/, ""));
       const children = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).length;
-      // 148/04 raised the row again, 10 -> 11, for its own lesson-meta lane; the examples lane's
-      // raise and give-back are still stated beside it.
-      assert.equal(children, 11);
-      assert.equal(rowData.ceiling, 11);
+      // 148/04 raised the row again, 10 -> 11, for its own lesson-meta lane, and 153/03 11 -> 12 for
+      // the memory-effectiveness lane; the examples lane's raise and give-back are still stated beside them.
+      assert.equal(children, 12);
+      assert.equal(rowData.ceiling, 12);
       assert.match(rowData.why, /tenth doctor lane/);
       assert.match(rowData.why, /134\/04: 10 -> 11/);
       assert.match(rowData.why, /11 -> 10/);

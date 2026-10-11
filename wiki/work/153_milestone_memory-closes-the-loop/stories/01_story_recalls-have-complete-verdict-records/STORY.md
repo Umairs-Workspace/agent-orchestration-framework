@@ -4,10 +4,10 @@ number: 01
 slug: recalls-have-complete-verdict-records
 title: "Recalls have complete verdict records"
 parent: 153
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-10
-updated: 2026-10-10
+updated: 2026-10-11
 depends: []
 schema: 1
 aofVersion: 0.1.0

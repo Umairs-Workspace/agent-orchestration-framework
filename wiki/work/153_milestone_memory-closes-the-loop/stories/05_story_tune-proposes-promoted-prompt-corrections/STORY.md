@@ -4,10 +4,10 @@ number: 05
 slug: tune-proposes-promoted-prompt-corrections
 title: "Tune proposes promoted prompt corrections"
 parent: 153
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-10
-updated: 2026-10-10
+updated: 2026-10-11
 depends: [153/03]
 schema: 1
 aofVersion: 0.1.0
