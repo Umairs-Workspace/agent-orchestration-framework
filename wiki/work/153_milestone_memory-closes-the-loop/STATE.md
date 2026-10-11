@@ -2,7 +2,7 @@
 
 ## Current position
 
-2026-10-11: `aof:verify 153` accepted all five stories. The executable lanes, 13 agent-run `@manual` scenarios and red probes on FF-15301/02/03 are recorded, the operator signed off the `@uat`, and validate passes. The milestone stays `in-progress` because the whole-tree regression gate is red. Its six 153 reds are fixed (F-01, F-02). The ~40 inherited reds from 154, 156 and the MCP merge (F-03) need an operator decision before the door can open.
+2026-10-11: `aof:verify 153` accepted the milestone. All five stories are done. The operator signed off the `@uat`. The whole-tree regression gate is green at `84d94ae7`, after the close fixed 153's own reds and the branch's inherited ones (VERIFICATION F-01 to F-03, F-09, F-10). Next: `aof work archive 153`, which is the operator's act.
 
 Earlier: the refine of 2026-10-10 authored five stories and ten task features; the loop built them; Q1 was answered as five milestones.
 

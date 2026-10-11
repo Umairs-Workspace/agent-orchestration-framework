@@ -28,10 +28,10 @@ These are milestone-level lessons. Story lessons sit beside their stories (01, 0
 
 - **Kind:** blocker · **Area:** process · **Stage:** verify · **Owner:** product-owner · **Raised by:** aof:verify 153 · **Promoted to:** none
 
-**What happened.** The first whole-tree gate on `148-memory-corpus-vocabulary` ran at this close, after 153, 154, 156 and an MCP branch had merged into it. It was red on about 46 cases. Measured at `9070395b` (before 153) and `98e0c98a` (after 153), only six of those were 153's. 36 were already red before 153 started, and four came in after it.
+**What happened.** The first whole-tree gate on `148-memory-corpus-vocabulary` ran at this close, after 153, 154, 156 and an MCP branch had merged into it. It was red on about 46 cases. Measured at `9070395b` (before 153) and `98e0c98a` (after 153), only six of those were 153's. 36 were already red before 153 started, and four came in after it. Several were not stale tests but regressions of delivered contracts: 143/03's provenance words and its `fable` example, 143/03's door and lend rules, and 69/06's stall reset (VERIFICATION F-09). The close fixed them inline, and the third gate run was green.
 
 **Why.** Each lane gated on its own story selection, and nothing ran the whole tree when another milestone's work merged into the shared branch. So reds accumulated with no owner.
 
-**Lesson.** When milestones share a branch, run the whole-tree gate after each one merges, and fix its reds before the next merges in. Otherwise the next milestone's close spends its gate run on attribution.
+**Lesson.** When milestones share a branch, run the whole-tree gate after each one merges, and fix its reds before the next merges in. Otherwise a contract regression hides among stale-test reds, and the next milestone's close spends its gate runs on attribution and repair.
 
 **Refs:** `VERIFICATION.md` F-01, F-03; `REGRESSION.md`.

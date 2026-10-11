@@ -3,7 +3,7 @@ type: milestone
 number: 153
 slug: memory-closes-the-loop
 title: "Memory closes the loop — every recall and its verdict is accounted, a lesson that recurs is caught at the retrospective, and each lesson names where it was promoted"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-10-11
