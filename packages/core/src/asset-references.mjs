@@ -92,8 +92,9 @@ export function extractInvalidAssetReferencePlaceholders(text) {
 export function expandAssetReferences(content, runtime, index) {
   if (typeof content !== "string" || !/\{\{\s*(skills|workflows|procedures|roles|references)\./.test(content)) return content;
   // The id runs greedily to `}}` and is trimmed below; a lazy id followed by `\s*` let both match the
-  // same whitespace (polynomial backtracking, CodeQL js/polynomial-redos).
-  return content.replace(/\{\{\s*(skills|workflows|procedures|roles|references)\.([^}]+)\}\}/g, (match, namespace, rawId) => {
+  // same whitespace. It also excludes `{`, which no id holds, so an unclosed `{{roles.` run cannot make
+  // every start position scan to the end (CodeQL js/polynomial-redos).
+  return content.replace(/\{\{\s*(skills|workflows|procedures|roles|references)\.([^{}]+)\}\}/g, (match, namespace, rawId) => {
     const reference = referenceFromParts(namespace, rawId.trim(), match);
     const target = getAssetReference(index, reference);
     if (!target) {
