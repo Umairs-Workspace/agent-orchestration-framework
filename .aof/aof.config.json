@@ -114,6 +114,7 @@
       "concurrency": "refine_first",
       "refine": "whole-item",
       "startToCloseMs": 14400000,
+      "heartbeatMs": 1800000,
       "scheduleToCloseMs": 43200000
     },
     "notify": {
