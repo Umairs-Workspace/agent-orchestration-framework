@@ -9,9 +9,10 @@ import { indexVersionReport } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { trimRun } from "@aof/foundation/text";
 import { createEpisodicIndexing, jsonPointerGet } from "./episodic-indexing.mjs";
+import { autoMemoryEnabled, isAutoMemoryRecord, parseAutoMemoryLocator } from "./claude-auto-memory.mjs";
 
 // Configured application services are supplied by core; construction performs no I/O.
-export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, ensureAofGitignore, importStoreRoot, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, AOF_FILE, episodicReaders = null }) {
+export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, ensureAofGitignore, importStoreRoot, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, AOF_FILE, episodicReaders = null, autoMemory = null }) {
 // 157/ADR-001 — the episodic leaf's readers (run store, snapshot reader, feedback ledger) are
 // core's to supply. A construction without them builds no episodic records, as before.
 const episodic = episodicReaders ? createEpisodicIndexing(episodicReaders) : null;
@@ -560,8 +561,31 @@ function assertInsideBase(source, rel, base, absPath) {
   if (!isInside(realPathOf(path.resolve(base)), realPathOf(absPath))) throw refuseSource(source, "a link out of the work tree");
 }
 
-function resolveRecordSourcePath(record, { workDir, projectRoot } = {}) {
+// 159/ADR-003 — THE ADAPTER BRANCH. An absolute locator is refused for every ordinary record; only an
+// ENABLED operator auto-memory record may name one, and only as `<absolute .md path>:1` directly inside
+// the selected project's memory folder. The same real-path containment the work/import guards use
+// then runs against that folder, so traversal, a sibling-prefix path, a descendant folder and a link
+// out of the root are all refused. A disabled source or a missing collaborator falls through to the
+// unchanged guards below, which refuse an absolute path.
+function resolveAutoMemorySource(record, { projectRoot, configMemory, env }) {
+  const source = String(record.source ?? "");
+  if (!autoMemory || !projectRoot || !autoMemoryEnabled(configMemory)) return null;
+  const absolute = parseAutoMemoryLocator(source);
+  if (absolute === null) throw refuseSource(source, "it is not an absolute Markdown path ending :1");
+  const root = autoMemory.memoryRootFor({ projectRoot, env });
+  const absPath = path.resolve(absolute);
+  if (path.relative(root, path.dirname(absPath)) !== "") throw refuseSource(source, "it is not an entry directly inside the auto-memory folder");
+  const real = realPathOf(absPath);
+  if (!isInside(realPathOf(root), real) || path.basename(real) !== path.basename(absPath)) throw refuseSource(source, "a link out of the auto-memory folder");
+  return { path: absPath, line: 1, absPath };
+}
+
+function resolveRecordSourcePath(record, { workDir, projectRoot, configMemory, env = process.env } = {}) {
   const source = String(record?.source ?? "");
+  if (isAutoMemoryRecord(record)) {
+    const adapter = resolveAutoMemorySource(record, { projectRoot, configMemory, env });
+    if (adapter) return adapter;
+  }
   const base = isImportRecord(record) ? importStoreRoot(projectRoot) : workDir;
   const hash = source.indexOf("#");
   if (hash >= 0) {
@@ -832,6 +856,11 @@ async function buildRecords(only, ctx) {
   if (!only) {
     records.push(...(await scanImportStore(projectRoot)));
     records.push(...(await scanColocatedDigests(workDir, indexedAof)));
+    // 159/ADR-001 — the opt-in operator auto-memory source, composed last and only on a whole-stream
+    // rebuild. A key-absent configuration never reaches the adapter, so it performs no external read.
+    if (autoMemory && autoMemoryEnabled(ctx.configMemory)) {
+      records.push(...(await autoMemory.autoMemoryRecords({ projectRoot, env: ctx.env ?? process.env })));
+    }
   }
   return records;
 }

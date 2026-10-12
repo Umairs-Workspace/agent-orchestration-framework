@@ -10,6 +10,7 @@
     "./memory/none-backend": "./src/memory/none-backend.mjs",
     "./memory/local-retrieval": "./src/memory/local-retrieval.mjs",
     "./memory/local-indexing": "./src/memory/local-indexing.mjs",
+    "./memory/claude-auto-memory": "./src/memory/claude-auto-memory.mjs",
     "./memory/local-backend": "./src/memory/local-backend.mjs",
     "./memory/graphify-backend": "./src/memory/graphify-backend.mjs",
     "./memory": "./src/memory.mjs",

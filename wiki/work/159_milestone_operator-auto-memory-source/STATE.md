@@ -43,3 +43,26 @@ not applicable. Pending fitness controls and their red probes land during build.
 
 Next: `$aof-continue 159`. Run-complete is the final phase operation; the driving
 shell owns the run's terminal settlement.
+
+## Build 159/01 (solo, all roles inline)
+
+2026-10-12: built and self-reviewed in one session; no subagent and no independent reviewer.
+Near-miss recall returned an empty block; recorded via `record-recall` (0 verdicts).
+Evidence: knowledge suite 22/22, FF-15901..03 7/7 with the three red probes run for real
+(a planted read-while-disabled, a trusting resolver, a staged extraction path all caught),
+integration feature 45/45, indexing suite 39/39, importer sweep 502 cases / 53 files / 0 failures
+(run in batches of 8 after a single 53-file run was reaped for memory pressure).
+`aof test --scope impacted --story` was not used: new files widen it to the whole tree.
+
+## Feedback (for retro)
+
+- Declared `files:` on 159/01 is incomplete: the build also wrote `packages/knowledge/src/memory.mjs`
+  (config validation + backend resolution) and `packages/knowledge/package.json` (export map entry).
+  Refine should add both; a sibling story declaring either would not have been held apart.
+- A dispatch worktree has no `node_modules`, so bare imports resolve to the MAIN checkout's
+  workspace links and silently test main's code. `node scripts/prepare-worktree.mjs` is required
+  before any build check.
+- The task features' Scenario Outlines are not expandable by the integration runner; every row was
+  expanded by hand into `memory-auto-source.feature` (45 scenarios), and the two injected-failure
+  cases run the indexer in process.
+- The two @manual scenarios (live junction comparison, enable/undo guide walk) are left for verify.
