@@ -4,7 +4,7 @@ number: 01
 slug: recall-operator-auto-memory
 title: "Recall the operator's local auto-memory beside work-stream lessons"
 parent: 159
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-12
 updated: 2026-10-12

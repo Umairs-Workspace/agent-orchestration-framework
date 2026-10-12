@@ -1,15 +1,15 @@
 # 159 · Verification register
 
-Refine evidence only. No implementation, executable pass, manual pass, UAT
-or independent review is claimed. Business discovery is answered.
+Refine evidence, then the 159/01 verify session below. No independent review and no milestone
+regression-gate run is claimed; business discovery is answered.
 
 ## Fitness functions
 
 | id | enforced by | result | red probe |
 |---|---|---|---|
-| FF-15901 | `test/arch/memory/acd-auto-memory-source.test.mjs` | pending | Not run. Planned: introduce an external read while disabled; record the observed failure after the control lands. |
-| FF-15902 | `test/arch/memory/acd-auto-memory-source.test.mjs` | pending | Not run. Planned: accept a forged or escaping locator; record the observed refusal-test failure. |
-| FF-15903 | `test/arch/memory/acd-auto-memory-source.test.mjs` | pending | Not run. Planned: stage a unique external canary for extraction/transport; record the observed leak-test failure. |
+| FF-15901 | `test/arch/memory/acd-auto-memory-source.test.mjs` | pass (3 cases, 2026-10-12) | Plant: `if (autoMemory && autoMemoryEnabled(ctx.configMemory)) {` → `if (autoMemory) {` in `local-indexing.mjs`. Observed: "an operator record appeared for undefined" (and for `{}`, `{backend:"local"}`, `sources:[]`) plus "12 read(s) while disabled"; the shipped module returns no violations. |
+| FF-15902 | `test/arch/memory/acd-auto-memory-source.test.mjs` | pass (2 cases, 2026-10-12) | Plant: the memory root replaced by `path.dirname(path.resolve(absolute))` (a resolver that trusts the locator). Observed: "a forged locator resolved: <outside.md>:1" and the `..`-traversal form; a second plant dropping the enabled check was caught as a disabled source resolving. |
+| FF-15903 | `test/arch/memory/acd-auto-memory-source.test.mjs` | pass (2 cases, 2026-10-12) | Plant: the graph build's `workDir` re-pointed at the operator memory directory in `graphify-backend.mjs`. Observed: "extraction path is not the work stream: <memory dir>" and "the external source reached extraction". |
 
 ## Refine checks
 
@@ -63,3 +63,23 @@ Result: no surviving Blocker or Important contract finding; no rereview is owed.
 No acceptance or build status move was made. Controls, executable bindings, manual
 evidence and the later milestone regression gate remain build/verify obligations.
 Next is `$aof-continue 159`.
+
+## Verification evidence — 159/01 (verify session, 2026-10-12, solo, inline)
+
+Lane scoped to the story: its own cases plus the fitness functions; the whole tree runs once at the
+milestone gate. Every run under a fresh `AOF_GLOBAL_HOME`, read from exit code and both streams.
+
+- **`@executable` — registered cases.** `node scripts/test.mjs --only packages/knowledge/test/claude-auto-memory.suite.mjs test/arch/memory/acd-auto-memory-source.test.mjs test/memory/memory-indexing.test.mjs` → exit 0, 68 `ok`, no `not ok`.
+- **`@executable` — integration feature.** `node test/integration/cli.mjs memory-auto-source` → exit 0, 45 `ok`, 0 `not ok` (every Outline row expanded to its own scenario, as the build recorded).
+- **Manual 1 — the live junction example, verifies → task 03 "The measured live junction example is reproducible on the owning node".** Procedure: in-process `createApplication().knowledge.memory.localIndexing.buildRecords` over this workspace (`wiki/work`, project root = the checkout), no index persisted, isolated global home, then `rankRecords("junction", limit 50)`. Result: disabled build 4553 records, 0 operator; enabled build 4620 = 4553 + 67 operator records. The junction recall names the operator record `worktree-node-modules-junction-destroys-source.md:1` (`owner` operator, `near-miss`, tag `feedback`, Why and How-to-apply present in `text`, area/stage/status blank) beside 68/R10, 45/R13 and 72/ADR-007, each with its own locator. The 77 files of the memory directory hashed identically before and after, and `originSessionId` appears in the work stream only in 159's own format notes, not as copied entry content.
+- **Manual 2 — the guide walk, verifies → task 03 "The operator can enable and undo the source using the memory guide".** Procedure: scratch project + scratch `CLAUDE_CONFIG_DIR`, `node packages/core/bin/aof.mjs` following `wiki/memory.md`: enable → `work memory ingest --all` (2 records) → `recall ZZQUOKKA --owner operator` (1 hit, `near-miss`, locator `…/memory/j.md:1`) → set `sources: []` → ingest (1 record) → the same recall (0 hits) while the work lesson still recalls. The source file hash is unchanged. The guide states the read-only source, no deduplication and the promote-for-workers rule.
+- **Design conformance / UAT.** Not applicable — CLI adapter, no UI surface; no `@uat` scenario exists.
+- **Gate.** `aof work validate 159/01` → PASS. `aof work doctor 159` → no `control-unresolved`; warnings are only the unconfigured control runner, rubric join, numbering gap and unchecked depends edges (all pre-existing and unrelated).
+
+## Findings
+
+None open. The build's three process notes (incomplete `files:` declaration, a dispatch worktree resolving bare imports to main, Outlines not expandable by the runner) are lessons, carried in the story RETROSPECTIVE.
+
+## Accept decision — 159/01
+
+Accepted 2026-10-12: scoped lane green, both manual scenarios reproduced, FF-15901..03 each shown to bite, validate PASS, no open finding. The milestone regression gate stays owed at 159's own acceptance.

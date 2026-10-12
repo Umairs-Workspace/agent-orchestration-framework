@@ -56,13 +56,4 @@ integration feature 45/45, indexing suite 39/39, importer sweep 502 cases / 53 f
 
 ## Feedback (for retro)
 
-- Declared `files:` on 159/01 is incomplete: the build also wrote `packages/knowledge/src/memory.mjs`
-  (config validation + backend resolution) and `packages/knowledge/package.json` (export map entry).
-  Refine should add both; a sibling story declaring either would not have been held apart.
-- A dispatch worktree has no `node_modules`, so bare imports resolve to the MAIN checkout's
-  workspace links and silently test main's code. `node scripts/prepare-worktree.mjs` is required
-  before any build check.
-- The task features' Scenario Outlines are not expandable by the integration runner; every row was
-  expanded by hand into `memory-auto-source.feature` (45 scenarios), and the two injected-failure
-  cases run the indexer in process.
-- The two @manual scenarios (live junction comparison, enable/undo guide walk) are left for verify.
+Archived 2026-10-12: graduated to `stories/01_story_recall-operator-auto-memory/RETROSPECTIVE.md` (R1–R3) when 159/01 was accepted.

@@ -58,7 +58,7 @@ Out of scope:
 - `user` and `reference` entries. Only `feedback` and `project` entries are indexed.
 
 ## Stories
-- [ ] `01_story_recall-operator-auto-memory` — Recall the operator's local auto-memory beside work-stream lessons.
+- [x] `01_story_recall-operator-auto-memory` — Recall the operator's local auto-memory beside work-stream lessons.
 
 One vertical slice follows the common indexer and source resolver. Discovery Q1
 is answered: both source types map to near-miss, with the original type as a tag.
