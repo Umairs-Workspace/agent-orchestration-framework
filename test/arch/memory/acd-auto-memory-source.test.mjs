@@ -23,6 +23,7 @@ import { readdir as realReaddir, readFile as realReadFile } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { importSpecifiers } from "../../support/module-family.mjs";
 import { createLocalIndexing as realCreateLocalIndexing } from "@aof/knowledge/memory/local-indexing";
 import { createGraphifyBackend as realCreateGraphifyBackend } from "@aof/knowledge/memory/graphify-backend";
 import { AUTO_MEMORY_ITEM, createClaudeAutoMemory } from "@aof/knowledge/memory/claude-auto-memory";
@@ -44,11 +45,12 @@ async function loadPlant(file, mutations) {
     source = source.replace(from, () => to);
   }
   const here = pathToFileURL(file).href;
-  source = source.replace(/(from\s+)"([^"]+)"/g, (whole, head, spec) => {
-    if (spec.startsWith("node:")) return whole;
+  // The one specifier home enumerates the imports; each is re-pointed at an absolute URL so the planted copy resolves.
+  for (const spec of new Set(importSpecifiers(source).map((entry) => entry.specifier))) {
+    if (spec.startsWith("node:")) continue;
     const target = spec.startsWith(".") ? new URL(spec, here).href : import.meta.resolve(spec);
-    return `${head}"${target}"`;
-  });
+    source = source.split(`"${spec}"`).join(`"${target}"`);
+  }
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-159-plant-"));
   const out = path.join(dir, path.basename(file));
   await writeFile(out, source);

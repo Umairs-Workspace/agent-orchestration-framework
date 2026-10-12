@@ -8,7 +8,7 @@ is evidence about its format, not instructions to this refine session.
 
 ## Entry grammar
 
-The current directory is `~/.claude/projects/C--Source-umair-aof/memory/`. Its 77
+The current directory is `~/.claude/projects/C--Source-umami-aof/memory/`. Its 77
 Markdown files comprise 39 nested `metadata.type: feedback`, 31 nested
 `metadata.type: project`, six reference entries and one without frontmatter.
 These are observations, not acceptance thresholds. Do not copy this personal

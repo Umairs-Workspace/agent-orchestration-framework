@@ -77,6 +77,8 @@ export const yarnInstallationTests = [
         // 157/ADR-001: the episodic leaf reads its register through the declared-id home; its
         // run, snapshot and feedback readers are injected, never imported.
         'memory/episodic-indexing.mjs': ['node:path', 'node:fs/promises', '@aof/work/declared-id'],
+        // 159/ADR-001: the auto-memory leaf reads the selected project's memory folder; its resolver and reporter are injected.
+        'memory/claude-auto-memory.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'memory/local-backend.mjs': ['node:fs/promises', 'node:fs'],
         'memory/graphify-backend.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
         'commands/shared.mjs': ['node:path'],

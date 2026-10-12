@@ -18,7 +18,7 @@ export const AUTO_MEMORY_SOURCES = Object.freeze([AUTO_MEMORY_SOURCE]);
 export const AUTO_MEMORY_ITEM = `operator:${AUTO_MEMORY_SOURCE}`;
 export const AUTO_MEMORY_OWNER = "operator";
 // ADR-002: the operator-approved fixed mapping — both admitted types are `near-miss`.
-export const AUTO_MEMORY_KIND = "near-miss";
+const AUTO_MEMORY_KIND = "near-miss";
 export const AUTO_MEMORY_TYPES = Object.freeze(["feedback", "project"]);
 export const SOURCES_CONFIG_PATH = ["memory", "sources"].join(".");
 

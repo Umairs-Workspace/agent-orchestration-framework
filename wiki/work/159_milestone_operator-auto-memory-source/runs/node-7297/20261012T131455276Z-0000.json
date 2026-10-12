@@ -282,13 +282,13 @@
   "spend": null,
   "asks": [
     {
-      "question": "159/01 Q1 · Discovery question — R3 · Imported lessons need a kind; settles E7 and E8.\nDecision needed: Feedback reminders and project facts declare no AOF kind. Should ingest assign near-miss to both types or classify each entry's meaning?\nOptions: Fixed near-miss; classification among mistake, blocker, near-miss and misunderstanding.\nI would pick: Fixed near-miss, preserving the original type as a tag.\nWhat the answer changes: Which entries appear in kind-filtered recall and the adapter contract. Research and the example map are saved; no tasks are locked.\n\nThe [aof-refine skill](C:/Source/umair/aof/.agents/skills/aof-refine/SKILL.md) requires: “Business-rule questions require actual answers, never autonomous defaults.”",
+      "question": "159/01 Q1 · Discovery question — R3 · Imported lessons need a kind; settles E7 and E8.\nDecision needed: Feedback reminders and project facts declare no AOF kind. Should ingest assign near-miss to both types or classify each entry's meaning?\nOptions: Fixed near-miss; classification among mistake, blocker, near-miss and misunderstanding.\nI would pick: Fixed near-miss, preserving the original type as a tag.\nWhat the answer changes: Which entries appear in kind-filtered recall and the adapter contract. Research and the example map are saved; no tasks are locked.\n\nThe [aof-refine skill](C:/Source/umami/aof/.agents/skills/aof-refine/SKILL.md) requires: “Business-rule questions require actual answers, never autonomous defaults.”",
       "phase": "refine",
       "askedAt": "2026-10-12T13:27:35.300Z",
       "parkedAt": null,
       "answer": "Ok let’s go with your suggestion",
       "answeredAt": "2026-10-12T13:36:57.331Z",
-      "by": "@umair_b",
+      "by": "@umami_b",
       "runtime": "codex",
       "questionToken": "159/01 Q1",
       "sessionId": "01a13040-8ebc-7893-b8f9-1bfd6a349477",
