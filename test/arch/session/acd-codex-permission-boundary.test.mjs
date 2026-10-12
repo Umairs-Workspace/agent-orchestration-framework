@@ -8,7 +8,7 @@ async function assertDeclined(adapterFactory) {
     const p = codexFixture({ scenario: `permission:${method}`, adapterFactory });
     let questions = 0;
     const result = await p.adapter.drive(p.brief, { ...p.options, onQuestion: () => { questions++; } });
-    assert.equal(result.failureReason, "operator_action_required"); assert.equal(questions, 0);
+    assert.equal(result.failureReason, "automatic_review_routing_failed"); assert.equal(questions, 0);
     assert.deepEqual(p.calls.find(call => call.id === "approval-1").result, method.includes("permissions") ? { permissions: {}, scope: "turn" } : { decision: "decline" }, "FF-15403: native permissions are declined, never business questions");
   }
 }

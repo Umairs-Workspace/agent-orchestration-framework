@@ -158,7 +158,24 @@ without inspecting credentials. Independent native roles additionally require a 
 launcher/model/effort combination. A missing prerequisite stays pending and leaves the
 milestone unaccepted. Public schema support alone does not prove live recovery or mesh parity.
 
-Permission requests stop for operator action. A business answer is not execution approval.
+Starting a loop or graph delegates task-related permission decisions to the native
+automatic reviewer. Codex thread start/resume selects `auto_review` with `on-request`
+and confirms the effective settings before starting tools. The configured sandbox,
+model, effort and managed restrictions remain in force. Native denials are not
+overridden. An unavailable reviewer or unexpected client approval RPC fails visibly;
+AOF never grants that RPC itself or turns it into a business question.
+
+Pending review appears as `waiting-for-permission` in the run's native observation.
+Only review identity, action type, native status/times and decision source are stored;
+commands, paths and rationale stay out of shared observations. Approval alone does
+not complete verification. Interrupted or reclaimed runs retain unknown review evidence,
+and new runs establish review afresh without replaying old decisions.
+
+For a historical `operator_action_required` failure, start a new loop with the same
+model flags and omit `--resume`. Bare resume cannot retry that non-retryable record.
+Completed builds and the earlier failure remain recorded. Deterministic tests cover
+this handling; real Windows Astra automatic approval remains a separate acceptance check.
+
 Graph grounding is advisory: when the code-only graph build cannot spawn, times out,
 or is denied by the sandbox, refinement and review record the unavailable graph and
 continue from source inspection. They do not request elevated access solely for

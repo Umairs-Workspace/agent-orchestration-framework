@@ -11,7 +11,20 @@ import { CODEX_PROFILE } from "../src/codex-protocol-profile.mjs";
 
 const fixture = JSON.parse(await readFile(new URL("./fixtures/codex-app-server-v1.json", import.meta.url), "utf8"));
 const secret = "FIXTURE_CREDENTIAL_MUST_NOT_APPEAR";
-export function codexFixture({ scenario = "complete", delivery = "ordinary", version = fixture.cliVersion, models = fixture.models, ignoreClose = false, adapterFactory = createCodexAppServerAdapter } = {}) {
+export const reviewProfiles = JSON.parse(await readFile(new URL("./fixtures/codex-auto-review-profiles.json", import.meta.url), "utf8"));
+export function reviewFrame(status = "inProgress", changes = {}, version = fixture.cliVersion) {
+  const frame = structuredClone(reviewProfiles[version][status === "inProgress" ? "started" : "completed"]);
+  Object.assign(frame.params, changes); frame.params.review.status = status;
+  return frame;
+}
+export function finishFrames() {
+  return [{ method: "item/completed", params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId,
+    item: { type: "agentMessage", phase: "final_answer", text: JSON.stringify(fixture.complete) } } },
+  { method: "turn/completed", params: { threadId: fixture.nativeThreadId, turn: { id: fixture.nativeTurnId, status: "completed" } } }];
+}
+export function codexFixture({ scenario = "complete", delivery = "ordinary", version = fixture.cliVersion, models = fixture.models, ignoreClose = false, adapterFactory = createCodexAppServerAdapter, acknowledgement = { approvalsReviewer: "auto_review", approvalPolicy: "on-request" }, onStart = null, nativeIdentity = {} } = {}) {
+  const wire = { ...structuredClone(fixture), ...nativeIdentity };
+  for (const params of [wire.question, wire.usage]) { params.threadId = wire.nativeThreadId; params.turnId = wire.nativeTurnId; }
   const calls = [], events = [], children = [];
   const child = new EventEmitter(); Object.assign(child, { stdin: new PassThrough(), stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null });
   let input = "";
@@ -32,31 +45,35 @@ export function codexFixture({ scenario = "complete", delivery = "ordinary", ver
         if (request.method === "initialize") {
           if (scenario === "request-timeout") return;
           if (scenario === "initialization-error") emit({ id: request.id, error: { code: -1, message: secret } });
-          else reply(request, fixture.initialize);
+          else reply(request, wire.initialize);
         } else if (request.method === "model/list") reply(request, { data: models, nextCursor: null });
-        else if (["thread/start", "thread/resume", "thread/read"].includes(request.method)) reply(request, { thread: { id: scenario === "missing-identity" ? "" : fixture.nativeThreadId } });
+        else if (["thread/start", "thread/resume", "thread/read"].includes(request.method)) {
+          if (acknowledgement === "rejected") emit({ id: request.id, error: { code: -1, message: secret } });
+          else reply(request, { thread: { id: scenario === "missing-identity" ? "" : wire.nativeThreadId }, ...acknowledgement });
+        }
         else if (request.method === "turn/interrupt") { events.push("interrupt"); if (scenario !== "stops-replying") reply(request, {}); }
         else if (request.method === "turn/start") {
-          reply(request, { turn: { id: fixture.nativeTurnId, status: "inProgress" } });
-          emit({ method: "turn/started", params: { threadId: fixture.nativeThreadId, turn: { id: fixture.nativeTurnId } } });
+          reply(request, { turn: { id: wire.nativeTurnId, status: "inProgress" } });
+          emit({ method: "turn/started", params: { threadId: wire.nativeThreadId, turn: { id: wire.nativeTurnId } } });
+          if (onStart) { onStart({ emit, close, calls }); return; }
           if (["active", "stops-replying"].includes(scenario)) return;
-          if (scenario.startsWith("permission:")) { emit({ id: "approval-1", method: scenario.slice(11), params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId, command: secret } }); return; }
-          if (scenario === "native-question" || scenario === "question-missing-identity") { emit({ id: "ephemeral-question-rpc", method: "item/tool/requestUserInput", params: { ...fixture.question, ...(scenario === "question-missing-identity" ? { threadId: "" } : {}) } }); return; }
+          if (scenario.startsWith("permission:")) { emit({ id: "approval-1", method: scenario.slice(11), params: { threadId: wire.nativeThreadId, turnId: wire.nativeTurnId, itemId: "item-1", startedAtMs: 1000, cwd: "C:/fixture", permissions: {}, command: secret } }); return; }
+          if (scenario === "native-question" || scenario === "question-missing-identity") { emit({ id: "ephemeral-question-rpc", method: "item/tool/requestUserInput", params: { ...wire.question, ...(scenario === "question-missing-identity" ? { threadId: "" } : {}) } }); return; }
           if (scenario === "malformed") { emit('{"secret":"' + secret + '"'); return; }
           if (scenario === "oversized") { emit(" ".repeat(1024 * 1024 + 1) + secret); return; }
           if (scenario === "unmatched") { emit({ id: 9999, result: secret }); return; }
           if (scenario === "unknown-request") { emit({ id: "unknown", method: "fixture/mandatory", params: { secret } }); return; }
           if (scenario === "disconnect") { close(); return; }
           if (scenario === "stderr-error") { child.stderr.emit("error", new Error(secret)); return; }
-          const result = scenario === "structured-question" ? { status: "needs_input", question: { token: "structured-token", text: "Choose a behaviour", choices: ["First", "Second"] }, failureReason: null } : fixture.complete;
-          const frames = [{ method: "thread/tokenUsage/updated", params: fixture.usage }];
+          const result = scenario === "structured-question" ? { status: "needs_input", question: { token: "structured-token", text: "Choose a behaviour", choices: ["First", "Second"] }, failureReason: null } : wire.complete;
+          const frames = [{ method: "thread/tokenUsage/updated", params: wire.usage }];
           if (delivery === "notification-burst") for (let i = 0; i < 512; i++) frames.push({
             method: ["codex/event/exec_command_output_delta", "item/commandExecution/outputDelta", "fixture/harmless"][i % 3],
-            params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId, delta: secret },
+            params: { threadId: wire.nativeThreadId, turnId: wire.nativeTurnId, delta: secret },
           });
           if (delivery === "unknown" || delivery === "interleaved") frames.push({ method: "fixture/harmless", params: {} });
-          if (scenario !== "transport-only") frames.push({ method: "item/completed", params: { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId, item: { type: "agentMessage", phase: "final_answer", text: JSON.stringify(result) } } });
-          frames.push({ method: "turn/completed", params: { threadId: fixture.nativeThreadId, turn: { id: fixture.nativeTurnId, status: "completed" } } });
+          if (scenario !== "transport-only") frames.push({ method: "item/completed", params: { threadId: wire.nativeThreadId, turnId: wire.nativeTurnId, item: { type: "agentMessage", phase: "final_answer", text: JSON.stringify(result) } } });
+          frames.push({ method: "turn/completed", params: { threadId: wire.nativeThreadId, turn: { id: wire.nativeTurnId, status: "completed" } } });
           emit(...frames);
         }
       });
@@ -65,7 +82,7 @@ export function codexFixture({ scenario = "complete", delivery = "ordinary", ver
   const adapter = adapterFactory({ selectExecutable: async () => ({ bin: "codex.exe", cliVersion: version }), readVersion: async () => version, spawnChild: (bin, args, options) => { children.push({ bin, args, options }); return child; }, terminate: async owned => { assert.equal(owned, child); owned.kill(); }, composePhaseBriefInput: (command, context) => `${command}\n${context?.text ?? ""}` });
   const brief = { worktreeCwd: path.resolve(".tmp"), itemRef: "154/02", phase: "continue", procedure: "aof-continue", arguments: ["154/02", "--solo"], command: "$aof-continue 154/02 --solo", context: { text: "BOUNDED_CONTEXT" } };
   const options = { requestTimeoutMs: 100, timeoutMs: 1000, closeMs: 20, interruptMs: 20 };
-  return { adapter, brief, options, calls, events, children, child, fixture };
+  return { adapter, brief, options, calls, events, children, child, fixture: wire };
 }
 function released(probe) {
   assert.ok(probe.child.stdin.destroyed && probe.child.stdout.destroyed && probe.child.stderr.destroyed);
@@ -73,6 +90,98 @@ function released(probe) {
   assert.equal(probe.children.length, 1);
 }
 export const codexAppServerTests = [
+  { name: "158 task01 E7 — simultaneous native lanes with equal review ids never cross outcomes", async run() {
+    const observed = [[], []];
+    const probes = [0, 1].map(i => codexFixture({ nativeIdentity: { nativeThreadId: `s${i}`, nativeTurnId: `t${i}` }, onStart: ({ emit }) => {
+      const identity = { threadId: `s${i}`, turnId: `t${i}` };
+      emit(reviewFrame("inProgress", identity));
+      if (i === 0) emit(reviewFrame("approved", identity), ...finishFrames().map(frame => ({ ...frame, params: { ...frame.params, ...identity, ...(frame.params.turn ? { turn: { ...frame.params.turn, id: identity.turnId } } : {}) } })));
+      else emit(reviewFrame("approved", { threadId: "s0", turnId: "t0" }));
+    } }));
+    const results = await Promise.all(probes.map((p, i) => p.adapter.drive(p.brief, { ...p.options, timeoutMs: 60, onActivity: event => observed[i].push(event) })));
+    assert.equal(results[0].outcome, "done"); assert.equal(results[1].failureReason, "timeout");
+    assert.equal(observed[0].filter(e => e.status === "approved").length, 1);
+    assert.equal(observed[1].some(e => e.status === "approved"), false); assert.equal(observed[1].at(-1).observationState, "unknown");
+    probes.forEach(released);
+  } },
+  ...Object.keys(reviewProfiles).flatMap(version => [false, true].map(resumed => ({ name: `158 task00 E1 E4 — ${version} ${resumed ? "resume" : "start"} delegates native review and preserves model`, async run() {
+    const observations = []; let questions = 0;
+    const models = [{ model: "gpt-6-astra", id: "gpt-6-astra", isDefault: true, defaultReasoningEffort: "high", supportedReasoningEfforts: [{ reasoningEffort: "high" }] }];
+    const p = codexFixture({ version, models, acknowledgement: reviewProfiles[version].acknowledgement,
+      onStart: ({ emit }) => emit(reviewFrame("inProgress", {}, version), reviewFrame("approved", {}, version), ...finishFrames()) });
+    const r = await p.adapter.drive(p.brief, { ...p.options, ...(resumed ? { resumeSessionId: fixture.nativeThreadId } : {}), onActivity: e => observations.push(e), onQuestion: () => questions++ });
+    assert.equal(r.outcome, "done"); assert.equal(questions, 0);
+    const thread = p.calls.find(c => c.method === (resumed ? "thread/resume" : "thread/start"));
+    assert.equal(thread.params.approvalsReviewer, "auto_review"); assert.equal(thread.params.approvalPolicy, "on-request");
+    assert.equal(thread.params.model, "gpt-6-astra");
+    const turn = p.calls.find(c => c.method === "turn/start"); assert.equal(turn.params.model, "gpt-6-astra"); assert.equal(turn.params.effort, "high");
+    assert.match(turn.params.input[0].text, /delegating task-related permission decisions/);
+    for (const c of p.calls) for (const key of ["sandbox", "sandboxPolicy", "writableRoots", "config"]) assert.equal(Object.hasOwn(c.params ?? {}, key), false);
+    assert.deepEqual(observations.filter(e => e.kind === "permission-review").map(e => e.status), ["inProgress", "approved"]);
+    assert.doesNotMatch(JSON.stringify(observations), /CANARY/); assert.equal(p.calls.filter(c => c.result).length, 0); released(p);
+  } }))),
+  ...["rejected", {}, { approvalsReviewer: "user", approvalPolicy: "on-request" }, { approvalsReviewer: "auto_review", approvalPolicy: "never" }].map((acknowledgement, i) => ({ name: `158 task00 — unavailable effective automatic review fails before tools ${i}`, async run() {
+    const p = codexFixture({ acknowledgement }); const r = await p.adapter.drive(p.brief, p.options);
+    assert.equal(r.failureReason, "automatic_review_unavailable"); assert.equal(p.calls.some(c => c.method === "turn/start"), false); released(p);
+  } })),
+  ...["command", "applyPatch", "requestPermissions", "networkAccess", "execve", "writeStdin", "mcpToolCall"].flatMap(type => ["approved", "denied", "timedOut", "aborted"].map(status => ({ name: `158 task02 E5 E10 — ${type} ${status} is observation, never phase success`, async run() {
+    const action = { type, command: "ACTION_CANARY", cwd: "C:/CWD_CANARY", source: "shell", files: ["PATH_CANARY"], permissions: { fileSystem: { write: ["PERMISSION_CANARY"] } }, host: "example.test", target: "example.test", port: 443, protocol: "https", program: "node", argv: [], approvalId: "cb-1", processId: "proc-1", stdin: "INPUT_CANARY", server: "test", toolName: "test" };
+    const changes = { action, ...(type === "networkAccess" ? { targetItemId: null } : {}) };
+    const observations = []; const p = codexFixture({ onStart: ({ emit }) => emit(reviewFrame("inProgress", changes), reviewFrame(status, changes)) });
+    const r = await p.adapter.drive(p.brief, { ...p.options, timeoutMs: 40, onActivity: e => observations.push(e) });
+    assert.equal(r.failureReason, "timeout", "approval alone cannot finish a phase");
+    assert.equal(observations.at(-1).status, status); assert.doesNotMatch(JSON.stringify(observations), /CANARY/);
+    assert.equal(p.calls.some(c => c.result), false); released(p);
+  } }))),
+  ...["wrong-session", "wrong-turn", "duplicate", "conflict", "missing-id", "bad-status", "bad-time", "missing-start"].map(condition => ({ name: `158 task02 E3 — review identity and history ${condition}`, async run() {
+    const observed = []; const first = reviewFrame(); let done = reviewFrame("approved");
+    if (condition === "wrong-session") done.params.threadId = "other";
+    if (condition === "wrong-turn") done.params.turnId = "other";
+    if (condition === "missing-id") delete done.params.reviewId;
+    if (condition === "bad-status") done.params.review.status = "invented";
+    if (condition === "bad-time") done.params.completedAtMs = "2000";
+    const frames = condition === "missing-start" ? [done] : [first, done];
+    if (condition === "duplicate") frames.push(done);
+    if (condition === "conflict") frames.push(reviewFrame("denied"));
+    const p = codexFixture({ onStart: ({ emit }) => emit(...frames, ...finishFrames()) });
+    const r = await p.adapter.drive(p.brief, { ...p.options, onActivity: e => observed.push(e) });
+    const expected = ["duplicate", "missing-start"].includes(condition) ? null : condition.startsWith("wrong-") ? "native_review_incomplete" : "native_review_invalid";
+    assert.equal(r.failureReason ?? null, expected); assert.equal(r.outcome, expected ? "failed" : "done");
+    if (condition === "duplicate") assert.equal(observed.filter(e => e.status === "approved").length, 1);
+    if (condition.startsWith("wrong-")) assert.equal(observed.some(e => e.status === "approved"), false);
+    released(p);
+  } })),
+  ...["abort", "timeout", "disconnect", "incomplete", "queue-limit", "start-persistence", "end-persistence"].map(condition => ({ name: `158 task03 E8 E9 — pending review cleanup ${condition}`, async run() {
+    const observed = []; const controller = new AbortController();
+    const p = codexFixture({ onStart: ({ emit }) => {
+      emit(reviewFrame());
+      if (condition === "incomplete") emit(...finishFrames());
+      if (condition === "queue-limit") for (let i = 0; i < 140; i++) emit(reviewFrame("inProgress", { reviewId: `r-${i}` }));
+      if (condition === "end-persistence") emit(reviewFrame("approved"), ...finishFrames());
+    } });
+    const boundary = createRuntimeSession({ adapters: { codex: p.adapter } });
+    const r = await boundary.drive(p.brief, { ...p.options, runtime: "codex", signal: controller.signal, timeoutMs: 60, onActivity: e => {
+      observed.push(e);
+      if (e.kind === "permission-review") {
+        if (condition === "abort") controller.abort();
+        if (condition === "disconnect") p.child.kill();
+        if ((condition === "start-persistence" && e.status === "inProgress") || (condition === "end-persistence" && e.status === "approved")) throw Error(secret);
+      }
+    } });
+    assert.equal(r.failureReason, ({ abort: "abort", timeout: "timeout", disconnect: "protocol_disconnected", incomplete: "native_review_incomplete", "queue-limit": "protocol_queue_limit", "start-persistence": "persistence_failed", "end-persistence": "persistence_failed" })[condition]);
+    assert.equal(r.outcome, "failed"); assert.doesNotMatch(JSON.stringify(r), /CANARY/); released(p);
+    if (["abort", "timeout", "disconnect", "incomplete"].includes(condition)) assert.equal(observed.at(-1).observationState, condition === "abort" ? "interrupted" : "unknown");
+  } })),
+  ...["no-rpc-id", "no-item", "wrong-thread", "wrong-turn", "bad-permissions"].map(condition => ({ name: `158 task02 — malformed approval RPC ${condition}`, async run() {
+    const params = { threadId: fixture.nativeThreadId, turnId: fixture.nativeTurnId, itemId: "item", startedAtMs: 1000, cwd: "C:/fixture", permissions: {} };
+    if (condition === "no-item") delete params.itemId;
+    if (condition === "wrong-thread") params.threadId = "other";
+    if (condition === "wrong-turn") params.turnId = "other";
+    if (condition === "bad-permissions") params.permissions = { all: true };
+    const p = codexFixture({ onStart: ({ emit }) => emit({ ...(condition === "no-rpc-id" ? {} : { id: "approval" }), method: "item/permissions/requestApproval", params }) });
+    assert.equal((await p.adapter.drive(p.brief, p.options)).failureReason, "protocol_invalid_permission_request");
+    assert.equal(p.calls.some(c => c.result), false); released(p);
+  } })),
   { name: "156 — Windows Codex child avoids Store PowerShell without changing host PATH or sandbox policy", async run() {
     const store = 'C:\\Program Files\\WindowsApps\\Microsoft.PowerShell_7\\';
     const aliases = 'C:\\Users\\fixture\\AppData\\Local\\Microsoft\\WindowsApps';
@@ -130,7 +239,7 @@ export const codexAppServerTests = [
       const result = await p.adapter.drive(p.brief,p.options);
       assert.equal(result.cliVersion,"0.162.0-alpha.2");
       assert.equal(result.outcome, scenario === "complete" ? "done" : scenario === "native-question" ? "needs-input" : "failed");
-      if (scenario.startsWith("permission:")) assert.equal(result.failureReason,"operator_action_required");
+      if (scenario.startsWith("permission:")) assert.equal(result.failureReason,"automatic_review_routing_failed");
       released(p);
     }
   } },
@@ -150,10 +259,10 @@ export const codexAppServerTests = [
   ...["item/commandExecution/requestApproval", "item/fileChange/requestApproval", "item/permissions/requestApproval"].map(method => ({ name: `154/02 task01 — operator permissions are declined: ${method}`, async run() {
     const p = codexFixture({ scenario: `permission:${method}` }); let questions = 0;
     const result = await p.adapter.drive(p.brief, { ...p.options, onQuestion: () => { questions++; } });
-    assert.equal(result.failureReason, "operator_action_required"); assert.equal(questions, 0);
+    assert.equal(result.failureReason, "automatic_review_routing_failed"); assert.equal(questions, 0);
     const answer = p.calls.find(call => call.id === "approval-1");
     assert.deepEqual(answer.result, method.includes("permissions") ? { permissions: {}, scope: "turn" } : { decision: "decline" });
-    for (const call of p.calls) assert.equal(Object.hasOwn(call.params ?? {}, "approvalPolicy"), false);
+    assert.equal(p.calls.find(call => call.method === "thread/start").params.approvalPolicy, "on-request");
     released(p);
   } })),
   ...["native-question", "structured-question"].map(scenario => ({ name: `154/02 task01 — persist a complete business question before interruption: ${scenario}`, async run() {

@@ -33,6 +33,54 @@ export function permissionReply(method) {
   if (method === "item/permissions/requestApproval") return { permissions: {}, scope: "turn" };
   return null;
 }
+export const CODEX_AUTO_REVIEW = Object.freeze({ approvalsReviewer: "auto_review", approvalPolicy: "on-request" });
+export const CODEX_REVIEW_METHODS = Object.freeze(["item/autoApprovalReview/started", "item/autoApprovalReview/completed"]);
+const timestamp = value => Number.isSafeInteger(value) && value >= 0 && value <= 8640000000000000;
+const strings = value => Array.isArray(value) && value.every(v => typeof v === "string");
+function permissionProfile(value) {
+  if (!object(value) || Object.keys(value).some(k => !["network", "fileSystem"].includes(k))) return false;
+  if (value.network != null && (!object(value.network) || (value.network.enabled != null && typeof value.network.enabled !== "boolean"))) return false;
+  const fs = value.fileSystem;
+  return fs == null || (object(fs) && ["read", "write"].every(k => fs[k] == null || strings(fs[k]))
+    && (fs.entries == null || (Array.isArray(fs.entries) && fs.entries.every(e => object(e) && ["read", "write", "deny"].includes(e.access) && object(e.path)
+      && ((e.path.type === "path" && named(e.path.path)) || (e.path.type === "glob_pattern" && named(e.path.pattern)) || (e.path.type === "special" && object(e.path.value) && named(e.path.value.kind)))))));
+}
+export function validPermissionRequest(method, params, sessionId, turnId) {
+  if (!named(sessionId) || !named(turnId) || params?.threadId !== sessionId || params.turnId !== turnId
+    || !named(params.itemId) || !timestamp(params.startedAtMs)) return false;
+  if (method === "item/permissions/requestApproval") return named(params.cwd) && permissionProfile(params.permissions);
+  return permissionReply(method) != null;
+}
+function reviewAction(action) {
+  if (!object(action)) return false;
+  switch (action.type) {
+    case "command": return typeof action.command === "string" && named(action.cwd) && ["shell", "unifiedExec"].includes(action.source);
+    case "execve": return named(action.program) && strings(action.argv) && named(action.cwd) && ["shell", "unifiedExec"].includes(action.source);
+    case "writeStdin": return [action.approvalId, action.processId, action.cwd].every(named) && typeof action.stdin === "string";
+    case "applyPatch": return named(action.cwd) && strings(action.files);
+    case "networkAccess": return named(action.host) && named(action.target) && ["http", "https", "socks5Tcp", "socks5Udp"].includes(action.protocol) && Number.isInteger(action.port) && action.port >= 0 && action.port <= 65535;
+    case "mcpToolCall": return named(action.server) && named(action.toolName);
+    case "requestPermissions": return permissionProfile(action.permissions);
+    default: return false;
+  }
+}
+// Both admitted versions use this unstable wire shape. Project metadata only.
+export function nativeReview(method, params, sessionId, turnId) {
+  if (params?.threadId !== sessionId || params?.turnId !== turnId) {
+    if (named(params?.threadId) && named(params?.turnId)) return null;
+    throw Object.assign(new Error("Invalid native review identity"), { code: "native_review_invalid" });
+  }
+  const completed = method === CODEX_REVIEW_METHODS[1];
+  if (!CODEX_REVIEW_METHODS.includes(method) || !named(params.reviewId) || !timestamp(params.startedAtMs)
+    || (params.targetItemId != null && !named(params.targetItemId)) || !reviewAction(params.action)
+    || !(completed ? ["approved", "denied", "timedOut", "aborted"] : ["inProgress"]).includes(params.review?.status)
+    || (completed && (!timestamp(params.completedAtMs) || params.completedAtMs < params.startedAtMs || params.decisionSource !== "agent"))) {
+    throw Object.assign(new Error("Invalid native review evidence"), { code: "native_review_invalid" });
+  }
+  return { kind: "permission-review", sessionId, turnId, reviewId: params.reviewId, targetItemId: params.targetItemId ?? null,
+    actionType: params.action.type, status: params.review.status, startedAtMs: params.startedAtMs,
+    ...(completed ? { completedAtMs: params.completedAtMs, decisionSource: params.decisionSource } : {}) };
+}
 export function nativeQuestion(params, sessionId) {
   if (!named(sessionId) || params?.threadId !== sessionId || params?.isBlocking !== true || !named(params.itemId)
     || !Array.isArray(params.questions) || !params.questions.length) return null;

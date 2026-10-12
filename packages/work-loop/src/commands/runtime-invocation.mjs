@@ -7,7 +7,7 @@ export const phaseRetryKey = (ref, phase) => `${ref}:${phase}`;
 
 // A native permission halt (156): the unattended adapter declined an approval, so the run is not
 // retryable and a bare --resume cannot help. The halt carries this remedy instead of a resume command.
-const PERMISSION_HALT_REMEDY = "Native permission approval is required. AOF's unattended adapter declines these requests. Resolve the blocked operation in an interactive assistant session, then start a new loop with the same model flags (omit --resume). A bare --resume cannot retry this run.";
+const PERMISSION_HALT_REMEDY = "This run recorded a native permission failure. Current Codex drives delegate task-related approvals to native automatic review. After automatic-review setup is available, start a new loop with the same model flags (omit --resume). A bare --resume cannot retry this historical run; native policy denials remain in force.";
 export function notePermissionHalt(act, details) {
   if (act?.producer === "run-store:not-retryable" && details.failureReason === "operator_action_required") act.remedy = PERMISSION_HALT_REMEDY;
 }

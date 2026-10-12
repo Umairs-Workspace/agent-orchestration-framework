@@ -281,9 +281,9 @@ export const SOURCE_DIRECTORY_BUDGETS = Object.freeze([
   Object.freeze({
     directory: "test/arch/session",
     counts: "direct-children",
-    ceiling: 36,
+    ceiling: 38,
     allowance: 0,
-    why: "119/03 established this session-control layer. 154/00 adds FF-15401: native protocol and transcript ownership stay behind the shared session boundary, an identity and attribution constraint across runtime adapters. The ceiling is the delivered 33 files with zero allowance. Further assertions on this boundary belong in that control; a different subject requires its own ownership decision and directory rather than an unreasoned sibling. 154/01 adds acd-runtime-choice-owner.test.mjs (FF-15402), the one-owner control for execution choices and resume provenance. Future ownership cases extend this control. 154/02 adds FF-15403, an executable permission refusal and actual-source bypass control. 154/08 FF-15406: native observation identity and unavailable measurements, a control on the session facts owned by ADR-007.",
+    why: "119/03 established this session-control layer. 154/00 adds FF-15401: native protocol and transcript ownership stay behind the shared session boundary, an identity and attribution constraint across runtime adapters. The ceiling is the delivered 33 files with zero allowance. Further assertions on this boundary belong in that control; a different subject requires its own ownership decision and directory rather than an unreasoned sibling. 154/01 adds acd-runtime-choice-owner.test.mjs (FF-15402), the one-owner control for execution choices and resume provenance. Future ownership cases extend this control. 154/02 adds FF-15403, an executable permission refusal and actual-source bypass control. 154/08 FF-15406: native observation identity and unavailable measurements, a control on the session facts owned by ADR-007. 158: 36 -> 38, zero allowance, for the two controls declared by ADR-001/002: FF-15801 verifies delegated native reviewer selection and acknowledgement; FF-15802 bounds review lifecycle and settlement. They constrain the existing session authority and lifecycle subjects; additional cases extend these owners. FF-15403 retains the distinct client-side no-grant boundary.",
   }),
   Object.freeze({
     directory: "test/arch/store",

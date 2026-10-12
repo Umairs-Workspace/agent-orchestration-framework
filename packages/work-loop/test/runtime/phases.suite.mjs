@@ -9,7 +9,7 @@ import { assembleCommandsDrive } from "../../../core/src/application/bindings/co
 import { createRuntimeSession } from "../../../execution/src/runtime-session.mjs";
 import * as execution from "../../../execution/src/runtime-selection.mjs";
 import * as sessions from "../../../execution/src/session-model.mjs";
-import { codexFixture } from "../../../execution/test/codex-app-server.suite.mjs";
+import { codexFixture, reviewFrame, finishFrames } from "../../../execution/test/codex-app-server.suite.mjs";
 import { compileBriefForItem } from "../../../work/src/phase-brief-read.mjs";
 import { createAskRequests, ASK_STATES } from "../../src/ask-request.mjs";
 import { createAskOrchestration } from "../../src/ask.mjs";
@@ -22,7 +22,7 @@ import { createWorkResolvers } from "../../../work/src/commands/resolve.mjs";
 import { createRunStartCommand } from "../../../work/src/commands/run-start.mjs";
 import { createRunCompleteCommand } from "../../../work/src/commands/run-complete.mjs";
 
-export async function nativePhaseFixture({ scenario = "complete", available = true, version, failFirstAskFile = false, heartbeatEvents = null } = {}) {
+export async function nativePhaseFixture({ scenario = "complete", available = true, version, failFirstAskFile = false, heartbeatEvents = null, onStart = null } = {}) {
   const root = await mkdtemp(path.join(tmpdir(), "aof-native-loop-"));
   const dir = path.join(root, "wiki/work/154_milestone_fixture/stories/06_story_native");
   await mkdir(path.join(dir, "tasks"), { recursive: true });
@@ -49,7 +49,7 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
     capabilities: { nativeIdentity: true },
     async inspectCapabilities(options) { const p = codexFixture({ version, models }); probes.push(p); return p.adapter.inspectCapabilities({ ...p.options, ...options }); },
     async canResume() { return available; },
-    async drive(brief, options) { const p = codexFixture({ scenario: driveScenario, version, models }); probes.push(p); return p.adapter.drive(brief, { ...p.options, ...options }); },
+    async drive(brief, options) { const p = codexFixture({ scenario: driveScenario, version, models, onStart }); probes.push(p); return p.adapter.drive(brief, { ...p.options, ...options }); },
   } } });
   const lock = createMeshLauncherLock({ globalMeshPaths: () => ({ meshRoot: root }), reportDegrade: () => {} });
   const requests = { ...createAskRequests({ getRuntimeRoot: () => path.join(root, "runtime"), reportDegrade: () => {}, acquireLock: lock.acquireMeshLauncherLock }), ASK_STATES };
@@ -68,6 +68,30 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  ...["refine", "continue", "verify", "repair", "review"].map(phase => ({ name: `158 task01 — ${phase} persists review waiting, heartbeat and terminal metadata through registered drive`, async run() {
+    const beats = []; const states = []; let finish;
+    const f = await nativePhaseFixture({ heartbeatEvents: beats, onStart: ({ emit }) => { emit(reviewFrame()); finish = () => emit(reviewFrame("approved"), ...finishFrames()); } });
+    try {
+      f.workspace.config.work.loop.heartbeatMs = 30;
+      const input = { ref: f.item.ref };
+      if (phase === "repair") { input.halt = path.join(f.root, "halt.json"); await writeFile(input.halt, JSON.stringify({ stop: "lane-open-failed", ref: f.item.ref })); }
+      const result = await f.drivers.createPhaseDriverCommand(phase).run(input, { ...f.ctx, agentSessionDriverOptions: {
+        onActivity: async e => {
+          if (e.kind !== "permission-review") return;
+          const record = (await a.execution.runs.readRuns(f.item))[0]; states.push(record);
+          if (e.status === "inProgress") setTimeout(finish, 40);
+        },
+      } });
+      assert.equal(result.outcome, "done"); assert.equal(states[0].state, "running"); assert.ok(beats.length > 1);
+      assert.equal(states[0].brief.runtimeObservation.turns[0].activity, "waiting-for-permission");
+      assert.equal(states[1].brief.runtimeObservation.turns[0].activity, null);
+      assert.equal(states[0].brief.runtimeObservation.lastActivityAt, null);
+      assert.equal(states[0].brief.runtimeObservation.turns[0].approvalsReviewer, "auto_review");
+      assert.equal(states[0].asks.length, 0); assert.equal(await f.requests.readAsk(path.join(f.root, "runtime", "loop-asks"), states[0].runId), null);
+      assert.doesNotMatch(JSON.stringify(states), /CANARY/);
+      assert.equal(f.probes.at(-1).calls.find(c => c.method === "thread/start").params.approvalsReviewer, "auto_review");
+    } finally { await f.cleanup(); }
+  } })),
   { name: "156 — real resumed loop reports missing assets without creating another attempt", async run() {
     const f = await nativePhaseFixture();
     try {
@@ -279,7 +303,8 @@ export const runtimePhaseTests = [
       const controller = new AbortController();
       const result = await f.drivers.continueDriverCommand.run({ ref: f.item.ref }, { ...f.ctx, agentSessionDriverOptions: {
         signal: controller.signal,
-        deadlinePolicy: { startToCloseMs: condition === "start-to-close" ? 25 : 1000 },
+        // Include native setup and the run-store write before testing expiry of an active turn.
+        deadlinePolicy: { startToCloseMs: 2000 },
         onTurnStarted: condition === "operator-stop" ? async () => { controller.abort(); } : undefined,
       } });
       assert.equal(result.failureReason, condition === "operator-stop" ? "cancelled" : "timeout", JSON.stringify(result));

@@ -2,8 +2,8 @@ import { spawn, execFile } from "node:child_process";
 import path from "node:path";
 import { resolveStartToCloseMs } from "@aof/contracts/loop-bounds";
 import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection.mjs";
-import { CODEX_PROFILE, CODEX_RESULT_SCHEMA, parseCodexPhaseResult, permissionReply, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
-import { normalizeCodexActivity } from "./runtime-events.mjs";
+import { CODEX_PROFILE, CODEX_RESULT_SCHEMA, CODEX_AUTO_REVIEW, CODEX_REVIEW_METHODS, parseCodexPhaseResult, permissionReply, validPermissionRequest, nativeReview, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
+import { normalizeCodexActivity, reducePermissionReviews } from "./runtime-events.mjs";
 import { selectCodexExecutable } from "./codex-executable.mjs";
 import { codexProcessEnvironment } from "./codex-process-environment.mjs";
 
@@ -28,12 +28,14 @@ async function terminateOwned(child) {
   } else child.kill("SIGKILL");
 }
 
-// One owned server per operation. No shell, permission override, auth mutation or provider fallback.
+// One owned server per operation. Native review owns grants; AOF never widens the sandbox.
 export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = probeVersion, selectExecutable = selectCodexExecutable, terminate = terminateOwned, composePhaseBriefInput = null } = {}) {
   async function operate(brief, options, readOnly = false) {
     let child, sessionId = null, turnId = null, cliVersion = null, execution = null, terminal = null;
     let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "";
     let events = Promise.resolve();
+    let reviews = [];
+    const reviewPending = () => reviews.some(review => review.observationState === "pending");
     let releaseTurn;
     const turnReady = new Promise(resolve => { releaseTurn = resolve; });
     const pending = new Map();
@@ -84,14 +86,31 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (terminal || finishing) return;
       const { method, params = {} } = message;
       if (Object.hasOwn(message, "id")) {
+        if (!(named(message.id) || Number.isSafeInteger(message.id))) { fail("protocol_invalid_message"); return; }
         const reply = permissionReply(method);
-        if (reply) { write({ id: message.id, result: reply }); fail("operator_action_required"); return; }
+        if (reply) {
+          if (!validPermissionRequest(method, params, sessionId, turnId)) { fail("protocol_invalid_permission_request"); return; }
+          write({ id: message.id, result: reply }); fail("automatic_review_routing_failed"); return;
+        }
         if (method === "item/tool/requestUserInput") {
           if (!turnId || params.turnId !== turnId) { fail("question_invalid"); return; }
           await publishQuestion(nativeQuestion(params, sessionId)); return;
         }
         write({ id: message.id, error: { code: -32601, message: "Unsupported server request" } });
         fail("protocol_unknown_request"); return;
+      }
+      if (permissionReply(method)) { fail("protocol_invalid_permission_request"); return; }
+      if (CODEX_REVIEW_METHODS.includes(method)) {
+        let review;
+        try {
+          review = nativeReview(method, params, sessionId, turnId);
+          if (!review) return;
+          const next = reducePermissionReviews(reviews, review);
+          if (next === reviews) return;
+          reviews = next;
+        } catch { fail("native_review_invalid"); return; }
+        await persist(options.onActivity, review);
+        return;
       }
       if (method === "turn/started" && params.threadId === sessionId) {
         if (!named(params.turn?.id) || (turnId && turnId !== params.turn.id)) { fail("protocol_identity_mismatch"); return; }
@@ -109,6 +128,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         finalText = params.item.text;
       } else if (method === "turn/completed" && params.turn?.id === turnId) {
         if (params.turn.status !== "completed") { fail(params.turn.status === "interrupted" ? "abort" : "phase_failed"); return; }
+        if (reviewPending()) { fail("native_review_incomplete"); return; }
         const result = parseCodexPhaseResult(finalText);
         if (!result) { fail("result_invalid"); return; }
         if (result.status === "needs_input") await publishQuestion({ ...result.question, sessionId });
@@ -133,7 +153,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       // Discard them before the persistence queue: a verbose native command must
       // not crowd out phase results, usage, questions or approval refusals.
       if (!Object.hasOwn(message, "id") && !["turn/started", "turn/completed", "thread/tokenUsage/updated",
-        "item/started", "item/completed", "item/agentMessage/delta"].includes(message.method)) return;
+        "item/started", "item/completed", "item/agentMessage/delta", ...CODEX_REVIEW_METHODS].includes(message.method) && !permissionReply(message.method)) return;
       if (++queued > CODEX_PROFILE.queuedMessages) { fail("protocol_queue_limit"); return; }
       events = events.then(() => event(message)).catch(() => fail("persistence_failed")).finally(() => { queued--; });
     }
@@ -196,31 +216,46 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         if (roleChoice != null) resolveExecution({}, { runtime: "codex", choices: { ...choices, [phase]: { model: choice.model, effort: choice.effort } }, capabilities: { codex: { models: catalog.data } } });
         const resumed = options.resumeSessionId;
         if (resumed !== undefined && !named(resumed)) throw failure("resume_unavailable");
-        const response = await request(resumed ? "thread/resume" : "thread/start", { cwd: brief.worktreeCwd, model: choice.model, ...(resumed ? { threadId: resumed, excludeTurns: true } : {}) });
+        let response;
+        try {
+          response = await request(resumed ? "thread/resume" : "thread/start", { cwd: brief.worktreeCwd, model: choice.model, ...CODEX_AUTO_REVIEW, ...(resumed ? { threadId: resumed, excludeTurns: true } : {}) });
+        } catch (error) { throw error.code === "protocol_rpc_error" ? failure("automatic_review_unavailable") : error; }
         sessionId = response?.thread?.id;
         if (!named(sessionId) || (resumed && sessionId !== resumed)) throw failure("protocol_identity_mismatch");
+        if (response.approvalsReviewer !== CODEX_AUTO_REVIEW.approvalsReviewer || response.approvalPolicy !== CODEX_AUTO_REVIEW.approvalPolicy) throw failure("automatic_review_unavailable");
         try { await persist(options.onIdentity, sessionId); await persist(options.onSessionIdCaptured, sessionId); } catch { throw failure("persistence_failed"); }
         const metadata = { itemRef: brief.itemRef, phase, procedure: brief.procedure ?? null, arguments: brief.arguments ?? [], task: brief.task ?? null, command: brief.command ?? null, ...(brief.role == null ? {} : { role: brief.role }) };
         if (brief.context != null && typeof composePhaseBriefInput !== "function") throw failure("phase_input_invalid");
         const composed = typeof composePhaseBriefInput === "function" ? composePhaseBriefInput(brief.command ?? brief.procedure ?? "", brief.context) : brief.command ?? brief.procedure ?? "";
-        const text = JSON.stringify(metadata) + "\n" + composed + "\nReturn only the phase result JSON matching the output schema. Use complete only when the requested procedure has finished; needs_input for a blocking business question. Never approve permission requests.";
+        const text = JSON.stringify(metadata) + "\n" + composed + "\nThe operator launched the item and phase named above, delegating task-related permission decisions to native automatic review. This does not authorize unrelated actions or override native policy. Use the native permission mechanism when needed; native review owns the decision. Return only the phase result JSON matching the output schema. Use complete only when the requested procedure has finished; needs_input for a blocking business question.";
         if (Buffer.byteLength(text) > CODEX_PROFILE.resultBytes) throw failure("phase_input_too_large");
         const started = await request("turn/start", { threadId: sessionId, cwd: brief.worktreeCwd, model: choice.model, effort: choice.effort, input: [{ type: "text", text, text_elements: [] }], outputSchema: CODEX_RESULT_SCHEMA });
         if (!named(started?.turn?.id) || (turnId && started.turn.id !== turnId)) throw failure("protocol_identity_mismatch");
         turnId = started.turn.id;
-        await persist(options.onTurnStarted, { sessionId, turnId });
+        await persist(options.onTurnStarted, { sessionId, turnId, ...CODEX_AUTO_REVIEW });
         releaseTurn();
         await settled; await events;
       }
     } catch (error) {
       detectedVersions = (error.detectedVersions ?? []).filter(value => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(value));
       // Never expose error.message, stderr, arbitrary server codes or payloads.
-      const allowed = ["runtime_unavailable", "unsupported_profile", "invalid_worktree", "unsupported_runtime", "invalid_phase", "resume_unavailable", "protocol_identity_mismatch", "protocol_initialization_invalid", "runtime_capabilities_unavailable", "phase_input_too_large", "phase_input_invalid", "persistence_failed", "protocol_timeout", "protocol_rpc_error", "protocol_disconnected", "protocol_frame_too_large", "protocol_request_limit"];
+      const allowed = ["automatic_review_unavailable", "runtime_unavailable", "unsupported_profile", "invalid_worktree", "unsupported_runtime", "invalid_phase", "resume_unavailable", "protocol_identity_mismatch", "protocol_initialization_invalid", "runtime_capabilities_unavailable", "phase_input_too_large", "phase_input_invalid", "persistence_failed", "protocol_timeout", "protocol_rpc_error", "protocol_disconnected", "protocol_frame_too_large", "protocol_request_limit"];
       fail(allowed.includes(error?.code) ? error.code : "execution_invalid");
     } finally {
       releaseTurn();
       clearTimeout(deadline); options.signal?.removeEventListener("abort", abort);
       finishing = true;
+      if (reviewPending()) {
+        // Best-effort bounded observation after stop, never a native decision or rollback.
+        // Persistence failure remains failure even if native execution already happened.
+        let timer;
+        try {
+          await Promise.race([Promise.resolve().then(() => options.onActivity?.({ kind: "permission-review-interrupted", sessionId, turnId,
+            observationState: terminal?.failureReason === "abort" ? "interrupted" : "unknown" })),
+          new Promise((_, reject) => { timer = setTimeout(() => reject(failure("persistence_failed")), closeMs); })]);
+        } catch { terminal = { outcome: "failed", failureReason: "persistence_failed" }; }
+        finally { clearTimeout(timer); }
+      }
       if (child) {
         if (!closed && sessionId && turnId && terminal?.outcome !== "done") {
           try { await request("turn/interrupt", { threadId: sessionId, turnId }, interruptMs); } catch { cleanupWarnings.push("interrupt_failed"); }
