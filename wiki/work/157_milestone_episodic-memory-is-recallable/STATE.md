@@ -11,7 +11,7 @@ doc: state
 - One blocker (VERIFICATION F-01, m153's FF-15301 census) was fixed inline and is closed.
 - RETROSPECTIVE R1–R2 and the four OUTCOMEs (the milestone's and each story's) are authored.
 
-The milestone moves to `done` after the whole-tree regression gate (`REGRESSION.md`).
+The whole-tree regression gate is green at `a439359f` (`REGRESSION.md`; the first run stalled while the host was idle and is recorded red), and the milestone is `done`. Next: `aof work archive 157`, which is the operator's act.
 
 ## Decisions
 

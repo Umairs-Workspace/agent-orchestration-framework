@@ -97,10 +97,13 @@ doc: verification
 
 ## Accept decision
 
-**ACCEPTED, stories 157/01, 157/02, 157/03.** 2026-10-12. The decision rests on:
+**ACCEPTED — stories 157/01, 157/02 and 157/03, and milestone 157.** 2026-10-12. The decision rests on:
 - the 157 lanes (296 cases) and the two feature files (58 cases) are green;
 - FF-15701 and FF-15702 are green with recorded red probes;
 - every `@manual` scenario has been walked;
-- the one blocker (F-01) is closed.
+- the one blocker (F-01) is closed;
+- the whole-tree regression gate is green at `a439359f` (`REGRESSION.md`).
+
+The gate's first run, at `b8ee89d9`, is recorded red. The runner stalled for about six hours while the host was idle and ended with no verdict and no failure enumerated. Every unit it marked red (14 files, 343 cases) re-ran green in isolation. The second run was green in 26.2 min, with three load flakes that the runner named and that passed when retried alone.
 
 No scenario is `@uat`, so no human sign-off applies.

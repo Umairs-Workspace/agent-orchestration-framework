@@ -3,7 +3,7 @@ type: milestone
 number: 157
 slug: episodic-memory-is-recallable
 title: "Episodic memory is recallable — findings, feedback and terminal runs become records, and a retry and a triage recall what happened before"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-27
 updated: 2026-10-12
