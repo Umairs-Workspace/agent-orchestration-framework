@@ -3,7 +3,7 @@ type: milestone
 number: 159
 slug: operator-auto-memory-source
 title: "The operator's auto-memory is an opt-in memory source — its feedback and project entries are recallable on the node that holds them"
-status: in-progress
+status: not-started
 owner: product-owner
 created: 2026-09-27
 updated: 2026-10-12
