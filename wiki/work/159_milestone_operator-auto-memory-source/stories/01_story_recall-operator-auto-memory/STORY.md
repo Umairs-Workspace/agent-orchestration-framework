@@ -4,7 +4,7 @@ number: 01
 slug: recall-operator-auto-memory
 title: "Recall the operator's local auto-memory beside work-stream lessons"
 parent: 159
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-12
 updated: 2026-10-12
@@ -37,10 +37,10 @@ so that reasons and instructions I already recorded can inform the next decision
      acceptance criteria. A task is done when its @executable feature is green. Keep tasks
      independent of OTHER stories' tasks; sequential within this story is fine. -->
 
-- [ ] `tasks/00_opt-in-local-source.feature` — opt-in configuration, backend parity and local discovery.
-- [ ] `tasks/01_map-procedural-entries.feature` — measured entry grammar, content, provenance and diagnostics.
-- [ ] `tasks/02_hold-the-kind-policy.feature` — operator-approved kind mapping and existing scope/status behavior.
-- [ ] `tasks/03_recall-and-rebuild.feature` — separate sources, lifecycle, live comparison and operator documentation.
+- [x] `tasks/00_opt-in-local-source.feature` — opt-in configuration, backend parity and local discovery.
+- [x] `tasks/01_map-procedural-entries.feature` — measured entry grammar, content, provenance and diagnostics.
+- [x] `tasks/02_hold-the-kind-policy.feature` — operator-approved kind mapping and existing scope/status behavior.
+- [x] `tasks/03_recall-and-rebuild.feature` — separate sources, lifecycle, live comparison and operator documentation.
 
 ## Notes
 

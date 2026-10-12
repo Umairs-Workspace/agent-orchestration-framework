@@ -5,6 +5,7 @@ import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
 import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
 import { commandError } from "@aof/contracts/error";
 import { resolveGraphifyExtraction } from "./graphify-backends.mjs";
+import { resolveMemorySources } from "./memory/claude-auto-memory.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
 export function createMemory({ loadLocalBackend, loadGraphifyBackend }) {
 // `aof work memory <verb>` — the memory SEAM (milestone 05, story 00).
@@ -138,6 +139,7 @@ function applyDefaultBackendSelection(config, defaultBackend) {
 // in-memory stub under any name (e.g. "local") WITHOUT the real module existing.
 async function resolveConfiguredBackend(config, registry = BACKEND_REGISTRY) {
   const name = selectBackendName(config);
+  resolveMemorySources(config?.memory); // 159/ADR-001 — an invalid source list is refused before any verb runs
   const loader = registry[name];
   if (!loader) {
     throw new Error(`Unknown memory backend "${name}". Registered: ${Object.keys(registry).join(", ")}.`);
@@ -624,6 +626,7 @@ export function inspectMemoryConfiguration(config) {
   const declared = declaredBackendName(config);
   const backend = selectBackendName(config);
   resolveGraphifyExtraction(config?.memory); // validate an authored nested setting even when inactive
+  resolveMemorySources(config?.memory); // 159/ADR-001 — likewise memory.sources
   if (!['none', 'local', 'graphify'].includes(backend)) {
     const error = commandError(`Unknown memory backend "${backend}". Registered: none, local, graphify.`, 'invalid-memory-backend', 400);
     error.path = MEMORY_BACKEND_CONFIG_PATH;
