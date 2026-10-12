@@ -2607,6 +2607,9 @@
             "limit": {
               "type": "integer",
               "minimum": 1
+            },
+            "all": {
+              "type": "boolean"
             }
           },
           "additionalProperties": false
@@ -2640,7 +2643,7 @@
           },
           "all": {
             "type": "boolean",
-            "description": "reindex/ingest: rebuild over the whole stream"
+            "description": "reindex/ingest: rebuild over the whole stream; recall: return the whole scoped result, overriding --limit"
           },
           "lessons": {
             "type": "boolean",

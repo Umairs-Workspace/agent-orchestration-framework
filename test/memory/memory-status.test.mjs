@@ -45,7 +45,20 @@ const DEFAULT_LESSON = { kind: "near-miss", area: "process", stage: "build", own
 
 // Milestone 39, exercising every parser: lessons, ADRs, capabilities + gaps, and an AOF.md summary.
 // `lessons` / `gapStatuses` vary the conformance fixtures; the defaults are task 00's stream.
-export async function writeEveryParserStream(workDir, { lessons = [DEFAULT_LESSON, DEFAULT_LESSON], gapStatuses = ["open", "discharged"] } = {}) {
+// 157/02 — `episodic: true` adds every episodic source 157/01 indexes: 3 Findings register rows,
+// 2 raw feedback rows (beside a classification row that is not one) and 3 terminal runs.
+async function writeEpisodicSources(dir) {
+  await writeFile(path.join(dir, "VERIFICATION.md"), ["# 39 · Verification", "", "## Findings", "", "| id | severity | status | finding |", "|---|---|---|---|", "| F-01 | major | open | one |", "| F-02 | minor | fixed | two |", "| F-03 | nit | open | three |", ""].join("\n"));
+  const raw = (id) => JSON.stringify({ kind: "raw", id, text: `note ${id}`, actor: "qa", refs: "", at: "2026-10-11T10:00:00Z" });
+  await writeFile(path.join(dir, "FEEDBACK.ndjson"), [raw("r1"), JSON.stringify({ kind: "classification", id: "c1", raw: "r1", at: "2026-10-11T10:05:00Z", classification: { type: "bug" } }), raw("r2"), ""].join("\n"));
+  await mkdir(path.join(dir, "runs"), { recursive: true });
+  for (const [n, state] of [[0, "done"], [1, "failed"], [2, "cancelled"]]) {
+    const runId = `20261011T10000000${n}Z-000${n}`;
+    await writeFile(path.join(dir, "runs", `${runId}.json`), JSON.stringify({ runId, itemRef: "39", state, attempt: 1, outcome: state, sessionId: null, brief: {}, failureReason: state === "failed" ? "cap-exhausted" : null, retryOf: null, node: null }));
+  }
+}
+
+export async function writeEveryParserStream(workDir, { lessons = [DEFAULT_LESSON, DEFAULT_LESSON], gapStatuses = ["open", "discharged"], episodic = false } = {}) {
   const dir = path.join(workDir, "39_milestone_fixture");
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, "SPEC.md"), `${frontmatter({ type: "milestone", number: "39", slug: "fixture", status: "in-progress", schema: 1 })}# 39 · fixture\n`);
@@ -62,6 +75,7 @@ export async function writeEveryParserStream(workDir, { lessons = [DEFAULT_LESSO
     `${frontmatter({ doc: "outcome" })}# 39 · Outcome\n\n## Delivered\n\n${capabilities.join("\n")}\n## Gaps\n\n${gaps.join("\n")}`,
   );
   await writeFile(path.join(dir, "AOF.md"), `${frontmatter({ doc: "aof" })}# 39 · Digest\n\n## Intent\n\nThe intent of 39.\n`);
+  if (episodic) await writeEpisodicSources(dir);
 }
 
 async function withStream(options, run) {
@@ -122,7 +136,8 @@ export const memoryStatusTests = [
     name: "148/05 E2: a record type the map does not name is counted, never dropped",
     run: () => withStream({}, async (paths) => {
       await memory("local", paths, ["ingest", "--all"]);
-      const finding = (n) => ({ recordType: "finding", id: `F-${n}`, item: "39", itemSlug: "fixture", title: `Finding ${n}`, area: "", stage: "", kind: "", owner: "", status: "", tags: [], summary: "", text: "", source: "x.md:1" });
+      // 157/02 mapped `finding`, the type this case first used; `observation` is one no map names.
+      const finding = (n) => ({ recordType: "observation", id: `O-${n}`, item: "39", itemSlug: "fixture", title: `Observation ${n}`, area: "", stage: "", kind: "", owner: "", status: "", tags: [], summary: "", text: "", source: "x.md:1" });
       // The store also holds three records of a type the map does not name, written into the derived
       // index itself, so the backend's own recordCount and the composed partition read one store.
       const storePath = memoryIndexPath(paths.projectRoot);
@@ -130,7 +145,7 @@ export const memoryStatusTests = [
       store.records.push(finding(1), finding(2), finding(3));
       await writeFile(storePath, JSON.stringify(store));
       const { result } = await memory("local", paths, ["status", "--json"]);
-      assert.deepEqual(result.types.finding, { count: 3, layer: "unmapped" });
+      assert.deepEqual(result.types.observation, { count: 3, layer: "unmapped" });
       assert.equal(result.layers.unmapped, 3);
       assert.equal(result.recordCount, 15);
       assert.equal(sumCounts(result.types), result.recordCount);
@@ -168,6 +183,8 @@ export const memoryStatusTests = [
     run: () => {
       assert.equal(RECORD_TYPE_LAYERS.lesson, "procedural");
       for (const type of ["adr", "capability", "gap", "summary"]) assert.equal(RECORD_TYPE_LAYERS[type], "semantic", type);
+      // 157/ADR-003 — what already happened on an item is the episodic layer.
+      for (const type of ["finding", "feedback", "run"]) assert.equal(RECORD_TYPE_LAYERS[type], "episodic", type);
       assert.ok(Object.isFrozen(RECORD_TYPE_LAYERS));
       // A type is one key, so it can carry one layer; every layer it names is one of the three.
       for (const layer of Object.values(RECORD_TYPE_LAYERS)) assert.ok(["episodic", "semantic", "procedural"].includes(layer), layer);

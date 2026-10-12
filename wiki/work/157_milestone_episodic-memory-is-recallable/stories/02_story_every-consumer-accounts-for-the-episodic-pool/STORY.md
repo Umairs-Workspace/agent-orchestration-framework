@@ -4,10 +4,10 @@ number: 02
 slug: every-consumer-accounts-for-the-episodic-pool
 title: "Every consumer accounts for the episodic pool"
 parent: 157
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-11
-updated: 2026-10-11
+updated: 2026-10-12
 depends: [157/01]
 schema: 1
 aofVersion: 0.1.0
@@ -27,8 +27,8 @@ whole history rather than its top five matches.
 
 ## Tasks
 
-- [ ] `tasks/00_status-counts-the-episodic-layer.feature` — layer map, legacy counters and both backends agree
-- [ ] `tasks/01_recall-returns-and-renders-episodic-records.feature` — the block line, `--all`, and tune's untouched populations
+- [x] `tasks/00_status-counts-the-episodic-layer.feature` — layer map, legacy counters and both backends agree
+- [x] `tasks/01_recall-returns-and-renders-episodic-records.feature` — the block line, `--all`, and tune's untouched populations
 
 ## Notes
 

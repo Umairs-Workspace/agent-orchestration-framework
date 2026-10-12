@@ -57,6 +57,10 @@ import { archTests as acdMemoryLayerMapTotalTests } from "./acd-memory-layer-map
 import { archTests as acdRecallLedgerConsumersTests } from "./acd-recall-ledger-consumers.test.mjs";
 // milestone 153 / story 02 — FF-15302 (see the import note).
 import { archTests as acdMemoryRecurrenceCalibrationTests } from "./acd-memory-recurrence-calibration.test.mjs";
+// milestone 157 / story 01 — FF-15701: both backends derive identical episodic identities from the
+// existing sources, every primary and stall locator resolves (and none leaves the work tree), and
+// rebuilding changes no source (ADR-001, ADR-002).
+import { archTests as acdEpisodicSourceProvenanceTests } from "./acd-episodic-source-provenance.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -87,4 +91,6 @@ export const tests = [
   ...acdRecallLedgerConsumersTests,
   // milestone 153 / story 02 — FF-15302 (see the import note).
   ...acdMemoryRecurrenceCalibrationTests,
+  // milestone 157 / story 01 — FF-15701 (see the import note).
+  ...acdEpisodicSourceProvenanceTests,
 ];

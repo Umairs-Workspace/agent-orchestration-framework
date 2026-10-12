@@ -201,8 +201,8 @@ m148/FF-14801 (retrieval eval) and m148/FF-14803 (layer-map total).
 
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
-| FF-15701 | Both backends derive identical episodic identities from existing sources; every primary and stall locator resolves; rebuilding changes no source | pending `test/arch/memory/acd-episodic-source-provenance.test.mjs`, registered in `test/arch/memory/index.mjs` by story 01 | ADR-001, ADR-002 |
-| FF-15702 | Retry and triage capture their actual scopes/results once; retrospective gathers episodic evidence through recall; source and runtime renders agree | pending extension of `test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs`, already registered in `test/arch/memory/index.mjs`, by story 03 | ADR-004 |
+| FF-15701 | Both backends derive identical episodic identities from existing sources; every primary and stall locator resolves; rebuilding changes no source | `test/arch/memory/acd-episodic-source-provenance.test.mjs`, registered in `test/arch/memory/index.mjs` (story 01) | ADR-001, ADR-002 |
+| FF-15702 | Retry and triage capture their actual scopes/results once; retrospective gathers episodic evidence through recall; source and runtime renders agree | `test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs`, registered in `test/arch/memory/index.mjs` (extended by story 03) | ADR-004 |
 
 Each control must have a failing negative probe recorded in VERIFICATION when it
 lands. Pending is a refine declaration, never acceptance evidence.

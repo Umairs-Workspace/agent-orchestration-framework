@@ -4,10 +4,10 @@ number: 03
 slug: retry-triage-and-retrospective-recall-episodes
 title: "A retry, a triage and a retrospective recall what happened before"
 parent: 157
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-11
-updated: 2026-10-11
+updated: 2026-10-12
 depends: [157/02]
 schema: 1
 aofVersion: 0.1.0
@@ -27,9 +27,9 @@ and a retrospective is built from evidence the memory can prove it holds.
 
 ## Tasks
 
-- [ ] `tasks/00_a-retry-acknowledges-its-prior-attempt.feature` — continue's attempt-2+ edge
-- [ ] `tasks/01_triage-recalls-prior-findings.feature` — verify's finding-triage edge
-- [ ] `tasks/02_retrospective-gathers-its-evidence-through-recall.feature` — the retrospective's evidence path
+- [x] `tasks/00_a-retry-acknowledges-its-prior-attempt.feature` — continue's attempt-2+ edge
+- [x] `tasks/01_triage-recalls-prior-findings.feature` — verify's finding-triage edge
+- [x] `tasks/02_retrospective-gathers-its-evidence-through-recall.feature` — the retrospective's evidence path
 
 ## Notes
 

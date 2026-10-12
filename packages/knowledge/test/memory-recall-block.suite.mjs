@@ -362,5 +362,27 @@ export const memoryRecallBlockTests = [
       assert.equal("tags" in legacy, false, "non-vacuity: the record carries no tags field");
       assert.equal(blockLines(renderRecallBlock({ records: [legacy] }))[0].split(" · ").length, 5);
     }
+  },
+
+  // ── milestone 157 / story 02 (ADR-003): an episodic record's line carries its summary ──────────
+  {
+    name: "157/02 E5: a failed run's line holds its summary (the failure reason) after its title, tags next, source last",
+    run: () => {
+      const source = "39_milestone_x/runs/node-7297/20261011T183057623Z-0000.json#";
+      const run = { ...record({ recordType: "run", id: "20261011T183057623Z-0000", item: "39", kind: "run", area: "delivery", title: "Run 20261011T183057623Z-0000: continue failed, attempt 2", summary: "failed: cap-exhausted", source }), tags: ["retried"] };
+      assert.equal(
+        renderRecallBlock({ records: [run] }),
+        `20261011T183057623Z-0000 (m39) · run · delivery · Run 20261011T183057623Z-0000: continue failed, attempt 2 · failed: cap-exhausted · [retried] · ${source}\n`,
+      );
+    }
+  },
+  {
+    name: "157/02: an episodic record with no summary renders the five-field line, and a lesson's summary never reaches its line",
+    run: () => {
+      const feedback = { ...record({ recordType: "feedback", id: "r1", item: "39", kind: "feedback", area: "delivery", title: "a note", source: "39_milestone_x/FEEDBACK.ndjson:1#" }), tags: [] };
+      assert.equal(blockLines(renderRecallBlock({ records: [feedback] }))[0].split(" · ").length, 5);
+      const lesson = { ...record({ recordType: "lesson", id: "R1", item: "39", kind: "near-miss", area: "process", title: "A lesson", summary: "the lesson gist", source: "x/RETROSPECTIVE.md:3" }), tags: [] };
+      assert.equal(renderRecallBlock({ records: [lesson] }), "R1 (m39) · near-miss · process · A lesson · x/RETROSPECTIVE.md:3\n");
+    }
   }
 ];

@@ -3,33 +3,36 @@ doc: state
 ---
 # 157 · Episodic memory is recallable — State
 
-## Progress
+## Current position
 
-- [ ] `01_story_episodic-records-resolve-to-their-sources` — not-started, contract authored
-- [ ] `02_story_every-consumer-accounts-for-the-episodic-pool` — not-started, contract authored (depends 01)
-- [ ] `03_story_retry-triage-and-retrospective-recall-episodes` — not-started, contract authored (depends 02)
+2026-10-12: `aof:verify 157` accepted stories 01, 02 and 03.
+- Every `@manual` scenario was walked: the live stream, plus a disposable stream for 03's edges.
+- FF-15701 and FF-15702 are green, with recorded red probes.
+- One blocker (VERIFICATION F-01, m153's FF-15301 census) was fixed inline and is closed.
+- RETROSPECTIVE R1–R2 and the four OUTCOMEs (the milestone's and each story's) are authored.
 
-## Notes & decisions in flight
+The milestone moves to `done` after the whole-tree regression gate (`REGRESSION.md`).
 
-- 2026-10-11, refine attempt 2 (`aof:refine 157 --autonomous`, solo). Attempt 1 was a loop-driven
-  Codex refine that wrote the four ADRs and failed with `operator_action_required` before any
-  story existed. This attempt verified those ADRs against the code and kept them. It also fixed
-  their evidence section: the recall observation ids it cited were never submitted, and the
-  RESEARCH it pointed at did not exist. The architect and PO recalls were re-run, both returned the
-  same results, and both were submitted (ARCHITECTURE, Recall and source evidence).
-- Graph unavailable: attempt 1 hit `EPERM`, attempt 2 hit `graphify-timeout`. Boundaries were drawn
-  from source imports and are cited in the ARCHITECTURE Breakdown.
-- The breakdown went from two stories to three. The doctor flagged 01's map at five rules, and the
-  consumer rule became 02.
-- Discovery ran for all three stories. No business question remained after striking what the SPEC
-  and ADRs answer, so nothing was asked, and every example stays `proposed`. Technical questions
-  took defaults from the ADRs, recorded in each map: cancelled runs are terminal (ADR-001), JSON
-  sources extend the locator string and not the record (ADR-002), tune keeps its own readers
-  (ADR-003), `--all` overrides `--limit` on recall (ADR-003), and a matched prior finding is cited,
-  never auto-closed (ADR-004).
+## Decisions
 
-## Verification
+- Episodic types are derived from existing sources and add no record field. JSON sources extend
+  the locator string (ADR-001, ADR-002). Cancelled runs are terminal.
+- Tune and lesson recurrence stay lesson-only, and `--all` overrides `--limit` (ADR-003).
+- A matched prior finding is cited, never auto-closed (ADR-004). "The build record" for the retry
+  acknowledgement is the milestone `STATE.md` `## Notes & decisions in flight` entry for the
+  attempt. Verify confirmed this reading: it matches the way continue already names the milestone's
+  `STATE.md` for recorded findings.
+- The episodic leaf is `packages/knowledge/src/memory/episodic-indexing.mjs`. Core injects its
+  readers through `createLocalIndexing({ episodicReaders })`.
+- The graph was unavailable at refine (EPERM, then a timeout), so boundaries were drawn from source
+  imports (ARCHITECTURE, Breakdown).
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green (FF-15701, FF-15702 — both `pending` at refine)
-- [ ] `@manual` evidence recorded in VERIFICATION
+## Carried follow-ups
+
+- `.opencode/agents/aof-architect.md` and `.opencode/commands/aof/review.md` differ from a fresh
+  render. This drift predates 157.
+- `scripts/generate-bundle-manifest.mjs` has no `--help`. Passing the flag writes the manifest.
+- The episodic leaf spells the terminal run states itself, because the run store exports no
+  terminal predicate (19/ADR-001).
+
+The build-time `## Feedback (for retro)` notes graduated into `RETROSPECTIVE.md` R1–R2 at verify.

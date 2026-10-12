@@ -4,10 +4,10 @@ number: 01
 slug: episodic-records-resolve-to-their-sources
 title: "Episodic records resolve to their sources"
 parent: 157
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-11
-updated: 2026-10-11
+updated: 2026-10-12
 schema: 1
 aofVersion: 0.1.0
 reads: ["wiki/work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md#adr-001-existing-sources-become-three-episodic-record-types","wiki/work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md#adr-002-source-locators-grow-without-a-new-record-field","wiki/work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md#adr-003-every-consumer-accounts-for-the-new-pool","packages/work/src/declared-id.mjs","packages/work/src/feedback-records.mjs","packages/work/src/observe.mjs","packages/execution/src/runs.mjs","packages/core/src/application/bindings/run-store.mjs","packages/core/src/application/bindings/work-tune/corpus.mjs","packages/core/src/application/bindings/memory/graphify-backend.mjs","packages/knowledge/src/memory/local-backend.mjs","packages/knowledge/src/memory/local-retrieval.mjs","test/arch/memory/acd-memory-retrieval-eval.test.mjs","test/integration/support/feature-runner.mjs","test/integration/support/step-registry.mjs","test/integration/support/common-steps.mjs","test/integration/support/cli-context.mjs","test/support/cli-spawn.mjs","scripts/test.mjs"]
@@ -26,8 +26,8 @@ instead of re-read from every ledger by hand.
 
 ## Tasks
 
-- [ ] `tasks/00_findings-feedback-and-terminal-runs-become-records.feature` — the three types are compiled from existing sources on both backends
-- [ ] `tasks/01_every-episodic-record-resolves-to-its-source.feature` — the locator grammar, its resolver and the index version
+- [x] `tasks/00_findings-feedback-and-terminal-runs-become-records.feature` — the three types are compiled from existing sources on both backends
+- [x] `tasks/01_every-episodic-record-resolves-to-its-source.feature` — the locator grammar, its resolver and the index version
 
 ## Notes
 

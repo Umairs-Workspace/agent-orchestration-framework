@@ -1798,6 +1798,29 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
      `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented.
+     **Recall the prior attempt on a retry (attempt 2 or later).** When this build is the story's
+     attempt 2 or later — its minted run's `attempt` is 2 or more — the developer refreshes the
+     index and recalls the story's whole delivery history BEFORE any implementation: first
+     `aof work memory ingest`, then `aof work memory recall "" --item <ref> --area delivery --all --json`.
+     No stage filter is added: it would hide the verify findings. Attempt 1 has no episodic edge, so
+     a first attempt skips this block entirely. From the actual result, identify the prior attempt —
+     the run this run's `retryOf` names, otherwise the latest terminal earlier attempt — and, before
+     the first code change, acknowledge it in the build record (the milestone `STATE.md`
+     `## Notes & decisions in flight` entry for this attempt): name that run, its `failureReason`,
+     and every finding the recall returned for the story. When memory is off, or the recall returns no
+     prior run, say the prior attempt's evidence is unavailable — never invent an acknowledgement of a
+     failure no record shows. **Keep the result; capture it once, when the build decision is made.**
+     Retain the recall's actual result unchanged — the exact query text and, for every returned
+     record, its `item`, `id` and `recordType` — and never re-run the recall to rebuild it. At the
+     build's terminator, write the observation to a scratch file outside every work folder: `id` (a
+     fresh UUID minted once for this recall — a retry reuses it and `at`), `at` (the ISO instant of
+     the recall), `edge` `continue-episodic`, `actor` `developer`, `query` (verbatim, `""`),
+     `scope` `{"item":"<ref>","area":"delivery"}` and `records` — one `{item, id, recordType,
+     verdict}` per returned record, each with an explicit verdict `honoured`, `departed` or
+     `irrelevant`, never a default. Submit it ONCE on the story:
+     `aof work memory record-recall <ref> --input <episodic observation file>`. An empty block is still
+     submitted, as `"records": []` — no verdict and no extra retrieval is invented. This edge is in
+     addition to the near-miss recall above, which is unchanged.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
 
      <gate_ladder>
@@ -3907,15 +3930,26 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    `NN/observability/{report.md,agents.json}` — the per-agent time / token / **stall** record mined
    from the session transcripts. It re-reads every transcript and overwrites, so a partial run is
    never wrong, only less complete; the close's run (all stories done) is the authoritative snapshot.
-2. **Gather the evidence** (read-only):
-   - `STATE.md` → the `## Feedback (for retro)` running notes (if any), durable decisions, the closure
-     record, carried follow-ups — anything recording a mistake / blocker / decision-with-hindsight.
-   - `VERIFICATION.md` → the **Findings** (defects/gaps caught at review) + their triage — the richest
-     source for an already-accepted milestone.
-   - `observability/agents.json` (if present) → per-agent spend + `stalls`. A **stall** (an agent idle
+2. **Gather the evidence through recall** (read-only). First `aof work memory ingest`, then
+   `aof work memory recall "" --item <ref> --area delivery --all --json` — ONE recall of the item's
+   whole delivery history, after the observability refresh above. What it returns is the evidence,
+   each record cited by its `source`:
+   - **findings** → the defects/gaps caught at review, with their triage — the richest source for an
+     already-accepted milestone;
+   - **feedback** → the raw feedback captured while the item ran;
+   - **runs** → each terminal run's outcome, `failureReason` and stalls. A **stall** (an agent idle
      past the threshold — dropped connection / interrupt / machine-off) or a grossly outsized
-     time/token consumer is a candidate **process lesson** (Kind: blocker | near-miss · Area: process),
-     never a product finding.
+     time/token consumer is a candidate **process lesson** (Kind: blocker | near-miss · Area:
+     process), never a product finding.
+
+   Open a cited source to substantiate a record; never enumerate `VERIFICATION.md`,
+   `FEEDBACK.ndjson` or run records as the evidence path. When memory is off, or the recall returns
+   nothing, report the episodic evidence as unavailable — do not fall back to reading the raw ledgers.
+   This retrospective's own run is still open, so it is correctly absent. This evidence step records
+   no recall observation. Beside it, read:
+   - `STATE.md` → durable decisions, the closure record and carried follow-ups — anything recording
+     a decision-with-hindsight. Its `## Feedback (for retro)` notes project feedback the recall
+     already returned: do not count it twice.
    - Any recorded blocker stops.
 3. **Triage.** Keep only what carries a **lesson** — a mistake, blocker, near-miss, or misunderstanding
    worth not repeating. A finding that was a clean catch with no process lesson is **not** a retro
@@ -4484,6 +4518,26 @@ that have content** — no empty "None" placeholders (absence of a section is in
    the block a register a check can read. Triage (PO): **blocker** → new `@bug` (+ `@finding-<id>`)
    task scenario + fix (back to `$aof-continue`); **non-blocker** → defer to backlog; **design-gap** →
    `aof-designer` sets the `DESIGN.md` rule first. Findings live in `VERIFICATION.md`, never in a task folder.
+
+   **Recall prior findings at triage.** Before a finding's triage is decided, refresh the index and
+   recall the stream's earlier findings: first `aof work memory ingest`, then
+   `aof work memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
+   with no item and no stage filter. The candidates support the triage and never decide it: compare
+   each by cause and evidence, excluding the finding's own identity (its `item` and `id`). A
+   candidate with the same cause and evidence is cited as the prior occurrence (`<item>/<id>`) and
+   the new finding stays open for its owner — a match is never closed automatically; otherwise record
+   a distinct incident and say why. A bare `F-` id on another item is not a duplicate by id alone.
+   Finding ownership stays with this session. **Keep the result; capture it once, when the triage
+   decision is made.** Retain the recall's actual result unchanged — the exact query text and, for
+   every returned line, its `item`, `id` and `recordType` — and never re-run the recall to rebuild
+   it. With the triage decided, write the observation to a scratch file outside every work folder:
+   `id` (a fresh UUID minted once for this recall — a retry reuses it and `at`), `at` (the ISO
+   instant of the recall), `edge` `verify-finding`, `actor` `verifier`, `query` (verbatim),
+   `scope` `{"kind":"finding"}` and `records` — one `{item, id, recordType, verdict}` per returned
+   line, the finding's own identity included, each with an explicit verdict `honoured`, `departed`
+   or `irrelevant`, never a default. Submit it ONCE on the item being verified:
+   `aof work memory record-recall <ref> --input <triage observation file>`. An empty block is still
+   submitted, as `"records": []` — no verdict and no extra retrieval is invented.
 
    **Who fills the `id` column, and when.** Reviewers report findings UNNUMBERED — an ordered list,
    one line each — and you number them here.

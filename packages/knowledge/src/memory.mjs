@@ -1,5 +1,5 @@
 import noneBackend from "./memory/none-backend.mjs";
-import { statusPartition } from "./memory/local-retrieval.mjs";
+import { layerOf, statusPartition } from "./memory/local-retrieval.mjs";
 import { evaluateRecurrence } from "./memory/recurrence.mjs";
 import { canonicalRecurrence } from "@aof/work/memory-vocabulary";
 import { ACCOUNTING_COUNTERS, accountMemory } from "@aof/work/memory-accounting";
@@ -258,6 +258,9 @@ function parseMemoryArgv(argv) {
   // For reindex/ingest the first non-verb positional (or --item / --all) is the
   // milestone ref to scope the rebuild; `--all` (whole stream) maps to null.
   const only = all ? null : (scope.item ?? restPositionals[0] ?? null);
+  // 157/ADR-003 — on recall, `--all` is the entire scoped result: it overrides `--limit` (and the
+  // block's cap) so an item's whole history can be gathered. Ingest's meaning above is unchanged.
+  if (all && verb === "recall") opts.all = true;
 
   // record-recall names its owning item by the first positional after the verb.
   const ref = verb === RECORD_RECALL_VERB ? (restPositionals[0] ?? null) : null;
@@ -302,7 +305,11 @@ function renderRecallBlock(recallResult, { limit } = {}) {
     // record, and one from a store before index version 2 that carries no `tags`, renders the
     // five-field line unchanged.
     const tags = Array.isArray(record.tags) && record.tags.length > 0 ? ` · [${record.tags.join("; ")}]` : "";
-    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${tags} · ${record.source}`;
+    // 157/ADR-003 — an episodic record's summary rides its line (a failed run's failureReason is
+    // in it), after the title and before the tags, so the source stays last. Every other record's
+    // line is byte-for-byte what it was.
+    const summary = layerOf(record.recordType) === "episodic" && record.summary ? ` · ${record.summary}` : "";
+    return `${id} · ${record.kind || record.recordType} · ${record.area} · ${record.title}${summary}${tags} · ${record.source}`;
   });
   return lines.join("\n") + "\n";
 }
@@ -572,7 +579,7 @@ async function runMemory(argv, { config, resolveBackend, render = defaultRender,
     console.error(error.message);
     return { ok: false, exitCode: 1 };
   }
-  render(parsed.verb, result, { json: parsed.json, block: parsed.block, limit: parsed.opts.limit, help: parsed.help }, log);
+  render(parsed.verb, result, { json: parsed.json, block: parsed.block, limit: parsed.opts.all === true ? Infinity : parsed.opts.limit, help: parsed.help }, log);
   return { ok: true, exitCode: 0, result };
 }
 

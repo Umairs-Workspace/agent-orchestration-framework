@@ -396,7 +396,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsTasks = assembleCommandsTasks({ commandsResolveServices: commandsResolve, cacheReadServices: cacheRead, workReadServices: workRead });
   const workTriggerDeclaration = assembleWorkTriggerDeclaration({ workLoopsServices: workLoops });
   const commandsTrigger = assembleCommandsTrigger({ workTriggerDeclarationServices: workTriggerDeclaration, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
-  const memoryLocalIndexing = assembleMemoryLocalIndexing({ workReadServices: workRead, importStoreServices: importStore, importMaterializeServices: importMaterialize });
+  const memoryLocalIndexing = assembleMemoryLocalIndexing({ workReadServices: workRead, importStoreServices: importStore, importMaterializeServices: importMaterialize, runStoreServices: runStore, workObserveServices: workObserve, degradeServices: degrade });
   const workTuneCorpus = assembleWorkTuneCorpus({ memoryLocalIndexingServices: memoryLocalIndexing, runStoreServices: runStore, workObserveServices: workObserve, workLoopsServices: workLoops });
   const workTuneProposal = assembleWorkTuneProposal({  });
   const commandsTune = assembleCommandsTune({ workTuneCorpusServices: workTuneCorpus, workTuneProposalServices: workTuneProposal, workLoopsServices: workLoops, commandsDoctorServices: commandsDoctor, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });

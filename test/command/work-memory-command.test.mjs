@@ -184,7 +184,7 @@ const JSON_GOLDENS = [
       + "  \"backend\": \"local\",\n"
       + "  \"recordCount\": 2,\n"
       + "  \"store\": \"<STORE>\",\n"
-      + "  \"version\": 2\n"
+      + "  \"version\": 3\n"
       + "}\n",
     check: (doc) => { assert.equal("records" in doc, false, "reindex --json carries no `records`"); assert.equal(doc.recordCount, 2); },
   },
@@ -203,9 +203,12 @@ const JSON_GOLDENS = [
       + "  \"summaries\": 0,\n"
       + "  \"capabilities\": 0,\n"
       + "  \"gaps\": 0,\n"
+      + "  \"findings\": 0,\n"
+      + "  \"feedback\": 0,\n"
+      + "  \"runs\": 0,\n"
       + "  \"index\": {\n"
-      + "    \"version\": 2,\n"
-      + "    \"current\": 2,\n"
+      + "    \"version\": 3,\n"
+      + "    \"current\": 3,\n"
       + "    \"stale\": false\n"
       + "  },\n"
       + "  \"types\": {\n"

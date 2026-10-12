@@ -118,6 +118,26 @@ that have content** — no empty "None" placeholders (absence of a section is in
    task scenario + fix (back to `$aof-continue`); **non-blocker** → defer to backlog; **design-gap** →
    `aof-designer` sets the `DESIGN.md` rule first. Findings live in `VERIFICATION.md`, never in a task folder.
 
+   **Recall prior findings at triage.** Before a finding's triage is decided, refresh the index and
+   recall the stream's earlier findings: first `aof work memory ingest`, then
+   `aof work memory recall "<the finding's text>" --kind finding --block` — across the whole stream,
+   with no item and no stage filter. The candidates support the triage and never decide it: compare
+   each by cause and evidence, excluding the finding's own identity (its `item` and `id`). A
+   candidate with the same cause and evidence is cited as the prior occurrence (`<item>/<id>`) and
+   the new finding stays open for its owner — a match is never closed automatically; otherwise record
+   a distinct incident and say why. A bare `F-` id on another item is not a duplicate by id alone.
+   Finding ownership stays with this session. **Keep the result; capture it once, when the triage
+   decision is made.** Retain the recall's actual result unchanged — the exact query text and, for
+   every returned line, its `item`, `id` and `recordType` — and never re-run the recall to rebuild
+   it. With the triage decided, write the observation to a scratch file outside every work folder:
+   `id` (a fresh UUID minted once for this recall — a retry reuses it and `at`), `at` (the ISO
+   instant of the recall), `edge` `verify-finding`, `actor` `verifier`, `query` (verbatim),
+   `scope` `{"kind":"finding"}` and `records` — one `{item, id, recordType, verdict}` per returned
+   line, the finding's own identity included, each with an explicit verdict `honoured`, `departed`
+   or `irrelevant`, never a default. Submit it ONCE on the item being verified:
+   `aof work memory record-recall <ref> --input <triage observation file>`. An empty block is still
+   submitted, as `"records": []` — no verdict and no extra retrieval is invented.
+
    **Who fills the `id` column, and when.** Reviewers report findings UNNUMBERED — an ordered list,
    one line each — and you number them here.
 

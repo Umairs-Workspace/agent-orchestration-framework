@@ -17,6 +17,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
 const memoryIndexPath = _aofApplication.knowledge.memory.localIndexing.memoryIndexPath;
+const readRecordSourceValue = _aofApplication.knowledge.memory.localIndexing.readRecordSourceValue;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..");
@@ -47,6 +48,20 @@ const TINY_ARCH = `# 09 · Tiny — Architecture Decisions
 **Invariant.** every record's source resolves to live text.
 `;
 
+// 157/ADR-002 — the episodic sources, so the control also resolves the JSON locator forms: a
+// Findings register row (Markdown), a raw feedback row (NDJSON) and a run record (JSON).
+const TINY_VERIFICATION = `# 09 · Tiny — Verification
+
+## Findings
+
+| id | severity | status | finding |
+|----|----------|--------|---------|
+| F-01 | major | open | the derived index cited a stale line |
+`;
+const TINY_FEEDBACK = `${JSON.stringify({ kind: "raw", id: "r1", text: "the index cited a stale line", actor: "qa", refs: "", at: "2026-10-11T10:00:00Z" })}
+`;
+const TINY_RUN = { runId: "20261011T100000000Z-0000", itemRef: "09", state: "done", attempt: 1, outcome: "done", sessionId: null, brief: {}, createdAt: "2026-10-11T10:00:00.000Z", updatedAt: "2026-10-11T10:30:00.000Z", failureReason: null, heartbeatAt: null, retryOf: null, reclaimedAt: null, node: "node-7297", resumeAfter: null, spend: null, asks: [] };
+
 async function buildTempStream() {
   const projectRoot = await mkdtemp(path.join(os.tmpdir(), "aof-arch-derived-"));
   const workDir = path.join(projectRoot, "wiki", "work");
@@ -60,6 +75,11 @@ async function buildTempStream() {
   await mkdir(m09, { recursive: true });
   await writeFile(path.join(m09, "RETROSPECTIVE.md"), TINY_RETRO, "utf8");
   await writeFile(path.join(m09, "ARCHITECTURE.md"), TINY_ARCH, "utf8");
+  await writeFile(path.join(m09, "VERIFICATION.md"), TINY_VERIFICATION, "utf8");
+  await writeFile(path.join(m09, "FEEDBACK.ndjson"), TINY_FEEDBACK, "utf8");
+  await mkdir(path.join(m09, "runs", "node-7297"), { recursive: true });
+  await writeFile(path.join(m09, "runs", "node-7297", `${TINY_RUN.runId}.json`), `${JSON.stringify(TINY_RUN, null, 2)}
+`, "utf8");
   return { projectRoot, workDir, ctx: { workDir, projectRoot, configMemory: {} } };
 }
 
@@ -80,7 +100,16 @@ export const archTests = [
         assert.ok(result.recordCount > 0, "the build produced records");
         assert.ok(existsSync(memoryIndexPath(projectRoot)), "the index was written to the fixed path");
 
+        const jsonTypes = new Set();
         for (const record of result.records) {
+          // 157/ADR-002 — a JSON locator (`<path>#<pointer>`, `<path>:<line>#<pointer>`) names a
+          // VALUE, never a line of pretty-printed JSON: it resolves to the record it was compiled from.
+          if (record.source.includes("#")) {
+            const value = await readRecordSourceValue(record, ctx);
+            assert.equal(value?.[record.recordType === "run" ? "runId" : "id"], record.id, `record ${record.id}'s JSON source names it (${record.source})`);
+            jsonTypes.add(record.recordType);
+            continue;
+          }
           // split source into path:line (path may contain no colon on posix; the
           // line is the trailing :N).
           const lastColon = record.source.lastIndexOf(":");
@@ -94,7 +123,7 @@ export const archTests = [
           const lines = (await readFile(absPath, "utf8")).split(/\r?\n/);
           assert.ok(lineNo <= lines.length, `record ${record.id} line ${lineNo} within file`);
 
-          // the recorded line is the record's own heading (R<n> or ADR-NNN).
+          // the recorded line is the record's own heading (R<n> or ADR-NNN), or a finding's register row.
           const headingLine = lines[lineNo - 1];
           assert.ok(
             headingLine.includes(record.id),
@@ -118,6 +147,8 @@ export const archTests = [
             `record ${record.id}'s summary traces to source text at/after line ${lineNo}`,
           );
         }
+        assert.deepEqual([...jsonTypes].sort(), ["feedback", "run"], "non-vacuity: both JSON locator forms were resolved");
+        assert.ok(result.records.some((record) => record.recordType === "finding"), "non-vacuity: a Markdown finding row was resolved");
       } finally {
         await rm(projectRoot, { recursive: true, force: true });
       }

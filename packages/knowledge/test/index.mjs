@@ -15,6 +15,8 @@ import { memoryBackendConfigTests } from "./memory-backend-config.suite.mjs";
 import { memoryRecurrenceTests } from "./memory-recurrence.suite.mjs";
 // milestone 153 / story 03 — `memory status` reports observed effectiveness, identically across backends.
 import { memoryEffectivenessTests } from "./memory-effectiveness.suite.mjs";
+// milestone 157 / story 01 — findings, raw feedback and terminal runs become episodic records.
+import { episodicRecordsTests } from "./episodic-records.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -30,4 +32,5 @@ export const tests = [
   ...storyRetrospectivesIndexedTests,
   ...memoryRecurrenceTests,
   ...memoryEffectivenessTests,
+  ...episodicRecordsTests,
 ];

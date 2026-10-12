@@ -62,6 +62,10 @@ export const RECORD_TYPE_LAYERS = Object.freeze({
   capability: "semantic",
   gap: "semantic",
   summary: "semantic",
+  // 157/ADR-003 — what already happened on an item: its findings, raw feedback and terminal runs.
+  finding: "episodic",
+  feedback: "episodic",
+  run: "episodic",
 });
 
 // The layer a record type serves, or `unmapped` for a type the map does not name.
@@ -309,7 +313,8 @@ function typeBoost(record, capabilityIntent) {
 export function rankRecords(records, query, scope = {}, opts = {}) {
   const survivors = applyScope(records, scope);
   const terms = tokenize(query);
-  const limit = opts.limit ?? DEFAULT_LIMIT;
+  // 157/ADR-003 — `--all` is the whole scoped result, overriding the limit.
+  const limit = opts.all === true ? Infinity : opts.limit ?? DEFAULT_LIMIT;
   // 39/ADR-003: the capability-intent gate is a property of the QUERY, computed
   // once — never per-record.
   const capabilityIntent = hasCapabilityIntent(terms);

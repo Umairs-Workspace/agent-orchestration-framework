@@ -77,7 +77,35 @@ async function addSnapshot(itemDir, json, stamp = "2026-08-31T00-00-00-000Z") {
   if (json !== undefined) await put(path.join(dir, "agents.json"), typeof json === "string" ? json : JSON.stringify(json));
 }
 
+// 157/02 — tune is a classified non-consumer of the memory index (157/ADR-003): its lanes read
+// their own sources, so an ingested index holding episodic copies of the same findings, feedback
+// and runs changes none of its populations.
+const reindex = _aofApplication.knowledge.memory.localIndexing.reindex;
+// The whole assembled corpus — every lane's population, lineage and the recall accounting.
+const populations = (corpus) => JSON.stringify(corpus);
+
 export const tuneCorpusTests = [
+  {
+    name: "work tune corpus 157/02 E6: an ingested memory index with episodic records changes no lane's population",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      const item = await addMilestone(workDir, "39", {
+        retro: promotedLesson("R1"),
+        ledger: ledgerOf(
+          JSON.stringify({ kind: "raw", id: "r1", text: "a note", actor: "qa", refs: "", at: "2026-10-10T09:00:00.000Z" }),
+          JSON.stringify({ kind: "raw", id: "r2", text: "a second note", actor: "qa", refs: "", at: "2026-10-10T09:01:00.000Z" }),
+          recall("k1", "39", "R1", "honoured"),
+        ),
+      });
+      await put(path.join(item, "VERIFICATION.md"), "## Findings\n\n| id | severity | finding |\n|---|---|---|\n| F-01 | major | a |\n| F-02 | minor | b |\n| F-03 | nit | c |\n");
+      for (const n of [0, 1, 2]) await addRun(item, "39", `2026-08-31T00-00-00-000Z-00${n}`);
+      const before = await assembleCorpus({ cwd, lanes: lowFloors() });
+      const { records } = await reindex(null, { workDir, projectRoot: cwd });
+      const counts = Object.fromEntries(["finding", "feedback", "run"].map((type) => [type, records.filter((r) => r.recordType === type).length]));
+      assert.deepEqual(counts, { finding: 3, feedback: 2, run: 3 }, "non-vacuity: the index holds the episodic copies");
+      const after = await assembleCorpus({ cwd, lanes: lowFloors() });
+      assert.equal(populations(after), populations(before));
+    }),
+  },
   {
     name: "work tune corpus: all three lanes state root, count and floor on object and report faces",
     run: () => fixture(async ({ cwd, workDir }) => {

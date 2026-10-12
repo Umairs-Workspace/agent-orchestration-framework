@@ -6,7 +6,7 @@ title: "Episodic memory is recallable — findings, feedback and terminal runs b
 status: in-progress
 owner: product-owner
 created: 2026-09-27
-updated: 2026-10-11
+updated: 2026-10-12
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
 depends: [148, 153]
 schema: 1
@@ -69,9 +69,9 @@ Out of scope:
 
 ## Stories
 
-- [ ] `stories/01_story_episodic-records-resolve-to-their-sources/` — findings, raw feedback and terminal runs become records that resolve to their sources, on both backends
-- [ ] `stories/02_story_every-consumer-accounts-for-the-episodic-pool/` — status, the recall block, `--all` and tune account for the new records (depends 01)
-- [ ] `stories/03_story_retry-triage-and-retrospective-recall-episodes/` — continue's retry edge, verify's triage edge and the retrospective's evidence path (depends 02)
+- [x] `stories/01_story_episodic-records-resolve-to-their-sources/` — findings, raw feedback and terminal runs become records that resolve to their sources, on both backends
+- [x] `stories/02_story_every-consumer-accounts-for-the-episodic-pool/` — status, the recall block, `--all` and tune account for the new records (depends 01)
+- [x] `stories/03_story_retry-triage-and-retrospective-recall-episodes/` — continue's retry edge, verify's triage edge and the retrospective's evidence path (depends 02)
 
 ## Dependencies
 

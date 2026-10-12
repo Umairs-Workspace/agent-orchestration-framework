@@ -25,7 +25,7 @@ the live `wiki/work`, resolve every episodic source, and run the m148 retrieval 
 record per-type counts and the eval result. Record FF-15701's red probe (e.g. a resolver that
 skips the traversal check) in the milestone VERIFICATION.
 
-Run the declared suites with `node scripts/test.mjs --only <files>`, under an isolated
+Run only the declared suites, under an isolated
 `AOF_GLOBAL_HOME`; never the full suite on this machine.
 
 ## Out of scope
