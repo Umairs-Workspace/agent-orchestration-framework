@@ -334,3 +334,47 @@ Language-tutor also exposed work-only ownership locks with no top-level `files` 
 Focused recovery checks: 12 cases, zero failures, including initial/resumed permission failures and work-only locks. The complete ownership and loop-resume suites then passed: 87 cases, zero failures (`.tmp/156-permission-recovery-tests.log`). `aof work validate 156 --json` returned no findings. This does not replace the outstanding broad regression gate or live acceptance.
 
 Both language-tutor dispatch worktrees and their merged branches (`16/03`, `16/04`) are removed. Git first unregistered the worktrees but failed to remove their Windows directories; the recovery checked exact resolved paths, absent `.git` markers and absent Git registrations before deleting only those two directories. The metadata backups and all merged code remain intact.
+
+## Verify session — 2026-10-12 (held in review)
+
+Scoped lane: `node scripts/test.mjs --only` over the story's twelve declared test files,
+`AOF_GLOBAL_HOME` isolated — 602 cases, 2 failures, plus `dispatch.test.mjs` 5/5 under
+`node:test`. Both failures are the 129/02 task03 argv cases in
+`test/loop/drive-command-phase-drivers.test.mjs`, and both are environmental: the shell's
+cwd was a lowercase `c:`, so relative imports load `file:///c:/…` while `@aof/*` imports
+load `file:///C:/…`; the SEA sentinel and the `ENTRY` path then sit on different module
+instances. Re-run from an uppercase `C:` cwd: 95/95, exit 0. The whole-tree sharded gate
+recorded green for milestone 157 (`0e5e08fe`) already contains this story's merged code
+(`a565e98c`), discharging the earlier "sharded gate not rerun" residue.
+verifies → tasks/00_phase-selection-and-recovery.feature, tasks/01_configure-and-prove-mixed-execution.feature
+
+`aof work doctor 156` reported eleven `example-map-malformed` errors: `EXAMPLES.md` was a
+table, not the rules→examples grammar. Rewritten in place with the same seven examples
+under three rules, all `[proposed]`; doctor now reports no errors and no
+`control-unresolved` (the story declares no `ARCHITECTURE.md`). `aof work validate 156`: no findings.
+
+### Pending — live mixed loop (operator-run)
+
+verifies → tasks/02_live-mixed-loop-acceptance.feature
+
+Procedure: in a disposable project with both bundles current (`aof work update`), and an
+eligible not-started item 07 (the test-bed's `07_milestone_loop-proof` fits), run
+`aof work loop 07 --level L2 --model sonnet:high --model refine=gpt-6-astra:high`.
+Accept when: Codex refinement completes before Claude implementation and verification;
+task checks and phase gates pass; each phase's run record carries its runtime, model and
+effort; no manual phase handoff or runtime flag was needed.
+
+Run 1 — operator-launched 2026-10-12 13:14 UTC, read at the source (run records + `loop-diag.159.2026-10-12T13-14-50-202Z.log`):
+
+- Project / item: this repo, milestone 159 (promoted from backlog by the loop), build `f37fe4f0` from source.
+- Banner: `refine gpt-6-astra (--model) at high (--model); continue sonnet (--model) at high (--model); verify sonnet (--model) at high (--model)` — no runtime flag.
+- Refine run `20261012T131455276Z-0000` — codex / gpt-6-astra / high, both `--model`; done, committed `09baad1d`.
+- Continue run (lane 159/01) `20261012T140413076Z-0000` — claude / sonnet / high, both `--model`; session `e28caf4b-a071-4029-b661-1a0338eaf3f3`; done, lane commit `ed874835`. The one human input was an in-build question (host low on memory), not a phase handoff.
+- Verify run: not reached.
+- Gates: validate 0 findings, doctor 0; grade `indeterminate (runner-timeout)`, 0 of 0 cases → halt `grade-indeterminate` at 159/01, exit 0. The milestone wave parent run `…-0001` (claude/sonnet, `agent_error`, no session) was failed by that halt.
+
+Partial: Codex refine → Claude build on the pinned per-phase selection is observed live; Sonnet
+verification and passing gates are not. Next: `aof work loop 159 --resume`, then record the verify
+run here.
+
+Status left `in-review`: task 02's verify and gate clauses have no live evidence yet.
