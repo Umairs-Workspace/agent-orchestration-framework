@@ -57,7 +57,9 @@
       },
       "gate": {
         "args": [
-          "scripts/test-sharded.mjs"
+          "scripts/test-sharded.mjs",
+          "--unit-timeout-min",
+          "45"
         ],
         "jobsArgs": [
           "--jobs",
