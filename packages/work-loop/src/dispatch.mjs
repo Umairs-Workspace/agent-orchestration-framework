@@ -340,6 +340,21 @@ async function ignoredRenderedFiles(projectRoot, worktree, exec) {
   return missing.filter((relpath) => ignored.has(relpath));
 }
 
+// assertLaneTree(lanePath) — A DIRECTORY AT THE KEY IS A LANE ONLY WHILE IT IS A WORKTREE. On
+// Windows `git worktree remove` can unregister a lane and then fail to delete its directory
+// (`dispatch-worktree-remove-failed`), leaving a partial copy with no `.git` marker. git run
+// inside that residue answers for the PRIMARY, so a session reusing it edits a partial tree,
+// validates against no `.aof/` config, and commits into the primary (159/01, 2026-10-12: 21
+// phantom findings, then cap-exhausted). The residue is refused, never deleted here: its
+// `node_modules` holds junctions, and a recursive delete that follows one destroys source.
+function assertLaneTree(lanePath) {
+  if (existsSync(path.join(lanePath, ".git"))) return lanePath;
+  const error = new Error(`${lanePath} is not a git worktree (no .git) — residue of a lane git unregistered but could not delete. Delete the directory, then resume.`);
+  error.code = "dispatch-lane-residue";
+  error.worktree = lanePath;
+  throw error;
+}
+
 // openDispatchLane(projectRoot, itemRef, options) — the three doors, exactly as before 129/03
 // gave `resolveDispatchLane` its advance; split out so the advance sits AFTER whichever door
 // answered rather than being spelled once per door.
@@ -357,7 +372,7 @@ async function openDispatchLane(projectRoot, itemRef, options = {}) {
   }
 
   // Door 2 — this lane's own tree at the ref's key.
-  if (existsSync(lanePath)) return lane(lanePath, false);
+  if (existsSync(lanePath)) return lane(assertLaneTree(lanePath), false);
 
   // Door 3 — materialise it.
   try {
@@ -369,7 +384,7 @@ async function openDispatchLane(projectRoot, itemRef, options = {}) {
     // The concurrent-`add` race: the loser reads the winner's tree.
     if (existsSync(lanePath)) {
       reportDegrade("work-dispatch", error);
-      return lane(lanePath, false);
+      return lane(assertLaneTree(lanePath), false);
     }
     // …or the winner took the item's branch into ITS tree, wherever that is (a mesh
     // assignment lane racing this one), which door 1 can now see.
