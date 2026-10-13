@@ -373,8 +373,40 @@ Run 1 — operator-launched 2026-10-12 13:14 UTC, read at the source (run record
 - Verify run: not reached.
 - Gates: validate 0 findings, doctor 0; grade `indeterminate (runner-timeout)`, 0 of 0 cases → halt `grade-indeterminate` at 159/01, exit 0. The milestone wave parent run `…-0001` (claude/sonnet, `agent_error`, no session) was failed by that halt.
 
-Partial: Codex refine → Claude build on the pinned per-phase selection is observed live; Sonnet
-verification and passing gates are not. Next: `aof work loop 159 --resume`, then record the verify
-run here.
+Run 1 was partial: refine and build observed, verification not reached.
 
-Status left `in-review`: task 02's verify and gate clauses have no live evidence yet.
+Runs 2–3 — operator `--resume`, 2026-10-12 20:41 and 21:29 UTC (`loop-diag.159.2026-10-12T21-29-02-345Z.log`):
+
+- Verify run (159/01) `20261012T213028164Z-0001` — claude / sonnet / high, both `--model`; session
+  `3c21f32b-2620-48d0-adaa-b1a3a12aec8e`; done 21:44, story accepted in `67e7797e`.
+- Gates before verify: validate 0, doctor 0, grade from the build's recorded ledger.
+- Every banner across the three launches printed the same pinned selection, including the two
+  resumes that took no `--model` flag.
+
+Task 02 is met: one command refined on Codex/gpt-6-astra/high, then built and verified on
+Claude/sonnet/high; each phase's run record names its runtime, model and effort; no runtime flag
+and no manual phase handoff was used. The human inputs were in-phase questions (a Q1 discovery
+answer, a low-memory build question), not handoffs. Milestone 159's own close (its whole-tree gate)
+is outside this story and was stopped by the operator; see F-4.
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F-1 | Lane grade killed at the 15-min heartbeat-derived deadline under a concurrent loop (rubric ~9 min unloaded) → `grade-indeterminate`, narrated as "no rubric declared" | defect | medium | non-blocker, fixed inline | loop | closed — `20bceb48` (`work.loop.heartbeatMs` 30 min; halt carries its summary) |
+| F-2 | Resume reused a lane directory git had unregistered but Windows could not delete; git inside it answered for the primary → 21 phantom validate findings, cap-exhausted | defect | high | non-blocker, fixed inline | dispatch | closed — `ac88758a` (`dispatch-lane-residue` refusal) |
+| F-3 | Milestone verify killed at `heartbeatMs` twice while waiting on the regression gate it launched (no tool call, no heartbeat) | defect | high | non-blocker, fixed inline | regression-gate | closed — `d8c0fccd` (gate keeps a driven run alive) |
+| F-4 | Loop-run suites assume an idle host: lane timeouts recorded red, the gate inherits the session env (`GIT_ASKPASS`), each repair re-runs the whole tree (4 gate runs, 1–2 h each), and a stopped loop leaves its gate running | gap | high | non-blocker for 156; recurrence of m129/F-70 | new work item | open |
+
+Recall preceded triage (`aof work memory ingest`, then one `--kind finding` recall per finding,
+submitted with `record-recall`). F-1 and F-2 are distinct incidents (m81/F-81-H, m66/F-34 and
+m129/F-31 differ in cause; F-34's junction hazard is why the residue is refused, never deleted).
+F-3 is a distinct trigger of m129/F-58's rule that a wait is not silence. F-4 shares cause and
+evidence with m129/F-70 (clone-credential cases red under gate load, green alone) and stays open.
+
+## Accept decision — 2026-10-13
+
+Accepted. Tasks 00/01: scoped lane green (602 cases; 2 drive-letter environmental reds green from a
+`C:` cwd), `dispatch.test.mjs` 5/5. Task 02: live mixed loop observed end to end as recorded
+above. `aof work validate 156`: no findings. `aof work doctor 156`: no errors, no
+`control-unresolved`. No blocker finding is open.
