@@ -4,7 +4,7 @@ number: 2
 slug: memory-wiki-describes-delivered-procedure
 title: "The memory wiki describes the delivered procedure"
 parent: 161
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-14
@@ -24,8 +24,8 @@ so that I can use recall, evidence and promotion without relying on obsolete cla
 
 ## Tasks
 
-- [ ] `tasks/01_describe-memory-as-delivered.feature` — delivered layers, records and memory procedure.
-- [ ] `tasks/02_preserve-scope-and-resolve-citations.feature` — preserved adapter section and a green whole-wiki citation check.
+- [x] `tasks/01_describe-memory-as-delivered.feature` — delivered layers, records and memory procedure.
+- [x] `tasks/02_preserve-scope-and-resolve-citations.feature` — preserved adapter section and a green whole-wiki citation check.
 
 ## Notes
 
