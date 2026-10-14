@@ -332,7 +332,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "d69d0f506709a353e1bd11847a41a7de59d5b79aad961bd2361a2e5ee99a028c",
+    "sourceDigest": "87d17c7ad2d03a3fb2462ac8095a52c49df6c04f7a3897b05e7b6c0468e032cd",
     "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
   },
   {
