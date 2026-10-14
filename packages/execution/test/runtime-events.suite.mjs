@@ -5,6 +5,8 @@ import os from "node:os";
 import { runStore as store } from "./support/run-store.mjs";
 import { resolveExecution } from "../src/runtime-selection.mjs";
 import { normalizeCodexActivity } from "../src/runtime-events.mjs";
+import { codexFixture, reviewFrame, finishFrames } from "./codex-app-server.suite.mjs";
+import { createRuntimeSession } from "../src/runtime-session.mjs";
 
 const execution = resolveExecution({}, { runtime: "codex", capabilities: { codex: { models: [{ id: "native", model: "native", isDefault: true,
   defaultReasoningEffort: "low", supportedReasoningEfforts: ["low", "medium", "high", "xhigh", "ultra"].map(reasoningEffort => ({ reasoningEffort })) }] } } });
@@ -19,6 +21,67 @@ async function fixture(run) {
 }
 
 export const runtimeEventsTests = [
+  { name: "158 task02 E2 — an ordinary approve answer cannot decide a pending native review", run: () => fixture(async ({ item, record, event, read }) => {
+    await event("turn", "turn-1", { resumed: false });
+    await event("permission-review", "turn-1", { reviewId: "r", targetItemId: "i", actionType: "command", status: "inProgress", startedAtMs: 10 });
+    const before = (await read()).brief.runtimeObservation;
+    await store.openRunAsk(item, record.runId, { question: "Approve the proposed product wording?", phase: "continue" });
+    await store.answerRunAsk(item, record.runId, { answer: "approve" });
+    const after = await read(); assert.equal(after.asks[0].answer, "approve");
+    assert.deepEqual(after.brief.runtimeObservation, before);
+  }) },
+  ...["failed", "cancelled", "reclaimed"].map(outcome => ({ name: `158 task03 — ${outcome} owner leaves unknown review evidence without a grant`, run: () => fixture(async ({ item, record, event, read }) => {
+    await event("turn", "turn-1", { resumed: false });
+    await event("permission-review", "turn-1", { reviewId: "r", targetItemId: "i", actionType: "command", status: "inProgress", startedAtMs: 10 });
+    await assert.rejects(store.completeRun(item, { runId: record.runId, outcome: "done" }), { code: "runtime-review-incomplete" });
+    if (outcome === "reclaimed") await store.reclaimRun(item, record.runId);
+    else await store.completeRun(item, { runId: record.runId, outcome });
+    const row = (await read()).brief.runtimeObservation.turns[0];
+    assert.equal(row.activity, null); assert.equal(row.reviews[0].status, "inProgress");
+    assert.equal(row.reviews[0].observationState, outcome === "cancelled" ? "interrupted" : "unknown");
+  }) })),
+  { name: "158 task01 E6 E7 task02 E2 — real native review persists in its run without counting useful work", run: () => fixture(async ({ item, record, read }) => {
+    const p = codexFixture({ onStart: ({ emit }) => emit(reviewFrame(), reviewFrame("inProgress", { reviewId: "review-8" }), reviewFrame("approved"), reviewFrame("denied", { reviewId: "review-8" }), ...finishFrames()) });
+    const boundary = createRuntimeSession({ adapters: { codex: p.adapter } });
+    const states = [];
+    const r = await boundary.drive(p.brief, { ...p.options, runtime: "codex",
+      onIdentity: sessionId => store.recordSessionId(item, { runId: record.runId, sessionId }),
+      onTurnStarted: e => store.recordRuntimeEvent(item, { runId: record.runId, event: { ...e, kind: "turn", resumed: false } }),
+      onActivity: async event => {
+        await store.recordRuntimeEvent(item, { runId: record.runId, event });
+        if (event.kind === "permission-review") states.push((await read()).brief.runtimeObservation);
+      },
+    });
+    assert.equal(r.outcome, "done");
+    assert.deepEqual(states.map(s => s.turns[0].activity), ["waiting-for-permission", "waiting-for-permission", "waiting-for-permission", null]);
+    assert.ok(states.every(s => s.lastActivityAt === null));
+    assert.equal(states[3].turns[0].approvalsReviewer, "auto_review");
+    assert.equal(states[3].turns[0].reviews[0].startObserved, true);
+    assert.equal((await read()).asks.length, 0); assert.doesNotMatch(JSON.stringify(await read()), /CANARY/);
+  }) },
+  { name: "158 task02 — missing-start evidence and duplicate decisions persist without invented history", run: () => fixture(async ({ event, read }) => {
+    await event("turn", "turn-1", { resumed: false });
+    const review = { reviewId: "r", targetItemId: null, actionType: "networkAccess", status: "approved", startedAtMs: 10, completedAtMs: 20, decisionSource: "agent" };
+    await event("permission-review", "turn-1", review);
+    const prior = await read(); await event("permission-review", "turn-1", review); assert.deepEqual(await read(), prior);
+    assert.equal(prior.brief.runtimeObservation.turns[0].reviews[0].startObserved, false);
+    await assert.rejects(event("permission-review", "turn-1", { ...review, status: "denied" }), { code: "runtime-observation-invalid" });
+    assert.deepEqual(await read(), prior);
+  }) },
+  { name: "158 task01 E7 task03 — equal ids and persisted decisions cannot cross lanes or authorize restart", run: () => fixture(async ({ item, record, event, read }) => {
+    const review = { reviewId: "review-7", targetItemId: "item", actionType: "command", status: "inProgress", startedAtMs: 10 };
+    await event("turn", "turn-1", { resumed: false }); await event("permission-review", "turn-1", review);
+    await event("permission-review-interrupted", "turn-1", { observationState: "unknown" });
+    await store.completeRun(item, { runId: record.runId, outcome: "failed", failureReason: "timeout" });
+    const prior = await read(); const next = await store.startRun(item, { sessionId: "native-thread", execution });
+    await event("turn", "turn-2", { resumed: true }, next.runId);
+    await event("permission-review", "turn-2", review, next.runId);
+    await event("permission-review", "turn-1", { ...review, status: "approved", completedAtMs: 20, decisionSource: "agent" }, next.runId);
+    assert.equal((await read(next.runId)).brief.runtimeObservation.turns[0].reviews[0].status, "inProgress");
+    assert.deepEqual(await read(), prior);
+    assert.equal(prior.brief.runtimeObservation.turns[0].reviews[0].status, "inProgress");
+    assert.equal(prior.brief.runtimeObservation.turns[0].reviews[0].observationState, "unknown");
+  }) },
   { name: "154/08 task00 — E1 repeated cumulative usage counts once with native thread and turn", run: () => fixture(async ({ event, read, item, record }) => {
     await event("turn", "turn-1", { resumed: false });
     await event("usage", "turn-1", { total: total(100) });

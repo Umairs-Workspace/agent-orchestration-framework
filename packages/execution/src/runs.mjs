@@ -39,7 +39,7 @@ import { writeText } from "@aof/foundation/fs";
 import { assertStampedClaim, compileProvenance } from "@aof/contracts/claim-provenance";
 import { createRunSpendIngest } from "./spend.mjs";
 import { resolveExecutionResume, validateExecutionEnvelope } from "./runtime-selection.mjs";
-import { reduceRuntimeObservation } from "./runtime-events.mjs";
+import { reduceRuntimeObservation, settleRuntimeReviews } from "./runtime-events.mjs";
 // ------------------------------------------- failure classification (20) ----
 
 // The CLOSED retryable/non-retryable classification (20/ADR-002), the
@@ -831,6 +831,7 @@ export function createRunStore({ reportDegrade, getAnswerTokens, readSessionAnsw
       ...record,
       state: toState,
       outcome: toState,
+      brief: settleRuntimeReviews(record, toState),
       updatedAt: now ?? new Date().toISOString(),
     };
     if (toState === "failed") {

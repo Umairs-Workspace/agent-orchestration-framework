@@ -334,3 +334,79 @@ Language-tutor also exposed work-only ownership locks with no top-level `files` 
 Focused recovery checks: 12 cases, zero failures, including initial/resumed permission failures and work-only locks. The complete ownership and loop-resume suites then passed: 87 cases, zero failures (`.tmp/156-permission-recovery-tests.log`). `aof work validate 156 --json` returned no findings. This does not replace the outstanding broad regression gate or live acceptance.
 
 Both language-tutor dispatch worktrees and their merged branches (`16/03`, `16/04`) are removed. Git first unregistered the worktrees but failed to remove their Windows directories; the recovery checked exact resolved paths, absent `.git` markers and absent Git registrations before deleting only those two directories. The metadata backups and all merged code remain intact.
+
+## Verify session — 2026-10-12 (held in review)
+
+Scoped lane: `node scripts/test.mjs --only` over the story's twelve declared test files,
+`AOF_GLOBAL_HOME` isolated — 602 cases, 2 failures, plus `dispatch.test.mjs` 5/5 under
+`node:test`. Both failures are the 129/02 task03 argv cases in
+`test/loop/drive-command-phase-drivers.test.mjs`, and both are environmental: the shell's
+cwd was a lowercase `c:`, so relative imports load `file:///c:/…` while `@aof/*` imports
+load `file:///C:/…`; the SEA sentinel and the `ENTRY` path then sit on different module
+instances. Re-run from an uppercase `C:` cwd: 95/95, exit 0. The whole-tree sharded gate
+recorded green for milestone 157 (`0e5e08fe`) already contains this story's merged code
+(`a565e98c`), discharging the earlier "sharded gate not rerun" residue.
+verifies → tasks/00_phase-selection-and-recovery.feature, tasks/01_configure-and-prove-mixed-execution.feature
+
+`aof work doctor 156` reported eleven `example-map-malformed` errors: `EXAMPLES.md` was a
+table, not the rules→examples grammar. Rewritten in place with the same seven examples
+under three rules, all `[proposed]`; doctor now reports no errors and no
+`control-unresolved` (the story declares no `ARCHITECTURE.md`). `aof work validate 156`: no findings.
+
+### Pending — live mixed loop (operator-run)
+
+verifies → tasks/02_live-mixed-loop-acceptance.feature
+
+Procedure: in a disposable project with both bundles current (`aof work update`), and an
+eligible not-started item 07 (the test-bed's `07_milestone_loop-proof` fits), run
+`aof work loop 07 --level L2 --model sonnet:high --model refine=gpt-6-astra:high`.
+Accept when: Codex refinement completes before Claude implementation and verification;
+task checks and phase gates pass; each phase's run record carries its runtime, model and
+effort; no manual phase handoff or runtime flag was needed.
+
+Run 1 — operator-launched 2026-10-12 13:14 UTC, read at the source (run records + `loop-diag.159.2026-10-12T13-14-50-202Z.log`):
+
+- Project / item: this repo, milestone 159 (promoted from backlog by the loop), build `f37fe4f0` from source.
+- Banner: `refine gpt-6-astra (--model) at high (--model); continue sonnet (--model) at high (--model); verify sonnet (--model) at high (--model)` — no runtime flag.
+- Refine run `20261012T131455276Z-0000` — codex / gpt-6-astra / high, both `--model`; done, committed `09baad1d`.
+- Continue run (lane 159/01) `20261012T140413076Z-0000` — claude / sonnet / high, both `--model`; session `e28caf4b-a071-4029-b661-1a0338eaf3f3`; done, lane commit `ed874835`. The one human input was an in-build question (host low on memory), not a phase handoff.
+- Verify run: not reached.
+- Gates: validate 0 findings, doctor 0; grade `indeterminate (runner-timeout)`, 0 of 0 cases → halt `grade-indeterminate` at 159/01, exit 0. The milestone wave parent run `…-0001` (claude/sonnet, `agent_error`, no session) was failed by that halt.
+
+Run 1 was partial: refine and build observed, verification not reached.
+
+Runs 2–3 — operator `--resume`, 2026-10-12 20:41 and 21:29 UTC (`loop-diag.159.2026-10-12T21-29-02-345Z.log`):
+
+- Verify run (159/01) `20261012T213028164Z-0001` — claude / sonnet / high, both `--model`; session
+  `3c21f32b-2620-48d0-adaa-b1a3a12aec8e`; done 21:44, story accepted in `67e7797e`.
+- Gates before verify: validate 0, doctor 0, grade from the build's recorded ledger.
+- Every banner across the three launches printed the same pinned selection, including the two
+  resumes that took no `--model` flag.
+
+Task 02 is met: one command refined on Codex/gpt-6-astra/high, then built and verified on
+Claude/sonnet/high; each phase's run record names its runtime, model and effort; no runtime flag
+and no manual phase handoff was used. The human inputs were in-phase questions (a Q1 discovery
+answer, a low-memory build question), not handoffs. Milestone 159's own close (its whole-tree gate)
+is outside this story and was stopped by the operator; see F-4.
+
+## Findings
+
+| id | observed | type | severity | triage | routed-to | status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F-1 | Lane grade killed at the 15-min heartbeat-derived deadline under a concurrent loop (rubric ~9 min unloaded) → `grade-indeterminate`, narrated as "no rubric declared" | defect | medium | non-blocker, fixed inline | loop | closed — `20bceb48` (`work.loop.heartbeatMs` 30 min; halt carries its summary) |
+| F-2 | Resume reused a lane directory git had unregistered but Windows could not delete; git inside it answered for the primary → 21 phantom validate findings, cap-exhausted | defect | high | non-blocker, fixed inline | dispatch | closed — `ac88758a` (`dispatch-lane-residue` refusal) |
+| F-3 | Milestone verify killed at `heartbeatMs` twice while waiting on the regression gate it launched (no tool call, no heartbeat) | defect | high | non-blocker, fixed inline | regression-gate | closed — `d8c0fccd` (gate keeps a driven run alive) |
+| F-4 | Loop-run suites assume an idle host: lane timeouts recorded red, the gate inherits the session env (`GIT_ASKPASS`), each repair re-runs the whole tree (4 gate runs, 1–2 h each), and a stopped loop leaves its gate running | gap | high | non-blocker for 156; recurrence of m129/F-70 | new work item | open |
+
+Recall preceded triage (`aof work memory ingest`, then one `--kind finding` recall per finding,
+submitted with `record-recall`). F-1 and F-2 are distinct incidents (m81/F-81-H, m66/F-34 and
+m129/F-31 differ in cause; F-34's junction hazard is why the residue is refused, never deleted).
+F-3 is a distinct trigger of m129/F-58's rule that a wait is not silence. F-4 shares cause and
+evidence with m129/F-70 (clone-credential cases red under gate load, green alone) and stays open.
+
+## Accept decision — 2026-10-13
+
+Accepted. Tasks 00/01: scoped lane green (602 cases; 2 drive-letter environmental reds green from a
+`C:` cwd), `dispatch.test.mjs` 5/5. Task 02: live mixed loop observed end to end as recorded
+above. `aof work validate 156`: no findings. `aof work doctor 156`: no errors, no
+`control-unresolved`. No blocker finding is open.

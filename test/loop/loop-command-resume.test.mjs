@@ -14,6 +14,7 @@ const loopCommand = _aofApplication.getCommand("work:loop");
 const runLoopBody = _aofApplication.loop.commandTools.loop.runLoopBody;
 import { lineageElapsedMs } from "../../packages/work-loop/src/engine.mjs";
 import { compatiblePhaseRetry } from "../../packages/work-loop/src/commands/runtime-invocation.mjs";
+import { runRuntimeRegression } from "../support/runtime-loop/fixture.mjs";
 const loopResumesDir = _aofApplication.loop.stopRequest.loopResumesDir;
 const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
@@ -60,6 +61,11 @@ const declaration = {
 const capThree = { ...declaration, cap: 3 };
 
 export const loopCommandResumeTests = [
+  { name: "158 task03 E11 — a fresh loop verifies completed work and preserves the historical permission failure", async run() {
+    const result = await runRuntimeRegression("codex", { recoverPermissionFailure: true });
+    // The supported loop scope verifies the story and then its containing milestone.
+    assert.deepEqual(result.phases, ["verify", "verify"]); assert.equal(result.state, "done");
+  } },
   { name: "156 drive — initial permission failure names the operator action without retrying", async run() {
     const fx = await loopFixture();
     try {
@@ -67,7 +73,7 @@ export const loopCommandResumeTests = [
       const lines = [];
       const state = await runLoopBody({ scope: "03", level: "L2" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: line => lines.push(line) });
       assert.equal(state.act.producer, "run-store:not-retryable");
-      assert.match(state.act.remedy, /Native permission approval is required/);
+      assert.match(state.act.remedy, /native automatic review/);
       assert.doesNotMatch(lines.at(-1), /Resume with:/);
       assert.equal(driver.spawnCalls.length, 1);
     } finally { await fx.cleanup(); }
@@ -82,7 +88,7 @@ export const loopCommandResumeTests = [
       const lines = [];
       const state = await runLoopBody({ scope: "03", resume: true, now: "2026-08-15T00:00:02.000Z" }, { ...fx.ctx, agentSessionDriverOptions: driver.options, report: line => lines.push(line) });
       assert.equal(state.act.producer, "run-store:not-retryable");
-      assert.match(state.act.remedy, /Native permission approval is required/);
+      assert.match(state.act.remedy, /native automatic review/);
       assert.match(lines.at(-1), /omit --resume/);
       assert.doesNotMatch(lines.at(-1), /Resume with:/);
       assert.equal(driver.spawnCalls.length, 0);

@@ -332,7 +332,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "2952dd8814f6fa6c2db83a82ee15952173f1a46895b67c0255d1901e256957f2",
+    "sourceDigest": "d69d0f506709a353e1bd11847a41a7de59d5b79aad961bd2361a2e5ee99a028c",
     "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
   },
   {
@@ -356,7 +356,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
     "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
-    "sourceDigest": "16e525c2888912abb0a28e7fa79d7c9fe4edba4a27a082eeb0c6e7a5917b5ab6",
+    "sourceDigest": "e44f8906ba268c9a3f1735723516313964bb345a1171efd59ee544261403aa6f",
     "reason": "Git-only bounded comparison reader; no application module entry."
   },
   {
@@ -713,10 +713,18 @@
   },
   {
     "file": "scripts/test-sharded.mjs",
+    "kind": "child-process",
+    "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
+    "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
+    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
+    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -724,16 +732,24 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
+    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
     "file": "scripts/test-sharded.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(path.join(integrationDir, \"support\", \"feature-runner.mjs\")).href)",
+    "digest": "b0f8535ade1e8e3014c2b92870732e37c8991961d96f1a54906506975ca179fc",
+    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "reason": "Repository test tooling: imports the integration lane's own feature discovery (`test/integration/support/feature-runner.mjs`) so each feature is planned as its own unit."
+  },
+  {
+    "file": "scripts/test-sharded.mjs",
     "kind": "child-process",
-    "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } })",
-    "digest": "0ca8e54ac95477b9606153a36eedd2c11c4fcced9b60394463a027193c9752ec",
-    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
-    "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`) or the lanes (`scripts/test.mjs --lanes-only`) as a node child with its own isolated AOF_GLOBAL_HOME."
+    "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } })",
+    "digest": "4d4bc039b3889e282373be32ecb39e61d7dd5d2108259fb2afa746da7619b483",
+    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`), each integration feature (`test/integration/cli.mjs <feature>`, in-process) and the cargo lane (`scripts/test.mjs --lanes-only` with no feature selected) as a node child with its own isolated AOF_GLOBAL_HOME."
   },
   {
     "file": "scripts/test-shard.mjs",
@@ -744,28 +760,20 @@
     "reason": "Repository test tooling: a suite that imports the runner itself sits on an import ring with its directory index; the unit enters through `scripts/test.mjs` first, exactly as the whole-tree run does."
   },
   {
-    "file": "scripts/test-sharded.mjs",
-    "kind": "child-process",
-    "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
-    "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "8aa69c3631c41db7e9b0ee2ef7ef9355230ece11e9d71cf7795de555c923abb7",
-    "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
-  },
-  {
     "file": "packages/execution/src/codex-app-server.mjs",
     "kind": "child-process",
     "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
     "digest": "9749c22c7c9ead00c79711cf188834c5c57c73962fe5b45e04253cee366c8e3c",
-    "sourceDigest": "de0b07baf139b49cee4d1f7c50d0e9e242e95427a044b294b1d6beb95fa26d08",
-    "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import."
+    "sourceDigest": "9fa88ac4312cec8b0fa4afa87b998bc9f61019e5e7c27bff48a7e431237548d2",
+    "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
   },
   {
     "file": "packages/execution/src/codex-app-server.mjs",
     "kind": "child-process",
     "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
     "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
-    "sourceDigest": "de0b07baf139b49cee4d1f7c50d0e9e242e95427a044b294b1d6beb95fa26d08",
-    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access."
+    "sourceDigest": "9fa88ac4312cec8b0fa4afa87b998bc9f61019e5e7c27bff48a7e431237548d2",
+    "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
   },
   {
     "file": "packages/execution/src/codex-executable.mjs",
@@ -836,7 +844,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"--git-common-dir\"], { cwd: projectRoot })",
     "digest": "121b87ce5897c0288b92e96e574c5d771dd690a02de99f2dab6497930bc922c7",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -844,7 +852,7 @@
     "kind": "child-process",
     "expression": "exec([\"check-ignore\", \"--\", ...missing], { cwd: worktree })",
     "digest": "a9f702f4ad3d700af554a87070689ab08b2b183fafd386e73ba82b72fde5485a",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -852,7 +860,7 @@
     "kind": "child-process",
     "expression": "exec([\"status\", \"--porcelain\", \"--untracked-files=all\"], { cwd: worktreePath })",
     "digest": "e68e6401169425f7da5489d2f94a58cc4229b7fbc82bf0d6552be1ed21a6f8a3",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -860,7 +868,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: options.primaryRoot })",
     "digest": "ab6bee4ca3a1877318b546b6b3d152bcdd0aa46fe5a12544778c9fc40118af2f",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -868,7 +876,7 @@
     "kind": "child-process",
     "expression": "exec([\"merge-base\", \"HEAD\", line], { cwd: lanePath })",
     "digest": "81e97e771f6ecd433f19d5d933592d3fa25fcad3234d00e92627eec9bbe8c398",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -876,7 +884,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: lanePath })",
     "digest": "4ee46cfe22e87fa7fe5a1a931f0737758700ac88b92fe44594fa3f071a30dfa8",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {
@@ -884,7 +892,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: primaryRoot })",
     "digest": "b7d45f585dc9037d673e45d8a91b9d14d7b5714f2aadf9fb7346a1d20c57cfb2",
-    "sourceDigest": "43e31e7bd554fee7f2785cca1f037c2d92726821fa272da0c4adc5d74faed9cd",
+    "sourceDigest": "c78e40c461b5f6eed3fd7ca2aa923bcff4ec667e1bcbef6ee65f2f40fc1302ff",
     "reason": "Injected Git exec port operates on explicitly admitted worktrees and refs; it does not import source from the checkout."
   },
   {

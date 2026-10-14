@@ -1,6 +1,6 @@
 import path from "node:path";
 import { stripHtmlComments } from "@aof/foundation/markdown";
-import { existsSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
 import { readFile, readdir } from "node:fs/promises";
 import { headingSplitRe, headingCaptureRe } from "@aof/work/declared-id";
 import { lessonSections, readLessonMeta, normaliseLessonMeta, forwardLessonMeta, normaliseGapStatus, collectTags } from "@aof/work/memory-vocabulary";
@@ -8,9 +8,14 @@ import { refInScope } from "@aof/work/ref-scope";
 import { indexVersionReport } from "./local-retrieval.mjs";
 import { readJson, writeText } from "@aof/foundation/fs";
 import { trimRun } from "@aof/foundation/text";
+import { createEpisodicIndexing, jsonPointerGet } from "./episodic-indexing.mjs";
+import { autoMemoryEnabled, isAutoMemoryRecord, parseAutoMemoryLocator } from "./claude-auto-memory.mjs";
 
 // Configured application services are supplied by core; construction performs no I/O.
-export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, ensureAofGitignore, importStoreRoot, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, AOF_FILE }) {
+export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, ensureAofGitignore, importStoreRoot, ARCHITECTURE_FILE, RETROSPECTIVE_FILE, AOF_FILE, episodicReaders = null, autoMemory = null }) {
+// 157/ADR-001 — the episodic leaf's readers (run store, snapshot reader, feedback ledger) are
+// core's to supply. A construction without them builds no episodic records, as before.
+const episodic = episodicReaders ? createEpisodicIndexing(episodicReaders) : null;
 // The local memory backend's indexing half (milestone 05 / story 01).
 //
 // Two source parsers + the derived-index writer, behind the frozen backend
@@ -52,7 +57,9 @@ export function createLocalIndexing({ listItemsCacheFirst, localItemsOnly, repor
 // The index-format version (ADR-005). Bump on a breaking record-shape change.
 // 148/ADR-003 — 2: every record gained `tags`. No migration: the index is derived, and a store
 // built before this version is reported stale by `status` until an ingest rebuilds it.
-const INDEX_VERSION = 2;
+// 157/ADR-002 — 3: a source may be a JSON locator (`<path>#<pointer>`, `<path>:<line>#<pointer>`),
+// which a version-2 source reader cannot interpret.
+const INDEX_VERSION = 3;
 
 // The fixed, git-ignored store location (ADR-005), relative to the project root
 // (the directory holding `.aof/`). The index is the only persistent artifact the
@@ -509,14 +516,105 @@ function isImportRecord(record) {
 // Exported so callers (the derived-index fitness function, the recall verifier, the
 // story-03 arch-test) resolve uniformly without re-deriving the leg rule. Returns
 // `{ path, line, absPath }`; `line` is the 1-based integer, `absPath` the resolved file.
-function resolveRecordSourcePath(record, { workDir, projectRoot } = {}) {
+//
+// 157/ADR-002 — THE LOCATOR GRAMMAR. A source is a string in one of three forms:
+//   Markdown  `<path>:<line>`            → { path, line, absPath }            (unchanged)
+//   JSON      `<path>#<pointer>`         → { path, line: null, pointer, absPath }
+//   NDJSON    `<path>:<line>#<pointer>`  → { path, line, pointer, absPath }
+// The pointer is RFC 6901 into the document (or the line's JSON value); "" is the root. The
+// first `#` splits it, so only a JSON locator carries `pointer` and a legacy answer is the one it
+// always was. Every form is REFUSED — thrown, before any file is opened — when it would leave its
+// base: an absolute path, a `..` traversal, or a symlink whose target is outside.
+const SOURCE_REFUSED = "memory-source-outside-root";
+
+function refuseSource(source, why) {
+  const error = new Error(`memory: record source "${source}" is refused — ${why}`);
+  error.code = SOURCE_REFUSED;
+  return error;
+}
+
+// The real path of the deepest existing ancestor, with the not-yet-existing tail re-appended:
+// the containment check must see through a symlink even when the leaf itself is missing.
+function realPathOf(target) {
+  const tail = [];
+  let current = target;
+  for (;;) {
+    try {
+      return path.join(realpathSync.native(current), ...tail.reverse());
+    } catch {
+      const parent = path.dirname(current);
+      if (parent === current) return target;
+      tail.push(path.basename(current));
+      current = parent;
+    }
+  }
+}
+
+function isInside(base, target) {
+  const rel = path.relative(base, target);
+  return rel === "" || (!rel.startsWith("..") && !path.isAbsolute(rel));
+}
+
+function assertInsideBase(source, rel, base, absPath) {
+  if (path.isAbsolute(rel) || /^[A-Za-z]:/.test(rel) || /^[\\/]/.test(rel)) throw refuseSource(source, "an absolute path");
+  if (!isInside(path.resolve(base), absPath)) throw refuseSource(source, "it leaves the work tree");
+  if (!isInside(realPathOf(path.resolve(base)), realPathOf(absPath))) throw refuseSource(source, "a link out of the work tree");
+}
+
+// 159/ADR-003 — THE ADAPTER BRANCH. An absolute locator is refused for every ordinary record; only an
+// ENABLED operator auto-memory record may name one, and only as `<absolute .md path>:1` directly inside
+// the selected project's memory folder. The same real-path containment the work/import guards use
+// then runs against that folder, so traversal, a sibling-prefix path, a descendant folder and a link
+// out of the root are all refused. A disabled source or a missing collaborator falls through to the
+// unchanged guards below, which refuse an absolute path.
+function resolveAutoMemorySource(record, { projectRoot, configMemory, env }) {
+  const source = String(record.source ?? "");
+  if (!autoMemory || !projectRoot || !autoMemoryEnabled(configMemory)) return null;
+  const absolute = parseAutoMemoryLocator(source);
+  if (absolute === null) throw refuseSource(source, "it is not an absolute Markdown path ending :1");
+  const root = autoMemory.memoryRootFor({ projectRoot, env });
+  const absPath = path.resolve(absolute);
+  if (path.relative(root, path.dirname(absPath)) !== "") throw refuseSource(source, "it is not an entry directly inside the auto-memory folder");
+  const real = realPathOf(absPath);
+  if (!isInside(realPathOf(root), real) || path.basename(real) !== path.basename(absPath)) throw refuseSource(source, "a link out of the auto-memory folder");
+  return { path: absPath, line: 1, absPath };
+}
+
+function resolveRecordSourcePath(record, { workDir, projectRoot, configMemory, env = process.env } = {}) {
   const source = String(record?.source ?? "");
+  if (isAutoMemoryRecord(record)) {
+    const adapter = resolveAutoMemorySource(record, { projectRoot, configMemory, env });
+    if (adapter) return adapter;
+  }
+  const base = isImportRecord(record) ? importStoreRoot(projectRoot) : workDir;
+  const hash = source.indexOf("#");
+  if (hash >= 0) {
+    const locator = source.slice(0, hash);
+    const pointer = source.slice(hash + 1);
+    if (pointer !== "" && !pointer.startsWith("/")) throw refuseSource(source, "its JSON pointer does not start with /");
+    const lined = locator.match(/^(.*):(\d+)$/);
+    const rel = lined ? lined[1] : locator;
+    const absPath = path.resolve(base, rel);
+    assertInsideBase(source, rel, base, absPath);
+    return { path: rel, line: lined ? Number.parseInt(lined[2], 10) : null, pointer, absPath };
+  }
   const idx = source.lastIndexOf(":");
   const rel = idx >= 0 ? source.slice(0, idx) : source;
   const line = idx >= 0 ? Number.parseInt(source.slice(idx + 1), 10) : NaN;
-  const base = isImportRecord(record) ? importStoreRoot(projectRoot) : workDir;
   const absPath = path.resolve(base, rel);
+  assertInsideBase(source, rel, base, absPath);
   return { path: rel, line, absPath };
+}
+
+// The value a record's source names: the selected JSON value for a JSON or NDJSON locator, the
+// cited line's text for a Markdown one. Callers resolve the VALUE, never a guessed line inside a
+// pretty-printed document. `undefined` when the pointer selects nothing.
+async function readRecordSourceValue(record, ctx = {}) {
+  const resolved = resolveRecordSourcePath(record, ctx);
+  const text = await readFile(resolved.absPath, "utf8");
+  if (resolved.pointer === undefined) return text.split(/\r?\n/)[resolved.line - 1];
+  const document = resolved.line == null ? JSON.parse(text) : JSON.parse(text.split(/\r?\n/)[resolved.line - 1]);
+  return jsonPointerGet(document, resolved.pointer);
 }
 
 async function readDirSafe(dir) {
@@ -684,6 +782,7 @@ async function buildRecords(only, ctx) {
   const isItemSource = (item) => !only || refInScope(item.ref, only) === true;
 
   const records = [];
+  const episodicBuild = episodic?.episodicBuild({ workDir, projectRoot });
   // AOF.md paths the work-stream loop indexes (ITEM_RE milestones) — excluded from the
   // co-located-digest scan below so a recognised milestone's digest is never doubled.
   const indexedAof = new Set();
@@ -740,6 +839,13 @@ async function buildRecords(only, ctx) {
         records.push(...parseOutcome(text, { ...meta, workRelPath: toWorkRel(workDir, outcomePath) }));
       }
     }
+
+    // 157/ADR-001 — findings, raw feedback and terminal runs → episodic records, for ANY item,
+    // appended at the item's own place in THIS walk (never a second loop: record order is the
+    // ranking tie-break above). Imports keep their source set: none of these is read for one.
+    if (episodic && isItemSource(item)) {
+      records.push(...(await episodic.episodicRecordsFor(item, meta, episodicBuild)));
+    }
   }
 
   // Compose the import-store scan AND the co-located-digest scan onto the work-stream
@@ -750,6 +856,11 @@ async function buildRecords(only, ctx) {
   if (!only) {
     records.push(...(await scanImportStore(projectRoot)));
     records.push(...(await scanColocatedDigests(workDir, indexedAof)));
+    // 159/ADR-001 — the opt-in operator auto-memory source, composed last and only on a whole-stream
+    // rebuild. A key-absent configuration never reaches the adapter, so it performs no external read.
+    if (autoMemory && autoMemoryEnabled(ctx.configMemory)) {
+      records.push(...(await autoMemory.autoMemoryRecords({ projectRoot, env: ctx.env ?? process.env })));
+    }
   }
   return records;
 }
@@ -825,10 +936,14 @@ async function status(ctx) {
     summaries: countOf("summary"),
     capabilities: countOf("capability"),
     gaps: countOf("gap"),
+    // 157/ADR-003 — the episodic types, so the split still sums to `recordCount`.
+    findings: countOf("finding"),
+    feedback: countOf("feedback"),
+    runs: countOf("run"),
     // 148/ADR-003 — a store built before INDEX_VERSION is stale until an ingest rebuilds it.
     index: indexVersionReport(index?.version, INDEX_VERSION, Boolean(index)),
   };
 }
 
-return { INDEX_VERSION, memoryIndexPath, parseRetrospective, parseArchitecture, parseAof, parseOutcome, IMPORT_ITEM_PREFIX, importItem, isImportRecord, resolveRecordSourcePath, buildRecords, buildIndex, reindex, status };
+return { INDEX_VERSION, memoryIndexPath, parseRetrospective, parseArchitecture, parseAof, parseOutcome, IMPORT_ITEM_PREFIX, importItem, isImportRecord, SOURCE_REFUSED, resolveRecordSourcePath, readRecordSourceValue, buildRecords, buildIndex, reindex, status };
 }

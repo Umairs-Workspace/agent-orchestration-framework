@@ -387,7 +387,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workTestChanged = assembleWorkTestChanged({ workTestSelectServices: workTestSelect });
   const workToolchain = assembleWorkToolchain({  });
   const commandsTest = assembleCommandsTest({ workAuditCensusServices: workAuditCensus, workTestChangedServices: workTestChanged, commandsResolveServices: commandsResolve, workTestSelectServices: workTestSelect, workToolchainServices: workToolchain });
-  const commandsRegressionGate = assembleCommandsRegressionGate({ meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest, workToolchainServices: workToolchain });
+  const commandsRegressionGate = assembleCommandsRegressionGate({ meshWorktreeServices: meshWorktree, commandsResolveServices: commandsResolve, commandsTestServices: commandsTest, workToolchainServices: workToolchain, degradeServices: degrade });
   const commandsResume = assembleCommandsResume({ commandsResolveServices: commandsResolve, runStoreServices: runStore, effectsRunTransitionsServices: effectsRunTransitions, workReadServices: workRead, itemLockServices: itemLock, loopAskRequestServices: loopAskRequest, loopAskServices: loopAsk, boardMeshExecutionServices: boardMeshExecution, notifyNotifyServices: notifyNotify, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const commandsResync = assembleCommandsResync({ globalWorkStoreServices: globalWorkStore, workspaceServices: workspace, meshResyncServices: meshResync });
   const commandsRunComplete = assembleCommandsRunComplete({ commandsResolveServices: commandsResolve, effectsRunTransitionsServices: effectsRunTransitions, runStoreServices: runStore, globalWorkPublisherServices: globalWorkPublisher });
@@ -396,7 +396,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsTasks = assembleCommandsTasks({ commandsResolveServices: commandsResolve, cacheReadServices: cacheRead, workReadServices: workRead });
   const workTriggerDeclaration = assembleWorkTriggerDeclaration({ workLoopsServices: workLoops });
   const commandsTrigger = assembleCommandsTrigger({ workTriggerDeclarationServices: workTriggerDeclaration, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
-  const memoryLocalIndexing = assembleMemoryLocalIndexing({ workReadServices: workRead, importStoreServices: importStore, importMaterializeServices: importMaterialize });
+  const memoryLocalIndexing = assembleMemoryLocalIndexing({ workReadServices: workRead, importStoreServices: importStore, importMaterializeServices: importMaterialize, runStoreServices: runStore, workObserveServices: workObserve, degradeServices: degrade });
   const workTuneCorpus = assembleWorkTuneCorpus({ memoryLocalIndexingServices: memoryLocalIndexing, runStoreServices: runStore, workObserveServices: workObserve, workLoopsServices: workLoops });
   const workTuneProposal = assembleWorkTuneProposal({  });
   const commandsTune = assembleCommandsTune({ workTuneCorpusServices: workTuneCorpus, workTuneProposalServices: workTuneProposal, workLoopsServices: workLoops, commandsDoctorServices: commandsDoctor, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });

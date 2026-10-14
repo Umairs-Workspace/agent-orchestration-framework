@@ -2,16 +2,17 @@
 import { createRegressionGateCommand } from "@aof/work/commands/regression-gate";
 import { execFile } from "node:child_process";
 
-export function assembleCommandsRegressionGate({ meshWorktreeServices, commandsResolveServices, commandsTestServices, workToolchainServices }) {
+export function assembleCommandsRegressionGate({ meshWorktreeServices, commandsResolveServices, commandsTestServices, workToolchainServices, degradeServices }) {
   // Core composition for work-owned regression-gate commands.
 
   const { headCommit } = meshWorktreeServices;
   const { requireLocalCheckout } = commandsResolveServices;
   const { resolveItemExact } = commandsResolveServices;
   const { runTest } = commandsTestServices;
+  const { reportDegrade } = degradeServices;
   const { gateToolchain, launchRunner, resolveTestGate, resolveTestToolchain } = workToolchainServices;
 
-  const { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, regressionGateCommand, runRegressionGate } = createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest });
+  const { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, regressionGateCommand, runRegressionGate } = createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, reportDegrade, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest });
 
   return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, regressionGateCommand, runRegressionGate };
 }

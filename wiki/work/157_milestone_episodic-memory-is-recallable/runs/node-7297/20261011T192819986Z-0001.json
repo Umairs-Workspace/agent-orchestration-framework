@@ -1,0 +1,34 @@
+{
+  "runId": "20261011T192819986Z-0001",
+  "itemRef": "157",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "92df3a7b-f676-4a11-8206-447865a200d2",
+  "brief": {},
+  "createdAt": "2026-10-11T19:28:19.986Z",
+  "updatedAt": "2026-10-11T19:58:19.370Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 310,
+      "output": 137619,
+      "cacheRead": 19621512,
+      "cacheCreate": 338477
+    },
+    "costUsd": 9.220957349999999,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 155,
+    "toolCalls": 83,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

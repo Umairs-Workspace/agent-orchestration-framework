@@ -15,6 +15,11 @@ import { memoryBackendConfigTests } from "./memory-backend-config.suite.mjs";
 import { memoryRecurrenceTests } from "./memory-recurrence.suite.mjs";
 // milestone 153 / story 03 — `memory status` reports observed effectiveness, identically across backends.
 import { memoryEffectivenessTests } from "./memory-effectiveness.suite.mjs";
+// milestone 157 / story 01 — findings, raw feedback and terminal runs become episodic records.
+import { episodicRecordsTests } from "./episodic-records.suite.mjs";
+
+// milestone 159 / story 01 — the opt-in operator auto-memory source: grammar, leaf, composition and resolver.
+import { claudeAutoMemoryTests } from "./claude-auto-memory.suite.mjs";
 
 export const tests = [
   ...memoryBackendConfigTests,
@@ -30,4 +35,6 @@ export const tests = [
   ...storyRetrospectivesIndexedTests,
   ...memoryRecurrenceTests,
   ...memoryEffectivenessTests,
+  ...episodicRecordsTests,
+  ...claudeAutoMemoryTests,
 ];

@@ -89,6 +89,60 @@ type are present as `""` (never omitted), so retrieval filters uniformly:
 
 As of milestone 05's acceptance the live stream yields **38 records = 8 lessons + 30 ADRs**.
 
+## Optional source: your local Claude auto-memory
+
+Off by default. An operator who keeps feedback and project notes in Claude Code's auto-memory folder
+can let recall surface them beside the repository's lessons, so a reason or instruction already
+recorded informs the next decision:
+
+```jsonc
+// .aof/aof.config.json
+"memory": { "backend": "local", "sources": ["claude-auto-memory"] }   // absent or [] ≡ off
+```
+
+- **What is read.** The selected project's folder, `<claude home>/projects/<project slug>/memory/*.md`,
+  where the claude home is `CLAUDE_CONFIG_DIR` when set, else `~/.claude`, and the project is the
+  workspace root (never the shell's current directory). No other project's folder, user or worker is
+  consulted. An absent folder is the ordinary case on a node that does not hold the notes — the work
+  records index exactly as before.
+- **Which entries.** Only a file whose frontmatter has a **nested** `metadata.type` of `feedback` or
+  `project` becomes a record. `user` and `reference` entries, a top-level `type` alone, `MEMORY.md` (the
+  index) and files without frontmatter are skipped. Plain, `'single'`- and `"double"`-quoted scalars,
+  LF or CRLF and a leading BOM are read; this is a small reader for the measured format, not a YAML
+  parser.
+- **What each entry becomes.** One `lesson` (so it counts in the *procedural* layer — no new record
+  type, layer or index version): `owner` `operator`, `item`/`itemSlug` `operator:claude-auto-memory`,
+  `id` the file name, `title` the entry's `name` (else the file name), `summary` its `description`
+  (else the first body line), and the whole body — the **Why:** and **How to apply:** — in the searchable
+  `text`. `source` is the entry's absolute path followed by `:1`.
+- **Fixed kind mapping.** Both types are indexed as `near-miss`, with the source type kept as a tag
+  (`feedback` or `project`). This is an adapter policy, not a claim that a note describes a historical
+  near-miss; `area`, `stage` and `status` stay empty, and `memory status` reports them as blank
+  honestly. Prose and unrelated metadata in the entry never change the kind or the owner.
+- **Read-only and separate.** The folder stays the source of truth: nothing is written to it, nothing
+  is copied into the work stream, and an operator lesson is **not** deduplicated against the repository
+  record that says the same thing — both appear in recall, each citing its own source. Recall it with
+  `--owner operator`; `--item NN` still returns only that work item's records.
+- **When it takes effect.** Records are composed on a **whole-stream** ingest (`aof work memory ingest
+  --all`). A scoped ingest (`--item NN`) builds that work item's records only. Each full ingest rebuilds:
+  deleted entries disappear, edits replace the old text, and setting `sources` back to `[]` (or removing
+  it) and ingesting again removes every operator record. Selecting the source does not enable a backend —
+  with `backend: "none"` nothing is indexed. Both `local` and `graphify` honour it; the graph build only
+  ever sees the work stream, never these notes.
+- **Node-local.** The entries exist on the node that holds the Claude home. Knowledge a worker or another
+  machine must have has to be promoted into the repository (a retrospective lesson or an ADR); the index
+  is derived and ignored, so it never travels.
+- **Bad input is visible, not fatal.** An entry that cannot be read (an unterminated frontmatter block, a
+  duplicate or non-string `metadata.type`, an unterminated quote, a blank entry, a permission failure) is
+  skipped with a diagnostic naming the file and the failure category — never its contents — and its
+  valid siblings still index. An unreadable folder is reported the same way and the work records remain.
+  An invalid `sources` value (not an array, an unknown name, a duplicate, a `null`) is a configuration
+  error that stops the verb.
+
+Try it end to end in a scratch workspace: set `"sources": ["claude-auto-memory"]`, run `aof work memory
+ingest --all`, then `aof work memory recall "<a phrase from a note>" --owner operator`; set `"sources":
+[]`, ingest again, and the operator lessons are gone.
+
 ## How `recall` ranks
 
 The spike's headline finding was that *ranking, not parsing, is the hard part* — raw term repetition in

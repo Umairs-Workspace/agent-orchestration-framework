@@ -94,7 +94,7 @@ const memoryCommand = {
       },
       opts: {
         type: "object",
-        properties: { limit: { type: "integer", minimum: 1 } },
+        properties: { limit: { type: "integer", minimum: 1 }, all: { type: "boolean" } },
         additionalProperties: false,
       },
       block: { type: "boolean" },
@@ -121,7 +121,7 @@ const memoryCommand = {
     // (journal, global-store). It resolves no backend and works with memory off.
     const recording = input.verb === RECORD_RECALL_VERB;
     const result = await runMemoryVerb(input, { config, resolveBackend: resolveConfiguredBackend, ctx: recording ? ctx : memoryCtx, recordRecall });
-    return { verb: input.verb, help: input.help === true, block: input.block === true, limit: input.opts?.limit, result };
+    return { verb: input.verb, help: input.help === true, block: input.block === true, limit: input.opts?.all === true ? Infinity : input.opts?.limit, result };
   },
 
   cli: {
@@ -131,7 +131,7 @@ const memoryCommand = {
       usage: MEMORY_USAGE,
       flags: {
         block: { type: "boolean", description: "recall only: render the compact injection block a read hook pastes into agent context" },
-        all: { type: "boolean", description: "reindex/ingest: rebuild over the whole stream" },
+        all: { type: "boolean", description: "reindex/ingest: rebuild over the whole stream; recall: return the whole scoped result, overriding --limit" },
         lessons: { type: "boolean", description: "status only: also report observed effectiveness per lesson" },
         input: { type: "string", description: "record-recall only: the JSON file holding the completed recall observation" },
         exclude: { type: "string", description: "recurrence only: the <item>/R<n> lesson being written, never its own candidate" },

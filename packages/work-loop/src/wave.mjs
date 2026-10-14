@@ -640,7 +640,10 @@ export function createWaveOrchestration({
             transitionOptions: laneOpts,
             worktreePath: open.worktree,
           });
-          await narrate(`Lane ${ref} — grade: ${settled.gradedSummary == null ? "no rubric declared" : `${settled.gradedSummary.verdict}, ${settled.gradedSummary.cases.failed} of ${settled.gradedSummary.cases.total} case(s) failing`}; next ${settled.next}.`);
+          const gradeWords = settled.gradedSummary != null
+            ? `${settled.gradedSummary.verdict}${settled.gradedSummary.codes?.length > 0 ? ` (${settled.gradedSummary.codes.join(", ")})` : ""}, ${settled.gradedSummary.cases.failed} of ${settled.gradedSummary.cases.total} case(s) failing`
+            : settled.next === "halt" ? "not graded" : "no rubric declared";
+          await narrate(`Lane ${ref} — grade: ${gradeWords}; next ${settled.next}.`);
           if (settled.next === "halt") return await committedHalt(settled.halt.act, settled.halt.details);
           if (settled.next === "continue") continue;
           break;

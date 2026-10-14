@@ -82,6 +82,8 @@ const LEDGER_READERS = {
   "packages/work/src/commands/counters.mjs": "hands the whole ledger to the counter",
   "packages/work/src/counters.mjs": 'selects kind === "raw" before counting',
   "packages/work/src/memory-accounting.mjs": 'selects kind === "recall" and skips raw and classification rows; a bad row is a diagnostic, never a count',
+  "packages/knowledge/src/memory/episodic-indexing.mjs": 'indexes kind === "raw" rows as feedback records; classification and recall rows become nothing (157/ADR-001)',
+  "packages/core/src/application/bindings/memory/local-indexing.mjs": "injects the parser and path into the episodic indexer; reads no row itself",
 };
 
 async function sourceFiles(dir) {

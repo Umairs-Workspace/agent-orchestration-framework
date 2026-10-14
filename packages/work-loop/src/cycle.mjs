@@ -1171,9 +1171,13 @@ export function createStoryCycle({
     // answer left is rung 3's `indeterminate`, which HALTS — and so does a grade that could not
     // be taken at all. Neither fabricates a record.
     if (gradeAct === "halt" || gradeUnavailable) {
-      return halt(haltDecision("grade-indeterminate", ref, gradeStopProducer(gradeStopCode(gradeResult))), gradedSummary == null
-        ? { unavailable: String(gradeFault?.message ?? gradeFault ?? "the grade could not be taken") }
-        : { verdict: gradedSummary.verdict, codes: gradedSummary.codes, cases: gradedSummary.cases });
+      // The summary rides the halt: the wave narrates it, and a null would read "no rubric declared".
+      return {
+        ...halt(haltDecision("grade-indeterminate", ref, gradeStopProducer(gradeStopCode(gradeResult))), gradedSummary == null
+          ? { unavailable: String(gradeFault?.message ?? gradeFault ?? "the grade could not be taken") }
+          : { verdict: gradedSummary.verdict, codes: gradedSummary.codes, cases: gradedSummary.cases }),
+        gradedSummary,
+      };
     }
 
     if (crossToVerify !== true) {

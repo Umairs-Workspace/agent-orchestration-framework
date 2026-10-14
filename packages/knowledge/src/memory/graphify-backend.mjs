@@ -58,7 +58,8 @@ const INDEX_REL = path.join(".aof", "aof.memory.graphify.index.json");
 
 // The index-format version (mirrors 05/INDEX_VERSION; bump on a record-shape change).
 // 148/ADR-003 — 2: every record gained `tags`, exactly as the local index did.
-const GRAPHIFY_INDEX_VERSION = 2;
+// 157/ADR-002 — 3: a source may be a JSON locator, in lockstep with the local index.
+const GRAPHIFY_INDEX_VERSION = 3;
 
 // The WORK-STREAM graph's own artifact root — beside this backend's own record store
 // under `.aof/` (git-ignored, and never on the mesh: acd-memory-index-never-on-mesh),
@@ -500,8 +501,10 @@ const W_ANCHOR_EDGE = 0.08;
 
 // The basename of a MemoryRecord's source file (`source` is "<workRelPath>:<line>";
 // the file-level join key is the basename, matched against GraphNode.sourceFile).
+// 157/ADR-002 — a JSON locator's `#<pointer>` names a value inside the file, not the file.
 function recordFile(record) {
-  const source = String(record?.source ?? "");
+  const raw = String(record?.source ?? "");
+  const source = raw.includes("#") ? raw.slice(0, raw.indexOf("#")) : raw;
   const lastColon = source.lastIndexOf(":");
   const relPath = lastColon >= 0 ? source.slice(0, lastColon) : source;
   // Normalize both Windows + POSIX separators, take the basename — graph nodes carry

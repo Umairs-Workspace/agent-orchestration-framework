@@ -1,12 +1,12 @@
 ---
 type: milestone
-number:
+number: 159
 slug: operator-auto-memory-source
 title: "The operator's auto-memory is an opt-in memory source — its feedback and project entries are recallable on the node that holds them"
-status: not-started
+status: done
 owner: product-owner
 created: 2026-09-27
-updated: 2026-09-27
+updated: 2026-10-14
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
 depends: [148]
 schema: 1
@@ -18,7 +18,7 @@ aofVersion: 0.1.0
   (ARCHITECTURE / DESIGN / RESEARCH / UAT live in this folder too, conditionally).
   Does NOT contain: a per-story user story (→ each STORY.md) or acceptance criteria (→ task .feature).
 -->
-# The operator's auto-memory is an opt-in memory source
+# 159 · The operator's auto-memory is an opt-in memory source
 
 ## Objective
 
@@ -58,8 +58,11 @@ Out of scope:
 - `user` and `reference` entries. Only `feedback` and `project` entries are indexed.
 
 ## Stories
+- [x] `01_story_recall-operator-auto-memory` — Recall the operator's local auto-memory beside work-stream lessons.
 
-To be broken down (`aof:refine`, once promoted).
+One vertical slice follows the common indexer and source resolver. Discovery Q1
+is answered: both source types map to near-miss, with the original type as a tag.
+All four task contracts are authored; implementation remains for continue.
 
 ## Dependencies
 

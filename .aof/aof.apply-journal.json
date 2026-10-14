@@ -290,7 +290,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:da2af0ea6708c75b53a36167f6820abdff321b453dd704266f45cfbf9ebaef1b"
+      "hash": "sha256:9946b374b0c861f3f26ca7d8771cf2c2ba22304c4a46b98710c896502b83f56d"
     },
     {
       "path": ".agents\\skills\\aof-continue\\agents\\openai.yaml",
@@ -716,7 +716,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:82153e3b71aad953a799209a9a9a07d1dc665124862f5f9468db31d0f730c310"
+      "hash": "sha256:b73ae21727318580280064547437469c0704a105e0645ecebb5e10081665123e"
     },
     {
       "path": ".agents\\skills\\aof-retrospective\\agents\\openai.yaml",
@@ -824,7 +824,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:fcb90cbcd43dc44bf19af80ebb540ccb4b81773083cf665668215cc8d22d68de"
+      "hash": "sha256:9bb89c29f7167d628af9ec129ea5afc637e447acdbd4cc74fd6dbb26b2860e92"
     },
     {
       "path": ".agents\\skills\\aof-verify\\agents\\openai.yaml",

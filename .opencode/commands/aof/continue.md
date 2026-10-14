@@ -345,6 +345,29 @@ Dispatch on the item's `type` — or, when the ref was a `NN/MM-PP` span, on the
      `departed` or `irrelevant`, never a default. Submit it ONCE on the story:
      `aof work memory record-recall <ref> --input <observation file>`. An empty block is still
      submitted, as `"records": []` — no verdict and no extra retrieval is invented.
+     **Recall the prior attempt on a retry (attempt 2 or later).** When this build is the story's
+     attempt 2 or later — its minted run's `attempt` is 2 or more — the developer refreshes the
+     index and recalls the story's whole delivery history BEFORE any implementation: first
+     `aof work memory ingest`, then `aof work memory recall "" --item <ref> --area delivery --all --json`.
+     No stage filter is added: it would hide the verify findings. Attempt 1 has no episodic edge, so
+     a first attempt skips this block entirely. From the actual result, identify the prior attempt —
+     the run this run's `retryOf` names, otherwise the latest terminal earlier attempt — and, before
+     the first code change, acknowledge it in the build record (the milestone `STATE.md`
+     `## Notes & decisions in flight` entry for this attempt): name that run, its `failureReason`,
+     and every finding the recall returned for the story. When memory is off, or the recall returns no
+     prior run, say the prior attempt's evidence is unavailable — never invent an acknowledgement of a
+     failure no record shows. **Keep the result; capture it once, when the build decision is made.**
+     Retain the recall's actual result unchanged — the exact query text and, for every returned
+     record, its `item`, `id` and `recordType` — and never re-run the recall to rebuild it. At the
+     build's terminator, write the observation to a scratch file outside every work folder: `id` (a
+     fresh UUID minted once for this recall — a retry reuses it and `at`), `at` (the ISO instant of
+     the recall), `edge` `continue-episodic`, `actor` `developer`, `query` (verbatim, `""`),
+     `scope` `{"item":"<ref>","area":"delivery"}` and `records` — one `{item, id, recordType,
+     verdict}` per returned record, each with an explicit verdict `honoured`, `departed` or
+     `irrelevant`, never a default. Submit it ONCE on the story:
+     `aof work memory record-recall <ref> --input <episodic observation file>`. An empty block is still
+     submitted, as `"records": []` — no verdict and no extra retrieval is invented. This edge is in
+     addition to the near-miss recall above, which is unchanged.
   4. **Gate** — the free deterministic ladder, walked BEFORE any review lane is spawned.
 
      <gate_ladder>

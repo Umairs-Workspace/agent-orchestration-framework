@@ -452,6 +452,24 @@ export const workDispatchLaneTests = [
       }),
   },
   {
+    // 159/01, 2026-10-12: git unregistered a merged lane but could not delete its directory on
+    // Windows; the next wave reused the residue, whose git answered for the primary.
+    name: "dispatch 2026-10-12 a directory at the lane key that is no longer a worktree is refused as residue, never reused and never deleted",
+    run: () =>
+      withDispatchRepo(async ({ root }) => {
+        const lanePath = meshDispatchWorktreePath(root, "53/00");
+        await mkdir(path.join(lanePath, "packages"), { recursive: true });
+        await writeFile(path.join(lanePath, "package.json"), "{}\n", "utf8");
+
+        await assert.rejects(
+          resolveDispatchLane(root, "53/00"),
+          (error) => error.code === "dispatch-lane-residue" && error.worktree === lanePath && /not a git worktree/u.test(error.message),
+        );
+        assert.ok(existsSync(path.join(lanePath, "package.json")), "the residue is left for the operator, not deleted");
+        assert.equal((await listWorktrees(root)).filter((entry) => isUnderMeshDispatchWorktreesRoot(root, entry.path)).length, 0, "no tree was added over it");
+      }),
+  },
+  {
     name: "dispatch 2026-09-24 a lane carries the primary's git-ignored .claude/settings.local.json — copied once, never over the lane's own, and nothing when the primary has none",
     run: async () => {
       const LOCAL = path.join(".claude", "settings.local.json");

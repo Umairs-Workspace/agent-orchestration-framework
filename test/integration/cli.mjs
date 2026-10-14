@@ -43,8 +43,17 @@ async function stepRunnerFor(featureFile) {
 // scripts/test.mjs imports the suite, its own argv never narrows it.
 const invokedDirectly = process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url;
 const filter = invokedDirectly ? process.argv[2] : undefined;
+// The sharded whole-tree run executes each feature as its own unit (2026-10-13), then asks the
+// embedded lane for none, so the lane's cargo half runs without a second pass over the features.
+// Unset, the embedded lane runs every feature as before.
+const embeddedSelection = !invokedDirectly && process.env.AOF_INTEGRATION_FEATURES != null
+  ? process.env.AOF_INTEGRATION_FEATURES.split(",").map((name) => name.trim()).filter(Boolean)
+  : null;
 
 let featureFiles = await discoverFeatureFiles(integrationDir);
+if (embeddedSelection != null) {
+  featureFiles = featureFiles.filter((file) => embeddedSelection.includes(path.basename(file, ".feature")));
+}
 if (filter) {
   const wanted = filter.replace(/\.feature$/, "");
   featureFiles = featureFiles.filter((file) => path.basename(file, ".feature") === wanted);

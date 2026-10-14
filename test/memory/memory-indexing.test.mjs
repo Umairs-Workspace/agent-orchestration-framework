@@ -714,6 +714,32 @@ export const memoryIndexingTests = [
       }
     },
   },
+  {
+    name: "159/01 R1: an absent or empty memory.sources leaves the index byte-identical, and an opted-in source only appends operator lessons at the existing version",
+    run: async () => {
+      const { projectRoot, workDir } = await tempStream([{ number: "07", slug: "tiny", retro: TINY_RETRO }]);
+      const claudeHome = path.join(projectRoot, "claude-home");
+      const memoryDir = path.join(claudeHome, "projects", projectRoot.replace(/[^A-Za-z0-9]/g, "-"), "memory");
+      try {
+        await mkdir(memoryDir, { recursive: true });
+        await writeFile(path.join(memoryDir, "note.md"), "---\nname: A note\ndescription: Why it matters\nmetadata:\n  type: project\n---\nBody text.\n", "utf8");
+        const env = { CLAUDE_CONFIG_DIR: claudeHome };
+        const run = async (configMemory) => (await reindex(null, { workDir, projectRoot, configMemory, env })).records;
+        const baseline = await run({});
+        assert.equal(baseline.length, 1, "non-vacuity: the tiny lesson is indexed");
+        assert.deepEqual(await run({ backend: "local" }), baseline);
+        assert.deepEqual(await run({ backend: "local", sources: [] }), baseline);
+        const enabled = await run({ backend: "local", sources: ["claude-auto-memory"] });
+        assert.deepEqual(enabled.slice(0, baseline.length), baseline, "the existing records keep their place");
+        assert.deepEqual(enabled.slice(baseline.length).map((r) => [r.recordType, r.owner, r.kind, r.id]), [["lesson", "operator", "near-miss", "note.md"]]);
+        assert.equal(JSON.parse(await readFile(memoryIndexPath(projectRoot), "utf8")).version, INDEX_VERSION);
+        assert.equal(INDEX_VERSION, 3, "no new index version");
+        assert.equal((await reindex("07", { workDir, projectRoot, configMemory: { backend: "local", sources: ["claude-auto-memory"] }, env })).records.length, 1, "a scoped rebuild carries no operator record");
+      } finally {
+        await rm(projectRoot, { recursive: true, force: true });
+      }
+    },
+  },
 ];
 
 // Recursively find any *.memory.index.json other than the fixed-path store.

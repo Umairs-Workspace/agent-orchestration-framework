@@ -214,6 +214,43 @@ const EDGES = Object.freeze({
       [/no verdict and no extra retrieval is invented/u, "invents no verdict and no second retrieval"],
     ],
   },
+  // milestone 157 / ADR-004 — FF-15702: two more decision edges, each refreshing the index first.
+  "continue-episodic": {
+    file: `${COMMANDS_DIR}/continue.md`,
+    lead: "**Recall the prior attempt on a retry",
+    recallFlags: ["--item", "--area", "--all", "--json"],
+    ingestFirst: true,
+    capture: "<episodic observation file>",
+    refPlaceholder: "<ref>",
+    must: [
+      [/`edge` `continue-episodic`/u, "names its edge"],
+      [/`actor` `developer`/u, "attributes the developer"],
+      [/`scope` `\{"item":"<ref>","area":"delivery"\}`/u, "keeps the item's delivery scope"],
+      [/attempt 2 or later/u, "runs on attempt 2 or later"],
+      [/Attempt 1 has no episodic edge/u, "has no edge on attempt 1"],
+      [/BEFORE any implementation/u, "recalls before any implementation"],
+      [/`retryOf` names, otherwise the latest terminal earlier attempt/u, "identifies the prior attempt through retryOf"],
+      [/evidence is unavailable/u, "reports unavailable evidence rather than inventing it"],
+      [/No stage filter/u, "hides no verify finding behind a stage filter"],
+    ],
+  },
+  "verify-finding": {
+    file: `${COMMANDS_DIR}/verify.md`,
+    lead: "**Recall prior findings at triage",
+    recallFlags: ["--kind", "--block"],
+    ingestFirst: true,
+    capture: "<triage observation file>",
+    refPlaceholder: "<ref>",
+    must: [
+      [/`edge` `verify-finding`/u, "names its edge"],
+      [/`actor` `verifier`/u, "attributes the verifier"],
+      [/`scope` `\{"kind":"finding"\}`/u, "keeps the finding kind in the scope"],
+      [/no item and no stage filter/u, "recalls across the whole stream"],
+      [/excluding the finding's own identity/u, "excludes the finding being triaged"],
+      [/never closed automatically/u, "never closes a match automatically"],
+      [/not a duplicate by id alone/u, "never matches a bare F id across items"],
+    ],
+  },
 });
 
 /** The edge's own block: from its bolded lead to the next numbered step heading, joined. */
@@ -242,6 +279,10 @@ function edgeFailures(text, edge) {
     if (!captures[0].tail.includes(spec.refPlaceholder)) failures.push(`${edge}: the submission names ${spec.refPlaceholder}`);
     if (recall.length === 1 && block.indexOf(recall[0].whole) > block.indexOf(captures[0].whole)) failures.push(`${edge}: the recall must precede its capture`);
   }
+  if (spec.ingestFirst) {
+    const ingest = calls.find((call) => call.verb === "ingest");
+    if (ingest == null || (recall.length === 1 && block.indexOf(ingest.whole) > block.indexOf(recall[0].whole))) failures.push(`${edge}: the index is refreshed (ingest) before the recall`);
+  }
   const checks = [
     [/actual result/u, "retains the recall's actual result"],
     [/never re-runs? the recall/iu, "never re-runs the recall to rebuild the result"],
@@ -266,6 +307,34 @@ function withoutCapture(text, edge) {
   const capture = new RegExp(`aof work memory\\s+record-recall\\s+${literal(spec.refPlaceholder)}\\s+--input\\s+${literal(spec.capture)}`, "u");
   assert.ok(capture.test(text), `guard: ${edge}'s capture invocation was located in the body it is being removed from`);
   return text.replace(capture, "aof work memory (capture removed)");
+}
+
+// 157/ADR-004 — the retrospective gathers its episodic evidence through recall: the observability
+// refresh, then ingest, then ONE `--item <ref> --area delivery --all --json` recall, inside its
+// evidence step and before the recurrence pass. Every failure names the retrospective.
+function retrospectiveEvidenceFailures(text) {
+  const failures = [];
+  const lines = text.split(/\r?\n/u);
+  const start = lines.findIndex((line) => line.startsWith("2. **Gather the evidence through recall**"));
+  const end = lines.findIndex((line, index) => index > start && STEP_HEADING.test(line));
+  if (start < 0 || end < 0) return ["retrospective: the evidence step was not found by its lead"];
+  const body = joined(text);
+  const step = joined(lines.slice(start, end).join("\n"));
+  const calls = invocationsIn(step);
+  const evidence = calls.filter((call) => call.verb === "recall" && sameFlags(call.flags, ["--item", "--area", "--all", "--json"]) && call.tail.includes("<ref>") && call.tail.includes("delivery"));
+  const ingest = calls.find((call) => call.verb === "ingest");
+  if (evidence.length !== 1) failures.push(`retrospective: expected exactly one --item <ref> --area delivery --all --json evidence recall (found ${evidence.length})`);
+  if (ingest == null || (evidence.length === 1 && step.indexOf(ingest.whole) > step.indexOf(evidence[0].whole))) failures.push("retrospective: the index is refreshed (ingest) before the evidence recall");
+  const observe = body.indexOf("aof work observe");
+  if (observe < 0 || observe > body.indexOf(step)) failures.push("retrospective: the observability refresh precedes the evidence step");
+  if (evidence.length === 1 && body.indexOf(evidence[0].whole) > body.indexOf("aof work memory recurrence")) failures.push("retrospective: the evidence is gathered before the recurrence pass");
+  for (const [pattern, what] of [
+    [/never enumerate `VERIFICATION\.md`, `FEEDBACK\.ndjson` or run records as the evidence path/u, "makes recall the evidence path, not a raw-file enumeration"],
+    [/report the episodic evidence as unavailable — do not fall back to reading the raw ledgers/u, "reports unavailable evidence rather than reading raw ledgers"],
+    [/do not count it twice/u, "never counts STATE's feedback projection twice"],
+    [/records\s+no recall observation/u, "is not a decision-recall edge"],
+  ]) if (!pattern.test(step)) failures.push(`retrospective: ${what}`);
+  return failures;
 }
 
 export const archTests = [
@@ -443,7 +512,9 @@ export const archTests = [
       }
       // 154/05 adds retrospective's recall and ingest edge, retaining the seven existing calls; 153/04 adds
       // four captures (one per declared decision-recall edge) and retrospective's recurrence match.
-      assert.equal(found.length, 14, `the bundle carries fourteen memory invocations (found ${found.length}: ${found.map((f) => f.rel).join(", ")})`);
+      // 157/ADR-004 adds eight: continue's and verify's ingest, recall and capture, and retrospective's
+      // evidence ingest and recall.
+      assert.equal(found.length, 22, `the bundle carries twenty-two memory invocations (found ${found.length}: ${found.map((f) => f.rel).join(", ")})`);
       assert.ok(found.length > 1, "the count it examined is reported and is greater than one");
 
       // THE TWO THAT MARKDOWN WRAPPED MID-COMMAND are each read as ONE invocation with a real verb
@@ -501,8 +572,12 @@ export const archTests = [
         assert.ok(recalls.length >= 1, `${name} is a roster entry and carries at least one \`aof work memory recall\``);
       }
       // …and a file carrying only `ingest` would NOT: shown on a real one rather than asserted.
-      const verify = invocationsIn(read(`${COMMANDS_DIR}/verify.md`));
-      assert.ok(verify.length > 0 && verify.every((call) => call.verb === "ingest"), "guard: verify's memory calls really are all `ingest`, so the recall test has teeth");
+      // 157/ADR-004 gave verify a triage recall, which is a declared decision edge and not a cut; every
+      // OTHER memory call verify makes is an `ingest`.
+      const triage = EDGES["verify-finding"];
+      const verify = invocationsIn(read(`${COMMANDS_DIR}/verify.md`))
+        .filter((call) => !(call.verb === "recall" && sameFlags(call.flags, triage.recallFlags)) && !(call.verb === "record-recall" && call.tail.includes(triage.capture)));
+      assert.ok(verify.length > 0 && verify.every((call) => call.verb === "ingest"), "guard: verify's memory calls besides its triage edge really are all `ingest`, so the recall test has teeth");
 
       // DIRECTION 2 — every command file is classified, so a 27th reds this by EXISTING.
       const classified = new Set([...roster, ...excluded]);
@@ -657,9 +732,9 @@ export const archTests = [
   },
 
   {
-    name: "arch/153/04 FF-15303 leg 1: every declared decision-recall edge binds the complete capture protocol in the authored source, and the roster is exactly the four edges",
+    name: "arch/153/04 FF-15303 + 157 FF-15702 leg 1: every declared decision-recall edge binds the complete capture protocol in the authored source, and the roster is exactly the six edges",
     run: () => {
-      assert.deepEqual(Object.keys(EDGES), ["shatter-po", "refine-architect", "refine-po", "continue-developer"], "guard: the edge roster is the four declared decision-recall edges");
+      assert.deepEqual(Object.keys(EDGES), ["shatter-po", "refine-architect", "refine-po", "continue-developer", "continue-episodic", "verify-finding"], "guard: the edge roster is m153's four decision-recall edges and 157's two");
       for (const edge of Object.keys(EDGES)) {
         const failures = edgeFailures(read(EDGES[edge].file), edge);
         assert.deepEqual(failures, [], `${edge}'s capture protocol is whole in ${EDGES[edge].file}`);
@@ -670,12 +745,12 @@ export const archTests = [
       for (const name of commandFiles()) {
         for (const call of invocationsIn(read(`${COMMANDS_DIR}/${name}`))) if (call.verb === "recall") recalls.push(name);
       }
-      assert.deepEqual(recalls.sort(), ["continue.md", "refine.md", "refine.md", "retrospective.md", "shatter.md"], "five recalls exist: four declared edges and retrospective's matching recall");
+      assert.deepEqual(recalls.sort(), ["continue.md", "continue.md", "refine.md", "refine.md", "retrospective.md", "retrospective.md", "shatter.md", "verify.md"], "eight recalls exist: six declared edges, retrospective's matching recall and its evidence recall");
       const submissions = [];
       for (const name of commandFiles()) {
         for (const call of invocationsIn(read(`${COMMANDS_DIR}/${name}`))) if (call.verb === "record-recall") submissions.push(name);
       }
-      assert.deepEqual(submissions.sort(), ["continue.md", "refine.md", "refine.md", "shatter.md"], "one submission per declared edge, and none anywhere else");
+      assert.deepEqual(submissions.sort(), ["continue.md", "continue.md", "refine.md", "refine.md", "shatter.md", "verify.md"], "one submission per declared edge, and none anywhere else");
     },
   },
 
@@ -733,20 +808,36 @@ export const archTests = [
           checked += 1;
         }
       }
-      assert.equal(checked, 12, "four edges across three runtimes were each checked");
+      assert.equal(checked, 18, "six edges across three runtimes were each checked");
     },
   },
 
+  {
+    name: "arch/157 FF-15702: the retrospective gathers its episodic evidence through one --all recall — observe, ingest, recall, then the m153 passes — in the authored source and every render, and removing the recall is detected",
+    run: async () => {
+      assert.deepEqual(retrospectiveEvidenceFailures(read(`${COMMANDS_DIR}/retrospective.md`)), [], "the authored retrospective gathers through recall");
+      const outputs = renderBundleOutputs(await loadBundle(), { runtimes: ["claude", "codex", "opencode"] });
+      const renders = outputs.filter((output) => /(^|\/)(retrospective\.md|aof-retrospective\/(procedure|SKILL)\.md)$/u.test(slash(output.path)) && String(output.content).includes("Gather the evidence through recall"));
+      assert.equal(new Set(renders.map((output) => slash(output.path).split("/")[0])).size, 3, `non-vacuity: a render per runtime carries the step (${renders.map((output) => slash(output.path)).join(", ")})`);
+      for (const output of renders) {
+        assert.deepEqual(retrospectiveEvidenceFailures(String(output.content)), [], `${slash(output.path)} gathers through recall`);
+        assert.deepEqual(retrospectiveEvidenceFailures(read(slash(output.path))), [], `${slash(output.path)} on disk gathers through recall`);
+      }
+      // THE RED PROBE: the --all recall removed is named as the retrospective's.
+      const probe = retrospectiveEvidenceFailures(read(`${COMMANDS_DIR}/retrospective.md`).replace(/aof work memory recall "" --item <ref> --area delivery --all --json/u, "(evidence recall removed)"));
+      assert.ok(probe.length > 0 && probe.every((failure) => failure.startsWith("retrospective:")), `removing the evidence recall is detected, naming the retrospective: ${probe.join("; ")}`);
+    },
+  },
   {
     name: "arch/153/04 FF-15303 leg 4: retrospective matches before it writes and indexes after — recurrence precedes ingest, the watermark and both lesson fields are authored first, and a clean pass invents nothing",
     run: () => {
       const text = read(`${COMMANDS_DIR}/retrospective.md`);
       const calls = invocationsIn(text);
-      assert.deepEqual(calls.map((call) => call.verb), ["recall", "recurrence", "ingest"], "recall, then the whole-index recurrence match, then ingest — in that order");
-      const recurrence = calls[1];
+      assert.deepEqual(calls.map((call) => call.verb), ["recall", "ingest", "recall", "recurrence", "ingest"], "the domain recall, the evidence ingest and recall (157/ADR-004), the whole-index recurrence match, then ingest — in that order");
+      const recurrence = calls[3];
       assert.deepEqual([...recurrence.flags].sort(), ["--exclude", "--json"], "the match excludes the lesson's own identity and reads JSON");
       const body = joined(text);
-      assert.ok(body.indexOf("promotionFrom: <the next R number>") < body.indexOf("aof work memory ingest"), "the watermark is established before ingest");
+      assert.ok(body.indexOf("promotionFrom: <the next R number>") < body.lastIndexOf("aof work memory ingest"), "the watermark is established before the post-authoring ingest");
       for (const needle of ["`**Recurs:** <item>/R<n>`", "`**Promoted to:**`", "`none`", "`control:<qualified-id>`", "`rule:<repo-path>`", "`prompt:<repo-path>`"]) {
         assert.ok(body.includes(needle), `retrospective names ${needle}`);
       }

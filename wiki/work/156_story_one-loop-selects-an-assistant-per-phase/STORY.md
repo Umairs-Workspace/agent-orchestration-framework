@@ -3,11 +3,11 @@ type: story
 number: 156
 slug: one-loop-selects-an-assistant-per-phase
 title: "One loop selects an assistant per phase"
-status: in-review
+status: done
 owner: product-owner
 schema: 1
 created: 2026-10-09
-updated: 2026-10-09
+updated: 2026-10-13
 reads: ["wiki/work/154_milestone_codex-drives-the-loop-alongside-claude/SPEC.md", "packages/execution/src/session-model.mjs"]
 files: ["packages/core/assets/", "test/loop/loop-command-probe.test.mjs", "test/loop/drive-command-phase-drivers.test.mjs", "test/arch/loop/acd-loop-narrates-in-flight.test.mjs", "packages/contracts/src/loop-bounds.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/test/codex-app-server.suite.mjs", "packages/work-loop/src/", "packages/core/src/application/bindings/", "packages/mesh/src/worker-execution.mjs", "apps/ui/src/config/RuntimeSettings.tsx", "schemas/aof.schema.json", "packages/execution/test/runtime-selection.suite.mjs", "packages/work-loop/test/runtime/phases.suite.mjs", "packages/core/test/config-editor.suite.mjs", "packages/core/test/codex-ownership.suite.mjs", "test/support/runtime-loop/fixture.mjs", "test/integration/", "wiki/codex-support.md", "wiki/work/154_milestone_codex-drives-the-loop-alongside-claude/SPEC.md", "packages/work-loop/test/dispatch.test.mjs", "test/loop/loop-bounds.test.mjs", "test/loop/loop-command-wave.test.mjs", "test/arch/loop/acd-loop-concurrency-single-home.test.mjs"]
 ---
@@ -25,7 +25,7 @@ runtime flag or separate phase-assistant setting is required.
 
 - [x] `tasks/00_phase-selection-and-recovery.feature` — one loop selects and preserves native execution per phase.
 - [x] `tasks/01_configure-and-prove-mixed-execution.feature` — configuration editing and lifecycle evidence.
-- [ ] `tasks/02_live-mixed-loop-acceptance.feature` — live Astra/Sonnet acceptance, separate from scripted regression evidence.
+- [x] `tasks/02_live-mixed-loop-acceptance.feature` — live Astra/Sonnet acceptance, separate from scripted regression evidence.
 
 ## Notes
 

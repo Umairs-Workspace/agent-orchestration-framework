@@ -210,7 +210,7 @@
         "id": "aof-continue",
         "kind": "skill"
       },
-      "hash": "sha256:da2af0ea6708c75b53a36167f6820abdff321b453dd704266f45cfbf9ebaef1b"
+      "hash": "sha256:9946b374b0c861f3f26ca7d8771cf2c2ba22304c4a46b98710c896502b83f56d"
     },
     {
       "path": ".agents/skills/aof-delegate/SKILL.md",
@@ -552,7 +552,7 @@
         "id": "aof-retrospective",
         "kind": "skill"
       },
-      "hash": "sha256:82153e3b71aad953a799209a9a9a07d1dc665124862f5f9468db31d0f730c310"
+      "hash": "sha256:b73ae21727318580280064547437469c0704a105e0645ecebb5e10081665123e"
     },
     {
       "path": ".agents/skills/aof-review/SKILL.md",
@@ -642,7 +642,7 @@
         "id": "aof-verify",
         "kind": "skill"
       },
-      "hash": "sha256:fcb90cbcd43dc44bf19af80ebb540ccb4b81773083cf665668215cc8d22d68de"
+      "hash": "sha256:9bb89c29f7167d628af9ec129ea5afc637e447acdbd4cc74fd6dbb26b2860e92"
     },
     {
       "path": ".aof/frozen-set.jsonc",
@@ -732,7 +732,7 @@
         "id": "loop-retrospective-memory-ingest",
         "kind": "asset"
       },
-      "hash": "sha256:3dfa5d0216f4f4d548d9a59a9b78432d14a942abd4bfdb470de66117c9280bdf"
+      "hash": "sha256:9429d196926a343ff495c5b5ec8e395c40cd23d13c9f96b1bf9dd2334acccedf"
     },
     {
       "path": ".aof/loops/review-fix-rereview-watcher.md",
@@ -1155,7 +1155,7 @@
         "id": "continue",
         "kind": "command"
       },
-      "hash": "sha256:6c85e02a7d7d17a4c76218e02678c6ed507c567cf6eb853b9d9577f649079524"
+      "hash": "sha256:a4f18c93e9f59d116e22a569b82e3b1589728e41ea42ab3a07b9f1b173aeac05"
     },
     {
       "path": ".claude/commands/aof/delegate.md",
@@ -1308,7 +1308,7 @@
         "id": "retrospective",
         "kind": "command"
       },
-      "hash": "sha256:3f8248bebdcf0326a01923ab3960d85aa86ed66a0b6e1e7501175c5656a85052"
+      "hash": "sha256:8b0a68b7548575c86e0978e2c600289cfa695c61ab6217973157e8e1830d74c3"
     },
     {
       "path": ".claude/commands/aof/review.md",
@@ -1344,7 +1344,7 @@
         "id": "verify",
         "kind": "command"
       },
-      "hash": "sha256:83850e0d844e39da90592421fc94a350b9c36b3adc10ca3357236c3b2939221f"
+      "hash": "sha256:3c08461d6fbd0bcc3a2b1077c4611ebb5cfe7515b96cd448515d6d312552bf7c"
     },
     {
       "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",

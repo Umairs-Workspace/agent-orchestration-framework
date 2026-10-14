@@ -41,15 +41,26 @@ Use existing lessons to deduplicate, never as invented evidence; an empty block 
    `NN/observability/{report.md,agents.json}` — the per-agent time / token / **stall** record mined
    from the session transcripts. It re-reads every transcript and overwrites, so a partial run is
    never wrong, only less complete; the close's run (all stories done) is the authoritative snapshot.
-2. **Gather the evidence** (read-only):
-   - `STATE.md` → the `## Feedback (for retro)` running notes (if any), durable decisions, the closure
-     record, carried follow-ups — anything recording a mistake / blocker / decision-with-hindsight.
-   - `VERIFICATION.md` → the **Findings** (defects/gaps caught at review) + their triage — the richest
-     source for an already-accepted milestone.
-   - `observability/agents.json` (if present) → per-agent spend + `stalls`. A **stall** (an agent idle
+2. **Gather the evidence through recall** (read-only). First `aof work memory ingest`, then
+   `aof work memory recall "" --item <ref> --area delivery --all --json` — ONE recall of the item's
+   whole delivery history, after the observability refresh above. What it returns is the evidence,
+   each record cited by its `source`:
+   - **findings** → the defects/gaps caught at review, with their triage — the richest source for an
+     already-accepted milestone;
+   - **feedback** → the raw feedback captured while the item ran;
+   - **runs** → each terminal run's outcome, `failureReason` and stalls. A **stall** (an agent idle
      past the threshold — dropped connection / interrupt / machine-off) or a grossly outsized
-     time/token consumer is a candidate **process lesson** (Kind: blocker | near-miss · Area: process),
-     never a product finding.
+     time/token consumer is a candidate **process lesson** (Kind: blocker | near-miss · Area:
+     process), never a product finding.
+
+   Open a cited source to substantiate a record; never enumerate `VERIFICATION.md`,
+   `FEEDBACK.ndjson` or run records as the evidence path. When memory is off, or the recall returns
+   nothing, report the episodic evidence as unavailable — do not fall back to reading the raw ledgers.
+   This retrospective's own run is still open, so it is correctly absent. This evidence step records
+   no recall observation. Beside it, read:
+   - `STATE.md` → durable decisions, the closure record and carried follow-ups — anything recording
+     a decision-with-hindsight. Its `## Feedback (for retro)` notes project feedback the recall
+     already returned: do not count it twice.
    - Any recorded blocker stops.
 3. **Triage.** Keep only what carries a **lesson** — a mistake, blocker, near-miss, or misunderstanding
    worth not repeating. A finding that was a clean catch with no process lesson is **not** a retro

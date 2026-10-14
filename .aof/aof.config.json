@@ -57,7 +57,9 @@
       },
       "gate": {
         "args": [
-          "scripts/test-sharded.mjs"
+          "scripts/test-sharded.mjs",
+          "--unit-timeout-min",
+          "45"
         ],
         "jobsArgs": [
           "--jobs",
@@ -114,6 +116,7 @@
       "concurrency": "refine_first",
       "refine": "whole-item",
       "startToCloseMs": 14400000,
+      "heartbeatMs": 1800000,
       "scheduleToCloseMs": 43200000
     },
     "notify": {

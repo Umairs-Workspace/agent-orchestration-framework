@@ -14,7 +14,7 @@ import { createRunSpendIngest } from "../../../packages/execution/src/spend.mjs"
 import { resolveExecution, resolveExecutionResume } from "../../../packages/execution/src/runtime-selection.mjs";
 import { CODEX_PROFILE } from "../../../packages/execution/src/codex-protocol-profile.mjs";
 import { buildNoProgressRoundsFromConfig, progressMaxResetsFromConfig } from "../../../packages/contracts/src/loop-bounds.mjs";
-import { codexFixture } from "../../../packages/execution/test/codex-app-server.suite.mjs";
+import { codexFixture, reviewFrame, finishFrames } from "../../../packages/execution/test/codex-app-server.suite.mjs";
 import { runCli } from "../../integration/support/cli-context.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../mesh-worker-terminal-fixture.mjs";
 import { withLaneRepo, replaceStatus, git, collector } from "../loop/lane-fixture.mjs";
@@ -83,11 +83,12 @@ async function validateGuide(context, commands) {
   }
 }
 
-function driversFor(fx, globalDir, probes, version) {
+function driversFor(fx, globalDir, probes, version, autoReview = false) {
+  const models = codexFixture().fixture.models.map(model => autoReview ? { ...model, id: "gpt-6-astra", model: "gpt-6-astra" } : model);
   const native = createRuntimeSession({ adapters: { codex: {
-    async inspectCapabilities(options) { const p = codexFixture({ version }); probes.push(p); return p.adapter.inspectCapabilities({ ...p.options, ...options }); },
+    async inspectCapabilities(options) { const p = codexFixture({ version, models }); probes.push(p); return p.adapter.inspectCapabilities({ ...p.options, ...options }); },
     async canResume() { return true; },
-    async drive(brief, options) { const p = codexFixture({ version }); probes.push(p); return p.adapter.drive(brief, { ...p.options, ...options }); },
+    async drive(brief, options) { const p = codexFixture({ version, models, ...(autoReview ? { onStart: ({ emit }) => emit(reviewFrame(), reviewFrame("approved"), ...finishFrames()) } : {}) }); probes.push(p); return p.adapter.drive(brief, { ...p.options, ...options }); },
   } } });
   const runs = app.execution.runs;
   return assembleCommandsDrive({
@@ -115,7 +116,7 @@ async function isolated(body) {
   finally { if (prior === undefined) delete process.env.AOF_GLOBAL_HOME; else process.env.AOF_GLOBAL_HOME = prior; await rm(home, { recursive: true, force: true }); }
 }
 
-export async function runRuntimeRegression(runtime, { failBuild = false, version, resumeAfterRefine = false } = {}) {
+export async function runRuntimeRegression(runtime, { failBuild = false, version, resumeAfterRefine = false, recoverPermissionFailure = false } = {}) {
   assert.ok(["claude", "codex", "mixed"].includes(runtime));
   return isolated(globalDir => withLaneRepo(async fx => {
     await seed(fx);
@@ -137,7 +138,7 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
     await readFile(path.join(fx.root, ".claude/commands/aof/continue.md"));
     await git(["add", "-A"], fx.root); await git(["commit", "-qm", "fixture: native assets and task"], fx.root);
     fx.workspace = await defaultWorkspace.work.loadWorkspace(fx.root);
-    const drivers = driversFor(fx, globalDir, probes, version);
+    const drivers = driversFor(fx, globalDir, probes, version, recoverPermissionFailure);
     const typed = [];
     const pty = createFakePtySpawn({ onWrite({ chunk, rawChunk, emitExit }) {
       if (rawChunk === "\r") emitExit(0); else typed.push(chunk);
@@ -146,7 +147,7 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
     const ctx = { workspace: fx.workspace, report, ...(resumeAfterRefine ? { stopSource: stop } : {}), globalWorkStoreOptions: { env },
       agentSessionDriverOptions: { env, ptySpawn: pty.spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => `fixture-claude-${typed.length}`, commandDelayMs: 0, submitDelayMs: 0, trustWorktree: async () => {}, },
     };
-    if (runtime !== "claude") ctx.executionHandoff = resolveExecution(fx.workspace.config, { capabilities: { codex: { models: codexFixture().fixture.models } } });
+    if (runtime !== "claude") ctx.executionHandoff = resolveExecution(fx.workspace.config, { capabilities: { codex: { models: codexFixture().fixture.models.map(model => recoverPermissionFailure ? { ...model, id: "gpt-6-astra", model: "gpt-6-astra" } : model) } } });
     if (version !== undefined && !CODEX_PROFILE.supportedVersions.includes(version)) {
       await assert.rejects(drivers.refineDriverCommand.run({ ref: "07/01" }, ctx), { code: "unsupported_profile" });
       const item = await app.work.commandTools.resolve.resolveItemExact(ctx, "07/01");
@@ -186,8 +187,19 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
       }
       return result;
     };
+    let recoveryHistory;
+    if (recoverPermissionFailure) {
+      await writeFile(path.join(fx.root, "src/s01.cjs"), "module.exports = { answer: 42 }; // task-ready\n");
+      const item = await app.work.commandTools.resolve.resolveItemExact(ctx, "07/01");
+      const build = await app.execution.runs.startRun(item, { execution: ctx.executionHandoff, brief: { phase: "continue" } });
+      await app.execution.runs.completeRun(item, { runId: build.runId, outcome: "done" });
+      const failed = await app.execution.runs.startRun(item, { execution: ctx.executionHandoff, brief: { phase: "verify" } });
+      await app.execution.runs.completeRun(item, { runId: failed.runId, outcome: "failed", failureReason: "operator_action_required" });
+      await replaceStatus(path.join(item.dir, "STORY.md"), "in-review");
+      recoveryHistory = await app.execution.runs.readRuns(item);
+    }
     // Real phase doors before the shell; review starts a fresh native thread request.
-    for (const phase of runtime === "mixed" ? [] : runtime === "codex" ? ["refine", "review"] : ["refine"]) {
+    for (const phase of recoverPermissionFailure || runtime === "mixed" ? [] : runtime === "codex" ? ["refine", "review"] : ["refine"]) {
       const result = await ctx.invokeRegistered(`work:drive-${phase}`, { ref: "07/01" }, ctx);
       assert.equal(result.outcome, "done", JSON.stringify(result));
     }
@@ -212,12 +224,12 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
     assert.ok(calls.some(call => call.id === "work:grade"));
     if (!failBuild) {
       assert.ok(calls.some(call => call.id === "work:validate") && calls.some(call => call.id === "work:doctor"));
-      assert.ok(phases.includes("continue") && phases.includes("verify"));
+      assert.ok((recoverPermissionFailure || phases.includes("continue")) && phases.includes("verify"));
     } else { assert.equal(phases.includes("verify"), false, "red task cannot cross into verify"); assert.equal(state.act.stop, "progress-exhausted"); }
     if (runtime === "codex") {
       assert.equal(pty.spawnCalls.length, 0);
       assert.ok(probes.every(p => p.children.every(child => child.args.join(" ") === "app-server --listen stdio://")));
-      assert.ok(runs.every(run => run.execution?.runtime === "codex" && run.sessionId === codexFixture().fixture.nativeThreadId));
+      assert.ok(runs.every(run => run.execution?.runtime === "codex" && (recoveryHistory?.some(old => old.runId === run.runId) || run.sessionId === codexFixture().fixture.nativeThreadId)));
       const pinned = runs.find(run => run.execution)?.execution;
       assert.deepEqual(resolveExecutionResume({ execution: pinned }), pinned);
       assert.throws(() => resolveExecutionResume({ execution: pinned }, { runtime: "claude" }), { code: "execution-resume-conflict" });
@@ -228,6 +240,14 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
       assert.ok(runs.some(run => run.execution?.runtime === "claude"));
       assert.ok(runs.every(run => run.execution?.version === 1));
     } else { assert.ok(pty.spawnCalls.length > 0); assert.equal(probes.length, 0); assert.ok(typed.some(text => text.includes("/aof:continue"))); }
+    if (recoveryHistory) {
+      assert.ok(phases.length > 0 && phases.every(phase => phase === "verify"), "158 E11: fresh verification does not rebuild or repair completed work");
+      for (const prior of recoveryHistory) assert.deepEqual(runs.find(run => run.runId === prior.runId), prior);
+      const current = runs.filter(run => !recoveryHistory.some(prior => prior.runId === run.runId));
+      assert.equal(current.length, 1); assert.equal(current[0].state, "done");
+      assert.equal(current[0].execution.phases.verify.model, "gpt-6-astra"); assert.equal(current[0].execution.phases.verify.effort, "high");
+      assert.equal(current[0].brief.runtimeObservation.turns[0].reviews[0].status, "approved");
+    }
     return { runtime, evidence: "deterministic-scripted-transports", accepted: false, profile: runtime === "codex" ? CODEX_PROFILE : null, commands, phases, gates: calls.filter(call => ["work:grade", "work:validate", "work:doctor"].includes(call.id)), state: state.state, stop: state.act.stop ?? null, buildLimit, runs: runs.map(run => ({ state: run.state, outcome: run.outcome, runtime: run.execution?.runtime ?? "claude", sessionId: run.sessionId, spend: run.spend })), globalStateIsolated: true };
   }, { stories: [{ number: "01", files: ["src/s01.cjs"] }], config: runtime === "mixed" ? { ...configFor("codex"), loop: { concurrency: "sequential" }, agents: { mode: "solo", session: { models: { refine: codexFixture().fixture.models[0].model, continue: "sonnet", verify: "sonnet" }, effort: { refine: "high", continue: "high", verify: "high" } } } } : configFor(runtime), commit: { "runner.cjs": runner } }));
 }

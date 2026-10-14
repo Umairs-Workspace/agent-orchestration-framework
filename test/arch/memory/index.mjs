@@ -57,6 +57,14 @@ import { archTests as acdMemoryLayerMapTotalTests } from "./acd-memory-layer-map
 import { archTests as acdRecallLedgerConsumersTests } from "./acd-recall-ledger-consumers.test.mjs";
 // milestone 153 / story 02 — FF-15302 (see the import note).
 import { archTests as acdMemoryRecurrenceCalibrationTests } from "./acd-memory-recurrence-calibration.test.mjs";
+// milestone 157 / story 01 — FF-15701: both backends derive identical episodic identities from the
+// existing sources, every primary and stall locator resolves (and none leaves the work tree), and
+// rebuilding changes no source (ADR-001, ADR-002).
+import { archTests as acdEpisodicSourceProvenanceTests } from "./acd-episodic-source-provenance.test.mjs";
+// milestone 159 / story 01 — FF-15901..FF-15903: the opt-in auto-memory source makes no read while
+// disabled, resolves only inside its selected root and never reaches extraction or the mesh; each
+// control runs its required red probe (ADR-001, ADR-003).
+import { archTests as acdAutoMemorySourceTests } from "./acd-auto-memory-source.test.mjs";
 
 export const tests = [
   ...acdAnchorTaxonomyAdditiveTests,
@@ -87,4 +95,8 @@ export const tests = [
   ...acdRecallLedgerConsumersTests,
   // milestone 153 / story 02 — FF-15302 (see the import note).
   ...acdMemoryRecurrenceCalibrationTests,
+  // milestone 157 / story 01 — FF-15701 (see the import note).
+  ...acdEpisodicSourceProvenanceTests,
+  // milestone 159 / story 01 — FF-15901..FF-15903 (see the import note).
+  ...acdAutoMemorySourceTests,
 ];

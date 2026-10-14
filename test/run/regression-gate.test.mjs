@@ -121,7 +121,8 @@ async function withGateFixture(body) {
       config: {},
       resolve: async (ref) => (ref === "70" ? item : null),
       git: gitStub(overrides.git ?? {}),
-      runSuite: async () => (overrides.suite ?? suiteResult()),
+      runSuite: overrides.runSuite ?? (async () => (overrides.suite ?? suiteResult())),
+      ...(overrides.keepAlive == null ? {} : { keepAlive: overrides.keepAlive }),
     });
   try {
     await body({ root: tmp, itemDir, item, recordPath, run });
@@ -213,6 +214,44 @@ async function refusalOf(fn) {
 }
 
 export const regressionGateTests = [
+  // ═══ 2026-10-13 — a gate inside a driven session keeps that session's run alive ══
+  // 159's milestone verify waited ~30 min on this gate with no tool call; the driver read the
+  // working session as silent and killed it at heartbeatMs, three attempts running.
+  {
+    name: "2026-10-13 inside a driven session the gate appends the hook's heartbeat to the run's queue while the suite runs",
+    run: () => withGateFixture(async ({ root, run }) => {
+      const drivenItem = path.join(root, "driven-item");
+      const saved = { dir: process.env.AOF_RUN_ITEM_DIR, id: process.env.AOF_RUN_ID };
+      process.env.AOF_RUN_ITEM_DIR = drivenItem;
+      process.env.AOF_RUN_ID = "20261013T000000000Z-0000";
+      try {
+        let during = null;
+        await run({
+          runSuite: async () => {
+            during = await readFile(path.join(drivenItem, "runs", ".heartbeats.ndjson"), "utf8");
+            return suiteResult();
+          },
+        });
+        const [line] = during.trim().split("\n").map((text) => JSON.parse(text));
+        assert.equal(line.runId, "20261013T000000000Z-0000", "the beat names the driven run");
+        assert.ok(Number.isFinite(Date.parse(line.at)), "…with an instant, in the hook's own shape");
+      } finally {
+        if (saved.dir === undefined) delete process.env.AOF_RUN_ITEM_DIR; else process.env.AOF_RUN_ITEM_DIR = saved.dir;
+        if (saved.id === undefined) delete process.env.AOF_RUN_ID; else process.env.AOF_RUN_ID = saved.id;
+      }
+    }),
+  },
+  {
+    name: "2026-10-13 the gate's keep-alive is stopped when the suite throws",
+    run: () => withGateFixture(async ({ run }) => {
+      let stopped = 0;
+      await assert.rejects(run({
+        keepAlive: () => () => { stopped += 1; },
+        runSuite: async () => { throw new Error("runner exploded"); },
+      }), /runner exploded/u);
+      assert.equal(stopped, 1, "the interval never outlives the run");
+    }),
+  },
   // ══════════════════════════ task 00 — the gate run is recorded as evidence ══
   {
     name: "96/04-00 a green gate run writes a row naming what it proved — the commit, the instant, the scope and the result",

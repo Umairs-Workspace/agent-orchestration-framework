@@ -14,7 +14,10 @@ import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // side-table accessors, the dispatch tick reading the phase (fallback to refine), and
 // the REAL route → verb → side-table persistence with the closed-set validation.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, readFile } from "node:fs/promises";
+import { importSpecifiers } from "../../support/module-family.mjs";
+import { nativePhaseFixture } from "../../../packages/work-loop/test/runtime/phases.suite.mjs";
+import { reviewFrame, finishFrames } from "../../../packages/execution/test/codex-app-server.suite.mjs";
 import os from "node:os";
 import path from "node:path";
 import { existsSync } from "node:fs";
@@ -477,3 +480,58 @@ meshAssignmentDirectiveTests.push({
     assert.ok(seen.has("native-retry"));
   }),
 });
+
+// Exercise the actual private native worker binding against the real phase/run writer.
+// The outer mesh service factory is captured so this test needs no remote host or Git push.
+async function nativeWorkerBinding(fixture) {
+  const captureUrl = "data:text/javascript;base64," + Buffer.from("export let captured; export function createWorkerExecutionServices(services) { captured = services.nativeExecution; return {}; }").toString("base64");
+  const capture = await import(captureUrl);
+  const url = new URL("../../../packages/core/src/application/bindings/mesh/worker-execution.mjs", import.meta.url);
+  const original = await readFile(url, "utf8"); let source = original;
+  for (const { specifier } of importSpecifiers(original)) source = source.replaceAll(JSON.stringify(specifier), JSON.stringify(specifier === "@aof/mesh/worker-execution" ? captureUrl : specifier.startsWith(".") ? new URL(specifier, url).href : import.meta.resolve(specifier)));
+  const binding = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"));
+  const empty = Object.fromEntries(["workServices", "runSessionCaptureServices", "effectsItemTransitionsServices", "effectsAssignmentTransitionsServices", "meshParkResumeServices", "meshWorktreeServices", "workDispatchServices", "meshPresenceServices", "agentSessionDriverServices", "degradeServices", "runHeartbeatConsumptionServices", "meshWorkerLaunchServices", "meshWorkerRepoAdmissionServices"].map(key => [key, {}]));
+  binding.assembleMeshWorkerExecution({ ...empty, runStoreServices: _aofApplication.execution.runs,
+    effectsRunTransitionsServices: _aofApplication.execution.transitions, runtimeSessionServices: fixture.runtimeSession,
+    commandsDriveServices: fixture.drivers, loopAskServices: fixture.asks, loopAskRequestServices: fixture.requests });
+  return capture.captured;
+}
+meshAssignmentDirectiveTests.push(...["approved", "withdrawn"].map(condition => ({ name: `158 task01 E6 task03 — native worker binding ${condition} preserves run ownership and review evidence`, async run() {
+  const f = await nativePhaseFixture({ onStart: ({ emit }) => emit(reviewFrame()) });
+  try {
+    const native = await nativeWorkerBinding(f); const run = await f.mint(); let withdraw;
+    const result = await native.drive({ item: f.item, worktreeItem: f.item, worktreePath: f.root, ws: f.workspace, runRecord: run, phase: "verify" }, {
+      onPtyLive: stop => { withdraw = stop; },
+      onActivity: async event => {
+        if (event.kind !== "permission-review" || event.status !== "inProgress") return;
+        const record = (await _aofApplication.execution.runs.readRuns(f.item))[0];
+        assert.equal(record.runId, run.runId); assert.equal(record.state, "running");
+        assert.equal(record.brief.runtimeObservation.turns[0].activity, "waiting-for-permission");
+        if (condition === "withdrawn") withdraw();
+        else f.probes.at(-1).child.stdout.write([reviewFrame("approved"), ...finishFrames()].map(frame => JSON.stringify(frame)).join("\n") + "\n");
+      },
+    });
+    assert.equal(result.outcome, condition === "withdrawn" ? "cancelled" : "done", `settled ${result.outcome}/${result.failureReason ?? "-"}`); assert.equal(result.native, true);
+    const records = await _aofApplication.execution.runs.readRuns(f.item); assert.equal(records.length, 1);
+    assert.equal(records[0].state, "running", "worker retains settlement ownership"); assert.equal(records[0].asks.length, 0);
+    const review = records[0].brief.runtimeObservation.turns[0].reviews[0];
+    assert.equal(review.observationState, condition === "withdrawn" ? "interrupted" : "observed-completion");
+    assert.doesNotMatch(JSON.stringify(records), /CANARY/);
+    assert.equal(f.probes.at(-1).calls.find(c => c.method === "thread/start").params.approvalsReviewer, "auto_review");
+  } finally { await f.cleanup(); }
+} })));
+meshAssignmentDirectiveTests.push({ name: "158 task01 — whole-loop worker handoff selects automatic review in its registered phase drive", async run() {
+  const f = await nativePhaseFixture({ onStart: ({ emit }) => emit(reviewFrame(), reviewFrame("approved"), ...finishFrames()) });
+  try {
+    const native = await nativeWorkerBinding(f);
+    const launch = native.launchOptions(f.selected, null, { options: {}, globalWorkStoreOptions: {}, launchDeclared: true });
+    const execution = decodeExecutionHandoff(launch.env.AOF_MESH_EXECUTION, resolveExecutionResume);
+    const run = await f.mint();
+    const result = await f.drivers.verifyDriverCommand.run({ ref: f.item.ref }, { ...f.ctx, loopDrive: { execution, runId: run.runId }, agentSessionDriverOptions: { env: launch.env } });
+    assert.equal(result.outcome, "done");
+    const probe = f.probes.at(-1);
+    assert.equal(probe.calls.find(c => c.method === "thread/start").params.approvalsReviewer, "auto_review");
+    assert.equal(probe.calls.find(c => c.method === "turn/start").params.model, f.selected.phases.verify.model);
+    assert.equal((await _aofApplication.execution.runs.readRuns(f.item)).length, 1);
+  } finally { await f.cleanup(); }
+} });

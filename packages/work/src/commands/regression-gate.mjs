@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { writeText } from "@aof/foundation/fs";
@@ -14,7 +14,7 @@ import {
 } from "../regression-record.mjs";
 
 // Core supplies configured resolution, execution, notification and transition services.
-export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest }) {
+export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest }) {
 // `aof work regression-gate <ref>` — THE GATE RUN (milestone 96 / story 04, ADR-008 §1, §2).
 // FF-9606 is its control.
 //
@@ -95,6 +95,31 @@ function defaultGit(args, { cwd, timeoutMs = 30000 } = {}) {
 }
 
 const posix = (value) => String(value).split(path.sep).join("/");
+
+// ── THE DRIVEN-RUN KEEP-ALIVE (2026-10-13) ───────────────────────────────────────────────────
+// A driven session's liveness is its PostToolUse hook appending `{runId, at}` to
+// `<AOF_RUN_ITEM_DIR>/runs/.heartbeats.ndjson`. A milestone verify that launches this gate and
+// waits for it makes no tool call for the gate's whole run (~26 min sharded, longer on a loaded
+// host), so the driver read a WORKING session as silent and killed it at `heartbeatMs` — 159's
+// verify, three attempts. The gate inherits the session's env, so while the suite runs it appends
+// the hook's exact bytes once a minute; outside a driven session nothing is written. The
+// attempt's `startToCloseMs` still bounds a gate that never ends.
+const KEEP_ALIVE_MS = 60_000;
+
+function keepDrivenRunAlive({ env = process.env, intervalMs = KEEP_ALIVE_MS } = {}) {
+  const itemDir = env.AOF_RUN_ITEM_DIR;
+  const runId = env.AOF_RUN_ID;
+  if (typeof itemDir !== "string" || itemDir.length === 0 || typeof runId !== "string" || runId.length === 0) return () => {};
+  const runsDir = path.join(itemDir, "runs");
+  // Liveness bookkeeping never fails the gate: a beat that cannot be written is reported, not thrown.
+  const beat = () => mkdir(runsDir, { recursive: true })
+    .then(() => appendFile(path.join(runsDir, ".heartbeats.ndjson"), `${JSON.stringify({ runId, at: new Date().toISOString() })}\n`, "utf8"))
+    .catch((error) => reportDegrade("regression-gate-keep-alive", error));
+  const first = beat();
+  const timer = setInterval(beat, intervalMs);
+  timer.unref?.();
+  return Object.assign(() => clearInterval(timer), { first });
+}
 
 // Every path `git status --porcelain` reports, forward-slashed on every platform. A non-zero status
 // — or a throw — is NOT an empty list here: it is `null`, and the caller refuses on it.
@@ -220,6 +245,7 @@ async function runRegressionGate(input, deps = {}) {
     clock = Date.now,
     read = readFile,
     write = writeText,
+    keepAlive = keepDrivenRunAlive,
   } = deps;
 
   const ref = typeof input?.ref === "string" ? input.ref.trim() : "";
@@ -295,19 +321,26 @@ async function runRegressionGate(input, deps = {}) {
   // lines (not isolated, slowest files, logs) reach the row. The clock brackets the call.
   let observed = null;
   const started = clock();
-  const outcome = await runSuite({ scope: GATE_SCOPE }, {
-    projectRoot,
-    config,
-    resolveStory: resolve,
-    resolveToolchain: (declared, options) => {
-      if (gateDeclared.ok !== true) return gateDeclared;
-      const compiled = resolveTestToolchain(declared, options);
-      return compiled.ok === true
-        ? Object.freeze({ ok: true, toolchain: gateToolchain(compiled.toolchain, gate, settings) })
-        : compiled;
-    },
-    run: async (toolchain, files, options) => (observed = await launch(toolchain, files, options)),
-  });
+  const stopKeepAlive = keepAlive();
+  await stopKeepAlive.first;
+  let outcome;
+  try {
+    outcome = await runSuite({ scope: GATE_SCOPE }, {
+      projectRoot,
+      config,
+      resolveStory: resolve,
+      resolveToolchain: (declared, options) => {
+        if (gateDeclared.ok !== true) return gateDeclared;
+        const compiled = resolveTestToolchain(declared, options);
+        return compiled.ok === true
+          ? Object.freeze({ ok: true, toolchain: gateToolchain(compiled.toolchain, gate, settings) })
+          : compiled;
+      },
+      run: async (toolchain, files, options) => (observed = await launch(toolchain, files, options)),
+    });
+  } finally {
+    stopKeepAlive();
+  }
   const minutes = Number(((clock() - started) / 60000).toFixed(1));
 
   // (5) THE ROW. A refusal from the run is recorded as RED rather than swallowed: the suite did not

@@ -38,7 +38,8 @@ async function withStream(run) {
     const workDir = path.join(root, "wiki", "work");
     const projectRoot = path.join(root, "project");
     await mkdir(path.join(projectRoot, ".aof"), { recursive: true });
-    await writeEveryParserStream(workDir);
+    // 157/02 — with every episodic source, so the three episodic types are exercised too.
+    await writeEveryParserStream(workDir, { episodic: true });
     await run({ workDir, projectRoot });
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -61,7 +62,7 @@ export const archTests = [
     run: () => withStream(async ({ workDir, projectRoot }) => {
       const records = await buildRecords(null, { workDir, projectRoot });
       const emitted = [...new Set(records.map((record) => record.recordType))].sort();
-      assert.deepEqual(emitted, ["adr", "capability", "gap", "lesson", "summary"], "non-vacuity: the fixture exercises every parser");
+      assert.deepEqual(emitted, ["adr", "capability", "feedback", "finding", "gap", "lesson", "run", "summary"], "non-vacuity: the fixture exercises every parser");
       const unmapped = emitted.filter((type) => !Object.hasOwn(RECORD_TYPE_LAYERS, type));
       assert.deepEqual(unmapped, [], `every emitted type has a layer — unmapped: ${unmapped.join(", ")}`);
     }),
