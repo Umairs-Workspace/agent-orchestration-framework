@@ -2,6 +2,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { readCitationHistory } from "../citation-history.mjs";
+import { probeWikiCitations } from "../wiki-citations.mjs";
 import { declaredReportFrom } from "../doctor/rubric.mjs";
 import { computeLoopReady } from "../doctor/loop-ready.mjs";
 import { readJson } from "@aof/foundation/fs";
@@ -247,6 +248,11 @@ const doctorCommand = {
       legacyIdentitySidecarPresent,
       legacyIdentitySidecarPath: ctx.workspace.aofDir ? `${ctx.workspace.aofDir}/mesh/identity.json` : null,
     });
+
+    // 161/ADR-001 — the direct wiki surface's source citations, ADDITIVE and workspace-level like the
+    // findings below: appended AFTER the engine's scope filtering, so a scoped call reports them too.
+    // History was read ONCE, for the snapshot; the probe takes that same map (null = no project root).
+    if (snapshot.renameMap != null) findings.push(...await probeWikiCitations({ projectRoot: ctx.workspace.projectRoot, renameMap: snapshot.renameMap }));
 
     // chore 103 — AN INSTRUMENT THAT CAN SEE NOTHING MUST REFUSE, NOT REPORT HEALTH
     // (78/RETROSPECTIVE R4). Every check-group above is a function of the snapshot, so

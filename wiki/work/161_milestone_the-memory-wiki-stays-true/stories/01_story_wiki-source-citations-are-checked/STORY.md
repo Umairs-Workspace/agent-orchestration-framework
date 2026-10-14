@@ -4,7 +4,7 @@ number: 1
 slug: wiki-source-citations-are-checked
 title: "Wiki source citations are checked by doctor"
 parent: 161
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-14
@@ -24,8 +24,8 @@ so that moved or removed code cannot silently leave misleading documentation.
 
 ## Tasks
 
-- [ ] `tasks/01_report-unresolved-source-citations.feature` — actionable diagnostics and correct file resolution.
-- [ ] `tasks/02_check-the-workspace-wiki.feature` — complete scope, command behavior and a shipped-command negative probe.
+- [x] `tasks/01_report-unresolved-source-citations.feature` — actionable diagnostics and correct file resolution.
+- [x] `tasks/02_check-the-workspace-wiki.feature` — complete scope, command behavior and a shipped-command negative probe.
 
 ## Notes
 
