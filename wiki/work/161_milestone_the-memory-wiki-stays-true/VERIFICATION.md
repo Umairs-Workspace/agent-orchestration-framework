@@ -24,7 +24,7 @@ well-formedness only, not the feature scenarios or the control's red probes.
 
 | id | enforced by | result | red probe |
 |---|---|---|---|
-| FF-16101 | `test/arch/command/acd-wiki-citation-resolver.test.mjs` | Pending implementation and registration in `test/arch/command/index.mjs` | Not run at refine. Build must bypass the resolver and disconnect the command call separately, then record the actual observed failing messages here. |
+| FF-16101 | `test/arch/command/acd-wiki-citation-resolver.test.mjs`, registered in `test/arch/command/index.mjs` (story 01 build; all 3 cases pass) | Resolves: the probe imports and calls the shared `resolveCitedPath` and `pathCitationsIn`, names no rename reader, git or execution door, and the command edge calls it once with the snapshot's history. | **Bypass** (resolver import and call removed, replaced by a direct `renameMap.get`): observed red — `does not import the shared resolver`; `never calls the shared resolver`; `looks a citation up in a rename map directly`. **Severed call** (the `probeWikiCitations` line removed from `doctor.mjs`): observed red — `does not call the probe with the history read for the snapshot`. Both asserted in-suite by mutating the shipped source text; the unmutated sources report no violations. |
 
 ## Acceptance checks still owed
 

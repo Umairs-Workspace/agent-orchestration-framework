@@ -128,6 +128,11 @@ async function seedDuplicate(workDir) {
   await milestone(workDir, { number: "07", slug: "beta", status: "not-started" }); // 07 already exists as alpha
 }
 
+async function wikiPage(repo, name, text) {
+  await mkdir(path.join(repo, "wiki"), { recursive: true });
+  await writeFile(path.join(repo, "wiki", name), text, "utf8");
+}
+
 const ctxFor = async (repo) => ({ workspace: await loadWorkspace(repo) });
 
 function runCli(root, args) {
@@ -680,6 +685,135 @@ export const doctorCommandCoreTests = [
         }
         assert.equal(threw, false, "doctorWork does not throw on an unresolved scope");
         assert.deepEqual(unresolved, [], "an unresolved scope is empty");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  // ════════════════ 161/01 · wiki source citations (tasks 01 and 02) ════════════════
+  {
+    name: "doctor/161 E4 a story scope does not hide another wiki page's broken source link, and keeps in-scope findings",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await cleanStream(workDir);
+        await seedOrphan(workDir);
+        await wikiPage(repo, "agents.md", "# Agents\n\nSee `src/absent.mjs`.\n");
+        const scoped = (await invoke("work:doctor", { scope: "07" }, await ctxFor(repo))).findings;
+        const unscoped = (await invoke("work:doctor", {}, await ctxFor(repo))).findings;
+        for (const findings of [scoped, unscoped]) {
+          const hits = findings.filter((f) => f.code === "wiki-source-unresolved");
+          assert.equal(hits.length, 1, "one wiki-source-unresolved warning");
+          assert.equal(hits[0].path, path.join(repo, "wiki", "agents.md"), "raw absolute page path at the core");
+          assert.equal(hits[0].severity, "warn");
+          assert.ok(findings.some((f) => f.code === "orphan-folder"), "the ordinary in-scope work finding is preserved");
+        }
+        const narrow = (await invoke("work:doctor", { scope: "07/00" }, await ctxFor(repo))).findings;
+        assert.equal(narrow.filter((f) => f.code === "wiki-source-unresolved").length, 1, "a story scope still reports the wiki page");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "doctor/161 E5 E6 nested work records and a missing wiki directory add no wiki finding",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await cleanStream(workDir);
+        let result = await invoke("work:doctor", {}, await ctxFor(repo));
+        assert.deepEqual(result.findings, [], "a project with no wiki keeps its existing doctor behavior");
+        await wikiPage(repo, "memory.md", "# Memory\n");
+        await mkdir(path.join(repo, "wiki", "old"), { recursive: true });
+        await writeFile(path.join(repo, "wiki", "old", "SPEC.md"), "src/absent.mjs\n", "utf8");
+        result = await invoke("work:doctor", {}, await ctxFor(repo));
+        assert.deepEqual(result.findings.filter((f) => /^wiki-source/u.test(f.code)), [], "nested records are outside this probe");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "doctor/161 E2 E3 a recorded move keeps a citation valid and a deleted destination does not",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await cleanStream(workDir);
+        const git = (...args) => {
+          const r = spawnCliSync("git", args, { cwd: repo, encoding: "utf8", windowsHide: true });
+          assert.equal(r.status, 0, `git ${args.join(" ")}: ${r.stderr}`);
+        };
+        await mkdir(path.join(repo, "src"), { recursive: true });
+        await writeFile(path.join(repo, "src", "moved.mjs"), "export const moved = 'a body long enough to be detected as a rename';\n".repeat(8), "utf8");
+        await writeFile(path.join(repo, "src", "deleted.mjs"), "export const gone = 'another body long enough to be detected as a rename';\n".repeat(8), "utf8");
+        git("init", "-q");
+        git("config", "user.email", "probe@example.invalid");
+        git("config", "user.name", "probe");
+        git("add", "-A");
+        git("commit", "-qm", "seed");
+        await mkdir(path.join(repo, "packages", "work", "src"), { recursive: true });
+        git("mv", "src/moved.mjs", "packages/work/src/moved.mjs");
+        git("mv", "src/deleted.mjs", "packages/work/src/deleted.mjs");
+        git("commit", "-qm", "move");
+        git("rm", "-q", "packages/work/src/deleted.mjs");
+        git("commit", "-qm", "delete the destination");
+        await wikiPage(repo, "memory.md", "cites src/moved.mjs\nand src/deleted.mjs\n");
+        const hits = (await invoke("work:doctor", {}, await ctxFor(repo))).findings.filter((f) => f.code === "wiki-source-unresolved");
+        assert.equal(hits.length, 1, "only the citation whose destination was deleted stays unresolved");
+        assert.match(hits[0].message, /src\/deleted\.mjs/u);
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "doctor/161 finding identity is stable across working directories and a configured work dir",
+    async run() {
+      const repo = await mkdtemp(path.join(os.tmpdir(), "aof-doctor-wiki-"));
+      try {
+        const workDir = path.join(repo, "planning", "work");
+        await mkdir(path.join(repo, ".aof"), { recursive: true });
+        await mkdir(workDir, { recursive: true });
+        await writeFile(path.join(repo, ".aof", "aof.config.json"), JSON.stringify({ name: "fixture", work: { dir: "./planning/work" } }), "utf8");
+        await cleanStream(workDir);
+        await wikiPage(repo, "agents.md", "see src/absent.mjs\n");
+        await mkdir(path.join(workDir, "wiki"), { recursive: true });
+        await writeFile(path.join(workDir, "wiki", "decoy.md"), "see src/decoy-absent.mjs\n", "utf8");
+        const nested = path.join(repo, "docs", "deep");
+        await mkdir(nested, { recursive: true });
+        const seen = [];
+        for (const cwd of [repo, nested]) {
+          const result = runCli(cwd, ["work", "doctor", "--json"]);
+          const body = JSON.parse(result.stdout);
+          const hits = body.findings.filter((f) => f.code === "wiki-source-unresolved");
+          assert.equal(hits.length, 1, `exactly one wiki finding from ${cwd}: ${result.stdout}`);
+          assert.equal(path.resolve(cwd, hits[0].path), path.join(repo, "wiki", "agents.md"));
+          assert.equal(hits[0].path, path.relative(cwd, path.join(repo, "wiki", "agents.md")), "displayed relative to that invocation's cwd");
+          assert.ok(!hits[0].message.includes("decoy"), "no wiki under the configured work dir is searched");
+          seen.push(hits[0].message);
+        }
+        assert.equal(seen[0], seen[1], "the same citation is identified from both directories");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "doctor/161 existing strict behavior makes a wiki warning fail only the strict call",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await cleanStream(workDir);
+        await wikiPage(repo, "memory.md", "see src/absent.mjs\n");
+        const normal = runCli(repo, ["work", "doctor", "--json"]);
+        const strict = runCli(repo, ["work", "doctor", "--strict", "--json"]);
+        assert.equal(normal.status, 0, normal.stdout + normal.stderr);
+        assert.equal(strict.status, 1, strict.stdout + strict.stderr);
+        for (const run of [normal, strict]) {
+          const hits = JSON.parse(run.stdout).findings.filter((f) => f.code === "wiki-source-unresolved");
+          assert.equal(hits.length, 1);
+          assert.equal(hits[0].severity, "warn");
+        }
       } finally {
         await rm(repo, { recursive: true, force: true });
       }
