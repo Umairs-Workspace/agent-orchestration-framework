@@ -238,6 +238,8 @@ export const yarnInstallationTests = [
         // 153/03: accounting reads each item's ledger and retrospective; the doctor lane names their paths.
         'memory-accounting.mjs': ['node:fs/promises', 'node:path'],
         'doctor/memory-effectiveness.mjs': ['node:path'],
+        // 161/01: the doctor command edge's wiki probe lists the direct wiki pages and stats each cited source file.
+        'wiki-citations.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
         // 153/05: tune reads a prompt destination inside the repository to compute its patch.
         'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],

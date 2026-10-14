@@ -12,7 +12,7 @@ depends: []
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/161_milestone_the-memory-wiki-stays-true/ARCHITECTURE.md#adr-001, packages/work/src/commands/doctor.mjs, packages/work/src/cited-path-resolve.mjs, packages/work/src/citation-history.mjs, packages/work/src/audit/controls.mjs, packages/work/src/doctor/index.mjs, packages/core/src/application/bindings/commands/doctor.mjs, packages/work/test/doctor.test.mjs, test/work/doctor-command-core.test.mjs, test/audit/cited-path-resolve.test.mjs, test/arch/command/acd-cited-path-resolves.test.mjs, test/arch/command/index.mjs, test/support/cli-spawn.mjs, scripts/test-unit.mjs, scripts/test.mjs, .aof/aof.config.json]
-files: [packages/work/src/wiki-citations.mjs, packages/work/src/commands/doctor.mjs, test/work/wiki-citations.test.mjs, test/work/doctor-command-core.test.mjs, scripts/test-unit.mjs, test/arch/command/acd-wiki-citation-resolver.test.mjs, test/arch/command/index.mjs]
+files: [packages/work/src/wiki-citations.mjs, packages/work/src/commands/doctor.mjs, test/work/wiki-citations.test.mjs, test/work/doctor-command-core.test.mjs, scripts/test-unit.mjs, test/arch/command/acd-wiki-citation-resolver.test.mjs, test/arch/command/index.mjs, test/bundle/yarn-installation.test.mjs]
 ---
 # 161/01 · Wiki source citations are checked by doctor
 
