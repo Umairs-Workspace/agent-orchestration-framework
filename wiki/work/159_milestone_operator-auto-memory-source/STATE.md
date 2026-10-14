@@ -57,3 +57,10 @@ integration feature 45/45, indexing suite 39/39, importer sweep 502 cases / 53 f
 ## Feedback (for retro)
 
 Archived 2026-10-12: graduated to `stories/01_story_recall-operator-auto-memory/RETROSPECTIVE.md` (R1–R3) when 159/01 was accepted.
+
+## Milestone close — 2026-10-14
+
+159/01 accepted 2026-10-12. The whole-tree regression gate went green at `ae767636` after seven red
+runs; the run history, findings F-1..F-4 and the accept decision are in VERIFICATION.md, the lesson
+in RETROSPECTIVE.md R1. The loop's verify attempts (runs `…-0003`..`…-0006`) ended on heartbeat
+timeouts while waiting on the gate, and the operator stopped the loop; the gate was then run by hand.

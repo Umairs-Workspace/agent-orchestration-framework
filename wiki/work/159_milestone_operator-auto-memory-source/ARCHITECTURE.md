@@ -101,9 +101,9 @@ source's contents must never be sent to extraction.
 
 | id | invariant | enforced by | source |
 |---|---|---|---|
-| FF-15901 | Disabled source makes no external reads; enabled records are deterministic, derived and read-only | pending `test/arch/memory/acd-auto-memory-source.test.mjs` | ADR-001 |
-| FF-15902 | Only enabled adapter records resolve within the selected memory root; existing containment remains intact | pending `test/arch/memory/acd-auto-memory-source.test.mjs` | ADR-003 |
-| FF-15903 | External content reaches neither graph extraction nor mesh; indexes stay ignored | pending `test/arch/memory/acd-auto-memory-source.test.mjs` | ADR-003 |
+| FF-15901 | Disabled source makes no external reads; enabled records are deterministic, derived and read-only | `test/arch/memory/acd-auto-memory-source.test.mjs` | ADR-001 |
+| FF-15902 | Only enabled adapter records resolve within the selected memory root; existing containment remains intact | `test/arch/memory/acd-auto-memory-source.test.mjs` | ADR-003 |
+| FF-15903 | External content reaches neither graph extraction nor mesh; indexes stay ignored | `test/arch/memory/acd-auto-memory-source.test.mjs` | ADR-003 |
 
 Register the suite in `test/arch/memory/index.mjs`, which scripts/test.mjs imports.
 

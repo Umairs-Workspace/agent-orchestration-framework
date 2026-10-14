@@ -1,0 +1,218 @@
+{
+  "runId": "20261012T224717445Z-0004",
+  "itemRef": "159",
+  "state": "failed",
+  "attempt": 2,
+  "outcome": "failed",
+  "sessionId": "26aca482-b03d-43a7-ba9c-a912d98dfc8f",
+  "brief": {
+    "loop": {
+      "loopRunId": "93d480f4-329a-4f8d-adb8-ee4a4ddb1c89",
+      "scope": "159",
+      "level": "L2",
+      "cap": 3,
+      "phase": "verify",
+      "cycle": 1,
+      "startedAt": "2026-10-12T13:14:54.907Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "sonnet",
+          "modelSource": "--model",
+          "runtime": "claude"
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "sonnet",
+          "modelSource": "--model",
+          "runtime": "claude"
+        }
+      },
+      "execution": {
+        "phaseExecutions": {
+          "continue": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "claude-pty-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "claude",
+            "runtimeSource": "model",
+            "transport": "pty",
+            "version": 1
+          },
+          "refine": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          },
+          "verify": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "claude-pty-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "claude",
+            "runtimeSource": "model",
+            "transport": "pty",
+            "version": 1
+          }
+        },
+        "phases": {
+          "continue": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "sonnet",
+            "modelSource": "--model",
+            "runtime": "claude"
+          },
+          "refine": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          },
+          "verify": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "sonnet",
+            "modelSource": "--model",
+            "runtime": "claude"
+          }
+        },
+        "runtime": "mixed",
+        "runtimeSource": "phase-map",
+        "version": 2
+      }
+    }
+  },
+  "createdAt": "2026-10-12T22:47:17.445Z",
+  "updatedAt": "2026-10-12T23:49:48.047Z",
+  "failureReason": "timeout",
+  "heartbeatAt": "2026-10-12T23:19:38.825Z",
+  "retryOf": "20261012T214406078Z-0003",
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 174,
+      "output": 52312,
+      "cacheRead": 9297063,
+      "cacheCreate": 193672
+    },
+    "costUsd": 4.3005908999999996,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 87,
+    "toolCalls": 40,
+    "exitReason": "error"
+  },
+  "asks": [],
+  "execution": {
+    "phases": {
+      "continue": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "sonnet",
+        "modelSource": "--model"
+      },
+      "refine": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": null,
+        "modelSource": null
+      },
+      "verify": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "sonnet",
+        "modelSource": "--model"
+      }
+    },
+    "profile": "claude-pty-v1",
+    "profileVersion": 1,
+    "roles": {},
+    "runtime": "claude",
+    "runtimeSource": "model",
+    "transport": "pty",
+    "version": 1
+  }
+}

@@ -1,7 +1,7 @@
 # 159 · Verification register
 
-Refine evidence, then the 159/01 verify session below. No independent review and no milestone
-regression-gate run is claimed; business discovery is answered.
+Refine evidence, the 159/01 verify session, then the milestone regression gate (green at
+`ae767636` after seven red runs). No independent review is claimed; business discovery is answered.
 
 ## Fitness functions
 
@@ -76,10 +76,45 @@ milestone gate. Every run under a fresh `AOF_GLOBAL_HOME`, read from exit code a
 - **Design conformance / UAT.** Not applicable — CLI adapter, no UI surface; no `@uat` scenario exists.
 - **Gate.** `aof work validate 159/01` → PASS. `aof work doctor 159` → no `control-unresolved`; warnings are only the unconfigured control runner, rubric join, numbering gap and unchecked depends edges (all pre-existing and unrelated).
 
+## Milestone regression gate — 2026-10-12..14
+
+`REGRESSION.md` holds eight whole-tree runs; the door reads the last. Run from a clean detached
+worktree, isolated `AOF_GLOBAL_HOME`, launch environment stripped of `GIT_ASKPASS`/`CLAUDE_*`/`AOF_RUN_*`.
+
+| commit | result | what it showed |
+| --- | --- | --- |
+| `67e7797e` | red | 159's own reds (budgets, kernel ports, wire-kind, citation, extractor, scrub) → F-1 |
+| `75549342` | red | a stale bundle manifest → F-1; integration lane killed at its 20-min unit limit → F-2 |
+| `206c8877` | red | clone-credential cases red from an inherited VS Code `GIT_ASKPASS` → F-2 |
+| `d9fddda9` | red | stopped by the operator mid-run (loop 159 halted) |
+| `b4f81341` ×2 | red | no verdict: cut off at the 2-h `work.test.deadlineMs`; integration lane killed at 45 min, its solo retry past the deadline → F-2 |
+| `79b926b7` | red | 54.7 min with a verdict after the lane split and doctor speed-up; five cases red alone: two regressions from the 156 loop fixes (runtime audit, silent catch), F-3, F-4, one load flake |
+| `ae767636` | **green** | 47.7 min; five load flakes red in the pool and green on their solo retry |
+
 ## Findings
 
-None open. The build's three process notes (incomplete `files:` declaration, a dispatch worktree resolving bare imports to main, Outlines not expandable by the runner) are lessons, carried in the story RETROSPECTIVE.
+| id | observed | type | severity | triage | routed-to | status |
+| --- | --- | --- | --- | --- | --- | --- |
+| F-1 | The gate found 159's own reds: directory budgets, kernel ports, wire-kind, a citation, an extractor, the private-terms scrub, and a bundle manifest left stale by the loop-record repair | defect | high | blocker, fixed | 159 | closed — `75549342`, `76e884cb`, `206c8877` |
+| F-2 | The whole-tree gate could not finish inside its deadline on this host: the integration lane ran ~350 scenarios serially (~25 min), doctor re-scanned history and read items one at a time, and the gate inherited the session environment | defect | high | blocker for the door, fixed; residual suite speed open | test runner; suite-speed milestone | closed for 159 — `ae1495a6`, `79b926b7`, `1366680d`; residual open as m156/F-4 |
+| F-3 | Withdrawing a native run during a permission review settled `failed/persistence_failed` under load: the post-stop review write raced the child's 1-s close grace (158 task01 E6, 2 of 6 parallel runs) | defect | high | blocker, fixed | execution | closed — `69171bfa` |
+| F-4 | 130/01's test timed spawn-to-exit while its scenario's 3 s run from the end of the script; importing the application alone takes ~2.8 s here | defect | medium | blocker, fixed | test | closed — `ae767636` |
+
+Recall preceded triage (one `--kind finding` recall per finding, submitted with `record-recall`).
+F-1 repeats m57/F-57-M-3 (a bundle change left the manifest un-derived) and m138/F-13 (an extractor
+red at the gate). F-2 shares cause and evidence with m127/F-30 ("the runner exited with no verdict",
+the deadline too short for the whole tree) and m156/F-4, which stays open for the suite-speed work.
+F-3 and F-4 are distinct incidents. The two regressions in the `79b926b7` row came from commits made
+during 156's verification, not from 159, and were fixed in `ef74f7d5` and `ae767636`. The build's three
+process notes are lessons, carried in the story RETROSPECTIVE.
 
 ## Accept decision — 159/01
 
 Accepted 2026-10-12: scoped lane green, both manual scenarios reproduced, FF-15901..03 each shown to bite, validate PASS, no open finding. The milestone regression gate stays owed at 159's own acceptance.
+
+## Accept decision — 159
+
+Accepted 2026-10-14: 159/01 done; the whole-tree regression gate green at `ae767636`
+(`REGRESSION.md`, last row); FF-15901..03 resolve to `test/arch/memory/acd-auto-memory-source.test.mjs`
+with their red probes recorded; validate PASS; doctor reports no `control-unresolved`. No blocker
+finding is open; F-2's residual (suite speed) is routed to its own work.

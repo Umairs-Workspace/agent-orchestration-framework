@@ -1,9 +1,9 @@
 {
   "runId": "20261012T214406078Z-0003",
   "itemRef": "159",
-  "state": "running",
+  "state": "failed",
   "attempt": 1,
-  "outcome": null,
+  "outcome": "failed",
   "sessionId": "1079f815-9878-4423-b13f-532e32de3a3c",
   "brief": {
     "loop": {
@@ -167,14 +167,29 @@
     }
   },
   "createdAt": "2026-10-12T21:44:06.078Z",
-  "updatedAt": "2026-10-12T21:44:06.078Z",
-  "failureReason": null,
-  "heartbeatAt": null,
+  "updatedAt": "2026-10-12T22:47:03.890Z",
+  "failureReason": "timeout",
+  "heartbeatAt": "2026-10-12T22:16:55.636Z",
   "retryOf": null,
   "reclaimedAt": null,
   "node": "node-7297",
   "resumeAfter": null,
-  "spend": null,
+  "spend": {
+    "model": "claude-sonnet-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 76,
+      "output": 11436,
+      "cacheRead": 3378879,
+      "cacheCreate": 117470
+    },
+    "costUsd": 1.6259442,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 38,
+    "toolCalls": 18,
+    "exitReason": "error"
+  },
   "asks": [],
   "execution": {
     "phases": {
