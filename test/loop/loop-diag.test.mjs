@@ -979,15 +979,21 @@ const stopRequestTests = [
         `const { createStopSource, loopStopsDir } = defaultApplication.loop.stopRequest;`,
         `const source = createStopSource({ loopRunId: "L1", dir: loopStopsDir() });`,
         `source.start();`,
+        `process.stdout.write("script-end " + Date.now() + "\\n");`,
       ].join("\n");
-      const startedAt = Date.now();
+      // The scenario's 3 seconds run from the END OF THE SCRIPT ("When the child's script reaches
+      // its end"), not from spawn: importing the application alone takes ~2.8 s on a Windows node
+      // (measured 2026-10-14), which made a spawn-to-exit clock fail a process that exited at once.
+      // The outer timeout only bounds a child that never exits.
       const outcome = await new Promise((resolve) => {
-        execFile(process.execPath, ["--input-type=module", "-e", script], { env: { ...process.env }, timeout: 3000, windowsHide: true }, (error, stdout, stderr) => {
-          resolve({ error, stdout, stderr });
+        execFile(process.execPath, ["--input-type=module", "-e", script], { env: { ...process.env }, timeout: 30_000, windowsHide: true }, (error, stdout, stderr) => {
+          resolve({ error, stdout, stderr, exitedAt: Date.now() });
         });
       });
-      assert.equal(outcome.error, null, `the child exited on its own within 3 seconds: ${outcome.error?.message ?? ""} ${outcome.stderr}`);
-      assert.ok(Date.now() - startedAt < 3000, "within 3 seconds");
+      assert.equal(outcome.error, null, `the child exited on its own with code 0: ${outcome.error?.message ?? ""} ${outcome.stderr}`);
+      const scriptEnd = Number(/^script-end (\d+)$/mu.exec(outcome.stdout)?.[1]);
+      assert.ok(Number.isFinite(scriptEnd), `the child reached its script's end: ${outcome.stdout}`);
+      assert.ok(outcome.exitedAt - scriptEnd < 3000, `within 3 seconds of the script's end (${outcome.exitedAt - scriptEnd} ms)`);
     },
   },
 ];

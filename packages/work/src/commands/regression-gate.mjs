@@ -14,7 +14,7 @@ import {
 } from "../regression-record.mjs";
 
 // Core supplies configured resolution, execution, notification and transition services.
-export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest }) {
+export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest }) {
 // `aof work regression-gate <ref>` — THE GATE RUN (milestone 96 / story 04, ADR-008 §1, §2).
 // FF-9606 is its control.
 //
@@ -111,10 +111,10 @@ function keepDrivenRunAlive({ env = process.env, intervalMs = KEEP_ALIVE_MS } = 
   const runId = env.AOF_RUN_ID;
   if (typeof itemDir !== "string" || itemDir.length === 0 || typeof runId !== "string" || runId.length === 0) return () => {};
   const runsDir = path.join(itemDir, "runs");
-  // Liveness bookkeeping never fails the gate: a beat that cannot be written is dropped.
+  // Liveness bookkeeping never fails the gate: a beat that cannot be written is reported, not thrown.
   const beat = () => mkdir(runsDir, { recursive: true })
     .then(() => appendFile(path.join(runsDir, ".heartbeats.ndjson"), `${JSON.stringify({ runId, at: new Date().toISOString() })}\n`, "utf8"))
-    .catch(() => {});
+    .catch((error) => reportDegrade("regression-gate-keep-alive", error));
   const first = beat();
   const timer = setInterval(beat, intervalMs);
   timer.unref?.();
