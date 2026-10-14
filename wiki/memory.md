@@ -10,84 +10,155 @@ and its rationale into [`ARCHITECTURE.md` ADRs](documents.md). Without memory th
 or a developer about to forget to pin line endings, has no way to be told *"we already learned this."*
 
 **Memory** is the seam that carries those lessons forward. It is a **CLI surface** — `aof work memory
-…` — that any ACD agent or command can call to **recall** relevant prior lessons at a decision point,
-and to **ingest** new ones at Accept. It was delivered by milestone
-[`05_work-memory`](work/archive/05_milestone_work-memory/SPEC.md).
+…` — that agents and commands call to **recall** relevant prior records at a decision point, to
+**record** what they did with them, and to **ingest** new records after work lands. It was first
+delivered by milestone [`05_work-memory`](work/archive/05_milestone_work-memory/SPEC.md) and has been
+extended since by three milestones this page compiles:
 
-## The load-bearing constraint: memory is a *derived index*
+| Milestone | What it added |
+|---|---|
+| [148 · memory corpus holds its vocabulary](work/148_milestone_memory-corpus-holds-its-vocabulary/SPEC.md) | the shared lesson vocabulary, record tags, the layer map and `status` composition |
+| [153 · memory closes the loop](work/153_milestone_memory-closes-the-loop/SPEC.md) | recall observations, recurrence, promotion metadata, effectiveness accounting, tune patches and the workflow hooks |
+| [157 · episodic memory is recallable](work/157_milestone_episodic-memory-is-recallable/SPEC.md) | findings, raw feedback and runs as records, JSON source locators, `--all` recall, the retry and triage edges |
+
+## Sources and authority
 
 The single rule the whole subsystem rests on:
 
-> **Memory is a derived index, rebuildable from the work-stream `.md` files — never an authoritative
-> second copy.**
+> **Work records stay authoritative. The memory index is derived and rebuildable — never an
+> authoritative second copy.**
 
-This preserves ACD's single-source-of-truth principle ([philosophy.md → principle 4](philosophy.md)).
-The source of truth is always the `RETROSPECTIVE.md` / `ARCHITECTURE.md` files themselves; the index is
-disposable. A fresh rebuild reconstructs it exactly, nothing accretes, and **every record traces back
-to live source text** (`path:line`). Without this, memory would become the very drift vector ACD exists
-to defend against — a summary that silently diverges from the docs it summarises.
+This preserves ACD's single-source-of-truth principle ([philosophy.md → principle 4](philosophy.md)) and is
+[05/ADR-001](work/archive/05_milestone_work-memory/ARCHITECTURE.md)'s ruling.
+Every record is parsed out of a file the work stream already owns, and a fresh `ingest` reconstructs the
+index exactly: nothing accretes, nothing is written back to a source, and **every record carries a
+`source` locator that resolves to live text**. Without this, memory would become the very drift vector
+ACD exists to defend against — a summary that silently diverges from what it summarises.
+
+**Wiki pages are not indexed.** This page and its siblings compile records that are already indexed;
+indexing them as well would be a second copy of the same lessons (see
+[161's scope](work/161_milestone_the-memory-wiki-stays-true/SPEC.md)).
 
 ## The seam: `aof work memory <verb>`
 
-The seam is **backend-agnostic by contract**. Agents call five verbs through one unchanging interface;
-*which backend answers* is a config choice they never see.
+The seam is **backend-agnostic by contract**. Agents call a small verb set through one unchanging
+interface; *which backend answers* is a config choice they never see.
 
 | Verb | What it does |
 |---|---|
-| `recall <query>` | Surface prior lessons/ADRs matching a query, scope-filtered and ranked — "we already learned this" at the moment it would help. |
-| `brief` | A situational digest: the lesson/ADR split + lessons-by-area (composed over `recall`). |
-| `reindex [ref]` | Rebuild the derived index from the work-stream `.md` files. `--all` = whole stream; `--item NN` / a milestone ref = one milestone. |
-| `ingest [ref]` | Alias of `reindex` — the verb agents call at Accept to fold a just-written lesson in. |
-| `status` | Report the active backend, record count, store location, and lesson/ADR split. |
+| `recall <query>` | Surface prior records matching a query — scope-filtered, ranked, five by default. |
+| `record-recall <ref> --input <file>` | Append a **completed recall observation** to the item's existing `FEEDBACK.ndjson` ledger. Not a backend verb: it works identically with memory off. |
+| `recurrence <lesson text> [--exclude <item>/R<n>]` | Does a new lesson repeat an earlier one? A calibrated match over every indexed lesson. |
+| `ingest [ref]` | (Re)build the derived index from the work stream. `--all` = whole stream; `--item NN` or a ref = one item's subtree. Alias of `reindex`. |
+| `reindex [ref]` | The same rebuild, under its backend name. |
+| `status [--lessons]` | The active backend, record count, per-type and per-layer counts, vocabulary conformance, observed effectiveness (per lesson with `--lessons`) and whether the index is stale. |
 
-Scope flags are first-class filters: `--area --stage --kind --owner --item`, plus `--limit N` and
-`--json` (the structured `records` array; the default is a rendered text view). The interface itself is
-frozen at exactly **four methods** — `{ name, recall, reindex, status }`; `brief` and `ingest` are
-seam-side conveniences, not new methods, so a richer backend never has to implement them.
+Scope flags are first-class filters: `--area --stage --kind --owner --item --status`, plus `--limit N`,
+`--all`, `--block` (the compact injection block a workflow pastes into agent context) and `--json` (the
+structured `records` array; the default is a rendered text view). The backend interface itself is
+frozen at four methods — `{ name, recall, reindex, status }` — so `ingest`, `recurrence` and
+`record-recall` are seam-side compositions that a richer backend never has to implement. The former
+`brief` verb was retired (153/ADR-001); it is refused as an unknown verb.
 
-The seam lives in [src/work-memory.mjs](../src/work-memory.mjs) and dispatches via `aof work memory` in
-[src/cli.mjs](../src/cli.mjs).
+The seam lives in [packages/knowledge/src/memory.mjs](../packages/knowledge/src/memory.mjs); the routed
+command is [packages/knowledge/src/commands/memory.mjs](../packages/knowledge/src/commands/memory.mjs).
+
+## Three layers
+
+Every record type belongs to exactly one memory layer. The one partition is
+`RECORD_TYPE_LAYERS` in [packages/knowledge/src/memory/local-retrieval.mjs](../packages/knowledge/src/memory/local-retrieval.mjs)
+([148/ADR-004](work/148_milestone_memory-corpus-holds-its-vocabulary/ARCHITECTURE.md),
+[157/ADR-003](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)):
+
+| Layer | Holds | Answers |
+|---|---|---|
+| **Procedural** | lessons | *What should we do differently?* |
+| **Semantic** | ADRs, capabilities, gaps, summaries | *What is true, decided or delivered?* |
+| **Episodic** | findings, raw feedback, runs | *What actually happened on this item?* |
+
+`status` reports the count in each layer, and the per-type counts always sum to the record count.
 
 ## Where memory is stored
 
 | Layer | Location | Notes |
 |---|---|---|
-| **Source of truth** | `wiki/work/NN_milestone_*/RETROSPECTIVE.md` and `…/ARCHITECTURE.md` | The `.md` files. Memory never owns this — it only reads it. |
-| **Derived index** (local backend) | `.aof/aof.memory.index.json` (project root) | A single JSON file, **git-ignored**, rebuilt wholesale by `reindex`. The only artifact the local backend persists, and it is disposable. |
+| **Source of truth** | the work stream's `RETROSPECTIVE.md`, `ARCHITECTURE.md`, `OUTCOME.md`, `VERIFICATION.md`, `FEEDBACK.ndjson` and run records | Memory never owns these — it only reads them. |
+| **Derived index** (`local`) | `.aof/aof.memory.index.json` | One JSON file, **git-ignored**, rebuilt wholesale by `ingest`. Disposable. |
+| **Derived index** (`graphify`) | `.aof/aof.memory.graphify.index.json` | The same records in the graphify backend's own git-ignored store. |
 | **`none` backend** | nothing | Stores nothing; every verb is a graceful no-op. |
 
-The index path is fixed ([src/memory/local-indexing.mjs](../src/memory/local-indexing.mjs)) and
-`reindex` idempotently adds it to `.gitignore` — a committed index would be an authoritative second
-copy, the invariant violation above. **In this repo today** the live `.aof/aof.config.json` selects no
-backend, so `none` is active and no index file exists; the index is materialised on demand (e.g. by a
-project that sets `memory.backend: "local"`, or by a temp-store reindex during verification).
+The index paths are fixed ([packages/knowledge/src/memory/local-indexing.mjs](../packages/knowledge/src/memory/local-indexing.mjs))
+and a rebuild idempotently git-ignores them — a committed index would be an authoritative second copy.
+An index built before the current format is reported **stale** by `status` until `ingest` rebuilds it;
+there is no migration.
 
 ## What goes into memory
 
-The local backend parses **two source kinds** across every milestone folder, producing one record each:
+The indexer walks every work item that is checked out locally — milestones, nested stories and backlog
+items, live or archived — and emits one record per declaration. There are **eight record types**:
 
-- **`lesson`** — one per `## R<n>` heading in a milestone's `RETROSPECTIVE.md`. The meta line
-  (`**Kind:** … · **Area:** … · **Stage:** … · **Owner:** …`) drives those fields; the heading drives
-  `id` + `title`.
-- **`adr`** — one per `## ADR-NNN` block in a milestone's `ARCHITECTURE.md`. `area` is always
-  `"architecture"`; `status` comes from the block's `**Status:**` line.
+| Type | Layer | One record per | Read from |
+|---|---|---|---|
+| `lesson` | procedural | `## R<n>` heading | `RETROSPECTIVE.md` |
+| `adr` | semantic | `## ADR-NNN` block | `ARCHITECTURE.md` |
+| `capability` | semantic | `###` heading under `## Delivered` | `OUTCOME.md` |
+| `gap` | semantic | `###` heading under `## Gaps` | `OUTCOME.md` |
+| `summary` | semantic | `##` section of an imported digest | a co-located `AOF.md` |
+| `finding` | episodic | declared finding id | the `Findings` register of `VERIFICATION.md` / `SESSION.md` |
+| `feedback` | episodic | raw feedback entry | `FEEDBACK.ndjson` (`kind: raw` rows only) |
+| `run` | episodic | terminal run | the run store (`done`, `failed`, `cancelled`) |
 
-Every record is the frozen **`MemoryRecord`** shape (ADR-005). Fields that don't apply to a record's
-type are present as `""` (never omitted), so retrieval filters uniformly:
+Every record is the frozen **`MemoryRecord`** shape: `recordType`, `id`, `item`, `itemSlug`, `title`,
+`area`, `stage`, `kind`, `owner`, `status`, `tags`, `summary`, `text`, `source`. **A field that does
+not apply to a type is present as `""` — never omitted and never guessed**, so retrieval filters
+uniformly. A record's identity is `(item, recordType, id)`: ids such as `R1` and `ADR-002` recur in every
+milestone, so a bare id identifies nothing.
 
-| Field | Meaning |
+**Source locators.** `source` stays one string. Markdown is `<path>:<line>`; a JSON document is
+`<path>#<pointer>` (an empty pointer is the root, so a run ends `.json#`); NDJSON is
+`<path>:<line>#<pointer>` into that line's JSON value, so a raw feedback entry ends `.ndjson:3#`
+([157/ADR-002](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)).
+
+**Tags.** `tags` is an array of the qualifiers the source carried and the vocabulary did not absorb: a
+lesson kind written `near-miss (recurring)` is kind `near-miss` tagged `recurring`; a lesson's `Recurs`
+reference is the tag `recurs:<item>/R<n>`; a discharged gap carries its date. Tags render in a block line
+as `[t1; t2]`, before the source.
+
+**Canonical lesson metadata.** A lesson's meta line is held to one vocabulary, shared by the
+retrospective prompt, `aof work validate` and `status` conformance
+([packages/work/src/memory-vocabulary.mjs](../packages/work/src/memory-vocabulary.mjs),
+[148/ADR-001](work/148_milestone_memory-corpus-holds-its-vocabulary/ARCHITECTURE.md)):
+
+| Field | Values |
 |---|---|
-| `recordType` | `"lesson"` or `"adr"` |
-| `id` | `R1`, `ADR-002`, … |
-| `item` / `itemSlug` | the milestone number / slug the record came from |
-| `title` | the de-emphasised heading prose |
-| `area` / `stage` / `kind` / `owner` | scope fields (lesson meta line; `area="architecture"` for ADRs) |
-| `status` | ADR status (lessons: `""`) |
-| `summary` | the one-line gist — the short display line |
-| `text` | the searchable blob (title + what/why/lesson, or context/decision/invariant) |
-| `source` | `path:line` back to the live heading — the trace that proves the record is derived |
+| **Kind** | `mistake` · `blocker` · `near-miss` · `misunderstanding` |
+| **Area** | `code` · `architecture` · `contract` · `security` · `process` |
+| **Stage** | `refine` · `build` · `verify` |
+| **Owner** | the role or lane |
+| **Promoted to** | `none` · `control:<id>` · `rule:<path>` · `prompt:<path>` — see [promotion](#recurrence-and-promotion) |
+| **Recurs** | optional `<item>/R<n>` |
 
-As of milestone 05's acceptance the live stream yields **38 records = 8 lessons + 30 ADRs**.
+A value that starts with a vocabulary word *is* that word and the rest becomes a tag; a value that starts
+with none is kept as written and counted as non-conforming, never silently mapped; a blank stays blank.
+ADRs carry `area: architecture` and take `status` from their `**Status:**` line; a gap's `status` is
+`open`, `discharged` or `open-by-decision`.
+
+### Episodic provenance
+
+The episodic records are compiled by [packages/knowledge/src/memory/episodic-indexing.mjs](../packages/knowledge/src/memory/episodic-indexing.mjs)
+from sources that already exist ([157/ADR-001](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)):
+
+- **Findings** come only from declarations in a `Findings` register — a heading or a table row's first
+  cell, with severity, disposition and evidence kept in the text. Prose citations of a finding create
+  nothing; one id declared twice is one merged record.
+- **Feedback** is the *raw* rows of `FEEDBACK.ndjson` only. Classification and recall rows never become
+  feedback records, and `STATE.md`'s feedback bullets are a projection that is not indexed.
+- **Runs** are terminal runs only — queued, running and parked runs are not evidence yet. A failed run's
+  `failureReason` rides its summary. No transcript is opened.
+- **Stalls** are folded into a run's text *when the snapshot has them*: matched on both session and the
+  run's full item ref. A missing snapshot, a native runtime with no stall telemetry or a wrong
+  attribution means the stall evidence is **unavailable**, never zero; only a matched agent with an empty
+  stall list is a known zero.
 
 ## Optional source: your local Claude auto-memory
 
@@ -146,56 +217,169 @@ ingest --all`, then `aof work memory recall "<a phrase from a note>" --owner ope
 ## How `recall` ranks
 
 The spike's headline finding was that *ranking, not parsing, is the hard part* — raw term repetition in
-a long ADR must not bury a short, on-point lesson. So retrieval ([src/memory/local-retrieval.mjs](../src/memory/local-retrieval.mjs))
+a long ADR must not bury a short, on-point lesson. So retrieval
+([packages/knowledge/src/memory/local-retrieval.mjs](../packages/knowledge/src/memory/local-retrieval.mjs))
 applies, in order:
 
-1. **Scope pre-filter** — the `--area/--stage/--kind/--owner/--item` flags are intersected (AND) and
-   applied as a *hard* filter before any scoring. Off-scope records never compete.
+1. **Scope pre-filter** — the `--area/--stage/--kind/--owner/--item/--status` flags are intersected (AND)
+   and applied as a *hard* filter before any scoring. Off-scope records never compete. `--item NN` is a
+   **subtree** match: `39` reaches milestone 39 and every story under it, `39/02` that story alone.
 2. **BM25-lite, length-normalised scoring** — so a dense short match beats a long term-heavy one.
-3. **Title-match + record-type boosts** — a query-term hit in the title lifts a record; at equal
+3. **Title-match and record-type boosts** — a query-term hit in the title lifts a record; at equal
    relevance a `lesson` outranks an `adr` (a tiebreaker, never a relevance override).
 
-The proof it works: `recall "requiring grep fitness function smell"` ranks milestone-01's **R1 lesson
-#1**, far above the ADRs — a lesson first written in milestone N reaches the decision-maker building
-milestone N+1, which is the whole objective.
+**How many results.** Recall returns **five** records by default; `--limit N` changes that. `--all`
+returns the **complete scoped result** and overrides the limit — it is how an item's whole delivery
+history is gathered (`recall "" --item <ref> --area delivery --all`, and an empty query is permitted). A
+workflow's `--block` output renders one compact line per record and an empty recall renders nothing at
+all, so a hook injects nothing rather than a placeholder. Episodic lines include their summary, so a
+failed run's reason is visible; source is always last.
+
+**Memory off.** With backend `none`, `recall` returns empty, `ingest` reports zero records and `status`
+reports backend `none`. `recurrence` answers "no candidates" and builds no index, while `record-recall`
+and the ledger-based part of `status` still work, because they read work records rather than the index.
+
+Ranking quality is held by a live-corpus eval whose query/reference pairs are fixed — a failing ranking is
+fixed in the ranker, never by editing the expectations
+([157/ADR-003](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)).
+
+## The decision edges
+
+Memory is **built into the workflow**, not only callable: six declared *decision-recall edges* recall at a
+moment a decision is about to be made, keep that result, and afterwards record what the decision did with
+it. Their authored sources are `shatter`, `refine`, `continue` and `verify` in
+[packages/core/assets/commands](../packages/core/assets/commands/continue.md), rendered into each runtime;
+the roster and each edge's protocol are enforced by
+[test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs](../test/arch/memory/acd-learning-edge-reaches-every-cut.test.mjs)
+([153/ADR-004](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md),
+[157/ADR-004](work/157_milestone_episodic-memory-is-recallable/ARCHITECTURE.md)).
+
+| Edge | Actor | Recall | Scope and condition |
+|---|---|---|---|
+| `shatter-po` | product owner | `recall "<query>" --block` | Unscoped, **once** before partition. The one observation is attached to the *first driver in PRD order*; other drivers cite that owner. An aborted shatter with no driver records nothing. |
+| `refine-architect` | architect | `recall … --area architecture --block` | The architect's **architecture filter**. |
+| `refine-po` | product owner | `recall … --block --item <ref>` | The PO's **item filter** — a different scope from the architect's, so the two edges never share a row. |
+| `continue-developer` | developer | `recall … --kind near-miss --block` | The existing near-miss recall, unchanged. |
+| `continue-episodic` | developer | `ingest`, then `recall "" --item <ref> --area delivery --all --json` | **Retry only** — attempt 2 or later; attempt 1 has no episodic edge. No stage filter, so verify findings stay visible. The developer names the prior run (`retryOf`, else the latest terminal earlier attempt), its `failureReason` and every recalled finding in the build record before the first code change, and says the evidence is unavailable when memory is off. |
+| `verify-finding` | verifier | `ingest`, then `recall "<finding text>" --kind finding --block` | **Stream-wide** — no item and no stage filter. Matches support triage and are **never closed automatically**: cause and evidence are compared, the finding's own identity is excluded, and a bare `F` id is not a duplicate by id alone. |
+
+Two things are **not** decision edges. A retrospective's *recurrence match* is a matching operation, and
+its *evidence gathering* is a recall that records no observation (both below).
+
+## Recall observations
+
+A decision edge's record of what happened is a **recall observation** on the item's existing
+`FEEDBACK.ndjson` ledger ([packages/work/src/feedback-records.mjs](../packages/work/src/feedback-records.mjs),
+[153/ADR-001](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md)) — the same append-only file raw
+feedback uses, as a third row kind `recall`, so there is no second store.
+
+- The agent **keeps the exact result of its one real recall** — the query, the scope and every returned
+  record's `item`, `id` and `recordType` — and never re-runs retrieval to rebuild it. When the decision is
+  made it assigns each returned record an **explicit verdict**: `honoured`, `departed` or `irrelevant`. No
+  default verdict exists.
+- It submits the completed observation once: `aof work memory record-recall <ref> --input <file>`, with a
+  caller-minted **UUID** per recall, the instant `at`, the `edge` name and the `actor`.
+- An **empty result is still submitted** (`"records": []`); no verdict and no extra retrieval is invented.
+- **Replay is safe.** The same UUID with identical content is a no-op (concurrent submissions leave one
+  row); changed content under that UUID is refused before anything is written. An interrupted decision has
+  no completed observation, so there is no provisional row.
+- The row is **evidence of a decision, not raw feedback**: it carries no text, projects no `STATE.md`
+  bullet and never enters a raw-feedback count.
+
+## Recurrence and promotion
+
+**Recurrence** asks whether a new lesson is an old one again. Before a retrospective writes each new
+lesson it runs `aof work memory recurrence "<what happened and lesson>" --exclude <new id> --json`
+([packages/knowledge/src/memory/recurrence.mjs](../packages/knowledge/src/memory/recurrence.mjs),
+[153/ADR-002](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md)). It scores **every indexed
+lesson across kinds** with a frozen-weight text-similarity measure, separate from retrieval ranking, and
+reports the top three candidates and the best one whose score is strictly above a threshold chosen from
+labelled pairs (null when none is). A qualifying match becomes `**Recurs:** <item>/R<n>` on the *new*
+lesson; the new incident keeps its own evidence and the earlier lesson is never rewritten. A match is never
+inferred from metadata alone and an ADR is never a candidate.
+
+**Promotion** records what *prevention exists* for a lesson. Every new lesson carries
+`**Promoted to:**` — `none`, `control:<qualified-id>`, `rule:<repo-path>` or `prompt:<repo-path>` — naming
+only a prevention that already exists, never a planned one. The value is kept verbatim in the lesson's
+`status`. A **forward watermark** keeps history untouched: before appending the first new lesson to a
+retrospective, the author writes `promotionFrom: <next R number>` in its frontmatter, and the vocabulary
+hold requires a promotion on every lesson at or above it. Lessons below the watermark stay legacy and
+unchanged.
+
+**`aof work tune`** joins recurrence and verdict counts onto its lesson evidence. For a recurring lesson
+with exactly one prompt target it may compute a deterministic, reviewable **patch** — the exact current
+bytes plus a delimited lesson block. The patch is advisory: tune writes nothing, there is no automatic
+applier, and a person must **apply** it. Targets under generated runtime folders are refused in favour of
+the authored source
+([packages/work/src/tune/proposal.mjs](../packages/work/src/tune/proposal.mjs),
+[153/ADR-005](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md)).
+
+## Accounting
+
+`aof work memory status` composes its report at the seam, so every backend reports the same numbers
+([148/ADR-004](work/148_milestone_memory-corpus-holds-its-vocabulary/ARCHITECTURE.md),
+[153/ADR-003](work/153_milestone_memory-closes-the-loop/ARCHITECTURE.md)):
+
+- **types** and **layers** — counts per record type and per memory layer;
+- **conformance** — how many lessons have a blank or non-enum kind, area or stage, a blank owner, and how
+  many gaps have a non-enum status;
+- **effectiveness** — per type, and per lesson with `--lessons`: how often it was `surfaced`, and how
+  often it was `honoured`, `departed` or judged `irrelevant`, plus `recurred` — the distinct new lessons
+  that name it in `Recurs`. These are *observed decisions and repeats*, not proof a lesson prevented
+  anything. They are read from the ledgers and retrospectives rather than the index, so they survive a
+  lesson leaving the index (marked `provenance unresolved`) and work with memory off.
+
+`aof work doctor` adds two **advisory** warnings from the same facts
+([packages/work/src/doctor/memory-effectiveness.mjs](../packages/work/src/doctor/memory-effectiveness.mjs)):
+a lesson that has **recurred**, and a lesson still **unpromoted** (no field, or `none`) after five later
+accepted top-level milestones (configurable as `work.doctor.memory.unpromotedAfterMilestones`). Neither
+gates acceptance, and a lesson whose age cannot be established is reported as unknown rather than guessed.
+
+## Retrospective evidence
+
+A retrospective gathers its evidence through memory, in a fixed order
+([packages/core/assets/commands/retrospective.md](../packages/core/assets/commands/retrospective.md)):
+
+1. `aof work observe` refreshes observability.
+2. `aof work memory ingest`, then **one** `recall "" --item <ref> --area delivery --all --json` — the
+   item's findings, raw feedback and terminal runs with their stalls. Cited sources may be opened to
+   substantiate a record, but raw files are never enumerated as the evidence path; when memory is off the
+   evidence is reported **unavailable**. This step records no recall observation, and `STATE.md`'s
+   feedback notes are not counted a second time.
+3. The **recurrence** match and the **promotion** fields for each new lesson, as above.
+4. `aof work memory ingest` once more, only after those fields are authored, so the index carries them.
 
 ## Backend selection
 
-One config key, read in exactly one place (ADR-002), picks the backend:
+One config key, read in exactly one place, picks the backend:
 
 ```jsonc
 // .aof/aof.config.json
-"memory": { "backend": "local" }   // or "none"; absent ≡ "none"
+"memory": { "backend": "local" }   // "none" | "local" | "graphify"; absent ≡ "none"
 ```
 
-- **`none`** (default) — a total no-op. ACD runs unchanged when memory is absent; recall returns empty,
-  reindex reports zero. Nothing to install, nothing to break.
-- **`local`** — the zero-dependency backend described above. Ships in the box.
-- **future: semantic (e.g. MemPalace)** — a vector/semantic backend plugs in behind the *same* four
-  verbs, with no change to a single agent prompt. That substitutability is the reason the seam exists;
-  the cheap local backend proves the seam earns its keep first.
+- **`none`** — a total no-op. ACD runs unchanged when memory is absent; recall returns empty, ingest
+  reports zero.
+- **`local`** — the zero-dependency backend: the records above in `.aof/aof.memory.index.json`.
+- **`graphify`** — the same records, from the same parsers, plus a work-stream graph built through the
+  `graph:build` command as a **re-rank signal only** (the graph is never the record source). It keeps its
+  own index and degrades to the base ranking when graphify is absent. `memory.graphify.extractionBackend`
+  names the extractor (`claude-cli` when unset, `claude`, `gemini`, `openai`, `kimi`, `deepseek` or the
+  offline `ollama`).
 
-An unknown backend name is rejected by the `$defs/memory` schema enum, not discovered at runtime.
+An unknown backend name is refused by name, with the registered choices listed. **This page
+does not say which backend, or how many records, a given repository has — both change.** Ask it:
 
-## What is wired today — and what is not
+```
+aof work memory status --json
+```
 
-Memory is **callable but not yet auto-invoked.** The verb surface, the local backend, and config
-selection are done and verified (stories `00`–`02`); the **read/write hooks** that wire it into the
-loop are [story `03_story_memory-hooks`](work/archive/05_milestone_work-memory/stories/03_story_memory-hooks/STORY.md)
-— authored as acceptance criteria, not yet built:
-
-- No bundled ACD agent or command prompt yet calls `aof work memory recall` / `ingest` on its own — not
-  `refine`, not `continue`, not `verify`. An agent recalls only if a human runs the verb.
-- So memory does not yet *automatically* surface a recall at a decision point or ingest a lesson at
-  Accept. Threading the verbs into [the agent prompts and the workflow](agents.md) is the next step the
-  seam was built to enable (see [05's spike findings](work/archive/05_milestone_work-memory/spike/FINDINGS.md)).
-
-Until those hooks land, the value is realised by invoking the verbs directly — `aof work memory recall
-"<the decision you're about to make>"` before committing to an approach.
+which reports the active backend and the current counts by type and layer, and names a stale index and the
+`ingest` that rebuilds it. `aof work memory ingest --all` rebuilds the whole stream.
 
 ## Next
 
 - The documents memory reads from (`RETROSPECTIVE.md`, `ARCHITECTURE.md`) → [documents.md](documents.md)
 - Why single-source-of-truth / derived-not-duplicated matters → [philosophy.md](philosophy.md)
-- Who would call recall/ingest once the hooks land → [agents.md](agents.md)
-- The milestone that delivered it → [work/05_milestone_work-memory/](work/archive/05_milestone_work-memory/SPEC.md)
+- The agents that recall at each edge → [agents.md](agents.md)
+- The milestone that delivered the seam → [work/05_milestone_work-memory/](work/archive/05_milestone_work-memory/SPEC.md)
