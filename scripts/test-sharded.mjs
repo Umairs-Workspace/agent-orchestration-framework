@@ -95,7 +95,20 @@ for (const [file, positions] of units) {
     plan.push({ key, file, positions: slice, chunked: chunks.length > 1, estimate: seconds * (slice.length / positions.length) });
   }
 }
-if (LANES) plan.push({ key: "lanes (integration + cargo)", lanes: true, positions: [], estimate: timings["lanes (integration + cargo)"]?.seconds ?? 300 });
+// THE INTEGRATION LANE IS SHARDED BY FEATURE (2026-10-13). Run as one unit its ~350 scenarios
+// took ~25 min serially and became the run's long pole. Each feature is independent (a temp
+// project and global home per scenario), so each runs as its own unit, in-process exactly as
+// `scripts/test.mjs` embeds it; the remaining `--lanes-only` unit selects no feature and runs cargo.
+if (LANES) {
+  const integrationDir = path.join(repo, "test", "integration");
+  const { discoverFeatureFiles } = await import(pathToFileURL(path.join(integrationDir, "support", "feature-runner.mjs")).href);
+  for (const feature of await discoverFeatureFiles(integrationDir)) {
+    const name = path.basename(feature, ".feature");
+    const key = `integration ${name}`;
+    plan.push({ key, lanes: true, positions: [], args: [path.join(integrationDir, "cli.mjs"), name], env: { AOF_IN_PROCESS_INTEGRATION: "1" }, estimate: timings[key]?.seconds ?? 120 });
+  }
+  plan.push({ key: "lanes (cargo)", lanes: true, positions: [], env: { AOF_INTEGRATION_FEATURES: "" }, estimate: timings["lanes (cargo)"]?.seconds ?? 30 });
+}
 plan.sort((a, b) => b.estimate - a.estimate);
 if (argv.includes("--plan")) {
   console.log(`# plan: ${plan.length} units; the heaviest ${Math.min(10, plan.length)} (estimate from recorded timings):`);
@@ -107,9 +120,9 @@ if (argv.includes("--plan")) {
 function runUnit(unit, label) {
   return new Promise((resolve) => {
     const home = mkdtempSync(path.join(os.tmpdir(), "aof-shard-home-"));
-    const args = unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), unit.file, unit.positions.join(",")];
+    const args = unit.args ?? (unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), unit.file, unit.positions.join(",")]);
     const begun = Date.now();
-    const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, AOF_GLOBAL_HOME: home } });
+    const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } });
     let output = "";
     child.stdout.on("data", (chunk) => { output += chunk; });
     child.stderr.on("data", (chunk) => { output += chunk; });
