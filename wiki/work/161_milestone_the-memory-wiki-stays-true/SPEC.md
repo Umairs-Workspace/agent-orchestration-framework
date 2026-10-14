@@ -53,8 +53,8 @@ Out of scope:
 
 ## Stories
 
-- [ ] [01 · Wiki source citations are checked by doctor](stories/01_story_wiki-source-citations-are-checked/STORY.md)
-- [ ] [02 · The memory wiki describes the delivered procedure](stories/02_story_memory-wiki-describes-delivered-procedure/STORY.md)
+- [x] [01 · Wiki source citations are checked by doctor](stories/01_story_wiki-source-citations-are-checked/STORY.md)
+- [x] [02 · The memory wiki describes the delivered procedure](stories/02_story_memory-wiki-describes-delivered-procedure/STORY.md)
 
 The stories have disjoint write sets and can build independently. Final acceptance
 runs the new doctor probe over the whole wiki after both land. The inventory and

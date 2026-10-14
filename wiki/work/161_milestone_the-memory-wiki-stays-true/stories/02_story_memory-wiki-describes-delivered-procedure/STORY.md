@@ -4,7 +4,7 @@ number: 2
 slug: memory-wiki-describes-delivered-procedure
 title: "The memory wiki describes the delivered procedure"
 parent: 161
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-14

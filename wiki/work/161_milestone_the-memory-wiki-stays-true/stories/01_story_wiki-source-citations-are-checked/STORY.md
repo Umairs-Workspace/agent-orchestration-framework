@@ -4,7 +4,7 @@ number: 1
 slug: wiki-source-citations-are-checked
 title: "Wiki source citations are checked by doctor"
 parent: 161
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-14
