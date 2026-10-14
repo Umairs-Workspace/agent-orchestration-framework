@@ -248,11 +248,14 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (reviewPending()) {
         // Best-effort bounded observation after stop, never a native decision or rollback.
         // Persistence failure remains failure even if native execution already happened.
+        // The write is a persistence operation, so it is bounded by the request bound, not the
+        // child's 1 s close grace: under load a successful run-record write outlasted closeMs and a
+        // clean withdrawal was recorded failed/persistence_failed (158 E6, 2026-10-14).
         let timer;
         try {
           await Promise.race([Promise.resolve().then(() => options.onActivity?.({ kind: "permission-review-interrupted", sessionId, turnId,
             observationState: terminal?.failureReason === "abort" ? "interrupted" : "unknown" })),
-          new Promise((_, reject) => { timer = setTimeout(() => reject(failure("persistence_failed")), closeMs); })]);
+          new Promise((_, reject) => { timer = setTimeout(() => reject(failure("persistence_failed")), requestMs); })]);
         } catch { terminal = { outcome: "failed", failureReason: "persistence_failed" }; }
         finally { clearTimeout(timer); }
       }

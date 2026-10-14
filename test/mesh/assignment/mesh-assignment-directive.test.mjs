@@ -511,7 +511,7 @@ meshAssignmentDirectiveTests.push(...["approved", "withdrawn"].map(condition => 
         else f.probes.at(-1).child.stdout.write([reviewFrame("approved"), ...finishFrames()].map(frame => JSON.stringify(frame)).join("\n") + "\n");
       },
     });
-    assert.equal(result.outcome, condition === "withdrawn" ? "cancelled" : "done"); assert.equal(result.native, true);
+    assert.equal(result.outcome, condition === "withdrawn" ? "cancelled" : "done", `settled ${result.outcome}/${result.failureReason ?? "-"}`); assert.equal(result.native, true);
     const records = await _aofApplication.execution.runs.readRuns(f.item); assert.equal(records.length, 1);
     assert.equal(records[0].state, "running", "worker retains settlement ownership"); assert.equal(records[0].asks.length, 0);
     const review = records[0].brief.runtimeObservation.turns[0].reviews[0];
