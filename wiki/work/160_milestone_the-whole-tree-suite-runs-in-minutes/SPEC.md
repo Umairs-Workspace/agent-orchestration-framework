@@ -1,16 +1,16 @@
 ---
 type: milestone
-number:
+number: 160
 slug: the-whole-tree-suite-runs-in-minutes
 title: "The whole-tree suite signs off in minutes — a time budget the runner enforces, and a timeout is never a red"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-14
 schema: 1
 aofVersion: 0.1.0
 ---
-# The whole-tree suite signs off in minutes
+# 160 · The whole-tree suite signs off in minutes
 
 ## Objective
 
@@ -58,7 +58,18 @@ Out of scope:
 
 ## Stories
 
-To be broken down by `aof:refine`.
+- [ ] [00 · The loop reads each git fact once per step](stories/00_story_the-loop-reads-each-git-fact-once-per-step/STORY.md) (ADR-001)
+- [ ] [01 · Tests that are not about git run on a git model](stories/01_story_tests-not-about-git-run-on-a-git-model/STORY.md) (ADR-002; after 00, 06)
+- [ ] [02 · A focused run loads only what it names](stories/02_story_a-focused-run-loads-only-what-it-names/STORY.md) (ADR-003)
+- [ ] [03 · A child process compiles once and loads only its verb](stories/03_story_a-child-process-compiles-once-and-loads-its-verb/STORY.md) (ADR-004)
+- [ ] [04 · The gate launches clean and dies with its session](stories/04_story_the-gate-launches-clean-and-dies-with-its-session/STORY.md) (ADR-005)
+- [ ] [05 · The runner enforces the budget, and a timeout is not-finished](stories/05_story_the-runner-enforces-the-budget-and-a-timeout-is-not-finished/STORY.md) (ADR-006; after 02, 04)
+- [ ] [06 · Citation history is read only when a citation misses](stories/06_story_citation-history-is-read-only-when-a-citation-misses/STORY.md) (ADR-007)
+
+Waves, from the declared write sets: **00, 02, 03, 04 and 06** run first, all independent, then
+**01 and 05**. Story 06 is not in the scope list above. Refine's profile found it: doctor's
+history reads were 422 × 3 git spawns in one loop suite, and it serves the first scope bullet
+("fewer git spawns per lane cycle").
 
 ## Dependencies
 
