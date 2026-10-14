@@ -380,6 +380,10 @@ function storyContractSets(item, text, projectRoot) {
   };
 }
 
+// How many items `buildSnapshot` reads at once: enough to keep the disk busy, few enough that a
+// large stream never exhausts file handles.
+const SNAPSHOT_READ_CONCURRENCY = 16;
+
 async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, renameMap = null } = {}) {
   const items = await listItems(workDir);
 
@@ -401,8 +405,10 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
   const ownedBy = (dir, target) =>
     !itemDirs.some((other) => other.length > dir.length && target.startsWith(other + path.sep));
 
-  const enriched = [];
-  for (const item of items) {
+  // EACH ITEM'S READS ARE ITS OWN, so items are enriched concurrently (2026-10-13). Read one at a
+  // time, ~600 items made doctor latency-bound — half of a 17 s run over this repository was the
+  // process idle between awaited reads. The rows keep `listItems` order.
+  const enrichItem = async (item) => {
     const doc = recordDoc(item.type);
     // Additive snapshot DATA (milestone 16 / ADR-002, the one allowed snapshot
     // extension): a SEPARATE per-artifact line-count map for the long-form context
@@ -519,7 +525,7 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     const overlaid = overlayFor(item, cache, meta, docs);
     // ONE recursive pass, two answers (see `scanItemTree`).
     const tree = await scanItemTree(item.dir);
-    enriched.push({
+    return {
       ...item,
       meta: overlaid.meta,
       mtimeMs: await mtimeMs(item.dir),
@@ -568,8 +574,17 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       cachedChildRefs: overlaid.cachedChildRefs,
       reportedBy: overlaid.reportedBy,
       diskStatus: overlaid.diskStatus,
-    });
-  }
+    };
+  };
+  const enriched = new Array(items.length);
+  let nextItem = 0;
+  const enrichWorker = async () => {
+    while (nextItem < items.length) {
+      const index = nextItem++;
+      enriched[index] = await enrichItem(items[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(SNAPSHOT_READ_CONCURRENCY, items.length) }, enrichWorker));
 
   // THE ORPHAN LANE'S RAW LISTINGS (127/ADR-001 §5 — a KEEPER, allow-listed in FF-12701).
   // Doctor's ITEM enumeration is `listItems` above; these `readdir`s exist because the orphan

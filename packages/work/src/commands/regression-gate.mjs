@@ -1,5 +1,4 @@
-import { appendFileSync, mkdirSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { appendFile, mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { writeText } from "@aof/foundation/fs";
@@ -111,19 +110,15 @@ function keepDrivenRunAlive({ env = process.env, intervalMs = KEEP_ALIVE_MS } = 
   const itemDir = env.AOF_RUN_ITEM_DIR;
   const runId = env.AOF_RUN_ID;
   if (typeof itemDir !== "string" || itemDir.length === 0 || typeof runId !== "string" || runId.length === 0) return () => {};
-  const beat = () => {
-    try {
-      const runsDir = path.join(itemDir, "runs");
-      mkdirSync(runsDir, { recursive: true });
-      appendFileSync(path.join(runsDir, ".heartbeats.ndjson"), `${JSON.stringify({ runId, at: new Date().toISOString() })}\n`, "utf8");
-    } catch {
-      // Liveness bookkeeping never fails the gate.
-    }
-  };
-  beat();
+  const runsDir = path.join(itemDir, "runs");
+  // Liveness bookkeeping never fails the gate: a beat that cannot be written is dropped.
+  const beat = () => mkdir(runsDir, { recursive: true })
+    .then(() => appendFile(path.join(runsDir, ".heartbeats.ndjson"), `${JSON.stringify({ runId, at: new Date().toISOString() })}\n`, "utf8"))
+    .catch(() => {});
+  const first = beat();
   const timer = setInterval(beat, intervalMs);
   timer.unref?.();
-  return () => clearInterval(timer);
+  return Object.assign(() => clearInterval(timer), { first });
 }
 
 // Every path `git status --porcelain` reports, forward-slashed on every platform. A non-zero status
@@ -327,6 +322,7 @@ async function runRegressionGate(input, deps = {}) {
   let observed = null;
   const started = clock();
   const stopKeepAlive = keepAlive();
+  await stopKeepAlive.first;
   let outcome;
   try {
     outcome = await runSuite({ scope: GATE_SCOPE }, {

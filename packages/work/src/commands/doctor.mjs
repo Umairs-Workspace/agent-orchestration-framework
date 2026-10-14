@@ -60,6 +60,30 @@ export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFrom
 // predicate does NOT make doctor a cache-first reader: its item set is still the disk's,
 // which is what `acd-cache-read-surface-boundary` pins `buildSnapshot` on.
 
+// HISTORY IS FIXED FOR A GIVEN HEAD (2026-10-13). The two `git log` reads below walk the whole
+// history with rename detection — 3 s and 667 KB on this repository's squash merges — and every
+// validate and doctor paid them: 422 doctor runs in one 51-case loop suite. A commit's history
+// cannot change, so a `log` answer is memoized per checkout and HEAD sha, for this process; the
+// working-tree `diff` is never memoized. A HEAD that cannot be read memoizes nothing.
+const HISTORY_MEMO = new Map();
+const HISTORY_MEMO_LIMIT = 32;
+
+async function historyMemoized(projectRoot, spawnGit) {
+  const head = String(await spawnGit(["rev-parse", "HEAD"])).trim();
+  if (!/^[0-9a-f]{40,64}$/u.test(head)) return spawnGit;
+  return (args) => {
+    if (args[0] !== "log") return spawnGit(args);
+    const key = `${path.resolve(projectRoot)}\0${head}\0${args.join("\0")}`;
+    if (!HISTORY_MEMO.has(key)) {
+      if (HISTORY_MEMO.size >= HISTORY_MEMO_LIMIT) HISTORY_MEMO.delete(HISTORY_MEMO.keys().next().value);
+      const answer = spawnGit(args);
+      answer.catch(() => HISTORY_MEMO.delete(key));
+      HISTORY_MEMO.set(key, answer);
+    }
+    return HISTORY_MEMO.get(key);
+  };
+}
+
 // THE ONE GIT READ THIS COMMAND PERFORMS, and the whole impure half of 119/ADR-004. The argv comes
 // from the resolver so this edge spells no second version of the read, and the parse and the map are
 // the resolver's too — this function contributes the spawn and nothing else.
@@ -68,7 +92,7 @@ async function readRenameMap(projectRoot, runGit = null) {
   // `runGit` is the READER, not its output: an injected `(args) => stdout` for tests. Named for what
   // it is, because a string handed here would be swallowed by the catch below and read as "no
   // renames, ever" — a silent empty map, which is the one answer this control must never invent.
-  const run = runGit ?? (async (args) => {
+  const spawnGit = async (args) => {
     const { stdout } = await execFileAsync("git", args, {
       cwd: projectRoot,
       encoding: "utf8",
@@ -77,8 +101,9 @@ async function readRenameMap(projectRoot, runGit = null) {
       windowsHide: true,
     });
     return stdout;
-  });
+  };
   try {
+    const run = runGit ?? (await historyMemoized(projectRoot, spawnGit));
     return await readCitationHistory(projectRoot, run);
   } catch {
     // Not a checkout, no git on PATH, a shallow clone with no history — every one of them means
