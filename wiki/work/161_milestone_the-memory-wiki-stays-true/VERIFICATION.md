@@ -122,3 +122,11 @@ agent-run manual checks, not human sign-off.
 | F-04 | The same gate failed FF-11904 (four cases) and 138/00 task01. Three ceilings equal to the delivered count were each over by one: `packages/work/src` (`wiki-citations.mjs`), `test/work` (`wiki-citations.test.mjs`) and `test/arch/command` (`acd-wiki-citation-resolver.test.mjs`). | defect | high | Blocker. Fixed inline: each row is raised by one with its reason stated in `acd-source-directory-budget.test.mjs`. `test/arch/command`'s reason explains why FF-16101 stays a file of its own rather than a case. This is another occurrence of m146/F-146-01 and m144/F-01 (an undeclared rise found at the gate). The prior findings stay as they are. | product-owner (161) | closed |
 | F-05 | The same gate failed `workspace-boundaries/all actual owners…`. `scripts/workspace-runtime-audit.json` keys `doctor.mjs`'s reviewed `execFileAsync("git", …)` on the file's whole-source digest, and 161/01's edit to the file made that entry stale. | defect | medium | Blocker. Fixed inline after review: the call's expression digest is unchanged (`db8bfc91…`), so only `sourceDigest` was re-stamped (`d69d0f50…` → `87d17c7a…`), and the boundary inspection now reports no findings. Recall: no prior finding matches. | product-owner (161) | closed |
 | F-06 | The same gate failed FF-7106 (`acd-declared-writes-include-generated-siblings`): 160/05's `STORY.md`, open on this branch, declares `packages/core/assets/commands/verify.md` but none of its five git-tracked renders. | defect | medium | Blocker for this gate, raised by 160's refine rather than 161. Fixed inline, as the operator chose: the five renders were added to 160/05's `files:` and the control re-ran green. This is another occurrence of m151/F-151-01 (FF-7106 red because of another milestone's open stories) and of the m127/F-05 class. | product-owner (161) | closed |
+
+## Accept decision
+
+**Accepted 2026-10-15.** Both stories are done. `aof work validate 161` passes.
+`aof work doctor 161` reports no `control-unresolved` at either severity, and
+FF-16101 resolves. All six findings are closed, none open as a blocker. The
+regression gate is green at `b4487fdc`. There is no `@uat` scope, so no human
+sign-off applies.

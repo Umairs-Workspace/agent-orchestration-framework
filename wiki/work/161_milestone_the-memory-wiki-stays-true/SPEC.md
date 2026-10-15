@@ -3,10 +3,10 @@ type: milestone
 number: 161
 slug: the-memory-wiki-stays-true
 title: "The compiled wiki stays true — every source path a wiki page cites resolves, and wiki/memory.md describes the memory procedure as delivered"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-09-27
-updated: 2026-10-14
+updated: 2026-10-15
 origin: wiki/planning/research/RESEARCH-agent-memory-procedure.md
 depends: [148, 153, 157]
 schema: 1
