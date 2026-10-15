@@ -296,4 +296,37 @@ export const testShardedReportTests = [
       assert.equal(gateResult({ failures: 0, notFinished: true, passed: false }), "not-finished", "and the row is not-finished");
     },
   },
+  {
+    // m160/F-01 — at the real budget one killed unit never closed: a process it had started outlived it and held
+    // its output open, so the pool waited on `close` until the gate's own deadline killed the runner and the row
+    // named no unit. A unit that has EXITED gets a bounded drain for its output, then the pool stops waiting.
+    name: "160/05 F-01 · a killed unit whose descendant holds its output open still leaves the pool within the drain",
+    run: async () => {
+      const grandchild = "setTimeout(() => {}, 60000)";
+      const unitScript = `const { spawn } = require("node:child_process");`
+        + `const g = spawn(process.execPath, ["-e", ${JSON.stringify(grandchild)}], { detached: true, stdio: ["ignore", "inherit", "inherit"] });`
+        + `console.log("grandchild " + g.pid); setTimeout(() => {}, 60000);`;
+      const pids = [];
+      const begun = Date.now();
+      const pool = await runPool([{ key: "holder", positions: [0] }], {
+        jobs: 1,
+        unitTimeoutMs: 60_000,
+        budgetMs: 1_500,
+        drainMs: 500,
+        spawnUnit: () => {
+          const child = spawn(process.execPath, ["-e", unitScript], { windowsHide: true });
+          child.stdout.on("data", (chunk) => { for (const match of String(chunk).matchAll(/grandchild (\d+)/gu)) pids.push(Number(match[1])); });
+          return { child };
+        },
+      });
+      try {
+        const seconds = (Date.now() - begun) / 1000;
+        assert.equal(pool.stoppedBy, "budget");
+        assert.deepEqual(pool.notFinished, ["holder"], "the killed unit is reported not finished");
+        assert.ok(seconds < 15, `the pool resolved ${seconds.toFixed(1)} s after it started, not when the descendant let go of the output`);
+      } finally {
+        for (const pid of pids) { try { process.kill(pid, "SIGKILL"); } catch { /* gone */ } }
+      }
+    },
+  },
 ];

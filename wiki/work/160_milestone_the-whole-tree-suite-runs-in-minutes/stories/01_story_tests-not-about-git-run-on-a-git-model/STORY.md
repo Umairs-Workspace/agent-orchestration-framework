@@ -4,7 +4,7 @@ number: 01
 slug: tests-not-about-git-run-on-a-git-model
 title: "Tests that are not about git run on a git model — an in-memory repository behind the same exec port, held honest by a parity control"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-15

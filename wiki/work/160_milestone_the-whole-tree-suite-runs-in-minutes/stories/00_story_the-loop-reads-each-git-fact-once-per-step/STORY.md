@@ -4,7 +4,7 @@ number: 00
 slug: the-loop-reads-each-git-fact-once-per-step
 title: "The loop reads each git fact once per step — a step-scoped read memo on the exec port, and no work on a lane already at its base"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-15

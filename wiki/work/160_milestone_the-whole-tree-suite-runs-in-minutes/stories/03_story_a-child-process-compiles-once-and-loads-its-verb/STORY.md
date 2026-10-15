@@ -4,7 +4,7 @@ number: 03
 slug: a-child-process-compiles-once-and-loads-its-verb
 title: "A child process compiles once and loads only its verb — the compile cache on every aof and runner process, and a pinned module ceiling for a child aof"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-15

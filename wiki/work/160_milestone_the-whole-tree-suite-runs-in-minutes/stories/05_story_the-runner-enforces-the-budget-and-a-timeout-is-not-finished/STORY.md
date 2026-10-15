@@ -4,7 +4,7 @@ number: 05
 slug: the-runner-enforces-the-budget-and-a-timeout-is-not-finished
 title: "The runner enforces the budget, and a timeout is not-finished — the gate fails a run that outlives 10 minutes, and never calls a killed unit a red"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-15

@@ -236,13 +236,13 @@ FF-16007 pins it.
 
 | id | invariant | enforced by | source |
 |---|---|---|---|
-| FF-16001 | Within one memoised step, no ref/topology read repeats between two writes, any write clears the memo, and a failed read is never kept; one lane cycle stays under its pinned call ceiling | `test/arch/loop/acd-loop-git-reads-once-per-step.test.mjs` — pending | ADR-001 |
-| FF-16002 | The git model answers and writes exactly as real git for every verb it models, and refuses any verb it does not model | `test/arch/testing/acd-git-fake-parity.test.mjs` — pending | ADR-002 |
-| FF-16003 | A declared selection launches `selectProgramArgs`, and a focused run of one suite evaluates no directory index and no unnamed suite | `test/testing/test-command-contract.test.mjs` — pending | ADR-003 |
-| FF-16004 | The compile cache is enabled before the application graph loads, and a child `aof` loads no more modules than its pinned, shrink-only ceiling | `test/arch/command/acd-cli-entry-executes.test.mjs` — pending | ADR-004 |
-| FF-16005 | The gate's launch environment carries no denied variable, and a runner whose stdin ends leaves no unit running | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` — pending | ADR-005 |
-| FF-16006 | A killed unit is never a `not ok` line, a run with a not-finished unit is never green, and `not-finished` is spelled only in `GATE_RESULTS` | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` — pending | ADR-006 |
-| FF-16007 | Doctor and validate over a stream whose citations all resolve on disk spawn no git for citation history, and a miss loads history once | `test/arch/command/acd-cited-path-resolves.test.mjs` — pending | ADR-007 |
+| FF-16001 | Within one memoised step, no ref/topology read repeats between two writes, any write clears the memo, and a failed read is never kept; one lane cycle stays under its pinned call ceiling | `test/arch/loop/acd-loop-git-reads-once-per-step.test.mjs` | ADR-001 |
+| FF-16002 | The git model answers and writes exactly as real git for every verb it models, and refuses any verb it does not model | `test/arch/testing/acd-git-fake-parity.test.mjs` | ADR-002 |
+| FF-16003 | A declared selection launches `selectProgramArgs`, and a focused run of one suite evaluates no directory index and no unnamed suite | `test/testing/test-command-contract.test.mjs` | ADR-003 |
+| FF-16004 | The compile cache is enabled before the application graph loads, and a child `aof` loads no more modules than its pinned, shrink-only ceiling | `test/arch/command/acd-cli-entry-executes.test.mjs` | ADR-004 |
+| FF-16005 | The gate's launch environment carries no denied variable, and a runner whose stdin ends leaves no unit running | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` | ADR-005 |
+| FF-16006 | A killed unit is never a `not ok` line, a run with a not-finished unit is never green, and `not-finished` is spelled only in `GATE_RESULTS` | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` | ADR-006 |
+| FF-16007 | Doctor and validate over a stream whose citations all resolve on disk spawn no git for citation history, and a miss loads history once | `test/arch/command/acd-cited-path-resolves.test.mjs` | ADR-007 |
 
 Each control lands with its subject, in a suite its directory's index registers. Required red
 probes, recorded in `VERIFICATION.md`: make `memoGitReads` keep a `status` answer; give the fake a

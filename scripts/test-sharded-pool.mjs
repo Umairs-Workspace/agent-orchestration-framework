@@ -57,6 +57,7 @@ export function poolExit(pool, verdictExit) {
  *   stdin         — the stream whose end stops the pool, or null to watch nothing
  *   unitTimeoutMs — a unit still running at this bound is killed, and is not finished
  *   budgetMs      — the whole run's budget: when it passes, the pool stops as on its stdin's end
+ *   drainMs       — how long an exited unit's output may stay open before the pool stops waiting for it
  *   onResult      — `(result, done, total)` after each pool unit closes
  *   writeLog      — `(label, output)` for each unit's log
  *
@@ -64,7 +65,7 @@ export function poolExit(pool, verdictExit) {
  * and `notStarted` are the unit keys a stop left in flight and never began; `notFinished` is every unit the
  * pool killed, a stop's and a time limit's alike; `stoppedBy` is "stdin", "budget" or null.
  */
-export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeoutMs, budgetMs = null, onResult = () => {}, writeLog = () => {}, now = Date.now }) {
+export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeoutMs, budgetMs = null, drainMs = 10_000, onResult = () => {}, writeLog = () => {}, now = Date.now }) {
   const inFlight = new Set();
   const killed = [];
   let stopped = false;
@@ -97,8 +98,17 @@ export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeout
       child.stdout?.on("data", (chunk) => { output += chunk; });
       child.stderr?.on("data", (chunk) => { output += chunk; });
       const timer = setTimeout(() => { entry.timedOut = true; child.kill(); }, unitTimeoutMs);
+      // THE DRAIN (m160/F-01). `close` waits for every holder of the unit's output, and a process the unit
+      // started can outlive it holding that output open — at the real budget one such unit kept the pool, and
+      // the runner, alive past the gate's deadline. Once the unit itself has EXITED, its output gets `drainMs`
+      // to close; then the pool's ends are destroyed, which closes the unit.
+      let drain = null;
+      child.on("exit", () => {
+        drain = setTimeout(() => { child.stdout?.destroy?.(); child.stderr?.destroy?.(); }, drainMs);
+      });
       child.on("close", (code) => {
         clearTimeout(timer);
+        clearTimeout(drain);
         inFlight.delete(entry);
         try { release?.(); } catch { /* best-effort */ }
         const notFinished = entry.stopped || entry.timedOut;

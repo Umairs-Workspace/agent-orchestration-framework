@@ -10,6 +10,11 @@ doc: state
   seven stories, each with its contract. Two business questions on 160/05 were asked at the refine
   close and answered by the operator (stop at the budget; a serial run still signs off).
 
+- 2026-10-15: verified (`aof:verify 160`). All seven stories accepted; every control bites its red probe and
+  every `@manual` has its evidence (VERIFICATION.md). The whole tree is green at 19.2 min on 16 workers, so the
+  10-minute gate records `not-finished` (F-02). F-01 (a killed unit held the pool open) was fixed in 160/05.
+  The operator chose to keep 160 open and refine new stories for the next levers (F-02, F-03).
+
 ## Notes & decisions in flight
 
 - **Re-measured at refine, as this file asked**, from `main` at `219729b8`, which carries
@@ -229,6 +234,6 @@ doc: state
 
 ## Verification
 
-- [ ] `@executable` suite green
-- [ ] Fitness functions green (FF-16001 – FF-16007, each with its red probe)
+- [x] `@executable` suite green (whole tree, unbudgeted, 2026-10-15)
+- [x] Fitness functions green (FF-16001 – FF-16007, each with its red probe)
 - [ ] Whole-tree gate green under the enforced budget on the control node

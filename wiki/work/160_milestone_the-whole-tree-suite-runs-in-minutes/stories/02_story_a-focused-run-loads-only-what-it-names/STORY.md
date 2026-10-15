@@ -4,7 +4,7 @@ number: 02
 slug: a-focused-run-loads-only-what-it-names
 title: "A focused run loads only what it names — a selection launches the light shard entry, and the registry stays where its readers look"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-15

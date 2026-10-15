@@ -4,10 +4,10 @@ number: 06
 slug: citation-history-is-read-only-when-a-citation-misses
 title: "Citation history is read only when a citation misses — doctor and validate resolve on disk first and spawn no git when everything resolves"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 schema: 1
 aofVersion: 0.1.0
 depends: []

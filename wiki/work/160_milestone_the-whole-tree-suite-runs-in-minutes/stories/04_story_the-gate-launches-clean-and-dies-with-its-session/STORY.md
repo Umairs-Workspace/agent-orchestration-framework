@@ -4,7 +4,7 @@ number: 04
 slug: the-gate-launches-clean-and-dies-with-its-session
 title: "The gate launches clean and dies with its session — no inherited GIT, CLAUDE or AOF variables, and no orphaned suite after a stop"
 parent: 160
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-15

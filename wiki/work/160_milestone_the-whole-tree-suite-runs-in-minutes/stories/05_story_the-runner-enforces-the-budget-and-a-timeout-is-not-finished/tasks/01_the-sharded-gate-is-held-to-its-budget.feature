@@ -25,6 +25,13 @@ Feature: The sharded gate is held to its budget
       When the program is still running at 12 minutes
       Then the launch ends "deadline-expired" and the row is "not-finished", never "red"
 
+    @executable @bug @finding-F-01 @cli @work @work-stream
+    Scenario: F-01 · a killed unit whose descendant holds its output open still leaves the pool within the drain
+      Given a unit that started a process which outlives it and holds the unit's output open
+      When the budget passes and the pool kills the unit
+      Then the pool resolves within the drain bound, not when that process exits
+      And the unit is reported not finished
+
     @executable @cli @work @work-stream
     Scenario Outline: The budget reaches the program
       Given a gate declaration with budgetMinutes <minutes>, budgetArgs <budgetArgs> and the operator's setting <setting>
