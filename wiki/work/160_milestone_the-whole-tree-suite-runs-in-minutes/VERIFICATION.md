@@ -314,6 +314,19 @@ resolved 60.1 s after it started", exactly the descendant's lifetime. After: gre
 exercised at the real budget: the next gate run is its evidence.
 verifies → `stories/05_story_the-runner-enforces-the-budget-and-a-timeout-is-not-finished/tasks/01_the-sharded-gate-is-held-to-its-budget.feature` · "F-01 · a killed unit whose descendant holds its output open still leaves the pool within the drain"
 
+### F-06 · a packed unit fits its command line (@bug)
+
+`packUnits` (`scripts/test-harness.mjs`) closes a pack when its arguments would pass `PACK_MAX_ARG_CHARS` (24,000,
+counted as Windows counts a command line), as well as at its target time. The pool (`scripts/test-sharded-pool.mjs`)
+turns a unit whose spawn throws, or emits `error`, into a failed unit whose output names the error; it is retried
+alone and reported, and the run goes on. Red first, with only the constant declared: 400 short files packed into
+one unit of 29,200 argument characters against a 4,000 bound; the default bound let 2,000 files reach 146,000; and
+the pool rejected with `spawn ENAMETOOLONG`. After the fix, `test-sharded-report` 24/24 green, and the 11 suites that
+import or pin the harness and the pool 231/231 green, after two expected re-keys: FF-5311's harness residue
+(re-pinned with its reason) and the runtime audit's source digest for `scripts/test-harness.mjs` (expression
+unchanged).
+verifies → `stories/09_story_small-suite-files-share-a-unit/tasks/02_a-packed-unit-fits-its-command-line.feature` · all three F-06 scenarios
+
 ## Findings
 
 Recalled at triage (`aof work memory recall … --kind finding --block`, four queries, recorded on 160).
@@ -325,6 +338,7 @@ Recalled at triage (`aof work memory recall … --kind finding --block`, four qu
 | F-03 | 160/03's `@manual` "the warm after medians are lower than before" is falsified: the compile cache is engaged and hit, but the application import is 853 → 893 ms warm and `aof --version` 247 → 246 ms. The cost is resolution and evaluation, not compilation. | measured non-result | non-blocker | the operator chose (2026-10-15) to keep the code and record the miss; the scenario's Then stands falsified here, unedited | the next start-up lever, 160's new stories | open |
 | F-04 | Contract wording that does not match the delivered face, flagged at build and at verify: 02/01's `@manual` names `aof test --story 160/02`, which needs `--scope impacted` and widens to the whole tree here (m72/F-72-AN's class); 01/00's "fails loudly … naming git" against ADR-007's empty map; 03/01's per-verb help that exits 0; 05's E5 "40 units still queued". | contract wording | non-blocker | each case asserts the real behaviour; recorded, not edited | — | open |
 | F-05 | 160/10's review finding, routed at continue as a story for the operator: memory ingest's episodic indexing (`packages/knowledge/src/memory/episodic-indexing.mjs`) still read each milestone's snapshot by ref, listing the stream once per milestone — the cost 160/10 removed from the tune corpus. | defect (160/10) | non-blocker | fixed in the item, not deferred: the ingest's build carries the walk's rows and a snapshot read hands the milestone's row; a distinct incident (recall recorded on 160; m157/F-01 is a census red in the same module, another cause) | 160/10 | fixed — FF-16012's ingest row red at HEAD (3 vs 14 listings), green after; 67 memory-index suites, 541 cases green; the unbudgeted whole-tree run then caught one pin the sweep missed, `packages/knowledge/test/episodic-records.suite.mjs` (157/01 R3 asserted the reader's exact arguments), re-pinned to the row form, 200 cases green |
+| F-06 | A whole-tree run at `--jobs 12`, planned from a quieter run's timings, packed 109 files into one unit; its command line passed Windows' limit and `spawn ENAMETOOLONG`, thrown inside the pool, ended the runner with no report and no timings. Any quiet run grows the next run's packs, so a gate could end this way with no row. | defect (160/09) | blocker | `@bug @finding-F-06` scenarios in a new 160/09 task (`02_a-packed-unit-fits-its-command-line.feature`; the delivered ones unedited) + fix; a distinct incident (recall recorded on 160; F-01 is a unit that would not close) | 160/09 | fixed — red/green below |
 
 ## Accept decision
 

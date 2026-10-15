@@ -317,7 +317,9 @@ const RUNNER_REGIONS = Object.freeze([
 // RE-PINNED by 160/09 (ADR-010): the harness gains the sharded run's pure planners beside `suiteCaseChunks` —
 // `fileEstimate`, `packUnits`, `shardArgs`, `planSummary` and `planCoverageProblem`. `runCases` is byte-unchanged:
 // the shard entry accounts per file by wrapping each case's `run`, so every pinned region above is unchanged.
-const RUNNER_RESIDUE = "613752422cc25d7a4b7f6f574f4c8007a098109ba80aa13b7081152b5eeb51f3";
+// RE-PINNED by 160 verify (F-06): `packUnits` also closes a pack at `PACK_MAX_ARG_CHARS`, the bound a Windows
+// command line allows, and that constant is declared beside it. `runCases` and every pinned region above are unchanged.
+const RUNNER_RESIDUE = "4331b734b1954c8d00a445a5688479c0f67e5fcfb6d7b9531dad92669ba8a502";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

@@ -109,16 +109,24 @@ export function fileEstimate(timings, key, caseCount) {
 // `targetSeconds`; a file is never split, and a chunk of a file, a lane, and a file at or over the threshold
 // keep their own units. A packed unit is `{ key, packed: true, files: [{ file, key, positions }], positions,
 // estimate }`, its `positions` every position it holds; a bin that ends with one file stays that file's unit.
-export function packUnits(plan, { packSeconds = 15, targetSeconds = 60 } = {}) {
+// m160/F-06: a packed unit names every file on its command line, and Windows refuses one over 32,767 characters.
+// The bound leaves room for the node path and the shard entry's path.
+export const PACK_MAX_ARG_CHARS = 24_000;
+
+export function packUnits(plan, { packSeconds = 15, targetSeconds = 60, maxArgChars = PACK_MAX_ARG_CHARS } = {}) {
   if (!Number.isFinite(packSeconds) || packSeconds <= 0 || !Number.isFinite(targetSeconds) || targetSeconds <= 0) {
     throw new TypeError("packUnits: the pack threshold and target must be positive");
   }
   const packable = (entry) => entry.lanes !== true && entry.chunked !== true && entry.file != null && entry.estimate < packSeconds;
+  // A bin also closes when its command line would pass `maxArgChars` (m160/F-06): each file adds `--file <file>
+  // <positions>`, counted as Windows counts it, each argument with a space and two quotes.
+  const argChars = (entry) => ["--file", entry.file, entry.positions.join(",")].reduce((sum, arg) => sum + arg.length + 3, 0);
   const bins = [];
   for (const entry of plan.filter(packable).sort((a, b) => b.estimate - a.estimate || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))) {
-    const bin = bins.find((candidate) => candidate.estimate + entry.estimate <= targetSeconds);
-    if (bin == null) bins.push({ entries: [entry], estimate: entry.estimate });
-    else { bin.entries.push(entry); bin.estimate += entry.estimate; }
+    const chars = argChars(entry);
+    const bin = bins.find((candidate) => candidate.estimate + entry.estimate <= targetSeconds && candidate.chars + chars <= maxArgChars);
+    if (bin == null) bins.push({ entries: [entry], estimate: entry.estimate, chars });
+    else { bin.entries.push(entry); bin.estimate += entry.estimate; bin.chars += chars; }
   }
   const packed = bins.map((bin) => (bin.entries.length === 1 ? bin.entries[0] : {
     key: `packed ${bin.entries.length} files from ${bin.entries[0].key}`,

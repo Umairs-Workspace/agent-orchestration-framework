@@ -29,7 +29,7 @@ import {
   slowestFiles,
 } from "../../scripts/test-sharded-report.mjs";
 import { poolExit, runPool, stdinIsPipe, unitResult as unitResultOf } from "../../scripts/test-sharded-pool.mjs";
-import { fileEstimate, packUnits, planCoverageProblem, planSummary } from "../../scripts/test-harness.mjs";
+import { fileEstimate, PACK_MAX_ARG_CHARS, packUnits, planCoverageProblem, planSummary, shardArgs } from "../../scripts/test-harness.mjs";
 import { gateResult } from "@aof/work/regression-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -474,9 +474,65 @@ export const testShardedReportTests = [
       assert.match(runner, /for \(const target of pool\.stopped \? \[\] :/u, "and a stopped run writes no timings");
     },
   },
+  // m160/F-06 — a 12-worker run planned from a quieter run's timings packed 109 files into one unit, whose
+  // command line passed Windows' limit: `spawn ENAMETOOLONG` was thrown inside the pool and ended the run with
+  // no report and no timings.
+  {
+    name: "160/09 F-06 · a pack closes when its command line would pass the bound",
+    run: () => {
+      const files = Array.from({ length: 400 }, (_, index) => fileUnit(`deeply/nested/directory/file-${String(index).padStart(4, "0")}`, 0.1));
+      const unbounded = packUnits(files, { packSeconds: 15, targetSeconds: 60, maxArgChars: Infinity });
+      assert.equal(unbounded.length, 1, "non-vacuity: without the bound, the 400 files fit one pack's target time");
+      const plan = packUnits(files, { packSeconds: 15, targetSeconds: 60, maxArgChars: 4_000 });
+      for (const unit of plan) assert.ok(argChars(unit) <= 4_000, `${unit.key}: ${argChars(unit)} argument characters`);
+      assert.deepEqual(plan.flatMap((unit) => (unit.files ?? [unit]).map((entry) => entry.key)).sort(), files.map((entry) => entry.key).sort(), "every file is in exactly one unit");
+    },
+  },
+  {
+    name: "160/09 F-06 · the runner's default bound fits a Windows command line",
+    run: () => {
+      assert.ok(Number.isFinite(PACK_MAX_ARG_CHARS) && PACK_MAX_ARG_CHARS > 0, "a finite default bound");
+      assert.ok(PACK_MAX_ARG_CHARS + 2_048 <= 32_767, `${PACK_MAX_ARG_CHARS} leaves room for the node path and the shard entry's path`);
+      const files = Array.from({ length: 2_000 }, (_, index) => fileUnit(`deeply/nested/directory/file-${String(index).padStart(4, "0")}`, 0.01));
+      for (const unit of packUnits(files)) assert.ok(argChars(unit) <= PACK_MAX_ARG_CHARS, `${unit.key}: ${argChars(unit)} argument characters`);
+    },
+  },
+  {
+    name: "160/09 F-06 · [outline] a unit that cannot start is a failed unit, not a crashed pool (2 rows)",
+    run: async () => {
+      const rows = [
+        ["throws ENAMETOOLONG", () => { throw Object.assign(new Error("spawn ENAMETOOLONG"), { code: "ENAMETOOLONG" }); }],
+        ["emits an error event instead of a close", () => {
+          const child = new EventEmitter();
+          child.stdout = new EventEmitter();
+          child.stderr = new EventEmitter();
+          child.kill = () => {};
+          setImmediate(() => child.emit("error", Object.assign(new Error("spawn EACCES"), { code: "EACCES" })));
+          return { child };
+        }],
+      ];
+      for (const [row, start] of rows) {
+        const plan = ["first", "second", "third"].map((key) => ({ key, positions: [0] }));
+        const pool = await runPool(plan, {
+          jobs: 2,
+          unitTimeoutMs: 60_000,
+          spawnUnit: (unit) => (unit.key === "second" ? start() : { child: scriptedChild("# executed 1 cases; failures 0\n", 0) }),
+        });
+        assert.equal(pool.results.length, 3, `${row}: the pool resolves with three results`);
+        const second = pool.results.find((result) => result.unit.key === "second");
+        assert.equal(second.ok, false, `${row}: the second unit is a failure`);
+        assert.match(second.output, /ENAMETOOLONG|EACCES/u, `${row}: its output names the error`);
+        assert.ok(pool.results.filter((result) => result.unit.key !== "second").every((result) => result.ok), `${row}: the other two pass`);
+        assert.deepEqual(pool.failures.map(({ first }) => first.unit.key), ["second"], `${row}: it is reported as a failure after its alone-retry`);
+      }
+    },
+  },
 ];
 
 // ── 160/09's helpers ─────────────────────────────────────────────────────────────────────────────
+
+// A unit's argument characters, as Windows counts its command line: each argument plus a space and two quotes.
+const argChars = (unit) => shardArgs(unit).reduce((sum, arg) => sum + arg.length + 3, 0);
 
 // One whole-file plan entry, as the runner plans it.
 function fileUnit(name, estimate, { positions = [0, 1, 2], chunked = false } = {}) {

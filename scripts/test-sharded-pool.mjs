@@ -104,7 +104,18 @@ export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeout
   function runUnit(unit, label) {
     return new Promise((resolve) => {
       const begun = now();
-      const { child, release } = spawnUnit(unit, label);
+      // A UNIT THAT CANNOT START IS A FAILED UNIT (m160/F-06). A spawn that throws (a command line past the
+      // platform's limit) or emits `error` once ended the whole run with no report; now it is this unit's result.
+      let started;
+      try {
+        started = spawnUnit(unit, label);
+      } catch (error) {
+        const output = `# unit did not start: ${error?.message ?? error}\n`;
+        writeLog(label, output);
+        resolve(unitResult(unit, { code: null, output, seconds: (now() - begun) / 1000 }));
+        return;
+      }
+      const { child, release } = started;
       const entry = { unit, child, stopped: false, timedOut: false };
       inFlight.add(entry);
       let output = "";
@@ -119,7 +130,16 @@ export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeout
       child.on("exit", () => {
         drain = setTimeout(() => { child.stdout?.destroy?.(); child.stderr?.destroy?.(); }, drainMs);
       });
+      let settled = false;
+      child.on("error", (error) => {
+        if (settled) return;
+        output += `# unit did not start: ${error?.message ?? error}\n`;
+        // A child that failed to start may never emit `close`: settle it here, as a close with no code.
+        setImmediate(() => child.emit("close", null));
+      });
       child.on("close", (code) => {
+        if (settled) return;
+        settled = true;
         clearTimeout(timer);
         clearTimeout(drain);
         inFlight.delete(entry);
