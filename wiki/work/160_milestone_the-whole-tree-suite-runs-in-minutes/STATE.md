@@ -20,6 +20,10 @@ doc: state
 - 2026-10-15: continued round 2 (`aof:continue 160`, solo). Stories 07–11 built, gated and reviewed, each moved
   to in-review; every `@manual` is measured in VERIFICATION.md. A final sweep of the 25 suites the five stories
   touched is green. The whole-tree gate under the bundle and the packed plan is still to run (`aof:verify 160`).
+- 2026-10-15: verified round 2 (`aof:verify 160`). Stories 07–11 accepted; FF-16008 – FF-16013 recorded with red
+  probes (FF-16010's run at verify). F-05 (memory ingest listed the stream per milestone) fixed in 160/10. The gate
+  at `bf783248` is `not-finished` again — 0 failures, 76% of cases inside 10.9 min; unbudgeted, the whole tree is
+  19.7 min (main pass about 16.3 min). F-02 stays open; the milestone stays `in-progress` pending the operator.
 
 ## Round 2 refine — notes
 
@@ -335,4 +339,4 @@ doc: state
 - [x] `@executable` suite green (whole tree, unbudgeted, 2026-10-15)
 - [x] Fitness functions green (FF-16001 – FF-16007, each with its red probe)
 - [ ] Whole-tree gate green under the enforced budget on the control node
-- [ ] Round 2: stories 07–11 built and accepted, FF-16008 – FF-16013 each with its red probe
+- [x] Round 2: stories 07–11 built and accepted, FF-16008 – FF-16013 each with its red probe

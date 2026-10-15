@@ -42,6 +42,24 @@ suite and every round-1 control re-run together through `scripts/test-shard.mjs`
 
 The code is green; the milestone's objective — a sign-off inside 10 minutes — is not met (F-02).
 
+**Round 2** (stories 07–11, clean detached worktree at `bf783248`, `AOF_GLOBAL_HOME` isolated, nothing else running):
+
+- **The gate at the real budget** (`aof work regression-gate 160`): `not-finished`, 10.9 min — the runner's own budget
+  stop, then a clean exit inside the grace (F-01's fix, exercised at the real budget for the first time). **0 failures**;
+  9,846 of 12,932 cases in 174 of 339 units, summed 160.0 min; 16 units killed in flight are named, 165 never started.
+  `REGRESSION.md`, second row.
+- **The whole tree unbudgeted** (`node scripts/test-sharded.mjs --jobs 16 --unit-timeout-min 45`): 12,932 of 12,932
+  cases in 339 units (1,273 in round 1), wall **19.7 min**, summed 258.9 min (297.9 in round 1, −13%). The pool's main
+  pass ended at about 16.3 min; the last 3.4 min were alone-retries of 11 units. Ten were red in the pool and green
+  alone, all other items' and mostly server- or port-bound (`work-ui-board-serves-unchanged/01`, `mesh-ui-cli-face/02`,
+  `work-ui-fleet-origin/01`, `advertised-paths/00`, `154/08 task01`, `bundle-asset-manifest-complete`). One was red
+  alone: `157/01 R3: one snapshot read serves every run of a milestone`, which pinned the reader's arguments that F-05
+  changed — repaired (F-05), the knowledge package's 200 cases green.
+
+Round 2 removed about 39 summed minutes, against the 92–108 the refine estimated. The heaviest files are still the
+loop and lane suites under contention (`loop-command-wave` 938 s summed, 218 s alone), `site-build` 466 s,
+`work-dispatch-lanes` 436 s and `work-this-tree-holds-what-is-live` 390 s. The objective is still not met (F-02).
+
 ## Verification evidence
 
 Before = `2bb15e80` (no 160 code), after = `ba23c7d9` (all seven stories), each a detached worktree prepared by
@@ -303,10 +321,10 @@ Recalled at triage (`aof work memory recall … --kind finding --block`, four qu
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
 | F-01 | At the real budget the runner did not exit within the gate's 2-minute grace after its own budget stop: a killed unit whose descendant held its output open never emitted `close`, so the gate's deadline killed the runner and the row named no unit. | defect (160/05) | blocker | `@bug @finding-F-01` scenario + fix; a distinct incident (m96/F-96-G is a killed run recorded as complete, a different cause) | 160/05 | fixed — red/green above |
-| F-02 | The whole tree is green but takes 19.2 min on 16 workers, about twice the 10-minute budget, so the gate can only record `not-finished`. | gap (milestone objective) | blocker for the milestone | prior occurrence m144/F-03 (same cause: the tree outruns its budget); the operator chose (2026-10-15) to keep 160 open and add stories for the next levers | 160 — new stories | open |
+| F-02 | The whole tree is green but takes 19.2 min on 16 workers, about twice the 10-minute budget, so the gate can only record `not-finished`. | gap (milestone objective) | blocker for the milestone | prior occurrence m144/F-03 (same cause: the tree outruns its budget); the operator chose (2026-10-15) to keep 160 open and add stories for the next levers | 160 — new stories | open — round 2 (07–11) landed and the gate is still `not-finished`: the main pass needs about 16 min on 16 workers (Whole-tree runs, round 2) |
 | F-03 | 160/03's `@manual` "the warm after medians are lower than before" is falsified: the compile cache is engaged and hit, but the application import is 853 → 893 ms warm and `aof --version` 247 → 246 ms. The cost is resolution and evaluation, not compilation. | measured non-result | non-blocker | the operator chose (2026-10-15) to keep the code and record the miss; the scenario's Then stands falsified here, unedited | the next start-up lever, 160's new stories | open |
 | F-04 | Contract wording that does not match the delivered face, flagged at build and at verify: 02/01's `@manual` names `aof test --story 160/02`, which needs `--scope impacted` and widens to the whole tree here (m72/F-72-AN's class); 01/00's "fails loudly … naming git" against ADR-007's empty map; 03/01's per-verb help that exits 0; 05's E5 "40 units still queued". | contract wording | non-blocker | each case asserts the real behaviour; recorded, not edited | — | open |
-| F-05 | 160/10's review finding, routed at continue as a story for the operator: memory ingest's episodic indexing (`packages/knowledge/src/memory/episodic-indexing.mjs`) still read each milestone's snapshot by ref, listing the stream once per milestone — the cost 160/10 removed from the tune corpus. | defect (160/10) | non-blocker | fixed in the item, not deferred: the ingest's build carries the walk's rows and a snapshot read hands the milestone's row; a distinct incident (recall recorded on 160; m157/F-01 is a census red in the same module, another cause) | 160/10 | fixed — FF-16012's ingest row red at HEAD (3 vs 14 listings), green after; 67 memory-index suites, 541 cases green |
+| F-05 | 160/10's review finding, routed at continue as a story for the operator: memory ingest's episodic indexing (`packages/knowledge/src/memory/episodic-indexing.mjs`) still read each milestone's snapshot by ref, listing the stream once per milestone — the cost 160/10 removed from the tune corpus. | defect (160/10) | non-blocker | fixed in the item, not deferred: the ingest's build carries the walk's rows and a snapshot read hands the milestone's row; a distinct incident (recall recorded on 160; m157/F-01 is a census red in the same module, another cause) | 160/10 | fixed — FF-16012's ingest row red at HEAD (3 vs 14 listings), green after; 67 memory-index suites, 541 cases green; the unbudgeted whole-tree run then caught one pin the sweep missed, `packages/knowledge/test/episodic-records.suite.mjs` (157/01 R3 asserted the reader's exact arguments), re-pinned to the row form, 200 cases green |
 
 ## Accept decision
 
