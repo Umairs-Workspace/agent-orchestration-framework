@@ -46,8 +46,9 @@ export function probeViolations(source) {
 export function edgeViolations(source) {
   const code = stripComments(source);
   const found = [];
-  if (!/import \{ probeWikiCitations \} from "\.\.\/wiki-citations\.mjs"/u.test(code)) found.push("does not import the probe");
-  if (!/probeWikiCitations\(\{[^}]*renameMap: snapshot\.renameMap[^}]*\}\)/u.test(code)) found.push("does not call the probe with the history read for the snapshot");
+  if (!/import \{[^}]*\bprobeWikiCitations\b[^}]*\} from "\.\.\/wiki-citations\.mjs"/u.test(code)) found.push("does not import the probe");
+  // 160/ADR-007 — the edge probes over the map the snapshot loaded, and loads the SAME history only on a miss.
+  if (!/probeWikiCitations\(\{[^}]*renameMap[^}]*\}\)/u.test(code) || !code.includes("snapshot.renameMap") || !code.includes("history.load()")) found.push("does not call the probe with the history read for the snapshot");
   if ((code.match(/readRenameMap\(/gu) ?? []).length !== 2) found.push("reads history more than once for one doctor run");
   return found;
 }
@@ -98,12 +99,13 @@ export const archTests = [
       assert.ok(probeViolations(executes).some((v) => v.includes("import(")), "executing cited source is red");
 
       // Mutation 4 — sever the command call.
-      const severed = edge.replace(/if \(snapshot\.renameMap != null\) findings\.push\(\.\.\.await probeWikiCitations\([^\n]*\)\);/u, "");
+      const severed = edge.replace(/if \(history != null\) \{[\s\S]*?findings\.push\(\.\.\.cited\);\s*\}/u, "");
       assert.notEqual(severed, edge, "the mutation removed the call");
       assert.ok(edgeViolations(severed).includes("does not call the probe with the history read for the snapshot"), "a disconnected command call is red");
 
       // Mutation 5 — a second history read at the edge.
-      const twice = edge.replace("probeWikiCitations({ projectRoot: ctx.workspace.projectRoot, renameMap: snapshot.renameMap })", "probeWikiCitations({ projectRoot: ctx.workspace.projectRoot, renameMap: await readRenameMap(ctx.workspace.projectRoot), x: snapshot.renameMap })");
+      const twice = edge.replace("await history.load()", "await readRenameMap(ctx.workspace.projectRoot).load()");
+      assert.notEqual(twice, edge, "the mutation added a read");
       assert.ok(edgeViolations(twice).includes("reads history more than once for one doctor run"), "a second history read is red");
 
       // The pristine sources are green, so the red above is the mutation's own.

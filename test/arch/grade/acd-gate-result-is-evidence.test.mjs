@@ -42,16 +42,21 @@ import {
   REGRESSION_HEADING,
   REGRESSION_RECORD_BASENAME,
   appendRegressionRow,
+  gateResult,
   newestRegressionRow,
   parseRegressionRows,
   regressionRecordPath,
   satisfiesDoor,
 } from "@aof/work/regression-record";
 const runRegressionGate = _aofApplication.work.commandTools.regressionGate.runRegressionGate;
+import { poolExit, unitResult } from "../../../scripts/test-sharded-pool.mjs";
+import { shardedReport } from "../../../scripts/test-sharded-report.mjs";
+const cleanLaunchEnv = _aofApplication.work.commandTools.regressionGate.cleanLaunchEnv;
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
 const RECORD_MODULE = "packages/work/src/regression-record.mjs";
+const GATE_MODULE = "packages/work/src/commands/regression-gate.mjs";
 
 const source = async (rel) => stripComments(await readFile(path.join(repoRoot, rel), "utf8"));
 
@@ -149,7 +154,8 @@ export const archTests = [
       assert.equal(REGRESSION_HEADING.startsWith("## "), true, "an h2, per m66's law");
       assert.equal(REGRESSION_HEADER.split("|").length - 2, 5, "five columns: commit, instant, scope, result, detail");
       assert.equal(REGRESSION_DIVIDER.split("|").length, REGRESSION_HEADER.split("|").length, "and a divider that matches it");
-      assert.deepEqual([...GATE_RESULTS], ["green", "red", "override"], "the result vocabulary is closed at three");
+      // 160/ADR-006 §4 adds the fourth word, a run that did not finish (FF-16006 pins its one home).
+      assert.deepEqual([...GATE_RESULTS], ["green", "red", "override", "not-finished"], "the result vocabulary is closed at four");
     },
   },
   {
@@ -218,5 +224,64 @@ export const archTests = [
       assert.equal(satisfiesDoor({ result: "green", scope: "all" }), true, "…and a whole-tree green run does");
       assert.equal(satisfiesDoor(null), false, "an absent row satisfies nothing");
     }),
+  },
+  // ── FF-16005 (160/ADR-005) — the gate's launch environment carries no denied variable, and a runner whose
+  // stdin ends leaves no unit running. The behaviour is test/run/regression-gate.test.mjs's (E1-E6) and
+  // test/testing/test-sharded-report.test.mjs's (the pool); these legs pin where it lives.
+  {
+    name: "arch/160 FF-16005 (1) the gate launches with cleanLaunchEnv, defined once, and every denied prefix is dropped in any case",
+    run: async () => {
+      const code = await source(GATE_MODULE);
+      assert.equal((code.match(/function cleanLaunchEnv\(/gu) ?? []).length, 1, "cleanLaunchEnv is defined once, in the gate");
+      assert.match(code, /const launchEnv = cleanLaunchEnv\(env\);/u, "the launch environment is the clean copy of the gate's own");
+      assert.match(code, /const stoppable = \{ env: launchEnv, signal: controller\.signal, stdin: "pipe" \};/u, "the launch carries it, the abort signal and a piped stdin");
+      assert.match(code, /launch\(toolchain, files, \{ \.\.\.options, \.\.\.stoppable, launch: boundedLaunch \}\)/u, "and the suite's one launch takes all three");
+      for (const rel of (await srcModules()).filter((file) => file !== GATE_MODULE && file.startsWith("packages/"))) {
+        assert.doesNotMatch(await source(rel), /function cleanLaunchEnv\(/u, `${rel} holds no second copy`);
+      }
+      const env = { GIT_ASKPASS: "a", git_dir: "b", Git_Index_File: "c", CLAUDECODE: "d", claude_code_entrypoint: "e", AOF_RUN_ID: "f", aof_sea_embedded: "g", AOF_GLOBAL_HOME: "h", PATH: "i" };
+      assert.deepEqual(cleanLaunchEnv(env), { AOF_GLOBAL_HOME: "h", PATH: "i" });
+      assert.equal(env.GIT_ASKPASS, "a", "the input is never edited");
+    },
+  },
+  {
+    name: "arch/160 FF-16005 (2) the sharded runner hands its pool its stdin pipe, and a stopped pool exits non-zero",
+    run: async () => {
+      const runner = await source("scripts/test-sharded.mjs");
+      assert.match(runner, /stdin: stdinIsPipe\(\) \? process\.stdin : null,/u, "the runner's own stdin, when it is a pipe, is the pool's");
+      assert.match(runner, /process\.exit\(poolExit\(pool, shardedExit\(verdict\)\)\);/u, "the exit goes through poolExit");
+      assert.doesNotMatch(runner, /async function worker\(/u, "the pool lives in its own module, not the runner");
+      const pool = await source("scripts/test-sharded-pool.mjs");
+      assert.match(pool, /stdin\.on\("end", onStdinEnd\);/u, "the pool stops when its stdin ends…");
+      assert.match(pool, /stdin\.on\("close", onStdinEnd\);/u, "…or closes");
+      assert.match(pool, /entry\.child\.kill\(\);/u, "and a stop kills every in-flight unit");
+    },
+  },
+  // ── FF-16006 (160/ADR-006) — a killed unit is never a `not ok` line, a run with a not-finished unit is
+  // never green, and `not-finished` is spelled only in `GATE_RESULTS`. Red probe (VERIFICATION.md): print a
+  // killed unit as `not ok` — leg (1) goes red.
+  {
+    name: "arch/160 FF-16006 (1) a killed unit is never a not ok line, and a run with one is never green",
+    run: async () => {
+      const killed = unitResult({ key: "integration lifecycle", positions: [0] }, { code: null, output: "ok - a\nnot ok - half-way\n", seconds: 1200, notFinished: true });
+      assert.deepEqual([killed.ok, killed.failed], [false, []], "a killed unit names no failure");
+      const lines = shardedReport({ stamp: "s", executed: 1, registered: 2, units: 1, wallSeconds: 1, summedSeconds: 1, jobs: 1, failures: [], flakes: [], perFile: {}, logs: "l", notFinished: ["integration lifecycle"] });
+      assert.equal(lines.some((line) => /^not ok\b/u.test(line)), false, "the report prints it as # not finished, never not ok");
+      assert.ok(lines.includes("# not finished - integration lifecycle"));
+      assert.equal(gateResult({ failures: 0, notFinished: true, passed: true }), "not-finished", "a run with a not-finished unit is never green");
+      assert.equal(gateResult({ failures: 1, notFinished: true, passed: false }), "red", "…and a failing case still makes it red");
+      assert.equal(poolExit({ stopped: false, notFinished: ["u"] }, 0), 1, "and its runner exits non-zero");
+    },
+  },
+  {
+    name: "arch/160 FF-16006 (acd-gate-result-is-evidence): The word has one home",
+    run: async () => {
+      assert.ok(GATE_RESULTS.includes("not-finished"), '"not-finished" is a member of GATE_RESULTS');
+      const spellers = [];
+      for (const rel of (await srcModules()).filter((file) => file.startsWith("packages/work/src/") && file !== RECORD_MODULE)) {
+        if (/["'`]not-finished["'`]/u.test(await source(rel))) spellers.push(rel);
+      }
+      assert.deepEqual(spellers, [], 'no comparison site in packages/work/src spells "not-finished" outside regression-record.mjs');
+    },
   },
 ];

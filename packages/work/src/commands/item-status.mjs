@@ -11,6 +11,7 @@ import {
   appendRegressionRow,
   detailCell,
   gateInstant,
+  isNotFinishedRow,
   isRedRow,
   newestRegressionRow,
   parseRegressionRows,
@@ -93,6 +94,8 @@ export function createItemStatusCommand({ resolveItem, resolveItemExact, require
 // severity table decide the other's meaning (the FF-5905 species).
 const GATE_MISSING = "regression-gate-missing";
 const GATE_RED = "regression-gate-red";
+// 160/ADR-006 §4 — a run that stopped before it could answer. Its repair is the run's, never the code's.
+const GATE_NOT_FINISHED = "regression-gate-not-finished";
 
 // The override's own refusal, and it is a DIFFERENT repair: not "run the gate" but "say why you are
 // not". A silent override is indistinguishable from no gate at all within two milestones — the gate
@@ -151,6 +154,14 @@ async function admitThroughRegressionGate(item, input, ctx) {
         item.ref,
         GATE_RED,
         `the newest regression gate run (${newest.commit}, ${newest.instant}) was RED: ${newest.detail ?? "no detail recorded"}. An older green row does not rescue it — fix the suite and re-run ${GATE_COMMAND}, or accept with --gate-override "<reason>".`,
+        { record: newest },
+      );
+    }
+    if (isNotFinishedRow(newest)) {
+      gateRefusal(
+        item.ref,
+        GATE_NOT_FINISHED,
+        `the newest regression gate run (${newest.commit}, ${newest.instant}) did not finish: ${newest.detail ?? "no detail recorded"}. That is no verdict on the code — re-run ${GATE_COMMAND}, or speed the run up so it finishes inside its budget.`,
         { record: newest },
       );
     }

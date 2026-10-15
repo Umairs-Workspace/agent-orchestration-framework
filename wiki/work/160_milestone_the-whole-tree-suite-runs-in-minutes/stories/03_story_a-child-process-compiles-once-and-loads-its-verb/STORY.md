@@ -4,10 +4,10 @@ number: 03
 slug: a-child-process-compiles-once-and-loads-its-verb
 title: "A child process compiles once and loads only its verb — the compile cache on every aof and runner process, and a pinned module ceiling for a child aof"
 parent: 160
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 schema: 1
 aofVersion: 0.1.0
 depends: []
@@ -26,8 +26,8 @@ anything.
 
 ## Tasks
 
-- [ ] `tasks/00_every-process-uses-the-compile-cache.feature`: the cache is on before the application graph loads, in the bin and in every runner process, and the entry contract is unchanged.
-- [ ] `tasks/01_a-child-aof-loads-a-pinned-closure.feature`: the profile-led cut and the shrink-only module ceiling.
+- [x] `tasks/00_every-process-uses-the-compile-cache.feature`: the cache is on before the application graph loads, in the bin and in every runner process, and the entry contract is unchanged.
+- [x] `tasks/01_a-child-aof-loads-a-pinned-closure.feature`: the profile-led cut and the shrink-only module ceiling.
 
 ## Notes
 

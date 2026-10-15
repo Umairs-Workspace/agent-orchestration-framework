@@ -106,17 +106,49 @@
   {
     "file": "packages/execution/src/worktrees.mjs",
     "kind": "child-process",
-    "expression": "execFile(\"git\", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
-    "digest": "76d3407a5c01112e347b23e936d215b61da0f719bfe116495741fd6b82233b99",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "expression": "execFile(\"git\", args, { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
+    "digest": "812dde8d2ba70aca4964a683802f24d785d08037d2c015ffb27a0304f90ecfdd",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, options)",
+    "digest": "437f6e6c11c7289afd3343fd7b9b2f8c99d9daba827b24ffe7c6d82251a18424",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
+    "reason": "The step memo and the commit-tip recorder forward a caller's own git argv to the injected port unchanged (160/ADR-001)."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec([\"-c\", \"core.abbrev=40\", ...args], options)",
+    "digest": "72891f300e127e3c063c250e12c1640fa688d810c97289b275362b195cbb862d",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
+    "reason": "The commit-tip recorder asks the caller's own commit with a full-length summary id, so no second rev-parse is needed (160/ADR-001 §4)."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, options)",
+    "digest": "437f6e6c11c7289afd3343fd7b9b2f8c99d9daba827b24ffe7c6d82251a18424",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
+    "reason": "The step memo and the commit-tip recorder forward a caller's own git argv to the injected port unchanged (160/ADR-001)."
+  },
+  {
+    "file": "packages/execution/src/worktrees.mjs",
+    "kind": "child-process",
+    "expression": "exec(args, options)",
+    "digest": "437f6e6c11c7289afd3343fd7b9b2f8c99d9daba827b24ffe7c6d82251a18424",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
+    "reason": "The step memo and the commit-tip recorder forward a caller's own git argv to the injected port unchanged (160/ADR-001)."
   },
   {
     "file": "packages/execution/src/worktrees.mjs",
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: projectRoot })",
     "digest": "ef928cf85d0dc9e7245e26be6f211753297c98e8a3595c3111d83bf572286481",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -124,7 +156,7 @@
     "kind": "child-process",
     "expression": "exec([\"cat-file\", \"-e\", `${commit}^{commit}`], { cwd: projectRoot })",
     "digest": "442ddd199ea10fc9c6d458e8dfef38cba187428fe9908fcccb5c056e41e44c22",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -132,7 +164,7 @@
     "kind": "child-process",
     "expression": "exec([\"fetch\", \"origin\"], { cwd: projectRoot })",
     "digest": "719be601cf1efe4f7d5dead7c3304c6fef859f0a4e17f062da30c7d2df9c5bf5",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -140,7 +172,7 @@
     "kind": "child-process",
     "expression": "exec([\"show-ref\", \"--verify\", \"--quiet\", `refs/heads/${branch}`], { cwd: projectRoot })",
     "digest": "9e43c2e61779335d8bf83fa45e5438a17f500403d2e6a9a2ea6a6a68dd0a7063",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -148,7 +180,7 @@
     "kind": "child-process",
     "expression": "exec([\"show-ref\", \"--verify\", \"--quiet\", `refs/remotes/origin/${branch}`], { cwd: projectRoot })",
     "digest": "719e74aea7a5c2db3242d53118bcb72ea827270ca1ff0987906574e17f0e2c3b",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -156,7 +188,7 @@
     "kind": "child-process",
     "expression": "exec([\"fetch\", \"origin\", \"--\", branch], { cwd: projectRoot })",
     "digest": "720826f51dcb2590f51149379274fc8817053f09bae1178741de596cc3d20813",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -164,7 +196,7 @@
     "kind": "child-process",
     "expression": "exec([\"branch\", branch, `refs/remotes/origin/${branch}`], { cwd: projectRoot })",
     "digest": "adb307243beb870d7b1e2d22defd73c7b0bd51b222954dc2918aacfca8b13c6d",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -172,7 +204,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: projectRoot })",
     "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -180,7 +212,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: worktreePath })",
     "digest": "816d6444d908a9c2b0f61e6da58f71886b0d6ddba75aa4de7f5111e59defea57",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -188,7 +220,7 @@
     "kind": "child-process",
     "expression": "exec([\"worktree\", \"list\", \"--porcelain\"], { cwd: projectRoot })",
     "digest": "79e153fde7f3ee1f42362b4fd59b14412198d7918303aa830c9a15be2717c88e",
-    "sourceDigest": "79ed9e0d87451d835e26c0e783863f950630a203aa09a4a28c8c82da8a5dbee3",
+    "sourceDigest": "bd80ddae9b9023406a54c835df4e3110721effddb239e5bd4e3ecf2b3c0b7182",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -332,7 +364,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "87d17c7ad2d03a3fb2462ac8095a52c49df6c04f7a3897b05e7b6c0468e032cd",
+    "sourceDigest": "540ce95740b4384925aafac98e9b524a51b4eab3230b1abf4c8eb6f4c401bfe2",
     "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
   },
   {
@@ -356,7 +388,7 @@
     "kind": "child-process",
     "expression": "execFile(\"git\", args, { cwd, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>\n      resolve({\n        stdout: String(stdout ?? \"\"),\n        stderr: String(stderr ?? \"\"),\n        status: error ? (typeof error.code === \"number\" ? error.code : 1) : 0,\n      }))",
     "digest": "e45b0aba4f94bfe7a064715e6b6a3ce6e2779a4e682737861598b04cead9420b",
-    "sourceDigest": "e44f8906ba268c9a3f1735723516313964bb345a1171efd59ee544261403aa6f",
+    "sourceDigest": "3f9575a809cbb4aae8f7cc9e828fab7d4991080be317e07ab273a76cc05271dc",
     "reason": "Git-only bounded comparison reader; no application module entry."
   },
   {
@@ -660,7 +692,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "eba418cbbb3b8a9c5843a53fb830a65549a4279cdc8d5a14b863699868bba6d0",
+    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -668,7 +700,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "eba418cbbb3b8a9c5843a53fb830a65549a4279cdc8d5a14b863699868bba6d0",
+    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -676,15 +708,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "eba418cbbb3b8a9c5843a53fb830a65549a4279cdc8d5a14b863699868bba6d0",
-    "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
-  },
-  {
-    "file": "scripts/test.mjs",
-    "kind": "computed-import",
-    "expression": "import(pathToFileURL(path.resolve(file)).href)",
-    "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "eba418cbbb3b8a9c5843a53fb830a65549a4279cdc8d5a14b863699868bba6d0",
+    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -704,19 +728,11 @@
     "reason": "Runs the pinned checked-in Yarn entry, never a globally selected package manager."
   },
   {
-    "file": "scripts/test-shard.mjs",
-    "kind": "computed-import",
-    "expression": "import(pathToFileURL(path.resolve(file)).href)",
-    "digest": "3f7b12f79597e3df307b61e8b690a296d0f79e3d39282178434bc832992e694b",
-    "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
-    "reason": "Repository test tooling: imports the one suite file the sharded run assigned this unit, by path, so the unit never loads the registry. Same rule as `scripts/test.mjs --only`."
-  },
-  {
     "file": "scripts/test-sharded.mjs",
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   },
   {
@@ -724,7 +740,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -732,7 +748,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -740,7 +756,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(integrationDir, \"support\", \"feature-runner.mjs\")).href)",
     "digest": "b0f8535ade1e8e3014c2b92870732e37c8991961d96f1a54906506975ca179fc",
-    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
     "reason": "Repository test tooling: imports the integration lane's own feature discovery (`test/integration/support/feature-runner.mjs`) so each feature is planned as its own unit."
   },
   {
@@ -748,7 +764,7 @@
     "kind": "child-process",
     "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } })",
     "digest": "4d4bc039b3889e282373be32ecb39e61d7dd5d2108259fb2afa746da7619b483",
-    "sourceDigest": "865cefd2c351860100c1b5d50a42fdf53b1427f8b8f5c19d236aa172bde1b5ee",
+    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`), each integration feature (`test/integration/cli.mjs <feature>`, in-process) and the cargo lane (`scripts/test.mjs --lanes-only` with no feature selected) as a node child with its own isolated AOF_GLOBAL_HOME."
   },
   {
@@ -756,8 +772,16 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), \"test.mjs\")).href)",
     "digest": "21a42fb352806b055fe00b19220e5c034f37c3cfb7aedb55d3a7dc625401743f",
-    "sourceDigest": "52223e009f9357fa32b3b49bf8456fadd0316954bdea6d6e95bebfe6bd9ae3e7",
-    "reason": "Repository test tooling: a suite that imports the runner itself sits on an import ring with its directory index; the unit enters through `scripts/test.mjs` first, exactly as the whole-tree run does."
+    "sourceDigest": "b461a1eef4d99684bb7aecca2612385846f19d8a3dcff6eaf9915ce108fd0290",
+    "reason": "Repository test tooling: a selection that holds a suite importing the runner sits on an import ring with that suite's directory index; the entry goes through `scripts/test.mjs` first, exactly as the whole-tree run does, and only for such a selection."
+  },
+  {
+    "file": "scripts/test-harness.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(resolve(file)).href)",
+    "digest": "4c6a4a5db69c974214972265d17a812e422581afba4b3ba8f2c3816b7ad1e3f0",
+    "sourceDigest": "28a82fbd62985588fc4c198b7e321538b19a7ffe4b57ef9a5f06013b82c48d4e",
+    "reason": "Repository test tooling: `loadSelected` imports exactly the suite files a selection names, by path - for the runner's `--only` and for the shard entry a focused `aof test` launches - and reports an unusable one by path. No production package consumes this dynamic path."
   },
   {
     "file": "packages/execution/src/codex-app-server.mjs",
@@ -924,7 +948,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "a9732d699a8abbe485b95b4f1ec5aff11f6a87ec3a89d2cef98482d64b74937a",
+    "sourceDigest": "48852d0475bbabdf5f2efb113f1a75f37e50620e5dc21e2d57bffb1d583dd8c3",
     "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
   },
   {

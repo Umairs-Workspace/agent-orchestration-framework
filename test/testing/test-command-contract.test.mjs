@@ -33,7 +33,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { runBounded } from "@aof/execution/bounded-process";
 
@@ -688,7 +688,8 @@ export const testCommandContractTests = [
       const loops = (source + harness).split("for (const { name, run } of tests)").length - 1;
       assert.equal(loops, 1, "exactly one loop prints results and counts failures");
       // 142 Plan 09: the same import also names `runnerShapedExports`, whose one home moved to the harness.
-      assert.match(source, /import \{ runCases(?:, runnerShapedExports)? \} from "\.\/test-harness\.mjs"/u, "the root runner uses the shared execution loop");
+      // 160/02: `loadSelected` joined it, shared with the shard entry a focused `aof test` launches.
+      assert.match(source, /import \{ (?:loadSelected, )?runCases(?:, runnerShapedExports)? \} from "\.\/test-harness\.mjs"/u, "the root runner uses the shared execution loop");
       assert.ok(source.includes("await runCases(tests)"), "the suite executes through that imported loop");
       assert.ok(source.includes("runSuite(tests)"), "the full path calls it");
       assert.ok(source.includes("runSuite(selected, { lanes: false })"), "…and the selected path calls the SAME one");
@@ -737,4 +738,133 @@ process.stdout.write(JSON.stringify({ assembled: Array.isArray(module.tests), co
       }
     },
   },
+
+  // ── 160/02 · 01_the-shard-entry-runs-a-named-selection.feature ─────────────────────────────
+  {
+    name: "160/02 task01: several files run as one selection, under one executed line",
+    async run() {
+      const dir = await scratch();
+      try {
+        const a = path.join(dir, "a.test.mjs");
+        const b = path.join(dir, "b.test.mjs");
+        await writeFile(a, casesSuiteSource("a", 3), "utf8");
+        await writeFile(b, casesSuiteSource("b", 2), "utf8");
+        const result = await shard([a, b], { home: path.join(dir, "home") });
+        assert.deepEqual(okRows(result.stdout), ["a 0", "a 1", "a 2", "b 0", "b 1"], `5 cases ran, in order — ${result.stderr}`);
+        assert.deepEqual(executedLines(result.stdout), ["# executed 5 cases; failures 0"], "…under one executed line");
+        assert.equal(result.exitCode, 0, "…and the entry exits 0");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "160/02 task01: the sharded runner's unit form still works — a trailing positions list selects by position",
+    async run() {
+      const dir = await scratch();
+      try {
+        const c = path.join(dir, "c.test.mjs");
+        await writeFile(c, casesSuiteSource("c", 4), "utf8");
+        const result = await shard([c, "1,3"], { home: path.join(dir, "home") });
+        assert.deepEqual(okRows(result.stdout), ["c 1", "c 3"], `exactly the cases at positions 1 and 3 ran — ${result.stderr}`);
+        assert.equal(result.exitCode, 0);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "160/02 task01: an unusable file is reported by path and fails the run, and the good suite still runs",
+    async run() {
+      const dir = await scratch();
+      try {
+        const good = path.join(dir, "good.test.mjs");
+        const missing = path.join(dir, "missing.test.mjs");
+        const plain = path.join(dir, "plain.mjs");
+        await writeFile(good, casesSuiteSource("good", 2), "utf8");
+        await writeFile(plain, "export const value = 1;\n", "utf8");
+        for (const [bad, reason] of [[missing, "could not be loaded"], [plain, "exports no array of { name, run } entries"]]) {
+          const result = await shard([good, bad], { home: path.join(dir, "home") });
+          assert.ok(result.stderr.includes(`not ok - ${bad} ${reason}`), `the unusable file is named with its reason — ${result.stderr}`);
+          assert.deepEqual(okRows(result.stdout), ["good 0", "good 1"], "…and the good suite's cases still ran");
+          assert.notEqual(result.exitCode, 0, "…and the run fails");
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "FF-16003 160/02 task01: a declared selection launches selectProgramArgs, and a focused run evaluates nothing it was not named — no test index, no other suite, no registry",
+    async run() {
+      const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
+      const compiled = _aofApplication.work.toolchain.resolveTestToolchain(config, { projectRoot: repoRoot });
+      assert.equal(compiled.ok, true, compiled.message);
+      assert.deepEqual([..._aofApplication.work.toolchain.argumentVector(compiled.toolchain, ["test/a.test.mjs"])], ["scripts/test-shard.mjs", "test/a.test.mjs"], "this repository's selection launches the shard entry, never the registry runner");
+      const dir = await scratch();
+      try {
+        const small = path.join(dir, "small.test.mjs");
+        const hook = path.join(dir, "record-hook.mjs");
+        const sink = path.join(dir, "modules.txt");
+        await writeFile(small, casesSuiteSource("small", 1), "utf8");
+        await writeFile(hook, MODULE_RECORDING_HOOK, "utf8");
+        const result = await shard([small], { home: path.join(dir, "home"), importHook: hook, env: { SHARD_MODULE_SINK: sink } });
+        assert.equal(result.exitCode, 0, `the run passed — ${result.stderr}`);
+        const urls = (await readFile(sink, "utf8")).split(/\r?\n/u).filter(Boolean).map((url) => url.replaceAll("\\", "/"));
+        assert.ok(urls.some((url) => url.endsWith("/small.test.mjs")), "the hook saw the named suite, so it was recording");
+        assert.deepEqual(urls.filter((url) => /\/test\/(?:.*\/)?index\.mjs$/u.test(url)), [], "no index.mjs under a test/ directory was evaluated");
+        assert.deepEqual(urls.filter((url) => /\.(?:test|suite)\.mjs$/u.test(url) && !url.endsWith("/small.test.mjs")), [], "…no other suite file was");
+        assert.deepEqual(urls.filter((url) => url.endsWith("/scripts/test.mjs")), [], "…and the runner's registry was not");
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "160/02 task01: a suite on the runner's import ring still enters through the runner",
+    async run() {
+      // This file imports the runner, so it IS such a suite; the child runs one of its pure cases.
+      const name = "72/02 task 02 (scripts/test.mjs): what the runner does with the files a selection names";
+      const position = runnerShapedExports(await import(import.meta.url)).flat().findIndex((entry) => entry.name === name);
+      assert.ok(position >= 0, "the pure case is one of this file's exported cases");
+      const dir = await scratch();
+      try {
+        const result = await shard([path.join(repoRoot, "test", "testing", "test-command-contract.test.mjs"), String(position)], { home: path.join(dir, "home") });
+        assert.doesNotMatch(result.stderr, /before initiali[sz]ation|Cannot access/u, "no case read an uninitialised array");
+        assert.deepEqual(okRows(result.stdout), [name], `its case ran — ${result.stderr}`);
+        assert.equal(result.exitCode, 0);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
 ];
+
+// ── 160/02 · the shard entry's helpers ───────────────────────────────────────────────────────
+
+const shardPath = path.join(repoRoot, "scripts", "test-shard.mjs");
+
+// A suite of `count` no-op cases named `<id> <position>`, importing nothing.
+function casesSuiteSource(id, count) {
+  const rows = Array.from({ length: count }, (_, index) => `  { name: ${jsLiteral(`${id} ${index}`)}, run: () => {} },`);
+  return `export const ${id}Tests = [\n${rows.join("\n")}\n];\n`;
+}
+
+// Records the URL of every module the child loads, in-thread, before it is evaluated.
+const MODULE_RECORDING_HOOK = `import { registerHooks } from "node:module";
+import { appendFileSync } from "node:fs";
+const sink = process.env.SHARD_MODULE_SINK;
+registerHooks({ load(url, context, next) { appendFileSync(sink, url + "\\n"); return next(url, context); } });
+`;
+
+const executedLines = (text) => String(text).split(/\r?\n/u).filter((line) => line.startsWith("# executed "));
+
+async function shard(args, { home, importHook = null, env = {} } = {}) {
+  return await runBounded({
+    command: process.execPath,
+    args: [...(importHook == null ? [] : ["--import", pathToFileURL(importHook).href]), shardPath, ...args],
+    cwd: repoRoot,
+    deadlineMs: 240_000,
+    env: { ...process.env, AOF_GLOBAL_HOME: home, ...env },
+  });
+}

@@ -59,6 +59,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
   const { reportDegrade } = degradeServices;
   const { commitWorktreeChanges } = meshWorktreeServices;
   const { resolveExec } = meshWorktreeServices;
+  const { recordCommitTip } = meshWorktreeServices;
   const { reconcileLanes } = loopWaveServices;
   const { runWaveBuild } = loopWaveServices;
   const { spawnLaneDrive } = loopChildDriveServices;
@@ -97,7 +98,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     runs: { readRuns, staleRunningRuns },
     transitions: { transitionRunStart, transitionStaleRunsReclaimed },
     diagnostics: { reportDegrade },
-    worktrees: { commitWorktreeChanges, resolveExec },
+    worktrees: { commitWorktreeChanges, recordCommitTip, resolveExec },
     wave: { reconcileLanes, runWaveBuild },
     childDrive: { spawnLaneDrive },
     asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },

@@ -1,6 +1,7 @@
 import { executionRuntimes } from "@aof/contracts/loop-bounds";
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import { createMeshWorktrees } from "@aof/mesh/worktrees";
+import { memoGitReads, recordCommitTip } from "@aof/execution/worktrees";
 import { prepareCodexWorktree } from "../../../codex-settings.mjs";
 
 export function assembleMeshWorktree({ degradeServices, workServices, provideWorkToolchain }) {
@@ -55,5 +56,5 @@ export function assembleMeshWorktree({ degradeServices, workServices, provideWor
     sweepRetainedWorktrees,
   } = worktrees;
 
-  return { DEFAULT_WORKTREE_RETENTION_MS, WORKTREE_PREPARE_DEADLINE_EXPIRED, WORKTREE_PREPARE_FAILED, WORKTREE_PREPARE_NOT_STARTED, addDispatchWorktree, addSessionWorktree, addWorktree, adoptRemoteBranch, advanceBranchToBase, commitWorktreeChanges, defaultGitExec, dispatchWorktreeSlug, ensureCommitAvailable, findItemWorktree, headCommit, isInsideMeshWorktree, isUnderMeshDispatchWorktreesRoot, isUnderMeshSessionWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, localBranchExists, meshDispatchWorktreePath, meshDispatchWorktreesRoot, meshIdentityArgs, meshItemBranchName, meshSessionWorktreePath, meshSessionWorktreesRoot, meshWorktreePath, meshWorktreesRoot, parsePorcelainStatus, remoteBranchExists, removeDispatchWorktree, removeWorktree, resolveExec, reuseWorktreeOnBranch, sessionWorktreeSlug, sweepRetainedWorktrees };
+  return { DEFAULT_WORKTREE_RETENTION_MS, WORKTREE_PREPARE_DEADLINE_EXPIRED, WORKTREE_PREPARE_FAILED, WORKTREE_PREPARE_NOT_STARTED, addDispatchWorktree, addSessionWorktree, addWorktree, adoptRemoteBranch, advanceBranchToBase, commitWorktreeChanges, defaultGitExec, dispatchWorktreeSlug, ensureCommitAvailable, findItemWorktree, headCommit, isInsideMeshWorktree, isUnderMeshDispatchWorktreesRoot, isUnderMeshSessionWorktreesRoot, isUnderMeshWorktreesRoot, listWorktrees, localBranchExists, meshDispatchWorktreePath, meshDispatchWorktreesRoot, meshIdentityArgs, meshItemBranchName, meshSessionWorktreePath, meshSessionWorktreesRoot, meshWorktreePath, meshWorktreesRoot, memoGitReads, parsePorcelainStatus, recordCommitTip, remoteBranchExists, removeDispatchWorktree, removeWorktree, resolveExec, reuseWorktreeOnBranch, sessionWorktreeSlug, sweepRetainedWorktrees };
 }

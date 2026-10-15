@@ -824,7 +824,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:9bb89c29f7167d628af9ec129ea5afc637e447acdbd4cc74fd6dbb26b2860e92"
+      "hash": "sha256:0ff4e5890b762b2b2662998a265812b24156bd5fe3ef7df2907af243ce1b0485"
     },
     {
       "path": ".agents\\skills\\aof-verify\\agents\\openai.yaml",

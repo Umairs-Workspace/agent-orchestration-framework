@@ -42,6 +42,10 @@ import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtemp, mkdir, readFile, rm, writeFile, realpath } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { normaliseTap } from "@aof/work/grade";
+import { generateBundleManifest, manifestPath, serializeBundleManifest } from "aof/bundle-manifest";
+import { shardedReport } from "../../scripts/test-sharded-report.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -123,6 +127,7 @@ async function withGateFixture(body) {
       git: gitStub(overrides.git ?? {}),
       runSuite: overrides.runSuite ?? (async () => (overrides.suite ?? suiteResult())),
       ...(overrides.keepAlive == null ? {} : { keepAlive: overrides.keepAlive }),
+      ...(overrides.deps ?? {}),
     });
   try {
     await body({ root: tmp, itemDir, item, recordPath, run });
@@ -202,6 +207,39 @@ async function withDoorFixture({ status = "in-progress", storyStatus = "in-revie
   }
 }
 
+// ── 160/04's seams: the suite launched through the gate's own `run` callback, and a driven run ──
+const STOPPED = _aofApplication.work.commandTools.regressionGate.STOPPED;
+const startRun = _aofApplication.execution.runs.startRun;
+const completeRun = _aofApplication.execution.runs.completeRun;
+const readRuns = _aofApplication.execution.runs.readRuns;
+const exitedGreen = () => Object.freeze({ outcome: "exited", exitCode: 0, stdout: "", stderr: "" });
+
+// A `runSuite` that launches through the gate's `run` callback, exactly as `runTest` does, then answers green.
+const launchingSuite = (toolchain = { program: "suite", args: [], deadlineMs: 60_000 }) => async (input, options) => {
+  await options.run(toolchain, [], { cwd: options.projectRoot });
+  return suiteResult();
+};
+
+// The environment the gate hands its program, for a gate whose own environment is `env`.
+async function launchedEnv(run, env, { during } = {}) {
+  let launched = null;
+  let seen = null;
+  await run({
+    deps: { env, launch: async (toolchain, files, options) => { launched = options.env; if (during) seen = await during(); return exitedGreen(); } },
+    runSuite: launchingSuite(),
+  });
+  return { launched, during: seen };
+}
+
+// A driven session's run: an item folder with one running record, minted through the run store.
+async function drivenRun(root) {
+  const dir = path.join(root, "driven-item");
+  await mkdir(dir, { recursive: true });
+  const item = { ref: "70/00", dir, type: "story" };
+  const { runId } = await startRun(item, { brief: {}, now: new Date().toISOString() });
+  return { item, runId };
+}
+
 async function refusalOf(fn) {
   let caught = null;
   try {
@@ -214,6 +252,134 @@ async function refusalOf(fn) {
 }
 
 export const regressionGateTests = [
+  // ═══ 160/04 — the gate launches clean and dies with its session (ADR-005) ══════════════
+  // task 00 · R1: the launch environment. The suite is launched through the gate's own `run` callback,
+  // so `options.env` is exactly what the program would receive.
+  {
+    name: "160/04 E1 · an inherited GIT_ASKPASS never reaches the suite",
+    run: () => withGateFixture(async ({ run }) => {
+      const { launched } = await launchedEnv(run, { GIT_ASKPASS: "C:\\Code\\askpass.sh", PATH: "/bin" });
+      assert.equal("GIT_ASKPASS" in launched, false, "the launched environment has no GIT_ASKPASS");
+      assert.equal(launched.PATH, "/bin");
+    }),
+  },
+  {
+    name: "160/04 E2 · a driven session's variables stay with the gate",
+    run: () => withGateFixture(async ({ root, run }) => {
+      const drivenItem = path.join(root, "driven-item");
+      const { launched, during } = await launchedEnv(run, { AOF_RUN_ID: "20261015T000000000Z-0000", AOF_RUN_ITEM_DIR: drivenItem, CLAUDECODE: "1" }, {
+        during: () => readFile(path.join(drivenItem, "runs", ".heartbeats.ndjson"), "utf8"),
+      });
+      for (const name of ["AOF_RUN_ID", "AOF_RUN_ITEM_DIR", "CLAUDECODE"]) assert.equal(name in launched, false, `${name} is not in the launched environment`);
+      const [beat] = during.trim().split("\n").map((text) => JSON.parse(text));
+      assert.equal(beat.runId, "20261015T000000000Z-0000", "the gate's keep-alive still appends a beat for that AOF_RUN_ID");
+    }),
+  },
+  {
+    name: "160/04 E3 · the isolated global home is kept, and names match in any case",
+    run: () => withGateFixture(async ({ run }) => {
+      const { launched } = await launchedEnv(run, { AOF_GLOBAL_HOME: "/tmp/gh", git_dir: "/x" });
+      assert.equal(launched.AOF_GLOBAL_HOME, "/tmp/gh");
+      assert.equal("git_dir" in launched, false, "a lower-case git_dir is a GIT_ variable too");
+    }),
+  },
+  {
+    name: "160/04 [outline] What the launch environment keeps and drops (10 rows)",
+    run: () => withGateFixture(async ({ run }) => {
+      const rows = [
+        ["GIT_INDEX_FILE", "absent"], ["GIT_CONFIG_NOSYSTEM", "absent"], ["CLAUDE_CODE_ENTRYPOINT", "absent"],
+        ["AOF_RUN_PHASE", "absent"], ["AOF_SEA_EMBEDDED", "absent"], ["AOF_GLOBAL_HOME", "present"],
+        ["PATH", "present"], ["SystemRoot", "present"], ["TEMP", "present"], ["VSCODE_PID", "present"],
+      ];
+      for (const [name, kept] of rows) {
+        const { launched } = await launchedEnv(run, { [name]: "v" });
+        assert.equal(name in launched, kept === "present", `${name} is ${kept} in the launched environment`);
+        if (kept === "present") assert.equal(launched[name], "v");
+      }
+    }),
+  },
+  {
+    name: "160/04 The gate's own process environment is untouched",
+    run: () => withGateFixture(async ({ run }) => {
+      const saved = process.env.GIT_ASKPASS;
+      process.env.GIT_ASKPASS = "C:\\Code\\askpass.sh";
+      try {
+        let launched = null;
+        await run({ deps: { launch: async (toolchain, files, options) => { launched = options.env; return exitedGreen(); } }, runSuite: launchingSuite() });
+        assert.equal("GIT_ASKPASS" in launched, false, "the suite got the clean copy");
+        assert.equal(process.env.GIT_ASKPASS, "C:\\Code\\askpass.sh", "the gate's own process.env still carries GIT_ASKPASS");
+      } finally {
+        if (saved === undefined) delete process.env.GIT_ASKPASS; else process.env.GIT_ASKPASS = saved;
+      }
+    }),
+  },
+  // task 01 · R2: the suite dies with its session.
+  {
+    name: "160/04 E4 · a cancelled session's gate stops its suite and writes no row",
+    run: () => withGateFixture(async ({ root, run, recordPath }) => {
+      await writeFile(recordPath, recordWith([greenRow()]), "utf8");
+      const before = await readFile(recordPath);
+      const { item, runId } = await drivenRun(root);
+      const marks = path.join(root, "marks");
+      await mkdir(marks, { recursive: true });
+      // The "suite": announces it started, and records that its stdin ended before it exits.
+      const suite = path.join(root, "suite.cjs");
+      await writeFile(suite, [
+        "const fs = require('fs'), path = require('path');",
+        `const marks = ${JSON.stringify(marks)};`,
+        "fs.writeFileSync(path.join(marks, 'started'), String(process.pid));",
+        "process.stdin.on('end', () => { fs.writeFileSync(path.join(marks, 'stdin-ended'), '1'); process.exit(0); });",
+        "process.stdin.resume();",
+        "setTimeout(() => process.exit(3), 60000);",
+      ].join("\n"), "utf8");
+      const settleWhenStarted = (async () => {
+        while (!existsSync(path.join(marks, "started"))) await new Promise((resolve) => setTimeout(resolve, 20));
+        await completeRun(item, { runId, outcome: "cancelled", now: new Date().toISOString() });
+      })();
+      const refusal = await refusalOf(() => run({
+        deps: { env: { AOF_RUN_ID: runId, AOF_RUN_ITEM_DIR: item.dir, PATH: process.env.PATH ?? "" }, keepAliveMs: 50, launch: launchRunner },
+        runSuite: launchingSuite({ program: process.execPath, args: [suite], deadlineMs: 60_000 }),
+      }));
+      await settleWhenStarted;
+      assert.equal(refusal.code, STOPPED, `the gate answers "regression-gate-stopped": ${refusal.message}`);
+      assert.ok(existsSync(path.join(marks, "stdin-ended")), "the gate aborted the launch and the runner's stdin ended");
+      assert.deepEqual(await readFile(recordPath), before, "REGRESSION.md is byte-identical to before the gate started");
+    }),
+  },
+  {
+    name: "160/04 E5 · a drained session's gate finishes and writes its row",
+    run: () => withGateFixture(async ({ root, run, recordPath }) => {
+      const { item, runId } = await drivenRun(root);
+      let beats = 0;
+      const result = await run({
+        deps: {
+          env: { AOF_RUN_ID: runId, AOF_RUN_ITEM_DIR: item.dir },
+          keepAliveMs: 10,
+          runs: async (target) => { beats += 1; return await readRuns(target); },
+          // The suite runs until the keep-alive has watched the running record twice — counted, never timed.
+          launch: async () => { while (beats < 2) await new Promise((resolve) => setTimeout(resolve, 10)); return exitedGreen(); },
+        },
+        runSuite: launchingSuite(),
+      });
+      assert.ok(beats >= 2, `the run stayed "running" through ${beats} watched beats`);
+      assert.equal(result.result, "green", "the gate appends a green row");
+      const rows = parseRegressionRows(await readFile(recordPath, "utf8"));
+      assert.equal(rows.at(-1).result, "green");
+    }),
+  },
+  {
+    name: "160/04 E6 · a gate run by hand watches nothing",
+    run: () => withGateFixture(async ({ run, recordPath }) => {
+      let reads = 0;
+      const result = await run({
+        deps: { env: { PATH: "/bin" }, keepAliveMs: 10, runs: async () => { reads += 1; return []; }, launch: async () => exitedGreen() },
+        runSuite: launchingSuite(),
+      });
+      assert.equal(reads, 0, "no run record was read");
+      assert.equal(result.appended, true, "the row is appended as before");
+      assert.equal(parseRegressionRows(await readFile(recordPath, "utf8")).length, 1);
+    }),
+  },
   // ═══ 2026-10-13 — a gate inside a driven session keeps that session's run alive ══
   // 159's milestone verify waited ~30 min on this gate with no tool call; the driver read the
   // working session as silent and killed it at heartbeatMs, three attempts running.
@@ -730,7 +896,8 @@ export const regressionGateTests = [
         [{}, 13.8, "sharded · 13.8 min"],
         [{ jobs: "8" }, 14.9, "sharded --jobs 8 · 14.9 min"],
         [{}, 24.1, "sharded · 24.1 min · over budget (15 min)"],
-        [{ serial: true }, 104.0, "serial · 104.0 min · over budget (15 min)"],
+        // 160/ADR-006 §5: the budget binds the sharded gate only, so a serial row is never "over budget".
+        [{ serial: true }, 104.0, "serial · 104.0 min"],
       ]) {
         await withGate144({ config: config144({ ...GATE_144, budgetMinutes: 15 }), minutes }, async ({ run }) => {
           const out = await run({ ref: "70", ...flags });
@@ -811,26 +978,175 @@ export const regressionGateTests = [
       assert.equal(lines[at + 3], "Logs: .tmp/test-sharded/2026-10-03T00-00-00-000Z");
     }),
   },
+  // ═══ 160/05 — the runner enforces the budget, and a timeout is not-finished (ADR-006) ══════════
+  // task 00 · R1: a unit that runs out of time is not finished, never failed.
+  {
+    name: "160/05 E1 · a killed integration lane is not finished, and nothing is red",
+    run: async () => {
+      const lines = shardedReport({ ...REPORT_160, failures: [], flakes: [], notFinished: ["integration lifecycle"], executed: 10, registered: 10 });
+      assert.ok(lines.includes("# not finished - integration lifecycle"), "the runner prints # not finished - integration lifecycle");
+      assert.equal(lines.some((line) => line.startsWith("not ok")), false, "…and no not ok line");
+      await withGate144({ config: config144(GATE_160), program: { exitCode: 1, stdout: `TAP version 13\n${lines.join("\n")}\n` }, minutes: 9.1 }, async ({ run }) => {
+        const out = await run({ ref: "70" });
+        assert.equal(out.result, "not-finished");
+        assert.equal(out.detail, "not finished: integration lifecycle · sharded · 9.1 min", "its detail names the unit and lists no failures");
+        assert.equal(out.satisfiesDoor, false);
+      });
+    },
+  },
+  {
+    name: "160/05 E2 · a failing case and a killed unit make a red row with both named apart",
+    run: async () => {
+      const failing = { first: unitResult144("work/x", ["work/x: 01 refuses"]), retry: unitResult144("work/x", ["work/x: 01 refuses"]) };
+      const lines = shardedReport({ ...REPORT_160, failures: [failing], flakes: [], notFinished: ["test/loop/loop-command-wave.test.mjs"], executed: 9, registered: 10 });
+      await withGate144({ config: config144(GATE_160), program: { exitCode: 1, stdout: `TAP version 13\n${lines.join("\n")}\n` }, minutes: 9.5 }, async ({ run }) => {
+        const out = await run({ ref: "70" });
+        assert.equal(out.result, "red");
+        assert.equal(out.detail, "work/x: 01 refuses · not finished: test/loop/loop-command-wave.test.mjs · sharded · 9.5 min", "the failure first, the killed unit apart under not finished");
+      });
+    },
+  },
+  {
+    name: "160/05 [outline] The row's result, by precedence (5 rows)",
+    run: async () => {
+      for (const [failures, killed, end, result] of [
+        [0, 0, "exit 0", "green"],
+        [1, 0, "exit 1", "red"],
+        [1, 2, "exit 1", "red"],
+        [0, 1, "exit 1", "not-finished"],
+        [0, 0, "deadline", "not-finished"],
+      ]) {
+        const stdout = ["TAP version 13",
+          ...Array.from({ length: failures }, (_, at) => `not ok - work/x: case ${at}`),
+          ...Array.from({ length: killed }, (_, at) => `# not finished - unit ${at}`), ""].join("\n");
+        const program = end === "deadline" ? { outcome: "deadline-expired", stdout } : { exitCode: end === "exit 0" ? 0 : 1, stdout };
+        await withGate144({ config: config144(GATE_160), program, minutes: 5 }, async ({ run }) => {
+          assert.equal((await run({ ref: "70" })).result, result, `${failures} failing, ${killed} not finished, ending by ${end}`);
+        });
+      }
+    },
+  },
+  {
+    name: "160/05 The TAP reader counts no failure for a not-finished unit",
+    run: () => {
+      const read = normaliseTap("TAP version 13\n# not finished - integration lifecycle\n");
+      assert.equal(read.cases.filter((entry) => entry.status === "failed").length, 0, "it counts no failure");
+    },
+  },
+  // task 01 · R2 and R3: the sharded gate is held to its budget, and only a green row signs off.
+  {
+    name: "160/05 E4 · a run inside the budget is green",
+    run: () => withGate144({ config: config144(GATE_160), minutes: 8.4 }, async ({ run }) => {
+      const out = await run({ ref: "70" });
+      assert.equal(out.result, "green");
+      assert.equal(out.detail, "sharded · 8.4 min");
+    }),
+  },
+  {
+    name: "160/05 E6 · a program that cannot be told is stopped by the gate's own deadline",
+    run: () => withGate144({ config: config144({ ...GATE_144, budgetMinutes: 10 }), program: { outcome: "deadline-expired", stdout: "TAP version 13\nok - partial\n" }, minutes: 12 }, async ({ run, program }) => {
+      const out = await run({ ref: "70" });
+      assert.equal(program.calls[0].deadlineMs, 12 * 60_000, "the launch was bounded at the budget plus the report's grace");
+      assert.equal(out.result, "not-finished", "the launch ended deadline-expired and the row is not-finished, never red");
+      assert.match(out.detail, /^not finished: the gate's own 12-minute deadline expired/u);
+    }),
+  },
+  {
+    name: "160/05 [outline] The budget reaches the program (4 rows)",
+    run: async () => {
+      for (const [budgetArgs, settings, tail, deadlineMs] of [
+        [["--budget-min", "{minutes}"], {}, ["--budget-min", "10"], 12 * 60_000],
+        [["--budget-min", "{minutes}"], { jobs: "8" }, ["--jobs", "8", "--budget-min", "10"], 12 * 60_000],
+        [undefined, {}, ["scripts/test-sharded.mjs"], 12 * 60_000],
+        [["--budget-min", "{minutes}"], { serial: true }, ["scripts/test.mjs"], TEST_144.deadlineMs],
+      ]) {
+        const gate = { ...GATE_144, budgetMinutes: 10, ...(budgetArgs === undefined ? {} : { budgetArgs }) };
+        await withGate144({ config: config144(gate) }, async ({ run, program }) => {
+          await run({ ref: "70", ...settings });
+          const [call] = program.calls;
+          assert.deepEqual(call.args.slice(-tail.length), tail, `${JSON.stringify(settings)}: the argument vector ends with ${tail.join(" ")}`);
+          assert.equal(call.deadlineMs, deadlineMs, "and the launch deadline is as declared");
+        });
+      }
+    },
+  },
+  {
+    name: "160/05 [outline] A malformed budget template is the toolchain's own refusal (3 rows)",
+    run: () => {
+      const resolveTestGate = _aofApplication.work.toolchain.resolveTestGate;
+      for (const value of ["--budget-min 10", ["--budget-min"], ["--budget-min", "{minutes}", "{minutes}"]]) {
+        const answer = resolveTestGate({ work: { test: { gate: { args: ["scripts/test-sharded.mjs"], budgetMinutes: 10, budgetArgs: value } } } });
+        assert.equal(answer.ok, false, `${JSON.stringify(value)} is refused`);
+        assert.equal(answer.code, "test-runner-declaration-invalid");
+        assert.equal(answer.key, "work.test.gate.budgetArgs");
+      }
+    },
+  },
+  {
+    name: "160/05 This repository declares a 10-minute budget the runner is told",
+    run: async () => {
+      const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
+      assert.equal(config.work.test.gate.budgetMinutes, 10);
+      assert.deepEqual(config.work.test.gate.budgetArgs, ["--budget-min", "{minutes}"]);
+    },
+  },
+  {
+    name: "160/05 E7 · a not-finished row is refused at the door with its own repair",
+    run: () => withDoorFixture({ record: recordWith([greenRow(), greenRow({ result: "not-finished", detail: "not finished: integration lifecycle", instant: LATER_INSTANT, commit: LATER_COMMIT })]) }, async ({ ctx, specPath }) => {
+      const error = await refusalOf(() => invoke("work:status", { ref: "70", status: "done" }, ctx));
+      assert.equal(error.code, "regression-gate-not-finished");
+      assert.match(error.message, /re-run/u, "the message says to re-run the gate…");
+      assert.match(error.message, /speed the run up/u, "…or speed the run up");
+      assert.doesNotMatch(error.message, /failing|fix the suite/iu, "and does not say the suite is failing");
+      assert.match(await readFile(specPath, "utf8"), /^status: in-progress$/m, "nothing moved");
+    }),
+  },
+  {
+    name: "160/05 E8 · a long serial run that passes still signs off",
+    run: () => withGate144({ config: config144(GATE_160), minutes: 104 }, async ({ run }) => {
+      const out = await run({ ref: "70", serial: true });
+      assert.equal(out.result, "green");
+      assert.equal(out.satisfiesDoor, true, "the row satisfies the door");
+      assert.equal(out.detail, "serial · 104.0 min");
+    }),
+  },
+  {
+    name: "160/05 The verify prose names the word",
+    run: async () => {
+      const prose = await readFile(path.join(repoRoot, "packages", "core", "assets", "commands", "verify.md"), "utf8");
+      assert.match(prose, /A `not-finished` row is no verdict on the code/u);
+      assert.match(prose, /re-run the gate, or to speed the run up/u, "it says a not-finished row is re-run or sped up");
+      assert.match(prose, /Never route a not-finished row to a code repair/u, "and is never routed to a code repair");
+      const shipped = await readFile(manifestPath(), "utf8");
+      assert.equal(shipped, serializeBundleManifest(generateBundleManifest()), "the shipped bundle manifest matches the rendered bundle");
+    },
+  },
 ];
 
 // ── 144's fixture ──────────────────────────────────────────────────────────────
 
 const TEST_144 = Object.freeze({ command: "node", args: ["scripts/test.mjs"], selectArgs: ["--only", "{file}"], roots: ["test"], deadlineMs: 60000, report: { format: "tap" } });
 const GATE_144 = Object.freeze({ args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"] });
+// ── 160/05's fixture: the gate held to a 10-minute budget the runner is told ──────────────────
+const GATE_160 = Object.freeze({ ...GATE_144, budgetArgs: ["--budget-min", "{minutes}"], budgetMinutes: 10 });
+const REPORT_160 = Object.freeze({ stamp: "2026-10-15T00-00-00-000Z", units: 3, wallSeconds: 540, summedSeconds: 1800, jobs: 16, perFile: {}, logs: ".tmp/test-sharded/2026-10-15T00-00-00-000Z" });
+const unitResult144 = (key, failed = []) => ({ unit: { key, positions: [0] }, ok: failed.length === 0, code: failed.length > 0 ? 1 : 0, seconds: 1, executed: 1, failed });
 const config144 = (gate) => ({ work: { test: gate === undefined ? { ...TEST_144 } : { ...TEST_144, gate } } });
 
 // The bounded spawn, as a spy behind the REAL `launchRunner`: it records the declared command and
 // the argument vector the shipped code composed, and answers in the seam's own envelope.
-function programStub({ exitCode = 0, stdout = "TAP version 13\n", stderr = "" } = {}) {
+function programStub({ exitCode = 0, stdout = "TAP version 13\n", stderr = "", outcome = "exited" } = {}) {
   const launched = [];
+  const calls = [];
   const launch = (toolchain, files, options) => launchRunner(toolchain, files, {
     ...options,
     launch: async (call) => {
       launched.push([toolchain.command, ...call.args].join(" "));
-      return Object.freeze({ outcome: "exited", command: call.command, args: call.args, attempted: [call.command, ...call.args].join(" "), deadlineMs: call.deadlineMs, exitCode, signal: null, stdout, stderr, error: null });
+      calls.push(call);
+      return Object.freeze({ outcome, command: call.command, args: call.args, attempted: [call.command, ...call.args].join(" "), deadlineMs: call.deadlineMs, exitCode: outcome === "exited" ? exitCode : null, signal: null, stdout, stderr, error: null });
     },
   });
-  return { launched, launch };
+  return { launched, calls, launch };
 }
 
 // A clock that reads 0 at launch and `minutes` at exit.

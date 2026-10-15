@@ -4,10 +4,10 @@ number: 02
 slug: a-focused-run-loads-only-what-it-names
 title: "A focused run loads only what it names — a selection launches the light shard entry, and the registry stays where its readers look"
 parent: 160
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 schema: 1
 aofVersion: 0.1.0
 depends: []
@@ -24,8 +24,8 @@ so that it starts in about a second instead of spending 15 s importing 1,177 sui
 
 ## Tasks
 
-- [ ] `tasks/00_a-selection-launches-its-declared-entry.feature`: the `selectProgramArgs` declaration, compiled and launched; absent means exactly today.
-- [ ] `tasks/01_the-shard-entry-runs-a-named-selection.feature`: the light entry takes several files, reports an unusable one by path, stays guarded, and loads nothing unnamed.
+- [x] `tasks/00_a-selection-launches-its-declared-entry.feature`: the `selectProgramArgs` declaration, compiled and launched; absent means exactly today.
+- [x] `tasks/01_the-shard-entry-runs-a-named-selection.feature`: the light entry takes several files, reports an unusable one by path, stays guarded, and loads nothing unnamed.
 
 ## Notes
 

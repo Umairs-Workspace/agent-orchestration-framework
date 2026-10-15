@@ -197,8 +197,12 @@ export const archTests = [
       assert.equal(session.has(FACE), false, `${FACE} is absent from ${SESSION_MODULE}'s static closure`);
 
       // THE TWO-SIDED ROWS: what the SAME walk must still find, so an empty walk cannot pass.
-      assert.equal(cli.has(WORKSPACE), true, `${WORKSPACE} is still in ${CLI_ENTRY}'s closure — 16 ms, and moving it would be churn dressed as a fix`);
-      assert.equal(cli.has(SESSION_MODULE), true, `${SESSION_MODULE} is in ${CLI_ENTRY}'s closure — the session verb is what this file still loads`);
+      // 160/ADR-004 §2 moved the session module inside the session arm and dropped the unused
+      // workspace binding, so `--version` loads neither; the arm still loads exactly them.
+      assert.equal(cli.has(SESSION_MODULE), false, `${SESSION_MODULE} is imported inside the session arm, not by ${CLI_ENTRY}'s static closure`);
+      assert.equal(cli.has(WORKSPACE), false, `${WORKSPACE} is not in ${CLI_ENTRY}'s static closure`);
+      assert.equal(cli.has("packages/core/src/asset-base.mjs"), true, `${CLI_ENTRY}'s closure still holds the version seam it prints from`);
+      assert.match(stripComments(await readFile(path.join(repoRoot, CLI_ENTRY), "utf8")), /await import\("\.\/application\/default-session-hooks\.mjs"\)/u, "the session arm imports the session module itself");
       assert.equal(session.has(WORKSPACE), true, `${WORKSPACE} is in ${SESSION_MODULE}'s closure`);
 
       assert.ok(cli.size >= CLI_CLOSURE_FLOOR, `${CLI_ENTRY}'s closure cleared the non-vacuity floor: ${cli.size} modules`);

@@ -180,7 +180,7 @@ export const loopCommandWaveTests = [
         assert.deepEqual(asked.map(([id]) => id), ["work:grade", "work:validate", "work:doctor"], "grade first, then the ladder in rung order");
         assert.equal(sampled[0].worktreePath, laneRoot, "the sampler received the lane path");
         assert.deepEqual(changeAsked, [], "a clean ladder never asks for the change under review");
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -258,7 +258,7 @@ export const loopCommandWaveTests = [
             if (row.halt[2] === "unavailable") assert.match(answer.halt.details.unavailable, /EPERM/u, `${label}: detail unavailable`);
           }
         }
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -300,7 +300,7 @@ export const loopCommandWaveTests = [
         assert.equal(driver.directives()[0], "/aof:verify 07/01");
         assert.ok(lines.includes("Driving 07/01 — verify, cycle 1 of 3, L2."));
         assert.equal(bookkeeping.cycles.get("07/01\0verify"), 1);
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -362,7 +362,7 @@ export const loopCommandWaveTests = [
           assert.equal(progress.attemptRun?.runId === record.runId, row.attemptRunIsDrive, `${label}: attemptRun`);
           assert.equal(progress.summary == null, row.summaryNull, `${label}: summary`);
         }
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -392,7 +392,7 @@ export const loopCommandWaveTests = [
         const continueRow = state.driven.find((row) => row.phase === "continue" && row.ref !== "07");
         assert.ok(continueRow, "guard: a story was driven continue");
         assert.deepEqual(Object.keys(continueRow), ["ref", "phase", "runId", "outcome", "attempt", "cycle"], "a sequential row: no lane, baseCommit or merge key");
-      }, { rubric: false, config: { loop: { concurrency: "sequential" } } });
+      }, { git: "fake", rubric: false, config: { loop: { concurrency: "sequential" } } });
     },
   },
   {
@@ -620,7 +620,7 @@ export const loopCommandWaveTests = [
             if (row.producer) assert.equal(state.act.producer, row.producer, `${label}: producer`);
             if (row.stop === "retry-parked") assert.match(report.lines.at(-1), /readyAt=/u, `${label}: readyAt in the account`);
           }
-        }, { stories: [{ number: "01" }] });
+        }, { git: "fake", stories: [{ number: "01" }] });
       }
     },
   },
@@ -645,7 +645,7 @@ export const loopCommandWaveTests = [
           assert.match(halt, new RegExp(`failureReason=${row.document.failureReason}`, "u"), `${label}: ${halt}`);
           if (row.screen == null) assert.doesNotMatch(halt, /screen=/u, `${label}: no screen`);
           else assert.match(halt, new RegExp(`screen=${row.screen}`, "u"), `${label}: ${halt}`);
-        }, { stories: [{ number: "01" }] });
+        }, { git: "fake", stories: [{ number: "01" }] });
       }
     },
   },
@@ -860,7 +860,7 @@ export const loopCommandWaveTests = [
         assert.equal(laneRows(state, "07/01").length, 2, "two rows for 07/01");
         assert.equal(laneRows(state, "07/01")[0].lane.worktree, laneRows(state, "07/01")[1].lane.worktree);
         assert.equal((await git(["status", "--porcelain"], fx.root)).stdout.includes("loop-fixes"), false, "nothing under the checkout was written for it");
-      }, { stories: ["01"] });
+      }, { git: "fake", stories: ["01"] });
     },
   },
   {
@@ -1062,7 +1062,7 @@ export const loopCommandWaveTests = [
             const text = JSON.parse(await readFile(spawns[1].fixFile, "utf8").catch(() => "null"));
             assert.ok(text == null || text.findings.every((f) => f.case === "own-red"), `${label}: the fix names own-red and neither base red`);
           }
-        });
+        }, { git: "fake" });
       }
     },
   },
@@ -1106,7 +1106,7 @@ export const loopCommandWaveTests = [
           assert.ok(runs.every((run) => run.brief.gradeBaseline == null), `${ref}: no baseline on the brief`);
           assert.equal(laneRows(state, ref)[0].cases.failed, 3, `${ref}: graded raw`);
         }
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -1198,7 +1198,7 @@ export const loopCommandWaveTests = [
         assert.ok(run);
         assert.equal("baseCommit" in run.brief.gradeBaseline, false, "no baseCommit key");
         assert.equal(run.brief.lane, undefined);
-      }, { stories: ["01"], config: { loop: { concurrency: "sequential" } } });
+      }, { git: "fake", stories: ["01"], config: { loop: { concurrency: "sequential" } } });
     },
   },
 
@@ -1517,7 +1517,7 @@ export const loopCommandWaveTests = [
         assert.equal(registry.of("work:dispatch").filter((c) => c.input.refs).length, 1, "no further work:dispatch ask");
         const wave = (await laneRunsOf(fx, "07")).find((r) => r.brief?.wave);
         assert.equal(wave.state, "failed");
-      }, { stories: ["01", "03"] });
+      }, { git: "fake", stories: ["01", "03"] });
       // one foreign holder at bound 2: 07/01 admitted, 07/03 waits and is admitted after the merge
       await withLaneRepo(async (fx) => {
         let admittedFirst = null;
@@ -1535,7 +1535,7 @@ export const loopCommandWaveTests = [
         assert.equal(state.state, "done", report.lines.join("\n"));
         assert.ok(report.lines.includes("07/03 — at capacity (2/2), waiting for a lane to close."));
         assert.ok(state.driven.some((r) => r.ref === "07/03" && r.lane != null), "07/03 admitted after 07/01's merge while the foreign lane still holds its slot");
-      }, { stories: ["01", "03"], config: { dispatch: { concurrency: 2 } } });
+      }, { git: "fake", stories: ["01", "03"], config: { dispatch: { concurrency: 2 } } });
     },
   },
   {
@@ -1552,13 +1552,13 @@ export const loopCommandWaveTests = [
         for (const key of ["worktree", "branch", "bound"]) assert.ok(opens[0].keys.includes(key));
         assert.equal(child.calls.length, 1, "driven in a lane, not the primary");
         assert.equal(path.resolve(child.calls[0].lane), path.resolve(meshDispatchWorktreePath(fx.root, "27/04")));
-      }, { stories: [{ number: "04" }], milestone: "27" });
+      }, { git: "fake", stories: [{ number: "04" }], milestone: "27" });
       await withLaneRepo(async (fx) => {
         const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { if (input.refs) throw Object.assign(new Error("git worktree add failed: disk full"), { code: "dispatch-worktree-add-failed" }); return await real(); } });
         const { state, report } = await runWave(fx, { child: fakeLaneChild(fx), rubric: stubRubric(emits(passingTap())), registry });
         assert.equal(state.act.stop, "lane-open-failed");
         assert.match(report.lines.at(-1), /disk full/u);
-      }, { stories: [{ number: "04" }], milestone: "27" });
+      }, { git: "fake", stories: [{ number: "04" }], milestone: "27" });
     },
   },
   {
@@ -1577,7 +1577,7 @@ export const loopCommandWaveTests = [
         assert.equal(state.act.producer, "engine:wave-empty-held");
         assert.match(report.lines.at(-1), /skipped=\["27\/03"\]/u);
         assert.equal(registry.of("work:dispatch").filter((c) => c.input.refs).length, 0, "no work:dispatch ask, no lane");
-      }, { stories: [{ number: "03", files: ["src/cli.mjs"] }, { number: "04", files: ["src/d.mjs"] }], milestone: "27" });
+      }, { git: "fake", stories: [{ number: "03", files: ["src/cli.mjs"] }, { number: "04", files: ["src/d.mjs"] }], milestone: "27" });
       await withLaneRepo(async (fx) => {
         const dispatches = [];
         const registry = scriptedRegistry({ dispatch: async (input, ctx, real) => { if (input.refs) dispatches.push([...input.refs]); return await real(); } });
@@ -1585,7 +1585,7 @@ export const loopCommandWaveTests = [
         assert.equal(state.state, "done", report.lines.join("\n"));
         assert.deepEqual(dispatches[0], ["27/02"], "27/03 is held while 27/02 is in flight");
         assert.deepEqual(dispatches[1], ["27/03"], "…and dispatched after 27/02 merges");
-      }, { stories: [{ number: "02", files: ["src/cli.mjs"] }, { number: "03", files: ["src/cli.mjs"] }], milestone: "27" });
+      }, { git: "fake", stories: [{ number: "02", files: ["src/cli.mjs"] }, { number: "03", files: ["src/cli.mjs"] }], milestone: "27" });
     },
   },
   {
@@ -1598,7 +1598,7 @@ export const loopCommandWaveTests = [
         const bounds = report.lines.filter((line) => /\(bound \d+\)/u.test(line)).map((line) => /\(bound (\d+)\)/u.exec(line)[1]);
         assert.ok(bounds.length > 0);
         assert.ok(bounds.every((b) => b === "7"), `every narrated bound is 7: ${bounds}`);
-      }, { stories: ["01"], config: { dispatch: { concurrency: 2 } } });
+      }, { git: "fake", stories: ["01"], config: { dispatch: { concurrency: 2 } } });
       const wave = await readFile(new URL("../../packages/work-loop/src/wave.mjs", import.meta.url), "utf8");
       assert.doesNotMatch(wave, /config\.work\.dispatch|config\.work\.loop|dispatchConcurrencyFromConfig|DEFAULT_DISPATCH_CONCURRENCY/u);
       const stripped = wave.replace(/\/\/[^\n]*/gu, "");
@@ -1821,7 +1821,7 @@ function waitingLaneTests() {
           assert.equal(state.act.ref, "07/01");
           assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /parked=\[\{"ref":"07\/01"/u);
           assert.equal(child.calls.filter((call) => call.ref === "07/03").length, 0, "07/03 waits on 07/01 and was never dispatched");
-        }, { stories: [{ number: "01" }, { number: "03", depends: ["01"] }] });
+        }, { stories: [{ number: "01" }, { number: "03", depends: ["01"] }] }, { git: "fake" });
       },
     },
     {
@@ -1844,7 +1844,7 @@ function waitingLaneTests() {
           assert.match(halt, /drained=\[[^\]]*\{"ref":"07\/01","parked":true\}/u);
           assert.match(halt, /parked=\[\{"ref":"07\/01"/u);
           assert.ok(report.lines.includes('  answer: aof work answer 07/01 "…"'), "the drained halt prints the ask block");
-        });
+        }, { git: "fake" });
       },
     },
     {
@@ -1871,7 +1871,7 @@ function waitingLaneTests() {
           assert.equal(posts.filter((p) => p.content.includes("parked, unanswered")).length, 0);
           assert.match(report.lines.findLast((line) => line.includes(" — halted on ")), /parked=\[\{"ref":"07\/01"/u);
           assert.ok(report.lines.some((line) => /^Lane 07\/03 — merge: (fast-forwarded|merged)/u.test(line)), "07/03 finished and merged home");
-        });
+        }, { git: "fake" });
       },
     },
   ];

@@ -15,6 +15,13 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //
 // Born in the subject directory `test/support/loop/` because `test/support` is at its ceiling
 // (the budget row asks exactly this of the next helper).
+//
+// …AND THE GIT MODEL (160/01, ADR-002). `withLaneRepo(body, { git: "fake" })` writes the same stream
+// and seeds an in-memory repository from it (`git-fake.mjs`) instead: no git process starts, no
+// `.git` directory is made, and `laneCtx`'s port is the model's. A case whose subject is the loop
+// runs there; a case about git's own behaviour, or one that reaches git outside the port, keeps the
+// real repository, which stays the default. `git(args, cwd)` answers from the model for a root it
+// holds, so a moved case's body is unchanged — and an argv the model does not answer throws by name.
 import { mkdtemp, mkdir, writeFile, rm, realpath, readFile, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
@@ -29,9 +36,13 @@ const createStopSource = _aofApplication.loop.stopRequest.createStopSource;
 const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
 const readAsk = _aofApplication.loop.askRequest.readAsk;
+const sampleWorktreeProgress = _aofApplication.loop.loopProgress.sampleWorktreeProgress;
+import { createGitModel, forgetGitModel, gitModelFor, registerGitModel } from "./git-fake.mjs";
 
-// git(args, cwd) — argv form only, never a shell string.
+// git(args, cwd) — argv form only, never a shell string. A root the git model holds is answered by it.
 export function git(args, cwd) {
+  const model = gitModelFor(cwd);
+  if (model != null) return model.exec(args, { cwd });
   return new Promise((resolve, reject) => {
     execFile("git", args, { cwd, windowsHide: true, env: { ...process.env, GIT_TERMINAL_PROMPT: "0" } }, (error, stdout, stderr) => {
       if (error && (error.code === "ENOENT" || error.killed || error.signal)) reject(error);
@@ -69,13 +80,17 @@ export const MILESTONE_SLUG = "07_milestone_wave";
  *   options.config   — merged into `work`
  *   options.commit   — extra files `{ "path": "body" }` committed with the stream
  */
-export async function withLaneRepo(body, { stories = ["01", "03"], rubric = true, config = {}, commit = {}, milestone = MILESTONE } = {}) {
+export async function withLaneRepo(body, { stories = ["01", "03"], rubric = true, config = {}, commit = {}, milestone = MILESTONE, git: gitMode = "real" } = {}) {
+  if (gitMode !== "real" && gitMode !== "fake") throw new TypeError(`withLaneRepo: git must be "real" or "fake", not ${JSON.stringify(gitMode)}`);
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-lane-")));
+  let model = null;
   try {
-    await git(["init", "-b", "main"], root);
-    await git(["config", "user.email", "fixture@aof.test"], root);
-    await git(["config", "user.name", "aof fixture"], root);
-    await git(["config", "core.autocrlf", "false"], root);
+    if (gitMode === "real") {
+      await git(["init", "-b", "main"], root);
+      await git(["config", "user.email", "fixture@aof.test"], root);
+      await git(["config", "user.name", "aof fixture"], root);
+      await git(["config", "core.autocrlf", "false"], root);
+    }
 
     const workDir = path.join(root, "wiki", "work");
     const milestoneDir = path.join(workDir, `${milestone}_milestone_wave`);
@@ -118,12 +133,18 @@ export async function withLaneRepo(body, { stories = ["01", "03"], rubric = true
     // `.aof/mesh/` is runtime state: a materialised lane must never show as an uncommitted
     // change of the origin tree.
     await writeFile(path.join(root, ".gitignore"), ".aof/mesh/\n", "utf8");
-    await git(["add", "-A"], root);
-    await git(["commit", "-q", "-m", "fixture: the stream"], root);
+    if (gitMode === "real") {
+      await git(["add", "-A"], root);
+      await git(["commit", "-q", "-m", "fixture: the stream"], root);
+    } else {
+      model = registerGitModel(createGitModel({ root }));
+      model.seed("fixture: the stream");
+    }
 
     const workspace = await loadWorkspace(root);
-    return await body({ root, workDir, milestoneDir, storyDirs, workspace, milestone, storyDir: (ref) => storyDirs.get(ref) });
+    return await body({ root, workDir, milestoneDir, storyDirs, workspace, milestone, storyDir: (ref) => storyDirs.get(ref), git: gitMode, model, exec: model?.exec ?? realExec });
   } finally {
+    if (model != null) forgetGitModel(model);
     await rm(root, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   }
 }
@@ -341,10 +362,12 @@ export async function stripAsks(item) {
   }
 }
 
-export function laneCtx(fx, { child, registry, rubric, driver, report, timers, signals, now, exec = realExec, extra = {} } = {}) {
+export function laneCtx(fx, { child, registry, rubric, driver, report, timers, signals, now, exec = fx.exec ?? realExec, extra = {} } = {}) {
   return {
     workspace: fx.workspace,
     exec,
+    // On the model, the build-progress sample reads the lane through the same port (its own seam).
+    ...(fx.model == null ? {} : { sampleWorktreeProgress: (input) => sampleWorktreeProgress(input, { exec }) }),
     askWait: immediatePark(),
     ...(child == null ? {} : { spawnLaneDrive: child }),
     ...(registry == null ? {} : { invokeRegistered: registry }),

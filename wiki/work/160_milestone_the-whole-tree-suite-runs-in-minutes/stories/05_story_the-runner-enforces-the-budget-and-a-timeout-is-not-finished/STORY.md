@@ -4,10 +4,10 @@ number: 05
 slug: the-runner-enforces-the-budget-and-a-timeout-is-not-finished
 title: "The runner enforces the budget, and a timeout is not-finished — the gate fails a run that outlives 10 minutes, and never calls a killed unit a red"
 parent: 160
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 schema: 1
 aofVersion: 0.1.0
 depends: [02, 04]
@@ -26,8 +26,8 @@ that only ran out of time.
 
 ## Tasks
 
-- [ ] `tasks/00_a-unit-out-of-time-is-not-finished.feature`: R1, the not-finished report, no retry, the row's precedence and the word's one home.
-- [ ] `tasks/01_the-sharded-gate-is-held-to-its-budget.feature`: R2 and R3, the budget reaches the program, the stop at the budget, the door's refusal, and the serial path.
+- [x] `tasks/00_a-unit-out-of-time-is-not-finished.feature`: R1, the not-finished report, no retry, the row's precedence and the word's one home.
+- [x] `tasks/01_the-sharded-gate-is-held-to-its-budget.feature`: R2 and R3, the budget reaches the program, the stop at the budget, the door's refusal, and the serial path.
 
 ## Notes
 

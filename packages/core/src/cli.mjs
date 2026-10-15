@@ -1,6 +1,4 @@
 import { pathToFileURL } from "node:url";
-import { defaultWorkspace } from "./application/default-workspace.mjs";
-const { loadWorkspace } = defaultWorkspace.work;
 // THE REGISTRY AND THE GENERIC FACE ARE NOT STATIC IMPORTS (milestone 72 / story 03, ADR-005 §1).
 //
 // `aof session ping` fires on EVERY prompt an operator types, writes a small record and exits. What
@@ -20,6 +18,13 @@ const { loadWorkspace } = defaultWorkspace.work;
 //
 // `getCommand` / `listCommands` / `resolveRoute` / `runCommandFace` are therefore imported at their
 // use sites, each of which sits below that arm.
+//
+// THE SESSION MODULE AND THE WORKSPACE WENT THE SAME WAY (milestone 160 / story 03, ADR-004 §2).
+// Profiled at refine, `aof --version` loaded 50 modules, a command module among them, to print one
+// line: the session hooks (a mesh store, a workspace) were static here for the session arm alone,
+// and the workspace binding was bound and never called. The session hooks are imported INSIDE the
+// arm now, so a ping still loads exactly them and `--version` loads neither. FF-16004 pins each
+// child's module count, shrink-only.
 // selectOrchestratorModel / showOrchestratorModel / setDelegationCommand /
 // setDelegationModelCommand / showDelegation / updateWork — no longer imported
 // here (m42 wave (d) leg d1, the CLI-only batch closing half): the model-config
@@ -40,9 +45,7 @@ const { loadWorkspace } = defaultWorkspace.work;
 // assistant-agnostic session-presence CLI seam. A CLI-only TOP-LEVEL command (the
 // mesh-desktop.mjs nested-verb shape, but at the top level rather than under
 // `mesh`) — NOT a registered mesh:* command (its stdin-JSON/env identity resolution
-// doesn't fit meshVerbCli's single-positional shape).
-import { defaultSessionHooks } from "./application/default-session-hooks.mjs";
-const { meshSessionCommand } = defaultSessionHooks.commandsMeshSession;
+// doesn't fit meshVerbCli's single-positional shape). Imported inside the session arm of `run()`.
 // startLauncher / acquireMeshLauncherLock / createMeshLogSink — no longer
 // imported here (m42 wave (d) leg d1, wave-3 tail): the `aof mesh serve --serve`
 // daemon body moved into commands/mesh-serve.mjs as mesh:serve's cli.launch
@@ -80,7 +83,8 @@ export async function run(argv) {
   // (`src/spine/face.mjs`) no longer runs on the session path. It still fires on every other verb
   // and throughout the arch suite, so a collision is still impossible to ship.
   if (command === "session") {
-    await meshSessionCommand(rest);
+    const { defaultSessionHooks } = await import("./application/default-session-hooks.mjs");
+    await defaultSessionHooks.commandsMeshSession.meshSessionCommand(rest);
     return;
   }
 

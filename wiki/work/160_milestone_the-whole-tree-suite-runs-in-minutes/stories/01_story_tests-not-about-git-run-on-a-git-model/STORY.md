@@ -4,10 +4,10 @@ number: 01
 slug: tests-not-about-git-run-on-a-git-model
 title: "Tests that are not about git run on a git model — an in-memory repository behind the same exec port, held honest by a parity control"
 parent: 160
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 schema: 1
 aofVersion: 0.1.0
 depends: [00, 06]
@@ -25,8 +25,8 @@ starting processes.
 
 ## Tasks
 
-- [ ] `tasks/00_the-git-model-answers-as-git-does.feature`: the model, its filesystem effects, its loud refusal of anything unmodelled, and the parity control.
-- [ ] `tasks/01_loop-suites-move-onto-the-model-by-rule.feature`: the classification rule applied to the loop suites; the git-subject cases stay on real git.
+- [x] `tasks/00_the-git-model-answers-as-git-does.feature`: the model, its filesystem effects, its loud refusal of anything unmodelled, and the parity control.
+- [x] `tasks/01_loop-suites-move-onto-the-model-by-rule.feature`: the classification rule applied to the loop suites; the git-subject cases stay on real git.
 
 ## Notes
 

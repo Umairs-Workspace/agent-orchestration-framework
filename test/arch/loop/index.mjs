@@ -150,6 +150,8 @@ import { archTests as acdLoopAskReachesEveryFaceTests } from "./acd-loop-ask-rea
 // milestone 131 / story 10 — FF-13111 and FF-13112, the RECORD once more: a Discord reply is one more
 // face that writes the ask, through one gateway and one allowlisted verb (ADR-008). 11 appends FF-13113.
 import { archTests as acdLoopAskAnsweredFromDiscordTests } from "./acd-loop-ask-answered-from-discord.test.mjs";
+// milestone 160 / story 00 — FF-16001: one loop step asks git each ref or topology question once.
+import { archTests as acdLoopGitReadsOncePerStepTests } from "./acd-loop-git-reads-once-per-step.test.mjs";
 
 export const tests = [
   // milestone 52 / story 04 — the nine loop-registry fitness functions
@@ -233,4 +235,6 @@ export const tests = [
   ...acdLoopAskReachesEveryFaceTests,
   // milestone 131 / story 10 — FF-13111, FF-13112.
   ...acdLoopAskAnsweredFromDiscordTests,
+  // milestone 160 / story 00 — FF-16001.
+  ...acdLoopGitReadsOncePerStepTests,
 ];

@@ -1,3 +1,11 @@
+// Node's module compile cache (160/ADR-004 §1), turned on as this module evaluates. The runner, the
+// shard entry and the sharded runner all import this module statically and load suites dynamically
+// afterwards, so every suite a unit loads compiles once per machine rather than once per process.
+// Optional, because a runtime older than Node 22.1 has no such function.
+import module from "node:module";
+
+module.enableCompileCache?.();
+
 export async function runCases(tests) {
   let failures = 0;
   // Per-test hermetic global AOF home (34/story 00) — see scripts/test-unit.mjs for the
@@ -46,6 +54,33 @@ export function runnerShapedExports(module) {
     if (!found.includes(value)) found.push(value);
   }
   return found;
+}
+
+// Import each named file and take its tests. A file that is not on disk, that does not evaluate,
+// or that exports nothing runner-shaped is UNUSABLE and is reported BY PATH - never dropped, and
+// never left to contribute zero tests in silence, which would read as a green run. Shared by the
+// runner's `--only` and the shard entry a focused `aof test` launches (160/ADR-003).
+export async function loadSelected(files) {
+  const { resolve } = await import("node:path");
+  const { pathToFileURL } = await import("node:url");
+  const selected = [];
+  const unusable = [];
+  for (const file of files) {
+    let module;
+    try {
+      module = await import(pathToFileURL(resolve(file)).href);
+    } catch (error) {
+      unusable.push({ file, reason: `could not be loaded: ${error?.message ?? String(error)}` });
+      continue;
+    }
+    const found = runnerShapedExports(module);
+    if (found.length === 0) {
+      unusable.push({ file, reason: "exports no array of { name, run } entries, so there is nothing in it to run" });
+      continue;
+    }
+    for (const array of found) selected.push(...array);
+  }
+  return { selected, unusable };
 }
 
 // Suite state belongs to its process. Timings may split only suites that explicitly

@@ -16,15 +16,23 @@
 //   - A failed unit is re-run ONCE, alone, after the pool drains. Red again = a failure. Green alone = a test that is
 //     not isolated, logged by name as `# not isolated - <case>` and not a failure; --strict makes it fail the run.
 //   - The report text and the exit decision are `scripts/test-sharded-report.mjs`'s, a pure module (144).
+//   - The pool is `scripts/test-sharded-pool.mjs`'s (160/04): it stops when this process's stdin pipe ends —
+//     the gate ending it on a stop, or the parent dying — killing every in-flight unit, and a stopped run exits
+//     non-zero whatever its units answered.
 //
-//   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--strict] [--no-lanes] [--plan]
+//   - At its budget (`--budget-min B`, 160/ADR-006 §2) the run stops: every in-flight unit is killed and reported
+//     `# not finished - <unit>`, the queue left is `# not started: <n> units`, and the run exits non-zero. A unit killed
+//     at `--unit-timeout-min` is not finished too, never a `not ok` line, and gets no alone-retry.
+//
+//   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--budget-min B] [--strict] [--no-lanes] [--plan]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { runnerShapedExports, suiteCaseChunks } from "./test-harness.mjs";
-import { fileTimings, lostUnitFailure, registryRefusal, shardedExit, shardedReport } from "./test-sharded-report.mjs";
+import { fileTimings, registryRefusal, shardedExit, shardedReport } from "./test-sharded-report.mjs";
+import { poolExit, runPool, stdinIsPipe } from "./test-sharded-pool.mjs";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
 const argv = process.argv.slice(2);
@@ -32,6 +40,7 @@ const option = (name, fallback) => { const at = argv.indexOf(name); return at < 
 const JOBS = option("--jobs", Math.max(2, Math.min(16, (os.availableParallelism?.() ?? os.cpus().length) - 4)));
 const SPLIT_SECONDS = option("--split-seconds", 60);
 const UNIT_TIMEOUT_MS = option("--unit-timeout-min", 20) * 60_000;
+const BUDGET_MS = argv.includes("--budget-min") ? option("--budget-min", null) * 60_000 : null;
 const STRICT = argv.includes("--strict");
 const LANES = !argv.includes("--no-lanes");
 const slash = (value) => value.replaceAll("\\", "/");
@@ -116,61 +125,37 @@ if (argv.includes("--plan")) {
   process.exit(0);
 }
 
-// 3. THE POOL.
-function runUnit(unit, label) {
-  return new Promise((resolve) => {
-    const home = mkdtempSync(path.join(os.tmpdir(), "aof-shard-home-"));
-    const args = unit.args ?? (unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), unit.file, unit.positions.join(",")]);
-    const begun = Date.now();
-    const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } });
-    let output = "";
-    child.stdout.on("data", (chunk) => { output += chunk; });
-    child.stderr.on("data", (chunk) => { output += chunk; });
-    const timer = setTimeout(() => { output += `\nnot ok - ${unit.key} killed after ${UNIT_TIMEOUT_MS / 60000} min\n`; child.kill(); }, UNIT_TIMEOUT_MS);
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      try { rmSync(home, { recursive: true, force: true }); } catch { /* best-effort */ }
-      const executed = Number(/^# executed (\d+) cases/m.exec(output)?.[1] ?? -1);
-      const failed = [...output.matchAll(/^not ok - (.*)$/gm)].map((match) => match[1]);
-      const lost = !unit.lanes && executed !== unit.positions.length;
-      const ok = code === 0 && failed.length === 0 && !lost;
-      if (lost) failed.push(lostUnitFailure(unit.key, executed, unit.positions.length));
-      const result = { unit, ok, code, seconds: (Date.now() - begun) / 1000, executed, failed, output };
-      writeFileSync(path.join(outDir, `${label}.log`), output);
-      resolve(result);
-    });
-  });
+// 3. THE POOL, and 4. ONE ALONE-RETRY for each failed unit after it drains — both the pool module's.
+function spawnUnit(unit) {
+  const home = mkdtempSync(path.join(os.tmpdir(), "aof-shard-home-"));
+  const args = unit.args ?? (unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), unit.file, unit.positions.join(",")]);
+  const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } });
+  return { child, release: () => rmSync(home, { recursive: true, force: true }) };
 }
-const results = [];
-let next = 0, done = 0;
-async function worker() {
-  while (next < plan.length) {
-    const unit = plan[next++];
-    const result = await runUnit(unit, `u${String(plan.indexOf(unit)).padStart(4, "0")}`);
-    results.push(result);
-    done += 1;
-    if (!result.ok || result.seconds > 30) console.log(`[${done}/${plan.length}] ${result.ok ? "ok  " : "FAIL"} ${result.seconds.toFixed(0).padStart(4)}s ${unit.key}${unit.chunked ? ` (chunk of ${unit.positions.length})` : ""}`);
-  }
-}
-await Promise.all(Array.from({ length: Math.min(JOBS, plan.length) }, worker));
-
-// 4. ONE ALONE-RETRY for each failed unit, after the pool has drained (so it runs without the load).
-const failedUnits = results.filter((result) => !result.ok);
-const flakes = [], failures = [];
-for (const result of failedUnits) {
-  const retry = await runUnit(result.unit, `retry-${results.indexOf(result)}`);
-  (retry.ok ? flakes : failures).push({ first: result, retry });
-}
+const pool = await runPool(plan, {
+  jobs: JOBS,
+  spawnUnit,
+  stdin: stdinIsPipe() ? process.stdin : null,
+  unitTimeoutMs: UNIT_TIMEOUT_MS,
+  budgetMs: BUDGET_MS,
+  writeLog: (label, output) => writeFileSync(path.join(outDir, `${label}.log`), output),
+  onResult: (result, done, total) => {
+    if (!result.ok || result.seconds > 30) console.log(`[${done}/${total}] ${result.ok ? "ok  " : "FAIL"} ${result.seconds.toFixed(0).padStart(4)}s ${result.unit.key}${result.unit.chunked ? ` (chunk of ${result.unit.positions.length})` : ""}`);
+  },
+});
+const { results, flakes, failures, notFinished, notStarted } = pool;
+if (pool.stopped) console.log(`# stopped - ${pool.stoppedBy === "budget" ? `the ${BUDGET_MS / 60_000}-minute budget passed` : "stdin ended"}`);
 
 // 5. TIMINGS for the next schedule, and the report.
 const perFile = fileTimings(results);
-for (const target of [timingsPath, mainTimingsPath].filter(Boolean)) {
+// A stopped run's killed units would teach the next schedule a duration they never had.
+for (const target of pool.stopped ? [] : [timingsPath, mainTimingsPath].filter(Boolean)) {
   try { mkdirSync(path.dirname(target), { recursive: true }); writeFileSync(target, JSON.stringify(perFile, null, 1)); } catch { /* best-effort */ }
 }
 // A unit that failed in the pool counts what its alone-retry executed: the retry ran exactly that unit's cases again.
 const retried = new Map([...flakes, ...failures].map(({ first, retry }) => [first, retry]));
 const executed = results.filter((result) => !result.unit.lanes).reduce((sum, result) => sum + Math.max(0, (retried.get(result) ?? result).executed), 0);
-const verdict = { failures, flakes, executed, registered: tests.length, strict: STRICT };
+const verdict = { failures, flakes, executed, registered: tests.length, strict: STRICT, notFinished, notStarted };
 const report = shardedReport({
   ...verdict,
   stamp,
@@ -183,4 +168,4 @@ const report = shardedReport({
 });
 writeFileSync(path.join(outDir, "SUMMARY.txt"), report.join("\n") + "\n");
 console.log(report.join("\n"));
-process.exit(shardedExit(verdict));
+process.exit(poolExit(pool, shardedExit(verdict)));

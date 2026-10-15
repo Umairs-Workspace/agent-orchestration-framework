@@ -51,22 +51,37 @@ export function notIsolatedLines(flakes) {
   return flakes.flatMap(({ first }) => namesOf(first).map((name) => `# not isolated - ${name}`));
 }
 
-export function shardedReport({ stamp, executed, registered, units, wallSeconds, summedSeconds, jobs, failures, flakes, perFile, logs }) {
+// 160/ADR-006 §2-§3 — one `# not finished - <unit>` per unit the pool killed (a stop, the budget, its own
+// time limit), and `# not started: <n> units` for the queue a stop left. Comments, so the TAP reader counts
+// no failure for them; the gate reads them by their own prefixes.
+export function notFinishedLines(notFinished = [], notStarted = []) {
+  return [
+    ...notFinished.map((key) => `# not finished - ${key}`),
+    ...(notStarted.length > 0 ? [`# not started: ${notStarted.length} units`] : []),
+  ];
+}
+
+export function shardedReport({ stamp, executed, registered, units, wallSeconds, summedSeconds, jobs, failures, flakes, perFile, logs, notFinished = [], notStarted = [] }) {
+  const unfinished = notFinished.length > 0 || notStarted.length > 0;
   return [
     `# sharded run ${stamp}`,
     `# ${executed} of ${registered} registered cases executed in ${units} units; wall ${(wallSeconds / 60).toFixed(1)} min, summed ${(summedSeconds / 60).toFixed(1)} min, ${jobs} workers`,
     `# failures: ${failures.length} unit(s); not isolated (red in the pool, green alone): ${flakes.length} unit(s)`,
     ...failureLines(failures),
     ...notIsolatedLines(flakes),
-    // A run that executed fewer cases than the registry holds, with no failing unit to explain it, lost cases.
-    ...(executed !== registered && failures.length === 0 ? [`not ok - executed ${executed} cases, the registry holds ${registered}`] : []),
+    ...notFinishedLines(notFinished, notStarted),
+    // A run that executed fewer cases than the registry holds, with no failing unit and no unit that did not
+    // finish to explain it, lost cases.
+    ...(executed !== registered && failures.length === 0 && !unfinished ? [`not ok - executed ${executed} cases, the registry holds ${registered}`] : []),
     ...slowestFiles(perFile),
     `# logs: ${logs}`,
   ];
 }
 
-// Red on a failure or a lost case; a not-isolated case is logged and passes, unless --strict.
-export function shardedExit({ failures, flakes, executed, registered, strict = false }) {
-  const lost = executed !== registered && failures.length === 0;
-  return failures.length > 0 || lost || (strict && flakes.length > 0) ? 1 : 0;
+// Red on a failure or a lost case; a not-isolated case is logged and passes, unless --strict. A run with a unit
+// that did not finish, or one never started, exits non-zero without being a failure.
+export function shardedExit({ failures, flakes, executed, registered, strict = false, notFinished = [], notStarted = [] }) {
+  const unfinished = notFinished.length > 0 || notStarted.length > 0;
+  const lost = executed !== registered && failures.length === 0 && !unfinished;
+  return failures.length > 0 || lost || unfinished || (strict && flakes.length > 0) ? 1 : 0;
 }

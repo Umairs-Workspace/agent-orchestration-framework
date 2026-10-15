@@ -183,7 +183,7 @@ export const citedPathResolveTests = [
         await writeFile(path.join(dir, "src", "after.mjs"), "export const x = 1;\n", "utf8");
         await rm(path.join(dir, "src", "before.mjs"));
 
-        const map = await readRenameMap(dir);
+        const map = await readRenameMap(dir).load();
         assert.equal(resolveThroughRenames("src/before.mjs", map), null, "the resolver answers UNRESOLVED for the old path");
         const answer = resolveCitedPath("src/before.mjs", { existsAtHead: () => false, renameMap: map });
         assert.equal(answer.resolved, false, "…and the rename is not in the repository's history");
@@ -191,7 +191,7 @@ export const citedPathResolveTests = [
         // …and once it IS committed as a rename, the same resolver answers.
         await git("add", "-A");
         await git("commit", "-qm", "move");
-        const after = await readRenameMap(dir);
+        const after = await readRenameMap(dir).load();
         assert.equal(resolveThroughRenames("src/before.mjs", after), "src/after.mjs", "a COMMITTED rename is what the map is derived from");
       } finally {
         await rm(dir, { recursive: true, force: true });
@@ -210,17 +210,19 @@ export const citedPathResolveTests = [
 
       // The edge is asked for the SAME read, through the resolver's own argv.
       const seen = [];
-      const stub = await readRenameMap(repoRoot, async (args) => {
+      const loader = readRenameMap(repoRoot, async (args) => {
         seen.push(args);
         return "R100\tsrc/from.mjs\tsrc/to.mjs\n";
       });
+      assert.deepEqual(seen, [], "building the loader reads nothing (160/ADR-007)");
+      const stub = await loader.load();
       assert.deepEqual(seen, [[...RENAME_LOG_ARGS], ['log', '--format=', '--diff-filter=D', '-p', '--', 'packages/core/src'], ['diff', '--no-ext-diff', '--unified=10000', '--', 'packages/core/src']], "the edge reads real renames and deleted forward source with no redirect table");
       assert.equal(stub.get("src/from.mjs"), "src/to.mjs");
 
       assert.equal(await readRenameMap(null), null, "no project root means no map at all, and the probe degrades to leg A alone");
       const dir = await mkdtemp(path.join(os.tmpdir(), "aof-nogit-"));
       try {
-        const empty = await readRenameMap(dir);
+        const empty = await readRenameMap(dir).load();
         assert.ok(empty instanceof Map && empty.size === 0, "a directory that is not a checkout yields an EMPTY map, never a thrown gate");
       } finally {
         await rm(dir, { recursive: true, force: true });

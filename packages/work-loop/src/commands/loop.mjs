@@ -126,7 +126,7 @@ export function createLoopShell({
   const { readRuns, staleRunningRuns } = runs;
   const { transitionRunStart, transitionStaleRunsReclaimed } = transitions;
   const { reportDegrade } = diagnostics;
-  const { commitWorktreeChanges, resolveExec } = worktrees;
+  const { commitWorktreeChanges, recordCommitTip, resolveExec } = worktrees;
   const { reconcileLanes, runWaveBuild } = wave;
   const { spawnLaneDrive } = childDrive;
   const { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt } = asks;
@@ -771,7 +771,7 @@ export function createLoopShell({
   // the operator's. Through `commitWorktreeChanges` with `paths` — the one commit verb, in its
   // home — and never a second spelling here. A refusal RESTORES the index for the paths it staged
   // (the primary is never left half-staged) and halts `lane-merge-refused` with producer
-  // `dispatch:commit-own-writes:<code>` naming git's message.
+  // `dispatch:commit-own-writes:<code>` naming git's message. The tip is the commit's own (160/ADR-001 §4).
   async function commitOwnWrites(scope, ctx, { node, exec, message = `aof(loop): refine ${scope}` } = {}) {
     const { items } = await localScopeItems(scope, ctx);
     const root = ctx.workspace.projectRoot;
@@ -781,11 +781,11 @@ export function createLoopShell({
       .filter((rel) => rel.length > 0 && !rel.startsWith(".."));
     if (paths.length === 0) return { committed: false, sha: null };
     const git = resolveExec({ exec });
+    const recording = recordCommitTip(git);
     try {
-      const { committed } = await commitWorktreeChanges(root, { message, node, exec, paths });
+      const { committed } = await commitWorktreeChanges(root, { message, node, exec: recording, paths });
       if (!committed) return { committed: false, sha: null };
-      const head = await git(["rev-parse", "HEAD"], { cwd: root });
-      return { committed: true, sha: String(head.stdout ?? "").trim() };
+      return { committed: true, sha: recording.tip() ?? String((await git(["rev-parse", "HEAD"], { cwd: root })).stdout ?? "").trim() };
     } catch (error) {
       try {
         await git(["reset", "-q", "--", ...paths], { cwd: root });
@@ -1616,7 +1616,7 @@ export function createLoopShell({
             // lanes, its signal aborts every child, and the request file reaches it through the
             // wave's own polls.
             stopSource: source,
-            commitOwnWrites: () => commitOwnWrites(resolved.scope, ctx, { node: ladderOptions.node, exec: ctx.exec, message: `aof(loop): wave ${resolved.scope}` }),
+            commitOwnWrites: (exec) => commitOwnWrites(resolved.scope, ctx, { node: ladderOptions.node, exec: exec ?? ctx.exec, message: `aof(loop): wave ${resolved.scope}` }),
           });
           if (built.outcome === "halt") {
             // A wave halted on the operator's stop carries the source's facts beside its own

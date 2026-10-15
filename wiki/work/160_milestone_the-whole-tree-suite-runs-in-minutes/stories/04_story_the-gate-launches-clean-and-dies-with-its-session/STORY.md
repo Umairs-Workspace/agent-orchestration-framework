@@ -4,10 +4,10 @@ number: 04
 slug: the-gate-launches-clean-and-dies-with-its-session
 title: "The gate launches clean and dies with its session — no inherited GIT, CLAUDE or AOF variables, and no orphaned suite after a stop"
 parent: 160
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-14
+updated: 2026-10-15
 schema: 1
 aofVersion: 0.1.0
 depends: []
@@ -26,8 +26,8 @@ behind it.
 
 ## Tasks
 
-- [ ] `tasks/00_the-gate-launches-its-suite-clean.feature`: R1, the denied variables, case-insensitively, with the global home kept.
-- [ ] `tasks/01_the-suite-dies-with-its-session.feature`: R2, the runner's pool stops when its stdin ends, and the gate stops when its run stops, with no row written.
+- [x] `tasks/00_the-gate-launches-its-suite-clean.feature`: R1, the denied variables, case-insensitively, with the global home kept.
+- [x] `tasks/01_the-suite-dies-with-its-session.feature`: R2, the runner's pool stops when its stdin ends, and the gate stops when its run stops, with no row written.
 
 ## Notes
 

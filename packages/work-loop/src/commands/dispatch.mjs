@@ -62,9 +62,13 @@ const dispatchCommand = {
     // widened) by what the caller asked for — and it rides EVERY answer this verb gives, so a
     // caller never has to ask a second question to know it.
     const bound = narrowDispatchBound(dispatchConcurrencyFromConfig(ws), input.bound);
+    // THE CALLER'S GIT PORT (160/01): every git read and write below goes through `ctx.exec` when the
+    // caller holds one — the loop's own port — and through the lane home's default spawn otherwise.
+    const port = typeof ctx.exec === "function" ? { exec: ctx.exec } : {};
     if (input.cleanup) {
       const ref = requireRef(input, "cleanup");
       const result = await cleanupDispatchLane(ws.projectRoot, ref, {
+        ...port,
         removeBranch: input.remove !== false,
         ensureProjection: ({ worktree }) => settleLaneProjectionEffects(ws, ref, worktree, ctx),
       });
@@ -75,14 +79,14 @@ const dispatchCommand = {
       // The known refs the lane inspector matches worktree paths against. Cache-first, so a
       // ref this node holds only in the mesh cache is still resolvable (the m43 seam).
       const refs = (await listItemsCacheFirst(ws, seamOptions)).map((item) => item.ref);
-      const swept = await sweepDispatchLanes(ws.projectRoot, refs, { remove: input.remove === true });
+      const swept = await sweepDispatchLanes(ws.projectRoot, refs, { ...port, remove: input.remove === true });
       return { action: "sweep", bound, ...swept };
     }
 
     const requestedRefs = dispatchRefs(input);
     if (input.list || requestedRefs.length === 0) {
       const refs = (await listItemsCacheFirst(ws, seamOptions)).map((item) => item.ref);
-      const lanes = await inspectDispatchLanes(ws.projectRoot, refs);
+      const lanes = await inspectDispatchLanes(ws.projectRoot, refs, port);
       // The READY SET rides the list answer, because "what may run at once" and "what is
       // running" are the two halves of one operator question and asking them separately is
       // how a dispatcher ends up acting on a stale half.
@@ -103,10 +107,10 @@ const dispatchCommand = {
     // real, smaller job: concurrent lane MATERIALISATION.
     const inspectAdmission = typeof ctx.inspectDispatchLaneAdmission === "function"
       ? ctx.inspectDispatchLaneAdmission
-      : inspectDispatchLaneAdmission;
+      : (root, refs) => inspectDispatchLaneAdmission(root, refs, port);
     const withAdmissionLock = typeof ctx.withDispatchAdmissionLock === "function"
       ? ctx.withDispatchAdmissionLock
-      : (operation) => withDispatchLaneAdmissionLock(ws.projectRoot, operation);
+      : (operation) => withDispatchLaneAdmissionLock(ws.projectRoot, operation, port);
     const { admission, planned, materialised } = await withAdmissionLock(async () => {
       const admission = await inspectAdmission(ws.projectRoot, requestedRefs);
       const planned = planDispatchLaneAdmissions(requestedRefs, admission, bound);
@@ -115,7 +119,7 @@ const dispatchCommand = {
         admitted.map((entry) => ({ ref: entry.ref })),
         (member) => typeof ctx.runDispatchLane === "function"
           ? ctx.runDispatchLane(member)
-          : resolveDispatchLane(ws.projectRoot, member.ref),
+          : resolveDispatchLane(ws.projectRoot, member.ref, port),
         { bound },
       );
       return { admission, planned, materialised };

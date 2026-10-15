@@ -5,6 +5,7 @@ import path from "node:path";
 import {
   canonicalDocumentIdentity,
   citationForRecord,
+  citationMissedOnDisk,
   emitProposals,
   extractProvenanceCitations,
   pathIsWithinRoot,
@@ -348,6 +349,27 @@ export const tuneProvenanceTests = [
         assert.equal(forwarded.resolved.document, "packages/owner/src/impl.mjs");
         assert.equal(forwarded.resolved.line, null, "a forward's old line names nothing in the new file");
         assert.equal(resolveCitationAtEmit("src/never-existed.mjs", { rootDir, renameMap }).failure.code, "file-absent");
+      } finally {
+        removeFixture(rootDir);
+      }
+    },
+  },
+  {
+    name: "160/06 task00 tune: only a cited document absent on disk asks for history, and through the map it no longer misses",
+    run: () => {
+      const { rootDir } = fixture();
+      try {
+        fs.mkdirSync(path.join(rootDir, "packages", "owner", "src"), { recursive: true });
+        fs.writeFileSync(path.join(rootDir, "packages", "owner", "src", "moved.md"), "a\nb\n");
+        fs.writeFileSync(path.join(rootDir, "notes", "here.md"), "a\n");
+        const renameMap = new Map([["src/moved.md", "packages/owner/src/moved.md"]]);
+        const candidate = (provenance) => [{ id: "c1", provenance }];
+        const onDisk = emitProposals(candidate(["notes/here.md:1", "notes/here.md:9"]), { rootDir });
+        assert.equal(citationMissedOnDisk(onDisk), false, "a present file — even with a line it lacks — never asks for history");
+        const missed = emitProposals(candidate(["src/moved.md:2"]), { rootDir });
+        assert.equal(citationMissedOnDisk(missed), true, "an absent cited document is the one miss");
+        assert.equal(citationMissedOnDisk(emitProposals(candidate(["src/moved.md:2"]), { rootDir, renameMap })), false, "…and once resolved through the map nothing misses");
+        assert.equal(citationMissedOnDisk(null), false, "an injected resolver with no findings asks nothing");
       } finally {
         removeFixture(rootDir);
       }

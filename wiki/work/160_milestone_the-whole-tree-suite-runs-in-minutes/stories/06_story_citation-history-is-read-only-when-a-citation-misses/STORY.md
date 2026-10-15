@@ -4,7 +4,7 @@ number: 06
 slug: citation-history-is-read-only-when-a-citation-misses
 title: "Citation history is read only when a citation misses — doctor and validate resolve on disk first and spawn no git when everything resolves"
 parent: 160
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-14
 updated: 2026-10-14
@@ -25,7 +25,7 @@ ways on every call.
 
 ## Tasks
 
-- [ ] `tasks/00_history-is-a-lazy-source.feature`: the loader reads history at most once and never before it is asked; a stream that resolves on disk spawns nothing; a miss resolves through history exactly as today.
+- [x] `tasks/00_history-is-a-lazy-source.feature`: the loader reads history at most once and never before it is asked; a stream that resolves on disk spawns nothing; a miss resolves through history exactly as today.
 
 ## Notes
 

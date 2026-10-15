@@ -308,7 +308,13 @@ const RUNNER_REGIONS = Object.freeze([
 // 142/09 recheck: the harness gains only suiteCaseChunks (12 non-comment lines),
 // the shared atomic-by-default planner covered by the workspace sharding regression.
 // runCases, runnerShapedExports, and all three pinned execution/isolation regions are unchanged.
-const RUNNER_RESIDUE = "bd6e01cac4e2e6e412b7348893c6a3201d89702fd564a2f3aa82483a3757575d";
+// RE-PINNED by 160/02 (ADR-003): `loadSelected` moves to `scripts/test-harness.mjs` (its body unchanged; its two
+// builtins imported inside it, as `runCases` imports its own), shared with the shard
+// entry a focused `aof test` launches, and is re-exported here; the harness import names it, and the runner's now
+// unused `node:path` import goes. Every pinned region above is unchanged.
+// RE-PINNED by 160/03 (ADR-004 §1): the harness gains its compile-cache call (an import and one guarded statement)
+// at the top of the module. Every pinned region above is unchanged.
+const RUNNER_RESIDUE = "ac095693cd3f183604c9a3e1c8406f07078136128f8c486acd629fb7731e59b8";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below
