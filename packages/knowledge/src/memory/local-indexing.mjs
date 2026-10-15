@@ -782,7 +782,7 @@ async function buildRecords(only, ctx) {
   const isItemSource = (item) => !only || refInScope(item.ref, only) === true;
 
   const records = [];
-  const episodicBuild = episodic?.episodicBuild({ workDir, projectRoot });
+  const episodicBuild = episodic?.episodicBuild({ workDir, projectRoot, items });
   // AOF.md paths the work-stream loop indexes (ITEM_RE milestones) — excluded from the
   // co-located-digest scan below so a recognised milestone's digest is never doubled.
   const indexedAof = new Set();

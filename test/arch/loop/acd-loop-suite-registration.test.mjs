@@ -314,7 +314,10 @@ const RUNNER_REGIONS = Object.freeze([
 // unused `node:path` import goes. Every pinned region above is unchanged.
 // RE-PINNED by 160/03 (ADR-004 §1): the harness gains its compile-cache call (an import and one guarded statement)
 // at the top of the module. Every pinned region above is unchanged.
-const RUNNER_RESIDUE = "ac095693cd3f183604c9a3e1c8406f07078136128f8c486acd629fb7731e59b8";
+// RE-PINNED by 160/09 (ADR-010): the harness gains the sharded run's pure planners beside `suiteCaseChunks` —
+// `fileEstimate`, `packUnits`, `shardArgs`, `planSummary` and `planCoverageProblem`. `runCases` is byte-unchanged:
+// the shard entry accounts per file by wrapping each case's `run`, so every pinned region above is unchanged.
+const RUNNER_RESIDUE = "613752422cc25d7a4b7f6f574f4c8007a098109ba80aa13b7081152b5eeb51f3";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

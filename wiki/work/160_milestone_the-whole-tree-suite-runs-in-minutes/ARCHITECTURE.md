@@ -232,6 +232,181 @@ needs it only for a cited path that does not exist on disk.
 all. That is every fixture stream, and on this repository every run with no stale citation.
 FF-16007 pins it.
 
+## Round 2 — the levers left after verify (F-02, F-03)
+
+Decide reopened on 2026-10-15 and closed the same day, before any round-2 contract was authored.
+Verify measured the whole tree green at **19.2 min, 17,877 s summed over 1,273 units** on 16 workers
+(`.tmp/test-timings.json`, written by that run). The wall is sum-bound: 17,877 / 16 is 18.6 min. To
+sign off inside 10 minutes the summed time must fall to about **8,600 s, a cut of about 52%**.
+
+**What the time is spent on, measured at refine.** A `--import` preload that wraps `child_process`
+recorded every spawn of the 49 heaviest suites (about half the summed time), each run alone through
+the shard entry, four at a time:
+
+| spawned | count | time | heaviest holders |
+|---|---|---|---|
+| a child `aof` (`packages/core/bin/aof.mjs`) | 799 | 1,620 s | `cli-face-contract` 143, `work-archive-is-a-move` 64, bijection 62 |
+| `git` | 10,867 | 1,237 s | `loop-command-wave` 4,018, `work-dispatch-lanes` 1,836, `loop-command-reconcile` 1,507 |
+| the registry runner (`node scripts/test.mjs`) | 10 | 194 s | `site-build` 3 (115 s), `test-command-contract` 3, `core-workspace` 2, `notify-channels` 2 |
+
+Two suites spawn nothing and are CPU-bound. A profile of `acd-control-derives-its-census` (140 s
+alone) put **110 s in one regex, `/\s+$/u`**, inside `startsRegex` in
+`test/support/source-slice.mjs`. It is handed the whole stripped-so-far prefix at every `/`, so the
+scan is quadratic in file size. Over the whole test tree, `blankStringLiterals` took 7,424 ms and
+`stripComments` 953 ms; with a bounded look-back they took 764 ms and 407 ms, with byte-identical
+output. 190 suites import that module. Separately, `assembleCorpus` over this repository took
+**24.7 s with no spawns**, and its profile was 18 s of idle `readdir`. `corpus.mjs` calls
+`readLatestSnapshot` once per item, and each call reaches `resolveMilestoneFolder`, which lists the
+whole stream again (`packages/work/src/observe.mjs:1338`), so the corpus lists the stream once per
+item.
+
+Process start-up is the rest. 616 units ran under 5 s each and summed to 1,229 s, and 975 units
+under 15 s summed to 4,102 s. Twenty small arch suites ran in 20.7 s as twenty processes and in
+11.1 s as one.
+
+The levers below are expected to cut about 5,500–6,500 s from the summed 17,877 s. That is not
+guaranteed to reach 8,600 s; see STATE. Less load also means less contention, which shortens every
+unit, and none of these estimates counts that.
+
+## ADR-008: A test's child `aof` runs from one bundle built at the start of the run
+
+**Status:** Accepted
+**Date:** 2026-10-15
+
+**Context.** A child `aof work find 160` takes about 2.0 s from source on this node (706 modules)
+and 0.56 s from an esbuild bundle of `packages/core/src/cli.mjs`, measured side by side at refine
+with byte-identical output. ADR-004's compile cache did not move it (F-03): the cost is resolving
+and evaluating 706 files, not compiling them. The release already ships a bundle
+(`scripts/build-sea.mjs` step 1), so the bundle is a shape the product already runs.
+
+**Decision.**
+1. **One recipe.** The bundle's esbuild options are exported from `scripts/build-sea.mjs` and the
+   test bundle is built from them, never from a copy. Whatever the release bundle handles
+   (externalised `node-pty`, the asset-base seam) the test bundle handles the same way.
+2. **Built once per run.** The sharded runner builds the bundle before its pool starts, under
+   `.tmp/`, and passes its path to every unit as `AOF_TEST_CLI_BUNDLE`. A build failure does not
+   stop the run: the units run the source, and the runner prints
+   `# cli bundle unavailable: <reason>`, so a slower run is visible rather than silent.
+3. **The bin honours the variable.** `packages/core/bin/aof.mjs` imports the bundle named by
+   `AOF_TEST_CLI_BUNDLE` when that file exists, and `../src/cli.mjs` otherwise. This follows the
+   existing `AOF_TEST_*` hooks. Production never sets it, the gate's clean environment drops every
+   `AOF_*` (ADR-005), and the runner sets it after that.
+4. **Where the subject is the source, the source runs.** A test whose subject is how the bin loads
+   (FF-16004's module counts, FF-7205's closure) strips the variable. A focused run sets nothing,
+   so it runs the source.
+5. **Parity is a control.** FF-16008 runs a fixed set of commands from the source and from the
+   bundle and requires the same stdout, stderr and exit code from each. The set covers a command
+   that reads package assets and a refused command.
+
+**Consequences.** About 800 child spawns in the heaviest suites alone drop from about 2.0 s to about
+0.6 s each. A defect that shows only when Node loads the separate source files (for example an
+import cycle that the bundle orders differently) is not caught by a child-process test in the gate.
+In-process tests and focused runs still load the source. That trade is the operator's to accept
+(160/07 Q1).
+
+**Recall.** `f22a188f-65aa-473a-99f7-5b031f7bab41`: m08 ADR-001 (one command core, not a
+per-request subprocess) is honoured. The bundle is the same command core, and tests still drive
+the CLI contract. m160 ADR-004 is completed rather than replaced: the compile cache stays.
+
+## ADR-009: Tests spend git only on what they assert
+
+**Status:** Accepted
+**Date:** 2026-10-15
+
+**Context.** After 160/01, `loop-command-wave` still makes 4,018 git calls alone. Its moved cases
+stop at a merge home, because the model refuses `merge --no-ff`, so 30 of its 51 cases stay on real
+git. Every real-git fixture builds its repository with `init`, two `config` calls, `add` and
+`commit`. Measured: `config` 176 and `init`/`config` 52/156 in `blocked-run-parking`, and 219 `add`
+and 130 `commit` in `work-dispatch-lanes`.
+
+**Decision.**
+1. **The model merges a lane home.** `test/support/loop/git-fake.mjs` gains `merge --no-ff`: a
+   merge commit with two parents, and a three-way merge of file maps in which every path changed on
+   at most one side. A merge in which both sides changed one path is **not modelled**. It throws,
+   naming the argv and the path (ADR-002 §2), so that case stays on real git. Git would merge such
+   a path line by line or report a conflict. The loop's lanes are write-disjoint by construction,
+   so its merge homes never need either. As ADR-002 §4 requires, each new verb or option joins with
+   parity rows in FF-16002.
+2. **The ADR-002 rule is re-applied, empirically.** Every real-git case of the loop suites is run
+   on the model. A case moves when it passes there and its subject is not merge, worktree or
+   cleanup behaviour (ADR-002 §3). The moved list stays pinned in FF-16002.
+3. **A real-git fixture starts from a template.** One repository per process is initialised, with
+   `main` and the fixture identity configured. Each fixture copies its `.git` directory and then
+   writes its own files, `add`s and `commit`s. The helper lives in `test/support/cli-spawn.mjs`,
+   beside `bundleFixtureRoot`, which is the per-process fixture-cache precedent. FF-16009 holds a
+   template-built repository to an `init`-built one: the same local config, symbolic HEAD, status
+   and first-commit tree.
+
+**Consequences.** Suites whose subject is git keep real git and lose only the setup spawns.
+`work-dispatch-lanes`' header ("a scripted exec double would be asserting the fixture's opinion of
+git") stays true: it moves nothing onto the model.
+
+## ADR-010: Small suite files share a unit
+
+**Status:** Accepted
+**Date:** 2026-10-15
+
+**Context.** Every unit is a process, which pays node start, the harness and the application import
+before its first case. 975 units have estimates under 15 s. The shard entry already runs several
+files in one process (160/02), and the serial runner runs every file in one process, so sharing a
+process is the registry's normal mode, not a new risk.
+
+**Decision.**
+1. **Packing.** The runner packs files whose recorded estimate is under `--pack-seconds` (default 15)
+   and that are not chunked, largest first, into units of about `--pack-target-seconds` (default 60).
+   A file is never split across units. A file at or over the threshold stays its own unit, as today.
+2. **The unit names its files.** A packed unit's argv names each file with its positions. The shard
+   entry keeps both forms it has today, the selection form and `<file> <positions>`.
+3. **Per-file accounting survives.** The shard entry prints `# file <path> <seconds> <executed>` for
+   each file. Timings stay per file, so the next schedule packs from file estimates. A lost case is
+   detected per file. A failed packed unit is retried alone as a unit, and the report names the
+   failing case as it does today. A not-finished packed unit names every file it held.
+
+**Consequences.** About 1,000 process start-ups fewer. A suite that leaks process state into its
+neighbours is exposed here, as it already is in a serial run.
+
+## ADR-011: The audits over this repository do their reading once
+
+**Status:** Accepted
+**Date:** 2026-10-15
+
+**Decision.**
+1. **The source scanner is linear.** `startsRegex` in `test/support/source-slice.mjs` takes the
+   output and an index, and looks back over trailing whitespace and one trailing identifier only.
+   It never copies or regex-scans the prefix. `stripComments` and `blankStringLiterals` keep their
+   output contract byte for byte. 190 readers depend on it, and FF-16011 checks that output over the
+   whole test tree.
+2. **The tune corpus lists the stream once.** `assembleCorpus` lists items once
+   (`corpus.mjs` already holds `allItems`) and hands each item's folder to the snapshot read, so
+   nothing inside the per-item loop lists the stream again. `readLatestSnapshot` takes an
+   already-resolved folder as well as a ref, and the ref form keeps today's answer. FF-16012 counts
+   the listings per corpus. This is production code: `aof work tune` gets faster too.
+
+**Consequences.** `acd-control-derives-its-census` loses most of its 110 s of regex time, and
+every reader of the scanner gets faster in proportion to its file sizes. The corpus suites
+(`acd-candidate-formation-is-lossless` assembles it twice, `acd-tune-is-non-vacuous-over-this-repo`
+once) lose most of their 24.7 s per assembly.
+
+## ADR-012: A test that needs a suite run starts the shard entry
+
+**Status:** Accepted
+**Date:** 2026-10-15
+
+**Context.** Each child `node scripts/test.mjs --only <file>` pays the registry import first,
+measured at about 19 s per spawn under the census load. `site-build` spawns it three times, because
+the Pages workflow (`.github/workflows/pages.yml:72`) spells its gate that way.
+`notify-channels` and `core-workspace` spawn it to prove that one suite runs.
+
+**Decision.**
+1. **The rule.** A test spawns `scripts/test.mjs` only when the registry runner itself is its
+   subject: its `--only` flag, its registration, its import ring. A test that only needs a suite to
+   run starts `scripts/test-shard.mjs`, the declared selection program since ADR-003.
+2. **The Pages gate follows the rule.** `pages.yml`'s gate step runs the shard entry over the same
+   control, and `site-build`'s copy of the runnable tree shrinks to what the shard entry loads.
+3. **FF-16013** finds every spawn of `scripts/test.mjs` under `test/` and requires each one to be
+   on an allowlist that names its subject. `test-command-contract`'s rows, priced and ruled on in
+   72/ADR-004 §6, are such subjects.
+
 ## Fitness functions
 
 | id | invariant | enforced by | source |
@@ -243,12 +418,22 @@ FF-16007 pins it.
 | FF-16005 | The gate's launch environment carries no denied variable, and a runner whose stdin ends leaves no unit running | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` | ADR-005 |
 | FF-16006 | A killed unit is never a `not ok` line, a run with a not-finished unit is never green, and `not-finished` is spelled only in `GATE_RESULTS` | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` | ADR-006 |
 | FF-16007 | Doctor and validate over a stream whose citations all resolve on disk spawn no git for citation history, and a miss loads history once | `test/arch/command/acd-cited-path-resolves.test.mjs` | ADR-007 |
+| FF-16008 | The bundle answers a fixed command set exactly as the source does, the bin loads it only when `AOF_TEST_CLI_BUNDLE` names a file, and the sharded runner builds it once for every unit | `test/testing/build-sea-recipe-guards.test.mjs` | ADR-008 |
+| FF-16009 | A template-built fixture repository is indistinguishable from an `init`-built one, and the model's `merge --no-ff` answers and writes as real git | `test/arch/testing/acd-git-fake-parity.test.mjs` | ADR-009 |
+| FF-16010 | Packed units run every registered case exactly once, a file at or over the pack threshold is its own unit, and timings stay per file | `test/testing/test-sharded-report.test.mjs` | ADR-010 |
+| FF-16011 | `stripComments` and `blankStringLiterals` give byte-identical output over the whole test tree, and the regex test never reads the prefix it was handed | `test/arch/audit/acd-comment-stripper-order.test.mjs` | ADR-011 |
+| FF-16012 | One corpus assembly lists the stream once, whatever the number of items | `test/arch/planning/acd-tune-corpus-declares-its-reads.test.mjs` | ADR-011 |
+| FF-16013 | Every spawn of `scripts/test.mjs` under `test/` is on an allowlist that names its subject | `test/arch/testing/acd-test-suite-registration.test.mjs` | ADR-012 |
 
 Each control lands with its subject, in a suite its directory's index registers. Required red
 probes, recorded in `VERIFICATION.md`: make `memoGitReads` keep a `status` answer; give the fake a
 default answer for an unknown verb; let a selection fall back to `args`; import `cli.mjs` statically
 again; pass the gate's environment through unfiltered; print a killed unit as `not ok`; load
-history eagerly again.
+history eagerly again. Round 2: make the bundle answer one command differently (a changed version
+string in the bundle only); give the template repository a different default branch; let a packed
+unit drop its last file; hand `startsRegex` the whole prefix again and scan it with `/\s+$/u` (the
+output check stays green; the structural leg reds); re-list the stream inside the corpus's per-item
+loop; add an unlisted `scripts/test.mjs` spawn to a suite.
 
 ## Recall decisions
 
@@ -259,3 +444,13 @@ honoured: `aof test` still only selects and spawns, and the new key is a declara
 (adr), irrelevant. m11 ADR-006 (adr), irrelevant. PO query: "whole-tree suite speed sharded gate
 budget timeout loop git spawns clean environment", item 160, observation
 `f3325510-a783-462c-bc95-844926d685b9`, returned empty.
+
+Round 2. Architect query: "test suite budget child process startup in-process CLI batching units",
+area architecture, observation `f22a188f-65aa-473a-99f7-5b031f7bab41`. m160 ADR-004 and ADR-006,
+honoured (ADR-008 completes the first; the budget is unchanged). m08 ADR-001, honoured in ADR-008.
+m129 ADR-005 and m59 ADR-002, irrelevant. PO query: "whole-tree suite speed budget child aof spawn
+startup batching heavy audits", item 160, observation `2638cfe9-2b35-402d-a9c0-254b79ed580e`.
+m160 ADR-004 and F-02, honoured (these stories are F-02's route). m160/02 R2 (near-miss: a red probe
+on a launcher broke the launcher that ran it), honoured: 160/07's and 160/09's probes run through
+`node scripts/test-shard.mjs`, never through `aof test`. m160/05's drain gap and R1, irrelevant to
+the breakdown (the next gate run is their evidence).

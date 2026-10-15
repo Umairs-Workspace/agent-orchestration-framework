@@ -5,7 +5,8 @@
 // This model answers that port for exactly the argv the loop sends after 160/ADR-001, in git's own
 // envelope and words, and makes git's filesystem effects for real and in-process: `worktree add` writes
 // the commit's files into the lane directory, `worktree remove` deletes it, `merge --ff-only` rewrites
-// the files the merge changes, and `status --porcelain` diffs the directory against the index and HEAD.
+// the files the merge changes, `merge --no-ff` writes a two-parent merge of a three-way file-map merge
+// (160/08), and `status --porcelain` diffs the directory against the index and HEAD.
 //
 // IT REFUSES WHAT IT DOES NOT MODEL, BY NAME (ADR-002 §2). An unmodelled verb or option is a thrown
 // error naming the argv — never a default answer — so a case misclassified onto the model fails loudly
@@ -549,6 +550,7 @@ export function createGitModel({ root, branch = "main" } = {}) {
       ].join("\n"));
     },
     merge: (tree, rest, args) => {
+      if (rest[0] === "--no-ff") return mergeNoFf(tree, rest, args);
       if (rest.length !== 2 || rest[0] !== "--ff-only") throw new GitModelRefusal(args);
       const target = resolveRev(tree, rest[1]);
       if (target == null) return answer("", 1, `merge: ${rest[1]} - not something we can merge\n`);
@@ -571,6 +573,56 @@ export function createGitModel({ root, branch = "main" } = {}) {
       return answer([`Updating ${short(current)}..${short(target)}`, "Fast-forward", ...statLines(changes), summaryLine(changes), ...modeLines(changes), ""].join("\n"));
     },
   };
+
+  // `merge --no-ff [--no-edit] [-m <message>] <commit>` (160/ADR-009 §1): a merge commit with two
+  // parents over a three-way merge of file maps. A path takes the side that changed it; a path BOTH sides
+  // changed is not modelled — git would merge it line by line or stop on a conflict — so it is refused,
+  // naming the path, before anything is written.
+  function mergeNoFf(tree, rest, args) {
+    let message = null;
+    const positional = [];
+    for (let i = 1; i < rest.length; i += 1) {
+      if (rest[i] === "--no-edit") continue;
+      if (rest[i] === "-m") { message = rest[i + 1]; i += 1; continue; }
+      if (rest[i].startsWith("-")) throw new GitModelRefusal(args, `merge option ${rest[i]}`);
+      positional.push(rest[i]);
+    }
+    if (positional.length !== 1) throw new GitModelRefusal(args);
+    const target = resolveRev(tree, positional[0]);
+    if (target == null) return answer("", 1, `merge: ${positional[0]} - not something we can merge\n`);
+    const current = headOf(tree);
+    if (ancestors(current).has(target)) return answer("Already up to date.\n");
+    const base = treeAt(mergeBase(current, target));
+    const ours = treeAt(current);
+    const theirs = treeAt(target);
+    const merged = new Map();
+    for (const rel of [...new Set([...base.keys(), ...ours.keys(), ...theirs.keys()])].sort()) {
+      const o = base.get(rel);
+      const a = ours.get(rel);
+      const b = theirs.get(rel);
+      let take;
+      if (same(a, b) || same(b, o)) take = a;
+      else if (same(a, o)) take = b;
+      else throw new GitModelRefusal(args, `both sides changed ${rel} since the merge base`);
+      if (take != null) merged.set(rel, take);
+    }
+    const changes = treeChanges(ours, merged);
+    const dirty = new Set(statusEntries(tree).map((entry) => entry.path));
+    const blocked = changes.map((change) => change.path).filter((rel) => dirty.has(rel));
+    if (blocked.length > 0) {
+      return answer("", 2, `error: Your local changes to the following files would be overwritten by merge:\n${blocked.map((rel) => `\t${rel}\n`).join("")}Please commit your changes or stash them before you merge.\nAborting\nMerge with strategy ort failed.\n`);
+    }
+    for (const change of changes) {
+      const full = path.join(tree.path, ...change.path.split("/"));
+      if (change.kind === "delete") rmSync(full, { force: true });
+      else { mkdirSync(path.dirname(full), { recursive: true }); writeFileSync(full, merged.get(change.path)); }
+    }
+    const subject = String(message ?? `Merge branch '${positional[0]}'`).split("\n")[0];
+    const id = mint(merged, [current, target], subject);
+    if (tree.head.ref != null) refs.set(tree.head.ref, id); else tree.head.detached = id;
+    tree.index = new Map(merged);
+    return answer(["Merge made by the 'ort' strategy.", ...(changes.length > 0 ? [...statLines(changes), summaryLine(changes)] : []), ...modeLines(changes), ""].join("\n"));
+  }
 
   function worktreeAdd(tree, options, args) {
     let newBranch = null;
@@ -633,6 +685,7 @@ export function createGitModel({ root, branch = "main" } = {}) {
     seed,
     verbs: Object.freeze(Object.keys(verbs)),
     head: (cwd = primary) => headOf(worktreeFor(cwd, ["rev-parse", "HEAD"])),
+    parents: (id) => [...(commits.get(id)?.parents ?? [])],
     branches: () => [...refs.keys()].map((ref) => ref.replace(/^refs\/heads\//u, "")),
   });
 }

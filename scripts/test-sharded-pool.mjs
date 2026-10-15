@@ -17,7 +17,7 @@
 // `stdout`/`stderr` streams, emits `close` with the exit code, and has `kill()`; `release` (optional)
 // runs once the unit closes. The pool parses what a unit printed in the shard entry's own vocabulary.
 import { fstatSync } from "node:fs";
-import { lostUnitFailure } from "./test-sharded-report.mjs";
+import { fileLines, lostUnitFailure } from "./test-sharded-report.mjs";
 
 // Is this stream's descriptor a pipe the parent holds the other end of? Windows reports a pipe as none of
 // FIFO, character device or file; POSIX reports a FIFO or a socket.
@@ -32,6 +32,9 @@ export function stdinIsPipe(stream = process.stdin, fstat = () => fstatSync(0)) 
 const EXECUTED_LINE = /^# executed (\d+) cases/m;
 const FAILED_LINE = /^not ok - (.*)$/gm;
 
+// The keys a unit stands for in the report: each file a packed unit held, or the unit itself.
+export const unitKeys = (unit) => (unit.files != null ? unit.files.map((entry) => entry.key) : [unit.key]);
+
 // What one unit's output says: the cases it executed, the cases it named as failing, and whether it lost
 // cases (exited having run fewer than it was assigned). A lane unit carries no case count. A unit the
 // pool killed (`notFinished`) is neither ok nor failed: it names no failure, because a killed unit is
@@ -40,8 +43,18 @@ export function unitResult(unit, { code, output, seconds, notFinished = false })
   const executed = Number(EXECUTED_LINE.exec(output)?.[1] ?? -1);
   if (notFinished) return { unit, ok: false, notFinished: true, code, seconds, executed, failed: [], output };
   const failed = [...output.matchAll(FAILED_LINE)].map((match) => match[1]);
-  const lost = !unit.lanes && executed !== unit.positions.length;
-  if (lost) failed.push(lostUnitFailure(unit.key, executed, unit.positions.length));
+  let lost = false;
+  if (unit.files != null) {
+    // A packed unit's cases are counted per file, so a lost case names the file that lost it.
+    const reported = fileLines(output);
+    for (const entry of unit.files) {
+      const ran = reported.get(entry.file)?.executed ?? 0;
+      if (ran !== entry.positions.length) { lost = true; failed.push(lostUnitFailure(entry.key, ran, entry.positions.length)); }
+    }
+  } else if (!unit.lanes && executed !== unit.positions.length) {
+    lost = true;
+    failed.push(lostUnitFailure(unit.key, executed, unit.positions.length));
+  }
   return { unit, ok: code === 0 && failed.length === 0 && !lost, code, seconds, executed, failed, output };
 }
 
@@ -62,8 +75,8 @@ export function poolExit(pool, verdictExit) {
  *   writeLog      — `(label, output)` for each unit's log
  *
  * Resolves `{ results, flakes, failures, stopped, stoppedBy, killed, notFinished, notStarted }`: `killed`
- * and `notStarted` are the unit keys a stop left in flight and never began; `notFinished` is every unit the
- * pool killed, a stop's and a time limit's alike; `stoppedBy` is "stdin", "budget" or null.
+ * and `notStarted` are the unit keys a stop left in flight and never began; `notFinished` names every unit the
+ * pool killed, a stop's and a time limit's alike (each file of a packed one); `stoppedBy` is "stdin", "budget" or null.
  */
 export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeoutMs, budgetMs = null, drainMs = 10_000, onResult = () => {}, writeLog = () => {}, now = Date.now }) {
   const inFlight = new Set();
@@ -147,7 +160,7 @@ export async function runPool(plan, { jobs, spawnUnit, stdin = null, unitTimeout
     }
     const notFinished = [...results, ...unfinishedRetries]
       .filter((result) => result.notFinished === true)
-      .map((result) => result.unit.key);
+      .flatMap((result) => unitKeys(result.unit));
     return { results, flakes, failures, stopped, stoppedBy, killed, notFinished, notStarted: stopped ? plan.slice(next).map((unit) => unit.key) : [] };
   } finally {
     if (budgetTimer != null) clearTimeout(budgetTimer);

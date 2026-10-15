@@ -1,5 +1,13 @@
 [
   {
+    "file": "packages/core/bin/aof.mjs",
+    "kind": "computed-import",
+    "expression": "import(pathToFileURL(testBundle).href)",
+    "digest": "aa84b6d0e148488ce973fcfcfabaf6a618ec25c746ccea6ec518ebb2597bf4ee",
+    "sourceDigest": "00ce76026c05243fe61b614183b9af78ae7e41ecb98adf406f0f2cd3a0b9c59d",
+    "reason": "160/ADR-008 §3: a test's child aof loads the one CLI bundle its sharded run built and named in AOF_TEST_CLI_BUNDLE, only when that file exists; nothing else sets the variable, so every other start loads the source."
+  },
+  {
     "file": "packages/core/src/application/bindings/commands/assets/ui.mjs",
     "kind": "child-process",
     "expression": "spawn(process.execPath, [viteBin, \"--host\", \"127.0.0.1\", \"--port\", String(port), \"--strictPort\"], {\n      cwd: uiDir,\n      stdio: \"inherit\",\n      env: {\n        // `VITE_AOF_UI_MODE: \"assets\"` stood here and is RETIRED with the query selector it\n        // fed (milestone 45 / ADR-002). It was a build-time constant, set only here and read\n        // only by the pre-45 render root's ternary; keeping it would leave the route decision\n        // with two inputs — a URL and a baked env var — which is the two-homes-for-one-fact\n        // shape this milestone exists to remove. The address bar is the one input now, and\n        // the editor is reached at `/config`.\n        ...process.env,\n        VITE_AOF_API_URL: apiUrl,\n        BROWSER: \"none\"\n      }\n    })",
@@ -412,7 +420,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -420,7 +428,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -428,7 +436,7 @@
     "kind": "child-process",
     "expression": "execFileSync(step.cmd, step.args, { stdio: \"inherit\" })",
     "digest": "e4a5a03d425cc23f4e865152f7ecc7fb9c068bb93e30fb085e553492cf9b5019",
-    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -436,7 +444,7 @@
     "kind": "child-process",
     "expression": "execFileSync(process.execPath, [\"--experimental-sea-config\", seaConfigPath], { cwd: outDir, stdio: \"inherit\" })",
     "digest": "520e9086f520a8a34f8f65e25dad7343342b674a6e2672b58d3a7c6bbc1598b2",
-    "sourceDigest": "4c7642ad6a1975efbbff717ddad7c8b15e2e1811b50c84ac7421afa0f0e9591b",
+    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -732,7 +740,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
+    "sourceDigest": "c30870815abc9cdaf0c5cd249371f30b7dbc1878bf3898a7fe385f381aed634e",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   },
   {
@@ -740,7 +748,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
+    "sourceDigest": "c30870815abc9cdaf0c5cd249371f30b7dbc1878bf3898a7fe385f381aed634e",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -748,7 +756,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
+    "sourceDigest": "c30870815abc9cdaf0c5cd249371f30b7dbc1878bf3898a7fe385f381aed634e",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -756,15 +764,15 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(integrationDir, \"support\", \"feature-runner.mjs\")).href)",
     "digest": "b0f8535ade1e8e3014c2b92870732e37c8991961d96f1a54906506975ca179fc",
-    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
+    "sourceDigest": "c30870815abc9cdaf0c5cd249371f30b7dbc1878bf3898a7fe385f381aed634e",
     "reason": "Repository test tooling: imports the integration lane's own feature discovery (`test/integration/support/feature-runner.mjs`) so each feature is planned as its own unit."
   },
   {
     "file": "scripts/test-sharded.mjs",
     "kind": "child-process",
-    "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } })",
-    "digest": "4d4bc039b3889e282373be32ecb39e61d7dd5d2108259fb2afa746da7619b483",
-    "sourceDigest": "564d0ba5161c9c43b4128c51d938eeae4d1e758e33cb11a6ee30258bff075ff8",
+    "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...env, AOF_GLOBAL_HOME: home } })",
+    "digest": "7c2da068ad24a5b9c65d07fc1301b7402fbcf85fb98f82bd06a4e33979c29943",
+    "sourceDigest": "c30870815abc9cdaf0c5cd249371f30b7dbc1878bf3898a7fe385f381aed634e",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`), each integration feature (`test/integration/cli.mjs <feature>`, in-process) and the cargo lane (`scripts/test.mjs --lanes-only` with no feature selected) as a node child with its own isolated AOF_GLOBAL_HOME."
   },
   {
@@ -772,7 +780,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.resolve(path.dirname(fileURLToPath(import.meta.url)), \"test.mjs\")).href)",
     "digest": "21a42fb352806b055fe00b19220e5c034f37c3cfb7aedb55d3a7dc625401743f",
-    "sourceDigest": "b461a1eef4d99684bb7aecca2612385846f19d8a3dcff6eaf9915ce108fd0290",
+    "sourceDigest": "9b0a4cdcc78e7244489db7355e04e55aa8f57a8bc20e182988260817651122c5",
     "reason": "Repository test tooling: a selection that holds a suite importing the runner sits on an import ring with that suite's directory index; the entry goes through `scripts/test.mjs` first, exactly as the whole-tree run does, and only for such a selection."
   },
   {
@@ -780,7 +788,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(resolve(file)).href)",
     "digest": "4c6a4a5db69c974214972265d17a812e422581afba4b3ba8f2c3816b7ad1e3f0",
-    "sourceDigest": "28a82fbd62985588fc4c198b7e321538b19a7ffe4b57ef9a5f06013b82c48d4e",
+    "sourceDigest": "26cd9d1e0d00c4f472dfafdabc6d79f033ac47ae2f4acd1a22c6a616cdbb488f",
     "reason": "Repository test tooling: `loadSelected` imports exactly the suite files a selection names, by path - for the runner's `--only` and for the shard entry a focused `aof test` launches - and reports an unusable one by path. No production package consumes this dynamic path."
   },
   {

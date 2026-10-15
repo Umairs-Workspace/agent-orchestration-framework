@@ -7,6 +7,9 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import fsPromises from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
+import { createTuneCorpus } from "@aof/work/tune/corpus";
 import { copyWorkRuntime } from "../../support/workspace/copied-work-runtime.mjs";
 
 import * as reads from "@aof/work/audit/reads";
@@ -165,4 +168,114 @@ export const archTests = [
       }
     },
   },
+
+  // ══════════════ FF-16012 (160/10, ADR-011 §2) — the corpus lists the stream once ══════════════
+  {
+    name: "FF-16012 160/10 [outline] One assembly lists the stream once, whatever its size (3 rows)",
+    run: async () => {
+      for (const items of [1, 12, 60]) {
+        await withStream(items, async ({ cwd, workDir }) => {
+          const listings = await countingListings(workDir, () => assembleCorpus({ cwd }));
+          assert.equal(listings, 1, `a stream of ${items} items was listed ${listings} times`);
+        });
+      }
+    },
+  },
+  {
+    name: "FF-16012 160/10 The corpus is unchanged",
+    run: async () => {
+      await withStream(4, async ({ cwd, workDir }) => {
+        await writeFile(path.join(workDir, "01_milestone_item-01", "RETROSPECTIVE.md"), "## R1 — A lesson\n- **Kind:** near-miss · **Area:** delivery · **Stage:** build · **Owner:** developer\n\n**Lesson.** Read once.\n", "utf8");
+        await writeFile(path.join(workDir, "02_milestone_item-02", "FEEDBACK.ndjson"), `${JSON.stringify({ kind: "finding", id: "F-1", at: "2026-10-10T10:00:00.000Z", note: "a finding" })}\n`, "utf8");
+        await mkdir(path.join(workDir, "03_milestone_item-03", "runs"), { recursive: true });
+        await writeFile(path.join(workDir, "03_milestone_item-03", "runs", "2026-08-31T00-00-00-000Z-000.json"), JSON.stringify({ runId: "2026-08-31T00-00-00-000Z-000", itemRef: "03", state: "done", attempt: 1, outcome: "done", createdAt: "2026-08-31T00:00:00.000Z", updatedAt: "2026-08-31T00:01:00.000Z" }), "utf8");
+        const byRow = await assembleCorpus({ cwd, lanes: CORPUS_LANES.map((entry) => ({ ...entry, floor: 1 })) });
+        const byRef = await corpusReadingSnapshotsByRef().assembleCorpus({ cwd, lanes: CORPUS_LANES.map((entry) => ({ ...entry, floor: 1 })) });
+        assert.ok(byRow.matched && byRow.items.length === 4, "the fixture stream was read");
+        assert.deepEqual(byRow, byRef, "the corpus is deep-equal to one that reads every snapshot by its ref");
+      });
+    },
+  },
+  {
+    name: "FF-16012 160/10 Memory ingest lists the stream as often for one item as for twelve",
+    run: async () => {
+      const listingsFor = async (items) => withStream(items, async ({ cwd, workDir }) => {
+        await mkdir(path.join(cwd, ".aof"), { recursive: true });
+        await writeFile(path.join(cwd, ".aof", "aof.config.json"), JSON.stringify({ name: "fixture", work: { dir: "./wiki/work" } }), "utf8");
+        for (let at = 1; at <= items; at += 1) {
+          const number = String(at).padStart(2, "0");
+          const runId = "20261011T100000000Z-0000";
+          await mkdir(path.join(workDir, `${number}_milestone_item-${number}`, "runs"), { recursive: true });
+          await writeFile(path.join(workDir, `${number}_milestone_item-${number}`, "runs", `${runId}.json`), JSON.stringify({ runId, itemRef: number, state: "done", attempt: 1, outcome: "done", sessionId: `s-${number}`, brief: {}, createdAt: "2026-10-11T10:00:00.000Z", updatedAt: "2026-10-11T11:00:00.000Z" }), "utf8");
+        }
+        const ctx = {
+          workDir,
+          projectRoot: cwd,
+          configMemory: { backend: "local" },
+          loadWorkspace: async () => ({ config: { name: "fixture", memory: { backend: "local" } }, configPath: path.join(cwd, ".aof", "aof.config.json"), projectRoot: cwd, workDir }),
+        };
+        let records = [];
+        const listings = await countingListings(workDir, async () => { ({ records } = await _aofApplication.knowledge.memory.localIndexing.reindex(null, ctx)); });
+        const runs = records.filter((record) => record.recordType === "run");
+        assert.equal(runs.length, items, `every milestone's run was indexed (${runs.length} of ${items})`);
+        assert.ok(runs.every((record) => record.text.includes("the matched agent")), `every run was matched against its milestone's snapshot: ${runs.map((record) => record.text).join(" | ")}`);
+        return listings;
+      });
+      const one = await listingsFor(1);
+      const twelve = await listingsFor(12);
+      assert.equal(twelve, one, `a stream of 1 item was listed ${one} times and a stream of 12 items ${twelve} times`);
+    },
+  },
 ];
+
+// ── FF-16012's helpers ───────────────────────────────────────────────────────────────────────
+
+// A stream of `count` milestones, each with one observability snapshot.
+async function withStream(count, body) {
+  const cwd = await mkdtemp(path.join(os.tmpdir(), "aof-160-10-"));
+  try {
+    const workDir = path.join(cwd, "wiki", "work");
+    for (let at = 1; at <= count; at += 1) {
+      const number = String(at).padStart(2, "0");
+      const snapshot = path.join(workDir, `${number}_milestone_item-${number}`, "observability", "snapshots", "2026-08-31T00-00-00-000Z");
+      await mkdir(snapshot, { recursive: true });
+      await writeFile(path.join(snapshot, "report.md"), "# observed\n", "utf8");
+      await writeFile(path.join(snapshot, "agents.json"), JSON.stringify({ agents: [{ sessionId: `s-${number}`, attributedTo: number }] }), "utf8");
+    }
+    return await body({ cwd, workDir });
+  } finally {
+    await rm(cwd, { recursive: true, force: true });
+  }
+}
+
+// How many times the stream root is listed while `run` runs: every listing of the stream starts with one
+// `readdir` of its root, through the discovery seam the corpus declares.
+async function countingListings(workDir, run) {
+  const original = fsPromises.readdir;
+  let listings = 0;
+  fsPromises.readdir = function countedReaddir(dir, ...rest) {
+    if (path.resolve(String(dir)) === path.resolve(workDir)) listings += 1;
+    return original.call(this, dir, ...rest);
+  };
+  syncBuiltinESMExports();
+  try {
+    await run();
+    return listings;
+  } finally {
+    fsPromises.readdir = original;
+    syncBuiltinESMExports();
+  }
+}
+
+// The same corpus service, with every snapshot read by its ref as before 160/10.
+function corpusReadingSnapshotsByRef() {
+  const readLatestSnapshot = _aofApplication.work.observe.readLatestSnapshot;
+  return createTuneCorpus({
+    parseRetrospective: _aofApplication.knowledge.memory.localIndexing.parseRetrospective,
+    readRuns: _aofApplication.execution.runs.readRuns,
+    runNodeRecordPath: _aofApplication.execution.runs.runNodeRecordPath,
+    runRecordPath: _aofApplication.execution.runs.runRecordPath,
+    readLatestSnapshot: ({ cwd, ref }) => readLatestSnapshot({ cwd, ref }),
+    loopPointersIn: _aofApplication.graph.work.loops.loopPointersIn,
+  });
+}

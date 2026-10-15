@@ -38,6 +38,13 @@ const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
 const readAsk = _aofApplication.loop.askRequest.readAsk;
 const sampleWorktreeProgress = _aofApplication.loop.loopProgress.sampleWorktreeProgress;
 import { createGitModel, forgetGitModel, gitModelFor, registerGitModel } from "./git-fake.mjs";
+import { repoFromTemplate } from "../cli-spawn.mjs";
+
+// The real repository's `init` and identity, built once per process and copied (160/ADR-009 §3).
+export const LANE_REPO = Object.freeze({
+  init: ["init", "-q", "-b", "main"],
+  config: [["user.email", "fixture@aof.test"], ["user.name", "aof fixture"], ["core.autocrlf", "false"]],
+});
 
 // git(args, cwd) — argv form only, never a shell string. A root the git model holds is answered by it.
 export function git(args, cwd) {
@@ -85,12 +92,7 @@ export async function withLaneRepo(body, { stories = ["01", "03"], rubric = true
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-lane-")));
   let model = null;
   try {
-    if (gitMode === "real") {
-      await git(["init", "-b", "main"], root);
-      await git(["config", "user.email", "fixture@aof.test"], root);
-      await git(["config", "user.name", "aof fixture"], root);
-      await git(["config", "core.autocrlf", "false"], root);
-    }
+    if (gitMode === "real") repoFromTemplate(root, LANE_REPO);
 
     const workDir = path.join(root, "wiki", "work");
     const milestoneDir = path.join(workDir, `${milestone}_milestone_wave`);

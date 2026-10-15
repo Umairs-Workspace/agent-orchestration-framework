@@ -49,6 +49,7 @@ import { shardedReport } from "../../scripts/test-sharded-report.mjs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { withTestCliBundle } from "../../scripts/build-sea.mjs";
 
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const invoke = _aofApplication.invoke;
@@ -281,6 +282,16 @@ export const regressionGateTests = [
       const { launched } = await launchedEnv(run, { AOF_GLOBAL_HOME: "/tmp/gh", git_dir: "/x" });
       assert.equal(launched.AOF_GLOBAL_HOME, "/tmp/gh");
       assert.equal("git_dir" in launched, false, "a lower-case git_dir is a GIT_ variable too");
+    }),
+  },
+  {
+    name: "160/07 The gate's clean environment still drops the variable, and the runner sets it after",
+    run: () => withGateFixture(async ({ run }) => {
+      const { launched } = await launchedEnv(run, { PATH: "/bin", AOF_TEST_CLI_BUNDLE: "/stale/bundle.mjs" });
+      assert.equal("AOF_TEST_CLI_BUNDLE" in launched, false, "the runner's own environment carries no AOF_TEST_CLI_BUNDLE");
+      const unit = withTestCliBundle(launched, { bundle: "/run/.tmp/test-cli-bundle/cli.mjs" });
+      assert.equal(unit.AOF_TEST_CLI_BUNDLE, "/run/.tmp/test-cli-bundle/cli.mjs", "its units carry the path of the bundle the runner built");
+      assert.equal(withTestCliBundle({ aof_test_cli_bundle: "/stale/bundle.mjs" }, { bundle: "/run/b.mjs" }).aof_test_cli_bundle, undefined, "an inherited spelling in another case is replaced, not kept beside it");
     }),
   },
   {

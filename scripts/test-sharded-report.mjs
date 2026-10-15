@@ -21,14 +21,29 @@ export function lostUnitFailure(key, executed, assigned) {
 }
 
 // Seconds and cases per suite file, summed across its chunks — the next run's schedule and the slowest-files block.
+// A packed unit (160/ADR-010 §3) is one process holding several files: each file is timed from the
+// `# file <path> <seconds> <executed>` line the shard entry printed for it, and the unit itself is never an entry.
 export function fileTimings(results) {
   const perFile = {};
+  const add = (key, seconds, cases) => {
+    const entry = perFile[key] ?? (perFile[key] = { seconds: 0, cases: 0 });
+    entry.seconds += seconds;
+    entry.cases += cases;
+  };
   for (const result of results) {
-    const entry = perFile[result.unit.key] ?? (perFile[result.unit.key] = { seconds: 0, cases: 0 });
-    entry.seconds += result.seconds;
-    entry.cases += result.unit.positions.length;
+    if (result.unit.files == null) { add(result.unit.key, result.seconds, result.unit.positions.length); continue; }
+    const reported = fileLines(result.output ?? "");
+    for (const entry of result.unit.files) {
+      const line = reported.get(entry.file);
+      if (line != null) add(entry.key, line.seconds, entry.positions.length);
+    }
   }
   return perFile;
+}
+
+// The `# file <path> <seconds> <executed>` lines a unit printed, by path.
+export function fileLines(output) {
+  return new Map([...String(output).matchAll(/^# file (.+) (\d+(?:\.\d+)?) (\d+)$/gm)].map((match) => [match[1], { seconds: Number(match[2]), executed: Number(match[3]) }]));
 }
 
 export function slowestFiles(perFile, limit = 12) {

@@ -103,7 +103,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
-import { stripComments } from "../../support/source-slice.mjs";
+import { blankStringLiterals, matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 const UNREGISTERED_BASELINE = _aofApplication.work.audit.census.UNREGISTERED_BASELINE;
 const baselineProblems = _aofApplication.work.audit.census.baselineProblems;
 const registrationDecision = _aofApplication.work.audit.census.registrationDecision;
@@ -455,4 +455,123 @@ export const archTests = [
       assert.deepEqual(positionalSlices(home), [], "self-check: test/support/source-slice.mjs holds no positional slice of its own");
     },
   },
+
+  // ══════ FF-16013 (160/11, ADR-012): the registry runner is spawned only where it is the subject ══════
+  {
+    name: "FF-16013 160/11 Every spawn of the registry runner names its subject",
+    run: async () => {
+      const files = await suiteFilesBelow(path.join(repoRoot, TEST_ROOT));
+      assert.ok(files.length > WALKED_FLOOR, `test/ was actually walked (non-vacuous): ${files.length} suite files`);
+      const found = [];
+      for (const rel of files) {
+        const file = `${TEST_ROOT}/${rel}`;
+        found.push(...runnerSpawnSites(await readFile(path.join(repoRoot, TEST_ROOT, rel), "utf8"), file));
+      }
+      assert.deepEqual(runnerSpawnProblems(found, RUNNER_SPAWN_ALLOWLIST), [], "every spawn of scripts/test.mjs is listed with the part of the runner it checks, and the list names no spawn the tree no longer holds");
+      assert.ok(found.length > 0, "the sweep finds the listed spawns (non-vacuous)");
+    },
+  },
+  {
+    name: "FF-16013 160/11 An unlisted spawn of the registry runner is caught",
+    run: () => {
+      const planted = [
+        'import { spawnSync } from "node:child_process";',
+        "export const plantedTests = [{ name: \"planted\", run() {",
+        '  const run = spawnSync(process.execPath, ["scripts/test.mjs", "--only", "test/other.test.mjs"], { encoding: "utf8" });',
+        "} }];",
+        "",
+      ].join("\n");
+      const sites = runnerSpawnSites(planted, "test/planted/planted.test.mjs");
+      assert.deepEqual(sites.map((site) => [site.file, site.line]), [["test/planted/planted.test.mjs", 3]], "the planted spawn is found at its line");
+      const problems = runnerSpawnProblems(sites, RUNNER_SPAWN_ALLOWLIST.filter((entry) => entry.file === "test/planted/planted.test.mjs"));
+      assert.equal(problems.length, 1, problems.join("\n"));
+      assert.match(problems[0], /test\/planted\/planted\.test\.mjs:3/u, `it fails naming the planted file and line: ${problems[0]}`);
+      // The two other spellings a spawn takes: a joined path, and a name bound to the runner and spawned later.
+      const joined = runnerSpawnSites('const r = spawnCliSync(process.execPath, [path.join(root, "scripts", "test.mjs"), "--only", f]);\n', "test/x.test.mjs");
+      const bound = runnerSpawnSites('const RUNNER = ["scripts/test.mjs", "--only"];\n\nconst out = spawnSyncHardened(process.execPath, RUNNER, {});\n', "test/y.test.mjs");
+      assert.deepEqual([joined.length, bound.length, bound[0]?.line], [1, 1, 3], "a joined path and a bound name are both found");
+      // A shard-entry spawn, and a string that only names the runner, are not spawns of it.
+      assert.deepEqual(runnerSpawnSites('spawnSync(process.execPath, ["scripts/test-shard.mjs", f]);\nconst label = "node scripts/test.mjs";\n', "test/z.test.mjs"), []);
+      assert.deepEqual(runnerSpawnProblems([], [{ file: "test/gone.test.mjs", sites: 1, subject: "a spawn that is gone" }]).length, 1, "a stale allowlist entry fails");
+    },
+  },
+  {
+    name: "FF-16013 160/11 [outline] A test that needs one suite run starts the shard entry (2 rows)",
+    run: async () => {
+      for (const suite of ["test/notify/notify-channels.test.mjs", "test/bundle/core-workspace.test.mjs"]) {
+        const source = await readFile(path.join(repoRoot, suite), "utf8");
+        assert.deepEqual(runnerSpawnSites(source, suite), [], `${suite} starts no scripts/test.mjs`);
+        assert.ok(shardSpawnCount(source) > 0, `${suite} starts scripts/test-shard.mjs to run its one suite`);
+      }
+    },
+  },
 ];
+
+// ── FF-16013 — spawns of the registry runner ─────────────────────────────────────────────────
+
+// The spawns a test may make of `scripts/test.mjs`: each because the runner itself is what it checks.
+const RUNNER_SPAWN_ALLOWLIST = Object.freeze([
+  Object.freeze({ file: "test/testing/test-command-contract.test.mjs", sites: 1, subject: "the runner's `--only` selection, its unusable-file refusal and its import ring — the rows 72/ADR-004 §6 priced and ruled on, driven through one bounded `runner()` child" }),
+]);
+
+const RUNNER_REFERENCE = /scripts\/test\.mjs|["']scripts["']\s*,\s*["']test\.mjs["']/u;
+const SPAWN_CALL = /\b(?:spawnSync|spawn|execFileSync|execFile|fork|spawnCliSync|spawnCliAsync|spawnSyncHardened|runBounded)\s*\(/gu;
+
+// Every call that starts a process and names the registry runner in its arguments — spelled as a path, as a
+// joined path, or through a name bound to one — with its file and line. Calls are found in the
+// string-blanked source, so a string that merely mentions the runner is never a call.
+export function runnerSpawnSites(source, file) {
+  const text = source.replace(/\r\n/gu, "\n");
+  const code = stripComments(text);
+  const blank = blankStringLiterals(text);
+  const bound = new Set();
+  for (const match of code.matchAll(/\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*([^;]*)/gu)) {
+    if (RUNNER_REFERENCE.test(match[2])) bound.add(match[1]);
+  }
+  const sites = [];
+  for (const match of blank.matchAll(SPAWN_CALL)) {
+    const span = matchedParenSpan(blank, match.index);
+    if (span == null) continue;
+    const args = code.substring(span.open, span.close + 1);
+    const named = RUNNER_REFERENCE.test(args) || [...bound].some((name) => new RegExp(`\\b${name.replace(/\$/gu, "\\$")}\\b`, "u").test(args));
+    if (!named) continue;
+    const firstLine = code.substring(match.index).split("\n")[0].trim();
+    const lines = text.split("\n");
+    const original = lines.findIndex((line) => line.trim().startsWith(firstLine) || line.includes(firstLine));
+    sites.push({ file, line: original >= 0 ? original + 1 : code.substring(0, match.index).split("\n").length });
+  }
+  return sites;
+}
+
+// Each site not covered by its file's allowlist entry, and each entry whose file holds fewer sites than it lists.
+export function runnerSpawnProblems(sites, allowlist) {
+  const problems = [];
+  const byFile = new Map();
+  for (const site of sites) (byFile.get(site.file) ?? byFile.set(site.file, []).get(site.file)).push(site);
+  for (const [file, held] of byFile) {
+    const entry = allowlist.find((candidate) => candidate.file === file);
+    if (entry == null || !(entry.subject?.length > 20)) {
+      for (const site of held) problems.push(`${site.file}:${site.line} spawns scripts/test.mjs, and the runner is not this test's listed subject — start scripts/test-shard.mjs to run a suite (160/ADR-012), or list the spawn with the part of the runner it checks`);
+    } else if (held.length > entry.sites) {
+      problems.push(`${file} spawns scripts/test.mjs at ${held.length} sites, and its entry lists ${entry.sites}: ${held.map((site) => site.line).join(", ")}`);
+    }
+  }
+  for (const entry of allowlist) {
+    const held = byFile.get(entry.file)?.length ?? 0;
+    if (held < entry.sites) problems.push(`${entry.file}: the allowlist names ${entry.sites} spawn(s) of scripts/test.mjs and the file holds ${held} — delete the stale entry`);
+  }
+  return problems;
+}
+
+// How many process starts in `source` name the shard entry.
+function shardSpawnCount(source) {
+  const text = source.replace(/\r\n/gu, "\n");
+  const code = stripComments(text);
+  const blank = blankStringLiterals(text);
+  let count = 0;
+  for (const match of blank.matchAll(SPAWN_CALL)) {
+    const span = matchedParenSpan(blank, match.index);
+    if (span != null && /scripts\/test-shard\.mjs/u.test(code.substring(span.open, span.close + 1))) count += 1;
+  }
+  return count;
+}

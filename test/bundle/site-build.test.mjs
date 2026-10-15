@@ -28,12 +28,14 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // The live site (Pages source switched to GitHub Actions, the page rendering as a diagram) is
 // @uat in both features and is not exercised here.
 import assert from "node:assert/strict";
+import { rmSync } from "node:fs";
 import { cp, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { loadSelected } from "../../scripts/test-harness.mjs";
 import { spawnSyncHardened } from "../support/cli-spawn.mjs";
 import { RECORDS, loop, snapshot, writeRegistry } from "../support/loop-document-fixture.mjs";
 import { computedDynamicImports, importSpecifiers } from "../support/module-family.mjs";
@@ -64,9 +66,17 @@ const workflowPath = path.join(workflowsDir, "pages.yml");
 const layoutPath = path.join(repoRoot, SHELL_DIR, "_layouts", "default.html");
 const BUILDER = "scripts/site/build-site.mjs";
 const GATE_CONTROL = "test/arch/loop/acd-loop-document-current.test.mjs";
-// The gate command exactly as the workflow spells it, minus the shell's `AOF_GLOBAL_HOME=…`
-// prefix, which is passed as the child's environment here.
-const GATE_ARGV = ["scripts/test.mjs", "--only", GATE_CONTROL];
+// The gate's program (160/ADR-012): the shard entry, which loads the control it is named and not the registry.
+const GATE_PROGRAM = "scripts/test-shard.mjs";
+// The gate's run line exactly as the workflow spells it: an isolated global home, then `node` and its argv.
+const GATE_RUN_LINE = /^ {8}run: AOF_GLOBAL_HOME="\$\(mktemp -d\)" node (\S+(?: \S+)*)$/mu;
+// The gate command as the workflow spells it, minus the shell's `AOF_GLOBAL_HOME=…` prefix, which is passed
+// as the child's environment here — read from the workflow, so the copy runs what the deploy gate runs.
+function gateArgv(rawWorkflow = readWorkflow()) {
+  const match = GATE_RUN_LINE.exec(normaliseEol(rawWorkflow));
+  assert.ok(match, "the gate step's run line isolates AOF_GLOBAL_HOME and runs node");
+  return match[1].split(" ");
+}
 // A job's own keys sit at this indent; a step's keys sit deeper.
 const JOB_INDENT = 4;
 
@@ -165,7 +175,7 @@ export function lintPagesWorkflow(rawText) {
 
   const deployBody = deploy ? jobs.get(deploy) : "";
   const gateBody = gate ? jobs.get(gate) : "";
-  for (const [name, body, command] of [[gate, gateBody, "node scripts/test.mjs"], [deploy, deployBody, `node ${BUILDER}`]]) {
+  for (const [name, body, command] of [[gate, gateBody, `node ${GATE_PROGRAM}`], [deploy, deployBody, `node ${BUILDER}`]]) {
     const install = body.indexOf("run: node scripts/prepare-worktree.mjs");
     const audit = body.indexOf("run: node scripts/supply-chain-audit.mjs");
     const execute = body.indexOf(command);
@@ -377,12 +387,31 @@ async function staticImportClosure(entry) {
   return { modules: [...seen.keys()].map((file) => path.relative(repoRoot, file).split(path.sep).join("/")), bare, computed, workspaces: [...workspaces], builtins: [...builtins] };
 }
 
+// The gate's shard entry (160/ADR-012) reaches a subset of the tree below; the copy is kept whole, since what the
+// shard entry loads is the control's own closure and re-deriving it here would be a second walker.
 // A copy of this repository's runnable tree — everything `scripts/test.mjs` reaches at LOAD (the
 // runner imports every suite before it selects, and suites import `packages/core/src/`, `apps/ui/src/` and the hook
 // under `.claude/hooks/` at module scope) — with a FIXTURE registry and its own config, placed
 // INSIDE this repository (under the git-ignored `.aof-test/`) so bare imports resolve up to this
 // tree's `node_modules` without a link or a junction. The gate is then run in it exactly as the
 // workflow runs it, and the fixture's registry is what drifts — never this repository's.
+// One copy for the cases that run the gate (160/11): copying the runnable tree is this suite's costliest step.
+// The last of them releases it, and the process's exit removes one that a partial run left behind.
+let gateFixture = null;
+function sharedGateFixture() {
+  gateFixture ??= makeGateFixture().then((fixture) => {
+    process.once("exit", () => rmSync(fixture.root, { recursive: true, force: true }));
+    return fixture;
+  });
+  return gateFixture;
+}
+async function releaseGateFixture() {
+  if (gateFixture == null) return;
+  const fixture = await gateFixture;
+  gateFixture = null;
+  await rm(fixture.root, { recursive: true, force: true });
+}
+
 async function makeGateFixture() {
   const root = path.join(repoRoot, ".aof-test", `site-gate-${randomBytes(4).toString("hex")}`);
   await mkdir(root, { recursive: true });
@@ -410,7 +439,7 @@ async function makeGateFixture() {
 
 function runGate(root) {
   const globalHome = path.join(root, ".global-home");
-  return spawnSyncHardened(process.execPath, GATE_ARGV, {
+  return spawnSyncHardened(process.execPath, gateArgv(), {
     cwd: root,
     encoding: "utf8",
     env: { ...process.env, AOF_GLOBAL_HOME: globalHome },
@@ -426,7 +455,7 @@ const REACHABILITY_MUTATIONS = [
   { name: "the deploy's workspace install removed", apply: (raw) => raw.replace(/(  deploy:[\s\S]*?)run: node scripts\/prepare-worktree\.mjs/, "$1run: node --version") },
   { name: "continue-on-error on the gate job", apply: (raw) => raw.replace(/^( {4})runs-on: ubuntu-latest$/m, (line, pad) => `${line}\n${pad}continue-on-error: true`) },
   { name: "continue-on-error on the gate's check step", apply: (raw) => raw.replace(/^( {6})- name: Run story 79's drift control.*$/m, (line, pad) => `${line}\n${pad}  continue-on-error: true`) },
-  { name: "`|| true` appended to the gate's run line", apply: (raw) => raw.replace(/(node scripts\/test\.mjs --only [^\n]*)$/m, "$1 || true") },
+  { name: "`|| true` appended to the gate's run line", apply: (raw) => raw.replace(/(node scripts\/test-shard\.mjs [^\n]*)$/m, "$1 || true") },
   { name: "`!cancelled() &&` prefixed to the deploy condition", apply: (raw) => raw.replace(/^( {4})if: (github\.event_name[^\n]*)$/m, "$1if: ${{ !cancelled() && $2 }}") },
   { name: "`needs.gate.result != 'skipped' &&` prefixed to the deploy condition", apply: (raw) => raw.replace(/^( {4})if: (github\.event_name[^\n]*)$/m, "$1if: needs.gate.result != 'skipped' && $2") },
   { name: "the deploy's job-level if moved onto the deploy-pages step", apply: (raw) => raw.replace(/^ {4}if: (github\.event_name[^\n]*)\n/m, "").replace(/^( {6})- name: Deploy to GitHub Pages$/m, (line, pad) => `${line}\n${pad}  if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'`) },
@@ -907,7 +936,8 @@ export const siteBuildTests = [
       const verdict = lintPagesWorkflow(readWorkflow());
       assert.deepEqual(verdict.problems, []);
       const gate = verdict.gateBody;
-      assert.match(gate, /node scripts\/test\.mjs --only test\/arch\/loop\/acd-loop-document-current\.test\.mjs/, "the gate runs story 79's control through the project's own test command and its --only selection");
+      // 160/ADR-012 §2: the project's own selection program is the shard entry (ADR-003), not the registry's `--only`.
+      assert.match(gate, /node scripts\/test-shard\.mjs test\/arch\/loop\/acd-loop-document-current\.test\.mjs/, "the gate runs story 79's control through the project's own test command, the selection's shard entry");
       assert.match(gate, /AOF_GLOBAL_HOME=/, "the run is isolated by AOF_GLOBAL_HOME, so it writes no fixture into a real ~/.aof");
       assert.doesNotMatch(gate, /git diff|\bcmp\b|\bdiff\b|sha256sum|md5sum/, "it holds no comparison of the document's bytes of its own");
       assert.doesNotMatch(gate, /loops document|loop-document --write|--write/, "and no regeneration of the document");
@@ -916,11 +946,38 @@ export const siteBuildTests = [
     },
   },
 
+  // ══════ 160/11 (ADR-012): the deploy gate runs its control through the shard entry ══════
+  {
+    name: "160/11 The Pages gate runs its control through the shard entry",
+    run: () => {
+      const raw = readWorkflow();
+      const verdict = lintPagesWorkflow(raw);
+      const runLines = normaliseEol(raw).split("\n").filter((line) => line.includes(GATE_CONTROL));
+      assert.deepEqual(runLines, [`        run: AOF_GLOBAL_HOME="$(mktemp -d)" node ${GATE_PROGRAM} ${GATE_CONTROL}`], "the gate step runs the control through the shard entry, with an isolated AOF_GLOBAL_HOME");
+      assert.deepEqual(gateArgv(raw), [GATE_PROGRAM, GATE_CONTROL]);
+      assert.deepEqual(verdict.problems, [], "and the step's exit status still decides the deploy job");
+      assert.ok(verdict.needs.includes(verdict.gate), `the deploy needs the gate (needs: [${verdict.needs.join(", ")}])`);
+    },
+  },
+  {
+    name: "160/11 The site build's copy of the tree runs the gate as the workflow spells it",
+    run: async () => {
+      // The copy is shared with the next case, which drifts and regenerates it and then removes it.
+      const fixture = await sharedGateFixture();
+      const workspace = await loadWorkspace(fixture.root);
+      await loopDocumentCommand.run({ write: true }, { workspace });
+      const gate = runGate(fixture.root);
+      assert.equal(gate.status, 0, `the gate exits 0\n--- stdout\n${gate.stdout}\n--- stderr\n${gate.stderr}`);
+      const { selected } = await loadSelected([path.join(repoRoot, GATE_CONTROL)]);
+      assert.ok(gate.stdout.includes(`# executed ${selected.length} cases; failures 0`), `and runs every case of the control (${selected.length})`);
+    },
+  },
+
   // ══════ 01: "a registry edit without regeneration stops the deploy" ══════
   {
     name: "site-build/01 a registry edit without regeneration stops the deploy: run the way the workflow runs it, the gate passes on a current document, fails after a record is edited without regenerating (naming the document and the regeneration command), passes again once regenerated — and the deploy job's needs makes it unreachable in between",
     run: async () => {
-      const fixture = await makeGateFixture();
+      const fixture = await sharedGateFixture();
       try {
         const workspace = await loadWorkspace(fixture.root);
         const documentName = path.basename(loopDocumentPath(workspace));
@@ -947,7 +1004,7 @@ export const siteBuildTests = [
         const regenerated = runGate(fixture.root);
         assert.equal(regenerated.status, 0, `the gate passes again once the document is regenerated\n--- stderr\n${regenerated.stderr}`);
       } finally {
-        await rm(fixture.root, { recursive: true, force: true });
+        await releaseGateFixture();
       }
 
       // (4) THE DEPLOY DOES NOT RUN: it waits on the gate and never overrides a failed need.

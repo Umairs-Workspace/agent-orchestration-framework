@@ -310,7 +310,10 @@ export function createEpisodicIndexing({ readRuns, runRecordPath, runNodeRecordP
       return { available: false, reason: "the snapshot reader reads only <project>/wiki/work" };
     }
     const ref = snapshotRefOf(item);
-    if (!build.snapshots.has(ref)) build.snapshots.set(ref, await readLatestSnapshot({ cwd: projectRoot, ref }));
+    // The walk's own row, when it holds one: resolving a ref lists the whole stream, so reading by
+    // ref listed the stream once per milestone (160/ADR-011 §2, the corpus's fix applied here).
+    const row = build.rows.get(ref);
+    if (!build.snapshots.has(ref)) build.snapshots.set(ref, await readLatestSnapshot(row == null ? { cwd: projectRoot, ref } : { cwd: projectRoot, ref, item: { ...row, dir: path.resolve(projectRoot, row.dir) } }));
     const snapshot = build.snapshots.get(ref);
     if (snapshot?.json == null) return { available: false, reason: snapshot == null ? "no observability snapshot" : "the snapshot is unreadable" };
     const owner = run.itemRef || item.ref;
@@ -389,9 +392,10 @@ export function createEpisodicIndexing({ readRuns, runRecordPath, runNodeRecordP
     ];
   }
 
-  // One build's shared state: a snapshot is read once per milestone, however many runs ask.
-  function episodicBuild({ workDir, projectRoot }) {
-    return { workDir, projectRoot, snapshots: new Map() };
+  // One build's shared state: a snapshot is read once per milestone, however many runs ask, and
+  // `items` (the walk's listing rows) lets a read resolve a milestone by its row, not by its ref.
+  function episodicBuild({ workDir, projectRoot, items = [] }) {
+    return { workDir, projectRoot, snapshots: new Map(), rows: new Map(items.map((row) => [String(row.ref), row])) };
   }
 
   return { episodicRecordsFor, episodicBuild };

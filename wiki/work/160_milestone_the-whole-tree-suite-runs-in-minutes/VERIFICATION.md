@@ -7,7 +7,9 @@ doc: verification
 
 Each control suite was run unmutated through `scripts/test-shard.mjs` (all green), then once per probe with one
 source edit applied, then reverted with `git checkout` (the checkout read clean after each). Run 2026-10-15 on
-`ba23c7d9`, `AOF_GLOBAL_HOME` isolated.
+`ba23c7d9`, `AOF_GLOBAL_HOME` isolated. Round 2 (FF-16008 – FF-16013): every control suite, every round-2 story
+suite and every round-1 control re-run together through `scripts/test-shard.mjs` on 2026-10-15 (25 files, 525 of
+525 cases green, `AOF_GLOBAL_HOME` isolated); the probes were run at build, except FF-16010's, run at verify.
 
 | id | enforced by | result | red probe |
 |---|---|---|---|
@@ -18,6 +20,12 @@ source edit applied, then reverted with `git checkout` (the checkout read clean 
 | FF-16005 | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` | 9/9 green (3 s) | the launch takes the gate's own env (`const launchEnv = env;`): leg (1) red — "the launch environment is the clean copy of the gate's own". |
 | FF-16006 | `test/arch/grade/acd-gate-result-is-evidence.test.mjs` | 9/9 green (3 s) | the report prints a killed unit as `not ok - <unit>` (`scripts/test-sharded-report.mjs`): leg (1) red — "the report prints it as # not finished, never not ok — true !== false". |
 | FF-16007 | `test/arch/command/acd-cited-path-resolves.test.mjs` | 14/14 green (12 s) | `readRenameMap` loads history eagerly (`packages/work/src/commands/doctor.mjs`): 2 red — the structural leg "readRenameMap builds a loader that reads history once, on its first load()", and the all-resolve outline, which failed on `EBUSY … rmdir aof-lazy-history-*` (the eager read's git still held its fixture). |
+| FF-16008 | `test/testing/build-sea-recipe-guards.test.mjs` | 18/18 green (31 s) | the version string changed in a built bundle: the parity set fails on `aof --version` alone, showing both answers; and `sourceEnv`'s strip disabled: FF-16004's child starts load a poisoned bundle (4 cases red) and both loading rows go red. Run at build (Story 07 evidence). |
+| FF-16009 | `test/arch/testing/acd-git-fake-parity.test.mjs` | 21/21 green (15 s) | the three-way merge takes ours where only theirs changed (`test/support/loop/git-fake.mjs`): the merge-home outline and the dirty-refusal row red; a template built without its first `config` pair: "indistinguishable from an init-built one" and "built once per process" red. Run at build (Story 08 evidence). |
+| FF-16010 | `test/testing/test-sharded-report.test.mjs` | 21/21 green (3 s) | run at verify, in `packUnits` (`scripts/test-harness.mjs`): (a) `estimate < packSeconds` → `<=`: the outline red — "15 s: its own unit"; (b) a packed unit's `files` drops its first entry: 4 red — "every file is in a unit … 37 !== 40", "the two short files packed", the plan-count case and the outline. Restored; 21/21 green. |
+| FF-16011 | `test/arch/audit/acd-comment-stripper-order.test.mjs` | 5/5 green (13 s) | the look-back no longer skips whitespace (`test/support/source-slice.mjs`): the whole-tree leg red, naming dozens of files. A first probe (dropping `yield` from the keyword set) stayed green — recorded in Story 10's evidence. |
+| FF-16012 | `test/arch/planning/acd-tune-corpus-declares-its-reads.test.mjs` | 9/9 green (2 s) | the corpus reads each snapshot by ref again (`packages/work/src/tune/corpus.mjs`): red — "a stream of 1 items was listed 2 times". Run at build (Story 10 evidence). At verify (F-05), the ingest row with `episodic-indexing.mjs` as at HEAD: red — "a stream of 1 item was listed 3 times and a stream of 12 items 14 times". 9/9 green with the fix. |
+| FF-16013 | `test/arch/testing/acd-test-suite-registration.test.mjs` | 7/7 green (2 s) | `core-workspace`'s spawn put back on `scripts/test.mjs --only`: red, naming `test/bundle/core-workspace.test.mjs:258`, and the shard-entry outline red with it. Run at build (Story 11 evidence). |
 
 ## Whole-tree runs
 
@@ -153,6 +161,131 @@ The before and after binaries run over the same tree (the after worktree), so on
 Doctor still loads history once because one of 160's citations misses on disk — the lazy source answering a
 miss, as ADR-007 says. Result: pass. verifies → `stories/06_story_citation-history-is-read-only-when-a-citation-misses/tasks/00_history-is-a-lazy-source.feature` · "The spawn counts on the control node"
 
+### Story 07 · the child start and the heaviest child-spawning suites (@manual)
+
+Measured 2026-10-15 in the main checkout (`cb89cb70` + the uncommitted 160/07 build), `AOF_GLOBAL_HOME` isolated,
+one run at a time on an otherwise idle control node. The bundle was built by `buildTestCliBundle` (276 ms). Child
+`aof` starts were counted by a `NODE_OPTIONS` preload that records, at exit, the lifetime of every node process whose
+entry is the bin. Each suite ran alone through `node scripts/test-shard.mjs`, with and without
+`AOF_TEST_CLI_BUNDLE`.
+
+`aof work find 160 --json`, five starts each: source 1,076 / 1,032 / 999 / 975 / 976 ms, **median 999 ms**; bundle
+394 / 280 / 264 / 260 / 275 ms, **median 275 ms**.
+
+| suite | child `aof` starts | source · wall / child time | bundle · wall / child time | cases |
+|---|---|---|---|---|
+| `cli-face-contract` | 143 | 62.9 s / 204.0 s | 15.2 s / 36.0 s | 31/31 pass both |
+| `work-archive-is-a-move` | 64 | 87.1 s / 71.5 s | 30.4 s / 15.4 s | 61/61 pass both |
+| `acd-work-command-cli-bijection` | 62 | 64.9 s / 60.9 s | 19.0 s / 15.2 s | 4/4 pass both |
+
+The counts are the refine census's (143, 64, 62). An uncounted first pass gave the same shape (58.8 → 15.1 s,
+91.0 → 32.1 s, 77.4 → 19.9 s). FF-16008's red probes: the version string changed in a built bundle fails the parity
+set on `aof --version` alone, showing both answers; and with `sourceEnv`'s strip disabled, FF-16004's own child
+starts load a poisoned bundle (4 of its cases red) and both of FF-16008's loading rows go red. Both reverted. Result:
+pass. verifies → `stories/07_story_a-tests-child-aof-runs-from-one-bundle/tasks/01_the-bundle-answers-as-the-source-does.feature` · "The child start and the heaviest child-spawning suites on the control node"
+
+### Story 08 · the loop suites' git calls, and the real-git suites' setup (@manual)
+
+Measured 2026-10-15 in the main checkout, `AOF_GLOBAL_HOME` isolated, one suite at a time through
+`node scripts/test-shard.mjs`, on an otherwise idle control node. Before = HEAD's six test-support files restored
+over the uncommitted tree (only the git model, the template and the fixtures differ); after = the 160/08 build. Git
+processes were counted by a `--import` preload that wraps `ChildProcess.prototype.spawn` and the synchronous spawn
+binding, so `spawn`, `execFile` and `spawnSync` alike are counted, by verb.
+
+| suite | before · wall / git calls | after · wall / git calls | cases |
+|---|---|---|---|
+| `loop-command-wave` | 336.6 s / 4,023 | 234.7 s / 2,219 | 51/51 pass both |
+| `loop-command-reconcile` | 156.1 s / 1,518 | 112.0 s / 1,160 | 18/18 pass both |
+| `loop-command-stops` | 141.0 s / 611 | 128.8 s / 575 | 78/78 pass both |
+
+| suite | before · wall · init / config / add / commit | after · wall · init / config / add / commit | cases |
+|---|---|---|---|
+| `work-dispatch-lanes` | 108.2 s · 88 / 176 / 219 / 216 | 89.9 s · 1 / 2 / 219 / 216 | 100/100 pass both |
+| `gate-propagation-refusals-leave-branch` | 45.2 s · 37 / 82 / 108 / 101 | 39.0 s · 30 / 61 / 108 / 101 | 37/37 pass both |
+| `blocked-run-parking` | 43.8 s · 52 / 156 / 52 / 52 | 31.1 s · 1 / 3 / 52 / 52 | 42/42 pass both |
+
+The before counts are the refine census's (4,018, 1,507, 918, 517, 1,836, within a handful). What `init` and
+`config` remain in `gate-propagation-refusals-leave-branch` are its bare `origin` and the scratch clones it pushes
+from, which are not the fixture's repository. The re-sort ran every real-git case of the three loop suites on the
+model (a temporary switch, removed): wave 43/51 and reconcile 12/18 passed there, stops' five real-git repair
+cases did not. Sixteen moved (12 wave, 4 reconcile); the rest stayed by ADR-002 §3 (a merge-home or branch
+assertion, a reused lane, a dirty or cleanup refusal). FF-16002's `MOVED` list carries them. Result: pass.
+verifies → `stories/08_story_tests-spend-git-only-on-what-they-assert/tasks/00_the-git-model-merges-a-lane-home.feature` · "The loop suites' git calls on the control node";
+`stories/08_story_tests-spend-git-only-on-what-they-assert/tasks/01_a-real-git-fixture-starts-from-a-template.feature` · "The real-git suites' setup cost on the control node"
+
+FF-16009's red probes: the three-way merge taking ours where only theirs changed, and the merge's first stdout
+line naming another strategy — each turns the merge-home outline and the dirty-refusal row red; and a template
+built without its first `config` pair turns "indistinguishable from an init-built one" and "built once per
+process" red. All reverted. The 44 other suites that import the changed fixtures or the model were each run alone
+afterwards: 44/44 green.
+
+### Story 09 · the unit count and the summed time (@manual)
+
+Measured 2026-10-15 in the main checkout, `AOF_GLOBAL_HOME` isolated, over the timings of the last whole-tree run
+(`.tmp/test-timings.json`). `node scripts/test-sharded.mjs --plan` before: **1,235 units**; after: **339 units, 68
+packed, holding 964 files**. The ten heaviest units are the same ten, in the same order, at the same estimates.
+
+Twenty short arch suites (recorded 1–10 s each, 90 cases), through the shard entry: as twenty units one after
+another **29.0 s**; as one packed unit (`--file <path> <positions>` each) **14.0 s**. 90 cases ran each way, none
+failed.
+
+Every packed unit of the real plan was then run through the real pool (8 workers, alone-retry included): 964 files,
+8,765 cases in **3.6 min**, 0 not isolated, 0 not finished, and per-file timings written for all 964 files. Two
+cases were red in the pool and again alone — FF-9603's "every PLAN.md is admitted" in
+`acd-plan-restates-no-declared-path` and its twin in `story-plan-document` — because round 2's refine wrote
+160/07's and 160/11's `PLAN.md` restating declared paths. Both plans were reworded; both suites are green. Result:
+pass. verifies → `stories/09_story_small-suite-files-share-a-unit/tasks/01_a-packed-unit-accounts-per-file.feature` · "The unit count and the summed time on the control node"
+
+### Story 10 · the scanner's readers and the corpus over this repository (@manual)
+
+Measured 2026-10-15 in the main checkout, `AOF_GLOBAL_HOME` isolated, one run at a time. Before = the scanner and
+the corpus as at HEAD; after = the 160/10 build.
+
+| what | before | after |
+|---|---|---|
+| strip every `.mjs` under `test/` (1,155 files, CRLF normalised) | 1,199 ms | 644 ms |
+| blank the same files (strip included) | 10,116 ms | 977 ms |
+| `acd-control-derives-its-census` alone (12 cases, all pass) | 157 s | 29 s |
+| `acd-source-directory-budget` alone (9 cases, all pass) | 2 s | 3 s |
+| `assembleCorpus` over this repository, in-process (554 items) | 12.6 s | 0.7 s |
+| `acd-candidate-formation-is-lossless` alone (7 cases, all pass) | 24 s | 8 s |
+| `acd-tune-is-non-vacuous-over-this-repo` alone (1 case, passes) | 16 s | 7 s |
+
+Every stripped and blanked output under `test/` is byte-identical to the previous scanner's (FF-16011's
+whole-tree leg; the one file that differs before/after is `source-slice.mjs` itself, which this story edits), and
+so is every one of the 904 `.mjs` files under `packages/` and `scripts/` when compared with the oracle. The two
+corpora are byte-identical (6,569,582 bytes of JSON). FF-16011's red probe: the look-back no longer skipping
+whitespace — the whole-tree leg names dozens of files. (A first probe, dropping `yield` from the keyword set,
+stayed green: no test file has `yield /`, and the outline's rows survive a regex misread as division unless it
+holds `//` or a quote.) FF-16012's red probe: the corpus reading snapshots by ref again — "a stream of 1 items was
+listed 2 times". Both reverted. Result: pass.
+verifies → `stories/10_story_the-audits-over-this-repository-read-once/tasks/00_the-source-scanner-is-linear.feature` · "The scanner's readers on the control node";
+`stories/10_story_the-audits-over-this-repository-read-once/tasks/01_the-tune-corpus-lists-the-stream-once.feature` · "The corpus over this repository on the control node"
+
+### Story 11 · the three suites, and a fourth (@manual)
+
+Measured 2026-10-15 in the main checkout, `AOF_GLOBAL_HOME` isolated, each suite alone through the shard entry, one
+at a time:
+
+| suite | before | after | cases |
+|---|---|---|---|
+| `site-build` | 109 s | 108 s | 20 → 22 (the two 160/11 cases), all pass |
+| `core-workspace` | 56 s | 45 s | 11/11 pass both |
+| `notify-channels` | 24 s | 14 s | 33/33 pass both |
+| `discord-bot` (undeclared, below) | 10 s | 3 s | 5/5 pass both |
+
+`site-build` does not move, and the reason is measured: timed case by case, copying the runnable tree is 82 s of
+its 108, and the three gate runs are about 8 s each. The copy cannot shrink to what the shard entry loads, because
+the gate's own control (`acd-loop-document-current`) imports the registry in one case and walks `packages/` in
+another, so it still needs the whole tree; the copy is kept, as the plan allows, and the two cases that run the
+gate now share one copy instead of paying for it twice. The refine's 115 s for those spawns was measured under
+four-at-a-time load, where each registry import cost about 19 s. FF-16013's red probe: `core-workspace`'s spawn
+put back on `scripts/test.mjs --only` — it fails naming `test/bundle/core-workspace.test.mjs:258`, and the
+shard-entry outline goes red with it. Reverted. The Pages gate step was read by eye: it runs
+`node scripts/test-shard.mjs test/arch/loop/acd-loop-document-current.test.mjs` under a fresh `AOF_GLOBAL_HOME`,
+and the deploy job still needs it. Result: pass.
+verifies → `stories/11_story_a-test-that-needs-a-suite-run-starts-the-shard-entry/tasks/00_a-suite-run-starts-the-shard-entry.feature` · "The three suites on the control node"
+
 ### F-01 · the drain fix (@bug)
 
 `scripts/test-sharded-pool.mjs`: once a unit has exited, its output gets `drainMs` (10 s) to close, then the pool
@@ -173,6 +306,7 @@ Recalled at triage (`aof work memory recall … --kind finding --block`, four qu
 | F-02 | The whole tree is green but takes 19.2 min on 16 workers, about twice the 10-minute budget, so the gate can only record `not-finished`. | gap (milestone objective) | blocker for the milestone | prior occurrence m144/F-03 (same cause: the tree outruns its budget); the operator chose (2026-10-15) to keep 160 open and add stories for the next levers | 160 — new stories | open |
 | F-03 | 160/03's `@manual` "the warm after medians are lower than before" is falsified: the compile cache is engaged and hit, but the application import is 853 → 893 ms warm and `aof --version` 247 → 246 ms. The cost is resolution and evaluation, not compilation. | measured non-result | non-blocker | the operator chose (2026-10-15) to keep the code and record the miss; the scenario's Then stands falsified here, unedited | the next start-up lever, 160's new stories | open |
 | F-04 | Contract wording that does not match the delivered face, flagged at build and at verify: 02/01's `@manual` names `aof test --story 160/02`, which needs `--scope impacted` and widens to the whole tree here (m72/F-72-AN's class); 01/00's "fails loudly … naming git" against ADR-007's empty map; 03/01's per-verb help that exits 0; 05's E5 "40 units still queued". | contract wording | non-blocker | each case asserts the real behaviour; recorded, not edited | — | open |
+| F-05 | 160/10's review finding, routed at continue as a story for the operator: memory ingest's episodic indexing (`packages/knowledge/src/memory/episodic-indexing.mjs`) still read each milestone's snapshot by ref, listing the stream once per milestone — the cost 160/10 removed from the tune corpus. | defect (160/10) | non-blocker | fixed in the item, not deferred: the ingest's build carries the walk's rows and a snapshot read hands the milestone's row; a distinct incident (recall recorded on 160; m157/F-01 is a census red in the same module, another cause) | 160/10 | fixed — FF-16012's ingest row red at HEAD (3 vs 14 listings), green after; 67 memory-index suites, 541 cases green |
 
 ## Accept decision
 

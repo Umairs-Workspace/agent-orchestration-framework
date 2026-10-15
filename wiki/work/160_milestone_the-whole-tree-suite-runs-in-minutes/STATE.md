@@ -14,6 +14,42 @@ doc: state
   every `@manual` has its evidence (VERIFICATION.md). The whole tree is green at 19.2 min on 16 workers, so the
   10-minute gate records `not-finished` (F-02). F-01 (a killed unit held the pool open) was fixed in 160/05.
   The operator chose to keep 160 open and refine new stories for the next levers (F-02, F-03).
+- 2026-10-15: refined round 2 (`aof:refine 160 --autonomous`, solo). Five ADRs (008–012), five stories
+  (07–11) with contracts. 07's contract waited on its business question, 160/07 Q1. It was asked at
+  the refine close and answered "Yes, bundle in the gate", and the contract was then authored.
+- 2026-10-15: continued round 2 (`aof:continue 160`, solo). Stories 07–11 built, gated and reviewed, each moved
+  to in-review; every `@manual` is measured in VERIFICATION.md. A final sweep of the 25 suites the five stories
+  touched is green. The whole-tree gate under the bundle and the packed plan is still to run (`aof:verify 160`).
+
+## Round 2 refine — notes
+
+- **Measured at refine** (ARCHITECTURE, "Round 2"). The 19.2-min run's timings sum to 17,877 s; the
+  budget needs about 8,600 s. A spawn census of the 49 heaviest suites, each run alone through the
+  shard entry with a `child_process` preload: 799 child `aof` (1,620 s), 10,867 git (1,237 s), 10
+  registry-runner children (194 s). The census preload itself reddened two suites
+  (`loop-cap-exhaustion-carries-the-record` 1, `warm-fix-loop` 5). The first re-ran green without
+  it. The census measures counts, not correctness.
+- **Profiles found two quadratic costs.** `startsRegex` re-scans the whole prefix (110 of 140 s in
+  the census audit). `assembleCorpus` lists the stream per item (24.7 s). Both are 160/10.
+- **The budget may still be missed.** The five levers are estimated at −5,500 to −6,500 s of
+  17,877 s, not counting less contention. If the gate is still over, the next levers are an
+  in-process CLI for tests (child `aof` cost to near zero), and a Defender real-time-scan exclusion
+  for the test temp directories. Defender is on here, and the exclusions are unreadable without
+  admin. That is a machine setting, the operator's call, and not a story.
+- **Default decisions (technical, in the ADRs):** a failed bundle build runs the source and says so
+  (ADR-008 §2); the bundle reaches children through `AOF_TEST_CLI_BUNDLE` (§3). The model refuses a
+  merge in which both sides changed one path, rather than merging lines (ADR-009 §1, ratified while
+  08's contract was authored). Pack threshold 15 s, target 60 s (ADR-010). `startsRegex` has no
+  look-back cap (ADR-011).
+- **Red-probe rows.** `aof work doctor 160` reports `verification-missing-red-probe` for FF-16008 to
+  FF-16013, because VERIFICATION.md's register exists from round 1. Each row is the builder's to
+  write, with the probe it ran, when the control lands. A row written before then would be invented
+  evidence.
+- **The codebase graph was unavailable again.** `aof graph build .` returned `graphify-timeout`
+  after 120 s. Boundaries were drawn from importer greps; no stale artifact was read.
+- **Diagrams:** none. Each round-2 ADR's flow is linear.
+- **Directories are at their ceilings** (`test/arch/testing` 11, `test/arch/command` 27,
+  `test/testing` 8), so every round-2 control extends an existing suite.
 
 ## Notes & decisions in flight
 
@@ -231,9 +267,72 @@ doc: state
   `poolExit`). 160/00 review (solo): no findings beyond the step decision above.
 - **Heredoc backslashes again.** Two splices lost `\\n`/`\\r` in regex and string literals. Fragments
   written with the Write tool and spliced by node survive.
+- **160/07 — the test bundle cannot be the SEA's entry or format.** `sea-entry.mjs` chooses payload or
+  embedded by `process.execPath` (node itself under a test), and a CJS bundle has no `import.meta.url`, so
+  `coreRoot()` would anchor at node's install directory. The shared part is `CLI_BUNDLE_RECIPE` (platform,
+  target, externals); the test bundle is `cli.mjs` as ESM, with each module's `import.meta` rewritten to its
+  own source file's URL by a build plugin, so assets, the manifest and git resolve exactly as from source.
+  Recorded in `scripts/build-sea.mjs`. The plugin's filter is a Go regex: the `u` flag is refused.
+- **160/07 — the declared write set was incomplete:** `test/run/regression-gate.test.mjs` (the gate half of
+  the clean-environment scenario, driven through the gate's own launch) and the runtime audit's new entry for
+  the bin's dynamic import. `test/arch/session/acd-session-verb-boots-no-registry.test.mjs` needed no change:
+  it starts no child (its loading-control row passes vacuously, and would bite if it ever spawned one).
+- **160/07 review (solo), fixed:** the bundle was built at a fixed `.tmp/test-cli-bundle/`, so two sharded
+  runs in one checkout would rewrite each other's bundle under their children. It is built into the run's own
+  stamped directory and removed when the pool drains. A relative `outDir` is resolved absolute, since a
+  unit's children resolve the path from their own working directory.
+- **160/07 — not yet proven over the whole tree.** Every suite that names the bin or the bundle was run with
+  the variable set; the whole-tree run under the bundle is the next gate's evidence.
+- **160/08 — the declared write set was incomplete, and one outline row names the wrong fixture.** The
+  `init`/`config` that `gate-propagation-refusals-leave-branch` and `blocked-run-parking` pay for is in
+  `test/support/mesh-worker-exec-fixture.mjs` (undeclared, changed). `mesh-assign-fixture.mjs` builds no
+  repository at all, so its row of "Each real-git fixture builds from the template" holds only its "no init,
+  no config" half. Flagged, not changed.
+- **160/08 — ADR-009 §1 supersedes a delivered 160/01 row.** 01/00's refusal outline lists
+  `merge --no-ff aof/07-01` as unmodelled; the model now merges a lane home, so the test row became
+  `merge --squash aof/07-01` (08's own refused row). The delivered `.feature` is unedited.
+- **160/08 — run minted and recall taken late again.** The model's merge and the template were written
+  before `run-start 160/08` and its recall, while 07's measurement held the machine. Neither recalled lesson
+  changed the build (verdicts recorded). Same process lesson as 160/04.
+- **160/09 — `runCases` is frozen, so the per-file account is the shard entry's.** FF-5311's REG-MUT-11
+  digests the harness's suite loop and global-home handling. The first build printed `# file` lines from inside
+  `runCases` and reddened it; the shipped build wraps each case's `run` in the shard entry instead, and
+  `runCases` is byte-unchanged. The harness's residue was re-pinned for the new pure planners beside
+  `suiteCaseChunks`, with the reason, as 142/09 and 160/03 did.
+- **160/09 — the declared write set was incomplete:** `test/arch/loop/acd-loop-suite-registration.test.mjs`
+  (that residue re-pin).
+- **160/09 review (solo), fixed:** a file's `# file` seconds started at its first case, so a file whose cost is
+  its import would be recorded short and packed too tightly next time. Its import time is now added to its line.
+- **Round 2's refine wrote two `PLAN.md` files that FF-9603 refuses.** 160/07's and 160/11's plans restated
+  paths their stories declare, which reds `acd-plan-restates-no-declared-path` and `story-plan-document` over
+  the live stream. Found by 160/09's run of every packed unit; both plans reworded. Refine's authoring pass did
+  not run those two controls.
+- **160/10 — contract wording in "A ref that resolves to nothing is still refused by name".** `readLatestSnapshot`
+  never refused: an unresolved ref reads null, before and after. The refusal naming the ref is `observeMilestone`'s
+  (`milestone-not-found`). The case asserts both. Flagged, not changed.
+- **160/10 — the outline's rows cannot tell a misread keyword apart.** A regex read as division survives
+  stripping unless it holds `//`, `/*` or a quote, so removing `yield` from the keyword set leaves every row green;
+  the whole-tree leg is what bites. Recorded with the red probes in VERIFICATION.
+- **160/10 review (solo), recorded (Important):** memory ingest's episodic indexing
+  (`packages/knowledge/src/memory/episodic-indexing.mjs`) still reads each item's snapshot by ref, so it lists the
+  stream once per item exactly as the corpus did. The seam now takes the row; passing it there is the same
+  one-line change. Outside this story's write set; routed as `story (operator)`: "memory ingest lists the stream
+  once".
+- **160/11 — the refine census missed a fourth spawn.** `test/discord/discord-bot.test.mjs` also started
+  `scripts/test.mjs --only` to prove one suite runs. FF-16013's sweep found it; it now starts the shard entry
+  (undeclared write). The allowlist holds one entry: `test-command-contract`'s bounded `runner()` child.
+- **160/11 — ADR-012 §2 supersedes a delivered `site-build/01` assertion** that the gate runs "through … its
+  `--only` selection". The case now asserts the shard entry, still "the project's own test command" (the
+  selection program since ADR-003); no delivered `.feature` spells the `--only` form, so nothing else moves.
+- **160/11 — `site-build` does not get faster alone.** Copying the runnable tree is 82 s of 108; the copy cannot
+  shrink because the gate's control imports the registry and walks `packages/`. The two gate cases now share one
+  copy. Shrinking it means changing `acd-loop-document-current` — a story shape for the operator, recorded.
+
+## Verification
 
 ## Verification
 
 - [x] `@executable` suite green (whole tree, unbudgeted, 2026-10-15)
 - [x] Fitness functions green (FF-16001 – FF-16007, each with its red probe)
 - [ ] Whole-tree gate green under the enforced budget on the control node
+- [ ] Round 2: stories 07–11 built and accepted, FF-16008 – FF-16013 each with its red probe

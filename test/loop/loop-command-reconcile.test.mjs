@@ -201,7 +201,7 @@ export const loopCommandReconcileTests = [
         const verifyRowsBeforeBoundary = state.driven.filter((row) => row.phase === "verify");
         assert.ok(verifyRowsBeforeBoundary.every((row) => report.lines.indexOf(`Driving ${row.ref} — verify, cycle 1 of 3, L2.`) > boundary), "every verify drive comes after the boundary");
         void seenAtDone;
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -434,7 +434,7 @@ export const loopCommandReconcileTests = [
         }
         const wave = (await laneRunsOf(fx, "07")).filter((r) => r.brief?.wave != null).at(-1);
         assert.equal(wave.state, "failed");
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -771,7 +771,7 @@ function reentryTests() {
           assert.ok(!report.lines.some((line) => line.startsWith("Reclaimed 07/01")), "never narrated Reclaimed");
           assert.ok(!report.lines.some((line) => line.includes("lane-open-failed")), "no lane-open-failed");
           assert.ok(report.lines.some((line) => /^Lane 07\/01 — merge: (fast-forwarded|merged)/u.test(line)), "merged home");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
       },
     },
     {
@@ -798,7 +798,7 @@ function reentryTests() {
           assert.equal(states[0], "waiting", "the file read waiting during the wait");
           assert.ok(report.lines.some((line) => line.startsWith("07/01 — waiting on you (build, ")), "the waiting row");
           assert.equal(posts.filter((p) => p.content.includes("waiting on you")).length, 0, "session-needs-input was not sent again");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
       },
     },
     {

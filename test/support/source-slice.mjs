@@ -55,6 +55,10 @@
 // removed with its newline kept, a block comment becomes a single space, every other byte passes
 // through. What changes is only that string, template and regex CONTENT is no longer eaten.
 export function stripComments(source) {
+  return stripWith(source, startsRegex);
+}
+
+function stripWith(source, regexAt) {
   let out = "";
   let index = 0;
   // `${` nesting per open template literal. An entry of 0 means "in that template's TEXT".
@@ -102,7 +106,7 @@ export function stripComments(source) {
       templates[templates.length - 1] -= 1;
       if (templates.at(-1) === 0) { out += char; index += 1; continue; }
     }
-    if (char === "/" && startsRegex(out)) {
+    if (char === "/" && regexAt(out, out.length)) {
       out += char;
       index += 1;
       let inClass = false;
@@ -133,7 +137,11 @@ export function stripComments(source) {
 // module's scanner as the start of a literal and concluded the one home had become block-first.
 // A pattern cannot make that distinction; a scan can, and there is already one here.
 export function blankStringLiterals(source) {
-  const stripped = stripComments(source);
+  return blankWith(source, startsRegex);
+}
+
+function blankWith(source, regexAt) {
+  const stripped = stripWith(source, regexAt);
   let out = "";
   let index = 0;
   // NO `u` FLAG, on purpose: under it an astral character (an emoji, a CJK ideograph outside the
@@ -155,7 +163,7 @@ export function blankStringLiterals(source) {
       out += char + blank(stripped.slice(start + 1, index - 1)) + (stripped[index - 1] ?? "");
       continue;
     }
-    if (char === "/" && startsRegex(out)) {
+    if (char === "/" && regexAt(out, out.length)) {
       const start = index;
       index += 1;
       let inClass = false;
@@ -184,14 +192,37 @@ export function blankStringLiterals(source) {
 // one of the keywords below it opens a literal. Erring toward DIVISION is harmless — the slash is
 // copied through either way — while erring toward regex would swallow source, so the keyword set is
 // closed and division is the default.
+//
+// LINEAR, BY LOOKING BACK (160/ADR-011 §1). The scanners call this at every `/` with everything they have
+// written so far, so it must never copy or pattern-match that prefix: a trim anchored at its end was a
+// whole-prefix scan per slash, and spent 110 s of one control's 140. It walks back from `end` over
+// whitespace to the last significant character and, when that ends an identifier, over the whole
+// identifier — never a fixed window, since a long identifier ending in a keyword would be misread.
+// The keyword is the identifier's tail from its first identifier-start character, exactly as the
+// anchored pattern `([A-Za-z_$][\w$]*)$` read it before.
 const REGEX_PRECEDERS = new Set(["(", ",", "=", ":", "[", "!", "&", "|", "?", "{", "}", ";", "+", "-", "*", "%", "^", "~", "<", ">"]);
 const REGEX_KEYWORDS = new Set(["return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "do", "else", "case", "yield", "await"]);
-function startsRegex(before) {
-  const trimmed = before.replace(/\s+$/u, "");
-  if (trimmed === "") return true;
-  if (REGEX_PRECEDERS.has(trimmed.at(-1))) return true;
-  const word = /([A-Za-z_$][\w$]*)$/u.exec(trimmed);
-  return word != null && REGEX_KEYWORDS.has(word[1]);
+const WHITESPACE = /\s/u;
+const WORD_CHAR = /[\w$]/u;
+const WORD_START = /[A-Za-z_$]/u;
+function startsRegex(text, end) {
+  let last = end;
+  while (last > 0 && WHITESPACE.test(text[last - 1])) last -= 1;
+  if (last === 0) return true;
+  if (REGEX_PRECEDERS.has(text[last - 1])) return true;
+  let first = last;
+  while (first > 0 && WORD_CHAR.test(text[first - 1])) first -= 1;
+  while (first < last && !WORD_START.test(text[first])) first += 1;
+  return first < last && REGEX_KEYWORDS.has(text.slice(first, last));
+}
+
+// The two scanners over another regex test `(text, end) => boolean` — FF-16011's seam, so its control can
+// run the scanner it replaced, as the oracle, over the same text.
+export function scannersWith(regexAt) {
+  return Object.freeze({
+    stripComments: (source) => stripWith(source, regexAt),
+    blankStringLiterals: (source) => blankWith(source, regexAt),
+  });
 }
 
 // The `{ … }` block that opens at or after `from`, delimited by MATCHING BRACES rather than by

@@ -25,10 +25,18 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 const srcCli = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 const binCli = path.join(repoRoot, "packages", "core", "bin", "aof.mjs");
 
+// This control's subject is how the bin loads the SOURCE (160/ADR-008 §4), so every child it starts runs
+// without the sharded run's AOF_TEST_CLI_BUNDLE.
+export function sourceEnv(extra = {}) {
+  const env = { ...process.env, NODE_NO_WARNINGS: "1", ...extra };
+  for (const name of Object.keys(env)) if (name.toUpperCase() === "AOF_TEST_CLI_BUNDLE") delete env[name];
+  return env;
+}
+
 function runNode(args) {
   const result = spawnCliSync(process.execPath, ["--no-warnings", ...args], {
     cwd: repoRoot,
-    env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    env: sourceEnv(),
     encoding: "utf8",
   });
   return { status: result.status, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
@@ -101,7 +109,7 @@ export const archTests = [
       try {
         const suite = path.join(dir, "cache-probe.test.mjs");
         await writeFile(suite, CACHE_PROBE_SUITE, "utf8");
-        const env = { ...process.env, NODE_NO_WARNINGS: "1" };
+        const env = sourceEnv();
         delete env.NODE_DISABLE_COMPILE_CACHE;
         const result = spawnCliSync(process.execPath, [path.join(repoRoot, "scripts", "test-shard.mjs"), suite], { cwd: repoRoot, env, encoding: "utf8" });
         assert.equal(result.status, 0, `the suite saw a compile cache directory when it was loaded\n${result.stdout}\n${result.stderr}`);
@@ -196,7 +204,7 @@ export const cacheProbeTests = [{ name: "cache-probe", run() { if (typeof dir !=
 `;
 
 // The distinct `file:` modules a child `aof <argv>` loads, run through the bin from the repository root.
-async function modulesEvaluated(argv) {
+export async function modulesEvaluated(argv) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-160-03-"));
   try {
     const hook = path.join(dir, "record.mjs");
@@ -204,7 +212,7 @@ async function modulesEvaluated(argv) {
     await writeFile(hook, RECORDING_HOOK, "utf8");
     const result = spawnCliSync(process.execPath, ["--no-warnings", "--import", pathToFileURL(hook).href, binCli, ...argv], {
       cwd: repoRoot,
-      env: { ...process.env, NODE_NO_WARNINGS: "1", FF16004_MODULE_SINK: sink },
+      env: sourceEnv({ FF16004_MODULE_SINK: sink }),
       encoding: "utf8",
     });
     assert.equal(result.status, 0, `aof ${argv.join(" ")} exited 0\n${result.stderr}`);

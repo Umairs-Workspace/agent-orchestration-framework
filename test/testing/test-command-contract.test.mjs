@@ -794,6 +794,69 @@ process.stdout.write(JSON.stringify({ assembled: Array.isArray(module.tests), co
       }
     },
   },
+  // ── 160/09 · the shard entry runs a packed unit (ADR-010 §2-§3) ──────────────────────────────
+  {
+    name: "160/09 The shard entry runs a packed unit's files with their positions",
+    async run() {
+      const dir = await scratch();
+      try {
+        const a = path.join(dir, "a.test.mjs");
+        const b = path.join(dir, "b.test.mjs");
+        await writeFile(a, casesSuiteSource("a", 3), "utf8");
+        await writeFile(b, casesSuiteSource("b", 4), "utf8");
+        const result = await shard(["--file", a, "0,2", "--file", b, "0,1,2,3"], { home: path.join(dir, "home") });
+        assert.deepEqual(okRows(result.stdout), ["a 0", "a 2", "b 0", "b 1", "b 2", "b 3"], `6 cases ran — ${result.stderr}`);
+        assert.deepEqual(executedLines(result.stdout), ["# executed 6 cases; failures 0"], "…under one executed line");
+        assert.equal(result.exitCode, 0);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "160/09 The shard entry's existing forms still work",
+    async run() {
+      const dir = await scratch();
+      try {
+        const c = path.join(dir, "c.test.mjs");
+        const d = path.join(dir, "d.test.mjs");
+        await writeFile(c, casesSuiteSource("c", 4), "utf8");
+        await writeFile(d, casesSuiteSource("d", 2), "utf8");
+        const byPosition = await shard([c, "1,3"], { home: path.join(dir, "home") });
+        assert.deepEqual(okRows(byPosition.stdout), ["c 1", "c 3"], `the cases at positions 1 and 3 ran — ${byPosition.stderr}`);
+        const selection = await shard([c, d], { home: path.join(dir, "home") });
+        assert.deepEqual(okRows(selection.stdout), ["c 0", "c 1", "c 2", "c 3", "d 0", "d 1"], `the selection ran every case of both files — ${selection.stderr}`);
+        assert.equal(byPosition.exitCode + selection.exitCode, 0);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "160/09 The shard entry reports each file it ran",
+    async run() {
+      const dir = await scratch();
+      try {
+        const a = path.join(dir, "a.test.mjs");
+        const b = path.join(dir, "b.test.mjs");
+        await writeFile(a, casesSuiteSource("a", 2), "utf8");
+        await writeFile(b, casesSuiteSource("b", 3), "utf8");
+        for (const args of [["--file", a, "0,1", "--file", b, "0,2"], [a, b]]) {
+          const result = await shard(args, { home: path.join(dir, "home") });
+          const lines = String(result.stdout).split(/\r?\n/u).filter((line) => line.startsWith("# file "));
+          const expected = args[0] === "--file" ? [[a, 2], [b, 2]] : [[a, 2], [b, 3]];
+          assert.equal(lines.length, 2, `one # file line for each file — ${result.stdout}`);
+          for (const [index, [file, executed]] of expected.entries()) {
+            const match = /^# file (.+) (\d+(?:\.\d+)?) (\d+)$/u.exec(lines[index]);
+            assert.ok(match, `"${lines[index]}" reads # file <path> <seconds> <executed>`);
+            assert.deepEqual([match[1], Number(match[3])], [file, executed], `${path.basename(file)}: its path and the cases it executed`);
+          }
+        }
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
+    },
+  },
   {
     name: "FF-16003 160/02 task01: a declared selection launches selectProgramArgs, and a focused run evaluates nothing it was not named — no test index, no other suite, no registry",
     async run() {

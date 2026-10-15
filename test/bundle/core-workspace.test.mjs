@@ -254,7 +254,8 @@ export const coreWorkspaceTests = [
       for (const failed of [false, true]) {
         const file = path.join(fixture, 'selected.mjs');
         writeFileSync(file, `export const tests = [{ name: "selected-harness-sentinel", run() { if (!process.env.AOF_GLOBAL_HOME?.includes(".aof-test")) throw Error("global home not isolated"); ${failed ? 'throw Error("planted-selected-failure");' : ''} } }];`);
-        const result = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/test.mjs'), '--only', file], { cwd: repoRoot, encoding: 'utf8', timeout: 30_000, windowsHide: true });
+        // The shard entry runs the shared harness without loading the registry (160/ADR-012).
+        const result = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/test-shard.mjs'), file], { cwd: repoRoot, encoding: 'utf8', timeout: 30_000, windowsHide: true });
         assert.equal(result.status, failed ? 1 : 0, result.error?.message ?? result.stdout + result.stderr);
         assert.match(result.stdout + result.stderr, /selected-harness-sentinel/u);
         assert.ok(result.stdout.includes(`# executed 1 cases; failures ${failed ? 1 : 0}`), 'the selected case executed, including the failure count');

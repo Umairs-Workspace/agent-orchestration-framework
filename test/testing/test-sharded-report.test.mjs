@@ -28,7 +28,8 @@ import {
   shardedReport,
   slowestFiles,
 } from "../../scripts/test-sharded-report.mjs";
-import { poolExit, runPool, stdinIsPipe } from "../../scripts/test-sharded-pool.mjs";
+import { poolExit, runPool, stdinIsPipe, unitResult as unitResultOf } from "../../scripts/test-sharded-pool.mjs";
+import { fileEstimate, packUnits, planCoverageProblem, planSummary } from "../../scripts/test-harness.mjs";
 import { gateResult } from "@aof/work/regression-record";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -329,4 +330,178 @@ export const testShardedReportTests = [
       }
     },
   },
+
+  // ── 160/09 · short files pack into one unit (ADR-010) ───────────────────────────────────────────
+  {
+    name: "160/09 [outline] A file packs or stands alone by its recorded time (5 rows)",
+    run: () => {
+      const options = { packSeconds: 15, targetSeconds: 60 };
+      // Two short neighbours, so a file that packs has other short files to pack with.
+      const neighbours = [fileUnit("n1", 5), fileUnit("n2", 5)];
+      for (const [seconds, chunking, placement] of [
+        [3, "does not declare independent cases", "packed"],
+        [14.9, "does not declare independent cases", "packed"],
+        [15, "does not declare independent cases", "own"],
+        [120, "declares independent cases", "chunks"],
+      ]) {
+        const subject = chunking.startsWith("declares")
+          ? [fileUnit("subject", 60, { positions: [0, 1, 2], chunked: true }), fileUnit("subject", 60, { positions: [3, 4, 5], chunked: true })]
+          : [fileUnit("subject", seconds)];
+        const plan = packUnits([...subject, ...neighbours], options);
+        const holders = plan.filter((unit) => (unit.files ?? [unit]).some((entry) => entry.key === "test/subject.test.mjs"));
+        if (placement === "packed") assert.ok(holders.length === 1 && holders[0].files?.length > 1, `${seconds} s: packed with other short files`);
+        if (placement === "own") assert.ok(holders.length === 1 && holders[0].files == null, `${seconds} s: its own unit`);
+        if (placement === "chunks") assert.ok(holders.length === 2 && holders.every((unit) => unit.files == null && unit.chunked), `${seconds} s: split into case chunks, none of them packed`);
+      }
+      // No recorded time: half a second a case, and packed only when that is under 15 seconds.
+      assert.equal(fileEstimate({}, "test/subject.test.mjs", 10), 5);
+      assert.equal(fileEstimate({ "test/subject.test.mjs": { seconds: 2 } }, "test/subject.test.mjs", 10), 2, "a recorded time wins");
+      for (const [cases, packed] of [[10, true], [40, false]]) {
+        const plan = packUnits([fileUnit("subject", fileEstimate({}, "test/subject.test.mjs", cases)), ...neighbours], options);
+        const holder = plan.find((unit) => (unit.files ?? [unit]).some((entry) => entry.key === "test/subject.test.mjs"));
+        assert.equal(holder.files != null, packed, `${cases} cases with no recorded time: ${packed ? "packed" : "its own unit"}`);
+      }
+    },
+  },
+  {
+    name: "160/09 A packed unit fills to its target and never splits a file",
+    run: () => {
+      const files = Array.from({ length: 40 }, (_, index) => fileUnit(`f${String(index).padStart(2, "0")}`, 4));
+      const plan = packUnits(files, { packSeconds: 15, targetSeconds: 60 });
+      const seen = [];
+      for (const unit of plan) {
+        assert.ok(unit.files != null, "every short file packed");
+        assert.ok(unit.estimate <= 60, `${unit.key} is estimated at ${unit.estimate} s, no more than 60`);
+        for (const entry of unit.files) {
+          assert.deepEqual(entry.positions, [0, 1, 2], `${entry.key} keeps every position of its file`);
+          seen.push(entry.key);
+        }
+      }
+      assert.equal(new Set(seen).size, 40, "every file is in a unit");
+      assert.equal(seen.length, 40, "and no file appears in two");
+      assert.equal(plan.length, 3, "forty 4-second files fill three units: 15, 15 and 10 files");
+    },
+  },
+  {
+    name: "160/09 Every registered case runs exactly once across packed units",
+    run: async () => {
+      const assigned = new Map([["/r/a.test.mjs", [0, 1]], ["/r/b.test.mjs", [0]], ["/r/long.test.mjs", [0, 1, 2]], ["/r/chunky.test.mjs", [0, 1, 2, 3]]]);
+      const filePlan = [
+        { key: "a", file: "/r/a.test.mjs", positions: [0, 1], estimate: 2 },
+        { key: "b", file: "/r/b.test.mjs", positions: [0], estimate: 1 },
+        { key: "long", file: "/r/long.test.mjs", positions: [0, 1, 2], estimate: 90 },
+        { key: "chunky", file: "/r/chunky.test.mjs", positions: [0, 1], chunked: true, estimate: 5 },
+        { key: "chunky", file: "/r/chunky.test.mjs", positions: [2, 3], chunked: true, estimate: 5 },
+        { key: "lanes (cargo)", lanes: true, positions: [], estimate: 30 },
+      ];
+      const plan = packUnits(filePlan);
+      assert.ok(plan.some((unit) => unit.files?.length === 2), "the two short files packed");
+      assert.equal(planCoverageProblem(plan, assigned), null, "every registered case is assigned exactly once");
+      const packed = plan.find((unit) => unit.files != null);
+      const lost = plan.map((unit) => (unit === packed ? { ...unit, files: [unit.files[0], { ...unit.files[1], positions: [] }] } : unit));
+      assert.match(planCoverageProblem(lost, assigned) ?? "", /^not ok - .* 1 lost, 0 run twice/u, "a plan that lost a case is refused");
+      const doubled = [...plan, { key: "a", file: "/r/a.test.mjs", positions: [1], estimate: 1 }];
+      assert.match(planCoverageProblem(doubled, assigned) ?? "", /0 lost, 1 run twice/u, "a plan that doubled a case is refused");
+      const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
+      const refusal = runner.indexOf("const coverage = planCoverageProblem(plan, units);");
+      assert.ok(refusal > 0 && refusal < runner.indexOf("await runPool("), "the runner refuses such a plan before any unit starts");
+      assert.match(runner.slice(refusal, refusal + 200), /process\.exit\(1\)/u, "…and exits non-zero");
+    },
+  },
+  {
+    name: "160/09 The plan shows how many processes the run will start",
+    run: async () => {
+      const plan = packUnits([...Array.from({ length: 5 }, (_, index) => fileUnit(`s${index}`, 4)), fileUnit("long", 90)]);
+      assert.equal(planSummary(plan), "# plan: 2 units; 1 packed, holding 5 files");
+      const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
+      assert.ok(runner.indexOf("console.log(planSummary(plan));") > runner.indexOf('if (argv.includes("--plan"))'), "--plan prints that line first");
+    },
+  },
+  // ── 160/09 · a packed unit accounts per file ───────────────────────────────────────────────────
+  {
+    name: "160/09 Timings stay per file",
+    run: () => {
+      const unit = packedUnit(["one", "two", "three"]);
+      const output = fileLinesFor(unit, [[2, 1], [3, 1], [4, 1]]);
+      const perFile = fileTimings([{ unit, ok: true, code: 0, seconds: 10, executed: 3, failed: [], output }]);
+      assert.deepEqual(perFile, {
+        "test/one.test.mjs": { seconds: 2, cases: 1 },
+        "test/two.test.mjs": { seconds: 3, cases: 1 },
+        "test/three.test.mjs": { seconds: 4, cases: 1 },
+      }, "one entry for each file, with its own seconds, and none naming the packed unit");
+    },
+  },
+  {
+    name: "160/09 A lost case is named by its file",
+    run: () => {
+      const unit = packedUnit(["first", "second"], [[0, 1, 2], [0, 1]]);
+      const result = unitResultOf(unit, { code: 0, output: `${fileLinesFor(unit, [[1, 3], [1, 1]])}# executed 4 cases; failures 0\n`, seconds: 2 });
+      assert.equal(result.ok, false);
+      assert.deepEqual(result.failed, [lostUnitFailure("test/second.test.mjs", 1, 2)], "the second file is named as having lost a case, and the first is not");
+    },
+  },
+  {
+    name: "160/09 A failure in a packed unit names its case and is retried with its unit",
+    run: async () => {
+      const unit = packedUnit(["a", "b", "c"]);
+      const runs = [];
+      const pool = await runPool([unit], {
+        jobs: 1,
+        unitTimeoutMs: 60_000,
+        spawnUnit: (spawned) => {
+          runs.push(spawned);
+          const red = runs.length === 1;
+          return { child: scriptedChild(`${fileLinesFor(spawned, [[1, 1], [1, 1], [1, 1]])}${red ? "not ok - b's case\n" : ""}# executed 3 cases; failures ${red ? 1 : 0}\n`, red ? 1 : 0) };
+        },
+      });
+      assert.equal(runs.length, 2, "the failed unit is retried once");
+      assert.equal(runs[1], unit, "…as the same packed unit");
+      assert.deepEqual(pool.results[0].failed, ["b's case"], "the report names the failing case by its name");
+      assert.deepEqual(notIsolatedLines(pool.flakes), ["# not isolated - b's case"], "a case green when the unit runs alone is not isolated, not a failure");
+      assert.equal(pool.failures.length, 0);
+    },
+  },
+  {
+    name: "160/09 A packed unit stopped at the budget names every file it held",
+    run: async () => {
+      const unit = packedUnit(["a", "b", "c"]);
+      const pool = await runPool([unit], { jobs: 1, unitTimeoutMs: 60_000, budgetMs: 50, spawnUnit: () => ({ child: fakeUnitChild() }) });
+      assert.equal(pool.stoppedBy, "budget");
+      const lines = report({ executed: 0, notFinished: pool.notFinished, notStarted: pool.notStarted });
+      for (const key of ["test/a.test.mjs", "test/b.test.mjs", "test/c.test.mjs"]) assert.ok(lines.includes(`# not finished - ${key}`), `# not finished - ${key}`);
+      assert.equal(lines.includes(`# not finished - ${unit.key}`), false, "the packed unit is named by its files, not as a batch");
+      const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
+      assert.match(runner, /for \(const target of pool\.stopped \? \[\] :/u, "and a stopped run writes no timings");
+    },
+  },
 ];
+
+// ── 160/09's helpers ─────────────────────────────────────────────────────────────────────────────
+
+// One whole-file plan entry, as the runner plans it.
+function fileUnit(name, estimate, { positions = [0, 1, 2], chunked = false } = {}) {
+  return { key: `test/${name}.test.mjs`, file: `/repo/test/${name}.test.mjs`, positions, chunked, estimate };
+}
+
+// A packed unit over `names`, each file with its positions.
+function packedUnit(names, positions = names.map(() => [0])) {
+  const files = names.map((name, index) => ({ file: `/repo/test/${name}.test.mjs`, key: `test/${name}.test.mjs`, positions: positions[index] }));
+  return { key: `packed ${names.length} files from ${files[0].key}`, packed: true, files, positions: files.flatMap((entry) => entry.positions), estimate: 10 };
+}
+
+// The `# file` lines a packed unit prints, one per file: `[seconds, executed]` each.
+const fileLinesFor = (unit, rows) => unit.files.map((entry, index) => `# file ${entry.file} ${rows[index][0]} ${rows[index][1]}\n`).join("");
+
+// A unit child that prints `output` and exits with `code`.
+function scriptedChild(output, code) {
+  const child = new EventEmitter();
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.kill = () => {};
+  setImmediate(() => {
+    child.stdout.emit("data", output);
+    child.emit("exit", code);
+    child.emit("close", code);
+  });
+  return child;
+}

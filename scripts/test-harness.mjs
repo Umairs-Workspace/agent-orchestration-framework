@@ -98,3 +98,66 @@ export function suiteCaseChunks(positions, { independentCases = false, seconds =
   return chunks;
 }
 
+// A file's estimate for the schedule: its recorded seconds, or half a second a case when it has none.
+export function fileEstimate(timings, key, caseCount) {
+  return timings?.[key]?.seconds ?? caseCount * 0.5;
+}
+
+// SHORT FILES SHARE A UNIT (160/ADR-010 §1). Every unit is a process that pays node, the harness and the
+// application import before its first case. A plan entry for one whole file whose estimate is under
+// `packSeconds` is packed, largest first, into a unit of other such files whose estimates sum to at most
+// `targetSeconds`; a file is never split, and a chunk of a file, a lane, and a file at or over the threshold
+// keep their own units. A packed unit is `{ key, packed: true, files: [{ file, key, positions }], positions,
+// estimate }`, its `positions` every position it holds; a bin that ends with one file stays that file's unit.
+export function packUnits(plan, { packSeconds = 15, targetSeconds = 60 } = {}) {
+  if (!Number.isFinite(packSeconds) || packSeconds <= 0 || !Number.isFinite(targetSeconds) || targetSeconds <= 0) {
+    throw new TypeError("packUnits: the pack threshold and target must be positive");
+  }
+  const packable = (entry) => entry.lanes !== true && entry.chunked !== true && entry.file != null && entry.estimate < packSeconds;
+  const bins = [];
+  for (const entry of plan.filter(packable).sort((a, b) => b.estimate - a.estimate || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0))) {
+    const bin = bins.find((candidate) => candidate.estimate + entry.estimate <= targetSeconds);
+    if (bin == null) bins.push({ entries: [entry], estimate: entry.estimate });
+    else { bin.entries.push(entry); bin.estimate += entry.estimate; }
+  }
+  const packed = bins.map((bin) => (bin.entries.length === 1 ? bin.entries[0] : {
+    key: `packed ${bin.entries.length} files from ${bin.entries[0].key}`,
+    packed: true,
+    files: bin.entries.map((entry) => ({ file: entry.file, key: entry.key, positions: entry.positions })),
+    positions: bin.entries.flatMap((entry) => entry.positions),
+    estimate: bin.estimate,
+  }));
+  return [...plan.filter((entry) => !packable(entry)), ...packed];
+}
+
+// The shard entry's argv for one file unit, `<file> <positions>`, or for a packed unit, `--file <file> <positions>`
+// per file (160/ADR-010 §2).
+export function shardArgs(unit) {
+  if (unit.files != null) return unit.files.flatMap((entry) => ["--file", entry.file, entry.positions.join(",")]);
+  return [unit.file, unit.positions.join(",")];
+}
+
+// The plan's first line: how many processes the run will start, how many of them are packed, and how many files
+// those hold.
+export function planSummary(plan) {
+  const packed = plan.filter((unit) => unit.files != null);
+  return `# plan: ${plan.length} units; ${packed.length} packed, holding ${packed.reduce((sum, unit) => sum + unit.files.length, 0)} files`;
+}
+
+// Every (file, position) a plan runs, against the registry's assignment (`Map<file, positions[]>`): the cases a
+// plan would lose or run twice, as one refusal line, or null when the plan runs each exactly once.
+export function planCoverageProblem(plan, assigned) {
+  const runs = new Map();
+  for (const entry of plan) {
+    if (entry.lanes === true) continue;
+    for (const { file, positions } of entry.files ?? [{ file: entry.file, positions: entry.positions }]) {
+      for (const position of positions) runs.set(`${file}\0${position}`, (runs.get(`${file}\0${position}`) ?? 0) + 1);
+    }
+  }
+  let lost = 0;
+  for (const [file, positions] of assigned) for (const position of positions) if (!runs.has(`${file}\0${position}`)) lost += 1;
+  const doubled = [...runs.values()].filter((count) => count > 1).length;
+  const stray = [...runs.keys()].filter((key) => { const [file, position] = key.split("\0"); return !(assigned.get(file) ?? []).includes(Number(position)); }).length;
+  return lost || doubled || stray ? `not ok - the sharded plan does not run every registered case once: ${lost} lost, ${doubled} run twice, ${stray} not registered` : null;
+}
+

@@ -66,10 +66,21 @@ Out of scope:
 - [x] [05 · The runner enforces the budget, and a timeout is not-finished](stories/05_story_the-runner-enforces-the-budget-and-a-timeout-is-not-finished/STORY.md) (ADR-006; after 02, 04)
 - [x] [06 · Citation history is read only when a citation misses](stories/06_story_citation-history-is-read-only-when-a-citation-misses/STORY.md) (ADR-007)
 
+- [x] [07 · A test's child aof runs from one bundle](stories/07_story_a-tests-child-aof-runs-from-one-bundle/STORY.md) (ADR-008)
+- [x] [08 · Tests spend git only on what they assert](stories/08_story_tests-spend-git-only-on-what-they-assert/STORY.md) (ADR-009)
+- [x] [09 · Small suite files share a unit](stories/09_story_small-suite-files-share-a-unit/STORY.md) (ADR-010; after 07)
+- [x] [10 · The audits over this repository do their reading once](stories/10_story_the-audits-over-this-repository-read-once/STORY.md) (ADR-011)
+- [x] [11 · A test that needs a suite run starts the shard entry](stories/11_story_a-test-that-needs-a-suite-run-starts-the-shard-entry/STORY.md) (ADR-012)
+
 Waves, from the declared write sets: **00, 02, 03, 04 and 06** run first, all independent, then
 **01 and 05**. Story 06 is not in the scope list above. Refine's profile found it: doctor's
 history reads were 422 × 3 git spawns in one loop suite, and it serves the first scope bullet
 ("fewer git spawns per lane cycle").
+
+**Round 2 (2026-10-15, F-02).** Verify measured the tree green at 19.2 min, so 160 stayed open for
+the next levers. Each of stories 07–11 cuts one measured cost (ARCHITECTURE, "Round 2"). **07, 08,
+10 and 11** run first, all independent. **09** follows 07, because both change the sharded
+runner. A cheaper child start (07) is F-03's route.
 
 ## Dependencies
 

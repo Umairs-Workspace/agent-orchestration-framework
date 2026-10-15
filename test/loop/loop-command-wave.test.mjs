@@ -451,7 +451,7 @@ export const loopCommandWaveTests = [
           assert.equal(home.state, "done");
         }
         assert.notEqual(await headSha(fx.root), base, "the primary moved by the merges");
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -481,7 +481,7 @@ export const loopCommandWaveTests = [
         assert.equal(inspected.primary, "not-started", "the primary's STORY.md still says not-started");
         assert.equal(inspected.lane, "in-review", "the lane's says in-review (the child moved it after the mint's in-progress)");
         assert.equal(inspected.porcelain.includes("stories/"), false, "git status in the primary names nothing under the stories");
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -501,7 +501,7 @@ export const loopCommandWaveTests = [
           assert.equal(call.deadlineMs, 1000 + 100, "startToCloseMs + startupGraceMs from the fixture config");
           assert.equal(call.env.AOF_GLOBAL_HOME, process.env.AOF_GLOBAL_HOME, "the child inherits the isolated home");
         }
-      }, { config: { loop: { startToCloseMs: 1000, startupGraceMs: 100 } } });
+      }, { git: "fake", config: { loop: { startToCloseMs: 1000, startupGraceMs: 100 } } });
     },
   },
   {
@@ -522,7 +522,7 @@ export const loopCommandWaveTests = [
           for (const ref of ["07/01", "07/03"]) {
             for (const run of await laneRunsOf(fx, ref)) assert.equal(run.brief.loop.thinking, expected, `${ref}: the lane's declaration carries it`);
           }
-        });
+        }, { git: "fake" });
       }
     },
   },
@@ -551,7 +551,7 @@ export const loopCommandWaveTests = [
           assert.ok(laneRoots.has(path.resolve(sample.worktreePath)), "the sampler received the lane");
           assert.ok(/^[0-9a-f]{40}$/u.test(sample.baseCommit), "…and the lane's base");
         }
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -1086,7 +1086,7 @@ export const loopCommandWaveTests = [
         const b01 = (await laneRunsOf(fx, "07/01")).find((r) => r.brief?.lane).brief.gradeBaseline;
         const b03 = (await laneRunsOf(fx, "07/03")).find((r) => r.brief?.lane).brief.gradeBaseline;
         assert.equal(b01.baseCommit, b03?.baseCommit ?? b01.baseCommit, "both graded against the same base");
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -1155,7 +1155,7 @@ export const loopCommandWaveTests = [
         const verifyGrades = registry.calls.filter((c) => c.id === "work:grade").slice(-3);
         assert.ok(verifyGrades.every((c) => c.input.run !== true), "VERIFY reads the recorded grade and never re-grades");
         assert.ok(report.lines.some((line) => /Gate work:grade 07\/01 — pass \(recorded delta 0 on run /u.test(line)), "…from the last progress sample of its merged lane run");
-      }, { stories: [{ number: "01", files: ["src/a.mjs"] }, { number: "02", files: ["src/a.mjs"] }, { number: "03", files: ["src/c.mjs"] }] });
+      }, { git: "fake", stories: [{ number: "01", files: ["src/a.mjs"] }, { number: "02", files: ["src/a.mjs"] }, { number: "03", files: ["src/c.mjs"] }] });
       // a resumed loop reads it back by sha — a live, unmerged lane holds it and nothing in the primary does
       await withLaneRepo(async (fx) => {
         const rubric = stubRubric((at) => (at === 0 ? emits(failingTap([["base-red-1", "r"]], ["alpha"]), 1) : emits(passingTap(["alpha"]))));
@@ -1176,7 +1176,7 @@ export const loopCommandWaveTests = [
         assert.equal(report.lines.some((line) => line.startsWith("Baseline work:grade")), false);
         const redrive = (await laneRunsOf(fx, "07/01")).filter((r) => r.brief?.lane).at(-1);
         assert.deepEqual(redrive.brief.gradeBaseline, held, "the re-drive's baseline deep-equals the one the lane held");
-      }, { stories: ["01"], config: { loop: { heartbeatMs: 60000 } } });
+      }, { git: "fake", stories: ["01"], config: { loop: { heartbeatMs: 60000 } } });
     },
   },
   {
@@ -1292,7 +1292,7 @@ export const loopCommandWaveTests = [
             assert.equal(line.stale, false, "never stale at any sampled instant");
           }
           assert.equal(timers.armed.size, 0, "cleared when the last lane closed");
-        }, { stories: row.lanes === 1 ? ["01"] : ["01", "03"], config: { loop: { heartbeatMs: 900000 } } });
+        }, { git: "fake", stories: row.lanes === 1 ? ["01"] : ["01", "03"], config: { loop: { heartbeatMs: 900000 } } });
       }
     },
   },
@@ -1433,7 +1433,7 @@ export const loopCommandWaveTests = [
         assert.equal(listed.rows[0].scope, "07");
         const unsupervised = decideSupervisedDeclarations({ workspaces: [{ workspaceId: "w", projectRoot: fx.root, items: [{ ref: "07", runs: [{ ...dead, heartbeatAt: at(-60_000), brief: { ...dead.brief, loop: { ...dead.brief.loop, supervised: false } } }] }] }], maxAttempts: 3, ceilingMs: 43200000, stalenessMs: 900000, now: at(0), isRunning, isStale, retryReadiness });
         assert.equal(unsupervised.rows.length, 0, "an unsupervised loop's wave run lists nothing");
-      });
+      }, { git: "fake" });
     },
   },
 
@@ -1492,7 +1492,7 @@ export const loopCommandWaveTests = [
           assert.deepEqual(spawned.slice(0, row.admitted.length).sort(), [...row.admitted].sort(), `${label}: the admitted are spawned before any settles`);
           for (const ref of row.refused) assert.ok(report.lines.includes(`${ref} — at capacity (${row.bound}/${row.bound}), waiting for a lane to close.`), `${label}: ${ref} refused and narrated`);
           assert.deepEqual([...new Set(spawned)].sort(), row.stories.map((n) => `27/${n}`).sort(), `${label}: the refused were re-asked and admitted after a merge`);
-        }, { stories: row.stories.map((n) => ({ number: n, files: [`src/f${n}.mjs`] })), milestone: "27", config: { dispatch: { concurrency: row.bound } } });
+        }, { git: "fake", stories: row.stories.map((n) => ({ number: n, files: [`src/f${n}.mjs`] })), milestone: "27", config: { dispatch: { concurrency: row.bound } } });
       }
     },
   },
@@ -1724,7 +1724,7 @@ function repairGradeTests() {
         assert.equal(repairs.length, 0, "no repair drive is spawned");
         assert.equal(posts.length, 1, "the account and the notification are as before");
         assert.equal(report.lines.some((line) => /Repair/u.test(line)), false);
-      }, { stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
+      }, { git: "fake", stories: ["01"], commit: { "src/x.mjs": "// base\n" } }),
     },
   ];
 }
@@ -1778,7 +1778,7 @@ function waitingLaneTests() {
           assert.equal(spawns[1].fixFile, undefined, "and no fix file");
           assert.equal(await readAsk(loopAsksDir(), spawns[0].runId), null, "the ask file is gone");
           assert.ok(!existsSync(meshDispatchWorktreePath(fx.root, "07/01")), "07/01 merged and was cleaned up");
-        });
+        }, { git: "fake" });
       },
     },
     {

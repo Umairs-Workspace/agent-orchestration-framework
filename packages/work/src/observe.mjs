@@ -1753,10 +1753,13 @@ async function dirExists(p) {
 // lexicographic order, determinable without reading content). Returns null when no
 // snapshot exists. The legacy root-level pre-68 files are NOT candidates — the newest
 // snapshot is always one written by the append-only writer.
-async function readLatestSnapshot({ cwd, ref }) {
-  const resolved = await resolveMilestoneFolder({ cwd, ref });
-  if (!resolved) return null;
-  const obsDir = path.join(cwd, "wiki", "work", resolved.folder, "observability");
+// The newest snapshot of one item, read by its `ref` or by its `item` — a row of the stream listing the caller
+// already holds (160/ADR-011 §2). Resolving a ref lists the whole stream, so a caller walking every item hands
+// the row and the stream is listed once per walk, not once per item. A ref that resolves to nothing reads null.
+async function readLatestSnapshot({ cwd, ref, item = null }) {
+  const folder = item != null ? relativeFolderOf(workDirOf(cwd), item) : (await resolveMilestoneFolder({ cwd, ref }))?.folder;
+  if (folder == null) return null;
+  const obsDir = path.join(cwd, "wiki", "work", folder, "observability");
   const snapshotsDir = path.join(obsDir, "snapshots");
   let names;
   try {
