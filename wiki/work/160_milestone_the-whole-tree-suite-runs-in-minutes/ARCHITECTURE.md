@@ -452,6 +452,49 @@ in this repository removes tables.
 unchanged, only the home it is written in. m42's concurrency pragmas are unchanged: every open still
 applies WAL and `busy_timeout`.
 
+## ADR-014: The whole tree runs on every pull request, sharded across runners, inside the budget
+
+**Status:** Accepted
+**Date:** 2026-10-17
+
+**Context.** The control node also carries the operator's other work. Its 12-worker wall time ranged
+from 16.2 to 22.4 min over three runs of nearly the same code, and the same 8-worker run took 15.3 min
+one day and 23.6 min the next (VERIFICATION.md, the worker sweep). A budget enforced there measures the
+machine's load as much as the suite. No workflow runs the suite on a pull request: `pages.yml` runs
+one control, and `release.yml` builds artefacts. The operator re-aimed the objective on 2026-10-17:
+the budget is the PR suite's CI wall time on GitHub-hosted Linux runners, drift is reported per file,
+and only the budget fails a run.
+
+**Decision.**
+1. **The runner takes one shard of the plan.** `--shard <i>/<n>` runs the `i`-th of `n` bins. Bins
+   are filled from the whole plan, after its coverage check, longest unit first into the lightest
+   bin, so each job computes the same split from the same timings. A shard's accounting counts only
+   the cases its own units hold.
+2. **A shard reports in JSON.** `--report-json <path>` writes the shard's verdict (executed,
+   registered, failures, not isolated, not finished, not started), its wall and summed seconds, and
+   its per-file timings.
+3. **`.github/workflows/test.yml`** runs on `pull_request` and on a push to `main`: a matrix of
+   shards on `ubuntu-latest`, each preparing its own tree and running one shard, then one summary job.
+   Every job restores the timings `main` last saved from the Actions cache, so the shards plan from the
+   same schedule.
+4. **The summary merges and judges.** `scripts/test-ci-summary.mjs` merges the shards' reports. It
+   fails the run when a shard is red, when the shards together did not execute every registered case
+   exactly once, or when the suite's wall time (the slowest shard's run) passes `--budget-min`. It
+   writes a drift table (files slower or faster than `main`'s timings by more than a threshold) to the
+   job summary; drift alone never fails a run. On `main` it saves the merged timings to the cache.
+5. **The control-node gate keeps no budget.** `.aof/aof.config.json` drops `work.test.gate.budgetMinutes`,
+   so `aof work regression-gate` there is a correctness gate under its own deadline, and 160/ADR-006's
+   `not-finished` still reports a unit killed at its limit.
+
+**Consequences.** The budget is measured on a machine that is the same on every run, and the trend
+is visible per file on every PR. The control node no longer proves the budget. A PR whose shards
+cannot start (an install failure, a runner outage) has no verdict on the code, and its rerun is the
+repair, exactly as for a `not-finished` row.
+
+**Recall.** 160/ADR-006 (a not-finished unit is never a red) is honoured on CI: an unfinished unit
+fails the budget, not a case. 96/ADR-008 (the accept door reads a recorded run) is unchanged: the
+door still reads the control node's gate row.
+
 ## Fitness functions
 
 | id | invariant | enforced by | source |
@@ -471,6 +514,8 @@ applies WAL and `busy_timeout`.
 | FF-16013 | Every spawn of `scripts/test.mjs` under `test/` is on an allowlist that names its subject | `test/arch/testing/acd-test-suite-registration.test.mjs` | ADR-012 |
 | FF-16014 | A trust write given no home lands in `AOF_TEST_CLAUDE_HOME`; the harness sets it to a temporary directory when unset, and the sharded runner gives each unit its own | `test/testing/test-sharded-report.test.mjs` | ADR-013 |
 | FF-16015 | Opening the projection store or the effects journal at its current schema version executes no write statement | `test/arch/store/acd-shared-store-concurrency.test.mjs` | ADR-013 |
+| FF-16016 | The shards of a plan hold every unit exactly once, each job computes the same split from the same timings, and a shard counts only its own cases | `test/testing/test-sharded-report.test.mjs` | ADR-014 |
+| FF-16017 | The CI summary fails a red shard, a lost or doubled case and a suite over its budget, and never fails on drift alone | `test/testing/test-sharded-report.test.mjs` | ADR-014 |
 
 Each control lands with its subject, in a suite its directory's index registers. Required red
 probes, recorded in `VERIFICATION.md`: make `memoGitReads` keep a `status` answer; give the fake a

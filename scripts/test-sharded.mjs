@@ -38,7 +38,7 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { fileEstimate, packUnits, planCoverageProblem, planSummary, runnerShapedExports, shardArgs, suiteCaseChunks } from "./test-harness.mjs";
+import { fileEstimate, packUnits, parseShard, planCoverageProblem, planSummary, runnerShapedExports, shardArgs, shardPlan, suiteCaseChunks } from "./test-harness.mjs";
 import { fileTimings, registryRefusal, shardedExit, shardedReport } from "./test-sharded-report.mjs";
 import { poolExit, runPool, stdinIsPipe } from "./test-sharded-pool.mjs";
 import { buildTestCliBundle, cliBundleNotice, withTestCliBundle } from "./build-sea.mjs";
@@ -54,6 +54,11 @@ const UNIT_TIMEOUT_MS = option("--unit-timeout-min", 20) * 60_000;
 const BUDGET_MS = argv.includes("--budget-min") ? option("--budget-min", null) * 60_000 : null;
 const STRICT = argv.includes("--strict");
 const LANES = !argv.includes("--no-lanes");
+const text = (name) => { const at = argv.indexOf(name); return at < 0 ? null : argv[at + 1] ?? ""; };
+// ONE SHARD OF THE PLAN (160/ADR-014 §1–2), for a pull request's suite split across jobs, and its report as JSON.
+const SHARD = text("--shard") == null ? null : parseShard(text("--shard"));
+if (SHARD?.error) { console.error(SHARD.error); process.exit(1); }
+const REPORT_JSON = text("--report-json");
 const slash = (value) => value.replaceAll("\\", "/");
 const rel = (file) => slash(path.relative(repo, file));
 const started = Date.now();
@@ -139,6 +144,13 @@ if (LANES) {
   plan.push({ key: "lanes (cargo)", lanes: true, positions: [], env: { AOF_INTEGRATION_FEATURES: "" }, estimate: timings["lanes (cargo)"]?.seconds ?? 30 });
 }
 plan.sort((a, b) => b.estimate - a.estimate);
+// The whole plan has passed its coverage check; a shard now keeps only its own bin, and counts only its cases.
+if (SHARD != null) {
+  const own = shardPlan(plan, SHARD.count)[SHARD.index - 1];
+  plan.splice(0, plan.length, ...own.sort((a, b) => b.estimate - a.estimate));
+  console.log(`# shard ${SHARD.index}/${SHARD.count}: ${plan.length} units`);
+}
+const registeredHere = SHARD == null ? tests.length : plan.filter((unit) => !unit.lanes).reduce((sum, unit) => sum + unit.positions.length, 0);
 if (argv.includes("--plan")) {
   console.log(planSummary(plan));
   console.log(`# the heaviest ${Math.min(10, plan.length)} (estimate from recorded timings):`);
@@ -186,7 +198,7 @@ for (const target of pool.stopped ? [] : [timingsPath, mainTimingsPath].filter(B
 // A unit that failed in the pool counts what its alone-retry executed: the retry ran exactly that unit's cases again.
 const retried = new Map([...flakes, ...failures].map(({ first, retry }) => [first, retry]));
 const executed = results.filter((result) => !result.unit.lanes).reduce((sum, result) => sum + Math.max(0, (retried.get(result) ?? result).executed), 0);
-const verdict = { failures, flakes, executed, registered: tests.length, strict: STRICT, notFinished, notStarted };
+const verdict = { failures, flakes, executed, registered: registeredHere, strict: STRICT, notFinished, notStarted };
 const report = shardedReport({
   ...verdict,
   stamp,
@@ -198,5 +210,26 @@ const report = shardedReport({
   logs: rel(outDir),
 });
 writeFileSync(path.join(outDir, "SUMMARY.txt"), report.join("\n") + "\n");
+if (REPORT_JSON) {
+  const planned = {};
+  for (const unit of plan) for (const entry of unit.files ?? (unit.lanes ? [] : [unit])) (planned[entry.key] ??= []).push(...entry.positions);
+  mkdirSync(path.dirname(path.resolve(REPORT_JSON)), { recursive: true });
+  writeFileSync(path.resolve(REPORT_JSON), JSON.stringify({
+    shard: SHARD?.index ?? 1,
+    shards: SHARD?.count ?? 1,
+    registeredTotal: tests.length,
+    registered: registeredHere,
+    executed,
+    failures: failures.map(({ first, retry }) => ({ unit: first.unit.key, cases: retry.failed.length > 0 ? retry.failed : first.failed })),
+    flakes: flakes.map(({ first }) => ({ unit: first.unit.key, cases: first.failed })),
+    notFinished,
+    notStarted,
+    stopped: pool.stopped === true,
+    wallSeconds: (Date.now() - started) / 1000,
+    summedSeconds: results.reduce((sum, result) => sum + result.seconds, 0),
+    perFile,
+    planned,
+  }, null, 1));
+}
 console.log(report.join("\n"));
 process.exit(poolExit(pool, shardedExit(verdict)));

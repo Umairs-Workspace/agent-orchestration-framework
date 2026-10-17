@@ -29,7 +29,8 @@ import {
   slowestFiles,
 } from "../../scripts/test-sharded-report.mjs";
 import { poolExit, runPool, stdinIsPipe, unitResult as unitResultOf } from "../../scripts/test-sharded-pool.mjs";
-import { fileEstimate, PACK_MAX_ARG_CHARS, packUnits, planCoverageProblem, planSummary, shardArgs } from "../../scripts/test-harness.mjs";
+import { fileEstimate, PACK_MAX_ARG_CHARS, packUnits, planCoverageProblem, planSummary, shardArgs, shardPlan } from "../../scripts/test-harness.mjs";
+import { judgeShards, summaryMarkdown } from "../../scripts/test-ci-summary.mjs";
 import { gateResult } from "@aof/work/regression-record";
 import { createClaudeTrust } from "@aof/execution/claude-trust";
 
@@ -577,6 +578,139 @@ export const testShardedReportTests = [
       assert.match(runner, /env: \{ \.\.\.env, AOF_GLOBAL_HOME: home, AOF_TEST_CLAUDE_HOME: home \}/u, "the unit's claude home is its own home, beside AOF_GLOBAL_HOME");
     },
   },
+  // ══════ FF-16016 (160/13, ADR-014 §1–2): the runner takes one shard of the plan ══════
+  {
+    name: "FF-16016 160/13 [outline] The shards of a plan (3 rows)",
+    run: () => {
+      const rows = [
+        [[90], 4],
+        [[90, 60, 50, 40, 30, 20, 10], 3],
+        [Array.from({ length: 40 }, (_, index) => index + 1), 8],
+      ];
+      for (const [estimates, count] of rows) {
+        const plan = estimates.map((estimate, index) => ({ key: `u${String(index).padStart(2, "0")}`, estimate }));
+        const bins = shardPlan(plan, count);
+        assert.equal(bins.length, count, `${estimates.length} units into ${count}: ${count} shards`);
+        assert.deepEqual(bins.flat().map((unit) => unit.key).sort(), plan.map((unit) => unit.key).sort(), `${estimates.length} units into ${count}: every unit in exactly one shard`);
+        const loads = bins.map((bin) => bin.reduce((sum, unit) => sum + unit.estimate, 0));
+        assert.ok(Math.max(...loads) - Math.min(...loads) <= Math.max(...estimates), `${estimates.length} units into ${count}: loads ${loads} differ by at most the heaviest unit`);
+      }
+    },
+  },
+  {
+    name: "FF-16016 160/13 Every job computes the same split",
+    run: () => {
+      const plan = Array.from({ length: 30 }, (_, index) => ({ key: `test/f${index}.test.mjs`, estimate: (index * 7) % 11 }));
+      const keys = (bins) => bins.map((bin) => bin.map((unit) => unit.key));
+      const first = keys(shardPlan(plan, 4));
+      assert.deepEqual(keys(shardPlan(plan, 4)), first, "the same plan splits the same way twice");
+      assert.deepEqual(keys(shardPlan([...plan].reverse(), 4)), first, "and whatever order the units arrive in");
+    },
+  },
+  {
+    name: "FF-16016 160/13 [outline] A shard argument the runner refuses (4 rows)",
+    run: () => {
+      for (const argument of ["0/4", "5/4", "2", "a/b"]) {
+        const result = spawnSync(process.execPath, [path.join(repoRoot, "scripts", "test-sharded.mjs"), "--shard", argument, "--plan"], { cwd: repoRoot, encoding: "utf8", windowsHide: true, timeout: 60_000 });
+        assert.equal(result.status, 1, `--shard ${argument}: exit 1`);
+        assert.ok(result.stderr.includes(`--shard ${argument}`), `--shard ${argument}: the refusal names it (${result.stderr.trim()})`);
+        assert.equal(result.stdout.includes("# sharded:"), false, `--shard ${argument}: refused before the registry was read`);
+      }
+    },
+  },
+  {
+    name: "FF-16016 160/13 A shard counts only its own cases",
+    run: async () => {
+      assert.equal(shardedExit({ failures: [], flakes: [], executed: 30, registered: 30 }), 0, "30 of 30 is green");
+      assert.equal(shardedExit({ failures: [], flakes: [], executed: 30, registered: 100 }), 1, "non-vacuity: 30 of the whole tree's 100 is a lost case");
+      const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
+      assert.match(runner, /const registeredHere = SHARD == null \? tests\.length : plan\.filter\(\(unit\) => !unit\.lanes\)\.reduce/u, "a shard registers only its own units' cases");
+      assert.match(runner, /registered: registeredHere,/u, "and its verdict reads that count");
+    },
+  },
+  {
+    name: "FF-16016 160/13 A shard reports in JSON, every field the summary reads",
+    run: async () => {
+      const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
+      const written = runner.slice(runner.indexOf("if (REPORT_JSON) {"));
+      for (const field of ["shard", "shards", "registeredTotal", "registered", "executed", "failures", "flakes", "notFinished", "notStarted", "wallSeconds", "summedSeconds", "perFile", "planned"]) {
+        assert.match(written, new RegExp(`\\b${field}[,:]`, "u"), `the report writes ${field}`);
+      }
+      const summary = await readFile(path.join(repoRoot, "scripts", "test-ci-summary.mjs"), "utf8");
+      for (const field of ["shard", "registeredTotal", "executed", "failures", "flakes", "notFinished", "notStarted", "wallSeconds", "summedSeconds", "perFile", "planned"]) {
+        assert.ok(summary.includes(`report.${field}`), `the summary reads report.${field}`);
+      }
+    },
+  },
+  // ══════ FF-16017 (160/13, ADR-014 §4): the CI summary judges the shards ══════
+  {
+    name: "FF-16017 160/13 [outline] The summary's verdict (7 rows)",
+    run: () => {
+      const rows = [
+        ["every shard is green and the slowest took 8 minutes", {}, true, /Suite wall: \*\*8\.0 min\*\*/u],
+        ["one shard has a failing case", { failures: [{ unit: "test/b.test.mjs", cases: ["b's case"] }] }, false, /not ok - shard 2: b's case/u],
+        ["the shards executed 99 of 100 registered cases", { drop: 1 }, false, /1 registered case\(s\) that no shard ran/u],
+        ["the shards executed 101 of 100 registered cases", { doubled: true }, false, /a case ran in two shards: test\/a\.test\.mjs/u],
+        ["every shard is green and the slowest took 11 minutes", { wall: 660 }, false, /over budget: the suite took 11\.0 min against 10 min \(slowest: shard 2\)/u],
+        ["a shard report is missing", { missing: true }, false, /shard 2\/2 wrote no report/u],
+        ["a unit did not finish", { notFinished: ["test/b.test.mjs"] }, false, /not finished - shard 2: test\/b\.test\.mjs/u],
+      ];
+      for (const [condition, change, passed, named] of rows) {
+        const reports = shardReports(change);
+        const verdict = judgeShards({ reports, shards: 2, budgetMinutes: 10 });
+        const markdown = summaryMarkdown(verdict, { shards: 2, budgetMinutes: 10 });
+        assert.equal(verdict.passed, passed, `${condition}: ${passed ? "passes" : "fails"} (${verdict.problems.join("; ")})`);
+        assert.match(markdown, named, `${condition}: names it`);
+        if (change.notFinished) assert.equal(verdict.problems.some((problem) => problem.startsWith("not ok")), false, "a unit that did not finish is never a failure");
+      }
+    },
+  },
+  {
+    name: "FF-16017 160/13 Drift is reported and never fails the run",
+    run: () => {
+      const reports = shardReports({});
+      reports[0].perFile["test/a.test.mjs"] = { seconds: 30, cases: 50 };
+      reports[1].perFile["test/b.test.mjs"] = { seconds: 5, cases: 50 };
+      const baseline = { "test/a.test.mjs": { seconds: 10 }, "test/b.test.mjs": { seconds: 20 } };
+      const verdict = judgeShards({ reports, shards: 2, budgetMinutes: 10, baseline });
+      assert.equal(verdict.passed, true, verdict.problems.join("; "));
+      assert.deepEqual(verdict.drift.map(({ key, direction, before, after }) => [key, direction, before, after]), [["test/a.test.mjs", "slower", 10, 30], ["test/b.test.mjs", "faster", 20, 5]]);
+      const markdown = summaryMarkdown(verdict, { shards: 2, budgetMinutes: 10 });
+      assert.match(markdown, /\| `test\/a\.test\.mjs` \| 10\.0 s \| 30\.0 s \| \+20\.0 s slower \|/u);
+      assert.match(markdown, /\| `test\/b\.test\.mjs` \| 20\.0 s \| 5\.0 s \| -15\.0 s faster \|/u);
+    },
+  },
+  {
+    name: "FF-16017 160/13 The merged timings are the union of the shards'",
+    run: () => {
+      const verdict = judgeShards({ reports: shardReports({}), shards: 2, budgetMinutes: 10 });
+      assert.deepEqual(verdict.timings, { "test/a.test.mjs": { seconds: 100, cases: 50 }, "test/b.test.mjs": { seconds: 120, cases: 50 } });
+    },
+  },
+  {
+    name: "160/13 The workflow runs the shards, then the summary, on every pull request",
+    run: async () => {
+      const raw = await readFile(path.join(repoRoot, ".github", "workflows", "test.yml"), "utf8");
+      const workflow = raw.replace(/^\s*#.*$/gmu, "");
+      assert.match(workflow, /on:\s*\n\s+push:\s*\n\s+branches:\s*\n\s+- main\s*\n\s+pull_request:\s*\n\s+branches:\s*\n\s+- main/u, "on a pull request to main and a push to main");
+      const shards = Number(/SHARDS: "(\d+)"/u.exec(workflow)?.[1]);
+      const matrix = /shard: \[([^\]]+)\]/u.exec(workflow)?.[1].split(",").map((value) => Number(value.trim()));
+      assert.deepEqual(matrix, Array.from({ length: shards }, (_, index) => index + 1), `the matrix is shards 1..${shards}`);
+      assert.match(workflow, /node scripts\/test-sharded\.mjs [^\n]*\\\n\s+--shard \$\{\{ matrix\.shard \}\}\/\$\{\{ env\.SHARDS \}\} \\\n\s+--report-json reports\/shard-\$\{\{ matrix\.shard \}\}\.json/u, "each shard runs its shard and writes its report");
+      assert.match(workflow, /name: test-report-\$\{\{ matrix\.shard \}\}/u, "and uploads it");
+      assert.match(workflow, /summary:[\s\S]*?needs: \[shard\]\s*\n\s+if: always\(\)/u, "the summary needs every shard and runs when one fails");
+      assert.match(workflow, /BUDGET_MINUTES: "10"/u, "with the 10-minute budget");
+      assert.match(workflow, /node scripts\/test-ci-summary\.mjs --reports reports --shards "\$SHARDS" --budget-min "\$BUDGET_MINUTES"/u, "which the summary judges");
+    },
+  },
+  {
+    name: "160/13 The control node's gate declares no budget",
+    run: async () => {
+      const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
+      assert.equal(Object.hasOwn(config.work.test.gate, "budgetMinutes"), false, "the control-node gate declares no budgetMinutes (160/ADR-014 §5)");
+      assert.deepEqual(config.work.test.gate.budgetArgs, ["--budget-min", "{minutes}"], "and still declares how a budget reaches the runner");
+    },
+  },
 ];
 
 // ── 160/09's helpers ─────────────────────────────────────────────────────────────────────────────
@@ -610,4 +744,23 @@ function scriptedChild(output, code) {
     child.emit("close", code);
   });
   return child;
+}
+
+// FF-16017's two shard reports over a 100-case tree: shard 1 holds test/a (50 cases), shard 2 holds test/b (50).
+// `change` bends them into one row's condition.
+function shardReports(change) {
+  const report = (shard, key, wallSeconds) => ({
+    shard, shards: 2, registeredTotal: 100, registered: 50, executed: 50,
+    failures: [], flakes: [], notFinished: [], notStarted: [], stopped: false,
+    wallSeconds, summedSeconds: wallSeconds * 4,
+    perFile: { [key]: { seconds: wallSeconds / 4, cases: 50 } },
+    planned: { [key]: Array.from({ length: 50 }, (_, position) => position) },
+  });
+  const reports = [report(1, "test/a.test.mjs", 400), report(2, "test/b.test.mjs", change.wall ?? 480)];
+  if (change.failures) reports[1].failures = change.failures;
+  if (change.notFinished) { reports[1].notFinished = change.notFinished; reports[1].executed = 0; }
+  if (change.drop) { reports[1].planned["test/b.test.mjs"].pop(); reports[1].executed = 49; reports[1].registered = 49; }
+  if (change.doubled) { reports[1].planned["test/a.test.mjs"] = [0]; reports[1].executed = 51; }
+  if (change.missing) reports.pop();
+  return reports;
 }

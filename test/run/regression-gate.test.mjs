@@ -1097,7 +1097,9 @@ export const regressionGateTests = [
     name: "160/05 This repository declares a 10-minute budget the runner is told",
     run: async () => {
       const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
-      assert.equal(config.work.test.gate.budgetMinutes, 10);
+      // 160/ADR-014 §5 (2026-10-17) moved the 10-minute budget to the pull request suite's CI wall time, so the
+      // control-node gate declares no budgetMinutes (160/13 asserts its absence). What this row still holds is how
+      // a declared budget reaches the runner.
       assert.deepEqual(config.work.test.gate.budgetArgs, ["--budget-min", "{minutes}"]);
     },
   },

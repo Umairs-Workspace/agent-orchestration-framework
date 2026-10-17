@@ -1,0 +1,23 @@
+{
+  "runId": "20261017T191954245Z-0000",
+  "itemRef": "160/13",
+  "state": "running",
+  "attempt": 1,
+  "outcome": null,
+  "sessionId": null,
+  "brief": {
+    "initiator": "operator",
+    "phase": "refine+build",
+    "mode": "solo"
+  },
+  "createdAt": "2026-10-17T19:19:54.245Z",
+  "updatedAt": "2026-10-17T19:19:54.245Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

@@ -322,7 +322,9 @@ const RUNNER_REGIONS = Object.freeze([
 // RE-PINNED by 160/12 (ADR-013 §2): the harness gives a test process that has none a temporary claude home
 // (`AOF_TEST_CLAUDE_HOME`), removed at exit, beside the compile-cache call. `runCases` and every pinned region above
 // are unchanged.
-const RUNNER_RESIDUE = "430dfb99198eac2286e4c64ebc2d986afb9bde152a9f23e02ae6f3dd02083bcf";
+// RE-PINNED by 160/13 (ADR-014 §1): the harness gains the pure shard planners `shardPlan` and `parseShard` beside
+// `packUnits`. `runCases` and every pinned region above are unchanged.
+const RUNNER_RESIDUE = "dec50aaf4cf14f1f92f1aa5cb65130e96914ead7c9c4c1ad1f5988be9e4decf3";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

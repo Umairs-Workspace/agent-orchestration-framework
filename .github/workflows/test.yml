@@ -1,0 +1,145 @@
+# The whole tree on every pull request (160/ADR-014).
+#
+# The suite runs as SHARDS jobs on GitHub-hosted Linux runners. Each job prepares its own tree, restores the
+# per-file timings `main` last saved, and runs one shard of the same plan (`scripts/test-sharded.mjs --shard i/n`),
+# so the jobs split the plan identically. The summary job merges their reports: it fails the run for a red shard,
+# for a case no shard ran or two shards both ran, and for a suite whose wall time (the slowest shard's run) passes
+# the budget. It reports each file's drift against main's timings in the job summary; drift alone never fails.
+# A green push to main saves the merged timings, which the next run plans from and compares against.
+#
+# A shard is not stopped at the budget: a slow run still records its timings, and the summary judges the budget.
+name: test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  SHARDS: "8"
+  BUDGET_MINUTES: "10"
+
+jobs:
+  shard:
+    name: shard ${{ matrix.shard }}/8
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # No linux-* node-pty prebuild is shipped; the reviewed explicit rebuild below compiles it on this runner,
+      # as release.yml does.
+      - name: Ensure a C++ toolchain is present (node-gyp compiles node-pty)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3
+
+      - name: Yarn immutable install (lifecycle scripts skipped)
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Build reviewed native dependency
+        run: node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
+
+      - name: Build the UI the bundle tests read
+        run: node scripts/ui-build.mjs
+
+      - name: A git identity, as the control node has
+        run: |
+          git config --global user.name "aof ci"
+          git config --global user.email "ci@aof.invalid"
+
+      - name: Restore the timings main last saved
+        uses: actions/cache/restore@v4
+        with:
+          path: .tmp/test-timings.json
+          key: test-timings-${{ github.sha }}
+          restore-keys: |
+            test-timings-
+
+      - name: Run shard ${{ matrix.shard }}/${{ env.SHARDS }}
+        run: |
+          export AOF_GLOBAL_HOME="$(mktemp -d)"
+          node scripts/test-sharded.mjs --jobs 4 --unit-timeout-min 20 \
+            --shard ${{ matrix.shard }}/${{ env.SHARDS }} \
+            --report-json reports/shard-${{ matrix.shard }}.json < /dev/null
+
+      - name: Upload the shard's report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ matrix.shard }}
+          path: reports/shard-${{ matrix.shard }}.json
+          if-no-files-found: warn
+
+      - name: Upload the shard's unit logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-${{ matrix.shard }}
+          path: .tmp/test-sharded/
+          if-no-files-found: ignore
+
+  summary:
+    name: suite (10-minute budget)
+    needs: [shard]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download the shards' reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-report-*
+          path: reports
+          merge-multiple: true
+
+      - name: Restore the timings main last saved (the drift baseline)
+        uses: actions/cache/restore@v4
+        with:
+          path: .tmp/test-timings.json
+          key: test-timings-${{ github.sha }}
+          restore-keys: |
+            test-timings-
+
+      - name: Judge the shards
+        run: |
+          mkdir -p .tmp/merged
+          node scripts/test-ci-summary.mjs --reports reports --shards "$SHARDS" --budget-min "$BUDGET_MINUTES" \
+            --baseline .tmp/test-timings.json --timings-out .tmp/merged/test-timings.json \
+            --summary-md "$GITHUB_STEP_SUMMARY"
+
+      - name: Main's timings become the next baseline
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: cp .tmp/merged/test-timings.json .tmp/test-timings.json
+
+      - name: Save main's timings
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: .tmp/test-timings.json
+          key: test-timings-${{ github.run_id }}

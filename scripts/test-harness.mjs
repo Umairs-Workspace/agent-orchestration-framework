@@ -152,6 +152,30 @@ export function packUnits(plan, { packSeconds = 15, targetSeconds = 60, maxArgCh
   return [...plan.filter((entry) => !packable(entry)), ...packed];
 }
 
+// THE SHARDS OF A PLAN (160/ADR-014 §1). A pull request's suite runs as `count` jobs, and each job runs one bin of
+// the same plan: units go longest first into the lightest bin, ties to the lower bin, so every job computes the
+// same split from the same timings and the bins differ by at most their heaviest unit.
+export function shardPlan(plan, count) {
+  if (!Number.isInteger(count) || count < 1) throw new TypeError("shardPlan: the shard count must be a positive integer");
+  const bins = Array.from({ length: count }, () => ({ units: [], estimate: 0 }));
+  const order = [...plan].sort((a, b) => b.estimate - a.estimate || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  for (const unit of order) {
+    const bin = bins.reduce((lightest, candidate) => (candidate.estimate < lightest.estimate ? candidate : lightest));
+    bin.units.push(unit);
+    bin.estimate += unit.estimate;
+  }
+  return bins.map((bin) => bin.units);
+}
+
+// `--shard <i>/<n>`: the 1-based index and the count, or the refusal that names the argument.
+export function parseShard(value) {
+  const match = /^(\d+)\/(\d+)$/u.exec(String(value ?? ""));
+  const index = Number(match?.[1]);
+  const count = Number(match?.[2]);
+  if (match == null || count < 1 || index < 1 || index > count) return { error: `--shard ${value}: expected <i>/<n> with 1 <= i <= n` };
+  return { index, count };
+}
+
 // The shard entry's argv for one file unit, `<file> <positions>`, or for a packed unit, `--file <file> <positions>`
 // per file (160/ADR-010 §2).
 export function shardArgs(unit) {

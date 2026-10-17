@@ -471,7 +471,9 @@ export const siteBuildTests = [
       // 119/FF-11902's admitted form, applied at aof:verify 127: the set is DERIVED from the tree, so it is
       // floored, its required members are named AMONG it, and every member is asserted admitted —
       // never enumerated as the answer. "Nothing else" is the admission leg, not a literal list.
-      const ADMITTED_WORKFLOWS = new Set(["pages.yml", "release.yml"]);
+      // 160/ADR-014 §3 admits a third member: test.yml, the pull request suite. It publishes nothing and releases
+      // nothing, which the vocabulary legs below now hold for it as well.
+      const ADMITTED_WORKFLOWS = new Set(["pages.yml", "release.yml", "test.yml"]);
       assert.ok(members.length >= 2, `.github/workflows/ was read and holds the two workflows (${members.length})`);
       for (const required of ["pages.yml", "release.yml"]) assert.ok(members.includes(required), `.github/workflows/ holds ${required}`);
       for (const member of members) assert.ok(ADMITTED_WORKFLOWS.has(member), `.github/workflows/ holds the release workflow and the ONE publishing workflow, and nothing else — found ${member}`);
@@ -485,6 +487,10 @@ export const siteBuildTests = [
       }
       for (const token of ["build-sea", "codesign", "softprops", "SHA256SUMS", "contents: write"]) {
         assert.ok(!pages.includes(token), `pages.yml carries none of the release path (found ${token})`);
+      }
+      const suite = stripYamlComments(readWorkflowText(path.join(workflowsDir, "test.yml")));
+      for (const token of ["deploy-pages", "jekyll", "id-token", "upload-pages-artifact", BUILDER, "build-sea", "codesign", "softprops", "SHA256SUMS", "contents: write"]) {
+        assert.ok(!suite.includes(token), `test.yml carries neither the publishing nor the release path (found ${token})`);
       }
     },
   },

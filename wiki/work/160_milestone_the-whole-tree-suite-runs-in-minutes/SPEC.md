@@ -6,7 +6,7 @@ title: "The whole-tree suite signs off in minutes — a time budget the runner e
 status: in-progress
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-15
+updated: 2026-10-17
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -23,6 +23,15 @@ reasons that were the runner's, not the code's (m159/F-2, m156/F-4, m127/F-30).
 An outsider can verify it: `aof work regression-gate <NN>` on that node records a green row under
 the budget, the runner fails the run when the budget is exceeded, and a unit killed at its deadline
 appears as `not-finished` in the row rather than among its failures.
+
+**Re-aimed 2026-10-17 (operator decision, at verify).** The budget now lives where every pull request
+waits on it: **the whole tree runs on every PR, sharded across GitHub-hosted Linux runners, and signs
+off inside 10 minutes of CI wall time.** Each file's time is compared with `main`'s last run and the
+drift is reported in the job summary; the run fails only when the suite goes over its budget. The
+Windows control node's `aof work regression-gate` stays the correctness gate, without the 10-minute
+target: that machine also carries the operator's other work, and its wall time varied between runs by
+about the budget itself (VERIFICATION.md, the worker sweep). An outsider verifies it on a PR's checks:
+every shard green, the summary's suite wall under 10 minutes, and its drift table.
 
 Measured causes (2026-10-13/14, evidence in m159's `VERIFICATION.md`):
 - **Git spawns in the loop's plumbing.** `loop-command-wave` made 7,588 git calls in 51 cases — 82%
@@ -73,6 +82,7 @@ Out of scope:
 - [x] [11 · A test that needs a suite run starts the shard entry](stories/11_story_a-test-that-needs-a-suite-run-starts-the-shard-entry/STORY.md) (ADR-012)
 
 - [ ] [12 · Tests keep their state their own](stories/12_story_tests-keep-their-state-their-own/STORY.md) (ADR-013)
+- [ ] [13 · The whole tree runs on every pull request](stories/13_story_the-whole-tree-runs-on-every-pull-request/STORY.md) (ADR-014)
 
 Waves, from the declared write sets: **00, 02, 03, 04 and 06** run first, all independent, then
 **01 and 05**. Story 06 is not in the scope list above. Refine's profile found it: doctor's

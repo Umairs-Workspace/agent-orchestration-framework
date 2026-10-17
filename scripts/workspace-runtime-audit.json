@@ -740,7 +740,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\"], { cwd: repo, encoding: \"utf8\", windowsHide: true })",
     "digest": "03bcf3b387dd17cab6cc2432a220dbe3f5ad3a683af658b629645a5ce5975c96",
-    "sourceDigest": "052c2cf509fe035b9e75e3f2c7ef205cb47b9f4d40a2d80330e468139c30d56e",
+    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
     "reason": "Repository test tooling: asks git for the main checkout (the common git dir) so a run from a detached worktree reads and writes the shared test timings."
   },
   {
@@ -748,7 +748,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(repo, \"scripts\", \"test.mjs\")).href)",
     "digest": "cea6ed1d26bddda67f6d953504e66dbcf26c4371124d1cdbe5a78e8ed7c744b9",
-    "sourceDigest": "052c2cf509fe035b9e75e3f2c7ef205cb47b9f4d40a2d80330e468139c30d56e",
+    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -756,7 +756,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(file).href)",
     "digest": "157543e2e2f928070ac3d45cc6cdbdc13ed54a580d73cd3b48c2e137b1c3945c",
-    "sourceDigest": "052c2cf509fe035b9e75e3f2c7ef205cb47b9f4d40a2d80330e468139c30d56e",
+    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
     "reason": "Repository test tooling: imports `scripts/test.mjs`'s assembled registry and each registered suite file, to map every registered case to its file by identity before sharding."
   },
   {
@@ -764,7 +764,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(path.join(integrationDir, \"support\", \"feature-runner.mjs\")).href)",
     "digest": "b0f8535ade1e8e3014c2b92870732e37c8991961d96f1a54906506975ca179fc",
-    "sourceDigest": "052c2cf509fe035b9e75e3f2c7ef205cb47b9f4d40a2d80330e468139c30d56e",
+    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
     "reason": "Repository test tooling: imports the integration lane's own feature discovery (`test/integration/support/feature-runner.mjs`) so each feature is planned as its own unit."
   },
   {
@@ -772,7 +772,7 @@
     "kind": "child-process",
     "expression": "spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...env, AOF_GLOBAL_HOME: home, AOF_TEST_CLAUDE_HOME: home } })",
     "digest": "e606bd0f184b738afba10f7b112b4bc437b88b308fca36596bd8eb12e3922fc3",
-    "sourceDigest": "052c2cf509fe035b9e75e3f2c7ef205cb47b9f4d40a2d80330e468139c30d56e",
+    "sourceDigest": "76146e0a7a1efec4bd87903a516b2509006012b72c49a1ba9a542b57006f039d",
     "reason": "Repository test tooling: runs each shard unit (`scripts/test-shard.mjs`), each integration feature (`test/integration/cli.mjs <feature>`, in-process) and the cargo lane (`scripts/test.mjs --lanes-only` with no feature selected) as a node child with its own isolated AOF_GLOBAL_HOME. Each unit also gets its home as AOF_TEST_CLAUDE_HOME (160/ADR-013 §2), so the claude folder trust a unit writes lands in its own temporary home, never the operator's ~/.claude.json."
   },
   {
@@ -788,7 +788,7 @@
     "kind": "computed-import",
     "expression": "import(pathToFileURL(resolve(file)).href)",
     "digest": "4c6a4a5db69c974214972265d17a812e422581afba4b3ba8f2c3816b7ad1e3f0",
-    "sourceDigest": "2e1f7308d12d5590257ae34732907886dd37009b5d4d3bdf583c592081683e4a",
+    "sourceDigest": "ae35c6b5d192702cad28e52009331ec887008aeb6d2614503c33248c5498f53a",
     "reason": "Repository test tooling: `loadSelected` imports exactly the suite files a selection names, by path - for the runner's `--only` and for the shard entry a focused `aof test` launches - and reports an unusable one by path. No production package consumes this dynamic path."
   },
   {
