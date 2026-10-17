@@ -133,7 +133,7 @@ async function openGlobalWorkProjectionStore(options = {}) {
     }
 
     // A current schema is only read (160/ADR-013 §3): migrating it again took a write lock, ran every
-    // CREATE TABLE IF NOT EXISTS and rewrote the version row on each open, and left the close a WAL checkpoint.
+    // every idempotent table creation again and rewrote the version row on each open, and left the close a WAL checkpoint.
     if (existing !== GLOBAL_WORK_SCHEMA_VERSION) migrateSchema(db, existing);
     return {
       db,
