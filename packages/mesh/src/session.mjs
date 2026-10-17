@@ -155,7 +155,13 @@ function sessionRecordPath(workspace, key) {
 // Read with a strict `=== true`, exactly as `workspaceHasRun` is one hop down the wire: an
 // unstated fact is `false`, never `undefined` — the key is ALWAYS PRESENT so a reader can
 // tell "this build states nothing" from "this session has no bridge".
-function assembleSessionRecord({ nodeId, workspaceId, repo, assistant, sessionId, startedAt, lastPingAt, relaying }) {
+//
+// 162/ADR-002 §1: the eight become NINE by APPEND — `loopRunId`, after `relaying`: the run
+// id of the loop drive that owns this session, or `null` for every session no loop drives.
+// It is stated by the drive child, the one process that knows it, and it is what makes a
+// relayed loop pane read-only rather than typeable. Carried as given (`?? null` only): a
+// malformed value is the UI's to fail closed on, never this projection's to launder.
+function assembleSessionRecord({ nodeId, workspaceId, repo, assistant, sessionId, startedAt, lastPingAt, relaying, loopRunId }) {
   return {
     nodeId,
     workspaceId,
@@ -165,6 +171,7 @@ function assembleSessionRecord({ nodeId, workspaceId, repo, assistant, sessionId
     startedAt,
     lastPingAt,
     relaying: relaying === true,
+    loopRunId: loopRunId ?? null,
   };
 }
 
@@ -341,10 +348,27 @@ async function reapExpiredSessions(workspace, nodeId, options = {}) {
 // positional session component is exactly what a caller forgets). Defaulted `false`, so
 // every existing caller — the hook-registered path above all — is byte-identical in
 // meaning: an operator's own `claude` on a worker states nothing and nothing relays it.
-async function startSession(workspace, { nodeId, workspaceId, repo, assistant, sessionId = null, relaying = false, now }, options = {}) {
+//
+// 162/ADR-002 §2: start is STICKY for `relaying` and `loopRunId`, exactly as ping is. A
+// hook's `SessionStart` fires again on resume and compact, on a record a drive child has
+// already stated; a fresh write that dropped both facts would demote a live loop pane to
+// `no-producer` mid-drive. The lifecycle pair is still written fresh — only the two facts
+// carry forward, and `endSession` deletes the record, so neither outlives its producer.
+async function startSession(workspace, { nodeId, workspaceId, repo, assistant, sessionId = null, relaying = false, loopRunId = null, now }, options = {}) {
   const nowIso = now ?? new Date().toISOString();
   await reapExpiredSessions(workspace, nodeId, { ...options, now: options.now ?? nowIso });
-  const record = assembleSessionRecord({ nodeId, workspaceId, repo, assistant, sessionId, startedAt: nowIso, lastPingAt: nowIso, relaying });
+  const existing = await readSessionRecord(workspace, { nodeId, workspaceId, assistant, sessionId });
+  const record = assembleSessionRecord({
+    nodeId,
+    workspaceId,
+    repo,
+    assistant,
+    sessionId,
+    startedAt: nowIso,
+    lastPingAt: nowIso,
+    relaying: relaying === true || existing?.relaying === true,
+    loopRunId: loopRunId ?? existing?.loopRunId ?? null,
+  });
   await mkdir(sessionsDir(workspace), { recursive: true });
   await writeText(sessionRecordPath(workspace, { nodeId, workspaceId, assistant, sessionId }), JSON.stringify(record, null, 2));
   return record;
@@ -368,7 +392,7 @@ async function startSession(workspace, { nodeId, workspaceId, repo, assistant, s
 // a LIVE, typeable pane to `no live output` mid-session. The record is deleted at
 // `endSession`, so the fact never outlives the bridge; there is nothing for stickiness to
 // leave behind.
-async function pingSession(workspace, { nodeId, workspaceId, repo, assistant, sessionId = null, relaying = false, now }, options = {}) {
+async function pingSession(workspace, { nodeId, workspaceId, repo, assistant, sessionId = null, relaying = false, loopRunId = null, now }, options = {}) {
   const nowIso = now ?? new Date().toISOString();
   await reapExpiredSessions(workspace, nodeId, { ...options, now: options.now ?? nowIso });
   const existing = await readSessionRecord(workspace, { nodeId, workspaceId, assistant, sessionId });
@@ -381,6 +405,7 @@ async function pingSession(workspace, { nodeId, workspaceId, repo, assistant, se
     startedAt: existing?.startedAt ?? nowIso,
     lastPingAt: nowIso,
     relaying: relaying === true || existing?.relaying === true,
+    loopRunId: loopRunId ?? existing?.loopRunId ?? null,
   });
   await mkdir(sessionsDir(workspace), { recursive: true });
   await writeText(sessionRecordPath(workspace, { nodeId, workspaceId, assistant, sessionId }), JSON.stringify(record, null, 2));

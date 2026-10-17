@@ -84,7 +84,7 @@ const FORBIDDEN_RECORD_KEYS = ["ref", "itemRef", "workItem", "assignmentId"];
 // that something is bridging this session's PTY output up its stream. An APPEND is the
 // same re-freeze-by-growth m48 itself performed on m38's six; every key above keeps its
 // position, so this list still asserts an exact ordered record rather than a subset.
-const RECORD_KEYS = ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"];
+const RECORD_KEYS = ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"];
 
 const NOW = "2026-08-10T12:00:00.000Z";
 

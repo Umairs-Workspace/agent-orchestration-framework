@@ -956,7 +956,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, { cwd, env, timeout: 10_000, windowsHide: true, encoding: \"utf8\" })",
     "digest": "a71c6610e4891eb53258a408a9c0a696c644478047edea1f55e8f5c65809de8d",
-    "sourceDigest": "48852d0475bbabdf5f2efb113f1a75f37e50620e5dc21e2d57bffb1d583dd8c3",
+    "sourceDigest": "d73dbfc8c5aa41e1b33bcb18105e7e86052e0c0c0a3d7e1366b55c418abdfc3f",
     "reason": "Git-only process wrapper for loop repository operations, with bounded execution."
   },
   {

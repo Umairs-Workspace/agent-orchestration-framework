@@ -306,7 +306,11 @@ export const archTests = [
       for (const owner of ["packages/core/src/application/bindings/effects/item-transitions.mjs", "packages/work/src/item-transitions.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
       // 156 adds the two builtin-only Codex leaves and the drive's native-asset preflight (156 -> 159).
       for (const owner of ["packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/work-loop/src/commands/runtime-assets.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 159, "the configured worker facade includes the lane status transition alongside native phases and questions");
+      // 162 (ADR-001 §3, ADR-002 §2) — the drive is handed its loop-session ports, so the facade's configured
+      // closure gains the session-command and terminal-relay-bridge bindings and their implementations
+      // (159 -> 163, measured against the 156 composition); the driver fences above are unchanged.
+      for (const owner of ["packages/core/src/application/bindings/commands/mesh/session.mjs", "packages/mesh/src/commands/session.mjs", "packages/core/src/application/bindings/mesh/terminal-relay-bridge.mjs", "packages/mesh/src/terminal-relay-bridge.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
+      assert.equal(sinkGraph.seen.size, 163, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

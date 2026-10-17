@@ -571,7 +571,7 @@ export const meshSessionSpawnHandlerTests = [
         // `.sendTerminalFrame(` producer in `packages/core/src/`, so it is exactly the module that must
         // state `relaying: true`: story 03's locked scenario says the record "contains" the
         // seven, and an additive eighth satisfies it as written.
-        ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"],
+        ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"],
         "the frozen 7-key schema, in order",
       );
       assert.equal(record.startedAt, NOW);

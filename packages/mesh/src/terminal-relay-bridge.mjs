@@ -1,8 +1,21 @@
-import { WebSocket } from "ws";
+import http from "node:http";
+import { randomBytes, timingSafeEqual } from "node:crypto";
+import { WebSocket, WebSocketServer } from "ws";
 
 export const TERMINAL_FRAME_KIND = "terminal-frame";
 export const TERMINAL_INPUT_KIND = "terminal-input";
 export const TERMINAL_RESUME_KIND = "terminal-resume";
+
+// 162/ADR-001 — the LOCAL TERMINAL INGRESS: a loopback-only door into this node's own daemon
+// through which a separate process (a loop's `aof work drive` child) hands it PTY output to
+// forward on the leg the daemon's role already owns. Its token header is the only way through
+// the upgrade. Where its address is published is the mesh store's (`store.mjs`), never this
+// module's: the bridge stays in-memory only (ADR-014 inv.3), so it writes and reads no file.
+export const TERMINAL_INGRESS_TOKEN_HEADER = "x-aof-ingress-token";
+const TERMINAL_INGRESS_HOST = "127.0.0.1";
+// A chunk the child buffers while its connection is still being admitted. Bounded, because a
+// door that never answers must not grow a drive's memory; past it, chunks are dropped.
+const TERMINAL_INGRESS_PENDING_LIMIT = 512;
 
 // Application services enter through explicit ports; construction starts no network or timer.
 export function createTerminalRelayBridge({ reportDegrade }) {
@@ -37,6 +50,12 @@ export function createTerminalRelayBridge({ reportDegrade }) {
 // (`acd-fleet-terminal-input-constrained` detector #4) is re-aimed at it. This module
 // keeps only what is live: the frozen envelope builders + the relay push transport.
 // m42 item 3 — every former silent catch reports a coded degrade event.
+//
+// 162/ADR-001 — the terminal INGRESS lives here too, beside the push transport it resembles.
+// Its two halves keep this module's read-only discipline: the server forwards what it is
+// handed and has no write-direction sink, and both publish and read the ingress's address
+// through ports the caller supplies — this module touches no file and no secret it was not
+// handed.
 
 // The NEW opaque relay `kind` this bridge introduces (ADR-014 decision 1). A single
 // source so the bridge and its tests agree on the literal.
@@ -269,5 +288,264 @@ function createTerminalRelayPushTransport(config, { timeoutMs = 3000 } = {}) {
   };
 }
 
-return { TERMINAL_FRAME_KIND, TERMINAL_INPUT_KIND, TERMINAL_RESUME_KIND, loopbackRelayUrl, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, buildTerminalInputEnvelope, buildTerminalResumeEnvelope, createTerminalRelayPushTransport };
+// A presented token is compared in constant time, and anything that is not a string of the
+// token's own length is refused before the comparison is asked.
+function ingressTokenMatches(presented, token) {
+  if (typeof presented !== "string" || typeof token !== "string") return false;
+  const left = Buffer.from(presented, "utf8");
+  const right = Buffer.from(token, "utf8");
+  return left.length === right.length && timingSafeEqual(left, right);
+}
+
+// routeIngressMessage(data, forward) — the ingress's whole vocabulary: a `frame` (a session
+// id and its bytes) or an `end` (a session id). Only those fields are read, so a `nodeId` the
+// client sent never reaches the forward: the daemon stamps its OWN id one hop later (the F17
+// re-stamp, ADR-001 §2). An unparseable message, an unknown type, a session id that is not a
+// non-empty string, or bytes that are not a string are dropped without a reply — the ingress
+// answers nothing back, so it is not a channel into the drive. Returns what it forwarded.
+function routeIngressMessage(data, forward) {
+  let message;
+  try {
+    message = JSON.parse(String(data));
+  } catch {
+    return null;
+  }
+  const sessionId = typeof message?.sessionId === "string" && message.sessionId.length > 0 ? message.sessionId : null;
+  if (sessionId == null) return null;
+  if (message.type === "frame" && typeof message.bytes === "string") {
+    forward.frame(sessionId, message.bytes);
+    return "frame";
+  }
+  if (message.type === "end") {
+    forward.end(sessionId);
+    return "end";
+  }
+  return null;
+}
+
+// startTerminalIngress({ forward, publish, withdraw }) → { port, stop() } — the DAEMON half
+// (ADR-001 §1). One ws server on 127.0.0.1 and an ephemeral port, whose upgrade is refused
+// unless the request carries the per-start random token. Once it listens, `publish` is handed
+// `{ host, port, token, pid }` to make it findable, and `withdraw` is handed the token on stop.
+// The listening socket is unref'd: the ingress never holds a process open that nothing else is
+// keeping alive. A forward fault is reported and swallowed — a forwarding leg's trouble never
+// reaches the child. A publish that fails closes the server and fails the start.
+async function startTerminalIngress({ forward, publish, withdraw, token = randomBytes(32).toString("hex") } = {}) {
+  const safeForward = {
+    frame: (sessionId, bytes) => forwardSafely(() => forward.frame(sessionId, bytes)),
+    end: (sessionId) => forwardSafely(() => forward.end(sessionId)),
+  };
+  const httpServer = http.createServer((_request, response) => {
+    response.writeHead(404);
+    response.end();
+  });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 1 << 20 });
+  httpServer.on("upgrade", (request, socket, head) => {
+    if (!ingressTokenMatches(request.headers[TERMINAL_INGRESS_TOKEN_HEADER], token)) {
+      socket.end("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
+      return;
+    }
+    wss.handleUpgrade(request, socket, head, (client) => wss.emit("connection", client, request));
+  });
+  wss.on("connection", (client) => {
+    client.on("error", (error) => reportDegrade("mesh-terminal-ingress", error));
+    client.on("message", (data) => routeIngressMessage(data, safeForward));
+    client.send(JSON.stringify({ type: "admitted" }));
+  });
+  await new Promise((resolve, reject) => {
+    httpServer.once("error", reject);
+    httpServer.listen(0, TERMINAL_INGRESS_HOST, () => {
+      httpServer.off("error", reject);
+      resolve();
+    });
+  });
+  httpServer.unref();
+  const { port } = httpServer.address();
+  const close = () => {
+    for (const client of wss.clients) client.terminate();
+    wss.close();
+    httpServer.close();
+  };
+  try {
+    await publish?.({ host: TERMINAL_INGRESS_HOST, port, token, pid: process.pid });
+  } catch (error) {
+    close();
+    throw error;
+  }
+  return {
+    port,
+    async stop() {
+      close();
+      try {
+        await withdraw?.(token);
+      } catch (error) {
+        reportDegrade("mesh-terminal-ingress", error);
+      }
+    },
+  };
+}
+
+function forwardSafely(send) {
+  try {
+    const sent = send();
+    if (sent && typeof sent.catch === "function") sent.catch((error) => reportDegrade("mesh-terminal-ingress", error));
+  } catch (error) {
+    reportDegrade("mesh-terminal-ingress", error);
+  }
+}
+
+// openTerminalIngressClient({ readAddress, onDegrade }) → { frame, end, admitted, close } — the
+// DRIVE CHILD half (ADR-001 §3). `readAddress()` answers the published `{ port, token }`, or null
+// when no daemon has published one. Lazy: nothing is read or dialled until the first frame. Best
+// effort and fire-and-forget: `frame`/`end` never throw and never wait, and chunks sent while
+// the connection is being admitted are held (bounded) and flushed on admission. A missing
+// address file, a refused token, a timeout or a closed socket ends the client for the rest of
+// the drive — no reconnect, so a door that is shut costs ONE coded degrade event, not one per
+// chunk. `admitted` resolves true once the daemon has said so, false when the client ended
+// first. `close()` waits for a pending admission (bounded by `timeoutMs`) so a short drive's
+// end marker is not dropped, then closes the socket after its queued sends.
+function openTerminalIngressClient({ readAddress, onDegrade, timeoutMs = 3000 } = {}) {
+  let state = "idle";
+  let socket = null;
+  let pending = [];
+  let degraded = false;
+  let settleAdmitted;
+  const admitted = new Promise((resolve) => {
+    settleAdmitted = resolve;
+  });
+
+  const degrade = (code, error) => {
+    if (degraded) return;
+    degraded = true;
+    try {
+      (onDegrade ?? reportDegrade)(code, error);
+    } catch {
+      // a reporting fault is never the drive's problem
+    }
+  };
+
+  const end = (code, error) => {
+    if (state === "dead") return;
+    state = "dead";
+    pending = [];
+    settleAdmitted(false);
+    degrade(code, error);
+    try {
+      socket?.terminate?.();
+    } catch {
+      // already gone
+    }
+  };
+
+  const write = (message) => {
+    try {
+      socket.send(JSON.stringify(message), (error) => {
+        if (error) end("terminal-ingress-closed", error);
+      });
+    } catch (error) {
+      end("terminal-ingress-closed", error);
+    }
+  };
+
+  async function connect() {
+    state = "connecting";
+    let address;
+    try {
+      address = await readAddress();
+    } catch (error) {
+      end("terminal-ingress-unreadable", error);
+      return;
+    }
+    if (address == null) {
+      end("terminal-ingress-absent", new Error("no daemon on this node has published a terminal ingress"));
+      return;
+    }
+    if (!Number.isInteger(address?.port) || typeof address?.token !== "string") {
+      end("terminal-ingress-unreadable", new Error("the published terminal ingress names no port and token"));
+      return;
+    }
+    const ws = new WebSocket(`ws://${TERMINAL_INGRESS_HOST}:${address.port}/`, { headers: { [TERMINAL_INGRESS_TOKEN_HEADER]: address.token } });
+    socket = ws;
+    const timer = setTimeout(() => end("terminal-ingress-timeout", new Error("terminal ingress: no admission in time")), timeoutMs);
+    timer.unref?.();
+    ws.on("unexpected-response", (_request, response) => {
+      clearTimeout(timer);
+      end("terminal-ingress-refused", new Error(`terminal ingress refused the connection (${response?.statusCode ?? "?"})`));
+    });
+    ws.on("error", (error) => {
+      clearTimeout(timer);
+      end(state === "open" ? "terminal-ingress-closed" : "terminal-ingress-refused", error);
+    });
+    ws.on("close", () => {
+      clearTimeout(timer);
+      end("terminal-ingress-closed", new Error("terminal ingress closed the connection"));
+    });
+    ws.on("message", (data) => {
+      let parsed = null;
+      try {
+        parsed = JSON.parse(String(data));
+      } catch {
+        return;
+      }
+      if (parsed?.type !== "admitted" || state !== "connecting") return;
+      clearTimeout(timer);
+      state = "open";
+      const queued = pending;
+      pending = [];
+      for (const message of queued) write(message);
+      settleAdmitted(true);
+    });
+  }
+
+  const send = (message) => {
+    if (state === "dead") return;
+    if (state === "open") {
+      write(message);
+      return;
+    }
+    if (pending.length < TERMINAL_INGRESS_PENDING_LIMIT) pending.push(message);
+    if (state === "idle") connect().catch((error) => end("terminal-ingress-unreadable", error));
+  };
+
+  return {
+    frame(sessionId, bytes) {
+      if (typeof sessionId !== "string" || sessionId.length === 0) return;
+      send({ type: "frame", sessionId, bytes: String(bytes) });
+    },
+    end(sessionId) {
+      if (typeof sessionId !== "string" || sessionId.length === 0) return;
+      send({ type: "end", sessionId });
+    },
+    admitted,
+    async close() {
+      if (state === "connecting") await admitted;
+      if (state !== "open") return;
+      state = "dead";
+      settleAdmitted(false);
+      await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          try {
+            socket.terminate();
+          } catch {
+            // already gone
+          }
+          resolve();
+        }, timeoutMs);
+        timer.unref?.();
+        socket.once("close", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+        try {
+          socket.close();
+        } catch {
+          clearTimeout(timer);
+          resolve();
+        }
+      });
+    },
+  };
+}
+
+return { TERMINAL_FRAME_KIND, TERMINAL_INPUT_KIND, TERMINAL_RESUME_KIND, TERMINAL_INGRESS_TOKEN_HEADER, loopbackRelayUrl, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, buildTerminalInputEnvelope, buildTerminalResumeEnvelope, createTerminalRelayPushTransport, routeIngressMessage, startTerminalIngress, openTerminalIngressClient };
 }

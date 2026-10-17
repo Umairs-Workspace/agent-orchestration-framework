@@ -52,7 +52,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), ".."
 // inputs of the browser's feed-axis disjunction sitting together. Unconditional and
 // read with a strict `=== true`, exactly as `workspaceHasRun` is; every key above it
 // keeps its position, so this list still asserts an exact ordered entry.
-const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying"];
+const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying", "loopRunId"];
 
 // THE PAYLOAD'S TOP-LEVEL KEYS, asserted EXACTLY — and this list carries a deliberate
 // departure from the task feature's own enumeration, recorded here rather than papered

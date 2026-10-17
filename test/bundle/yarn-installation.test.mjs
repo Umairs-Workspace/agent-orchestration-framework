@@ -176,7 +176,8 @@ export const yarnInstallationTests = [
         'assignment-directive.mjs': ['@aof/work-loop/engine'],
         'relay.mjs': ['node:http', 'node:crypto', 'ws'],
         'relay-client.mjs': ['ws'],
-        'terminal-relay-bridge.mjs': ['ws'],
+        // 162/ADR-001: the loopback terminal ingress — its server and its constant-time token check. No fs: its address is the mesh store's.
+        'terminal-relay-bridge.mjs': ['node:http', 'node:crypto', 'ws'],
         'terminal-mirror.mjs': ['ws'],
         'worktrees.mjs': ['node:path', '@aof/execution/worktrees', '@aof/foundation/git-args', '@aof/foundation/text'],
       } : name === 'work-loop' ? {
@@ -202,6 +203,8 @@ export const yarnInstallationTests = [
         'ask-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'stop-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'child-drive.mjs': ['node:path'],
+        // 162/ADR-004: the drive status ticker reads the lane's subagent transcripts (names and mtimes only).
+        'drive-status.mjs': ['node:path', 'node:fs/promises'],
       } : name === 'work-graph' ? {
         'registry.mjs': ['node:fs/promises', 'node:path', '@aof/work/records', '@aof/contracts/loop-bounds'],
         'record.mjs': ['@aof/contracts/loop-bounds'],

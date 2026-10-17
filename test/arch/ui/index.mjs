@@ -209,6 +209,7 @@ import { archTests as acdHomeLayoutIsAFilterTests } from "./acd-home-layout-is-a
 
 // milestone 133 / story 04 — FF-13304 (the console renders a diagram only as an image).
 import { archTests as acdDiagramRenderedAsImageTests } from "./acd-diagram-rendered-as-image.test.mjs";
+import { archTests as acdLoopPaneReadOnlyTests } from "./acd-loop-pane-read-only.test.mjs";
 export const tests = [
   ...acdFleetReclaimGuardedTests,
   ...acdReusesRenderPlanTests,
@@ -261,4 +262,6 @@ export const tests = [
   ...acdHomeLayoutIsAFilterTests,
   // milestone 133 / story 04 — FF-13304: a diagram reaches the board only as an image.
   ...acdDiagramRenderedAsImageTests,
+  // 162 — FF-16202: a loop-driven pane never mounts interactive; the loop line has one home.
+  ...acdLoopPaneReadOnlyTests,
 ];

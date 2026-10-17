@@ -19,10 +19,16 @@
 // outcome has two callers and one home here (`childDriveOutcome`), with the cancel grace and
 // the fix file's path beside it.
 //
-// What this module does NOT do, by construction: it touches no run record (the child
+// What this module does NOT do, by construction: it writes no run record (the child
 // heartbeats the lent id; the parent settles it), prints nothing, imports no session driver
 // and never a shell.
+//
+// 162/ADR-004 — THE DRIVE STATUS TICKER HANGS HERE, because this is the one seam every drive
+// crosses. A caller that hands `status: { narrate, item }` gets a status line every five minutes
+// while the child is pending, printed through ITS narrate (so `--quiet` silences it), and the
+// ticker stops when the child settles. The ticker READS the lane's run record; it writes nothing.
 import path from "node:path";
+import { createDriveStatus, withDriveStatus } from "./drive-status.mjs";
 
 // THE CANCEL GRACE — the family's one named constant (129/04 ruling): how long an aborted
 // child is given to exit on its own after its stdin is ended, before it is killed. NOT a config
@@ -33,11 +39,14 @@ export const LANE_CANCEL_GRACE_MS = 10000;
 // The fix file's home — under the aof home (`AOF_GLOBAL_HOME` honoured), NEVER in a checkout
 // (ADR-005 §3): a lane's `git add -A` would otherwise commit it.
 // Application policy is supplied once; construction performs no I/O.
-export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runBounded }) {
+export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runBounded, driveStatusServices = null }) {
   if (typeof getRuntimeRoot !== "function") throw new TypeError("createChildDrive: getRuntimeRoot is required");
   if (typeof isPackaged !== "function") throw new TypeError("createChildDrive: isPackaged is required");
   if (typeof getCliEntry !== "function") throw new TypeError("createChildDrive: getCliEntry is required");
   if (typeof runBounded !== "function") throw new TypeError("createChildDrive: runBounded is required");
+
+  // The status ticker, composed only when its readers are supplied (a suite without them arms none).
+  const driveStatus = driveStatusServices == null ? null : createDriveStatus(driveStatusServices);
 
   function loopFixFilePath(runId, { env } = {}) {
     return path.join(getRuntimeRoot(env), "loop-fixes", `${runId}.json`);
@@ -116,7 +125,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     return lines.slice(-STDERR_TAIL_LINES);
   }
 
-  // spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, haltFile, thinking, model, autonomous, env, deadlineMs, signal, graceMs, spawnChild })
+  // spawnLaneDrive({ ref, phase, runId, lane, fixFile, answerFile, haltFile, thinking, model, autonomous, env, deadlineMs, signal, graceMs, spawnChild, status })
   // → { outcome, document, exitCode, stderrTail, spawn }
   //
   //   outcome   "document" | "refused" | "died" | "timeout" | "aborted"
@@ -129,7 +138,8 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
   // included); `stdin: "pipe"` is the cancel channel (task 01) — `signal`/`graceMs` end it,
   // wait, then kill through the seam. `spawnChild` is injectable for the suites, mirroring
   // `runBounded`'s own seam. A missing `ref`/`phase`/`runId`/`lane` is a caller error and
-  // throws before any spawn — never a `died`.
+  // throws before any spawn — never a `died`. `status` (optional, 162/ADR-004) arms the status
+  // ticker for the life of the spawn.
   async function spawnLaneDrive({
     ref,
     phase,
@@ -147,6 +157,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     signal,
     graceMs,
     spawnChild,
+    status,
   } = {}) {
     const given = { ref, phase, runId, lane };
     for (const key of REQUIRED) {
@@ -181,21 +192,28 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     ];
     const args = isPackaged() ? verb : [getCliEntry(), ...verb];
 
-    const spawn = await runBounded({
-      command: process.execPath,
-      args,
-      cwd: lane,
-      env: { ...process.env, ...(env ?? {}) },
-      stdin: "pipe",
-      // 129/06 F-63 — the lane child holds its OWN console: the session it drives is killed with a
-      // console-scoped kill (node-pty's ConPTY console-list agent) and that kill must never reach
-      // the loop's console (loop death #5, 2026-09-15). A no-op off win32.
-      ownConsole: true,
-      ...(deadlineMs == null ? {} : { deadlineMs }),
-      ...(signal == null ? {} : { signal }),
-      ...(graceMs == null ? {} : { graceMs }),
-      ...(spawnChild == null ? {} : { spawnChild }),
-    });
+    const ticker = driveStatus?.startDriveStatus({ ref, runId, lane, env, status }) ?? null;
+    let spawn;
+    try {
+      spawn = await runBounded({
+        command: process.execPath,
+        args,
+        cwd: lane,
+        env: { ...process.env, ...(env ?? {}) },
+        stdin: "pipe",
+        // 129/06 F-63 — the lane child holds its OWN console: the session it drives is killed with a
+        // console-scoped kill (node-pty's ConPTY console-list agent) and that kill must never reach
+        // the loop's console (loop death #5, 2026-09-15). A no-op off win32.
+        ownConsole: true,
+        ...(deadlineMs == null ? {} : { deadlineMs }),
+        ...(signal == null ? {} : { signal }),
+        ...(graceMs == null ? {} : { graceMs }),
+        ...(spawnChild == null ? {} : { spawnChild }),
+      });
+    } finally {
+      // Settled — timed out, cancelled or finished — so no status line for it is printed after.
+      ticker?.stop();
+    }
 
     const document = parseDocument(spawn.stdout);
     const answer = (outcome) => ({
@@ -215,5 +233,5 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     return answer(document.ok === false ? "refused" : "document");
   }
 
-  return Object.freeze({ loopFixFilePath, loopRepairFilePath, childDriveOutcome, spawnLaneDrive });
+  return Object.freeze({ loopFixFilePath, loopRepairFilePath, childDriveOutcome, spawnLaneDrive, withDriveStatus });
 }

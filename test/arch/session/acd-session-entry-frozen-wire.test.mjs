@@ -75,7 +75,8 @@ const WIRE_TYPE_FILE = "apps/ui/src/fleet/api.ts";
 // them are still here, in order, and every proof below still reads an EXACT ordered
 // projection rather than a subset. Both ends move together — the projection, the wire
 // type and this list are one edit, which is the property this gate exists to hold.
-const FROZEN_SIX = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"];
+// 162/ADR-002 §1 appends an eighth, `loopRunId`, after `relaying` (hop 2 of the record's ninth key).
+const FROZEN_SIX = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"];
 // The m38 four, in their m38 relative order — the keys this milestone may not move.
 const M38_FOUR = ["workspaceId", "repo", "assistant", "lastPingAt"];
 // The declared TS type of each key on the wire's typed mirror.

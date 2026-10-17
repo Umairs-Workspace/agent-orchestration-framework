@@ -44,7 +44,8 @@ export function createPhaseDrivers({
   sessionCapture,
   items,
   transcripts,
-  spend, runtimeSession, nativeAsks, execution
+  spend, runtimeSession, nativeAsks, execution,
+  loopSession = null
 }) {
   const { driveInteractiveClaudeSession, INTERACTIVE_COMMAND_READY_DELAY_MS } = sessionDriver;
   const { ensureWorktreeTrusted } = trust;
@@ -66,6 +67,105 @@ export function createPhaseDrivers({
   // effort as `continue` does (ADR-004 §4's lend reads continue's row for it).
   const PHASES = Object.freeze(["refine", "continue", "verify", "repair", "review"]);
   const sessionPhaseOf = (phase) => (["repair", "review"].includes(phase) ? "continue" : phase);
+
+  // 162/ADR-002 §2 — how often a loop drive re-states its session's two facts while its PTY
+  // lives: the launched-session handler's own ping cadence, well inside the session TTL.
+  const LOOP_SESSION_RESTATE_MS = 30_000;
+
+  // 162/ADR-002 §2 — the loop run that drives a lent drive: the `loopRunId` its run record's
+  // loop declaration names, else the lent run id itself (still a loop's drive, still read-only).
+  // A drive that owns its run is no loop's, and streams nothing.
+  async function loopRunIdFor(item, managedRunId) {
+    if (managedRunId == null) return null;
+    const runs = await Promise.resolve().then(() => readRuns(item)).catch(() => []);
+    const run = (Array.isArray(runs) ? runs : []).find((record) => record.runId === managedRunId);
+    const declared = run?.brief?.loop?.loopRunId;
+    return typeof declared === "string" && declared.length > 0 ? declared : managedRunId;
+  }
+
+  // 162/ADR-001 §3 + ADR-002 §2 — the drive child as PRODUCER. Every chunk with a captured
+  // session id is pushed to this node's own terminal ingress; once the ingress admits the
+  // connection, the session's record is stated `relaying` and named for its loop run, and
+  // re-stated on a beat while the PTY lives. The end marker is pushed once per session. All of
+  // it is best effort: the ingress client degrades once and never throws, and a statement that
+  // fails is reported, so the drive is never slowed, failed or retried because of it.
+  function createLoopSessionStream(workspace, loopRunId) {
+    const ingress = loopSession.openTerminalIngressClient({ workspace, onDegrade: (code, error) => reportDegrade(code, error) });
+    const ended = new Set();
+    // Every statement in flight, so the stream's close waits for them rather than racing them.
+    const inflight = new Set();
+    let statedFor = null;
+    let restate = null;
+    const stop = () => {
+      if (restate != null) clearInterval(restate);
+      restate = null;
+    };
+    // Asked again at write time, not only at arm time: a beat already scheduled when the session
+    // ended must not re-create the record the session's own hook has just removed.
+    const state = (sessionId) => {
+      const statement = Promise.resolve()
+        .then(() => (ended.has(sessionId) ? null : stateLoopSession(workspace, { sessionId, loopRunId })))
+        .catch((error) => reportDegrade("drive-loop-session", error))
+        .finally(() => inflight.delete(statement));
+      inflight.add(statement);
+      return statement;
+    };
+    const arm = (sessionId) => {
+      if (statedFor === sessionId) return;
+      statedFor = sessionId;
+      ingress.admitted.then((admitted) => {
+        if (!admitted || statedFor !== sessionId || ended.has(sessionId)) return;
+        state(sessionId);
+        stop();
+        restate = setInterval(() => state(sessionId), LOOP_SESSION_RESTATE_MS);
+        restate.unref?.();
+      });
+    };
+    return {
+      onOutputChunk(chunk, sessionId) {
+        if (typeof sessionId !== "string" || sessionId.length === 0) return;
+        ingress.frame(sessionId, chunk);
+        arm(sessionId);
+      },
+      onSessionEnd(sessionId) {
+        stop();
+        if (typeof sessionId !== "string" || sessionId.length === 0 || ended.has(sessionId)) return;
+        ended.add(sessionId);
+        ingress.end(sessionId);
+      },
+      async close() {
+        stop();
+        await Promise.allSettled([...inflight]);
+        await ingress.close();
+      },
+    };
+  }
+
+  // 162/ADR-002 §2 — the statement itself, keyed EXACTLY as the session's own hook keys its
+  // record (`aof session start|ping`: this node's id, the workspace's canonical id, the
+  // `claude-code` label), so it upserts that record rather than writing a sibling beside it.
+  async function stateLoopSession(workspace, { sessionId, loopRunId }) {
+    const config = workspace.config ?? {};
+    return loopSession.pingSession(workspace, {
+      nodeId: await loopSession.resolveNodeId(workspace),
+      workspaceId: loopSession.resolveWorkspaceId({ config, projectRoot: workspace.projectRoot }),
+      repo: config.name ?? path.basename(workspace.projectRoot),
+      assistant: "claude-code",
+      sessionId,
+      relaying: true,
+      loopRunId,
+    });
+  }
+
+  // Two optional driver hooks composed into one: the caller's own, then the loop stream's.
+  const composeHooks = (first, second) => (first == null ? second : second == null ? first : (...args) => {
+    try {
+      first(...args);
+    } catch (error) {
+      reportDegrade("drive", error);
+    }
+    return second(...args);
+  });
 
   async function driveNative(phase, item, input, ctx, recorded) {
     const managedRunId = input.run ?? ctx.loopDrive?.runId ?? null;
@@ -598,8 +698,16 @@ export function createPhaseDrivers({
             findings: fix.findings,
             changeUnderReview: fix.changeUnderReview,
           });
+        // 162/ADR-001 §5 — a loop's drive (a lent run) streams its session through this node's
+        // own daemon; a drive that owns its run is no loop's, and binds nothing.
+        const loopRunId = loopSession == null ? null : await loopRunIdFor(item, managedRunId);
+        const loopStream = loopRunId == null ? null : createLoopSessionStream(ctx.workspace, loopRunId);
         const driverOptions = {
           ...baseOptions,
+          ...(loopStream == null ? {} : {
+            onOutputChunk: composeHooks(baseOptions.onOutputChunk, loopStream.onOutputChunk),
+            onSessionEnd: composeHooks(baseOptions.onSessionEnd, loopStream.onSessionEnd),
+          }),
           // F27 (local drive path) — the directive command must not be typed into
           // claude's PTY at t=0: it races claude's startup, the keystrokes are lost, and
           // claude sits idle at an empty prompt — no transcript, no sessionId, no spend.
@@ -689,6 +797,8 @@ export function createPhaseDrivers({
         } finally {
           // The stop channel has nothing left to carry once there is nothing to stop.
           cancel?.release();
+          // The end marker is flushed before the socket closes; a close fault is the stream's.
+          await loopStream?.close().catch((error) => reportDegrade("drive-loop-session", error));
         }
 
         // Settle the run record so it never leaks a `running` row (the dedup guard would

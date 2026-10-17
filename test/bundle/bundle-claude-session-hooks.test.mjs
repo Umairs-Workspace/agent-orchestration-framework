@@ -622,8 +622,8 @@ export const bundleClaudeSessionHookTests = [
         }
         assert.deepEqual(
           producers,
-          ["packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs"],
-          "the relay has exactly three frame producers in mesh-launcher (fresh execution, terminal bridge, and parked-session resume); this hook story adds none",
+          ["packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs", "packages/mesh/src/launcher.mjs"],
+          "the relay has exactly four frame producers in mesh-launcher (fresh execution, terminal bridge, parked-session resume and, since 162/ADR-001, the loop ingress forward); this hook story adds none",
         );
       } finally {
         await rm(workspace.tmp, { recursive: true, force: true });

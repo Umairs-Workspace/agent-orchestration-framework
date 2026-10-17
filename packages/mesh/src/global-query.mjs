@@ -340,6 +340,11 @@ function buildSessionIndex({ nodes, assignments } = {}) {
         // but genuinely bridged) renders as a live pane instead of a dead tile. The wire
         // states a TRANSPORT fact; the browser keeps its own word. No vocabulary crosses.
         relaying: session.relaying === true,
+        // 162/ADR-002 §1, hop 3 — the TENTH key, appended after `relaying`: the run id of
+        // the loop drive that owns the session, or `null`. Carried as stated (`?? null`
+        // only), so the browser's posture rule — interactive only on null — sees a
+        // malformed value and fails closed, rather than this hop laundering it to null.
+        loopRunId: session.loopRunId ?? null,
       };
       // ONE TUPLE, ONE ENTRY — resolved, not collapsed (R12). The held entry keeps the
       // address unless this candidate outranks it under the stated total order. The

@@ -31,6 +31,7 @@ const meshSessionCommand = _aofHooks.commandsMeshSession.meshSessionCommand;
 const readSessionRecord = _aofHooks.meshSession.readSessionRecord;
 const readSessionRecordsForNode = _aofHooks.meshSession.readSessionRecordsForNode;
 const sessionRecordPath = _aofHooks.meshSession.sessionRecordPath;
+const pingSessionRecord = _aofHooks.meshSession.pingSession;
 const readLiveSessions = _aofApplication.mesh.presence.readLiveSessions;
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 
@@ -40,7 +41,7 @@ const NOW = "2026-08-10T12:00:00.000Z";
 // that something is bridging this session's PTY output up its stream. An APPEND is the
 // same re-freeze-by-growth m48 itself performed on m38's six; every key above keeps its
 // position, so this list still asserts an exact ordered record rather than a subset.
-const FROZEN_KEYS = ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"];
+const FROZEN_KEYS = ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"];
 
 async function makeFixture() {
   const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-session-per-session-"));
@@ -179,7 +180,7 @@ export const meshSessionPerSessionRecordTests = [
           assert.deepEqual(Object.keys(onDisk), FROZEN_KEYS, `${row.case}: its keys are exactly the ordered seven`);
           assert.strictEqual(onDisk.sessionId, row.stored, `${row.case}: sessionId is ${JSON.stringify(row.stored)}`);
           assert.ok(Object.hasOwn(onDisk, "sessionId"), `${row.case}: the key was not dropped`);
-          // EIGHT since m50/ADR-008's tail append. The clause is a bound on the RECORD — "no
+          // EIGHT since m50/ADR-008's tail append, NINE since 162/ADR-002's `loopRunId`. The clause is a bound on the RECORD — "no
           // key appeared that FROZEN_KEYS does not name" — never on the number, so it is
           // stated against the list rather than against a literal that has to be found twice.
           assert.equal(Object.keys(onDisk).length, FROZEN_KEYS.length, `${row.case}: no unnamed key appeared`);
@@ -358,4 +359,31 @@ export const meshSessionPerSessionRecordTests = [
       }
     },
   },
+  // ══ 162 task 00 — a hook that restarts the session record keeps the loop's facts (ADR-002 §2) ══
+  {
+    name: "loop-session-streams-to-its-card/00 [outline] a hook that restarts the session record keeps the loop's facts — the session's own hook starts or pings the record without either fact, and it still states it is relayed and names the loop run (2 rows)",
+    async run() {
+      const LOOP_RUN = "20261017T081933836Z-0000";
+      for (const writes of ["starts", "pings"]) {
+        const fixture = await makeFixture();
+        try {
+          const ctx = ctxFor(fixture);
+          // The drive child's statement: the hook's own key, both facts stated.
+          await pingSessionRecord(fixture.ws, { ...keyFor("sess-L"), repo: "demo", relaying: true, loopRunId: LOOP_RUN, now: NOW });
+          const stated = await readSessionRecord(fixture.ws, keyFor("sess-L"));
+          assert.equal(stated.relaying, true, `${writes}: the precondition — the record states it is relayed`);
+          assert.equal(stated.loopRunId, LOOP_RUN, `${writes}: …and names the loop run`);
+          // The session's OWN hook — `aof session start` on resume/compact, `aof session ping` per prompt.
+          const { exitCode } = await runCommand(writes === "starts" ? startArgs("sess-L") : pingArgs("sess-L"), ctx);
+          assert.notEqual(exitCode, 1, `${writes}: the hook verb succeeded`);
+          const after = await readSessionRecord(fixture.ws, keyFor("sess-L"));
+          assert.equal(after.relaying, true, `${writes}: the record still states that it is relayed`);
+          assert.equal(after.loopRunId, LOOP_RUN, `${writes}: …and still names loop run ${LOOP_RUN}`);
+        } finally {
+          await rm(fixture.tmp, { recursive: true, force: true });
+        }
+      }
+    },
+  },
 ];
+

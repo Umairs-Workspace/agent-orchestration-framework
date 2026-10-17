@@ -35,14 +35,17 @@ import {
   HOME_PAGE_STATE_ERROR,
   HOME_PAGE_STATE_LOADING,
   HOME_PAGE_STATE_POPULATED,
+  HOME_PAGE_STATES_WITH_PAYLOAD,
   HOME_POLL_MS,
   HOME_STATUS_PATH,
   activeRunCount,
   addressableSessionCount,
   homeEmptyCopy,
   homeFaultMessage,
+  homeLoopLines,
   homePageState,
   homeSlotSummary,
+  type HomeLoopLine,
   type HomePageState,
   type HomeStatusPayload,
 } from "./page-state.mjs";
@@ -117,6 +120,8 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
   }, [load]);
 
   const state = homePageState({ loading, error: failure, status });
+  // 162/ADR-005 — the live nodes' loops, composed against the browser's clock at this render.
+  const loops = homeLoopLines(status);
   // ONE population, counted once. The summary and the selector read the same array, because two
   // counts over one array is a fact with two homes — and `live`/`needInput` are the GRID's own
   // answers, reported up rather than recounted here: the number in the chrome and the tiles on
@@ -181,6 +186,9 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
           rhythm every other surface does. Exactly ONE of the five treatments is inside it. */}
       <div className="flex min-h-0 flex-1 flex-col px-4 py-7 sm:px-8">
         <div className="mx-auto flex min-h-0 w-full max-w-[1240px] flex-1 flex-col">
+          {/* 162/ADR-005 — a running loop is named where the operator looks first: above the
+              grid (or the empty card), in every state that holds a payload. */}
+          {HOME_PAGE_STATES_WITH_PAYLOAD.includes(state) && loops.length > 0 ? <LoopLines loops={loops} /> : null}
           {state === HOME_PAGE_STATE_LOADING ? (
             <LoadingCard />
           ) : state === HOME_PAGE_STATE_ERROR ? (
@@ -189,7 +197,7 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
             // G2 — the grid: one S2 tile per addressable session, and the socket each one opens.
             <SessionGrid status={status} origins={origins} onSummary={setCounts} />
           ) : (
-            <EmptyCard state={state} runCount={activeRunCount(status)} />
+            <EmptyCard state={state} runCount={activeRunCount(status)} loops={loops} />
           )}
         </div>
       </div>
@@ -221,12 +229,12 @@ function LoadingCard() {
 // The card's className is the house's dashed primitive VERBATIM and nothing is appended to it —
 // alignment lives on the children — so "this is the same card the rest of the product uses" is
 // a byte comparison rather than a judgement.
-function EmptyCard({ state, runCount }: { state: HomePageState; runCount: number }) {
-  const copy = homeEmptyCopy(state, runCount);
+function EmptyCard({ state, runCount, loops }: { state: HomePageState; runCount: number; loops: HomeLoopLine[] }) {
+  const copy = homeEmptyCopy(state, runCount, loops);
   return (
     <div data-home-state={copy.state} className={HOME_EMPTY_CARD_CLASS}>
       <p className="text-center">{copy.lines[0]}</p>
-      <p className="mt-1 text-center">{copy.lines[1]}</p>
+      {copy.lines.slice(1).map((line, index) => <p key={index} className="mt-1 text-center">{line}</p>)}
       <p className="mt-4 text-center">
         {/* THE ONE ROUTE OUT, and it is a real anchor an operator can middle-click — not a
             button that navigates. Its href comes off the route table through ./page-state.mjs,
@@ -236,6 +244,21 @@ function EmptyCard({ state, runCount }: { state: HomePageState; runCount: number
           {copy.link.label}
         </a>
       </p>
+    </div>
+  );
+}
+
+// 162/ADR-003 §3 + ADR-005 — the live loops' lines, one per loop, each naming its node. The line
+// is the shared module's; only the progress takes the warning tone, once the drive is quiet.
+function LoopLines({ loops }: { loops: HomeLoopLine[] }) {
+  return (
+    <div data-home-loops="" className="mb-3 flex flex-col gap-1">
+      {loops.map((loop) => (
+        <p key={`${loop.nodeId ?? ""}:${loop.key}`} className="min-w-0 truncate text-[12px] font-semibold text-primary" title={loop.nodeId ? `${loop.title} · ${loop.nodeId}` : loop.title}>
+          {loop.head}
+          {loop.progress ? <> · <span className={loop.quiet ? "text-amber-500" : undefined}>{loop.progress}</span></> : null}
+        </p>
+      ))}
     </div>
   );
 }

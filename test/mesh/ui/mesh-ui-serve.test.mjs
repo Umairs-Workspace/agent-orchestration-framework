@@ -546,7 +546,8 @@ export const meshUiServeTests = [
       const loop = /export type PresenceLoop = \{([\s\S]*?)\};/.exec(api);
       assert.ok(loop, "PresenceLoop is declared");
       const keys = [...loop[1].matchAll(/^\s*(\w+)\??:/gm)].map((match) => match[1]);
-      assert.deepEqual(keys, ["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"], "the eleven keys, in the frozen order");
+      // 162/ADR-003 §1 appends three after `stop`, optional because a node built before them omits all three.
+      assert.deepEqual(keys, ["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop", "sessionId", "driveStartedAt", "lastActivityAt"], "the eleven keys, in the frozen order, then 162's three");
       assert.match(loop[1], /stop: null \| "drain" \| "cancel";/, "stop is the two words or null");
     },
   },

@@ -101,6 +101,17 @@ export const READ_ONLY_CAUSE_REASON = Object.freeze({
   [FEED_ROSTER_GONE]: ROSTER_GONE_REASON,
 });
 
+// 162/ADR-002 §3 — the cause for the one read-only pane whose bytes ARE real: a session a loop
+// drives. Its stream binds, because a producer feeds it; its keyboard does not, because typing
+// would race the driver's own directive and nudge. The answer goes through the loop's own door.
+export const LOOP_DRIVEN_REASON = "read-only — a loop drives this session; answer it with aof work answer";
+
+// A row is loop-driven unless its `loopRunId` is null or absent — so a malformed value (a number,
+// an empty string, an object) fails CLOSED to read-only rather than open to a typeable pane.
+export function isLoopDriven(row) {
+  return row?.loopRunId != null;
+}
+
 // THE HELD TILE'S LINE (DESIGN K7/K8, DG-49-4), authored HERE because a pane has ONE injected
 // sentence and it has exactly one author. A tile the arbiter did not subscribe is listed, at rest,
 // and says which of the two held states it is in:
@@ -235,6 +246,7 @@ export function homeSessionMount(row, options = {}) {
 
   const axis = axisFor(row, options);
   const hold = options?.hold ?? null;
+  const loopDriven = isLoopDriven(row);
 
   return Object.freeze({
     // ═══ WHETHER ANYTHING BINDS, THE STRUCTURAL HALF OF "NO SOCKET IS OPENED" ═══
@@ -256,7 +268,9 @@ export function homeSessionMount(row, options = {}) {
     source: lookup.source,
     params: Object.freeze({ nodeId, sessionId }),
     // ═══ THE ONE WORD, AND THE ONLY PLACE IT IS DECIDED ═══
-    posture: axis === FEED_PRODUCER_KNOWN ? POSTURE_INTERACTIVE : POSTURE_READ_ONLY,
+    // 162/ADR-002 §3: a known producer AND no driving loop. The axis says bytes are coming; the
+    // loop fact says whose keyboard this session is — and a loop's session is nobody's.
+    posture: axis === FEED_PRODUCER_KNOWN && !loopDriven ? POSTURE_INTERACTIVE : POSTURE_READ_ONLY,
     ref,
     farEnd: nodeId,
     // The identity line's TAIL, and the FIRST thing to yield when the header cannot fit (DESIGN
@@ -275,7 +289,9 @@ export function homeSessionMount(row, options = {}) {
     // the one field that carries it: a tile the arbiter did not subscribe holds no socket, so
     // there is no transport fact to report and no read-only cause to explain — what it owes the
     // operator is why it is not watching and how to change that.
-    reason: hold?.subscribed === false ? heldPaneLine(hold) : READ_ONLY_CAUSE_REASON[axis] ?? null,
+    reason: hold?.subscribed === false
+      ? heldPaneLine(hold)
+      : READ_ONLY_CAUSE_REASON[axis] ?? (loopDriven ? LOOP_DRIVEN_REASON : null),
     // DG-49-10: a node that is stale, offline or simply not connected to the relay is NOT
     // `unavailable`. That word means the ORIGIN could not be resolved; the home is served from
     // the fleet origin, so `origins.fleet` always resolves and this surface cannot reach the

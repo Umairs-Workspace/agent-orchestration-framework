@@ -791,7 +791,7 @@ export const sessionSpawnOutcomeLaneTests = [
         assert.equal(record.relaying, true, "`startSession` was called with relaying: true alongside the existing 4-part key and `repo`");
         assert.deepEqual(
           Object.keys(record),
-          ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"],
+          ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"],
           "the written record contains relaying: true BESIDE the seven keys the frozen schema already carries — an APPEND, never a reorder",
         );
 
@@ -874,7 +874,7 @@ export const sessionSpawnOutcomeLaneTests = [
         assert.equal(live.length, 1, "the session projects");
         assert.deepEqual(
           Object.keys(live[0]),
-          ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"],
+          ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"],
           "readLiveSessions' projected entry carries `relaying` appended at the TAIL of its frozen six — never a reorder",
         );
         assert.equal(live[0].relaying, true, "…and it carries the stated value");
@@ -914,7 +914,7 @@ export const sessionSpawnOutcomeLaneTests = [
         assert.equal(index.length, 1, "the index holds the session");
         assert.deepEqual(
           Object.keys(index[0]),
-          ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying"],
+          ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying", "loopRunId"],
           "buildSessionIndex's entry carries `relaying` appended AFTER `workItem`, unconditionally",
         );
         assert.equal(index[0].relaying, true, "…with the stated value");
@@ -1063,7 +1063,8 @@ export const sessionSpawnOutcomeLaneTests = [
     name: "50/04 task 00 lane B: the producer-site ceiling is raised to three, with all three sites sanctioned by name",
     async run() {
       const gate = (await readFile(path.join(repoRoot, "test", "arch", "session", "acd-terminal-output-signal-source.test.mjs"), "utf8")).replace(/\r\n/g, "\n");
-      assert.match(gate, /const SANCTIONED_PRODUCER_SITES = 3;/, "the ceiling is 3 — AT the delivered count, never above it");
+      assert.match(gate, /const SANCTIONED_PRODUCER_SITES = 4;/, "the ceiling is AT the delivered count, never above it — 3 at this raise, 4 since 162/ADR-001's ingress forward");
+      assert.match(gate, /RAISED 3 → 4 BY 162\/ADR-001/, "…and the later raise names its own ADR the same way");
       assert.match(gate, /RAISED 2 → 3 BY m50\/ADR-008 DECISION 9/, "…and the raise names its ADR in the gate's own header");
       assert.match(gate, /the reverse direction no longer rests on the count at all/i, "…carrying decision 9's RE-DERIVATION: the reverse implication now rests on every non-assignment producer STATING relaying: true");
       assert.match(gate, /survives as the TRIPWIRE/, "…and states what the count still proxies");

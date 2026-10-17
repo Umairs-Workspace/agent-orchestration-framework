@@ -68,7 +68,7 @@ export const meshSessionCliRecordTests = [
         // …the frozen seven, plus m50/ADR-008 decision 8's APPENDED eighth (`relaying`). A CLI
         // -started session states nothing, so it reads `false` — which is correct and is the
         // point: `aof session start` registers a session, it does not bridge one.
-        assert.deepEqual(Object.keys(record), ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"], "keys are exactly the frozen seven plus the m50 tail append, in order (48/ADR-002 re-froze m38's six by inserting sessionId after assistant)");
+        assert.deepEqual(Object.keys(record), ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"], "keys are exactly the frozen seven plus the m50 tail append, in order (48/ADR-002 re-froze m38's six by inserting sessionId after assistant)");
         assert.equal(record.relaying, false, "a hook/CLI-registered session states no producer fact — nothing is relaying it, and the browser must not light its pane up");
         assert.equal(record.startedAt, record.lastPingAt, "startedAt equals lastPingAt on a fresh start");
       } finally {

@@ -128,7 +128,7 @@ export function createLoopShell({
   const { reportDegrade } = diagnostics;
   const { commitWorktreeChanges, recordCommitTip, resolveExec } = worktrees;
   const { reconcileLanes, runWaveBuild } = wave;
-  const { spawnLaneDrive } = childDrive;
+  const { spawnLaneDrive, withDriveStatus = (spawn) => spawn } = childDrive;
   const { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt } = asks;
   const { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent } = loopDiagnostics;
   const { buildNotifyEnvelope, notify } = notifications;
@@ -1240,6 +1240,7 @@ export function createLoopShell({
     // foreground loop, a loop under `AOF_LOOP_DIAG=0` and a test-driven `runLoopBody` all carry
     // it — to the in-process drive, the retry ladder, the cross to verify and the wave alike.
     ctx = { ...ctx, agentSessionDriverOptions: { ...(ctx.agentSessionDriverOptions ?? {}), signal: source.signal } };
+    if (typeof ctx.spawnPhaseDrive === "function") ctx = { ...ctx, spawnPhaseDrive: withDriveStatus(ctx.spawnPhaseDrive, { narrate, resolveItem: (ref) => resolveItemExact(ctx, ref) }) }; // 162/ADR-004: the child's status line rides `narrate`, so --quiet silences it
     const driven = [];
     // 131/03 — WHAT EVERY NEEDS-INPUT SITE OF THIS INVOCATION SHARES (ADR-004 §1): the loop's scope and
     // id, the workspace's id, and the composer's seams over this body's own source and printer. The

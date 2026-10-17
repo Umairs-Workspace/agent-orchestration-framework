@@ -505,6 +505,28 @@ export const loopCommandWaveTests = [
     },
   },
   {
+    // 162 task 02 (ADR-004) — the WAVE hands every lane's child spawn its own status: the wave's
+    // in-flight printer and the lane's own item, so a lane's status line names its own ref and reads
+    // its own run record, never the primary's.
+    name: "loop-progress-in-the-terminal/02 E11 · each wave lane prints its own status line — the wave hands each lane's spawn the wave's printer and that lane's own item, and a line printed through it reaches the loop's output naming its lane",
+    run: async () => {
+      await withLaneRepo(async (fx) => {
+        const child = fakeLaneChild(fx, { onSpawn: (input) => input.status?.narrate?.(`${input.ref} — 5 min, status probe`) });
+        const { state, report } = await runWave(fx, { child, rubric: stubRubric(emits(passingTap())) });
+        assert.equal(state.state, "done");
+        assert.equal(child.calls.length, 2);
+        for (const call of child.calls) {
+          assert.equal(typeof call.status?.narrate, "function", `${call.ref}: the lane spawn carries a status printer`);
+          assert.equal(call.status.item?.ref, call.ref, `${call.ref}: …and its own item`);
+          assert.ok(path.resolve(call.status.item.dir).startsWith(path.resolve(call.lane)), `${call.ref}: …resolved in the lane, never the primary`);
+        }
+        for (const ref of ["07/01", "07/03"]) {
+          assert.equal(report.matching(`${ref} — 5 min, status probe`).length, 1, `${ref}: its status line reached the loop's output, naming its own ref`);
+        }
+      });
+    },
+  },
+  {
     // 141/01 — a wave lane's child drive argv carries the loop's --thinking (the lane seam turns
     // `thinking` into `--thinking <level>`, pinned in the drive suite); none when the loop has none.
     name: "141/01 every wave lane's child is handed the loop's --thinking, and nothing when the loop has none",

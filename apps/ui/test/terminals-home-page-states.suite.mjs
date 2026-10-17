@@ -34,6 +34,7 @@ import {
   HOME_EXIT_LABEL,
   HOME_HEADING,
   HOME_LOADING_LINE,
+  HOME_LOOP_SESSION_PENDING,
   HOME_PAGE_STATE_E1,
   HOME_PAGE_STATE_E2,
   HOME_PAGE_STATE_ERROR,
@@ -46,6 +47,7 @@ import {
   countedPhrase,
   homeEmptyCopy,
   homeFaultMessage,
+  homeLoopLines,
   homePageState,
   homeSlotSummary,
 } from "../src/home/page-state.mjs";
@@ -937,4 +939,110 @@ export const terminalsHomePageStatesTests = [
       }
     },
   },
+  // ═══ 162 tasks 01 + 03 — a running loop is named where the operator looks first ═══════════════
+  // `03_home-empty-state-names-the-loop.feature` and task 01's above-the-grid scenario, driven
+  // through the SHIPPED selector and copy and — for what is on screen — the REAL mounted home.
+  {
+    name: "home-empty-state-names-the-loop/03 E12 · a running loop whose session has not registered is named — \"loop 03 · refine 03/07\" and its session has not reported yet, never the sentence blaming the bundle",
+    async run() {
+      const status = payload({ nodes: [loopNode("aof-control", { runs: ["r1"], loop: LOOP_03() })] });
+      assert.equal(homePageState({ status }), HOME_PAGE_STATE_E2, "runs are in flight and no session row exists");
+      const copy = homeEmptyCopy(HOME_PAGE_STATE_E2, activeRunCount(status), homeLoopLines(status));
+      assert.equal(copy.lines[0], "1 run in flight · no session is reporting a terminal.", "the count line is unchanged");
+      assert.ok(copy.lines.slice(1).some((line) => line.includes("loop 03 · refine 03/07") && line.endsWith(HOME_LOOP_SESSION_PENDING)), `it names the loop and says its session has not reported yet — got ${JSON.stringify(copy.lines)}`);
+      assert.ok(!copy.lines.includes(HOME_E2_WHY), "it does not show the sentence blaming the bundle");
+      await withHomeFace({ status }, async ({ url }) => {
+        await mount({ url }, async (app) => {
+          const card = app.homeState();
+          assert.equal(card.props["data-home-state"], HOME_PAGE_STATE_E2);
+          const words = textOf(card);
+          assert.ok(words.includes("loop 03 · refine 03/07") && words.includes(HOME_LOOP_SESSION_PENDING), "…and that is what the mounted card says");
+          assert.ok(!words.includes(HOME_E2_WHY), "…without the bundle sentence");
+        });
+      });
+    },
+  },
+  {
+    name: "home-empty-state-names-the-loop/03 E13 · a run that belongs to no loop keeps today's sentence — \"1 run in flight · no session is reporting a terminal.\" and the bundle sentence, unchanged",
+    async run() {
+      const status = RUNS_IN_FLIGHT;
+      assert.deepEqual(homeLoopLines(status), [], "no live node reports a loop");
+      const copy = homeEmptyCopy(HOME_PAGE_STATE_E2, activeRunCount(status), homeLoopLines(status));
+      assert.deepEqual([...copy.lines], ["1 run in flight · no session is reporting a terminal.", HOME_E2_WHY], "today's two lines, byte for byte");
+    },
+  },
+  {
+    name: "home-empty-state-names-the-loop/03 [outline] what the empty state says about a loop's session — no id and no row → empty, pending; an id and no row → empty, `session 89b1d500 is not relaying`; an id and its row → populated, the pane in the grid and the loop's line above it (3 rows)",
+    async run() {
+      const rows = [
+        { label: "no session id, no row", loop: LOOP_03(), sessions: [], state: HOME_PAGE_STATE_E2, says: HOME_LOOP_SESSION_PENDING },
+        { label: "an id, no row", loop: LOOP_03({ sessionId: "89b1d500" }), sessions: [], state: HOME_PAGE_STATE_E2, says: "session 89b1d500 is not relaying" },
+        { label: "an id and its row", loop: LOOP_03({ sessionId: "89b1d500" }), sessions: [{ ...session("aof-control", "89b1d500"), relaying: true, loopRunId: "L03" }], state: HOME_PAGE_STATE_POPULATED, says: null },
+      ];
+      for (const row of rows) {
+        const status = payload({ nodes: [loopNode("aof-control", { runs: ["r1"], loop: row.loop })], sessions: row.sessions });
+        assert.equal(homePageState({ status }), row.state, `${row.label}: the page is ${row.state}`);
+        const loops = homeLoopLines(status);
+        if (row.says != null) {
+          const copy = homeEmptyCopy(row.state, activeRunCount(status), loops);
+          assert.ok(copy.lines.some((line) => line.includes("loop 03") && line.endsWith(row.says)), `${row.label}: the copy names loop 03 and says ${JSON.stringify(row.says)} — got ${JSON.stringify(copy.lines)}`);
+        } else {
+          assert.equal(loops[0].sessionRow, true, `${row.label}: the loop's own session has its row`);
+          await withHomeFace({ status }, async ({ url }) => {
+            await mount({ url }, async (app) => {
+              assertLoopAboveGrid(app, "loop 03");
+            });
+          });
+        }
+      }
+    },
+  },
+  {
+    name: "home-empty-state-names-the-loop/03 a loop on a stale node is not named — the page says nothing is running",
+    async run() {
+      const status = payload({ nodes: [loopNode("aof-mac", { freshness: "stale", runs: ["r1"], loop: LOOP_03() })] });
+      assert.equal(homePageState({ status }), HOME_PAGE_STATE_E1, "nothing is running");
+      assert.deepEqual(homeLoopLines(status), [], "the stale node's loop is not read");
+      const copy = homeEmptyCopy(HOME_PAGE_STATE_E1, activeRunCount(status), homeLoopLines(status));
+      assert.deepEqual([...copy.lines], [...HOME_E1_LINES]);
+      assert.ok(!copy.lines.join(" ").includes("loop 03"), "loop 03 is not named");
+    },
+  },
+  {
+    name: "loop-progress-in-the-ui/01 the home page shows the running loops above its grid — a live node reports loop 03 with its session streaming, and loop 03's line is shown above the session grid",
+    async run() {
+      const status = payload({
+        nodes: [loopNode("aof-control", { runs: ["r1"], loop: LOOP_03({ sessionId: "89b1d500" }) })],
+        sessions: [{ ...session("aof-control", "89b1d500"), relaying: true, loopRunId: "L03" }],
+      });
+      assert.equal(homePageState({ status }), HOME_PAGE_STATE_POPULATED, "the page holds a payload with a row");
+      await withHomeFace({ status }, async ({ url }) => {
+        await mount({ url }, async (app) => {
+          assertLoopAboveGrid(app, "loop 03 · refine 03/07");
+        });
+      });
+    },
+  },
 ];
+
+// ── 162 fixtures ──────────────────────────────────────────────────────────────────────────────
+function LOOP_03(overrides = {}) {
+  return { loopRunId: "L03", workspaceId: "workspace-a", scope: "03", level: "L2", cap: 3, phase: "refine", cycle: 1, ref: "03/07", runId: "r1", supervised: false, stop: null, sessionId: null, driveStartedAt: null, lastActivityAt: null, ...overrides };
+}
+
+function loopNode(nodeId, { freshness = "live", runs = [], loop } = {}) {
+  const base = node(nodeId, { freshness, runs });
+  return { ...base, presence: { ...base.presence, loops: [loop] } };
+}
+
+// The loop's line is on screen, and it comes BEFORE the session grid in document order.
+function assertLoopAboveGrid(app, text) {
+  const nodes = findAll(app.tree(), () => true);
+  const strip = nodes.findIndex((child) => child.props?.["data-home-loops"] !== undefined);
+  const grid = nodes.findIndex((child) => String(child.props?.className ?? "").includes(GRID_TRACK));
+  assert.ok(strip >= 0, "the loop lines are on screen");
+  assert.ok(textOf(nodes[strip]).includes(text), `…naming ${text}`);
+  assert.ok(grid >= 0, "the session grid is on screen");
+  assert.ok(strip < grid, "…and the loop's line is above the grid");
+}
+

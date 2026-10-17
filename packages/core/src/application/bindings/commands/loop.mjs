@@ -100,7 +100,7 @@ export function assembleCommandsLoop({ runtimeSessionServices, workServices, loo
     diagnostics: { reportDegrade },
     worktrees: { commitWorktreeChanges, recordCommitTip, resolveExec },
     wave: { reconcileLanes, runWaveBuild },
-    childDrive: { spawnLaneDrive },
+    childDrive: { spawnLaneDrive, withDriveStatus: loopChildDriveServices.withDriveStatus },
     asks: { askBlockLines, askContext, askEnvFor, awaitAnswer, isParkedHalt, parkedHalt },
     loopDiagnostics: { installLoopDiagnostics, loopDiagLogDir, loopDiagScopeTag, readLastLoopDiagEvent },
     notifications: { buildNotifyEnvelope, notify },

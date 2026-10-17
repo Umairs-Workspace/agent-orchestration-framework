@@ -1469,7 +1469,7 @@ function GlobalNodePanel({ nodes, total, localNodeId }: { nodes: GlobalNode[]; t
 // ONE button on this node's card only (`Stop` muted → `Stop now` destructive → absent; the rung is
 // `loopStopAffordance`'s, the in-flight / post-2xx hold and the refusal slot the assign affordance's own machine —
 // `runAssign` over `fleetApi.loopStop` with the loop's words) and the message span. A 2xx climbs the panel's rung
-// memory to the word the verb answered; the wire catches the line up on its own poll.
+// memory to the word the verb answered; the wire catches the line up on its own poll. 162/ADR-003 §3: the drive's progress closes the line, in the warning tone once quiet.
 function LoopStopRow({ loop, node, localNodeId, remembered, onRung }: { loop: FleetLoopLine; node: GlobalNode; localNodeId: string | null; remembered?: RememberedStopRung; onRung: (rung: number) => void }) {
   const [ack, setAck] = useState<AssignAffordanceState>(assignAtRest);
   const { button } = loopStopAffordance({ loop, node, localNodeId, remembered });
@@ -1482,7 +1482,7 @@ function LoopStopRow({ loop, node, localNodeId, remembered, onRung }: { loop: Fl
   }, [loop.scope, loop.workspaceId, onRung]);
   return (
     <p className="flex items-center gap-2 text-[13px] font-semibold text-primary">
-      <span className="min-w-0 truncate" title={loop.title}>{loop.line}</span>
+      <span className="min-w-0 truncate" title={loop.title}>{loop.head}{loop.progress ? <> · <span className={loop.quiet ? "text-amber-500" : undefined}>{loop.progress}</span></> : null}</span>
       {button ? <button type="button" disabled={view.actionDisabled} aria-busy={ack.phase === "sending" ? "true" : undefined} aria-label={button.title} title={button.title} onClick={onStop} className={button.tone === "muted" ? "shrink-0 rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-card disabled:cursor-not-allowed disabled:opacity-50" : "shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive transition disabled:cursor-not-allowed disabled:opacity-50"}>{button.label}</button> : null}
       {button && view.message ? <span className="mono min-w-0 shrink truncate text-[10.5px] text-destructive" title={view.messageTitle ?? view.message}>{view.message}</span> : null}
     </p>

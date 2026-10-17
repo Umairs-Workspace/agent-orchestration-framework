@@ -539,6 +539,9 @@ export function createWaveOrchestration({
               deadlineMs: bounds.startToCloseMs + bounds.startupGraceMs,
               signal: lane.controller.signal,
               graceMs: LANE_CANCEL_GRACE_MS,
+              // 162/ADR-004 — this lane's own status line, naming its own ref, read off the LANE's
+              // item (its run record and Claude projects dir), printed through the wave's narrate.
+              status: { narrate, item: laneItem },
             });
             const document = answer?.document ?? null;
             const outcome = childDriveOutcome(answer);

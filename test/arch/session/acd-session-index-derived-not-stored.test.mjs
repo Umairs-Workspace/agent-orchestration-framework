@@ -87,7 +87,7 @@ const WIRE_TYPE_FILE = "apps/ui/src/fleet/api.ts";
 // inputs of the browser's feed-axis disjunction sitting together. Unconditional and
 // read with a strict `=== true`, exactly as `workspaceHasRun` is; every key above it
 // keeps its position, so this list still asserts an exact ordered entry.
-const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying"];
+const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying", "loopRunId"]; // 162/ADR-002 §1 appends loopRunId
 
 // The DECLARED TS type of each key on the wire's typed mirror (`MeshSession`).
 // `sessionId` is `string` — NOT `PresenceSession`'s `string | null`. That is the one

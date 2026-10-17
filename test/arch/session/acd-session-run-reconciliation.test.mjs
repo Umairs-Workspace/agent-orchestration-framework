@@ -148,11 +148,15 @@ function formatterViolations(source) {
 }
 
 // Load a PLANTED variant of the real formatter as a real module. `apps/ui/src/fleet/runs.mjs`
-// imports nothing (measured: a zero-import leaf), so a mutated copy in a temp dir is
-// the real code path with one line changed — not a re-implementation of it.
+// imports exactly one module — since 162/ADR-003 §2, the shared `../components/loop-line.mjs` it
+// re-exports the loop line from — so the plant keeps that one sibling, copied byte for byte, and a
+// mutated copy in a temp dir is still the real code path with one line changed.
 async function loadPlantedFormatter(source) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-acd-planted-formatter-"));
-  const file = path.join(dir, "runs.mjs");
+  await mkdir(path.join(dir, "fleet"), { recursive: true });
+  await mkdir(path.join(dir, "components"), { recursive: true });
+  await writeFile(path.join(dir, "components", "loop-line.mjs"), await readFile(path.join(repoRoot, "apps", "ui", "src", "components", "loop-line.mjs"), "utf8"), "utf8");
+  const file = path.join(dir, "fleet", "runs.mjs");
   await writeFile(file, source, "utf8");
   const module = await import(`${pathToFileURL(file).href}?v=${Math.random()}`);
   return { fleetCurrentWorkLines: module.fleetCurrentWorkLines, cleanup: () => rm(dir, { recursive: true, force: true }) };

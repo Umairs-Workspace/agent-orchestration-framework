@@ -37,6 +37,9 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { fleetCurrentWorkLines, fleetLoopLines, loopStopAffordance, rememberStopRung } from "../../apps/ui/src/fleet/runs.mjs";
+import { LOOP_QUIET_AFTER_MS, fleetLoopLines as sharedFleetLoopLines, loopProgress } from "../../apps/ui/src/components/loop-line.mjs";
+import { homeLoopLines } from "../../apps/ui/src/home/page-state.mjs";
+const ago = (ms) => new Date(Date.now() - ms).toISOString();
 import { POLL_MS, ASSIGN_SENT_HOLD_MS, ASSIGN_TIMEOUT_MS } from "../../apps/ui/src/fleet/assign-affordance.mjs";
 import { removeWorkspaceFromProjection, withPublishedAssignFixture } from "../support/mesh-ui-assign-fixture.mjs";
 import { withFleetApp, findAll, textOf } from "../../apps/ui/test/support/fleet-app-harness.mjs";
@@ -1775,13 +1778,16 @@ export const fleetScopeTests = [
     name: "the-line-and-the-button-are-pure/03 the type declarations name the four exports — runs.d.mts declares fleetLoopLines, loopStopAffordance and rememberStopRung with their shapes; scope.d.mts declares nodeWorkRegion",
     async run() {
       const runs = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "runs.d.mts"), "utf8");
-      assert.match(runs, /export declare function fleetLoopLines\(/);
+      // 162/ADR-003 §2 — the loop line, its entry type and the rung memory moved to the shared module.
+      const shared = await readFile(path.join(repoRoot, "apps", "ui", "src", "components", "loop-line.d.mts"), "utf8");
+      assert.match(runs, /export \{ fleetLoopLines \} from "\.\.\/components\/loop-line\.mjs";/, "runs.d.mts re-exports the shared line");
+      assert.match(shared, /export declare function fleetLoopLines\(/);
       assert.match(runs, /export declare function loopStopAffordance\(/);
       assert.match(runs, /export declare function rememberStopRung\(/);
-      assert.match(runs, /export type FleetLoopLine = \{[\s\S]*?key: string;[\s\S]*?line: string;[\s\S]*?title: string;[\s\S]*?loopRunId: string;[\s\S]*?scope: string;[\s\S]*?workspaceId: string \| null;[\s\S]*?stop: null \| "drain" \| "cancel";[\s\S]*?\};/, "the line entry's shape");
+      assert.match(shared, /export type FleetLoopLine = \{[\s\S]*?key: string;[\s\S]*?line: string;[\s\S]*?title: string;[\s\S]*?loopRunId: string;[\s\S]*?scope: string;[\s\S]*?workspaceId: string \| null;[\s\S]*?stop: null \| "drain" \| "cancel";[\s\S]*?\};/, "the line entry's shape");
       assert.match(runs, /export type LoopStopButton = \{[\s\S]*?rung: 1 \| 2;[\s\S]*?label: "Stop" \| "Stop now";[\s\S]*?title: string;[\s\S]*?tone: "muted" \| "destructive";[\s\S]*?\};/, "the button's shape");
       assert.match(runs, /button: LoopStopButton \| null;[\s\S]*?remote: boolean;/, "the affordance's shape");
-      assert.match(runs, /export type StopRungMemory = Map<string, RememberedStopRung>;/, "the memory's shape");
+      assert.match(shared, /export type StopRungMemory = Map<string, RememberedStopRung>;/, "the memory's shape");
       const scope = await readFile(path.join(repoRoot, "apps", "ui", "src", "fleet", "scope.d.mts"), "utf8");
       assert.match(scope, /export declare function nodeWorkRegion\(/);
       assert.match(scope, /export type NodeWorkRegion = \{[\s\S]*?lines: string\[\];[\s\S]*?token: "primary" \| "muted";[\s\S]*?loops: FleetLoopLine\[\];[\s\S]*?\};/, "the region's shape");
@@ -2109,7 +2115,87 @@ export const fleetScopeTests = [
       await control.run();
     },
   },
+  // ═══ 162 task 01 — the loop line carries its drive's progress, on the fleet card and the home ═══
+  // `01_loop-progress-in-the-ui.feature`, driven against the SHARED `apps/ui/src/components/loop-line.mjs`
+  // through both surfaces' own entry points: the fleet's `nodeWorkRegion` (the card production renders)
+  // and the home's `homeLoopLines`. Times are relative to the real clock, as the browser's are.
+  {
+    name: "loop-progress-in-the-ui/01 E6 · an active drive shows its elapsed time and its last activity — \"loop 03 · refine 03/07 · cycle 1 of 3 · 36 min · active 5 s ago\", on the fleet node card and the home page alike",
+    async run() {
+      const entry = E1({ scope: "03", phase: "refine", ref: "03/07", cycle: 1, cap: 3, driveStartedAt: ago(36 * 60_000), lastActivityAt: ago(5_000) });
+      const expected = "loop 03 · refine 03/07 · cycle 1 of 3 · 36 min · active 5 s ago";
+      const card = nodeWorkRegion({ nodeId: "node-7297", presence: { activeRuns: ["r1"], sessions: [], loops: [entry] } }, "node-7297");
+      assert.equal(card.loops[0].line, expected, "the fleet node card");
+      const home = homeLoopLines({ nodes: [{ nodeId: "node-7297", freshness: "live", presence: { activeRuns: ["r1"], loops: [entry] } }], sessions: [] });
+      assert.equal(home[0].line, expected, "the home page — the same line");
+      assert.equal(card.loops[0].quiet, false, "no warning tone");
+    },
+  },
+  {
+    name: "loop-progress-in-the-ui/01 E7 · between two drives the line carries no progress — \"loop 03 · cycle 2 of 3\", with neither an elapsed time nor an activity age",
+    async run() {
+      const [line] = fleetLoopLines({ loops: [E1({ scope: "03", phase: null, ref: null, cycle: 2, cap: 3, driveStartedAt: ago(60_000), lastActivityAt: ago(1_000) })] });
+      assert.equal(line.line, "loop 03 · cycle 2 of 3");
+      assert.equal(line.progress, null, "no progress segment");
+      assert.ok(!/\bmin\b|\bs ago\b|quiet|active/.test(line.line), "neither an elapsed time nor an activity age");
+    },
+  },
+  {
+    name: "loop-progress-in-the-ui/01 E8 · a drive quiet for 14 minutes is flagged — its progress reads \"50 min · quiet 14 min\", in the warning tone",
+    async run() {
+      const [line] = fleetLoopLines({ loops: [E1({ scope: "03", driveStartedAt: ago(50 * 60_000), lastActivityAt: ago(14 * 60_000) })] });
+      assert.equal(line.progress, "50 min · quiet 14 min");
+      assert.equal(line.quiet, true, "the warning tone");
+      assert.ok(line.line.endsWith("· 50 min · quiet 14 min"), "…closing the line");
+    },
+  },
+  {
+    name: "loop-progress-in-the-ui/01 E14 · a drive quiet for just under ten minutes is not flagged — its progress ends \"active 9 min ago\", not in the warning tone",
+    async run() {
+      const now = Date.parse("2026-10-17T12:00:00.000Z");
+      const [line] = fleetLoopLines({ loops: [E1({ scope: "03", driveStartedAt: new Date(now - 40 * 60_000).toISOString(), lastActivityAt: new Date(now - (9 * 60_000 + 59_000)).toISOString() })] }, null, now);
+      assert.ok(line.progress.endsWith("active 9 min ago"), `got ${line.progress}`);
+      assert.equal(line.quiet, false);
+    },
+  },
+  {
+    name: "loop-progress-in-the-ui/01 [outline] the progress segment by drive age and activity age (6 rows)",
+    async run() {
+      const now = Date.parse("2026-10-17T12:00:00.000Z");
+      const at = (ms) => new Date(now - ms).toISOString();
+      const rows = [
+        { started: 45_000, heartbeat: null, segment: "45 s", warning: false },
+        { started: 36 * 60_000, heartbeat: 5_000, segment: "36 min · active 5 s ago", warning: false },
+        { started: 40 * 60_000, heartbeat: 9 * 60_000 + 59_000, segment: "40 min · active 9 min ago", warning: false },
+        { started: 40 * 60_000, heartbeat: 10 * 60_000, segment: "40 min · quiet 10 min", warning: true },
+        { started: 50 * 60_000, heartbeat: 14 * 60_000, segment: "50 min · quiet 14 min", warning: true },
+        { started: 65 * 60_000, heartbeat: 30_000, segment: "1 h 05 min · active 30 s ago", warning: false },
+      ];
+      for (const row of rows) {
+        const loop = E1({ driveStartedAt: at(row.started), lastActivityAt: row.heartbeat == null ? null : at(row.heartbeat) });
+        assert.deepEqual(loopProgress(loop, now), { text: row.segment, quiet: row.warning }, `started ${row.started} ms ago, heartbeat ${row.heartbeat}`);
+        const [line] = fleetLoopLines({ loops: [loop] }, null, now);
+        assert.equal(line.progress, row.segment, "…and the line carries the same segment");
+        assert.equal(line.quiet, row.warning, "…in the tone the row says");
+      }
+    },
+  },
+  {
+    name: "loop-progress-in-the-ui/01 the loop line and the quiet threshold have one home — both surfaces compose it from the one shared module, and the ten-minute threshold is its one exported constant",
+    async run() {
+      assert.equal(fleetLoopLines, sharedFleetLoopLines, "the fleet's loop line IS the shared module's, re-exported");
+      assert.equal(LOOP_QUIET_AFTER_MS, 10 * 60 * 1000, "the threshold is ten minutes, exported once");
+      const pageState = await readFile(path.join(repoRoot, "apps", "ui", "src", "home", "page-state.mjs"), "utf8");
+      assert.match(pageState, /import \{ fleetLoopLines \} from "\.\.\/components\/loop-line\.mjs";/, "the home composes its loop lines from the same module");
+      const entry = E1({ driveStartedAt: ago(20 * 60_000), lastActivityAt: ago(11 * 60_000) });
+      const card = nodeWorkRegion({ nodeId: "n1", presence: { activeRuns: [], sessions: [], loops: [entry] } }, "n1");
+      const home = homeLoopLines({ nodes: [{ nodeId: "n1", freshness: "live", presence: { loops: [entry] } }] });
+      assert.equal(card.loops[0].quiet, true);
+      assert.equal(home[0].quiet, card.loops[0].quiet, "…so the two surfaces agree on what quiet is");
+    },
+  },
 ];
+
 
 // ══════════════════════ m47 / story 02 — the task-01 and task-02 payload fixtures ══════
 //

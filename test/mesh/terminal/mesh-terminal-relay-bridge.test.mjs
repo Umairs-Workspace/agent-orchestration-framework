@@ -41,6 +41,11 @@ const bridge = Object.freeze({
   buildTerminalInputEnvelope: _aofApplication.mesh.terminalRelayBridge.buildTerminalInputEnvelope,
   buildTerminalResumeEnvelope: _aofApplication.mesh.terminalRelayBridge.buildTerminalResumeEnvelope,
   createTerminalRelayPushTransport: _aofApplication.mesh.terminalRelayBridge.createTerminalRelayPushTransport,
+  // 162/ADR-001 — the local terminal ingress, beside the push transport it resembles.
+  TERMINAL_INGRESS_TOKEN_HEADER: _aofApplication.mesh.terminalRelayBridge.TERMINAL_INGRESS_TOKEN_HEADER,
+  routeIngressMessage: _aofApplication.mesh.terminalRelayBridge.routeIngressMessage,
+  startTerminalIngress: _aofApplication.mesh.terminalRelayBridge.startTerminalIngress,
+  openTerminalIngressClient: _aofApplication.mesh.terminalRelayBridge.openTerminalIngressClient,
 });
 const TERMINAL_FRAME_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_FRAME_KIND;
 const TERMINAL_INPUT_KIND = _aofApplication.mesh.terminalRelayBridge.TERMINAL_INPUT_KIND;
@@ -114,6 +119,12 @@ const EXPECTED_EXPORTS = [
   "buildTerminalInputEnvelope",
   "buildTerminalResumeEnvelope",
   "createTerminalRelayPushTransport",
+  // 162/ADR-001 — the terminal ingress: its token header, the message router, the daemon's server and
+  // the drive child's client. Live, so they belong to the surface. (Its address file is the mesh store's.)
+  "TERMINAL_INGRESS_TOKEN_HEADER",
+  "routeIngressMessage",
+  "startTerminalIngress",
+  "openTerminalIngressClient",
 ];
 
 // THE WIRE, PINNED BEFORE THE DELETION. Each string was captured by importing
@@ -217,7 +228,7 @@ const DEPENDENT_ROWS = [
   { module: "packages/mesh/src/terminal-mirror.mjs", adapter: "packages/core/src/application/bindings/mesh/terminal-mirror.mjs", factory: "createTerminalMirroring", bindings: ["TERMINAL_FRAME_KIND", "loopbackRelayUrl"] },
   { module: "packages/mesh/src/terminal-input.mjs", adapter: "packages/core/src/application/bindings/mesh/terminal-input.mjs", factory: "createTerminalInput", bindings: ["TERMINAL_INPUT_KIND", "TERMINAL_RESUME_KIND"] },
   { module: "packages/mesh/src/control-stream-server.mjs", adapter: "packages/core/src/application/bindings/control-stream-server.mjs", factory: "createControlStreamServices", bindings: ["TERMINAL_FRAME_KIND"] },
-  { module: "packages/mesh/src/launcher.mjs", adapter: "packages/core/src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport"] },
+  { module: "packages/mesh/src/launcher.mjs", adapter: "packages/core/src/application/bindings/mesh/launcher.mjs", factory: "createMeshLauncher", bindings: ["createTerminalRelayPushTransport", "startTerminalIngress", "buildTerminalFrameEnvelope", "buildTerminalEndEnvelope"] },
   { module: "packages/mesh/src/commands/terminal-resume.mjs", adapter: "packages/core/src/application/bindings/commands/mesh/terminal-resume.mjs", factory: "createMeshTerminalResumeCommands", bindings: ["buildTerminalResumeEnvelope", "createTerminalRelayPushTransport"] },
   { module: "packages/mesh/src/commands/ui.mjs", adapter: "packages/core/src/application/bindings/commands/mesh/ui.mjs", factory: "createMeshUiCommands", bindings: ["createTerminalRelayPushTransport"] },
 ];
@@ -275,7 +286,7 @@ export const meshTerminalRelayBridgeTests = [
     name: "46/01/00 the retired wireTerminalBridge is gone from the shipped module, and asking for it fails to LINK — never a silently-undefined binding",
     async run() {
       // Then its exported names are exactly the nine live ones.
-      assert.deepEqual(Object.keys(bridge).sort(), [...EXPECTED_EXPORTS].sort(), "the module's export surface is exactly the nine LIVE names");
+      assert.deepEqual(Object.keys(bridge).sort(), [...EXPECTED_EXPORTS].sort(), "the module's export surface is exactly the LIVE names — the nine m46 kept plus 162's four ingress names");
       // And wireTerminalBridge is not among them.
       assert.ok(!("wireTerminalBridge" in bridge), "wireTerminalBridge is NOT among the exports");
       assert.equal(bridge.wireTerminalBridge, undefined);
