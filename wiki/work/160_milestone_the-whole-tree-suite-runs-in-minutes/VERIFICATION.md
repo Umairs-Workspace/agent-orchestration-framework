@@ -60,6 +60,21 @@ Round 2 removed about 39 summed minutes, against the 92–108 the refine estimat
 loop and lane suites under contention (`loop-command-wave` 938 s summed, 218 s alone), `site-build` 466 s,
 `work-dispatch-lanes` 436 s and `work-this-tree-holds-what-is-live` 390 s. The objective is still not met (F-02).
 
+**The worker sweep** (2026-10-16, clean detached worktree at `e9fc8342`, `AOF_GLOBAL_HOME` isolated, Docker Desktop and
+both WSL distros stopped, every run planned from the same baseline timings, back to back):
+
+| workers | wall | summed | failures | red in the pool, green alone |
+|---|---|---|---|---|
+| 8 | 23.6 min | 173.2 min | 0 | 2 |
+| 10 | 18.5 min | 175.7 min | 0 | 3 |
+| 12 | **17.3 min** | 205.8 min | 0 | 0 |
+| 16 | 18.7 min | 288.8 min | 0 | 3 |
+
+Every count ran all 12,935 cases green. The worker count is not the lever: from 10 to 16 workers the wall moves
+between 17.3 and 18.7 min, and the best is still 7 min over the budget. The same 8-worker run took 15.3 min
+(121 summed) the day before, so run-to-run variance on this machine is of the order of the budget itself; whole-machine
+load averaged 62% at 8 workers and 90–99% at 10 to 16, which includes the tests' own load.
+
 ## Verification evidence
 
 Before = `2bb15e80` (no 160 code), after = `ba23c7d9` (all seven stories), each a detached worktree prepared by

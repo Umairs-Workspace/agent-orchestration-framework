@@ -407,6 +407,51 @@ the Pages workflow (`.github/workflows/pages.yml:72`) spells its gate that way.
    on an allowlist that names its subject. `test-command-contract`'s rows, priced and ruled on in
    72/ADR-004 §6, are such subjects.
 
+## ADR-013: Tests keep their state their own
+
+**Status:** Accepted
+**Date:** 2026-10-17
+
+**Context.** The round-3 trial profiled the heaviest suites alone. `loop-command-stops` spent 29 s
+of CPU in `ensureWorktreeTrusted` (`packages/execution/src/claude-trust.mjs`), which resolves the
+claude home from `os.homedir()`. No lane test passes a home, and `AOF_GLOBAL_HOME` isolates
+`~/.aof`, not `~/.claude.json`. So every lane of every run read, rewrote and renamed the operator's
+real config. By 2026-10-17 it held 108,151 project entries, 106,899 of them test temp directories
+carrying only `hasTrustDialogAccepted` (12 MB; cleaned that day with a backup, at the operator's
+word). Parallel units rewrote one real file, and a lost write would drop claude's own settings.
+The same profile found the projection store (`packages/mesh/src/projection-store.mjs`) and the
+effects journal (`packages/effects/src/journal.mjs`) running `BEGIN IMMEDIATE`, every
+`CREATE TABLE IF NOT EXISTS` and a version upsert on every open, then a WAL checkpoint on close:
+about 36 s of the same suite's CPU. Prototyped together, the two cut the six heaviest loop and lane
+suites alone from 914 s to 574 s, and the whole tree at 12 workers from 205.8 to 140.8 summed
+minutes.
+
+**Decision.**
+1. **The trust writer reads a test's claude home.** Its home is `options.homedir`, else
+   `AOF_TEST_CLAUDE_HOME`, else `os.homedir()`, following the existing `AOF_TEST_*` hooks
+   (`AOF_TEST_CLI_BUNDLE`, ADR-008 §3). Production never sets it.
+2. **Every test process has one.** `scripts/test-harness.mjs`, which every runner imports, sets
+   `AOF_TEST_CLAUDE_HOME` to a fresh temporary directory when it is unset and removes it at exit.
+   The sharded runner sets each unit's to the unit's own home, beside `AOF_GLOBAL_HOME`. A child
+   inherits its parent's. The gate's clean environment drops it with every other `AOF_*` (ADR-005),
+   and the runner it launches sets it again.
+3. **A store opens without rewriting a current schema.** The projection store and the effects
+   journal migrate only when the recorded version is absent or older. A newer version is still
+   refused, and an absent or older one still migrates in one `BEGIN IMMEDIATE` transaction.
+4. **FF-16014** holds the claude home: the writer, given no home, writes into
+   `AOF_TEST_CLAUDE_HOME`; the harness sets it to a temporary directory; and the sharded runner
+   gives each unit its own. **FF-16015** holds the open: opening either store at its current
+   version executes no write statement.
+
+**Consequences.** A test run no longer reads or writes the operator's claude config, and its cost
+no longer grows with that file. A store's first open still creates its schema. A database whose
+version row is current but whose tables were removed by hand is no longer repaired on open; nothing
+in this repository removes tables.
+
+**Recall.** m70/ADR on the claude project key (the forward-slash spelling) is honoured: the key is
+unchanged, only the home it is written in. m42's concurrency pragmas are unchanged: every open still
+applies WAL and `busy_timeout`.
+
 ## Fitness functions
 
 | id | invariant | enforced by | source |
@@ -424,6 +469,8 @@ the Pages workflow (`.github/workflows/pages.yml:72`) spells its gate that way.
 | FF-16011 | `stripComments` and `blankStringLiterals` give byte-identical output over the whole test tree, and the regex test never reads the prefix it was handed | `test/arch/audit/acd-comment-stripper-order.test.mjs` | ADR-011 |
 | FF-16012 | One corpus assembly lists the stream once, whatever the number of items | `test/arch/planning/acd-tune-corpus-declares-its-reads.test.mjs` | ADR-011 |
 | FF-16013 | Every spawn of `scripts/test.mjs` under `test/` is on an allowlist that names its subject | `test/arch/testing/acd-test-suite-registration.test.mjs` | ADR-012 |
+| FF-16014 | A trust write given no home lands in `AOF_TEST_CLAUDE_HOME`; the harness sets it to a temporary directory when unset, and the sharded runner gives each unit its own | `test/testing/test-sharded-report.test.mjs` | ADR-013 |
+| FF-16015 | Opening the projection store or the effects journal at its current schema version executes no write statement | `test/arch/store/acd-shared-store-concurrency.test.mjs` | ADR-013 |
 
 Each control lands with its subject, in a suite its directory's index registers. Required red
 probes, recorded in `VERIFICATION.md`: make `memoGitReads` keep a `status` answer; give the fake a

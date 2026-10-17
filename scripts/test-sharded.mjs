@@ -158,7 +158,8 @@ function spawnUnit(unit) {
   const home = mkdtempSync(path.join(os.tmpdir(), "aof-shard-home-"));
   const args = unit.args ?? (unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), ...shardArgs(unit)]);
   const env = withTestCliBundle({ ...process.env, ...(unit.env ?? {}) }, cliBundle);
-  const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...env, AOF_GLOBAL_HOME: home } });
+  // The unit's home is also its claude home (160/ADR-013 §2), so its folder trust never reaches the operator's.
+  const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...env, AOF_GLOBAL_HOME: home, AOF_TEST_CLAUDE_HOME: home } });
   return { child, release: () => rmSync(home, { recursive: true, force: true }) };
 }
 const pool = await runPool(plan, {

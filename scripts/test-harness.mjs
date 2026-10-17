@@ -3,8 +3,22 @@
 // afterwards, so every suite a unit loads compiles once per machine rather than once per process.
 // Optional, because a runtime older than Node 22.1 has no such function.
 import module from "node:module";
+import { mkdtempSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
 module.enableCompileCache?.();
+
+// A test process's claude home (160/ADR-013 §2). The claude folder-trust writer resolves its home from
+// AOF_TEST_CLAUDE_HOME before os.homedir(), so a test process that has none gets a fresh temporary one,
+// inherited by every child it starts and removed when it exits. The sharded runner hands each unit its own.
+if (!process.env.AOF_TEST_CLAUDE_HOME) {
+  const claudeHome = mkdtempSync(path.join(os.tmpdir(), "aof-test-claude-home-"));
+  process.env.AOF_TEST_CLAUDE_HOME = claudeHome;
+  process.on("exit", () => {
+    try { rmSync(claudeHome, { recursive: true, force: true }); } catch { /* best-effort: a temporary folder */ }
+  });
+}
 
 export async function runCases(tests) {
   let failures = 0;

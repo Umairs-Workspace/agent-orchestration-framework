@@ -319,7 +319,10 @@ const RUNNER_REGIONS = Object.freeze([
 // the shard entry accounts per file by wrapping each case's `run`, so every pinned region above is unchanged.
 // RE-PINNED by 160 verify (F-06): `packUnits` also closes a pack at `PACK_MAX_ARG_CHARS`, the bound a Windows
 // command line allows, and that constant is declared beside it. `runCases` and every pinned region above are unchanged.
-const RUNNER_RESIDUE = "4331b734b1954c8d00a445a5688479c0f67e5fcfb6d7b9531dad92669ba8a502";
+// RE-PINNED by 160/12 (ADR-013 §2): the harness gives a test process that has none a temporary claude home
+// (`AOF_TEST_CLAUDE_HOME`), removed at exit, beside the compile-cache call. `runCases` and every pinned region above
+// are unchanged.
+const RUNNER_RESIDUE = "430dfb99198eac2286e4c64ebc2d986afb9bde152a9f23e02ae6f3dd02083bcf";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

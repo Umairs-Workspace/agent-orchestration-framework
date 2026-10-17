@@ -9,7 +9,7 @@
 // children, and once over real processes for a parent that dies.
 // The gate's half of each scenario — what the row records from these lines — is `test/run/regression-gate.test.mjs`'s.
 import assert from "node:assert/strict";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
@@ -31,6 +31,7 @@ import {
 import { poolExit, runPool, stdinIsPipe, unitResult as unitResultOf } from "../../scripts/test-sharded-pool.mjs";
 import { fileEstimate, PACK_MAX_ARG_CHARS, packUnits, planCoverageProblem, planSummary, shardArgs } from "../../scripts/test-harness.mjs";
 import { gateResult } from "@aof/work/regression-record";
+import { createClaudeTrust } from "@aof/execution/claude-trust";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 
@@ -525,6 +526,55 @@ export const testShardedReportTests = [
         assert.ok(pool.results.filter((result) => result.unit.key !== "second").every((result) => result.ok), `${row}: the other two pass`);
         assert.deepEqual(pool.failures.map(({ first }) => first.unit.key), ["second"], `${row}: it is reported as a failure after its alone-retry`);
       }
+    },
+  },
+  // ══════ FF-16014 (160/12, ADR-013 §1–2): a test run trusts folders in its own claude home ══════
+  // Measured 2026-10-17: lane tests had written 106,899 temp-folder trust entries into the operator's real
+  // ~/.claude.json (12 MB), because the trust writer resolved os.homedir() and AOF_GLOBAL_HOME isolates ~/.aof only.
+  {
+    name: "FF-16014 160/12 [outline] The trust writer chooses its home (2 rows)",
+    run: async () => {
+      const trust = createClaudeTrust({ reportDegrade: () => {} });
+      const saved = process.env.AOF_TEST_CLAUDE_HOME;
+      const option = await mkdtemp(path.join(os.tmpdir(), "aof-160-12-option-"));
+      const variable = await mkdtemp(path.join(os.tmpdir(), "aof-160-12-variable-"));
+      const trusted = async (home) => Object.keys(JSON.parse(await readFile(path.join(home, ".claude.json"), "utf8")).projects);
+      try {
+        for (const home of [option, variable]) await writeFile(path.join(home, ".claude.json"), JSON.stringify({ projects: {} }));
+        process.env.AOF_TEST_CLAUDE_HOME = variable;
+        await trust.ensureWorktreeTrusted("C:/fixture/one", { homedir: option });
+        assert.deepEqual([await trusted(option), await trusted(variable)], [["C:/fixture/one"], []], "a home option: written in the home option");
+        await trust.ensureWorktreeTrusted("C:/fixture/two");
+        assert.deepEqual([await trusted(option), await trusted(variable)], [["C:/fixture/one"], ["C:/fixture/two"]], "no home option: written in the test folder");
+      } finally {
+        if (saved === undefined) delete process.env.AOF_TEST_CLAUDE_HOME;
+        else process.env.AOF_TEST_CLAUDE_HOME = saved;
+        await rm(option, { recursive: true, force: true });
+        await rm(variable, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "FF-16014 160/12 Every test process has a claude home of its own",
+    run: () => {
+      const env = { ...process.env };
+      delete env.AOF_TEST_CLAUDE_HOME;
+      const harness = pathToFileURL(path.join(repoRoot, "scripts", "test-harness.mjs")).href;
+      const probe = `import { existsSync } from "node:fs"; await import(${JSON.stringify(harness)}); const dir = process.env.AOF_TEST_CLAUDE_HOME ?? ""; console.log(JSON.stringify({ dir, existed: dir !== "" && existsSync(dir) }));`;
+      const result = spawnSync(process.execPath, ["--input-type=module", "-e", probe], { cwd: repoRoot, env, encoding: "utf8", windowsHide: true });
+      assert.equal(result.status, 0, result.stderr);
+      const { dir, existed } = JSON.parse(result.stdout.trim().split(/\r?\n/u).pop());
+      assert.ok(existed, `the harness set AOF_TEST_CLAUDE_HOME to a folder that exists while the process runs (got ${JSON.stringify(dir)})`);
+      const inside = path.relative(path.resolve(os.tmpdir()), path.resolve(dir));
+      assert.ok(inside !== "" && !inside.startsWith("..") && !path.isAbsolute(inside), `${dir} is under the system temporary directory`);
+      assert.equal(existsSync(dir), false, "and it is removed when the process exits");
+    },
+  },
+  {
+    name: "FF-16014 160/12 Each unit of a sharded run has its own claude home",
+    run: async () => {
+      const runner = await readFile(path.join(repoRoot, "scripts", "test-sharded.mjs"), "utf8");
+      assert.match(runner, /env: \{ \.\.\.env, AOF_GLOBAL_HOME: home, AOF_TEST_CLAUDE_HOME: home \}/u, "the unit's claude home is its own home, beside AOF_GLOBAL_HOME");
     },
   },
 ];

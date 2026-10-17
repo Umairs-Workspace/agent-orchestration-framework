@@ -72,6 +72,8 @@ Out of scope:
 - [x] [10 · The audits over this repository do their reading once](stories/10_story_the-audits-over-this-repository-read-once/STORY.md) (ADR-011)
 - [x] [11 · A test that needs a suite run starts the shard entry](stories/11_story_a-test-that-needs-a-suite-run-starts-the-shard-entry/STORY.md) (ADR-012)
 
+- [ ] [12 · Tests keep their state their own](stories/12_story_tests-keep-their-state-their-own/STORY.md) (ADR-013)
+
 Waves, from the declared write sets: **00, 02, 03, 04 and 06** run first, all independent, then
 **01 and 05**. Story 06 is not in the scope list above. Refine's profile found it: doctor's
 history reads were 422 × 3 git spawns in one loop suite, and it serves the first scope bullet
