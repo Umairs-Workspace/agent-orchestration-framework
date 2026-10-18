@@ -43,6 +43,6 @@ Feature: The runner takes one shard of the plan
   @executable @cli @work @work-stream
   Scenario: A shard reports in JSON
     Given a shard run with --report-json
-    Then the file names the shard and the shard count, the executed and registered case counts, every
-    failing, not isolated, not finished and not started unit, the wall and summed seconds, and the
-    per-file timings
+    Then the file names the shard, the shard count, and the executed and registered case counts
+    And it names every failing, not isolated, not finished and not started unit
+    And it carries the wall and summed seconds, and the per-file timings

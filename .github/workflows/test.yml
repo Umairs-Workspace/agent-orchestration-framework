@@ -40,7 +40,11 @@ jobs:
       matrix:
         shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
+      # Full history: the citation resolver derives its rename map from git log (119/ADR-004), so a
+      # shallow clone reads an empty map.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -52,6 +56,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y build-essential python3
+
+      # The cargo lane checks the desktop shell (apps/desktop/crates/app), a Tauri v2 app: on Linux it links
+      # against GTK and WebKitGTK, so their development packages are Tauri's documented prerequisites.
+      - name: Tauri's Linux prerequisites (the desktop shell's cargo check)
+        run: |
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
+
+      - name: Restore the cargo build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/target
+            apps/desktop/crates/app/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('apps/desktop/Cargo.lock', 'apps/desktop/crates/app/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
 
       - name: Yarn immutable install (lifecycle scripts skipped)
         run: node scripts/prepare-worktree.mjs

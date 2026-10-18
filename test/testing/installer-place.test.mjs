@@ -348,6 +348,12 @@ export const installerPlaceTests = [
   {
     name: "installer-place/02 install.ps1 EXTRACTS the zip sidecar (real packSidecarArchive, nested root entries) into build-sea.mjs's layout",
     async run() {
+      if (process.platform !== "win32") {
+        // install.ps1 is the Windows installer: this row drives its extraction into the install layout, a Windows
+        // file lock or the Windows registry, which a Linux pwsh does not reproduce (160/13, the PR suite on Linux).
+        console.warn("installer-place: an install.ps1 behaviour row is Windows-only -- skipped on this platform (flagged, not faked)");
+        return;
+      }
       const base = mkdtempSync(path.join(os.tmpdir(), "aof-place-ps1-extract-"));
       const installDir = path.join(base, "installdir");
       try {
@@ -449,6 +455,12 @@ try {
   {
     name: "installer-place/02 F5: install.ps1 Install-AofFiles leaves a PRIOR install fully intact when the new sidecar archive fails to extract",
     async run() {
+      if (process.platform !== "win32") {
+        // install.ps1 is the Windows installer: this row drives its extraction into the install layout, a Windows
+        // file lock or the Windows registry, which a Linux pwsh does not reproduce (160/13, the PR suite on Linux).
+        console.warn("installer-place: an install.ps1 behaviour row is Windows-only -- skipped on this platform (flagged, not faked)");
+        return;
+      }
       const base = mkdtempSync(path.join(os.tmpdir(), "aof-place-ps1-f5-half-install-"));
       const installDir = path.join(base, "installdir");
       try {
@@ -521,6 +533,12 @@ try {
   {
     name: "installer-place/02 F6: install.ps1 Install-AofFiles throws loudly (never silently nests) when the prior install's sidecar tree cannot be removed (locked file)",
     async run() {
+      if (process.platform !== "win32") {
+        // install.ps1 is the Windows installer: this row drives its extraction into the install layout, a Windows
+        // file lock or the Windows registry, which a Linux pwsh does not reproduce (160/13, the PR suite on Linux).
+        console.warn("installer-place: an install.ps1 behaviour row is Windows-only -- skipped on this platform (flagged, not faked)");
+        return;
+      }
       const base = mkdtempSync(path.join(os.tmpdir(), "aof-place-ps1-f6-locked-"));
       const installDir = path.join(base, "installdir");
       try {
@@ -576,6 +594,12 @@ try {
   {
     name: "installer-place/02 install.ps1 re-install replaces the extracted sidecar tree in place, no stale prior-version file remains",
     async run() {
+      if (process.platform !== "win32") {
+        // install.ps1 is the Windows installer: this row drives its extraction into the install layout, a Windows
+        // file lock or the Windows registry, which a Linux pwsh does not reproduce (160/13, the PR suite on Linux).
+        console.warn("installer-place: an install.ps1 behaviour row is Windows-only -- skipped on this platform (flagged, not faked)");
+        return;
+      }
       const base = mkdtempSync(path.join(os.tmpdir(), "aof-place-ps1-reinstall-"));
       const installDir = path.join(base, "installdir");
       try {
@@ -623,6 +647,12 @@ Write-Output "DONE"
   {
     name: "installer-place/02 install.ps1 re-install with a DIFFERENT sidecar arch removes the stale prior extracted tree",
     async run() {
+      if (process.platform !== "win32") {
+        // install.ps1 is the Windows installer: this row drives its extraction into the install layout, a Windows
+        // file lock or the Windows registry, which a Linux pwsh does not reproduce (160/13, the PR suite on Linux).
+        console.warn("installer-place: an install.ps1 behaviour row is Windows-only -- skipped on this platform (flagged, not faked)");
+        return;
+      }
       const base = mkdtempSync(path.join(os.tmpdir(), "aof-place-ps1-arch-swap-"));
       const installDir = path.join(base, "installdir");
       try {
@@ -856,6 +886,12 @@ Write-Output ("PATH:" + $script:fakeUserPath)
     // Add-AofToUserPath's own test above proves THAT).
     name: "installer-place/02 F7: the registry API technique (DoNotExpandEnvironmentNames / ExpandString) genuinely preserves a %VAR% token and REG_EXPAND_SZ type across a round-trip",
     async run() {
+      if (process.platform !== "win32") {
+        // install.ps1 is the Windows installer: this row drives its extraction into the install layout, a Windows
+        // file lock or the Windows registry, which a Linux pwsh does not reproduce (160/13, the PR suite on Linux).
+        console.warn("installer-place: an install.ps1 behaviour row is Windows-only -- skipped on this platform (flagged, not faked)");
+        return;
+      }
       const testKeyPath = "Software\\AofInstallerTestF7_" + Date.now();
       const script = `
 $hk = [Microsoft.Win32.Registry]::CurrentUser

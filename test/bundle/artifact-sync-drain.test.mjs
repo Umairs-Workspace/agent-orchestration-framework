@@ -438,7 +438,8 @@ export const artifactSyncDrainTests = [
       const itemDir = fx.itemDir.replaceAll("\\", "/");
       const spellings = [
         { name: "a relative path the hook carried verbatim", value: "./wiki/work/43_milestone_mesh-artifact-authority/stories/03_story_artifact-sync/STORY.md" },
-        { name: "a lower-cased drive letter", value: `${itemDir.replace(/^([A-Za-z]):/, (all, letter) => `${letter.toLowerCase()}:`)}/STORY.md` },
+        // A drive letter exists only on Windows; on POSIX that spelling would be the real path itself.
+        ...(/^[A-Za-z]:/u.test(itemDir) ? [{ name: "a lower-cased drive letter", value: `${itemDir.replace(/^([A-Za-z]):/, (all, letter) => `${letter.toLowerCase()}:`)}/STORY.md` }] : []),
         { name: "a case-different segment", value: `${itemDir.replace("/stories/", "/STORIES/")}/STORY.md` },
       ];
       await fx.enqueue([

@@ -82,7 +82,7 @@ const recorderTests = [
   {
     name: "loop-diag/00 the log lives beside the daemon logs in the aof home (honouring AOF_GLOBAL_HOME), never in the checkout; named by the install instant, every line timestamped",
     run() {
-      const home = path.join("C:", "tmp", "aof-home");
+      const home = path.join(path.parse(process.cwd()).root, "tmp", "aof-home");
       assert.equal(loopDiagLogDir({ AOF_GLOBAL_HOME: home }), path.join(home, "mesh", "logs"), "the global mesh logs directory, through the one resolver every daemon log uses");
       assert.equal(loopDiagScopeTag(["work", "loop", "127", "--level", "L2"]), "127", "the scope after `loop` becomes the filename tag");
       assert.equal(loopDiagScopeTag(["work", "loop", "01-05"]), "01-05", "a range is a safe segment as-is");
@@ -329,7 +329,7 @@ const stopRequestTests = [
   {
     name: "130/01 stop-request/00 the directory and the path are derived from the mesh root, and only there",
     run() {
-      const H = path.join("C:", "tmp", "aof-home");
+      const H = path.join(path.parse(process.cwd()).root, "tmp", "aof-home");
       const dir = loopStopsDir({ AOF_GLOBAL_HOME: H });
       assert.equal(dir, path.join(H, "mesh", "loop-stops"), "the sibling of logs/ and loop-fixes/, under the mesh root");
       assert.equal(stopRequestPath(dir, "27dbcc7a-3e23-402b-96fd-b59131131c56"), path.join(dir, "27dbcc7a-3e23-402b-96fd-b59131131c56.json"));
@@ -1043,7 +1043,7 @@ const askRequestTests = [
   {
     name: "131/01 ask-request/02 the directory and the path derive from the mesh root, and only there",
     run() {
-      const H = path.join("C:", "tmp", "aof-home");
+      const H = path.join(path.parse(process.cwd()).root, "tmp", "aof-home");
       const dir = loopAsksDir({ AOF_GLOBAL_HOME: H });
       assert.equal(dir, path.join(H, "mesh", "loop-asks"));
       assert.equal(askRequestPath(dir, "20260923T173003685Z-0000"), path.join(dir, "20260923T173003685Z-0000.json"));
