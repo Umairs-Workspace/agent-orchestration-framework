@@ -485,6 +485,11 @@ and only the budget fails a run.
 5. **The control-node gate keeps no budget.** `.aof/aof.config.json` drops `work.test.gate.budgetMinutes`,
    so `aof work regression-gate` there is a correctness gate under its own deadline, and 160/ADR-006's
    `not-finished` still reports a unit killed at its limit.
+6. **The gate itself runs on a runner** (operator, 2026-10-18). `.github/workflows/gate.yml` runs
+   `aof work regression-gate <ref>`, unchanged, on a clean `ubuntu-latest` checkout, started by pushing a branch
+   `gate/<ref>` at the commit to gate (or by hand once the workflow is on the default branch), and uploads the
+   `REGRESSION.md` it wrote. The row is brought home and committed on the item's branch like any gate row. The
+   CLI never reads CI: the runner is only the machine the command runs on.
 
 **Consequences.** The budget is measured on a machine that is the same on every run, and the trend
 is visible per file on every PR. The control node no longer proves the budget. A PR whose shards

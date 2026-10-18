@@ -13,6 +13,14 @@ Feature: The pull request suite is wired, and the control node keeps no budget
     And the summary job needs every shard, runs even when one fails, and judges them with a 10-minute budget
 
   @executable @cli @work @work-stream
+  Scenario: The regression gate runs on a runner, unchanged, and its row comes home
+    Given the repository's gate workflow
+    Then a push of a branch gate/<ref> starts it
+    And it runs aof work regression-gate for that ref on a clean, full-history checkout
+    And it uploads the REGRESSION.md the gate wrote, whether the row is green or red
+    And the CLI's gate command reads nothing from CI
+
+  @executable @cli @work @work-stream
   Scenario: The control node's gate declares no budget
     Given this repository's configuration
     Then its gate declares no budgetMinutes

@@ -705,6 +705,19 @@ export const testShardedReportTests = [
     },
   },
   {
+    name: "160/13 The regression gate runs on a runner, unchanged, and its row comes home",
+    run: async () => {
+      const raw = await readFile(path.join(repoRoot, ".github", "workflows", "gate.yml"), "utf8");
+      const workflow = raw.replace(/\r\n/gu, "\n").replace(/^\s*#.*$/gmu, "");
+      assert.match(workflow, /on:\s*\n\s+push:\s*\n\s+branches:\s*\n\s+- "gate\/\*\*"/u, "a push of gate/<ref> starts it");
+      assert.match(workflow, /GATE_REF: \$\{\{ inputs\.ref \|\| github\.ref_name \}\}/u, "the ref reaches the shell through the environment, never interpolated into the script");
+      assert.match(workflow, /node packages\/core\/bin\/aof\.mjs work regression-gate "\$\{GATE_REF#gate\/\}"/u, "it runs the CLI's own gate command, unchanged");
+      assert.match(workflow, /fetch-depth: 0/u, "on a full-history checkout");
+      assert.match(workflow, /if: always\(\)\s*\n\s+uses: actions\/upload-artifact@v4\s*\n\s+with:\s*\n\s+name: regression-row\s*\n\s+path: wiki\/work\/\*\*\/REGRESSION\.md/u, "and uploads the row it wrote, red or green");
+      assert.equal(/\bgh\s|github\.com|api\.github|GITHUB_/u.test(await readFile(path.join(repoRoot, "packages", "work", "src", "commands", "regression-gate.mjs"), "utf8")), false, "and the CLI's gate knows nothing of CI");
+    },
+  },
+  {
     name: "160/13 The control node's gate declares no budget",
     run: async () => {
       const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
