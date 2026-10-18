@@ -103,7 +103,7 @@ export function loopRasterSvgPath(paths) {
 // `ADR-NNN-<slug>` stem plus one of the three extensions export writes. Anything else — a path, a
 // `..`, another extension, a stem with no ADR or no slug — is null, so a request can never name a
 // file outside the folder. `path` is forward-slashed like every path here.
-export const DIAGRAM_FILE_EXTS = Object.freeze([".html", ".svg", ".png"]);
+export const DIAGRAM_FILE_EXTS = Object.freeze([".html", ".svg", ".png", ".excalidraw"]);
 
 export function diagramFile(itemDir, name) {
   const base = String(name ?? "");

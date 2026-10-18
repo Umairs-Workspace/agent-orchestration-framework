@@ -26,6 +26,7 @@ const CONTENT_TYPES = Object.freeze({
   ".html": "text/html; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".excalidraw": "application/json; charset=utf-8",
 });
 
 const diagramFileCommand = {

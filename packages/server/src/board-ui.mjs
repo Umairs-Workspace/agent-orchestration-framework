@@ -307,6 +307,22 @@ async function handleDiagramApi(request, response, options = {}) {
   } catch {
     return false;
   }
+  if (requestUrl.pathname === "/api/diagram/scene") {
+    response.setHeader("cache-control", "no-store");
+    try {
+      const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
+      const ctx = { workspace };
+      const params = requestUrl.searchParams;
+      if (request.method === "GET") {
+        const result = await invoke("diagram:scene", { ref: (params.get("ref") ?? "").trim(), file: (params.get("file") ?? "").trim(), action: "read" }, ctx);
+        sendJson(response, 200, result); return true;
+      }
+      if (!admitWriteRequest(request, response)) return true;
+      const body = await readJsonBody(request);
+      const result = await invoke("diagram:scene", { ...body, ref: (params.get("ref") ?? body.ref ?? "").trim(), file: (params.get("file") ?? body.file ?? "").trim() }, ctx);
+      sendJson(response, 200, result); return true;
+    } catch (error) { sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-scene-api-failed"); return true; }
+  }
   if (request.method !== "GET" || requestUrl.pathname !== "/api/diagram/file") return false;
   try {
     const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));

@@ -4,6 +4,7 @@ export const WORK_COMMAND_IDS = Object.freeze([
   "diagram:plan",
   "diagram:export",
   "diagram:file",
+  "diagram:scene",
   "work:list",
   "work:continue",
   "work:refine",

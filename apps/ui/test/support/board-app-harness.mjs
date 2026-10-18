@@ -52,11 +52,17 @@ const VIRTUAL_ICONS = [
   "Minimize2",
 ].map((name) => `export const ${name} = () => null;`).join("\n") + "\n";
 
+// The native canvas needs a real DOM/canvas, just like xterm. These board tests
+// do not open it; scene API and fingerprint suites cover its non-DOM contracts.
+const EDITOR_STUB = "export const ExcalidrawEditor = () => null;";
+const EDITOR_FILTER = /(?:^|\/)ExcalidrawEditor(?:\.tsx)?$/;
 const BOARD_STUBS = {
+  __excalidraw_editor__: EDITOR_STUB,
   __terminal_control__: TERMINAL_CONTROL_STUB,
   __icons__: VIRTUAL_ICONS,
 };
 const BOARD_RESOLVE = [
+  { filter: EDITOR_FILTER, to: "__excalidraw_editor__" },
   { filter: TERMINAL_CONTROL_FILTER, to: "__terminal_control__" },
   { filter: /^lucide-react$/, to: "__icons__" },
 ];
@@ -66,7 +72,7 @@ const BOARD_RESOLVE = [
 // this day, so un-stubbing the control does not fail here first.
 function boardSubstitutions(realTerminalControl) {
   return realTerminalControl
-    ? { stubs: { __icons__: VIRTUAL_ICONS, ...XTERM_STUBS }, resolve: [{ filter: /^lucide-react$/, to: "__icons__" }, ...XTERM_RESOLVE] }
+    ? { stubs: { __excalidraw_editor__: EDITOR_STUB, __icons__: VIRTUAL_ICONS, ...XTERM_STUBS }, resolve: [{ filter: EDITOR_FILTER, to: "__excalidraw_editor__" }, { filter: /^lucide-react$/, to: "__icons__" }, ...XTERM_RESOLVE] }
     : { stubs: BOARD_STUBS, resolve: BOARD_RESOLVE };
 }
 

@@ -17,7 +17,7 @@
 //
 // Callers pass the ALREADY frontmatter/comment-stripped body (see cleanDoc in
 // DetailPanel) — this component only does markdown → HTML.
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { Marked, marked } from "marked";
@@ -25,6 +25,10 @@ import type { DocResponse } from "./api";
 import { requestFullscreen } from "../app/shell-bus.mjs";
 import { diagramFileUrl, diagramMembers, diagramRenderer, figureState } from "./diagrams.mjs";
 import type { DiagramImages, DiagramResponse } from "./diagrams.mjs";
+const ExcalidrawEditor = lazy(() => {
+  (window as Window & { EXCALIDRAW_ASSET_PATH?: string }).EXCALIDRAW_ASSET_PATH = new URL(`${import.meta.env.BASE_URL}excalidraw/`, window.location.href).href;
+  return import("./ExcalidrawEditor").then((module) => ({ default: module.ExcalidrawEditor }));
+});
 
 // GFM on (tables, etc.); synchronous parse so we can render inline.
 marked.setOptions({ gfm: true, breaks: false });
@@ -62,8 +66,9 @@ export function Markdown({ source, images, itemRef }: { source: string; images?:
 // The node the shell adopts is created here rather than by React, for the reason
 // TerminalFullscreenOccupant gives: the shell re-parents it, so React must own its CONTENTS (via a
 // portal into it) and never its position. `home` is a hidden sibling the node returns to.
-function DiagramViewer({ figure, alt, fileHref, opener, onClose }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; opener: HTMLElement | null; onClose: () => void }) {
+function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClose }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; itemRef: string; svgFile: string; opener: HTMLElement | null; onClose: () => void }) {
   const [full, setFull] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [node] = useState<HTMLDivElement | null>(() => {
     if (typeof document === "undefined") return null;
     const element = document.createElement("div");
@@ -73,7 +78,7 @@ function DiagramViewer({ figure, alt, fileHref, opener, onClose }: { figure: { u
   const homeRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     if (node == null) return undefined;
-    const dismiss = requestFullscreen({ id: `diagram:${fileHref}`, label: alt, node, home: homeRef.current, opener, onDismiss: onClose });
+    const dismiss = requestFullscreen({ id: `diagram:${fileHref}`, label: alt, node, home: homeRef.current, opener, ownsChrome: true, claimsEscape: true, onDismiss: onClose });
     return () => dismiss();
     // Presented once per open: the figure, the label and the opener are fixed while it is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,23 +91,37 @@ function DiagramViewer({ figure, alt, fileHref, opener, onClose }: { figure: { u
         ? null
         : createPortal(
             <>
-              <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 py-2">
-                <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setFull((value) => !value)}>
-                  {full ? "Fit to screen" : "Actual size"}
-                </button>
-                <a href={fileHref} target="_blank" rel="noopener noreferrer" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
-                  Open in new tab
-                </a>
-              </div>
-              <div className={`min-h-0 flex-1 overflow-auto p-4 ${full ? "" : "grid place-items-center"}`}>
-                <img
-                  src={figure.uri}
-                  alt={alt}
-                  onClick={() => setFull((value) => !value)}
-                  className={`rounded-md ${full ? "cursor-zoom-out" : "cursor-zoom-in"}`}
-                  style={full ? { width: `${actual}px`, maxWidth: "none", height: "auto" } : { width: "100%", height: "100%", maxWidth: `${actual}px`, objectFit: "contain" }}
-                />
-              </div>
+              {editing ? (
+                <Suspense fallback={<p className="p-4">Loading Excalidraw…</p>}><ExcalidrawEditor
+                  itemRef={itemRef}
+                  svgFile={svgFile}
+                  onRequestClose={() => setEditing(false)}
+                /></Suspense>
+              ) : (
+                <>
+                  <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 py-2">
+                    <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setFull((value) => !value)}>
+                      {full ? "Fit to screen" : "Actual size"}
+                    </button>
+                    <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setEditing(true)}>
+                      Edit draft
+                    </button>
+                    <button type="button" onClick={onClose} className="ml-auto rounded border border-border px-2 py-1 text-xs font-semibold">Close diagram</button>
+                    <a href={fileHref} target="_blank" rel="noopener noreferrer" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
+                      Open SVG preview
+                    </a>
+                  </div>
+                  <div className={`min-h-0 flex-1 overflow-auto p-4 ${full ? "" : "grid place-items-center"}`}>
+                    <img
+                      src={figure.uri}
+                      alt={alt}
+                      onClick={() => setFull((value) => !value)}
+                      className={`rounded-md ${full ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+                      style={full ? { width: `${actual}px`, maxWidth: "none", height: "auto" } : { width: "100%", height: "100%", maxWidth: `${actual}px`, objectFit: "contain" }}
+                    />
+                  </div>
+                </>
+              )}
             </>,
             node,
           )}
@@ -168,6 +187,8 @@ export function DiagramMarkdown({
           alt={expanded.alt}
           opener={expanded.opener}
           fileHref={diagramFileUrl(itemRef, expanded.key.slice(expanded.key.indexOf("/") + 1))}
+          itemRef={itemRef}
+          svgFile={expanded.key.slice(expanded.key.indexOf("/") + 1)}
           onClose={close}
         />
       ) : null}

@@ -132,7 +132,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   // diagram:export — milestone 133 — see ./commands/diagram/export.mjs's header.
   const { diagramExportCommand } = commandsDiagramExportServices;
   // diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
-  const { diagramFileCommand } = commandsDiagramFileServices;
+  const { diagramFileCommand, diagramSceneCommand } = commandsDiagramFileServices;
   // messaging:init / messaging:enable / messaging:disable / messaging:status / messaging:test — 131/08 — see ./commands/messaging/messaging.mjs's header.
   const { messagingContribution } = commandsMessagingMessagingServices;
   const { workUiCommand } = commandsWorkUiServices;
@@ -254,7 +254,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     createKnowledgeContribution([
       graphServeCommand,
     ]),
-    createWorkContribution([diagramPlanCommand, diagramExportCommand, diagramFileCommand]),
+    createWorkContribution([diagramPlanCommand, diagramExportCommand, diagramFileCommand, diagramSceneCommand]),
     messagingContribution,
     createServerContribution(workUiCommand),
     { name: "aof", commands: [assetsUiCommand] },

@@ -47,6 +47,22 @@ export const useCallback = (...a) => R().useCallback(...a);
 export const useMemo = (...a) => R().useMemo(...a);
 export const useRef = (...a) => R().useRef(...a);
 export const Fragment = Symbol.for("aof.mini.fragment");
+// Lazy DOM-heavy leaves are loaded only if mounted, just as in the browser. This
+// instrument does not emulate Suspense scheduling; dedicated browser tests own that.
+export const Suspense = ({ children }) => children;
+export const lazy = (loader) => {
+  let component = null;
+  let pending = null;
+  return function Lazy(props) {
+    const [, setReady] = useState(false);
+    useEffect(() => {
+      let active = true;
+      (pending ??= loader()).then((module) => { component = module.default; if (active) setReady(true); });
+      return () => { active = false; };
+    }, []);
+    return component ? R().jsx(component, props) : null;
+  };
+};
 // The class base, present for ONE reason: an error boundary has no function-component
 // form, so without it the shell's "a failing surface degrades in place" contract is
 // undrivable headlessly (m45 / F-45-M-1). \`isReactComponent\` on the prototype is the
