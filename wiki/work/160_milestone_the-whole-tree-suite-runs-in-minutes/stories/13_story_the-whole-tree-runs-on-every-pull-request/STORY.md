@@ -4,10 +4,10 @@ number: 13
 slug: the-whole-tree-runs-on-every-pull-request
 title: "The whole tree runs on every pull request — sharded across Linux runners, inside its budget, with each file's drift against main"
 parent: 160
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-17
-updated: 2026-10-17
+updated: 2026-10-18
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/160_milestone_the-whole-tree-suite-runs-in-minutes/ARCHITECTURE.md#adr-014-the-whole-tree-runs-on-every-pull-request-sharded-across-runners-inside-the-budget, wiki/work/160_milestone_the-whole-tree-suite-runs-in-minutes/ARCHITECTURE.md#adr-006-the-runner-enforces-the-budget-and-a-timeout-is-not-finished, scripts/test-sharded-pool.mjs, .github/workflows/pages.yml, scripts/prepare-worktree.mjs]
@@ -26,9 +26,9 @@ instead of on a control node whose own load moved the wall time by as much as th
 
 ## Tasks
 
-- [ ] `tasks/00_the-runner-takes-one-shard.feature` — a job runs one balanced shard of the plan and reports it in JSON
-- [ ] `tasks/01_the-ci-summary-judges-the-shards.feature` — the summary fails a red shard, a lost case or a suite over budget, and reports drift
-- [ ] `tasks/02_the-pull-request-suite-is-wired.feature` — the workflow runs shards then summary on every PR, and the control node keeps no budget
+- [x] `tasks/00_the-runner-takes-one-shard.feature` — a job runs one balanced shard of the plan and reports it in JSON
+- [x] `tasks/01_the-ci-summary-judges-the-shards.feature` — the summary fails a red shard, a lost case or a suite over budget, and reports drift
+- [x] `tasks/02_the-pull-request-suite-is-wired.feature` — the workflow runs shards then summary on every PR, and the control node keeps no budget
 
 ## Notes
 

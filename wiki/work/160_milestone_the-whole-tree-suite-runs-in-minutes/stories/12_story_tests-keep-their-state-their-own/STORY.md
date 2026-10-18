@@ -4,10 +4,10 @@ number: 12
 slug: tests-keep-their-state-their-own
 title: "Tests keep their state their own — a test run trusts folders in its own claude home, and a store opens without rewriting a current schema"
 parent: 160
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-17
-updated: 2026-10-17
+updated: 2026-10-18
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/work/160_milestone_the-whole-tree-suite-runs-in-minutes/ARCHITECTURE.md#adr-013-tests-keep-their-state-their-own, wiki/work/160_milestone_the-whole-tree-suite-runs-in-minutes/ARCHITECTURE.md#adr-008-a-tests-child-aof-runs-from-one-bundle-built-at-the-start-of-the-run, wiki/work/160_milestone_the-whole-tree-suite-runs-in-minutes/ARCHITECTURE.md#adr-005-the-gate-launches-clean-and-dies-with-its-session, packages/core/src/application/bindings/claude-trust.mjs, test/mesh/worker/mesh-worker-trust-worktree.test.mjs, test/arch/testing/acd-source-directory-budget.test.mjs, test/bundle/core-workspace.test.mjs]
@@ -28,8 +28,8 @@ the tree's summed time.
 
 ## Tasks
 
-- [ ] `tasks/00_a-test-run-trusts-folders-in-its-own-claude-home.feature` — a test process writes claude's folder trust into a claude home of its own
-- [ ] `tasks/01_a-store-opens-without-rewriting-a-current-schema.feature` — opening a current store only reads
+- [x] `tasks/00_a-test-run-trusts-folders-in-its-own-claude-home.feature` — a test process writes claude's folder trust into a claude home of its own
+- [x] `tasks/01_a-store-opens-without-rewriting-a-current-schema.feature` — opening a current store only reads
 
 ## Notes
 
