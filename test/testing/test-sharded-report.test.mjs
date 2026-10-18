@@ -691,7 +691,8 @@ export const testShardedReportTests = [
     name: "160/13 The workflow runs the shards, then the summary, on every pull request",
     run: async () => {
       const raw = await readFile(path.join(repoRoot, ".github", "workflows", "test.yml"), "utf8");
-      const workflow = raw.replace(/^\s*#.*$/gmu, "");
+      // A checkout may hold the workflow with CRLF endings (core.autocrlf), so its lines are matched as LF.
+      const workflow = raw.replace(/\r\n/gu, "\n").replace(/^\s*#.*$/gmu, "");
       assert.match(workflow, /on:\s*\n\s+push:\s*\n\s+branches:\s*\n\s+- main\s*\n\s+pull_request:\s*\n\s+branches:\s*\n\s+- main/u, "on a pull request to main and a push to main");
       const shards = Number(/SHARDS: "(\d+)"/u.exec(workflow)?.[1]);
       const matrix = /shard: \[([^\]]+)\]/u.exec(workflow)?.[1].split(",").map((value) => Number(value.trim()));
