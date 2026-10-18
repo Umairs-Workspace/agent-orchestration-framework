@@ -75,7 +75,7 @@ function fakeFs() {
   };
 }
 
-const ROOT = path.join("C:", "home", "mesh", "logs");
+const ROOT = path.join(path.parse(process.cwd()).root, "home", "mesh", "logs");
 const at = new Date("2026-09-11T16:35:20.000Z");
 
 const recorderTests = [
@@ -333,7 +333,7 @@ const stopRequestTests = [
       const dir = loopStopsDir({ AOF_GLOBAL_HOME: H });
       assert.equal(dir, path.join(H, "mesh", "loop-stops"), "the sibling of logs/ and loop-fixes/, under the mesh root");
       assert.equal(stopRequestPath(dir, "27dbcc7a-3e23-402b-96fd-b59131131c56"), path.join(dir, "27dbcc7a-3e23-402b-96fd-b59131131c56.json"));
-      const other = path.join("C:", "tmp", "another-home");
+      const other = path.join(path.parse(process.cwd()).root, "tmp", "another-home");
       assert.equal(loopStopsDir({ AOF_GLOBAL_HOME: other }), path.join(other, "mesh", "loop-stops"), "a different AOF_GLOBAL_HOME answers under THAT home");
       assert.equal(loopStopsDir({ AOF_GLOBAL_HOME: other }), path.join(globalMeshPaths({ env: { AOF_GLOBAL_HOME: other } }).meshRoot, "loop-stops"), "the resolver is globalMeshPaths, never os.homedir()");
     },

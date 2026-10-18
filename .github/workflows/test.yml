@@ -100,7 +100,7 @@ jobs:
       - name: Run shard ${{ matrix.shard }}/${{ env.SHARDS }}
         run: |
           export AOF_GLOBAL_HOME="$(mktemp -d)"
-          node scripts/test-sharded.mjs --jobs 4 --unit-timeout-min 20 \
+          node scripts/test-sharded.mjs --jobs 4 --unit-timeout-min 8 \
             --shard ${{ matrix.shard }}/${{ env.SHARDS }} \
             --report-json reports/shard-${{ matrix.shard }}.json < /dev/null
 

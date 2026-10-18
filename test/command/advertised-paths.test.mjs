@@ -195,9 +195,15 @@ function launchAndAnnounce(cwd, args, { env = {}, timeoutMs = 20000 } = {}) {
     let stdout = "";
     let stderr = "";
     let settled = false;
+    // Bounded (m160/F-01's class, seen on the Linux PR suite 2026-10-18): `aof assets ui` starts a real vite
+    // grandchild that can outlive the kill and hold this child's output open, so waiting for `close` hung the
+    // unit until its limit. Settle on `exit`, then close our ends; a child that ignores SIGTERM gets SIGKILL.
     const stop = () => new Promise((res) => {
-      child.on("close", () => res());
-      try { child.kill("SIGTERM"); } catch { res(); }
+      const done = () => { clearTimeout(escalate); child.stdout?.destroy(); child.stderr?.destroy(); res(); };
+      const escalate = setTimeout(() => { try { child.kill("SIGKILL"); } catch { done(); } }, 5000);
+      if (child.exitCode !== null || child.signalCode !== null) { done(); return; }
+      child.once("exit", done);
+      try { child.kill("SIGTERM"); } catch { done(); }
     });
     const timer = setTimeout(() => {
       if (settled) return;
