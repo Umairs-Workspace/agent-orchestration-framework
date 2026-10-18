@@ -533,7 +533,7 @@ export function runnerSpawnSites(source, file) {
     const span = matchedParenSpan(blank, match.index);
     if (span == null) continue;
     const args = code.substring(span.open, span.close + 1);
-    const named = RUNNER_REFERENCE.test(args) || [...bound].some((name) => new RegExp(`\\b${name.replace(/\$/gu, "\\$")}\\b`, "u").test(args));
+    const named = RUNNER_REFERENCE.test(args) || [...bound].some((name) => new RegExp(`\\b${name.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")}\\b`, "u").test(args));
     if (!named) continue;
     const firstLine = code.substring(match.index).split("\n")[0].trim();
     const lines = text.split("\n");

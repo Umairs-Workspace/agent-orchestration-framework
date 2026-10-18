@@ -29,7 +29,14 @@ function settleExecFile(error, stdout, stderr, resolve, reject) {
 const GIT_TIMEOUT_MS = 30000;
 const GIT_COMMIT_TIMEOUT_MS = 5 * 60 * 1000;
 
+// Git runs the value of these options as a program, so an argument that names one could execute a
+// command of the caller's choosing (CodeQL js/second-order-command-line-injection). No caller passes one;
+// the spawn refuses it rather than trusting every caller's input.
+const GIT_PROGRAM_OPTION = /^--(?:upload-pack|receive-pack|exec)(?:=|$)/u;
+
 export function defaultGitExec(args, { cwd, env, timeoutMs } = {}) {
+  const program = args.find((arg) => GIT_PROGRAM_OPTION.test(String(arg)));
+  if (program !== undefined) return Promise.reject(Object.assign(new Error(`git refused: ${program} names a program for git to run`), { code: "git-program-option" }));
   const timeout = timeoutMs ?? (gitVerb(args).verb === "commit" ? GIT_COMMIT_TIMEOUT_MS : GIT_TIMEOUT_MS);
   return new Promise((resolve, reject) => {
     execFile("git", args, { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>
