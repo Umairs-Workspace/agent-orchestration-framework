@@ -51,12 +51,6 @@ export function driveStatusLine({ ref, elapsedMs, sessionId = null, subagentsAct
   return `${head}, ${subagents}, ${activity}`;
 }
 
-// withDriveStatus(spawnDrive, { narrate, resolveItem }) — a spawn seam whose every drive carries its
-// status ticker's `status`: the caller's printer and the drive's item, resolved lazily by its ref
-// at the first tick. The sequential loop wraps its child spawn with it; a lane passes its own.
-export function withDriveStatus(spawnDrive, { narrate, resolveItem }) {
-  return (args) => spawnDrive({ ...args, status: { narrate, item: () => resolveItem(args.ref) } });
-}
 
 // Application services enter explicitly; construction starts no timer and reads nothing.
 export function createDriveStatus({ readRuns, claudeProjectsDir, reportDegrade, readdir = fsReaddir, stat = fsStat, timers = null, clock = null }) {
@@ -64,12 +58,9 @@ export function createDriveStatus({ readRuns, claudeProjectsDir, reportDegrade, 
   if (typeof claudeProjectsDir !== "function") throw new TypeError("createDriveStatus: claudeProjectsDir is required");
   const schedule = timers ?? { setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (handle) => clearInterval(handle) };
   const nowMs = () => (typeof clock === "function" ? clock() : Date.now());
+  // reportDegrade never throws (degrade.mjs), so it needs no guard of its own.
   const degrade = (error) => {
-    try {
-      reportDegrade?.("drive-status", error);
-    } catch {
-      // a reporting fault is never the drive's
-    }
+    reportDegrade?.("drive-status", error);
   };
 
   // The subagent transcripts written within the last interval, under the LANE's own projects dir.

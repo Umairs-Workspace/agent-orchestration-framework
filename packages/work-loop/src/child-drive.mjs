@@ -28,13 +28,19 @@
 // while the child is pending, printed through ITS narrate (so `--quiet` silences it), and the
 // ticker stops when the child settles. The ticker READS the lane's run record; it writes nothing.
 import path from "node:path";
-import { createDriveStatus, withDriveStatus } from "./drive-status.mjs";
 
 // THE CANCEL GRACE — the family's one named constant (129/04 ruling): how long an aborted
 // child is given to exit on its own after its stdin is ended, before it is killed. NOT a config
 // key: a knob on how long to wait for a child the operator has already cancelled twice is a
 // knob nobody tunes.
 export const LANE_CANCEL_GRACE_MS = 10000;
+
+// withDriveStatus(spawnDrive, { narrate, resolveItem }) — a spawn seam whose every drive carries its
+// status ticker's `status`: the caller's printer and the drive's item, resolved lazily by its ref
+// at the first tick. The sequential loop wraps its child spawn with it; a lane passes its own.
+export function withDriveStatus(spawnDrive, { narrate, resolveItem }) {
+  return (args) => spawnDrive({ ...args, status: { narrate, item: () => resolveItem(args.ref) } });
+}
 
 // The fix file's home — under the aof home (`AOF_GLOBAL_HOME` honoured), NEVER in a checkout
 // (ADR-005 §3): a lane's `git add -A` would otherwise commit it.
@@ -45,8 +51,18 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
   if (typeof getCliEntry !== "function") throw new TypeError("createChildDrive: getCliEntry is required");
   if (typeof runBounded !== "function") throw new TypeError("createChildDrive: runBounded is required");
 
-  // The status ticker, composed only when its readers are supplied (a suite without them arms none).
-  const driveStatus = driveStatusServices == null ? null : createDriveStatus(driveStatusServices);
+  // The status ticker, composed only when its readers are supplied (a suite without them arms none), and
+  // loaded on the first lane drive rather than when the registry assembles: a verb that drives no lane, such
+  // as `aof work find`, loads nothing it does not use (160/ADR-004, FF-16004).
+  let driveStatus = null;
+  async function laneDriveStatus() {
+    if (driveStatusServices == null) return null;
+    if (driveStatus == null) {
+      const { createDriveStatus } = await import("./drive-status.mjs");
+      driveStatus = createDriveStatus(driveStatusServices);
+    }
+    return driveStatus;
+  }
 
   function loopFixFilePath(runId, { env } = {}) {
     return path.join(getRuntimeRoot(env), "loop-fixes", `${runId}.json`);
@@ -192,7 +208,7 @@ export function createChildDrive({ getRuntimeRoot, isPackaged, getCliEntry, runB
     ];
     const args = isPackaged() ? verb : [getCliEntry(), ...verb];
 
-    const ticker = driveStatus?.startDriveStatus({ ref, runId, lane, env, status }) ?? null;
+    const ticker = (await laneDriveStatus())?.startDriveStatus({ ref, runId, lane, env, status }) ?? null;
     let spawn;
     try {
       spawn = await runBounded({

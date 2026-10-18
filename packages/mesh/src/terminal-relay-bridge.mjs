@@ -417,10 +417,12 @@ function openTerminalIngressClient({ readAddress, onDegrade, timeoutMs = 3000 } 
   const degrade = (code, error) => {
     if (degraded) return;
     degraded = true;
+    // reportDegrade never throws (degrade.mjs); a caller's onDegrade might, and its fault is reported, not lost.
+    if (onDegrade == null) { reportDegrade(code, error); return; }
     try {
-      (onDegrade ?? reportDegrade)(code, error);
-    } catch {
-      // a reporting fault is never the drive's problem
+      onDegrade(code, error);
+    } catch (reportError) {
+      reportDegrade("mesh-terminal-ingress", reportError);
     }
   };
 
@@ -432,8 +434,8 @@ function openTerminalIngressClient({ readAddress, onDegrade, timeoutMs = 3000 } 
     degrade(code, error);
     try {
       socket?.terminate?.();
-    } catch {
-      // already gone
+    } catch (terminateError) {
+      reportDegrade("mesh-terminal-ingress", terminateError);
     }
   };
 
@@ -526,8 +528,8 @@ function openTerminalIngressClient({ readAddress, onDegrade, timeoutMs = 3000 } 
         const timer = setTimeout(() => {
           try {
             socket.terminate();
-          } catch {
-            // already gone
+          } catch (terminateError) {
+            reportDegrade("mesh-terminal-ingress", terminateError);
           }
           resolve();
         }, timeoutMs);
