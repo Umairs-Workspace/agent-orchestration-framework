@@ -182,7 +182,7 @@ export const archTests = [
 // Node upgrade's builtins move nothing.
 const MODULE_CEILINGS = Object.freeze([
   Object.freeze({ argv: ["--version"], ceiling: 16, measured: 16, loweredBy: "160/03 — 41 before: the session hooks and an unused workspace binding left cli.mjs's static imports" }),
-  Object.freeze({ argv: ["work", "find", "160"], ceiling: 706, measured: 706, loweredBy: "160/03 — pinned at 706, unchanged by the cut: the registry is this verb's route table" }),
+  Object.freeze({ argv: ["work", "find", "160"], ceiling: 707, measured: 707, loweredBy: "160/03 — pinned at 706, unchanged by the cut: the registry is this verb's route table; 162 raised it to 707: its drive status ticker arms synchronously when a lane drive starts (162/ADR-004), so child-drive imports drive-status.mjs" }),
 ]);
 
 export function ceilingProblems(row, count) {

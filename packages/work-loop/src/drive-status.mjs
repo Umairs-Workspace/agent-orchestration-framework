@@ -51,6 +51,12 @@ export function driveStatusLine({ ref, elapsedMs, sessionId = null, subagentsAct
   return `${head}, ${subagents}, ${activity}`;
 }
 
+// withDriveStatus(spawnDrive, { narrate, resolveItem }) — a spawn seam whose every drive carries its
+// status ticker's `status`: the caller's printer and the drive's item, resolved lazily by its ref
+// at the first tick. The sequential loop wraps its child spawn with it; a lane passes its own.
+export function withDriveStatus(spawnDrive, { narrate, resolveItem }) {
+  return (args) => spawnDrive({ ...args, status: { narrate, item: () => resolveItem(args.ref) } });
+}
 
 // Application services enter explicitly; construction starts no timer and reads nothing.
 export function createDriveStatus({ readRuns, claudeProjectsDir, reportDegrade, readdir = fsReaddir, stat = fsStat, timers = null, clock = null }) {
