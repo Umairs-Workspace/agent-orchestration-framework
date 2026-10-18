@@ -91,6 +91,7 @@ runs on every PR in `.github/workflows/test.yml`: 8 shards × 4 workers on `ubun
 | 4 | `b66312ab` | 1.8 min | red | my fix for FF-16004 broke 162's synchronous ticker (F-10) |
 | 5 | `7cffeee6` | 1.7 min | **green**, 12,988 of 12,988 | CodeQL then raised two high alerts in 160's code (F-09) |
 | 6 | `c407c1a4` | **1.8 min** | **green**, 12,988 of 12,988, summed 29.4 min | every PR check green; CodeQL: no new alerts |
+| gate | `21cfaaf4` | 11.5 min | **green** | `aof work regression-gate 160`, unchanged, on a runner (`gate.yml`, run 39139730420); the first runner gate at `feffa4a2` was red on one case, a wiring regex that item-24 read as a comment stripper (fixed) |
 
 On the PR runner the suite signs off in under 2 minutes against its 10-minute budget, so F-02 is resolved by the
 re-aim: its cause was the control node's own load and process-start cost, which the runner does not share.
@@ -406,9 +407,13 @@ Recalled at triage (`aof work memory recall … --kind finding --block`, four qu
 
 ## Accept decision
 
-2026-10-15, `aof:verify 160`. All seven stories are accepted: every `@executable` scenario is green in the
-whole-tree run, every `@manual` scenario has its evidence above (03/00's as a recorded miss, F-03), F-01 is fixed,
-and every control's red probe bites. **The milestone stays `in-progress`:** its objective is the 10-minute sign-off,
-the gate's newest row is `not-finished`, and F-02 is open. The operator's decision is to refine new 160 stories for
-the next levers — pool contention on the loop suites, `work-dispatch-lanes`, the heavy arch audits, process
-start-up's resolution cost — and to re-run `aof work regression-gate 160` when they land.
+**2026-10-18, `aof:verify 160` — accepted.** All fourteen stories are done, each with its `@executable` scenarios green
+in the whole tree and its `@manual` evidence above. Every declared control, FF-16001 to FF-16017, bites its red
+probe. The objective as re-aimed on 2026-10-17 is met: the pull request suite signs off on all 12,988 registered cases
+in 1.8 minutes against its 10-minute budget (PR #12, run 6), and the regression gate is green at `21cfaaf4` — `aof work
+regression-gate 160`, unchanged, on a GitHub-hosted runner (`gate.yml`), 11.5 minutes (REGRESSION.md, newest row).
+No blocker finding is open: F-01, F-05 to F-10 are fixed, F-02 is resolved by the re-aim, and F-03 and F-04 stay open
+as non-blockers.
+
+*Round 2's held decision, 2026-10-15, superseded:* all seven round-1 stories were accepted and the milestone stayed
+`in-progress` because the gate's newest row was `not-finished` (F-02); the operator chose to refine further stories.

@@ -3,10 +3,10 @@ type: milestone
 number: 160
 slug: the-whole-tree-suite-runs-in-minutes
 title: "The whole-tree suite signs off in minutes — a time budget the runner enforces, and a timeout is never a red"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-14
-updated: 2026-10-17
+updated: 2026-10-18
 schema: 1
 aofVersion: 0.1.0
 ---
