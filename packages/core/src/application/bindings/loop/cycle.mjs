@@ -4,7 +4,7 @@ import { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS, boundGradeFailures } from 
 import { PHASE_BRIEF_MAX_CHARS } from "@aof/work/phase-brief";
 import { meshNodeIdOf } from "@aof/mesh/commands/gate";
 
-export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServices, loopAskServices, loopAskRequestServices, workDispatchServices, meshWorktreeServices, loopProgressServices, commandsGradeServices, itemLockServices, runStoreServices, effectsRunTransitionsServices, degradeServices, runSpendIngestServices, provideCommandCore }) {
+export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServices, loopAskServices, loopAskRequestServices, loopProgressServices, commandsGradeServices, itemLockServices, runStoreServices, effectsRunTransitionsServices, degradeServices, runSpendIngestServices, provideCommandCore }) {
   // Core composition; @aof/work-loop owns the implementation.
 
   const { resolveItemExact } = commandsResolveServices;
@@ -20,11 +20,10 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const { liveOwnerHolds } = loopAskServices;
   const { parkedHalt } = loopAskServices;
   const { reenterStandingAsks } = loopAskServices;
+  const { runsBehindAsk } = loopAskServices;
   const { standingAsk } = loopAskServices;
   const { sweepStaleAsks } = loopAskServices;
   const { readAsk } = loopAskRequestServices;
-  const { resolveRefInWorktree } = workDispatchServices;
-  const { meshDispatchWorktreePath } = meshWorktreeServices;
   const { appendProgressSample } = loopProgressServices;
   const { decideBuildProgress } = loopProgressServices;
   const { evaluateProgressPolicy } = loopProgressServices;
@@ -42,14 +41,12 @@ export function assembleLoopCycle({ commandsResolveServices, loopChildDriveServi
   const { reportDegrade } = degradeServices;
   const { settleSpendFromTranscript } = runSpendIngestServices;
 
-  const asks = { askContext: loopAskServices.askContext, askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks };
+  const asks = { askContext: loopAskServices.askContext, askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, runsBehindAsk, standingAsk, sweepStaleAsks };
   const implementation = createStoryCycle({
     items: { resolveItemExact, requireLocalCheckout },
     childDrive: { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, loopRepairFilePath },
     asks,
     askRequests: { readAsk },
-    dispatch: { resolveRefInWorktree },
-    worktrees: { meshDispatchWorktreePath },
     progress: { appendProgressSample, decideBuildProgress, evaluateProgressPolicy, readProgressSamples, sampleWorktreeProgress },
     grading: { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS, boundGradeFailures },
     briefs: { PHASE_BRIEF_MAX_CHARS },

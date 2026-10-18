@@ -456,6 +456,24 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
+      "path": ".agents/skills/aof-questions/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill"
+      },
+      "hash": "sha256:c1dca690fdd9dc17d0674eb95d2f81d9789e2091cd6133aaebd19a52afd93ee8"
+    },
+    {
+      "path": ".agents/skills/aof-questions/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
       "path": ".agents/skills/aof-recent/SKILL.md",
       "runtime": "codex",
       "resource": {
@@ -1273,6 +1291,15 @@
         "kind": "command"
       },
       "hash": "sha256:ba2ff654a1aaaa317e5cc2be8bf349bfa9a1251c3841bb9877ee8f46c9066382"
+    },
+    {
+      "path": ".claude/commands/aof/questions.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "questions",
+        "kind": "command"
+      },
+      "hash": "sha256:97d7b979a2f76ccff179badda8a61fb9822093243e15b6916e92d09038baaf18"
     },
     {
       "path": ".claude/commands/aof/recent.md",

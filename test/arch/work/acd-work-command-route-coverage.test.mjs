@@ -91,6 +91,11 @@ const BOARD_DEFERRED = new Set([
   // separate, deliberate decision. This entry records both deferrals, not an oversight.
   "regression-gate",
   "resume",
+  // story 163 — `questions` is the TERMINAL's read of the open asks, for when the portal is stale
+  // or down. The board needs no route for it: it already reads every ask through `work:list`'s
+  // ask overlay (131/ADR-006 §2), and a second door onto the same fact would be two answers to
+  // one question. A deliberate carve-out recorded here, not an oversight.
+  "questions",
   "insert-milestone",
   "insert-uat",
   "insert-story",

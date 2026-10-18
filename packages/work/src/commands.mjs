@@ -30,6 +30,7 @@ export const WORK_COMMAND_IDS = Object.freeze([
   "work:run-retry",
   "work:resume",
   "work:answer",
+  "work:questions",
   "work:find",
   "work:observe",
   "work:insert-milestone",

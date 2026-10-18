@@ -30,6 +30,20 @@ test('resume reclaims a stranded run before delegating the retry with the config
   assert.deepEqual(calls, ['reclaim', 'retry']); assert.deepEqual(result.reclaimed, ['prior']); assert.equal(result.resumed, true);
 });
 
+test('the sweep reads "waiting on a human" through the injected standingAsk, never a copy of its own (163)', async () => {
+  const run = { runId: 'r1', state: 'running', attempt: 1, heartbeatAt: '2026-09-01T09:59:00Z', updatedAt: '2026-09-01T09:59:00Z', asks: [{ askedAt: '2026-09-01T09:00:00Z', answeredAt: null }] };
+  const asked = [];
+  const { resumeCommand } = createReentryCommands({
+    listStreamCacheFirst: async () => [{ ref: '01', dir: '/fixture', status: 'in-progress', title: 'One' }],
+    resolveItem: async () => ({ ref: '01', dir: '/fixture' }), readRuns: async () => [run], isStale: () => false,
+    standingAsk: (record) => { asked.push(record.runId); return null; },
+    lockContextFor: () => ({}),
+  });
+  const result = await resumeCommand.run({ now: '2026-09-01T10:00:00Z' }, { workspace: { config: {} } });
+  assert.ok(asked.includes('r1'), 'the injected rule was asked');
+  assert.equal(result.pending[0].state, 'in-flight', 'its answer decides the row, even over an open-looking entry');
+});
+
 test('worker answers load the command registry lazily and do not notify on refused delivery', async () => {
   const calls = [], execution = { sessionId: 'worker-session', runId: 'worker-run', updatedAt: '2026-09-01T09:00:00Z', ask: { phase: 'continue', askedAt: '2026-09-01T09:00:00Z' } };
   const { answerCommand } = createReentryCommands({

@@ -18,6 +18,7 @@
 // death). This module arms no `setInterval`. The beat is the hook's own queue, through the one
 // `enqueueHeartbeat`, at the wait's checks.
 
+import { existsSync } from "node:fs";
 import { decideScheduleToClose } from "./engine.mjs";
 import { DEFAULT_HEARTBEAT_MS } from "@aof/contracts/loop-bounds";
 
@@ -30,10 +31,15 @@ export function createAskOrchestration({
   notifications,
   notificationFormatting,
   diagnostics,
-  workspaceIdentity
+  workspaceIdentity,
+  // 163 — the item and lane resolvers `runsBehindAsk` reads through; only that read needs them.
+  items = {},
+  lanes = {},
 }) {
   const { ASK_STATES, askRequestPath, clearAsk, loopAsksDir, openAsk, parkAsk, readAsk, readAsks, normalizeNativeQuestion, acknowledgeNativeDelivery } = askRequests;
   const { answerRunAsk, isStale, openRunAsk, parkRunAsk, readRuns } = runs;
+  const { resolveItemExact = null } = items;
+  const { meshDispatchWorktreePath = null, resolveRefInWorktree = null } = lanes;
   const { enqueueHeartbeat: enqueueHeartbeatDefault } = heartbeats;
   const { readAskQuestion } = transcripts;
   // 136/ADR-004 — optional: a question the session never wrote to its transcript.
@@ -72,10 +78,39 @@ export function createAskOrchestration({
   // A question the session never wrote to its transcript is lost to the resumed session too, so
   // the re-drive types it ahead of the answer; a transcript question keeps the answer verbatim.
   const answerFor = (question, answer, lost) => (lost && typeof question === "string" ? `You asked:\n${question}\n\nThe answer:\n${answer}` : answer);
-  // A run is WAITING ON A HUMAN when its record's last ask is a plain object with no answer.
+  // A run is WAITING ON A HUMAN when its record's last ask is a plain object with no answer. The one
+  // copy of the rule: `work:resume` receives it injected (163) rather than spelling its own.
   function standingAsk(record) {
     const last = lastAsk(record);
     return last != null && typeof last === "object" && !Array.isArray(last) && last.answeredAt == null ? last : null;
+  }
+  // The runtime a PTY ask is stamped with (163): the run's own, else claude — the only runtime the
+  // PTY path drives. The codex path writes its own through `persistNativeQuestion`.
+  const ptyRuntime = (record) => record?.execution?.runtime ?? "claude";
+
+  // askRunStopped(ask, runs) — whether the run behind an ask file has stopped: no record among `runs`
+  // with its `runId` is `running`. The ONE stale test (163): `sweepStaleAsks` clears on it and
+  // `work:questions` withholds the answer line on it.
+  function askRunStopped(ask, runRecords) {
+    return runRecords.find((run) => run.runId === ask?.runId)?.state !== "running";
+  }
+
+  // runsBehindAsk({ ctx, primaryRoot, ref }) → the run records an ask on `ref` may belong to: the
+  // primary checkout's item and the ref's dispatch lane, the lane read only when its tree exists. An
+  // item that does not resolve contributes nothing.
+  async function runsBehindAsk({ ctx, primaryRoot, ref }) {
+    if (typeof resolveItemExact !== "function" || typeof meshDispatchWorktreePath !== "function" || typeof resolveRefInWorktree !== "function") {
+      throw new TypeError("runsBehindAsk needs the item and lane resolvers");
+    }
+    const found = [];
+    const item = await resolveItemExact(ctx, ref).catch(() => null);
+    if (item?.dir != null) found.push(...await readRuns(item));
+    const lane = meshDispatchWorktreePath(primaryRoot, ref);
+    if (existsSync(lane)) {
+      const laneItem = await resolveRefInWorktree(primaryRoot, ctx.workspace.workDir, lane, ref).catch(() => null);
+      if (laneItem != null) found.push(...await readRuns(laneItem));
+    }
+    return found;
   }
 
   async function persistNativeQuestion({ item, runId, question, phase, ctx }) {
@@ -228,7 +263,7 @@ export function createAskOrchestration({
           // notice or row (QA ruling 6).
           const record = await openRunAsk(item, runId, { question, phase: word, now: iso(opened) });
           askedAt = lastAsk(record).askedAt;
-          await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: word, node, question, now: () => new Date(opened) });
+          await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: word, node, question, runtime: ptyRuntime(current.record), now: () => new Date(opened) });
           }
           const envelope = envelopeAt("session-needs-input", opened, { question });
           // A re-ask while the loop is stopping still records the question, and tells nobody.
@@ -247,7 +282,7 @@ export function createAskOrchestration({
           sessionId = sessionId ?? file?.sessionId ?? null;
           lost = (await pendingAt(answeredSince((Array.isArray(stored?.asks) ? stored.asks : []).slice(0, -1)))) != null;
           if (file == null || file.state === parked) {
-            await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: entry?.phase ?? word, node, question, now: () => new Date(opened) });
+            await openAsk(dir, { runId, ref, workspaceId, loopRunId, scope, sessionId, phase: entry?.phase ?? word, node, question, runtime: ptyRuntime(stored), now: () => new Date(opened) });
           }
           }
           await narrate(accountLine(envelopeAt("session-needs-input", opened, { question })));
@@ -347,9 +382,7 @@ export function createAskOrchestration({
   async function sweepStaleAsks({ dir = loopAsksDir(), workspaceId, inScope, runsFor, narrate = NO_PRINT }) {
     for (const ask of await readAsks(dir, { workspaceId })) {
       if (!inScope(ask.ref)) continue;
-      const runs = await runsFor(ask.ref);
-      const behind = runs.find((run) => run.runId === ask.runId);
-      if (behind?.state === "running") continue;
+      if (!askRunStopped(ask, await runsFor(ask.ref))) continue;
       await clearAsk(dir, ask.runId);
       await narrate(`Ask ${ask.runId} — stale: its run is not running; cleared.`);
     }
@@ -406,6 +439,7 @@ export function createAskOrchestration({
     askContext,
     askEnvFor,
     askFileFor,
+    askRunStopped,
     awaitAnswer,
     defaultAskWait,
     isParkedHalt,
@@ -413,6 +447,7 @@ export function createAskOrchestration({
     parkedHalt,
     phaseWord,
     reenterStandingAsks,
+    runsBehindAsk,
     standingAsk,
     sweepStaleAsks,
     persistNativeQuestion,

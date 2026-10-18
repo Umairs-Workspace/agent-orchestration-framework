@@ -1301,9 +1301,9 @@ function answerSweepTests() {
       run: async () => {
         const NOTHING_WAITING = "Nothing is ready yet — answer the questions above, or re-run this command after the earliest readyAt.";
         const rows = [
-          ["only 348 waits", ["", "Answer:", '  aof work answer 348 "…"', "", NOTHING_WAITING]],
-          ["349 ready", ["", "Answer:", '  aof work answer 348 "…"', "", "Resume now:", "  aof work resume 349"]],
-          ["349 parked", ["", "Answer:", '  aof work answer 348 "…"', "", NOTHING_WAITING]],
+          ["only 348 waits", ["", "Read each question with: aof work questions", "Answer:", '  aof work answer 348 "…"', "", NOTHING_WAITING]],
+          ["349 ready", ["", "Read each question with: aof work questions", "Answer:", '  aof work answer 348 "…"', "", "Resume now:", "  aof work resume 349"]],
+          ["349 parked", ["", "Read each question with: aof work questions", "Answer:", '  aof work answer 348 "…"', "", NOTHING_WAITING]],
           ["348 answered, 349 parked", ["", "Nothing is ready yet — re-run this command after the earliest readyAt above."]],
         ];
         for (const [label, tail] of rows) {

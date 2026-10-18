@@ -193,9 +193,10 @@ export const yarnInstallationTests = [
         'commands/trigger.mjs': ['@aof/contracts/error'],
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],
         'diagnostics.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path'],
-        'ask.mjs': ['@aof/contracts/loop-bounds'],
+        // 163: the lane-tree existence check moved with `runsBehindAsk` from cycle.mjs into ask.mjs.
+        'ask.mjs': ['node:fs', '@aof/contracts/loop-bounds'],
         'stop.mjs': ['@aof/contracts/loop-bounds'],
-        'cycle.mjs': ['node:fs/promises', 'node:path', 'node:fs', '@aof/contracts/loop-bounds'],
+        'cycle.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/loop-bounds'],
         'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path'],
         // 155/00: the drive composes its mode flag from the session chain's contract leaf.
         'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/agent-mode'],
@@ -225,6 +226,8 @@ export const yarnInstallationTests = [
         "ready-wave.mjs": ["node:path","node:fs/promises"],
         "story-contract-derive.mjs": ["node:path","node:fs"],
         "commands/migrate-folder.mjs": ["node:path","node:fs/promises","@aof/contracts/error"],
+        // 163: work:questions reads the node's workspace descriptors and checks another checkout exists.
+        "commands/questions.mjs": ["node:fs/promises","node:fs","node:path"],
         "commands/diagram/plan.mjs": ["node:fs","node:fs/promises","node:os","node:path","@aof/contracts/error"],
         "commands/diagram/export.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
         "commands/diagram/file.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
