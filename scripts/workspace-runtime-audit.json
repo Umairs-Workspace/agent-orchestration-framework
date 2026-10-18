@@ -114,17 +114,17 @@
   {
     "file": "packages/execution/src/worktrees.mjs",
     "kind": "child-process",
-    "expression": "execFile(\"git\", args, { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
-    "digest": "812dde8d2ba70aca4964a683802f24d785d08037d2c015ffb27a0304f90ecfdd",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
-    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
+    "expression": "execFile(\"git\", [...GIT_SAFE_PREFIX, ...args], { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>\n      settleExecFile(error, stdout, stderr, resolve, reject)\n    )",
+    "digest": "872a08dde16de4df435130882fe525ea8b116be11ae6903fbf16e981a19227c8",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
+    "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports. Every spawn pins protocol.ext.allow=never ahead of the caller argv, and an argument naming --upload-pack, --receive-pack or --exec is refused before it."
   },
   {
     "file": "packages/execution/src/worktrees.mjs",
     "kind": "child-process",
     "expression": "exec(args, options)",
     "digest": "437f6e6c11c7289afd3343fd7b9b2f8c99d9daba827b24ffe7c6d82251a18424",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The step memo and the commit-tip recorder forward a caller's own git argv to the injected port unchanged (160/ADR-001)."
   },
   {
@@ -132,7 +132,7 @@
     "kind": "child-process",
     "expression": "exec([\"-c\", \"core.abbrev=40\", ...args], options)",
     "digest": "72891f300e127e3c063c250e12c1640fa688d810c97289b275362b195cbb862d",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The commit-tip recorder asks the caller's own commit with a full-length summary id, so no second rev-parse is needed (160/ADR-001 §4)."
   },
   {
@@ -140,7 +140,7 @@
     "kind": "child-process",
     "expression": "exec(args, options)",
     "digest": "437f6e6c11c7289afd3343fd7b9b2f8c99d9daba827b24ffe7c6d82251a18424",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The step memo and the commit-tip recorder forward a caller's own git argv to the injected port unchanged (160/ADR-001)."
   },
   {
@@ -148,7 +148,7 @@
     "kind": "child-process",
     "expression": "exec(args, options)",
     "digest": "437f6e6c11c7289afd3343fd7b9b2f8c99d9daba827b24ffe7c6d82251a18424",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The step memo and the commit-tip recorder forward a caller's own git argv to the injected port unchanged (160/ADR-001)."
   },
   {
@@ -156,7 +156,7 @@
     "kind": "child-process",
     "expression": "exec([\"rev-parse\", \"HEAD\"], { cwd: projectRoot })",
     "digest": "ef928cf85d0dc9e7245e26be6f211753297c98e8a3595c3111d83bf572286481",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -164,7 +164,7 @@
     "kind": "child-process",
     "expression": "exec([\"cat-file\", \"-e\", `${commit}^{commit}`], { cwd: projectRoot })",
     "digest": "442ddd199ea10fc9c6d458e8dfef38cba187428fe9908fcccb5c056e41e44c22",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -172,7 +172,7 @@
     "kind": "child-process",
     "expression": "exec([\"fetch\", \"origin\"], { cwd: projectRoot })",
     "digest": "719be601cf1efe4f7d5dead7c3304c6fef859f0a4e17f062da30c7d2df9c5bf5",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -180,7 +180,7 @@
     "kind": "child-process",
     "expression": "exec([\"show-ref\", \"--verify\", \"--quiet\", `refs/heads/${branch}`], { cwd: projectRoot })",
     "digest": "9e43c2e61779335d8bf83fa45e5438a17f500403d2e6a9a2ea6a6a68dd0a7063",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -188,7 +188,7 @@
     "kind": "child-process",
     "expression": "exec([\"show-ref\", \"--verify\", \"--quiet\", `refs/remotes/origin/${branch}`], { cwd: projectRoot })",
     "digest": "719e74aea7a5c2db3242d53118bcb72ea827270ca1ff0987906574e17f0e2c3b",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -196,7 +196,7 @@
     "kind": "child-process",
     "expression": "exec([\"fetch\", \"origin\", \"--\", branch], { cwd: projectRoot })",
     "digest": "720826f51dcb2590f51149379274fc8817053f09bae1178741de596cc3d20813",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -204,7 +204,7 @@
     "kind": "child-process",
     "expression": "exec([\"branch\", branch, `refs/remotes/origin/${branch}`], { cwd: projectRoot })",
     "digest": "adb307243beb870d7b1e2d22defd73c7b0bd51b222954dc2918aacfca8b13c6d",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -212,7 +212,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: projectRoot })",
     "digest": "2d2d1b7afcd72941de8daf4b41b3e88ec4d667465e2ad0314bc594f240a3d188",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -220,7 +220,7 @@
     "kind": "child-process",
     "expression": "exec(args, { cwd: worktreePath })",
     "digest": "816d6444d908a9c2b0f61e6da58f71886b0d6ddba75aa4de7f5111e59defea57",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {
@@ -228,7 +228,7 @@
     "kind": "child-process",
     "expression": "exec([\"worktree\", \"list\", \"--porcelain\"], { cwd: projectRoot })",
     "digest": "79e153fde7f3ee1f42362b4fd59b14412198d7918303aa830c9a15be2717c88e",
-    "sourceDigest": "6d66606c6758434b9eac10cf87a7230d123a6e9822f7da8cf7e82a29e6f539da",
+    "sourceDigest": "f92b12dfdef16c011273b9fc8202c3de39211f82b67a01de811f42d6effa9992",
     "reason": "The exec port is a Git-only wrapper; worktree paths and refs are arguments to Git, not JavaScript module imports."
   },
   {

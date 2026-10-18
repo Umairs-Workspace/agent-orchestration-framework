@@ -29,17 +29,19 @@ function settleExecFile(error, stdout, stderr, resolve, reject) {
 const GIT_TIMEOUT_MS = 30000;
 const GIT_COMMIT_TIMEOUT_MS = 5 * 60 * 1000;
 
-// Git runs the value of these options as a program, so an argument that names one could execute a
-// command of the caller's choosing (CodeQL js/second-order-command-line-injection). No caller passes one;
-// the spawn refuses it rather than trusting every caller's input.
+// Git can be made to run a program two ways: the value of --upload-pack, --receive-pack or --exec, and the
+// ext:: transport, whose URL is a command line. So the spawn refuses any argument naming such an option (no
+// caller passes one), and every spawn pins protocol.ext.allow=never ahead of the caller's argv, so no URL a
+// caller relays can reach a command (CodeQL js/second-order-command-line-injection, PR #12).
 const GIT_PROGRAM_OPTION = /^--(?:upload-pack|receive-pack|exec)(?:=|$)/u;
+const GIT_SAFE_PREFIX = Object.freeze(["-c", "protocol.ext.allow=never"]);
 
 export function defaultGitExec(args, { cwd, env, timeoutMs } = {}) {
   const program = args.find((arg) => GIT_PROGRAM_OPTION.test(String(arg)));
   if (program !== undefined) return Promise.reject(Object.assign(new Error(`git refused: ${program} names a program for git to run`), { code: "git-program-option" }));
   const timeout = timeoutMs ?? (gitVerb(args).verb === "commit" ? GIT_COMMIT_TIMEOUT_MS : GIT_TIMEOUT_MS);
   return new Promise((resolve, reject) => {
-    execFile("git", args, { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>
+    execFile("git", [...GIT_SAFE_PREFIX, ...args], { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>
       settleExecFile(error, stdout, stderr, resolve, reject)
     );
   });
