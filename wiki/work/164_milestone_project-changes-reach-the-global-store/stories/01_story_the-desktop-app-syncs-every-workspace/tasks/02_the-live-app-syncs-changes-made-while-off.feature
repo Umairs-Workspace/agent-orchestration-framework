@@ -16,5 +16,5 @@ Feature: The live desktop app syncs changes made while it was off
       When the operator relaunches the app with "aof mesh desktop run"
       Then both daemons print "Build: payload <buildId>" with the installed build id
       And within one propagation tick both changes show in the fleet view at "http://127.0.0.1:4181/?mode=fleet"
-      And "aof work find" for both refs, run from the "aof" checkout, reports the new statuses
+      And the global store's rows for both refs carry the new statuses, authored by "node-7297"
       And "aof work doctor" in "aof-test-repo" raises no "sync-failing" or "sync-behind" finding

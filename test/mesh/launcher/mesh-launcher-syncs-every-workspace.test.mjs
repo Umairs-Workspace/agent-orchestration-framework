@@ -4,6 +4,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // Traceability wiring for milestone 164 / story 01 (the desktop app syncs every workspace):
 //   .../01_story_the-desktop-app-syncs-every-workspace/tasks/00_every-tick-syncs-every-registered-workspace.feature (@executable)
 //   .../01_story_the-desktop-app-syncs-every-workspace/tasks/01_the-daemon-catches-up-when-it-starts.feature (@executable)
+//   .../01_story_the-desktop-app-syncs-every-workspace/tasks/03_a-torn-node-record-never-empties-membership.feature (@executable @bug)
 //
 // The launcher is started with an INJECTED fabric exec, an injected propagation ticker and a stub
 // control-stream server (the real one binds the fleet port this machine's daemon holds), from a
@@ -12,8 +13,8 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // store or the effects journal at the source. A fired tick is awaited by polling its observable
 // outcome, never by sleeping.
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, realpath, rename, rm, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { mkdir, mkdtemp, readFile, realpath, rename, rm, writeFile } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -262,4 +263,71 @@ export const meshLauncherSyncsEveryWorkspaceTests = [
       assert.equal(marks(fx).length, before, "no workspace.changed event is appended");
     }),
   },
+
+  // ================================ task 03 · R4 — a torn node record never empties membership (F-02)
+  {
+    name: "164/01 E9 · a torn node record leaves the workspace's links and descriptor as they were, and the change stays owed",
+    run: () => withTornRoster(async (fx) => {
+      await setStory(fx, TEST_REPO, "in-progress");
+      const refused = await fx.sync();
+      assert.equal(refused.effects?.[0]?.status, "failed", "the publish step failed and stays owed");
+      const step = stepOf(fx, refused.eventId);
+      assert.equal(step.status, "failed");
+      assert.match(step.lastError, /node record\(s\) could not be read .*node-2976\.json/, "the step names the unreadable record");
+      assert.equal(refused.effects[0].detail?.warning?.code, "node-record-unreadable", "the refusal is coded");
+      assert.deepEqual(linksOf(fx, TEST_REPO), [WORKER, NODE], "the links are as they were");
+      assert.deepEqual(membersOf(fx, TEST_REPO), { row: [WORKER, NODE], file: [WORKER, NODE] }, "the descriptor still lists both members");
+      assert.equal(row(fx, TEST_REPO, "01/00")?.status, "not-started", "the changed row is not written");
+    }),
+  },
+  {
+    name: "164/01 E10 · once the record is readable again, the next pass lands the owed change",
+    run: () => withTornRoster(async (fx) => {
+      await setStory(fx, TEST_REPO, "in-progress");
+      const refused = await fx.sync();
+      assert.equal(stepOf(fx, refused.eventId).status, "failed");
+      await fx.restoreWorker();
+      ageFailedSteps(fx); // the failed step's backoff elapses (164/ADR-006)
+      const landed = await fx.sync();
+      assert.equal(landed.eventId, refused.eventId, "the same owed mark is drained again");
+      assert.equal(stepOf(fx, refused.eventId).status, "done");
+      assert.equal(row(fx, TEST_REPO, "01/00")?.status, "in-progress", "the changed row is written");
+      assert.deepEqual(linksOf(fx, TEST_REPO), [WORKER, NODE]);
+    }),
+  },
 ];
+
+// task 03's fixture: aof-test-repo synced once with a two-node roster (this node and a worker), then
+// the worker's node record torn the way a crash mid-write leaves it — the right size, all NULs.
+const WORKER = "node-2976";
+const WORKER_RECORD = { nodeId: WORKER, host: "172.27.155.33", os: "linux", runtimes: ["claude"], publishedAt: "2026-10-19T09:00:00.000Z" };
+const workerRecordPath = (fx) => path.join(fx.home, "mesh", "nodes", `${WORKER}.json`);
+const linksOf = (fx, workspace) => read(fx, "projection.sqlite", "SELECT node_id AS id FROM global_node_workspaces WHERE workspace_id = ? ORDER BY node_id", workspace.id).map(({ id }) => id);
+const stepOf = (fx, eventId) => {
+  const [step] = read(fx, "journal.sqlite", "SELECT status, last_error AS lastError FROM effect_steps WHERE event_id = ? AND reactor_key = 'publish-projection'", eventId);
+  return step ?? null;
+};
+function membersOf(fx, workspace) {
+  const [descriptor] = read(fx, "projection.sqlite", "SELECT member_node_ids_json AS members FROM global_workspace_descriptors WHERE workspace_id = ?", workspace.id);
+  const file = JSON.parse(readFileSync(path.join(fx.home, "mesh", "workspaces", `${workspace.id}.json`), "utf8"));
+  return { row: JSON.parse(descriptor.members).sort(), file: [...file.memberNodeIds].sort() };
+}
+function ageFailedSteps(fx) {
+  const db = new DatabaseSync(path.join(fx.home, "mesh", "work", "journal.sqlite"));
+  try { db.prepare("UPDATE effect_steps SET updated_at = '2000-01-01T00:00:00.000Z' WHERE status = 'failed'").run(); } finally { db.close(); }
+}
+
+function withTornRoster(body) {
+  return withMesh(async (fx) => {
+    const ws = await loadWorkspace(path.join(fx.tmp, TEST_REPO.dir), undefined, { env: fx.env });
+    fx.sync = async () => await syncWorkspace(await loadWorkspace(path.join(fx.tmp, TEST_REPO.dir), undefined, { env: fx.env }), { globalWorkStoreOptions: { env: fx.env }, journalOptions: { env: fx.env } });
+    fx.restoreWorker = async () => await publishNodeRecord(ws, WORKER, WORKER_RECORD);
+    await fx.restoreWorker();
+    await fx.sync();
+    assert.deepEqual(linksOf(fx, TEST_REPO), [WORKER, NODE], "the first sync linked both nodes (non-vacuous)");
+    assert.deepEqual(membersOf(fx, TEST_REPO), { row: [WORKER, NODE], file: [WORKER, NODE] });
+    const size = (await readFile(workerRecordPath(fx))).length;
+    await writeFile(workerRecordPath(fx), Buffer.alloc(size));
+    return await body(fx);
+  });
+}

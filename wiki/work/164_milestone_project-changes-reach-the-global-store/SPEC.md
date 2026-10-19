@@ -37,8 +37,9 @@ The operator's rulings at framing (2026-10-19) set the design:
 
 An outsider can check it. Stop the desktop app. Hand-edit a story's status and `git pull` a commit
 in another project. `aof work find` in the first project shows the edit immediately. Start the
-app: both changes appear in fleet and in `aof work find` from any other workspace, without a single
-`aof work` verb being run.
+app: both changes appear in fleet and in the global store's rows, without a single `aof work` verb
+being run. (`aof work find` answers the workspace it runs in, so the cross-project view is fleet;
+corrected at verify, 164/F-03.)
 
 ## Scope
 

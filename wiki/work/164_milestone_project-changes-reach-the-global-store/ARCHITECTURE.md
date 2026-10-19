@@ -208,6 +208,15 @@ for propagation: the tick addresses workspaces by descriptor, not cwd. The ident
 stays out of scope. Each CLI command pays one stat walk of its own work tree, the same order of
 cost as the `listItems` it already does.
 
+**Amended at verify (164/F-02, 2026-10-19).** Driver 1's set is this node's links in
+`global_node_workspaces`, and every publish rewrites a workspace's links from the node roster
+under the global mesh root, which skipped an unparseable record silently. Measured live: every
+node record NUL-filled after a crash, and each command's publish then wrote its workspace with no
+members, so the tick stopped syncing it. A publish over a roster with an unreadable record now
+writes nothing: the registry is published FIRST and refuses (`node-record-unreadable`), the last
+membership stands, and the change stays owed, so every pass retries it with ADR-006's backoff
+until the record is readable. Story 01 task 03 carries the criteria.
+
 ### Diagram
 
 **Why.** Three drivers, two stores and one gate meet in this decision. The reader has to see that
@@ -350,7 +359,7 @@ which three stories read.
 | id | invariant | enforced by (arch-test) | from |
 |---|---|---|---|
 | FF-16401 | "Changed since observed" is computed by ONE exported predicate over the ADR-002 fingerprint; the publisher, the detector, and both read overlays import it and none re-derives a fingerprint | `test/arch/store/acd-local-change-single-predicate.test.mjs` (164/00) | ADR-002 |
-| FF-16402 | `buildStreamView`'s overlay and doctor's `overlayFor` both decide "does the cache answer" through the one `cacheAnswers` predicate; neither overlays a row unconditionally | `test/arch/store/acd-cache-answers-single-predicate.test.mjs` — pending | ADR-005 |
+| FF-16402 | `buildStreamView`'s overlay and doctor's `overlayFor` both decide "does the cache answer" through the one `cacheAnswers` predicate; neither overlays a row unconditionally | `test/arch/store/acd-cache-answers-single-predicate.test.mjs` (164/02) | ADR-005 |
 | FF-16403 | Sync state lives only in `journal.sqlite` and `projection.sqlite`; no package source opens or creates any other database or ledger file under the global mesh root | `test/arch/store/acd-sync-rides-the-effects-journal.test.mjs` (164/00) | ADR-003 |
 | FF-16404 | No module writes a record doc from a stored row or doc — no store read flows into a `work.dir` write | `test/arch/store/acd-store-never-writes-records.test.mjs` (164/00) | ADR-001 |
-| FF-16405 | The daemon's propagation tick publishes through the per-workspace sync pass over the registered set; `launcher.mjs` contains no direct `publishGlobalWorkSnapshot(ws` of the launch workspace | `test/arch/mesh/acd-sync-covers-every-registered-workspace.test.mjs` — pending | ADR-004 |
+| FF-16405 | The daemon's propagation tick publishes through the per-workspace sync pass over the registered set; `launcher.mjs` contains no direct `publishGlobalWorkSnapshot(ws` of the launch workspace | `test/arch/mesh/acd-sync-covers-every-registered-workspace.test.mjs` (164/01) | ADR-004 |

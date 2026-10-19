@@ -12,7 +12,7 @@ schema: 1
 aofVersion: 0.1.0
 depends: [00]
 reads: [wiki/work/164_milestone_project-changes-reach-the-global-store/ARCHITECTURE.md#adr-004, wiki/work/164_milestone_project-changes-reach-the-global-store/ARCHITECTURE.md#adr-002, wiki/work/164_milestone_project-changes-reach-the-global-store/stories/01_story_the-desktop-app-syncs-every-workspace/EXAMPLES.md, wiki/work/164_milestone_project-changes-reach-the-global-store/stories/01_story_the-desktop-app-syncs-every-workspace/PLAN.md, packages/mesh/src/publisher.mjs, packages/mesh/src/presence.mjs, packages/mesh/src/presence-loop.mjs, packages/mesh/src/sync-cadence.mjs, packages/mesh/src/commands/serve.mjs, packages/core/src/application/bindings/global-work-publisher.mjs, packages/core/src/application/bindings/mesh/presence.mjs, apps/desktop/crates/core/src/supervision.rs, test/mesh/launcher/mesh-coordination-launcher.test.mjs, test/arch/mesh/acd-launcher-seam.test.mjs, test/arch/mesh/acd-presence-aggregates-node-workspaces.test.mjs, test/arch/store/acd-global-publisher-single-seam.test.mjs]
-files: [packages/mesh/src/launcher.mjs, packages/core/src/application/bindings/mesh/launcher.mjs, test/mesh/launcher/mesh-launcher-syncs-every-workspace.test.mjs, test/mesh/launcher/index.mjs, test/arch/mesh/acd-sync-covers-every-registered-workspace.test.mjs, test/arch/mesh/index.mjs]
+files: [packages/mesh/src/launcher.mjs, packages/mesh/src/publisher.mjs, packages/mesh/src/global-node-registry.mjs, packages/mesh/src/store.mjs, packages/core/src/application/bindings/mesh/launcher.mjs, test/mesh/launcher/mesh-launcher-syncs-every-workspace.test.mjs, test/mesh/launcher/index.mjs, test/arch/mesh/acd-sync-covers-every-registered-workspace.test.mjs, test/arch/mesh/index.mjs]
 ---
 # 01 · The desktop app syncs every workspace and catches up when it starts
 
@@ -31,7 +31,8 @@ so no project is ever re-read.**
 
 - [x] [00 · Every tick syncs every registered workspace](tasks/00_every-tick-syncs-every-registered-workspace.feature)
 - [x] [01 · The daemon catches up when it starts](tasks/01_the-daemon-catches-up-when-it-starts.feature)
-- [ ] [02 · The live desktop app syncs changes made while it was off](tasks/02_the-live-app-syncs-changes-made-while-off.feature) (@manual, operator restart)
+- [x] [02 · The live desktop app syncs changes made while it was off](tasks/02_the-live-app-syncs-changes-made-while-off.feature) (@manual, live restart)
+- [x] [03 · A torn node record never empties a workspace's membership](tasks/03_a-torn-node-record-never-empties-membership.feature) (@bug, verify finding F-02)
 
 ## Notes
 

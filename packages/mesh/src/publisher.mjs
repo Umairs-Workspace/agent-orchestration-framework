@@ -124,6 +124,19 @@ async function publishGlobalWorkSnapshot(workspace, ctx = {}) {
       //
       // 43/01's read-carry-reinsert dance is gone with the rebuild that forced it: a row
       // upsert simply does not write a held ref, so there is nothing to carry back over.
+      // 164/F-02 — the registry FIRST: it rewrites this workspace's membership from the node
+      // roster, and a roster with a torn record is partial, so the registry refuses (writing
+      // nothing). The publish then writes nothing at all — no rows, no observations, no stat
+      // digest — so the change stays owed, and every pass re-marks it and retries it with backoff
+      // until it lands (164/ADR-006, exactly as a refused row write does), loud on every tick.
+      const registry = await publishGlobalRegistryDescriptorsToStore(store, workspace, {
+        now: ctx.now,
+        fabricPeers: ctx.fabricPeers,
+        ...(ctx.globalRegistryOptions ?? {}),
+      });
+      if (registry?.published === false) {
+        return { published: false, result: { registry }, warning: { code: registry.code, message: registry.message, path: registry.unreadable?.[0] ?? paths?.databasePath ?? null } };
+      }
       const workspaceId = resolveWorkspaceId(workspace);
       const result = await publishWorkspaceSnapshot(store, workspace, {
         now: ctx.now,
@@ -135,11 +148,6 @@ async function publishGlobalWorkSnapshot(workspace, ctx = {}) {
         operatorRefs: ctx.operatorRefs,
         // The stat digest a sync mark noticed (164/ADR-002), recorded only once nothing is owed.
         digest: ctx.digest,
-      });
-      const registry = await publishGlobalRegistryDescriptorsToStore(store, workspace, {
-        now: ctx.now,
-        fabricPeers: ctx.fabricPeers,
-        ...(ctx.globalRegistryOptions ?? {}),
       });
       return { published: true, result: { ...result, registry } };
     } catch (error) {
