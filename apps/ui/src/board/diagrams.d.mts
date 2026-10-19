@@ -28,3 +28,19 @@ export function diagramRenderer(images?: DiagramImages, context?: { ref?: string
   paragraph(token: { tokens?: Array<{ type: string; raw: string; href?: string; text?: string }> }): string | false;
   image(token: { href: string; text: string }): string | false;
 };
+
+export declare function sceneFileName(svgFile: string): string;
+export declare function sceneFingerprint(scene: {elements: unknown; files: unknown; appState?: Record<string, unknown>} | null): string;
+export declare function diagramReviewInvocation(ref: string, file: string, requestId: string): string;
+export type ReviewOperation = { op: "add"; element: { id?: string } } | { op: "update"; id: string; patch: Record<string, unknown> } | { op: "delete"; id: string };
+export type ReviewProposal = { id: string; requestId?: string; summary: string; rationale: string; status: string; operations: ReviewOperation[]; reason?: string | null };
+export type ReviewRequest = { id: string; request: string; status: string; answer: string | null };
+export declare const POLL_MS: number;
+export declare function pendingProposals<T extends { status: string }>(proposals: T[] | null | undefined): T[];
+export declare function operationCounts(proposal: { operations?: unknown[] } | null | undefined): { add: number; update: number; delete: number };
+export declare function describeCounts(proposal: { operations?: unknown[] } | null | undefined): string;
+export declare function touchedIds(proposal: { operations?: unknown[] } | null | undefined, options?: { existingOnly?: boolean }): string[];
+export declare function selectionFor(ids: string[]): Record<string, true>;
+export declare function staleConflictIds(message: string | null | undefined): string[];
+export declare function describeError(code: string | null | undefined, message: string | null | undefined): string;
+export declare function shouldPoll(state?: { open?: boolean; visible?: boolean }): boolean;

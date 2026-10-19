@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CaptureUpdateAction, Excalidraw, restoreElements, serializeAsJSON } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
-import { sceneFileName, sceneFingerprint } from "./scene-draft.mjs";
-import { POLL_MS, describeCounts, describeError, pendingProposals, selectionFor, shouldPoll, touchedIds } from "./review-state.mjs";
+import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./diagrams.mjs";
 
 type Scene = { type: "excalidraw"; version: 2; elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> };
 type SceneResponse = { ref: string; file: string; present: boolean; revision: string | null; scene: Scene; readOnly: boolean };
@@ -136,9 +135,10 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     if (!question.trim()) throw new Error("Enter a question or requested change first.");
     if (dirty || !loaded?.present) await saveSnapshot();
     setNotice(null); setInvocation(null);
-    const answer = await post<{ invocation?: string }>({ action: "request", baseRevision: revision.current, selectedIds: selectedIdsNow(), request: question.trim() });
-    if (answer.invocation && onAskArchitect) { onAskArchitect(answer.invocation); setNotice(ARCHITECT_NOTICE); }
-    else if (answer.invocation) { setInvocation(answer.invocation); setNotice("Request recorded. Run this command in your architect session."); }
+    const answer = await post<{ request?: { id?: string } }>({ action: "request", baseRevision: revision.current, selectedIds: selectedIdsNow(), request: question.trim() });
+    const command = answer.request?.id ? diagramReviewInvocation(itemRef, file, answer.request.id) : null;
+    if (command && onAskArchitect) { onAskArchitect(command); setNotice(ARCHITECT_NOTICE); }
+    else if (command) { setInvocation(command); setNotice("Request recorded. Run this command in your architect session."); }
     await refreshReview();
   };
   const preview = (proposal: ReviewProposal) => {

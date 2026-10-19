@@ -46,7 +46,7 @@ export const diagramSceneCommandTests = [
     } finally { await rm(root, { recursive: true, force: true }); }
   } },
   { name: "scene: delivered and archived items reject writes, while an ADR heading is required", run: async () => {
-    for (const options of [{ status: "done" }, { archived: true }]) await withFixture(async ({ command, ctx }) => rejected(() => save(command, ctx, scene()), "diagram-item-delivered"), options);
+    for (const options of [{ status: "done" }, { status: "done", archived: true }]) await withFixture(async ({ command, ctx }) => rejected(() => save(command, ctx, scene()), "diagram-item-delivered"), options);
     await withFixture(async ({ command, ctx }) => rejected(() => save(command, ctx, scene()), "diagram-adr-unknown"), { adr: false });
   } },
   { name: "scene: save/read preserve payload and a read never writes storage", run: () => withFixture(async ({ command, ctx, item }) => {

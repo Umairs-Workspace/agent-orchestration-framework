@@ -209,7 +209,13 @@ function assertUiFrozen(pairs) {
   // it, and given the drive's progress segment). The fleet and the home read the loop entry's three
   // appended presence keys and the session row's appended `loopRunId`; nothing under
   // `apps/ui/src/board/` changed, and the board reads no run-record key, cycle, level or loop state.
-  assert.equal(hash.digest("hex"), "545907074603c295b46daec5cee4a3fc21ddc142f41fb4f7acf291c0891e06dc", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by PR #13 (Excalidraw drafts), measured: `git diff --numstat origin/main -- apps/ui/src` is
+  // FIVE files, all under `apps/ui/src/board/`: `ExcalidrawEditor.tsx` (new, 237: the native draft editor
+  // and review panel), `diagrams.mjs` (+92) and `diagrams.d.mts` (+16: scene name/fingerprint and review
+  // helpers), `Markdown.tsx` (+45 −20: the lazy editor and its viewer controls) and `DetailPanel.tsx`
+  // (+4 −4: threads `onRunAgent` to the editor). It reads `/api/diagram/scene` only. No fleet or home
+  // file, run-record key, cycle, level or loop state is read.
+  assert.equal(hash.digest("hex"), "399468f4d3b7c661928b4f2a7d757b79e530c65ab042de618a8ab9c241f8a535", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -359,9 +365,10 @@ export const archTests = [
         // `/api/work/answer` branch, `admitWriteRequest` + `sendMethodNotAllowed`, the
         // `./static-serve.mjs` import of `isLoopbackHost`, and `readJsonBody` refusing a non-object
         // body `invalid-body`. Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1.
+        // RE-PINNED by PR #13: one `/api/diagram/scene` branch onto `diagram:scene`; no run key, GETs unchanged.
         // RE-PINNED by 142: transport factory relocation only; all exported function bodies
         // match the prior source and HTTP integration tests retain routing/persistence coverage.
-        ["packages/server/src/board-ui.mjs", "d0a2383b3a210b6ce6d23e2d2757bde1cdfaf3725ca1c869e8f20100d228d9a1"],
+        ["packages/server/src/board-ui.mjs", "4cf5240cf64d5cea4c1b8629d8ea1f3a10d97cbbce76623ed2443b7d6b1c7517"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

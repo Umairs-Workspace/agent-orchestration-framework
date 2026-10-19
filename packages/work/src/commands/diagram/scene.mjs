@@ -104,12 +104,22 @@ async function textOrNull(file, limitBytes = null) {
   }
 }
 
+// Best-effort removal of a file this command created. Absence is the expected outcome (a renamed
+// temp file); any other failure is surfaced rather than swallowed (acd-no-new-silent-catch).
+async function removeIfPresent(file) {
+  try {
+    await unlink(file);
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+}
+
 async function withFileLock(file, work) {
   const lock = `${file}.lock`;
   let handle;
   try { handle = await open(lock, "wx", 0o600); }
   catch (error) { if (error?.code === "EEXIST") fail("Scene is locked by another writer; retry later.", "diagram-scene-locked", 409); throw error; }
-  try { return await work(); } finally { await handle.close(); await unlink(lock).catch(() => {}); }
+  try { return await work(); } finally { await handle.close(); await removeIfPresent(lock); }
 }
 
 
@@ -228,10 +238,13 @@ async function readRecord(paths, kind, id) {
   const directory = kind === "request" ? paths.requests : paths.proposals;
   const text = await readRecordText(path.resolve(reviewRecordPath(directory, id)));
   if (text === null) fail(`No ${kind} "${id}" exists for this diagram.`, "diagram-review-unknown", 404);
+  let record;
   try {
-    const record = JSON.parse(text);
-    if (plainObject(record) && record.id === id && record.kind === kind) return record;
-  } catch { /* falls through */ }
+    record = JSON.parse(text);
+  } catch {
+    return fail(`Stored ${kind} is not valid JSON.`, "diagram-review-corrupt", 409);
+  }
+  if (plainObject(record) && record.id === id && record.kind === kind) return record;
   return fail(`Stored ${kind} is invalid.`, "diagram-review-corrupt", 409);
 }
 
@@ -239,19 +252,26 @@ async function listRecords(paths, kind) {
   await assertReviewStorage(paths);
   const directory = path.resolve(kind === "request" ? paths.requests : paths.proposals);
   let names;
-  try { names = await readdir(directory); } catch (error) { if (error?.code === "ENOENT") return []; throw error; }
+  try { names = await readdir(directory); } catch (error) { if (error?.code === "ENOENT") return { records: [], skipped: [] }; throw error; }
   const records = [];
+  const skipped = [];
   for (const name of names) {
     const id = RECORD_FILE.exec(name)?.[1];
     if (!id) continue;
     const text = await readRecordText(path.join(directory, name));
+    // An unreadable record is reported by id, never dropped without a word.
+    let record = null;
     try {
-      const record = JSON.parse(text);
-      if (plainObject(record) && record.id === id && record.kind === kind) records.push(record);
-    } catch { /* an unreadable record is skipped, not fatal to the listing */ }
+      record = JSON.parse(text);
+    } catch {
+      skipped.push(id);
+      continue;
+    }
+    if (plainObject(record) && record.id === id && record.kind === kind) records.push(record);
+    else skipped.push(id);
   }
   records.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || b.id.localeCompare(a.id));
-  return records.slice(0, MAX_LISTED);
+  return { records: records.slice(0, MAX_LISTED), skipped };
 }
 
 // Atomic write (temp + rename). A NEW record is linked into place so an existing id is never replaced.
@@ -266,7 +286,7 @@ async function writeRecord(paths, record, { create = false } = {}) {
   try {
     await writeFile(temporary, body, { mode: 0o600, flag: "wx" });
     if (create) await link(temporary, target); else await rename(temporary, target);
-  } finally { await unlink(temporary).catch(() => {}); }
+  } finally { await removeIfPresent(temporary); }
 }
 
 const newReviewId = () => randomBytes(8).toString("hex");
@@ -303,7 +323,8 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       if (!spec || spec.ext !== ".excalidraw") fail("Scene file must be a bare ADR-NNN-slug.excalidraw name.", "diagram-scene-file-invalid");
       const action = input.action ?? "read";
       if (!SCENE_ACTIONS.has(action)) fail("Unsupported scene action.", "diagram-scene-action-invalid");
-      const readOnly = item.status === "done" || item.archived === true;
+      // An archived item is an accepted one, so `done` covers it.
+      const readOnly = item.status === "done";
       const writing = WRITE_ACTIONS.has(action);
       if (writing) requireLocalCheckout(item, ref);
       if (typeof item.dir !== "string" || item.dir.length === 0) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: cloneEmpty(), readOnly: true };
@@ -342,7 +363,13 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       if (action === "context") return sceneContext(input, await readCurrent());
       if (action === "proposals") {
         const out = await readCurrent();
-        return { ref: out.ref, file: out.file, revision: out.revision, requests: await listRecords(review, "request"), proposals: await listRecords(review, "proposal") };
+        const requests = await listRecords(review, "request");
+        const proposals = await listRecords(review, "proposal");
+        return {
+          ref: out.ref, file: out.file, revision: out.revision,
+          requests: requests.records, proposals: proposals.records,
+          skipped: { requests: requests.skipped, proposals: proposals.skipped },
+        };
       }
       if (readOnly) fail(`${item.ref} is delivered or archived; scene drafts are immutable.`, "diagram-item-delivered", 409);
       if (!adr || !hasAdrSection(architecture, adr)) fail(`${item.ref} has no "## ${adr}" heading in its ARCHITECTURE.md.`, "diagram-adr-unknown", 404);
@@ -362,7 +389,7 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         if (byteLength(body) > MAX_BYTES) fail("Scene exceeds the 2MB limit.", "diagram-scene-too-large", 413);
         const temporary = path.join(diagramDir, `.${spec.name}.${randomUUID()}.tmp`);
         try { await writeFile(temporary, body, { mode: 0o600, flag: "wx" }); await rename(temporary, file); }
-        finally { await unlink(temporary).catch(() => {}); }
+        finally { await removeIfPresent(temporary); }
         return { ref: item.ref, file: spec.name, present: true, revision: hash(body), scene, readOnly: false, saved: true };
       };
       const requireSavedRevision = (current) => {
@@ -392,7 +419,9 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           const revision = requireSavedRevision(current);
           const record = { id: newReviewId(), kind: "request", createdAt: new Date().toISOString(), revision, selectedIds, request, status: "open", answer: null, answeredAt: null };
           await writeRecord(review, record, { create: true });
-          return { ref: item.ref, file: spec.name, request: record, invocation: `/aof:diagram-review ${item.ref} ${spec.name} ${record.id}` };
+          // The agent invocation is composed by the board (apps/ui), beside its other phase commands:
+          // exactly one src module authors slash commands (FF-6306).
+          return { ref: item.ref, file: spec.name, request: record };
         });
       }
 

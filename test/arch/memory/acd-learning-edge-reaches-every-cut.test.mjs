@@ -109,6 +109,8 @@ const EXCLUDED = Object.freeze({
   // 151 — re-runs refine's diagram step for an existing item's briefed ADRs; no partition, no memory call.
   "add-diagram.md": "draws an existing item's ADR diagrams; cuts nothing",
   "add-milestone.md": "frames one named driver; spawns the PO but partitions nothing",
+  // PR #13 — answers one human request about a saved Excalidraw draft or proposes element operations; no partition, no memory call.
+  "diagram-review.md": "answers or proposes changes for one diagram draft request; cuts nothing",
   "add-spike.md": "creates one spike; partitions nothing",
   "add-story.md": "adds one story to an existing milestone",
   "add-task.md": "adds one task feature",

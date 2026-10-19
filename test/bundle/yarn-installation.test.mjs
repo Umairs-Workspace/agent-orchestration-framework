@@ -404,6 +404,20 @@ export const yarnInstallationTests = [
     assert.ok(codes.includes('SUSPICIOUS_PAYLOAD_FILE'));
     assert.ok(codes.includes('UNSAFE_PULL_REQUEST_TARGET_WORKFLOW'));
   }) },
+  { name: 'yarn-installation/audit admits a reviewed payload-name collision only at its exact path with its reviewed bytes', run: async () => {
+    const reviewed = readFileSync(path.join(root, 'node_modules/d3-shape/src/curve/bundle.js'), 'utf8');
+    const payloadCodes = async (files) => fixture(async dir => {
+      write(dir, 'node_modules/.yarn-state.yml', '"example@npm:1.0.0":\n  locations:\n    - "node_modules/example"\n');
+      write(dir, 'node_modules/example/package.json', { name: 'example', version: '1.0.0' });
+      for (const [rel, body] of Object.entries(files)) write(dir, rel, body);
+      return (await auditSupplyChain(dir)).filter(d => d.code === 'SUSPICIOUS_PAYLOAD_FILE').map(d => d.path);
+    });
+    assert.deepEqual(await payloadCodes({ 'node_modules/d3-shape/src/curve/bundle.js': reviewed }), [], 'the reviewed D3 file is admitted');
+    assert.deepEqual(await payloadCodes({ 'node_modules/d3/node_modules/d3-shape/src/curve/bundle.js': reviewed }), [], '…including a nested copy of the same bytes');
+    assert.deepEqual(await payloadCodes({ 'node_modules/d3-shape/src/curve/bundle.js': reviewed + '\n// one more byte' }), ['node_modules/d3-shape/src/curve/bundle.js'], 'a changed byte still fails');
+    assert.deepEqual(await payloadCodes({ 'node_modules/example/bundle.js': reviewed }), ['node_modules/example/bundle.js'], 'the same bytes at another path still fail');
+    assert.deepEqual(await payloadCodes({ 'node_modules/not-d3-shape/src/curve/bundle.js': reviewed }), ['node_modules/not-d3-shape/src/curve/bundle.js'], 'a look-alike package still fails');
+  } },
   { name: 'yarn-installation/audit rejects enabling scripts globally or for an unreviewed version', run: () => fixture(async dir => {
     write(dir, '.yarnrc.yml', 'enableScripts: true\nnpmRegistryServer: "https://registry.npmjs.org"\n');
     write(dir, 'package.json', { name: 'fixture', dependenciesMeta: { 'node-pty@9.0.0': { built: true } } });

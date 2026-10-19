@@ -129,6 +129,9 @@ function hashOf(text) {
 //              icon pack that is 1,500 SVG modules).
 //   `resolve`— [{ filter: RegExp, to: <virtual name> }], how an import specifier
 //              in the real source reaches one of those stubs.
+const EXCALIDRAW_EDITOR_STUB_NAME = "__excalidraw_editor__";
+const EXCALIDRAW_EDITOR_STUB = "export const ExcalidrawEditor = () => null; export default ExcalidrawEditor;";
+const EXCALIDRAW_EDITOR_FILTER = /(?:^|\/)ExcalidrawEditor(?:\.tsx)?$/;
 export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
   const key = bundleCacheKey({ entry, stubs, resolve });
   const cached = bundleCache.get(key);
@@ -139,6 +142,7 @@ export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
     ["react", VIRTUAL_REACT],
     ["react/jsx-runtime", VIRTUAL_JSX],
     ["react/jsx-dev-runtime", VIRTUAL_JSX],
+    [EXCALIDRAW_EDITOR_STUB_NAME, EXCALIDRAW_EDITOR_STUB],
     ...Object.entries(stubs),
   ]);
   const stubPlugin = {
@@ -148,6 +152,9 @@ export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
       for (const entry of resolve) {
         build.onResolve({ filter: entry.filter }, () => ({ path: entry.to, namespace: "aof-stub" }));
       }
+      // Default for EVERY surface: Markdown.tsx lazily imports the editor, and the real one drags in the
+      // canvas SDK. Callers' own rules above win.
+      build.onResolve({ filter: EXCALIDRAW_EDITOR_FILTER }, () => ({ path: EXCALIDRAW_EDITOR_STUB_NAME, namespace: "aof-stub" }));
       build.onResolve({ filter: /\.css$/ }, (args) => ({ path: args.path, namespace: "aof-empty" }));
       build.onLoad({ filter: /.*/, namespace: "aof-stub" }, (args) => ({ contents: sources.get(args.path) ?? "export default {};", loader: "js" }));
       build.onLoad({ filter: /.*/, namespace: "aof-empty" }, () => ({ contents: "", loader: "js" }));

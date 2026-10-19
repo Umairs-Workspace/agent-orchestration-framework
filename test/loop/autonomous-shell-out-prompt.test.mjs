@@ -54,7 +54,9 @@ const commandIdsBeforeStory = [
   // `delegate`): the read-only `/aof:explain` command, composed of the existing read verbs.
   // `code-review` REMOVED AT 149, with the diff that deletes it: its review half is `aof:review`,
   // and its shipping half went with `--ship` and `work.codeReview.autoComplete`.
-  "assimilate-code", "autonomous", "continue", "delegate", "explain", "feedback",
+  // `diagram-review` ADDED AT PR #13, WITH the diff that lands it, in the descriptor's own order (after
+  // `delegate`): the `/aof:diagram-review` session the board's Excalidraw editor starts for one request.
+  "assimilate-code", "autonomous", "continue", "delegate", "diagram-review", "explain", "feedback",
   // `loop-diagram` ADDED AT 145, in the descriptor's own order (after `insert-uat`): the
   // `/aof:loop-diagram` wrapper over `aof diagram plan|export <ref> loop` — the same species as
   // `promote` and `archive`, repaired at `aof:verify 145`.

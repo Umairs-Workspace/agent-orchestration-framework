@@ -38,7 +38,17 @@ const widen = [{ op: "update", id: "a", patch: { width: 99 } }, { op: "add", ele
 const propose = (fx, request, baseRevision, operations = widen) => fx.run("propose", { requestId: request.id, baseRevision, summary: "Widen a", rationale: "Because", operations });
 
 export const diagramSceneReviewTests = [
-  { name: "review: request needs a saved scene and the current revision, and builds the invocation", run: () => withFixture(async (fx) => {
+  { name: "review: a corrupt record is reported as skipped in the listing and refused by id, never silently dropped", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    await propose(fx, request, saved.revision);
+    const proposalsDir = path.join(fx.item, "diagrams", "ADR-002-scene.review", "proposals");
+    await writeFile(path.join(proposalsDir, "deadbeefdeadbeef.json"), "{ not json");
+    const listed = await fx.run("proposals");
+    assert.equal(listed.proposals.length, 1, "the healthy proposal is still listed");
+    assert.deepEqual(listed.skipped, { requests: [], proposals: ["deadbeefdeadbeef"] });
+    await rejected(fx.run("reject", { proposalId: "deadbeefdeadbeef" }), "diagram-review-corrupt");
+  }) },
+  { name: "review: request needs a saved scene and the current revision, and leaves the invocation to the board", run: () => withFixture(async (fx) => {
     await rejected(fx.run("request", { baseRevision: "0".repeat(64), selectedIds: [], request: "x" }), "diagram-scene-missing");
     const saved = await fx.savedScene([box("a")]);
     await rejected(fx.run("request", { baseRevision: "f".repeat(64), selectedIds: [], request: "x" }), "diagram-scene-conflict");
@@ -46,7 +56,7 @@ export const diagramSceneReviewTests = [
     await rejected(fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: "x".repeat(10001) }), "diagram-scene-invalid");
     const out = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["a"], request: "Explain" });
     assert.match(out.request.id, /^[a-f0-9]{16}$/);
-    assert.equal(out.invocation, `/aof:diagram-review 07 ${file} ${out.request.id}`);
+    assert.equal("invocation" in out, false, "the board composes the slash command (FF-6306)");
     assert.deepEqual({ ...out.request, id: "", createdAt: "" }, { id: "", kind: "request", createdAt: "", revision: saved.revision, selectedIds: ["a"], request: "Explain", status: "open", answer: null, answeredAt: null });
     assert.ok(!Number.isNaN(Date.parse(out.request.createdAt)));
   }) },
@@ -193,6 +203,7 @@ export const diagramSceneReviewTests = [
     const listed = await fx.run("proposals");
     assert.equal(listed.proposals.length, 1);
     assert.equal(listed.requests.length, 1);
+    assert.deepEqual(listed.skipped, { requests: [], proposals: [] }, "nothing is skipped in a healthy listing");
     assert.equal(listed.proposals[0].status, "pending");
     assert.equal((await fx.run("context", { requestId: request.id })).requestId, request.id);
   }) },
@@ -243,7 +254,7 @@ export const diagramSceneReviewTests = [
       };
       const saved = await invoke("save", { baseRevision: null, scene: scene([box("a")]) });
       const requested = await invoke("request", { baseRevision: saved.revision, selectedIds: ["a"], request: "Make it wider" });
-      assert.match(requested.invocation, /^\/aof:diagram-review 07 ADR-002-scene\.excalidraw [a-f0-9]{16}$/);
+      assert.match(requested.request.id, /^[a-f0-9]{16}$/);
       const proposed = await invoke("propose", { requestId: requested.request.id, baseRevision: saved.revision, summary: "Wider", rationale: "r", operations: [{ op: "update", id: "a", patch: { width: 80 } }] });
       const listed = await invoke("proposals");
       assert.equal(listed.proposals[0].id, proposed.proposal.id);

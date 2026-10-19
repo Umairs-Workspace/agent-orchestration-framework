@@ -1,5 +1,3 @@
-import { sceneDraftTests } from "./scene-draft.suite.mjs";
-import { reviewStateTests } from "./review-state.suite.mjs";
 import { terminalCollapseIsNotHideTests } from "./terminal-collapse-is-not-hide.suite.mjs";
 import { terminalControlBothSourcesTests } from "./terminal-control-both-sources.suite.mjs";
 import { terminalCoreGeometryTests } from "./terminal-core-geometry.suite.mjs";
@@ -14,7 +12,7 @@ import { terminalGridPaneHostTests } from "./terminal-grid-pane-host.suite.mjs";
 import { terminalOneImplementationTests } from "./terminal-one-implementation.suite.mjs";
 import { terminalUnavailablePaneTests } from "./terminal-unavailable-pane.suite.mjs";
 import { appRoutesTests } from "./app-routes.suite.mjs";
-import { boardDiagramsTests } from "./board-diagrams.suite.mjs";
+import { boardDiagramsTests, sceneDraftTests, reviewStateTests } from "./board-diagrams.suite.mjs";
 import { boardRuleGroupsTests } from "./board-rule-groups.suite.mjs";
 import { boardRunsPureTests } from "./board-runs-pure.suite.mjs";
 import { fleetAssignmentChipTests } from "./fleet-assignment-chip.suite.mjs";
@@ -36,8 +34,6 @@ import { terminalsHomePageStatesTests } from "./terminals-home-page-states.suite
 import { terminalsHomeRouteTests } from "./terminals-home-route.suite.mjs";
 
 export const tests = [
-  ...sceneDraftTests,
-  ...reviewStateTests,
   ...terminalCollapseIsNotHideTests,
   ...terminalControlBothSourcesTests,
   ...terminalCoreGeometryTests,
@@ -53,6 +49,8 @@ export const tests = [
   ...terminalUnavailablePaneTests,
   ...appRoutesTests,
   ...boardDiagramsTests,
+  ...sceneDraftTests,
+  ...reviewStateTests,
   ...boardRuleGroupsTests,
   ...boardRunsPureTests,
   ...fleetAssignmentChipTests,
