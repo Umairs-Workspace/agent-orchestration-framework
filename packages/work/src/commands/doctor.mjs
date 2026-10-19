@@ -2,6 +2,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { readCitationHistory } from "../citation-history.mjs";
+import { UNRESOLVED_CODE as WIKI_UNRESOLVED, probeWikiCitations } from "../wiki-citations.mjs";
 import { declaredReportFrom } from "../doctor/rubric.mjs";
 import { computeLoopReady } from "../doctor/loop-ready.mjs";
 import { readJson } from "@aof/foundation/fs";
@@ -87,8 +88,18 @@ async function historyMemoized(projectRoot, spawnGit) {
 // THE ONE GIT READ THIS COMMAND PERFORMS, and the whole impure half of 119/ADR-004. The argv comes
 // from the resolver so this edge spells no second version of the read, and the parse and the map are
 // the resolver's too — this function contributes the spawn and nothing else.
-async function readRenameMap(projectRoot, runGit = null) {
+//
+// 160/ADR-007 — HISTORY IS A LAZY SOURCE. This returns a loader, not a map: building it runs
+// nothing, and its first `load()` reads history once and keeps the promise. A reader resolves every
+// citation on disk first and calls `load()` only when one misses, so a stream whose citations all
+// resolve spawns no git for them at all. `null` still means "no project root, no history".
+function readRenameMap(projectRoot, runGit = null) {
   if (projectRoot == null) return null;
+  let loaded = null;
+  return Object.freeze({ load: () => (loaded ??= readHistory(projectRoot, runGit)) });
+}
+
+async function readHistory(projectRoot, runGit) {
   // `runGit` is the READER, not its output: an injected `(args) => stdout` for tests. Named for what
   // it is, because a string handed here would be swallowed by the catch below and read as "no
   // renames, ever" — a silent empty map, which is the one answer this control must never invent.
@@ -204,6 +215,12 @@ const doctorCommand = {
         { docNames: CONVENTION_DOCS },
         { globalWorkStoreOptions: ctx.globalWorkStoreOptions ?? {} },
       );
+    // 119/ADR-004 — the rename history, as a loader built HERE and handed in as data (160/ADR-007).
+    // Building it reads nothing; the snapshot loads it only when a cited control misses on disk. A
+    // repository that is not a git checkout, or a git that fails for any reason, loads an EMPTY map:
+    // the probe then resolves exactly what it resolved before, which is the honest degradation. It
+    // is never an error, because a citation gate must not depend on history to report at all.
+    const history = readRenameMap(ctx.workspace.projectRoot ?? null);
     // milestone 135 / ADR-001 §3 — the config, and the transcript directory a live answer is read
     // from, resolved at THIS edge as the settle seam resolves it, so the engine never reads the
     // environment. Both are data for the story probe, whose own gate decides whether it reads.
@@ -212,11 +229,7 @@ const doctorCommand = {
       projectsDir: ctx.workspace.projectRoot
         ? claudeProjectsDir({ cwd: ctx.workspace.projectRoot, env: process.env })
         : null,
-      // 119/ADR-004 — the rename map, read HERE and handed in as plain data. A repository that is
-      // not a git checkout, or a git that fails for any reason, yields an EMPTY map: the probe then
-      // resolves exactly what it resolved before, which is the honest degradation. It is never an
-      // error, because a citation gate must not depend on the presence of history to report at all.
-      renameMap: await readRenameMap(ctx.workspace.projectRoot ?? null),
+      history,
       cache: cache ?? null,
       selfNode: meshNodeIdOf(ctx.workspace.config ?? {}) ?? null,
       projectRoot: ctx.workspace.projectRoot ?? null,
@@ -247,6 +260,17 @@ const doctorCommand = {
       legacyIdentitySidecarPresent,
       legacyIdentitySidecarPath: ctx.workspace.aofDir ? `${ctx.workspace.aofDir}/mesh/identity.json` : null,
     });
+
+    // 161/ADR-001 — the direct wiki surface's source citations, ADDITIVE and workspace-level like the
+    // findings below: appended AFTER the engine's scope filtering, so a scoped call reports them too.
+    // On disk first (160/ADR-007): the probe runs over the map the snapshot loaded, or none, and only
+    // a page citation that misses loads history — the same loader, so it is still read at most ONCE.
+    if (history != null) {
+      const wikiCitations = async (renameMap) => probeWikiCitations({ projectRoot: ctx.workspace.projectRoot, renameMap: renameMap ?? new Map() });
+      let cited = await wikiCitations(snapshot.renameMap);
+      if (snapshot.renameMap == null && cited.some((finding) => finding.code === WIKI_UNRESOLVED)) cited = await wikiCitations(await history.load());
+      findings.push(...cited);
+    }
 
     // chore 103 — AN INSTRUMENT THAT CAN SEE NOTHING MUST REFUSE, NOT REPORT HEALTH
     // (78/RETROSPECTIVE R4). Every check-group above is a function of the snapshot, so

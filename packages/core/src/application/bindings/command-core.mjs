@@ -125,6 +125,8 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   // work:resume — see ./commands/resume.mjs's header.
   const { resumeCommand } = commandsResumeServices;
   const { answerCommand } = commandsResumeServices;
+  // work:questions — 163, the read side of work:answer — see ./commands/questions.mjs's header.
+  const { questionsCommand } = commandsResumeServices;
   // graph:serve — m42 — see ./commands/graph/serve.mjs's header.
   const { graphServeCommand } = commandsGraphServeServices;
   // diagram:plan — milestone 133 — see ./commands/diagram/plan.mjs's header.
@@ -249,6 +251,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
       runRetryCommand,
       resumeCommand,
       answerCommand,
+      questionsCommand,
     ]),
     meshContribution,
     createKnowledgeContribution([

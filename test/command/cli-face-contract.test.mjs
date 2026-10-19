@@ -23,7 +23,7 @@
 // (`bin/aof.mjs`) with cwd = the fixture root, and assert exit code + stdout/stderr.
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import assert from "node:assert/strict";
-import { spawnCliSync } from "../support/cli-spawn.mjs";
+import { spawnCliAsync, spawnCliSync } from "../support/cli-spawn.mjs";
 import { mkdtemp, mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -625,6 +625,49 @@ export const cliFaceContractTests = [
         assert.match(r.stdout, /^Nothing actionable in 08 — everything is done\.$/m, "the done line names the scope");
       } finally {
         await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // 160/03 task 01. The face has no per-verb help: `--help` is a flag like any other, so a command
+    // that declares it answers its own help (exit 0), and every other command's own flag parser
+    // refuses it with that command's usage line (exit 1) — before anything is invoked or launched.
+    // Both answers come from the command's own spec through the bin, so a cut that broke a route
+    // shows here. (The task feature says every route exits 0; that is the contract error recorded
+    // in the milestone feedback — before this story, as after it, a refusal exits 1.)
+    name: "160/03 task01: every routed verb still reaches its own command through the bin after the cut",
+    async run() {
+      const routed = _aofApplication.listCommands().filter((command) => Array.isArray(command.cli?.route));
+      assert.ok(routed.length > 50, `the route table is not vacuous: ${routed.length} routes`);
+      const home = await mkdtemp(path.join(os.tmpdir(), "aof-160-03-home-"));
+      const cwd = await mkdtemp(path.join(os.tmpdir(), "aof-160-03-cwd-"));
+      try {
+        const answers = [];
+        const queue = [...routed];
+        const worker = async () => {
+          for (let command = queue.shift(); command != null; command = queue.shift()) {
+            const result = await spawnCliAsync(process.execPath, [cliPath, ...command.cli.route, "--help"], {
+              cwd,
+              env: { ...process.env, AOF_GLOBAL_HOME: home, NODE_NO_WARNINGS: "1" },
+              windowsHide: true,
+            });
+            answers.push({ command, result });
+          }
+        };
+        await Promise.all(Array.from({ length: 6 }, worker));
+        for (const { command, result } of answers) {
+          const route = command.cli.route.join(" ");
+          if (command.cli.spec?.flags?.help) {
+            assert.equal(result.status, 0, `aof ${route} --help answers its own help\n${result.stderr}`);
+            assert.ok(`${result.stdout}${result.stderr}`.includes(`aof ${route}`), `aof ${route} --help names its own route`);
+          } else {
+            assert.equal(result.status, 1, `aof ${route} --help exits 1, as before\n${result.stdout}${result.stderr}`);
+            assert.ok(result.stderr.includes(`Unknown flag "--help" for ${command.id}.`), `aof ${route} reached its own command (${command.id}): ${result.stderr.slice(0, 300)}`);
+          }
+        }
+      } finally {
+        await rm(home, { recursive: true, force: true });
+        await rm(cwd, { recursive: true, force: true });
       }
     },
   },

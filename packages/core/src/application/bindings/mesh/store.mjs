@@ -6,9 +6,9 @@ export function assembleMeshStore({ workspaceServices }) {
 
   const { globalMeshPaths } = workspaceServices;
 
-  const { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords } = createMeshStore({ globalMeshPaths });
+  const { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords, terminalIngressPath, publishTerminalIngress, readTerminalIngress, withdrawTerminalIngress } = createMeshStore({ globalMeshPaths });
 
   // Preserve the historical run API while execution owns its implementation.
 
-  return { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords };
+  return { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords, terminalIngressPath, publishTerminalIngress, readTerminalIngress, withdrawTerminalIngress };
 }

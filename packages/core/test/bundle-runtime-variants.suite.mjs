@@ -136,9 +136,11 @@ export const bundleRuntimeVariantTests = [
     }
   })),
   caseOf('01 full shipped prompt audit covers every descriptor role/procedure/skill honestly', async () => {
-    const audit = await readFile('wiki/work/154_milestone_codex-drives-the-loop-alongside-claude/PROMPT-AUDIT.md', 'utf8');
+    // The LIVING audit (163): sign-off never reads a past item's record, so a member added after 154
+    // is audited in wiki/prompt-audit.md by the change that ships it.
+    const audit = await readFile('wiki/prompt-audit.md', 'utf8');
     const members = readDescriptor().members.filter(item => ['agent', 'command', 'skill'].includes(item.kind));
-    assert.equal(members.length, 43);
+    assert.equal(members.length, 44);
     for (const member of members) {
       const row = audit.split('\n').filter(line => line.startsWith(`| ${member.kind}:${member.id} |`));
       assert.equal(row.length, 1, `exactly one decision for ${member.id}`);

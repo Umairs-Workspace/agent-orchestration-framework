@@ -205,7 +205,8 @@ export const notifyChannelsTests = [
     name: "131/02 task00 — each notify suite runs a non-zero number of its own cases through the registry",
     run() {
       for (const suite of ["notify-form", "notify-discord"]) {
-        const run = spawnSync(process.execPath, ["scripts/test.mjs", "--only", `test/notify/${suite}.test.mjs`], {
+        // The shard entry, not the registry runner: the runner is not this case's subject (160/ADR-012).
+        const run = spawnSync(process.execPath, ["scripts/test-shard.mjs", `test/notify/${suite}.test.mjs`], {
           cwd: repoRoot, encoding: "utf8", env: { ...process.env }, windowsHide: true,
         });
         assert.equal(run.status, 0, `${suite} exits 0: ${run.stdout.slice(-400)}${run.stderr.slice(-400)}`);

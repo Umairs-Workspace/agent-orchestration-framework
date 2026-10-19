@@ -300,6 +300,12 @@ export function resolveProvenanceAtEmit(provenance, options = {}) {
 
 const candidateName = (candidate, index) => String(candidate?.id ?? candidate?.name ?? candidate?.title ?? `candidate-${index + 1}`);
 
+// 160/ADR-007 — the one question a caller asks before it loads history: did any cited document miss
+// on disk? Only a `file-absent` failure is ever answered through a rename, so it is the only miss.
+export function citationMissedOnDisk(emitted) {
+  return (emitted?.findings ?? []).some((finding) => (finding.failures ?? []).some((item) => item.code === "file-absent"));
+}
+
 export function emitProposals(candidates, options = {}) {
   const proposalEvidenceFloor = PROPOSAL_EVIDENCE_FLOOR;
   const acceptanceEvidenceToCommit = options.acceptanceEvidenceToCommit ?? null;

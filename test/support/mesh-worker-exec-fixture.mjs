@@ -11,7 +11,14 @@ import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { spawnSyncHardened } from "./cli-spawn.mjs";
+import { repoFromTemplate, spawnSyncHardened } from "./cli-spawn.mjs";
+
+// The repository's `init` and identity, built once per process and copied (160/ADR-009 §3). Its `init`
+// names no branch, as before, so the repository keeps whatever default branch git gives it.
+export const WORKER_REPO = Object.freeze({
+  init: ["init", "-q"],
+  config: [["user.email", "fixture@aof.local"], ["user.name", "aof fixture"], ["commit.gpgsign", "false"]],
+});
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 const workspaceIdFor = _aofApplication.mesh.store.workspaceIdFor;
@@ -65,10 +72,7 @@ export async function withMeshWorkerExecFixture(fn, { milestoneNumber = "35", st
     );
     await writeFile(path.join(root, ".gitignore"), ".aof/\n", "utf8");
 
-    git(root, ["init", "-q"]);
-    git(root, ["config", "user.email", "fixture@aof.local"]);
-    git(root, ["config", "user.name", "aof fixture"]);
-    git(root, ["config", "commit.gpgsign", "false"]);
+    repoFromTemplate(root, WORKER_REPO);
     git(root, ["add", "-A"]);
     git(root, ["commit", "-q", "-m", "fixture-story"]);
     const headSha = git(root, ["rev-parse", "HEAD"]).stdout.trim();

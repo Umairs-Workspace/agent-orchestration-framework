@@ -40,6 +40,8 @@ import { archTests as acdOneSelectorOneChangedSetTests } from "./acd-one-selecto
 // are registered by their own milestones' blocks above, because a re-pointed control is the
 // same control.
 import { archTests as acdSourceDirectoryBudgetTests } from "./acd-source-directory-budget.test.mjs";
+// milestone 160 / story 01 — FF-16002: the loop suites' git model is held to real git, verb by verb.
+import { archTests as acdGitFakeParityTests } from "./acd-git-fake-parity.test.mjs";
 
 export const tests = [
   ...acdTestSelectionWidensNeverNarrowsTests,
@@ -52,4 +54,6 @@ export const tests = [
   ...acdOneSelectorOneChangedSetTests,
   // milestone 119 / story 01 — the directory budget and the path-is-not-behaviour guard (see the import note).
   ...acdSourceDirectoryBudgetTests,
+  // milestone 160 / story 01 — FF-16002.
+  ...acdGitFakeParityTests,
 ];

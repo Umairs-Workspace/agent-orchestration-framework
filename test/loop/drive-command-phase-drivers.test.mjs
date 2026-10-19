@@ -43,6 +43,9 @@ const findWork = _aofWorkspace.work.findWork;
 const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
 import { stripComments } from "../support/source-slice.mjs";
+import { createTerminalRelayBridge } from "../../packages/mesh/src/terminal-relay-bridge.mjs";
+import { createMeshStore } from "../../packages/mesh/src/store.mjs";
+import { globalMeshPaths } from "../../packages/core/src/workspace.mjs";
 
 // The bracketed-paste protocol bytes, built here from char codes rather than
 // imported: they are a TERMINAL PROTOCOL constant (like the carriage return that
@@ -326,7 +329,142 @@ async function withHandOver(body, overrides = {}) {
 }
 const continueMedium = (fx) => ({ ...fx.workspace, config: { work: { ...fx.workspace.config.work, agents: { session: { effort: { continue: "medium", verify: "low", refine: "low" } } } } } });
 
+
+// ── 162 task 00 — a loop's drive streams through its node's own daemon ───────────────────────
+const LOOP_RUN_ID = "20261017T081933836Z-0000";
+
+async function waitUntil(probe, label, timeoutMs = 3000) {
+  const start = Date.now();
+  for (;;) {
+    const value = await probe();
+    if (value) return value;
+    if (Date.now() - start > timeoutMs) throw new Error(`waitUntil(${label}) timed out`);
+    await sleep(10);
+  }
+}
+
+// withLoopDrive({ ingress, lent }, body) — a continue drive of 03/01, lent (by default) a run whose
+// brief names loop LOOP_RUN_ID, over a held session; `ingress: true` starts a REAL ingress at the
+// path this application's drive reads (`<aof home>/mesh/terminal-ingress.json`). `finish()` exits
+// the session and resolves the drive's result; `sessionRecord(id)` reads the record the child
+// stated, wherever under the mesh home's `sessions/` it was written.
+async function withLoopDrive({ ingress = false, lent = true } = {}, body) {
+  const fx = await fixture();
+  const meshRoot = globalMeshPaths({ env: process.env }).meshRoot;
+  const bridge = createTerminalRelayBridge({ reportDegrade: () => {} });
+  const forwarded = [];
+  const store = createMeshStore({ globalMeshPaths: () => ({ meshRoot }) });
+  const started = ingress
+    ? await bridge.startTerminalIngress({
+      forward: { frame: (sessionId, bytes) => forwarded.push(["frame", sessionId, bytes]), end: (sessionId) => forwarded.push(["end", sessionId]) },
+      publish: (address) => store.publishTerminalIngress(null, address),
+      withdraw: (token) => store.withdrawTerminalIngress(null, token),
+    })
+    : null;
+  // The session store writes under the workspace's own mesh root when it names one (meshDir).
+  const sessionsDir = path.join(fx.workspace.globalMeshRoot || meshRoot, "sessions");
+  const before = new Set(await readdir(sessionsDir).catch(() => []));
+  const sessionRecord = async (sessionId) => {
+    for (const name of await readdir(sessionsDir).catch(() => [])) {
+      if (before.has(name) || !name.endsWith(".json")) continue;
+      const record = JSON.parse(await readFile(path.join(sessionsDir, name), "utf8"));
+      if (record.sessionId === sessionId) return record;
+    }
+    return null;
+  };
+  try {
+    const item = await resolveItemExact({ workspace: fx.workspace }, "03/01");
+    const { record } = await transitionRunStart(item, { brief: { loop: { loopRunId: LOOP_RUN_ID, scope: "03" } }, now: new Date().toISOString() });
+    const session = heldSession({ sessionId: "89b1d500" });
+    const stdin = stdinDouble();
+    // A LOADED workspace names its .aof dir; the hand-built fixture is given it, as the session hook's node-id read needs.
+    const workspace = { ...fx.workspace, aofDir: path.join(fx.projectRoot, ".aof") };
+    const pending = continueDriverCommand.run(lent ? { ref: "03/01", run: record.runId } : { ref: "03/01" }, { workspace, agentSessionDriverOptions: session.options, ...(lent ? { stdin } : {}) });
+    await session.written();
+    let result = null;
+    const finish = async () => {
+      if (result == null) {
+        session.exit(0);
+        result = await pending;
+      }
+      return result;
+    };
+    try {
+      await body({ session, forwarded, sessionRecord, item, finish });
+    } finally {
+      await finish();
+    }
+  } finally {
+    await started?.stop();
+    for (const name of await readdir(sessionsDir).catch(() => [])) {
+      if (!before.has(name)) await rm(path.join(sessionsDir, name), { force: true });
+    }
+    await fx.cleanup();
+  }
+}
+
 export const driveCommandPhaseDriverTests = [
+  // ═══ 162 task 00 — the drive child is the PRODUCER (ADR-001 §3, ADR-002 §2) ═══════════════════
+  // A REAL ingress under this run's isolated aof home stands in for the node's daemon; the drive is
+  // lent a run whose brief names its loop, exactly as a loop's child drive is.
+  {
+    name: "loop-session-streams-to-its-card/00 E1 · a sequential loop drive's session streams live on the control node — the child pushes each chunk to its node's own ingress, and the session's record states that it is relayed and names loop 03's run as its driver",
+    async run() {
+      await withLoopDrive({ ingress: true }, async ({ session, forwarded, sessionRecord, item }) => {
+        await waitUntil(async () => (await readRuns(item))[0]?.sessionId === "89b1d500", "the session id is captured");
+        session.held.emitData("refining 03/07 …");
+        await waitUntil(() => forwarded.some(([kind]) => kind === "frame"), "the chunk reaches the ingress");
+        assert.deepEqual(forwarded.find(([kind]) => kind === "frame"), ["frame", "89b1d500", "refining 03/07 …"], "exactly the chunk, under the captured session");
+        const record = await waitUntil(() => sessionRecord("89b1d500"), "the session's record is stated");
+        assert.equal(record.relaying, true, "the record states that it is relayed");
+        assert.equal(record.loopRunId, LOOP_RUN_ID, "…and names loop 03's run as its driver");
+        assert.equal(record.assistant, "claude-code", "the statement upserts the hook's own record, keyed by the hook's label");
+      });
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 E4 · a finished drive ends its session's stream — the drive's end marker crosses the ingress exactly once for that session",
+    async run() {
+      await withLoopDrive({ ingress: true }, async ({ session, forwarded, item, finish }) => {
+        await waitUntil(async () => (await readRuns(item))[0]?.sessionId === "89b1d500", "the session id is captured");
+        session.held.emitData("done.");
+        await waitUntil(() => forwarded.length >= 1, "the chunk reaches the ingress");
+        await finish();
+        await waitUntil(() => forwarded.some(([kind]) => kind === "end"), "the end marker arrives");
+        assert.deepEqual(forwarded.filter(([kind]) => kind === "end"), [["end", "89b1d500"]], "one end marker, for that session");
+      });
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 [outline] a failing ingress never slows or fails the drive — with no daemon (no ingress file) the drive settles with the outcome its session reached, and nothing is sent",
+    async run() {
+      const outcomes = {};
+      for (const ingress of [true, false]) {
+        await withLoopDrive({ ingress }, async ({ session, forwarded, item, finish }) => {
+          await waitUntil(async () => (await readRuns(item))[0]?.sessionId === "89b1d500", "the session id is captured");
+          session.held.emitData("output");
+          if (ingress) await waitUntil(() => forwarded.length >= 1, "the chunk reaches the live ingress");
+          const result = await finish();
+          outcomes[ingress ? "live" : "absent"] = { outcome: result.outcome, failureReason: result.failureReason ?? null, sessionId: result.sessionId };
+          if (!ingress) assert.deepEqual(forwarded, [], "no terminal frame is sent with no daemon");
+        });
+      }
+      assert.deepEqual(outcomes.absent, outcomes.live, "the drive settles with the same outcome whether or not its node's ingress is there");
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 a drive that owns its run is no loop's — it binds no ingress and states nothing",
+    async run() {
+      await withLoopDrive({ ingress: true, lent: false }, async ({ session, forwarded, sessionRecord, finish }) => {
+        await sleep(100);
+        session.held.emitData("a bare drive's output");
+        await sleep(200);
+        await finish();
+        assert.deepEqual(forwarded, [], "nothing reaches the ingress");
+        assert.equal(await sessionRecord("89b1d500"), null, "and no loop statement was written");
+      });
+    },
+  },
   {
     name: "147/02 the repair driver types the repair command with the hand-over file, in the primary checkout, on the session continue resolves to, under the lent run",
     async run() {

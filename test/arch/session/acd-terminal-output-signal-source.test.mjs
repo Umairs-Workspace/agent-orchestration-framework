@@ -130,6 +130,18 @@ const SANCTIONED_PRODUCER_SHAPES = Object.freeze([
     shape: SANCTIONED_OUTPUT_BRIDGE_KEY,
     spelling: "(sessionId, bytes) => <client>.sendTerminalFrame(sessionId, bytes)",
   }),
+  // ═══ THE THIRD SANCTIONED SHAPE (162/ADR-001) — the terminal INGRESS's worker forward ═══
+  //
+  // A loop's drive child is a separate process with no stream of its own, so it hands its PTY
+  // chunks to its node's daemon over a loopback ingress, and a WORKER daemon forwards each one up
+  // its admitted stream through this key of the ingress forward. It carries the bytes UNTOUCHED —
+  // the ingress reads only `{ sessionId, bytes }` and the child's own `nodeId` never reaches it
+  // (FF-16201) — so the spelling is exactly the bridge key's, under its own enumerated key.
+  Object.freeze({
+    key: "frame",
+    shape: SANCTIONED_OUTPUT_BRIDGE_KEY,
+    spelling: "(sessionId, bytes) => <client>.sendTerminalFrame(sessionId, bytes)",
+  }),
 ]);
 
 // The SEND SEAM's call shape. The leading `.` is load-bearing: it excludes
@@ -210,7 +222,15 @@ const SEND_TERMINAL_FRAME_CALL = /\.sendTerminalFrame\s*\(/g;
 //   producer's willingness to STATE itself, and nothing textual can check that a producer nobody has
 //   written yet remembers to. The count survives as the TRIPWIRE that stops the build and asks a
 //   human — which is what it was always really doing. A FOURTH site of ANY shape still fires.
-const SANCTIONED_PRODUCER_SITES = 3;
+//
+// ═══ RAISED 3 → 4 BY 162/ADR-001, AND IT MEETS THE OBLIGATION THE RAISE ABOVE NAMED ══════════════
+//
+// The fourth site is the terminal INGRESS's worker forward (`frame:` in the launcher's worker
+// branch): a loop's drive child streams its session through its own node's daemon. It is not
+// assignment-bound, so it must STATE itself — and it does: the drive child writes `relaying: true`
+// and its `loopRunId` onto the session record through `pingSession` once the ingress admits it
+// (162/ADR-002), which FF-16201 (`acd-loop-terminal-ingress`) checks. A FIFTH site still fires.
+const SANCTIONED_PRODUCER_SITES = 4;
 
 // keyArrowRanges(source, key) — EVERY `key: <value>` property value in a source, with its
 // [start, end) span, sliced from the key to the comma that closes that property at depth 0 (so a
@@ -289,7 +309,7 @@ export function outputSignalProblems({ bridgeSource, srcSources }) {
       producers.push({ file, host });
       if (host == null) {
         problems.push(
-          `${file}: a \`.sendTerminalFrame(\` call site sits OUTSIDE every sanctioned producer host — the streamed signal must come from a PTY output callback or the spawn handler's own bridge seam, and nothing else. The sanctioned hosts are an ENUMERATION of exactly two: ${SANCTIONED_HOSTS_CLAUSE}. ${RESPELLING_CLAUSE}`,
+          `${file}: a \`.sendTerminalFrame(\` call site sits OUTSIDE every sanctioned producer host — the streamed signal must come from a PTY output callback or the spawn handler's own bridge seam, and nothing else. The sanctioned hosts are an ENUMERATION of exactly three: ${SANCTIONED_HOSTS_CLAUSE}. ${RESPELLING_CLAUSE}`,
         );
       } else if (!host.shape.test(host.text)) {
         problems.push(
@@ -305,11 +325,11 @@ export function outputSignalProblems({ bridgeSource, srcSources }) {
     );
   } else if (producers.length < SANCTIONED_PRODUCER_SITES) {
     problems.push(
-      `only ${producers.length} \`.sendTerminalFrame(\` producer found under src/ (in ${producers.map((p) => p.file).join(", ")}) — ALL ${SANCTIONED_PRODUCER_SITES} production call sites must stream: the assignment dispatch, the terminal-resume handler AND (m50/story 03) the session-spawn handler's PTY bridge. Three call sites are three chances to disagree, and "an assignment's session streams but a RESUMED one goes dark" is exactly the silent half-wiring this milestone exists to end.`,
+      `only ${producers.length} \`.sendTerminalFrame(\` producer found under src/ (in ${producers.map((p) => p.file).join(", ")}) — ALL ${SANCTIONED_PRODUCER_SITES} production call sites must stream: the assignment dispatch, the terminal-resume handler, (m50/story 03) the session-spawn handler's PTY bridge AND (162/ADR-001) the terminal ingress's worker forward. Three call sites are three chances to disagree, and "an assignment's session streams but a RESUMED one goes dark" is exactly the silent half-wiring this milestone exists to end.`,
     );
   } else if (producers.length > SANCTIONED_PRODUCER_SITES) {
     problems.push(
-      `${producers.length} \`.sendTerminalFrame(\` producers found under src/ (in ${producers.map((p) => p.file).join(", ")}) — the CEILING is ${SANCTIONED_PRODUCER_SITES} (m49/ADR-003, RAISED 2 → 3 by m50/ADR-008 decision 9). This is not a tidiness rule: the terminals home decides a pane's FEED AXIS in the BROWSER. Until m50 the arithmetic was \`workItem == null ⟹ no call site anywhere in src/ will ever feed this tuple ⟹ no-producer\`, a property of THIS SWEEP and not of any code in ui/. ADR-008 re-derived it, because m50's spawn handler is a producer that is NOT assignment-bound: the axis is now the DISJUNCTION \`establishedProducer(workItem) OR row.relaying === true\`, and the reverse direction rests on every non-assignment producer STATING \`relaying: true\` on the wire (acd-session-producer-fact-survives-the-wire gates that chain). THE COUNT SURVIVES AS THE TRIPWIRE: a new producer that does NOT state itself makes every \`no-producer\` pane a LIE — the operator is told "no live output — nothing will ever feed this" about a tuple that is streaming, and no test in either build can see it. So a FOURTH site stops the build and asks a human: either it is assignment-owned, or it must state \`relaying: true\` on the session record it feeds — and then this ceiling is RAISED in the SAME diff that says so in an ADR, never by relaxing the number to make CI quiet. Shrink-only otherwise: lowering it is always allowed (the FLOOR above will object independently if a lane is what left).`,
+      `${producers.length} \`.sendTerminalFrame(\` producers found under src/ (in ${producers.map((p) => p.file).join(", ")}) — the CEILING is ${SANCTIONED_PRODUCER_SITES} (m49/ADR-003, RAISED 2 → 3 by m50/ADR-008 decision 9 and 3 → 4 by 162/ADR-001). This is not a tidiness rule: the terminals home decides a pane's FEED AXIS in the BROWSER. Until m50 the arithmetic was \`workItem == null ⟹ no call site anywhere in src/ will ever feed this tuple ⟹ no-producer\`, a property of THIS SWEEP and not of any code in ui/. ADR-008 re-derived it, because m50's spawn handler is a producer that is NOT assignment-bound: the axis is now the DISJUNCTION \`establishedProducer(workItem) OR row.relaying === true\`, and the reverse direction rests on every non-assignment producer STATING \`relaying: true\` on the wire (acd-session-producer-fact-survives-the-wire gates that chain). THE COUNT SURVIVES AS THE TRIPWIRE: a new producer that does NOT state itself makes every \`no-producer\` pane a LIE — the operator is told "no live output — nothing will ever feed this" about a tuple that is streaming, and no test in either build can see it. So a FOURTH site stops the build and asks a human: either it is assignment-owned, or it must state \`relaying: true\` on the session record it feeds — and then this ceiling is RAISED in the SAME diff that says so in an ADR, never by relaxing the number to make CI quiet. Shrink-only otherwise: lowering it is always allowed (the FLOOR above will object independently if a lane is what left).`,
     );
   }
   return problems;
@@ -419,7 +439,7 @@ async function readSrcSources() {
 
 export const archTests = [
   {
-    name: "arch/42+46+50 (acd-terminal-output-signal-source): every `.sendTerminalFrame(` producer found by sweeping src/ — wherever it lives, and there must be exactly three — sits in one of the TWO enumerated sanctioned hosts and streams that host's own bytes and nothing else, and the bridge module that builds every envelope references no credential/env/askpass/mint material",
+    name: "arch/42+46+50+162 (acd-terminal-output-signal-source): every `.sendTerminalFrame(` producer found by sweeping src/ — wherever it lives, and there must be exactly four — sits in one of the THREE enumerated sanctioned hosts and streams that host's own bytes and nothing else, and the bridge module that builds every envelope references no credential/env/askpass/mint material",
     async run() {
       const bridgeSource = await realSource(BRIDGE);
       const srcSources = await readSrcSources();
@@ -453,7 +473,7 @@ export const archTests = [
       assert.equal(
         discovered.length,
         SANCTIONED_PRODUCER_SITES,
-        `the streamed-output producer must be wired at ALL ${SANCTIONED_PRODUCER_SITES} call sites (the assignment dispatch, createMeshWorkerTerminalResumeHandler, and m50/story 03's session-spawn bridge) and at NO OTHER — found ${discovered.length} in ${discovered.join(", ")}. Below ${SANCTIONED_PRODUCER_SITES}: a lane went dark (m46/ADR-007). Above it: a producer arrived that the browser's feed axis knows nothing about (m49/ADR-003 as re-derived by m50/ADR-008).`,
+        `the streamed-output producer must be wired at ALL ${SANCTIONED_PRODUCER_SITES} call sites (the assignment dispatch, createMeshWorkerTerminalResumeHandler, m50/story 03's session-spawn bridge and 162/ADR-001's ingress forward) and at NO OTHER — found ${discovered.length} in ${discovered.join(", ")}. Below ${SANCTIONED_PRODUCER_SITES}: a lane went dark (m46/ADR-007). Above it: a producer arrived that the browser's feed axis knows nothing about (m49/ADR-003 as re-derived by m50/ADR-008).`,
       );
     },
   },
@@ -556,12 +576,15 @@ export const archTests = [
       // m50/story 03's shape: a BRIDGE KEY, not an output arrow. The gate's second enumerated shape.
       const sanctionedBridgeKey = "sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),";
 
+      // 162/ADR-001's ingress forward: the third enumerated shape, the fourth site.
+      const sanctionedIngressForward = "frame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),";
       const cleanThree = [
         [
           "packages/mesh/src/launcher.mjs",
           `const handler = createMeshWorkerExecutionHandler({ nodeId, ${sanctionedArrow} });
            const terminalResumeHandler = createMeshWorkerTerminalResumeHandler({ nodeId, ${sanctionedArrow} });
-           const sessionSpawnHandler = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });`,
+           const sessionSpawnHandler = createMeshWorkerSessionSpawnHandler({ nodeId, ${sanctionedBridgeKey} });
+           ingressForward = { ${sanctionedIngressForward} end: (sessionId) => client.sendTerminalEnd(sessionId) };`,
         ],
       ];
       const cleanProblems = outputSignalProblems({ bridgeSource: "", srcSources: asSweep(cleanThree) });
@@ -576,6 +599,17 @@ export const archTests = [
         [],
         "self-check: the m50 bridge key is sanctioned by its own enumerated shape (the FLOOR still objects to it being alone, which is a different clause)",
       );
+      const ingressOnly = [["packages/mesh/src/launcher.mjs", `ingressForward = { ${sanctionedIngressForward} };`]];
+      assert.deepEqual(
+        outputSignalProblems({ bridgeSource: "", srcSources: asSweep(ingressOnly) }).filter((problem) => !/only 1/.test(problem)),
+        [],
+        "self-check: 162's ingress forward is sanctioned by its own enumerated key",
+      );
+      const stampedIngress = [["packages/mesh/src/launcher.mjs", "ingressForward = { frame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes, childNodeId) };"]];
+      assert.ok(
+        outputSignalProblems({ bridgeSource: "", srcSources: asSweep(stampedIngress) }).some((problem) => /not exactly/.test(problem)),
+        "self-check: an ingress forward that carries anything beyond the session id and its bytes trips the SHAPE clause",
+      );
       const foldedBridge = [["packages/mesh/src/launcher.mjs", "const h = createMeshWorkerSessionSpawnHandler({ nodeId, sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes + process.env.ANTHROPIC_API_KEY) });"]];
       assert.ok(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(foldedBridge) }).some((problem) => /not exactly/.test(problem)),
@@ -587,19 +621,19 @@ export const archTests = [
         "self-check: a sanitiser inside the bridge key trips too — the lane is content-blind by contract on BOTH sanctioned shapes",
       );
 
-      // THE PLANT: a FOURTH producer, perfectly well-formed, in a new module.
+      // THE PLANT: a FIFTH producer, perfectly well-formed, in a new module.
       const plantedFour = [
         ...cleanThree,
         ["packages/core/src/mesh-board-terminal-bridge.mjs", `const bridge = createBoardTerminalBridge({ nodeId, ${sanctionedArrow} });`],
       ];
       assert.notDeepEqual(plantedFour, cleanThree, "the plant actually differs from the clean three-producer sweep");
-      assert.equal(plantedFour.length, cleanThree.length + 1, "the plant genuinely adds a FOURTH call site, in a module of its own");
+      assert.equal(plantedFour.length, cleanThree.length + 1, "the plant genuinely adds a FIFTH call site, in a module of its own");
 
       const ceilingProblems = outputSignalProblems({ bridgeSource: "", srcSources: asSweep(plantedFour) });
       assert.equal(
         ceilingProblems.length,
         1,
-        `self-check: a fourth producer trips the CEILING and NOTHING ELSE — the plant is sanctioned-shaped on purpose, so a ceiling that never fired could not hide behind a shape refusal. Got: ${JSON.stringify(ceilingProblems)}`,
+        `self-check: a fifth producer trips the CEILING and NOTHING ELSE — the plant is sanctioned-shaped on purpose, so a ceiling that never fired could not hide behind a shape refusal. Got: ${JSON.stringify(ceilingProblems)}`,
       );
       assert.match(
         ceilingProblems[0],
@@ -633,7 +667,7 @@ export const archTests = [
         "…and it does NOT borrow the ceiling's reason: two invariants on one number, two refusals, and a reviewer can tell which fired from the first line",
       );
 
-      // FIVE is not a special case of four, and a `>` written as `===` would pass this file's other
+      // SIX is not a special case of five, and a `>` written as `===` would pass this file's other
       // clauses. Driven so the comparison itself is pinned.
       const plantedFive = [
         ...plantedFour,
@@ -642,7 +676,7 @@ export const archTests = [
       assert.equal(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(plantedFive) }).length,
         1,
-        "self-check: FIVE producers trip the ceiling too — the guard is `>` and not an equality against four",
+        "self-check: SIX producers trip the ceiling too — the guard is `>` and not an equality against five",
       );
     },
   },
@@ -670,6 +704,10 @@ export const archTests = [
           sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),
           sendTerminalEnd: (sessionId) => client.sendTerminalEnd(sessionId),
         });
+        ingressForward = {
+          frame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),
+          end: (sessionId) => client.sendTerminalEnd(sessionId),
+        };
       `);
       assert.deepEqual(
         outputSignalProblems({ bridgeSource: "", srcSources: asSweep(cleanLauncher) }),
@@ -765,7 +803,8 @@ export const archTests = [
       // than pass quietly.
       const plantedNoProducer = cleanLauncher
         .replaceAll("onOutputChunk: (chunk, sessionId) => client.sendTerminalFrame(sessionId, String(chunk)),\n          ", "")
-        .replaceAll("sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),\n          ", "");
+        .replaceAll("sendTerminalFrame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),\n          ", "")
+        .replaceAll("frame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),\n          ", "");
       assert.notEqual(plantedNoProducer, cleanLauncher, "the plant actually differs from the clean synthesized shape");
       assert.equal(keyArrowRanges(plantedNoProducer, "onOutputChunk").length, 0, "the plant genuinely removed every output arrow");
       assert.equal(keyArrowRanges(plantedNoProducer, "sendTerminalFrame").length, 0, "…and the bridge key too, so this really is the zero-producer tree and not a one-producer one");

@@ -383,7 +383,7 @@ export const archTests = [
       // the YARDSTICK (what `readLiveSessions` emits today), not a captured fixture, so
       // it moves with the producer by design: that is the whole mechanism by which a
       // producer shape-change with a stale cross-language fixture fails CI below.
-      assert.deepEqual(producer.sessionKeys, ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"], "the producer's session projection (the yardstick)");
+      assert.deepEqual(producer.sessionKeys, ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"], "the producer's session projection (the yardstick)");
 
       const rust = await readRustSurface();
       const fixtures = capturedFixtures(rust);

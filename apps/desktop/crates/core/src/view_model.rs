@@ -543,6 +543,12 @@ mod tests {
     // the appended `"relaying": false` — `false` because these records predate the key,
     // which is the strict `=== true` projection the ADR specifies for exactly this case.
     // Nothing outside the eight session objects was touched.
+    // RE-CAPTURED 2026-10-17 (162/ADR-002 §1) by the SAME method and under the SAME proof: the
+    // session entry gained `loopRunId` (the loop drive that owns the session, `null` for every
+    // session no loop drives) after `relaying`. Each of the eight entries was re-emitted by the
+    // real `startSession` -> `readLiveSessions` in its own hermetic AOF_GLOBAL_HOME with the clock
+    // injected at its own `lastPingAt`, and reproduced its original byte-for-byte EXCEPT the
+    // appended `"loopRunId": null`. Every fixture re-serialised byte-for-byte before the splice.
     const REAL_CAPTURED_LIVE_SESSION_STATUS: &str = r#"{
   "nodes": [
     {
@@ -650,7 +656,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-07-12T20:55:20.329Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           }
         ],
         "aofVersion": "0.1.0",
@@ -783,7 +790,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-07-12T20:54:50.051Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           },
           {
             "sessionId": null,
@@ -792,7 +800,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-07-12T20:54:50.302Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           }
         ],
         "aofVersion": "0.1.0",
@@ -854,7 +863,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-07-12T21:10:00.000Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           },
           {
             "sessionId": null,
@@ -863,7 +873,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-07-12T21:10:00.000Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           }
         ],
         "aofVersion": "0.1.0",
@@ -1007,7 +1018,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-08-11T20:36:11.627Z",
             "workspaceHasRun": true,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           }
         ],
         "aofVersion": "0.1.0",
@@ -1077,7 +1089,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-08-13T12:47:36.418Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           },
           {
             "sessionId": "sess-bravo",
@@ -1086,7 +1099,8 @@ mod tests {
             "assistant": "claude-code",
             "lastPingAt": "2026-08-13T12:47:36.421Z",
             "workspaceHasRun": false,
-            "relaying": false
+            "relaying": false,
+            "loopRunId": null
           }
         ],
         "aofVersion": "0.1.0",

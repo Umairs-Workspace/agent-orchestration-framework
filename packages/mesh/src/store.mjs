@@ -1,5 +1,5 @@
 import path from "node:path";
-import { mkdir, readFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, readdir, unlink } from "node:fs/promises";
 import { writeText } from "@aof/foundation/fs";
 
 
@@ -152,5 +152,45 @@ async function readNodeRecords(workspace) {
   return records;
 }
 
-return { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords };
+// ------------------------------------------------- the terminal ingress's address ----
+
+// 162/ADR-001 §1 — where this machine's daemon publishes its LOCAL terminal ingress, so a loop's
+// drive child on the same machine can find it: `<aof home>/mesh/terminal-ingress.json`, holding
+// `{ host, port, token, pid }`. It is a MACHINE-LOCAL liveness fact of the one daemon that owns
+// this mesh root — never synced, never read by another machine — and it is addressed through the
+// same `meshDir` seam as every mesh record. Published atomically through the writeText seam;
+// withdrawn on stop only while it still names THAT start's token, so an older daemon's shutdown
+// never removes a newer one's address.
+const TERMINAL_INGRESS_FILENAME = "terminal-ingress.json";
+
+function terminalIngressPath(workspace) {
+  return path.join(meshDir(workspace), TERMINAL_INGRESS_FILENAME);
+}
+
+async function publishTerminalIngress(workspace, address) {
+  await mkdir(meshDir(workspace), { recursive: true });
+  await writeText(path.join(meshDir(workspace), TERMINAL_INGRESS_FILENAME), JSON.stringify(address, null, 2));
+  return terminalIngressPath(workspace);
+}
+
+// The published address, or null when no daemon on this machine has published one.
+async function readTerminalIngress(workspace) {
+  try {
+    return JSON.parse(await readFile(terminalIngressPath(workspace), "utf8"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return null;
+    throw error;
+  }
+}
+
+async function withdrawTerminalIngress(workspace, token) {
+  const published = await readTerminalIngress(workspace);
+  if (published == null || published.token !== token) return false;
+  await unlink(path.join(meshDir(workspace), TERMINAL_INGRESS_FILENAME)).catch((error) => {
+    if (error?.code !== "ENOENT") throw error;
+  });
+  return true;
+}
+
+return { aofHome, meshDir, nodeRecordPath, presenceRecordPath, publishNodeRecord, readNodeRecord, readNodeRecords, terminalIngressPath, publishTerminalIngress, readTerminalIngress, withdrawTerminalIngress };
 }

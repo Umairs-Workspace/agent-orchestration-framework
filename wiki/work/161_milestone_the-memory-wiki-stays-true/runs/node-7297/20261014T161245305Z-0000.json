@@ -1,0 +1,271 @@
+{
+  "runId": "20261014T161245305Z-0000",
+  "itemRef": "161",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "01a13b30-22d1-7723-a24f-521d81d790c7",
+  "brief": {
+    "loop": {
+      "loopRunId": "a455d83f-9979-4bef-9117-ae8f7980801b",
+      "scope": "161",
+      "level": "L2",
+      "cap": 3,
+      "phase": "refine",
+      "cycle": 1,
+      "startedAt": "2026-10-14T16:12:44.592Z",
+      "id": "loop:autonomous-cascade",
+      "supervised": false,
+      "thinking": null,
+      "promotedFrom": null,
+      "refine": "whole-item",
+      "sessions": {
+        "continue": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "sonnet",
+          "modelSource": "--model",
+          "runtime": "claude"
+        },
+        "refine": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        },
+        "verify": {
+          "effort": "high",
+          "effortSource": "--model",
+          "model": "gpt-6-astra",
+          "modelSource": "--model",
+          "runtime": "codex"
+        }
+      },
+      "execution": {
+        "phaseExecutions": {
+          "continue": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "sonnet",
+                "modelSource": "--model"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": null,
+                "modelSource": null
+              }
+            },
+            "profile": "claude-pty-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "claude",
+            "runtimeSource": "model",
+            "transport": "pty",
+            "version": 1
+          },
+          "refine": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          },
+          "verify": {
+            "phases": {
+              "continue": {
+                "effort": "high",
+                "effortSource": "default",
+                "model": "gpt-6.1-sol",
+                "modelSource": "runtime-default"
+              },
+              "refine": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              },
+              "verify": {
+                "effort": "high",
+                "effortSource": "--model",
+                "model": "gpt-6-astra",
+                "modelSource": "--model"
+              }
+            },
+            "profile": "codex-app-server-v1",
+            "profileVersion": 1,
+            "roles": {},
+            "runtime": "codex",
+            "runtimeSource": "model",
+            "transport": "app-server-stdio",
+            "version": 1
+          }
+        },
+        "phases": {
+          "continue": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "sonnet",
+            "modelSource": "--model",
+            "runtime": "claude"
+          },
+          "refine": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          },
+          "verify": {
+            "effort": "high",
+            "effortSource": "--model",
+            "model": "gpt-6-astra",
+            "modelSource": "--model",
+            "runtime": "codex"
+          }
+        },
+        "runtime": "mixed",
+        "runtimeSource": "phase-map",
+        "version": 2
+      }
+    },
+    "nativeAskContext": {
+      "scope": "161",
+      "loopRunId": "a455d83f-9979-4bef-9117-ae8f7980801b",
+      "workspaceId": "9db1fd84f5895e38"
+    },
+    "runtimeObservation": {
+      "version": 1,
+      "runtime": "codex",
+      "turns": [
+        {
+          "sessionId": "01a13b30-22d1-7723-a24f-521d81d790c7",
+          "turnId": "01a13b30-2c9b-7620-9ff5-637a8ea6b84a",
+          "baseline": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheCreate": 0,
+            "reasoningOutput": 0,
+            "total": 0
+          },
+          "latest": {
+            "input": 2752990,
+            "output": 17509,
+            "cacheRead": 2627328,
+            "cacheCreate": 0,
+            "reasoningOutput": 2341,
+            "total": 2770499
+          },
+          "tokens": {
+            "input": 2752990,
+            "output": 17509,
+            "cacheRead": 2627328,
+            "cacheCreate": 0,
+            "reasoningOutput": 2341,
+            "total": 2770499
+          },
+          "lastActivityAt": "2026-10-14T16:25:49.183Z",
+          "approvalsReviewer": "auto_review",
+          "approvalPolicy": "on-request",
+          "reviews": [
+            {
+              "reviewId": "950f5bee-aeb1-4b63-8dbd-748ddb208ae5",
+              "targetItemId": "exec-8425fbd0-5ade-4e00-9331-f7792d12d604",
+              "actionType": "command",
+              "status": "approved",
+              "startedAtMs": 1791994754479,
+              "completedAtMs": 1791994762484,
+              "decisionSource": "agent",
+              "observationState": "observed-completion",
+              "startObserved": true
+            }
+          ],
+          "activity": null
+        }
+      ],
+      "tokens": {
+        "input": 2752990,
+        "output": 17509,
+        "cacheRead": 2627328,
+        "cacheCreate": 0,
+        "reasoningOutput": 2341,
+        "total": 2770499
+      },
+      "costUsd": null,
+      "costUnavailable": "native-cost-not-reported",
+      "usageUnavailable": null,
+      "lastActivityAt": "2026-10-14T16:25:49.183Z"
+    }
+  },
+  "createdAt": "2026-10-14T16:12:45.305Z",
+  "updatedAt": "2026-10-14T16:25:50.642Z",
+  "failureReason": null,
+  "heartbeatAt": "2026-10-14T16:22:51.871Z",
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": [],
+  "execution": {
+    "phases": {
+      "continue": {
+        "effort": "high",
+        "effortSource": "default",
+        "model": "gpt-6.1-sol",
+        "modelSource": "runtime-default"
+      },
+      "refine": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "gpt-6-astra",
+        "modelSource": "--model"
+      },
+      "verify": {
+        "effort": "high",
+        "effortSource": "--model",
+        "model": "gpt-6-astra",
+        "modelSource": "--model"
+      }
+    },
+    "profile": "codex-app-server-v1",
+    "profileVersion": 1,
+    "roles": {},
+    "runtime": "codex",
+    "runtimeSource": "model",
+    "transport": "app-server-stdio",
+    "version": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "runId": "20261015T085838357Z-0000",
+  "itemRef": "160/04",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": null,
+  "brief": {},
+  "createdAt": "2026-10-15T08:58:38.357Z",
+  "updatedAt": "2026-10-15T08:59:44.550Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

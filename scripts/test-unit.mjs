@@ -108,6 +108,7 @@ import { memoryRecallBlockTests } from "../packages/knowledge/test/memory-recall
 import { memoryHooksInertTests } from "../packages/knowledge/test/memory-hooks-inert.suite.mjs";
 // milestone 03 — work board UI
 import { workListTests } from "../test/work/lifecycle/work-list.test.mjs";
+import { wikiCitationTests } from "../test/work/wiki-citations.test.mjs";
 import { archTests as acdWorkListContractTests } from "../test/arch/work/acd-work-list-contract.test.mjs";
 import { boardApiTests } from "../test/surfaces/board-api.test.mjs";
 import { archTests as acdBoardWriteIsolationTests } from "../test/arch/ui/acd-board-write-isolation.test.mjs";
@@ -205,6 +206,7 @@ const tests = [
   ...memoryRecallBlockTests,
   ...memoryHooksInertTests,
   ...workListTests,
+  ...wikiCitationTests,
   ...acdWorkListContractTests,
   ...boardApiTests,
   ...acdBoardWriteIsolationTests,

@@ -1,0 +1,92 @@
+# The regression gate on a runner (160/ADR-014 §6).
+#
+# `aof work regression-gate <ref>` runs the whole tree on a clean checkout and appends its row to the item's
+# REGRESSION.md, which the accept door reads. This workflow runs that command, unchanged, on a GitHub-hosted runner
+# instead of the operator's machine, and uploads the REGRESSION.md it wrote; the row is brought home and committed
+# on the item's branch like any gate row. The CLI knows nothing of CI: the runner is only the machine it runs on.
+#
+# Triggered by pushing a branch `gate/<ref>` at the commit to gate (e.g. `gate/160`), or by hand once this file is
+# on the default branch.
+name: gate
+
+on:
+  push:
+    branches:
+      - "gate/**"
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "The item to gate (aof work regression-gate <ref>)"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  regression-gate:
+    name: aof work regression-gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      GATE_REF: ${{ inputs.ref || github.ref_name }}
+    steps:
+      # Full history: the citation resolver derives its rename map from git log (119/ADR-004).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Ensure a C++ toolchain is present (node-gyp compiles node-pty)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3
+
+      - name: Tauri's Linux prerequisites (the desktop shell's cargo check)
+        run: |
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev librsvg2-dev libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
+
+      - name: Restore the cargo build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/target
+            apps/desktop/crates/app/target
+          key: cargo-${{ runner.os }}-${{ hashFiles('apps/desktop/Cargo.lock', 'apps/desktop/crates/app/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ runner.os }}-
+
+      - name: Yarn immutable install (lifecycle scripts skipped)
+        run: node scripts/prepare-worktree.mjs
+
+      - name: Build reviewed native dependency
+        run: node .yarn/releases/yarn-4.18.1.cjs rebuild node-pty
+
+      - name: Build the UI the bundle tests read
+        run: node scripts/ui-build.mjs
+
+      - name: A git identity, as the control node has
+        run: |
+          git config --global user.name "aof ci"
+          git config --global user.email "ci@aof.invalid"
+
+      - name: The checkout is clean (the gate refuses a dirty one)
+        run: git status --short
+
+      # The ref names the item: `gate/160` gates 160; a dispatch names it directly.
+      - name: aof work regression-gate
+        run: |
+          export AOF_GLOBAL_HOME="$(mktemp -d)"
+          node packages/core/bin/aof.mjs work regression-gate "${GATE_REF#gate/}"
+
+      - name: Upload the row the gate wrote
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-row
+          path: wiki/work/**/REGRESSION.md
+          if-no-files-found: warn

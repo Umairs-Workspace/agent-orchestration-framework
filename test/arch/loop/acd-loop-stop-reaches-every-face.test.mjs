@@ -55,7 +55,8 @@ const READERS_OF_RUNS = Object.freeze(["packages/mesh/src/commands/heartbeat.mjs
 const RUNS_CALL = /(?<!function\s)\breadActiveRuns\s*\(/u;
 const LOOPS_CALL = /(?<!function\s)\breadActiveLoops\s*\(/u;
 const SIX_KEYS = Object.freeze(["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion", "buildId"]);
-const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"]);
+// 162/ADR-003 §1 appends three after `stop` — the drive's session, its start and its consumed heartbeat.
+const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop", "sessionId", "driveStartedAt", "lastActivityAt"]);
 
 const FLEET_DIR = "apps/ui/src/fleet";
 const FLEET_FETCH = 'fetch("/api/mesh/loop-stop"';

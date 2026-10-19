@@ -45,8 +45,10 @@
         "scripts/test.mjs"
       ],
       "selectArgs": [
-        "--only",
         "{file}"
+      ],
+      "selectProgramArgs": [
+        "scripts/test-shard.mjs"
       ],
       "roots": [
         "test"
@@ -65,7 +67,10 @@
           "--jobs",
           "{jobs}"
         ],
-        "budgetMinutes": 15
+        "budgetArgs": [
+          "--budget-min",
+          "{minutes}"
+        ]
       }
     },
     "worktree": {

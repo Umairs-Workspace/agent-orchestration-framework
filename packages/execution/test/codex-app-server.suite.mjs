@@ -90,6 +90,30 @@ function released(probe) {
   assert.equal(probe.children.length, 1);
 }
 export const codexAppServerTests = [
+  { name: "Codex minimum version accepts newer releases and prereleases and rejects old or malformed versions", async run() {
+    const candidates = async function* () { yield "codex"; };
+    for (const version of ["0.160.0", "0.160.0+build.1", "0.160.1", "0.161.0", "0.162.0-alpha.2", "0.162.0-alpha.17.2", "0.162.0-alpha.17.2+desktop.1", "0.1000.0", "1.0.0", "9.0.0"]) {
+      assert.deepEqual(await selectCodexExecutable({}, { candidates, readVersion: async () => version }), { bin: "codex", cliVersion: version });
+    }
+    for (const version of ["0.130.0", "0.159.999", "0.16.0", "0.160.0-alpha.17.2", "0.160.0-rc.1+build", "unknown", "0.160", "v0.160.0", "0.0160.0", "0.162.0-alpha..2", "0.162.0-alpha.02", "0.162.0+", null]) {
+      await assert.rejects(selectCodexExecutable({}, { candidates, readVersion: async () => version }), { code: "unsupported_profile" }, String(version));
+    }
+  } },
+  { name: "Newer Codex versions still require native automatic review and the expected protocol", async run() {
+    for (const [scenario, acknowledgement, expected] of [["complete", {}, "automatic_review_unavailable"], ["unknown-request", undefined, "protocol_unknown_request"]]) {
+      const p = codexFixture({ version: "0.162.0-alpha.17.2", scenario, acknowledgement });
+      const result = await p.adapter.drive(p.brief, p.options);
+      assert.equal(result.failureReason, expected);
+      if (expected === "automatic_review_unavailable") assert.equal(p.calls.some(c => c.method === "turn/start"), false);
+      released(p);
+    }
+  } },
+  { name: "Codex capabilities declare the minimum version and newer builds pass catalog preflight", async run() {
+    const p = codexFixture({ version: "0.162.0-alpha.17.2" });
+    assert.equal(p.adapter.capabilities.minimumCliVersion, CODEX_PROFILE.minimumVersion);
+    assert.deepEqual((await p.adapter.inspectCapabilities({ ...p.options, cwd: p.brief.worktreeCwd })).models, fixture.models);
+    released(p);
+  } },
   { name: "158 task01 E7 — simultaneous native lanes with equal review ids never cross outcomes", async run() {
     const observed = [[], []];
     const probes = [0, 1].map(i => codexFixture({ nativeIdentity: { nativeThreadId: `s${i}`, nativeTurnId: `t${i}` }, onStart: ({ emit }) => {
@@ -211,11 +235,11 @@ export const codexAppServerTests = [
       installedDesktopLocations: async () => { discoveries++; return [desktopRoot]; } };
     const candidates = options => codexExecutables(options, dependencies);
     const options = { env: { Path: `"${root}"` } };
-    const first = await selectCodexExecutable(options, { candidates, supportedVersions: CODEX_PROFILE.supportedVersions, readVersion: async () => "0.160.0" });
+    const first = await selectCodexExecutable(options, { candidates, readVersion: async () => "0.160.0" });
     assert.equal(first.bin, native); assert.equal(discoveries, 0, "compatible PATH installation avoids desktop discovery");
-    const selected = await selectCodexExecutable(options, { candidates, supportedVersions: CODEX_PROFILE.supportedVersions, readVersion: async bin => bin === native ? "0.130.0" : "0.162.0-alpha.2" });
+    const selected = await selectCodexExecutable(options, { candidates, readVersion: async bin => bin === native ? "0.130.0" : "0.162.0-alpha.17.2" });
     assert.equal(selected.bin, desktop); assert.equal(discoveries, 1);
-    await assert.rejects(selectCodexExecutable({ ...options, codexBin: `${root}\\codex.cmd` }, { candidates, supportedVersions: CODEX_PROFILE.supportedVersions, readVersion: async () => "0.130.0" }), { code: "unsupported_profile", detectedVersions: ["0.130.0"] });
+    await assert.rejects(selectCodexExecutable({ ...options, codexBin: `${root}\\codex.cmd` }, { candidates, readVersion: async () => "0.130.0" }), { code: "unsupported_profile", detectedVersions: ["0.130.0"] });
     assert.equal(discoveries, 1, "explicit executable never falls back to another installation");
   } })),
   { name: "156 Codex executable discovery preserves direct PATH and POSIX launches and refuses missing installations", async run() {
@@ -224,20 +248,20 @@ export const codexAppServerTests = [
     assert.deepEqual(await collect(codexExecutables({ codexBin: "/opt/codex" }, { platform: "darwin" })), ["/opt/codex"]);
     const win = { platform: "win32", exists: value => value === "C:\\bin\\codex.exe", installedDesktopLocations: async () => [] };
     assert.deepEqual(await collect(codexExecutables({env:{PATH:"C:\\bin"}}, win)), ["C:\\bin\\codex.exe"]);
-    await assert.rejects(selectCodexExecutable({}, { candidates: async function* () {}, readVersion: async () => {}, supportedVersions: CODEX_PROFILE.supportedVersions }), { code: "runtime_unavailable" });
-    await assert.rejects(selectCodexExecutable({}, { candidates: async function* () { yield "codex"; }, readVersion: async () => { throw Object.assign(new Error(secret), {code:"unsupported_profile"}); }, supportedVersions: CODEX_PROFILE.supportedVersions }), { code: "unsupported_profile" });
+    await assert.rejects(selectCodexExecutable({}, { candidates: async function* () {}, readVersion: async () => {} }), { code: "runtime_unavailable" });
+    await assert.rejects(selectCodexExecutable({}, { candidates: async function* () { yield "codex"; }, readVersion: async () => { throw Object.assign(new Error(secret), {code:"unsupported_profile"}); } }), { code: "unsupported_profile" });
   } },
   { name: "156 Codex preflight reports missing or incompatible executables without leaking subprocess diagnostics", async run() {
     for (const code of ["runtime_unavailable", "unsupported_profile"]) {
       const adapter = createCodexAppServerAdapter({ selectExecutable: async () => { throw Object.assign(new Error(secret), {code,detectedVersions:["0.130.0",secret]}); } });
-      await assert.rejects(adapter.inspectCapabilities({cwd:path.resolve(".tmp")}), error => error.code === code && !error.message.includes(secret) && (code !== "unsupported_profile" || error.message.includes("0.130.0")));
+      await assert.rejects(adapter.inspectCapabilities({cwd:path.resolve(".tmp")}), error => error.code === code && !error.message.includes(secret) && (code !== "unsupported_profile" || (error.message.includes("0.130.0") && error.message.includes("Required: Codex CLI 0.160.0 or newer."))));
     }
   } },
   { name: "156 admitted desktop Codex profile retains result, usage, resume and permission semantics", async run() {
-    for (const scenario of ["complete", "native-question", "permission:item/commandExecution/requestApproval", "permission:item/fileChange/requestApproval", "permission:item/permissions/requestApproval"]) {
-      const p = codexFixture({version:"0.162.0-alpha.2",scenario});
+    for (const version of ["0.162.0-alpha.2", "0.162.0-alpha.17.2", "0.163.0", "1.0.0"]) for (const scenario of ["complete", "native-question", "permission:item/commandExecution/requestApproval", "permission:item/fileChange/requestApproval", "permission:item/permissions/requestApproval"]) {
+      const p = codexFixture({version,scenario});
       const result = await p.adapter.drive(p.brief,p.options);
-      assert.equal(result.cliVersion,"0.162.0-alpha.2");
+      assert.equal(result.cliVersion,version);
       assert.equal(result.outcome, scenario === "complete" ? "done" : scenario === "native-question" ? "needs-input" : "failed");
       if (scenario.startsWith("permission:")) assert.equal(result.failureReason,"automatic_review_routing_failed");
       released(p);
@@ -286,7 +310,7 @@ export const codexAppServerTests = [
     const q = codexFixture(); const r = await q.adapter.drive(q.brief, { ...q.options, resumeSessionId: fixture.nativeThreadId });
     assert.equal(r.sessionId, fixture.nativeThreadId); assert.equal(q.calls.filter(c => c.method === "thread/start").length, 0); assert.equal(q.calls.find(c => c.method === "thread/resume").params.threadId, fixture.nativeThreadId); released(q);
   } },
-  { name: "154/02 task00 — unsupported version never starts the server", async run() { const p = codexFixture({ version: "9.0.0" }); const r = await p.adapter.drive(p.brief, p.options); assert.equal(r.failureReason, "unsupported_profile"); assert.equal(p.children.length, 0); } },
+  { name: "154/02 task00 — unsupported version never starts the server", async run() { const p = codexFixture({ version: "0.159.0" }); const r = await p.adapter.drive(p.brief, p.options); assert.equal(r.failureReason, "unsupported_profile"); assert.equal(p.children.length, 0); } },
   { name: "154/02 task01 — identity persistence failure stops through the normalized boundary", async run() { const p = codexFixture(); const boundary = createRuntimeSession({ adapters: { codex: p.adapter } }); const r = await boundary.drive(p.brief, { ...p.options, runtime: "codex", onIdentity: () => { throw new Error(secret); } }); assert.equal(r.failureReason, "persistence_failed"); assert.equal(p.calls.filter(c => c.method === "turn/start").length, 0); released(p); } },
   ...["onActivity", "onUsage", "onQuestion"].map(callback => ({ name: `154/02 task01 — persistence failure cannot be reported as success: ${callback}`, async run() {
     const p = codexFixture({ scenario: callback === "onQuestion" ? "structured-question" : "complete" });

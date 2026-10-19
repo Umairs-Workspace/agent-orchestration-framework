@@ -8,13 +8,14 @@ import {
   appendRegressionRow,
   detailCell,
   gateInstant,
+  gateResult,
   regressionRecordPath,
   satisfiesDoor,
   scopeCell,
 } from "../regression-record.mjs";
 
 // Core supplies configured resolution, execution, notification and transition services.
-export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, launchRunner, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runTest }) {
+export function createRegressionGateCommand({ execFile, gateToolchain, headCommit, isRunning, launchRunner, readRuns, reportDegrade = () => {}, requireLocalCheckout, resolveItemExact, resolveTestGate, resolveTestToolchain, runBounded, runTest }) {
 // `aof work regression-gate <ref>` — THE GATE RUN (milestone 96 / story 04, ADR-008 §1, §2).
 // FF-9606 is its control.
 //
@@ -76,6 +77,25 @@ const SETTINGS_CONFLICT = "regression-gate-settings-conflict";
 const JOBS_INVALID = "regression-gate-jobs-invalid";
 const JOBS_UNDECLARED = "regression-gate-jobs-undeclared";
 
+// A STOPPED GATE (160/ADR-005 §3): the driven run that launched it stopped, so the gate aborted its suite.
+// A stop is not a test result, so nothing is recorded — the repair is to run the gate again.
+const STOPPED = "regression-gate-stopped";
+
+// THE LAUNCH ENVIRONMENT (160/ADR-005 §1, m159/F-2). The suite inherits none of the session's `GIT_*`,
+// `CLAUDE*` or `AOF_*` variables — an inherited `GIT_ASKPASS` turned a clone-credential case red — and
+// keeps `AOF_GLOBAL_HOME`, the isolated home the suite must write under. Names compare case-insensitively,
+// because Windows environment names are. A copy is returned: the gate's own environment is untouched, and
+// its keep-alive still reads the driven run from it.
+const DENIED_ENV_PREFIXES = Object.freeze(["GIT_", "CLAUDE", "AOF_"]);
+const KEPT_ENV = Object.freeze(["AOF_GLOBAL_HOME"]);
+
+function cleanLaunchEnv(env) {
+  return Object.fromEntries(Object.entries(env ?? {}).filter(([name]) => {
+    const upper = name.toUpperCase();
+    return KEPT_ENV.includes(upper) || !DENIED_ENV_PREFIXES.some((prefix) => upper.startsWith(prefix));
+  }));
+}
+
 // The two ways the gate's program runs, named on every row so a reader of the record can tell a
 // sharded sign-off from a serial one without the run's logs.
 const SERIAL = "serial";
@@ -106,15 +126,24 @@ const posix = (value) => String(value).split(path.sep).join("/");
 // attempt's `startToCloseMs` still bounds a gate that never ends.
 const KEEP_ALIVE_MS = 60_000;
 
-function keepDrivenRunAlive({ env = process.env, intervalMs = KEEP_ALIVE_MS } = {}) {
+// THE BEAT ALSO WATCHES THE RUN (160/ADR-005 §3). Each beat reads the driven run's record through the run
+// store the core binding injects, and calls `onStopped` once that run is no longer running: a cancel-level
+// loop stop killed the session and its driver settled it, or the run was reclaimed. The gate reads no stop
+// request of its own — the run record is the one fact — and a drain, which lets the session finish, leaves
+// the record running. A read that fails is reported and never read as a stop.
+function keepDrivenRunAlive({ env = process.env, intervalMs = KEEP_ALIVE_MS, onStopped = null, readRuns: read = readRuns, isRunning: running = isRunning } = {}) {
   const itemDir = env.AOF_RUN_ITEM_DIR;
   const runId = env.AOF_RUN_ID;
   if (typeof itemDir !== "string" || itemDir.length === 0 || typeof runId !== "string" || runId.length === 0) return () => {};
   const runsDir = path.join(itemDir, "runs");
+  const watch = typeof onStopped === "function" && typeof read === "function" && typeof running === "function";
   // Liveness bookkeeping never fails the gate: a beat that cannot be written is reported, not thrown.
   const beat = () => mkdir(runsDir, { recursive: true })
     .then(() => appendFile(path.join(runsDir, ".heartbeats.ndjson"), `${JSON.stringify({ runId, at: new Date().toISOString() })}\n`, "utf8"))
-    .catch((error) => reportDegrade("regression-gate-keep-alive", error));
+    .catch((error) => reportDegrade("regression-gate-keep-alive", error))
+    .then(async () => (watch ? (await read({ dir: itemDir })).find((record) => record.runId === runId) ?? null : null))
+    .then((record) => { if (record != null && !running(record)) onStopped(record); })
+    .catch((error) => reportDegrade("regression-gate-run-watch", error));
   const first = beat();
   const timer = setInterval(beat, intervalMs);
   timer.unref?.();
@@ -179,12 +208,17 @@ function readSettings(input) {
 // The program's own report lines the gate reads. The runner prints them; the gate parses nothing
 // it would have to infer. Both streams, in the order `aof test` reads them.
 const NOT_ISOLATED_LINE = /^# not isolated - (.+?)\s*$/gm;
+// 160/ADR-006 — the units the runner killed (a stop, the budget, a unit's own limit) and the queue it left.
+const NOT_FINISHED_LINE = /^# not finished - (.+?)\s*$/gm;
+const NOT_STARTED_LINE = /^# not started: (\d+) units\s*$/m;
 const SLOWEST_HEADING = /^# slowest files/;
 const LOGS_LINE = /^# logs: (.+?)\s*$/m;
 
 function programReport(observed) {
   const text = `${observed?.stdout ?? ""}\n${observed?.stderr ?? ""}`;
   const notIsolated = [...text.matchAll(NOT_ISOLATED_LINE)].map((match) => match[1]);
+  const notFinished = [...text.matchAll(NOT_FINISHED_LINE)].map((match) => match[1]);
+  const notStarted = Number(NOT_STARTED_LINE.exec(text)?.[1] ?? 0);
   const lines = text.split(/\r?\n/);
   const at = lines.findIndex((line) => SLOWEST_HEADING.test(line));
   const slowest = [];
@@ -197,6 +231,8 @@ function programReport(observed) {
   }
   return Object.freeze({
     notIsolated: Object.freeze(notIsolated),
+    notFinished: Object.freeze(notFinished),
+    notStarted,
     slowest: Object.freeze(slowest),
     logs: LOGS_LINE.exec(text)?.[1] ?? null,
   });
@@ -210,11 +246,13 @@ function runLine({ mode, jobs, minutes, budgetMinutes, overBudget }) {
     + `${overBudget ? ` · over budget (${budgetMinutes} min)` : ""}`;
 }
 
-// The detail cell, composed in ONE place and in ONE order: what failed, then what is not isolated,
-// then the run line — so a red row still leads with its failures and a green row is never empty.
-function rowDetail({ green, outcome, failures, notIsolated, run }) {
+// The detail cell, composed in ONE place and in ONE order: what failed, then what did not finish, then
+// what is not isolated, then the run line — so a red row still leads with its failures, the units that ran
+// out of time are named apart from them, and a green row is never empty.
+function rowDetail({ red, outcome, failures, unfinished, notIsolated, run }) {
   const parts = [];
-  if (!green) parts.push(failureDetail(outcome, failures));
+  if (red) parts.push(failureDetail(outcome, failures));
+  if (unfinished != null) parts.push(unfinished);
   if (notIsolated.length > 0) parts.push(`not isolated: ${notIsolated.join(", ")}`);
   if (run != null) parts.push(runLine(run));
   return parts.length === 0 ? null : detailCell(parts.join(" · "));
@@ -227,8 +265,10 @@ function rowDetail({ green, outcome, failures, notIsolated, run }) {
  *
  *   input — `{ ref, now, serial, jobs }`; `now` (ISO-8601 UTC-Z) is the established injected clock,
  *           never a flag; `serial` and `jobs` are the operator's settings for the run
- *   deps  — `{ projectRoot, config, resolve, git, runSuite, launch, clock, read, write }`, every one
- *           defaulted to the shipped seam by the command below; `clock` times the run in ms
+ *   deps  — `{ projectRoot, config, resolve, git, runSuite, launch, clock, read, write, keepAlive,
+ *           keepAliveMs, env, bounded, runs }`, every one defaulted to the shipped seam by the command
+ *           below; `clock` times the run in ms, `env` is the gate's own environment (the keep-alive reads
+ *           it, the suite gets its clean copy) and `runs` reads the driven run's record
  *
  * The order is load-bearing: the tree is checked BEFORE the settings, the settings BEFORE the commit
  * is resolved and the commit BEFORE the suite runs, so the hash the row names and the state the
@@ -246,6 +286,10 @@ async function runRegressionGate(input, deps = {}) {
     read = readFile,
     write = writeText,
     keepAlive = keepDrivenRunAlive,
+    keepAliveMs = KEEP_ALIVE_MS,
+    env = process.env,
+    bounded = runBounded,
+    runs = readRuns,
   } = deps;
 
   const ref = typeof input?.ref === "string" ? input.ref.trim() : "";
@@ -319,10 +363,18 @@ async function runRegressionGate(input, deps = {}) {
   // injects is WHICH PROGRAM that body launches — the toolchain module composes the gate's program
   // from the declaration and the settings — and a tap on the launch, so the program's own report
   // lines (not isolated, slowest files, logs) reach the row. The clock brackets the call.
+  //
+  // THE LAUNCH IS CLEAN AND STOPPABLE (160/ADR-005): the program gets `cleanLaunchEnv` of the gate's
+  // environment, a piped stdin and the abort signal the keep-alive fires when the driven run stops.
+  // `runBounded` ends that stdin on an abort, and the sharded runner stops its own pool when it ends.
   let observed = null;
   const started = clock();
-  const stopKeepAlive = keepAlive();
+  const controller = new AbortController();
+  const launchEnv = cleanLaunchEnv(env);
+  const stopKeepAlive = keepAlive({ env, intervalMs: keepAliveMs, readRuns: runs, onStopped: () => controller.abort() });
   await stopKeepAlive.first;
+  const stoppable = { env: launchEnv, signal: controller.signal, stdin: "pipe" };
+  const boundedLaunch = (spec) => bounded({ ...spec, signal: controller.signal, stdin: "pipe" });
   let outcome;
   try {
     outcome = await runSuite({ scope: GATE_SCOPE }, {
@@ -336,19 +388,42 @@ async function runRegressionGate(input, deps = {}) {
           ? Object.freeze({ ok: true, toolchain: gateToolchain(compiled.toolchain, gate, settings) })
           : compiled;
       },
-      run: async (toolchain, files, options) => (observed = await launch(toolchain, files, options)),
+      run: async (toolchain, files, options) => (observed = await launch(toolchain, files, { ...options, ...stoppable, launch: boundedLaunch })),
     });
   } finally {
     stopKeepAlive();
+  }
+  // A STOPPED RUN WRITES NO ROW: the suite was aborted, so it answered nothing about the code.
+  if (controller.signal.aborted && (observed == null || observed.outcome === "aborted")) {
+    const error = commandError(
+      `The regression gate for ${item.ref} stopped: the driven run ${env.AOF_RUN_ID} is no longer running, so its suite was stopped and no row was written. Run the gate again.`,
+      STOPPED,
+      409,
+    );
+    error.detail = { ref: item.ref, runId: env.AOF_RUN_ID ?? null };
+    throw error;
   }
   const minutes = Number(((clock() - started) / 60000).toFixed(1));
 
   // (5) THE ROW. A refusal from the run is recorded as RED rather than swallowed: the suite did not
   // answer, and "the toolchain is undeclared" is a thing the milestone's history should carry.
+  // ADR-006 §4's precedence (`gateResult`): any failing case is red; otherwise a unit that did not finish,
+  // a budget stop or the gate's own deadline expiring is not-finished; otherwise a passing run is green. A
+  // refusal from the run stays red: the suite did not answer for a reason the code's own repair names.
   const failures = outcome.report?.failures ?? [];
-  const green = outcome.refusal == null && outcome.exit === 0 && failures.length === 0;
   const report = programReport(observed);
-  const budgetMinutes = gate?.budgetMinutes ?? null;
+  const deadlineExpired = outcome.runner?.outcome === "deadline-expired";
+  const notFinished = outcome.refusal == null && (report.notFinished.length > 0 || report.notStarted > 0 || deadlineExpired);
+  const result = gateResult({ failures: failures.length, notFinished, passed: outcome.refusal == null && outcome.exit === 0 });
+  const green = satisfiesDoor({ result, scope: GATE_SCOPE });
+  const red = !green && !(notFinished && failures.length === 0);
+  const unfinished = !notFinished ? null : `not finished: ${[
+    ...report.notFinished,
+    ...(report.notStarted > 0 ? [`${report.notStarted} units not started`] : []),
+    ...(deadlineExpired ? [`the gate's own ${Math.round((outcome.runner?.deadlineMs ?? 0) / 60000)}-minute deadline expired`] : []),
+  ].join(", ")}`;
+  // The budget binds the sharded gate only (160/05 Q2): a serial run is never measured against it.
+  const budgetMinutes = mode === SHARDED ? gate?.budgetMinutes ?? null : null;
   // A run that never launched has no wall time to report, so it carries no run line.
   const run = outcome.launched === true
     ? Object.freeze({
@@ -363,8 +438,8 @@ async function runRegressionGate(input, deps = {}) {
     commit,
     instant: gateInstant(input?.now),
     scope: scopeCell({ scope: outcome.scope, widened: outcome.widened ?? [] }),
-    result: green ? "green" : "red",
-    detail: rowDetail({ green, outcome, failures, notIsolated: report.notIsolated, run }),
+    result,
+    detail: rowDetail({ red, outcome, failures, unfinished, notIsolated: report.notIsolated, run }),
   };
 
   // (6) THE APPEND — read-modify-write through the atomic seam. A malformed existing document stops
@@ -392,6 +467,7 @@ async function runRegressionGate(input, deps = {}) {
     appended: true,
     run,
     notIsolated: report.notIsolated,
+    notFinished: report.notFinished,
     slowest: report.slowest,
     logs: report.logs,
     exit: green ? 0 : 1,
@@ -473,5 +549,5 @@ function displayPath(value) {
   return path.relative(process.cwd(), value) || ".";
 }
 
-return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, regressionGateCommand, runRegressionGate };
+return { DIRTY_TREE, JOBS_INVALID, JOBS_UNDECLARED, SETTINGS_CONFLICT, STOPPED, cleanLaunchEnv, regressionGateCommand, runRegressionGate };
 }

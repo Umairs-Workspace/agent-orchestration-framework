@@ -1470,6 +1470,36 @@
     }
   },
   {
+    "id": "work:questions",
+    "input": {
+      "type": "object",
+      "properties": {
+        "all": {
+          "type": "boolean"
+        },
+        "now": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "questions"
+      ],
+      "spec": {
+        "usage": "aof work questions [--all] [--json]",
+        "flags": {
+          "all": {
+            "type": "boolean",
+            "description": "list the open questions of every workspace on this node"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "mesh:identity",
     "input": {
       "type": "object",

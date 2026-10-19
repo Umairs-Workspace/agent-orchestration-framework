@@ -2290,7 +2290,7 @@ function repairTests() {
         assert.equal(state.act.stop, "lane-open-failed");
         assert.ok(detailsOf(haltLines.at(-1)).includes(`repaired=${repairs[0].runId}`), haltLines.at(-1));
         assert.equal(h.posts.length, 1);
-      }, { stories: ["01"] }),
+      }, { git: "fake", stories: ["01"] }),
     },
     {
       name: "147/00 [outline] each lane stop is handed over when repair is on — lane-merge-refused (lane-open-failed is E2, lane-merge-conflict is E1)",
@@ -2304,7 +2304,7 @@ function repairTests() {
         assert.equal(handOver.producer, "dispatch:merge-home:refused");
         assert.ok(handOver.details.includes(`files=["${CONFLICT_FILE}"]`), handOver.details);
         assert.equal(state.act.stop, "lane-merge-refused");
-      }, { stories: ["01"] }),
+      }, { git: "fake", stories: ["01"] }),
     },
     ...[
       { example: "E3", config: undefined, flags: { noRepair: true }, halt: "conflict", stop: "lane-merge-conflict" },
@@ -2338,7 +2338,7 @@ function repairTests() {
         assert.equal(child.calls.length, 0, "no lane is driven");
         assert.equal(phase.calls.length, 0, "no drive of any phase is spawned");
         assert.equal(h.posts.length, 0);
-      }, { stories: ["01"], config: { loop: { repair: value } } }),
+      }, { git: "fake", stories: ["01"], config: { loop: { repair: value } } }),
     })),
     {
       // E6, the red-grade half of this rule, is in `loop-command-wave` (grade/01 keeps this suite
@@ -2352,7 +2352,7 @@ function repairTests() {
           assert.equal(state.act.stop, "session-needs-input");
           assert.equal(phase.repairs().length, 0, "no repair drive is spawned");
           assert.ok(lines.some((line) => line.startsWith("  ")), "the ask block is printed as before this story");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
         // E5 — the loop reaches a UAT session, over the sequential stops fixture
         const fx = await loopFixture({ uat: true });
         try {
@@ -2454,7 +2454,7 @@ function repairTests() {
         assert.ok(detailsOf(lines.at(-1)).includes("repair=refused:duplicate-run"), lines.at(-1));
         assert.equal(posts.length, 1);
         assert.equal((await storyRuns(fx, "07/01")).filter((run) => run.brief?.loop?.phase === "repair").length, 0, "nothing was minted");
-      }, { stories: ["01"], config: { loop: { heartbeatMs: 3600000 } } }),
+      }, { git: "fake", stories: ["01"], config: { loop: { heartbeatMs: 3600000 } } }),
     },
   ];
 }

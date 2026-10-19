@@ -1,0 +1,55 @@
+{
+  "runId": "20261017T191200768Z-0000",
+  "itemRef": "163",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "6494256d-a02a-4fcb-9562-cc4cbc032ddd",
+  "brief": {
+    "answers": [
+      {
+        "token": "163 Q1",
+        "question": "163 Q1 · A question whose loop has died is still on disk until the next `aof work loop --resume` clears it unanswered — anything typed into it is thrown away. How should `aof work questions` show it? (Spotting it means also reading the item's run records and its lane worktree, not just the question files.)",
+        "answer": "Show it, marked stale (Recommended)",
+        "toolUseId": "toolu_01EKzw8wDfY8GBDntmwPVLJQ",
+        "sessionId": "6494256d-a02a-4fcb-9562-cc4cbc032ddd",
+        "at": "2026-10-18T08:29:15.288Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "163 Q2",
+        "question": "163 Q2 · A lane running on another machine (the Mac or WSL worker) that stops to ask is already answerable with `aof work answer`. Should `aof work questions` list it too? It reads this machine's local mesh database (no daemon), and often the question text never reached this machine, so the row may only say 'open the worker's terminal to read it'.",
+        "answer": "List them (Recommended)",
+        "toolUseId": "toolu_01EKzw8wDfY8GBDntmwPVLJQ",
+        "sessionId": "6494256d-a02a-4fcb-9562-cc4cbc032ddd",
+        "at": "2026-10-18T08:29:15.288Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-17T19:12:00.768Z",
+  "updatedAt": "2026-10-18T08:43:09.131Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 234,
+      "output": 105398,
+      "cacheRead": 15046401,
+      "cacheCreate": 629693
+    },
+    "costUsd": 8.45694105,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 117,
+    "toolCalls": 67,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

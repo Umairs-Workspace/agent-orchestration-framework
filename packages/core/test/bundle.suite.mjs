@@ -66,6 +66,7 @@ const COMMAND_IDS = [
   "observe",
   "pay-debt",
   "promote",
+  "questions",
   "recent",
   "refine",
   "repair",
@@ -225,7 +226,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 32 commands, 7 templates, 3 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 33 commands, 7 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -235,7 +236,7 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 32, "32 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — and add-diagram, 151)");
+      assert.equal(byKind("command"), 33, "33 commands (incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — and questions, 163)");
       assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 7, "milestone/story/task/uat/spike/chore templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
@@ -350,7 +351,7 @@ export const bundleTests = [
     name: "bundle/descriptor: every resource member (agent + command) names one or more target runtimes",
     run: async () => {
       const resourceMembers = descriptorMembers().filter((m) => m.kind === "agent" || m.kind === "command");
-      assert.equal(resourceMembers.length, 40, "40 resource members (8 agents + 32 commands)");
+      assert.equal(resourceMembers.length, 41, "41 resource members (8 agents + 33 commands)");
       for (const member of resourceMembers) {
         assert.ok(Array.isArray(member.runtimes) && member.runtimes.length >= 1, `${member.id} declares >=1 runtime`);
       }

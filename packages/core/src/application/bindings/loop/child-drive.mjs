@@ -5,7 +5,7 @@ import { isPackaged } from "../../../asset-base.mjs";
 import { runBounded } from "@aof/execution/bounded-process";
 import * as api0 from "@aof/work-loop/child-drive";
 
-export function assembleLoopChildDrive({ workspaceServices }) {
+export function assembleLoopChildDrive({ workspaceServices, runStoreServices, workObserveServices, degradeServices }) {
   // Core composition; implementation is owned by @aof/work-loop.
 
   const { globalMeshPaths } = workspaceServices;
@@ -14,13 +14,22 @@ export function assembleLoopChildDrive({ workspaceServices }) {
     loopFixFilePath,
     loopRepairFilePath,
     childDriveOutcome,
-    spawnLaneDrive
+    spawnLaneDrive,
+    withDriveStatus
   } = createChildDrive({
     getRuntimeRoot: (env) => globalMeshPaths({ env }).meshRoot,
     isPackaged,
     getCliEntry: () => fileURLToPath(new URL("../../../cli.mjs", import.meta.url)),
     runBounded,
+    // 162/ADR-004 — the status ticker's readers: the lane's run record and its Claude projects dir.
+    ...(runStoreServices == null || workObserveServices == null ? {} : {
+      driveStatusServices: {
+        readRuns: runStoreServices.readRuns,
+        claudeProjectsDir: workObserveServices.claudeProjectsDir,
+        reportDegrade: degradeServices?.reportDegrade,
+      },
+    }),
   });
 
-  return { "LANE_CANCEL_GRACE_MS": api0.LANE_CANCEL_GRACE_MS, loopFixFilePath, loopRepairFilePath, childDriveOutcome, spawnLaneDrive };
+  return { "LANE_CANCEL_GRACE_MS": api0.LANE_CANCEL_GRACE_MS, loopFixFilePath, loopRepairFilePath, childDriveOutcome, spawnLaneDrive, withDriveStatus };
 }

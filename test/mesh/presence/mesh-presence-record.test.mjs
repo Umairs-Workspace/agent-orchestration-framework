@@ -97,7 +97,8 @@ async function seedRun(milestoneDir, runId, state, createdAt = "2026-06-29T00:00
 // ── milestone 130 / story 03 / task 00 fixtures ──────────────────────────────────────────
 
 // The ELEVEN keys of a loop entry, in the frozen order 130/ADR-005 §1 fixes.
-const LOOP_ENTRY_KEYS = ["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"];
+// 162/ADR-003 §1 appends three after `stop` — the drive's session, its start and its consumed heartbeat.
+const LOOP_ENTRY_KEYS = ["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop", "sessionId", "driveStartedAt", "lastActivityAt"];
 
 // A workspace `W` (pinned `workspaceId: "w1"`) holding items 03, 03/01 and 03/02 — the three
 // the reduction is driven over. `items` are the REAL listItems rows (each with its `dir`).
@@ -495,4 +496,30 @@ export const meshPresenceRecordTests = [
       assert.match(source.slice(at, at + 800), /pub active_runs: Vec<String>/, "…and active_runs is still the frozen bare string array");
     },
   },
+  // ══ 162 task 01 — the loop entry carries its drive's session and timing (ADR-003 §1) ══
+  {
+    name: "loop-progress-in-the-ui/01 the loop entry carries its drive's session and timing — the eleven keys in their order, then its session id, its drive's start and its last activity, which is the run's consumed heartbeat",
+    async run() {
+      const fx = await makeLoopRepo();
+      try {
+        const file = await seedLoopRun(fx, "03/01", "running", loopBrief({ loopRunId: "L1" }), {
+          sessionId: "89b1d500",
+          createdAt: "2026-10-17T11:00:00.000Z",
+          heartbeatAt: "2026-10-17T11:35:55.000Z",
+        });
+        const [entry] = await readActiveLoops(fx.items, { workspaceId: "w1", stopRequestFor: () => null });
+        assert.deepEqual(Object.keys(entry).slice(0, 11), ["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"], "the eleven keys in their order");
+        assert.deepEqual(Object.keys(entry).slice(11), ["sessionId", "driveStartedAt", "lastActivityAt"], "…followed by the three, in that order");
+        assert.equal(entry.sessionId, "89b1d500", "its session id");
+        assert.equal(entry.driveStartedAt, "2026-10-17T11:00:00.000Z", "its drive's start — the run's createdAt");
+        const run = JSON.parse(await readFile(file, "utf8"));
+        assert.equal(entry.lastActivityAt, run.heartbeatAt, "its last activity is the run's consumed heartbeat — the field the loop's stall bound reads back");
+        const [bare] = await readActiveLoops(fx.items.map((item) => item), { workspaceId: "w1", stopRequestFor: () => null });
+        assert.deepEqual(bare, entry, "a read is a read: asking again answers the same entry");
+      } finally {
+        await rm(fx.repo, { recursive: true, force: true });
+      }
+    },
+  },
 ];
+

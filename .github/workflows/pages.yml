@@ -46,9 +46,10 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # The gate: story 79's control, selected through the runner's own `--only` path. Isolated by
-  # AOF_GLOBAL_HOME so the run writes no fixture into a real `~/.aof` — the same discipline every
-  # local run of this suite is held to.
+  # The gate: story 79's control, run through the shard entry — the program a selection launches
+  # (160/ADR-012), which loads that control and not the whole registry. Isolated by AOF_GLOBAL_HOME
+  # so the run writes no fixture into a real `~/.aof` — the same discipline every local run of this
+  # suite is held to.
   # ---------------------------------------------------------------------------
   gate:
     name: gate (the committed loop document is current)
@@ -69,7 +70,7 @@ jobs:
         run: node scripts/supply-chain-audit.mjs
 
       - name: Run story 79's drift control through the project's own test command
-        run: AOF_GLOBAL_HOME="$(mktemp -d)" node scripts/test.mjs --only test/arch/loop/acd-loop-document-current.test.mjs
+        run: AOF_GLOBAL_HOME="$(mktemp -d)" node scripts/test-shard.mjs test/arch/loop/acd-loop-document-current.test.mjs
 
   # ---------------------------------------------------------------------------
   # The deploy: stage -> Jekyll over the STAGED directory -> upload -> publish. Unreachable

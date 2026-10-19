@@ -38,8 +38,9 @@
 // here without invoking the real codesign binary.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, rmSync, copyFileSync, chmodSync, writeFileSync, readFileSync, cpSync } from "node:fs";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import esbuild from "esbuild";
 import { inject as postjectInject } from "postject";
 import { generateAssetManifest } from "./sea-asset-manifest.mjs";
@@ -60,6 +61,92 @@ function embeddedBuildId() {
   } catch {
     return null;
   }
+}
+
+// THE ONE BUNDLE RECIPE (160/ADR-008 §1). The release bundle (step 1 below) and the bundle the sharded
+// test run builds for its children's `aof` (`buildTestCliBundle`) both take these options, so a test runs
+// the same bundling the release ships: node-pty and the dev-server helper stay external in both.
+export const CLI_BUNDLE_RECIPE = Object.freeze({
+  bundle: true,
+  platform: "node",
+  target: "node22",
+  // node-pty is a native addon reached ONLY via the guarded dynamic load/createRequire inside
+  // terminal-ws.mjs's defaultSpawn — it must never be inlined (a .node cannot inline; ADR-002). The
+  // repository-only development server is lazy and absent from installed built-UI paths, so its public
+  // helper stays outside the bundle too. The two asset trees (src/bundle, ui/dist) need no entry: they
+  // are read at runtime through the ADR-003 seam, never `import`ed, so esbuild never sees them.
+  external: Object.freeze(["node-pty", "@aof/ui/vite-cli"]),
+});
+
+// THE TEST BUNDLE (160/ADR-008 §1-§2). The recipe above is shared; the entry and the format are not, and
+// cannot be. The SEA entry (`scripts/sea-entry.mjs`) chooses between a payload and its embedded build by
+// `process.execPath`, which under a test is node itself; and a CJS bundle has no `import.meta.url`, so
+// `coreRoot()` would anchor the package at node's install directory. So the test bundle is the CLI module
+// itself, as ESM, and every module's `import.meta` is rewritten to its own source file's: a bundle file
+// has one URL, and the source resolves its manifest, its assets and its git directory relative to each
+// module's. With that, a module in the bundle resolves every path exactly as it does from the source.
+const CLI_ENTRY = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
+const TEST_BUNDLE_BANNER = 'import { createRequire as __aofCreateRequire } from "node:module"; const require = __aofCreateRequire(import.meta.url);';
+
+const sourceAnchoredImportMeta = Object.freeze({
+  name: "source-anchored-import-meta",
+  setup(build) {
+    // esbuild compiles the filter as a Go regular expression, which refuses JavaScript's `u` flag.
+    build.onLoad({ filter: /\.[cm]?js$/ }, async (args) => {
+      const source = await readFile(args.path, "utf8");
+      if (!source.includes("import.meta.")) return undefined;
+      const url = pathToFileURL(args.path).href;
+      const contents = source
+        .replaceAll("import.meta.url", JSON.stringify(url))
+        .replaceAll("import.meta.dirname", JSON.stringify(path.dirname(args.path)))
+        .replaceAll("import.meta.filename", JSON.stringify(args.path));
+      return { contents, loader: "js", resolveDir: path.dirname(args.path) };
+    });
+  },
+});
+
+export function testCliBundleOptions(outfile, { root = repoRoot } = {}) {
+  return {
+    ...CLI_BUNDLE_RECIPE,
+    external: [...CLI_BUNDLE_RECIPE.external],
+    absWorkingDir: root,
+    entryPoints: [CLI_ENTRY],
+    format: "esm",
+    outfile,
+    banner: { js: TEST_BUNDLE_BANNER },
+    plugins: [sourceAnchoredImportMeta],
+    logLevel: "silent",
+  };
+}
+
+// Build the test bundle into `outDir`. Answers `{ bundle }`, the built file's path, or `{ unavailable }`,
+// the reason it did not build: a failed build costs the run its speed, never its correctness (§2).
+export async function buildTestCliBundle(outDir, { build = (options) => esbuild.build(options) } = {}) {
+  // Absolute, because a unit's children resolve the path from their own working directories.
+  const outfile = path.resolve(outDir, "cli.mjs");
+  try {
+    rmSync(outDir, { recursive: true, force: true });
+    mkdirSync(outDir, { recursive: true });
+    await build(testCliBundleOptions(outfile));
+    if (!existsSync(outfile)) return { unavailable: `the build wrote no ${outfile}` };
+    return { bundle: outfile };
+  } catch (error) {
+    const first = error?.errors?.[0]?.text ?? String(error?.message ?? error).split(/\r?\n/u)[0];
+    return { unavailable: first };
+  }
+}
+
+// The one line a run prints when its bundle did not build, and null when it did.
+export function cliBundleNotice(built) {
+  return built?.unavailable ? `# cli bundle unavailable: ${built.unavailable}` : null;
+}
+
+// The environment a unit is started with (§2-§3): the bundle's path when it built, and otherwise no
+// AOF_TEST_CLI_BUNDLE at all — never one inherited from whatever launched the runner.
+export function withTestCliBundle(env, built) {
+  const next = Object.fromEntries(Object.entries(env).filter(([name]) => name.toUpperCase() !== "AOF_TEST_CLI_BUNDLE"));
+  if (built?.bundle) next.AOF_TEST_CLI_BUNDLE = built.bundle;
+  return next;
 }
 
 function parseArgs(argv) {
@@ -195,24 +282,13 @@ async function main() {
   // --- 1. esbuild -> one CJS bundle, node-pty + asset trees externalized ---
   const buildResult = step("esbuild bundle (ESM -> CJS, node22, externalized node-pty + asset trees)", () =>
     esbuild.buildSync({
+      ...CLI_BUNDLE_RECIPE,
+      external: [...CLI_BUNDLE_RECIPE.external],
       absWorkingDir: repoRoot,
       entryPoints: [path.join(repoRoot, "scripts", "sea-entry.mjs")],
-      bundle: true,
-      platform: "node",
       format: "cjs",
-      target: "node22",
       outfile: bundleOut,
       metafile: true,
-      // node-pty is a native addon reached ONLY via the guarded dynamic
-      // load/createRequire inside terminal-ws.mjs's defaultSpawn — it must
-      // never be inlined (a .node cannot inline; ADR-002), hence the ONE
-      // external entry. The two asset trees (src/bundle, ui/dist) need no
-      // entry here: they are read at runtime (readFile/readdir through the
-      // ADR-003 seam), never `import`ed, so esbuild never sees them as
-      // inputs — they ship as the sidecar this script copies below.
-      // The repository-only development server is lazy and absent from installed
-      // built-UI paths. Keep its public helper outside the native runtime bundle.
-      external: ["node-pty", "@aof/ui/vite-cli"],
       define: { __AOF_EMBEDDED_BUILD_ID__: JSON.stringify(embeddedBuildId()) },
       logLevel: "info",
     })

@@ -922,6 +922,24 @@
       }
     },
     {
+      "id": "questions",
+      "kind": "command",
+      "file": "commands/questions.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/workflow.md",
+          "section": "questions"
+        }
+      }
+    },
+    {
       "id": "recent",
       "kind": "command",
       "file": "commands/recent.md",

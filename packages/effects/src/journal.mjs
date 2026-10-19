@@ -30,7 +30,8 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
           409,
         );
       }
-      migrateSchema(db);
+      // A current schema is only read (160/ADR-013 §3), as the projection store's is.
+      if (existing !== EFFECTS_JOURNAL_SCHEMA_VERSION) migrateSchema(db);
       return { db, databasePath, schemaVersion: EFFECTS_JOURNAL_SCHEMA_VERSION, close: () => db.close() };
     } catch (error) {
       try {

@@ -35,6 +35,9 @@ import { loopCommandSequencingTests } from "./loop-command-sequencing.test.mjs";
 import { loopCommandGateTests } from "./loop-command-gate.test.mjs";
 import { loopCommandStopsTests } from "./loop-command-stops.test.mjs";
 import { loopCommandResumeTests } from "./loop-command-resume.test.mjs";
+// story 163 — `aof work questions`, the read side of `aof work answer`, end to end over real ask
+// files, run records, lanes, descriptors and the mesh store; and its /aof:questions wrapper.
+import { loopCommandQuestionsTests } from "./loop-command-questions.test.mjs";
 // milestone 126 / story 00, tasks 02-03 — FF-12602's DRIVEN half: what reaches the one injected
 // printer while a drive or a gate is still pending, and what `--quiet` does and does not silence.
 // The structural half is `test/arch/loop/acd-loop-narrates-in-flight.test.mjs`.
@@ -268,6 +271,7 @@ export const tests = [
   ...loopCommandGateTests,
   ...loopCommandStopsTests,
   ...loopCommandResumeTests,
+  ...loopCommandQuestionsTests,
   ...loopCommandNarrationTests,
   // milestone 129 / story 04 — the wave tick (tasks 00, 02–05) and its phases, gate, signals and reconcile (tasks 01, 06).
   ...loopCommandWaveTests,

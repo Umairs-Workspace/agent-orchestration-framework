@@ -136,9 +136,11 @@ Preflight names that dependency and the local alternative. It never silently swi
 
 ## Protocol profile and proof limits
 
-The shipped `codex-app-server-v1` profile currently admits CLI **0.160.0** and
-**0.162.0-alpha.2** over
-`app-server --listen stdio://`. It refuses other versions, missing required capabilities,
+The shipped `codex-app-server-v1` profile requires CLI **0.160.0 or newer** over
+`app-server --listen stdio://`. Newer prereleases such as `0.162.0-alpha.17.2`
+pass the version gate; prereleases of `0.160.0` itself do not. Build metadata
+does not affect admission. Version admission does not certify protocol compatibility:
+AOF still refuses missing required capabilities,
 invalid completion envelopes and unsupported mandatory requests. In particular, the
 0.130.0 CLI observed during initial research is not admitted by this implementation.
 There is no exec, PTY, model or Claude fallback for a failed Codex launch.
@@ -146,7 +148,7 @@ There is no exec, PTY, model or Claude fallback for a failed Codex launch.
 On Windows, AOF resolves native executables behind npm launchers without running a
 shell. It tries compatible PATH installations first, then the registered Codex
 desktop app if those installations are unavailable or incompatible. An explicit
-executable override is never replaced. A missing or unsupported installation
+executable override is never replaced. A missing, unrecognized or below-minimum installation
 produces a diagnostic rather than falling back to Claude.
 
 The desktop build `0.162.0-alpha.2` has passed live Astra/high structured completion,

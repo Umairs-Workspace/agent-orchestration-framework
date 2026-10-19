@@ -34,6 +34,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const openEffectsJournal = _aofApplication.effects.journal.openEffectsJournal;
+import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 
@@ -171,4 +173,54 @@ export const archTests = [
       }
     },
   },
+  // ══════ FF-16015 (160/12, ADR-013 §3): a store opens without rewriting a current schema ══════
+  {
+    name: "FF-16015 160/12 [outline] Opening a store at each schema version (6 rows)",
+    run: async () => {
+      const runtime = await importSqliteRuntime();
+      const stores = [
+        ["projection store", (home, sqlite) => openGlobalWorkProjectionStore({ env: { ...process.env, AOF_GLOBAL_HOME: home }, sqlite }), [/PRAGMA journal_mode\s*=\s*WAL/iu, /PRAGMA busy_timeout\s*=\s*[1-9]/iu]],
+        ["effects journal", (home, sqlite) => openEffectsJournal({ env: { ...process.env, AOF_GLOBAL_HOME: home }, sqlite }), [/PRAGMA busy_timeout\s*=\s*[1-9]/iu]],
+      ];
+      for (const [label, open, pragmas] of stores) {
+        const home = await mkdtemp(path.join(os.tmpdir(), "aof-store-open-"));
+        try {
+          let seen = recordingSqlite(runtime);
+          let store = await open(home, seen.runtime);
+          const databasePath = store.databasePath ?? store.paths?.databasePath;
+          store.close();
+          assert.equal(seen.writes().filter((sql) => /^BEGIN IMMEDIATE/iu.test(sql)).length, 1, `${label}, no schema: one write transaction`);
+          assert.ok(seen.writes().some((sql) => /CREATE TABLE/iu.test(sql)), `${label}, no schema: it creates its tables`);
+
+          seen = recordingSqlite(runtime);
+          store = await open(home, seen.runtime);
+          store.close();
+          assert.deepEqual(seen.writes(), [], `${label}, the current version: executes no write statement`);
+          for (const pragma of pragmas) assert.ok(seen.statements.some((sql) => pragma.test(sql)), `${label}, the current version: the open still applies ${pragma}`);
+
+          const db = new runtime.DatabaseSync(databasePath);
+          db.prepare("UPDATE aof_schema SET value = 999 WHERE key = 'version'").run();
+          db.close();
+          await assert.rejects(open(home, runtime), /newer than this AOF build supports/u, `${label}, a newer version: refused`);
+        } finally {
+          await rm(home, { recursive: true, force: true });
+        }
+      }
+    },
+  },
 ];
+
+// FF-16015's recorder: the real SQLite runtime, with every statement a connection executes or prepares kept.
+// A write is a statement that changes the database; the pragmas are asserted on their own.
+function recordingSqlite(runtime) {
+  const statements = [];
+  class RecordingDatabase extends runtime.DatabaseSync {
+    exec(sql) { statements.push(String(sql).trim()); return super.exec(sql); }
+    prepare(sql) { statements.push(String(sql).trim()); return super.prepare(sql); }
+  }
+  return {
+    statements,
+    runtime: { ...runtime, DatabaseSync: RecordingDatabase },
+    writes: () => statements.filter((sql) => /^(BEGIN|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|REPLACE|COMMIT)\b/iu.test(sql)),
+  };
+}

@@ -107,6 +107,7 @@
     "./commands/item-status": "./src/commands/item-status.mjs",
     "./commands/regression-gate": "./src/commands/regression-gate.mjs",
     "./commands/continue": "./src/commands/continue.mjs",
+    "./commands/questions": "./src/commands/questions.mjs",
     "./commands/resume": "./src/commands/resume.mjs",
     "./commands": "./src/commands.mjs",
     "./acceptor/source-units": "./src/acceptor/source-units.mjs",

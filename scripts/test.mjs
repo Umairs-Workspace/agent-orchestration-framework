@@ -10,8 +10,7 @@ import { tests as ownedWorkLoopRuntimeTests } from "../packages/work-loop/test/r
 import { tests as ownedWorkTests } from "../packages/work/test/index.mjs";
 import { tests as ownedKnowledgeTests } from "../packages/knowledge/test/index.mjs";
 import { tests as ownedFoundationTests } from "../packages/foundation/test/index.mjs";
-import { runCases, runnerShapedExports } from "./test-harness.mjs";
-import path from "node:path";
+import { loadSelected, runCases, runnerShapedExports } from "./test-harness.mjs";
 import { pathToFileURL } from "node:url";
 // THE SUITE REGISTRY — it names DIRECTORIES, not suites (119/03, ADR-010 §1).
 //
@@ -275,29 +274,9 @@ export function selectionArgv(argv) {
 // Its one home is `test-harness.mjs`, shared with the sharded runner's children (`scripts/test-shard.mjs`).
 export { runnerShapedExports };
 
-// Import each named file and take its tests. A file that is not on disk, that does not evaluate,
-// or that exports nothing runner-shaped is UNUSABLE and is reported BY PATH - never dropped, and
-// never left to contribute zero tests in silence, which would read as a green run.
-export async function loadSelected(files) {
-  const selected = [];
-  const unusable = [];
-  for (const file of files) {
-    let module;
-    try {
-      module = await import(pathToFileURL(path.resolve(file)).href);
-    } catch (error) {
-      unusable.push({ file, reason: `could not be loaded: ${error?.message ?? String(error)}` });
-      continue;
-    }
-    const found = runnerShapedExports(module);
-    if (found.length === 0) {
-      unusable.push({ file, reason: "exports no array of { name, run } entries, so there is nothing in it to run" });
-      continue;
-    }
-    for (const array of found) selected.push(...array);
-  }
-  return { selected, unusable };
-}
+// Import each named file and take its tests, reporting an unusable file BY PATH. Its one home is
+// `test-harness.mjs` too, shared with the shard entry a focused `aof test` launches (160/ADR-003).
+export { loadSelected };
 
 // The selected run, through THE SAME execution loop the full path calls. One loop, because a
 // second copy of it is how the per-test global-home isolation, the `ok -`/`not ok -` printing and

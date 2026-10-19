@@ -30,8 +30,8 @@
 // to buy this one milestone's move.
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
-import { execFile } from "node:child_process";
-import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { ChildProcess, execFile } from "node:child_process";
+import { mkdtemp, mkdir, readFile, readdir, realpath, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -254,6 +254,87 @@ async function realSweep() {
   return { result: await sweep({ documents, srcFiles, renameMap: await renameMapFromHistory() }), documents, srcFiles };
 }
 
+// ── 160/ADR-007 · FF-16007 — citation history is read only when a citation misses on disk ──────────
+//
+// The real `work:doctor` and `work:validate` commands, run in this process over a fixture stream, with
+// every git process they start counted where every spawn passes (`ChildProcess.prototype.spawn`). Only
+// the three history reads and the memo's `rev-parse HEAD` are classified: the claim is about history.
+const HISTORY_READS = Object.freeze({
+  renameLog: (args) => args[0] === "log" && args.includes("--diff-filter=R"),
+  deletedLog: (args) => args[0] === "log" && args.includes("--diff-filter=D"),
+  historyDiff: (args) => args[0] === "diff" && args.includes("--unified=10000"),
+  revParseHead: (args) => args.length === 2 && args[0] === "rev-parse" && args[1] === "HEAD",
+});
+
+function historyReadCounts(spawns) {
+  return Object.fromEntries(Object.entries(HISTORY_READS).map(([name, matches]) => [name, spawns.filter(matches).length]));
+}
+
+async function gitSpawnsUnder(dir, run) {
+  const under = (await realpath(dir)).toLowerCase();
+  const spawns = [];
+  const original = ChildProcess.prototype.spawn;
+  ChildProcess.prototype.spawn = function countedSpawn(options) {
+    const file = path.basename(String(options?.file ?? "")).toLowerCase();
+    const cwd = options?.cwd == null ? "" : path.resolve(String(options.cwd)).toLowerCase();
+    if ((file === "git" || file === "git.exe") && cwd.startsWith(under)) spawns.push(options.args.slice(1));
+    return original.call(this, options);
+  };
+  try {
+    return { result: await run(), spawns };
+  } finally {
+    ChildProcess.prototype.spawn = original;
+  }
+}
+
+// A project whose wiki page, story `reads:` and fitness register each cite `cites`; `src/present.mjs` and
+// the cited control exist. `checkout` makes it a git repository; `renamed` records `src/old.mjs` →
+// `src/new.mjs` in a commit.
+async function withCitingProject({ cites, checkout = true, renamed = false }, run) {
+  const dir = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-lazy-history-")));
+  const write = async (rel, text) => {
+    await mkdir(path.dirname(path.join(dir, rel)), { recursive: true });
+    await writeFile(path.join(dir, rel), text, "utf8");
+  };
+  try {
+    await write(".aof/aof.config.json", JSON.stringify({ name: "fixture", work: { dir: "./wiki/work" } }, null, 2));
+    await write("src/present.mjs", "export const present = 1;\n");
+    await write("test/arch/acd-fixture-present.test.mjs", "export const archTests = [];\n");
+    if (checkout) {
+      const git = (...args) => execFileAsync("git", args, { cwd: dir, encoding: "utf8", windowsHide: true });
+      await git("init", "-q");
+      await git("config", "user.email", "probe@example.invalid");
+      await git("config", "user.name", "probe");
+      if (renamed) await write("src/old.mjs", "export const moved = 1;\n");
+      await git("add", "-A");
+      await git("commit", "-qm", "seed");
+      if (renamed) {
+        await git("mv", "src/old.mjs", "src/new.mjs");
+        await git("commit", "-qm", "move");
+      }
+    }
+    const milestone = "wiki/work/01_milestone_fixture";
+    await write(`${milestone}/SPEC.md`, "---\ntype: milestone\nnumber: 01\nslug: fixture\ntitle: \"fixture\"\nstatus: in-progress\nschema: 1\n---\n# 01 · fixture\n");
+    await write(`${milestone}/ARCHITECTURE.md`, "---\ndoc: architecture\n---\n# fixture\n\n## Fitness functions\n\n| id | invariant | enforced by (arch-test) | from |\n|---|---|---|---|\n| FF-0101 | an invariant | `test/arch/acd-fixture-present.test.mjs` | ADR-001 |\n");
+    await write(`${milestone}/stories/00_story_fixture/STORY.md`, `---\ntype: story\nnumber: 00\nslug: fixture\ntitle: "fixture"\nparent: 01\nstatus: not-started\nschema: 1\ndepends: []\nreads: [${cites}]\nfiles: []\n---\n# 00 · fixture\n`);
+    await mkdir(path.join(dir, milestone, "stories/00_story_fixture/tasks"), { recursive: true });
+    await write("wiki/notes.md", `# notes\n\nThe fixture reads \`${cites}\`.\n`);
+    return await run(dir);
+  } finally {
+    await rm(dir, { recursive: true, force: true });
+  }
+}
+
+async function runCommand(name, dir) {
+  const { defaultApplication } = await import("aof/default-application");
+  const { defaultWorkspace } = await import("aof/workspace-services");
+  const ctx = { workspace: await defaultWorkspace.work.loadWorkspace(dir) };
+  return defaultApplication.getCommand(name).run({}, ctx);
+}
+
+const NO_HISTORY_READ = Object.freeze({ renameLog: 0, deletedLog: 0, historyDiff: 0, revParseHead: 0 });
+const HISTORY_READ_ONCE = Object.freeze({ renameLog: 1, deletedLog: 1, historyDiff: 1, revParseHead: 1 });
+
 export const archTests = [
   {
     name: "arch/119 FF-11903: one resolver answers every citation — at HEAD, or through a rename this repository recorded",
@@ -361,7 +442,8 @@ export const archTests = [
 
       const edge = stripComments(await readFile(path.join(root, EDGE), "utf8"));
       assert.match(edge, /execFileAsync\("git", args/u, `${EDGE} is the module that reads the repository's history`);
-      assert.match(edge, /renameMap: await readRenameMap\(/u, "…and hands the derived map to the snapshot as plain data, exactly as projectRoot already is");
+      assert.match(edge, /const history = readRenameMap\(/u, "…and hands the snapshot a history LOADER as data, exactly as projectRoot already is (160/ADR-007)");
+      assert.match(edge, /^\s*history,$/mu, "…passed to the snapshot, which loads it only on a miss");
       assert.match(edge, /readCitationHistory\(projectRoot, run\)/u, "…using the common history reader, which owns the resolver's argv and recorded module links");
     },
   },
@@ -470,6 +552,82 @@ export const archTests = [
       } finally {
         await rm(dir, { recursive: true, force: true });
       }
+    },
+  },
+  {
+    name: "160/06 task00 [outline] A command over a stream whose citations all resolve spawns no git for history (2 rows)",
+    run: async () => {
+      for (const command of ["work:doctor", "work:validate"]) {
+        await withCitingProject({ cites: "src/present.mjs" }, async (dir) => {
+          const { result, spawns } = await gitSpawnsUnder(dir, () => runCommand(command, dir));
+          assert.ok(Array.isArray(result.findings), `${command} answered its findings envelope`);
+          assert.deepEqual(historyReadCounts(spawns), NO_HISTORY_READ, `${command}: no "log" walk, no history "diff" and no "rev-parse HEAD" for the memo (spawned: ${JSON.stringify(spawns)})`);
+        });
+      }
+    },
+  },
+
+  {
+    name: "160/06 task00 A citation of a renamed file still resolves through history",
+    run: async () => {
+      await withCitingProject({ cites: "src/old.mjs", renamed: true }, async (dir) => {
+        const { result, spawns } = await gitSpawnsUnder(dir, () => runCommand("work:doctor", dir));
+        assert.deepEqual(historyReadCounts(spawns), HISTORY_READ_ONCE, "history was read once");
+        assert.deepEqual(result.findings.filter((finding) => finding.message?.includes("src/old.mjs")), [], "the citation resolves to src/new.mjs, so doctor reports nothing for it, exactly as before this story");
+        const { result: validated } = await gitSpawnsUnder(dir, () => runCommand("work:validate", dir));
+        assert.deepEqual(validated.findings.filter((finding) => finding.problem?.includes("src/old.mjs")), [], "…and validate resolves the same reads entry through the same history");
+      });
+    },
+  },
+
+  {
+    name: "160/06 task00 A citation history cannot resolve reports as it did",
+    run: async () => {
+      await withCitingProject({ cites: "src/never-existed.mjs" }, async (dir) => {
+        const { result, spawns } = await gitSpawnsUnder(dir, () => runCommand("work:validate", dir));
+        const story = path.join(dir, "wiki", "work", "01_milestone_fixture", "stories", "00_story_fixture", "STORY.md");
+        assert.deepEqual(
+          result.findings.filter((finding) => finding.problem?.includes("src/never-existed.mjs")),
+          [{ path: story, problem: 'story reads path "src/never-existed.mjs" does not exist' }],
+          "the finding is byte-identical to the one validate reported before this story",
+        );
+        assert.equal(historyReadCounts(spawns).renameLog, 1, "…and it was reached through history, which was read for the miss");
+      });
+    },
+  },
+
+  {
+    name: "160/06 task00 A directory that is not a checkout still answers an empty map, and only on a miss",
+    run: async () => {
+      await withCitingProject({ cites: "src/missing.mjs", checkout: false }, async (dir) => {
+        const result = await runCommand("work:doctor", dir);
+        assert.deepEqual(
+          result.findings.filter((finding) => finding.code === "wiki-source-unresolved").map((finding) => finding.message),
+          ["wiki/notes.md cites src/missing.mjs (first at line 3), which resolves to no current file and has no recorded move to one"],
+          "the miss is reported as it was, and no error is raised",
+        );
+      });
+    },
+  },
+
+  {
+    name: "arch/160 FF-16007: doctor and validate load history through a loader, on a miss, and the red probe — an eager load — is detected",
+    run: async () => {
+      const edge = stripComments(await readFile(path.join(root, EDGE), "utf8"));
+      const spine = stripComments(await readFile(path.join(root, SPINE), "utf8"));
+      const validate = stripComments(await readFile(path.join(root, "packages/work/src/commands/validate.mjs"), "utf8"));
+      const tune = stripComments(await readFile(path.join(root, "packages/work/src/commands/tune.mjs"), "utf8"));
+      const eager = (source) => /await readRenameMap\([^)]*\)\.load\(\)|renameMap: await readRenameMap\(/u.test(source);
+      assert.match(edge, /function readRenameMap\(projectRoot, runGit = null\) \{\s*if \(projectRoot == null\) return null;\s*let loaded = null;\s*return Object\.freeze\(\{ load: \(\) => \(loaded \?\?= readHistory\(projectRoot, runGit\)\) \}\);/u, "readRenameMap builds a loader that reads history once, on its first load()");
+      for (const [name, source] of [["doctor", edge], ["validate", validate], ["tune", tune]]) assert.equal(eager(source), false, `${name} never loads history eagerly`);
+      assert.match(spine, /if \(controlProbes\[control\] === true\) continue;\s*renameMap \?\?= history == null \? null : await history\.load\(\);/u, "the snapshot loads history only past a miss");
+      assert.match(validate, /if \(target == null\) \{[\s\S]*?resolveCitedPath\(resolved\.projectPath, \{ renameMap: await history\?\.load\(\) \?\? null \}\)/u, "validate loads history only where a reads entry missed on disk");
+      assert.match(tune, /if \(history != null && citationMissedOnDisk\(resolved\)\) resolved = resolveWith\(await history\.load\(\)\);/u, "tune re-resolves through history only when a cited document missed");
+
+      // THE RED PROBE — load history eagerly again, at the doctor edge.
+      const reverted = edge.replace("const history = readRenameMap(ctx.workspace.projectRoot ?? null);", "const history = readRenameMap(ctx.workspace.projectRoot ?? null); await readRenameMap(ctx.workspace.projectRoot ?? null).load();");
+      assert.notEqual(reverted, edge, "the mutation changed the edge");
+      assert.equal(eager(reverted), true, "an eager load is red");
     },
   },
 ];

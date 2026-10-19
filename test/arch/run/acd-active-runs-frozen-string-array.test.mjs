@@ -332,7 +332,7 @@ export const archTests = [
         // its workspace attribution, a run entry never does.
         assert.deepEqual(
           Object.keys(record.sessions[0]),
-          ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"],
+          ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"],
           "a session entry carries its workspace attribution — a run entry never does",
         );
         assert.equal(typeof record.sessions[0].workspaceId, "string", "…and that attribution is a real value on the wire, which is the fact ADR-004 needed");

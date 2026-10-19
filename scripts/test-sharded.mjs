@@ -16,24 +16,49 @@
 //   - A failed unit is re-run ONCE, alone, after the pool drains. Red again = a failure. Green alone = a test that is
 //     not isolated, logged by name as `# not isolated - <case>` and not a failure; --strict makes it fail the run.
 //   - The report text and the exit decision are `scripts/test-sharded-report.mjs`'s, a pure module (144).
+//   - The pool is `scripts/test-sharded-pool.mjs`'s (160/04): it stops when this process's stdin pipe ends —
+//     the gate ending it on a stop, or the parent dying — killing every in-flight unit, and a stopped run exits
+//     non-zero whatever its units answered.
 //
-//   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--unit-timeout-min M] [--strict] [--no-lanes] [--plan]
+//   - Before the pool starts it builds ONE bundle of the CLI from the release's recipe (160/ADR-008), and every
+//     unit's child `aof` loads it through AOF_TEST_CLI_BUNDLE. A failed build costs speed, not correctness: the
+//     units run the source, and the run says `# cli bundle unavailable: <reason>`.
+//
+//   - At its budget (`--budget-min B`, 160/ADR-006 §2) the run stops: every in-flight unit is killed and reported
+//     `# not finished - <unit>`, the queue left is `# not started: <n> units`, and the run exits non-zero. A unit killed
+//     at `--unit-timeout-min` is not finished too, never a `not ok` line, and gets no alone-retry.
+//
+//   - Whole files estimated under --pack-seconds (15) are packed, largest first, into units of about
+//     --pack-target-seconds (60) (160/ADR-010): one process, but its timings, lost cases and not-finished lines
+//     still name each file.
+//
+//   node scripts/test-sharded.mjs [--jobs N] [--split-seconds S] [--pack-seconds P] [--pack-target-seconds T] [--unit-timeout-min M] [--budget-min B] [--strict] [--no-lanes] [--plan]
 import { execFileSync, spawn } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync, existsSync, mkdtempSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { runnerShapedExports, suiteCaseChunks } from "./test-harness.mjs";
-import { fileTimings, lostUnitFailure, registryRefusal, shardedExit, shardedReport } from "./test-sharded-report.mjs";
+import { fileEstimate, packUnits, parseShard, planCoverageProblem, planSummary, runnerShapedExports, shardArgs, shardPlan, suiteCaseChunks } from "./test-harness.mjs";
+import { fileTimings, registryRefusal, shardedExit, shardedReport } from "./test-sharded-report.mjs";
+import { poolExit, runPool, stdinIsPipe } from "./test-sharded-pool.mjs";
+import { buildTestCliBundle, cliBundleNotice, withTestCliBundle } from "./build-sea.mjs";
 
 const repo = fileURLToPath(new URL("../", import.meta.url));
 const argv = process.argv.slice(2);
 const option = (name, fallback) => { const at = argv.indexOf(name); return at < 0 ? fallback : Number(argv[at + 1]); };
 const JOBS = option("--jobs", Math.max(2, Math.min(16, (os.availableParallelism?.() ?? os.cpus().length) - 4)));
 const SPLIT_SECONDS = option("--split-seconds", 60);
+const PACK_SECONDS = option("--pack-seconds", 15);
+const PACK_TARGET_SECONDS = option("--pack-target-seconds", 60);
 const UNIT_TIMEOUT_MS = option("--unit-timeout-min", 20) * 60_000;
+const BUDGET_MS = argv.includes("--budget-min") ? option("--budget-min", null) * 60_000 : null;
 const STRICT = argv.includes("--strict");
 const LANES = !argv.includes("--no-lanes");
+const text = (name) => { const at = argv.indexOf(name); return at < 0 ? null : argv[at + 1] ?? ""; };
+// ONE SHARD OF THE PLAN (160/ADR-014 §1–2), for a pull request's suite split across jobs, and its report as JSON.
+const SHARD = text("--shard") == null ? null : parseShard(text("--shard"));
+if (SHARD?.error) { console.error(SHARD.error); process.exit(1); }
+const REPORT_JSON = text("--report-json");
 const slash = (value) => value.replaceAll("\\", "/");
 const rel = (file) => slash(path.relative(repo, file));
 const started = Date.now();
@@ -86,14 +111,23 @@ console.log(`# sharded: ${tests.length} registered cases from ${units.size} file
 // 2. WORK UNITS, longest first; a file is one unit unless it declares independentCases (then a slow one is chunked).
 const timingsSource = [timingsPath, mainTimingsPath].find((candidate) => candidate && existsSync(candidate));
 const timings = timingsSource ? JSON.parse(readFileSync(timingsSource, "utf8")) : {};
-const plan = [];
+const filePlan = [];
 for (const [file, positions] of units) {
   const key = rel(file);
-  const seconds = timings[key]?.seconds ?? positions.length * 0.5;
+  const seconds = fileEstimate(timings, key, positions.length);
   const chunks = suiteCaseChunks(positions, { independentCases: independent.has(file), seconds, splitSeconds: SPLIT_SECONDS });
   for (const slice of chunks) {
-    plan.push({ key, file, positions: slice, chunked: chunks.length > 1, estimate: seconds * (slice.length / positions.length) });
+    filePlan.push({ key, file, positions: slice, chunked: chunks.length > 1, estimate: seconds * (slice.length / positions.length) });
   }
+}
+// SHORT FILES SHARE A UNIT (160/ADR-010): a whole file estimated under --pack-seconds packs with others into a
+// unit of about --pack-target-seconds, so the run starts about a thousand fewer processes. The packed plan must
+// still run every registered case exactly once, or the run refuses before any unit starts.
+const plan = packUnits(filePlan, { packSeconds: PACK_SECONDS, targetSeconds: PACK_TARGET_SECONDS });
+const coverage = planCoverageProblem(plan, units);
+if (coverage != null) {
+  console.error(coverage);
+  process.exit(1);
 }
 // THE INTEGRATION LANE IS SHARDED BY FEATURE (2026-10-13). Run as one unit its ~350 scenarios
 // took ~25 min serially and became the run's long pole. Each feature is independent (a temp
@@ -110,67 +144,61 @@ if (LANES) {
   plan.push({ key: "lanes (cargo)", lanes: true, positions: [], env: { AOF_INTEGRATION_FEATURES: "" }, estimate: timings["lanes (cargo)"]?.seconds ?? 30 });
 }
 plan.sort((a, b) => b.estimate - a.estimate);
+// The whole plan has passed its coverage check; a shard now keeps only its own bin, and counts only its cases.
+if (SHARD != null) {
+  const own = shardPlan(plan, SHARD.count)[SHARD.index - 1];
+  plan.splice(0, plan.length, ...own.sort((a, b) => b.estimate - a.estimate));
+  console.log(`# shard ${SHARD.index}/${SHARD.count}: ${plan.length} units`);
+}
+const registeredHere = SHARD == null ? tests.length : plan.filter((unit) => !unit.lanes).reduce((sum, unit) => sum + unit.positions.length, 0);
 if (argv.includes("--plan")) {
-  console.log(`# plan: ${plan.length} units; the heaviest ${Math.min(10, plan.length)} (estimate from recorded timings):`);
+  console.log(planSummary(plan));
+  console.log(`# the heaviest ${Math.min(10, plan.length)} (estimate from recorded timings):`);
   for (const unit of plan.slice(0, 10)) console.log(`  ${unit.estimate.toFixed(0).padStart(5)}s  ${unit.positions.length || "-"} cases  ${unit.key}${unit.chunked ? " (chunk)" : ""}`);
   process.exit(0);
 }
 
-// 3. THE POOL.
-function runUnit(unit, label) {
-  return new Promise((resolve) => {
-    const home = mkdtempSync(path.join(os.tmpdir(), "aof-shard-home-"));
-    const args = unit.args ?? (unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), unit.file, unit.positions.join(",")]);
-    const begun = Date.now();
-    const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...process.env, ...(unit.env ?? {}), AOF_GLOBAL_HOME: home } });
-    let output = "";
-    child.stdout.on("data", (chunk) => { output += chunk; });
-    child.stderr.on("data", (chunk) => { output += chunk; });
-    const timer = setTimeout(() => { output += `\nnot ok - ${unit.key} killed after ${UNIT_TIMEOUT_MS / 60000} min\n`; child.kill(); }, UNIT_TIMEOUT_MS);
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      try { rmSync(home, { recursive: true, force: true }); } catch { /* best-effort */ }
-      const executed = Number(/^# executed (\d+) cases/m.exec(output)?.[1] ?? -1);
-      const failed = [...output.matchAll(/^not ok - (.*)$/gm)].map((match) => match[1]);
-      const lost = !unit.lanes && executed !== unit.positions.length;
-      const ok = code === 0 && failed.length === 0 && !lost;
-      if (lost) failed.push(lostUnitFailure(unit.key, executed, unit.positions.length));
-      const result = { unit, ok, code, seconds: (Date.now() - begun) / 1000, executed, failed, output };
-      writeFileSync(path.join(outDir, `${label}.log`), output);
-      resolve(result);
-    });
-  });
-}
-const results = [];
-let next = 0, done = 0;
-async function worker() {
-  while (next < plan.length) {
-    const unit = plan[next++];
-    const result = await runUnit(unit, `u${String(plan.indexOf(unit)).padStart(4, "0")}`);
-    results.push(result);
-    done += 1;
-    if (!result.ok || result.seconds > 30) console.log(`[${done}/${plan.length}] ${result.ok ? "ok  " : "FAIL"} ${result.seconds.toFixed(0).padStart(4)}s ${unit.key}${unit.chunked ? ` (chunk of ${unit.positions.length})` : ""}`);
-  }
-}
-await Promise.all(Array.from({ length: Math.min(JOBS, plan.length) }, worker));
+// 3. THE CLI BUNDLE, built once, before the first unit starts (160/ADR-008 §2). Into this run's own directory, so
+// a second run in the same checkout never rewrites a bundle this run's children are loading; removed at the end.
+const cliBundleDir = path.join(outDir, "cli-bundle");
+const cliBundle = await buildTestCliBundle(cliBundleDir);
+const cliBundleLine = cliBundleNotice(cliBundle);
+if (cliBundleLine) console.log(cliBundleLine);
 
-// 4. ONE ALONE-RETRY for each failed unit, after the pool has drained (so it runs without the load).
-const failedUnits = results.filter((result) => !result.ok);
-const flakes = [], failures = [];
-for (const result of failedUnits) {
-  const retry = await runUnit(result.unit, `retry-${results.indexOf(result)}`);
-  (retry.ok ? flakes : failures).push({ first: result, retry });
+// 4. THE POOL, and 5. ONE ALONE-RETRY for each failed unit after it drains — both the pool module's.
+function spawnUnit(unit) {
+  const home = mkdtempSync(path.join(os.tmpdir(), "aof-shard-home-"));
+  const args = unit.args ?? (unit.lanes ? [path.join(repo, "scripts", "test.mjs"), "--lanes-only"] : [path.join(repo, "scripts", "test-shard.mjs"), ...shardArgs(unit)]);
+  const env = withTestCliBundle({ ...process.env, ...(unit.env ?? {}) }, cliBundle);
+  // The unit's home is also its claude home (160/ADR-013 §2), so its folder trust never reaches the operator's.
+  const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: { ...env, AOF_GLOBAL_HOME: home, AOF_TEST_CLAUDE_HOME: home } });
+  return { child, release: () => rmSync(home, { recursive: true, force: true }) };
 }
+const pool = await runPool(plan, {
+  jobs: JOBS,
+  spawnUnit,
+  stdin: stdinIsPipe() ? process.stdin : null,
+  unitTimeoutMs: UNIT_TIMEOUT_MS,
+  budgetMs: BUDGET_MS,
+  writeLog: (label, output) => writeFileSync(path.join(outDir, `${label}.log`), output),
+  onResult: (result, done, total) => {
+    if (!result.ok || result.seconds > 30) console.log(`[${done}/${total}] ${result.ok ? "ok  " : "FAIL"} ${result.seconds.toFixed(0).padStart(4)}s ${result.unit.key}${result.unit.chunked ? ` (chunk of ${result.unit.positions.length})` : ""}`);
+  },
+});
+rmSync(cliBundleDir, { recursive: true, force: true });
+const { results, flakes, failures, notFinished, notStarted } = pool;
+if (pool.stopped) console.log(`# stopped - ${pool.stoppedBy === "budget" ? `the ${BUDGET_MS / 60_000}-minute budget passed` : "stdin ended"}`);
 
-// 5. TIMINGS for the next schedule, and the report.
+// 6. TIMINGS for the next schedule, and the report.
 const perFile = fileTimings(results);
-for (const target of [timingsPath, mainTimingsPath].filter(Boolean)) {
+// A stopped run's killed units would teach the next schedule a duration they never had.
+for (const target of pool.stopped ? [] : [timingsPath, mainTimingsPath].filter(Boolean)) {
   try { mkdirSync(path.dirname(target), { recursive: true }); writeFileSync(target, JSON.stringify(perFile, null, 1)); } catch { /* best-effort */ }
 }
 // A unit that failed in the pool counts what its alone-retry executed: the retry ran exactly that unit's cases again.
 const retried = new Map([...flakes, ...failures].map(({ first, retry }) => [first, retry]));
 const executed = results.filter((result) => !result.unit.lanes).reduce((sum, result) => sum + Math.max(0, (retried.get(result) ?? result).executed), 0);
-const verdict = { failures, flakes, executed, registered: tests.length, strict: STRICT };
+const verdict = { failures, flakes, executed, registered: registeredHere, strict: STRICT, notFinished, notStarted };
 const report = shardedReport({
   ...verdict,
   stamp,
@@ -182,5 +210,26 @@ const report = shardedReport({
   logs: rel(outDir),
 });
 writeFileSync(path.join(outDir, "SUMMARY.txt"), report.join("\n") + "\n");
+if (REPORT_JSON) {
+  const planned = {};
+  for (const unit of plan) for (const entry of unit.files ?? (unit.lanes ? [] : [unit])) (planned[entry.key] ??= []).push(...entry.positions);
+  mkdirSync(path.dirname(path.resolve(REPORT_JSON)), { recursive: true });
+  writeFileSync(path.resolve(REPORT_JSON), JSON.stringify({
+    shard: SHARD?.index ?? 1,
+    shards: SHARD?.count ?? 1,
+    registeredTotal: tests.length,
+    registered: registeredHere,
+    executed,
+    failures: failures.map(({ first, retry }) => ({ unit: first.unit.key, cases: retry.failed.length > 0 ? retry.failed : first.failed })),
+    flakes: flakes.map(({ first }) => ({ unit: first.unit.key, cases: first.failed })),
+    notFinished,
+    notStarted,
+    stopped: pool.stopped === true,
+    wallSeconds: (Date.now() - started) / 1000,
+    summedSeconds: results.reduce((sum, result) => sum + result.seconds, 0),
+    perFile,
+    planned,
+  }, null, 1));
+}
 console.log(report.join("\n"));
-process.exit(shardedExit(verdict));
+process.exit(poolExit(pool, shardedExit(verdict)));

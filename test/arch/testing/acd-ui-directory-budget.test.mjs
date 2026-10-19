@@ -86,9 +86,9 @@ export const UI_DIRECTORY_BUDGETS = Object.freeze([
   }),
   Object.freeze({
     directory: "components",
-    ceiling: 7,
+    ceiling: 9,
     allowance: 0,
-    why: "the tree's ACTUAL shared home, and the smallest of the eight. It is the one directory whose growth is usually right — but a component earns a place here by having TWO surface importers, so the next addition is a PROMOTION out of a surface directory, which is net-zero on the tree, and never a new primitive written straight into it.",
+    why: "the tree's ACTUAL shared home, and the smallest of the eight. It is the one directory whose growth is usually right — but a component earns a place here by having TWO surface importers, so the next addition is a PROMOTION out of a surface directory, which is net-zero on the tree, and never a new primitive written straight into it. RAISED 7 -> 9 by 162/ADR-003 §2 for `loop-line.mjs` and its `.d.mts`: exactly that promotion — `fleetLoopLines` moved out of `apps/ui/src/fleet/runs.mjs` (which re-exports it) because the terminals home renders the same line and may not import the fleet, and a home copy would give the ten-minute quiet rule two homes. Two surface importers, the fleet and the home.",
   }),
   Object.freeze({
     directory: "config",

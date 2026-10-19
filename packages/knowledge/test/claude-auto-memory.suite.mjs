@@ -320,7 +320,10 @@ export const claudeAutoMemoryTests = [
 
   // ------------------------------------------------------------------- resolver ----
   test("FF-15902 locator grammar: the exact terminal :1 form only, drive colons and # are literal", () => {
-    assert.equal(parseAutoMemoryLocator("C:\\claude\\memory\\a.md:1"), "C:\\claude\\memory\\a.md");
+    // A colon inside the path is literal; only the terminal `:1` is the line. The path is the platform's own
+    // absolute form, so the drive-letter colon is the Windows instance and a colon in a segment the POSIX one.
+    if (process.platform === "win32") assert.equal(parseAutoMemoryLocator("C:\\claude\\memory\\a.md:1"), "C:\\claude\\memory\\a.md");
+    else assert.equal(parseAutoMemoryLocator("/home/u/C:/memory/a.md:1"), "/home/u/C:/memory/a.md");
     assert.equal(parseAutoMemoryLocator("/home/u/memory/a#b.md:1"), "/home/u/memory/a#b.md");
     for (const bad of ["a.md:1", "/m/a.md:2", "/m/a.md", "/m/a.md:1#/p", "/m/a.md:1#", "/m/a.txt:1", "", null]) assert.equal(parseAutoMemoryLocator(bad), null, String(bad));
   }),

@@ -456,6 +456,24 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
+      "path": ".agents/skills/aof-questions/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill"
+      },
+      "hash": "sha256:c1dca690fdd9dc17d0674eb95d2f81d9789e2091cd6133aaebd19a52afd93ee8"
+    },
+    {
+      "path": ".agents/skills/aof-questions/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
       "path": ".agents/skills/aof-recent/SKILL.md",
       "runtime": "codex",
       "resource": {
@@ -642,7 +660,7 @@
         "id": "aof-verify",
         "kind": "skill"
       },
-      "hash": "sha256:9bb89c29f7167d628af9ec129ea5afc637e447acdbd4cc74fd6dbb26b2860e92"
+      "hash": "sha256:0ff4e5890b762b2b2662998a265812b24156bd5fe3ef7df2907af243ce1b0485"
     },
     {
       "path": ".aof/frozen-set.jsonc",
@@ -1275,6 +1293,15 @@
       "hash": "sha256:ba2ff654a1aaaa317e5cc2be8bf349bfa9a1251c3841bb9877ee8f46c9066382"
     },
     {
+      "path": ".claude/commands/aof/questions.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "questions",
+        "kind": "command"
+      },
+      "hash": "sha256:97d7b979a2f76ccff179badda8a61fb9822093243e15b6916e92d09038baaf18"
+    },
+    {
       "path": ".claude/commands/aof/recent.md",
       "runtime": "claude",
       "resource": {
@@ -1344,7 +1371,7 @@
         "id": "verify",
         "kind": "command"
       },
-      "hash": "sha256:3c08461d6fbd0bcc3a2b1077c4611ebb5cfe7515b96cd448515d6d312552bf7c"
+      "hash": "sha256:5a85e1b4ecdbf8ef12fe085ae41b766ce42f1b9a9ff90a7626c5282489b52331"
     },
     {
       "path": ".claude/hooks/aof/artifact-sync-enqueue.mjs",

@@ -276,6 +276,11 @@ a story you are accepting should already read `in-review`.
   - **The ordinary path is `aof work regression-gate <NN>`.** It runs the whole tree on a CLEAN
     checkout (a dirty one is refused, naming what is dirty), and appends a row to the milestone's own
     `REGRESSION.md` carrying the commit, the instant, the scope and the result. Run it, then accept.
+  - **A `not-finished` row is no verdict on the code (160/ADR-006).** The run was held to its budget
+    and stopped, or a unit ran out of time, or the gate's own deadline expired; the door refuses it as
+    `regression-gate-not-finished`. Its repair is to re-run the gate, or to speed the run up so it
+    finishes inside its budget. **Never route a not-finished row to a code repair**, and never count
+    its unfinished units as failures: only a `red` row names failing cases.
   - **The escape is `--gate-override "<reason>"`, for an ENVIRONMENT that cannot host the run** — the
     case m66 and 63/R12 both name (a node with no browser lane, a runner that cannot start here). It
     permits the move and writes the reason into `REGRESSION.md` as its own row. It is not the way

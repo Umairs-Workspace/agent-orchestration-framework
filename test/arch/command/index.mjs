@@ -70,6 +70,7 @@ import { archTests as acdConsoleLogConfinedTests } from "./acd-console-log-confi
 import { archTests as acdRouteLogicFrameworkFreeTests } from "./acd-route-logic-framework-free.test.mjs";
 import { archTests as acdDeclaredIdSingleHomeTests } from "./acd-declared-id-single-home.test.mjs";
 import { archTests as acdCitedPathResolvesTests } from "./acd-cited-path-resolves.test.mjs";
+import { archTests as acdWikiCitationResolverTests } from "./acd-wiki-citation-resolver.test.mjs";
 import { archTests as acdPathIsNotBehaviourTests } from "./acd-path-is-not-behaviour.test.mjs";
 // milestone 119 / story 02 — `packages/core/src/commands/` gets its interior, and the one control that story
 // authors. FF-11908 (the registry CITES and does not EXPLAIN: every entry comment in
@@ -121,6 +122,7 @@ export const tests = [
   ...acdRouteLogicFrameworkFreeTests,
   ...acdDeclaredIdSingleHomeTests,
   ...acdCitedPathResolvesTests,
+  ...acdWikiCitationResolverTests,
   ...acdPathIsNotBehaviourTests,
   // milestone 119 / story 02 — the registry cites, it does not explain (see the import note).
   ...acdRegistryCitesNeverExplainsTests,

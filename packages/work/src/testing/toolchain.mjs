@@ -69,6 +69,7 @@ const TOOLCHAIN_CONFIG_KEYS = Object.freeze([
   "work.test.command",
   "work.test.args",
   "work.test.selectArgs",
+  "work.test.selectProgramArgs",
   "work.test.roots",
   "work.test.deadlineMs",
   "work.test.report",
@@ -322,6 +323,17 @@ function resolveTestToolchain(config, options = {}) {
   });
   if (fault != null) return fault;
 
+  // THE SELECTION'S OWN PROGRAM (160/ADR-003). Optional, and it REPLACES `args` only when a launch
+  // carries a selection — the gate's `args` (144) is the precedent. Absent is an answer: a
+  // selection launches exactly as it did before the key existed.
+  const selectProgramProblem = stringArrayProblem(declared.selectProgramArgs);
+  if (selectProgramProblem === -1) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.selectProgramArgs", "work.test.selectProgramArgs must be an array, one argument each — it replaces work.test.args when a launch carries a selection, never one string a shell would re-split");
+  }
+  if (selectProgramProblem != null) {
+    return refusal(TEST_RUNNER_DECLARATION_INVALID, "work.test.selectProgramArgs", `work.test.selectProgramArgs: index ${selectProgramProblem} holds a non-string — every element reaches the child verbatim, so it must already be a string`);
+  }
+
   const { problem, resolved } = compileProgram(declared.command, TEST_RUNNER_UNRESOLVABLE, "work.test.command", options);
   if (problem != null) return problem;
 
@@ -332,6 +344,7 @@ function resolveTestToolchain(config, options = {}) {
       program: resolved,
       args: Object.freeze([...(declared.args ?? [])]),
       selectArgs: Object.freeze([...(declared.selectArgs ?? [])]),
+      selectProgramArgs: declared.selectProgramArgs === undefined ? null : Object.freeze([...declared.selectProgramArgs]),
       roots: Object.freeze([...(declared.roots ?? [])]),
       deadlineMs: declared.deadlineMs,
       // The WHOLE report block is carried, with only `format` defaulted: `work.rubric.report`
@@ -391,12 +404,17 @@ function resolveWorktreePrepare(config, options = {}) {
 // differs from both in what it carries: no command (the gate runs `work.test.command`, so one
 // program resolution answers both), an `args` vector that REPLACES `work.test.args` for the gate run
 // only, an optional `jobsArgs` template in which `{jobs}` expands once, and an optional
-// `budgetMinutes` the gate measures its wall time against. ABSENT IS AN ANSWER — the gate runs
+// `budgetMinutes` the gate holds the run to, with an optional `budgetArgs` template in which
+// `{minutes}` expands once (160/ADR-006 §1): the budget reaches the program through it, and the gate's
+// own launch deadline is the budget plus a two-minute grace for the runner's report. ABSENT IS AN ANSWER — the gate runs
 // `work.test` exactly as before, so a project that declares nothing sees no change. PRESENT AND
 // FAULTY is the test runner's own refusal, keyed by the field, raised at compile time exactly as
 // the other two are.
 const TEST_GATE_KEY = "work.test.gate";
 const JOBS_TOKEN = "{jobs}";
+const MINUTES_TOKEN = "{minutes}";
+// The runner's report outlives its budget by this much before the gate's own deadline stops it.
+const BUDGET_GRACE_MS = 2 * 60 * 1000;
 
 function resolveTestGate(config) {
   const declared = config?.work?.test?.gate;
@@ -424,6 +442,13 @@ function resolveTestGate(config) {
     return fault("jobsArgs", `must carry the \`${JOBS_TOKEN}\` token in exactly one element — it is where the operator's worker count goes`);
   }
 
+  const budgetProblem = stringArrayProblem(declared.budgetArgs);
+  if (budgetProblem === -1) return fault("budgetArgs", `must be an array — it is an argv TEMPLATE in which \`${MINUTES_TOKEN}\` expands once, not a string`);
+  if (budgetProblem != null) return fault("budgetArgs", `holds a non-string at index ${budgetProblem} — an argv template is a vector of strings`);
+  if (declared.budgetArgs !== undefined && declared.budgetArgs.filter((element) => element.includes(MINUTES_TOKEN)).length !== 1) {
+    return fault("budgetArgs", `must carry the \`${MINUTES_TOKEN}\` token in exactly one element — it is where the gate's budget goes`);
+  }
+
   if (declared.budgetMinutes !== undefined
     && (typeof declared.budgetMinutes !== "number" || !Number.isFinite(declared.budgetMinutes) || declared.budgetMinutes <= 0)) {
     return fault("budgetMinutes", "must be a positive number of minutes — the wall time a whole-tree sign-off may take before the gate row calls it over budget");
@@ -434,6 +459,7 @@ function resolveTestGate(config) {
     gate: Object.freeze({
       args: Object.freeze([...declared.args]),
       jobsArgs: declared.jobsArgs === undefined ? null : Object.freeze([...declared.jobsArgs]),
+      budgetArgs: declared.budgetArgs === undefined ? null : Object.freeze([...declared.budgetArgs]),
       budgetMinutes: declared.budgetMinutes ?? null,
     }),
   });
@@ -442,13 +468,26 @@ function resolveTestGate(config) {
 // The toolchain the gate launches: `work.test` with its `args` replaced by the gate's, and the
 // operator's worker count expanded into `jobsArgs`. `serial`, or no gate declaration, is the
 // test runner unchanged. Which settings are LEGAL is the gate command's question, asked before it
-// gets here; this only composes.
+// gets here; this only composes. A declared budget (160/ADR-006 §1) appends its expanded
+// `budgetArgs` after the worker count, and bounds the launch at the budget plus the report's grace —
+// with or without `budgetArgs`, so a program that cannot be told is still stopped. A serial launch
+// carries neither (160/05 Q2): its deadline stays `work.test.deadlineMs`.
 function gateToolchain(toolchain, gate, { serial = false, jobs = null } = {}) {
   if (serial || gate == null) return toolchain;
   const jobsVector = jobs == null || gate.jobsArgs == null
     ? []
     : gate.jobsArgs.map((element) => element.split(JOBS_TOKEN).join(String(jobs)));
-  return Object.freeze({ ...toolchain, args: Object.freeze([...gate.args, ...jobsVector]) });
+  const budget = gate.budgetMinutes ?? null;
+  const budgetVector = budget == null || gate.budgetArgs == null
+    ? []
+    : gate.budgetArgs.map((element) => element.split(MINUTES_TOKEN).join(String(budget)));
+  // The gate is a whole-tree launch, so the selection's program goes with the args it replaces.
+  return Object.freeze({
+    ...toolchain,
+    args: Object.freeze([...gate.args, ...jobsVector, ...budgetVector]),
+    selectProgramArgs: null,
+    ...(budget == null ? {} : { deadlineMs: Math.round(budget * 60_000) + BUDGET_GRACE_MS }),
+  });
 }
 
 // ── THE ONE EXPANSION RULE (ADR-001 §3) ──────────────────────────────────────────────────────
@@ -489,9 +528,13 @@ function selectionArgs(selectArgs, files) {
 }
 
 // The full vector handed to the seam: the invariant prefix the project declared, then the
-// selection. Two halves, in that order, and nothing between them.
+// selection. Two halves, in that order, and nothing between them. A launch that carries a selection
+// takes `selectProgramArgs` as its prefix when one is declared (160/ADR-003); a launch that selects
+// nothing is the whole-tree run and keeps `args`.
 function argumentVector(toolchain, files) {
-  return Object.freeze([...toolchain.args, ...selectionArgs(toolchain.selectArgs, files)]);
+  const selection = selectionArgs(toolchain.selectArgs, files);
+  const prefix = selection.length > 0 && Array.isArray(toolchain.selectProgramArgs) ? toolchain.selectProgramArgs : toolchain.args;
+  return Object.freeze([...prefix, ...selection]);
 }
 
 // ── THE LAUNCH, AND WHAT AN OUTCOME MEANS (ADR-001 §6) ───────────────────────────────────────

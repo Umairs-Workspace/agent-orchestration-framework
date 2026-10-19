@@ -48,9 +48,10 @@ export function createValidateCommand({ declaredAdrsInStory, extractAdrBlocks, r
 // the same combined findings. The controls lane and its frozen m66 envelope stay out.
 async function validateWork(workDir, config, scopeRef, { projectRoot } = {}) {
   const findings = await validateCoreWork(workDir, config, scopeRef);
-  // Read ONCE for the whole run and handed down as data: the map is derived from git history, so it
-  // is the same answer for every story, and a per-story read would spawn git once per item.
-  const renameMap = await readRenameMap(projectRoot ?? null);
+  // A loader, built once for the whole run (160/ADR-007): the map is derived from git history, so it
+  // is the same answer for every story. It is LOADED only below, where a reads entry misses on disk,
+  // and at most once, so a stream whose every entry resolves spawns no git for history at all.
+  const history = await readRenameMap(projectRoot ?? null);
   const items = await listItems(workDir);
   const milestones = items.filter((item) => item.type === "milestone" && item.dir != null);
   const architectureReads = new Map();
@@ -156,7 +157,7 @@ async function validateWork(workDir, config, scopeRef, { projectRoot } = {}) {
           // history records a rename from it. A story that read a module somebody later moved
           // has not become malformed, and a DELIVERED story's record cannot be edited to say
           // otherwise — which is the whole reason the resolver exists.
-          if (resolveCitedPath(resolved.projectPath, { renameMap }).resolved) continue;
+          if (resolveCitedPath(resolved.projectPath, { renameMap: await history?.load() ?? null }).resolved) continue;
           // …or if it names an item the archive verb has since moved: an item created and archived
           // inside one squash leaves no rename to follow, and the archive rule is the answer
           // (m138/F-16). The resolver names the candidate; this edge probes it.

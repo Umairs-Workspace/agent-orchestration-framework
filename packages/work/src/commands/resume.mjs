@@ -2,7 +2,7 @@ import { commandError } from "@aof/contracts/error";
 import { heartbeatFromConfig } from "@aof/contracts/loop-bounds";
 
 // Core supplies configured execution, mesh, notification and transition services.
-export function createReentryCommands({ resolveItem, resolveItemExact, requireLocalCheckout, readRuns, retryReadiness, isStale, transitionRunStart, transitionStaleRunsReclaimed, listStreamCacheFirst, meshNodeIdOf, lockContextFor, answerAsk, loopAsksDir, askEnvFor, readExecutionOverlay, resolveScopedExecution, executionScopeRef, awaitsAnswer, resolveWorkspaceId, buildNotifyEnvelope, notify, loadCommandCore }) {
+export function createReentryCommands({ resolveItem, resolveItemExact, requireLocalCheckout, readRuns, retryReadiness, isStale, standingAsk, transitionRunStart, transitionStaleRunsReclaimed, listStreamCacheFirst, meshNodeIdOf, lockContextFor, answerAsk, loopAsksDir, askEnvFor, readExecutionOverlay, resolveScopedExecution, executionScopeRef, awaitsAnswer, resolveWorkspaceId, buildNotifyEnvelope, notify, loadCommandCore }) {
 // work:resume — the deterministic re-entry point after a run was killed by infra
 // (348 auto-resume).
 //
@@ -44,13 +44,6 @@ function latestFailed(runs) {
   return [...runs].reverse().find((run) => run.state === "failed") ?? null;
 }
 
-// A run's last `asks` entry when it is still unanswered, else null. Only the LAST entry counts:
-// an earlier open one under an answered last one is history, not a question.
-function openLastAsk(run) {
-  const last = Array.isArray(run.asks) ? run.asks.at(-1) : null;
-  return last != null && typeof last === "object" && last.answeredAt == null ? last : null;
-}
-
 // One sweep row per item that has something resumable, or null. Pure over the runs
 // it is handed plus the injected clock/ceiling/threshold.
 //
@@ -63,10 +56,11 @@ function readinessRow(ref, runs, { maxAttempts, nowMs, stalenessThreshold }) {
   // last question is unanswered is not an orphan however long its owner has been silent: a parked
   // ask has nobody beating it, and the stranded case below would offer to reclaim it. It outranks
   // a failed prior too, because it is the live lineage. Only this row carries `askedAt` and
-  // `parkedAt`; every other row is key for key what it was.
-  const waiting = [...running].reverse().find((run) => openLastAsk(run) != null);
+  // `parkedAt`; every other row is key for key what it was. "Waiting on a human" is the loop's
+  // `standingAsk`, injected (163): only the record's LAST entry counts, and only a plain object.
+  const waiting = [...running].reverse().find((run) => standingAsk(run) != null);
   if (waiting) {
-    const ask = openLastAsk(waiting);
+    const ask = standingAsk(waiting);
     return {
       ref,
       runId: waiting.runId,
@@ -264,9 +258,12 @@ const resumeCommand = {
       // back to a dead run should not have to work out the next move.
       const ready = result.ready;
       // A question waiting on the operator comes first: answering it is the next move, and it
-      // is never offered as a resume.
+      // is never offered as a resume. The question's TEXT is `work:questions`'s to print (163);
+      // this face names the verb rather than growing a second listing.
       const waiting = result.pending.filter((row) => row.state === "waiting-on-you").map((row) => row.ref);
-      const answer = waiting.length ? `\n\nAnswer:\n${waiting.map((r) => `  ${answerLine(r)}`).join("\n")}` : "";
+      const answer = waiting.length
+        ? `\n\nRead each question with: aof work questions\nAnswer:\n${waiting.map((r) => `  ${answerLine(r)}`).join("\n")}`
+        : "";
       const tail = ready.length
         ? `\n\nResume now:\n${ready.map((r) => `  aof work resume ${r}`).join("\n")}`
         : waiting.length

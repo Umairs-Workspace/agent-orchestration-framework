@@ -1,7 +1,7 @@
 import { formCandidates } from "../tune/formation.mjs";
 import fs from "node:fs";
 import path from "node:path";
-import { emitProposals as resolveProvenance, pathIsWithinRoot } from "../tune/provenance.mjs";
+import { citationMissedOnDisk, emitProposals as resolveProvenance, pathIsWithinRoot } from "../tune/provenance.mjs";
 import { ACCOUNTING_COUNTERS } from "../memory-accounting.mjs";
 import { promotionPointers } from "../memory-vocabulary.mjs";
 import { attachProposalDistances } from "../tune/distance.mjs";
@@ -435,12 +435,15 @@ async function buildTuneReport(input = {}, ctx = {}) {
     ...candidate,
     provenance: candidate.citations,
   }));
-  // Read ONCE per report and handed down as data, exactly as validate does: the map is derived from git history.
-  const renameMap = deps.renameMap ?? (readRenameMap == null ? null : await readRenameMap(workspace.projectRoot ?? null));
-  const resolved = (deps.resolveProvenance ?? resolveProvenance)(provenanceInput, {
+  // On disk first (160/ADR-007): every citation is resolved with no rename map, and history — a loader,
+  // exactly as validate holds it — is loaded once and the set re-resolved only when a cited document missed.
+  const resolveWith = (renameMap) => (deps.resolveProvenance ?? resolveProvenance)(provenanceInput, {
     rootDir: workspace.projectRoot,
     renameMap,
   });
+  const history = deps.renameMap != null || readRenameMap == null ? null : await readRenameMap(workspace.projectRoot ?? null);
+  let resolved = resolveWith(deps.renameMap ?? null);
+  if (history != null && citationMissedOnDisk(resolved)) resolved = resolveWith(await history.load());
   const candidateFindings = [];
   const candidates = [];
   for (const candidate of resolved.proposals) {

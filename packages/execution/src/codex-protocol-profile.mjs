@@ -1,6 +1,6 @@
 // Version-specific public App Server shapes; lifecycle and policy live elsewhere.
 export const CODEX_PROFILE = Object.freeze({
-  name: "codex-app-server-v1", version: 1, supportedVersions: Object.freeze(["0.160.0", "0.162.0-alpha.2"]),
+  name: "codex-app-server-v1", version: 1, minimumVersion: "0.160.0",
   // Native event names from openai/codex rust-v0.160.0, codex-rs/hooks/src/lib.rs
   // (HOOK_EVENT_NAMES). A definition still needs native hook review/trust.
   hookEvents: Object.freeze(["PreToolUse", "PermissionRequest", "PostToolUse", "PreCompact", "PostCompact",
@@ -8,6 +8,19 @@ export const CODEX_PROFILE = Object.freeze({
   frameBytes: 1024 * 1024, resultBytes: 65536, queuedMessages: 128,
   requestMs: 15000, interruptMs: 1000, closeMs: 1000,
 });
+// The floor is a stable release. Newer prereleases qualify; prereleases of the
+// floor itself do not. Build metadata does not affect version precedence.
+export function isSupportedCodexVersion(version) {
+  if (typeof version !== "string") return false;
+  const match = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/u.exec(version);
+  if (!match || match[4]?.split(".").some(part => /^0\d+$/u.test(part))) return false;
+  const minimum = CODEX_PROFILE.minimumVersion.split(".").map(BigInt);
+  for (let i = 0; i < 3; i++) {
+    const actual = BigInt(match[i + 1]);
+    if (actual !== minimum[i]) return actual > minimum[i];
+  }
+  return match[4] === undefined;
+}
 const object = value => value !== null && typeof value === "object" && !Array.isArray(value);
 const named = value => typeof value === "string" && value.trim().length > 0;
 const closed = (value, keys) => object(value) && Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
@@ -64,7 +77,7 @@ function reviewAction(action) {
     default: return false;
   }
 }
-// Both admitted versions use this unstable wire shape. Project metadata only.
+// Validate the required native review wire shape on every admitted version. Project metadata only.
 export function nativeReview(method, params, sessionId, turnId) {
   if (params?.threadId !== sessionId || params?.turnId !== turnId) {
     if (named(params?.threadId) && named(params?.turnId)) return null;

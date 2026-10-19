@@ -37,7 +37,7 @@ const NOW = "2026-08-10T12:00:00.000Z";
 // (`relaying`, the worker's stated producer fact). A tail append is the growth that ADR
 // permits; every key above it keeps its position, so this list still asserts the exact
 // ordered entry the wire carries.
-const FROZEN_SIX = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"];
+const FROZEN_SIX = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"];
 
 // ── fixtures ────────────────────────────────────────────────────────────────────
 

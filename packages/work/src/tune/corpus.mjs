@@ -167,7 +167,8 @@ async function readObservations(items, cwd) {
   let readings = 0;
   let attributed = 0;
   for (const item of items) {
-    const snapshot = await readLatestSnapshot({ cwd, ref: item.ref });
+    // The row the corpus already listed, never the ref: resolving a ref lists the stream again (160/ADR-011 §2).
+    const snapshot = await readLatestSnapshot({ cwd, ref: item.ref, item });
     if (snapshot == null) {
       entries.push(Object.freeze({ item: item.ref, state: "no-series", reading: null }));
       continue;
