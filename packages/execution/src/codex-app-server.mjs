@@ -2,7 +2,7 @@ import { spawn, execFile } from "node:child_process";
 import path from "node:path";
 import { resolveStartToCloseMs } from "@aof/contracts/loop-bounds";
 import { resolveExecution, validateExecutionEnvelope } from "./runtime-selection.mjs";
-import { CODEX_PROFILE, CODEX_RESULT_SCHEMA, CODEX_AUTO_REVIEW, CODEX_REVIEW_METHODS, parseCodexPhaseResult, permissionReply, validPermissionRequest, nativeReview, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
+import { CODEX_PROFILE, isSupportedCodexVersion, CODEX_RESULT_SCHEMA, CODEX_AUTO_REVIEW, CODEX_REVIEW_METHODS, parseCodexPhaseResult, permissionReply, validPermissionRequest, nativeReview, nativeQuestion, nativeUsage } from "./codex-protocol-profile.mjs";
 import { normalizeCodexActivity, reducePermissionReviews } from "./runtime-events.mjs";
 import { selectCodexExecutable } from "./codex-executable.mjs";
 import { codexProcessEnvironment } from "./codex-process-environment.mjs";
@@ -15,7 +15,7 @@ function probeVersion(bin, options) {
   return new Promise((resolve, reject) => {
     execFile(bin, ["--version"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {
       if (error) reject(failure("runtime_unavailable"));
-      else { const match = /^codex-cli (\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure("unsupported_profile")); }
+      else { const match = /^codex-cli (\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?)\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure("unsupported_profile")); }
     });
   });
 }
@@ -176,11 +176,11 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     try {
       if (options.signal?.aborted) { abort(); return { ...terminal, sessionId, processStarted: false }; }
       if (!named(brief.worktreeCwd) || !path.isAbsolute(brief.worktreeCwd)) throw failure("invalid_worktree");
-      const selected = await selectExecutable({ codexBin: options.codexBin, cwd: brief.worktreeCwd, env: options.env, signal: options.signal }, { readVersion, supportedVersions: CODEX_PROFILE.supportedVersions });
+      const selected = await selectExecutable({ codexBin: options.codexBin, cwd: brief.worktreeCwd, env: options.env, signal: options.signal }, { readVersion });
       const command = codexServerCommand(selected.bin);
       cliVersion = selected.cliVersion;
       if (terminal) return { ...terminal, sessionId, processStarted: false };
-      if (!CODEX_PROFILE.supportedVersions.includes(cliVersion)) throw failure("unsupported_profile");
+      if (!isSupportedCodexVersion(cliVersion)) throw failure("unsupported_profile");
       child = spawnChild(command.bin, command.args, { cwd: brief.worktreeCwd, env: codexProcessEnvironment(options.env), stdio: ["pipe", "pipe", "pipe"], windowsHide: true, detached: true, shell: false });
       child.stdout.on("data", data);
       child.stderr.resume(); // Drain without retaining or publishing potentially sensitive diagnostics.
@@ -237,7 +237,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         await settled; await events;
       }
     } catch (error) {
-      detectedVersions = (error.detectedVersions ?? []).filter(value => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(value));
+      detectedVersions = (error.detectedVersions ?? []).filter(value => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(value));
       // Never expose error.message, stderr, arbitrary server codes or payloads.
       const allowed = ["automatic_review_unavailable", "runtime_unavailable", "unsupported_profile", "invalid_worktree", "unsupported_runtime", "invalid_phase", "resume_unavailable", "protocol_identity_mismatch", "protocol_initialization_invalid", "runtime_capabilities_unavailable", "phase_input_too_large", "phase_input_invalid", "persistence_failed", "protocol_timeout", "protocol_rpc_error", "protocol_disconnected", "protocol_frame_too_large", "protocol_request_limit"];
       fail(allowed.includes(error?.code) ? error.code : "execution_invalid");
@@ -281,7 +281,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(detectedVersions.length ? { detectedVersions } : {}), ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
   }
   return Object.freeze({ capabilities: Object.freeze({ transport: "app-server-stdio", profile: CODEX_PROFILE.name, profileVersion: 1,
-    compatibility: "live-probed", cliVersions: CODEX_PROFILE.supportedVersions, nativeIdentity: true, resume: true, usage: true,
+    compatibility: "live-probed", minimumCliVersion: CODEX_PROFILE.minimumVersion, nativeIdentity: true, resume: true, usage: true,
     questions: true, structuredQuestionFallback: true, nativeQuestions: "runtime-dependent" }),
     drive: (brief, options = {}) => operate(brief, options),
     async inspectCapabilities(options = {}) {
@@ -289,7 +289,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       if (result.outcome !== "done") {
         const error = failure(result.failureReason);
         if (result.failureReason === "runtime_unavailable") error.message = "Codex could not be started. Check that Codex is installed and executable; AOF checks PATH, npm launchers and the Windows Codex desktop app.";
-        if (result.failureReason === "unsupported_profile") error.message = `No compatible Codex CLI was found. Detected: ${result.detectedVersions?.join(", ") || result.cliVersion || "unrecognized version"}. Supported: ${CODEX_PROFILE.supportedVersions.join(", ")}.`;
+        if (result.failureReason === "unsupported_profile") error.message = `No compatible Codex CLI was found. Detected: ${result.detectedVersions?.join(", ") || result.cliVersion || "unrecognized version"}. Required: Codex CLI ${CODEX_PROFILE.minimumVersion} or newer.`;
         throw error;
       }
       return { models: result.models, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version };

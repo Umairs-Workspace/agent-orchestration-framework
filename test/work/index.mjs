@@ -64,6 +64,8 @@ import { migrateCommandCoreTests } from "./migrate-command-core.test.mjs";
 // traceability + the FOUR cross-cutting fitness functions — envelope contract,
 // engine determinism, --strict exit matrix, and the two generalised bijections)
 import { doctorCommandCoreTests } from "./doctor-command-core.test.mjs";
+// milestone 161 / story 01 — the wiki source-citation probe and its doctor command edge.
+import { wikiCitationTests } from "./wiki-citations.test.mjs";
 // milestone 15 — work doctor core (story 01: coherence & completeness — the
 // status-coherence + lifecycle-completeness check-groups appended to the registry;
 // story 02: freshness/date-sanity + structural-integrity — the injected-clock date
@@ -239,6 +241,7 @@ export const tests = [
   // story 29 — migrate-command (the command + its two story arch-tests)
   ...migrateCommandCoreTests,
   ...doctorCommandCoreTests,
+  ...wikiCitationTests,
   ...doctorCoherenceCompletenessTests,
   ...doctorFreshnessStructuralTests,
   ...doctorContextBudgetTests,

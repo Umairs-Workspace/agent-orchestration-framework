@@ -611,6 +611,27 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
+      "path": ".agents\\skills\\aof-questions\\SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill"
+      },
+      "hash": "sha256:c1dca690fdd9dc17d0674eb95d2f81d9789e2091cd6133aaebd19a52afd93ee8"
+    },
+    {
+      "path": ".agents\\skills\\aof-questions\\agents\\openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-questions",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
       "path": ".agents\\skills\\aof-recent\\SKILL.md",
       "runtime": "codex",
       "resource": {
@@ -824,7 +845,7 @@
         "file": "procedure.md",
         "sourceFile": "procedure.md"
       },
-      "hash": "sha256:9bb89c29f7167d628af9ec129ea5afc637e447acdbd4cc74fd6dbb26b2860e92"
+      "hash": "sha256:0ff4e5890b762b2b2662998a265812b24156bd5fe3ef7df2907af243ce1b0485"
     },
     {
       "path": ".agents\\skills\\aof-verify\\agents\\openai.yaml",

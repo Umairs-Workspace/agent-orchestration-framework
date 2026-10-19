@@ -51,7 +51,11 @@ export const archTests = [
     name: "arch/ADR-004: bin/aof.mjs imports run from src/cli.mjs and calls exactly run(process.argv.slice(2)) with no per-mode fork",
     run: async () => {
       const code = stripComments(await readFile(binPath, "utf8"));
-      assert.ok(/import\s*\{\s*run\s*\}\s*from\s*["']\.\.\/src\/cli\.mjs["']/.test(code), "bin/aof.mjs imports { run } from ../packages/core/src/cli.mjs");
+      // 160/ADR-004 §1: the import is DYNAMIC, after the compile cache is turned on — a static one
+      // would be hoisted above that call. 160/ADR-008 §3: a test's child may load the run's bundle of that
+      // same module instead, so the binding may be chosen between the two imports — and no third.
+      assert.ok(/const\s*\{\s*run\s*\}\s*=\s*(?:testBundle\s*&&\s*existsSync\(testBundle\)\s*\?\s*await\s+import\(pathToFileURL\(testBundle\)\.href\)\s*:\s*)?await\s+import\(\s*["']\.\.\/src\/cli\.mjs["']\s*\)/.test(code), "bin/aof.mjs imports { run } from ../packages/core/src/cli.mjs");
+      assert.equal((code.match(/\bimport\(/g) ?? []).length, code.includes("AOF_TEST_CLI_BUNDLE") ? 2 : 1, "the bin has no other dynamic import");
       assert.ok(callsRunWithFullArgv(code), "bin/aof.mjs calls run(process.argv.slice(2))");
       assert.ok(!hasPerModeFork(code), "bin/aof.mjs has no argv[0]/mode === \"relay\" fork ahead of run()");
     },

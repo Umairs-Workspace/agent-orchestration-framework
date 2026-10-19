@@ -137,6 +137,8 @@ const EXCLUDED = Object.freeze({
   // 127/02 task 04 — the one wrapper over `work:promote`: moves ONE backlog item into the numbered
   // stream and mints its number; spawns no agent, carries no memory call, partitions nothing.
   "promote.md": "promotes one backlog item into the stream and mints its number; no partition",
+  // 163 — the wrapper over `work:questions`: prints the loop's open questions; answers none.
+  "questions.md": "reads the loop's open questions; answers none, cuts nothing",
   "recent.md": "reads the stream chronologically",
   // 147 — the session a loop hands a lane halt to: repairs the loop's own records and cuts nothing.
   // Classified at 149, whose run of this control first met it unclassified.

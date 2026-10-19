@@ -18,13 +18,14 @@ test('doctor history port preserves bounded Git argv and degrades a failed read 
   const calls=[];
   const {readRenameMap}=createDoctorCommand({execFileAsync:async(...args)=>{calls.push(args);return {stdout:'R100\tsrc/old.mjs\tsrc/new.mjs\n'};}});
   assert.equal(await readRenameMap(null),null); assert.deepEqual(calls,[]);
-  assert.equal((await readRenameMap(root)).get('src/old.mjs'),'src/new.mjs');
+  const history=readRenameMap(root); assert.deepEqual(calls,[],'building the loader reads nothing');
+  assert.equal((await history.load()).get('src/old.mjs'),'src/new.mjs');
   const renameLog=calls.find(call=>call[1].includes('--name-status'));
   assert.ok(renameLog,'the rename log is read');assert.equal(renameLog[0],'git');
   assert.ok(calls.every(call=>call[0]==='git'&&(call[1][0]==='log'||call[1][0]==='diff'||call[1][0]==='rev-parse')),'only bounded history reads');
   assert.deepEqual(renameLog[2],{cwd:root,encoding:'utf8',timeout:15000,maxBuffer:16*1024*1024,windowsHide:true});
   const failed=createDoctorCommand({execFileAsync:async()=>{throw Error('unavailable');}});
-  assert.deepEqual(await failed.readRenameMap(root),new Map());
+  assert.deepEqual(await failed.readRenameMap(root).load(),new Map());
 }));
 
 test('archive refuses before its transition port, then passes the selected set through once',()=>fixture(async root=>{

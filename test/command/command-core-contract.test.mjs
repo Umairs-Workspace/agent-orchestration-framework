@@ -187,6 +187,9 @@ const WORK_IDS = [
   // milestone 131 / story 04 — work:answer, the operator's answer to a waiting session, beside
   // work:resume in `packages/core/src/commands/resume.mjs`.
   "work:answer",
+  // story 163 — work:questions, the read side of work:answer, composed beside it in the same
+  // binding and BOARD_DEFERRED: the board reads the ask through work:list's overlay.
+  "work:questions",
   // milestone 54 / story 01 — work:grade, the declared rubric's ONE impure edge (the
   // milestone's only registering story, 54/ADR-003 §2). Its bare face is a READ (the plan
   // plus the last recorded grade, spawning nothing) and `--run` is the only door to

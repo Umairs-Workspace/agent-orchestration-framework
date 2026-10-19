@@ -177,7 +177,10 @@ export const episodicRecordsTests = [
     run: () => withFixture({ runs: [runRecord("r-1", "done"), runRecord("r-2", "failed")], snapshot: null }, async (s) => {
       await s.build();
       assert.equal(s.snapshotReads.length, 1);
-      assert.deepEqual(s.snapshotReads[0], { cwd: s.root, ref: "39" });
+      const { item, ...read } = s.snapshotReads[0];
+      assert.deepEqual(read, { cwd: s.root, ref: "39" });
+      // The walk's own row is handed over, so the read lists no stream (160/10, F-05).
+      assert.equal(path.resolve(item.dir), path.resolve(s.dir));
     }),
   },
   {

@@ -85,7 +85,11 @@ async function readActiveRuns(items) {
 
 // The ELEVEN keys of a loop entry, in the one frozen order every producer emits (130/ADR-005
 // §1). `stop` is the standing request's word — null | "drain" | "cancel" — and trails.
-const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop"]);
+// 162/ADR-003 §1 APPENDS three after `stop`, read off the same latest running run:
+// `sessionId` (its captured session), `driveStartedAt` (its `createdAt`) and `lastActivityAt`
+// (its consumed `heartbeatAt` — the one field the heartbeat consumer writes and the loop's
+// stall bound reads back, so "quiet" means one thing on every face).
+const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop", "sessionId", "driveStartedAt", "lastActivityAt"]);
 
 // The word for a request's level through the ONE map (ADR-001 §2): a record whose level is not
 // in the map — impossible for a record `readStopRequest` admits — reads as no request at all.
@@ -119,8 +123,9 @@ async function readStopRequestFor(loopRunId) {
 // readActiveRuns (130/ADR-005 §1-§2): over the SAME readRuns read, every `running` run whose
 // `brief.loop` is USABLE (the five-key rule the declaration read owns — `readLoopDeclaration`
 // over that one run answers null otherwise) contributes to ONE entry per `loopRunId`, the
-// LATEST such run naming `ref` (its itemRef) and `runId`. Eleven keys, frozen order:
-//   { loopRunId, workspaceId, scope, level, cap, phase, cycle, ref, runId, supervised, stop }
+// LATEST such run naming `ref` (its itemRef) and `runId`. Fourteen keys, frozen order:
+//   { loopRunId, workspaceId, scope, level, cap, phase, cycle, ref, runId, supervised, stop,
+//     sessionId, driveStartedAt, lastActivityAt }
 // The values are COPIED, not validated: `cap: 0` rides as 0 and a missing `cycle` as null —
 // how the line renders them is the fleet's question. `supervised` is the one field read by the
 // mint's own fail-closed rule (126/02 — only the boolean `true` raises it), exactly as the
@@ -160,6 +165,11 @@ async function readActiveLoops(items, { workspaceId = null, stopRequestFor = rea
       runId: run.runId,
       supervised: loop.supervised === true,
       stop: stopWordFor(request),
+      // Read, never consumed: presence is a READ, so it takes the heartbeat the drive's own
+      // stall check last consumed rather than draining the queue itself.
+      sessionId: run.sessionId ?? null,
+      driveStartedAt: run.createdAt ?? null,
+      lastActivityAt: run.heartbeatAt ?? null,
     };
     loops.push(Object.fromEntries(LOOP_ENTRY_KEYS.map((key) => [key, entry[key]])));
   }
@@ -237,6 +247,10 @@ async function readLiveSessions(workspace, nodeId, options = {}) {
         // browser would keep answering confidently from a field that never arrives, with
         // every test on both sides of the wire green.
         relaying: record.relaying === true,
+        // 162/ADR-002 §1, hop 2 — the EIGHTH key, appended after `relaying`. `?? null` so a
+        // record written before the key existed projects "no loop drives this", and a value is
+        // carried as written: the pane's posture rule fails closed on anything but null.
+        loopRunId: record.loopRunId ?? null,
       });
     }
   }

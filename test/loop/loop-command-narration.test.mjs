@@ -15,6 +15,8 @@ const startRun = _aofApplication.execution.runs.startRun;
 const resolveItemExact = _aofApplication.work.commandTools.resolve.resolveItemExact;
 import { DECLARATION_L1, completingDriver, fakeStopSource, loopFixture, replaceStatus, resetLoopStops, writeDeclarationRun } from "./loop-command-probe.test.mjs";
 import { createFakePtySpawn, createFakeWhich } from "../support/mesh-worker-terminal-fixture.mjs";
+import { createChildDrive } from "@aof/work-loop/child-drive";
+import { DRIVE_STATUS_INTERVAL_MS, driveStatusLine } from "../../packages/work-loop/src/drive-status.mjs";
 const loopStopsDir = _aofApplication.loop.stopRequest.loopStopsDir;
 const markStopHonoured = _aofApplication.loop.stopRequest.markStopHonoured;
 const requestLoopStop = _aofApplication.loop.stopRequest.requestLoopStop;
@@ -620,4 +622,201 @@ export const loopCommandNarrationTests = [
       }
     },
   },
+  // ═══ 162 task 02 — the loop prints a drive status line every five minutes (ADR-004) ═══════════
+  // `02_loop-progress-in-the-terminal.feature`, driven through the SHIPPED `createChildDrive` (the
+  // seam every drive crosses) over a scripted spawn, clock and transcript tree — and, for `--quiet`,
+  // through the SHIPPED loop body's own in-flight printer.
+  {
+    name: "loop-progress-in-the-terminal/02 E9 · a long drive prints its status line — \"03/07 — 36 min, 2 subagents active, last activity 5 s ago\"",
+    async run() {
+      const rig = statusRig({ runs: [{ runId: "r1", sessionId: "89b1d500", heartbeatAt: at(36 * MIN - 5_000) }], transcripts: { "89b1d500": { "a.jsonl": 36 * MIN - 60_000, "b.jsonl": 36 * MIN - 2 * MIN, "c.jsonl": 20 * MIN } } });
+      const lines = [];
+      const drive = rig.spawn({ ref: "03/07", runId: "r1", narrate: (line) => lines.push(line) });
+      rig.clock.set(36 * MIN);
+      await rig.fire();
+      assert.deepEqual(lines, ["03/07 — 36 min, 2 subagents active, last activity 5 s ago"]);
+      rig.settle();
+      await drive;
+    },
+  },
+  {
+    name: "loop-progress-in-the-terminal/02 E10 · a drive that finishes inside five minutes prints no status line — the ticker is armed at five minutes and stopped at the settle, so only the drive's own start and end lines exist",
+    async run() {
+      const rig = statusRig({ runs: [{ runId: "r1", sessionId: "s1", heartbeatAt: at(60_000) }] });
+      const lines = [];
+      const drive = rig.spawn({ ref: "03/07", runId: "r1", narrate: (line) => lines.push(line) });
+      assert.deepEqual(rig.intervals(), [DRIVE_STATUS_INTERVAL_MS], "armed at the five-minute cadence");
+      assert.equal(DRIVE_STATUS_INTERVAL_MS, 5 * 60 * 1000);
+      rig.clock.set(4 * MIN);
+      rig.settle();
+      await drive;
+      assert.deepEqual(rig.intervals(), [], "…and disarmed when the drive settled");
+      await rig.fire();
+      assert.deepEqual(lines, [], "no status line was printed");
+    },
+  },
+  {
+    name: "loop-progress-in-the-terminal/02 E11 · each wave lane prints its own status line — two lanes for 12 min each print one line at 5 min and one at 10 min, each naming its own ref",
+    async run() {
+      const rig = statusRig({ runs: [{ runId: "r-01", sessionId: "s-01", heartbeatAt: at(0) }, { runId: "r-02", sessionId: "s-02", heartbeatAt: at(0) }] });
+      const lines = [];
+      const narrate = (line) => lines.push(line);
+      const one = rig.spawn({ ref: "03/01", runId: "r-01", narrate });
+      const two = rig.spawn({ ref: "03/02", runId: "r-02", narrate });
+      for (const minute of [5, 10]) {
+        rig.clock.set(minute * MIN);
+        await rig.fire();
+      }
+      rig.clock.set(12 * MIN);
+      rig.settle();
+      await Promise.all([one, two]);
+      await rig.fire();
+      const byRef = (ref) => lines.filter((line) => line.startsWith(`${ref} — `));
+      assert.deepEqual(byRef("03/01").map((line) => line.split(",")[0]), ["03/01 — 5 min", "03/01 — 10 min"], "lane 01: one line at 5 min and one at 10");
+      assert.deepEqual(byRef("03/02").map((line) => line.split(",")[0]), ["03/02 — 5 min", "03/02 — 10 min"], "lane 02: the same, under its own ref");
+      assert.equal(lines.length, 4, "every status line names its own lane's ref");
+    },
+  },
+  {
+    name: "loop-progress-in-the-terminal/02 [outline] the status line's count and session phrases — session starting, 0 subagents, the singular, and no activity yet (4 rows)",
+    async run() {
+      const rows = [
+        { runs: [{ runId: "r1", sessionId: null, heartbeatAt: null }], transcripts: {}, line: "03/07 — 10 min, session starting" },
+        { runs: [{ runId: "r1", sessionId: "s1", heartbeatAt: at(10 * MIN - 40_000) }], transcripts: {}, line: "03/07 — 10 min, 0 subagents active, last activity 40 s ago" },
+        { runs: [{ runId: "r1", sessionId: "s1", heartbeatAt: at(9 * MIN) }], transcripts: { s1: { "a.jsonl": 10 * MIN - 30_000, "b.jsonl": 2 * MIN, "c.jsonl": 1 * MIN } }, line: "03/07 — 10 min, 1 subagent active, last activity 1 min ago" },
+        { runs: [{ runId: "r1", sessionId: "s1", heartbeatAt: null }], transcripts: { s1: { "a.jsonl": 2 * MIN, "b.jsonl": 1 * MIN } }, line: "03/07 — 10 min, 0 subagents active, no activity yet" },
+      ];
+      for (const row of rows) {
+        const rig = statusRig(row);
+        const lines = [];
+        const drive = rig.spawn({ ref: "03/07", runId: "r1", narrate: (line) => lines.push(line) });
+        rig.clock.set(10 * MIN);
+        await rig.fire();
+        rig.settle();
+        await drive;
+        assert.deepEqual(lines, [row.line], row.line);
+        assert.equal(driveStatusLine({ ref: "03/07", elapsedMs: 10 * MIN, ...(await rig.facts("r1")) }), row.line, "…and the pure line agrees with what the ticker printed");
+      }
+    },
+  },
+  {
+    name: "loop-progress-in-the-terminal/02 --quiet silences the status line — the sequential child drive's status prints through the loop's in-flight printer, which --quiet silences, and the drive's item resolves in the primary",
+    async run() {
+      for (const quiet of [false, true]) {
+        const fx = await loopFixture();
+        try {
+          const lines = [];
+          let handed = null;
+          const spawnPhaseDrive = async (args) => {
+            handed = args.status;
+            await args.status.narrate("03/01 — 12 min, 0 subagents active, last activity 5 s ago");
+            return { outcome: "document", document: { ok: true, outcome: "needs-input", sessionId: "child-session" }, exitCode: 0, stderrTail: [], spawn: {} };
+          };
+          await runLoopBody({ scope: "03", ...(quiet ? { quiet: true } : {}) }, { ...fx.ctx, spawnPhaseDrive, report: (line) => lines.push(line) });
+          assert.equal(typeof handed?.narrate, "function", `${quiet ? "quiet" : "loud"}: the child drive is handed its status printer`);
+          assert.equal((await handed.item())?.ref, "03/01", "…and the drive's item, resolved by its ref");
+          const printed = lines.filter((line) => line.startsWith("03/01 — 12 min"));
+          assert.equal(printed.length, quiet ? 0 : 1, quiet ? "--quiet prints no status line" : "loud prints it");
+        } finally {
+          await fx.cleanup();
+        }
+      }
+    },
+  },
+  {
+    name: "loop-progress-in-the-terminal/02 the status ticker stops when the drive settles — cancelled, timed out or finished, no status line for that drive is printed after its settle, not even from a tick still reading",
+    async run() {
+      for (const outcome of ["aborted", "deadline-expired", "exited"]) {
+        const gate = deferredRead();
+        const rig = statusRig({ runs: [{ runId: "r1", sessionId: "s1", heartbeatAt: at(0) }], readRuns: gate.readRuns });
+        const lines = [];
+        const drive = rig.spawn({ ref: "03/07", runId: "r1", narrate: (line) => lines.push(line) });
+        rig.clock.set(5 * MIN);
+        const firing = rig.fire();
+        rig.settle(outcome);
+        await drive;
+        gate.release();
+        await firing;
+        await rig.fire();
+        assert.deepEqual(lines, [], `${outcome}: nothing printed after the settle`);
+        assert.deepEqual(rig.intervals(), [], `${outcome}: the ticker is disarmed`);
+      }
+    },
+  },
 ];
+
+// ── 162 task 02 rig ─────────────────────────────────────────────────────────────────────────────
+const MIN = 60_000;
+const T0 = Date.parse("2026-10-17T10:00:00.000Z");
+const at = (offset) => new Date(T0 + offset).toISOString();
+
+function deferredRead() {
+  let release;
+  const open = new Promise((resolve) => { release = resolve; });
+  return { readRuns: async (runs) => { await open; return runs; }, release };
+}
+
+// statusRig({ runs, transcripts, readRuns }) — the SHIPPED child drive over a scripted world: a clock
+// starting at T0, a scheduler whose ticks the test fires, a spawn whose settle the test chooses, a
+// lane run record per `runs` row, and per-session subagent transcripts as { name: offset-mtime }.
+function statusRig({ runs = [], transcripts = {}, readRuns: gatedRead = null } = {}) {
+  let now = T0;
+  const handles = new Map();
+  let nextHandle = 1;
+  const pendingSpawns = [];
+  const projects = "C:/scripted/projects";
+  const childDrive = createChildDrive({
+    getRuntimeRoot: () => "C:/scripted/home",
+    isPackaged: () => true,
+    getCliEntry: () => "cli.mjs",
+    runBounded: () => new Promise((resolve) => pendingSpawns.push(resolve)),
+    driveStatusServices: {
+      readRuns: async () => (gatedRead ? gatedRead(runs) : runs),
+      claudeProjectsDir: () => projects,
+      readdir: async (dir) => {
+        const session = Object.keys(transcripts).find((id) => dir === path.join(projects, id, "subagents"));
+        if (session == null) throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+        return Object.keys(transcripts[session]);
+      },
+      stat: async (file) => {
+        const session = Object.keys(transcripts).find((id) => file.startsWith(path.join(projects, id, "subagents")));
+        return { mtimeMs: T0 + transcripts[session][path.basename(file)] };
+      },
+      reportDegrade: () => {},
+      clock: () => now,
+      timers: {
+        setInterval: (fn, ms) => { const handle = nextHandle++; handles.set(handle, { fn, ms }); return handle; },
+        clearInterval: (handle) => { handles.delete(handle); },
+      },
+    },
+  });
+  const flush = async () => { for (let i = 0; i < 20; i += 1) await new Promise((resolve) => setImmediate(resolve)); };
+  return {
+    clock: { set: (offset) => { now = T0 + offset; } },
+    intervals: () => [...handles.values()].map((entry) => entry.ms),
+    async fire() {
+      for (const { fn } of [...handles.values()]) fn();
+      await flush();
+    },
+    spawn: ({ ref, runId, narrate }) => childDrive.spawnLaneDrive({ ref, phase: "refine", runId, lane: "C:/lanes/primary", status: { narrate, item: { ref, dir: "C:/lanes/primary/item" } } }),
+    settle(outcome = "exited") {
+      for (const resolve of pendingSpawns.splice(0)) resolve({ outcome, exitCode: 0, stdout: JSON.stringify({ outcome: "done" }), stderr: "" });
+    },
+    facts: async (runId) => {
+      const run = runs.find((row) => row.runId === runId);
+      return { sessionId: run?.sessionId ?? null, subagentsActive: 0, lastActivityAgeMs: null, ...(await factsFor(run)) };
+    },
+  };
+
+  async function factsFor(run) {
+    const sessionId = run?.sessionId ?? null;
+    const heartbeat = Date.parse(run?.heartbeatAt ?? "");
+    const files = sessionId == null ? {} : transcripts[sessionId] ?? {};
+    return {
+      sessionId,
+      lastActivityAgeMs: Number.isFinite(heartbeat) ? now - heartbeat : null,
+      subagentsActive: sessionId == null ? 0 : Object.values(files).filter((offset) => now - (T0 + offset) <= DRIVE_STATUS_INTERVAL_MS).length,
+    };
+  }
+}
+

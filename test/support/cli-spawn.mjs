@@ -20,7 +20,7 @@
 // thread block via Atomics.wait (Node permits this on the main thread); it only happens
 // on the rare transient failure, never on the success path.
 import { spawnSync, spawn } from "node:child_process";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
@@ -72,6 +72,38 @@ export function bundleFixtureRoot(repoRoot) {
   if (result.status !== 0) throw new Error(`Native bundle fixture init failed: ${result.stderr || result.stdout}`);
   nativeFixtures.set(repoRoot, project);
   return project;
+}
+
+// THE TEMPLATE REPOSITORY (160/ADR-009 §3). A real-git fixture used to `init` and `config` a
+// repository for every case, and on Windows each of those is a process. Instead one repository per
+// process is initialised with exactly the fixture's own `init` arguments and `config` pairs, and each
+// fixture copies its `.git` directory: the fixture then writes, adds and commits as before. A template is
+// keyed by its arguments, so fixtures with different identities never share one; the `git` port is not part
+// of the key, and runs only when that template is first built. Resolved with realpath,
+// since macOS's tmpdir is a symlink and git reports resolved paths.
+const gitTemplates = new Map();
+
+const defaultTemplateGit = (args, cwd) => spawnSyncHardened("git", args, { cwd, encoding: "utf8", windowsHide: true });
+
+export function gitTemplate({ init = ["init", "-q", "-b", "main"], config = [], git = defaultTemplateGit } = {}) {
+  const key = JSON.stringify([init, config]);
+  if (gitTemplates.has(key)) return gitTemplates.get(key);
+  const parent = path.resolve(os.tmpdir());
+  const template = realpathSync(mkdtempSync(path.join(parent, "aof-git-template-")));
+  process.once("exit", () => rmSync(template, { recursive: true, force: true }));
+  for (const args of [init, ...config.map(([name, value]) => ["config", name, value])]) {
+    const result = git(args, template);
+    if (result.status !== 0) throw new Error(`fixture template: git ${args.join(" ")} failed: ${result.stderr || result.stdout}`);
+  }
+  gitTemplates.set(key, template);
+  return template;
+}
+
+// repoFromTemplate(root, options) — make `root` a repository by copying the template's `.git`, which is
+// what `git init` plus the same `config` calls would have left there.
+export function repoFromTemplate(root, options) {
+  cpSync(path.join(gitTemplate(options), ".git"), path.join(root, ".git"), { recursive: true });
+  return root;
 }
 
 export function installedBundlePath(rel, repoRoot) {

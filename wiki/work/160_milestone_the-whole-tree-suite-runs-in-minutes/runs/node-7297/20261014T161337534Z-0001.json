@@ -1,0 +1,55 @@
+{
+  "runId": "20261014T161337534Z-0001",
+  "itemRef": "160",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "0fcb9894-34a7-4a74-903d-298d59bb63a6",
+  "brief": {
+    "answers": [
+      {
+        "token": "160/05 Q1",
+        "question": "160/05 Q1 · When a whole-tree gate run reaches its 10-minute budget, should it stop there or run to the end and then fail? Stopping answers at 10 minutes: units still running are reported not finished, the rest not started, and those unrun cases go unchecked. Running on reports every failure, but can take the ~48 minutes it takes today.",
+        "answer": "Stop at the budget (Recommended)",
+        "toolUseId": "toolu_017EcWFFiENBgLiKpJTCtymH",
+        "sessionId": "0fcb9894-34a7-4a74-903d-298d59bb63a6",
+        "at": "2026-10-14T16:11:51.194Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "160/05 Q2",
+        "question": "160/05 Q2 · Should a --serial gate run (about 1¾ hours, the fallback when the sharded run can't be trusted) still be able to sign a milestone off? If yes, the 10-minute budget binds only the sharded gate. If no, every sign-off must come from a run inside the budget.",
+        "answer": "Serial still signs off (Recommended)",
+        "toolUseId": "toolu_017EcWFFiENBgLiKpJTCtymH",
+        "sessionId": "0fcb9894-34a7-4a74-903d-298d59bb63a6",
+        "at": "2026-10-14T16:11:51.194Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-14T16:13:37.534Z",
+  "updatedAt": "2026-10-14T16:17:18.166Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 638,
+      "output": 425072,
+      "cacheRead": 70758159,
+      "cacheCreate": 709540
+    },
+    "costUsd": 30.266216700000005,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 319,
+    "toolCalls": 178,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

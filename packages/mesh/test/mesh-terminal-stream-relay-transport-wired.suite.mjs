@@ -23,11 +23,12 @@
 // The full chain is driven end-to-end so the transport genuinely carries a frame; an
 // unroutable frame is proven dropped over that same real chain.
 import assert from "node:assert/strict";
-import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { WebSocket } from "ws";
 import { controlStreamServerServices, globalWorkStoreServices, meshRelayServices, meshTerminalMirrorServices, meshTerminalRelayBridgeServices, meshUiServeServices, workerStreamClientServices } from "./support/mesh-services.mjs";
+import { createMeshStore } from "../src/store.mjs";
 const { serveRelay } = meshRelayServices().relay;
 const { startControlStreamServer } = controlStreamServerServices();
 const { createWorkerStreamClient, createWorkerWsTransport } = workerStreamClientServices();
@@ -210,4 +211,241 @@ export const meshTerminalStreamRelayTransportWiredTests = [
       }
     },
   },
+
+  // ═══ 162 task 00 — a loop-driven session streams to its card, through its node's OWN daemon ═══
+  // The drive child is played by the REAL ingress client; the daemon by the REAL ingress with the
+  // launcher's exact forward for its role; the rest of the chain is the m38 one, unchanged.
+  {
+    name: "loop-session-streams-to-its-card/00 E1 · a sequential loop drive's session streams live on the control node — the mirror receives a terminal frame for the control node and that session carrying exactly the chunk",
+    async run() {
+      await withControlChain(async ({ ingress, view, readAddress }) => {
+        const viewer = await view({ nodeId: CONTROL_NODE, sessionId: "89b1d500" });
+        assert.ok(viewer.opened, "the card for (control, session) opens");
+        const child = openTerminalIngressClient({ readAddress });
+        child.frame("89b1d500", "refining 03/07 …\r\n");
+        assert.equal(await child.admitted, true, "the child's connection is admitted by the control daemon's ingress");
+        await waitFor(() => viewer.frames.length >= 1, { label: "the card receives the loop's chunk" });
+        assert.deepEqual(viewer.frames, ["refining 03/07 …\r\n"], "exactly the chunk, byte for byte");
+        await child.close();
+        assert.ok(ingress.forwarded.every(([, nodeId]) => nodeId === CONTROL_NODE), "every envelope was built with the control daemon's own id");
+      });
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 E2 · each wave lane's session streams only its own output — two lanes' chunks land each under its own session, and neither card shows the other's bytes",
+    async run() {
+      await withControlChain(async ({ view, readAddress }) => {
+        const one = await view({ nodeId: CONTROL_NODE, sessionId: "lane-01" });
+        const two = await view({ nodeId: CONTROL_NODE, sessionId: "lane-02" });
+        const laneOne = openTerminalIngressClient({ readAddress });
+        const laneTwo = openTerminalIngressClient({ readAddress });
+        laneOne.frame("lane-01", "01 output\n");
+        laneTwo.frame("lane-02", "02 output\n");
+        await waitFor(() => one.frames.length >= 1 && two.frames.length >= 1, { label: "both cards receive their own chunk" });
+        await settle(100);
+        assert.deepEqual(one.frames, ["01 output\n"], "lane 01's card holds only lane 01's bytes");
+        assert.deepEqual(two.frames, ["02 output\n"], "lane 02's card holds only lane 02's bytes");
+        await Promise.all([laneOne.close(), laneTwo.close()]);
+      });
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 E4 · a finished drive ends its session's stream — the end marker is sent exactly once for that session, and the card's stream closes",
+    async run() {
+      await withControlChain(async ({ ingress, view, readAddress }) => {
+        const viewer = await view({ nodeId: CONTROL_NODE, sessionId: "89b1d500" });
+        const closed = new Promise((resolve) => viewer.ws.once("close", resolve));
+        const child = openTerminalIngressClient({ readAddress });
+        child.frame("89b1d500", "last words\n");
+        child.end("89b1d500");
+        await child.close();
+        await closed;
+        assert.equal(ingress.ends.filter((sessionId) => sessionId === "89b1d500").length, 1, "the end marker crossed the ingress exactly once");
+        assert.deepEqual(viewer.frames, ["last words\n"], "the bytes arrived before the end");
+      });
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 E5 · a loop on a worker node streams through that worker's own stream — the worker sends the chunk up its admitted stream and the control relays it under the worker's CONNECTION-bound node id",
+    async run() {
+      const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-ingress-worker-"));
+      const home = path.join(tmp, "home");
+      const chain = await controlChainParts(tmp, home);
+      // The REAL control stream server, re-stamping exactly as the launcher's `onTerminalFrame` does.
+      const controlServer = await startControlStreamServer({
+        peerNodeIds: ["node-2976"],
+        resolveOrigin: () => ({ nodeId: "node-2976" }),
+        storeOptions: { env: { AOF_GLOBAL_HOME: home } },
+        onTerminalFrame: (frame, { nodeId }) => chain.controlPush.push({ ...frame, nodeId }),
+      });
+      let client;
+      let workerIngress;
+      try {
+        const viewer = await chain.view({ nodeId: "node-2976", sessionId: "wsl-sess" });
+        assert.ok(viewer.opened, "the card for (worker, session) opens on the control UI");
+        client = createWorkerStreamClient({ transport: createWorkerWsTransport(`ws://127.0.0.1:${controlServer.server.address().port}/`), nodeId: "worker-self-declared", workspaceId: "ws-1", now: () => NOW });
+        assert.equal(await client.ensureConnected(), true, "the worker's admitted stream is up");
+        // The WORKER daemon's ingress, with the launcher's worker forward verbatim.
+        const workerStore = storeAt(path.join(tmp, "worker-home", "mesh"));
+        workerIngress = await startTerminalIngress({
+          forward: { frame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes), end: (sessionId) => client.sendTerminalEnd(sessionId) },
+          publish: (address) => workerStore.publishTerminalIngress(null, address),
+          withdraw: (token) => workerStore.withdrawTerminalIngress(null, token),
+        });
+        const child = openTerminalIngressClient({ readAddress: () => workerStore.readTerminalIngress() });
+        child.frame("wsl-sess", "a worker loop's screen\n");
+        await waitFor(() => viewer.frames.length >= 1, { label: "the worker loop's chunk reaches the control UI" });
+        assert.deepEqual(viewer.frames, ["a worker loop's screen\n"], "the bytes rode the worker's own stream, then the control's relay");
+        await child.close();
+      } finally {
+        await workerIngress?.stop();
+        client?.stop?.();
+        controlServer.stop();
+        await chain.stop();
+        await rm(tmp, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 the ingress stamps the daemon's own node id on every frame — a frame naming another node's id reaches the mirror under the control node's own id, and never under the id the client named",
+    async run() {
+      await withControlChain(async ({ view, store }) => {
+        const own = await view({ nodeId: CONTROL_NODE, sessionId: "s-forge" });
+        const victim = await view({ nodeId: "node-victim", sessionId: "s-forge" });
+        const address = await store.readTerminalIngress();
+        const raw = new WebSocket(`ws://127.0.0.1:${address.port}/`, { headers: { "x-aof-ingress-token": address.token } });
+        await new Promise((resolve) => raw.once("message", resolve));
+        raw.send(JSON.stringify({ type: "frame", sessionId: "s-forge", bytes: "forged?\n", nodeId: "node-victim" }));
+        await waitFor(() => own.frames.length >= 1, { label: "the frame reaches the control's own card" });
+        await settle(150);
+        assert.deepEqual(own.frames, ["forged?\n"], "routed under the daemon's own id");
+        assert.deepEqual(victim.frames, [], "never routed under the id the client named");
+        raw.close();
+      });
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 [outline] a failing ingress never slows or fails the drive — absent file, refused token, closed after the first chunk: the client never throws, frames go only where a live door took them, and at most one coded degrade event (3 rows)",
+    async run() {
+      // Row 1 — the file is absent because no daemon runs.
+      {
+        const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-ingress-absent-"));
+        const degrades = [];
+        try {
+          const child = openTerminalIngressClient({ readAddress: () => storeAt(path.join(tmp, "mesh")).readTerminalIngress(), onDegrade: (code) => degrades.push(code) });
+          for (let i = 0; i < 5; i += 1) assert.doesNotThrow(() => child.frame("s1", `chunk ${i}`), "row 1: a frame never throws");
+          child.end("s1");
+          assert.equal(await child.admitted, false, "row 1: never admitted");
+          await child.close();
+          assert.deepEqual(degrades, ["terminal-ingress-absent"], "row 1: one coded degrade for the whole drive");
+        } finally {
+          await rm(tmp, { recursive: true, force: true });
+        }
+      }
+      // Row 2 — the ingress refuses the token the child presents: no frame is read.
+      await withControlChain(async ({ ingress, store }) => {
+        const address = await store.readTerminalIngress();
+        await store.publishTerminalIngress(null, { ...address, token: "0".repeat(address.token.length) });
+        const degrades = [];
+        const child = openTerminalIngressClient({ readAddress: () => store.readTerminalIngress(), onDegrade: (code) => degrades.push(code) });
+        child.frame("s1", "never read");
+        child.frame("s1", "nor this");
+        assert.equal(await child.admitted, false, "row 2: refused at the upgrade");
+        await child.close();
+        await settle(100);
+        assert.deepEqual(ingress.forwarded, [], "row 2: no terminal frame was read from the connection");
+        assert.deepEqual(degrades, ["terminal-ingress-refused"], "row 2: one coded degrade");
+      });
+      // Row 3 — the ingress closes after the first chunk: only the first reaches the mirror.
+      await withControlChain(async ({ ingress, view, readAddress }) => {
+        const viewer = await view({ nodeId: CONTROL_NODE, sessionId: "s1" });
+        const degrades = [];
+        const child = openTerminalIngressClient({ readAddress, onDegrade: (code) => degrades.push(code) });
+        child.frame("s1", "first\n");
+        await waitFor(() => viewer.frames.length >= 1, { label: "the first chunk arrives" });
+        await ingress.stop();
+        await settle(100);
+        for (const chunk of ["second\n", "third\n"]) assert.doesNotThrow(() => child.frame("s1", chunk), "row 3: a frame after the close never throws");
+        await child.close();
+        await settle(100);
+        assert.deepEqual(viewer.frames, ["first\n"], "row 3: only the first chunk reached the mirror");
+        assert.ok(degrades.length <= 1, `row 3: at most one coded degrade — got ${JSON.stringify(degrades)}`);
+      });
+    },
+  },
 ];
+
+// ── 162 task 00 harness ───────────────────────────────────────────────────────────────────────
+const CONTROL_NODE = "node-7297";
+const { startTerminalIngress, openTerminalIngressClient, buildTerminalFrameEnvelope, buildTerminalEndEnvelope } = meshTerminalRelayBridgeServices();
+// The mesh store at one mesh root: where a daemon publishes its ingress and a child reads it.
+const storeAt = (meshRoot) => createMeshStore({ globalMeshPaths: () => ({ meshRoot }) });
+
+// The same-machine half of the chain: a REAL relay, the control's REAL loopback push, the REAL
+// mirror and subscriber, and the REAL fleet face whose `/ws/terminal-view` a card opens.
+async function controlChainParts(tmp, home) {
+  const distRoot = path.join(tmp, "dist");
+  const root = path.join(tmp, "repo");
+  await mkdir(path.join(root, ".aof"), { recursive: true });
+  await writeFile(path.join(root, ".aof", "aof.config.json"), `${JSON.stringify({ name: "demo", work: { dir: "./wiki/work" } }, null, 2)}\n`, "utf8");
+  await writeDist(meshUiDist(distRoot));
+  const relay = await serveRelay({ port: 0 });
+  const config = { mesh: { relay: { url: relay.url } } };
+  const controlPush = createTerminalRelayPushTransport(config);
+  const mirror = createTerminalMirror();
+  const subscriber = await startTerminalMirrorSubscriber({ transport: createTerminalMirrorSubscriberTransport(config), mirror });
+  const session = await serveMeshUi({ projectDir: root, port: 0, repoRoot: distRoot, globalStoreOptions: { env: { AOF_GLOBAL_HOME: home } }, terminalMirror: mirror });
+  const viewers = [];
+  return {
+    controlPush,
+    async view(tuple) {
+      const viewer = await openTerminalView(session.url, tuple);
+      viewers.push(viewer);
+      return viewer;
+    },
+    async stop() {
+      for (const viewer of viewers) {
+        try { viewer.ws?.close?.(); } catch { /* noop */ }
+      }
+      await new Promise((resolve) => session.server.close(resolve));
+      subscriber.stop();
+      controlPush.close();
+      await relay.stop();
+    },
+  };
+}
+
+// The CONTROL daemon's ingress over that chain, with the launcher's control forward verbatim —
+// the envelope built with the control's own node id — and a spy on what crossed it.
+async function withControlChain(body) {
+  const tmp = await mkdtemp(path.join(os.tmpdir(), "aof-ingress-control-"));
+  const home = path.join(tmp, "home");
+  const chain = await controlChainParts(tmp, home);
+  const store = storeAt(path.join(home, "mesh"));
+  const forwarded = [];
+  const ends = [];
+  const started = await startTerminalIngress({
+    publish: (address) => store.publishTerminalIngress(null, address),
+    withdraw: (token) => store.withdrawTerminalIngress(null, token),
+    forward: {
+      frame: (sessionId, bytes) => {
+        const envelope = buildTerminalFrameEnvelope(CONTROL_NODE, sessionId, bytes);
+        forwarded.push([sessionId, envelope.nodeId]);
+        return chain.controlPush.push(envelope);
+      },
+      end: (sessionId) => {
+        ends.push(sessionId);
+        return chain.controlPush.push(buildTerminalEndEnvelope(CONTROL_NODE, sessionId));
+      },
+    },
+  });
+  let stopped = false;
+  const ingress = { forwarded, ends, async stop() { if (!stopped) { stopped = true; await started.stop(); } } };
+  try {
+    await body({ ingress, store, readAddress: () => store.readTerminalIngress(), view: chain.view });
+  } finally {
+    await ingress.stop();
+    await chain.stop();
+    await rm(tmp, { recursive: true, force: true });
+  }
+}

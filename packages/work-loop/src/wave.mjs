@@ -70,7 +70,7 @@ export function createWaveOrchestration({
   const { transitionRunComplete, transitionRunStart, transitionStaleRunsReclaimed } = transitions;
   const { reportDegrade } = diagnostics;
   const { commitDispatchLane, dispatchLaneBase, inspectDispatchLanes, mergeDispatchLaneHome, resolveDispatchLane, resolveRefInWorktree } = dispatch;
-  const { headCommit, meshDispatchWorktreePath, resolveExec } = worktrees;
+  const { headCommit, meshDispatchWorktreePath, memoGitReads, resolveExec } = worktrees;
   const { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, spawnLaneDrive: spawnLaneDriveChild } = childDrive;
   const { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk } = asks;
   const { budgetElapsedMs, drivenRow, measureGradeBaseline, readGradeBaseline, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor } = cycle;
@@ -202,7 +202,15 @@ export function createWaveOrchestration({
     }
     const primaryRoot = ctx.workspace.projectRoot;
     const primaryWorkDir = ctx.workspace.workDir;
-    const exec = ctx.exec;
+    // ONE STEP, ONE MEMO (160/ADR-001): every step below asks git through a fresh read memo over
+    // the loop's port, and drops it when the step ends. A step is a run of in-process git work with
+    // no out-of-port writer inside it: the ask-and-dispatch tick, a lane's prelude, a lane's
+    // commit, a merge home, and the epoch re-mint after a cleanup. A lane's child session and the
+    // cleanup verb write the tree through no port, so no memo is carried across either. The wrapper
+    // is a seam beside `ctx.exec` (`ctx.memoGitReads`), so a suite can run the same wave unmemoised.
+    const portExec = resolveExec({ exec: ctx.exec });
+    const memo = typeof ctx.memoGitReads === "function" ? ctx.memoGitReads : memoGitReads;
+    const stepExec = () => memo(portExec);
     const node = ladderOptions.node;
     const spawnLaneDrive = typeof ctx.spawnLaneDrive === "function" ? ctx.spawnLaneDrive : spawnLaneDriveChild;
     const timers = ctx.waveTimers ?? { setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (handle) => clearInterval(handle) };
@@ -261,7 +269,7 @@ export function createWaveOrchestration({
     // home a real merge rather than the fast-forward a still primary earns. `brief.wave.baseCommit`
     // is therefore the HEAD at the mint; the lanes' base is the own-writes commit that carries it —
     // one commit later, by construction.
-    async function mintWaveRun(members, bound) {
+    async function mintWaveRun(members, bound, exec) {
       const milestoneItem = await milestoneFor(members[0]);
       if (milestoneItem?.dir == null) return null;
       const baseCommit = await headCommit(primaryRoot, { exec });
@@ -271,7 +279,7 @@ export function createWaveOrchestration({
       const row = { ref: milestoneItem.ref, phase: "continue", runId: record.runId, outcome: "running", attempt: record.attempt, cycle: 1, wave: { members: [...members], bound } };
       driven.push(row);
       waveRun = { item: milestoneItem, record, row, members: [...members] };
-      const committed = typeof commitOwnWrites === "function" ? await commitOwnWrites() : { committed: false };
+      const committed = typeof commitOwnWrites === "function" ? await commitOwnWrites(exec) : { committed: false };
       if (committed?.refused != null) {
         return { halt: { act: haltDecision("lane-merge-refused", resolved.scope, `dispatch:commit-own-writes:${committed.refused.code}`), details: { message: committed.refused.message } } };
       }
@@ -347,7 +355,7 @@ export function createWaveOrchestration({
     // and nothing is touched), a stale one is left for the lane's own reclaim and the lane is then
     // re-driven FROM ITS OWN TREE, dirt in place, never advanced first. Every other reopened lane is
     // advanced to the primary's HEAD (ADR-002 §7) through the lane home's own verb.
-    async function openLane(ref, baseCommit) {
+    async function openLane(ref, baseCommit, exec) {
       const lanePath = meshDispatchWorktreePath(primaryRoot, ref);
       let advance = !laneRetries.has(ref) && isObjectName(baseCommit);
       if (existsSync(lanePath)) {
@@ -384,7 +392,7 @@ export function createWaveOrchestration({
       };
       try {
         await lane.turn;
-        lane.baseCommit = await dispatchLaneBase(open.worktree, { primaryRoot, exec });
+        lane.baseCommit = await dispatchLaneBase(open.worktree, { primaryRoot, exec: stepExec() });
         await narrate(`Lane ${ref} — open: ${open.worktree} at ${lane.baseCommit} (branch ${open.branch}, ${open.created ? "created" : "reused"}).`);
         laneItem = await resolveRefInWorktree(primaryRoot, primaryWorkDir, open.worktree, ref);
         if (laneItem == null) {
@@ -531,6 +539,9 @@ export function createWaveOrchestration({
               deadlineMs: bounds.startToCloseMs + bounds.startupGraceMs,
               signal: lane.controller.signal,
               graceMs: LANE_CANCEL_GRACE_MS,
+              // 162/ADR-004 — this lane's own status line, naming its own ref, read off the LANE's
+              // item (its run record and Claude projects dir), printed through the wave's narrate.
+              status: { narrate, item: laneItem },
             });
             const document = answer?.document ?? null;
             const outcome = childDriveOutcome(answer);
@@ -661,7 +672,7 @@ export function createWaveOrchestration({
       }
 
       async function commitLane() {
-        const { committed, tip } = await commitDispatchLane(open.worktree, { message: `aof(loop): ${ref} — lane commit\n\nRecord docs and run records of the lane's drive (129/ADR-004 §5).`, node, exec });
+        const { committed, tip } = await commitDispatchLane(open.worktree, { message: `aof(loop): ${ref} — lane commit\n\nRecord docs and run records of the lane's drive (129/ADR-004 §5).`, node, exec: stepExec() });
         await narrate(`Lane ${ref} — commit: ${committed ? `tip ${tip}` : `clean, tip ${tip}`}.`);
         return { committed, tip };
       }
@@ -690,7 +701,7 @@ export function createWaveOrchestration({
     }
 
     // ---- a closed lane: merge home, cleanup, the rows, the wave run's epoch ----
-    async function mergeLane(closed) {
+    async function mergeLane(closed, exec) {
       const { ref, lane } = closed;
       const milestoneItem = await milestoneFor(ref);
       const merge = await mergeHome(primaryRoot, ref, { milestoneDir: milestoneItem?.dir, node, exec });
@@ -704,13 +715,14 @@ export function createWaveOrchestration({
     async function closeLane(closed) {
       const { ref, lane } = closed;
       if (closed.outcome === "closed") {
-        const merged = await mergeLane(closed);
+        const merged = await mergeLane(closed, stepExec());
         if (merged.halt != null) {
           if (halted == null) halted = merged.halt;
           else drained.push({ ref, merge: merged.merge.outcome, halt: merged.halt.act.stop });
           return;
         }
-        await cleanupLane(ref, lane, ctx, narrate);
+        // The cleanup verb's git rides the port too (160/01), on a step of its own.
+        await cleanupLane(ref, lane, { ...ctx, exec: stepExec() }, narrate);
         // Every lane that merged in this wave is named beside a halt (the drained set): a lane that
         // closed a beat before the halting one was still part of the wave the halt ended.
         drained.push({ ref, merge: merged.merge.outcome });
@@ -722,7 +734,7 @@ export function createWaveOrchestration({
         // so every epoch's brief names exactly the lanes it carried.
         await settleWaveRun(halted != null || stopping() ? "failed" : "done");
         if (lanes.size > 0 && halted == null && !stopping()) {
-          const minted = await mintWaveRun([...lanes.keys()], lastBound);
+          const minted = await mintWaveRun([...lanes.keys()], lastBound, stepExec());
           if (minted?.halt != null && halted == null) halted = minted.halt;
         }
         return;
@@ -754,6 +766,7 @@ export function createWaveOrchestration({
 
     // ---- the ask + dispatch tick ----
     async function tick() {
+      const exec = stepExec();
       const answer = await invokeRegistered("work:next", { scope: resolved.scope, throughReview: true }, ctx);
       // A level that arrived while the ask was pending — a signal, or a request the poll here reads
       // — stops the tick: nothing is dispatched after the first level (ADR-005 §4), and the halt
@@ -764,7 +777,7 @@ export function createWaveOrchestration({
         // Lanes still open and nothing new to admit: the epoch a merge settled is re-minted now,
         // naming the lanes in flight, so the loop is never hidden while a lane works.
         if (waveRun == null && lanes.size > 0) {
-          const minted = await mintWaveRun([...lanes.keys()], lastBound);
+          const minted = await mintWaveRun([...lanes.keys()], lastBound, exec);
           if (minted?.halt != null) return { halt: minted.halt };
         }
         return { wait: true };
@@ -817,19 +830,21 @@ export function createWaveOrchestration({
       // loop's own lane bound (129/07, `bounds.laneBound`) rides both asks when it is a number:
       // dispatch narrows the pool's bound by it and answers the EFFECTIVE bound, so what the loop
       // narrates and records is what admission ran under; unset, nothing is passed.
-      if (lastBound == null) readBound(await invokeRegistered("work:dispatch", { list: true, ...laneBoundAsk }, ctx));
+      // The dispatch verb's own git reads (list, admission) share this tick's memo (160/ADR-001 §1).
+      if (lastBound == null) readBound(await invokeRegistered("work:dispatch", { list: true, ...laneBoundAsk }, { ...ctx, exec }));
       if (waveRun != null) await settleWaveRun("done");
       {
-        const minted = await mintWaveRun([...lanes.keys(), ...wave.dispatch], lastBound);
+        const minted = await mintWaveRun([...lanes.keys(), ...wave.dispatch], lastBound, exec);
         if (minted?.halt != null) return { halt: minted.halt };
       }
       const baseCommit = await headCommit(primaryRoot, { exec });
 
       const dispatchCtx = {
         ...ctx,
+        exec,
         runDispatchLane: typeof ctx.runDispatchLane === "function"
           ? ctx.runDispatchLane
-          : (member) => openLane(member.ref, baseCommit),
+          : (member) => openLane(member.ref, baseCommit, exec),
       };
       let dispatched;
       try {

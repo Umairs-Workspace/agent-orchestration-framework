@@ -74,8 +74,9 @@ const commandIdsBeforeStory = [
   // at `aof:verify 127`.
   // `repair` ADDED AT 147 (after `refine`, the descriptor's own order): the `/aof:repair` session a
   // loop hands a lane halt to. `review` ADDED AT 149 (after `retrospective`): `/aof:review` reviews
-  // the operator's own build.
-  "observe", "pay-debt", "promote", "archive", "recent", "refine", "repair", "retrospective", "review", "shatter", "validate", "verify",
+  // the operator's own build. `questions` ADDED AT 163 (after `archive`, the descriptor's own
+  // order): the `/aof:questions` wrapper over `aof work questions`, the read side of `work:answer`.
+  "observe", "pay-debt", "promote", "archive", "questions", "recent", "refine", "repair", "retrospective", "review", "shatter", "validate", "verify",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],

@@ -384,7 +384,7 @@ function storyContractSets(item, text, projectRoot) {
 // large stream never exhausts file handles.
 const SNAPSHOT_READ_CONCURRENCY = 16;
 
-async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, renameMap = null } = {}) {
+async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, history = null, renameMap = null } = {}) {
   const items = await listItems(workDir);
 
   // A SNAPSHOT FACT GATHERED BY A RECURSIVE WALK BELONGS TO THE ITEM THAT OWNS THE PATH
@@ -662,8 +662,13 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // (`test/arch/audit/acd-controls-never-execute.test.mjs`), so the git read lives in
     // `src/commands/doctor.mjs` exactly as `projectRoot` does. A null map is an honest no-op —
     // every miss stays a miss, which is what a caller that built a snapshot without history gets.
+    //
+    // 160/ADR-007 — the edge may hand a LOADER (`history`) in place of a map. It is loaded on the
+    // first miss and never before, so a register whose every control exists spawns nothing for
+    // history, and the snapshot then carries no map.
     for (const control of cited) {
       if (controlProbes[control] === true) continue;
+      renameMap ??= history == null ? null : await history.load();
       const answer = resolveCitedPath(control, { renameMap });
       if (answer.at == null) continue;
       try {

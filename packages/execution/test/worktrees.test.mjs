@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createWorktreeOperations, parsePorcelainStatus, defaultGitExec, resolveExec } from '../src/worktrees.mjs';
+import { createWorktreeOperations, parsePorcelainStatus, defaultGitExec, resolveExec, memoGitReads } from '../src/worktrees.mjs';
 
 test('worktree operations are inert and use caller paths, preparation and runner identity', async () => {
   const calls = [];
@@ -50,4 +50,19 @@ test('merge mechanics use supplied identity/message and abort conflicts without 
     { index: 'R', worktree: ' ', paths: ['old', 'new'] },
     { index: '?', worktree: '?', paths: ['extra'] },
   ]);
+});
+
+test('memoGitReads keeps a ref read per tree until any other verb runs, and never keeps a failure', async () => {
+  const calls = [];
+  const exec = memoGitReads(async (args, { cwd }) => { calls.push(`${cwd}:${args.join(' ')}`); return { status: args[0] === 'show-ref' ? 1 : 0, stdout: cwd, stderr: '' }; });
+  const first = await exec(['rev-parse', 'HEAD'], { cwd: 'a' });
+  assert.equal(await exec(['rev-parse', 'HEAD'], { cwd: 'a' }), first);
+  await exec(['rev-parse', 'HEAD'], { cwd: 'b' });
+  await exec(['status', '--porcelain'], { cwd: 'a' });
+  await exec(['rev-parse', 'HEAD'], { cwd: 'a' });
+  await exec(['show-ref', '--verify', 'refs/heads/x'], { cwd: 'a' });
+  await exec(['show-ref', '--verify', 'refs/heads/x'], { cwd: 'a' });
+  await exec(['-c', 'user.name=n', 'commit', '-m', 'x'], { cwd: 'b' });
+  await exec(['rev-parse', 'HEAD'], { cwd: 'a' });
+  assert.deepEqual(calls, ['a:rev-parse HEAD', 'b:rev-parse HEAD', 'a:status --porcelain', 'a:show-ref --verify refs/heads/x', 'a:show-ref --verify refs/heads/x', 'b:-c user.name=n commit -m x', 'a:rev-parse HEAD']);
 });

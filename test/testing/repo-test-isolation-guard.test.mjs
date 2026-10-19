@@ -177,4 +177,16 @@ export const repoTestIsolationGuardTests = [
       }
     },
   },
+  {
+    name: "160/02 task01: the isolation hook guards the shard entry as it guards the runner",
+    run: () => {
+      for (const [command, expected] of [
+        ["node scripts/test-shard.mjs test/run/regression-gate.test.mjs", true],
+        ["AOF_GLOBAL_HOME=/tmp/x node scripts/test-shard.mjs test/a.test.mjs", false],
+        ["node scripts/test.mjs --only test/a.test.mjs", true],
+      ]) {
+        assert.equal(blocked(command), expected, `${command}: expected ${expected ? "blocked" : "allowed"}`);
+      }
+    },
+  },
 ];

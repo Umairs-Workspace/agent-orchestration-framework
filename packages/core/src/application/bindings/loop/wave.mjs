@@ -24,6 +24,7 @@ export function assembleLoopWave({ workServices, runStoreServices, runHeartbeatC
   const { headCommit } = meshWorktreeServices;
   const { meshDispatchWorktreePath } = meshWorktreeServices;
   const { resolveExec } = meshWorktreeServices;
+  const { memoGitReads } = meshWorktreeServices;
   const { LANE_CANCEL_GRACE_MS } = loopChildDriveServices;
   const { childDriveOutcome } = loopChildDriveServices;
   const { loopFixFilePath } = loopChildDriveServices;
@@ -52,7 +53,7 @@ export function assembleLoopWave({ workServices, runStoreServices, runHeartbeatC
     transitions: { transitionRunComplete, transitionRunStart, transitionStaleRunsReclaimed },
     diagnostics: { reportDegrade },
     dispatch: { commitDispatchLane, dispatchLaneBase, inspectDispatchLanes, mergeDispatchLaneHome, resolveDispatchLane, resolveRefInWorktree },
-    worktrees: { headCommit, meshDispatchWorktreePath, resolveExec },
+    worktrees: { headCommit, meshDispatchWorktreePath, memoGitReads, resolveExec },
     childDrive: { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, spawnLaneDrive: spawnLaneDriveChild },
     asks: { askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, standingAsk },
     cycle: { budgetElapsedMs, drivenRow, measureGradeBaseline, readGradeBaseline, retryUntilTerminal, runBrief, settleDriven, settleStoryCycle, transitionOptionsFor },

@@ -22,9 +22,26 @@ function settleExecFile(error, stdout, stderr, resolve, reject) {
 // composes this module's verbs — borrows THIS seam instead of carrying a second literal
 // `execFile("git", …)` of its own. One spawn form, one resolver; a caller that injects `exec`
 // meets the same shape at both doors.
-export function defaultGitExec(args, { cwd, env, timeoutMs = 30000 } = {}) {
+//
+// A `commit` carries the commit verb's own five-minute bound when the caller names none (160/00):
+// a port wrapped by `memoGitReads` is an injected runner, so the commit verb's caller no longer
+// applies its default, and the bound must travel with the spawn rather than with that caller.
+const GIT_TIMEOUT_MS = 30000;
+const GIT_COMMIT_TIMEOUT_MS = 5 * 60 * 1000;
+
+// Git can be made to run a program two ways: the value of --upload-pack, --receive-pack or --exec, and the
+// ext:: transport, whose URL is a command line. So the spawn refuses any argument naming such an option (no
+// caller passes one), and every spawn pins protocol.ext.allow=never ahead of the caller's argv, so no URL a
+// caller relays can reach a command (CodeQL js/second-order-command-line-injection, PR #12).
+const GIT_PROGRAM_OPTION = /^--(?:upload-pack|receive-pack|exec)(?:=|$)/u;
+const GIT_SAFE_PREFIX = Object.freeze(["-c", "protocol.ext.allow=never"]);
+
+export function defaultGitExec(args, { cwd, env, timeoutMs } = {}) {
+  const program = args.find((arg) => GIT_PROGRAM_OPTION.test(String(arg)));
+  if (program !== undefined) return Promise.reject(Object.assign(new Error(`git refused: ${program} names a program for git to run`), { code: "git-program-option" }));
+  const timeout = timeoutMs ?? (gitVerb(args).verb === "commit" ? GIT_COMMIT_TIMEOUT_MS : GIT_TIMEOUT_MS);
   return new Promise((resolve, reject) => {
-    execFile("git", args, { cwd, env, timeout: timeoutMs, windowsHide: true }, (error, stdout, stderr) =>
+    execFile("git", [...GIT_SAFE_PREFIX, ...args], { cwd, env, timeout, windowsHide: true }, (error, stdout, stderr) =>
       settleExecFile(error, stdout, stderr, resolve, reject)
     );
   });
@@ -34,6 +51,79 @@ export function resolveExec(options) {
   return typeof options?.exec === "function" ? options.exec : defaultGitExec;
 }
 
+// memoGitReads(exec) — THE STEP-SCOPED READ MEMO (160/ADR-001). Answers an `exec` of the same
+// shape that asks git each ref or topology question once: an argv-identical call in the same `cwd`
+// to one of the MEMOISED verbs is answered from the first status-0 envelope. The content and
+// working-tree reads (`PASSED`) are forwarded every time and keep the memo. EVERY OTHER verb — the
+// writes, and any verb named nowhere here — clears the whole memo, in every `cwd`, before it runs:
+// an unknown verb fails safe, never stale. A failed read is never kept, so it is asked again.
+//
+// The verb is the first argument that is not an option; `-c`/`-C` and the bare `--git-dir`,
+// `--work-tree` and `--namespace` take the next argument as their value, so
+// `-c user.name=… commit` is a `commit`. Keys use the argv as given and are never normalised
+// (`worktree list --porcelain` is forward-slashed on Windows).
+//
+// A read in flight when a write clears the memo is answered but not kept (the generation check):
+// its answer may predate the write. The wrapper lives for one step and is dropped with it — the
+// caller makes a new one per step, because an agent writes the tree between steps through no port.
+const MEMOISED_GIT_VERBS = new Set(["rev-parse", "symbolic-ref", "merge-base", "show-ref", "rev-list"]);
+const PASSED_GIT_VERBS = new Set(["status", "diff", "log", "check-ignore"]);
+const GIT_OPTIONS_WITH_VALUE = new Set(["-c", "-C", "--git-dir", "--work-tree", "--namespace"]);
+
+function gitVerb(args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = String(args[index]);
+    if (GIT_OPTIONS_WITH_VALUE.has(arg)) { index += 1; continue; }
+    if (arg.startsWith("-")) continue;
+    return { verb: arg, sub: args[index + 1] == null ? null : String(args[index + 1]) };
+  }
+  return { verb: null, sub: null };
+}
+
+// recordCommitTip(exec) — an `exec` of the same shape whose `tip()` names the last commit it made
+// (160/ADR-001 §4), so a caller that commits through it needs no second `rev-parse HEAD`. The commit
+// is asked under `core.abbrev=40`, so its summary line (`[<branch> <sha>] <subject>`; a root commit
+// adds `(root-commit)`, a detached HEAD reads `detached HEAD`) carries the full id; the sha is the
+// token before `]`. `tip()` is null until a commit succeeds, or when that line cannot be read.
+const COMMIT_SUMMARY = /^\[[^\]\n]*?\b([0-9a-f]{7,64})\]/mu;
+
+export function recordCommitTip(exec) {
+  let tip = null;
+  const recording = async (args, options) => {
+    if (gitVerb(args).verb !== "commit") return await exec(args, options);
+    const result = await exec(["-c", "core.abbrev=40", ...args], options);
+    if (result?.status === 0) tip = COMMIT_SUMMARY.exec(String(result.stdout ?? ""))?.[1] ?? null;
+    return result;
+  };
+  return Object.assign(recording, { tip: () => tip });
+}
+
+export function memoGitReads(exec) {
+  if (typeof exec !== "function") throw new TypeError("memoGitReads: exec must be a function");
+  const answers = new Map();
+  let generation = 0;
+  return async function memoisedExec(args, options = {}) {
+    const { verb, sub } = gitVerb(args);
+    const memoised = MEMOISED_GIT_VERBS.has(verb) || (verb === "worktree" && sub === "list");
+    if (!memoised) {
+      if (!PASSED_GIT_VERBS.has(verb)) {
+        answers.clear();
+        generation += 1;
+      }
+      return exec(args, options);
+    }
+    const key = `${options?.cwd ?? ""}\0${args.map(String).join("\0")}`;
+    if (answers.has(key)) return answers.get(key);
+    const asked = generation;
+    const result = await exec(args, options);
+    if (result?.status === 0 && asked === generation) answers.set(key, result);
+    return result;
+  };
+}
+
+
+// A full object id as `rev-parse` prints it: SHA-1 or SHA-256.
+const OBJECT_ID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/iu;
 
 function gitError(message, code, extra = {}) {
   const error = new Error(message);
@@ -327,23 +417,38 @@ async function advanceBranchToBase(worktreePath, commit, options = {}) {
     try { return await run(args); } catch { return { status: 1, stdout: "", stderr: "" }; }
   };
 
+  // ONE QUESTION FIRST (160/ADR-001 §4): the tip, the resolved base and the branch in a single
+  // `rev-parse` — `--abbrev-ref` applies only to the arguments after it, and a detached HEAD
+  // answers `HEAD`. A lane whose tip IS the base is `already-current` on that one answer. Any
+  // other answer shape (a failed resolve, an unexpected runner) falls back to the three reads
+  // below, which own the coded refusal for a base that does not resolve.
+  const asked = await tryRun(["rev-parse", "HEAD", `${commit}^{commit}`, "--abbrev-ref", "HEAD"]);
+  const lines = asked.status === 0 ? text(asked).split(/\r?\n/u).map((line) => line.trim()) : [];
+  const answered = lines.length === 3 && OBJECT_ID.test(lines[0]) && OBJECT_ID.test(lines[1]) && lines[2].length > 0;
+
   // HEAD is on the item branch at the reuse door (ADR-015: never detached) — read it for
   // the report rather than re-deriving it, so the line names the branch git actually holds.
-  const branch = text(await tryRun(["symbolic-ref", "--quiet", "--short", "HEAD"])) || null;
+  const branch = answered
+    ? (lines[2] === "HEAD" ? null : lines[2])
+    : text(await tryRun(["symbolic-ref", "--quiet", "--short", "HEAD"])) || null;
 
-  const resolved = await run(["rev-parse", "--verify", "--quiet", `${commit}^{commit}`]);
-  const base = text(resolved);
-  if (resolved.status !== 0 || base.length === 0) {
-    // The caller has already run ensureCommitAvailable, so a miss here is a genuine fault
-    // (a mid-dispatch prune, a corrupt object db) and never the routine unpushed-control
-    // case that `assignment-base-commit-unavailable` names.
-    throw gitError(`the pinned base commit "${commit}" does not resolve in the worktree at ${worktreePath}`, "gate-propagation-base-unresolved", { worktreePath, commit, branch });
+  let base = answered ? lines[1] : null;
+  if (!answered) {
+    const resolved = await run(["rev-parse", "--verify", "--quiet", `${commit}^{commit}`]);
+    base = text(resolved);
+    if (resolved.status !== 0 || base.length === 0) {
+      // The caller has already run ensureCommitAvailable, so a miss here is a genuine fault
+      // (a mid-dispatch prune, a corrupt object db) and never the routine unpushed-control
+      // case that `assignment-base-commit-unavailable` names.
+      throw gitError(`the pinned base commit "${commit}" does not resolve in the worktree at ${worktreePath}`, "gate-propagation-base-unresolved", { worktreePath, commit, branch });
+    }
   }
-  const tipBefore = text(await run(["rev-parse", "HEAD"]));
+  const tipBefore = answered ? lines[0] : text(await run(["rev-parse", "HEAD"]));
   const settle = (outcome, code, tip) => ({ outcome, code, branch, base, tip });
 
-  // (1) The pinned base is already on the branch — nothing to do, and nothing touched.
-  if ((await run(["merge-base", "--is-ancestor", base, "HEAD"])).status === 0) {
+  // (1) The pinned base is already on the branch — nothing to do, and nothing touched. A tip
+  // that IS the base needs no ancestry question at all.
+  if (tipBefore === base || (await run(["merge-base", "--is-ancestor", base, "HEAD"])).status === 0) {
     return settle("already-current", null, tipBefore);
   }
 

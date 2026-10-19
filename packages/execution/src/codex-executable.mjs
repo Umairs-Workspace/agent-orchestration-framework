@@ -2,6 +2,7 @@ import { statSync } from "node:fs";
 import { execFile } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
+import { isSupportedCodexVersion } from "./codex-protocol-profile.mjs";
 
 const isFile = file => { try { return statSync(file).isFile(); } catch { return false; } };
 const packagePath = (root, name) => {
@@ -59,16 +60,16 @@ export async function* codexExecutables({ codexBin, env = process.env, signal } 
   }
 }
 
-export async function selectCodexExecutable(options, { readVersion, supportedVersions, candidates = codexExecutables } = {}) {
+export async function selectCodexExecutable(options, { readVersion, candidates = codexExecutables } = {}) {
   const detectedVersions = [];
   let incompatible = false;
   for await (const bin of candidates(options)) {
     if (options.signal?.aborted) throw Object.assign(new Error("abort"), { code: "abort" });
     try {
       const cliVersion = await readVersion(bin, options);
-      if (supportedVersions.includes(cliVersion)) return { bin, cliVersion };
+      if (isSupportedCodexVersion(cliVersion)) return { bin, cliVersion };
       incompatible = true;
-      if (/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u.test(cliVersion)) detectedVersions.push(cliVersion);
+      if (/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(cliVersion)) detectedVersions.push(cliVersion);
     } catch (error) {
       if (!["runtime_unavailable", "unsupported_profile"].includes(error.code)) throw error;
       if (error.code === "unsupported_profile") incompatible = true;

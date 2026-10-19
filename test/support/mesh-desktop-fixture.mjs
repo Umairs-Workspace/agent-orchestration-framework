@@ -32,6 +32,9 @@ export async function withMeshDesktopFixture(fn, { seedAofBinary = true, seedArt
     const bootstrapperArtifactPath = path.join(artifactsDir, "webview2-bootstrapper-source.exe");
     if (seedArtifacts) {
       await writeFile(appArtifactPath, "fixture-app-bytes-v1", "utf8");
+      // A built app is executable, and the install copies the mode with the bytes: without the bit, every install-then-run
+      // scenario refused desktop-not-runnable on POSIX (the seeded install above already sets it).
+      await chmod(appArtifactPath, 0o755);
       await writeFile(bootstrapperArtifactPath, "fixture-bootstrapper-bytes", "utf8");
     }
 

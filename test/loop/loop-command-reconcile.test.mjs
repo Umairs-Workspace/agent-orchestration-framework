@@ -201,7 +201,7 @@ export const loopCommandReconcileTests = [
         const verifyRowsBeforeBoundary = state.driven.filter((row) => row.phase === "verify");
         assert.ok(verifyRowsBeforeBoundary.every((row) => report.lines.indexOf(`Driving ${row.ref} — verify, cycle 1 of 3, L2.`) > boundary), "every verify drive comes after the boundary");
         void seenAtDone;
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -229,7 +229,7 @@ export const loopCommandReconcileTests = [
         assert.equal(driver.directives()[0], "/aof:verify 07/01", "the next drive is verify, never continue");
         const verifyRun = (await laneRunsOf(fx, "07/01")).filter((run) => run.brief?.loop?.phase === "verify").at(-1);
         assert.equal(verifyRun.brief.grade.verdict, "pass", "the verify run's brief.grade is the recorded grade");
-      }, { stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
+      }, { git: "fake", stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
     },
   },
   {
@@ -281,7 +281,7 @@ export const loopCommandReconcileTests = [
             }
           }
           void fixInput;
-        }, { stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
+        }, { git: "fake", stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
       }
     },
   },
@@ -305,7 +305,7 @@ export const loopCommandReconcileTests = [
         assert.ok(runs.some((run) => run.brief?.loop?.phase === "continue" && run.brief.loop.cycle === 2), "minted in the primary");
         assert.equal(child.calls.length, 0, "spawnLaneDrive is never called");
         assert.equal(state.act.stop === "unmapped-item-type", false, "no unmapped-item-type halt");
-      }, { stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
+      }, { git: "fake", stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
       // A `gate` act arriving with a status other than in-review is still the unexpected act: the
       // engine emits a fresh `gate` only for an in-review head, so the divergence cannot be driven
       // through `work:next`; the shell's guard and the halt that follows it are read at the source.
@@ -378,7 +378,7 @@ export const loopCommandReconcileTests = [
             assert.equal(driver.directives()[0], row.next === "continue" ? "/aof:continue 07/01 --solo" : `/aof:${row.next} 07/01`, `${row.records}: next`);
             assert.equal(state.driven.find((r) => r.ref === "07/01").cycle, row.cycle, `${row.records}: cycle`);
           }
-        }, { stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
+        }, { git: "fake", stories: [{ number: "01", status: "in-review" }], config: { loop: { concurrency: "sequential" } } });
       }
     },
   },
@@ -405,7 +405,7 @@ export const loopCommandReconcileTests = [
         // The own-writes commit stages the milestone's paths before git refuses; the shell resets
         // them, so the porcelain reads as it did before the commit was attempted.
         assert.equal(after, before, "git status --porcelain is byte-identical to before the commit");
-      }, { stories: ["01", { number: "02", tasks: false }] });
+      }, { git: "fake", stories: ["01", { number: "02", tasks: false }] });
     },
   },
 
@@ -434,7 +434,7 @@ export const loopCommandReconcileTests = [
         }
         const wave = (await laneRunsOf(fx, "07")).filter((r) => r.brief?.wave != null).at(-1);
         assert.equal(wave.state, "failed");
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -448,7 +448,7 @@ export const loopCommandReconcileTests = [
         const { state } = await runLoop(fx, { child, registry, signals });
         assert.equal(state.act.stop, "operator-interrupt");
         assert.equal(child.calls.length, 0, "no child is touched, no lane opened");
-      });
+      }, { git: "fake" });
       // 1 open, 0 prior, SIGTERM: the one child finishes on its own and its lane is merged
       await withLaneRepo(async (fx) => {
         const signals = fakeSignals();
@@ -461,7 +461,7 @@ export const loopCommandReconcileTests = [
         assert.equal(state.act.stop, "operator-interrupt");
         assert.equal(state.act.producer, "SIGTERM");
         assert.ok(state.driven.find((r) => r.ref === "07/01" && r.merge != null), "that lane is merged");
-      }, { stories: ["01"] });
+      }, { git: "fake", stories: ["01"] });
       // 2 open, 1 prior, second SIGINT: both children's stdin ended, neither lane merged, both kept
       await withLaneRepo(async (fx) => {
         const signals = fakeSignals();
@@ -485,7 +485,7 @@ export const loopCommandReconcileTests = [
           assert.equal(row.merge, undefined, `${ref}: merge absent`);
         }
         assert.match(report.lines.at(-1), /cancelled=\["07\/0[13]","07\/0[13]"\]/u, "the cancelled lanes are named in the account");
-      });
+      }, { git: "fake" });
       // 1 open, 1 prior, SIGTERM: the one child is aborted, its lane kept
       await withLaneRepo(async (fx) => {
         const signals = fakeSignals();
@@ -493,7 +493,7 @@ export const loopCommandReconcileTests = [
         const { state } = await runLoop(fx, { child, signals });
         assert.equal(state.act.stop, "operator-interrupt");
         assert.ok(existsSync(meshDispatchWorktreePath(fx.root, "07/01")), "its lane is kept");
-      }, { stories: ["01"] });
+      }, { git: "fake", stories: ["01"] });
       // 2 open, one already merged, 1 prior, SIGINT: only the open child is aborted; the merged lane stays merged
       await withLaneRepo(async (fx) => {
         const signals = fakeSignals();
@@ -508,7 +508,7 @@ export const loopCommandReconcileTests = [
         assert.equal(existsSync(meshDispatchWorktreePath(fx.root, "07/01")), false, "the merged lane stays merged and cleaned up");
         assert.ok(existsSync(meshDispatchWorktreePath(fx.root, "07/03")), "the open one is kept");
         assert.ok(state.driven.find((r) => r.ref === "07/01" && r.merge != null));
-      });
+      }, { git: "fake" });
     },
   },
   {
@@ -523,7 +523,7 @@ export const loopCommandReconcileTests = [
         assert.deepEqual(runs.map((r) => [r.state, r.failureReason]), [["failed", "timeout"], ["done", null]]);
         assert.ok(report.lines.includes("Retrying 07/01 — continue, attempt 2 of 3 (timeout)."));
         assert.equal(child.calls[0].lane, child.calls[1].lane, "the SAME lane worktree");
-      }, { stories: ["01"], config: { loop: { startToCloseMs: 1000, startupGraceMs: 100 } } });
+      }, { git: "fake", stories: ["01"], config: { loop: { startToCloseMs: 1000, startupGraceMs: 100 } } });
       await withLaneRepo(async (fx) => {
         // Every attempt is a timeout; each is stamped an instant apart so the lineage's elapsed
         // (attempt sums, the budget) crosses 1500ms on the second retry.
@@ -537,7 +537,7 @@ export const loopCommandReconcileTests = [
         const lane = meshDispatchWorktreePath(fx.root, "07/01");
         const runs = await readRuns(await resolveRefInWorktree(fx.root, fx.workDir, lane, "07/01"));
         assert.ok(runs.length >= 2 && runs.every((r) => r.state === "failed" && r.failureReason === "timeout"), "both failed / timeout records");
-      }, { stories: ["01"], config: { loop: { startToCloseMs: 1000, startupGraceMs: 100, scheduleToCloseMs: 1500 } } });
+      }, { git: "fake", stories: ["01"], config: { loop: { startToCloseMs: 1000, startupGraceMs: 100, scheduleToCloseMs: 1500 } } });
     },
   },
   {
@@ -771,7 +771,7 @@ function reentryTests() {
           assert.ok(!report.lines.some((line) => line.startsWith("Reclaimed 07/01")), "never narrated Reclaimed");
           assert.ok(!report.lines.some((line) => line.includes("lane-open-failed")), "no lane-open-failed");
           assert.ok(report.lines.some((line) => /^Lane 07\/01 — merge: (fast-forwarded|merged)/u.test(line)), "merged home");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
       },
     },
     {
@@ -798,7 +798,7 @@ function reentryTests() {
           assert.equal(states[0], "waiting", "the file read waiting during the wait");
           assert.ok(report.lines.some((line) => line.startsWith("07/01 — waiting on you (build, ")), "the waiting row");
           assert.equal(posts.filter((p) => p.content.includes("waiting on you")).length, 0, "session-needs-input was not sent again");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
       },
     },
     {
@@ -816,7 +816,7 @@ function reentryTests() {
           await runLoop(fx, { child, report, input: { resume: true }, now: new Date().toISOString() });
           assert.ok(report.lines.includes(`Lane 07/01 — live: run ${run.runId} is still heartbeating; left.`), report.lines.join("\n"));
           assert.equal(child.calls.length, 0, "never spawned");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
         await withLaneRepo(async (fx) => {
           const item = await resolveItemExact({ workspace: fx.workspace }, "07/01");
           // A settled run carrying the loop's declaration, so the resume has a loop to resume.
@@ -830,7 +830,7 @@ function reentryTests() {
           assert.equal(await readAsk(loopAsksDir(), minted.runId), null, "the stale file is gone");
           assert.equal(report.lines.filter((line) => line === `Ask ${minted.runId} — stale: its run is not running; cleared.`).length, 1, report.lines.join("\n"));
           assert.equal(await readFile(askRequestPath(loopAsksDir(), "R-OUT"), "utf8"), beforeOut, "an ask outside the scope is byte-unchanged");
-        }, { stories: ["01"] });
+        }, { git: "fake", stories: ["01"] });
       },
     },
   ];

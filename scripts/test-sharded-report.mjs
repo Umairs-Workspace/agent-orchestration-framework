@@ -21,14 +21,29 @@ export function lostUnitFailure(key, executed, assigned) {
 }
 
 // Seconds and cases per suite file, summed across its chunks — the next run's schedule and the slowest-files block.
+// A packed unit (160/ADR-010 §3) is one process holding several files: each file is timed from the
+// `# file <path> <seconds> <executed>` line the shard entry printed for it, and the unit itself is never an entry.
 export function fileTimings(results) {
   const perFile = {};
+  const add = (key, seconds, cases) => {
+    const entry = perFile[key] ?? (perFile[key] = { seconds: 0, cases: 0 });
+    entry.seconds += seconds;
+    entry.cases += cases;
+  };
   for (const result of results) {
-    const entry = perFile[result.unit.key] ?? (perFile[result.unit.key] = { seconds: 0, cases: 0 });
-    entry.seconds += result.seconds;
-    entry.cases += result.unit.positions.length;
+    if (result.unit.files == null) { add(result.unit.key, result.seconds, result.unit.positions.length); continue; }
+    const reported = fileLines(result.output ?? "");
+    for (const entry of result.unit.files) {
+      const line = reported.get(entry.file);
+      if (line != null) add(entry.key, line.seconds, entry.positions.length);
+    }
   }
   return perFile;
+}
+
+// The `# file <path> <seconds> <executed>` lines a unit printed, by path.
+export function fileLines(output) {
+  return new Map([...String(output).matchAll(/^# file (.+) (\d+(?:\.\d+)?) (\d+)$/gm)].map((match) => [match[1], { seconds: Number(match[2]), executed: Number(match[3]) }]));
 }
 
 export function slowestFiles(perFile, limit = 12) {
@@ -51,22 +66,37 @@ export function notIsolatedLines(flakes) {
   return flakes.flatMap(({ first }) => namesOf(first).map((name) => `# not isolated - ${name}`));
 }
 
-export function shardedReport({ stamp, executed, registered, units, wallSeconds, summedSeconds, jobs, failures, flakes, perFile, logs }) {
+// 160/ADR-006 §2-§3 — one `# not finished - <unit>` per unit the pool killed (a stop, the budget, its own
+// time limit), and `# not started: <n> units` for the queue a stop left. Comments, so the TAP reader counts
+// no failure for them; the gate reads them by their own prefixes.
+export function notFinishedLines(notFinished = [], notStarted = []) {
+  return [
+    ...notFinished.map((key) => `# not finished - ${key}`),
+    ...(notStarted.length > 0 ? [`# not started: ${notStarted.length} units`] : []),
+  ];
+}
+
+export function shardedReport({ stamp, executed, registered, units, wallSeconds, summedSeconds, jobs, failures, flakes, perFile, logs, notFinished = [], notStarted = [] }) {
+  const unfinished = notFinished.length > 0 || notStarted.length > 0;
   return [
     `# sharded run ${stamp}`,
     `# ${executed} of ${registered} registered cases executed in ${units} units; wall ${(wallSeconds / 60).toFixed(1)} min, summed ${(summedSeconds / 60).toFixed(1)} min, ${jobs} workers`,
     `# failures: ${failures.length} unit(s); not isolated (red in the pool, green alone): ${flakes.length} unit(s)`,
     ...failureLines(failures),
     ...notIsolatedLines(flakes),
-    // A run that executed fewer cases than the registry holds, with no failing unit to explain it, lost cases.
-    ...(executed !== registered && failures.length === 0 ? [`not ok - executed ${executed} cases, the registry holds ${registered}`] : []),
+    ...notFinishedLines(notFinished, notStarted),
+    // A run that executed fewer cases than the registry holds, with no failing unit and no unit that did not
+    // finish to explain it, lost cases.
+    ...(executed !== registered && failures.length === 0 && !unfinished ? [`not ok - executed ${executed} cases, the registry holds ${registered}`] : []),
     ...slowestFiles(perFile),
     `# logs: ${logs}`,
   ];
 }
 
-// Red on a failure or a lost case; a not-isolated case is logged and passes, unless --strict.
-export function shardedExit({ failures, flakes, executed, registered, strict = false }) {
-  const lost = executed !== registered && failures.length === 0;
-  return failures.length > 0 || lost || (strict && flakes.length > 0) ? 1 : 0;
+// Red on a failure or a lost case; a not-isolated case is logged and passes, unless --strict. A run with a unit
+// that did not finish, or one never started, exits non-zero without being a failure.
+export function shardedExit({ failures, flakes, executed, registered, strict = false, notFinished = [], notStarted = [] }) {
+  const unfinished = notFinished.length > 0 || notStarted.length > 0;
+  const lost = executed !== registered && failures.length === 0 && !unfinished;
+  return failures.length > 0 || lost || unfinished || (strict && flakes.length > 0) ? 1 : 0;
 }

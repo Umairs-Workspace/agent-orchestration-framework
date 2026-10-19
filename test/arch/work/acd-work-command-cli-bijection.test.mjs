@@ -343,6 +343,9 @@ function argsFor(sub) {
     // document at exit 1 — the `promote` shape above, and deliberately so: an answer that
     // SUCCEEDED would write an ask file the fixture never opened.
     case "answer": return ["work", "answer", "03/01", "bijection probe", "--json"];
+    // story 163 — work:questions, the read side of `answer`. The fixture holds no ask file and no
+    // parked worker, so the verb answers the empty array at exit 0 — it writes nothing.
+    case "questions": return ["work", "questions", "--json"];
     // milestone 40 / story 02 — work:upgrade. --dry-run so the probe never
     // mutates the fixture's "03"/"03/01" refs the other subcommand probes
     // above depend on (it only REPORTS what would change).

@@ -30,7 +30,7 @@
 // ASSEMBLED FROM PARTS at runtime, so this file's own source contains no comment-stripping
 // call site and cannot match itself. The self-check at the end proves the detector fires on a
 // planted block-first stripper and stays silent on each accepted line-first spelling.
-import { blankStringLiterals } from "../../support/source-slice.mjs";
+import { blankStringLiterals, functionBody, scannersWith, stripComments } from "../../support/source-slice.mjs";
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
@@ -158,4 +158,78 @@ export const archTests = [
       }
     },
   },
+
+  // ══════════════ FF-16011 (160/10, ADR-011 §1) — the source scanner is linear ══════════════
+  {
+    name: "FF-16011 160/10 The output is unchanged over the whole test tree",
+    run: async () => {
+      const files = (await listMjs(path.join(root, "test"))).sort();
+      assert.ok(files.length > 1000, `the tree is the whole test tree (${files.length} files)`);
+      const differ = [];
+      for (const file of files) {
+        const source = (await readFile(file, "utf8")).replace(/\r\n/gu, "\n");
+        if (stripComments(source) !== PREVIOUS.stripComments(source)) differ.push(`${path.relative(root, file)} (stripped)`);
+        if (blankStringLiterals(source) !== PREVIOUS.blankStringLiterals(source)) differ.push(`${path.relative(root, file)} (blanked)`);
+      }
+      assert.deepEqual(differ, [], "every file strips and blanks exactly as the previous scanner does");
+    },
+  },
+  {
+    name: "FF-16011 160/10 [outline] A slash is read as a regex or a division by what comes before it (6 rows)",
+    run: () => {
+      const rows = [
+        ["const a = b / c; // note", "const a = b / c;"],
+        ['const r = x.replace(/\\s+$/u, ""); // trim', "/\\s+$/u"],
+        ["if (ok) return /a\\/\\/b/u.test(s); // check", "/a\\/\\/b/u"],
+        ["value   /   2 // half", "value   /   2"],
+        ["yield /x/; // after a keyword", "yield /x/;"],
+        ["const half = thisIsAVeryLongIdentifierThatRunsPastSixtyFourCharactersAndEndsWithin / 2; // note", "EndsWithin / 2;"],
+      ];
+      for (const [source, kept] of rows) {
+        const stripped = stripComments(source);
+        assert.ok(stripped.includes(kept), `${JSON.stringify(source)} keeps ${JSON.stringify(kept)}: ${JSON.stringify(stripped)}`);
+        const comment = source.slice(source.lastIndexOf("// ") + 3);
+        assert.equal(stripped.includes(comment), false, `${JSON.stringify(source)}: the comment "${comment}" is gone`);
+        assert.equal(stripped, PREVIOUS.stripComments(source), `${JSON.stringify(source)}: as the previous scanner reads it`);
+      }
+    },
+  },
+  {
+    name: "FF-16011 160/10 The regex test never reads the prefix it was handed",
+    run: async () => {
+      const code = stripComments(await readFile(path.join(root, "test", "support", "source-slice.mjs"), "utf8"));
+      const body = functionBody(code, "function startsRegex(");
+      assert.ok(body != null, "the regex test was found");
+      assert.match(code, /function startsRegex\(text, end\)/u, "it is handed the text and the index to look back from");
+      assert.match(body, /while \(last > 0 && WHITESPACE\.test\(text\[last - 1\]\)\) last -= 1;/u, "it looks back over whitespace from that index");
+      assert.match(body, /while \(first > 0 && WORD_CHAR\.test\(text\[first - 1\]\)\) first -= 1;/u, "…and over one identifier");
+      assert.equal(/\.(?:replace|substring|substr|match|exec)\(|\.slice\(0\b/u.test(body), false, "it copies nothing before that index and runs no pattern over it");
+      assert.equal(/\$\/[a-z]*\.(?:test|exec)|new RegExp/u.test(body), false, "and runs no pattern anchored at its end");
+      assert.deepEqual([...body.matchAll(/text\.slice\(([^)]*)\)/gu)].map((match) => match[1]), ["first, last"], "the one slice it takes is the identifier itself");
+      assert.ok(/stripWith\(source, startsRegex\)/u.test(code) && /blankWith\(source, startsRegex\)/u.test(code), "both scanners use it");
+      assert.equal((code.match(/regexAt\(out, out\.length\)/gu) ?? []).length, 2, "and both hand it the index, never a copy of what they wrote");
+    },
+  },
 ];
+
+// ── FF-16011's oracle: the regex test this story replaced, verbatim, over the same two scanners ──
+function previousStartsRegex(before) {
+  const trimmed = before.replace(/\s+$/u, "");
+  if (trimmed === "") return true;
+  if (PREVIOUS_PRECEDERS.has(trimmed.at(-1))) return true;
+  const word = /([A-Za-z_$][\w$]*)$/u.exec(trimmed);
+  return word != null && PREVIOUS_KEYWORDS.has(word[1]);
+}
+const PREVIOUS_PRECEDERS = new Set(["(", ",", "=", ":", "[", "!", "&", "|", "?", "{", "}", ";", "+", "-", "*", "%", "^", "~", "<", ">"]);
+const PREVIOUS_KEYWORDS = new Set(["return", "typeof", "instanceof", "in", "of", "new", "delete", "void", "do", "else", "case", "yield", "await"]);
+const PREVIOUS = scannersWith((text, end) => previousStartsRegex(text.slice(0, end)));
+
+async function listMjs(dir) {
+  const out = [];
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) out.push(...(await listMjs(full)));
+    else if (entry.name.endsWith(".mjs")) out.push(full);
+  }
+  return out;
+}

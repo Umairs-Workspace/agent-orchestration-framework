@@ -11,7 +11,7 @@ import { readPresentedCredential } from "./relay.mjs";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshLauncher({ globalMeshPaths, readNodeRecords, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, publishGlobalWorkSnapshot, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
+export function createMeshLauncher({ globalMeshPaths, readNodeRecords, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, publishGlobalWorkSnapshot, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
 // src/mesh/launcher.mjs — the per-node presence and global propagation daemon (milestone 33 / story 01,
 // ADR-003). The coordination launcher (F-3201): with the ws@8 broker eliminated
 // (ADR-002), this is the per-node process the fabric-native model needs — it publishes
@@ -829,6 +829,11 @@ async function startLauncher(ws, options = {}) {
   // needs no launcher-held handle — it rides the existing stream client.)
   let relayBroker = null;
   let controlTerminalPush = null;
+  // 162/ADR-001 — the LOCAL terminal ingress a loop's drive child pushes its PTY output into,
+  // and the forward each role gives it: the control node into its loopback push, a worker up
+  // its own admitted stream. Set in the role branch below, started after it, stopped in stop().
+  let terminalIngress = null;
+  let ingressForward = null;
   // m42 "interactive worker terminals" — the serve process's SELF-subscription to its
   // own loopback broker (the input direction's inbound leg). Disposed in stop().
   let terminalInputSubscriber = null;
@@ -901,6 +906,15 @@ async function startLauncher(ws, options = {}) {
     const relayEnabled = options?.relay !== false && configuredRelayUrl(config) != null;
     if (relayEnabled) {
       controlTerminalPush = createTerminalRelayPushTransport(config);
+    }
+    // 162/ADR-001 §2 — the control node's ingress leg: straight into the loopback push the
+    // fabric-received frames above already ride. The envelope's node id is THIS daemon's own,
+    // never a field the child sent (the ingress forwards only a session id and its bytes).
+    if (controlTerminalPush != null) {
+      ingressForward = {
+        frame: (sessionId, bytes) => controlTerminalPush.push(buildTerminalFrameEnvelope(nodeId, sessionId, bytes)),
+        end: (sessionId) => controlTerminalPush.push(buildTerminalEndEnvelope(nodeId, sessionId)),
+      };
     }
     streamServer = await startServer({
       ...(boundAddress ? { bindAddress: boundAddress } : {}),
@@ -1105,6 +1119,14 @@ async function startLauncher(ws, options = {}) {
       ...(options?.workerStreamClientOptions ?? {}),
     });
     streamClient = client;
+    // 162/ADR-001 §2 — a worker's ingress leg: up the SAME admitted stream its own assignment
+    // PTYs ride, so the control re-stamps the frames with this connection's bound node id.
+    if (transport != null) {
+      ingressForward = {
+        frame: (sessionId, bytes) => client.sendTerminalFrame(sessionId, bytes),
+        end: (sessionId) => client.sendTerminalEnd(sessionId),
+      };
+    }
 
     // milestone 35 / story 02 (ADR-004) — wire the accepted-directive execution
     // handler onto the SAME persistent channel's receive seam (worker-stream-
@@ -1420,6 +1442,25 @@ async function startLauncher(ws, options = {}) {
       await connectClient(client, ws, record);
     }
     workerStreamHasTransport = transport != null;
+  }
+
+  // 162/ADR-001 §1 — every daemon with a leg to forward on opens ONE local terminal ingress,
+  // started with it and stopped with it. `options.terminalIngress === false` is the
+  // test-isolation seam (the `relay: false` discipline) and `options.startTerminalIngress`
+  // the injected server; a start fault is a warning and an ingress-less daemon, never a dead one.
+  if (ingressForward != null && options?.terminalIngress !== false) {
+    const startIngress = options?.startTerminalIngress ?? startTerminalIngress;
+    try {
+      terminalIngress = await startIngress({
+        forward: ingressForward,
+        // Published at, and withdrawn from, this machine's own mesh root through the mesh store.
+        publish: (address) => publishTerminalIngress(ws, address),
+        withdraw: (token) => withdrawTerminalIngress(ws, token),
+      });
+    } catch (error) {
+      emitWarning(launcherWarnings, { code: "terminal-ingress-start-failed", message: error?.message ?? "The local terminal ingress failed to start.", path: null }, options);
+      terminalIngress = null;
+    }
   }
 
   // The peer-poll ticker — periodically re-reads resolvePeers so mesh:status reflects
@@ -1894,6 +1935,10 @@ async function startLauncher(ws, options = {}) {
     });
     // 131/10: the bot's gateway closed and its timers cleared, before the stream server goes.
     discordBot?.stop?.();
+    // 162/ADR-001 §1 — the ingress closes before the legs it forwards on, and removes its file.
+    Promise.resolve(terminalIngress?.stop?.()).catch((error) => {
+      reportDegrade("mesh-launcher", error);
+    });
     streamServer?.stop?.();
     streamClient?.stop?.();
     relayBroker?.stop?.();

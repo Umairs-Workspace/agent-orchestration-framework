@@ -13,6 +13,14 @@ import { mkdtemp, mkdir, writeFile, rm, realpath, readdir, readFile } from "node
 import { execFile } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
+import { repoFromTemplate } from "./cli-spawn.mjs";
+
+// The repository's `init` and identity, built once per process and copied (160/ADR-009 §3): git stays
+// this fixture's subject, and only its setup gets cheaper.
+export const DISPATCH_REPO = Object.freeze({
+  init: ["init", "-q", "-b", "main"],
+  config: [["user.email", "fixture@aof.test"], ["user.name", "aof fixture"]],
+});
 
 // git(args, cwd) — argv form only, never a shell string (mesh-worktree.mjs's discipline).
 export function git(args, cwd) {
@@ -67,9 +75,7 @@ export async function withDispatchRepo(body, { stories = ["00", "01"], shared = 
   // resolved paths — an unresolved fixture root makes every prefix-child check a false red.
   const root = await realpath(await mkdtemp(path.join(os.tmpdir(), "aof-dispatch-")));
   try {
-    await git(["init", "-b", "main"], root);
-    await git(["config", "user.email", "fixture@aof.test"], root);
-    await git(["config", "user.name", "aof fixture"], root);
+    repoFromTemplate(root, DISPATCH_REPO);
 
     const workDir = path.join(root, "wiki", "work");
     const milestoneDir = path.join(workDir, "53_milestone_dispatch");

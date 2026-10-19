@@ -40,7 +40,7 @@ const TTL_MS = DEFAULT_SESSION_TTL_SECONDS * 1000;
 // only growth m48/ADR-005 permits. The constant keeps its name because the SIX are what it
 // is about: every one of them is still here, in order, and the scenarios below still assert
 // an exact ordered list rather than a subset.
-const FROZEN_SIX = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"];
+const FROZEN_SIX = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"]; // 162/ADR-002 §1 appends loopRunId
 // The m38 four, in their m38 relative order — the keys this milestone must NOT move.
 const M38_FOUR = ["workspaceId", "repo", "assistant", "lastPingAt"];
 

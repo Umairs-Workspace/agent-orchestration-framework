@@ -333,7 +333,7 @@ export const archTests = [
       assert.equal(record.relaying, true, "hop 1: the record states the fact");
       assert.deepEqual(
         Object.keys(record),
-        ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"],
+        ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"],
         "…APPENDED as the eighth key, with m48/ADR-002's frozen seven in their existing order (an insertion would be a reorder of a shape another milestone froze)",
       );
       assert.equal(assembleSessionRecord({ nodeId: "n1" }).relaying, false, "…and a record that states nothing reads FALSE, never undefined — the key is always present");

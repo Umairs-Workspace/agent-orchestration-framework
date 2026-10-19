@@ -67,7 +67,24 @@ export const EMPTY_CELL = "—";
 const GREEN = "green";
 const RED = "red";
 const OVERRIDE = "override";
-export const GATE_RESULTS = Object.freeze([GREEN, RED, OVERRIDE]);
+// 160/ADR-006 §4 — a run that did not finish: a unit killed at its time limit, a budget stop, or the
+// gate's own deadline. It is a gate run and not a verdict on the code, so it is neither red nor green.
+const NOT_FINISHED = "not-finished";
+export const GATE_RESULTS = Object.freeze([GREEN, RED, OVERRIDE, NOT_FINISHED]);
+
+// The row's result, by ADR-006 §4's precedence: any failing case is red; otherwise anything that did
+// not finish is not-finished; otherwise a run that passed is green, and one that did not is red.
+export function gateResult({ failures = 0, notFinished = false, passed = false } = {}) {
+  if (failures > 0) return RED;
+  if (notFinished) return NOT_FINISHED;
+  return passed ? GREEN : RED;
+}
+
+// isNotFinishedRow(row) — did the gate run and stop before it could answer? Its own door refusal,
+// because its repair is "re-run, or speed the run up", never "fix the code".
+export function isNotFinishedRow(row) {
+  return row?.result === NOT_FINISHED;
+}
 
 // The result and scope an OVERRIDE row carries. It is not a run, so it names no run's scope; the
 // word in both cells is what makes the row distinguishable from a gate result at a glance, and what

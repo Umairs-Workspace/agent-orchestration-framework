@@ -29,6 +29,8 @@ import { lessonMetaHoldTests } from "./lesson-meta-hold.suite.mjs";
 // milestone 153 / story 03 — memory effectiveness: the accounting read model and doctor's advisory lane.
 import { memoryAccountingTests } from "./memory-accounting.suite.mjs";
 import { memoryEffectivenessTests } from "./memory-effectiveness.suite.mjs";
+// story 163 — work:questions, the read side of work:answer: its selection and render rules.
+import { workQuestionsTests } from "./work-questions.suite.mjs";
 
 export const tests = [
   ...runtimeObserveTests,
@@ -59,4 +61,5 @@ export const tests = [
   ...lessonMetaHoldTests,
   ...memoryAccountingTests,
   ...memoryEffectivenessTests,
+  ...workQuestionsTests,
 ];

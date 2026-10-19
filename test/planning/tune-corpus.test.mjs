@@ -1,4 +1,5 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 // milestone 62 / story 00 — the three corpus lanes and the absence floor.
 import assert from "node:assert/strict";
 import os from "node:os";
@@ -381,4 +382,41 @@ export const tuneCorpusTests = [
       assert.ok(byId.R3.citations.some((citation) => citation.includes("refine.md")), "a lesson that promoted nowhere keeps every path it mentions");
     }),
   },
+
+  // ── 160/10 (ADR-011 §2) · a snapshot is read by ref or by the row the caller already holds ──
+  {
+    name: "160/10 [outline] A snapshot is read by ref or by folder with the same answer (3 rows)",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      const milestone = await addItem(workDir, "53");
+      const story = path.join(milestone, "stories", "01_story_s01");
+      await put(path.join(story, "STORY.md"), "---\ntype: story\nnumber: 01\nslug: s01\nparent: 53\nstatus: not-started\ntitle: S01\n---\n");
+      const archived = path.join(workDir, "archive", "41_milestone_old");
+      await mkdir(archived, { recursive: true });
+      for (const [dir, who] of [[milestone, "53"], [story, "53/01"], [archived, "41"]]) await addSnapshot(dir, { agents: [{ sessionId: `s-${who}`, attributedTo: who }] });
+      const rows = await listStream(workDir);
+      for (const [label, ref] of [["milestone 53", "53"], ["story 53/01", "53/01"], ["an archived milestone", "41"]]) {
+        const row = rows.find((candidate) => candidate.ref === ref);
+        assert.ok(row != null, `${label} is a row of the stream`);
+        const byRef = await readLatestSnapshot({ cwd, ref });
+        const byFolder = await readLatestSnapshot({ cwd, ref, item: row });
+        assert.ok(byRef != null && byRef.json.agents[0].attributedTo === ref, `${label}: the read by ref found its snapshot`);
+        assert.deepEqual(byFolder, byRef, `${label}: both reads return the same snapshot`);
+      }
+    }),
+  },
+  {
+    name: "160/10 A ref that resolves to nothing is still refused by name",
+    run: () => fixture(async ({ cwd, workDir }) => {
+      await addSnapshot(await addItem(workDir, "53"), { agents: [] });
+      assert.equal(await readLatestSnapshot({ cwd, ref: "99" }), null, "the snapshot read of 99 finds nothing, as before");
+      await assert.rejects(_aofApplication.work.observe.observeMilestone({ cwd, ref: "99" }), (error) => {
+        assert.equal(error.code, "milestone-not-found");
+        assert.ok(error.message.includes('"99"'), `the refusal names "99": ${error.message}`);
+        return true;
+      });
+    }),
+  },
 ];
+
+const readLatestSnapshot = _aofApplication.work.observe.readLatestSnapshot;
+const listStream = _aofWorkspace.work.listItems;

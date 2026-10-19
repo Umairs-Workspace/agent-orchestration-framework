@@ -167,8 +167,9 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade, acquireLock =
   // readAsks(dir, { workspaceId }) → one workspace's records, ordered by `askedAt` and then `runId`,
   // both ascending. Only entries named `<segment>.json` are read — a `.tmp-*` write in flight or a
   // stray file is skipped quietly; a `.json` that is not a record is skipped after its degrade.
-  // An absent directory is `[]`.
-  async function readAsks(dir, { workspaceId } = {}) {
+  // An absent directory is `[]`. `allWorkspaces: true` is the explicit node-wide read (163's
+  // `aof work questions --all`); an absent `workspaceId` still matches only records without one.
+  async function readAsks(dir, { workspaceId, allWorkspaces = false } = {}) {
     let names;
     try {
       names = await readdir(dir);
@@ -181,7 +182,7 @@ export function createAskRequests({ getRuntimeRoot, reportDegrade, acquireLock =
     for (const name of names) {
       if (!RECORD_FILE_RE.test(name)) continue;
       const record = await readAsk(dir, name.slice(0, -".json".length));
-      if (record != null && record.workspaceId === workspaceId) records.push(record);
+      if (record != null && (allWorkspaces === true || record.workspaceId === workspaceId)) records.push(record);
     }
     return records.sort((a, b) => ordinal(a.askedAt, b.askedAt) || ordinal(a.runId, b.runId));
   }

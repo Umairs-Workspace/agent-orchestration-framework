@@ -35,7 +35,7 @@ const { openGlobalWorkProjectionStore } = globalWorkStoreServices();
 // inputs of the browser's feed-axis disjunction sitting together. Unconditional and
 // read with a strict `=== true`, exactly as `workspaceHasRun` is; every key above it
 // keeps its position, so this list still asserts an exact ordered entry.
-const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying"];
+const ENTRY_KEYS = ["nodeId", "sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "workItem", "relaying", "loopRunId"];
 
 const NOW = "2026-08-10T12:00:00.000Z";
 

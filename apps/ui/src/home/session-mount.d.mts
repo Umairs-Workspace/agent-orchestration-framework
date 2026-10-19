@@ -39,6 +39,12 @@ export declare const ROSTER_GONE_REASON: string;
 /** Axis value → the sentence that names why the pane cannot type. `producer-known` has none. */
 export declare const READ_ONLY_CAUSE_REASON: Readonly<Record<string, string>>;
 
+/** 162/ADR-002 §3 — why a relayed pane a loop drives still cannot type. */
+export declare const LOOP_DRIVEN_REASON: "read-only — a loop drives this session; answer it with aof work answer";
+
+/** True unless the row's `loopRunId` is null or absent — a malformed value fails closed. */
+export declare function isLoopDriven(row: { readonly loopRunId?: unknown } | null | undefined): boolean;
+
 /** One `MeshSession` entry of milestone 48's index, as the fleet already polls it. */
 export interface HomeSessionRow {
   readonly nodeId?: string | null;
@@ -49,6 +55,9 @@ export interface HomeSessionRow {
   readonly lastPingAt?: string | null;
   readonly workspaceHasRun?: boolean;
   readonly workItem?: { readonly ref?: string | null; readonly assignmentId?: string | null } | null;
+  readonly relaying?: boolean;
+  /** 162/ADR-002 — the loop run driving this session; anything but null/absent mounts read-only. */
+  readonly loopRunId?: unknown;
 }
 
 export interface HomeSessionMountOptions {

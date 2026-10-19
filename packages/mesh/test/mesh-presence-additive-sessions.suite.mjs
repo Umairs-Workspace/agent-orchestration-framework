@@ -30,7 +30,7 @@ const FROZEN_FIVE = ["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVers
 // INSERTION at the head and an APPEND at the tail, NEVER a reorder"). Every key above it
 // keeps its position, so what this list still asserts — an exact ordered projection, never
 // a subset — is unchanged.
-const ENTRY_KEYS = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying"];
+const ENTRY_KEYS = ["sessionId", "workspaceId", "repo", "assistant", "lastPingAt", "workspaceHasRun", "relaying", "loopRunId"]; // 162/ADR-002 §1 appends loopRunId
 const NODE_ID = "node-a";
 const NOW = "2026-07-10T12:00:00.000Z";
 
@@ -73,7 +73,7 @@ export const meshPresenceAdditiveSessionsTests = [
       // 8 appended `relaying` at the tail. It is spelled in full here because
       // `assemblePresenceRecord` carries an entry through WHOLE (the pass-through m48/ADR-005
       // depends on), so this literal IS the shape under test rather than an input to it.
-      const session = { sessionId: "sess-A", workspaceId: "ws-1", repo: "my-repo", assistant: "claude-code", lastPingAt: "2026-07-10T12:00:00.000Z", workspaceHasRun: false, relaying: false };
+      const session = { sessionId: "sess-A", workspaceId: "ws-1", repo: "my-repo", assistant: "claude-code", lastPingAt: "2026-07-10T12:00:00.000Z", workspaceHasRun: false, relaying: false, loopRunId: null };
       const record = assemblePresenceRecord({ nodeId: "node-a", heartbeatAt: "2026-07-10T12:00:00.000Z", activeRuns: [], sessions: [session], aofVersion: "1.2.3" });
       assert.equal(record.sessions.length, 1, "sessions has exactly one entry");
       assert.deepEqual(Object.keys(record.sessions[0]), ENTRY_KEYS, "entry keys are exactly the six, in order");

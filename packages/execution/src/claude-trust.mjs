@@ -60,7 +60,10 @@ function claudeProjectKey(cwd) {
 
 async function ensureWorktreeTrusted(worktreeCwd, options = {}) {
   if (typeof worktreeCwd !== "string" || worktreeCwd.length === 0) return;
-  const home = options.homedir ?? os.homedir();
+  // A test process names its own claude home (160/ADR-013 §1), as the other AOF_TEST_* hooks do; production
+  // never sets it. Without it, every lane a test drove wrote its temp folder into the operator's real
+  // ~/.claude.json — 106,899 such entries by 2026-10-17.
+  const home = options.homedir ?? process.env.AOF_TEST_CLAUDE_HOME ?? os.homedir();
   const cfgPath = path.join(home, ".claude.json");
   // The ONE key both this writer and claude's reader agree on.
   const key = claudeProjectKey(worktreeCwd);

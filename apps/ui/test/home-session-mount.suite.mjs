@@ -11,6 +11,7 @@
 import assert from "node:assert/strict";
 import {
   HOME_NO_STREAM,
+  LOOP_DRIVEN_REASON,
   READ_ONLY_CAUSE_REASON,
   ROSTER_GONE_REASON,
   homeSessionMount,
@@ -323,4 +324,50 @@ export const homeSessionMountTests = [
       assert.equal(READ_ONLY_CAUSE_REASON[FEED_PRODUCER_KNOWN], undefined, "…because there is no cause to carry: nothing cost it anything");
     },
   },
+  // ═══ 162 task 00 — a loop-driven session's pane: its stream binds, its keyboard does not ═══
+  {
+    name: "loop-session-streams-to-its-card/00 E1 · a sequential loop drive's session streams live — its home pane opens a stream instead of reading \"no live output — no assignment is relaying this session\"",
+    async run() {
+      const declared = homeSessionMount(row({ relaying: true, loopRunId: "20261017T081933836Z-0000" }));
+      assert.equal(declared.bound, true, "the pane binds a socket — the bytes are real");
+      assert.notEqual(declared.reason, NO_LIVE_OUTPUT_REASON, "…and does not read `no live output`");
+      assert.equal(declared.rendersPanel, true);
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 E3 · typing into a loop session's card reaches nothing — the pane opens a stream, its posture is read-only with the loop's reason, and no keystroke sink or send path exists",
+    async run() {
+      const declared = homeSessionMount(row({ relaying: true, loopRunId: "20261017T081933836Z-0000" }));
+      assert.equal(declared.bound, true, "the pane opens a stream");
+      assert.equal(declared.posture, POSTURE_READ_ONLY, "its posture is read-only");
+      assert.equal(declared.reason, "read-only — a loop drives this session; answer it with aof work answer", "…with the loop's reason");
+      assert.equal(LOOP_DRIVEN_REASON, declared.reason, "the reason has one author");
+      const policy = inputPolicyFor(declared.source, declared.posture);
+      assert.equal(policy.inputEnabled, false, "no input path");
+      const model = modelOf(declared);
+      assert.deepEqual([...model.keystrokeSinks], [], "no keystroke sink is registered, so a keystroke is sent nowhere");
+      assert.equal(model.sendPath, null, "…and there is no send path to send it down");
+    },
+  },
+  {
+    name: "loop-session-streams-to-its-card/00 [outline] only a session with no driving loop mounts interactive — relaying × loop run → posture (6 rows)",
+    async run() {
+      const rows = [
+        { relaying: true, loopRunId: undefined, posture: POSTURE_INTERACTIVE },
+        { relaying: true, loopRunId: null, posture: POSTURE_INTERACTIVE },
+        { relaying: true, loopRunId: "20261017T081933836Z-0000", posture: POSTURE_READ_ONLY },
+        { relaying: true, loopRunId: 42, posture: POSTURE_READ_ONLY },
+        { relaying: true, loopRunId: "", posture: POSTURE_READ_ONLY },
+        { relaying: false, loopRunId: "20261017T081933836Z-0000", posture: POSTURE_READ_ONLY },
+      ];
+      for (const example of rows) {
+        const subject = { ...row({ relaying: example.relaying }), ...(example.loopRunId === undefined ? {} : { loopRunId: example.loopRunId }) };
+        assert.equal(Object.hasOwn(subject, "loopRunId"), example.loopRunId !== undefined, "the row carries the key exactly when the example says so");
+        const declared = homeSessionMount(subject);
+        assert.equal(declared.posture, example.posture, `relaying ${example.relaying}, loop run ${JSON.stringify(example.loopRunId)}`);
+        assert.equal(inputPolicyFor(declared.source, declared.posture).inputEnabled, example.posture === POSTURE_INTERACTIVE, "…and the input path follows it");
+      }
+    },
+  },
 ];
+

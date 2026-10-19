@@ -34,6 +34,9 @@
 // failure arrive as arguments (`acd-home-layout-is-a-filter` sweeps this whole directory for
 // them). The fetch, the poll and the retry are the component's — see apps/ui/src/home/Home.tsx.
 import { ROUTES } from "../app/routes.mjs";
+// 162/ADR-003 §2 — the one loop line, from the tree's shared directory (the home may not import
+// the fleet, and a copy would give the quiet rule a second home).
+import { fleetLoopLines } from "../components/loop-line.mjs";
 
 // ────────────────────────────────────────────────── the five states DESIGN §S1 fixes ────
 //
@@ -120,13 +123,37 @@ export function activeRunCount(status) {
   return total;
 }
 
+// homeLoopLines(status, now) — 162/ADR-005: every loop a LIVE node reports, composed by the one
+// shared loop-line module and tagged with its node, so the page can name a running loop wherever
+// the operator looks first. LIVE NODES ONLY, by the same ruling `activeRunCount` keeps: a stale
+// node's presence is frozen on disk with its loops inside it, and naming one would assert work
+// on a machine we cannot see. Ordered by node, then by the module's own scope order. Each entry
+// carries `sessionRow` — whether the index holds a row for the loop's own session — which is
+// what the empty state's sentence about that session turns on.
+export function homeLoopLines(status, now = Date.now()) {
+  const nodes = status == null || typeof status !== "object" ? null : status.nodes;
+  if (!Array.isArray(nodes)) return [];
+  const rows = addressableSessions(status);
+  const lines = [];
+  for (const node of nodes) {
+    if (node == null || typeof node !== "object" || node.freshness !== "live") continue;
+    const nodeId = typeof node.nodeId === "string" ? node.nodeId : null;
+    for (const entry of fleetLoopLines(node.presence, null, now)) {
+      const sessionRow = entry.sessionId != null && rows.some((row) => row.nodeId === nodeId && row.sessionId === entry.sessionId);
+      lines.push(Object.freeze({ ...entry, nodeId, sessionRow }));
+    }
+  }
+  return lines;
+}
+
 // homePageState({ loading, error, status }) — the ONE selector, and the precedence is stated
 // here rather than discovered at a render site:
 //   loading wins over everything, including a stale error still held from a previous attempt;
 //   a failure wins over any payload, empty or populated, because a payload in hand beside a
 //   fresh failure is a payload we cannot vouch for;
 //   no payload at all is STILL ASKING;
-//   then the index decides populated vs empty, and the NODES decide which emptiness.
+//   then the index decides populated vs empty, and the NODES decide which emptiness — a live
+//   node's runs in flight, or (162/ADR-005) a loop a live node reports, are both "work is running".
 export function homePageState(context) {
   const source = context == null || typeof context !== "object" ? {} : context;
   if (source.loading) return HOME_PAGE_STATE_LOADING;
@@ -136,7 +163,7 @@ export function homePageState(context) {
   if (status == null || typeof status !== "object") return HOME_PAGE_STATE_LOADING;
 
   if (addressableSessions(status).length > 0) return HOME_PAGE_STATE_POPULATED;
-  return activeRunCount(status) > 0 ? HOME_PAGE_STATE_E2 : HOME_PAGE_STATE_E1;
+  return activeRunCount(status) > 0 || homeLoopLines(status).length > 0 ? HOME_PAGE_STATE_E2 : HOME_PAGE_STATE_E1;
 }
 
 // The addressable row count, exported beside the selector because the surface-slot summary
@@ -237,14 +264,29 @@ export const HOME_E2_WHY =
 // house's own `EmptyFleet` prints three different commands in this very slot, so the nearest
 // precedent is exactly the thing not to reach for. When that decision lands, E2 gains its
 // command line in DESIGN first and here second — in one change, in that order.
-export function homeEmptyCopy(state, runCount = 0) {
+//
+// 162/ADR-005 — WHEN A LOOP IS WHY THE RUNS ARE IN FLIGHT, THE COPY NAMES THE LOOP. The bundle
+// sentence explains a run whose workspace reports no session at all; a loop's drive is not that
+// case, and blaming the bundle for it sent an operator after the wrong fault. So with `loops`
+// (`homeLoopLines`' entries) the second line onward is one sentence per loop — its line, then
+// what is true of its session: none captured yet, or an id the index holds no row for. E2's
+// first line and its exit are unchanged, and a run that belongs to no loop keeps today's copy.
+export const HOME_LOOP_SESSION_PENDING = "its session has not reported yet";
+
+export function homeLoopSessionSentence(loop) {
+  const session = loop?.sessionId == null ? HOME_LOOP_SESSION_PENDING : `session ${loop.sessionId} is not relaying`;
+  return `${loop?.line ?? ""} — ${session}`;
+}
+
+export function homeEmptyCopy(state, runCount = 0, loops = []) {
   const runs = wholeCount(runCount);
+  const named = Array.isArray(loops) ? loops.filter((loop) => loop != null && typeof loop === "object" && loop.sessionRow !== true) : [];
   const lines =
     state === HOME_PAGE_STATE_E2
       // K3, THROUGH THE SURFACE'S COUNT RULE (designer's GAP-6). `1 runs in flight` was on the
       // LIVE PRODUCTION SCREEN — this is the first sentence an operator reads on this milestone's
       // own surface, and it was the identical defect GAP-3 had just been fixed for one region up.
-      ? [`${countedPhrase(runs, "run in flight", "runs in flight")} · no session is reporting a terminal.`, HOME_E2_WHY]
+      ? [`${countedPhrase(runs, "run in flight", "runs in flight")} · no session is reporting a terminal.`, ...(named.length > 0 ? named.map(homeLoopSessionSentence) : [HOME_E2_WHY])]
       : [HOME_E1_LINES[0], HOME_E1_LINES[1]];
   return Object.freeze({
     state: state === HOME_PAGE_STATE_E2 ? HOME_PAGE_STATE_E2 : HOME_PAGE_STATE_E1,

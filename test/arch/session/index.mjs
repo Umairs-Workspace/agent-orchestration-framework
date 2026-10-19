@@ -176,6 +176,7 @@ import { archTests as acdSessionInputLaneFallthroughTests } from "./acd-session-
 import { archTests as acdSessionSpawnAckHasReaderTests } from "./acd-session-spawn-ack-has-reader.test.mjs";
 import { archTests as acdSessionProducerFactSurvivesTheWireTests } from "./acd-session-producer-fact-survives-the-wire.test.mjs";
 import { archTests as acdAttributionIsCapturedOrAbsentTests } from "./acd-attribution-is-captured-or-absent.test.mjs";
+import { archTests as acdLoopTerminalIngressTests } from "./acd-loop-terminal-ingress.test.mjs";
 
 export const tests = [
   ...runtimeObservationFactsTests,
@@ -232,4 +233,6 @@ export const tests = [
   ...acdSessionSpawnAckHasReaderTests,
   ...acdSessionProducerFactSurvivesTheWireTests,
   ...acdAttributionIsCapturedOrAbsentTests,
+  // 162 — FF-16201: the loop drive's terminal ingress (loopback, token-gated, output-only, re-stamped).
+  ...acdLoopTerminalIngressTests,
 ];

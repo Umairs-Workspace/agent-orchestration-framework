@@ -43,7 +43,9 @@ const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 // that something is bridging this session's PTY output up its stream. An APPEND is the
 // same re-freeze-by-growth m48 itself performed on m38's six; every key above keeps its
 // position, so this list still asserts an exact ordered record rather than a subset.
-const FROZEN_KEYS = ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying"];
+// 162/ADR-002 §1 APPENDS a ninth, `loopRunId`, after `relaying` — the run of the loop drive that owns
+// the session, or null. The same append-only growth m50 used; every earlier key keeps its place.
+const FROZEN_KEYS = ["nodeId", "workspaceId", "repo", "assistant", "sessionId", "startedAt", "lastPingAt", "relaying", "loopRunId"];
 
 const SAMPLE = {
   nodeId: "node-a",
@@ -80,13 +82,15 @@ export const archTests = [
       // APPENDED `relaying`, which sits at the tail and moves nothing — and the m38 six
       // remain, in the m38 order. Both growths are asserted the same way and for the same
       // reason: this record has only ever grown by insertion-at-a-named-point or append,
-      // and a REORDER is the thing that would break every reader at once.
+      // and a REORDER is the thing that would break every reader at once. 162/ADR-002's
+      // `loopRunId` is the second tail append, struck the same way.
       assert.deepEqual(
-        Object.keys(record).filter((key) => key !== "sessionId" && key !== "relaying"),
+        Object.keys(record).filter((key) => key !== "sessionId" && key !== "relaying" && key !== "loopRunId"),
         ["nodeId", "workspaceId", "repo", "assistant", "startedAt", "lastPingAt"],
         "the m38 six keep their RELATIVE order — this is an insertion plus a tail append, never a reorder",
       );
-      assert.equal(Object.keys(record).at(-1), "relaying", "…and m50's own growth is an APPEND: it is the LAST key, so every key that predates it kept its index");
+      assert.equal(Object.keys(record).at(-2), "relaying", "…and m50's own growth is an APPEND: it sits right before 162's, so every key that predates it kept its index");
+      assert.equal(Object.keys(record).at(-1), "loopRunId", "…and 162's `loopRunId` is the LAST key, appended after it");
     },
   },
   {

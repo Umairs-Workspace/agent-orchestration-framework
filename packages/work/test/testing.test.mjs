@@ -19,6 +19,8 @@ test('testing ports preserve bounded argv execution and supplied changed-set ref
   const result=await toolchain.launchRunner(declared,['test/with space.test.mjs'],{cwd:'fixture'});
   assert.equal(result.verdict,'passed');
   assert.deepEqual(launches.at(-1),{command:'fixture-runner',args:['--report','--file','test/with space.test.mjs'],cwd:'fixture',env:undefined,deadlineMs:4567});
+  await toolchain.launchRunner({...declared,selectProgramArgs:['light-entry']},['a.test.mjs'],{cwd:'fixture'});
+  assert.deepEqual(launches.at(-1).args,['light-entry','--file','a.test.mjs'],'a selection launches the declared selection program in place of args');
   const empty=createChangedFilesReader({runBounded:async()=>({outcome:'exited',exitCode:0,stdout:'',stderr:''}),CHANGED_SET_EMPTY:'custom-empty',CHANGED_SET_UNREADABLE:'unreadable',SINCE_REV_UNRESOLVABLE:'revision'});
   assert.equal((await empty.changedFiles({projectRoot:'fixture'})).code,'custom-empty');
 });

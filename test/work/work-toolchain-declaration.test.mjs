@@ -522,7 +522,7 @@ export const workToolchainDeclarationTests = [
 
       const declared = resolveTestGate({ work: { test: { gate: { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetMinutes: 15 } } } });
       assert.equal(declared.ok, true);
-      assert.deepEqual(declared.gate, { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetMinutes: 15 });
+      assert.deepEqual(declared.gate, { args: ["scripts/test-sharded.mjs"], jobsArgs: ["--jobs", "{jobs}"], budgetArgs: null, budgetMinutes: 15 });
 
       const base = Object.freeze({ command: "node", program: "/usr/bin/node", args: Object.freeze(["scripts/test.mjs"]), selectArgs: Object.freeze([]), roots: Object.freeze(["test"]), deadlineMs: 1000, report: Object.freeze({ format: "tap" }) });
       assert.deepEqual([...gateToolchain(base, declared.gate, {}).args], ["scripts/test-sharded.mjs"], "the gate's args replace work.test.args");
@@ -552,6 +552,63 @@ export const workToolchainDeclarationTests = [
         assert.equal(result.key, key, `…keyed ${key}`);
         assert.ok(result.message.startsWith(key), `…and its message names ${key}`);
       }
+    },
+  },
+  // ══════════════ 160/02 task 00 — a selection launches its declared entry ══════════════
+  {
+    name: "160/02 task00: the selection argv a declaration composes — selectProgramArgs replaces args only when files are selected, and absent is exactly today",
+    run: () => {
+      assert.ok(TOOLCHAIN_CONFIG_KEYS.includes("work.test.selectProgramArgs"), "the module owns the selection-program key");
+      const ABSENT = Symbol("absent");
+      for (const [args, selectArgs, selectProgramArgs, files, argv] of [
+        [["scripts/test.mjs"], ["{file}"], ["scripts/test-shard.mjs"], ["a.test.mjs"], ["scripts/test-shard.mjs", "a.test.mjs"]],
+        [["scripts/test.mjs"], ["{file}"], ["scripts/test-shard.mjs"], ["a.mjs", "b.mjs"], ["scripts/test-shard.mjs", "a.mjs", "b.mjs"]],
+        [["scripts/test.mjs"], ["--only", "{file}"], ABSENT, ["a.test.mjs"], ["scripts/test.mjs", "--only", "a.test.mjs"]],
+        [["scripts/test.mjs"], ["{file}"], ["scripts/test-shard.mjs"], [], ["scripts/test.mjs"]],
+      ]) {
+        const declared = declaration({ args, selectArgs, ...(selectProgramArgs === ABSENT ? {} : { selectProgramArgs }) });
+        const compiled = resolveTestToolchain({ work: { test: declared } }, resolvable);
+        assert.equal(compiled.ok, true, `the declaration compiles — ${compiled.message ?? ""}`);
+        assert.deepEqual([...argumentVector(compiled.toolchain, files)], argv, `${JSON.stringify(files)} composes ${JSON.stringify(argv)}`);
+      }
+    },
+  },
+  {
+    name: "160/02 task00: the whole-tree gate never launches the selection entry",
+    run: () => {
+      const resolveTestGate = _aofApplication.work.toolchain.resolveTestGate;
+      const gateToolchain = _aofApplication.work.toolchain.gateToolchain;
+      const config = { work: { test: declaration({ args: ["scripts/test.mjs"], selectArgs: ["{file}"], selectProgramArgs: ["scripts/test-shard.mjs"], gate: { args: ["scripts/test-sharded.mjs"] } }) } };
+      const compiled = resolveTestToolchain(config, resolvable);
+      const { gate } = resolveTestGate(config);
+      const launched = gateToolchain(compiled.toolchain, gate, {});
+      assert.equal(argumentVector(launched, [])[0], "scripts/test-sharded.mjs", "the gate's argv begins with its own program");
+      assert.equal(launched.selectProgramArgs, null, "…and the gate's toolchain carries no selection entry at all");
+    },
+  },
+  {
+    name: "160/02 task00: a malformed selection entry is the toolchain's own refusal, keyed work.test.selectProgramArgs",
+    run: () => {
+      for (const [value, why] of [
+        ["scripts/test-shard.mjs", "it must be an array, one argument each"],
+        [["scripts/x.mjs", 7], "index 1 holds a non-string"],
+      ]) {
+        const result = resolveTestToolchain({ work: { test: declaration({ selectProgramArgs: value }) } }, resolvable);
+        assert.equal(result.ok, false, `${JSON.stringify(value)} is refused`);
+        assert.equal(result.code, TEST_RUNNER_DECLARATION_INVALID, "…with the declaration-invalid code");
+        assert.equal(result.key, "work.test.selectProgramArgs", "…keyed by the field");
+        assert.ok(result.message.includes(why.replace("it must", "must")), `…and the message says ${why}: ${result.message}`);
+      }
+    },
+  },
+  {
+    name: "160/02 task00: this repository declares the shard entry for selections, and keeps the runner as work.test.args",
+    run: async () => {
+      const { readFile } = await import("node:fs/promises");
+      const config = JSON.parse(await readFile(path.join(repoRoot, ".aof", "aof.config.json"), "utf8"));
+      assert.deepEqual(config.work.test.selectProgramArgs, ["scripts/test-shard.mjs"], "a selection launches the shard entry");
+      assert.deepEqual(config.work.test.selectArgs, ["{file}"], "…with the files as its positional arguments");
+      assert.deepEqual(config.work.test.args, ["scripts/test.mjs"], "…and work.test.args is still the runner the census reads");
     },
   },
 ];

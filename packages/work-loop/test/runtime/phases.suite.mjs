@@ -68,6 +68,17 @@ export async function nativePhaseFixture({ scenario = "complete", available = tr
 }
 
 export const runtimePhaseTests = [
+  { name: "Newer Codex prerelease completes a native phase and persists its run", async run() {
+    const f = await nativePhaseFixture({ version: "0.162.0-alpha.17.2" });
+    try {
+      const result = await f.drivers.refineDriverCommand.run({ ref: f.item.ref, model: f.selected.phases.refine.model, thinking: "high" }, f.ctx);
+      assert.equal(result.outcome, "done");
+      const [run] = await a.execution.runs.readRuns(f.item);
+      assert.equal(run.execution.runtime, "codex");
+      assert.equal(run.state, "done");
+      assert.equal(run.sessionId, codexFixture().fixture.nativeThreadId);
+    } finally { await f.cleanup(); }
+  } },
   ...["refine", "continue", "verify", "repair", "review"].map(phase => ({ name: `158 task01 — ${phase} persists review waiting, heartbeat and terminal metadata through registered drive`, async run() {
     const beats = []; const states = []; let finish;
     const f = await nativePhaseFixture({ heartbeatEvents: beats, onStart: ({ emit }) => { emit(reviewFrame()); finish = () => emit(reviewFrame("approved"), ...finishFrames()); } });

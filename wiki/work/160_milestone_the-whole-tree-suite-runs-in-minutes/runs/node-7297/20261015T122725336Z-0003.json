@@ -1,0 +1,46 @@
+{
+  "runId": "20261015T122725336Z-0003",
+  "itemRef": "160",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "fb580e0e-122e-4287-8d5d-438bfd6e07e4",
+  "brief": {
+    "answers": [
+      {
+        "token": "160/07 Q1",
+        "question": "160/07 Q1 · In the whole-tree gate, may a test's child `aof` run a bundle built from the tree at the start of the run, instead of the source files? Measured: ~0.6 s per start vs ~2.0 s, over at least 800 child starts in the heaviest suites. A control checks the bundle answers a fixed set of commands exactly as the source does. What it gives up: a defect that shows only when Node loads the separate source files (e.g. an import cycle the bundle orders differently) would not be caught by a child-process test in the gate. In-process tests and focused runs still load the source.",
+        "answer": "Yes, bundle in the gate (Recommended)",
+        "toolUseId": "toolu_01YUjhG74x19f8KHLQNwsZ3F",
+        "sessionId": "fb580e0e-122e-4287-8d5d-438bfd6e07e4",
+        "at": "2026-10-15T13:25:48.749Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-15T12:27:25.336Z",
+  "updatedAt": "2026-10-15T13:27:27.108Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 652,
+      "output": 419491,
+      "cacheRead": 68540886,
+      "cacheCreate": 760741
+    },
+    "costUsd": 29.709365549999998,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 326,
+    "toolCalls": 162,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

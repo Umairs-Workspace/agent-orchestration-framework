@@ -133,7 +133,8 @@ function isTestInvocation(argv) {
   if (executable === "node" || executable === "node.exe") {
     if (args.includes("--test")) return true;
     const script = args.find((arg) => !arg.startsWith("-"));
-    return /(?:^|\/)scripts\/test\.mjs$/i.test(String(script ?? "").replaceAll("\\", "/"));
+    // The runner, and the light entry a focused run launches (160/ADR-003 §4): both run suites.
+    return /(?:^|\/)scripts\/test(?:-shard)?\.mjs$/i.test(String(script ?? "").replaceAll("\\", "/"));
   }
   if (["npm", "npm.cmd", "npm.exe"].includes(executable)) {
     if (/^test(?::|$)/.test(args[0] ?? "")) return true;

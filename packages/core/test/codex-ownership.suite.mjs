@@ -626,7 +626,7 @@ const codexWorkerHandoffTests = [
     assert.equal(f.recorder.frames.some(frame => frame.state === "accepted"), false);
     assert.equal(f.recorder.frames.at(-1).code, "unsupported_profile");
     assert.equal(f.probes.flatMap(p => p.children).length, 0); assert.deepEqual(await f.a.execution.runs.readRuns(f.item), []);
-  }, { version: "9.0.0" }) },
+  }, { version: "0.159.0" }) },
   { name: "154/07 task01 — reconnect and native answer continue the same run/thread after worker configuration changes", run: () => fixture(async f => {
     await f.handler(f.directive);
     const before = (await f.a.execution.runs.readRuns(f.item))[0];

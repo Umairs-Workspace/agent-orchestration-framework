@@ -308,7 +308,23 @@ const RUNNER_REGIONS = Object.freeze([
 // 142/09 recheck: the harness gains only suiteCaseChunks (12 non-comment lines),
 // the shared atomic-by-default planner covered by the workspace sharding regression.
 // runCases, runnerShapedExports, and all three pinned execution/isolation regions are unchanged.
-const RUNNER_RESIDUE = "bd6e01cac4e2e6e412b7348893c6a3201d89702fd564a2f3aa82483a3757575d";
+// RE-PINNED by 160/02 (ADR-003): `loadSelected` moves to `scripts/test-harness.mjs` (its body unchanged; its two
+// builtins imported inside it, as `runCases` imports its own), shared with the shard
+// entry a focused `aof test` launches, and is re-exported here; the harness import names it, and the runner's now
+// unused `node:path` import goes. Every pinned region above is unchanged.
+// RE-PINNED by 160/03 (ADR-004 §1): the harness gains its compile-cache call (an import and one guarded statement)
+// at the top of the module. Every pinned region above is unchanged.
+// RE-PINNED by 160/09 (ADR-010): the harness gains the sharded run's pure planners beside `suiteCaseChunks` —
+// `fileEstimate`, `packUnits`, `shardArgs`, `planSummary` and `planCoverageProblem`. `runCases` is byte-unchanged:
+// the shard entry accounts per file by wrapping each case's `run`, so every pinned region above is unchanged.
+// RE-PINNED by 160 verify (F-06): `packUnits` also closes a pack at `PACK_MAX_ARG_CHARS`, the bound a Windows
+// command line allows, and that constant is declared beside it. `runCases` and every pinned region above are unchanged.
+// RE-PINNED by 160/12 (ADR-013 §2): the harness gives a test process that has none a temporary claude home
+// (`AOF_TEST_CLAUDE_HOME`), removed at exit, beside the compile-cache call. `runCases` and every pinned region above
+// are unchanged.
+// RE-PINNED by 160/13 (ADR-014 §1): the harness gains the pure shard planners `shardPlan` and `parseShard` beside
+// `packUnits`. `runCases` and every pinned region above are unchanged.
+const RUNNER_RESIDUE = "dec50aaf4cf14f1f92f1aa5cb65130e96914ead7c9c4c1ad1f5988be9e4decf3";
 // RE-PINNED by 142 Plan 09: an owned workspace's `test/index.mjs` import (`../packages/<name>/test/…`,
 // `../apps/<name>/test/…`) is a registration row exactly like a `../test/` one. Measured: the residue
 // loses precisely those imports (seven at the time of the pin) and no logic line, so the digest below

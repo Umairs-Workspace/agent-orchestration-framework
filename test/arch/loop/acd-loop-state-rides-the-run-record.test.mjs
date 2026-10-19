@@ -203,7 +203,13 @@ function assertUiFrozen(pairs) {
   // configuration preview only. No board, fleet, run-record key, cycle, level or loop state is read.
   // The same verify gives the new `Default assistant` disclosure the form's focus-ring tokens (154/10's
   // accessible-form contract), a class-only change to the same file.
-  assert.equal(hash.digest("hex"), "9babbd10aee801bb728efb9f4a197ca1abbd298dbf07a5fd92edc5107af2c04f", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 162 (ADR-002, ADR-003, ADR-005), measured: `git diff --numstat origin/main -- apps/ui/src`
+  // is nine files under `apps/ui/src/{fleet,home}/` plus two new ones under `apps/ui/src/components/`
+  // (`loop-line.mjs` and its `.d.mts`, `fleetLoopLines` MOVED out of `fleet/runs.mjs`, which re-exports
+  // it, and given the drive's progress segment). The fleet and the home read the loop entry's three
+  // appended presence keys and the session row's appended `loopRunId`; nothing under
+  // `apps/ui/src/board/` changed, and the board reads no run-record key, cycle, level or loop state.
+  assert.equal(hash.digest("hex"), "545907074603c295b46daec5cee4a3fc21ddc142f41fb4f7acf291c0891e06dc", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

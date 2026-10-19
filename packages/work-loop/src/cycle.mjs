@@ -39,16 +39,12 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { MAX_REVIEW_ROUNDS, loopBoundsFromConfig, executionForPhase } from "@aof/contracts/loop-bounds";
 
-import { existsSync } from "node:fs";
-
 // Core supplies application services; creating this interface starts no work.
 export function createStoryCycle({
   items,
   childDrive,
   asks,
   askRequests,
-  dispatch,
-  worktrees,
   progress,
   grading,
   briefs,
@@ -63,10 +59,8 @@ export function createStoryCycle({
 }) {
   const { resolveItemExact, requireLocalCheckout } = items;
   const { LANE_CANCEL_GRACE_MS, childDriveOutcome, loopFixFilePath, loopRepairFilePath } = childDrive;
-  const { askContext, askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, standingAsk, sweepStaleAsks } = asks;
+  const { askContext, askEnvFor, askFileFor, awaitAnswer, liveOwnerHolds, parkedHalt, reenterStandingAsks, runsBehindAsk, standingAsk, sweepStaleAsks } = asks;
   const { readAsk } = askRequests;
-  const { resolveRefInWorktree } = dispatch;
-  const { meshDispatchWorktreePath } = worktrees;
   const { appendProgressSample, decideBuildProgress, evaluateProgressPolicy, readProgressSamples, sampleWorktreeProgress } = progress;
   const { ADVISORY_CODES, GRADE_CODES, GRADE_VERDICTS, boundGradeFailures } = grading;
   const { PHASE_BRIEF_MAX_CHARS } = briefs;
@@ -1246,17 +1240,7 @@ export function createStoryCycle({
       dir,
       workspaceId: ask.site.workspaceId,
       inScope: (ref) => loopScopeIncludes(scope, ref),
-      runsFor: async (ref) => {
-        const runs = [];
-        const item = await resolveItemExact(ctx, ref).catch(() => null);
-        if (item?.dir != null) runs.push(...await readRuns(item));
-        const lane = meshDispatchWorktreePath(primaryRoot, ref);
-        if (existsSync(lane)) {
-          const laneItem = await resolveRefInWorktree(primaryRoot, ctx.workspace.workDir, lane, ref).catch(() => null);
-          if (laneItem != null) runs.push(...await readRuns(laneItem));
-        }
-        return runs;
-      },
+      runsFor: (ref) => runsBehindAsk({ ctx, primaryRoot, ref }),
       narrate,
     });
     const nowMs = Date.parse(input.now ?? new Date().toISOString());

@@ -20,9 +20,20 @@ export type HomeSessionRow = {
 
 /** A node, seen only through the two fields the E1/E2 discriminator reads. */
 export type HomeNodeRow = {
+  readonly nodeId?: unknown;
   readonly freshness?: unknown;
-  readonly presence?: { readonly activeRuns?: unknown } | null;
+  readonly presence?: { readonly activeRuns?: unknown; readonly loops?: unknown } | null;
 };
+
+/** 162/ADR-005 — one live node's loop, composed by the shared loop-line module. */
+export type HomeLoopLine = import("../components/loop-line.mjs").FleetLoopLine & {
+  readonly nodeId: string | null;
+  /** Whether the index holds a row for the loop's own session. */
+  readonly sessionRow: boolean;
+};
+
+/** Every loop a LIVE node reports — a stale node's frozen loops are not running. */
+export declare function homeLoopLines(status?: HomeStatusPayload | null, now?: number): HomeLoopLine[];
 
 /** The status payload, seen only through the two arrays this module reads. */
 export type HomeStatusPayload = {
@@ -74,13 +85,17 @@ export declare const HOME_E2_WHY: string;
 
 export type HomeEmptyCopy = {
   readonly state: "E1" | "E2";
-  readonly lines: readonly [string, string];
+  /** E2 names each loop that explains its runs, one line per loop, after the count line. */
+  readonly lines: readonly string[];
   /** The count the copy NAMES — null in E1, which makes no count claim. */
   readonly runCount: number | null;
   readonly link: { readonly label: string; readonly href: string | null };
 };
 
-export declare function homeEmptyCopy(state: HomePageState, runCount?: number): HomeEmptyCopy;
+export declare const HOME_LOOP_SESSION_PENDING: "its session has not reported yet";
+export declare function homeLoopSessionSentence(loop: { readonly line?: string; readonly sessionId?: string | null } | null | undefined): string;
+
+export declare function homeEmptyCopy(state: HomePageState, runCount?: number, loops?: readonly HomeLoopLine[]): HomeEmptyCopy;
 
 /**
  * The server's own coded sentence when it sent one, else the status, else the last-resort

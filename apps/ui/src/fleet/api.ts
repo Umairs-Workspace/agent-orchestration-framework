@@ -54,6 +54,11 @@ export type PresenceSession = {
   // record with a strict `=== true`, so a record written before this key existed projects
   // `false` rather than `undefined`.
   relaying: boolean;
+  // 162/ADR-002 §1 — the EIGHTH key, appended after `relaying`: the run id of the loop drive
+  // that owns this session, `null` when no loop drives it. The producer carries a value as
+  // written, and the pane's posture rule is interactive only on `null`/absent, so a malformed
+  // value fails closed rather than trusting this type.
+  loopRunId: string | null;
 };
 
 // A presence record (m23 story 00 — { nodeId, heartbeatAt, activeRuns, aofVersion });
@@ -93,6 +98,12 @@ export type PresenceLoop = {
   runId: string;
   supervised: boolean;
   stop: null | "drain" | "cancel";
+  // 162/ADR-003 §1 — appended after `stop`, read off the same latest running drive run: its
+  // captured session, its `createdAt`, and its consumed heartbeat (the loop stall bound's own
+  // read). Optional because a node built before them omits all three.
+  sessionId?: string | null;
+  driveStartedAt?: string | null;
+  lastActivityAt?: string | null;
 };
 
 // A fleet node — the m22 node record (nodeId + capability footer fields) joined
@@ -291,6 +302,9 @@ export type MeshSession = {
   // feed axis's disjunction (`apps/ui/src/home/feed-axis.mjs`); the wire states a TRANSPORT
   // fact and the browser keeps its own word.
   relaying: boolean;
+  // 162/ADR-002 §1 — the TENTH key, the typed mirror of `buildSessionIndex`'s append. Any
+  // value but `null`/absent mounts the pane read-only (`apps/ui/src/home/session-mount.mjs`).
+  loopRunId: string | null;
 };
 
 // The GLOBAL scope's status payload (src/global-mesh-query.mjs shapeGlobalStatus).

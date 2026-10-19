@@ -198,97 +198,18 @@ export function fleetCurrentWorkLines(presence) {
 // no reload. The propagation gap keeps the SAME `runId` (the drive continues while
 // draining), which is exactly where the guard must hold.
 
-const STOP_WORDS = Object.freeze({ drain: "stopping", cancel: "cancelling" });
-// The rung the wire's word puts the card at: the request that stands, plus one — the rung the
-// NEXT click would ask for. `null` → 1 (nothing stands, `Stop` drains).
-const WIRE_RUNG = Object.freeze({ drain: 2, cancel: 3 });
-// The word a remembered rung holds the line at until the wire confirms it (DESIGN "held
-// locally"): rung 2 means a drain was asked for, rung 3 a cancel.
-const HELD_WORD = Object.freeze({ 2: "drain", 3: "cancel" });
 const NO_BUTTON_RUNG = 3;
-
-function positiveInteger(value) {
-  return Number.isInteger(value) && value > 0;
-}
 
 function nonEmptyString(value) {
   return typeof value === "string" && value.length > 0;
 }
 
-function stopWord(value) {
-  return value === "drain" || value === "cancel" ? value : null;
-}
-
-// The plain codepoint comparison the region already uses (38 S6; the `(session)` line's step
-// 4) — never a locale collation, which could disagree with the Rust surface's byte-wise sort.
-function byScopeThenLoopRunId(left, right) {
-  if (left.scope !== right.scope) return left.scope < right.scope ? -1 : 1;
-  return left.loopRunId < right.loopRunId ? -1 : left.loopRunId > right.loopRunId ? 1 : 0;
-}
-
-// fleetLoopLines(presence, memory) — one entry per `presence.loops[]` element, ascending by
-// `scope` (ties by `loopRunId`), each `{ key, line, title, loopRunId, scope, workspaceId, runId,
-// stop }`. `memory` (optional — the card's, a Map of `{ rung, runId }` per `loopRunId` from
-// `rememberStopRung`) raises each entry's `stop` to the HELD word for the same drive before
-// the line is composed (DESIGN "held locally"); without it the projection is wire-only.
-//
-// THE ANATOMY (DESIGN §Surface 1, left → right):
-//   `loop <scope> [· stopping | · cancelling] [· <phase> <ref>] · cycle <n>[ of <cap>]`
-// FAIL-CLOSED — the line never prints a value the mint could not have produced: the
-// `<phase> <ref>` segment only when both are non-empty strings (between drives the loop has
-// no ref, so it reads `loop 129 · cycle 2 of 3` rather than asserting one); the `cycle`
-// segment only for a positive-integer `cycle`; ` of <cap>` only for a positive-integer `cap`;
-// and an unrecognised `stop` renders no state word and is reported `null`. `level` and
-// `supervised` are NOT on the line — a level is configuration, not liveness, and
-// "supervised" matters only for what happens after the stop, the desktop's row to say — both
-// ride the `title` tail: `… · L2 · supervised`. An absent, null or non-array `loops` is `[]`,
-// never a throw. PURE: the presence record is read, never mutated.
-export function fleetLoopLines(presence, memory) {
-  const loops = Array.isArray(presence?.loops) ? presence.loops : [];
-  return loops
-    .filter((loop) => loop != null && typeof loop === "object")
-    .map((loop) => {
-      const scope = String(loop.scope ?? "");
-      const stop = heldStopWord(loop, memory instanceof Map ? memory.get(loop.loopRunId) : undefined);
-      const parts = [`loop ${scope}`];
-      if (stop) parts.push(STOP_WORDS[stop]);
-      if (nonEmptyString(loop.phase) && nonEmptyString(loop.ref)) parts.push(`${loop.phase} ${loop.ref}`);
-      if (positiveInteger(loop.cycle)) parts.push(positiveInteger(loop.cap) ? `cycle ${loop.cycle} of ${loop.cap}` : `cycle ${loop.cycle}`);
-      const line = parts.join(" · ");
-      const tail = [];
-      if (nonEmptyString(loop.level)) tail.push(loop.level);
-      if (loop.supervised === true) tail.push("supervised");
-      return {
-        key: `loop:${loop.loopRunId}`,
-        line,
-        title: [line, ...tail].join(" · "),
-        loopRunId: String(loop.loopRunId ?? ""),
-        scope,
-        workspaceId: typeof loop.workspaceId === "string" ? loop.workspaceId : null,
-        // The drive this entry names — what the rung memory is keyed against.
-        runId: typeof loop.runId === "string" ? loop.runId : null,
-        stop,
-      };
-    })
-    .sort(byScopeThenLoopRunId);
-}
-
-// heldStopWord(loop, remembered) — the wire's word raised to the remembered rung, for the
-// SAME drive only: the "held locally" word the line shows between a 2xx and the wire's
-// confirmation. A memory from another drive is absent; a wire word higher than the memory
-// wins by construction (it is the max of the two).
-function heldStopWord(loop, remembered) {
-  const wire = stopWord(loop?.stop);
-  const rung = Math.max(wire ? WIRE_RUNG[wire] : 1, rememberedRung(loop, remembered));
-  return HELD_WORD[rung] ?? null;
-}
-
-// The remembered rung, admitted ONLY while it names this entry's drive (`runId`), else 0.
-function rememberedRung(loop, remembered) {
-  if (remembered == null || typeof remembered !== "object") return 0;
-  if (!Number.isInteger(remembered.rung) || remembered.runId !== loop?.runId) return 0;
-  return remembered.rung;
-}
+// 162/ADR-003 §2 — the LOOP LINE moved to the tree's shared directory, because the terminals
+// home renders it too and may not import this surface. It is re-exported here, unchanged in
+// meaning, for the fleet's existing readers; the rung both the line's held word and the button
+// below read is that module's one `loopStopRung`.
+import { loopStopRung } from "../components/loop-line.mjs";
+export { fleetLoopLines } from "../components/loop-line.mjs";
 
 // The DESIGN's two buttons, verbatim — label, `title`/`aria-label` and tone. Rung 0 is
 // `muted` (draining is the ordinary way a loop ends and loses nothing; the quietest control
@@ -313,8 +234,7 @@ function buttonFor(rung, scope) {
 export function loopStopAffordance({ loop, node, localNodeId, remembered } = {}) {
   const local = nonEmptyString(localNodeId) && node?.nodeId === localNodeId;
   if (!local) return { button: null, remote: nonEmptyString(localNodeId) };
-  const wire = stopWord(loop?.stop);
-  const rung = Math.max(wire ? WIRE_RUNG[wire] : 1, rememberedRung(loop, remembered));
+  const rung = loopStopRung(loop, remembered);
   if (rung >= NO_BUTTON_RUNG) return { button: null, remote: false };
   return { button: buttonFor(rung, String(loop?.scope ?? "")), remote: false };
 }

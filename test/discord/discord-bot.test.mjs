@@ -152,7 +152,9 @@ export const discordBotTests = [
       const registry = stripComments(await readFile(path.join(repoRoot, "scripts", "test.mjs"), "utf8"));
       assert.equal(registry.split("../test/discord/index.mjs").length - 1, 1, "scripts/test.mjs imports the index once");
       assert.match(registry, /\.\.\.discordTests\b/u, "and spreads it");
-      const run = spawnSync(process.execPath, ["scripts/test.mjs", "--only", "test/discord/discord-gateway.test.mjs"], { cwd: repoRoot, encoding: "utf8", windowsHide: true, env: { ...process.env } });
+      // The shard entry, not the registry runner: the registration is asserted above, and the runner is not
+      // this case's subject (160/ADR-012).
+      const run = spawnSync(process.execPath, ["scripts/test-shard.mjs", "test/discord/discord-gateway.test.mjs"], { cwd: repoRoot, encoding: "utf8", windowsHide: true, env: { ...process.env } });
       assert.equal(run.status, 0, `the gateway suite runs green through the runner: ${run.stdout.slice(-400)}${run.stderr.slice(-400)}`);
       assert.ok((run.stdout.match(/^ok - 131\/10 task01/gmu) ?? []).length > 0, "the discord suite is reachable from the runner");
     },

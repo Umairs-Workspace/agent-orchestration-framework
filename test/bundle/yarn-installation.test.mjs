@@ -176,7 +176,8 @@ export const yarnInstallationTests = [
         'assignment-directive.mjs': ['@aof/work-loop/engine'],
         'relay.mjs': ['node:http', 'node:crypto', 'ws'],
         'relay-client.mjs': ['ws'],
-        'terminal-relay-bridge.mjs': ['ws'],
+        // 162/ADR-001: the loopback terminal ingress — its server and its constant-time token check. No fs: its address is the mesh store's.
+        'terminal-relay-bridge.mjs': ['node:http', 'node:crypto', 'ws'],
         'terminal-mirror.mjs': ['ws'],
         'worktrees.mjs': ['node:path', '@aof/execution/worktrees', '@aof/foundation/git-args', '@aof/foundation/text'],
       } : name === 'work-loop' ? {
@@ -192,9 +193,10 @@ export const yarnInstallationTests = [
         'commands/trigger.mjs': ['@aof/contracts/error'],
         'progress.mjs': ['node:child_process', 'node:fs/promises', 'node:path', 'node:util', '@aof/contracts/loop-bounds'],
         'diagnostics.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path'],
-        'ask.mjs': ['@aof/contracts/loop-bounds'],
+        // 163: the lane-tree existence check moved with `runsBehindAsk` from cycle.mjs into ask.mjs.
+        'ask.mjs': ['node:fs', '@aof/contracts/loop-bounds'],
         'stop.mjs': ['@aof/contracts/loop-bounds'],
-        'cycle.mjs': ['node:fs/promises', 'node:path', 'node:fs', '@aof/contracts/loop-bounds'],
+        'cycle.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/loop-bounds'],
         'wave.mjs': ['node:fs/promises', 'node:fs', 'node:path'],
         // 155/00: the drive composes its mode flag from the session chain's contract leaf.
         'drive.mjs': ['node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/contracts/loop-bounds', '@aof/contracts/agent-mode'],
@@ -202,6 +204,8 @@ export const yarnInstallationTests = [
         'ask-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'stop-request.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'child-drive.mjs': ['node:path'],
+        // 162/ADR-004: the drive status ticker reads the lane's subagent transcripts (names and mtimes only).
+        'drive-status.mjs': ['node:path', 'node:fs/promises'],
       } : name === 'work-graph' ? {
         'registry.mjs': ['node:fs/promises', 'node:path', '@aof/work/records', '@aof/contracts/loop-bounds'],
         'record.mjs': ['@aof/contracts/loop-bounds'],
@@ -222,6 +226,8 @@ export const yarnInstallationTests = [
         "ready-wave.mjs": ["node:path","node:fs/promises"],
         "story-contract-derive.mjs": ["node:path","node:fs"],
         "commands/migrate-folder.mjs": ["node:path","node:fs/promises","@aof/contracts/error"],
+        // 163: work:questions reads the node's workspace descriptors and checks another checkout exists.
+        "commands/questions.mjs": ["node:fs/promises","node:fs","node:path"],
         "commands/diagram/plan.mjs": ["node:fs","node:fs/promises","node:os","node:path","@aof/contracts/error"],
         "commands/diagram/export.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
         "commands/diagram/file.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
@@ -238,6 +244,8 @@ export const yarnInstallationTests = [
         // 153/03: accounting reads each item's ledger and retrospective; the doctor lane names their paths.
         'memory-accounting.mjs': ['node:fs/promises', 'node:path'],
         'doctor/memory-effectiveness.mjs': ['node:path'],
+        // 161/01: the doctor command edge's wiki probe lists the direct wiki pages and stats each cited source file.
+        'wiki-citations.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
         // 153/05: tune reads a prompt destination inside the repository to compute its patch.
         'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],

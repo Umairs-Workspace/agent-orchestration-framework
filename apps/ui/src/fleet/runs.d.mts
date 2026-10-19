@@ -38,20 +38,11 @@ export declare function fleetCurrentWorkLines(
 
 // ── milestone 130 / story 03 (ADR-005 §5; DESIGN §Surface 1) — the loop line and its Stop ──
 
-// One rendered loop line: the DESIGN's anatomy in `line`, the whole value plus the `L<n>` /
-// `supervised` tail (and, composed by `nodeWorkRegion`, the remote reason) in `title`, and the
-// facts the button needs beside it. `stop` is the word the line shows — the wire's, raised to
-// the held one for the same drive when a memory is handed in.
-export type FleetLoopLine = {
-  key: string;
-  line: string;
-  title: string;
-  loopRunId: string;
-  scope: string;
-  workspaceId: string | null;
-  runId: string | null;
-  stop: null | "drain" | "cancel";
-};
+// 162/ADR-003 §2 — the loop line, its entry type and the rung memory moved to the shared
+// `apps/ui/src/components/loop-line.mjs`; re-exported here for the fleet's readers.
+import type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "../components/loop-line.mjs";
+export type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "../components/loop-line.mjs";
+export { fleetLoopLines } from "../components/loop-line.mjs";
 
 // The rung a click REQUESTS: 1 = drain (`Stop`), 2 = cancel (`Stop now`). Rung 3 — nothing
 // left to ask — renders no button.
@@ -66,16 +57,6 @@ export type LoopStopAffordance = {
   button: LoopStopButton | null;
   remote: boolean;
 };
-
-// The card's rung memory: per `loopRunId`, the rung reached AGAINST the drive it was reached
-// on — a memory from another drive is absent, and nothing here expires on a timer.
-export type RememberedStopRung = { rung: number; runId: string | null };
-export type StopRungMemory = Map<string, RememberedStopRung>;
-
-export declare function fleetLoopLines(
-  presence: Partial<PresenceRecord> | { loops?: unknown } | null | undefined,
-  memory?: StopRungMemory | null
-): FleetLoopLine[];
 
 export declare function loopStopAffordance(input: {
   loop: Pick<PresenceLoop, "stop" | "scope"> & { runId?: string | null } | FleetLoopLine | null | undefined;
