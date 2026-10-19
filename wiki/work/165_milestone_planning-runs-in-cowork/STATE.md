@@ -9,7 +9,7 @@ doc: state
 - [x] Contracts authored for 00, 01, 02 and 03. 03's Q1 and Q2 were answered by the operator at
   the refine review: an explicit `--scope` with cowork is refused, and the packages stay out of
   git via `.aof/cowork/.gitignore`.
-- [ ] `aof:continue 165` (solo), built in the sibling worktree `aof-165` on branch
+- [x] `aof:continue 165` (solo), built in the sibling worktree `aof-165` on branch
   `165-planning-runs-in-cowork` off main, because the main checkout carries 164's branch
   - [x] 165/00 built and reviewed 2026-10-19: 80/80 on the focused set, FF-16501 red-probed
   - [x] 165/01 built and reviewed 2026-10-19: 290/290 on the focused set (00's and 01's suites,
@@ -26,6 +26,17 @@ doc: state
     pm-execution (30 files), pm-product-discovery (21), pm-product-strategy (20) and
     pm-market-research (13), each with LICENSE. 0 of the 84 files contain a CR, and no
     `aof-pm-skills-*` temp directory remained afterwards.
+  - [x] 165/03 built and reviewed 2026-10-19: 269/269 on the focused set, then 599/599 on the
+    importer sweep (every test importing a changed module, plus work init/update, the bundle arch
+    index and the budget). FF-16505 and FF-16506 red-probed (argv on a cowork item, a dry-run
+    resolving the sha, `installConfirmed: true`, an "installed" claim). **End-to-end, through the
+    real CLI on a temp git repo with claude seeded:** a live `--runtime cowork` exited 0. It wrote
+    `.aof/cowork/{.gitignore, aof-planning.plugin, pm-skills/pm-{execution,product-discovery,product-strategy}.plugin}`,
+    `git check-ignore` reports them ignored, and `git status` shows only the lock. Every `.plugin`
+    passes `python -m zipfile -t`, and no output line contains "Installed".
+    `--runtime cowork --scope user` exited 1 and left the lock byte-identical.
+- [ ] Next: `aof:verify 165`, which includes the `@uat` 165/03 E5 (install in Cowork, PRD →
+  shatter, Windows validate). That one is the operator's.
 
 ## Notes & decisions in flight
 
