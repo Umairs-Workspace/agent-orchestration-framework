@@ -217,6 +217,15 @@ writes nothing: the registry is published FIRST and refuses (`node-record-unread
 membership stands, and the change stays owed, so every pass retries it with ADR-006's backoff
 until the record is readable. Story 01 task 03 carries the criteria.
 
+**Amended at verify (164/F-06, 2026-10-19).** Driver 3 runs wherever a command runs, and a linked
+`git worktree` of a mesh-published repository carries the repository's `workspaceId`. Measured live:
+a sibling worktree republished every row of the workspace, and its root, on each command, and the
+primary checkout republished them back. `meshGlobalPropagationDecision` (the one predicate) now
+refuses a linked worktree (`mesh-workspace-secondary-checkout`, beside the lane arm), so only the
+repository's own checkout publishes its workspace; a worktree's work reaches the store once it
+merges home. Story 00 task 03 carries the criteria. A second full CLONE with the same id is not
+detectable from the checkout alone and stays TECH_DEBT item 4's.
+
 ### Diagram
 
 **Why.** Three drivers, two stores and one gate meet in this decision. The reader has to see that

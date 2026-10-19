@@ -1,6 +1,6 @@
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readdir, stat } from "node:fs/promises";
 import { activeScopeHolders, executionScopeRef, restoreParkedAssignmentResume } from "./assignment-record.mjs";
 import { isMeshLaneTree } from "./worktrees.mjs";
@@ -8,6 +8,7 @@ import { isMeshLaneTree } from "./worktrees.mjs";
 export const MESH_GLOBAL_DISABLED_CODE = "mesh-global-disabled";
 export const MESH_WORKSPACE_UNCONFIGURED_CODE = "mesh-workspace-unconfigured";
 export const MESH_WORKSPACE_LANE_CODE = "mesh-workspace-is-lane";
+export const MESH_WORKSPACE_SECONDARY_CHECKOUT_CODE = "mesh-workspace-secondary-checkout";
 export const WORKSPACE_CHANGED_EVENT = "workspace.changed";
 
 // Application policy enters explicitly; constructing the service opens no stores or timers.
@@ -65,6 +66,18 @@ function meshGlobalPropagationDecision(workspaceOrConfig) {
         enabled: false,
         code: MESH_WORKSPACE_LANE_CODE,
         guidance: `Not publishing ${projectRoot}: it is a mesh lane, not a workspace.`,
+      };
+    }
+    // …nor a LINKED WORKTREE of the repository (164/F-06). It carries the same committed config,
+    // so the same `workspaceId`, and since 164 every command publishes: measured live, a sibling
+    // `git worktree` of this repository republished all of the workspace's rows, and its root, on
+    // every command run in it, and the primary checkout republished them back. A linked worktree's
+    // work reaches the store through its repository's checkout, once it merges home.
+    if (projectRoot != null && isLinkedWorktree(projectRoot)) {
+      return {
+        enabled: false,
+        code: MESH_WORKSPACE_SECONDARY_CHECKOUT_CODE,
+        guidance: `Not publishing ${projectRoot}: it is a linked git worktree of its repository, not the workspace's checkout.`,
       };
     }
     if (projectRoot != null && projectRoot.length > 0) {
@@ -162,6 +175,18 @@ async function publishGlobalWorkSnapshot(workspace, ctx = {}) {
     }
   } catch (error) {
     return { published: false, warning: propagationWarning(error, paths) };
+  }
+}
+
+// isLinkedWorktree(projectRoot) — is this checkout a linked `git worktree`? Its `.git` is a FILE naming
+// a gitdir under the main repository's `.git/worktrees/` (a submodule's names `.git/modules/`
+// instead, and a clone's `.git` is a directory). Read once per decision; unreadable is "no".
+function isLinkedWorktree(projectRoot) {
+  try {
+    const gitdir = /^gitdir:\s*(.+)$/mu.exec(readFileSync(path.join(projectRoot, ".git"), "utf8"));
+    return gitdir != null && /[\\/]worktrees[\\/][^\\/]+[\\/]?$/u.test(gitdir[1].trim());
+  } catch {
+    return false;
   }
 }
 

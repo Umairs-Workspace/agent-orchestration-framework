@@ -31,6 +31,7 @@ never reaches it, and a ref another machine once reported stays that machine's f
 - [x] [00 · A changed record takes its row; an unchanged one never steals another node's](tasks/00_a-changed-record-takes-its-row.feature)
 - [x] [01 · A change is owed in the journal, once per workspace](tasks/01_a-change-is-owed-in-the-journal.feature)
 - [x] [02 · Every aof command syncs its own workspace](tasks/02_every-command-syncs-its-own-workspace.feature)
+- [x] [03 · A linked worktree never publishes over its repository's checkout](tasks/03_a-linked-worktree-never-publishes-over-its-repository.feature) (@bug, verify finding F-06)
 
 ## Notes
 
