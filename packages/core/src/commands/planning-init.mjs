@@ -63,7 +63,7 @@ export const planningInitCommand = {
       workspace: false,
       flags: {
         dryRun: { type: "boolean", description: "preview the runtime commands without running or writing anything" },
-        force: { type: "boolean", description: "re-pin and re-install over an existing planning provenance section" },
+        force: { type: "boolean", description: "re-pin and re-install the named runtime over its recorded planning entry" },
         withOptional: { type: "boolean", description: "also install the optional pm-market-research plugin" },
         runtime: { type: "string", description: "target runtime (claude | codex; default claude)" },
         scope: { type: "string", description: "claude settings scope for the declarations (user | project | local; default project)" },

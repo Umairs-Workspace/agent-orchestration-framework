@@ -33,6 +33,7 @@ import {
   initPlanning,
   planPlanningInstall,
   planningLockPath,
+  planningEntries,
   parseTagSha,
   CORE_PLUGINS,
   MARKETPLACE_GIT_URL,
@@ -40,6 +41,7 @@ import {
 } from "../src/planning-init.mjs";
 import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../src/render-plan.mjs";
 import { readLock, writeLock } from "../src/lock.mjs";
+import { planningInitCommand } from "../src/commands/planning-init.mjs";
 
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 // v2.0.0 → this commit (architect-established fact; the lightweight tag → commit).
@@ -70,18 +72,22 @@ function flagToOptions(flag) {
   return flag === "--with-optional" ? { withOptional: true } : {};
 }
 
-// ADR-009: provenance is the `planning` SECTION of the unified lock. "exists" means
-// the unified lock exists AND carries a `planning` section; "readManifest" returns
-// that section (so every `manifest.*` assertion reads `lock.planning.*`).
+// ADR-009 → 165/ADR-004: provenance is one runtime's entry in the `planning`
+// SECTION of the unified lock, read through `planningEntries`. "exists" means the
+// unified lock records at least one planning entry; "readManifest" returns the
+// named runtime's entry, or the sole entry when no runtime is named.
 async function manifestExists(repo) {
   if (!existsSync(planningLockPath(repo))) return false;
   const lock = JSON.parse(await readFile(planningLockPath(repo), "utf8"));
-  return Boolean(lock && lock.planning);
+  return Object.keys(planningEntries(lock)).length > 0;
 }
 
-async function readManifest(repo) {
-  const lock = JSON.parse(await readFile(planningLockPath(repo), "utf8"));
-  return lock.planning;
+async function readManifest(repo, runtime) {
+  const entries = planningEntries(JSON.parse(await readFile(planningLockPath(repo), "utf8")));
+  if (runtime !== undefined) return entries[runtime];
+  const values = Object.values(entries);
+  assert.equal(values.length, 1, "readManifest without a runtime expects exactly one planning entry");
+  return values[0];
 }
 
 // Read/overwrite the whole unified lock (for seeding foreign sections + asserting
@@ -137,6 +143,42 @@ const WORK_SEED = {
   packages: [],
   frameworks: [],
   frameworkInstallAttempts: []
+};
+
+// 165/00: drive the real `planning:init` face — parse the flags the way the CLI
+// route does, run the core offline, and return the rendered output and exit code.
+async function runFace(repo, flags, options = {}) {
+  const argv = flags.split(/\s+/).filter(Boolean);
+  const parsed = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === "--runtime") parsed.runtime = argv[(i += 1)];
+    else if (argv[i] === "--force") parsed.force = true;
+    else if (argv[i] === "--dry-run") parsed.dryRun = true;
+    else throw new Error(`runFace: unexpected flag ${argv[i]}`);
+  }
+  const { result, lines } = await runInit(repo, { ...parsed, ...options });
+  const faced = { ...result, notes: lines };
+  return {
+    result,
+    exit: planningInitCommand.cli.exit(faced),
+    output: planningInitCommand.cli.render(faced)
+  };
+}
+
+async function readEntries(repo) {
+  return planningEntries(await readUnifiedLock(repo));
+}
+
+// The flat, single-runtime `planning` section every lock written before 165 holds.
+const PRE_165_CLAUDE = {
+  generatedAt: "2026-07-01T00:00:00.000Z",
+  source: "phuryn/pm-skills",
+  marketplaceName: "pm-skills",
+  marketplaceVersion: "2.0.0",
+  sha: "5042ff6169e0df49086c846f69bf7b6cdb67a6de",
+  runtime: "claude",
+  plugins: [{ name: "pm-execution", marketplace: "pm-skills" }],
+  codex: null
 };
 
 export const planningInitTests = [
@@ -548,8 +590,8 @@ export const planningInitTests = [
         // observable — read-merge-write it back so the foreign sections (none here)
         // and the section wrapper are preserved.
         const lock = await readUnifiedLock(repo);
-        const seededPlanning = { ...lock.planning, generatedAt: "2000-01-01T00:00:00.000Z", sha: "0".repeat(40) };
-        await writeUnifiedLock(repo, { ...lock, planning: seededPlanning });
+        const seededEntry = { ...planningEntries(lock).claude, generatedAt: "2000-01-01T00:00:00.000Z", sha: "0".repeat(40) };
+        await writeUnifiedLock(repo, { ...lock, planning: { runtimes: { claude: seededEntry } } });
         const before = await readFile(planningLockPath(repo), "utf8");
 
         const { result } = await runInit(repo, { force: true, sha: FIXTURE_SHA });
@@ -843,8 +885,8 @@ export const planningInitTests = [
         assert.ok(!existsSync(path.join(repo, ".aof", "aof.planning.lock.json")), "no separate aof.planning.lock.json written");
 
         const lock = await readUnifiedLock(repo);
-        const planning = lock.planning;
-        assert.ok(planning && typeof planning === "object", "provenance recorded under the `planning` section");
+        const planning = planningEntries(lock).claude;
+        assert.ok(planning && typeof planning === "object", "provenance recorded as the claude entry of the `planning` section");
         // The frozen schema: source, marketplaceName, marketplaceVersion, sha, runtime, plugins, codex.
         assert.equal(planning.source, "phuryn/pm-skills", "planning.source");
         assert.equal(planning.marketplaceName, "pm-skills", "planning.marketplaceName");
@@ -876,7 +918,7 @@ export const planningInitTests = [
         assert.equal(result.manifestWritten, true);
 
         const lock = await readUnifiedLock(repo);
-        assert.ok(lock.planning && lock.planning.sha === FIXTURE_SHA, "the `planning` section is added/updated");
+        assert.ok(planningEntries(lock).claude?.sha === FIXTURE_SHA, "the `planning` section is added/updated");
         // The pre-existing asset/package/framework sections survive byte-intact.
         assert.deepEqual(lock.files, seeded.files, "asset files[] preserved unchanged");
         assert.deepEqual(lock.packages, seeded.packages, "asset packages preserved");
@@ -939,7 +981,7 @@ export const planningInitTests = [
         assert.equal(forced.result.guarded, false, "--force bypasses the guard");
         assert.equal(forced.result.manifestWritten, true, "--force rewrites the planning section");
         const after = await readUnifiedLock(repo);
-        assert.equal(after.planning.sha, repinSha, "the `planning` section was re-pinned");
+        assert.equal(planningEntries(after).claude.sha, repinSha, "the `planning` section was re-pinned");
         // The asset + work sections survive byte-intact.
         assert.deepEqual(after.files, before.files, "asset files[] preserved across --force");
         assert.deepEqual(after.work, before.work, "the `work` section preserved across --force");
@@ -948,4 +990,186 @@ export const planningInitTests = [
       }
     }
   }
+,
+  // ====================================================================
+  // 165/00 planning-lock-records-each-runtime — one entry per runtime (ADR-004)
+  //   00_a-second-runtime-is-recorded-beside-the-first.feature
+  //   01_a-re-install-needs-force-for-its-own-runtime-only.feature
+  // Each scenario runs the real `planning:init` face (render + exit) over
+  // initPlanning with the sha injected and the install simulated.
+  // ====================================================================
+  {
+    name: "planning-lock-records-each-runtime/00 E1 · a codex install is added beside a recorded claude install",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        const claudeBefore = (await readEntries(repo)).claude;
+        const { exit } = await runFace(repo, "--runtime codex");
+        assert.equal(exit, 0, "the command exits 0");
+        const entries = await readEntries(repo);
+        assert.ok(entries.codex, "the lock records a planning entry for codex");
+        assert.deepEqual(entries.claude, claudeBefore, "the claude entry is unchanged from before the run");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/00 E2 · a planning section written before 165 is carried over as its runtime's entry",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await writeUnifiedLock(repo, { ...ASSET_SEED, planning: { ...PRE_165_CLAUDE } });
+        const { exit } = await runFace(repo, "--runtime codex");
+        assert.equal(exit, 0, "the command exits 0");
+        const entries = await readEntries(repo);
+        assert.deepEqual(entries.claude, PRE_165_CLAUDE, "the claude entry equals the pre-165 section exactly");
+        assert.ok(entries.codex, "the lock records a planning entry for codex");
+        assert.ok((await readUnifiedLock(repo)).planning.runtimes, "the writer wrote the runtime-keyed shape");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  ...[
+    { present: "claude", added: "codex", recorded: "claude,codex" },
+    { present: "codex", added: "claude", recorded: "claude,codex" }
+  ].map((row) => ({
+    name: `planning-lock-records-each-runtime/00 outline · ${row.present} present, ${row.added} added → entries exactly ${row.recorded}`,
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: row.present });
+        const { result } = await runFace(repo, `--runtime ${row.added}`);
+        assert.equal(result.manifest.runtime, row.added, "the manifest field runtime is the runtime just installed");
+        assert.deepEqual(Object.keys(await readEntries(repo)).sort(), row.recorded.split(","), "planning entries recorded");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  })),
+  {
+    name: "planning-lock-records-each-runtime/00 E7 · the asset and work sections survive a second runtime's install",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await writeUnifiedLock(repo, { ...ASSET_SEED, work: { ...WORK_SEED } });
+        await runInit(repo, { runtime: "claude" });
+        const before = await readUnifiedLock(repo);
+        await runFace(repo, "--runtime codex");
+        const after = await readUnifiedLock(repo);
+        for (const section of ["files", "packages", "work"]) {
+          assert.equal(JSON.stringify(after[section]), JSON.stringify(before[section]), `the ${section} section is byte-for-byte what it was`);
+        }
+        const locks = (await readdir(path.join(repo, ".aof"))).filter((name) => name.endsWith(".lock.json"));
+        assert.deepEqual(locks, ["aof.lock.json"], "no lock file other than .aof/aof.lock.json");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E3 · re-installing a recorded runtime without --force is refused and names it",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        await runInit(repo, { runtime: "codex" });
+        const before = await readFile(planningLockPath(repo), "utf8");
+        const { exit, output } = await runFace(repo, "");
+        assert.notEqual(exit, 0, "the command exits non-zero");
+        assert.match(output, /\bclaude\b/, "the output names the runtime claude");
+        assert.match(output, /--force/, "the output points the user to --force");
+        assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E4 · --force re-pins only the runtime it names",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        await runInit(repo, { runtime: "codex" });
+        const lock = await readUnifiedLock(repo);
+        const stale = { ...planningEntries(lock).claude, generatedAt: "2000-01-01T00:00:00.000Z" };
+        await writeUnifiedLock(repo, { ...lock, planning: { runtimes: { ...planningEntries(lock), claude: stale } } });
+        const codexBefore = (await readEntries(repo)).codex;
+        const { exit } = await runFace(repo, "--force");
+        assert.equal(exit, 0, "the command exits 0");
+        const entries = await readEntries(repo);
+        assert.notEqual(entries.claude.generatedAt, stale.generatedAt, "the claude entry has a new generatedAt");
+        assert.deepEqual(entries.codex, codexBefore, "the codex entry is unchanged from before the run");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E5 · a pre-165 planning section still guards its runtime",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await writeUnifiedLock(repo, { ...ASSET_SEED, planning: { ...PRE_165_CLAUDE } });
+        const before = await readFile(planningLockPath(repo), "utf8");
+        const { exit, output } = await runFace(repo, "");
+        assert.notEqual(exit, 0, "the command exits non-zero");
+        assert.match(output, /--force/, "the output points the user to --force");
+        assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E6 · a dry-run previews without touching the lock",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        const before = await readFile(planningLockPath(repo), "utf8");
+        const { exit, output } = await runFace(repo, "--runtime codex --dry-run");
+        assert.equal(exit, 0, "the command exits 0");
+        assert.match(output, /codex plugin marketplace add/, "the output reports the runtime commands it would run");
+        assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  ...[
+    { recorded: "claude", runtime: "claude", flag: "", outcome: "refused, lock unchanged" },
+    { recorded: "claude", runtime: "codex", flag: "", outcome: "codex added" },
+    { recorded: "claude,codex", runtime: "codex", flag: "", outcome: "refused, lock unchanged" },
+    { recorded: "claude,codex", runtime: "codex", flag: " --force", outcome: "codex re-pinned, claude kept" }
+  ].map((row) => ({
+    name: `planning-lock-records-each-runtime/01 outline · recorded ${row.recorded} + --runtime ${row.runtime}${row.flag} → ${row.outcome}`,
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        for (const runtime of row.recorded.split(",")) await runInit(repo, { runtime });
+        const bytesBefore = await readFile(planningLockPath(repo), "utf8");
+        const entriesBefore = await readEntries(repo);
+        const { exit } = await runFace(repo, `--runtime ${row.runtime}${row.flag}`, { sha: "1".repeat(40) });
+        const entries = await readEntries(repo);
+        if (row.outcome === "refused, lock unchanged") {
+          assert.notEqual(exit, 0, "refused");
+          assert.equal(await readFile(planningLockPath(repo), "utf8"), bytesBefore, "lock unchanged");
+        } else if (row.outcome === "codex added") {
+          assert.equal(exit, 0);
+          assert.ok(entries.codex, "codex added");
+          assert.deepEqual(entries.claude, entriesBefore.claude, "claude kept");
+        } else {
+          assert.equal(exit, 0);
+          assert.equal(entries.codex.sha, "1".repeat(40), "codex re-pinned");
+          assert.deepEqual(entries.claude, entriesBefore.claude, "claude kept");
+        }
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  }))
 ];

@@ -15,7 +15,7 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { initPlanning, planPlanningInstall, planningLockPath, MARKETPLACE_REF } from "../../../packages/core/src/planning-init.mjs";
+import { initPlanning, planPlanningInstall, planningEntries, planningLockPath, MARKETPLACE_REF } from "../../../packages/core/src/planning-init.mjs";
 
 const srcDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src");
 const planningSourcePath = path.join(srcDir, "planning-init.mjs");
@@ -60,8 +60,8 @@ export const archTests = [
           log: () => {}
         });
         assert.equal(result.manifestWritten, true);
-        // ADR-009: provenance is the `planning` SECTION of the unified lock.
-        const manifest = JSON.parse(await readFile(planningLockPath(repo), "utf8")).planning;
+        // ADR-009 → 165/ADR-004: provenance is the runtime's entry in the `planning` section.
+        const manifest = planningEntries(JSON.parse(await readFile(planningLockPath(repo), "utf8"))).codex;
         assert.equal(manifest.codex.marketplaceRegistered, true, "marketplace registered");
         assert.equal(manifest.codex.pluginsInstalled, false, "pluginsInstalled is false (never claims success)");
         assert.deepEqual(manifest.plugins, [], "no installed plugin recorded");

@@ -45,6 +45,12 @@
 //     a manual fallback, never emit the absent Codex plugin-install verb. Guarded
 //     by acd-planning-no-codex-install.
 //   ADR-006: idempotent via a manifest guard with --force (mirrors `work init`).
+//   165/ADR-004: the section holds ONE ENTRY PER RUNTIME —
+//     `planning: { runtimes: { <runtime>: <entry> } }`, each entry the frozen schema
+//     above. `planningEntries` is the one reader (a pre-165 flat section reads as its
+//     own runtime's entry); the guard refuses only when the runtime being installed
+//     already has an entry, and --force re-pins that runtime alone. Guarded by
+//     acd-planning-lock-isolation (FF-16501).
 //   ADR-010: the claude marketplace/plugin declarations default to PROJECT scope
 //     (`--scope project`) so the bought planner travels with the repo's
 //     `.claude/settings.json`, NOT the user's global `~/.claude/settings.json`
@@ -107,6 +113,16 @@ export const DEFAULT_SCOPE = "project";
 // and assets apply write (their own sections), never a per-vertical sibling.
 export function planningLockPath(targetDir) {
   return workspacePaths(targetDir).lockPath;
+}
+
+// The one reader of the lock's `planning` section (165/ADR-004): the runtime-keyed
+// map of entries. No section → `{}`; the 165 shape → its `runtimes`; a pre-165 flat
+// section → `{ [section.runtime]: section }`, the section itself kept as it was.
+export function planningEntries(lock) {
+  const section = lock?.planning;
+  if (!section || typeof section !== "object") return {};
+  if (section.runtimes && typeof section.runtimes === "object") return section.runtimes;
+  return { [section.runtime]: section };
 }
 
 export function recommendedPlugins({ withOptional = false } = {}) {
@@ -344,14 +360,14 @@ export async function initPlanning(options = {}) {
   const log = options.log ?? NO_PRINT;
   const lockPath = planningLockPath(targetDir);
 
-  // Re-run guard (ADR-006 → ADR-009): key off the PRESENCE of the `planning`
-  // SECTION of the unified lock, not on file existence (the unified lock may
-  // already exist for the asset/`work` verticals). If the section is present and
-  // --force was not given, refuse and write nothing. --dry-run always previews
-  // regardless (so the guard is skipped on a dry-run and the lock is untouched).
+  // Re-run guard (ADR-006 → ADR-009 → 165/ADR-004): key off THIS RUNTIME's entry
+  // in the `planning` section, not on the section or the file existing — another
+  // runtime's entry is added beside, never refused. If the runtime already has an
+  // entry and --force was not given, refuse and write nothing. --dry-run always
+  // previews regardless (so the guard is skipped on a dry-run and the lock is untouched).
   if (!dryRun) {
     const existing = await readLock(lockPath);
-    if (existing && existing.planning && !force) {
+    if (planningEntries(existing)[runtime] && !force) {
       return {
         runtime,
         targetDir,
@@ -365,7 +381,7 @@ export async function initPlanning(options = {}) {
         plan: [],
         planCommands: [],
         attempts: [],
-        message: "A planning provenance section already exists in .aof/aof.lock.json. Re-run with `--force` to re-pin the sha and re-install."
+        message: `Planning for ${runtime} is already recorded in .aof/aof.lock.json. Re-run with \`--force\` to re-pin the sha and re-install for ${runtime}.`
       };
     }
   }
@@ -489,8 +505,13 @@ export async function initPlanning(options = {}) {
   const manifest = buildManifest({ runtime, sha: resolved, withOptional, generatedAt: new Date().toISOString() });
   // Read-merge-write (ADR-009): preserve the flat asset fields and the `work`
   // section; replace ONLY the `planning` key. Never reconstruct from a fixed set.
+  // 165/ADR-004: always the runtime-keyed shape; every other runtime's entry passes
+  // through as the same object, and only this runtime's entry is replaced.
   const currentLock = (await readLock(lockPath)) ?? {};
-  await writeLock(lockPath, { ...currentLock, planning: manifest });
+  await writeLock(lockPath, {
+    ...currentLock,
+    planning: { runtimes: { ...planningEntries(currentLock), [runtime]: manifest } }
+  });
 
   return {
     runtime,
