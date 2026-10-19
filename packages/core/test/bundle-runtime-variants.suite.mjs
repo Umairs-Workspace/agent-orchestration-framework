@@ -140,7 +140,7 @@ export const bundleRuntimeVariantTests = [
     // is audited in wiki/prompt-audit.md by the change that ships it.
     const audit = await readFile('wiki/prompt-audit.md', 'utf8');
     const members = readDescriptor().members.filter(item => ['agent', 'command', 'skill'].includes(item.kind));
-    assert.equal(members.length, 44);
+    assert.equal(members.length, 45);
     for (const member of members) {
       const row = audit.split('\n').filter(line => line.startsWith(`| ${member.kind}:${member.id} |`));
       assert.equal(row.length, 1, `exactly one decision for ${member.id}`);

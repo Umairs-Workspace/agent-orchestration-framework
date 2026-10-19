@@ -171,12 +171,14 @@ export const workDelegationTests = [
       const bundle = loadBundle();
       // OFF (or any non-'on') is a no-op — the bundle already encodes the flag.
       const off = applyDelegationToResources(bundle.resources, "off");
-      for (const r of off.filter((r) => r.kind === "skill")) {
+      // The delegation toggle governs the codex-* recipes only (the Hyperagent aof-prd skill is
+      // not a delegation recipe and never carries the flag).
+      for (const r of off.filter((r) => r.kind === "skill" && r.id.startsWith("codex-"))) {
         assert.equal(r.disableModelInvocation, true, `${r.id} keeps the flag when off`);
       }
       // ON drops it so the rendered skill is auto-invocable.
       const on = applyDelegationToResources(bundle.resources, "on");
-      for (const r of on.filter((r) => r.kind === "skill")) {
+      for (const r of on.filter((r) => r.kind === "skill" && r.id.startsWith("codex-"))) {
         assert.ok(!("disableModelInvocation" in r), `${r.id} drops the flag when on`);
       }
       // Non-skill members are untouched under both.

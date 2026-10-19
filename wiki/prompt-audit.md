@@ -7,9 +7,11 @@ updated: 2026-10-18
 
 The living audit of every shipped descriptor role, procedure and skill. Milestone 154 authored it;
 its delivery-time copy and evaluation evidence stay in that milestone folder, and a member added
-since is audited HERE, in the change that ships it (163 added `command:questions`).
+since is audited HERE, in the change that ships it (163 added `command:questions`; the Hyperagent
+planning runtime added `skill:aof-prd` and the six `hyperagent` planning variants, which are full
+rewrites for a GitHub-integration agent — see wiki/hyperagent-support.md).
 
-Inventory: 44 descriptor roles, procedures and skills. Runtime selection is automatic;
+Inventory: 45 descriptor roles, procedures and skills. Runtime selection is automatic;
 there is no free-form template profile. Common metadata/body, selected bundled variant, then
 project resource overrides determine the result. Claude/OpenCode retain the common bodies;
 retrospective gains the shared recall/ingest edge required by this story, repair states its
@@ -75,6 +77,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 | skill:codex-implementation | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (679 common-body words baseline) | none |
 | skill:codex-review | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (466 common-body words baseline) | none |
 | skill:codex-computer-use | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (897 common-body words baseline) | none |
+| skill:aof-prd | keep | Hyperagent-only planning skill: research and write the PRD seam aof-shatter consumes; delivers a draft pull request, writes no code or work items. | Hyperagent GitHub integration and web research only | Never writes the default branch; draft PR only; asks before any business decision | selected entry only (Hyperagent runtime) | none |
 
 ## Frozen behavioral workload — 154/11, before measurement
 

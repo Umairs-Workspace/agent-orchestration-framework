@@ -113,6 +113,25 @@ Feature: AOF CLI lifecycle
     And file `.aof/aof.config.json` should contain `"kind": "rule"`
     And file `.aof/aof.config.json` should contain `"codex"`
 
+  Scenario: Hyperagent renders the planning subset as importable skills only when named
+    Given an empty project
+    When I run `work init --runtime hyperagent`
+    Then the command should succeed
+    And stdout should contain `hyperagent renders the planning subset only`
+    And file `.hyperagent/skills/aof-shatter/SKILL.md` should contain `## Hyperagent execution contract`
+    And file `.hyperagent/skills/aof-refine/SKILL.md` should contain `aof-runtime: hyperagent`
+    And file `.hyperagent/skills/aof-prd/SKILL.md` should exist
+    And file `.hyperagent/AGENT.md` should contain `AOF Planner`
+    And file `.hyperagent/skills/aof-continue/SKILL.md` should not exist
+    And file `.claude/commands/aof/shatter.md` should not exist
+
+  Scenario: A work init that names no runtime never renders Hyperagent
+    Given an empty project
+    When I run `work init`
+    Then the command should succeed
+    And file `.claude/commands/aof/shatter.md` should exist
+    And file `.hyperagent/skills/aof-shatter/SKILL.md` should not exist
+
   Scenario: Interactively add a project asset
     Given an empty project
     When I run `assets add` with resource input `{"kind":"skill","id":"interactive-skill","description":"Interactive skill","runtimes":["codex"],"body":"Interactive body"}`
