@@ -24,6 +24,7 @@ import { archTests as acdPlanningLockIsolationTests } from "./acd-planning-lock-
 import { archTests as acdCoworkSkillsFromCommandSourceTests } from "./acd-cowork-skills-from-command-source.test.mjs";
 import { archTests as acdCoworkPackageDeterministicTests } from "./acd-cowork-package-deterministic.test.mjs";
 import { archTests as acdCoworkPlannerPinnedTests } from "./acd-cowork-planner-pinned.test.mjs";
+import { archTests as acdPlanningCoworkInstallUnconfirmedTests } from "./acd-planning-cowork-install-unconfirmed.test.mjs";
 import { archTests as acdPlanningNoCodexInstallTests } from "./acd-planning-no-codex-install.test.mjs";
 import { archTests as acdPlanningClonableRefTests } from "./acd-planning-clonable-ref.test.mjs";
 // milestone 06 — headroom plugin (ADRs 001–005; RED-until-built fitness functions)
@@ -73,6 +74,7 @@ export const tests = [
   ...acdCoworkSkillsFromCommandSourceTests,
   ...acdCoworkPackageDeterministicTests,
   ...acdCoworkPlannerPinnedTests,
+  ...acdPlanningCoworkInstallUnconfirmedTests,
   ...acdPlanningNoCodexInstallTests,
   ...acdPlanningClonableRefTests,
   ...acdHeadroomConfigSchemaTests,

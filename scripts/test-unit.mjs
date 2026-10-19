@@ -96,6 +96,7 @@ import { archTests as acdPlanningLockIsolationTests } from "../test/arch/plannin
 import { archTests as acdCoworkSkillsFromCommandSourceTests } from "../test/arch/planning/acd-cowork-skills-from-command-source.test.mjs";
 import { archTests as acdCoworkPackageDeterministicTests } from "../test/arch/planning/acd-cowork-package-deterministic.test.mjs";
 import { archTests as acdCoworkPlannerPinnedTests } from "../test/arch/planning/acd-cowork-planner-pinned.test.mjs";
+import { archTests as acdPlanningCoworkInstallUnconfirmedTests } from "../test/arch/planning/acd-planning-cowork-install-unconfirmed.test.mjs";
 import { archTests as acdPlanningNoCodexInstallTests } from "../test/arch/planning/acd-planning-no-codex-install.test.mjs";
 import { archTests as acdPlanningClonableRefTests } from "../test/arch/planning/acd-planning-clonable-ref.test.mjs";
 import { archTests as acdUnifiedLockSectionsTests } from "../test/arch/store/acd-unified-lock-sections.test.mjs";
@@ -202,6 +203,7 @@ const tests = [
   ...acdCoworkSkillsFromCommandSourceTests,
   ...acdCoworkPackageDeterministicTests,
   ...acdCoworkPlannerPinnedTests,
+  ...acdPlanningCoworkInstallUnconfirmedTests,
   ...acdPlanningNoCodexInstallTests,
   ...acdPlanningClonableRefTests,
   ...acdUnifiedLockSectionsTests,

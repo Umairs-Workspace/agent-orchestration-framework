@@ -20,6 +20,8 @@
 //        (honest degrade: marketplaceRegistered true / pluginsInstalled false /
 //        plugins empty / manual fallback emitted / no install claim); the re-run
 //        guard + --force + dry-run-regardless decision table
+//   165/00, 165/03 — the per-runtime lock entries and the cowork runtime (see their
+//        sections at the end of the array)
 //   04_https-marketplace-source.feature — (ADR-007, Finding F1) the marketplace-add
 //        source is an HTTPS git URL pinned by a `#<sha>` ref, never the SSH-able
 //        `phuryn/pm-skills@<sha>` shorthand; the per-plugin install still targets
@@ -27,6 +29,7 @@
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -154,6 +157,8 @@ async function runFace(repo, flags, options = {}) {
     if (argv[i] === "--runtime") parsed.runtime = argv[(i += 1)];
     else if (argv[i] === "--force") parsed.force = true;
     else if (argv[i] === "--dry-run") parsed.dryRun = true;
+    else if (argv[i] === "--with-optional") parsed.withOptional = true;
+    else if (argv[i] === "--scope") parsed.scope = argv[(i += 1)];
     else throw new Error(`runFace: unexpected flag ${argv[i]}`);
   }
   const { result, lines } = await runInit(repo, { ...parsed, ...options });
@@ -180,6 +185,31 @@ const PRE_165_CLAUDE = {
   plugins: [{ name: "pm-execution", marketplace: "pm-skills" }],
   codex: null
 };
+
+// 165/03: a temp target repo plus a planner fixture tree at FIXTURE_SHA (each pm-skills
+// folder with its manifest, a root LICENSE), handed to the cowork run as plannerSource.
+const COWORK_FILES = [
+  ".aof/cowork/aof-planning.plugin",
+  ".aof/cowork/pm-skills/pm-execution.plugin",
+  ".aof/cowork/pm-skills/pm-product-discovery.plugin",
+  ".aof/cowork/pm-skills/pm-product-strategy.plugin"
+];
+
+async function withPlanner(fn) {
+  const repo = await tempRepo();
+  const tree = await tempRepo("aof-planner-tree-");
+  try {
+    for (const name of ["pm-execution", "pm-product-discovery", "pm-product-strategy", "pm-market-research", "pm-ai-shipping"]) {
+      await mkdir(path.join(tree, name, ".claude-plugin"), { recursive: true });
+      await writeFile(path.join(tree, name, ".claude-plugin", "plugin.json"), JSON.stringify({ name }));
+    }
+    await writeFile(path.join(tree, "LICENSE"), "MIT License\n");
+    return await fn(repo, { dir: tree, head: FIXTURE_SHA });
+  } finally {
+    await rm(repo, { recursive: true, force: true });
+    await rm(tree, { recursive: true, force: true });
+  }
+}
 
 export const planningInitTests = [
   // ====================================================================
@@ -1172,4 +1202,146 @@ export const planningInitTests = [
       }
     }
   }))
+,
+  // ====================================================================
+  // 165/03 planning-init-delivers-cowork — render and hand over (ADR-001)
+  //   00_cowork-packages-and-install-steps.feature
+  //   01_cowork-beside-claude-and-codex.feature
+  // The sha is injected and the planner source is a fixture tree at that sha, so no
+  // network is touched and no process is spawned.
+  // ====================================================================
+  {
+    name: "planning-init-delivers-cowork/00 E1 · a cowork run writes the plugin and the planner packages",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      await runInit(repo, { runtime: "claude" });
+      const { exit, output } = await runFace(repo, "--runtime cowork", { plannerSource });
+      assert.equal(exit, 0, "the command exits 0");
+      for (const file of COWORK_FILES) assert.ok(existsSync(path.join(repo, file)), `${file} exists`);
+      assert.match(output, /Customize › Plugins › Add › Upload plugin/);
+      for (const file of COWORK_FILES) assert.ok(output.includes(`  ${file}`), `the upload steps name ${file}`);
+      assert.match(output, /connect this repo's folder in Cowork and run \/aof-planning:shatter/);
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E2 · a cowork dry-run previews and touches nothing",
+    run: () => withPlanner(async (repo) => {
+      await runInit(repo, { runtime: "claude" });
+      const before = await readFile(planningLockPath(repo), "utf8");
+      let spawned = 0;
+      let cloned = 0;
+      const { exit, output, result } = await runFace(repo, "--runtime cowork --dry-run", {
+        spawn: () => { spawned += 1; return { status: 0 }; },
+        plannerClone: () => { cloned += 1; return { ok: false }; }
+      });
+      assert.equal(exit, 0);
+      for (const file of COWORK_FILES) assert.ok(output.includes(`  ${file}`), `the preview lists ${file}`);
+      assert.match(output, /Upload plugin/, "the preview gives the upload steps");
+      assert.equal(existsSync(path.join(repo, ".aof", "cowork")), false, "no file under .aof/cowork/");
+      assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      assert.equal(spawned + cloned, 0, "no process was spawned and no clone was attempted");
+      assert.equal(result.sha, "<sha>", "no sha was resolved");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E3 · a failed planner clone writes nothing",
+    run: () => withPlanner(async (repo) => {
+      await runInit(repo, { runtime: "claude" });
+      const { exit } = await runFace(repo, "--runtime cowork", { plannerClone: () => ({ ok: false, message: "unable to access" }) });
+      assert.notEqual(exit, 0, "the command exits non-zero");
+      assert.equal(existsSync(path.join(repo, ".aof", "cowork")), false, "no file under .aof/cowork/");
+      assert.equal((await readEntries(repo)).cowork, undefined, "no planning entry for cowork");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E4 · the install is recorded as unconfirmed, and never claimed",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      await runInit(repo, { runtime: "claude" });
+      const { output } = await runFace(repo, "--runtime cowork", { plannerSource });
+      const entry = (await readEntries(repo)).cowork;
+      assert.equal(entry.cowork.installConfirmed, false);
+      assert.equal(entry.sha, FIXTURE_SHA);
+      assert.match(output, /the Cowork install is not confirmed/);
+      assert.deepEqual(output.split("\n").filter((line) => /installed/i.test(line)), [], "no line says the plugins were installed");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 the optional planner plugin follows --with-optional",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      await runFace(repo, "--runtime cowork --with-optional", { plannerSource });
+      assert.ok(existsSync(path.join(repo, ".aof", "cowork", "pm-skills", "pm-market-research.plugin")));
+      assert.ok(!existsSync(path.join(repo, ".aof", "cowork", "pm-skills", "pm-ai-shipping.plugin")), "no pm-ai-shipping.plugin");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 E6 · cowork is added beside a recorded claude install",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      await runInit(repo, { runtime: "claude" });
+      const claudeBefore = (await readEntries(repo)).claude;
+      const { exit } = await runFace(repo, "--runtime cowork", { plannerSource });
+      assert.equal(exit, 0);
+      const entries = await readEntries(repo);
+      assert.deepEqual(Object.keys(entries).sort(), ["claude", "cowork"]);
+      assert.deepEqual(entries.claude, claudeBefore, "the claude entry is unchanged");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 E7 · re-installing cowork without --force is refused",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      await runInit(repo, { runtime: "claude" });
+      await runFace(repo, "--runtime cowork", { plannerSource });
+      const before = await readFile(planningLockPath(repo), "utf8");
+      const { exit, output } = await runFace(repo, "--runtime cowork", { plannerSource });
+      assert.notEqual(exit, 0);
+      assert.match(output, /--force/);
+      assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 --force re-pins cowork only",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      await runInit(repo, { runtime: "claude" });
+      await runFace(repo, "--runtime cowork", { plannerSource });
+      const lock = await readUnifiedLock(repo);
+      const stale = { ...planningEntries(lock).cowork, generatedAt: "2000-01-01T00:00:00.000Z" };
+      await writeUnifiedLock(repo, { ...lock, planning: { runtimes: { ...planningEntries(lock), cowork: stale } } });
+      const claudeBefore = (await readEntries(repo)).claude;
+      const { exit } = await runFace(repo, "--runtime cowork --force", { plannerSource });
+      assert.equal(exit, 0);
+      const entries = await readEntries(repo);
+      assert.notEqual(entries.cowork.generatedAt, stale.generatedAt, "cowork has a new generatedAt");
+      assert.deepEqual(entries.claude, claudeBefore, "the claude entry is unchanged");
+    })
+  },
+  ...["user", "project", "local"].map((scope) => ({
+    name: `planning-init-delivers-cowork/01 ${scope === "user" ? "E8 · " : ""}--scope ${scope} with cowork is refused and writes nothing`,
+    run: () => withPlanner(async (repo, plannerSource) => {
+      const before = existsSync(planningLockPath(repo)) ? await readFile(planningLockPath(repo), "utf8") : null;
+      const { exit, output } = await runFace(repo, `--runtime cowork --scope ${scope}`, { plannerSource });
+      assert.notEqual(exit, 0);
+      assert.match(output, /--scope applies only to claude/);
+      assert.equal(existsSync(path.join(repo, ".aof", "cowork")), false, "no file under .aof/cowork/");
+      const after = existsSync(planningLockPath(repo)) ? await readFile(planningLockPath(repo), "utf8") : null;
+      assert.equal(after, before, "the lock file is byte-for-byte what it was");
+    })
+  })),
+  {
+    name: "planning-init-delivers-cowork/01 E9 · without --scope the cowork entry carries no scope",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      const { exit } = await runFace(repo, "--runtime cowork", { plannerSource });
+      assert.equal(exit, 0);
+      assert.equal(Object.hasOwn((await readEntries(repo)).cowork, "scope"), false);
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 E10 · the packages are ignored by git",
+    run: () => withPlanner(async (repo, plannerSource) => {
+      const git = (...args) => spawnSync("git", args, { cwd: repo, encoding: "utf8" });
+      assert.equal(git("init", "-q").status, 0, "the target repo is a git repository");
+      await runFace(repo, "--runtime cowork", { plannerSource });
+      assert.equal(await readFile(path.join(repo, ".aof", "cowork", ".gitignore"), "utf8"), "*\n", ".aof/cowork/.gitignore holds exactly *");
+      const status = git("status", "--porcelain", "--untracked-files=all").stdout.split("\n");
+      assert.ok(status.some((line) => line.includes(".aof/aof.lock.json")), "git status sees the repo's untracked files");
+      assert.deepEqual(status.filter((line) => line.includes(".aof/cowork/")), [], "nothing under .aof/cowork/");
+    })
+  }
 ];

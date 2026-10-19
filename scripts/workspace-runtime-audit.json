@@ -68,7 +68,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"ls-remote\", MARKETPLACE_GIT_URL, tagRef], {\n    encoding: \"utf8\",\n    shell: process.platform === \"win32\"\n  })",
     "digest": "3fa3e349bddb7393b817514c23b378032ac3f17c34a25ac3a2058edb2ef964a8",
-    "sourceDigest": "9829e5b5f1b98e901f2c3b92c6c957191dc2a9540b418e39792120edc4124d07",
+    "sourceDigest": "bbb42232036013bcd5111535e8b467c8284275b99e4bbcf65a1c1a91e6b5cee1",
     "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
   },
   {
@@ -76,8 +76,24 @@
     "kind": "child-process",
     "expression": "spawn(item.argv[0], item.argv.slice(1), {\n      stdio: \"inherit\",\n      shell: process.platform === \"win32\",\n      env: { ...process.env }\n    })",
     "digest": "1d2b72e0774d0285f637824937f7257f8a23fae7fe93fce11f801d96db05136c",
-    "sourceDigest": "9829e5b5f1b98e901f2c3b92c6c957191dc2a9540b418e39792120edc4124d07",
+    "sourceDigest": "bbb42232036013bcd5111535e8b467c8284275b99e4bbcf65a1c1a91e6b5cee1",
     "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
+  },
+  {
+    "file": "packages/core/src/planning/cowork-planner.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", plannerCloneArgv(dir), spawnOptions)",
+    "digest": "8b854be963141688a5f33ebea983326baef197e5b2facf3d2d0bfd751b83d336",
+    "sourceDigest": "0b1a50ce3b41a107265a6a92a00cf4d5f3b7baa37149f3fec68945101781298e",
+    "reason": "165/ADR-003: git clones pm-skills over HTTPS at the release tag by fixed argv with no shell, then reads the clone's HEAD to check it against the recorded sha."
+  },
+  {
+    "file": "packages/core/src/planning/cowork-planner.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", [\"-C\", dir, \"rev-parse\", \"HEAD\"], spawnOptions)",
+    "digest": "80bc47842cf33ef4bec2d9dd73fc08d336f8ef14c5213f113b711805171d1ce6",
+    "sourceDigest": "0b1a50ce3b41a107265a6a92a00cf4d5f3b7baa37149f3fec68945101781298e",
+    "reason": "165/ADR-003: git clones pm-skills over HTTPS at the release tag by fixed argv with no shell, then reads the clone's HEAD to check it against the recorded sha."
   },
   {
     "file": "packages/core/src/tool-store.mjs",

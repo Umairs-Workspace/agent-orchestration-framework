@@ -3169,7 +3169,7 @@
         "init"
       ],
       "spec": {
-        "usage": "aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex] [--scope user|project|local] [--force] [--json]",
+        "usage": "aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force] [--json]",
         "workspace": false,
         "flags": {
           "dryRun": {
@@ -3178,7 +3178,7 @@
           },
           "force": {
             "type": "boolean",
-            "description": "re-pin and re-install over an existing planning provenance section"
+            "description": "re-pin and re-install the named runtime over its recorded planning entry"
           },
           "withOptional": {
             "type": "boolean",
@@ -3186,11 +3186,11 @@
           },
           "runtime": {
             "type": "string",
-            "description": "target runtime (claude | codex; default claude)"
+            "description": "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages under .aof/cowork/"
           },
           "scope": {
             "type": "string",
-            "description": "claude settings scope for the declarations (user | project | local; default project)"
+            "description": "claude settings scope for the declarations (user | project | local; default project); refused with cowork"
           }
         }
       }

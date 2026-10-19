@@ -87,3 +87,14 @@ Diagrams: none. Each ADR is a linear flow with no moving parts that a picture wo
   Windows idiom from `resolveSha`. Its argv carries a temp path, so a profile directory containing
   a space would have split under the shell. It now spawns with no shell (`git` is an executable),
   and a live clone into `…\aof probe …\with space` succeeded at `5042ff61…`.
+- 165/03 · `files:` was incomplete in two places, and both were found by the importer sweep, not
+  by the story's own suites. (1) `scripts/workspace-runtime-audit.json` keys each reviewed spawn by
+  a digest of the call and of the whole source file, so 00's and 03's edits to `planning-init.mjs`
+  turned its two existing entries stale, and 02's new clone needed entries of its own. They were
+  re-reviewed: same reasons for the unchanged spawns, a new reason for the clone. (2)
+  `test/fixtures/application/command-inventory.json` snapshots the `planning:init` usage and flag
+  text, which 00 and 03 changed. A refine that adds a spawn or edits a CLI face should list both
+  files.
+- 165/03 · The worktree had no `apps/ui/dist`, so two inventory readers failed for that reason
+  alone. `node scripts/ui-build.mjs` in the worktree turned them green rather than writing them
+  off as environmental. One of them ("copied core runs") packages the new `src/planning/` files.
