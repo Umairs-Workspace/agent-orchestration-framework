@@ -1123,6 +1123,153 @@
     }
   },
   {
+    "id": "hyperagent:brief",
+    "input": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "plan",
+            "prd",
+            "shatter",
+            "refine"
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "request": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "base": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "integrations",
+        "hyperagent",
+        "brief"
+      ],
+      "spec": {
+        "usage": "aof work integrations hyperagent brief <plan|prd|shatter|refine> [target] [--request <text>] [--repo <owner/name>] [--base <branch>] [--json]",
+        "flags": {
+          "request": {
+            "type": "string",
+            "description": "the operator's request, verbatim"
+          },
+          "repo": {
+            "type": "string",
+            "description": "the GitHub repository (default: the origin remote)"
+          },
+          "base": {
+            "type": "string",
+            "description": "the base branch (default: work.integrations.hyperagent.baseBranch, then origin's HEAD)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hyperagent:result",
+    "input": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "integrations",
+        "hyperagent",
+        "result"
+      ],
+      "spec": {
+        "usage": "aof work integrations hyperagent result <file> [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
+    "id": "hyperagent:check",
+    "input": {
+      "type": "object",
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "base": {
+          "type": "string"
+        },
+        "remote": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "branch"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "integrations",
+        "hyperagent",
+        "check"
+      ],
+      "spec": {
+        "usage": "aof work integrations hyperagent check <branch> [--base <branch>] [--remote <name>] [--json]",
+        "flags": {
+          "base": {
+            "type": "string",
+            "description": "the branch the plan was cut from"
+          },
+          "remote": {
+            "type": "string",
+            "description": "the remote holding the plan branch (default origin)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "hyperagent:doctor",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "integrations",
+        "hyperagent",
+        "doctor"
+      ],
+      "spec": {
+        "usage": "aof work integrations hyperagent doctor [--json]",
+        "flags": {}
+      }
+    }
+  },
+  {
     "id": "work:run-start",
     "input": {
       "type": "object",
