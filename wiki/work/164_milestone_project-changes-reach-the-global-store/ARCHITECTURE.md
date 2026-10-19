@@ -363,6 +363,27 @@ which three stories read.
 
 **Consequences.** 00 is the critical path. Each later story is independently revertible.
 
+## Build refinements (graduated from STATE at 164's close)
+
+Decisions the build took inside the ADRs above, kept here so the compacted STATE loses none:
+- **Where a local change is computed (ADR-001).** `localChangeRefs` is computed inside
+  `publishWorkspaceSnapshot`, the one disk-derived publish every path reaches (a verb's event, a
+  mark, a daemon tick), not in the reactor, which would have read the rows twice.
+- **A held change is reported, not marked (ADR-001/003).** A mark drained under the lock would
+  settle `done` with the change still owed, and its `(workspace, digest)` id would then swallow
+  the post-release mark; a same-state event that settled while its change is still owed is
+  re-marked under a suffixed id.
+- **The stat digest is recorded only when nothing is owed (ADR-002),** so a held change keeps the
+  row pass running until it lands; a deleted record is a change too (observations of refs a
+  complete claim no longer carries are forgotten).
+- **"This node" is the publisher's id (ADR-005).** Rows are stamped with `deriveNodeId` (the pin,
+  else `node-<hash>`); the cache read hands that resolved `selfNodeId` to the overlay and to
+  doctor, never `meshNodeIdOf` (the pin only).
+- **Explicit retries skip the backoff (ADR-006).** `settleLaneProjectionEffects` and
+  `doctor --converge` drain with `backoff: false`; only automatic passes wait.
+- **Doctor judges the row over the store's record doc (ADR-005/006),** `records.mjs`'s
+  `recordDoc` (an imported milestone's `AOF.md`), so a synced record never reads as behind.
+
 ## Fitness functions
 
 | id | invariant | enforced by (arch-test) | from |

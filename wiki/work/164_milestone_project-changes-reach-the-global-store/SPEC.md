@@ -3,7 +3,7 @@ type: milestone
 number: 164
 slug: project-changes-reach-the-global-store
 title: "Every project change reaches the global store — local files stay canonical, every change is noticed and owed in the existing journal, and one sync pass lands it whether or not the desktop app is running"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19
@@ -63,10 +63,10 @@ Out of scope:
 
 ## Stories
 
-- [ ] [00 · A local change is noticed and owed](stories/00_story_a-local-change-is-noticed-and-owed/STORY.md) (ADR-001, ADR-002, ADR-003; ADR-004 driver 3)
-- [ ] [01 · The desktop app syncs every workspace and catches up when it starts](stories/01_story_the-desktop-app-syncs-every-workspace/STORY.md) (ADR-004; after 00)
-- [ ] [02 · My own items read from my files](stories/02_story_my-own-items-read-from-my-files/STORY.md) (ADR-005; after 00)
-- [ ] [03 · Owed sync never gives up and shows how far behind it is](stories/03_story_owed-sync-never-gives-up-and-shows-its-lag/STORY.md) (ADR-006; after 00, 02)
+- [x] [00 · A local change is noticed and owed](stories/00_story_a-local-change-is-noticed-and-owed/STORY.md) (ADR-001, ADR-002, ADR-003; ADR-004 driver 3)
+- [x] [01 · The desktop app syncs every workspace and catches up when it starts](stories/01_story_the-desktop-app-syncs-every-workspace/STORY.md) (ADR-004; after 00)
+- [x] [02 · My own items read from my files](stories/02_story_my-own-items-read-from-my-files/STORY.md) (ADR-005; after 00)
+- [x] [03 · Owed sync never gives up and shows how far behind it is](stories/03_story_owed-sync-never-gives-up-and-shows-its-lag/STORY.md) (ADR-006; after 00, 02)
 
 ## Dependencies
 

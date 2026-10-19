@@ -4,7 +4,7 @@ number: 00
 slug: a-local-change-is-noticed-and-owed
 title: "A local change is noticed and owed — a hand edit, pull or scaffold takes its row in the store through the same journal a verb uses, and every aof command syncs its own workspace"
 parent: 164
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19

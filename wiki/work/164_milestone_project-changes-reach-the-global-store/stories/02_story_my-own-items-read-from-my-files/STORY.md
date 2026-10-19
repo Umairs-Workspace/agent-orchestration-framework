@@ -4,7 +4,7 @@ number: 02
 slug: my-own-items-read-from-my-files
 title: "My own items read from my files — find, list, next and doctor answer a project's own records from its disk, and a cached row overlays one only when another machine reported it and the file has not changed since"
 parent: 164
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19

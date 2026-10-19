@@ -4,7 +4,7 @@ number: 01
 slug: the-desktop-app-syncs-every-workspace
 title: "The desktop app syncs every workspace and catches up when it starts — the daemon tick runs the one sync pass over every registered workspace, not the directory it was launched from"
 parent: 164
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19

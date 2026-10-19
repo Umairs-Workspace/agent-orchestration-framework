@@ -4,7 +4,7 @@ number: 03
 slug: owed-sync-never-gives-up-and-shows-its-lag
 title: "Owed sync never gives up and shows how far behind it is — an idempotent publish retries until it lands with backoff, and the operator can see each workspace's owed sync, its error and its last success"
 parent: 164
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19
