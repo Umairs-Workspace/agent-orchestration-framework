@@ -9,9 +9,10 @@ The living audit of every shipped descriptor role, procedure and skill. Mileston
 its delivery-time copy and evaluation evidence stay in that milestone folder, and a member added
 since is audited HERE, in the change that ships it (163 added `command:questions`; the Hyperagent
 planning runtime added `skill:aof-prd` and the six `hyperagent` planning variants, which are full
-rewrites for a GitHub-integration agent — see wiki/hyperagent-support.md).
+rewrites for a GitHub-integration agent — see wiki/hyperagent-support.md; `command:hyperplan` delegates
+planning to that agent over Hyperagent's MCP endpoint).
 
-Inventory: 45 descriptor roles, procedures and skills. Runtime selection is automatic;
+Inventory: 46 descriptor roles, procedures and skills. Runtime selection is automatic;
 there is no free-form template profile. Common metadata/body, selected bundled variant, then
 project resource overrides determine the result. Claude/OpenCode retain the common bodies;
 retrospective gains the shared recall/ingest edge required by this story, repair states its
@@ -66,6 +67,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 | command:promote | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (886 common-body words baseline) | none |
 | command:archive | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (672 common-body words baseline) | none |
 | command:questions | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (189 common-body words baseline) | none |
+| command:hyperplan | adapt | Delegate a planning step to the Hyperagent AOF Planner over MCP; deterministic brief/result/check verbs, bounded polling, questions relayed to the operator, never merges. | Hyperagent MCP tools when registered; Bash for the aof hyperagent verbs; native question tool or conversation | Never authenticates, merges, checks out or promotes; the branch is checked in a temporary worktree | selected entry only | none |
 | command:recent | adapt | Retain mechanical CLI procedure; adapt native invocation and supported question/role handling. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | selected entry only (183 common-body words baseline) | none |
 | command:refine | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (5555 common-body words baseline) | procedure.md; {{references.workflow-contract}} |
 | command:repair | extract | Keep critical phase gates in entry; attach only this native procedure and the shared contract. | Codex tools only when exposed; native role/question fallback preflight | Role instructions are not enforced tool isolation; host approval/sandbox governs | entry + own procedure + shared contract (1234 common-body words baseline) | procedure.md; {{references.workflow-contract}} |

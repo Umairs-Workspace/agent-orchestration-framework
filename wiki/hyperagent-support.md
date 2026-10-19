@@ -58,12 +58,57 @@ the existing Hyperagent skill from the new file (or ask the planner to do it) ra
   the code graph, or run `aof work validate`. Those remain the operator's (or CI's) steps on the branch.
 - `aof-refine` works on **numbered** items only: a backlog milestone must be promoted first, because
   stories are keyed by their milestone's number.
-- Live acceptance — an imported skill set driving a real plan end to end — is tracked in
+- Live acceptance — an imported skill set driving a real plan end to end, and one `/aof:hyperplan`
+  run from a connected assistant — is tracked in
   `wiki/work/backlog/milestone_hyperagent-planning-runtime/`.
 
-## Later: delegating planning from Claude Code or Codex
+## `/aof:hyperplan` — delegate planning from Claude Code or Codex
 
-Hyperagent also serves an MCP endpoint (`https://hyperagent.com/api/mcp`: `create_thread`,
-`get_thread`, `send_message`). A follow-up `aof:hyperplan` command could hand a planning request to
-the AOF Planner from inside a Claude Code or Codex session and fetch the resulting branch. It is out of
-scope for this change.
+From inside a Claude Code (`/aof:hyperplan`), Codex (`$aof-hyperplan`) or OpenCode session:
+
+```text
+/aof:hyperplan Add a Slack notifier for loop questions          # plan: PRD, then shatter, one PR
+/aof:hyperplan prd Replace the board's polling with SSE          # the PRD only
+/aof:hyperplan shatter wiki/planning/PRD-sse.md                  # an existing PRD
+/aof:hyperplan refine 164                                        # a numbered milestone or story
+```
+
+The procedure drives Hyperagent's MCP endpoint (`create_thread` → `get_thread` → `send_message`),
+and the deterministic parts are `aof` verbs owned by `@aof/integration-hyperagent`:
+
+| Step | Verb |
+|---|---|
+| Is the assistant connected, are the skills rendered, is the config valid? | `aof work integrations hyperagent doctor` |
+| Compose the self-contained brief (repo from `origin`, base branch, work dir, tag vocabulary, delivery rules, result-block contract) | `aof work integrations hyperagent brief <plan\|prd\|shatter\|refine> [target] --request "…"` |
+| Read the planner's `AOF-PLAN-RESULT` block (PR URL, branch, status) | `aof work integrations hyperagent result <file>` |
+| Validate the plan branch without touching your checkout, and flag files outside the planning lane | `aof work integrations hyperagent check <branch>` |
+
+Between those, the session polls the planner thread with a doubling wait bounded by
+`maxMinutes`, relays every planner question to you (never answering it itself), and hands you the
+thread id if it runs out of time. It never merges, checks out or promotes.
+
+`check` fetches the branch and extracts its tip into a temporary directory through a private index
+file — your index, HEAD, working tree and worktree list are untouched — then runs `aof work validate`
+over it and lists any changed file that is not a work record or planning document.
+
+**One-time setup:** `claude mcp add --transport http hyperagent https://hyperagent.com/api/mcp` and
+`/mcp` to sign in (or `codex mcp add hyperagent --url https://hyperagent.com/api/mcp` and
+`codex mcp login hyperagent`), then the Hyperagent setup above. No credential is stored by aof.
+
+Optional configuration (`.aof/aof.config.json`):
+
+```json
+{ "work": { "integrations": { "hyperagent": {
+  "agent": "AOF Planner", "baseBranch": null, "branchPrefix": "aof/plan/", "pollSeconds": 20, "maxMinutes": 30
+} } } }
+```
+
+## The package
+
+`packages/integration-hyperagent` owns everything Hyperagent-specific in code: the runtime
+declaration and capability column core's model imports, the bundle command mapping, the brief,
+result parser, branch check, setup doctor and the four CLI verbs. It imports nothing from core and
+spawns nothing — git and the work validator are injected by core's command registry — and each verb
+loads its implementation only when it runs. The prompt bodies (the planning variants, `aof-prd`,
+`AGENT.md`, `hyperplan`) stay in `packages/core/assets/`, where the bundle loader and release
+packaging already read every shipped prompt.

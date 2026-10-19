@@ -310,7 +310,11 @@ export const archTests = [
       // closure gains the session-command and terminal-relay-bridge bindings and their implementations
       // (159 -> 163, measured against the 156 composition); the driver fences above are unchanged.
       for (const owner of ["packages/core/src/application/bindings/commands/mesh/session.mjs", "packages/mesh/src/commands/session.mjs", "packages/core/src/application/bindings/mesh/terminal-relay-bridge.mjs", "packages/mesh/src/terminal-relay-bridge.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 163, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // The Hyperagent integration: core's model takes the `hyperagent` runtime declaration from
+      // @aof/integration-hyperagent/runtime, a leaf importing only node builtins (163 -> 164); no I/O,
+      // lifecycle or driver import.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/integration-hyperagent/src/runtime.mjs")), "the Hyperagent runtime leaf");
+      assert.equal(sinkGraph.seen.size, 164, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

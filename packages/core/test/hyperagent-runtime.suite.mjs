@@ -22,6 +22,7 @@ import { loadBundle, renderBundleOutputs } from "../src/work/bundle.mjs";
 import { partitionByCapability, OUTSIDE_RUNTIME_SUBSET } from "../src/work/bundle-runtime.mjs";
 import { readLock } from "../src/lock.mjs";
 import { updateWork } from "../src/work/update.mjs";
+import { HYPERAGENT_RUNTIME, HYPERAGENT_CAPABILITIES } from "@aof/integration-hyperagent/runtime";
 
 const initWork = assets.work.init.initWork;
 
@@ -70,6 +71,18 @@ export const hyperagentRuntimeTests = [
       assert.ok(outputs.every((output) => !String(output.path).replaceAll("\\", "/").startsWith(".hyperagent/")),
         "a default render never touches the opt-in runtime's folder");
     })
+  },
+  {
+    name: "hyperagent/package: core's runtime entry and capability column ARE the package's declarations, and every status is one core knows",
+    run: async () => {
+      assert.equal(RUNTIMES.hyperagent, HYPERAGENT_RUNTIME, "core declares no Hyperagent runtime of its own");
+      const known = new Set(Object.values(CAPABILITY_STATUS));
+      for (const [kind, status] of Object.entries(HYPERAGENT_CAPABILITIES)) {
+        assert.ok(known.has(status), `${kind}: "${status}" is a core capability status`);
+        assert.equal(CAPABILITIES[kind]?.hyperagent, status, `${kind} is taken from the package`);
+      }
+      assert.deepEqual(Object.keys(HYPERAGENT_CAPABILITIES).sort(), Object.keys(CAPABILITIES).sort(), "the package covers every capability kind");
+    }
   },
   {
     name: "hyperagent/capabilities: skills are native; commands, agents and rules are not renderable outside the bundle mapping",

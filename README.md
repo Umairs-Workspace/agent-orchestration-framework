@@ -101,6 +101,7 @@ The unit of independence is the **story** — boundaries follow real coupling so
 | `/aof:questions` / `$aof-questions` | read the questions a loop is waiting on — each in full, with the `aof work answer` line that replies; `--all` for every workspace on this node; read-only |
 | `/aof:explain` / `$aof-explain` | say what one or more work items are for — by number or backlog folder path, briefly or with `--verbose`; read-only, nothing is written |
 | `/aof:insert-milestone` · `/aof:insert-story` · `/aof:insert-chore` · `/aof:insert-uat` / `$aof-insert-milestone` · `$aof-insert-story` · `$aof-insert-chore` · `$aof-insert-uat` | insert a work item before or after an existing item while preserving stream ordering and references |
+| `/aof:hyperplan` / `$aof-hyperplan` | hand planning to the Hyperagent AOF Planner over MCP — it writes the PRD and shatters it (or refines a numbered item) into a draft PR; this session relays its questions and checks the branch with `aof work integrations hyperagent check`. Plans only, never merges ([guide](wiki/hyperagent-support.md)) |
 | `/aof:delegate` | set the two model decisions — toggle gpt-5.6 delegation on/off (default off), then always choose the orchestrator model (Fable 5 or Opus 4.8) |
 
 In orchestrated mode, commands/skills use native **subagents** (rendered into `.claude/agents/` and `.codex/agents/`). `work.agents.mode: "solo"` performs the roles inline and spawns none. Role instructions describe scope; the host's tools, approval and sandbox capabilities determine enforcement:
@@ -126,7 +127,9 @@ agent. Import them with Hyperagent's *Import from GitHub*: the planner researche
 shatters it into backlog drivers, refines promoted milestones into stories and task contracts, and
 delivers every step as a draft pull request that `aof work validate` gates on its branch. Hyperagent
 never builds or verifies, and the runtime is never assumed — a project that does not name it renders
-nothing new. See the [Hyperagent guide](wiki/hyperagent-support.md).
+nothing new. From Claude Code or Codex, `/aof:hyperplan <request>` delegates that planning over
+Hyperagent's MCP endpoint and checks the returned branch. The integration lives in
+`packages/integration-hyperagent`. See the [Hyperagent guide](wiki/hyperagent-support.md).
 
 ### Model selection (orchestrator, roles, and gpt-5.6-sol)
 

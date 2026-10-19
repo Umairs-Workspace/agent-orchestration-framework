@@ -125,6 +125,33 @@ Feature: AOF CLI lifecycle
     And file `.hyperagent/skills/aof-continue/SKILL.md` should not exist
     And file `.claude/commands/aof/shatter.md` should not exist
 
+  Scenario: /aof:hyperplan renders for the execution runtimes and never for Hyperagent itself
+    Given an empty project
+    When I run `work init --runtime claude,hyperagent`
+    Then the command should succeed
+    And file `.claude/commands/aof/hyperplan.md` should contain `aof work integrations hyperagent brief`
+    And file `.hyperagent/skills/aof-hyperplan/SKILL.md` should not exist
+
+  Scenario: The Hyperagent doctor names the missing setup steps without writing anything
+    Given an empty project
+    When I run `work integrations hyperagent doctor`
+    Then the command should succeed
+    And stdout should contain `Hyperagent planning: not ready yet.`
+    And stdout should contain `claude mcp add --transport http hyperagent https://hyperagent.com/api/mcp`
+    And file `.mcp.json` should not exist
+
+  Scenario: The Hyperagent brief is composed deterministically for a named repository
+    Given an empty project
+    When I run `work integrations hyperagent brief plan --request "Add SSO" --repo acme/widgets --base main`
+    Then the command should succeed
+    And stdout should contain `plan branch aof/plan/add-sso`
+    And stdout should contain `AOF-PLAN-RESULT`
+
+  Scenario: The Hyperagent brief refuses a mode it does not know
+    Given an empty project
+    When I run `work integrations hyperagent brief build --request "x" --repo acme/widgets --base main`
+    Then the command should fail
+
   Scenario: A work init that names no runtime never renders Hyperagent
     Given an empty project
     When I run `work init`

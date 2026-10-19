@@ -937,6 +937,24 @@
       }
     },
     {
+      "id": "hyperplan",
+      "kind": "command",
+      "file": "commands/hyperplan.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/workflow.md",
+          "section": "hyperplan"
+        }
+      }
+    },
+    {
       "id": "questions",
       "kind": "command",
       "file": "commands/questions.md",

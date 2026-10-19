@@ -276,6 +276,24 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
+      "path": ".agents/skills/aof-hyperplan/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-hyperplan",
+        "kind": "skill"
+      },
+      "hash": "sha256:94e2c2cf326a66667687f55c26e78887e2c2d5514d72a1ffe53d8280cfd85b18"
+    },
+    {
+      "path": ".agents/skills/aof-hyperplan/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-hyperplan",
+        "kind": "skill"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
       "path": ".agents/skills/aof-init/SKILL.md",
       "runtime": "codex",
       "resource": {
@@ -1201,6 +1219,15 @@
         "kind": "command"
       },
       "hash": "sha256:4078aceb936f879f3a86c399e44e0bfba78718495e1213c50bb8d7d976661fe0"
+    },
+    {
+      "path": ".claude/commands/aof/hyperplan.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "hyperplan",
+        "kind": "command"
+      },
+      "hash": "sha256:d99949bc127105468b13261d68ae563c9b41f27be15051b748649aefd9d1a503"
     },
     {
       "path": ".claude/commands/aof/init.md",

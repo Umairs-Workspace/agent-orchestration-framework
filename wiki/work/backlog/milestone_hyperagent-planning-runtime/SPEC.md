@@ -2,7 +2,7 @@
 type: milestone
 number:
 slug: hyperagent-planning-runtime
-title: "Hyperagent plans the work — an opt-in planning runtime that renders the planning procedures as importable skills"
+title: "Hyperagent plans the work — an opt-in planning runtime, and /aof:hyperplan to delegate planning to it"
 status: not-started
 owner: product-owner
 created: 2026-10-19
@@ -10,7 +10,7 @@ updated: 2026-10-19
 schema: 1
 aofVersion: 0.1.0
 ---
-# Hyperagent plans the work — an opt-in planning runtime that renders the planning procedures as importable skills
+# Hyperagent plans the work — an opt-in planning runtime, and /aof:hyperplan to delegate planning to it
 
 ## Objective
 
@@ -32,11 +32,15 @@ In scope:
   each carrying the Hyperagent execution contract and the embedded validate checklist.
 - The Hyperagent-only `aof-prd` skill and the `.hyperagent/AGENT.md` planner instructions.
 - This repository's own `.hyperagent/` render, so Hyperagent can import from it.
+- `packages/integration-hyperagent`: the runtime declaration core imports, and the deterministic
+  `aof work integrations hyperagent brief | result | check | doctor` verbs.
+- `/aof:hyperplan` (Claude, OpenCode; `$aof-hyperplan` in Codex): delegate a planning step to the
+  AOF Planner over Hyperagent's MCP endpoint, relay its questions, and check the returned branch
+  without touching the operator's checkout; `work.integrations.hyperagent` config.
 - Documentation: `wiki/hyperagent-support.md`, the README, the prompt audit.
 
 Out of scope:
 - Hyperagent as an execution runtime (`aof work loop`, continue, review, verify) — planning only.
-- An `aof:hyperplan` command delegating planning to Hyperagent over its MCP endpoint — a follow-up.
 - Refreshing already-imported Hyperagent skills automatically — Hyperagent's import creates new skills;
   updating is a documented manual (or planner-driven) step.
 - The pre-existing `.claude/settings.json` merge on a non-Claude `work init` — unchanged here.
@@ -50,4 +54,5 @@ Out of scope:
 
 - None in the stream. The acceptance still owed is live: import the rendered skills into Hyperagent,
   run one plan from idea to promoted-and-refined milestone, and confirm `aof work validate` passes on
-  the branch it produced.
+  the branch it produced; and run `/aof:hyperplan` once from a Claude Code or Codex session connected
+  to Hyperagent over OAuth.

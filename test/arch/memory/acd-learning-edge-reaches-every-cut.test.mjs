@@ -122,6 +122,9 @@ const EXCLUDED = Object.freeze({
   "delegate.md": "sets two model decisions",
   // 150 — says what items are for, composed of the read verbs; writes nothing, carries no memory call.
   "explain.md": "explains items; reads only, cuts nothing",
+  // The Hyperagent integration — hands planning to the AOF Planner over MCP; the partition is made by
+  // the planner's own shatter/refine skills, which carry their recall, never by this delegation.
+  "hyperplan.md": "delegates planning to Hyperagent; the cut is the planner's shatter or refine, not this command's",
   "feedback.md": "captures one raw entry",
   "init.md": "installs ACD and authors a config",
   "insert-chore.md": "inserts one chore at a position and renumbers; no partition",
