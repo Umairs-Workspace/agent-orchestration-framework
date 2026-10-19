@@ -117,6 +117,17 @@ separate choices. Resume retains recorded runtime/settings. See the
 conflicts, rollback, explicit memory choices and the limits of deterministic evidence.
 Live lifecycle and repeated prompt-performance acceptance remain pending.
 
+### Planning in Hyperagent (opt-in)
+
+`aof work init --runtime hyperagent` renders the **planning** procedures — `aof-prd`, `aof-shatter`,
+`aof-refine`, `aof-add-milestone` / `-story` / `-task` and `aof-validate` — as importable `SKILL.md`
+files under `.hyperagent/skills/`, plus `.hyperagent/AGENT.md` instructions for an "AOF Planner"
+agent. Import them with Hyperagent's *Import from GitHub*: the planner researches and writes the PRD,
+shatters it into backlog drivers, refines promoted milestones into stories and task contracts, and
+delivers every step as a draft pull request that `aof work validate` gates on its branch. Hyperagent
+never builds or verifies, and the runtime is never assumed — a project that does not name it renders
+nothing new. See the [Hyperagent guide](wiki/hyperagent-support.md).
+
 ### Model selection (orchestrator, roles, and gpt-5.6-sol)
 
 The **orchestrator** is the main session in orchestrated mode — it spawns the role sub-agents and does the top-level planning. Fable 5 leads on intelligence and taste; because it counts against token usage, the model is an explicit choice rather than a hard default. Both stay fully available at all times — this is a switch you can flip whenever, not a one-way fallback:
