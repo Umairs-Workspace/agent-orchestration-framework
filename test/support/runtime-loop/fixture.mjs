@@ -12,7 +12,7 @@ import { createRuntimeSession } from "../../../packages/execution/src/runtime-se
 import { createRunSessionCapture } from "../../../packages/execution/src/session-capture.mjs";
 import { createRunSpendIngest } from "../../../packages/execution/src/spend.mjs";
 import { resolveExecution, resolveExecutionResume } from "../../../packages/execution/src/runtime-selection.mjs";
-import { CODEX_PROFILE } from "../../../packages/execution/src/codex-protocol-profile.mjs";
+import { isSupportedCodexVersion } from "../../../packages/execution/src/codex-protocol-profile.mjs";
 import { buildNoProgressRoundsFromConfig, progressMaxResetsFromConfig } from "../../../packages/contracts/src/loop-bounds.mjs";
 import { codexFixture, reviewFrame, finishFrames } from "../../../packages/execution/test/codex-app-server.suite.mjs";
 import { runCli } from "../../integration/support/cli-context.mjs";
@@ -148,7 +148,7 @@ export async function runRuntimeRegression(runtime, { failBuild = false, version
       agentSessionDriverOptions: { env, ptySpawn: pty.spawn, which: createFakeWhich(["claude"]), watchTranscriptSessionId: async () => `fixture-claude-${typed.length}`, commandDelayMs: 0, submitDelayMs: 0, trustWorktree: async () => {}, },
     };
     if (runtime !== "claude") ctx.executionHandoff = resolveExecution(fx.workspace.config, { capabilities: { codex: { models: codexFixture().fixture.models.map(model => recoverPermissionFailure ? { ...model, id: "gpt-6-astra", model: "gpt-6-astra" } : model) } } });
-    if (version !== undefined && !CODEX_PROFILE.supportedVersions.includes(version)) {
+    if (version !== undefined && !isSupportedCodexVersion(version)) {
       await assert.rejects(drivers.refineDriverCommand.run({ ref: "07/01" }, ctx), { code: "unsupported_profile" });
       const item = await app.work.commandTools.resolve.resolveItemExact(ctx, "07/01");
       assert.deepEqual(await app.execution.runs.readRuns(item), []);
