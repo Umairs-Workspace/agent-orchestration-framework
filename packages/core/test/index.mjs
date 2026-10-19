@@ -13,6 +13,7 @@ import { notionDescriptorTests } from "./notion-descriptor.suite.mjs";
 import { headroomStoreFirstTests } from "./headroom-store-first.suite.mjs";
 import { planningInitTests } from "./planning-init.suite.mjs";
 import { planningCoworkPluginTests } from "./planning-cowork-plugin.suite.mjs";
+import { planningCoworkPlannerTests } from "./planning-cowork-planner.suite.mjs";
 import { identitySidecarPersistTests } from "./identity-sidecar-persist.suite.mjs";
 import { modelTests } from "./model.suite.mjs";
 import { codexNativeAssetTests } from "./codex-native-assets.suite.mjs";
@@ -56,6 +57,7 @@ export const tests = [
   ...headroomStoreFirstTests,
   ...planningInitTests,
   ...planningCoworkPluginTests,
+  ...planningCoworkPlannerTests,
   ...identitySidecarPersistTests,
   ...modelTests,
   ...codexNativeAssetTests,

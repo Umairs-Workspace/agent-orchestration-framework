@@ -88,12 +88,14 @@ import { archTests as acdCapabilityDelegationTests } from "../test/arch/bundle/a
 import { archTests as acdNoClobberWithoutForceTests } from "../test/arch/store/acd-no-clobber-without-force.test.mjs";
 import { planningInitTests } from "../packages/core/test/planning-init.suite.mjs";
 import { planningCoworkPluginTests } from "../packages/core/test/planning-cowork-plugin.suite.mjs";
+import { planningCoworkPlannerTests } from "../packages/core/test/planning-cowork-planner.suite.mjs";
 import { planningPrdTests } from "../test/planning/planning-prd.test.mjs";
 import { archTests as acdPlanningInstallCommandsTests } from "../test/arch/planning/acd-planning-install-commands.test.mjs";
 import { archTests as acdPlanningProvenanceShaTests } from "../test/arch/planning/acd-planning-provenance-sha.test.mjs";
 import { archTests as acdPlanningLockIsolationTests } from "../test/arch/planning/acd-planning-lock-isolation.test.mjs";
 import { archTests as acdCoworkSkillsFromCommandSourceTests } from "../test/arch/planning/acd-cowork-skills-from-command-source.test.mjs";
 import { archTests as acdCoworkPackageDeterministicTests } from "../test/arch/planning/acd-cowork-package-deterministic.test.mjs";
+import { archTests as acdCoworkPlannerPinnedTests } from "../test/arch/planning/acd-cowork-planner-pinned.test.mjs";
 import { archTests as acdPlanningNoCodexInstallTests } from "../test/arch/planning/acd-planning-no-codex-install.test.mjs";
 import { archTests as acdPlanningClonableRefTests } from "../test/arch/planning/acd-planning-clonable-ref.test.mjs";
 import { archTests as acdUnifiedLockSectionsTests } from "../test/arch/store/acd-unified-lock-sections.test.mjs";
@@ -192,12 +194,14 @@ const tests = [
   ...acdNoClobberWithoutForceTests,
   ...planningInitTests,
   ...planningCoworkPluginTests,
+  ...planningCoworkPlannerTests,
   ...planningPrdTests,
   ...acdPlanningInstallCommandsTests,
   ...acdPlanningProvenanceShaTests,
   ...acdPlanningLockIsolationTests,
   ...acdCoworkSkillsFromCommandSourceTests,
   ...acdCoworkPackageDeterministicTests,
+  ...acdCoworkPlannerPinnedTests,
   ...acdPlanningNoCodexInstallTests,
   ...acdPlanningClonableRefTests,
   ...acdUnifiedLockSectionsTests,

@@ -4,7 +4,7 @@ number: 02
 slug: pinned-planner-is-packaged-for-cowork
 title: "The pinned planner is packaged for Cowork — pm-skills' recommended plugins are taken from a clone checked against the recorded commit, each a standalone uploadable package"
 parent: 165
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19
@@ -27,8 +27,8 @@ that.**
 
 ## Tasks
 
-- [ ] [00 · Packages come only from the pinned commit](tasks/00_packages-come-only-from-the-pinned-commit.feature)
-- [ ] [01 · Each recommended plugin is a standalone package](tasks/01_each-recommended-plugin-is-a-standalone-package.feature)
+- [x] [00 · Packages come only from the pinned commit](tasks/00_packages-come-only-from-the-pinned-commit.feature)
+- [x] [01 · Each recommended plugin is a standalone package](tasks/01_each-recommended-plugin-is-a-standalone-package.feature)
 
 ## Notes
 

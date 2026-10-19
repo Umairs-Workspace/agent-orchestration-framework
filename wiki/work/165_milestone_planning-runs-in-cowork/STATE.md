@@ -17,6 +17,15 @@ doc: state
     33 bundle skills are byte-identical across the shared mapping, but every one of them renders
     through a native variant, so the preamble path is proven by FF-16502's frozen pre-165 oracle,
     run over every command with its variants stripped.
+  - [x] 165/02 built and reviewed 2026-10-19: 28/28 on the focused set; FF-16504 red-probed four
+    ways (head check removed, pm-ai-shipping added, LICENSE dropped, SSH clone URL).
+    **`@manual` live clone, run by the developer on 2026-10-19 (Windows control node), evidence
+    for VERIFICATION:** `resolveSha` gave `refs/tags/v2.0.0` →
+    `5042ff6169e0df49086c846f69bf7b6cdb67a6de`. `packagePlanner({ withOptional: true })` cloned at
+    `v2.0.0` over HTTPS and returned `ok: true`, so the clone's HEAD equalled that sha. It produced
+    pm-execution (30 files), pm-product-discovery (21), pm-product-strategy (20) and
+    pm-market-research (13), each with LICENSE. 0 of the 84 files contain a CR, and no
+    `aof-pm-skills-*` temp directory remained afterwards.
 
 ## Notes & decisions in flight
 
@@ -67,3 +76,14 @@ Diagrams: none. Each ADR is a linear flow with no moving parts that a picture wo
   version in and checks the default against `packages/core/package.json` (also fixed at the close).
 - 165/01 · `packages/core/src/planning/` is founded as a declared EXEMPTION, not a row. It names
   02's `cowork-planner` ahead of time, so 02 adds its file without a budget edit.
+- 165/02 · The live `@manual` run caught what the fixtures could not. pm-skills declares
+  `* text=auto`, so a Windows clone checked out all 128 plugin files with CRLF, even with
+  `core.autocrlf=false`. Those packages were not "the folder as it is at the commit" (E7), and
+  their bytes would have varied by host. Fixed in the build: the clone argv now pins
+  `-c core.autocrlf=false -c core.eol=lf` (all 142 files hash equal to their blobs), and FF-16504
+  asserts both settings. PLAN.md's verification step called for this live run, and it paid for
+  itself.
+- 165/02 · Review fix at the close: the clone spawned through `shell: true`, the codebase's
+  Windows idiom from `resolveSha`. Its argv carries a temp path, so a profile directory containing
+  a space would have split under the shell. It now spawns with no shell (`git` is an executable),
+  and a live clone into `…\aof probe …\with space` succeeded at `5042ff61…`.
