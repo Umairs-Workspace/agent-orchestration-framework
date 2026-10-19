@@ -112,6 +112,8 @@ import { archTests as acdDeclarationsRideTheOneDataCommandTests } from "./acd-de
 import { archTests as acdAutostartIsOneInjectedRunnerTests } from "./acd-autostart-is-one-injected-runner.test.mjs";
 // 132 / task 03 — no tracked run record names a machine (the path + record rules, shrink-only).
 import { archTests as acdRunRecordsNameNoMachineTests } from "./acd-run-records-name-no-machine.test.mjs";
+// milestone 164 / story 01 — FF-16405: the daemon tick runs the sync pass over every registered workspace
+import { archTests as acdSyncCoversEveryRegisteredWorkspaceTests } from "./acd-sync-covers-every-registered-workspace.test.mjs";
 
 export const tests = [
   ...acdShellLoopIdIsDeclaredTests,
@@ -174,4 +176,6 @@ export const tests = [
   ...acdAutostartIsOneInjectedRunnerTests,
   // 132 / task 03
   ...acdRunRecordsNameNoMachineTests,
+  // milestone 164 / story 01 — FF-16405
+  ...acdSyncCoversEveryRegisteredWorkspaceTests,
 ];

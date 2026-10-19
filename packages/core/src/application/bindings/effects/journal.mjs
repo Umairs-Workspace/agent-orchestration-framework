@@ -20,8 +20,8 @@ export function assembleEffectsJournal({ workspaceServices, degradeServices }) {
   }
 
   const storage = createEffectsJournal({ mintEventId, reportDegrade });
-  const { appendEvent, pendingSteps, markStep, hasEventId, oldestEventAt, readEventSteps, readUnsettledSteps, readEvents, readStep } = storage;
+  const { appendEvent, pendingSteps, failedStepsPastCeiling, markStep, hasEventId, oldestEventAt, readEventSteps, readUnsettledSteps, readEvents, readStep } = storage;
   const { openEffectsJournal } = createJournalOpener({ effectsJournalPath, importSqliteRuntime, storage });
 
-  return { "EFFECTS_JOURNAL_SCHEMA_VERSION": api0.EFFECTS_JOURNAL_SCHEMA_VERSION, "STEP_STATUSES": api0.STEP_STATUSES, "hasEventForRun": api1.hasEventForRun, "latestAppliedAssignmentParkEventId": api2.latestAppliedAssignmentParkEventId, effectsJournalPath, appendEvent, pendingSteps, markStep, hasEventId, oldestEventAt, readEventSteps, readUnsettledSteps, readEvents, readStep, openEffectsJournal };
+  return { "EFFECTS_JOURNAL_SCHEMA_VERSION": api0.EFFECTS_JOURNAL_SCHEMA_VERSION, "STEP_STATUSES": api0.STEP_STATUSES, "hasEventForRun": api1.hasEventForRun, "latestAppliedAssignmentParkEventId": api2.latestAppliedAssignmentParkEventId, effectsJournalPath, appendEvent, pendingSteps, failedStepsPastCeiling, markStep, hasEventId, oldestEventAt, readEventSteps, readUnsettledSteps, readEvents, readStep, openEffectsJournal };
 }

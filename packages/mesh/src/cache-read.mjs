@@ -4,7 +4,7 @@ import { resolveWorkspaceId } from "./workspace-identity.mjs";
 
 
 export function createCacheReader({ projectionStore, globalMeshPaths, reportDegrade }) {
-const { openGlobalWorkProjectionStore, readWorkspaceItems, readWorkspaceItemProvenance, readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns } = projectionStore;
+const { openGlobalWorkProjectionStore, readWorkspaceItems, readWorkspaceItemProvenance, readWorkspaceObservations, readSyncState, readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns } = projectionStore;
 
 // src/cache-read.mjs — THIS NODE'S READ OF THE SHARED WORK CACHE (renamed 119/01, ADR-005 §5;
 // TECH_DEBT item 10's trigger, "the tenth dependent or the src/mesh/ partition, whichever comes
@@ -268,7 +268,7 @@ async function readCachedProvenance(workspace, options = {}) {
 // an empty stub being a missing deliverable.
 async function readCachedWorkFacts(workspace, { docNames = [] } = {}, options = {}) {
   const names = docNames.filter((name) => typeof name === "string" && name.length > 0);
-  return withProjectionStore(workspace, options, (store, workspaceId) => {
+  return withProjectionStore(workspace, options, async (store, workspaceId) => {
     const docs = new Map();
     for (const name of names) {
       const key = canonicalArtifactDocKey(name.replace(/\.md$/i, ""));
@@ -287,6 +287,10 @@ async function readCachedWorkFacts(workspace, { docNames = [] } = {}, options = 
       provenance: new Map([...readWorkspaceItemProvenance(store, workspaceId)]
         .map(([ref, record]) => [ref, toWireProvenance(record)])),
       docs,
+      workspaceId,
+      // 164/ADR-005 — this node's id and its observation baseline, from the SAME open, so doctor's
+      // overlay asks "does the cache answer" exactly as the stream readers do.
+      ...(await ownObservations(store, workspace, { syncState: true })),
     };
   });
 }
@@ -332,13 +336,30 @@ async function readCachedActiveRunIds(workspace, refs = [], options = {}) {
 // four times. The file's HEADER subject widens with it: it is the node's read of the
 // shared cache, of which "as the worker sees it" was the first instance.
 async function readCachedItemRows(workspace, options = {}) {
-  return withProjectionStore(workspace, options, (store, workspaceId) => ({
+  return withProjectionStore(workspace, options, async (store, workspaceId) => ({
     rows: new Map(readWorkspaceItems(store, workspaceId).map((row) => [row.ref, row])),
     // Through the ONE mapper, exactly as readCachedProvenance below — a wire name is never
     // spelled from a storage name outside cache-provenance.mjs (ADR-014/E4).
     provenance: new Map([...readWorkspaceItemProvenance(store, workspaceId)]
       .map(([ref, record]) => [ref, toWireProvenance(record)])),
+    // 164/ADR-005 — who this node is and what it last observed, beside the rows in the same open.
+    ...(await ownObservations(store, workspace)),
   }));
+}
+
+// ownObservations(store, workspace) → { selfNodeId, observations } — the overlay's two inputs
+// besides the row (164/ADR-005). An unreadable baseline is an EMPTY one, never a failed read: a
+// missing baseline is never a change, so the overlay degrades to the pre-164 rule, not to disk.
+// With `syncState`, doctor's read (164/03) also gets each workspace's last successful sync on this
+// node, from the same open.
+async function ownObservations(store, workspace, { syncState = false } = {}) {
+  try {
+    const { nodeId, observations } = await readWorkspaceObservations(store, workspace);
+    return { selfNodeId: nodeId, observations, ...(syncState ? { syncState: readSyncState(store, nodeId) } : {}) };
+  } catch (error) {
+    reportDegrade("board-worker-stream", error);
+    return { selfNodeId: null, observations: new Map(), ...(syncState ? { syncState: [] } : {}) };
+  }
 }
 
 // applyCachedProvenance(rows, provenance) → rows — stamp each row the cache knows about

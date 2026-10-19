@@ -471,9 +471,9 @@ export const doctorExamplesLaneTests = [
       const rowData = JSON.parse(line.trim().replace(/^Object\.freeze\(/, "").replace(/\),?$/, ""));
       const children = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).length;
       // 148/04 raised the row again, 10 -> 11, for its own lesson-meta lane, and 153/03 11 -> 12 for
-      // the memory-effectiveness lane; the examples lane's raise and give-back are still stated beside them.
-      assert.equal(children, 12);
-      assert.equal(rowData.ceiling, 12);
+      // the memory-effectiveness lane, and 164/03 12 -> 13 for the sync lane; the examples lane's raise and give-back are still stated beside them.
+      assert.equal(children, 13);
+      assert.equal(rowData.ceiling, 13);
       assert.match(rowData.why, /tenth doctor lane/);
       assert.match(rowData.why, /134\/04: 10 -> 11/);
       assert.match(rowData.why, /11 -> 10/);

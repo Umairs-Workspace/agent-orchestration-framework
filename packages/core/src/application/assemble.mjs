@@ -252,7 +252,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const loopStopRequest = assembleLoopStopRequest({ workspaceServices: workspace, degradeServices: degrade });
   const meshPresence = assembleMeshPresence({ meshStoreServices: meshStore, runStoreServices: runStore, loopStopRequestServices: loopStopRequest, meshSessionServices: meshSession, globalWorkStoreServices: globalWorkStore, workspaceServices: workspace });
   const globalNodeRegistry = assembleGlobalNodeRegistry({ workspaceServices: workspace, meshStoreServices: meshStore, meshPresenceServices: meshPresence, degradeServices: degrade });
-  const globalWorkPublisher = assembleGlobalWorkPublisher({ workspaceServices: workspace, globalWorkStoreServices: globalWorkStore, workContentReadServices: workContentRead, globalNodeRegistryServices: globalNodeRegistry, degradeServices: degrade });
+  const globalWorkPublisher = assembleGlobalWorkPublisher({ workspaceServices: workspace, globalWorkStoreServices: globalWorkStore, workContentReadServices: workContentRead, globalNodeRegistryServices: globalNodeRegistry, degradeServices: degrade, effectsJournalServices: effectsJournal, effectsTableServices: effectsTable, effectsDispatchServices: effectsDispatch });
   const itemLock = assembleItemLock({ workspaceServices: workspace, globalWorkStoreServices: globalWorkStore, globalWorkPublisherServices: globalWorkPublisher });
   const effectsStreamTransitions = assembleEffectsStreamTransitions({ itemLockServices: itemLock, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade });
   const commandsArchive = assembleCommandsArchive({ effectsStreamTransitionsServices: effectsStreamTransitions });
@@ -286,7 +286,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workDoctorDiagrams = assembleWorkDoctorDiagrams({ configInspectServices: configInspect });
   const workDoctor = assembleWorkDoctor({ runStoreServices: runStore, workDoctorDiagramsServices: workDoctorDiagrams, workDoctorExamplesServices: workDoctorExamples, configInspectServices: configInspect, provideWorkExamplesAnswers: async () => { lifetime.assertReady(); return workExamplesAnswers; } });
   const effectsReconcile = assembleEffectsReconcile({ workServices: work, runStoreServices: runStore, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, degradeServices: degrade });
-  const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, workObserveServices: workObserve, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
+  const commandsDoctor = assembleCommandsDoctor({ workDoctorServices: workDoctor, globalWorkPublisherServices: globalWorkPublisher, cacheReadServices: cacheRead, workReadServices: workRead, effectsTableServices: effectsTable, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, effectsReconcileServices: effectsReconcile, workObserveServices: workObserve, provideCommandCore: async () => { lifetime.assertReady(); return commandCore; } });
   const loopAskRequest = assembleLoopAskRequest({ workspaceServices: workspace, degradeServices: degrade, meshLauncherLockServices: meshLauncherLock });
   const runSessionCapture = assembleRunSessionCapture({ runStoreServices: runStore, degradeServices: degrade });
   const runSpendIngest = assembleRunSpendIngest({ runStoreServices: runStore });
@@ -417,7 +417,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const workInit = assembleWorkInit({ workspaceServices: workspace, workMemoryServices: workMemory });
   const commandsInitUpdate = assembleCommandsInitUpdate({ workInitServices: workInit, workMemoryServices: workMemory });
   const commandsAssetsUi = assembleCommandsAssetsUi({ provideSetupUi: async () => { lifetime.assertReady(); return setupUi; } });
-  const spineFace = assembleSpineFace({ commandCoreServices: commandPort, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade, provideGlobalWorkStore: async () => { lifetime.assertReady(); return globalWorkStore; }, applicationEnv: env });
+  const spineFace = assembleSpineFace({ commandCoreServices: commandPort, effectsJournalServices: effectsJournal, effectsDispatchServices: effectsDispatch, degradeServices: degrade, provideGlobalWorkStore: async () => { lifetime.assertReady(); return globalWorkStore; }, provideGlobalWorkPublisher: async () => { lifetime.assertReady(); return globalWorkPublisher; }, applicationEnv: env });
   const scaffold = assembleScaffold({ fsServices: fs, workspaceServices: workspace });
   const commandsAssetsShow = assembleCommandsAssetsShow({ fsServices: fs, workspaceServices: workspace });
   const commandsAssetsRemove = assembleCommandsAssetsRemove({ fsServices: fs, workspaceServices: workspace });

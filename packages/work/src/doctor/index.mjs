@@ -1,7 +1,7 @@
 import path from "node:path";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { listItems } from "../discovery.mjs";
-import { parseFrontmatter } from "../records.mjs";
+import { parseFrontmatter, readItemMeta, recordDoc as storeRecordDoc } from "../records.mjs";
 import { isDriver, isDependTarget, siblingDependencyNumber } from "../dependencies.mjs";
 import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT } from "../identity.mjs";
 import { statusCoherenceGroup, lifecycleCompletenessGroup, cacheAuthorityGroup } from "./coherence.mjs";
@@ -9,6 +9,7 @@ import { freshnessGroup, structuralIntegrityGroup } from "./freshness.mjs";
 import { budgetGroup, PLAN_BASENAME } from "./budget.mjs";
 import { itemInScope } from "../ref-scope.mjs";
 import { meshIdentityCommittedGroup } from "./identity.mjs";
+import { syncGroup } from "./sync.mjs";
 import { controlsLane, citedControlPathsIn, isControlFileName } from "../audit/controls.mjs";
 import { resolveCitedPath } from "../cited-path-resolve.mjs";
 import { rubricTraceabilityGroup, declaredReportFrom } from "./rubric.mjs";
@@ -18,6 +19,7 @@ import { lessonMetaLane } from "./lesson-meta.mjs";
 import { memoryEffectivenessLane } from "./memory-effectiveness.mjs";
 import { DIAGRAMS_DIR } from "../diagrams/layout.mjs";
 import { resolveDeclaredSet } from "../story-contract.mjs";
+import { cacheAnswers, locallyChanged, projectedRow, rowFingerprint } from "../local-change.mjs";
 
 // Application policy and cross-domain reads are supplied by core.
 //
@@ -296,9 +298,23 @@ async function taskFilesState(dir) {
 //
 // Nothing here reads the FS or a clock: the overlay arrives as plain data through
 // `doctorWork`'s options, at the same impure edge `now` / `rawCommittedMesh` already use.
-function overlayFor(item, cache, diskMeta, diskDocs) {
+// changedSinceObserved(item, cache, diskMeta, docName) — has this record changed since this node
+// last observed (synced) it? The predicate the store asks, over the same projected row it
+// fingerprints (164/ADR-002). A missing baseline is never a change.
+function changedSinceObserved(item, cache, diskMeta, docName) {
+  const baseline = cache?.observations?.get?.(item.ref);
+  return baseline != null && docName != null && locallyChanged(rowFingerprint(projectedRow(item, diskMeta, docName)), baseline);
+}
+
+function overlayFor(item, cache, diskMeta, diskDocs, { changed = false, selfNode = null } = {}) {
   const row = cache?.rows?.get?.(item.ref);
-  if (row == null) {
+  // 164/ADR-005 — the cache stands in for this record only when ANOTHER node reported it and
+  // the record has not changed since this node observed it: `cacheAnswers`, the predicate the
+  // stream readers ask. A row this node reported is an older copy of these files, and a local
+  // edit outranks any report.
+  const reportedBy = cache?.provenance?.get?.(item.ref)?.reportedBy ?? null;
+  const selfNodeId = cache?.selfNodeId ?? selfNode;
+  if (row == null || !cacheAnswers({ reportedBy }, { selfNodeId, locallyChanged: changed })) {
     return {
       meta: diskMeta,
       docs: diskDocs,
@@ -310,10 +326,8 @@ function overlayFor(item, cache, diskMeta, diskDocs) {
       diskStatus: diskMeta.status ?? null,
     };
   }
-  // STATUS — the cache's row wins, whoever reported it. The DISK's own value is kept beside
-  // it (never discarded): a disagreement is a finding when this node itself last reported
-  // the row, and silent when another node did, and `node_id` is the only thing that tells
-  // those two apart (ADR-005). Discarding the disk value would make the pair unaskable.
+  // STATUS — another node's report, for a record this node has not touched since (above). The
+  // DISK's own value is kept beside it (never discarded), so the pair stays askable.
   const meta = { ...diskMeta, status: row.status ?? null };
 
   // DOCS — per NAME, because the cache genuinely holds some and not others (a worker streams
@@ -384,7 +398,7 @@ function storyContractSets(item, text, projectRoot) {
 // large stream never exhausts file handles.
 const SNAPSHOT_READ_CONCURRENCY = 16;
 
-async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, history = null, renameMap = null } = {}) {
+async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRoot = null, runners = null, report = null, config = null, projectsDir = null, history = null, sync = null, renameMap = null } = {}) {
   const items = await listItems(workDir);
 
   // A SNAPSHOT FACT GATHERED BY A RECURSIVE WALK BELONGS TO THE ITEM THAT OWNS THE PATH
@@ -522,7 +536,13 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     // `docTexts` and 78/03's engagement list do. Resolving them at this one impure edge is what
     // keeps the depends lane a pure function of the snapshot: it never learns where it ran.
     const contract = storyContractSets(item, docTexts[doc], projectRoot);
-    const overlaid = overlayFor(item, cache, meta, docs);
+    // The row is judged over the record doc the STORE projects (`records.mjs`'s recordDoc, which
+    // prefers an imported milestone's AOF.md), never this snapshot's by-type choice: two doc
+    // resolutions would fingerprint two different rows and report a synced record as behind.
+    const projectedDoc = item.dir == null ? null : storeRecordDoc(item);
+    const changedSinceSync = cache?.observations?.has?.(item.ref) === true && projectedDoc != null
+      && changedSinceObserved(item, cache, projectedDoc === doc ? meta : await readItemMeta(item), projectedDoc);
+    const overlaid = overlayFor(item, cache, meta, docs, { changed: changedSinceSync, selfNode });
     // ONE recursive pass, two answers (see `scanItemTree`).
     const tree = await scanItemTree(item.dir);
     return {
@@ -569,6 +589,8 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       // and nothing else — so they are observable only through WHICH findings appear, and
       // through the message of the two findings that must NAME the reporting node (R6.2).
       statusFrom: overlaid.statusFrom,
+      // 164/03 — this record changed since this node last synced it (the sync-behind count).
+      changedSinceSync,
       docsFrom: overlaid.docsFrom,
       childrenFrom: overlaid.childrenFrom,
       cachedChildRefs: overlaid.cachedChildRefs,
@@ -725,7 +747,9 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
     }
   }
 
-  return { items: enriched, workDir, projectRoot, topEntries, storyEntries, archiveEntries, archiveStoryEntries, backlogOrphans, selfNode, controlProbes, runnerTexts, rubricReport, renameMap };
+  // `sync` (164/03) — the sync facts the command edge read (the owed journal steps, each workspace's
+  // last successful sync), as plain data for the sync lane; absent, the lane says nothing.
+  return { items: enriched, workDir, projectRoot, topEntries, storyEntries, archiveEntries, archiveStoryEntries, backlogOrphans, selfNode, controlProbes, runnerTexts, rubricReport, renameMap, sync };
 }
 
 // The per-milestone `stories/` listings (dirs only) under one numbered root — the root and the
@@ -874,6 +898,9 @@ const CHECK_GROUPS = [
   structuralIntegrityGroup,
   budgetGroup,
   meshIdentityCommittedGroup,
+  // milestone 164 / story 03 — THE SYNC LANE: what is owed to the global store, why it fails, and how
+  // far behind this workspace is (164/ADR-006, Q1). Warn only, read from facts the command edge hands in.
+  syncGroup,
   // milestone 66 / story 02 (ADR-003 §2/§3) — THE CONTROLS LANE, appended as ONE
   // entry carrying all three groups (register / verification / control). One story
   // owns this array for the whole milestone: three stories appending to it would be
@@ -1046,7 +1073,7 @@ function dedupe(findings) {
 // file's mesh block independently and hands it in here as plain data, exactly like
 // `now`/`staleWindow` — the engine itself performs no extra disk read.
 async function doctorWork(workDir, config, scope, options = {}) {
-  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir } = options;
+  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir, sync } = options;
   // milestone 43 / story 06 (ADR-005) — `cache` + `selfNode` are injected at the SAME impure
   // edge as `now` and `rawCommittedMesh`: plain data, read by `commands/doctor.mjs`, so the
   // engine still performs no store open and still reads no clock. Absent ⇒ the snapshot is
@@ -1059,6 +1086,7 @@ async function doctorWork(workDir, config, scope, options = {}) {
   // answers reproducible from a literal snapshot with no filesystem.
   const snapshot = options.snapshot ?? await buildSnapshot(workDir, {
     cache: cache ?? null,
+    sync: sync ?? null,
     selfNode: selfNode ?? null,
     projectRoot: projectRoot ?? null,
     runners: Array.isArray(config?.work?.controls?.runners) ? config.work.controls.runners : null,

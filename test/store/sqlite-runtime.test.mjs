@@ -128,9 +128,9 @@ export const sqliteRuntimeTests = [
     name: "126/05 task00 the journal's refusal is unchanged, and it is the journal's OWN — including the parts that look uneven",
     async run() {
       await withGlobalHome(async ({ paths }) => {
-        // | no sqlite, the runtime resolvable | opens journal.sqlite at schema 1 through the leaf |
+        // | no sqlite, the runtime resolvable | opens journal.sqlite at its current schema (2 since 164/ADR-003) through the leaf |
         const opened = await openEffectsJournal({ paths });
-        assert.equal(opened.schemaVersion, 1, "opens at schema 1");
+        assert.equal(opened.schemaVersion, 2, "opens at schema 2 (164/ADR-003: the collapse key)");
         assert.match(opened.databasePath, /journal\.sqlite$/);
         opened.close?.();
 

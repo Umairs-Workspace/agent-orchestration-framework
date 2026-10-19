@@ -205,14 +205,16 @@ export const cacheReadSeamTests = [
       // The cache's row for "01" reads `done` while this node's disk frontmatter reads
       // `in-progress` — a genuine disagreement, which is the only way to tell which side won.
       await writeItem(fx, "01", { status: "in-progress" });
-      await plantCacheRow(fx, "01", { status: "done", title: "Item 01", node: CONTROL_NODE, at: SYNCED_AT });
+      // 164/ADR-005: a row THIS node reported is an older copy of its own files and answers from
+      // disk; the cache stands in when ANOTHER node reported it and this record is untouched here.
+      await plantCacheRow(fx, "01", { status: "done", title: "Item 01", node: WORKER_NODE, at: SYNCED_AT });
       const { workspace, options } = await seamCtx(fx);
 
       const row = rowFor(await findWorkCacheFirst(workspace, "01", options), "01");
       assert.ok(row != null, "the seam resolves 01");
       assert.equal(row.status, "done", "the returned row reports the CACHE's status");
       assert.equal(row.answeredFrom, "cache", "…and reports that the cache answered it");
-      assert.equal(row.reportedBy, CONTROL_NODE, "…and names this control node as the reporter");
+      assert.equal(row.reportedBy, WORKER_NODE, "…and names the node that reported it");
       // Non-vacuity: the disk really does say something else, so "done" cannot have come from it.
       assert.equal((await findWork(fx.workDir, "01"))[0].status, "in-progress", "the DISK says in-progress — the two sides genuinely disagree");
     }, { stream: DISK_STREAM }),
@@ -254,7 +256,8 @@ export const cacheReadSeamTests = [
       state: "present, holding the \"02\" row",
       prepare: async (fx) => background(fx),
       expectRefs: ["00", "01", "02"],
-      expectSide: (ref) => (ref === "00" ? "disk" : "cache"),
+      // 164/ADR-005: 02 (another node's report) from the cache; 01, reported by THIS node, from disk.
+      expectSide: (ref) => (ref === "02" ? "cache" : "disk"),
       expectCode: DEGRADE_CACHE_MISS,
     },
     {
@@ -581,8 +584,10 @@ export const cacheReadSeamTests = [
       assert.equal(found.length, 1);
       assert.equal(found[0].dir, theta, "the row's dir is THIS checkout's folder — never a path under an archive/ it does not have");
       assert.ok(!("archived" in found[0]), "NO archived key — a location fact is never overlaid from the cache");
-      assert.equal(found[0].status, "done", "status is the cache's (it agrees)");
-      assert.equal(found[0].answeredFrom, "cache");
+      assert.equal(found[0].status, "done", "status agrees on both sides");
+      // 164/ADR-005: the row is THIS node's own report, so the disk answers for it; the location
+      // rule this case pins (never a dir under an archive/ this checkout lacks) holds either way.
+      assert.equal(found[0].answeredFrom, "disk");
       const listed = await listStreamCacheFirst(workspace, options);
       assert.ok(listed.some((row) => row.ref === "12" && !("archived" in row)), "the default listing includes 12 as a live done row");
 

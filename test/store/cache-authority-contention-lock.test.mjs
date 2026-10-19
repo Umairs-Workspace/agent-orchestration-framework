@@ -206,13 +206,17 @@ export const cacheAuthorityContentionTests = [
     // "authored by control-1" is one no worker has ever reported, not one a worker
     // reported and the control took back.
     run: () => withCacheFixture(async (fx) => {
+      const marker = `written by ${writer} as ${initiation}`;
+      // 164/ADR-001: a control record CHANGED since the control observed it takes the row back
+      // (164/00 E2), so the scaffold a tick must step over is one the control has already
+      // observed. It is on the control's disk from the first tick, and the row's author differs.
+      if (initiation === "tick" && author === WORKER_A) await writeItem(fx, "43/02", { status: "not-started", title: marker });
       await tick(fx);
       if (author === WORKER_A) await stream(fx, WORKER_A, [itemRow("43/02", { status: "in-progress" })], { at: "2026-08-02T09:00:00.000Z" });
       if (lock === "held") await seedActive(fx, { assignmentId: ASSIGNMENT, itemRef: HELD_SCOPE, node: WORKER_A, state: "running" });
       assert.equal(await authorOf(fx, "43/02"), author, "the row under test carries the author this row is about (non-vacuous)");
 
       const before = (await rows(fx)).get("43/02");
-      const marker = `written by ${writer} as ${initiation}`;
 
       if (initiation === "frame") {
         // The cross-node row writes an OLDER stamp than the row already carries, which is

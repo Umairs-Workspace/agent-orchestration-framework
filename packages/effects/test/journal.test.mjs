@@ -94,3 +94,50 @@ test('corrupt payloads remain visible with diagnostics', () => withJournal((api,
   assert.ok(api.diagnostics.every(([code]) => code === 'effects-journal-payload-parse'));
   assert.ok(api.diagnostics.length > 0);
 }));
+
+// 164/00 task 01 — the collapse key (164/ADR-003): a key owes at most one run of its work.
+const mark = [{ key: 'publish-projection', locus: 'local' }];
+test('164/00 E9: newer events with a collapse key supersede the older owed steps of that key', () => withJournal((api, journal) => {
+  for (const [id, minute] of [['a', '01'], ['b', '02'], ['c', '03']]) {
+    api.appendEvent(journal, { eventId: id, name: 'workspace.changed', payload: { digest: id }, now: `2026-10-19T10:${minute}:00.000Z`, collapseKey: 'ws:aof' }, mark);
+  }
+  assert.deepEqual(api.pendingSteps(journal).map(row => row.eventId), ['c']);
+  assert.deepEqual(['a', 'b'].map(id => api.readStep(journal, id, 'publish-projection').status), ['superseded', 'superseded']);
+  assert.deepEqual(api.readUnsettledSteps(journal).map(row => row.eventId), ['c'], 'a superseded step is settled, not owed');
+  api.appendEvent(journal, { eventId: 'other', name: 'workspace.changed', payload: { digest: 'x' }, now: NOW, collapseKey: 'ws:elsewhere' }, mark);
+  assert.equal(api.readStep(journal, 'c', 'publish-projection').status, 'pending', 'another key collapses nothing of this one');
+}));
+
+test('164/00 E10: appending the same keyed event twice is one event, and supersedes nothing of itself', () => withJournal((api, journal) => {
+  const fact = { eventId: 'workspace-changed:aof:d1', name: 'workspace.changed', payload: { digest: 'd1' }, now: NOW, collapseKey: 'ws:aof' };
+  assert.equal(api.appendEvent(journal, fact, mark).appended, true);
+  assert.equal(api.appendEvent(journal, fact, mark).appended, false);
+  assert.equal(api.readEvents(journal).length, 1);
+  assert.equal(api.readStep(journal, fact.eventId, 'publish-projection').status, 'pending');
+}));
+
+test('164/00 E11: an event with no collapse key is never superseded by a keyed one', () => withJournal((api, journal) => {
+  api.appendEvent(journal, { eventId: 'verb', name: 'item-status.changed', payload: { ref: '164/00' }, now: NOW }, mark);
+  api.appendEvent(journal, { eventId: 'mark', name: 'workspace.changed', payload: { digest: 'd' }, now: NOW, collapseKey: 'ws:aof' }, mark);
+  assert.equal(api.readStep(journal, 'verb', 'publish-projection').status, 'pending');
+  assert.equal(api.readStep(journal, 'mark', 'publish-projection').status, 'pending');
+}));
+
+test('164/00: a schema-1 journal opens at schema 2, gains the collapse key, and keeps its owed step', () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec(`CREATE TABLE aof_schema (key TEXT PRIMARY KEY, value INTEGER NOT NULL);
+    INSERT INTO aof_schema VALUES ('version', 1);
+    CREATE TABLE events (event_id TEXT PRIMARY KEY, name TEXT NOT NULL, payload TEXT NOT NULL, source TEXT, created_at TEXT NOT NULL);
+    CREATE TABLE effect_steps (event_id TEXT NOT NULL, reactor_key TEXT NOT NULL, locus TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending', attempts INTEGER NOT NULL DEFAULT 0, last_error TEXT, updated_at TEXT NOT NULL, PRIMARY KEY (event_id, reactor_key));
+    INSERT INTO events VALUES ('owed', 'item-status.changed', '{}', 'old-build', '2026-01-01');
+    INSERT INTO effect_steps VALUES ('owed', 'publish-projection', 'local', 'pending', 0, NULL, '2026-01-01');`);
+  const api = storage(), journal = api.initializeJournal({ db, databasePath: ':memory:' });
+  try {
+    assert.equal(EFFECTS_JOURNAL_SCHEMA_VERSION, 2);
+    assert.equal(db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value, 2);
+    assert.ok(db.prepare('PRAGMA table_info(events)').all().some(column => column.name === 'collapse_key'));
+    assert.deepEqual(api.pendingSteps(journal).map(row => row.eventId), ['owed']);
+    api.appendEvent(journal, { eventId: 'mark', name: 'workspace.changed', payload: {}, now: NOW, collapseKey: 'ws:aof' }, mark);
+    assert.equal(api.readStep(journal, 'owed', 'publish-projection').status, 'pending', 'a pre-key event is collapsed by nothing');
+  } finally { journal.close(); }
+});
