@@ -1,5 +1,6 @@
 import { tests as ownedCoreTests } from "../packages/core/test/index.mjs";
 import { tests as ownedExecutionTests } from "../packages/execution/test/index.mjs";
+import { tests as ownedIntegrationHyperagentTests } from "../packages/integration-hyperagent/test/index.mjs";
 import { tests as ownedIntegrationNotionTests } from "../packages/integration-notion/test/index.mjs";
 import { tests as ownedMeshTests } from "../packages/mesh/test/index.mjs";
 import { tests as ownedWorkGraphTests } from "../packages/work-graph/test/index.mjs";
@@ -94,6 +95,7 @@ import { tests as workStreamTests } from "../test/work/stream/index.mjs";
 export const tests = [
   ...ownedCoreTests,
   ...ownedExecutionTests,
+  ...ownedIntegrationHyperagentTests,
   ...ownedIntegrationNotionTests,
   ...ownedMeshTests,
   ...ownedWorkGraphTests,

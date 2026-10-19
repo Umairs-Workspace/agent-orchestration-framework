@@ -700,7 +700,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
+    "sourceDigest": "3463ccf03ef3f957a6aab1931a7d3d3a772af6ba64c785d2f3531cb99324a872",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -708,7 +708,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
+    "sourceDigest": "3463ccf03ef3f957a6aab1931a7d3d3a772af6ba64c785d2f3531cb99324a872",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -716,7 +716,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
+    "sourceDigest": "3463ccf03ef3f957a6aab1931a7d3d3a772af6ba64c785d2f3531cb99324a872",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {

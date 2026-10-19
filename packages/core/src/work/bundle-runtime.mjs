@@ -1,4 +1,5 @@
 import { CAPABILITIES, CAPABILITY_STATUS, mergeRuntimeOverride } from "../model.mjs";
+import { HYPERAGENT_BUNDLE_COMMAND_MAPPING } from "@aof/integration-hyperagent/runtime";
 
 export const ACD_BUNDLE_CAPABILITIES = {
   ...CAPABILITIES,
@@ -26,18 +27,9 @@ const RESOURCE_MAPPINGS = {
       sourceInvocationPrefix: "/",
       argumentToken: "$ARGUMENTS"
     },
-    // Hyperagent imports skills (SKILL.md) and has no slash commands. Only members that author
-    // a `hyperagent` variant are rendered (`requiresVariant`): the variant is a full rewrite of
-    // the procedure for an agent that reaches the repository through the GitHub MCP and opens a
-    // pull request, rather than running the `aof` CLI in a checkout.
-    hyperagent: {
-      kind: "skill",
-      idPrefix: "aof-",
-      invocationPrefix: "aof-",
-      sourceInvocationPrefix: "/",
-      argumentToken: "$ARGUMENTS",
-      requiresVariant: true
-    }
+    // Hyperagent imports skills (SKILL.md) and has no slash commands; its package declares the
+    // mapping, which renders ONLY members that author a `hyperagent` variant (`requiresVariant`).
+    hyperagent: HYPERAGENT_BUNDLE_COMMAND_MAPPING
   }
 };
 

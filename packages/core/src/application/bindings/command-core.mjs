@@ -37,6 +37,12 @@ import { graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
 import { projectProvisionCommand } from "../../commands/project-provision.mjs";
 import { createNotionContribution } from "@aof/integration-notion/commands";
+// @aof/integration-hyperagent — `aof work integrations hyperagent brief|result|check|doctor`, the
+// deterministic half of `/aof:hyperplan` (wiki/hyperagent-support.md).
+import { createHyperagentContribution } from "@aof/integration-hyperagent/commands";
+import { defaultGitExec } from "@aof/execution/worktrees";
+import { commandError as hyperagentCommandError } from "@aof/contracts/error";
+import { readJson as hyperagentReadJson } from "@aof/foundation/fs";
 import { useHeadroomCommand, unuseHeadroomCommand } from "../../commands/headroom.mjs";
 // work:orchestrator / work:delegation / work:delegation-model — m42 — see ./commands/orchestrator-delegation.mjs's header.
 import { workOrchestratorCommand, workDelegationCommand, workDelegationModelCommand } from "../../commands/orchestrator-delegation.mjs";
@@ -242,6 +248,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     ]),
     createWorkContribution([migrateFolderCommand]),
     createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
+    createHyperagentContribution({ commandError: hyperagentCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: hyperagentReadJson }),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,

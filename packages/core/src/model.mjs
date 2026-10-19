@@ -1,5 +1,6 @@
 import os from "node:os";
 import path from "node:path";
+import { HYPERAGENT_RUNTIME, HYPERAGENT_CAPABILITIES } from "@aof/integration-hyperagent/runtime";
 
 export const RUNTIMES = {
   claude: {
@@ -25,21 +26,10 @@ export const RUNTIMES = {
     globalRoot: path.join(os.homedir(), ".config", "opencode"),
     commandPrefix: "/"
   },
-  // Hyperagent is a PLANNING runtime (wiki/hyperagent-support.md): it renders the planning
-  // subset of the ACD bundle as importable SKILL.md files under `.hyperagent/skills/`, and
-  // nothing else. It is never an execution runtime (`aof work loop` stays claude | codex).
-  // `optIn: true` keeps it out of every "no runtime named ⇒ all runtimes" default — see
-  // defaultRuntimes() — so an existing project never starts rendering a `.hyperagent/`
-  // tree it did not ask for. It is reachable only by naming it (`--runtime hyperagent`,
-  // or `runtimes: ["hyperagent"]` in config / on a resource).
-  hyperagent: {
-    id: "hyperagent",
-    name: "Hyperagent",
-    localRoot: ".hyperagent",
-    globalRoot: path.join(os.homedir(), ".hyperagent"),
-    commandPrefix: "",
-    optIn: true
-  }
+  // Hyperagent — the opt-in PLANNING runtime, declared by its own package
+  // (@aof/integration-hyperagent; wiki/hyperagent-support.md). `optIn` keeps it out of
+  // defaultRuntimes(): accepted when named, never assumed.
+  hyperagent: HYPERAGENT_RUNTIME
 };
 
 export const RESOURCE_KINDS = {
@@ -84,37 +74,37 @@ export const CAPABILITIES = {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.native,
     opencode: CAPABILITY_STATUS.native,
-    hyperagent: CAPABILITY_STATUS.native
+    hyperagent: HYPERAGENT_CAPABILITIES.skill
   },
   command: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.unsupportedFail,
     opencode: CAPABILITY_STATUS.native,
-    hyperagent: CAPABILITY_STATUS.unsupportedFail
+    hyperagent: HYPERAGENT_CAPABILITIES.command
   },
   agent: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.native,
     opencode: CAPABILITY_STATUS.native,
-    hyperagent: CAPABILITY_STATUS.unsupportedWarning
+    hyperagent: HYPERAGENT_CAPABILITIES.agent
   },
   rule: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.mapped,
     opencode: CAPABILITY_STATUS.native,
-    hyperagent: CAPABILITY_STATUS.unsupportedWarning
+    hyperagent: HYPERAGENT_CAPABILITIES.rule
   },
   pathScopedRule: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.mapped,
     opencode: CAPABILITY_STATUS.mapped,
-    hyperagent: CAPABILITY_STATUS.unsupportedWarning
+    hyperagent: HYPERAGENT_CAPABILITIES.pathScopedRule
   },
   codexExecutionPolicyRule: {
     claude: CAPABILITY_STATUS.unsupportedFail,
     codex: CAPABILITY_STATUS.future,
     opencode: CAPABILITY_STATUS.unsupportedFail,
-    hyperagent: CAPABILITY_STATUS.unsupportedFail
+    hyperagent: HYPERAGENT_CAPABILITIES.codexExecutionPolicyRule
   }
 };
 
