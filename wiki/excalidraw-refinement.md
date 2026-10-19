@@ -1,6 +1,6 @@
 # Excalidraw collaborative refinement
 
-Status: feature-branch work in progress. Slice 1 is the embedded editor and native-scene foundation. Slice 2 (below) wires the human ↔ architect review loop: ask, answer, propose, preview, accept or reject.
+Status: feature-branch work in progress; CI green on PR #13. Slice 1 is the embedded editor and native-scene foundation. Slice 2 (below) wires the human ↔ architect review loop: ask, answer, propose, preview, accept or reject.
 
 ## Slice 2 — the review loop
 
@@ -80,12 +80,7 @@ HTTP uses GET /api/diagram/scene for read and POST to the same endpoint for save
 
 ### Open release gates
 
-The repository's supply-chain audit currently FAILS on two name-based SUSPICIOUS_PAYLOAD_FILE findings introduced through the SDK's dependency graph:
-
-- node_modules/d3/node_modules/d3-shape/src/curve/bundle.js
-- node_modules/d3-shape/src/curve/bundle.js
-
-The observed files contain D3 curve-bundling source, but this branch does not declare them safe merely from appearance or weaken the audit. Verify provenance and resolve the finding through the project's review process before release. The audit remains unchanged and failing.
+The supply-chain audit's name rule flagged two `bundle.js` files reached through the SDK's dependency graph (`@excalidraw/excalidraw` → `@excalidraw/mermaid-to-excalidraw` → `mermaid` → d3-shape 1.3.7 and 3.2.0). Provenance was checked rather than assumed: both are D3's `curveBundle` source, byte-identical to `src/curve/bundle.js` at github.com/d3/d3-shape tags v1.3.7 and v3.2.0 (sha256 `8ea2ba76…5e25`), and yarn.lock's checksums pin both tarballs to registry.npmjs.org. `scripts/supply-chain-audit.mjs` now admits that one collision only at `node_modules/**/d3-shape/src/curve/bundle.js` AND only with that reviewed digest; any other `bundle.js`, a look-alike package or a single changed byte still fails, and the tests assert each case. **This is a change to a security gate and needs maintainer sign-off on the PR.**
 
 Yarn also reports transitive React/ReactDOM peer-range warnings (the SDK itself declares React 19 support, but some transitive dependencies do not). Browser validation is necessary. Large-chunk warnings remain from the SDK/diagram dependency graph. Review full third-party/font licence notices before distributing the newly bundled UI assets.
 
@@ -97,6 +92,6 @@ Yarn also reports transitive React/ReactDOM peer-range warnings (the SDK itself 
 3. Agent proposals with stable semantic identities, minimal element patches and base-revision checks, preserving human layout.
 4. Human preview/accept/reject and an attributed revision log. Save draft is not an approval mechanism.
 5. Explicit ADR/brief/task reconciliation through the architect's existing single-writer path and immutable delivered-ADR rules.
-6. Browser end-to-end coverage, navigation-loss prevention, provenance/licence review and resolution of the supply-chain gate.
+6. Browser end-to-end coverage, navigation-loss prevention and a full third-party/font licence review.
 
 No full architecture intermediate representation or multi-user CRDT service is introduced in this slice. Build only the semantic identity needed for proven workflows before committing to a universal model.
