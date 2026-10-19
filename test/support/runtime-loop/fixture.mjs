@@ -12,7 +12,7 @@ import { createRuntimeSession } from "../../../packages/execution/src/runtime-se
 import { createRunSessionCapture } from "../../../packages/execution/src/session-capture.mjs";
 import { createRunSpendIngest } from "../../../packages/execution/src/spend.mjs";
 import { resolveExecution, resolveExecutionResume } from "../../../packages/execution/src/runtime-selection.mjs";
-import { isSupportedCodexVersion } from "../../../packages/execution/src/codex-protocol-profile.mjs";
+import { CODEX_PROFILE, isSupportedCodexVersion } from "../../../packages/execution/src/codex-protocol-profile.mjs";
 import { buildNoProgressRoundsFromConfig, progressMaxResetsFromConfig } from "../../../packages/contracts/src/loop-bounds.mjs";
 import { codexFixture, reviewFrame, finishFrames } from "../../../packages/execution/test/codex-app-server.suite.mjs";
 import { runCli } from "../../integration/support/cli-context.mjs";

@@ -794,9 +794,9 @@
   {
     "file": "packages/execution/src/codex-app-server.mjs",
     "kind": "child-process",
-    "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
-    "digest": "9749c22c7c9ead00c79711cf188834c5c57c73962fe5b45e04253cee366c8e3c",
-    "sourceDigest": "9fa88ac4312cec8b0fa4afa87b998bc9f61019e5e7c27bff48a7e431237548d2",
+    "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
+    "digest": "27b4673e2938278c4bc521b70f7679f6e2c74ae29dd1187be06a333afd5b5a4b",
+    "sourceDigest": "f91da8ab022d4a2dedab794d92d5c3ece36186b8cb38638c4786069b69d187b9",
     "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
   },
   {
@@ -804,7 +804,7 @@
     "kind": "child-process",
     "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
     "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
-    "sourceDigest": "9fa88ac4312cec8b0fa4afa87b998bc9f61019e5e7c27bff48a7e431237548d2",
+    "sourceDigest": "f91da8ab022d4a2dedab794d92d5c3ece36186b8cb38638c4786069b69d187b9",
     "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
   },
   {
@@ -812,7 +812,7 @@
     "kind": "computed-require",
     "expression": "createRequire(path.join(root, \"package.json\")).resolve(`${name}/package.json`)",
     "digest": "53209288242f86278b9dba6eef2b628c5b8c40e99c026dbfa99f9dcbf3ebfbba",
-    "sourceDigest": "d85d438a91e4b18247b3b11c329250daf1d4b1686ce17e3d71344d8cc3e35f9e",
+    "sourceDigest": "87208eadf65fc28ea07434aed7458e5a8076cc883e89f5d091aaab0e1eb04d4e",
     "reason": "156: resolves an installed Codex package's package.json from a fixed package-name list to find its bin. It reads a path and executes no module; the name is a constant, not operator input."
   },
   {
@@ -820,7 +820,7 @@
     "kind": "child-process",
     "expression": "execFile(\"powershell.exe\", [\"-NoProfile\", \"-NonInteractive\", \"-Command\", \"Get-AppxPackage -Name OpenAI.Codex | Select-Object -ExpandProperty InstallLocation\"],\n      { env, signal, windowsHide: true, timeout: 5000, maxBuffer: 65536 }, (error, stdout) => {\n        resolve(error ? [] : String(stdout).split(/\\r?\\n/u).map(value => value.trim()).filter(Boolean));\n      })",
     "digest": "7e5282ceb6fd7481870a5d9fdfa253096b22ca4342bcdcfb527d6dca55d0ddeb",
-    "sourceDigest": "d85d438a91e4b18247b3b11c329250daf1d4b1686ce17e3d71344d8cc3e35f9e",
+    "sourceDigest": "87208eadf65fc28ea07434aed7458e5a8076cc883e89f5d091aaab0e1eb04d4e",
     "reason": "156: asks Windows for the Store Codex install location with a fixed PowerShell command. No operator input reaches the argv; it is time- and buffer-bounded, and a failure yields no candidate."
   },
   {
