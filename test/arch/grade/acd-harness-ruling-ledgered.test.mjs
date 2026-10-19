@@ -91,6 +91,9 @@ const THE_EIGHT = Object.freeze({
   // this census consciously, as every name after the eight must be: "no tenth" is a claim about
   // 61's harness name, never a freeze on the stream's own vocabulary.
   "stream.archived": ["publish-projection"],
+  // milestone 164 / ADR-003 (story 00) — the sync pass's `workspace.changed` mark, taught here
+  // the same way: its one consequence is the publish.
+  "workspace.changed": ["publish-projection"],
   "assignment.reported": ["settle-assignment"],
   "terminal.resume-refused": ["restore-parked-resume"],
   "assignment.settled": ["record-item-branch"],
@@ -108,6 +111,8 @@ const APPEND_EVENT_SEAMS = Object.freeze([
   "packages/execution/src/reconcile.mjs",
   "packages/execution/src/run-transitions.mjs",
   "packages/work/src/stream-transitions.mjs",
+  // milestone 164 / ADR-003 + ADR-004 — the sync pass marks a change no verb raised.
+  "packages/mesh/src/publisher.mjs",
 ]);
 
 // ADR-010 §2's frozen RULING vocabulary — the codes that may reach a `refusals` array.

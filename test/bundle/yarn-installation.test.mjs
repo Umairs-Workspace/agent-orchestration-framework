@@ -164,8 +164,10 @@ export const yarnInstallationTests = [
         'presence.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs', '@aof/work-loop/engine'],
         'global-node-registry.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'global-query.mjs': [],
-        'publisher.mjs': ['node:path', 'node:fs'],
-        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts'],
+        // 164/00: the sync pass stat-walks the record files and digests what it saw.
+        'publisher.mjs': ['node:path', 'node:fs', 'node:crypto', 'node:fs/promises'],
+        // 164/00: the store asks the one "changed since observed" predicate (FF-16401).
+        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change'],
         'assignment-record.mjs': ['node:crypto'],
         'store.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'registry.mjs': ['node:path', 'node:fs/promises', 'node:crypto', '@aof/foundation/fs'],
@@ -246,6 +248,8 @@ export const yarnInstallationTests = [
         'doctor/memory-effectiveness.mjs': ['node:path'],
         // 161/01: the doctor command edge's wiki probe lists the direct wiki pages and stats each cited source file.
         'wiki-citations.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
+        // 164/00: the local-change leaf hashes a row's fields and normalises its location keys; it does no I/O.
+        'local-change.mjs': ['node:crypto', 'node:path'],
         // 153/05: tune reads a prompt destination inside the repository to compute its patch.
         'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
