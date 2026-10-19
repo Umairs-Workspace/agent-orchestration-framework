@@ -4,7 +4,7 @@ number: 01
 slug: planning-skills-render-as-a-cowork-plugin
 title: "The planning skills render as a Cowork plugin — shatter and explain become aof-planning skills from their own command sources, packaged as a reproducible .plugin"
 parent: 165
-status: not-started
+status: in-review
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-19
@@ -27,9 +27,9 @@ CLI.**
 
 ## Tasks
 
-- [ ] [00 · The plugin holds shatter and explain, rendered from their commands](tasks/00_the-plugin-holds-shatter-and-explain.feature)
-- [ ] [01 · Without the CLI a skill writes Markdown only](tasks/01_without-the-cli-a-skill-writes-markdown-only.feature)
-- [ ] [02 · The package is reproducible](tasks/02_the-package-is-reproducible.feature)
+- [x] [00 · The plugin holds shatter and explain, rendered from their commands](tasks/00_the-plugin-holds-shatter-and-explain.feature)
+- [x] [01 · Without the CLI a skill writes Markdown only](tasks/01_without-the-cli-a-skill-writes-markdown-only.feature)
+- [x] [02 · The package is reproducible](tasks/02_the-package-is-reproducible.feature)
 
 ## Notes
 

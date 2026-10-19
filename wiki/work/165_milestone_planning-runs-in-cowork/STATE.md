@@ -12,6 +12,11 @@ doc: state
 - [ ] `aof:continue 165` (solo), built in the sibling worktree `aof-165` on branch
   `165-planning-runs-in-cowork` off main, because the main checkout carries 164's branch
   - [x] 165/00 built and reviewed 2026-10-19: 80/80 on the focused set, FF-16501 red-probed
+  - [x] 165/01 built and reviewed 2026-10-19: 290/290 on the focused set (00's and 01's suites,
+    the planning arch index, budget and codex suites); FF-16502 and FF-16503 red-probed. Codex's
+    33 bundle skills are byte-identical across the shared mapping, but every one of them renders
+    through a native variant, so the preamble path is proven by FF-16502's frozen pre-165 oracle,
+    run over every command with its variants stripped.
 
 ## Notes & decisions in flight
 
@@ -56,3 +61,9 @@ Diagrams: none. Each ADR is a linear flow with no moving parts that a picture wo
 - 165/00 · `aof test --scope impacted --story 165/00` launched the whole tree (`scripts/test.mjs`
   with no selection) even though every declared path exists. It was stopped after 10 minutes with
   no output, and the story was gated with `scripts/test.mjs --only` over its five suites instead.
+- 165/01 · The review found that FF-16503's import scan missed a bare side-effect `import "x"`, and
+  fixed it at the close: the red probe now catches both import forms. E3 pinned aof's literal
+  version, so any release bump would have turned it red for an unrelated reason. It now passes the
+  version in and checks the default against `packages/core/package.json` (also fixed at the close).
+- 165/01 · `packages/core/src/planning/` is founded as a declared EXEMPTION, not a row. It names
+  02's `cowork-planner` ahead of time, so 02 adds its file without a budget edit.
