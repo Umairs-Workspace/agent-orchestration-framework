@@ -231,6 +231,7 @@ export const yarnInstallationTests = [
         "commands/diagram/plan.mjs": ["node:fs","node:fs/promises","node:os","node:path","@aof/contracts/error"],
         "commands/diagram/export.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
         "commands/diagram/file.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
+        "commands/diagram/scene.mjs": ["node:fs/promises","node:fs","node:crypto","node:path","@aof/contracts/error"],
         "integration-routing.mjs": ["node:path","node:fs"],
         "legacy-milestone-discovery.mjs": ["node:path","node:fs"],
         'doc-transitions.mjs': ["node:path","node:fs/promises"],

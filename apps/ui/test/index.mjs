@@ -1,4 +1,5 @@
 import { sceneDraftTests } from "./scene-draft.suite.mjs";
+import { reviewStateTests } from "./review-state.suite.mjs";
 import { terminalCollapseIsNotHideTests } from "./terminal-collapse-is-not-hide.suite.mjs";
 import { terminalControlBothSourcesTests } from "./terminal-control-both-sources.suite.mjs";
 import { terminalCoreGeometryTests } from "./terminal-core-geometry.suite.mjs";
@@ -36,6 +37,7 @@ import { terminalsHomeRouteTests } from "./terminals-home-route.suite.mjs";
 
 export const tests = [
   ...sceneDraftTests,
+  ...reviewStateTests,
   ...terminalCollapseIsNotHideTests,
   ...terminalControlBothSourcesTests,
   ...terminalCoreGeometryTests,

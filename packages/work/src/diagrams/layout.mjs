@@ -99,6 +99,25 @@ export function loopRasterSvgPath(paths) {
   return `${paths.dir}/.${LOOP_SUBJECT}.raster.svg`;
 }
 
+// The review records of one scene draft (collaborative refinement): the human's requests and the
+// architect's proposals live beside the scene as `<stem>.review/{requests,proposals}/<id>.json`.
+// Ids are random lowercase hex, validated with `isReviewId` BEFORE any path is built from them.
+export const REVIEW_ID = /^[a-z0-9]{8,32}$/;
+
+export function isReviewId(value) {
+  return typeof value === "string" && REVIEW_ID.test(value);
+}
+
+export function diagramReviewPaths(itemDir, stem) {
+  const dir = `${diagramsDir(itemDir)}/${stem}.review`;
+  return { dir, requests: `${dir}/requests`, proposals: `${dir}/proposals` };
+}
+
+export function reviewRecordPath(directory, id) {
+  if (!isReviewId(id)) throw commandError("Review id is invalid.", "diagram-review-id-invalid", 400);
+  return `${directory}/${id}.json`;
+}
+
 // The one file a reader may ask an item's `diagrams/` folder for (133/VERIFICATION F-133-02): a bare
 // `ADR-NNN-<slug>` stem plus one of the three extensions export writes. Anything else — a path, a
 // `..`, another extension, a stem with no ADR or no slug — is null, so a request can never name a

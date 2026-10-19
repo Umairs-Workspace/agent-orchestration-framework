@@ -211,6 +211,16 @@
         "generatedAt": "2026-10-18T14:59:16.656Z"
       },
       {
+        "path": ".claude/commands/aof/diagram-review.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "diagram-review",
+          "kind": "command"
+        },
+        "hash": "sha256:84a74891aa5c39009da70922fceb3154f6037f519c2d7426af0f1190aecb2821",
+        "generatedAt": "2026-10-18T14:59:16.656Z"
+      },
+      {
         "path": ".claude/commands/aof/explain.md",
         "runtime": "claude",
         "resource": {
@@ -821,6 +831,29 @@
         "runtime": "codex",
         "resource": {
           "id": "aof-delegate",
+          "kind": "skill",
+          "artifact": "associated-file",
+          "file": "agents/openai.yaml",
+          "sourceFile": "agents/openai.yaml"
+        },
+        "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce",
+        "generatedAt": "2026-10-18T14:59:16.656Z"
+      },
+      {
+        "path": ".agents/skills/aof-diagram-review/SKILL.md",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-diagram-review",
+          "kind": "skill"
+        },
+        "hash": "sha256:d3e3a9423fbc5fbaa2ed27da0c889ace47cac268da95082e4195b555904ea932",
+        "generatedAt": "2026-10-18T14:59:16.656Z"
+      },
+      {
+        "path": ".agents/skills/aof-diagram-review/agents/openai.yaml",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-diagram-review",
           "kind": "skill",
           "artifact": "associated-file",
           "file": "agents/openai.yaml",

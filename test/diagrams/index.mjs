@@ -15,6 +15,7 @@ import { loopDiagramCommandTests } from "./loop-diagram-command.test.mjs";
 // 151 — `/aof:add-diagram`: refine's diagram step run after the fact; the command's prose (tasks 01-02).
 import { addDiagramCommandTests } from "./add-diagram-command.test.mjs";
 import { diagramSceneCommandTests } from "./diagram-scene-command.test.mjs";
+import { diagramSceneReviewTests } from "./diagram-scene-review.test.mjs";
 import { diagramSceneApiTests } from "./diagram-scene-api.test.mjs";
 
 export const tests = [
@@ -23,5 +24,6 @@ export const tests = [
   ...loopDiagramCommandTests,
   ...addDiagramCommandTests,
   ...diagramSceneCommandTests,
+  ...diagramSceneReviewTests,
   ...diagramSceneApiTests,
 ];

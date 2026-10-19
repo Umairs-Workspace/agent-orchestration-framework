@@ -688,6 +688,24 @@
       }
     },
     {
+      "id": "diagram-review",
+      "kind": "command",
+      "file": "commands/diagram-review.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/workflow.md",
+          "section": "diagram-review"
+        }
+      }
+    },
+    {
       "id": "explain",
       "kind": "command",
       "file": "commands/explain.md",

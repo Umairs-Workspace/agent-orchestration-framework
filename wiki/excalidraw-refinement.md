@@ -1,6 +1,23 @@
-# Excalidraw collaborative refinement — first implementation slice
+# Excalidraw collaborative refinement
 
-Status: feature-branch work in progress. This is the embedded editor and native-scene foundation, not the completed conversational review workflow.
+Status: feature-branch work in progress. Slice 1 is the embedded editor and native-scene foundation. Slice 2 (below) wires the human ↔ architect review loop: ask, answer, propose, preview, accept or reject.
+
+## Slice 2 — the review loop
+
+1. In the editor, select elements (or nothing, for the whole scene), type a question or change request and choose **Ask architect**. The draft is saved first if needed, a request record is written, and the board dock starts an interactive agent session that is typed `/aof:diagram-review <ref> <ADR-NNN-slug.excalidraw> <request-id>`. The dock sits behind the fullscreen editor; close the diagram to watch or continue the conversation.
+2. The architect reads `aof diagram scene … --action context` for that request. A question is answered in the session and recorded with `--action respond`. A change request becomes a proposal via `--action propose`: minimal add / update / delete element operations, with new ids prefixed `aof-` and `customData.aof` provenance.
+3. The editor's **Review** panel polls `--action proposals` every 5 s while the editor is open and visible. Pending proposals offer **Preview** (selects and scrolls to touched elements), **Accept** and **Reject** (with optional reason).
+4. **Accept** saves any unsaved canvas first, then merges ONLY the elements the proposal touches. It refuses `diagram-proposal-stale` if any touched element changed since the proposal was made, listing the conflicting ids, and leaves the file unchanged. Every other human edit made in the meantime is preserved. Updated/deleted elements get a bumped `version`/`versionNonce`; the UI runs the SDK's `restoreElements` (with binding repair) before rendering accepted elements.
+
+Review records live beside the draft in `diagrams/<stem>.review/{requests,proposals}/<id>.json` (paths owned by layout.mjs). Accepting still changes only the native draft — never ARCHITECTURE.md, the SVG/PNG preview or work status. If a proposal implies an ADR amendment, the architect says so in its rationale; amending stays on the architect's existing single-writer path.
+
+New `diagram:scene` actions: `request`, `context` (with `requestId`), `respond`, `propose`, `proposals`, `accept`, `reject`. New coded refusals: `diagram-review-unknown`, `diagram-review-id-invalid`, `diagram-proposal-invalid`, `diagram-proposal-stale`, `diagram-proposal-decided`, `diagram-review-storage-invalid`, `diagram-review-too-large`, `diagram-review-corrupt`. The bundled command ships for Claude and OpenCode, with a Codex skill variant.
+
+Known slice-2 limits: accept writes the scene and then the proposal record — not atomic across both files (a crash between them leaves the proposal pending, and a retry is refused as stale). Agent-authored geometry/binding quality is only structurally validated; the human preview is the quality gate. Real-browser and live-agent end-to-end runs have not been performed in this sandbox.
+
+---
+
+# Slice 1 — embedded editor foundation
 
 ## Scope and ownership
 
@@ -74,6 +91,7 @@ Yarn also reports transitive React/ReactDOM peer-range warnings (the SDK itself 
 
 ## Next slices — not implemented
 
+0. (Done in slice 2: direct architect-session dispatch, agent proposals with element-level merge protection, preview/accept/reject.)
 1. Native scene generation during refinement, rather than the existing HTML/SVG-only generator path. Resolve the synchronous generator toSvg contract explicitly; do not claim arbitrary scene JSON can be exported through the current adapter without a renderer.
 2. Direct architect-session dispatch and streaming explanations from the editor using the existing runtime/session contracts.
 3. Agent proposals with stable semantic identities, minimal element patches and base-revision checks, preserving human layout.

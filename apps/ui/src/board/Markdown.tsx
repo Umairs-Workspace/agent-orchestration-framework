@@ -66,7 +66,7 @@ export function Markdown({ source, images, itemRef }: { source: string; images?:
 // The node the shell adopts is created here rather than by React, for the reason
 // TerminalFullscreenOccupant gives: the shell re-parents it, so React must own its CONTENTS (via a
 // portal into it) and never its position. `home` is a hidden sibling the node returns to.
-function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClose }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; itemRef: string; svgFile: string; opener: HTMLElement | null; onClose: () => void }) {
+function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClose, onAskArchitect }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; itemRef: string; svgFile: string; opener: HTMLElement | null; onClose: () => void; onAskArchitect?: (command: string) => void }) {
   const [full, setFull] = useState(false);
   const [editing, setEditing] = useState(false);
   const [node] = useState<HTMLDivElement | null>(() => {
@@ -95,6 +95,7 @@ function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClos
                 <Suspense fallback={<p className="p-4">Loading Excalidraw…</p>}><ExcalidrawEditor
                   itemRef={itemRef}
                   svgFile={svgFile}
+                  onAskArchitect={onAskArchitect}
                   onRequestClose={() => setEditing(false)}
                 /></Suspense>
               ) : (
@@ -137,11 +138,13 @@ export function DiagramMarkdown({
   itemRef,
   load,
   elsewhere,
+  onAskArchitect,
 }: {
   source: string;
   itemRef: string;
   load: (member: string) => Promise<DocResponse>;
   elsewhere: string | null;
+  onAskArchitect?: (command: string) => void;
 }) {
   const [expanded, setExpanded] = useState<{ key: string; alt: string; opener: HTMLElement } | null>(null);
   const close = useCallback(() => setExpanded(null), []);
@@ -190,6 +193,7 @@ export function DiagramMarkdown({
           itemRef={itemRef}
           svgFile={expanded.key.slice(expanded.key.indexOf("/") + 1)}
           onClose={close}
+          onAskArchitect={onAskArchitect}
         />
       ) : null}
     </div>
