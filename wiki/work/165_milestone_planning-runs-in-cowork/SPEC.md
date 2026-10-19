@@ -38,7 +38,7 @@ from Cowork write a PRD and shatter it: the milestone SPECs land in the work tre
 In scope:
 - `cowork` is a valid `aof planning init` runtime; its plan spawns nothing and yields a render step
   plus the manual install instructions; `--dry-run` previews both
-- the cowork bundle: an `aof-planning` plugin (`.claude-plugin/plugin.json` + `skills/*/SKILL.md`)
+- the cowork bundle: an `aof` plugin (`.claude-plugin/plugin.json` + `skills/*/SKILL.md`)
   rendered from the existing command sources and zipped to a `.plugin` under `.aof/`, carrying at
   least shatter (PRD discovery included) and, if the break-down warrants, refine and explain
 - the bought planner reaching Cowork — either the pinned `pm-skills` marketplace added through
@@ -63,7 +63,7 @@ Out of scope:
 
 ## Stories
 - [ ] `00_story_planning-lock-records-each-runtime` — the lock keeps one planning entry per runtime; a new runtime is added without `--force`, and `--force` re-pins only the runtime it names (ADR-004).
-- [ ] `01_story_planning-skills-render-as-a-cowork-plugin` — shatter and explain become `aof-planning` skills, rendered from their command sources through the shared command-to-skill mapping, and packaged as a reproducible `.plugin` (ADR-002, ADR-005).
+- [ ] `01_story_planning-skills-render-as-a-cowork-plugin` — shatter and explain become `aof` skills, rendered from their command sources through the shared command-to-skill mapping, and packaged as a reproducible `.plugin` (ADR-002, ADR-005).
 - [ ] `02_story_pinned-planner-is-packaged-for-cowork` — pm-skills' recommended plugins are packaged from a clone checked against the recorded commit (ADR-003).
 - [ ] `03_story_planning-init-delivers-cowork` — `aof planning init --runtime cowork` writes the packages, prints the upload steps and records an unconfirmed cowork entry; depends on 00, 01 and 02 (ADR-001).
 

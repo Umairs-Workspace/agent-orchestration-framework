@@ -19,12 +19,12 @@ Feature: Planning init writes the Cowork packages and says how to install them
       Then the command exits 0
       And these files exist:
         | path                                          |
-        | .aof/cowork/aof-planning.plugin               |
+        | .aof/cowork/aof.plugin               |
         | .aof/cowork/pm-skills/pm-execution.plugin     |
         | .aof/cowork/pm-skills/pm-product-discovery.plugin |
         | .aof/cowork/pm-skills/pm-product-strategy.plugin  |
       And the output tells the user to upload each of those files under "Customize › Plugins › Add › Upload plugin"
-      And the output tells the user to connect the repo folder in Cowork and run "/aof-planning:shatter"
+      And the output tells the user to connect the repo folder in Cowork and run "/aof:shatter"
 
     @executable
     Scenario: E2 · a cowork dry-run previews and touches nothing
@@ -63,7 +63,7 @@ Feature: Planning init writes the Cowork packages and says how to install them
   Scenario: E5 · from Cowork, a PRD shatters into the work tree the CLI validates
     Given "aof planning init --runtime cowork" has run in a repo whose lock already records claude
     And every package under ".aof/cowork/" is uploaded in Cowork, and the repo folder is connected
-    When the operator writes a PRD with the planner in Cowork and runs "/aof-planning:shatter"
+    When the operator writes a PRD with the planner in Cowork and runs "/aof:shatter"
     Then the shattered drivers' record docs land under "wiki/work/backlog/"
     And "aof work validate" run from the Windows CLI passes over them
     And the lock's claude entry is unchanged

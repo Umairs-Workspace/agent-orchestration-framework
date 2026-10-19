@@ -19,7 +19,7 @@ files: [packages/core/src/planning-init.mjs, packages/core/src/commands/planning
 ## User story
 
 As **the operator, who wants to plan in Cowork and build in Claude Code**,
-I want **`aof planning init --runtime cowork` to write the aof-planning plugin and the pinned
+I want **`aof planning init --runtime cowork` to write the aof plugin and the pinned
 planner as uploadable packages, tell me exactly how to install them, and record a cowork entry
 next to my claude one**,
 so that **one command takes me from a repo to PRD → shatter in Cowork, on the same `wiki/work/`

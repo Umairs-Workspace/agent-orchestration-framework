@@ -9,7 +9,7 @@ Feature: The plugin holds shatter and explain, rendered from their commands
   Background:
     Given the bundle's command sources as shipped
 
-  Rule: R1 · The plugin carries shatter and explain, and each runs only when invoked as /aof-planning:<skill>
+  Rule: R1 · The plugin carries shatter and explain, and each runs only when invoked as /aof:<skill>
 
     Scenario: E1 · the plugin's files are its manifest and two skills
       When the aof planning plugin is rendered
@@ -18,7 +18,7 @@ Feature: The plugin holds shatter and explain, rendered from their commands
         | .claude-plugin/plugin.json |
         | skills/shatter/SKILL.md    |
         | skills/explain/SKILL.md    |
-      And the manifest's "name" is "aof-planning"
+      And the manifest's "name" is "aof"
 
     Scenario: E2 · refine is not part of the plugin
       When the aof planning plugin is rendered
@@ -34,7 +34,7 @@ Feature: The plugin holds shatter and explain, rendered from their commands
       When the aof planning plugin is rendered
       Then the frontmatter of "skills/<skill>/SKILL.md" has exactly the keys "name" and "description"
       And its "name" is "<skill>"
-      And its body names the invocation "/aof-planning:<skill>"
+      And its body names the invocation "/aof:<skill>"
 
       Examples:
         | skill   |
@@ -43,7 +43,7 @@ Feature: The plugin holds shatter and explain, rendered from their commands
 
     Scenario Outline: E9 · a description opens with its explicit invocation
       When the aof planning plugin is rendered
-      Then the "description" of "skills/<skill>/SKILL.md" starts with "Use only when the user invokes `/aof-planning:<skill>`"
+      Then the "description" of "skills/<skill>/SKILL.md" starts with "Use only when the user invokes `/aof:<skill>`"
 
       Examples:
         | example | skill   |

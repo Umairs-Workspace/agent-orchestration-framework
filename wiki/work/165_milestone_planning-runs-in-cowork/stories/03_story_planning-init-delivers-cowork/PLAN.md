@@ -9,7 +9,7 @@
    refuse with nothing written (E8, Q1). The default `project` scope is never applied to cowork.
 2. **Guard** through 165/00's per-runtime reader, exactly as for claude and codex.
 3. **Plan.** `planPlanningInstall({ runtime: "cowork" })` returns one
-   `{ kind: "render", plugin: "aof-planning", path }` item and one `{ kind: "package", plugin, path }`
+   `{ kind: "render", plugin: "aof", path }` item and one `{ kind: "package", plugin, path }`
    item per recommended plugin, with no `argv` and no `command`. The dry-run lists those paths and
    the upload steps, and returns before any sha resolution, clone or write (E2).
 4. **Build in memory.** Call `resolveSha`, then the existing 40-hex gate, then 165/02's

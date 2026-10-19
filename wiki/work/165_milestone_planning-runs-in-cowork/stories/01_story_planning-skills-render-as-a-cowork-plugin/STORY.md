@@ -2,7 +2,7 @@
 type: story
 number: 01
 slug: planning-skills-render-as-a-cowork-plugin
-title: "The planning skills render as a Cowork plugin — shatter and explain become aof-planning skills from their own command sources, packaged as a reproducible .plugin"
+title: "The planning skills render as a Cowork plugin — shatter and explain become aof skills from their own command sources, packaged as a reproducible .plugin"
 parent: 165
 status: in-review
 owner: product-owner
@@ -19,9 +19,9 @@ files: [packages/core/src/work/bundle-runtime.mjs, packages/core/src/planning/co
 ## User story
 
 As **the operator, planning in Cowork**,
-I want **aof to render shatter and explain as the skills of an `aof-planning` plugin, from the
+I want **aof to render shatter and explain as the skills of an `aof` plugin, from the
 same command sources Claude Code and Codex use, packaged as one reproducible `.plugin` file**,
-so that **I can upload a single file and run `/aof-planning:shatter` in Cowork, with a procedure
+so that **I can upload a single file and run `/aof:shatter` in Cowork, with a procedure
 that can't drift from `/aof:shatter` and that still behaves when Cowork's shell has no `aof`
 CLI.**
 

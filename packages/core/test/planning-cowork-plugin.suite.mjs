@@ -109,7 +109,7 @@ export const planningCoworkPluginTests = [
     run: () => {
       const files = renderPlanningPlugin();
       assert.deepEqual(Object.keys(files).sort(), [".claude-plugin/plugin.json", "skills/explain/SKILL.md", "skills/shatter/SKILL.md"]);
-      assert.equal(JSON.parse(files[".claude-plugin/plugin.json"]).name, "aof-planning");
+      assert.equal(JSON.parse(files[".claude-plugin/plugin.json"]).name, "aof");
     }
   },
   {
@@ -136,7 +136,7 @@ export const planningCoworkPluginTests = [
       const { frontmatter, body } = readSkill(renderPlanningPlugin(), skill);
       assert.deepEqual(Object.keys(frontmatter), ["name", "description"], "exactly the keys name and description");
       assert.equal(frontmatter.name, skill);
-      assert.ok(body.includes(`/aof-planning:${skill}`), `the body names /aof-planning:${skill}`);
+      assert.ok(body.includes(`/aof:${skill}`), `the body names /aof:${skill}`);
     }
   })),
   ...SKILLS.map((skill) => ({
@@ -144,7 +144,7 @@ export const planningCoworkPluginTests = [
     run: () => {
       const { frontmatter } = readSkill(renderPlanningPlugin(), skill);
       assert.ok(
-        frontmatter.description.startsWith(`Use only when the user invokes \`/aof-planning:${skill}\``),
+        frontmatter.description.startsWith(`Use only when the user invokes \`/aof:${skill}\``),
         frontmatter.description
       );
     }

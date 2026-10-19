@@ -20,7 +20,7 @@ import { archTests as acdTuneIsNonVacuousOverThisRepoTests } from "./acd-tune-is
 import { archTests as acdPlanningInstallCommandsTests } from "./acd-planning-install-commands.test.mjs";
 import { archTests as acdPlanningProvenanceShaTests } from "./acd-planning-provenance-sha.test.mjs";
 import { archTests as acdPlanningLockIsolationTests } from "./acd-planning-lock-isolation.test.mjs";
-// milestone 165 — the aof-planning Cowork plugin (FF-16502, FF-16503)
+// milestone 165 — the aof Cowork plugin (FF-16502, FF-16503)
 import { archTests as acdCoworkSkillsFromCommandSourceTests } from "./acd-cowork-skills-from-command-source.test.mjs";
 import { archTests as acdCoworkPackageDeterministicTests } from "./acd-cowork-package-deterministic.test.mjs";
 import { archTests as acdCoworkPlannerPinnedTests } from "./acd-cowork-planner-pinned.test.mjs";

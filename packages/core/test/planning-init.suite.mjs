@@ -189,7 +189,7 @@ const PRE_165_CLAUDE = {
 // 165/03: a temp target repo plus a planner fixture tree at FIXTURE_SHA (each pm-skills
 // folder with its manifest, a root LICENSE), handed to the cowork run as plannerSource.
 const COWORK_FILES = [
-  ".aof/cowork/aof-planning.plugin",
+  ".aof/cowork/aof.plugin",
   ".aof/cowork/pm-skills/pm-execution.plugin",
   ".aof/cowork/pm-skills/pm-product-discovery.plugin",
   ".aof/cowork/pm-skills/pm-product-strategy.plugin"
@@ -1219,7 +1219,7 @@ export const planningInitTests = [
       for (const file of COWORK_FILES) assert.ok(existsSync(path.join(repo, file)), `${file} exists`);
       assert.match(output, /Customize › Plugins › Add › Upload plugin/);
       for (const file of COWORK_FILES) assert.ok(output.includes(`  ${file}`), `the upload steps name ${file}`);
-      assert.match(output, /connect this repo's folder in Cowork and run \/aof-planning:shatter/);
+      assert.match(output, /connect this repo's folder in Cowork and run \/aof:shatter/);
     })
   },
   {

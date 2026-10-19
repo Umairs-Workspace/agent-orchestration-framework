@@ -1,4 +1,4 @@
-// The aof-planning Cowork plugin (165/ADR-002): shatter and explain rendered as
+// The aof Cowork plugin (165/ADR-002): shatter and explain rendered as
 // skills from their own command sources, through the one command-to-skill mapping
 // codex also uses (`commandAsSkill` with the cowork entry). Each skill's body is the
 // cowork preamble followed by the command's body unchanged (FF-16502); refine is
@@ -9,7 +9,7 @@ import { loadBundle } from "../work/bundle.mjs";
 import { commandAsSkill, commandSkillMapping } from "../work/bundle-runtime.mjs";
 import { zipStored } from "./stored-zip.mjs";
 
-export const PLANNING_PLUGIN_NAME = "aof-planning";
+export const PLANNING_PLUGIN_NAME = "aof";
 export const PLANNING_PLUGIN_SKILLS = Object.freeze(["shatter", "explain"]);
 export const PLANNING_PLUGIN_MANIFEST = ".claude-plugin/plugin.json";
 export const COWORK_STAMP = "<!-- aof-generated: true; aof-runtime: cowork -->";

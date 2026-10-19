@@ -1,10 +1,10 @@
 # 165/01 · The planning skills render as a Cowork plugin — example map
 
-## R1 · The plugin carries shatter and explain, and each runs only when invoked as `/aof-planning:<skill>`
-- E1 · The plugin is rendered: it holds `.claude-plugin/plugin.json` named `aof-planning`, `skills/shatter/SKILL.md` and `skills/explain/SKILL.md`, and nothing else [proposed]
+## R1 · The plugin carries shatter and explain, and each runs only when invoked as `/aof:<skill>`
+- E1 · The plugin is rendered: it holds `.claude-plugin/plugin.json` named `aof`, `skills/shatter/SKILL.md` and `skills/explain/SKILL.md`, and nothing else [proposed]
 - E2 · The plugin is rendered: no `skills/refine/` and no `commands/` folder appear [proposed]
 - E3 · aof's package version is `0.1.0`: `plugin.json` says `"version": "0.1.0"` [proposed]
-- E9 · The shatter skill's description opens with "Use only when the user invokes `/aof-planning:shatter`", so a Claude Code session in another repo, where the plugin also syncs, does not load it on a passing mention of a PRD [proposed]
+- E9 · The shatter skill's description opens with "Use only when the user invokes `/aof:shatter`", so a Claude Code session in another repo, where the plugin also syncs, does not load it on a passing mention of a PRD [proposed]
 
 ## R2 · A skill runs the command's own procedure, unchanged
 - E4 · The shatter skill's body, after its preamble, is the body of `packages/core/assets/commands/shatter.md` character for character [proposed]

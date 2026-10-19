@@ -1,11 +1,11 @@
 # 165/03 · Planning init delivers Cowork — example map
 
 ## R1 · One command writes the packages, says how to install them, and never claims the install happened
-- E1 · Claude is recorded; I run `aof planning init --runtime cowork`: it writes `.aof/cowork/aof-planning.plugin` and `.aof/cowork/pm-skills/pm-execution.plugin`, `pm-product-discovery.plugin` and `pm-product-strategy.plugin`, prints the upload steps (Customize › Plugins › Add › Upload plugin) naming each file, and exits 0 [proposed]
+- E1 · Claude is recorded; I run `aof planning init --runtime cowork`: it writes `.aof/cowork/aof.plugin` and `.aof/cowork/pm-skills/pm-execution.plugin`, `pm-product-discovery.plugin` and `pm-product-strategy.plugin`, prints the upload steps (Customize › Plugins › Add › Upload plugin) naming each file, and exits 0 [proposed]
 - E2 · I run `aof planning init --runtime cowork --dry-run`: it prints the four paths and the upload steps; nothing is written, nothing is cloned, nothing is spawned [proposed]
 - E3 · The planner clone fails mid-run: it exits non-zero, no `.plugin` file is written, and no cowork lock entry is recorded [proposed]
 - E4 · After a successful run, the lock's cowork entry says `installConfirmed: false`, and the output says the install is not confirmed; no line says the plugins were installed [proposed]
-- E5 · I install the packages in Cowork, connect the repo folder, write a PRD with the planner and run `/aof-planning:shatter`: the milestone SPECs land in `wiki/work/backlog/`, and `aof work validate` run from Windows passes [proposed]
+- E5 · I install the packages in Cowork, connect the repo folder, write a PRD with the planner and run `/aof:shatter`: the milestone SPECs land in `wiki/work/backlog/`, and `aof work validate` run from Windows passes [proposed]
 
 ## R2 · Cowork is recorded beside claude and codex
 - E6 · Claude is recorded; the cowork run adds a cowork entry without `--force`, and the claude entry is exactly what it was [proposed]
@@ -22,4 +22,4 @@
 - Q1 · business · answered · `--scope` chooses which Claude Code settings file holds the planner (user, project or local). It means nothing in Cowork, because a Cowork plugin is saved to your Claude account. If someone runs `aof planning init --runtime cowork --scope user`, should aof (a) **refuse**: exit non-zero, write nothing, and say `--scope` applies only to claude (E8 as written), or (b) **run**, ignore `--scope`, and print a note that it was ignored (how codex's marketplace step treats it today)? Answer: (a) refuse.
 - Q2 · business · answered · The `.plugin` files under `.aof/cowork/` (about 0.5 MB, 4–5 files) can be rebuilt at any time from the commit the lock records, and they change on every aof upgrade or `--force`. Should they (a) **stay out of git**: aof writes `.aof/cowork/.gitignore`, and each person who plans in Cowork runs the init once (E10 as written), or (b) **be committed**, so a teammate can upload them without running aof? Answer: (a) stay out of git; aof writes `.aof/cowork/.gitignore`.
 - Q3 · technical · defaulted ARCHITECTURE.md#adr-001 · What marks the install unconfirmed? `cowork.installConfirmed: false` on the entry. aof never writes `true`, because it cannot see Cowork.
-- Q4 · technical · defaulted ARCHITECTURE.md#adr-005 · Where do the packages go? `.aof/cowork/aof-planning.plugin` and `.aof/cowork/pm-skills/<plugin>.plugin`.
+- Q4 · technical · defaulted ARCHITECTURE.md#adr-005 · Where do the packages go? `.aof/cowork/aof.plugin` and `.aof/cowork/pm-skills/<plugin>.plugin`.

@@ -13,7 +13,7 @@ const RENDERABLE_STATUSES = new Set([CAPABILITY_STATUS.native, CAPABILITY_STATUS
 // The one command-to-skill mapping (165/ADR-002). Each runtime's entry carries its own
 // preamble wording; `commandAsSkill` puts that preamble in front of the command's body.
 // cowork is not a bundle runtime (it has no CAPABILITIES entry, so partitionByCapability
-// never reaches it): the aof-planning plugin renders through it directly.
+// never reaches it): the aof plugin renders through it directly.
 const RESOURCE_MAPPINGS = {
   command: {
     codex: {
@@ -32,14 +32,14 @@ const RESOURCE_MAPPINGS = {
     cowork: {
       kind: "skill",
       idPrefix: "",
-      invocationPrefix: "/aof-planning:",
-      sourceInvocationPrefix: "/",
+      // The plugin is named `aof`, so a skill's invocation is the command's own
+      // `/aof:<id>` and needs no translation line.
+      invocationPrefix: "/aof:",
       argumentToken: "$ARGUMENTS",
-      preamble: ({ invocation, hint, sourceInvocation, mapping }) => [
+      preamble: ({ invocation, hint, mapping }) => [
         `Use this skill only when the user invokes \`${invocation}${hint ? ` ${hint}` : ""}\`.`,
         "",
         `Where this procedure mentions \`${mapping.argumentToken}\`, use the text the user supplied after the skill name.`,
-        `Where it mentions Claude slash command \`${mapping.sourceInvocationPrefix ?? ""}${sourceInvocation}\`, treat that as this skill's invocation, \`${invocation}\`.`,
         "",
         "The `aof` CLI may be absent here. Before the first `aof` step, run `command -v aof`. If aof is absent, skip each `aof` step and list the skipped steps in your report.",
         "Without aof, never imitate a verb that changes state by hand: never mint a number, never promote, never write a `number:` line and never change a `status:` line by hand. Any driver written without aof stays in the backlog, to be promoted from Claude Code or Codex.",

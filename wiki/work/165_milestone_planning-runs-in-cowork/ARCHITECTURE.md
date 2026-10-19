@@ -53,14 +53,17 @@ Codex already turns a command into a skill: `mappedBody` in
 of the command's body. That preamble's wording is written for Codex. The SPEC asks for shatter at
 least, with PRD discovery included, and leaves refine and explain to the break-down.
 
-**Decision.** The plugin is named `aof-planning`. It holds `.claude-plugin/plugin.json` (`name`,
+**Decision.** The plugin is named `aof`, so Cowork invokes its skills as `/aof:shatter` and
+`/aof:explain`, the same names as the commands. (Amended by the operator on 2026-10-19, after the
+build, from `aof-planning`. The plugin is the Cowork planning integration and is not an entry
+point for Claude Code, so the shorter name wins.) It holds `.claude-plugin/plugin.json` (`name`,
 `version` taken from aof's package version, `description`) and one `skills/<id>/SKILL.md` each for
 **`shatter`** and **`explain`**. Every body is rendered from `packages/core/assets/commands/<id>.md`
 through the existing mapping. The mapping is generalised so that each runtime's mapping carries
 its own preamble wording. Codex's rendered output stays byte-identical, and cowork gets a second
 mapping entry. A cowork copy of a command is never authored. The cowork preamble holds the
 runtime rules in one place:
-- invoke as `/aof-planning:<id>`, and read `$ARGUMENTS` as the text after the skill name;
+- invoke as `/aof:<id>`, and read `$ARGUMENTS` as the text after the skill name;
 - the `aof` CLI may be absent (R5). Probe with `command -v aof` before the first `aof` step. If
   it is absent, skip each `aof` step, list what was skipped in the report, and never imitate a
   verb that changes state by hand: never mint a number, never promote, never touch a `status:`
@@ -160,7 +163,7 @@ rules). `zlib.crc32` is newer than `engines` allows (R4). Packages are small (R3
 **Decision.** A dependency-free writer turns a file map (`relative path → bytes`) into a zip
 using the *stored* method (method 0) and its own CRC-32 table. Entries are sorted by path and use
 `/` separators, with a fixed DOS timestamp, so the same input always gives the same bytes. Only
-`node:` built-ins are imported. Output paths are `.aof/cowork/aof-planning.plugin` and
+`node:` built-ins are imported. Output paths are `.aof/cowork/aof.plugin` and
 `.aof/cowork/pm-skills/<plugin>.plugin`. All of a run's bytes are built in memory first and
 written only if every step succeeded.
 

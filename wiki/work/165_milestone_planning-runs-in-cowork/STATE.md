@@ -31,7 +31,7 @@ doc: state
     index and the budget). FF-16505 and FF-16506 red-probed (argv on a cowork item, a dry-run
     resolving the sha, `installConfirmed: true`, an "installed" claim). **End-to-end, through the
     real CLI on a temp git repo with claude seeded:** a live `--runtime cowork` exited 0. It wrote
-    `.aof/cowork/{.gitignore, aof-planning.plugin, pm-skills/pm-{execution,product-discovery,product-strategy}.plugin}`,
+    `.aof/cowork/{.gitignore, aof.plugin, pm-skills/pm-{execution,product-discovery,product-strategy}.plugin}`,
     `git check-ignore` reports them ignored, and `git status` shows only the lock. Every `.plugin`
     passes `python -m zipfile -t`, and no output line contains "Installed".
     `--runtime cowork --scope user` exited 1 and left the lock byte-identical.

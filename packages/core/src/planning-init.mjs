@@ -63,7 +63,7 @@
 //     carry `--scope <scope>` since the user runs it through claude. Guarded by
 //     acd-planning-install-commands.
 //   165/ADR-001: cowork is a RENDER-AND-HAND-OVER runtime. Cowork has no plugin CLI,
-//     so its plan holds no spawn item: one `render` item (the aof-planning plugin,
+//     so its plan holds no spawn item: one `render` item (the aof plugin,
 //     165/ADR-002) and one `package` item per recommended planner plugin (165/ADR-003).
 //     A real run builds every package in memory, writes them under `.aof/cowork/` only
 //     if every step succeeded (165/ADR-005), prints the upload steps, and records the
@@ -615,7 +615,7 @@ export async function initPlanning(options = {}) {
 
 // The cowork path (165/ADR-001): render and hand over. The dry-run resolves nothing,
 // clones nothing and writes nothing. A real run builds every package in memory — the
-// pinned planner (165/02) and the aof-planning plugin (165/01), each zipped (165/ADR-005)
+// pinned planner (165/02) and the aof plugin (165/01), each zipped (165/ADR-005)
 // — and writes `.aof/cowork/` and the lock entry only once all of them succeeded.
 async function initCowork({ options, targetDir, dryRun, force, withOptional, log, lockPath }) {
   const runtime = "cowork";
