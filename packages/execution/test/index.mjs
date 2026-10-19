@@ -2,6 +2,7 @@ import { runtimeEventsTests } from "./runtime-events.suite.mjs";
 import { sessionModelTests } from "./session-model.suite.mjs";
 import { runtimeSessionTests } from "./runtime-session.suite.mjs";
 import { runtimeSelectionTests } from "./runtime-selection.suite.mjs";
+import { codexDiscoveryTests } from "./codex-discovery.suite.mjs";
 import { codexAppServerTests } from "./codex-app-server.suite.mjs";
 import { diagramRasterizeTests } from "./diagram-rasterize.suite.mjs";
 import { terminalSessionsTests } from "./terminal-sessions.suite.mjs";
@@ -17,6 +18,7 @@ export const tests = [
   ...runtimeSessionTests,
   ...runtimeSelectionTests,
   ...codexAppServerTests,
+  ...codexDiscoveryTests,
   ...sessionModelTests,
   ...diagramRasterizeTests,
   ...terminalSessionsTests,

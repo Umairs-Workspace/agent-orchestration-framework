@@ -92,7 +92,7 @@ export function createRuntimeInvocation({ claudeModelFamily, configuredSessionMo
       try {
         if (executionRuntimes(preview).includes("codex")) capabilities = { codex: await runtimeSession.inspectCapabilities("codex", { ...(ctx.agentSessionDriverOptions ?? {}), cwd: ctx.workspace.projectRoot }) };
       } catch (error) {
-        if (["runtime_unavailable", "unsupported_profile"].includes(error.code)) throw commandError(error.message, error.code, 409);
+        if (["runtime_unavailable", "unsupported_profile", "runtime_discovery_failed", "runtime_preflight_failed"].includes(error.code)) throw commandError(error.message, error.code, 409);
         throw error;
       }
       resolved.execution = resolveExecution(ctx.workspace.config, { runtime: input.runtime, choices: sessionRequest.choices, capabilities });
