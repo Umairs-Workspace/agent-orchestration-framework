@@ -4,9 +4,16 @@ export const ACD_BUNDLE_CAPABILITIES = {
   ...CAPABILITIES,
   command: {
     ...CAPABILITIES.command,
-    codex: CAPABILITY_STATUS.mapped
+    codex: CAPABILITY_STATUS.mapped,
+    hyperagent: CAPABILITY_STATUS.mapped
   }
 };
+
+// The status a mapped member reports when its runtime renders only an authored SUBSET of the
+// bundle (`requiresVariant`) and this member carries no variant for it. Not a capability gap —
+// the runtime can render the kind — but a deliberate scope: Hyperagent renders the PLANNING
+// commands only, and the build/verify procedures stay with the execution runtimes.
+export const OUTSIDE_RUNTIME_SUBSET = "outside-runtime-subset";
 
 const RENDERABLE_STATUSES = new Set([CAPABILITY_STATUS.native, CAPABILITY_STATUS.mapped]);
 
@@ -18,6 +25,18 @@ const RESOURCE_MAPPINGS = {
       invocationPrefix: "$aof-",
       sourceInvocationPrefix: "/",
       argumentToken: "$ARGUMENTS"
+    },
+    // Hyperagent imports skills (SKILL.md) and has no slash commands. Only members that author
+    // a `hyperagent` variant are rendered (`requiresVariant`): the variant is a full rewrite of
+    // the procedure for an agent that reaches the repository through the GitHub MCP and opens a
+    // pull request, rather than running the `aof` CLI in a checkout.
+    hyperagent: {
+      kind: "skill",
+      idPrefix: "aof-",
+      invocationPrefix: "aof-",
+      sourceInvocationPrefix: "/",
+      argumentToken: "$ARGUMENTS",
+      requiresVariant: true
     }
   }
 };
@@ -53,6 +72,15 @@ export function partitionByCapability(resources, runtimes) {
       }
 
       const mapping = mappingFor(resource.kind, runtime);
+      if (mapping?.requiresVariant && !Object.hasOwn(resource.runtimeVariants ?? {}, runtime)) {
+        notInstallable.push({
+          id: resource.id,
+          kind: resource.kind,
+          runtime,
+          status: OUTSIDE_RUNTIME_SUBSET
+        });
+        continue;
+      }
       if (mapping) {
         installable.push(mappedResource(resolveBundleVariant(resource, runtime), runtime, mapping));
         continue;

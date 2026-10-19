@@ -24,6 +24,21 @@ export const RUNTIMES = {
     localRoot: ".opencode",
     globalRoot: path.join(os.homedir(), ".config", "opencode"),
     commandPrefix: "/"
+  },
+  // Hyperagent is a PLANNING runtime (wiki/hyperagent-support.md): it renders the planning
+  // subset of the ACD bundle as importable SKILL.md files under `.hyperagent/skills/`, and
+  // nothing else. It is never an execution runtime (`aof work loop` stays claude | codex).
+  // `optIn: true` keeps it out of every "no runtime named ⇒ all runtimes" default — see
+  // defaultRuntimes() — so an existing project never starts rendering a `.hyperagent/`
+  // tree it did not ask for. It is reachable only by naming it (`--runtime hyperagent`,
+  // or `runtimes: ["hyperagent"]` in config / on a resource).
+  hyperagent: {
+    id: "hyperagent",
+    name: "Hyperagent",
+    localRoot: ".hyperagent",
+    globalRoot: path.join(os.homedir(), ".hyperagent"),
+    commandPrefix: "",
+    optIn: true
   }
 };
 
@@ -68,32 +83,38 @@ export const CAPABILITIES = {
   skill: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.native,
-    opencode: CAPABILITY_STATUS.native
+    opencode: CAPABILITY_STATUS.native,
+    hyperagent: CAPABILITY_STATUS.native
   },
   command: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.unsupportedFail,
-    opencode: CAPABILITY_STATUS.native
+    opencode: CAPABILITY_STATUS.native,
+    hyperagent: CAPABILITY_STATUS.unsupportedFail
   },
   agent: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.native,
-    opencode: CAPABILITY_STATUS.native
+    opencode: CAPABILITY_STATUS.native,
+    hyperagent: CAPABILITY_STATUS.unsupportedWarning
   },
   rule: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.mapped,
-    opencode: CAPABILITY_STATUS.native
+    opencode: CAPABILITY_STATUS.native,
+    hyperagent: CAPABILITY_STATUS.unsupportedWarning
   },
   pathScopedRule: {
     claude: CAPABILITY_STATUS.native,
     codex: CAPABILITY_STATUS.mapped,
-    opencode: CAPABILITY_STATUS.mapped
+    opencode: CAPABILITY_STATUS.mapped,
+    hyperagent: CAPABILITY_STATUS.unsupportedWarning
   },
   codexExecutionPolicyRule: {
     claude: CAPABILITY_STATUS.unsupportedFail,
     codex: CAPABILITY_STATUS.future,
-    opencode: CAPABILITY_STATUS.unsupportedFail
+    opencode: CAPABILITY_STATUS.unsupportedFail,
+    hyperagent: CAPABILITY_STATUS.unsupportedFail
   }
 };
 
@@ -134,6 +155,13 @@ export const IDENTITY_FIELDS = new Set(["id", "kind"]);
 
 export function supportedRuntimes() {
   return Object.keys(RUNTIMES);
+}
+
+// The runtimes a command renders for when NONE is named — every supported runtime except the
+// opt-in ones (Hyperagent). Validation keeps using supportedRuntimes(): an opt-in runtime is
+// always ACCEPTED when named, it is only never ASSUMED.
+export function defaultRuntimes() {
+  return Object.keys(RUNTIMES).filter((runtime) => RUNTIMES[runtime].optIn !== true);
 }
 
 // Native discovery roots are per asset kind; runtime configuration keeps its own root.

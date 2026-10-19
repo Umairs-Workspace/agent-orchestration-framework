@@ -38,8 +38,14 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
   // confine-console.log discipline): group by runtime, one line per group.
   function notInstallableLines(notInstallable = []) {
     if (notInstallable.length === 0) return [];
+    // A runtime that renders an authored SUBSET (Hyperagent: the planning procedures) reports the
+    // rest as out of scope, not as a capability gap — one summary line per runtime, never a list
+    // of every build/verify procedure it deliberately leaves to the execution runtimes.
+    const outsideSubset = notInstallable.filter((item) => item.status === "outside-runtime-subset");
+    const subsetLines = [...new Set(outsideSubset.map((item) => item.runtime))].map((runtime) =>
+      `${runtime} renders the planning subset only: ${outsideSubset.filter((item) => item.runtime === runtime).length} other procedure(s) stay with the execution runtimes; not written.`);
     const byRuntime = new Map();
-    for (const item of notInstallable) {
+    for (const item of notInstallable.filter((entry) => entry.status !== "outside-runtime-subset")) {
       const list = byRuntime.get(item.runtime) ?? [];
       list.push(item);
       byRuntime.set(item.runtime, list);
@@ -49,7 +55,7 @@ export function assembleCommandsInitUpdate({ workInitServices, workMemoryService
       const kinds = [...new Set(items.map((item) => item.kind))].join(", ");
       lines.push(`Not installable on ${runtime} (${kinds}): ${items.map((item) => item.id).join(", ")} — unsupported by the capability matrix; not written.`);
     }
-    return lines;
+    return [...lines, ...subsetLines];
   }
 
   function actionLines(result) {

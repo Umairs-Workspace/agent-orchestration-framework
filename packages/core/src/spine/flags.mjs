@@ -4,7 +4,7 @@
 // and the remaining cli.mjs inline handlers read the SAME interpretation —
 // never a per-verb re-derivation. Import-clean of the command core (a command
 // file may import this without creating a face→core→command cycle).
-import { supportedRuntimes } from "../adapters.mjs";
+import { defaultRuntimes } from "../adapters.mjs";
 
 // The three runtime-selection flags, spec-shaped for cli.spec composition:
 //   spec.flags = { ...RUNTIME_FLAGS, target: {...} }
@@ -25,7 +25,7 @@ export function parseRuntimes(options) {
     selected.push(...String(options.runtime).split(",").map((runtime) => runtime.trim()).filter(Boolean));
   }
 
-  if (selected.length === 0) return supportedRuntimes();
+  if (selected.length === 0) return defaultRuntimes();
   return [...new Set(selected)];
 }
 

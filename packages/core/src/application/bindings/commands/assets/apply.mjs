@@ -1,6 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import path from "node:path";
-import { supportedRuntimes } from "../../../../adapters.mjs";
+import { supportedRuntimes, defaultRuntimes } from "../../../../adapters.mjs";
 import { collectAdapterWarnings } from "../../../../adapter-warnings.mjs";
 import { readLock, writeLock } from "../../../../lock.mjs";
 import {
@@ -39,14 +39,14 @@ export function assembleCommandsAssetsApply({ fsServices, dslServices, workspace
   const { renderValidationReport } = commandsValidateSharedServices;
 
   // Runtime resolution for apply (moved from cli.mjs with the migration): flags
-  // win; else the config's own runtimes list; else every supported runtime.
+  // win; else the config's own runtimes list; else every default (non-opt-in) runtime.
   async function runtimesForApply(configPath, input) {
     if (hasRuntimeOptions(input)) return parseRuntimes(input);
     const raw = await readJson(configPath);
     if (Array.isArray(raw.runtimes) && raw.runtimes.length > 0) {
       return [...new Set(raw.runtimes)];
     }
-    return supportedRuntimes();
+    return defaultRuntimes();
   }
 
   const assetsApplyCommand = {

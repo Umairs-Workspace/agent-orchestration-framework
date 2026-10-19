@@ -1,7 +1,7 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import path from "node:path";
 import { access } from "node:fs/promises";
-import { defaultBodyFile, supportedResourceKinds, supportedRuntimes, RESOURCE_KINDS } from "../../model.mjs";
+import { defaultBodyFile, supportedResourceKinds, supportedRuntimes, defaultRuntimes, RESOURCE_KINDS } from "../../model.mjs";
 
 export function assembleScaffold({ fsServices, workspaceServices }) {
   const { readJson } = fsServices;
@@ -113,7 +113,7 @@ export function assembleScaffold({ fsServices, workspaceServices }) {
   }
 
   function normalizeRuntimes(runtimes) {
-    if (!runtimes || runtimes.length === 0) return supportedRuntimes();
+    if (!runtimes || runtimes.length === 0) return defaultRuntimes();
     const normalized = [...new Set(runtimes)];
     for (const runtime of normalized) {
       if (!VALID_RUNTIMES.has(runtime)) {
