@@ -109,6 +109,11 @@ export const cacheAuthorityOwnDiskReadTests = [
   {
     name: "cache-authority/07 the worker's frame is built from the WORKER's OWN worktree — a different directory entirely — and those values reach the cache while the control's own disk says something else throughout",
     run: withFixture(async (fx) => {
+      // The control's disk says something ELSE about the same ref, and has said it since the
+      // control first observed it. 164/ADR-001: a control record CHANGED since observed is a
+      // local edit and takes the row back (164/00 E2); what must never matter is a record the
+      // control holds UNCHANGED — its stale scaffold.
+      await writeItem(fx, "43/02", { status: "blocked", title: "the control's stale opinion" });
       await tick(fx);
 
       // A SECOND work dir, not the control's. Reading the control's own directory and
@@ -117,10 +122,6 @@ export const cacheAuthorityOwnDiskReadTests = [
       const worktree = await workerWorktree(fx, ["43", "43/02"]);
       assert.notEqual(worktree.workDir, fx.workDir, "the worker reads a different directory (the whole point)");
       await writeItem(fx, "43/02", { workDir: worktree.workDir, status: "in-progress", title: "as the worker's worktree has it" });
-
-      // …and the control's disk says something ELSE about the same ref, BEFORE the
-      // worker reads, so no ordering can explain the outcome.
-      await writeItem(fx, "43/02", { status: "blocked", title: "the control's stale opinion" });
 
       const built = await readWorkspaceProjectionItems(worktree.workspace);
       const carried = built.rows.filter((row) => row.ref === "43/02");
@@ -134,12 +135,12 @@ export const cacheAuthorityOwnDiskReadTests = [
       assert.equal(cached.title, "as the worker's worktree has it");
 
       // The control's disk keeps saying something else, and keeps not mattering.
-      await writeItem(fx, "43/02", { status: "done", title: "the control's second stale opinion" });
+      await tick(fx);
       await tick(fx);
       const still = (await rows(fx)).get("43/02");
       assert.equal(still.title, "as the worker's worktree has it", "unaffected by what the control's disk says, on this tick and the next");
       const controlDisk = (await readWorkspaceProjectionItems(fx.workspace)).rows.find((row) => row.ref === "43/02");
-      assert.equal(controlDisk.title, "the control's second stale opinion", "…while the control's own disk read still reports the control's own disk");
+      assert.equal(controlDisk.title, "the control's stale opinion", "…while the control's own disk read still reports the control's own disk");
     }),
   },
 

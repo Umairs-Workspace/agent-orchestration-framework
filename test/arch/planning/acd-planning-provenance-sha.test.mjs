@@ -12,7 +12,7 @@ import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { initPlanning, planningLockPath } from "../../../packages/core/src/planning-init.mjs";
+import { initPlanning, planningEntries, planningLockPath } from "../../../packages/core/src/planning-init.mjs";
 
 const SHA_RE = /^[0-9a-f]{40}$/;
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
@@ -30,8 +30,8 @@ export const archTests = [
           log: () => {}
         });
         assert.equal(result.manifestWritten, true, "manifest written for a full sha");
-        // ADR-009: provenance is the `planning` SECTION of the unified lock.
-        const manifest = JSON.parse(await readFile(planningLockPath(repo), "utf8")).planning;
+        // ADR-009 → 165/ADR-004: provenance is the runtime's entry in the `planning` section.
+        const manifest = planningEntries(JSON.parse(await readFile(planningLockPath(repo), "utf8"))).claude;
         assert.match(manifest.sha, SHA_RE, "manifest.sha is 40-char lowercase hex");
         assert.equal(manifest.sha, FIXTURE_SHA, "manifest pins the injected commit");
       } finally {

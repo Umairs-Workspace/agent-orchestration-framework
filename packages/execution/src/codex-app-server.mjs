@@ -30,7 +30,7 @@ async function terminateOwned(child) {
 
 // One owned server per operation. Native review owns grants; AOF never widens the sandbox.
 export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = probeVersion, selectExecutable = selectCodexExecutable, terminate = terminateOwned, composePhaseBriefInput = null } = {}) {
-  async function operate(brief, options, readOnly = false) {
+  async function operate(brief, options, readOnly = false, selectedExecutable = null) {
     let child, sessionId = null, turnId = null, cliVersion = null, execution = null, terminal = null;
     let closed = false, finishing = false, finalText = null, queued = 0, sequence = 0, partial = "";
     let events = Promise.resolve();
@@ -40,7 +40,10 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     const turnReady = new Promise(resolve => { releaseTurn = resolve; });
     const pending = new Map();
     const cleanupWarnings = [];
-    let detectedVersions = [];
+    let detectedVersions = [], discoveryIssues = [], probeIssues = [];
+    let executable = null;
+    const selectionStop = new AbortController();
+    const selectionSignal = options.signal ? AbortSignal.any([options.signal, selectionStop.signal]) : selectionStop.signal;
     const decoder = new TextDecoder("utf-8", { fatal: true });
     const requestMs = positive(options.requestTimeoutMs, CODEX_PROFILE.requestMs);
     const interruptMs = positive(options.interruptMs, CODEX_PROFILE.interruptMs);
@@ -51,7 +54,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     const fail = code => settle({ outcome: "failed", failureReason: code });
     function settle(result) {
       if (terminal) return;
-      terminal = result; resolveTerminal(result);
+      terminal = result; resolveTerminal(result); selectionStop.abort();
       for (const { reject, timer } of pending.values()) { clearTimeout(timer); reject(failure(result.failureReason ?? "operation_settled")); }
       pending.clear();
     }
@@ -176,7 +179,23 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
     try {
       if (options.signal?.aborted) { abort(); return { ...terminal, sessionId, processStarted: false }; }
       if (!named(brief.worktreeCwd) || !path.isAbsolute(brief.worktreeCwd)) throw failure("invalid_worktree");
-      const selected = await selectExecutable({ codexBin: options.codexBin, cwd: brief.worktreeCwd, env: options.env, signal: options.signal }, { readVersion });
+      const selected = selectedExecutable ?? await selectExecutable({ codexBin: options.codexBin, cwd: brief.worktreeCwd, env: options.env, signal: selectionSignal }, {
+        readVersion,
+        probeExecutable: async candidate => {
+          // Reuse the owned transport for a read-only handshake. No thread, turn,
+          // persistence callbacks or permission decisions occur during selection.
+          const probe = await operate({ worktreeCwd: brief.worktreeCwd }, {
+            env: options.env, signal: selectionSignal, requestTimeoutMs: requestMs,
+            timeoutMs: requestMs * 2 + closeMs, closeMs, interruptMs,
+          }, "catalog", candidate);
+          if (probe.outcome !== "done") throw failure(probe.failureReason);
+          return probe;
+        },
+      });
+      if (terminal) return { ...terminal, sessionId, processStarted: false };
+      // The successful probe already owns and has closed this catalog connection.
+      if (readOnly === "catalog" && selected.probe) return selected.probe;
+      executable = selected.bin;
       const command = codexServerCommand(selected.bin);
       cliVersion = selected.cliVersion;
       if (terminal) return { ...terminal, sessionId, processStarted: false };
@@ -237,12 +256,17 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
         await settled; await events;
       }
     } catch (error) {
+      discoveryIssues = (error.discoveryIssues ?? []).filter(issue => ["editor", "desktop"].includes(issue?.source)
+        && ["discovery_failed", "discovery_timeout", "executable_missing"].includes(issue?.code)).map(({ source, code }) => ({ source, code }));
+      probeIssues = (error.probeIssues ?? []).filter(issue => ["probe_timeout", "probe_failed", "version_unavailable"].includes(issue?.code))
+        .map(issue => ({ code: issue.code, ...(/^[0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(issue.version) ? { version: issue.version } : {}) }));
       detectedVersions = (error.detectedVersions ?? []).filter(value => typeof value === "string" && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u.test(value));
       // Never expose error.message, stderr, arbitrary server codes or payloads.
-      const allowed = ["automatic_review_unavailable", "runtime_unavailable", "unsupported_profile", "invalid_worktree", "unsupported_runtime", "invalid_phase", "resume_unavailable", "protocol_identity_mismatch", "protocol_initialization_invalid", "runtime_capabilities_unavailable", "phase_input_too_large", "phase_input_invalid", "persistence_failed", "protocol_timeout", "protocol_rpc_error", "protocol_disconnected", "protocol_frame_too_large", "protocol_request_limit"];
+      const allowed = ["automatic_review_unavailable", "runtime_unavailable", "runtime_discovery_failed", "runtime_preflight_failed", "unsupported_profile", "invalid_worktree", "unsupported_runtime", "invalid_phase", "resume_unavailable", "protocol_identity_mismatch", "protocol_initialization_invalid", "runtime_capabilities_unavailable", "phase_input_too_large", "phase_input_invalid", "persistence_failed", "protocol_timeout", "protocol_rpc_error", "protocol_disconnected", "protocol_frame_too_large", "protocol_request_limit"];
       fail(allowed.includes(error?.code) ? error.code : "execution_invalid");
     } finally {
       releaseTurn();
+      selectionStop.abort();
       clearTimeout(deadline); options.signal?.removeEventListener("abort", abort);
       finishing = true;
       if (reviewPending()) {
@@ -278,7 +302,7 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       }
       for (const entry of pending.values()) { clearTimeout(entry.timer); entry.reject(failure("operation_settled")); } pending.clear();
     }
-    return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(detectedVersions.length ? { detectedVersions } : {}), ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
+    return { ...terminal, sessionId, processStarted: Boolean(child), cliVersion, executable, ...(discoveryIssues.length ? { discoveryIssues } : {}), ...(probeIssues.length ? { probeIssues } : {}), profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version, ...(detectedVersions.length ? { detectedVersions } : {}), ...(execution ? { execution } : {}), ...(cleanupWarnings.length ? { cleanupWarnings } : {}) };
   }
   return Object.freeze({ capabilities: Object.freeze({ transport: "app-server-stdio", profile: CODEX_PROFILE.name, profileVersion: 1,
     compatibility: "live-probed", minimumCliVersion: CODEX_PROFILE.minimumVersion, nativeIdentity: true, resume: true, usage: true,
@@ -288,11 +312,19 @@ export function createCodexAppServerAdapter({ spawnChild = spawn, readVersion = 
       const result = await operate({ worktreeCwd: options.cwd }, options, "catalog");
       if (result.outcome !== "done") {
         const error = failure(result.failureReason);
-        if (result.failureReason === "runtime_unavailable") error.message = "Codex could not be started. Check that Codex is installed and executable; AOF checks PATH, npm launchers and the Windows Codex desktop app.";
+        if (result.failureReason === "runtime_unavailable") error.message = "Codex could not be started. Check that Codex is installed and executable; AOF checks PATH, npm launchers, registered VS Code extensions and the Windows Codex desktop app.";
         if (result.failureReason === "unsupported_profile") error.message = `No compatible Codex CLI was found. Detected: ${result.detectedVersions?.join(", ") || result.cliVersion || "unrecognized version"}. Required: Codex CLI ${CODEX_PROFILE.minimumVersion} or newer.`;
+        if (result.failureReason === "runtime_discovery_failed") error.message = "Codex discovery was incomplete. AOF could not check every installation.";
+        if (result.failureReason === "runtime_preflight_failed") error.message = "Codex installations were found, but none passed the App Server initialize/model-list check.";
+        const details = [
+          ...(result.discoveryIssues ?? []).map(issue => (issue.source === "desktop" ? "Windows desktop" : "VS Code extensions") + ": " + ({ discovery_timeout: "discovery timed out", discovery_failed: "discovery failed", executable_missing: "registered executable is missing" })[issue.code]),
+          ...(result.probeIssues ?? []).map(issue => "Codex" + (issue.version ? " " + issue.version : "") + ": " + ({ probe_timeout: "App Server check timed out", probe_failed: "App Server check failed", version_unavailable: "executable could not report its version" })[issue.code]),
+        ];
+        if (details.length) error.message += " Checks: " + details.join("; ") + ".";
+        if (["runtime_discovery_failed", "runtime_preflight_failed"].includes(result.failureReason) && result.detectedVersions?.length) error.message += " Detected versions: " + result.detectedVersions.join(", ") + ".";
         throw error;
       }
-      return { models: result.models, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version };
+      return { executable: result.executable, cliVersion: result.cliVersion, models: result.models, profile: CODEX_PROFILE.name, profileVersion: CODEX_PROFILE.version };
     },
     async canResume(sessionId, options = {}) {
       if (!named(sessionId)) return false;

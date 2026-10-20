@@ -61,7 +61,7 @@ export function assembleEffectsTable({ degradeServices, provideWork, provideRunS
   // contributes local remapping BEFORE mesh projection and external sync AFTER publication.
   const eventOrder = [
     "run.started", "run.completed", "feedback.recorded", "item-status.changed", "stream.reindexed",
-    "stream.archived", "assignment.reported", "terminal.resume-refused", "assignment.settled", "harness.ruled",
+    "stream.archived", "workspace.changed", "assignment.reported", "terminal.resume-refused", "assignment.settled", "harness.ruled",
   ];
   const registry = createReactorRegistry([
     { name: "aof", events: Object.fromEntries(eventOrder.map(name => [name, []])) },

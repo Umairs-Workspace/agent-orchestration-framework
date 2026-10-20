@@ -1,11 +1,12 @@
 // SQLite journal algorithms over an already opened connection.
 // The caller owns runtime loading, directories, identifiers and diagnostics.
-export const EFFECTS_JOURNAL_SCHEMA_VERSION = 1;
+export const EFFECTS_JOURNAL_SCHEMA_VERSION = 2;
 
 // Step statuses: pending (owed), done (paid), failed (attempted, retryable —
 // the tick/next sweep re-runs it while attempts < maxAttempts), skipped
-// (vocabulary drift: the reactor key no longer exists in this build's EFFECTS).
-export const STEP_STATUSES = Object.freeze(["pending", "done", "failed", "skipped"]);
+// (vocabulary drift: the reactor key no longer exists in this build's EFFECTS),
+// superseded (settled unrun: a newer event with the same collapse key owes the same work).
+export const STEP_STATUSES = Object.freeze(["pending", "done", "failed", "skipped", "superseded"]);
 
 function journalError(message, code, status = 500) {
   const error = new Error(message);
@@ -80,6 +81,12 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
         );
         CREATE INDEX IF NOT EXISTS idx_effect_steps_status ON effect_steps (status);
       `);
+      // v2 (164/ADR-003): an opaque collapse key. An existing table gains no column from its
+      // create statement, so a v1 journal gains it by an in-place ALTER; owed steps survive.
+      if (!db.prepare("PRAGMA table_info(events)").all().some((column) => column.name === "collapse_key")) {
+        db.exec("ALTER TABLE events ADD COLUMN collapse_key TEXT");
+      }
+      db.exec("CREATE INDEX IF NOT EXISTS idx_events_collapse_key ON events (collapse_key)");
       db.prepare("INSERT OR REPLACE INTO aof_schema (key, value) VALUES ('version', ?)").run(EFFECTS_JOURNAL_SCHEMA_VERSION);
       db.exec("COMMIT");
     } catch (error) {
@@ -92,7 +99,12 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
   // transaction. `reactors` is the EFFECTS[name] entry the caller (transition /
   // dispatch) resolved; the journal never imports the vocabulary itself. Events
   // carry their own evidence (the serialised payload), never empty pings.
-  function appendEvent(journal, { eventId: suppliedEventId = null, name, payload = {}, source = null, now } = {}, reactors = []) {
+  //
+  // collapseKey (164/ADR-003) — an OPAQUE key the journal compares and never interprets. A
+  // newly appended event that carries one settles every still-owed step of OLDER events with
+  // the same key as `superseded`, in the same transaction, so a key owes at most one run of
+  // its work. An event with no key collapses nothing and is collapsed by nothing.
+  function appendEvent(journal, { eventId: suppliedEventId = null, name, payload = {}, source = null, now, collapseKey = null } = {}, reactors = []) {
     if (!name) throw journalError("An event needs a name.", "invalid-event", 400);
     const createdAt = now ?? new Date().toISOString();
     const eventId = typeof suppliedEventId === "string" && suppliedEventId.length > 0 ? suppliedEventId : mintEventId(createdAt);
@@ -100,8 +112,9 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
     const { db } = journal;
     db.exec("BEGIN IMMEDIATE");
     try {
-      const inserted = db.prepare("INSERT OR IGNORE INTO events (event_id, name, payload, source, created_at) VALUES (?, ?, ?, ?, ?)")
-        .run(eventId, name, encodedPayload, source, createdAt).changes === 1;
+      const key = typeof collapseKey === "string" && collapseKey.length > 0 ? collapseKey : null;
+      const inserted = db.prepare("INSERT OR IGNORE INTO events (event_id, name, payload, source, created_at, collapse_key) VALUES (?, ?, ?, ?, ?, ?)")
+        .run(eventId, name, encodedPayload, source, createdAt, key).changes === 1;
       const existing = inserted
         ? null
         : db.prepare("SELECT name, payload, created_at AS createdAt FROM events WHERE event_id = ?").get(eventId);
@@ -117,6 +130,13 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
         if (step?.locus !== reactor.locus) {
           throw journalError(`Event ${eventId} reactor ${reactor.key} changed locus.`, "event-step-conflict", 409);
         }
+      }
+      if (inserted && key != null) {
+        db.prepare(`
+          UPDATE effect_steps SET status = 'superseded', updated_at = ?
+          WHERE status IN ('pending', 'failed')
+            AND event_id IN (SELECT event_id FROM events WHERE collapse_key = ? AND event_id != ?)
+        `).run(createdAt, key, eventId);
       }
       db.exec("COMMIT");
       return { eventId, createdAt: existing?.createdAt ?? createdAt, appended: inserted };
@@ -148,7 +168,33 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
     const rows = journal.db.prepare(`
       SELECT s.event_id AS eventId, e.name AS name, e.payload AS payload, e.source AS source,
              e.created_at AS createdAt, s.reactor_key AS key, s.locus AS locus,
-             s.status AS status, s.attempts AS attempts
+             s.status AS status, s.attempts AS attempts, s.updated_at AS updatedAt
+      FROM effect_steps s JOIN events e ON e.event_id = s.event_id
+      WHERE ${clauses.join(" AND ")}
+      ORDER BY e.created_at ASC, s.rowid ASC
+      LIMIT ?
+    `).all(...params, limit);
+    return rows.map((row) => ({ ...row, payload: safeParse(row.payload) }));
+  }
+
+  // failedStepsPastCeiling — the failed steps `pendingSteps` stops returning once their attempts
+  // reach the ceiling, in the same row shape (164/ADR-006). The journal does not decide which of
+  // them may still run: that is the reactor's declaration, which only the dispatcher holds.
+  function failedStepsPastCeiling(journal, { eventId = null, maxAttempts = 5, limit = 100, loci = null } = {}) {
+    const clauses = ["s.status = 'failed'", "s.attempts >= ?"];
+    const params = [maxAttempts];
+    if (eventId) {
+      clauses.push("s.event_id = ?");
+      params.push(eventId);
+    }
+    if (Array.isArray(loci) && loci.length > 0) {
+      clauses.push(`s.locus IN (${loci.map(() => "?").join(", ")})`);
+      params.push(...loci);
+    }
+    const rows = journal.db.prepare(`
+      SELECT s.event_id AS eventId, e.name AS name, e.payload AS payload, e.source AS source,
+             e.created_at AS createdAt, s.reactor_key AS key, s.locus AS locus,
+             s.status AS status, s.attempts AS attempts, s.updated_at AS updatedAt
       FROM effect_steps s JOIN events e ON e.event_id = s.event_id
       WHERE ${clauses.join(" AND ")}
       ORDER BY e.created_at ASC, s.rowid ASC
@@ -229,5 +275,5 @@ export function createEffectsJournal({ mintEventId, reportDegrade } = {}) {
   function readStep(journal, eventId, reactorKey) {
     return journal.db.prepare('SELECT status FROM effect_steps WHERE event_id = ? AND reactor_key = ?').get(eventId, reactorKey);
   }
-  return Object.freeze({ initializeJournal, appendEvent, pendingSteps, markStep, hasEventId, oldestEventAt, readEventSteps, readUnsettledSteps, readEvents, readStep });
+  return Object.freeze({ initializeJournal, appendEvent, pendingSteps, failedStepsPastCeiling, markStep, hasEventId, oldestEventAt, readEventSteps, readUnsettledSteps, readEvents, readStep });
 }

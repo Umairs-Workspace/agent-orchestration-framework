@@ -310,7 +310,11 @@ export const archTests = [
       // closure gains the session-command and terminal-relay-bridge bindings and their implementations
       // (159 -> 163, measured against the 156 composition); the driver fences above are unchanged.
       for (const owner of ["packages/core/src/application/bindings/commands/mesh/session.mjs", "packages/mesh/src/commands/session.mjs", "packages/core/src/application/bindings/mesh/terminal-relay-bridge.mjs", "packages/mesh/src/terminal-relay-bridge.mjs"]) assert.ok(sinkGraph.seen.has(path.join(root, owner)), owner);
-      assert.equal(sinkGraph.seen.size, 163, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 164 (ADR-002) — the projection store asks the one "changed since observed" predicate, so the
+      // closure gains its pure leaf `@aof/work/local-change` (163 -> 164). Its imports (`node:crypto`,
+      // `node:path`, `item-row.mjs`) were already here; it does no I/O and reaches no lifecycle module.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/work/src/local-change.mjs")), "the change predicate's leaf");
+      assert.equal(sinkGraph.seen.size, 164, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

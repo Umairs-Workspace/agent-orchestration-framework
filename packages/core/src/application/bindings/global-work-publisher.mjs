@@ -2,7 +2,7 @@
 import { createGlobalWorkPublisher } from "@aof/mesh/publisher";
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
-export function assembleGlobalWorkPublisher({ workspaceServices, globalWorkStoreServices, workContentReadServices, globalNodeRegistryServices, degradeServices }) {
+export function assembleGlobalWorkPublisher({ workspaceServices, globalWorkStoreServices, workContentReadServices, globalNodeRegistryServices, degradeServices, effectsJournalServices, effectsTableServices, effectsDispatchServices }) {
   // Core composition for mesh-owned projections.
 
   const { globalMeshPaths } = workspaceServices;
@@ -11,12 +11,17 @@ export function assembleGlobalWorkPublisher({ workspaceServices, globalWorkStore
   const { recordWorkspaceProjectionError } = globalWorkStoreServices;
   const { workspaceIdFor } = globalWorkStoreServices;
   const { readWorkspaceProjectionItems } = globalWorkStoreServices;
+  const { detectWorkspaceChanges } = globalWorkStoreServices;
+  // 164/ADR-004 — the sync pass marks and drains through the effects seam the transitions use.
+  const { openEffectsJournal, appendEvent, readEventSteps } = effectsJournalServices;
+  const { applicableReactors } = effectsTableServices;
+  const { drainEffects } = effectsDispatchServices;
   const { readWorkspaceContentRecords } = workContentReadServices;
   const { publishGlobalRegistryDescriptorsToStore } = globalNodeRegistryServices;
 
   const { reportDegrade } = degradeServices;
 
-  const { MESH_GLOBAL_DISABLED_CODE, MESH_WORKSPACE_UNCONFIGURED_CODE, meshGlobalPropagationDecision, publishGlobalWorkSnapshot, threadPropagationWarnings, appendPropagationWarning, renderPropagationWarnings, renderWithPropagationWarnings, restoreRefusedResumeReservation } = createGlobalWorkPublisher({ globalMeshPaths, openGlobalWorkProjectionStore, publishWorkspaceSnapshot, recordWorkspaceProjectionError, workspaceIdFor, readWorkspaceProjectionItems, readWorkspaceContentRecords, publishGlobalRegistryDescriptorsToStore, resolveWorkspaceId, reportDegrade });
+  const { MESH_GLOBAL_DISABLED_CODE, MESH_WORKSPACE_UNCONFIGURED_CODE, meshGlobalPropagationDecision, publishGlobalWorkSnapshot, syncWorkspace, threadPropagationWarnings, appendPropagationWarning, renderPropagationWarnings, renderWithPropagationWarnings, restoreRefusedResumeReservation } = createGlobalWorkPublisher({ globalMeshPaths, openGlobalWorkProjectionStore, publishWorkspaceSnapshot, recordWorkspaceProjectionError, workspaceIdFor, readWorkspaceProjectionItems, readWorkspaceContentRecords, publishGlobalRegistryDescriptorsToStore, resolveWorkspaceId, reportDegrade, detectWorkspaceChanges, openEffectsJournal, appendEvent, readEventSteps, applicableReactors, drainEffects });
 
-  return { MESH_GLOBAL_DISABLED_CODE, MESH_WORKSPACE_UNCONFIGURED_CODE, meshGlobalPropagationDecision, publishGlobalWorkSnapshot, threadPropagationWarnings, appendPropagationWarning, renderPropagationWarnings, renderWithPropagationWarnings, restoreRefusedResumeReservation, workspaceIdFor, readWorkspaceProjectionItems, readWorkspaceContentRecords };
+  return { MESH_GLOBAL_DISABLED_CODE, MESH_WORKSPACE_UNCONFIGURED_CODE, meshGlobalPropagationDecision, publishGlobalWorkSnapshot, syncWorkspace, threadPropagationWarnings, appendPropagationWarning, renderPropagationWarnings, renderWithPropagationWarnings, restoreRefusedResumeReservation, workspaceIdFor, readWorkspaceProjectionItems, readWorkspaceContentRecords };
 }

@@ -1,8 +1,9 @@
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { GRAPHIFY_BACKENDS } from "../graphify-backends.mjs";
+import { hashTree, inputsCurrent, listCloneFiles, stampInputs } from "../graph-bundle.mjs";
 // Configured application services are supplied by core; construction performs no I/O.
-export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath }) {
+export function createGraphBuildCommand({ resolveGraphifyBinary, runGraphifyBuild, readGraph, normalizeGraph, graphJsonPath, graphArtifactBuiltAt, isCodeOnlyWholeRootBuild, git }) {
 // graph:build — build the queryable graph from a folder (ADR-001). Spawns the
 // pinned graphify binary (via the ADR-002 driver — the ONLY spawn site), reads
 // the resulting graph.json, and returns a BuildResult whose counts are derived
@@ -144,36 +145,32 @@ const graphBuildCommand = {
       throw commandError(resolved.hint, "graphify-missing", 424);
     }
 
-    // Spawn the pinned binary via the sole driver seam (cwd = projectRoot, #756;
-    // the artifact lands under outRoot).
-    const built = runGraphifyBuild(
-      { path: input.path, backend, tokenBudget: input.tokenBudget },
-      { projectRoot, outRoot }
-    );
-
-    // Counts come from graph.json (ADR-001 invariant), never from stdout.
-    const normalized = readBuiltGraph(built.graphPath);
+    // A code-only whole-root build is skipped when nothing it read has changed since the graph was
+    // stamped (166 F-01: `graphify update` re-extracts everything, every time). The tree is
+    // snapshotted BEFORE the spawn, so an edit made while graphify runs is never stamped as read.
+    const request = { path: input.path, backend, tokenBudget: input.tokenBudget };
+    const outDir = path.dirname(graphJsonPath(outRoot));
+    const tree = isCodeOnlyWholeRootBuild(request, outRoot, projectRoot) ? await snapshotTree(projectRoot) : null;
 
     // egress: "none" when no backend ran (code/AST only); "docs-media" when ANY
     // --backend drove the doc/media hop (ADR-001/005). ollama is still
     // "docs-media" — the hop RAN; locality is a separate privacy property.
     const egress = classifyEgress(backend);
 
-    return {
-      graphPath: graphJsonPath(outRoot),
-      projectRoot,
-      nodeCount: normalized.nodes.length,
-      edgeCount: normalized.edges.length,
-      hyperedgeCount: normalized.hyperedges.length,
-      builtAt: built.builtAt,
-      backend,
-      egress,
-      // true when graphify found nothing to change and left the artifact untouched —
-      // a SUCCESS meaning "the graph is already current", not a soft failure. Surfaced
-      // so a caller can distinguish it from a rebuild without re-stat'ing anything.
-      unchanged: built.unchanged,
-      stdout: built.stdout,
-    };
+    if (tree && inputsCurrent({ outDir, ...tree, graphifyVersion: resolved.version })) {
+      const graphPath = graphJsonPath(outRoot);
+      return buildResult({ graphPath, projectRoot, backend, egress, normalized: readBuiltGraph(graphPath), builtAt: graphArtifactBuiltAt(graphPath), unchanged: true, stdout: INPUTS_UNCHANGED });
+    }
+
+    // Spawn the pinned binary via the sole driver seam (cwd = projectRoot, #756;
+    // the artifact lands under outRoot).
+    const built = runGraphifyBuild(request, { projectRoot, outRoot });
+
+    // Counts come from graph.json (ADR-001 invariant), never from stdout.
+    const normalized = readBuiltGraph(built.graphPath);
+    if (tree) stampInputs(outDir, tree, resolved.version);
+
+    return buildResult({ graphPath: graphJsonPath(outRoot), projectRoot, backend, egress, normalized, builtAt: built.builtAt, unchanged: built.unchanged, stdout: built.stdout });
   },
 
   cli: {
@@ -216,6 +213,33 @@ const graphBuildCommand = {
 
 // Relativise graphPath/projectRoot to process.cwd() for the CLI --json face
 // (08/ADR-002 path-display projection). Leaves every other field untouched.
+const INPUTS_UNCHANGED = "aof: no file this graph was built from has changed since it was built — graphify was not run.";
+
+function buildResult({ graphPath, projectRoot, backend, egress, normalized, builtAt, unchanged, stdout }) {
+  return {
+    graphPath,
+    projectRoot,
+    nodeCount: normalized.nodes.length,
+    edgeCount: normalized.edges.length,
+    hyperedgeCount: normalized.hyperedges.length,
+    builtAt,
+    backend,
+    egress,
+    // true when the artifact was left untouched — by graphify finding nothing to change, or by
+    // aof finding nothing it read had changed — a SUCCESS meaning "the graph is already current",
+    // not a soft failure. Surfaced so a caller can tell it from a rebuild without re-stat'ing.
+    unchanged,
+    stdout,
+  };
+}
+
+// The git-visible files and their content hashes, or null when git cannot list them (no stamp is
+// then read or written, and every build runs graphify as before).
+async function snapshotTree(projectRoot) {
+  const visible = await listCloneFiles(git, projectRoot);
+  return visible ? { visible, hashes: hashTree(projectRoot, visible) } : null;
+}
+
 function relativisePaths(result) {
   const out = { ...result };
   if (typeof out.graphPath === "string") out.graphPath = path.relative(process.cwd(), out.graphPath);

@@ -35,6 +35,9 @@ import { meshLauncherStreamRoleTests } from "./mesh-launcher-stream-role.test.mj
 //   untouched, the stamp follows activeRuns' own run-state rule, and a session read fault
 //   still degrades to `sessions: []` through the coded-degrade channel.
 import { meshLauncherSessionWireCompleteTests } from "./mesh-launcher-session-wire-complete.test.mjs";
+// milestone 164 / story 01 — the daemon runs the one sync pass over every registered workspace, on
+// every tick and once at start (164/ADR-004 drivers 1 and 2; tasks 00 and 01, task 02 is @manual).
+import { meshLauncherSyncsEveryWorkspaceTests } from "./mesh-launcher-syncs-every-workspace.test.mjs";
 
 export const tests = [
   ...meshFaceSkeletonTests,
@@ -45,4 +48,5 @@ export const tests = [
   // render). The fitness function this story AMENDS is acd-session-run-reconciliation,
   // registered with m38's block above.
   ...meshLauncherSessionWireCompleteTests,
+  ...meshLauncherSyncsEveryWorkspaceTests,
 ];

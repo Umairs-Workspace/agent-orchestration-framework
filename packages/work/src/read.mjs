@@ -1,5 +1,7 @@
 import { listItems, findWork, listStream } from "./discovery.mjs";
 import { nextWork } from "./readiness.mjs";
+import { readItemMeta, recordDoc } from "./records.mjs";
+import { cacheAnswers, locallyChanged, projectedRow, reportedElsewhere, rowFingerprint } from "./local-change.mjs";
 import path from "node:path";
 
 // Core supplies cache, execution and mesh collaborators explicitly.
@@ -218,11 +220,32 @@ async function buildStreamView(workspace, options = {}) {
   const meta = new Map();
   const missed = [];
 
+  // 164/ADR-005 — a cached row stands in for a LOCAL record only when another node reported it
+  // and the local record has not changed since this node observed it (`cacheAnswers`, the one
+  // predicate doctor asks too). A ref the rule hands to the disk is answered from disk BY RULE,
+  // not by degrade, so it is not a cache miss.
+  const selfNodeId = cache?.selfNodeId ?? null;
+  const observations = cache?.observations ?? new Map();
+  const answersFromCache = async (item) => {
+    const reportedBy = provenance.get(item.ref)?.reportedBy ?? null;
+    // The authorship clause first: a row this node reported never needs the record read.
+    if (!cacheAnswers({ reportedBy }, { selfNodeId })) return false;
+    const baseline = observations.get(item.ref);
+    const doc = baseline == null ? null : recordDoc(item);
+    if (doc == null) return true; // a missing baseline is never a change
+    const changed = locallyChanged(rowFingerprint(projectedRow(item, await readItemMeta(item), doc)), baseline);
+    return cacheAnswers({ reportedBy }, { selfNodeId, locallyChanged: changed });
+  };
+
   for (const item of diskItems) {
     const row = rows.get(item.ref);
     if (row == null) {
       answeredFrom.set(item.ref, "disk");
       missed.push(item.ref);
+      continue;
+    }
+    if (!(await answersFromCache(item))) {
+      answeredFrom.set(item.ref, "disk");
       continue;
     }
     answeredFrom.set(item.ref, "cache");
@@ -294,23 +317,9 @@ function withoutAnsweringSide(row) {
   return out;
 }
 
-// reportedElsewhere(row, selfNodeId) — did ANOTHER node put this row's authoritative value in
-// the cache? ONE home for the question (m43 / ADR-016/G10, ADR-015/F5: "the same fact asked
-// twice must be answered from the same source"), because the answer decides whether a reader
-// reaches for the cached body or for this node's own folder.
-//
-// All three clauses are load-bearing and each was a live branch before this collapsed:
-// the row must be CACHE-answered (a disk answer is this node's own by construction), the
-// author must be KNOWN (a cache-published row with no author is "cache-published, author
-// unknown" — a different fact from a remote one, ADR-005 rule 3), and it must not be us.
-//
-// `work-doctor-coherence.mjs`'s predicate of the same name is a deliberate SECOND spelling
-// over the doctor SNAPSHOT's shape (`statusFrom`, `snapshot.selfNode`) — it cites this one.
-function reportedElsewhere(row, selfNodeId) {
-  return row?.answeredFrom === "cache"
-    && typeof row.reportedBy === "string" && row.reportedBy.length > 0
-    && row.reportedBy !== selfNodeId;
-}
+// reportedElsewhere(row, selfNodeId) — ONE home for "did ANOTHER node put this row's value in the
+// cache" (m43 / ADR-016/G10). Its clauses moved into `local-change.mjs` with `cacheAnswers`
+// (164/ADR-005), whose first half they are; this seam re-exports it unchanged for `doc`/`tasks`.
 
 // --------------------------------------------------------------- the readers ----
 

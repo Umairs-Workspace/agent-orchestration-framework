@@ -119,21 +119,12 @@ export function cacheAuthorityGroup(snapshot) {
   for (const item of snapshot.items) {
     if (item.statusFrom !== "cache") continue;
 
-    // cache-status-divergence (warn): this node's own disk disagrees with this node's own
-    // last report. That is a REAL fault — something wrote the record doc without publishing,
-    // or the publish tick is broken — and it stays a finding. The identical disagreement on a
-    // ref another node reported is SILENT, because it is the mesh working exactly as designed:
-    // the other node's copy is the live one and this node's scaffold is simply behind.
-    if (!reportedElsewhere(snapshot, item) && (item.diskStatus ?? null) !== (statusOf(item) ?? null)) {
-      const reporter = item.reportedBy ?? snapshot.selfNode ?? "this node";
-      findings.push({
-        code: "cache-status-divergence",
-        severity: "warn",
-        path: anchorPath(item),
-        message: `${item.ref} reads "${item.diskStatus ?? "unset"}" on this node's disk but "${statusOf(item) ?? "unset"}" in the cache, last reported by ${reporter} — this node's own report disagrees with its own files`,
-      });
-      continue;
-    }
+    // cache-status-divergence (this node's own disk disagreeing with its own last report) is
+    // RETIRED by 164/ADR-005: a row this node reported no longer overlays its own record at all —
+    // the disk answers for it (164/02 E6) — so it can never reach this group as cache-sourced. The
+    // fault it used to report, a store behind this node's own files, is the sync lane's
+    // `sync-behind` (164/03). A cache-sourced item here was reported by ANOTHER node, and its
+    // disagreement with this node's scaffold is the mesh working as designed.
 
     // cache-incomplete (warn): the ONE honest finding that replaces up to three false ones.
     if (item.type !== "milestone") continue;

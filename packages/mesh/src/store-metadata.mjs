@@ -78,5 +78,11 @@ export const TABLE_CLASSIFICATION = Object.freeze({
   node_logs: Object.freeze({
     class: "fact",
     writers: Object.freeze(["packages/mesh/src/projection-store.mjs"])
+  }),
+  // 164/ADR-002: this node's per-ref observation baseline. Bookkeeping, not truth — only a
+  // successful write advances it — but never swept: a sweep would read as "never observed".
+  work_item_observations: Object.freeze({
+    class: "fact",
+    writers: Object.freeze(["packages/mesh/src/projection-store.mjs"])
   })
 });

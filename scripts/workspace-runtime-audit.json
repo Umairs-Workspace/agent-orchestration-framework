@@ -68,7 +68,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"ls-remote\", MARKETPLACE_GIT_URL, tagRef], {\n    encoding: \"utf8\",\n    shell: process.platform === \"win32\"\n  })",
     "digest": "3fa3e349bddb7393b817514c23b378032ac3f17c34a25ac3a2058edb2ef964a8",
-    "sourceDigest": "9829e5b5f1b98e901f2c3b92c6c957191dc2a9540b418e39792120edc4124d07",
+    "sourceDigest": "d75b8814fc96acd7fd90fd70a117af937e46c0c60c1a846dc9d0002a44490e71",
     "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
   },
   {
@@ -76,8 +76,24 @@
     "kind": "child-process",
     "expression": "spawn(item.argv[0], item.argv.slice(1), {\n      stdio: \"inherit\",\n      shell: process.platform === \"win32\",\n      env: { ...process.env }\n    })",
     "digest": "1d2b72e0774d0285f637824937f7257f8a23fae7fe93fce11f801d96db05136c",
-    "sourceDigest": "9829e5b5f1b98e901f2c3b92c6c957191dc2a9540b418e39792120edc4124d07",
+    "sourceDigest": "d75b8814fc96acd7fd90fd70a117af937e46c0c60c1a846dc9d0002a44490e71",
     "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
+  },
+  {
+    "file": "packages/core/src/planning/cowork-planner.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", plannerCloneArgv(dir), spawnOptions)",
+    "digest": "8b854be963141688a5f33ebea983326baef197e5b2facf3d2d0bfd751b83d336",
+    "sourceDigest": "0b1a50ce3b41a107265a6a92a00cf4d5f3b7baa37149f3fec68945101781298e",
+    "reason": "165/ADR-003: git clones pm-skills over HTTPS at the release tag by fixed argv with no shell, then reads the clone's HEAD to check it against the recorded sha."
+  },
+  {
+    "file": "packages/core/src/planning/cowork-planner.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(\"git\", [\"-C\", dir, \"rev-parse\", \"HEAD\"], spawnOptions)",
+    "digest": "80bc47842cf33ef4bec2d9dd73fc08d336f8ef14c5213f113b711805171d1ce6",
+    "sourceDigest": "0b1a50ce3b41a107265a6a92a00cf4d5f3b7baa37149f3fec68945101781298e",
+    "reason": "165/ADR-003: git clones pm-skills over HTTPS at the release tag by fixed argv with no shell, then reads the clone's HEAD to check it against the recorded sha."
   },
   {
     "file": "packages/core/src/tool-store.mjs",
@@ -244,7 +260,7 @@
     "kind": "child-process",
     "expression": "spawn(resolved.path, args, options)",
     "digest": "cafa2b787777fc12c12154baff452dcfa6be959f2df57f929f24ae2e412d0c28",
-    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "sourceDigest": "63cfb139a062147f335098085f24f7114d12e063a62f12543abd22a7e146c2f2",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -252,7 +268,7 @@
     "kind": "child-process",
     "expression": "spawnSync(resolved.path, args, options)",
     "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
-    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "sourceDigest": "63cfb139a062147f335098085f24f7114d12e063a62f12543abd22a7e146c2f2",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -260,7 +276,7 @@
     "kind": "child-process",
     "expression": "spawnSync(resolved.path, args, options)",
     "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
-    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "sourceDigest": "63cfb139a062147f335098085f24f7114d12e063a62f12543abd22a7e146c2f2",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -372,7 +388,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n      cwd: projectRoot,\n      encoding: \"utf8\",\n      timeout: 15_000,\n      maxBuffer: 16 * 1024 * 1024,\n      windowsHide: true,\n    })",
     "digest": "db8bfc9168ea05342d42883e266871b0d09482c06a6abd2901b7409da0371584",
-    "sourceDigest": "540ce95740b4384925aafac98e9b524a51b4eab3230b1abf4c8eb6f4c401bfe2",
+    "sourceDigest": "0c0379b838e7fb40d2e69ae2cee3e33703a14f6a6ee6c43b22abf55385ecbeb2",
     "reason": "Bounded Git history reader supplies rename and deleted-forward source as data; it never imports project code."
   },
   {
@@ -460,7 +476,7 @@
     "kind": "child-process",
     "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
     "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -468,7 +484,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -476,7 +492,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -484,7 +500,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
     "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -796,7 +812,7 @@
     "kind": "child-process",
     "expression": "execFile(bin, [\"--version\"], { cwd: options.cwd, env: options.env, signal: options.signal, timeout: 5000, maxBuffer: 65536, windowsHide: true }, (error, stdout) => {\n      if (error) reject(failure(\"runtime_unavailable\"));\n      else { const match = /^codex-cli (\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?)\\s*$/u.exec(String(stdout).trim()); match ? resolve(match[1]) : reject(failure(\"unsupported_profile\")); }\n    })",
     "digest": "27b4673e2938278c4bc521b70f7679f6e2c74ae29dd1187be06a333afd5b5a4b",
-    "sourceDigest": "f91da8ab022d4a2dedab794d92d5c3ece36186b8cb38638c4786069b69d187b9",
+    "sourceDigest": "fe147a4e80e0411f6aa83e563294f9a3dc27e1060db09bdfc0a2aa5d5366a1e9",
     "reason": "156: probes the resolved Codex binary for its version, admitting a prerelease suffix. A fixed argv, a 5 s timeout and a bounded buffer; the binary path comes from codex-executable discovery, never from a module import. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
   },
   {
@@ -804,7 +820,7 @@
     "kind": "child-process",
     "expression": "execFile(\"taskkill.exe\", [\"/PID\", String(child.pid), \"/T\", \"/F\"], { timeout: 2000, windowsHide: true }, error => { if (error) child.kill(\"SIGKILL\"); resolve(); })",
     "digest": "b84eecd1f7b48c01c36a21272fa680ca975e45e1208a5e5bab7322cb731d90c1",
-    "sourceDigest": "f91da8ab022d4a2dedab794d92d5c3ece36186b8cb38638c4786069b69d187b9",
+    "sourceDigest": "fe147a4e80e0411f6aa83e563294f9a3dc27e1060db09bdfc0a2aa5d5366a1e9",
     "reason": "154/02: owned Codex version probe, stdio server or bounded process-tree termination; explicit argv, no shell, approval override or credential access. 158 re-review: both audited expressions are unchanged; native reviewer selection, acknowledgement and observation cleanup change the enclosing module. Server spawn remains explicit argv, shell:false, inherited sandbox policy and bounded owned-process cleanup."
   },
   {
@@ -812,16 +828,8 @@
     "kind": "computed-require",
     "expression": "createRequire(path.join(root, \"package.json\")).resolve(`${name}/package.json`)",
     "digest": "53209288242f86278b9dba6eef2b628c5b8c40e99c026dbfa99f9dcbf3ebfbba",
-    "sourceDigest": "87208eadf65fc28ea07434aed7458e5a8076cc883e89f5d091aaab0e1eb04d4e",
+    "sourceDigest": "f23121d9083233cafd0aeaff2a91aa25ac44da9250db187878861e9ebd6b7daf",
     "reason": "156: resolves an installed Codex package's package.json from a fixed package-name list to find its bin. It reads a path and executes no module; the name is a constant, not operator input."
-  },
-  {
-    "file": "packages/execution/src/codex-executable.mjs",
-    "kind": "child-process",
-    "expression": "execFile(\"powershell.exe\", [\"-NoProfile\", \"-NonInteractive\", \"-Command\", \"Get-AppxPackage -Name OpenAI.Codex | Select-Object -ExpandProperty InstallLocation\"],\n      { env, signal, windowsHide: true, timeout: 5000, maxBuffer: 65536 }, (error, stdout) => {\n        resolve(error ? [] : String(stdout).split(/\\r?\\n/u).map(value => value.trim()).filter(Boolean));\n      })",
-    "digest": "7e5282ceb6fd7481870a5d9fdfa253096b22ca4342bcdcfb527d6dca55d0ddeb",
-    "sourceDigest": "87208eadf65fc28ea07434aed7458e5a8076cc883e89f5d091aaab0e1eb04d4e",
-    "reason": "156: asks Windows for the Store Codex install location with a fixed PowerShell command. No operator input reaches the argv; it is time- and buffer-bounded, and a failure yields no candidate."
   },
   {
     "file": "packages/mesh/src/worktrees.mjs",

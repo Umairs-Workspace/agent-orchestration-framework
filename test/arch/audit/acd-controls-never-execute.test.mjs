@@ -138,6 +138,11 @@ const DOCTOR_LANE_MODULES = Object.freeze([
   // (recurrence stamps and promotion state) against the stream's acceptance facts, all carried on the
   // snapshot, and executes nothing.
   "./memory-effectiveness.mjs",
+  // THE THIRTEENTH — milestone 164 / story 03's sync lane, named in the change that lands it. A doctor
+  // lane on the same reading as the twelfth: it judges the sync facts the command edge read (the owed
+  // journal steps, each workspace's last sync) and the snapshot's changed-since-synced bits, and
+  // executes nothing.
+  "./sync.mjs",
 ]);
 
 // The two INJECTED lanes (the diagrams lane, 133/03; the examples lane, 134/04) reach the spine as

@@ -6,6 +6,7 @@
   "exports": {
     "./graph-normalize": "./src/graph-normalize.mjs",
     "./graph-impact": "./src/graph-impact.mjs",
+    "./graph-bundle": "./src/graph-bundle.mjs",
     "./graphify": "./src/graphify.mjs",
     "./memory/none-backend": "./src/memory/none-backend.mjs",
     "./memory/local-retrieval": "./src/memory/local-retrieval.mjs",
@@ -17,6 +18,8 @@
     "./commands/shared": "./src/commands/shared.mjs",
     "./commands/graph-impact": "./src/commands/graph-impact.mjs",
     "./commands/graph-build": "./src/commands/graph-build.mjs",
+    "./commands/graph-export": "./src/commands/graph-export.mjs",
+    "./commands/graph-import": "./src/commands/graph-import.mjs",
     "./commands/graph-query": "./src/commands/graph-query.mjs",
     "./commands/graph-triage": "./src/commands/graph-triage.mjs",
     "./commands/graph-serve": "./src/commands/graph-serve.mjs",

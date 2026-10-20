@@ -5,6 +5,7 @@ import { archTests as codexPermissionTests } from "../test/arch/session/acd-code
 import { adapterTests } from "../test/bundle/adapters.test.mjs";
 import { runtimeSessionTests } from "../packages/execution/test/runtime-session.suite.mjs";
 import { runtimeSelectionTests } from "../packages/execution/test/runtime-selection.suite.mjs";
+import { codexDiscoveryTests } from "../packages/execution/test/codex-discovery.suite.mjs";
 import { codexAppServerTests } from "../packages/execution/test/codex-app-server.suite.mjs";
 import { archTests as runtimeChoiceOwnerTests } from "../test/arch/session/acd-runtime-choice-owner.test.mjs";
 import { archTests as runtimeSessionBoundaryTests } from "../test/arch/session/acd-runtime-session-boundary.test.mjs";
@@ -86,10 +87,16 @@ import { archTests as acdGeneratedStampTests } from "../test/arch/bundle/acd-gen
 import { archTests as acdCapabilityDelegationTests } from "../test/arch/bundle/acd-capability-delegation.test.mjs";
 import { archTests as acdNoClobberWithoutForceTests } from "../test/arch/store/acd-no-clobber-without-force.test.mjs";
 import { planningInitTests } from "../packages/core/test/planning-init.suite.mjs";
+import { planningCoworkPluginTests } from "../packages/core/test/planning-cowork-plugin.suite.mjs";
+import { planningCoworkPlannerTests } from "../packages/core/test/planning-cowork-planner.suite.mjs";
 import { planningPrdTests } from "../test/planning/planning-prd.test.mjs";
 import { archTests as acdPlanningInstallCommandsTests } from "../test/arch/planning/acd-planning-install-commands.test.mjs";
 import { archTests as acdPlanningProvenanceShaTests } from "../test/arch/planning/acd-planning-provenance-sha.test.mjs";
 import { archTests as acdPlanningLockIsolationTests } from "../test/arch/planning/acd-planning-lock-isolation.test.mjs";
+import { archTests as acdCoworkSkillsFromCommandSourceTests } from "../test/arch/planning/acd-cowork-skills-from-command-source.test.mjs";
+import { archTests as acdCoworkPackageDeterministicTests } from "../test/arch/planning/acd-cowork-package-deterministic.test.mjs";
+import { archTests as acdCoworkPlannerPinnedTests } from "../test/arch/planning/acd-cowork-planner-pinned.test.mjs";
+import { archTests as acdPlanningCoworkInstallUnconfirmedTests } from "../test/arch/planning/acd-planning-cowork-install-unconfirmed.test.mjs";
 import { archTests as acdPlanningNoCodexInstallTests } from "../test/arch/planning/acd-planning-no-codex-install.test.mjs";
 import { archTests as acdPlanningClonableRefTests } from "../test/arch/planning/acd-planning-clonable-ref.test.mjs";
 import { archTests as acdUnifiedLockSectionsTests } from "../test/arch/store/acd-unified-lock-sections.test.mjs";
@@ -135,6 +142,7 @@ const tests = [
   ...runtimeSessionTests,
   ...runtimeSelectionTests,
   ...codexAppServerTests,
+  ...codexDiscoveryTests,
   ...runtimeChoiceOwnerTests,
   ...runtimeSessionBoundaryTests,
   ...codexPermissionTests,
@@ -186,10 +194,16 @@ const tests = [
   ...acdCapabilityDelegationTests,
   ...acdNoClobberWithoutForceTests,
   ...planningInitTests,
+  ...planningCoworkPluginTests,
+  ...planningCoworkPlannerTests,
   ...planningPrdTests,
   ...acdPlanningInstallCommandsTests,
   ...acdPlanningProvenanceShaTests,
   ...acdPlanningLockIsolationTests,
+  ...acdCoworkSkillsFromCommandSourceTests,
+  ...acdCoworkPackageDeterministicTests,
+  ...acdCoworkPlannerPinnedTests,
+  ...acdPlanningCoworkInstallUnconfirmedTests,
   ...acdPlanningNoCodexInstallTests,
   ...acdPlanningClonableRefTests,
   ...acdUnifiedLockSectionsTests,

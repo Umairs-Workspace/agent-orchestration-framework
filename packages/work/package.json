@@ -69,6 +69,7 @@
     "./commands/insert-story": "./src/commands/insert-story.mjs",
     "./commands/insert-uat": "./src/commands/insert-uat.mjs",
     "./item-row": "./src/item-row.mjs",
+    "./local-change": "./src/local-change.mjs",
     "./artifacts": "./src/artifacts.mjs",
     "./content-read": "./src/content-read.mjs",
     "./read": "./src/read.mjs",

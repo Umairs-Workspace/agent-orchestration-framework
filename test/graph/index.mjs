@@ -51,6 +51,9 @@ import { graphifyDegradeTests } from "./graphify-degrade.test.mjs";
 // store-first re-point of resolveGraphifyBinary onto resolveManagedBinary, ADR-004
 // task 00; @executable traceability)
 import { graphifyStoreFirstTests } from "./graphify-store-first.test.mjs";
+// 166 — a built graph travels to another machine: aof graph export / import, the bundle, its
+// staleness report and the cache re-key across line endings; @executable traceability
+import { graphBundleTests } from "./graph-bundle.test.mjs";
 
 export const tests = [
   ...graphCommandCoreTests,
@@ -63,4 +66,5 @@ export const tests = [
   ...graphifyRerankingTests,
   ...graphifyDegradeTests,
   ...graphifyStoreFirstTests,
+  ...graphBundleTests,
 ];

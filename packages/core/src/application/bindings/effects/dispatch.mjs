@@ -13,7 +13,7 @@ export function assembleEffectsDispatch({ effectsTableServices, effectsJournalSe
   // the drain — one consequence's fault cannot strand its siblings.
 
   const { EFFECTS } = effectsTableServices;
-  const { pendingSteps } = effectsJournalServices;
+  const { pendingSteps, failedStepsPastCeiling } = effectsJournalServices;
   const { markStep } = effectsJournalServices;
   const { reportDegrade } = degradeServices;
 
@@ -48,7 +48,7 @@ export function assembleEffectsDispatch({ effectsTableServices, effectsJournalSe
 
   // The contribution table now loads without importing domain implementations or transitions.
   const dispatcher = createEffectsDispatcher({
-    effects: EFFECTS, loci: LOCAL_LOCI, pendingSteps, markStep, reportDegrade,
+    effects: EFFECTS, loci: LOCAL_LOCI, pendingSteps, failedStepsPastCeiling, markStep, reportDegrade,
   });
 
   async function drainEffects(options) {

@@ -157,7 +157,7 @@ export const runtimePhaseTests = [
     } finally { await f.cleanup(); }
   } },
   { name: "156 — unavailable Codex preflight becomes an actionable command refusal", async run() {
-    for (const code of ["runtime_unavailable", "unsupported_profile"]) {
+    for (const code of ["runtime_unavailable", "unsupported_profile", "runtime_discovery_failed", "runtime_preflight_failed"]) {
       const resolver = createRuntimeInvocation({ ...sessions, ...execution, runtimeSession: { inspectCapabilities: async () => { throw Object.assign(new Error("Codex installation requires attention"), {code}); } } });
       const input = { model: ["gpt-6-astra:high", "continue=sonnet:high"] };
       const ctx = { workspace: { config: {}, projectRoot: path.resolve(".tmp") } };
