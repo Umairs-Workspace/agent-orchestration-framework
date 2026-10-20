@@ -87,6 +87,11 @@ export const yarnInstallationTests = [
         'commands/graph-query.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-triage.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-serve.mjs': ['@aof/contracts/error'],
+        // 166: the graph carry — one bundle module (gzip + sha256, no archive dependency) and its
+        // two verbs; git and the graphify probe arrive injected.
+        'graph-bundle.mjs': ['node:crypto', 'node:zlib', 'node:fs', 'node:path'],
+        'commands/graph-export.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-import.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
       } : name === 'messaging' ? {
         'secret.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'ask-messages.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],

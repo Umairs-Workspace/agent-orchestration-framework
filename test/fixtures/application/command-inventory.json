@@ -858,6 +858,66 @@
     }
   },
   {
+    "id": "graph:export",
+    "input": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "export"
+      ],
+      "spec": {
+        "usage": "aof graph export <path> [--force] [--json]",
+        "flags": {
+          "force": {
+            "type": "boolean",
+            "description": "replace an existing file at the path"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "graph:import",
+    "input": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "import"
+      ],
+      "spec": {
+        "usage": "aof graph import <path> [--force] [--json]",
+        "flags": {
+          "force": {
+            "type": "boolean",
+            "description": "replace this clone's existing graph"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "test",
     "input": {
       "type": "object",

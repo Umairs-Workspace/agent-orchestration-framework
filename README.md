@@ -225,9 +225,11 @@ aof graph build src                # AST-extract a code graph → graphify-out/g
 aof graph impact src/cli.mjs       # EXACT dependents (blast-radius) + dependencies, from the edges
 aof graph query "what calls main"  # a fuzzy, similarity-seeded natural-language answer
 aof graph triage                   # graphify's PR-impact ranking
+aof graph export D:/carry/aof.graph   # the built graph + graphify's cache → one portable file
+aof graph import /mnt/usb/aof.graph  # lay it out as this clone's graph (same project only)
 ```
 
-`graphify-out/` is a derived, git-ignored build artifact (rebuild on demand, never committed). `aof graph impact` is the **deterministic, edge-based** coupling lookup the review/refine agents consume; `aof graph query` is the fuzzier NL hint.
+`graphify-out/` is a derived, git-ignored build artifact (rebuild on demand, never committed). To reuse a graph built on another machine instead, `aof graph export <path>` writes it to one file and `aof graph import <path>` lays it down in a second clone of the same project: it reports the graph's age and how many commits it is behind HEAD, re-keys graphify's cache to the clone's line endings, and replaces an existing graph only with `--force`. `aof graph build .` runs no graphify while no file the graph was built from has changed — on the receiving clone too, whatever its line endings. `aof graph impact` is the **deterministic, edge-based** coupling lookup the review/refine agents consume; `aof graph query` is the fuzzier NL hint.
 
 ### Notion work-board sync (milestones 17 · 18)
 

@@ -68,6 +68,12 @@ const GRAPH_REACHING_ALLOWLIST = new Set([
                                                       // changed, and an inner-loop tool that might cost minutes
                                                       // before it costs seconds is not one.
   path.join("packages", "knowledge", "src/memory/graphify-backend.mjs"), // imports the normalizer (10)
+  // 166 — the graph carried between clones: export reads graph.json's path and age through the
+  // normalizer, import lays it back where every reader resolves it and asks the driver's resolver
+  // for the local graphify version. Neither builds, queries or spawns.
+  path.join("packages", "knowledge", "src", "commands", "graph-export.mjs"),
+  path.join("packages", "knowledge", "src", "commands", "graph-import.mjs"),
+  path.join("packages/core/src/application/bindings/commands/graph/import.mjs"),
   path.join("packages/core/src/application/bindings/story-contract-derive.mjs"), // configured knowledge ports
   path.join("packages", "work", "src/story-contract-derive.mjs"),      // imports the normalizer (96/ADR-004): the read/write-set
                                                       // derivation reaches the graph by the pure read — never a

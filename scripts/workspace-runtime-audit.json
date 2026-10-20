@@ -260,7 +260,7 @@
     "kind": "child-process",
     "expression": "spawn(resolved.path, args, options)",
     "digest": "cafa2b787777fc12c12154baff452dcfa6be959f2df57f929f24ae2e412d0c28",
-    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "sourceDigest": "4daa088b76b78c567b5da87fc8f01f51dab5910fc22066bef837be68bd45c070",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -268,7 +268,7 @@
     "kind": "child-process",
     "expression": "spawnSync(resolved.path, args, options)",
     "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
-    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "sourceDigest": "4daa088b76b78c567b5da87fc8f01f51dab5910fc22066bef837be68bd45c070",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -276,7 +276,7 @@
     "kind": "child-process",
     "expression": "spawnSync(resolved.path, args, options)",
     "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
-    "sourceDigest": "a31bf1b2216477abe718eeba105d3d03eba35564215a397c99af7c2a195f5b73",
+    "sourceDigest": "4daa088b76b78c567b5da87fc8f01f51dab5910fc22066bef837be68bd45c070",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
