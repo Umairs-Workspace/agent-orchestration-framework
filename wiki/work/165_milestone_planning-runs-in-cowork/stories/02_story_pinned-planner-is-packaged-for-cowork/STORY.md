@@ -4,10 +4,10 @@ number: 02
 slug: pinned-planner-is-packaged-for-cowork
 title: "The pinned planner is packaged for Cowork — pm-skills' recommended plugins are taken from a clone checked against the recorded commit, each a standalone uploadable package"
 parent: 165
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 schema: 1
 aofVersion: 0.1.0
 depends: []

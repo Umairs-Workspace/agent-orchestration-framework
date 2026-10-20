@@ -4,10 +4,10 @@ number: 01
 slug: planning-skills-render-as-a-cowork-plugin
 title: "The planning skills render as a Cowork plugin — shatter and explain become aof skills from their own command sources, packaged as a reproducible .plugin"
 parent: 165
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 schema: 1
 aofVersion: 0.1.0
 depends: []

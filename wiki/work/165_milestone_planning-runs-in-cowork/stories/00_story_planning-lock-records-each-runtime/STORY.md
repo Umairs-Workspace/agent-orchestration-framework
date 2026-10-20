@@ -4,10 +4,10 @@ number: 00
 slug: planning-lock-records-each-runtime
 title: "The planning lock records each runtime — a second runtime's planning init is added beside the first without --force, and --force re-pins only the runtime it names"
 parent: 165
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 schema: 1
 aofVersion: 0.1.0
 depends: []
