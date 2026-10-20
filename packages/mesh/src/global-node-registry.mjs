@@ -14,6 +14,7 @@ export function createGlobalNodeRegistry({ globalMeshPaths, resolveWorkspaceId, 
 // m42 item 3 — every former silent catch reports a coded degrade event.
 
 const SECRET_KEY_PATTERN = /(token|secret|credential|auth|invite|hash)/i;
+const NODE_RECORD_UNREADABLE_CODE = "node-record-unreadable";
 
 async function publishGlobalRegistryDescriptorsToStore(store, workspace, options = {}) {
   const paths = store.paths ?? globalMeshPaths(options);
@@ -25,6 +26,22 @@ async function publishGlobalRegistryDescriptorsToStore(store, workspace, options
   await removeStaleFabricDescriptors(staleFabricDescriptorPaths, paths.nodesRoot, []);
 
   const snapshot = await assembleGlobalRegistrySnapshot(workspace, { ...options, now, paths });
+  // 164/F-02 — a roster with a torn node record is PARTIAL, and this publish REPLACES the
+  // workspace's membership (descriptor `memberNodeIds` and its `global_node_workspaces` links)
+  // with whatever the roster holds. Measured live: every node file NUL-filled after a crash, and
+  // each command's publish emptied its workspace's membership, dropping it out of the daemon
+  // tick. So nothing is written: the last good membership stands, and the refusal is reported.
+  if (snapshot.unreadableNodeRecords.length > 0) {
+    const error = Object.assign(new Error(`${snapshot.unreadableNodeRecords.length} node record(s) could not be read (${snapshot.unreadableNodeRecords.map((entry) => entry.path).join(", ")}); the registry was not republished, so the last membership stands.`), { code: NODE_RECORD_UNREADABLE_CODE });
+    reportDegrade("global-node-registry", error);
+    return {
+      workspaceId: snapshot.workspaceDescriptor.workspaceId,
+      published: false,
+      code: NODE_RECORD_UNREADABLE_CODE,
+      message: error.message,
+      unreadable: snapshot.unreadableNodeRecords.map((entry) => entry.path),
+    };
+  }
 
   await writeDescriptor(snapshot.workspaceDescriptorPath, snapshot.workspaceDescriptor);
   for (const descriptor of snapshot.nodeDescriptors) {
@@ -46,7 +63,8 @@ async function assembleGlobalRegistrySnapshot(workspace, options = {}) {
   const now = options.now ?? new Date().toISOString();
   const config = workspace.config ?? {};
   const workspaceId = resolveWorkspaceId(workspace);
-  const nodeRecords = await readNodeRecords(workspace);
+  const unreadableNodeRecords = [];
+  const nodeRecords = await readNodeRecords(workspace, { unreadable: unreadableNodeRecords });
   const presenceRecords = await readPresenceRecords(workspace);
   const fabricPeers = Array.isArray(options.fabricPeers)
     ? options.fabricPeers
@@ -149,6 +167,7 @@ async function assembleGlobalRegistrySnapshot(workspace, options = {}) {
     workspaceDescriptor,
     workspaceDescriptorPath,
     nodeDescriptors,
+    unreadableNodeRecords,
   };
 }
 

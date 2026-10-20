@@ -23,8 +23,12 @@
 //  3. Assert the dry-run path makes no spawn — inject a spawn spy and run an actual
 //     dry-run through initPlanning; the spy must record zero process launches, and
 //     the preview shows the real `#v2.0.0` tag (not a `<sha>` placeholder).
+//  4. FF-16505 (165/ADR-001) — the cowork plan holds no spawn item (no argv, no
+//     command) and the planning-init source names no `cowork plugin` verb; a cowork
+//     --dry-run resolves no sha, clones nothing, spawns nothing and writes nothing.
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import os from "node:os";
 import path from "node:path";
 import {
@@ -241,6 +245,55 @@ export const archTests = [
         if (prevEnv === undefined) delete process.env.AOF_PLANNING_SHA;
         else process.env.AOF_PLANNING_SHA = prevEnv;
         await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "arch/FF-16505: the cowork plan holds no spawn item, and planning-init names no cowork plugin verb",
+    run: async () => {
+      for (const withOptional of [false, true]) {
+        const plan = planPlanningInstall({ runtime: "cowork", withOptional });
+        assert.ok(plan.length > 0, "the cowork plan has items");
+        for (const item of plan) {
+          assert.ok(["render", "package"].includes(item.kind), `${item.kind} is a render or package item`);
+          assert.equal(item.argv, undefined, `${item.plugin} carries no argv`);
+          assert.equal(item.command, undefined, `${item.plugin} carries no command`);
+        }
+      }
+      const source = await readFile(
+        path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src", "planning-init.mjs"),
+        "utf8"
+      );
+      assert.ok(!/cowork\s+plugin/.test(source), "no `cowork plugin` verb is named");
+    }
+  },
+  {
+    name: "arch/FF-16505: a cowork --dry-run resolves no sha, clones nothing, spawns nothing and writes nothing",
+    run: async () => {
+      const repo = await mkdtemp(path.join(os.tmpdir(), "aof-arch-planning-cowork-dry-"));
+      const aofHome = await mkdtemp(path.join(os.tmpdir(), "aof-arch-planning-cowork-home-"));
+      let launches = 0;
+      const prevEnv = process.env.AOF_PLANNING_SHA;
+      delete process.env.AOF_PLANNING_SHA;
+      try {
+        const result = await initPlanning({
+          targetDir: repo,
+          runtime: "cowork",
+          dryRun: true,
+          aofHome,
+          spawn: () => { launches += 1; return { status: 0, stdout: "" }; },
+          plannerClone: () => { launches += 1; return { ok: false }; },
+          log: () => {}
+        });
+        assert.equal(launches, 0, "nothing spawned and nothing cloned");
+        assert.equal(result.sha, "<sha>", "no sha was resolved");
+        assert.deepEqual(await readdir(repo), [], "nothing was written in the project");
+        assert.deepEqual(await readdir(aofHome), [], "nothing was written in the aof home");
+      } finally {
+        if (prevEnv === undefined) delete process.env.AOF_PLANNING_SHA;
+        else process.env.AOF_PLANNING_SHA = prevEnv;
+        await rm(repo, { recursive: true, force: true });
+        await rm(aofHome, { recursive: true, force: true });
       }
     }
   }

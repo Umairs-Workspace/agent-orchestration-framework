@@ -52,6 +52,13 @@ import { archTests as acdCacheStalenessSinglePredicateTests } from "./acd-cache-
 // warnings is a legitimate choice, and the consequence (every CLI integration test is blind to
 // this warning) is stated in the control rather than hidden.
 import { archTests as acdSqliteRuntimeHasOneHomeTests } from "./acd-sqlite-runtime-has-one-home.test.mjs";
+// milestone 164 / story 00 — FF-16401 (one "changed since observed" predicate), FF-16403 (sync
+// state rides the two existing stores) and FF-16404 (the store never writes a record doc).
+import { archTests as acdLocalChangeSinglePredicateTests } from "./acd-local-change-single-predicate.test.mjs";
+import { archTests as acdSyncRidesTheEffectsJournalTests } from "./acd-sync-rides-the-effects-journal.test.mjs";
+import { archTests as acdStoreNeverWritesRecordsTests } from "./acd-store-never-writes-records.test.mjs";
+// milestone 164 / story 02 — FF-16402: the stream view and doctor ask one "does the cache answer" predicate.
+import { archTests as acdCacheAnswersSinglePredicateTests } from "./acd-cache-answers-single-predicate.test.mjs";
 
 export const tests = [
   ...codexOutputOwnershipTests,
@@ -71,4 +78,8 @@ export const tests = [
   ...acdCacheReadSurfaceBoundaryTests,
   ...acdCacheStalenessSinglePredicateTests,
   ...acdSqliteRuntimeHasOneHomeTests,
+  ...acdLocalChangeSinglePredicateTests,
+  ...acdSyncRidesTheEffectsJournalTests,
+  ...acdStoreNeverWritesRecordsTests,
+  ...acdCacheAnswersSinglePredicateTests,
 ];

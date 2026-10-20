@@ -7,6 +7,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // invokable in-process such that the routed command id is observable). Each
 // row is a distinct real route; every one dispatches through the ONE run().
 import assert from "node:assert/strict";
+import net from "node:net";
 import { run } from "../../packages/core/src/cli.mjs";
 const getCommand = _aofApplication.getCommand;
 
@@ -198,14 +199,24 @@ export const singleEntryTwoModeTests = [
   {
     name: "single-entry-two-mode/03 run([\"mesh\",\"relay\",\"--json\"]) invokes the non-blocking probe and returns without binding a long-lived listener",
     async run() {
-      const startedAt = Date.now();
-      const { out, threw } = await captureLog(() => run(["mesh", "relay", "--json"]));
-      const elapsedMs = Date.now() - startedAt;
+      // "No long-lived listener" is observed at its source: every server the dispatch could bind
+      // (net, http, ws) listens through `net.Server.prototype.listen`. This replaced a wall-clock
+      // proxy (`< 2000 ms`) at 164's verify (F-05): since 164 every command runs its workspace's
+      // sync pass first, so the elapsed time measured this repository's record count under load,
+      // not whether a listener was bound — and the awaited run() returning at all already proves
+      // the dispatch does not block.
+      const listen = net.Server.prototype.listen;
+      const bound = [];
+      net.Server.prototype.listen = function (...args) { bound.push(args); return listen.apply(this, args); };
+      let captured;
+      try {
+        captured = await captureLog(() => run(["mesh", "relay", "--json"]));
+      } finally {
+        net.Server.prototype.listen = listen;
+      }
+      const { out, threw } = captured;
       assert.equal(threw, null, "the relay-mode dispatch does not throw");
-      // A bound long-lived listener would hang the awaited run() call
-      // indefinitely (or at least far longer than a plain config-read probe);
-      // completing quickly is the observable proxy for "no listen() call".
-      assert.ok(elapsedMs < 2000, "the relay dispatch returns quickly — no long-lived listener was bound by dispatch itself");
+      assert.deepEqual(bound, [], "the relay dispatch bound no listener — it runs the non-blocking probe and returns");
       const parsed = JSON.parse(out);
       assert.equal(typeof parsed.nominated, "boolean", "the probe result is returned to the caller");
     },

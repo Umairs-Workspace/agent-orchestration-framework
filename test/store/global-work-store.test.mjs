@@ -146,7 +146,7 @@ export const globalWorkStoreTests = [
         // v8 -> v9 (m127 / ADR-006 §1, owned by 127/04): the work_items LOCATION columns
         // backlog + archived — the same in-place, PRAGMA-checked ALTER, and the same
         // pinned-version re-arm. The migration has its own fixture in the 127-04-00 cases.
-        assert.equal(store.schemaVersion, 10); // 131/ADR-010: the ask column
+        assert.equal(store.schemaVersion, 11); // 164/ADR-002: the observation baseline
         const tables = store.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all().map((r) => r.name);
         assert.ok(tables.includes("aof_schema"));
         assert.ok(tables.includes("workspaces"));
@@ -160,6 +160,7 @@ export const globalWorkStoreTests = [
         assert.ok(tables.includes("work_item_docs"));
         assert.ok(tables.includes("work_item_runs"));
         assert.ok(tables.includes("node_logs"));
+        assert.ok(tables.includes("work_item_observations"), "v11: this node's observation baseline (164/ADR-002)");
         const workItemColumns = store.db.prepare("PRAGMA table_info(work_items)").all().map((column) => column.name);
         assert.ok(workItemColumns.includes("node_id"), "v8: work_items carries the reporting node");
         assert.ok(workItemColumns.includes("updated_at"), "v8: work_items carries the instant that node reported it");
@@ -171,7 +172,7 @@ export const globalWorkStoreTests = [
       try {
         const versions = reopened.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").all();
         assert.equal(versions.length, 1);
-        assert.equal(versions[0].value, 10); // 131/ADR-010: the ask column
+        assert.equal(versions[0].value, 11); // 164/ADR-002: the observation baseline
       } finally {
         reopened.close();
       }
@@ -533,9 +534,9 @@ export const globalWorkStoreTests = [
         const columns = columnsOf(first);
         assert.deepEqual(columns.find(([name]) => name === "backlog"), ["backlog", "TEXT"], "backlog TEXT was added");
         assert.deepEqual(columns.find(([name]) => name === "archived"), ["archived", "INTEGER"], "archived INTEGER was added");
-        // 131/ADR-010: a v8 store now lands on 10 (the ask column), and the marker names the version it reached.
-        assert.equal(version(first), 10, "the version moved to 10");
-        assert.deepEqual(markers(first), [["migration:10", "8"]], "projection_metadata holds ('_global', 'migration:10', '8')");
+        // A v8 store lands on the current version (11 since 164/ADR-002), and the marker names the version it reached.
+        assert.equal(version(first), 11, "the version moved to 11");
+        assert.deepEqual(markers(first), [["migration:11", "8"]], "projection_metadata holds ('_global', 'migration:11', '8')");
         const rows = readWorkspaceItems(first, V8_WS);
         assert.equal(rows.length, 3, "the three rows survived — an ALTER in place, never a rebuild");
         for (const row of rows) assert.deepEqual(Object.keys(row), SEVEN_KEYS, `${row.ref}: exactly the seven keys — neither new key appears on a row the migration touched`);
@@ -543,25 +544,25 @@ export const globalWorkStoreTests = [
       } finally {
         first.close();
       }
-      assert.equal(GLOBAL_WORK_SCHEMA_VERSION, 10, "GLOBAL_WORK_SCHEMA_VERSION is 10 (131/ADR-010: the ask column)");
+      assert.equal(GLOBAL_WORK_SCHEMA_VERSION, 11, "GLOBAL_WORK_SCHEMA_VERSION is 11 (164/ADR-002: the observation baseline)");
 
       const second = await openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } });
       try {
         assert.deepEqual(columnsOf(second), afterFirst.columns, "a second open adds no column");
         assert.deepEqual(markers(second), afterFirst.markers, "…and no second marker (idempotent)");
         assert.deepEqual(readWorkspaceItems(second, V8_WS), afterFirst.rows, "…and changes no row");
-        second.db.prepare("UPDATE aof_schema SET value = 11 WHERE key = 'version'").run();
+        second.db.prepare("UPDATE aof_schema SET value = 12 WHERE key = 'version'").run();
       } finally {
         second.close();
       }
       await assert.rejects(
         openGlobalWorkProjectionStore({ env: { AOF_GLOBAL_HOME: home } }),
-        (error) => error.code === "global-store-schema-unsupported" && error.schemaVersion === 11,
-        "a database stamped version = 11 is refused with the existing newer-schema error",
+        (error) => error.code === "global-store-schema-unsupported" && error.schemaVersion === 12,
+        "a database stamped version = 12 is refused with the existing newer-schema error",
       );
       const stamped = new DatabaseSync(paths.databasePath);
       try {
-        assert.equal(Number(stamped.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value), 11, "…and its version row is untouched: never silently downgraded or re-migrated");
+        assert.equal(Number(stamped.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value), 12, "…and its version row is untouched: never silently downgraded or re-migrated");
         assert.deepEqual(stamped.prepare("PRAGMA table_info(work_items)").all().map((column) => [column.name, column.type]), afterFirst.columns, "…nor its columns");
       } finally {
         stamped.close();

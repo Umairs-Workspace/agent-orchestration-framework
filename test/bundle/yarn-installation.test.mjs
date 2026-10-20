@@ -87,6 +87,11 @@ export const yarnInstallationTests = [
         'commands/graph-query.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-triage.mjs': ['node:fs', '@aof/contracts/error'],
         'commands/graph-serve.mjs': ['@aof/contracts/error'],
+        // 166: the graph carry — one bundle module (gzip + sha256, no archive dependency) and its
+        // two verbs; git and the graphify probe arrive injected.
+        'graph-bundle.mjs': ['node:crypto', 'node:zlib', 'node:fs', 'node:path'],
+        'commands/graph-export.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'commands/graph-import.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
       } : name === 'messaging' ? {
         'secret.mjs': ['node:crypto', 'node:fs/promises', 'node:path'],
         'ask-messages.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
@@ -113,7 +118,7 @@ export const yarnInstallationTests = [
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
         // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
-        'codex-executable.mjs': ['node:fs', 'node:child_process', 'node:module', 'node:path'],
+        'codex-executable.mjs': ['node:fs', 'node:fs/promises', 'node:child_process', 'node:module', 'node:path'],
         'codex-process-environment.mjs': ['node:fs', 'node:path'],
         'runtime-selection.mjs': ['@aof/contracts/loop-bounds'],
         // 154/ADR-001: the session adapter owns native availability and bounded ANSI decoding.
@@ -164,8 +169,10 @@ export const yarnInstallationTests = [
         'presence.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs', '@aof/work-loop/engine'],
         'global-node-registry.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'global-query.mjs': [],
-        'publisher.mjs': ['node:path', 'node:fs'],
-        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts'],
+        // 164/00: the sync pass stat-walks the record files and digests what it saw.
+        'publisher.mjs': ['node:path', 'node:fs', 'node:crypto', 'node:fs/promises'],
+        // 164/00: the store asks the one "changed since observed" predicate (FF-16401).
+        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change'],
         'assignment-record.mjs': ['node:crypto'],
         'store.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'registry.mjs': ['node:path', 'node:fs/promises', 'node:crypto', '@aof/foundation/fs'],
@@ -246,6 +253,8 @@ export const yarnInstallationTests = [
         'doctor/memory-effectiveness.mjs': ['node:path'],
         // 161/01: the doctor command edge's wiki probe lists the direct wiki pages and stats each cited source file.
         'wiki-citations.mjs': ['node:path', 'node:fs', 'node:fs/promises'],
+        // 164/00: the local-change leaf hashes a row's fields and normalises its location keys; it does no I/O.
+        'local-change.mjs': ['node:crypto', 'node:path'],
         // 153/05: tune reads a prompt destination inside the repository to compute its patch.
         'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],

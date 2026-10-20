@@ -509,7 +509,7 @@ async function notionIntegrationCommand(args) {
 // reaches this shim.
 async function planningCommand(args) {
   const [subcommand] = args;
-  throw new Error(`Unknown planning command "${subcommand ?? ""}".\n\nExamples:\n  aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex] [--scope user|project|local] [--force]`);
+  throw new Error(`Unknown planning command "${subcommand ?? ""}".\n\nExamples:\n  aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force]`);
 }
 
 // workFindCommand — RETIRED (m42 wave (d) leg d1, wave-3 tail): work:find is a

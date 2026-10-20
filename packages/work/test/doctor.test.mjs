@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createWorkDoctor } from '../src/doctor/index.mjs';
 import { createDoctorDiagrams } from '../src/doctor/diagrams.mjs';
 import { isDriver } from '../src/dependencies.mjs';
+import { syncGroup, syncLine, syncSummary, durationLabel } from '../src/doctor/sync.mjs';
 
 async function scratch(run) {
   const parent = await realpath(os.tmpdir());
@@ -45,4 +46,41 @@ test('diagram checks receive caller configuration without loading application co
   const config = { supplied: true };
   assert.deepEqual(api.diagramsGroup({ items: [] }, { config }), []);
   assert.deepEqual(seen, [config]);
+});
+
+// 164/03 — the sync lane is a pure function of the facts the command edge hands it.
+
+test('164/03 the sync lane reports nothing when no sync facts were read', () => {
+  assert.deepEqual(syncSummary({ items: [], workDir: '/w' }, 0), []);
+  assert.deepEqual(syncGroup({ items: [], workDir: '/w', sync: null }, { now: 0 }), []);
+});
+
+test('164/03 the sync lane groups owed steps per workspace, counts this workspace\'s changes, and warns', () => {
+  const now = Date.parse('2026-10-19T12:00:00.000Z');
+  const snapshot = {
+    workDir: '/w/aof/wiki/work',
+    items: [{ changedSinceSync: true }, { changedSinceSync: false }, { changedSinceSync: true }],
+    sync: {
+      workspaceId: 'ws-aof', name: 'aof',
+      workspaces: [{ workspaceId: 'ws-aof', name: 'aof', lastSyncedAt: '2026-10-19T10:00:00.000Z' }, { workspaceId: 'ws-other', name: 'other', lastSyncedAt: '2026-10-19T11:00:00.000Z' }],
+      owed: [
+        { workspaceId: 'ws-other', createdAt: '2026-10-19T11:20:00.000Z', attempts: 7, status: 'failed', lastError: 'database is locked' },
+        { workspaceId: 'ws-other', createdAt: '2026-10-19T11:50:00.000Z', attempts: 1, status: 'failed', lastError: 'older' },
+      ],
+    },
+  };
+  const [aof, other] = syncSummary(snapshot, now);
+  assert.deepEqual([aof.owed, aof.changed, aof.current], [false, 2, true]);
+  assert.deepEqual([other.owed, other.owedSince, other.attempts, other.lastError, other.changed], [true, '2026-10-19T11:20:00.000Z', 7, 'database is locked', null]);
+  assert.equal(durationLabel(other.owedForMs), '40m');
+  const findings = syncGroup(snapshot, { now });
+  assert.deepEqual(findings.map((finding) => [finding.code, finding.severity, finding.path]), [['sync-behind', 'warn', '/w/aof/wiki/work'], ['sync-failing', 'warn', '/w/aof/wiki/work']]);
+  assert.match(syncLine(other, now), /^sync: other — owed 40m, 7 attempts, last error: database is locked/);
+  assert.match(syncLine(aof, now), /^sync: aof — 2 record\(s\) changed and not yet synced/);
+});
+
+test('164/03 an owed step not yet attempted is shown as owed but is not failing', () => {
+  const snapshot = { workDir: '/w', items: [], sync: { workspaceId: 'a', name: 'a', workspaces: [], owed: [{ workspaceId: 'a', createdAt: '2026-10-19T11:59:00.000Z', attempts: 0, status: 'pending', lastError: null }] } };
+  assert.equal(syncSummary(snapshot, Date.parse('2026-10-19T12:00:00.000Z'))[0].owed, true);
+  assert.deepEqual(syncGroup(snapshot, { now: Date.parse('2026-10-19T12:00:00.000Z') }), []);
 });

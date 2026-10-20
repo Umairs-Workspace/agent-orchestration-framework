@@ -194,25 +194,30 @@ function isCodeOnlyWholeRootBuild(input, outRoot, projectRoot = outRoot) {
 // graph.json (ADR-001) and the opaque markdown is still carried.
 const GRAPHIFY_TIMEOUT_ENV = "AOF_GRAPHIFY_TIMEOUT_MS";
 const DEFAULT_GRAPHIFY_TIMEOUT_MS = 120_000;
+// A code-only whole-root build (`graphify update`) reaches no network and reads no prompt — the
+// two things the 2-minute default bounds — and it re-extracts the whole corpus: 232 s for this
+// repo's 2255 code files (166 F-02, 2026-10-20), so the default failed every first build here.
+// Ten minutes is twice the slowest full build measured (299 s); AOF_GRAPHIFY_TIMEOUT_MS still wins.
+const DEFAULT_CODE_BUILD_TIMEOUT_MS = 600_000;
 
 // The wall-clock budget (ms) from AOF_GRAPHIFY_TIMEOUT_MS, or the pinned default. Only
 // a positive finite integer overrides; anything else (absent / 0 / negative / garbage)
 // falls back to the default so the spawn is NEVER unbounded. `env` is injectable so a
 // test drives the override without mutating the global process env.
-function graphifySpawnTimeoutMs(env = process.env) {
+function graphifySpawnTimeoutMs(env = process.env, fallbackMs = DEFAULT_GRAPHIFY_TIMEOUT_MS) {
   const raw = Number.parseInt(env?.[GRAPHIFY_TIMEOUT_ENV] ?? "", 10);
-  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_GRAPHIFY_TIMEOUT_MS;
+  return Number.isFinite(raw) && raw > 0 ? raw : fallbackMs;
 }
 
 // The spawnSync options EVERY graphify spawn shares (build/query/triage). Bounds the
 // wall-clock, force-kills on overrun, and closes the child's stdin (see the envelope
 // note above). Pure + injectable (`env`) so a unit test asserts the guards without a
-// live binary.
-function graphifySpawnOptions({ projectRoot, env = process.env } = {}) {
+// live binary. `codeBuild` raises only the default budget, never the override.
+function graphifySpawnOptions({ projectRoot, env = process.env, codeBuild = false } = {}) {
   return {
     cwd: projectRoot,
     encoding: "utf8",
-    timeout: graphifySpawnTimeoutMs(env),
+    timeout: graphifySpawnTimeoutMs(env, codeBuild ? DEFAULT_CODE_BUILD_TIMEOUT_MS : DEFAULT_GRAPHIFY_TIMEOUT_MS),
     killSignal: "SIGKILL",
     stdio: ["ignore", "pipe", "pipe"],
   };
@@ -300,7 +305,7 @@ function runGraphifyBuild(
   const graphPath = graphJsonPath(outRoot);
   const before = graphArtifactStat(graphPath);
   const args = graphifyBuildArgs(input, outRoot, projectRoot);
-  const options = graphifySpawnOptions({ projectRoot });
+  const options = graphifySpawnOptions({ projectRoot, codeBuild: args[0] === "update" });
   const result = spawn(resolved.path, args, options);
   throwOnSpawnError(result, options);
   if (result.status !== 0) {
@@ -414,5 +419,5 @@ function runGraphifyTriage(input, { projectRoot }) {
 // imports them from there directly; 09's command code + tests still import them
 // from here, unchanged.
 
-return { GRAPHIFY_SPEC, GRAPHIFY_BINARY, PINNED_GRAPHIFY_VERSION, resolveGraphifyBinary, graphifyBuildArgs, isCodeOnlyWholeRootBuild, GRAPHIFY_TIMEOUT_ENV, DEFAULT_GRAPHIFY_TIMEOUT_MS, graphifySpawnTimeoutMs, graphifySpawnOptions, runGraphifyBuild, runGraphifyQuery, runGraphifyTriage, graphJsonPath, readGraph, normalizeGraph, graphArtifactBuiltAt };
+return { GRAPHIFY_SPEC, GRAPHIFY_BINARY, PINNED_GRAPHIFY_VERSION, resolveGraphifyBinary, graphifyBuildArgs, isCodeOnlyWholeRootBuild, GRAPHIFY_TIMEOUT_ENV, DEFAULT_GRAPHIFY_TIMEOUT_MS, DEFAULT_CODE_BUILD_TIMEOUT_MS, graphifySpawnTimeoutMs, graphifySpawnOptions, runGraphifyBuild, runGraphifyQuery, runGraphifyTriage, graphJsonPath, readGraph, normalizeGraph, graphArtifactBuiltAt };
 }

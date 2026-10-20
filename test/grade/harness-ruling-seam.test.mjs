@@ -410,6 +410,9 @@ const featureZero = [
         // one consequence, the publish, at the local locus. In the census so the "one name" claim
         // stays about the ruling name rather than freezing the stream's vocabulary.
         "stream.archived": [["publish-projection", "local"]],
+        // milestone 164 / ADR-003 (story 00) — the sync pass's mark, declared after this story the
+        // same way: one consequence, the publish, at the local locus.
+        "workspace.changed": [["publish-projection", "local"]],
         "assignment.reported": [["settle-assignment", "control-store"]],
         "terminal.resume-refused": [["restore-parked-resume", "control-store"]],
         "assignment.settled": [["record-item-branch", "control-store"]],

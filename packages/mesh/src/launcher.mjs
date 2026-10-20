@@ -11,7 +11,7 @@ import { readPresentedCredential } from "./relay.mjs";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshLauncher({ globalMeshPaths, readNodeRecords, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, publishGlobalWorkSnapshot, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
+export function createMeshLauncher({ globalMeshPaths, readNodeRecords, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, syncWorkspace, MESH_WORKSPACE_UNCONFIGURED_CODE, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
 // src/mesh/launcher.mjs — the per-node presence and global propagation daemon (milestone 33 / story 01,
 // ADR-003). The coordination launcher (F-3201): with the ws@8 broker eliminated
 // (ADR-002), this is the per-node process the fabric-native model needs — it publishes
@@ -525,16 +525,98 @@ async function assembleCurrentPresenceRecord(ws, nodeId, options = {}, warningsS
   }
 }
 
-async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openStore) {
-  // Every store-backed read in this tick is handed the SAME opener (see above). A caller that
-  // injected its own `openStore` still gets it — `sharedProjectionStore` wraps it rather than
-  // replacing it — so the hermetic-test seam is unchanged.
-  const tickOptions = { ...options, openStore };
-  const registryResult = await resolveNodeWorkspaces(nodeId, tickOptions);
+// resolveTickWorkspaces(ws, nodeId, options, openStore) — THE workspace set one tick covers: this
+// node's registered workspaces, the worker's recovered mesh checkouts, and the launch cwd,
+// deduplicated by `resolveAggregationWorkspaces`. The presence aggregation and the sync pass
+// (164/ADR-004) both read it here, so the two can never disagree about which projects exist.
+// `remaining` is the registry's unresolvable skips, each caller reporting them in its own terms.
+async function resolveTickWorkspaces(ws, nodeId, options, openStore) {
+  const registryResult = await resolveNodeWorkspaces(nodeId, { ...options, openStore });
   const { recovered, remaining } = await recoverSkippedViaMeshCheckout(registryResult.skipped ?? [], options);
   if (registryResult.ok && recovered.length > 0) {
     registryResult.workspaces.push(...recovered);
   }
+  const workspaces = resolveAggregationWorkspaces(ws, registryResult);
+  // Each entry's project root, by the same normalised work-dir key the dedup uses: the launch
+  // workspace is the one already loaded; a registered one is its descriptor's root.
+  const roots = new Map([[normalizedWorkDirKey(ws.workDir), ws.projectRoot]]);
+  for (const entry of registryResult.ok ? registryResult.workspaces : []) {
+    const key = normalizedWorkDirKey(entry.workDir);
+    if (!roots.has(key) && typeof entry.projectRoot === "string") roots.set(key, entry.projectRoot);
+  }
+  return { registryResult, workspaces, remaining, projectRootOf: (entry) => roots.get(normalizedWorkDirKey(entry.workDir)) ?? null };
+}
+
+// syncTickWorkspaces(ws, nodeId, options, warningsSink) — 164/ADR-004 drivers 1 and 2: the ONE
+// sync pass (story 00's `syncWorkspace`, through the publisher seam) over every workspace this
+// tick covers, sharing the tick's one projection-store handle for its reads. It REPLACES the
+// cwd-only publish of the launch workspace: the desktop app launches the daemon from a folder
+// with no aof config, so that publish never re-read a project (FF-16405).
+//
+// Skips are LOUD and per workspace — a registered folder that is gone, a workspace that does not
+// propagate, a pass that throws — and the tick goes on to the next. The one quiet skip is the
+// launch cwd when it is not a workspace at all: it is in the set only "when it is a real
+// workspace", and warning about the desktop's launch folder every tick would say nothing.
+async function syncTickWorkspaces(ws, nodeId, options, warningsSink) {
+  const sync = typeof options?.syncWorkspace === "function" ? options.syncWorkspace : syncWorkspace;
+  const shared = sharedProjectionStore(options?.openStore ? { openStore: options.openStore } : {});
+  const results = [];
+  try {
+    const { registryResult, workspaces, remaining, projectRootOf } = await resolveTickWorkspaces(ws, nodeId, options, shared.openStore);
+    if (!registryResult.ok) {
+      // The registry lives in the store this tick could not read: every registered workspace is
+      // owed this tick's pass, and saying so is the difference from "there are none".
+      emitWarning(warningsSink, { code: "global-work-propagation-failed", message: "The registered workspaces could not be read from the global store; this tick synced none of them.", path: null }, options);
+    }
+    for (const skip of remaining) {
+      emitWarning(warningsSink, {
+        code: skip.reason ?? "workspace-unresolvable",
+        message: `Not syncing workspace ${skip.workspaceId}: its work dir could not be resolved (${skip.reason})${skip.workDir ? `: ${skip.workDir}` : ""}.`,
+        path: skip.workDir ?? null,
+        workspaceId: skip.workspaceId ?? null,
+      }, options);
+    }
+    const launchKey = normalizedWorkDirKey(ws.workDir);
+    for (const entry of workspaces) {
+      const isLaunch = normalizedWorkDirKey(entry.workDir) === launchKey;
+      try {
+        const projectRoot = projectRootOf(entry);
+        const workspace = isLaunch ? ws : await loadWorkspace(projectRoot);
+        const result = await sync(workspace, {
+          globalWorkStoreOptions: options?.globalWorkStoreOptions ?? {},
+          openStore: shared.openStore,
+          publisherOptions: options ?? {},
+          ...(options?.effectsJournalOptions ? { journalOptions: options.effectsJournalOptions } : {}),
+        });
+        results.push({ workspaceId: entry.workspaceId, ...result });
+        if (result?.skipped && !(isLaunch && result.code === MESH_WORKSPACE_UNCONFIGURED_CODE)) {
+          emitWarning(warningsSink, { code: result.code, message: `Not syncing workspace ${entry.workspaceId}: it does not propagate (${result.code}).`, path: projectRoot, workspaceId: entry.workspaceId ?? null }, options);
+        }
+        for (const outcome of result?.effects ?? []) {
+          if (outcome.status !== "failed") continue;
+          const warning = outcome.detail?.warning ?? {};
+          emitWarning(warningsSink, { code: warning.code ?? "global-work-propagation-failed", message: `Syncing workspace ${entry.workspaceId} failed: ${warning.message ?? outcome.error}`, path: warning.path ?? projectRoot, workspaceId: entry.workspaceId ?? null }, options);
+        }
+      } catch (error) {
+        emitWarning(warningsSink, {
+          code: "global-work-propagation-failed",
+          message: `Syncing workspace ${entry.workspaceId} failed${error?.code ? ` (${error.code})` : ""}: ${error?.message ?? error}`,
+          path: entry.workDir,
+          workspaceId: entry.workspaceId ?? null,
+        }, options);
+      }
+    }
+    return results;
+  } finally {
+    shared.close();
+  }
+}
+
+async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openStore) {
+  // Every store-backed read in this tick is handed the SAME opener (see above). A caller that
+  // injected its own `openStore` still gets it — `sharedProjectionStore` wraps it rather than
+  // replacing it — so the hermetic-test seam is unchanged.
+  const { remaining, workspaces } = await resolveTickWorkspaces(ws, nodeId, options, openStore);
   for (const skip of remaining) {
     emitWarning(warningsSink, {
       code: "workspace-workdir-unresolvable",
@@ -542,7 +624,6 @@ async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openSt
       path: skip.workDir ?? null,
     }, options);
   }
-  const workspaces = resolveAggregationWorkspaces(ws, registryResult);
 
   // activeRuns is the UNION across every resolved workspace's items (ADR-003);
   // workspacesWithRuns is the per-workspace attribution the render layer cannot
@@ -784,11 +865,12 @@ async function startLauncher(ws, options = {}) {
   };
   let record = await publishCurrentPresence();
 
+  // Every propagation tick runs the sync pass over every workspace this node covers (164/ADR-004
+  // driver 1), and the start-up call below is driver 2: a change made while the daemon was down
+  // lands before the first tick fires.
   const capturePropagation = async () => {
     record = await publishCurrentPresence();
-    const propagation = await publishGlobalWorkSnapshot(ws, options);
-    if (propagation.warning) emitWarning(launcherWarnings, propagation.warning, options);
-    return propagation;
+    return await syncTickWorkspaces(ws, nodeId, options, launcherWarnings);
   };
   await capturePropagation();
 

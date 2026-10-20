@@ -58,6 +58,9 @@ const GRAPH_READER_ALLOWLIST = new Set([
   path.join("packages", "knowledge", "src/graphify.mjs"),           // imports + re-exports the normalizer
   path.join("packages", "knowledge", "src", "graph-normalize.mjs"),    // DEFINES readGraph/normalizeGraph; reads graph.json
   path.join("packages", "knowledge", "src", "commands", "graph-build.mjs"),
+  path.join("packages", "knowledge", "src", "commands", "graph-export.mjs"), // 166: carries the artifact whole; its
+  path.join("packages", "knowledge", "src", "commands", "graph-import.mjs"), // one parse reads the build commit graphify
+                                                    // stamped (`built_at_commit`), never the coupling — no second reader.
   path.join("packages", "knowledge", "src", "commands", "graph-query.mjs"),
   path.join("packages", "knowledge", "src", "commands", "graph-triage.mjs"),
   path.join("packages", "knowledge", "src", "commands", "graph-impact.mjs"), // ADR-007: the deterministic, edge-based coupling

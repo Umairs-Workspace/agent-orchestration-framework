@@ -31,6 +31,7 @@ import { memoryAccountingTests } from "./memory-accounting.suite.mjs";
 import { memoryEffectivenessTests } from "./memory-effectiveness.suite.mjs";
 // story 163 — work:questions, the read side of work:answer: its selection and render rules.
 import { workQuestionsTests } from "./work-questions.suite.mjs";
+import { localChangeTests } from "./local-change.suite.mjs";
 
 export const tests = [
   ...runtimeObserveTests,
@@ -62,4 +63,5 @@ export const tests = [
   ...memoryAccountingTests,
   ...memoryEffectivenessTests,
   ...workQuestionsTests,
+  ...localChangeTests,
 ];

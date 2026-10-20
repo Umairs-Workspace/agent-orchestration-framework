@@ -45,6 +45,12 @@
 //     a manual fallback, never emit the absent Codex plugin-install verb. Guarded
 //     by acd-planning-no-codex-install.
 //   ADR-006: idempotent via a manifest guard with --force (mirrors `work init`).
+//   165/ADR-004: the section holds ONE ENTRY PER RUNTIME —
+//     `planning: { runtimes: { <runtime>: <entry> } }`, each entry the frozen schema
+//     above. `planningEntries` is the one reader (a pre-165 flat section reads as its
+//     own runtime's entry); the guard refuses only when the runtime being installed
+//     already has an entry, and --force re-pins that runtime alone. Guarded by
+//     acd-planning-lock-isolation (FF-16501).
 //   ADR-010: the claude marketplace/plugin declarations default to PROJECT scope
 //     (`--scope project`) so the bought planner travels with the repo's
 //     `.claude/settings.json`, NOT the user's global `~/.claude/settings.json`
@@ -56,10 +62,25 @@
 //     mechanism), while the codex MANUAL fallback (`claude plugin install …`) DOES
 //     carry `--scope <scope>` since the user runs it through claude. Guarded by
 //     acd-planning-install-commands.
+//   165/ADR-001: cowork is a RENDER-AND-HAND-OVER runtime. Cowork has no plugin CLI,
+//     so its plan holds no spawn item: one `render` item (the aof plugin,
+//     165/ADR-002) and one `package` item per recommended planner plugin (165/ADR-003).
+//     A real run builds every package in memory, writes them once under the aof
+//     home's `cowork/` only if every step succeeded (165/ADR-005, ADR-006), prints
+//     the upload steps, and records the
+//     install as unconfirmed — aof cannot see Cowork, so it never writes `true` there.
+//     `--scope` names a Claude Code settings file and is refused with cowork. Guarded
+//     by acd-planning-install-commands (FF-16505) and
+//     acd-planning-cowork-install-unconfirmed (FF-16506).
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { readLock, writeLock } from "./lock.mjs";
 import { workspacePaths } from "./workspace.mjs";
+import { defaultGlobalWorkspaceDir } from "./paths.mjs";
+// The cowork modules (165/01, 165/02) load only on a real cowork run — inside
+// initCowork — so a verb that merely composes this command evaluates none of them
+// (FF-16004).
 
 // A core never prints: it REPORTS through the collector its caller injects, and the
 // face turns the collected lines into the one stdout document (m42 wave (d) leg d1,
@@ -94,7 +115,41 @@ export const MARKETPLACE_GIT_URL = `${MARKETPLACE_HEAD_URL}.git`;
 export const CORE_PLUGINS = ["pm-execution", "pm-product-discovery", "pm-product-strategy"];
 export const OPTIONAL_PLUGINS = ["pm-market-research"];
 
-const VALID_RUNTIMES = ["claude", "codex"];
+const VALID_RUNTIMES = ["claude", "codex", "cowork"];
+
+// Where the cowork packages are written (165/ADR-006): once, under the aof home
+// (`~/.aof`, or AOF_GLOBAL_HOME), because they are the same for every project and
+// Cowork installs a plugin to the account. aof owns this directory whole and rebuilds
+// it on every cowork run. The lock names each package RELATIVE to the aof home — it
+// is committed, and a home directory is machine-specific.
+export const COWORK_DIR = "cowork";
+// The aof Cowork plugin's name and skills (165/ADR-002), rendered by
+// planning/cowork-plugin.mjs and recorded in the lock's cowork entry.
+export const PLANNING_PLUGIN_NAME = "aof";
+export const PLANNING_PLUGIN_SKILLS = Object.freeze(["shatter", "explain"]);
+export const COWORK_BUNDLE_PATH = `${COWORK_DIR}/${PLANNING_PLUGIN_NAME}.plugin`;
+
+export function coworkPackagePath(plugin) {
+  return `${COWORK_DIR}/pm-skills/${plugin}.plugin`;
+}
+
+// The aof home a cowork run writes under: `aofHome` when the caller injects one,
+// else the one global home every aof store uses.
+function coworkHome(options = {}) {
+  return path.resolve(options.aofHome ?? defaultGlobalWorkspaceDir());
+}
+
+// The hand-over (165/ADR-001): how the operator installs what aof wrote, each package
+// named by its full path. Never a claim that anything was installed.
+export function coworkUploadSteps(paths, aofHome) {
+  return [
+    "cowork: aof cannot install into Cowork. In the Claude desktop app, upload each package under Customize › Plugins › Add › Upload plugin:",
+    ...paths.map((entry) => `  ${path.join(aofHome, entry)}`),
+    "Start a new Cowork task after uploading: a task that was already running does not see newly uploaded plugins.",
+    `Next, connect this repo's folder in Cowork and run /${PLANNING_PLUGIN_NAME}:shatter.`,
+    "note: the Cowork install is not confirmed — aof cannot see Cowork, so the lock records installConfirmed: false."
+  ];
+}
 const SHA_RE = /^[0-9a-f]{40}$/;
 // ADR-010: where the claude marketplace/plugin declarations are written. Defaults to
 // `project` (the repo's .claude/settings.json) so the planner travels with the repo,
@@ -107,6 +162,29 @@ export const DEFAULT_SCOPE = "project";
 // and assets apply write (their own sections), never a per-vertical sibling.
 export function planningLockPath(targetDir) {
   return workspacePaths(targetDir).lockPath;
+}
+
+// The one reader of the lock's `planning` section (165/ADR-004): the runtime-keyed
+// map of entries. No section → `{}`; the 165 shape → its `runtimes`; a pre-165 flat
+// section → `{ [section.runtime]: section }`, the section itself kept as it was.
+export function planningEntries(lock) {
+  const section = lock?.planning;
+  if (!section || typeof section !== "object") return {};
+  if (section.runtimes && typeof section.runtimes === "object") return section.runtimes;
+  return { [section.runtime]: section };
+}
+
+// The one writer of a planning entry. Read-merge-write (ADR-009): preserve the flat
+// asset fields and the `work` section; replace ONLY the `planning` key, never
+// reconstructing the lock from a fixed field set. 165/ADR-004: always the runtime-keyed
+// shape; every other runtime's entry passes through as the same object, and only this
+// runtime's entry is replaced.
+async function writePlanningEntry(lockPath, runtime, manifest) {
+  const currentLock = (await readLock(lockPath)) ?? {};
+  await writeLock(lockPath, {
+    ...currentLock,
+    planning: { runtimes: { ...planningEntries(currentLock), [runtime]: manifest } }
+  });
 }
 
 export function recommendedPlugins({ withOptional = false } = {}) {
@@ -122,6 +200,13 @@ export function recommendedPlugins({ withOptional = false } = {}) {
 export function planPlanningInstall({ runtime = "claude", sha, withOptional = false, scope = DEFAULT_SCOPE } = {}) {
   if (!VALID_RUNTIMES.includes(runtime)) {
     throw new Error(`Unsupported runtime "${runtime}". Expected one of: ${VALID_RUNTIMES.join(", ")}.`);
+  }
+  // 165/ADR-001: cowork renders and hands over — no argv, no command, nothing spawned.
+  if (runtime === "cowork") {
+    return [
+      { runtime, kind: "render", plugin: PLANNING_PLUGIN_NAME, path: COWORK_BUNDLE_PATH },
+      ...recommendedPlugins({ withOptional }).map((plugin) => ({ runtime, kind: "package", plugin, path: coworkPackagePath(plugin) }))
+    ];
   }
   if (!VALID_SCOPES.includes(scope)) {
     throw new Error(`Unsupported scope "${scope}". Expected one of: ${VALID_SCOPES.join(", ")}.`);
@@ -311,6 +396,17 @@ function buildManifest({ runtime, sha, withOptional, generatedAt }) {
     };
   }
 
+  if (runtime === "cowork") {
+    // 165/ADR-001: the packages aof wrote, and an install it cannot see — so
+    // installConfirmed is false, and aof never writes true.
+    return {
+      ...base,
+      plugins: recommendedPlugins({ withOptional }).map((name) => ({ name, marketplace: MARKETPLACE_NAME, package: coworkPackagePath(name) })),
+      codex: null,
+      cowork: { bundle: COWORK_BUNDLE_PATH, skills: [...PLANNING_PLUGIN_SKILLS], installConfirmed: false }
+    };
+  }
+
   return {
     ...base,
     plugins: recommendedPlugins({ withOptional }).map((name) => ({ name, marketplace: MARKETPLACE_NAME })),
@@ -333,6 +429,27 @@ export async function initPlanning(options = {}) {
   if (!VALID_RUNTIMES.includes(runtime)) {
     throw new Error(`Unsupported runtime "${runtime}". Expected one of: ${VALID_RUNTIMES.join(", ")}.`);
   }
+  // 165/03 Q1: `--scope` picks a Claude Code settings file and means nothing to an
+  // account-level Cowork plugin, so an explicit scope with cowork is refused, writing
+  // nothing. Read before the default below, or explicit and default are indistinguishable.
+  if (runtime === "cowork" && options.scope !== undefined) {
+    return {
+      runtime,
+      targetDir,
+      dryRun: Boolean(options.dryRun),
+      force: Boolean(options.force),
+      withOptional: Boolean(options.withOptional),
+      guarded: false,
+      shaRejected: false,
+      scopeRejected: true,
+      manifestPath: planningLockPath(targetDir),
+      manifestWritten: false,
+      plan: [],
+      planCommands: [],
+      attempts: [],
+      message: "Refusing --scope with --runtime cowork: --scope applies only to claude (it picks a Claude Code settings file; a Cowork plugin is saved to your Claude account). Nothing was written."
+    };
+  }
   // ADR-010: default to project scope (the repo's .claude/settings.json), overridable.
   const scope = options.scope ?? DEFAULT_SCOPE;
   if (!VALID_SCOPES.includes(scope)) {
@@ -344,14 +461,14 @@ export async function initPlanning(options = {}) {
   const log = options.log ?? NO_PRINT;
   const lockPath = planningLockPath(targetDir);
 
-  // Re-run guard (ADR-006 → ADR-009): key off the PRESENCE of the `planning`
-  // SECTION of the unified lock, not on file existence (the unified lock may
-  // already exist for the asset/`work` verticals). If the section is present and
-  // --force was not given, refuse and write nothing. --dry-run always previews
-  // regardless (so the guard is skipped on a dry-run and the lock is untouched).
+  // Re-run guard (ADR-006 → ADR-009 → 165/ADR-004): key off THIS RUNTIME's entry
+  // in the `planning` section, not on the section or the file existing — another
+  // runtime's entry is added beside, never refused. If the runtime already has an
+  // entry and --force was not given, refuse and write nothing. --dry-run always
+  // previews regardless (so the guard is skipped on a dry-run and the lock is untouched).
   if (!dryRun) {
     const existing = await readLock(lockPath);
-    if (existing && existing.planning && !force) {
+    if (planningEntries(existing)[runtime] && !force) {
       return {
         runtime,
         targetDir,
@@ -365,10 +482,12 @@ export async function initPlanning(options = {}) {
         plan: [],
         planCommands: [],
         attempts: [],
-        message: "A planning provenance section already exists in .aof/aof.lock.json. Re-run with `--force` to re-pin the sha and re-install."
+        message: `Planning for ${runtime} is already recorded in .aof/aof.lock.json. Re-run with \`--force\` to re-pin the sha and re-install for ${runtime}.`
       };
     }
   }
+
+  if (runtime === "cowork") return initCowork({ options, targetDir, dryRun, force, withOptional, log, lockPath });
 
   // Resolve the sha (ADR-002). A dry-run must NOT touch the network or spawn a
   // process (ADR-001): it uses an injected sha if one was supplied, else a
@@ -487,10 +606,7 @@ export async function initPlanning(options = {}) {
   }
 
   const manifest = buildManifest({ runtime, sha: resolved, withOptional, generatedAt: new Date().toISOString() });
-  // Read-merge-write (ADR-009): preserve the flat asset fields and the `work`
-  // section; replace ONLY the `planning` key. Never reconstruct from a fixed set.
-  const currentLock = (await readLock(lockPath)) ?? {};
-  await writeLock(lockPath, { ...currentLock, planning: manifest });
+  await writePlanningEntry(lockPath, runtime, manifest);
 
   return {
     runtime,
@@ -510,4 +626,83 @@ export async function initPlanning(options = {}) {
     manifestPath: lockPath,
     manifestWritten: true
   };
+}
+
+// The cowork path (165/ADR-001): render and hand over. The dry-run resolves nothing,
+// clones nothing and writes nothing. A real run builds every package in memory — the
+// pinned planner (165/02) and the aof plugin (165/01), each zipped (165/ADR-005)
+// — and writes the aof home's `cowork/` (165/ADR-006) and the lock entry only once
+// all of them succeeded. Nothing but the lock is written inside the project.
+async function initCowork({ options, targetDir, dryRun, force, withOptional, log, lockPath }) {
+  const runtime = "cowork";
+  const plan = planPlanningInstall({ runtime, withOptional });
+  const packages = plan.map((item) => item.path);
+  const aofHome = coworkHome(options);
+  const coworkDir = path.join(aofHome, COWORK_DIR);
+  const result = (fields) => ({
+    runtime,
+    targetDir,
+    dryRun,
+    force,
+    withOptional,
+    guarded: false,
+    shaRejected: false,
+    plan,
+    planCommands: [],
+    attempts: [],
+    codex: null,
+    manualFallback: [],
+    manifest: null,
+    manifestPath: lockPath,
+    manifestWritten: false,
+    packages,
+    coworkDir,
+    ...fields
+  });
+
+  if (dryRun) {
+    log("dry-run: the following Cowork packages would be written (nothing cloned, nothing written):");
+    for (const entry of packages) log(`  ${path.join(aofHome, entry)}`);
+    for (const line of coworkUploadSteps(packages, aofHome)) log(line);
+    return result({ sha: SHA_PLACEHOLDER });
+  }
+
+  const resolved = resolveSha(options);
+  if (!isFullSha(resolved)) {
+    return result({
+      shaRejected: true,
+      sha: resolved,
+      message: `Refusing to pin: the resolved ref "${resolved}" is not a 40-character commit sha. Resolve an exact commit (40-char lowercase hex) before packaging; nothing was written.`
+    });
+  }
+
+  const [{ packagePlanner }, { renderPlanningPlugin }, { zipStored }] = await Promise.all([
+    import("./planning/cowork-planner.mjs"),
+    import("./planning/cowork-plugin.mjs"),
+    import("./planning/stored-zip.mjs")
+  ]);
+  const planner = await packagePlanner({
+    sha: resolved,
+    withOptional,
+    source: options.plannerSource,
+    clone: options.plannerClone,
+    log
+  });
+  if (!planner.ok) {
+    log(`error: the planner could not be packaged (${planner.reason}); nothing was written.`);
+    return result({ installFailed: true, sha: resolved, message: `Refusing to record provenance — ${planner.message}` });
+  }
+
+  const outputs = { [COWORK_BUNDLE_PATH]: zipStored(renderPlanningPlugin()) };
+  for (const entry of planner.packages) outputs[coworkPackagePath(entry.name)] = zipStored(entry.files);
+
+  await rm(coworkDir, { recursive: true, force: true });
+  await mkdir(path.join(coworkDir, "pm-skills"), { recursive: true });
+  for (const [relative, bytes] of Object.entries(outputs)) await writeFile(path.join(aofHome, relative), bytes);
+  for (const line of coworkUploadSteps(packages, aofHome)) log(line);
+
+  const manifest = buildManifest({ runtime, sha: resolved, withOptional, generatedAt: new Date().toISOString() });
+  await writePlanningEntry(lockPath, runtime, manifest);
+
+  return result({ sha: resolved, manifest, manifestWritten: true });
 }

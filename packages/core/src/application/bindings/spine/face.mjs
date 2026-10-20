@@ -3,7 +3,7 @@ import { deriveRouteTable as contributionRoutes, resolveRoute as resolveContribu
 import { existsSync } from "node:fs";
 import { commandError } from "@aof/contracts/error";
 
-export function assembleSpineFace({ commandCoreServices, effectsJournalServices, effectsDispatchServices, degradeServices, provideGlobalWorkStore, applicationEnv }) {
+export function assembleSpineFace({ commandCoreServices, effectsJournalServices, effectsDispatchServices, degradeServices, provideGlobalWorkStore, provideGlobalWorkPublisher, applicationEnv }) {
   // src/spine/face.mjs — the ONE generic CLI face (m42 wave (d) leg d1;
   // PRD-command-spine-effects-ledger). The end state this file exists for:
   // cli.mjs shrinks to argv → route table → THIS face — no more per-verb face
@@ -174,6 +174,7 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
       } catch (error) {
         emitJsonErrorEnvelope(error);
       }
+      await syncOwnWorkspace();
       await sweepPendingEffects();
       return;
     }
@@ -187,6 +188,7 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
     const rendered = cli.render(result, faceCtx);
     if (rendered !== null) console.log(rendered);
     applyExitAdapter(cli, result, faceCtx);
+    await syncOwnWorkspace();
     await sweepPendingEffects();
   }
 
@@ -294,6 +296,24 @@ export function assembleSpineFace({ commandCoreServices, effectsJournalServices,
     if (typeof cli.exit !== "function") return;
     const code = cli.exit(result, faceCtx);
     if (Number.isInteger(code) && code !== 0) process.exitCode = code;
+  }
+
+  // 164/ADR-004 driver 3 — every command runs the sync pass for the workspace it runs in, just
+  // before the sweep drains what the journal owes, so a hand edit, a pull or a scaffold reaches
+  // the global store with no daemon at all. The pass decides for itself whether this cwd is a
+  // propagating workspace (never a lane, never an unconfigured directory). Like the sweep, it is
+  // never allowed to fail the command it rides behind, and it prints nothing: a fault is a degrade.
+  async function syncOwnWorkspace() {
+    try {
+      if (typeof provideGlobalWorkPublisher !== "function") return;
+      const { syncWorkspace } = await provideGlobalWorkPublisher();
+      const result = await syncWorkspace(await loadWorkspace(process.cwd()));
+      for (const outcome of result?.effects ?? []) {
+        if (outcome.status === "failed") reportDegrade("sync-pass", new Error(outcome.error ?? "the sync publish failed"));
+      }
+    } catch (error) {
+      reportDegrade("sync-pass", error);
+    }
   }
 
   // The crash-recovery half of the CLI sync-drain: pay out anything the journal

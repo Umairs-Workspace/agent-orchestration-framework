@@ -20,7 +20,7 @@ import { initPlanning } from "../planning-init.mjs";
 import { relativeDisplayPath } from "../render-plan.mjs";
 
 function refused(result) {
-  return Boolean(result.guarded || result.shaRejected || result.installFailed);
+  return Boolean(result.guarded || result.shaRejected || result.installFailed || result.scopeRejected);
 }
 
 export const planningInitCommand = {
@@ -59,14 +59,14 @@ export const planningInitCommand = {
   cli: {
     route: ["planning", "init"],
     spec: {
-      usage: "aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex] [--scope user|project|local] [--force] [--json]",
+      usage: "aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force] [--json]",
       workspace: false,
       flags: {
         dryRun: { type: "boolean", description: "preview the runtime commands without running or writing anything" },
-        force: { type: "boolean", description: "re-pin and re-install over an existing planning provenance section" },
+        force: { type: "boolean", description: "re-pin and re-install the named runtime over its recorded planning entry" },
         withOptional: { type: "boolean", description: "also install the optional pm-market-research plugin" },
-        runtime: { type: "string", description: "target runtime (claude | codex; default claude)" },
-        scope: { type: "string", description: "claude settings scope for the declarations (user | project | local; default project)" },
+        runtime: { type: "string", description: "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages once under the aof home (~/.aof/cowork/)" },
+        scope: { type: "string", description: "claude settings scope for the declarations (user | project | local; default project); refused with cowork" },
       },
     },
 
@@ -83,7 +83,11 @@ export const planningInitCommand = {
       if (refused(result)) return [...result.notes, result.message].join("\n");
       if (result.dryRun) return result.notes.join("\n");
       const lines = [...result.notes, `Pinned the pm-skills marketplace at ${result.sha} for ${result.runtime}.`];
-      if (result.runtime === "claude") {
+      if (result.runtime === "cowork") {
+        // 165/ADR-001: the packages were written; the Cowork install is the operator's
+        // and is never claimed here (the upload steps are already in the notes above).
+        lines.push(`Cowork: wrote ${result.packages.length} package(s) under ${result.coworkDir}; the Cowork install is not confirmed.`);
+      } else if (result.runtime === "claude") {
         lines.push(`Installed ${result.manifest.plugins.length} planner plugin(s): ${result.manifest.plugins.map((entry) => entry.name).join(", ")}.`);
       } else {
         lines.push("Codex: marketplace registered; plugins NOT installed (see the manual fallback above).");
@@ -98,6 +102,7 @@ export const planningInitCommand = {
           guarded: Boolean(result.guarded),
           shaRejected: Boolean(result.shaRejected),
           installFailed: Boolean(result.installFailed),
+          scopeRejected: Boolean(result.scopeRejected),
           manifest: relativeDisplayPath(result.manifestPath, result.targetDir),
           message: result.message,
         };
@@ -112,6 +117,7 @@ export const planningInitCommand = {
         manualFallback: result.manualFallback,
         manifest: result.manifestWritten ? relativeDisplayPath(result.manifestPath, result.targetDir) : null,
         plugins: result.manifest?.plugins ?? null,
+        ...(result.runtime === "cowork" ? { packages: result.packages } : {}),
       };
     },
 

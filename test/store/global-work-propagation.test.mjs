@@ -261,6 +261,14 @@ export const globalWorkPropagationTests = [
         const publishWarnings = handle.warnings.filter((warning) => warning.code !== "discord-bot-off");
         assert.equal(publishWarnings.length, 1, "initial failure is captured as a launcher warning");
         assert.equal(peerTicker.handles.length, 1, "peer loop still started");
+        // 164/ADR-006: the failed publish is owed in the journal and retried once its backoff has
+        // elapsed — time passes for it here, so the next tick is the one that may retry it.
+        const journal = await _aofApplication.effects.journal.openEffectsJournal({});
+        try {
+          journal.db.prepare("UPDATE effect_steps SET updated_at = '2000-01-01T00:00:00.000Z' WHERE status = 'failed'").run();
+        } finally {
+          journal.close();
+        }
         propagationTicker.fire(propagationTicker.handles[0]);
         // WAIT FOR THE CONDITION, NOT THE CLOCK. This slept a flat 25ms for an async
         // publish to land. Alone that is ample; inside the full suite — hundreds of

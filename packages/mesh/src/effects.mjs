@@ -6,13 +6,21 @@ export function createMeshEffects(getServices) {
     const { workspaceRoot } = event.payload ?? {};
     if (!workspaceRoot) return { skipped: true, reason: "no-workspace-root" };
     const workspace = await loadWorkspace(workspaceRoot);
+    // A verb's event names the refs its operator touched; a `workspace.changed` mark names none
+    // and carries the stat digest it noticed. Either way the publish itself asks which rows
+    // changed since observed (164/ADR-001), so a verb and a mark land a local change identically.
+    const { digest } = event.payload ?? {};
     const publish = await publishGlobalWorkSnapshot(workspace, {
       ...(ctx.publisherOptions ?? {}),
       operatorRefs: await operatorRefsWithArchivedStories(workspace, event.payload),
+      ...(typeof digest === "string" ? { digest } : {}),
     });
     if (publish.warning) throw projectionPropagationError(publish.warning);
     if (publish.skipped) return { published: false, skipped: true, code: publish.code };
-    return { published: publish.published === true };
+    // A change the lock held back stays owed (164/ADR-001), and the pass says so by name.
+    const held = (publish.result?.skippedRefs ?? []).filter((entry) => entry?.reason === "held-by-assignment")
+      .map(({ ref, reason, holderNode }) => ({ ref, reason, holderNode: holderNode ?? null }));
+    return { published: publish.published === true, ...(held.length > 0 ? { held } : {}) };
   }
 
   function projectionPropagationError(warning) {
@@ -159,26 +167,32 @@ export function createMeshEffects(getServices) {
   }
 
 
+  // 164/ADR-006 — `publish-projection` is state-based and idempotent (a whole-workspace upsert), so a
+  // failed publish is retried until it lands, with backoff, instead of stopping at the ceiling.
   return Object.freeze({ name: '@aof/mesh', events: Object.freeze({
     "run.started": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "run.completed": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "feedback.recorded": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "item-status.changed": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "stream.reindexed": Object.freeze([
       Object.freeze({ key: "remap-projection", locus: "local", apply: remapProjectionRefs }),
       Object.freeze({ key: "remap-control-facts", locus: "control-store", apply: remapControlFactRefs, applies: meshFactsApply }),
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "stream.archived": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
+    ]),
+    // 164/ADR-003 — a change no verb raised (a hand edit, a pull, a scaffold), noticed by the sync pass.
+    "workspace.changed": Object.freeze([
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "assignment.reported": Object.freeze([
       Object.freeze({ key: "settle-assignment", locus: "control-store", apply: settleAssignment }),

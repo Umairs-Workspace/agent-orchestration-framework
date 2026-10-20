@@ -5,11 +5,12 @@ import { readCitationHistory } from "../citation-history.mjs";
 import { UNRESOLVED_CODE as WIKI_UNRESOLVED, probeWikiCitations } from "../wiki-citations.mjs";
 import { declaredReportFrom } from "../doctor/rubric.mjs";
 import { computeLoopReady } from "../doctor/loop-ready.mjs";
+import { syncLine, syncSummary } from "../doctor/sync.mjs";
 import { readJson } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
 // Application composition supplies shared runtime services and transition policy.
-export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore }) {
+export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore }) {
 // work:doctor — the deterministic, cross-item HEALTH lane of the work stream
 // (milestone 15 / ADR-001). The SIBLING of work:validate on the SAME command
 // core: same `{ id, input, run, cli }` contract, same getCommand/invoke door, the
@@ -221,6 +222,9 @@ const doctorCommand = {
     // the probe then resolves exactly what it resolved before, which is the honest degradation. It
     // is never an error, because a citation gate must not depend on history to report at all.
     const history = readRenameMap(ctx.workspace.projectRoot ?? null);
+    // 164/03 (Q1) — the sync lane's facts, read HERE and handed to the engine as data.
+    const sync = cache == null ? null : await readSyncFacts(ctx, cache);
+    const now = Date.now();
     // milestone 135 / ADR-001 §3 — the config, and the transcript directory a live answer is read
     // from, resolved at THIS edge as the settle seam resolves it, so the engine never reads the
     // environment. Both are data for the story probe, whose own gate decides whether it reads.
@@ -231,7 +235,10 @@ const doctorCommand = {
         : null,
       history,
       cache: cache ?? null,
-      selfNode: meshNodeIdOf(ctx.workspace.config ?? {}) ?? null,
+      sync,
+      // 164/ADR-005 — the node id the publisher stamps rows with (the cache read resolves it), so
+      // "this node's own report" means the same node here as in the overlay; the pinned id else.
+      selfNode: cache?.selfNodeId ?? meshNodeIdOf(ctx.workspace.config ?? {}) ?? null,
       projectRoot: ctx.workspace.projectRoot ?? null,
       runners: Array.isArray(ctx.workspace.config?.work?.controls?.runners)
         ? ctx.workspace.config.work.controls.runners
@@ -243,7 +250,7 @@ const doctorCommand = {
     });
     const findings = await doctorWork(ctx.workspace.workDir, ctx.workspace.config, scope, {
       snapshot,
-      now: Date.now(), // the impure edge — the engine stays wall-clock-free
+      now, // the impure edge — the engine stays wall-clock-free
       staleWindow: staleWindowFromConfig(ctx.workspace.config),
       // milestone 66 / story 02 (ADR-004 §1) — the controls lane's leg A resolves a
       // cited control path REPO-relative, and the work dir is not the repo. The root
@@ -254,7 +261,7 @@ const doctorCommand = {
       cache,
       // WHOSE report counts as "this node's own" — the discriminator between a real
       // divergence and the mesh working as designed (ADR-005).
-      selfNode: meshNodeIdOf(ctx.workspace.config ?? {}),
+      selfNode: cache?.selfNodeId ?? meshNodeIdOf(ctx.workspace.config ?? {}),
       rawCommittedMesh,
       committedConfigPath: ctx.workspace.configPath,
       legacyIdentitySidecarPresent,
@@ -396,6 +403,9 @@ const doctorCommand = {
         message: finding.message,
       })),
       loopReady,
+      // 164/03 — one entry per workspace where this workspace propagates; absent otherwise, so a
+      // workspace with no mesh keeps its envelope byte-for-byte.
+      ...(sync == null ? {} : { sync: syncSummary(snapshot, now) }),
     };
   },
 
@@ -439,6 +449,7 @@ const doctorCommand = {
       const held = result.loopReady.blocking.length === 0
         ? "nothing is holding the rung down"
         : `blocking: ${result.loopReady.blocking.join(", ")}`;
+      for (const entry of result.sync ?? []) findingLines.push(syncLine(entry, Date.now()));
       findingLines.push(
         `Loop-Ready: ${result.loopReady.score}% (${result.loopReady.passed}/${result.loopReady.applicable}) — clears ${result.loopReady.clears}; ${held}.`,
       );
@@ -463,7 +474,7 @@ const doctorCommand = {
       const errors = findings.filter((finding) => finding.severity === "error").length;
       const warnings = findings.filter((finding) => finding.severity === "warn").length;
       const failed = errors > 0 || (strict && warnings > 0);
-      return { healthy: !failed, strict, errors, warnings, findings, loopReady: result.loopReady };
+      return { healthy: !failed, strict, errors, warnings, findings, loopReady: result.loopReady, ...(result.sync ? { sync: result.sync } : {}) };
     },
 
     exit(result, faceCtx = {}) {
@@ -480,6 +491,31 @@ const doctorCommand = {
 // the ONE calling convention (the pre-route { strict } shape is retired).
 function doctorStrict(faceCtx = {}) {
   return Boolean(faceCtx.options?.strict);
+}
+
+// readSyncFacts(ctx, cache) — 164/03's facts at doctor's impure edge: each owed `publish-projection`
+// step (attempts, last error, age; `readUnsettledSteps` keeps one past the ceiling visible) mapped to
+// its workspace, and each workspace's last successful sync on this node (the cache read's
+// `syncState`). Only where this workspace propagates — the one shared predicate decides. A journal
+// that exists but cannot be opened is refused exactly as `--explain` refuses it, never swallowed.
+async function readSyncFacts(ctx, cache) {
+  if (typeof meshGlobalPropagationDecision !== "function" || meshGlobalPropagationDecision(ctx.workspace).enabled !== true) return null;
+  const root = ctx.workspace.projectRoot ? path.resolve(ctx.workspace.projectRoot) : null;
+  const owed = [];
+  const journalOptions = ctx.effectsJournalOptions ?? {};
+  if (typeof readUnsettledSteps === "function" && existsSync(effectsJournalPath(journalOptions))) {
+    const journal = await openEffectsJournal(journalOptions);
+    try {
+      for (const step of readUnsettledSteps(journal, { key: "publish-projection" })) {
+        const stepRoot = typeof step.payload?.workspaceRoot === "string" ? path.resolve(step.payload.workspaceRoot) : null;
+        const workspaceId = step.payload?.workspaceId ?? (stepRoot != null && stepRoot === root ? cache.workspaceId ?? null : null);
+        owed.push({ workspaceId, createdAt: step.createdAt, attempts: step.attempts, status: step.status, lastError: step.lastError ?? null });
+      }
+    } finally {
+      journal.close();
+    }
+  }
+  return { workspaceId: cache.workspaceId ?? null, name: ctx.workspace.config?.name ?? null, workspaces: cache.syncState ?? [], owed };
 }
 
 function scopeOf(input) {
@@ -611,7 +647,9 @@ async function convergeLedger(ctx, now) {
     // guard), so an empty pass means convergence — not an infinite loop against
     // steps that keep failing (attempts cap them out of the fetch).
     for (let pass = 0; pass < 10; pass += 1) {
-      const outcomes = await drainEffects({ journal, loci, limit: 100, now, ctx: reactorCtx });
+      // The first pass is the operator's explicit retry and ignores a retry-until-done step's backoff
+      // (164/ADR-006); a step that fails again then has a fresh attempt, so later passes stop on it.
+      const outcomes = await drainEffects({ journal, loci, limit: 100, now, ctx: reactorCtx, backoff: pass > 0 });
       drained.push(...outcomes);
       if (outcomes.length === 0) break;
     }

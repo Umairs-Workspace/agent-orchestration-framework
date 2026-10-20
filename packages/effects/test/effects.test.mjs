@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { createEffectsDispatcher } from '@aof/effects/dispatch';
 import { createEffectsOutbox } from '@aof/effects/outbox';
+import { createEffectsJournal } from '@aof/effects/journal';
+import { createReactorRegistry } from '@aof/effects/registry';
+import { DatabaseSync } from 'node:sqlite';
 
 // A port double, not another journal implementation. SQLite durability is exercised
 // by the root effects-ledger and mesh-outbox integration suites.
@@ -128,4 +131,71 @@ test('invalid, unknown and duplicate acknowledgements never write a journal row'
     assert.equal(createEffectsOutbox({ ...io, readStep: () => ({ status }) }).applyEffectAck(journal, ack).code, 'effect-ack-already-settled');
   }
   assert.deepEqual(io.writes, []);
+});
+
+// 164/00 task 03/00 (164/ADR-006) — an owed sync retries until it lands, with backoff. These run the
+// REAL journal (in-memory SQLite) under the dispatcher, with an injected clock.
+
+async function retryHarness({ retry = 'until-done', failures, failedAt, succeeds = true }) {
+  let next = 0, calls = 0;
+  const storage = createEffectsJournal({ mintEventId: () => `event-${++next}`, reportDegrade() {} });
+  const journal = storage.initializeJournal({ db: new DatabaseSync(':memory:'), databasePath: ':memory:' });
+  const reactor = { key: 'publish-projection', locus: 'local', apply: async () => { calls += 1; if (!succeeds) throw new Error('database is locked'); return { published: true }; }, ...(retry ? { retry } : {}) };
+  const effects = { 'workspace.changed': [reactor] };
+  storage.appendEvent(journal, { eventId: 'mark', name: 'workspace.changed', payload: { workspaceId: 'aof' }, now: '2026-10-19T08:00:00.000Z' }, [reactor]);
+  for (let attempt = 0; attempt < failures; attempt += 1) storage.markStep(journal, 'mark', 'publish-projection', { status: 'failed', error: 'database is locked', now: failedAt });
+  const dispatcher = createEffectsDispatcher({ effects, loci: ['local'], pendingSteps: storage.pendingSteps, failedStepsPastCeiling: storage.failedStepsPastCeiling, markStep: storage.markStep, reportDegrade() {} });
+  return { journal, storage, dispatcher, calls: () => calls };
+}
+const after = (iso, ms) => new Date(Date.parse(iso) + ms).toISOString();
+const FAILED_AT = '2026-10-19T10:00:00.000Z';
+
+test('164/03 E1: a publish that failed five times is retried once its backoff has elapsed, and lands', async () => {
+  const h = await retryHarness({ failures: 5, failedAt: FAILED_AT });
+  try {
+    await h.dispatcher.drainEffects({ journal: h.journal, now: after(FAILED_AT, 16 * 60_000) });
+    assert.equal(h.calls(), 1, 'attempted past the ceiling');
+    assert.equal(h.storage.readStep(h.journal, 'mark', 'publish-projection').status, 'done');
+  } finally { h.journal.close(); }
+});
+
+for (const [attempts, agoMs, attempted] of [[3, 2_000, false], [3, 3 * 60_000, true], [9, 10 * 60_000, false], [9, 16 * 60_000, true]]) {
+  test(`164/03 E2: a failed publish after ${attempts} attempts, ${agoMs / 1000}s ago, is ${attempted ? 'attempted again' : 'not attempted'}`, async () => {
+    const h = await retryHarness({ failures: attempts, failedAt: FAILED_AT, succeeds: false });
+    try {
+      const outcomes = await h.dispatcher.drainEffects({ journal: h.journal, now: after(FAILED_AT, agoMs) });
+      assert.equal(h.calls(), attempted ? 1 : 0);
+      assert.equal(outcomes.length, attempted ? 1 : 0, 'a step still in its backoff is neither run nor counted');
+      const steps = h.storage.readEventSteps(h.journal, 'mark');
+      assert.equal(steps[0].attempts, attempts + (attempted ? 1 : 0));
+    } finally { h.journal.close(); }
+  });
+}
+
+test('164/03 E3: a reactor that does not declare retry-until-done keeps the ceiling', async () => {
+  const h = await retryHarness({ retry: null, failures: 5, failedAt: FAILED_AT });
+  try {
+    await h.dispatcher.drainEffects({ journal: h.journal, now: after(FAILED_AT, 24 * 60 * 60_000) });
+    assert.equal(h.calls(), 0, 'not attempted again, however long ago it failed');
+    assert.equal(h.storage.readStep(h.journal, 'mark', 'publish-projection').status, 'failed');
+  } finally { h.journal.close(); }
+});
+
+test('164/03: an unknown retry declaration is refused when the reactor table is built, naming the reactor and the value', () => {
+  const forever = { key: 'publish-projection', locus: 'local', apply: async () => {}, retry: 'forever' };
+  assert.throws(
+    () => createReactorRegistry([{ name: 'mesh', events: { 'workspace.changed': [forever] } }], { reportDegrade() {} }),
+    (error) => /workspace\.changed\/publish-projection/.test(error.message) && /"forever"/.test(error.message),
+  );
+});
+
+test('164/03: an explicit retry (backoff: false) pays a failed until-done step at once; an automatic pass waits it out', async () => {
+  const h = await retryHarness({ failures: 1, failedAt: FAILED_AT });
+  try {
+    await h.dispatcher.drainEffects({ journal: h.journal, now: after(FAILED_AT, 1_000) });
+    assert.equal(h.calls(), 0, 'the automatic pass waits out the backoff');
+    await h.dispatcher.drainEffects({ journal: h.journal, now: after(FAILED_AT, 1_000), backoff: false });
+    assert.equal(h.calls(), 1, 'the operator\'s explicit retry runs it now');
+    assert.equal(h.storage.readStep(h.journal, 'mark', 'publish-projection').status, 'done');
+  } finally { h.journal.close(); }
 });

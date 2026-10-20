@@ -5,6 +5,9 @@
 // — "nobody knows that name" and "the event could not be stored" are different answers
 // and a caller must be able to branch on which it got.
 export const EVENT_NOT_DECLARED = "event-not-declared";
+// 164/ADR-006 — a reactor safe to re-run may declare that its steps retry until done, with backoff.
+export const RETRY_UNTIL_DONE = "until-done";
+export const RETRY_POLICIES = Object.freeze([RETRY_UNTIL_DONE]);
 
 export class UndeclaredEventError extends Error {
   constructor(offered, declared) {
@@ -49,6 +52,11 @@ export function createReactorRegistry(contributions, { reportDegrade, isKnownLoc
         if (!reactor || typeof reactor.key !== 'string' || !reactor.key.trim() || !isKnownLocus(reactor.locus) ||
             typeof reactor.apply !== 'function' || (reactor.applies !== undefined && typeof reactor.applies !== 'function')) {
           throw new TypeError(`Invalid reactor for "${event}" contributed by "${contribution.name}".`);
+        }
+        // 164/ADR-006 — the one retry policy a reactor may declare. Anything else is refused here,
+        // at assembly, rather than silently read as "keeps the ceiling" by the dispatcher.
+        if (reactor.retry !== undefined && !RETRY_POLICIES.includes(reactor.retry)) {
+          throw new TypeError(`Reactor "${event}/${reactor.key}" contributed by "${contribution.name}" declares an unknown retry policy "${reactor.retry}" (known: ${RETRY_POLICIES.join(", ")}).`);
         }
         const claimed = owners.get(event);
         if (claimed.has(reactor.key)) {
