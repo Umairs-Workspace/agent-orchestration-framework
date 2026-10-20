@@ -24,6 +24,8 @@ doc: verification
   carries wiki records only.
 - **Third gate, `83850d89`: green** (row 3, sharded, from the same clean worktree), after 165/03's
   ADR-006 amendment. Every red was a load flake that passed alone.
+- **Fourth gate, `1a3c4573`: green** (row 4), after the E5 fixes (F-04, F-06). Every red was a
+  load flake that passed alone. This is the gate the accept door reads. Later commits are wiki records only.
 
 ### 165/00 · The planning lock records each runtime
 
@@ -126,3 +128,17 @@ green.
 | F-04 | At E5, the cowork preamble told every skill to skip each `aof` step when the CLI is absent, while shatter's step 6 says validate must pass before it finishes. So a Cowork run always ended in a state the skill itself calls blocking. A distinct incident from m66/F-45, which was prose promising a refusal the machinery does not make; this is two rules in one prompt that contradict each other. | defect | medium | fixed at the close: one preamble line says a check that did not run is not a failed one, so the run finishes, marks its report unvalidated and names each check to run from Claude Code or Codex. 165/03 E12 pins it. | 165 (verifier) | closed |
 | F-05 | E5 handed `/aof:shatter` the PRD path, so the auto-discovery branch (no argument, one `PRD-*.md` at the root) never ran in Cowork. Shatter states the rule inline (explicit path wins, else exactly one `PRD-*.md`, never guess, otherwise stop and ask). Its citation of `packages/core/src/planning-prd.mjs` names aof's own source, which a downstream repo does not have. Related to m126/F-29: a path exercised live on one branch only. | test-gap | low | non-blocker: E5 does not state discovery, and the rule is in the skill. The next Cowork session can run `/aof:shatter` with no argument once. | recorded (STATE feedback) | open |
 | F-06 | At E5, a Cowork task that was already running did not see the newly uploaded plugins; only a task started after the upload did. | enhancement | low | fixed at the close: the upload steps say to start a new Cowork task after uploading (165/03 E1) | 165 (verifier) | closed |
+| F-07 | Two projects whose cowork inits run at the same instant both remove and rewrite the one aof-home `cowork/` directory, so one run can fail mid-write and then record no lock entry. The end state is still a complete set with equal bytes. | defect | low | non-blocker (a review Nit at 165/03's amendment): a staged directory swap would remove the race | recorded (STATE) | open |
+
+## Accept decision
+
+**ACCEPTED** — 2026-10-20. The decision rests on:
+- the whole-tree regression gate, green at `1a3c4573`;
+- all seven fitness functions (FF-16501…16507) green, each red-probed;
+- 165/02's `@manual` live clone, re-run at verify;
+- the operator's sign-off of 165/03 `@uat` E5 in Cowork, with every Windows-side check holding;
+- validate passing, and doctor reporting no unresolved control.
+ blocker finding is closed (F-01, F-02, and F-04 and F-06, fixed at the close). Carried forward, all non-blocking:
+- F-03, the daemon's CPU, routed to the backlog milestone;
+- F-05, PRD auto-discovery not yet exercised in Cowork;
+- F-07, the concurrent-init race.

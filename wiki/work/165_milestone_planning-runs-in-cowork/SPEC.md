@@ -3,7 +3,7 @@ type: milestone
 number: 165
 slug: planning-runs-in-cowork
 title: "Planning runs in Cowork — `aof planning init --runtime cowork` delivers the planner and the PRD-to-roadmap seam as a Cowork plugin, alongside Claude and Codex"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-20
@@ -65,7 +65,7 @@ Out of scope:
 - [x] `00_story_planning-lock-records-each-runtime` — the lock keeps one planning entry per runtime; a new runtime is added without `--force`, and `--force` re-pins only the runtime it names (ADR-004).
 - [x] `01_story_planning-skills-render-as-a-cowork-plugin` — shatter and explain become `aof` skills, rendered from their command sources through the shared command-to-skill mapping, and packaged as a reproducible `.plugin` (ADR-002, ADR-005).
 - [x] `02_story_pinned-planner-is-packaged-for-cowork` — pm-skills' recommended plugins are packaged from a clone checked against the recorded commit (ADR-003).
-- [ ] `03_story_planning-init-delivers-cowork` — `aof planning init --runtime cowork` writes the packages, prints the upload steps and records an unconfirmed cowork entry; depends on 00, 01 and 02 (ADR-001).
+- [x] `03_story_planning-init-delivers-cowork` — `aof planning init --runtime cowork` writes the packages, prints the upload steps and records an unconfirmed cowork entry; depends on 00, 01 and 02 (ADR-001).
 
 00, 01 and 02 have no data dependency on each other. 01 and 02 both add a suite and an arch control, and they share the
 directory-budget file and the two test indexes, so the wave planner runs them one after the other. 00 runs beside

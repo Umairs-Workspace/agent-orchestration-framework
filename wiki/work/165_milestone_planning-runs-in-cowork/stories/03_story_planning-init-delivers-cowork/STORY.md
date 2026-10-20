@@ -4,7 +4,7 @@ number: 03
 slug: planning-init-delivers-cowork
 title: "Planning init delivers Cowork — aof planning init --runtime cowork writes the uploadable packages, prints the install steps and records an unconfirmed cowork entry beside claude and codex"
 parent: 165
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-20
