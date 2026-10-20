@@ -68,7 +68,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"git\", [\"ls-remote\", MARKETPLACE_GIT_URL, tagRef], {\n    encoding: \"utf8\",\n    shell: process.platform === \"win32\"\n  })",
     "digest": "3fa3e349bddb7393b817514c23b378032ac3f17c34a25ac3a2058edb2ef964a8",
-    "sourceDigest": "b0eac1fe43943459600fa1683ab30060c43f13883f58fb8208d98eae1efbeeab",
+    "sourceDigest": "7ce558e26ba6393d47f0cbcbee520e27af1c388818696314a3d3ec8084ee41fb",
     "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
   },
   {
@@ -76,7 +76,7 @@
     "kind": "child-process",
     "expression": "spawn(item.argv[0], item.argv.slice(1), {\n      stdio: \"inherit\",\n      shell: process.platform === \"win32\",\n      env: { ...process.env }\n    })",
     "digest": "1d2b72e0774d0285f637824937f7257f8a23fae7fe93fce11f801d96db05136c",
-    "sourceDigest": "b0eac1fe43943459600fa1683ab30060c43f13883f58fb8208d98eae1efbeeab",
+    "sourceDigest": "7ce558e26ba6393d47f0cbcbee520e27af1c388818696314a3d3ec8084ee41fb",
     "reason": "Git checks the selected marketplace ref; install argv is the declared marketplace plan."
   },
   {

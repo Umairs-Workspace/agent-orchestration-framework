@@ -4,10 +4,12 @@ Feature: Cowork is recorded beside claude and codex, on cowork's own terms
   WHY. Planning in Cowork while building in Claude Code needs both installs recorded, and neither
   may disturb the other. --scope chooses a Claude Code settings file, which means nothing to an
   account-level Cowork plugin, so naming it with cowork is refused rather than silently ignored.
-  The packages are rebuilt from the recorded commit at will, so they stay out of git.
+  The packages are the same for every project and Cowork installs them to the account, so they
+  live once in the aof home, and the project carries only its lock entry.
 
   Background:
     Given a target repo
+    And the aof home is an isolated temporary directory
     And the marketplace commit sha is resolved from a fixture so no network is touched
     And the planner source is a fixture tree at that commit
 
@@ -40,7 +42,7 @@ Feature: Cowork is recorded beside claude and codex, on cowork's own terms
       When I run "aof planning init --runtime cowork --scope <scope>"
       Then the command exits non-zero
       And the output says "--scope" applies only to claude
-      And no file exists under ".aof/cowork/"
+      And no file exists under the aof home's "cowork/"
       And the lock file is byte-for-byte what it was
 
       Examples:
@@ -54,10 +56,17 @@ Feature: Cowork is recorded beside claude and codex, on cowork's own terms
       Then the command exits 0
       And the lock's planning entry for "cowork" has no "scope" field
 
-  Rule: R4 · The generated packages stay out of git
+  Rule: R4 · The packages live once in the aof home, never in the project
 
-    Scenario: E10 · the packages are ignored by git
+    Scenario: E10 · the project holds only its lock entry
       Given the target repo is a git repository
       When I run "aof planning init --runtime cowork"
-      Then the file ".aof/cowork/.gitignore" holds exactly "*"
-      And "git status --porcelain" lists nothing under ".aof/cowork/"
+      Then "git status --porcelain" lists only ".aof/aof.lock.json"
+      And the lock's planning entry for "cowork" names every package by a relative path under "cowork/"
+
+    Scenario: E11 · a second project's run writes the same packages to the same place
+      Given a second target repo
+      When I run "aof planning init --runtime cowork" in the first repo and then in the second
+      Then both commands exit 0
+      And the aof home holds one set of packages under "cowork/"
+      And each package's bytes after the second run equal its bytes after the first

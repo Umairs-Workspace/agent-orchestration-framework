@@ -65,8 +65,9 @@
 //   165/ADR-001: cowork is a RENDER-AND-HAND-OVER runtime. Cowork has no plugin CLI,
 //     so its plan holds no spawn item: one `render` item (the aof plugin,
 //     165/ADR-002) and one `package` item per recommended planner plugin (165/ADR-003).
-//     A real run builds every package in memory, writes them under `.aof/cowork/` only
-//     if every step succeeded (165/ADR-005), prints the upload steps, and records the
+//     A real run builds every package in memory, writes them once under the aof
+//     home's `cowork/` only if every step succeeded (165/ADR-005, ADR-006), prints
+//     the upload steps, and records the
 //     install as unconfirmed — aof cannot see Cowork, so it never writes `true` there.
 //     `--scope` names a Claude Code settings file and is refused with cowork. Guarded
 //     by acd-planning-install-commands (FF-16505) and
@@ -76,6 +77,7 @@ import { spawnSync } from "node:child_process";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { readLock, writeLock } from "./lock.mjs";
 import { workspacePaths } from "./workspace.mjs";
+import { defaultGlobalWorkspaceDir } from "./paths.mjs";
 // The cowork modules (165/01, 165/02) load only on a real cowork run — inside
 // initCowork — so a verb that merely composes this command evaluates none of them
 // (FF-16004).
@@ -115,10 +117,12 @@ export const OPTIONAL_PLUGINS = ["pm-market-research"];
 
 const VALID_RUNTIMES = ["claude", "codex", "cowork"];
 
-// Where the cowork packages are written (165/ADR-005), relative to the target repo.
-// aof owns this directory whole: it is rebuilt on every cowork run and kept out of git
-// by its own `.gitignore`.
-export const COWORK_DIR = ".aof/cowork";
+// Where the cowork packages are written (165/ADR-006): once, under the aof home
+// (`~/.aof`, or AOF_GLOBAL_HOME), because they are the same for every project and
+// Cowork installs a plugin to the account. aof owns this directory whole and rebuilds
+// it on every cowork run. The lock names each package RELATIVE to the aof home — it
+// is committed, and a home directory is machine-specific.
+export const COWORK_DIR = "cowork";
 // The aof Cowork plugin's name and skills (165/ADR-002), rendered by
 // planning/cowork-plugin.mjs and recorded in the lock's cowork entry.
 export const PLANNING_PLUGIN_NAME = "aof";
@@ -129,12 +133,18 @@ export function coworkPackagePath(plugin) {
   return `${COWORK_DIR}/pm-skills/${plugin}.plugin`;
 }
 
-// The hand-over (165/ADR-001): how the operator installs what aof wrote. Never a
-// claim that anything was installed.
-export function coworkUploadSteps(paths) {
+// The aof home a cowork run writes under: `aofHome` when the caller injects one,
+// else the one global home every aof store uses.
+function coworkHome(options = {}) {
+  return path.resolve(options.aofHome ?? defaultGlobalWorkspaceDir());
+}
+
+// The hand-over (165/ADR-001): how the operator installs what aof wrote, each package
+// named by its full path. Never a claim that anything was installed.
+export function coworkUploadSteps(paths, aofHome) {
   return [
     "cowork: aof cannot install into Cowork. In the Claude desktop app, upload each package under Customize › Plugins › Add › Upload plugin:",
-    ...paths.map((entry) => `  ${entry}`),
+    ...paths.map((entry) => `  ${path.join(aofHome, entry)}`),
     `Next, connect this repo's folder in Cowork and run /${PLANNING_PLUGIN_NAME}:shatter.`,
     "note: the Cowork install is not confirmed — aof cannot see Cowork, so the lock records installConfirmed: false."
   ];
@@ -620,11 +630,14 @@ export async function initPlanning(options = {}) {
 // The cowork path (165/ADR-001): render and hand over. The dry-run resolves nothing,
 // clones nothing and writes nothing. A real run builds every package in memory — the
 // pinned planner (165/02) and the aof plugin (165/01), each zipped (165/ADR-005)
-// — and writes `.aof/cowork/` and the lock entry only once all of them succeeded.
+// — and writes the aof home's `cowork/` (165/ADR-006) and the lock entry only once
+// all of them succeeded. Nothing but the lock is written inside the project.
 async function initCowork({ options, targetDir, dryRun, force, withOptional, log, lockPath }) {
   const runtime = "cowork";
   const plan = planPlanningInstall({ runtime, withOptional });
   const packages = plan.map((item) => item.path);
+  const aofHome = coworkHome(options);
+  const coworkDir = path.join(aofHome, COWORK_DIR);
   const result = (fields) => ({
     runtime,
     targetDir,
@@ -642,13 +655,14 @@ async function initCowork({ options, targetDir, dryRun, force, withOptional, log
     manifestPath: lockPath,
     manifestWritten: false,
     packages,
+    coworkDir,
     ...fields
   });
 
   if (dryRun) {
     log("dry-run: the following Cowork packages would be written (nothing cloned, nothing written):");
-    for (const entry of packages) log(`  ${entry}`);
-    for (const line of coworkUploadSteps(packages)) log(line);
+    for (const entry of packages) log(`  ${path.join(aofHome, entry)}`);
+    for (const line of coworkUploadSteps(packages, aofHome)) log(line);
     return result({ sha: SHA_PLACEHOLDER });
   }
 
@@ -681,12 +695,10 @@ async function initCowork({ options, targetDir, dryRun, force, withOptional, log
   const outputs = { [COWORK_BUNDLE_PATH]: zipStored(renderPlanningPlugin()) };
   for (const entry of planner.packages) outputs[coworkPackagePath(entry.name)] = zipStored(entry.files);
 
-  const coworkDir = path.join(targetDir, COWORK_DIR);
   await rm(coworkDir, { recursive: true, force: true });
   await mkdir(path.join(coworkDir, "pm-skills"), { recursive: true });
-  await writeFile(path.join(coworkDir, ".gitignore"), "*\n", "utf8");
-  for (const [relative, bytes] of Object.entries(outputs)) await writeFile(path.join(targetDir, relative), bytes);
-  for (const line of coworkUploadSteps(packages)) log(line);
+  for (const [relative, bytes] of Object.entries(outputs)) await writeFile(path.join(aofHome, relative), bytes);
+  for (const line of coworkUploadSteps(packages, aofHome)) log(line);
 
   const manifest = buildManifest({ runtime, sha: resolved, withOptional, generatedAt: new Date().toISOString() });
   await writePlanningEntry(lockPath, runtime, manifest);

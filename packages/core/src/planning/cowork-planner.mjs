@@ -5,7 +5,7 @@
 // the outcome. Each recommended plugin becomes one standalone file map: its own folder
 // exactly as it is at the commit, plus the repository's root LICENSE (MIT, root only —
 // RESEARCH R3). pm-ai-shipping is never packaged. This module returns file maps only;
-// zipping and writing under `.aof/cowork/` is planning init's (165/03).
+// zipping and writing under the aof home's `cowork/` is planning init's (165/03).
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdtemp, readdir, readFile, rm } from "node:fs/promises";

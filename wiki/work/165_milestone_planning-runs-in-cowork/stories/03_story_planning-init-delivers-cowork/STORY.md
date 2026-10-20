@@ -7,12 +7,12 @@ parent: 165
 status: in-review
 owner: product-owner
 created: 2026-10-19
-updated: 2026-10-19
+updated: 2026-10-20
 schema: 1
 aofVersion: 0.1.0
 depends: [00, 01, 02]
-reads: [wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-001, wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-004, wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-005, wiki/work/165_milestone_planning-runs-in-cowork/RESEARCH.md, wiki/work/165_milestone_planning-runs-in-cowork/stories/03_story_planning-init-delivers-cowork/EXAMPLES.md, wiki/work/165_milestone_planning-runs-in-cowork/stories/03_story_planning-init-delivers-cowork/PLAN.md, packages/core/src/planning-init.mjs, packages/core/src/planning/cowork-plugin.mjs, packages/core/src/planning/stored-zip.mjs, packages/core/src/planning/cowork-planner.mjs, packages/core/src/lock.mjs, packages/core/src/workspace.mjs, packages/core/src/render-plan.mjs]
-files: [packages/core/src/planning-init.mjs, packages/core/src/commands/planning-init.mjs, packages/core/src/cli.mjs, packages/core/test/planning-init.suite.mjs, test/arch/planning/acd-planning-install-commands.test.mjs, test/arch/planning/acd-planning-cowork-install-unconfirmed.test.mjs, test/arch/planning/index.mjs, test/arch/testing/acd-source-directory-budget.test.mjs]
+reads: [wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-001, wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-004, wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-005, wiki/work/165_milestone_planning-runs-in-cowork/ARCHITECTURE.md#adr-006, wiki/work/165_milestone_planning-runs-in-cowork/RESEARCH.md, wiki/work/165_milestone_planning-runs-in-cowork/stories/03_story_planning-init-delivers-cowork/EXAMPLES.md, wiki/work/165_milestone_planning-runs-in-cowork/stories/03_story_planning-init-delivers-cowork/PLAN.md, packages/core/src/planning-init.mjs, packages/core/src/planning/cowork-plugin.mjs, packages/core/src/planning/stored-zip.mjs, packages/core/src/planning/cowork-planner.mjs, packages/core/src/lock.mjs, packages/core/src/workspace.mjs, packages/core/src/paths.mjs, packages/core/src/render-plan.mjs]
+files: [packages/core/src/planning-init.mjs, packages/core/src/commands/planning-init.mjs, packages/core/src/cli.mjs, packages/core/src/planning/cowork-plugin.mjs, packages/core/src/planning/cowork-planner.mjs, packages/core/test/planning-init.suite.mjs, test/fixtures/application/command-inventory.json, test/arch/planning/acd-planning-install-commands.test.mjs, test/arch/planning/acd-planning-cowork-install-unconfirmed.test.mjs, test/arch/planning/index.mjs, test/arch/testing/acd-source-directory-budget.test.mjs]
 ---
 # 03 · Planning init delivers Cowork
 
@@ -40,6 +40,9 @@ the claude install the repo already records.**
   per-runtime writer.
 - **The entry** carries m02's schema plus
   `plugins[].package` and `cowork: { bundle, skills, installConfirmed: false }`.
+- **Where the packages go** (ADR-006, amended at verify 2026-10-20, Q4): once, in the aof home,
+  as `<aof home>/cowork/aof.plugin` and `<aof home>/cowork/pm-skills/<plugin>.plugin`. The entry
+  names them relative to the aof home, and nothing but the lock is written in the project.
 - **FF-16505** extends `acd-planning-install-commands`. **FF-16506** is a new arch file, with
   `test/arch/planning` +1.
 - **@uat** E5 is the SPEC's outsider check. It needs a live Cowork session, and the operator

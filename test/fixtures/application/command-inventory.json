@@ -3186,7 +3186,7 @@
           },
           "runtime": {
             "type": "string",
-            "description": "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages under .aof/cowork/"
+            "description": "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages once under the aof home (~/.aof/cowork/)"
           },
           "scope": {
             "type": "string",

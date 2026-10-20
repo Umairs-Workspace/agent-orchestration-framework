@@ -3,7 +3,7 @@
 // codex also uses (`commandAsSkill` with the cowork entry). Each skill's body is the
 // cowork preamble followed by the command's body unchanged (FF-16502); refine is
 // never shipped. This module returns a file map only — writing it under
-// `.aof/cowork/` is planning init's (165/03).
+// the aof home's `cowork/` is planning init's (165/03).
 import { packageVersionString } from "../asset-base.mjs";
 import { loadBundle } from "../work/bundle.mjs";
 import { commandAsSkill, commandSkillMapping } from "../work/bundle-runtime.mjs";

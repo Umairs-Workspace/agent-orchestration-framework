@@ -271,6 +271,7 @@ export const archTests = [
     name: "arch/FF-16505: a cowork --dry-run resolves no sha, clones nothing, spawns nothing and writes nothing",
     run: async () => {
       const repo = await mkdtemp(path.join(os.tmpdir(), "aof-arch-planning-cowork-dry-"));
+      const aofHome = await mkdtemp(path.join(os.tmpdir(), "aof-arch-planning-cowork-home-"));
       let launches = 0;
       const prevEnv = process.env.AOF_PLANNING_SHA;
       delete process.env.AOF_PLANNING_SHA;
@@ -279,17 +280,20 @@ export const archTests = [
           targetDir: repo,
           runtime: "cowork",
           dryRun: true,
+          aofHome,
           spawn: () => { launches += 1; return { status: 0, stdout: "" }; },
           plannerClone: () => { launches += 1; return { ok: false }; },
           log: () => {}
         });
         assert.equal(launches, 0, "nothing spawned and nothing cloned");
         assert.equal(result.sha, "<sha>", "no sha was resolved");
-        assert.deepEqual(await readdir(repo), [], "nothing was written");
+        assert.deepEqual(await readdir(repo), [], "nothing was written in the project");
+        assert.deepEqual(await readdir(aofHome), [], "nothing was written in the aof home");
       } finally {
         if (prevEnv === undefined) delete process.env.AOF_PLANNING_SHA;
         else process.env.AOF_PLANNING_SHA = prevEnv;
         await rm(repo, { recursive: true, force: true });
+        await rm(aofHome, { recursive: true, force: true });
       }
     }
   }

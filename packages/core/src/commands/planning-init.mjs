@@ -65,7 +65,7 @@ export const planningInitCommand = {
         dryRun: { type: "boolean", description: "preview the runtime commands without running or writing anything" },
         force: { type: "boolean", description: "re-pin and re-install the named runtime over its recorded planning entry" },
         withOptional: { type: "boolean", description: "also install the optional pm-market-research plugin" },
-        runtime: { type: "string", description: "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages under .aof/cowork/" },
+        runtime: { type: "string", description: "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages once under the aof home (~/.aof/cowork/)" },
         scope: { type: "string", description: "claude settings scope for the declarations (user | project | local; default project); refused with cowork" },
       },
     },
@@ -86,7 +86,7 @@ export const planningInitCommand = {
       if (result.runtime === "cowork") {
         // 165/ADR-001: the packages were written; the Cowork install is the operator's
         // and is never claimed here (the upload steps are already in the notes above).
-        lines.push(`Cowork: wrote ${result.packages.length} package(s) under .aof/cowork/; the Cowork install is not confirmed.`);
+        lines.push(`Cowork: wrote ${result.packages.length} package(s) under ${result.coworkDir}; the Cowork install is not confirmed.`);
       } else if (result.runtime === "claude") {
         lines.push(`Installed ${result.manifest.plugins.length} planner plugin(s): ${result.manifest.plugins.map((entry) => entry.name).join(", ")}.`);
       } else {

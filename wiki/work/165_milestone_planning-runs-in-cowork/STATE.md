@@ -75,6 +75,20 @@ Diagrams: none. Each ADR is a linear flow with no moving parts that a picture wo
 
 ## Feedback (for retro)
 
+- 165/03 · **Amended at verify (2026-10-20), Q4.** The operator asked why the Cowork packages sat
+  in each project's `.aof/cowork/` when they are the same everywhere and Cowork installs to the
+  account. Refine had defaulted the location (Q4 `defaulted ADR-005`) without asking. ADR-006 moves
+  them to the aof home's `cowork/`, and the lock records them relative to it. FF-16507 pins this,
+  red-probed two ways. 03 was reopened, rebuilt and re-reviewed. The lesson is about a default
+  that shapes what the operator sees, not about a technical detail.
+- 165/03 · The rebuild's first run was minted with no session id, so the doctor's example-answers
+  rung could not read the operator's recorded Q4 answer. The run was cancelled and re-minted with
+  `--session`.
+- 165/03 · Recorded at the review close (Nit): two projects whose cowork inits run at the same
+  instant both remove and rewrite the one `cowork/` directory, so one can fail mid-write (and then
+  write no lock entry). The end state is still complete and the bytes are equal. A staged
+  directory swap would remove the race.
+
 - 165/00 · `files:` was incomplete. The build also changed the `--force` help text in
   `packages/core/src/commands/planning-init.mjs` (now "re-pin and re-install the named runtime over
   its recorded planning entry"). That file was in `reads:` but not in `files:`.

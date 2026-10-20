@@ -11,7 +11,7 @@ from one per lock to one per runtime.
 
 ## ADR-001: Cowork is a render-and-hand-over runtime — aof writes uploadable packages, spawns nothing, and records the install as unconfirmed
 
-**Status:** Accepted
+**Status:** Accepted; where the packages are written is amended by ADR-006
 **Date:** 2026-10-19
 
 **Context.** Cowork has no plugin CLI, so there is nothing for aof to spawn. A plugin gets in
@@ -154,7 +154,7 @@ leaves every non-`planning` section of the lock intact (FF-16501).
 
 ## ADR-005: Packages are written by an in-repo, deterministic stored-zip writer into `.aof/cowork/`
 
-**Status:** Accepted
+**Status:** Accepted; its output paths are superseded by ADR-006
 **Date:** 2026-10-19
 
 **Context.** There is no zip dependency, and installs are restricted (AGENTS.md supply-chain
@@ -178,6 +178,45 @@ two packages is meaningful.
 **Invariant.** The same file map always produces the same bytes, and the writer imports only
 `node:` built-ins (FF-16503).
 
+## ADR-006: The Cowork packages live once, in the aof home, not in each project
+
+**Status:** Accepted (supersedes ADR-005's output paths)
+**Date:** 2026-10-20
+
+**Context.** ADR-005 put the packages under the project's `.aof/cowork/`, as a refine default
+(165/03 Q4) nobody was asked about. The operator questioned it at verify. Every package is the
+same for every project. `aof.plugin` is rendered from aof's own bundled command sources, so it
+depends only on the aof version. The planner packages come from the pinned commit, and
+`MARKETPLACE_REF` is a constant of aof, not of a project. Cowork saves an uploaded plugin to the
+Claude account (RESEARCH R2), so one upload already serves every project. A copy per repo
+multiplied identical files, needed its own `.gitignore` (Q2), and its output suggested a
+per-project install that does not exist.
+
+**Decision.** A cowork run writes its packages under the aof home: `<aof home>/cowork/aof.plugin`
+and `<aof home>/cowork/pm-skills/<plugin>.plugin`. The aof home is `~/.aof`, or
+`AOF_GLOBAL_HOME` when it is set, read through `defaultGlobalWorkspaceDir`, the one home every
+global aof store uses. `initPlanning` takes `aofHome` to override it. The project's lock entry
+still records the run (runtime, the 40-hex sha, `installConfirmed: false`), so it keeps meaning
+"this project plans in Cowork". It names each package by its path relative to the aof home
+(`cowork/aof.plugin`), never by an absolute path, because the lock is committed and a home
+directory is machine-specific. The printed upload steps name the absolute paths, so the operator
+can find the files. Nothing is written inside the project except the lock, so no `.gitignore` is
+needed. The writer, the in-memory build and the all-or-nothing write are ADR-005's, unchanged.
+
+**Alternatives considered.**
+- *Keep `.aof/cowork/` per project.* Rejected for the reasons above.
+- *Key the directory by aof version and sha* (`cowork/<version>-<sha>/`). Rejected for now: a
+  re-run rebuilds identical bytes, and the operator uploads the newest. Old directories would
+  need a pruner. Revisit if two aof versions must coexist on one machine.
+
+**Consequences.** A second project's cowork run rewrites the same files with the same bytes. A
+lock entry written by the pre-ADR-006 build names `.aof/cowork/…` paths. No such entry was
+released, so there is nothing to migrate.
+
+**Invariant.** A cowork run writes nothing inside the target project except
+`.aof/aof.lock.json`, and every package path its lock entry records is relative and under
+`cowork/` (FF-16507).
+
 ## Fitness functions
 
 | id | invariant | enforced by (arch-test) | from |
@@ -188,3 +227,4 @@ two packages is meaningful.
 | FF-16504 | A planner package is produced only from a tree whose `HEAD` equals the resolved 40-hex sha, cloned over HTTPS at `MARKETPLACE_REF`; `pm-ai-shipping` is never packaged; every package carries `LICENSE` | `test/arch/planning/acd-cowork-planner-pinned.test.mjs` | ADR-003 |
 | FF-16505 | The cowork plan holds no spawn item and the planning-init source names no `cowork plugin` verb; a cowork `--dry-run` writes nothing and spawns nothing | `test/arch/planning/acd-planning-install-commands.test.mjs` (extended by 165/03) | ADR-001 |
 | FF-16506 | The cowork lock entry records `cowork.installConfirmed: false`, and no planning-init output line claims a cowork install happened | `test/arch/planning/acd-planning-cowork-install-unconfirmed.test.mjs` | ADR-001 |
+| FF-16507 | A cowork run writes nothing inside the target project except `.aof/aof.lock.json`; every package path its lock entry records is relative and under `cowork/` | `test/arch/planning/acd-planning-cowork-install-unconfirmed.test.mjs` (extended at 165/03's amendment) | ADR-006 |
