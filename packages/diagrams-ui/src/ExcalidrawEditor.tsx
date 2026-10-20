@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { CaptureUpdateAction, Excalidraw, restoreElements, serializeAsJSON } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import "@excalidraw/excalidraw/index.css";
-import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./diagrams.mjs";
+import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, touchedIds } from "./editor-state.mjs";
 
 type Scene = { type: "excalidraw"; version: 2; elements: unknown[]; appState: Record<string, unknown>; files: Record<string, unknown> };
 type SceneResponse = { ref: string; file: string; present: boolean; revision: string | null; scene: Scene; readOnly: boolean };

@@ -35,6 +35,28 @@ async function withApi(run) {
 }
 
 export const diagramSceneApiTests = [
+  { name: "capability api: GET invokes diagram:capability with no input and answers it verbatim", run: () => withApi(async ({ calls, request, workspace }) => {
+    const response = await request("GET", "/api/diagram/capability");
+    assert.equal(response.status, 200);
+    assert.equal(response.headers["cache-control"], "no-store");
+    assert.deepEqual(calls, [{ id: "diagram:capability", input: {}, ctx: { workspace } }]);
+    assert.deepEqual(response.body, { delivered: true, id: "diagram:capability", input: {} });
+  }) },
+  { name: "capability api: a build without the diagrams package answers absent, off, and no editor — 200, not an error", run: () => withApi(async ({ request, setFailure }) => {
+    setFailure(new Error('Unknown command id "diagram:capability".'));
+    const response = await request("GET", "/api/diagram/capability");
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, { absent: true, enabled: false, editor: false, generator: "off" });
+  }) },
+  { name: "capability api: any other failure keeps its status and code, and POST is not a capability read", run: () => withApi(async ({ calls, request, setFailure, port }) => {
+    setFailure(Object.assign(new Error("config unreadable"), { status: 500, code: "config-invalid" }));
+    const failed = await request("GET", "/api/diagram/capability");
+    assert.equal(failed.status, 500); assert.deepEqual(failed.body, { ok: false, error: "config unreadable", code: "config-invalid" });
+    const host = `127.0.0.1:${port}`;
+    const posted = await request("POST", "/api/diagram/capability", { headers: { host, origin: `http://${host}`, "content-type": "application/json" }, body: "{}" });
+    assert.equal(posted.status, 404);
+    assert.equal(calls.length, 1);
+  }) },
   { name: "scene api: GET invokes the scene reader with its exact query shape", run: () => withApi(async ({ calls, request, workspace }) => {
     const response = await request("GET", "/api/diagram/scene?ref=%2007%20&file=%20ADR-002-scene.excalidraw%20");
     assert.equal(response.status, 200);

@@ -1,5 +1,4 @@
 import { runtimeObserveTests } from "./runtime-observe.suite.mjs";
-import { diagramLayoutTests } from "./diagram-layout.suite.mjs";
 import { gradeRecordVocabulariesTests } from "./grade-record-vocabularies.suite.mjs";
 import { loopReadyScoreTests } from "./loop-ready-score.suite.mjs";
 import { l3AnchorCheckScoreTests } from "./l3-anchor-check-score.suite.mjs";
@@ -35,7 +34,6 @@ import { localChangeTests } from "./local-change.suite.mjs";
 
 export const tests = [
   ...runtimeObserveTests,
-  ...diagramLayoutTests,
   ...gradeRecordVocabulariesTests,
   ...loopReadyScoreTests,
   ...l3AnchorCheckScoreTests,

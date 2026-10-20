@@ -37,6 +37,8 @@ import { graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
 import { projectProvisionCommand } from "../../commands/project-provision.mjs";
 import { createNotionContribution } from "@aof/integration-notion/commands";
+// diagram:* — @aof/diagrams' own contribution, registered as one unit core can leave out.
+import { createDiagramsContribution } from "@aof/diagrams/contribution";
 import { useHeadroomCommand, unuseHeadroomCommand } from "../../commands/headroom.mjs";
 // work:orchestrator / work:delegation / work:delegation-model — m42 — see ./commands/orchestrator-delegation.mjs's header.
 import { workOrchestratorCommand, workDelegationCommand, workDelegationModelCommand } from "../../commands/orchestrator-delegation.mjs";
@@ -137,7 +139,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   // diagram:export — milestone 133 — see ./commands/diagram/export.mjs's header.
   const { diagramExportCommand } = commandsDiagramExportServices;
   // diagram:file — milestone 133 — see ./commands/diagram/file.mjs's header.
-  const { diagramFileCommand, diagramSceneCommand } = commandsDiagramFileServices;
+  const { diagramFileCommand, diagramSceneCommand, diagramCapabilityCommand } = commandsDiagramFileServices;
   // messaging:init / messaging:enable / messaging:disable / messaging:status / messaging:test — 131/08 — see ./commands/messaging/messaging.mjs's header.
   const { messagingContribution } = commandsMessagingMessagingServices;
   const { workUiCommand } = commandsWorkUiServices;
@@ -262,7 +264,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     createKnowledgeContribution([
       graphServeCommand,
     ]),
-    createWorkContribution([diagramPlanCommand, diagramExportCommand, diagramFileCommand, diagramSceneCommand]),
+    createDiagramsContribution([diagramPlanCommand, diagramExportCommand, diagramFileCommand, diagramSceneCommand, diagramCapabilityCommand]),
     messagingContribution,
     createServerContribution(workUiCommand),
     { name: "aof", commands: [assetsUiCommand] },

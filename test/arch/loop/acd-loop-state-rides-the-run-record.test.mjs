@@ -215,7 +215,32 @@ function assertUiFrozen(pairs) {
   // helpers), `Markdown.tsx` (+45 −20: the lazy editor and its viewer controls) and `DetailPanel.tsx`
   // (+4 −4: threads `onRunAgent` to the editor). It reads `/api/diagram/scene` only. No fleet or home
   // file, run-record key, cycle, level or loop state is read.
-  assert.equal(hash.digest("hex"), "399468f4d3b7c661928b4f2a7d757b79e530c65ab042de618a8ab9c241f8a535", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED when diagramming became its own package pair (@aof/diagrams-ui, the browser half), measured:
+  // `git diff --numstat HEAD -- apps/ui/src apps/ui/package.json apps/ui/vite.config.ts` is SEVEN files —
+  // `board/ExcalidrawEditor.tsx` (−237: MOVED whole to `packages/diagrams-ui/src/`), `board/diagrams.mjs` (−92)
+  // and `board/diagrams.d.mts` (−16: the editor's pure state MOVED to that package's `editor-state.mjs`/`.d.mts`;
+  // the figure stays), `board/Markdown.tsx` (+3 −1: the same one lazy `import()`, now of `@aof/diagrams-ui/editor`),
+  // `package.json` (+1 −1: `@aof/diagrams-ui` in, `@excalidraw/excalidraw` out), `index.css` (+2: Tailwind
+  // `@source` for the library) and `vite.config.ts` (+3 −2: the SDK fonts resolved through the library's seam).
+  // Nothing new is read: the board's one read of `/api/diagram/scene` moved with the editor, and no fleet or
+  // home file, run-record key, cycle, level or loop state is read.
+  // RE-PINNED by the diagrams opt-out seam, measured on top of the move above: `git diff --numstat HEAD --
+  // apps/ui/src` adds `board/api.ts` (+8: the `DiagramCapability` type and `workApi.diagramCapability`, one GET
+  // of `/api/diagram/capability`), `board/Markdown.tsx` (+25 −6: `DiagramMarkdown` asks the injected
+  // `capability` once per mount and the viewer shows Edit draft only when the editor is on) and
+  // `board/DetailPanel.tsx` (+1 −1: the one call passes the asker). It reads the capability answer only; no
+  // fleet or home file, run-record key, cycle, level or loop state is read.
+  // RE-PINNED by the `/diagram` route, measured on top of the two above: `git diff --numstat HEAD -- apps/ui/src`
+  // now also holds `app/routes.mjs` (+7: the fifth addressable row and its comment), `app/routes.d.mts` (+3 −3:
+  // `diagram` in `RouteId`), `app/shell-nav.mjs` (+7 −1) and `app/shell-nav.d.mts` (+4: the exported unlisted set, so the bar keeps four and the nav suite derives its expectation from it),
+  // `app/shell-layout.mjs` (+2: the editor is `content:fixed`), `main.tsx` (+4: the surface, handed its address)
+  // and FIVE new files under `apps/ui/src/diagram/` (the surface, its address vocabulary and its dock mount, each
+  // `.mjs` with its `.d.mts`); `board/Markdown.tsx` (+46 −43 net of the move) turns Edit draft into a LINK built
+  // by the surface's address module and drops the lazy editor, and `board/DetailPanel.tsx` (+4 −4) drops the
+  // `onRunAgent` thread PR #13 added. Nothing new is read: the editor's reads moved with it to the diagram
+  // surface and its dock binds a `local-pty` exactly as the board's does; no fleet or home file, run-record
+  // key, cycle, level or loop state is read.
+  assert.equal(hash.digest("hex"), "f2c41d00829e4151471fde3bb5f06edca0a5d419f62c404e4e01488462d80d0e", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -368,7 +393,10 @@ export const archTests = [
         // RE-PINNED by PR #13: one `/api/diagram/scene` branch onto `diagram:scene`; no run key, GETs unchanged.
         // RE-PINNED by 142: transport factory relocation only; all exported function bodies
         // match the prior source and HTTP integration tests retain routing/persistence coverage.
-        ["packages/server/src/board-ui.mjs", "4cf5240cf64d5cea4c1b8629d8ea1f3a10d97cbbce76623ed2443b7d6b1c7517"],
+        // RE-PINNED by the diagrams opt-out seam: one GET `/api/diagram/capability` branch onto
+        // `diagram:capability` (+16, all inside `handleDiagramApi`, with the absent-package answer); no
+        // admission added, no run key read, `handleWorkApi` byte-identical.
+        ["packages/server/src/board-ui.mjs", "d4c7e3f3aacae5191b7219d12f9859305e158193c147b114e16d777abb110c45"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

@@ -6,9 +6,9 @@
 // The names below are the CONTRACT, not an implementation detail: the fitness functions
 // and three downstream milestones bind to `routeFor` and `legacyRedirectFor`.
 
-// The five route ids of ADR-002's table. `landing` (not `home`) is deliberate — "/" is the
+// The six route ids of ADR-002's table (`diagram` joined it as the editor's own address). `landing` (not `home`) is deliberate — "/" is the
 // shell landing, and milestone 49 replaces what it RENDERS, never the route.
-export type RouteId = "landing" | "fleet" | "board" | "config" | "not-found";
+export type RouteId = "landing" | "fleet" | "board" | "config" | "diagram" | "not-found";
 
 // One row of the table. `path` is null for `not-found` alone: it is not addressable, it is
 // what every address the table does not know resolves to. Entries are frozen at runtime.
@@ -37,7 +37,7 @@ export interface CanonicalUrlParts {
 // The shell's not-found surface — ONE shared entry, never one per typo.
 export declare const NOT_FOUND_ROUTE: RouteEntry;
 
-// ADR-002's table: four addressable entries plus the shared not-found entry.
+// ADR-002's table: five addressable entries plus the shared not-found entry.
 export declare const ROUTES: readonly RouteEntry[];
 
 // Total over every input, including a non-string one: an unknown, shapeless or hostile

@@ -181,20 +181,21 @@ export const appRoutesTests = [
   {
     name: "app-routes/00 the table is total, deterministic and single-valued — frozen against caller mutation, and blind to any second argument (00 scenario 6)",
     run() {
-      // FOUR addressable entries plus ONE not-found entry.
+      // FOUR addressable entries plus ONE not-found entry — FIVE since the diagram editor's own
+      // address (`/diagram`) joined the table; the nav still lists four (diagram-address.suite.mjs).
       const addressable = ROUTES.filter((route) => route.path !== null);
       const notFound = ROUTES.filter((route) => route.path === null);
-      assert.equal(addressable.length, 4, "the table holds exactly FOUR addressable entries");
+      assert.equal(addressable.length, 5, "the table holds exactly FIVE addressable entries");
       assert.equal(notFound.length, 1, "…plus exactly ONE not-found entry");
-      assert.equal(ROUTES.length, 5);
+      assert.equal(ROUTES.length, 6);
       assert.deepEqual(notFound[0], NOT_FOUND_ROUTE);
 
       // Pairwise distinct: no path names two surfaces, and no surface is named by two paths.
       const ids = ROUTES.map((route) => route.id);
-      assert.deepEqual(ids, ["landing", "fleet", "board", "config", "not-found"]);
-      assert.equal(new Set(ids).size, 5, "the five names are pairwise distinct");
+      assert.deepEqual(ids, ["landing", "fleet", "board", "config", "diagram", "not-found"]);
+      assert.equal(new Set(ids).size, 6, "the six names are pairwise distinct");
       const paths = addressable.map((route) => route.path);
-      assert.equal(new Set(paths).size, 4, "no path appears twice in the table");
+      assert.equal(new Set(paths).size, 5, "no path appears twice in the table");
 
       // Every addressable entry answers for its own path.
       for (const route of addressable) {
@@ -202,7 +203,7 @@ export const appRoutesTests = [
       }
 
       // Deterministic: no memo, no hidden state, no dependence on call order.
-      for (const pathname of ["/", "/fleet", "/board", "/config", "/nope"]) {
+      for (const pathname of ["/", "/fleet", "/board", "/config", "/diagram", "/nope"]) {
         assert.deepEqual(routeFor(pathname), routeFor(pathname), `routeFor("${pathname}") answers deep-equal twice in a row`);
       }
 
@@ -227,7 +228,7 @@ export const appRoutesTests = [
       }
       assert.equal(routeFor("/fleet").id, "fleet", "a mutated entry does not change what the next call answers");
       assert.equal(routeFor("/fleet").path, "/fleet");
-      assert.equal(ROUTES.length, 5, "the exported table cannot be extended by a caller");
+      assert.equal(ROUTES.length, 6, "the exported table cannot be extended by a caller");
       assert.equal(routeFor("/smuggled").id, "not-found");
 
       // ORIGIN-BLIND (ADR-002): the table takes a pathname and nothing else, so there is no

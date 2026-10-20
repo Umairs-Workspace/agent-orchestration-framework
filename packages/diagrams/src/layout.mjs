@@ -1,5 +1,5 @@
 import { commandError } from "@aof/contracts/error";
-import { headingCaptureRe, idForm } from "../declared-id.mjs";
+import { headingCaptureRe, idForm } from "@aof/work/declared-id";
 
 // THE ONE HOME of a diagram's place and spelling (milestone 133, ADR-003; FF-13302). Three parties
 // must agree on it — the writer (`aof diagram plan` / `export`), the reader (the doctor lane) and

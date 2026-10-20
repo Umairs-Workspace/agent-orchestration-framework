@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { mkdtemp, mkdir, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { createDiagramSceneCommand } from "../../packages/work/src/commands/diagram/scene.mjs";
+import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
 
 const file = "ADR-002-scene.excalidraw";
 const box = (id, extra = {}) => ({ id, type: "rectangle", x: 1, y: 2, width: 30, height: 40, ...extra });

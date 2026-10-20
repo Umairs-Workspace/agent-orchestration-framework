@@ -33,7 +33,7 @@ import { resolveManagedBinary, toolDescriptors } from "../../tool-store.mjs";
 import { delimiter } from "node:path";
 import { spawnSync } from "node:child_process";
 import { statSync } from "node:fs";
-import { generatorIds } from "../../diagrams/generators.mjs";
+import { generatorIds } from "@aof/diagrams/generators";
 import { inspectMemoryConfiguration } from "@aof/knowledge/memory";
 import { agentModeFromConfig } from "@aof/contracts/agent-mode";
 export function assembleConfigInspect({ dslServices, fsServices, workspaceServices, degradeServices }) {

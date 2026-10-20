@@ -17,6 +17,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/diagrams-ui@workspace:*, @aof/diagrams-ui@workspace:packages/diagrams-ui":
+  version: 0.0.0-use.local
+  resolution: "@aof/diagrams-ui@workspace:packages/diagrams-ui"
+  dependencies:
+    "@excalidraw/excalidraw": "npm:0.18.0"
+  peerDependencies:
+    react: ^19.0.0
+    react-dom: ^19.0.0
+  languageName: unknown
+  linkType: soft
+
+"@aof/diagrams@workspace:*, @aof/diagrams@workspace:packages/diagrams":
+  version: 0.0.0-use.local
+  resolution: "@aof/diagrams@workspace:packages/diagrams"
+  dependencies:
+    "@aof/contracts": "workspace:*"
+    "@aof/work": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@aof/effects@workspace:*, @aof/effects@workspace:packages/effects":
   version: 0.0.0-use.local
   resolution: "@aof/effects@workspace:packages/effects"
@@ -86,6 +106,8 @@ __metadata:
   resolution: "@aof/repository@workspace:."
   dependencies:
     "@aof/contracts": "workspace:*"
+    "@aof/diagrams": "workspace:*"
+    "@aof/diagrams-ui": "workspace:*"
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
@@ -139,8 +161,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/ui@workspace:apps/ui"
   dependencies:
+    "@aof/diagrams-ui": "workspace:*"
     "@aof/messaging": "workspace:*"
-    "@excalidraw/excalidraw": "npm:0.18.0"
     "@radix-ui/react-scroll-area": "npm:^1.2.10"
     "@radix-ui/react-slot": "npm:^1.1.0"
     "@tailwindcss/vite": "npm:^4.0.0"
@@ -2592,6 +2614,7 @@ __metadata:
   resolution: "aof@workspace:packages/core"
   dependencies:
     "@aof/contracts": "workspace:*"
+    "@aof/diagrams": "workspace:*"
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"

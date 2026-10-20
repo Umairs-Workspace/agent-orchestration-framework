@@ -4,7 +4,6 @@ import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from 'node:fs/promi
 import os from 'node:os';
 import path from 'node:path';
 import { createWorkDoctor } from '../src/doctor/index.mjs';
-import { createDoctorDiagrams } from '../src/doctor/diagrams.mjs';
 import { isDriver } from '../src/dependencies.mjs';
 import { syncGroup, syncLine, syncSummary, durationLabel } from '../src/doctor/sync.mjs';
 
@@ -38,15 +37,6 @@ test('doctor reads execution only when a record exists and uses supplied project
   assert.deepEqual(second.items[0].loopEngagements, ['injected-loop']);
   assert.equal(await readFile(path.join(dir, 'SPEC.md'), 'utf8'), record, 'the snapshot does not rewrite records');
 }));
-
-test('diagram checks receive caller configuration without loading application configuration', () => {
-  const seen = [];
-  const api = createDoctorDiagrams({ resolveWorkDiagrams: config => { seen.push(config); return { enabled: true, formats: ['svg', 'png'] }; } });
-  assert.deepEqual(seen, []);
-  const config = { supplied: true };
-  assert.deepEqual(api.diagramsGroup({ items: [] }, { config }), []);
-  assert.deepEqual(seen, [config]);
-});
 
 // 164/03 — the sync lane is a pure function of the facts the command edge hands it.
 

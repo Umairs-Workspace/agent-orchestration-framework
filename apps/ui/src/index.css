@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* The editor lives in @aof/diagrams-ui, outside this app's root: name its sources so its utilities are generated. */
+@source "../../../packages/diagrams-ui/src";
 
 @theme {
   --color-background: hsl(210 18% 96%);

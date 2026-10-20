@@ -2390,6 +2390,23 @@
     }
   },
   {
+    "id": "diagram:capability",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "diagram",
+        "capability"
+      ],
+      "spec": {
+        "usage": "aof diagram capability [--json]"
+      }
+    }
+  },
+  {
     "id": "messaging:init",
     "input": {
       "type": "object",

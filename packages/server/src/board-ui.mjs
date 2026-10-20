@@ -307,6 +307,22 @@ async function handleDiagramApi(request, response, options = {}) {
   } catch {
     return false;
   }
+  // The opt-out seam. A project with diagrams off answers `editor: false`; a build WITHOUT the
+  // diagrams package has no `diagram:capability` at all, and that is the same answer with
+  // `absent: true` — the board hides Edit draft either way and never loads the editor chunk.
+  if (request.method === "GET" && requestUrl.pathname === "/api/diagram/capability") {
+    response.setHeader("cache-control", "no-store");
+    try {
+      const workspace = await loadWorkspace(path.resolve(options.projectDir ?? process.cwd()));
+      const result = await invoke("diagram:capability", {}, { workspace });
+      sendJson(response, 200, result); return true;
+    } catch (error) {
+      if (/^Unknown command id "diagram:capability"/u.test(error?.message ?? "")) {
+        sendJson(response, 200, { absent: true, enabled: false, editor: false, generator: "off" }); return true;
+      }
+      sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-capability-api-failed"); return true;
+    }
+  }
   if (requestUrl.pathname === "/api/diagram/scene") {
     response.setHeader("cache-control", "no-store");
     try {

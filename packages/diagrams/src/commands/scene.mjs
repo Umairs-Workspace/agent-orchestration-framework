@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { diagramFile, diagramReviewPaths, hasAdrSection, isReviewId, readDiagramBrief, reviewRecordPath, stemAdr } from "../../diagrams/layout.mjs";
+import { diagramFile, diagramReviewPaths, hasAdrSection, isReviewId, readDiagramBrief, reviewRecordPath, stemAdr } from "../layout.mjs";
 
 const MAX_BYTES = 2 * 1024 * 1024;
 const MAX_ELEMENTS = 5000;

@@ -10,8 +10,8 @@
     "test": "node ../../scripts/test-workspace.mjs @aof/ui"
   },
   "dependencies": {
+    "@aof/diagrams-ui": "workspace:*",
     "@aof/messaging": "workspace:*",
-    "@excalidraw/excalidraw": "0.18.0",
     "@radix-ui/react-scroll-area": "^1.2.10",
     "@radix-ui/react-slot": "^1.1.0",
     "@tailwindcss/vite": "^4.0.0",

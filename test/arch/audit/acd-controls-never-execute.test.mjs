@@ -122,8 +122,10 @@ const DOCTOR_LANE_MODULES = Object.freeze([
   "./depends.mjs",
   // THE NINTH — milestone 133 / story 03's diagrams lane, named in the change that lands it. A
   // doctor lane on the same reading as the eighth: it reports on the work stream's own records
-  // (an ADR's diagram links against the item's `diagrams/` listing) and executes nothing.
-  "./diagrams.mjs",
+  // (an ADR's diagram links against the item's `diagrams/` listing) and executes nothing. Since
+  // diagramming became its own package it is @aof/diagrams' module, reaching the spine through the
+  // injected `diagramsGroup` seam exactly as the examples lane reaches it through `extensionGroups`.
+  "@aof/diagrams/doctor-lane",
   // THE TENTH — milestone 134 / story 04's examples lane, named in the change that lands it. A doctor
   // lane on the same reading as the ninth: it judges a story's own example map against the answers
   // a person gave, both carried on the snapshot, and executes nothing. Since 135/01 it is
@@ -149,18 +151,21 @@ const DOCTOR_LANE_MODULES = Object.freeze([
 // collaborators rather than relative imports, so each port is pinned here from the spine's signature
 // through the core binding to the adapter that constructs it from its own module. Since 135/01 the
 // examples lane arrives through the spine's practice-neutral `extensionGroups` seam.
-const SPINE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, storyProbe = null, budgetRows = \[\], extensionGroups = \[\] \}\)/u;
-const CORE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: \[examplesGroup\] \}\)/u;
+const SPINE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing = async \(\) => null, storyProbe = null, budgetRows = \[\], extensionGroups = \[\] \}\)/u;
+const CORE_PORT = /createWorkDoctor\(\{ projectExecution, readRuns, diagramsGroup, diagramListing, storyProbe, budgetRows: EXAMPLES_BUDGET_ROWS, extensionGroups: \[examplesGroup\] \}\)/u;
 const EXAMPLES_LANE = "@aof/specification-by-example/doctor-lane";
+// The diagrams lane's module, @aof/diagrams' own: the spine imports it from nowhere and takes the
+// group (and the item listing probe beside it) by injection.
+const DIAGRAMS_LANE = "@aof/diagrams/doctor-lane";
 async function assertDiagramsPort(spineBody) {
   assert.match(spineBody, SPINE_PORT);
   const core = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8"));
-  assert.match(core, /const\s*\{ diagramsGroup \}\s*= workDoctorDiagramsServices/u);
+  assert.match(core, /const\s*\{ diagramsGroup, diagramListing \}\s*= workDoctorDiagramsServices/u);
   assert.match(core, /const\s*\{ examplesGroup \}\s*= workDoctorExamplesServices/u);
   assert.match(core, CORE_PORT);
   const adapter = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor-diagrams.mjs"), "utf8"));
-  assert.match(adapter, /from "@aof\/work\/doctor\/diagrams"/u);
-  assert.match(adapter, /createDoctorDiagrams\(\{ resolveWorkDiagrams \}\)/u);
+  assert.match(adapter, /from "@aof\/diagrams\/doctor-lane"/u);
+  assert.match(adapter, /createDoctorDiagrams\(\{ resolveWorkDiagrams, readdir \}\)/u);
   const examples = stripComments(await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor-examples.mjs"), "utf8"));
   assert.match(examples, /from "@aof\/specification-by-example\/doctor-lane"/u);
   assert.match(examples, /createDoctorExamples\(\{ examplesEnabledFromConfig \}\)/u);
@@ -680,7 +685,7 @@ export const archTests = [
         for (const binding of namedBindingsFrom(spineBody, specifier)) laneModuleFor.set(binding, specifier);
       }
       await assertDiagramsPort(spineBody);
-      laneModuleFor.set("diagramsGroup", "./diagrams.mjs");
+      laneModuleFor.set("diagramsGroup", DIAGRAMS_LANE);
       const registryModules = [...new Set(entries.map((entry) => laneModuleFor.get(entry)).filter((specifier) => specifier != null))];
       assert.ok(registryModules.length >= 5, `the registry's entries resolve to their modules: ${registryModules.join(", ")}`);
       assert.equal(laneModuleFor.get("controlsLane"), "../audit/controls.mjs", "…and the controls lane is one of them, so the mapping is real");
@@ -746,7 +751,7 @@ export const archTests = [
       const spine = await read(THE_SPINE);
       const spineBody = strippedBody(spine.file, spine.text);
       await assertDiagramsPort(spineBody);
-      const laneModules = [...directImports(spineBody).filter(specifier => specifier.startsWith("./") || specifier === "../audit/controls.mjs"), "./diagrams.mjs", EXAMPLES_LANE];
+      const laneModules = [...directImports(spineBody).filter(specifier => specifier.startsWith("./") || specifier === "../audit/controls.mjs"), DIAGRAMS_LANE, EXAMPLES_LANE];
       assert.equal(laneModules.length, DOCTOR_LANE_MODULES.length, `non-vacuity: the spine's body yielded ${laneModules.length} lane specifiers against a roster of ${DOCTOR_LANE_MODULES.length} — a rename must RED this row, never empty it (119/01, ADR-003 §4)`);
       assert.deepEqual([...new Set(laneModules)].sort(), [...DOCTOR_LANE_MODULES].sort(), "the doctor lane modules are named, not counted (m47/R9) — a ninth is an edit here and an ADR act there");
       // THE LOAD-BEARING HALF: none of them is 59's, and the registry holds no audit lane.

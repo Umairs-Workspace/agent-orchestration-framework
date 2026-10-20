@@ -13,7 +13,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 const invoke = _aofApplication.invoke;
 const loadWorkspace = _aofApplication.loadWorkspace;
-import { renderDiagramBlock } from "@aof/work/diagrams/layout";
+import { renderDiagramBlock } from "@aof/diagrams/layout";
 const CHECK_GROUPS = _aofApplication.work.doctor.CHECK_GROUPS;
 const DIAGRAM_LANE_CODES = _aofApplication.work.doctorDiagrams.DIAGRAM_LANE_CODES;
 const diagramsGroup = _aofApplication.work.doctorDiagrams.diagramsGroup;
@@ -191,7 +191,7 @@ export const doctorDiagramsLaneTests = [
       const spine = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/work/doctor.mjs"), "utf8");
       assert.ok(dependencySpecifiers(spine).some(edge => edge.parameter === "workDoctorDiagramsServices" && edge.specifier === "./doctor-diagrams.mjs"), "the doctor receives its configured diagrams lane");
       const roster = await readFile(path.join(repoRoot, "test", "arch", "audit", "acd-controls-never-execute.test.mjs"), "utf8");
-      assert.match(roster, /"\.\/diagrams\.mjs"/, "DOCTOR_LANE_MODULES names the lane implementation");
+      assert.match(roster, /"@aof\/diagrams\/doctor-lane"/, "DOCTOR_LANE_MODULES names the lane implementation (@aof/diagrams' module since diagramming became its own package)");
       const others = (await readdir(path.join(repoRoot, "packages", "work", "src", "doctor"))).filter((name) => name.endsWith(".mjs") && name !== "diagrams.mjs");
       assert.ok(others.length >= 8, "the other lanes and the spine are swept");
       for (const name of others) {

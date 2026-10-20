@@ -1,12 +1,13 @@
 import path from "node:path";
 import { readFileSync, readdirSync } from "node:fs";
-import { createRequire } from "node:module";
+import { sdkFontsDirectory } from "@aof/diagrams-ui/fonts";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // Ship the SDK's fonts with AOF rather than depending on Excalidraw's CDN.
-const sdkFonts = path.join(path.dirname(createRequire(import.meta.url).resolve("@excalidraw/excalidraw")), "fonts");
+// The SDK is @aof/diagrams-ui's dependency, so that package says where its fonts are; this app never names the SDK.
+const sdkFonts = sdkFontsDirectory();
 const fontAssets = new Map<string, Buffer>();
 function collectFonts(directory: string, prefix = "") {
   for (const entry of readdirSync(directory, { withFileTypes: true })) {

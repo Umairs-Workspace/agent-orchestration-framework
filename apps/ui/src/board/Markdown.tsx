@@ -17,18 +17,17 @@
 //
 // Callers pass the ALREADY frontmatter/comment-stripped body (see cleanDoc in
 // DetailPanel) — this component only does markdown → HTML.
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import { Marked, marked } from "marked";
-import type { DocResponse } from "./api";
+import type { DiagramCapability, DocResponse } from "./api";
 import { requestFullscreen } from "../app/shell-bus.mjs";
 import { diagramFileUrl, diagramMembers, diagramRenderer, figureState } from "./diagrams.mjs";
 import type { DiagramImages, DiagramResponse } from "./diagrams.mjs";
-const ExcalidrawEditor = lazy(() => {
-  (window as Window & { EXCALIDRAW_ASSET_PATH?: string }).EXCALIDRAW_ASSET_PATH = new URL(`${import.meta.env.BASE_URL}excalidraw/`, window.location.href).href;
-  return import("./ExcalidrawEditor").then((module) => ({ default: module.ExcalidrawEditor }));
-});
+// The editor is its own routed surface (`/diagram`, apps/ui/src/diagram/); the board LINKS to it and
+// never imports it, so nothing of the SDK reaches the board's bundle.
+import { diagramHref } from "../diagram/diagram-address.mjs";
 
 // GFM on (tables, etc.); synchronous parse so we can render inline.
 marked.setOptions({ gfm: true, breaks: false });
@@ -66,9 +65,8 @@ export function Markdown({ source, images, itemRef }: { source: string; images?:
 // The node the shell adopts is created here rather than by React, for the reason
 // TerminalFullscreenOccupant gives: the shell re-parents it, so React must own its CONTENTS (via a
 // portal into it) and never its position. `home` is a hidden sibling the node returns to.
-function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClose, onAskArchitect }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; itemRef: string; svgFile: string; opener: HTMLElement | null; onClose: () => void; onAskArchitect?: (command: string) => void }) {
+function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, editable, onClose }: { figure: { uri: string; width: number | null }; alt: string; fileHref: string; itemRef: string; svgFile: string; opener: HTMLElement | null; editable: boolean; onClose: () => void }) {
   const [full, setFull] = useState(false);
-  const [editing, setEditing] = useState(false);
   const [node] = useState<HTMLDivElement | null>(() => {
     if (typeof document === "undefined") return null;
     const element = document.createElement("div");
@@ -83,6 +81,8 @@ function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClos
     // Presented once per open: the figure, the label and the opener are fixed while it is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node]);
+  // The editor's address for THIS member, built by the diagram surface's own vocabulary.
+  const editHref = diagramHref(itemRef, svgFile);
   const actual = (figure.width ?? 1000) * 2;
   return (
     <>
@@ -91,38 +91,29 @@ function DiagramViewer({ figure, alt, fileHref, itemRef, svgFile, opener, onClos
         ? null
         : createPortal(
             <>
-              {editing ? (
-                <Suspense fallback={<p className="p-4">Loading Excalidraw…</p>}><ExcalidrawEditor
-                  itemRef={itemRef}
-                  svgFile={svgFile}
-                  onAskArchitect={onAskArchitect}
-                  onRequestClose={() => setEditing(false)}
-                /></Suspense>
-              ) : (
-                <>
-                  <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 py-2">
-                    <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setFull((value) => !value)}>
-                      {full ? "Fit to screen" : "Actual size"}
-                    </button>
-                    <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setEditing(true)}>
-                      Edit draft
-                    </button>
-                    <button type="button" onClick={onClose} className="ml-auto rounded border border-border px-2 py-1 text-xs font-semibold">Close diagram</button>
-                    <a href={fileHref} target="_blank" rel="noopener noreferrer" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
-                      Open SVG preview
-                    </a>
-                  </div>
-                  <div className={`min-h-0 flex-1 overflow-auto p-4 ${full ? "" : "grid place-items-center"}`}>
-                    <img
-                      src={figure.uri}
-                      alt={alt}
-                      onClick={() => setFull((value) => !value)}
-                      className={`rounded-md ${full ? "cursor-zoom-out" : "cursor-zoom-in"}`}
-                      style={full ? { width: `${actual}px`, maxWidth: "none", height: "auto" } : { width: "100%", height: "100%", maxWidth: `${actual}px`, objectFit: "contain" }}
-                    />
-                  </div>
-                </>
-              )}
+              <div className="flex shrink-0 items-center gap-2 border-b border-border bg-card px-4 py-2">
+                <button type="button" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted" onClick={() => setFull((value) => !value)}>
+                  {full ? "Fit to screen" : "Actual size"}
+                </button>
+                {editable && editHref != null ? (
+                  <a href={editHref} className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
+                    Edit draft
+                  </a>
+                ) : null}
+                <button type="button" onClick={onClose} className="ml-auto rounded border border-border px-2 py-1 text-xs font-semibold">Close diagram</button>
+                <a href={fileHref} target="_blank" rel="noopener noreferrer" className="rounded border border-border px-2 py-1 text-xs font-semibold text-foreground hover:bg-muted">
+                  Open SVG preview
+                </a>
+              </div>
+              <div className={`min-h-0 flex-1 overflow-auto p-4 ${full ? "" : "grid place-items-center"}`}>
+                <img
+                  src={figure.uri}
+                  alt={alt}
+                  onClick={() => setFull((value) => !value)}
+                  className={`rounded-md ${full ? "cursor-zoom-out" : "cursor-zoom-in"}`}
+                  style={full ? { width: `${actual}px`, maxWidth: "none", height: "auto" } : { width: "100%", height: "100%", maxWidth: `${actual}px`, objectFit: "contain" }}
+                />
+              </div>
             </>,
             node,
           )}
@@ -138,15 +129,27 @@ export function DiagramMarkdown({
   itemRef,
   load,
   elsewhere,
-  onAskArchitect,
+  capability,
 }: {
   source: string;
   itemRef: string;
   load: (member: string) => Promise<DocResponse>;
   elsewhere: string | null;
-  onAskArchitect?: (command: string) => void;
+  // The opt-out seam: asked ONCE per mount, and a tab with no asker (the headless harness, a
+  // build without diagramming) never shows Edit draft. Any failure is "not editable", never a
+  // retry: the editor is a convenience the board can do without, not a read it must have.
+  capability?: () => Promise<DiagramCapability>;
 }) {
   const [expanded, setExpanded] = useState<{ key: string; alt: string; opener: HTMLElement } | null>(null);
+  const [editable, setEditable] = useState(false);
+  useEffect(() => {
+    if (capability == null) return undefined;
+    let cancelled = false;
+    capability().then((answer) => { if (!cancelled) setEditable(answer.editor === true); }).catch(() => { if (!cancelled) setEditable(false); });
+    return () => { cancelled = true; };
+    // Asked once per mount; `capability` is a fresh closure per render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const close = useCallback(() => setExpanded(null), []);
   const members = useMemo(() => diagramMembers(source), [source]);
   const [answers, setAnswers] = useState<Record<string, DiagramResponse>>({});
@@ -192,8 +195,8 @@ export function DiagramMarkdown({
           fileHref={diagramFileUrl(itemRef, expanded.key.slice(expanded.key.indexOf("/") + 1))}
           itemRef={itemRef}
           svgFile={expanded.key.slice(expanded.key.indexOf("/") + 1)}
+          editable={editable}
           onClose={close}
-          onAskArchitect={onAskArchitect}
         />
       ) : null}
     </div>

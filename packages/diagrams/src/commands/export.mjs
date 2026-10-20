@@ -3,7 +3,7 @@ import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 
 
-import { assertAdrId, diagramPaths, diagramsDir, findDiagramSources, LOOP_SUBJECT, loopDiagramPaths, loopRasterSvgPath, readAdrTitle, renderDiagramBlock } from "../../diagrams/layout.mjs";
+import { assertAdrId, diagramPaths, diagramsDir, findDiagramSources, LOOP_SUBJECT, loopDiagramPaths, loopRasterSvgPath, readAdrTitle, renderDiagramBlock } from "../layout.mjs";
 
 
 export function createDiagramExportCommand({ resolveWorkDiagrams, generatorFor, requireLocalCheckout, resolveItemExact, findBrowser, rasterizeSvg }) {

@@ -54,6 +54,13 @@ export const ROUTES = Object.freeze([
   Object.freeze({ id: "fleet", path: "/fleet" }),
   Object.freeze({ id: "board", path: "/board" }),
   Object.freeze({ id: "config", path: "/config" }),
+  // THE FIFTH ADDRESSABLE PATH: one Excalidraw draft, `?ref=<item>&file=<member>` (the query is the
+  // diagram surface's own vocabulary, apps/ui/src/diagram/diagram-address.mjs; this table knows no
+  // query key but `mode`). It is a DESTINATION, not a place in the bar: the shell's nav lists it
+  // under no item (shell-nav.mjs's unlisted set), because it is reached from a figure on the
+  // board and the bar is designed for four. ADR-002's "four addressable paths" is thereby five,
+  // and the nav's four is unchanged.
+  Object.freeze({ id: "diagram", path: "/diagram" }),
   NOT_FOUND_ROUTE,
 ]);
 

@@ -96,7 +96,9 @@ const MODE_URL_LITERAL = /[?&]mode=(fleet|board|assets)\b/g;
 //     and, again, `/api/mesh/board-url`.
 // Both exclusions are pinned by the self-check below, so this reasoning is tested, not
 // asserted. Comments are stripped first, exactly as the legacy detector does.
-const ROUTE_PATH_LITERAL = /(?<=["'`}\d])\/(fleet|board|config)(?=["'`?#\s,);]|$)/gm;
+// `diagram` joined the alternation with the editor's route: its one link builder
+// (apps/ui/src/diagram/diagram-address.mjs) derives the path from ROUTES and names no literal.
+const ROUTE_PATH_LITERAL = /(?<=["'`}\d])\/(fleet|board|config|diagram)(?=["'`?#\s,);]|$)/gm;
 
 // The four advertised-URL PRODUCERS (ADR-002's consequences), each with the route path it
 // must name after the migration. Naming the path as a LITERAL at its producer is what makes

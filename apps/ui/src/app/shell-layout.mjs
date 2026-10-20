@@ -528,6 +528,8 @@ const CONTENT_MODES = new Map([
   ["fleet", CONTENT_MODE_PAGE],
   ["config", CONTENT_MODE_PAGE],
   ["board", CONTENT_MODE_FIXED],
+  // The diagram editor hosts a canvas and, when asked, the dock: a fixed region, like the board.
+  ["diagram", CONTENT_MODE_FIXED],
   ["not-found", CONTENT_MODE_PAGE],
 ]);
 

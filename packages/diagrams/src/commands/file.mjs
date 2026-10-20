@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { DIAGRAM_FILE_EXTS, diagramFile } from "../../diagrams/layout.mjs";
+import { DIAGRAM_FILE_EXTS, diagramFile } from "../layout.mjs";
 
 
 export function createDiagramFileCommand({ resolveItemExact }) {

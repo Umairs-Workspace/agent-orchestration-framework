@@ -483,7 +483,7 @@ function DocBody({
       ) : null}
       {/* A milestone's SPEC tab leads with a Records summary (which milestone docs exist). */}
       {item.type === "milestone" && tab === "SPEC" ? <MilestoneRecords records={records} /> : null}
-      <DocMarkdown tab={tab} doc={doc} item={item} elsewhere={elsewhere} onRunAgent={onRunAgent} />
+      <DocMarkdown tab={tab} doc={doc} item={item} elsewhere={elsewhere} />
     </div>
   );
 }
@@ -530,12 +530,12 @@ function DocMarkdown({
   tab,
   doc,
   item,
-  elsewhere, onRunAgent,
+  elsewhere,
 }: {
   tab: Tab;
   doc: DocState;
   item: WorkItem;
-  elsewhere: string | null; onRunAgent: (ref: string, command?: string) => void;
+  elsewhere: string | null;
 }) {
   const docLabel = tab === "SPEC" && item.type !== "milestone" ? "document" : tab;
   if (doc.kind === "loading") return <p className="mono text-sm text-muted-foreground">Loading {docLabel}...</p>;
@@ -572,7 +572,7 @@ function DocMarkdown({
   // The artifact's own provenance line is the region's FIRST child and is emitted
   // by `DocBody` above, so this returns the body and nothing else.
   if (tab !== "ARCHITECTURE") return <Markdown source={cleanDoc(doc.body)} />;
-  return <DiagramMarkdown source={cleanDoc(doc.body)} itemRef={item.ref} load={(member) => workApi.doc(item.ref, "DIAGRAMS", member)} elsewhere={elsewhere} onAskArchitect={(command) => onRunAgent(item.ref, command)} />;
+  return <DiagramMarkdown source={cleanDoc(doc.body)} itemRef={item.ref} load={(member) => workApi.doc(item.ref, "DIAGRAMS", member)} elsewhere={elsewhere} capability={() => workApi.diagramCapability()} />;
 }
 
 // The node that reported this row, for the copy the cache-miss placeholder needs.

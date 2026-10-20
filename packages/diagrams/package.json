@@ -1,0 +1,27 @@
+{
+  "name": "@aof/diagrams",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./layout": "./src/layout.mjs",
+    "./generators": "./src/generators.mjs",
+    "./doctor-lane": "./src/doctor-lane.mjs",
+    "./contribution": "./src/contribution.mjs",
+    "./commands/plan": "./src/commands/plan.mjs",
+    "./commands/export": "./src/commands/export.mjs",
+    "./commands/file": "./src/commands/file.mjs",
+    "./commands/scene": "./src/commands/scene.mjs",
+    "./commands/capability": "./src/commands/capability.mjs"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/diagrams"
+  },
+  "dependencies": {
+    "@aof/contracts": "workspace:*",
+    "@aof/work": "workspace:*"
+  }
+}

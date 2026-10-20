@@ -152,7 +152,7 @@ export const terminalsHomeRouteTests = [
       const keys = await surfaceMapKeys();
       assert.ok(Array.isArray(keys), "the SURFACES declaration was FOUND in apps/ui/src/main.tsx (non-vacuous: a null read fails here rather than asserting over an empty list)");
       assert.ok(keys.length >= 4, `…and it really has entries: ${JSON.stringify(keys)}`);
-      assert.deepEqual(keys, ["landing", "fleet", "board", "config"], "landing is a key of SURFACES, alongside fleet, board and config");
+      assert.deepEqual(keys, ["landing", "fleet", "board", "config", "diagram"], "landing is a key of SURFACES, alongside fleet, board, config and the diagram editor");
 
       // (3) the same id now MOUNTS, through the shipped decision and against the entry's own map.
       const mount = surfaceMountFor("landing", keys);
@@ -208,7 +208,7 @@ export const terminalsHomeRouteTests = [
       // (a) THE VALUE HALF. Driven over ids on BOTH sides of the list, against the list itself,
       // with an EMPTY map so only this input can move the answer. This kills a derivation that
       // hard-codes the WRONG id (`routeId === "landing"` answers true where the list says false).
-      for (const id of ["landing", "not-found", "fleet", "board", "config", "terminals"]) {
+      for (const id of ["landing", "not-found", "fleet", "board", "config", "diagram", "terminals"]) {
         assert.equal(
           surfaceMountFor(id, []).shellRenders,
           SHELL_RENDERED_ROUTES.includes(id),
@@ -292,8 +292,8 @@ export const terminalsHomeRouteTests = [
     name: "home-route/00 the route table is untouched and the `landing` id survives — and that SAME id now answers mounts:true (00 scenario 3)",
     async run() {
       // The table's shape, order and freezing, exactly as m45 shipped it.
-      assert.deepEqual(ROUTES.map((route) => route.id), ["landing", "fleet", "board", "config", "not-found"], "four addressable paths plus the shared not-found entry, in that order");
-      assert.deepEqual(ROUTES.map((route) => route.path), ["/", "/fleet", "/board", "/config", null]);
+      assert.deepEqual(ROUTES.map((route) => route.id), ["landing", "fleet", "board", "config", "diagram", "not-found"], "five addressable paths (the diagram editor joined the four) plus the shared not-found entry, in that order");
+      assert.deepEqual(ROUTES.map((route) => route.path), ["/", "/fleet", "/board", "/config", "/diagram", null]);
       assert.deepEqual({ ...ROUTES[0] }, { id: "landing", path: "/" }, "ROUTES still holds { id: \"landing\", path: \"/\" }");
       assert.equal(Object.isFrozen(ROUTES), true, "…still frozen");
       for (const route of ROUTES) assert.equal(Object.isFrozen(route), true, "…entry by entry");
@@ -435,7 +435,7 @@ export const terminalsHomeRouteTests = [
 
       // …and nothing renders it, at any address. The shell is what drew it, so the shell is
       // mounted at every route it knows.
-      for (const [routeId, pathname] of [["landing", "/"], ["fleet", "/fleet"], ["board", "/board"], ["config", "/config"], ["not-found", "/nope"]]) {
+      for (const [routeId, pathname] of [["landing", "/"], ["fleet", "/fleet"], ["board", "/board"], ["config", "/config"], ["diagram", "/diagram"], ["not-found", "/nope"]]) {
         await withShellApp(
           { routeId, address: ADDRESS(pathname), identity: "aof", viewportWidth: 1280, surface: routeId === "not-found" ? "none" : "plain" },
           async (app) => {
@@ -490,7 +490,9 @@ export const terminalsHomeRouteTests = [
       // ROW 2 IS TECH_DEBT 33'S NAMED PREDICTION FOR THIS MILESTONE, and it is stated as an
       // EXACT count because "zero vocabulary added" is not observable from a ceiling with 44
       // lines of room: the failure it predicts would stay green all the way through.
-      assert.equal(await gateLineCount("apps/ui/src/app/shell-layout.mjs"), 1016, "apps/ui/src/app/shell-layout.mjs gains ZERO lines — one row's VALUE changed and nothing else");
+      // 1016 at m49 (ZERO lines gained by that milestone — one row's VALUE changed and nothing else);
+      // 1018 since the diagram route added its own `content:fixed` row and the one comment above it.
+      assert.equal(await gateLineCount("apps/ui/src/app/shell-layout.mjs"), 1018, "apps/ui/src/app/shell-layout.mjs gains ZERO lines beyond the diagram route's declared row — m49 changed one row's VALUE and nothing else");
       assert.ok(1016 <= 1060, "…inside its 1060-line ceiling");
 
       // ROWS 3-6: the blast radius this story must not touch. Row 5 is on the table because a

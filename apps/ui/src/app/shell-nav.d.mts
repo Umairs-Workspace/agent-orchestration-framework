@@ -113,3 +113,7 @@ export declare function navResolvableFor(input?: {
   selfOrigin?: string | null;
   probe?: FleetOriginProbe | null;
 }): NavResolvable;
+
+// The addressable routes the nav lists under NO item: destinations reached from a surface (the
+// diagram editor, from a figure on the board), not places in the bar, which is designed for four.
+export declare const NAV_UNLISTED_ROUTES: ReadonlySet<string>;

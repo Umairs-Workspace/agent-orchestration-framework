@@ -1,4 +1,6 @@
 import { tests as ownedCoreTests } from "../packages/core/test/index.mjs";
+import { tests as ownedDiagramsTests } from "../packages/diagrams/test/index.mjs";
+import { tests as ownedDiagramsUiTests } from "../packages/diagrams-ui/test/index.mjs";
 import { tests as ownedExecutionTests } from "../packages/execution/test/index.mjs";
 import { tests as ownedIntegrationNotionTests } from "../packages/integration-notion/test/index.mjs";
 import { tests as ownedMeshTests } from "../packages/mesh/test/index.mjs";
@@ -93,6 +95,8 @@ import { tests as workStreamTests } from "../test/work/stream/index.mjs";
 
 export const tests = [
   ...ownedCoreTests,
+  ...ownedDiagramsTests,
+  ...ownedDiagramsUiTests,
   ...ownedExecutionTests,
   ...ownedIntegrationNotionTests,
   ...ownedMeshTests,

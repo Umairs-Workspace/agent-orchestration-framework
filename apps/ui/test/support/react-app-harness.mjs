@@ -131,7 +131,8 @@ function hashOf(text) {
 //              in the real source reaches one of those stubs.
 const EXCALIDRAW_EDITOR_STUB_NAME = "__excalidraw_editor__";
 const EXCALIDRAW_EDITOR_STUB = "export const ExcalidrawEditor = () => null; export default ExcalidrawEditor;";
-const EXCALIDRAW_EDITOR_FILTER = /(?:^|\/)ExcalidrawEditor(?:\.tsx)?$/;
+// The editor is reached as `@aof/diagrams-ui/editor` (its package export) since diagramming became its own package.
+const EXCALIDRAW_EDITOR_FILTER = /(?:^|\/)ExcalidrawEditor(?:\.tsx)?$|^@aof\/diagrams-ui\/editor$/;
 export async function bundleSurface({ entry, stubs = {}, resolve = [] }) {
   const key = bundleCacheKey({ entry, stubs, resolve });
   const cached = bundleCache.get(key);
