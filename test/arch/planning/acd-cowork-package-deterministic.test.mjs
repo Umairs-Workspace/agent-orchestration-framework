@@ -6,6 +6,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { zipStored } from "../../../packages/core/src/planning/stored-zip.mjs";
+import { computedDynamicImports, importSpecifiers } from "../../support/module-family.mjs";
 
 const writerPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "src", "planning", "stored-zip.mjs"
@@ -26,10 +27,10 @@ export const archTests = [
     name: "arch/FF-16503: the package writer imports only node: built-ins",
     run: async () => {
       const source = await readFile(writerPath, "utf8");
-      const specifiers = [...source.matchAll(/^\s*import\s+(?:[^;"']*?\sfrom\s+)?["']([^"']+)["']/gm)].map((match) => match[1]);
-      const dynamic = [...source.matchAll(/import\(\s*["']([^"']+)["']\s*\)/g)].map((match) => match[1]);
+      const specifiers = importSpecifiers(source).map((entry) => entry.specifier);
       assert.ok(specifiers.length > 0, "the writer's imports were found");
-      for (const specifier of [...specifiers, ...dynamic]) {
+      assert.deepEqual(computedDynamicImports(source), [], "the writer computes no import specifier");
+      for (const specifier of specifiers) {
         assert.ok(specifier.startsWith("node:"), `${specifier} is not a node: built-in`);
       }
     }

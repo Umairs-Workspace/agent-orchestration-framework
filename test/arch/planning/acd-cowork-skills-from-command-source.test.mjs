@@ -17,7 +17,8 @@ import {
   normalizeArgumentHint,
   partitionByCapability
 } from "../../../packages/core/src/work/bundle-runtime.mjs";
-import { renderPlanningPlugin, PLANNING_PLUGIN_SKILLS } from "../../../packages/core/src/planning/cowork-plugin.mjs";
+import { renderPlanningPlugin } from "../../../packages/core/src/planning/cowork-plugin.mjs";
+import { PLANNING_PLUGIN_SKILLS } from "../../../packages/core/src/planning-init.mjs";
 
 function codexPre165Body(resource) {
   const hint = normalizeArgumentHint(resource.argumentHint);

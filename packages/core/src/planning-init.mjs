@@ -76,9 +76,9 @@ import { spawnSync } from "node:child_process";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { readLock, writeLock } from "./lock.mjs";
 import { workspacePaths } from "./workspace.mjs";
-import { packagePlanner } from "./planning/cowork-planner.mjs";
-import { renderPlanningPlugin, PLANNING_PLUGIN_NAME, PLANNING_PLUGIN_SKILLS } from "./planning/cowork-plugin.mjs";
-import { zipStored } from "./planning/stored-zip.mjs";
+// The cowork modules (165/01, 165/02) load only on a real cowork run — inside
+// initCowork — so a verb that merely composes this command evaluates none of them
+// (FF-16004).
 
 // A core never prints: it REPORTS through the collector its caller injects, and the
 // face turns the collected lines into the one stdout document (m42 wave (d) leg d1,
@@ -119,6 +119,10 @@ const VALID_RUNTIMES = ["claude", "codex", "cowork"];
 // aof owns this directory whole: it is rebuilt on every cowork run and kept out of git
 // by its own `.gitignore`.
 export const COWORK_DIR = ".aof/cowork";
+// The aof Cowork plugin's name and skills (165/ADR-002), rendered by
+// planning/cowork-plugin.mjs and recorded in the lock's cowork entry.
+export const PLANNING_PLUGIN_NAME = "aof";
+export const PLANNING_PLUGIN_SKILLS = Object.freeze(["shatter", "explain"]);
 export const COWORK_BUNDLE_PATH = `${COWORK_DIR}/${PLANNING_PLUGIN_NAME}.plugin`;
 
 export function coworkPackagePath(plugin) {
@@ -131,7 +135,7 @@ export function coworkUploadSteps(paths) {
   return [
     "cowork: aof cannot install into Cowork. In the Claude desktop app, upload each package under Customize › Plugins › Add › Upload plugin:",
     ...paths.map((entry) => `  ${entry}`),
-    `Then connect this repo's folder in Cowork and run /${PLANNING_PLUGIN_NAME}:shatter.`,
+    `Next, connect this repo's folder in Cowork and run /${PLANNING_PLUGIN_NAME}:shatter.`,
     "note: the Cowork install is not confirmed — aof cannot see Cowork, so the lock records installConfirmed: false."
   ];
 }
@@ -657,6 +661,11 @@ async function initCowork({ options, targetDir, dryRun, force, withOptional, log
     });
   }
 
+  const [{ packagePlanner }, { renderPlanningPlugin }, { zipStored }] = await Promise.all([
+    import("./planning/cowork-planner.mjs"),
+    import("./planning/cowork-plugin.mjs"),
+    import("./planning/stored-zip.mjs")
+  ]);
   const planner = await packagePlanner({
     sha: resolved,
     withOptional,

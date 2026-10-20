@@ -113,7 +113,7 @@ export const yarnInstallationTests = [
         'session-driver.mjs': ['node:path', 'node:child_process', 'node:fs/promises', 'node:crypto', '@aof/contracts/loop-bounds'],
         'codex-app-server.mjs': ['node:child_process', 'node:path', '@aof/contracts/loop-bounds'],
         // 156: Windows Codex discovery (package bin, Store install) and the sandboxed child's PATH.
-        'codex-executable.mjs': ['node:fs', 'node:child_process', 'node:module', 'node:path'],
+        'codex-executable.mjs': ['node:fs', 'node:fs/promises', 'node:child_process', 'node:module', 'node:path'],
         'codex-process-environment.mjs': ['node:fs', 'node:path'],
         'runtime-selection.mjs': ['@aof/contracts/loop-bounds'],
         // 154/ADR-001: the session adapter owns native availability and bounded ANSI decoding.

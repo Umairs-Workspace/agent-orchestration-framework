@@ -8,9 +8,8 @@ import { packageVersionString } from "../asset-base.mjs";
 import { loadBundle } from "../work/bundle.mjs";
 import { commandAsSkill, commandSkillMapping } from "../work/bundle-runtime.mjs";
 import { zipStored } from "./stored-zip.mjs";
+import { PLANNING_PLUGIN_NAME, PLANNING_PLUGIN_SKILLS } from "../planning-init.mjs";
 
-export const PLANNING_PLUGIN_NAME = "aof";
-export const PLANNING_PLUGIN_SKILLS = Object.freeze(["shatter", "explain"]);
 export const PLANNING_PLUGIN_MANIFEST = ".claude-plugin/plugin.json";
 export const COWORK_STAMP = "<!-- aof-generated: true; aof-runtime: cowork -->";
 
