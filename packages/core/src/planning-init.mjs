@@ -145,6 +145,7 @@ export function coworkUploadSteps(paths, aofHome) {
   return [
     "cowork: aof cannot install into Cowork. In the Claude desktop app, upload each package under Customize › Plugins › Add › Upload plugin:",
     ...paths.map((entry) => `  ${path.join(aofHome, entry)}`),
+    "Start a new Cowork task after uploading: a task that was already running does not see newly uploaded plugins.",
     `Next, connect this repo's folder in Cowork and run /${PLANNING_PLUGIN_NAME}:shatter.`,
     "note: the Cowork install is not confirmed — aof cannot see Cowork, so the lock records installConfirmed: false."
   ];

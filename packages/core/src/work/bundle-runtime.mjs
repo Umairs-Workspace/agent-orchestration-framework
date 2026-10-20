@@ -43,6 +43,7 @@ const RESOURCE_MAPPINGS = {
         "",
         "The `aof` CLI may be absent here. Before the first `aof` step, run `command -v aof`. If aof is absent, skip each `aof` step and list the skipped steps in your report.",
         "Without aof, never imitate a verb that changes state by hand: never mint a number, never promote, never write a `number:` line and never change a `status:` line by hand. Any driver written without aof stays in the backlog, to be promoted from Claude Code or Codex.",
+        "Without aof, a check this procedure says must pass (such as `aof work validate`) cannot run here, and a check that did not run is not a failed one: finish, mark the report unvalidated, name each check you skipped, and say it runs from Claude Code or Codex.",
         "",
         "Write Markdown only, and never commit."
       ]

@@ -26,6 +26,7 @@ Feature: Planning init writes the Cowork packages and says how to install them
         | cowork/pm-skills/pm-product-discovery.plugin |
         | cowork/pm-skills/pm-product-strategy.plugin  |
       And the output tells the user to upload each of those files, by its full path, under "Customize › Plugins › Add › Upload plugin"
+      And the output tells the user to start a new Cowork task after uploading
       And the output tells the user to connect the repo folder in Cowork and run "/aof:shatter"
       And no file exists under the target repo's ".aof/cowork/"
 
@@ -59,6 +60,14 @@ Feature: Planning init writes the Cowork packages and says how to install them
       When I run "aof planning init --runtime cowork --with-optional"
       Then the file "cowork/pm-skills/pm-market-research.plugin" exists under the aof home
       And no file named "pm-ai-shipping.plugin" exists under the aof home's "cowork/"
+
+  Rule: R5 · Without the aof CLI, a check a skill cannot run is reported unvalidated, never as a failure
+
+    @executable
+    Scenario: E12 · the packaged plugin tells each skill to finish unvalidated without aof
+      When I run "aof planning init --runtime cowork"
+      Then each skill's SKILL.md inside the aof home's "cowork/aof.plugin" says that without aof a check the procedure says must pass is not a failed one
+      And it tells the agent to mark the report unvalidated and name each check it skipped, to be run from Claude Code or Codex
 
   # The SPEC's outsider check. It needs the Claude desktop app, a Cowork session and a real repo,
   # so the operator runs it at verify and records the evidence in VERIFICATION.md.

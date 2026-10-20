@@ -88,6 +88,12 @@ Diagrams: none. Each ADR is a linear flow with no moving parts that a picture wo
   instant both remove and rewrite the one `cowork/` directory, so one can fail mid-write (and then
   write no lock entry). The end state is still complete and the bytes are equal. A staged
   directory swap would remove the race.
+- 165/03 · E5 (operator, in Cowork) found two gaps the suites could not. (1) The cowork preamble's
+  "skip every aof step" contradicted shatter's "validate must pass", so a Cowork run always ended
+  blocked. Fixed at the close (F-04, E12). (2) PRD auto-discovery was never exercised, because the
+  run was handed the path (F-05, recorded). It also found the "start a new task after uploading"
+  line (F-06, fixed). A procedure run with a capability missing needs its gates read against
+  that absence, not only its writes.
 
 - 165/00 · `files:` was incomplete. The build also changed the `--force` help text in
   `packages/core/src/commands/planning-init.mjs` (now "re-pin and re-install the named runtime over

@@ -1224,6 +1224,7 @@ export const planningInitTests = [
       for (const file of COWORK_FILES) assert.ok(existsSync(path.join(home, file)), `${file} exists under the aof home`);
       assert.match(output, /Customize › Plugins › Add › Upload plugin/);
       for (const file of COWORK_FILES) assert.ok(output.includes(`  ${path.join(home, file)}`), `the upload steps name ${file} by its full path`);
+      assert.match(output, /Start a new Cowork task after uploading/, "the steps say to start a new Cowork task");
       assert.match(output, /connect this repo's folder in Cowork and run \/aof:shatter/);
       assert.equal(existsSync(path.join(repo, ".aof", "cowork")), false, "no file under the repo's .aof/cowork/");
     })
@@ -1280,6 +1281,15 @@ export const planningInitTests = [
     })
   },
   {
+    name: "planning-init-delivers-cowork/00 E12 · the packaged plugin tells each skill to finish unvalidated without aof",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      // A stored zip holds each SKILL.md's bytes as they are, so the text is read straight from the package.
+      const bundle = (await readFile(path.join(home, "cowork", "aof.plugin"))).toString("utf8");
+      const rule = "a check that did not run is not a failed one: finish, mark the report unvalidated, name each check you skipped, and say it runs from Claude Code or Codex.";
+      assert.equal(bundle.split(rule).length - 1, 2, "both skills (shatter, explain) carry the rule once each");
+    })
+  },  {
     name: "planning-init-delivers-cowork/01 E6 · cowork is added beside a recorded claude install",
     run: () => withPlanner(async (repo, plannerSource, home) => {
       await runInit(repo, { runtime: "claude" });
