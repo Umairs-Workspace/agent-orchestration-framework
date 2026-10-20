@@ -15,7 +15,7 @@ A whole-root code-only `aof graph build .` stamps what it read (`graphify-out/ao
 - **A CRLF and an LF checkout of one commit extract to the same graph** — measured equal on this repo's Windows and WSL clones (same nodes, edges and impact sets).
 
 ### A code-only build's own time budget
-A whole-root code-only build defaults to a 15-minute graphify budget; every other graphify spawn keeps the 2-minute bound.
+A whole-root code-only build defaults to a 10-minute graphify budget; every other graphify spawn keeps the 2-minute bound.
 
 ### A WSL deploy that runs
 `scripts/deploy-wsl.sh` writes the distro's `bin/aof.mjs` as a forward to `packages/core/bin/aof.mjs` and completes, including the native reinstall.

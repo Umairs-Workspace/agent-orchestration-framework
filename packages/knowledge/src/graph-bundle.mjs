@@ -182,7 +182,7 @@ export async function listCloneFiles(git, projectRoot) {
 // was a ~4-minute full extraction, carried cache or not. So after each code-only build aof stamps
 // what the graph was built from, and the next build runs no graphify when nothing it read changed.
 //
-// The fingerprint covers (a) every file graphify read — its `manifest.json` keys — by content with
+// The digest covers (a) every file graphify read — its `manifest.json` keys — by content with
 // CRLF folded to LF (a Windows and an LF checkout of one commit extract identically), and (b) the
 // list of every git-visible path, so a file added or deleted anywhere forces a rebuild even when
 // graphify would not have read it: a needless rebuild costs minutes, a missed one a wrong graph.
@@ -196,13 +196,21 @@ export function hashInput(bytes) {
   return sha256(Buffer.from(bytes.toString("latin1").replace(/\r\n/gu, "\n"), "latin1"));
 }
 
-// hashTree(projectRoot, files) → Map(rel → content hash) over the files that can be read now.
+function readIfPresent(file) {
+  try {
+    return readFileSync(file);
+  } catch {
+    return null;
+  }
+}
+
+// hashTree(projectRoot, files) → Map(rel → content hash) over the files that can be read now. An
+// unreadable file is left out, and so is never stamped as read.
 export function hashTree(projectRoot, files) {
   const hashes = new Map();
   for (const rel of files) {
-    try {
-      hashes.set(rel, hashInput(readFileSync(path.join(projectRoot, ...rel.split("/")))));
-    } catch { /* unreadable now: left out, and so never stamped as read */ }
+    const bytes = readIfPresent(path.join(projectRoot, ...rel.split("/")));
+    if (bytes) hashes.set(rel, hashInput(bytes));
   }
   return hashes;
 }
@@ -222,10 +230,11 @@ export function manifestInputs(outDir) {
   return [...new Set(inputs)].sort();
 }
 
-// inputsFingerprint({ inputs, visible, hashes }) → hex, or null when an input has no hash. A path is
+// inputsDigest({ inputs, visible, hashes }) → hex, or null when an input has no hash. A path is
 // counted only when it could be read: `ls-files --cached` still lists a tracked file deleted from
-// the working tree, and a deletion must change the fingerprint.
-export function inputsFingerprint({ inputs, visible, hashes }) {
+// the working tree, and a deletion must change the digest. This is not the 164/ADR-002 record
+// fingerprint: it digests what a graph build read, and decides nothing about work items.
+export function inputsDigest({ inputs, visible, hashes }) {
   const hash = createHash("sha256").update(`${INPUTS_FORMAT}/1\n`);
   for (const rel of visible) if (hashes.has(rel)) hash.update(`p ${rel}\n`);
   for (const rel of inputs) {
@@ -252,13 +261,13 @@ export function stampInputs(outDir, { visible, hashes }, graphifyVersion) {
   const target = path.join(outDir, INPUTS_STAMP);
   try {
     const inputs = manifestInputs(outDir);
-    const fingerprint = inputs && graphifyVersion ? inputsFingerprint({ inputs, visible, hashes }) : null;
-    if (!fingerprint) {
+    const digest = inputs && graphifyVersion ? inputsDigest({ inputs, visible, hashes }) : null;
+    if (!digest) {
       rmSync(target, { force: true });
       return;
     }
     const graphSha256 = sha256(readFileSync(path.join(outDir, "graph.json")));
-    writeFileSync(target, `${JSON.stringify({ format: INPUTS_FORMAT, version: 1, graphifyVersion, fingerprint, graphSha256 }, null, 2)}\n`, "utf8");
+    writeFileSync(target, `${JSON.stringify({ format: INPUTS_FORMAT, version: 1, graphifyVersion, digest, graphSha256 }, null, 2)}\n`, "utf8");
   } catch {
     rmSync(target, { force: true });
   }
@@ -278,8 +287,8 @@ export function inputsCurrent({ outDir, visible, hashes, graphifyVersion }) {
     return false;
   }
   if (sha256(graphBytes) !== stamp.graphSha256) return false;
-  const fingerprint = inputsFingerprint({ inputs, visible, hashes });
-  return fingerprint != null && fingerprint === stamp.fingerprint;
+  const digest = inputsDigest({ inputs, visible, hashes });
+  return digest != null && digest === stamp.digest;
 }
 
 // ------------------------------------------------------------------ the cache key ----
@@ -328,18 +337,31 @@ function lineEndingVariants(bytes) {
   return [lf, crlf].filter((variant) => variant !== text).map((variant) => Buffer.from(variant, "latin1"));
 }
 
+function listIfPresent(dir) {
+  try {
+    return readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+}
+
+function isDirectory(target) {
+  try {
+    return statSync(target).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+// A bundle with no AST cache, or no semantic cache, carries none to re-key.
 function cacheDirs(outDir) {
   const dirs = [];
   const ast = path.join(outDir, "cache", "ast");
-  try {
-    for (const entry of readdirSync(ast, { withFileTypes: true })) {
-      if (entry.isDirectory()) dirs.push(path.join(ast, entry.name));
-    }
-  } catch { /* no AST cache carried */ }
+  for (const entry of listIfPresent(ast)) {
+    if (entry.isDirectory()) dirs.push(path.join(ast, entry.name));
+  }
   const semantic = path.join(outDir, "cache", "semantic");
-  try {
-    if (statSync(semantic).isDirectory()) dirs.push(semantic);
-  } catch { /* no semantic cache carried */ }
+  if (isDirectory(semantic)) dirs.push(semantic);
   return dirs;
 }
 

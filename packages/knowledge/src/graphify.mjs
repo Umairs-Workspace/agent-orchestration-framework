@@ -197,7 +197,8 @@ const DEFAULT_GRAPHIFY_TIMEOUT_MS = 120_000;
 // A code-only whole-root build (`graphify update`) reaches no network and reads no prompt — the
 // two things the 2-minute default bounds — and it re-extracts the whole corpus: 232 s for this
 // repo's 2255 code files (166 F-02, 2026-10-20), so the default failed every first build here.
-const DEFAULT_CODE_BUILD_TIMEOUT_MS = 900_000;
+// Ten minutes is twice the slowest full build measured (299 s); AOF_GRAPHIFY_TIMEOUT_MS still wins.
+const DEFAULT_CODE_BUILD_TIMEOUT_MS = 600_000;
 
 // The wall-clock budget (ms) from AOF_GRAPHIFY_TIMEOUT_MS, or the pinned default. Only
 // a positive finite integer overrides; anything else (absent / 0 / negative / garbage)

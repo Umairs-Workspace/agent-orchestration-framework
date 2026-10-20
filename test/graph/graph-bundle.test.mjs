@@ -56,7 +56,9 @@ function writeConfig(repo, workspaceId) {
 
 // The source repo: two committed files (CRLF bytes), and a hand-written graphify-out/ whose cache
 // is keyed by graphify's formula over those CRLF bytes, with every machine-local file present.
-function makeSource(root, { workspaceId = WORKSPACE_ID } = {}) {
+// `rootMessage` keeps an unrelated repo's root commit distinct: a commit's sha is its content, so
+// two fixtures with the same files, author, message and second share one root commit.
+function makeSource(root, { workspaceId = WORKSPACE_ID, rootMessage = "root" } = {}) {
   const repo = path.join(root, "win", "aof");
   mkdirSync(path.join(repo, "packages"), { recursive: true });
   mkdirSync(path.join(repo, "docs"), { recursive: true });
@@ -67,7 +69,7 @@ function makeSource(root, { workspaceId = WORKSPACE_ID } = {}) {
   writeFileSync(path.join(repo, "docs", "b.md"), CRLF_B);
   writeFileSync(path.join(repo, ".gitignore"), "graphify-out/\n");
   git(repo, "add", "-A");
-  git(repo, "commit", "-q", "-m", "root");
+  git(repo, "commit", "-q", "-m", rootMessage);
   const head = git(repo, "rev-parse", "HEAD");
   writeGraph(repo, head);
   return { repo, head };
@@ -361,7 +363,7 @@ const importTests = [
       await exportFrom(repo, bundle);
       const clone = makeClone(root, repo, { workspaceId: null });
       await importInto(clone, bundle);
-      const other = makeSource(path.join(root, "other"), { workspaceId: null }).repo;
+      const other = makeSource(path.join(root, "other"), { workspaceId: null, rootMessage: "an unrelated project" }).repo;
       rmSync(path.join(other, "graphify-out"), { recursive: true, force: true });
       await rejectsWith(() => importInto(other, bundle), "graph-import-wrong-project");
     },
@@ -661,7 +663,7 @@ machineTests.push(
       await buildWith(repo);
       const stamp = JSON.parse(readFileSync(path.join(repo, "graphify-out", INPUTS_STAMP), "utf8"));
       assert.equal(stamp.graphifyVersion, "0.8.44");
-      assert.match(stamp.fingerprint, /^[0-9a-f]{64}$/u);
+      assert.match(stamp.digest, /^[0-9a-f]{64}$/u);
       const { files } = unpackBundle(await (async () => {
         const bundle = path.join(root, "carry", "aof.graph");
         await exportFrom(repo, bundle);

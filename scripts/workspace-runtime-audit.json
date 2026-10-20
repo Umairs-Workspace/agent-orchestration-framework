@@ -260,7 +260,7 @@
     "kind": "child-process",
     "expression": "spawn(resolved.path, args, options)",
     "digest": "cafa2b787777fc12c12154baff452dcfa6be959f2df57f929f24ae2e412d0c28",
-    "sourceDigest": "4daa088b76b78c567b5da87fc8f01f51dab5910fc22066bef837be68bd45c070",
+    "sourceDigest": "63cfb139a062147f335098085f24f7114d12e063a62f12543abd22a7e146c2f2",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -268,7 +268,7 @@
     "kind": "child-process",
     "expression": "spawnSync(resolved.path, args, options)",
     "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
-    "sourceDigest": "4daa088b76b78c567b5da87fc8f01f51dab5910fc22066bef837be68bd45c070",
+    "sourceDigest": "63cfb139a062147f335098085f24f7114d12e063a62f12543abd22a7e146c2f2",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -276,7 +276,7 @@
     "kind": "child-process",
     "expression": "spawnSync(resolved.path, args, options)",
     "digest": "d4ede35c0f164a8d69c3ffc5e8c3ea288d7e33a72b4020858f0637df9cbca829",
-    "sourceDigest": "4daa088b76b78c567b5da87fc8f01f51dab5910fc22066bef837be68bd45c070",
+    "sourceDigest": "63cfb139a062147f335098085f24f7114d12e063a62f12543abd22a7e146c2f2",
     "reason": "Executes the located graphify tool through injected process ports, preserving the optional-tool refusal behavior."
   },
   {
@@ -476,7 +476,7 @@
     "kind": "child-process",
     "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
     "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -484,7 +484,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -492,7 +492,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -500,7 +500,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
     "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
-    "sourceDigest": "6f4194059ab37e4433483b72851da9bdb960f50566357d6b535a87cc43479faf",
+    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
