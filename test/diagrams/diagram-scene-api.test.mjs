@@ -80,13 +80,19 @@ export const diagramSceneApiTests = [
       ["POST", { host: "evil.test", origin: "http://evil.test", "content-type": "application/json" }, "{}", 403, "non-loopback-host"],
       ["POST", { host, origin: `http://${host}`, "content-type": "text/plain" }, "{}", 400, "invalid-content-type"],
       ["POST", { host, origin: `http://${host}`, "content-type": "application/json" }, "{broken", 400, "malformed-json"],
-      ["POST", { host, origin: `http://${host}`, "content-type": "application/json" }, JSON.stringify({ payload: "x".repeat(1_000_001) }), 413, "payload-too-large"],
+      ["POST", { host, origin: `http://${host}`, "content-type": "application/json" }, JSON.stringify({ payload: "x".repeat(16_000_001) }), 413, "payload-too-large"],
     ];
     for (const [method, headers, body, status, code] of rows) {
       const response = await request(method, "/api/diagram/scene", { headers, body });
       assert.equal(response.status, status); assert.equal(response.body.code, code);
     }
     assert.deepEqual(calls, []);
+  }) },
+  { name: "scene api: the diagram route alone admits a body over the board's 1 MB default (Publish carries an SVG and a PNG)", run: () => withApi(async ({ calls, request, port }) => {
+    const host = `127.0.0.1:${port}`;
+    const response = await request("POST", "/api/diagram/scene?ref=07&file=ADR-002-scene.excalidraw", { headers: { host, origin: `http://${host}`, "content-type": "application/json" }, body: JSON.stringify({ action: "publish", svg: "x".repeat(3_000_000) }) });
+    assert.equal(response.status, 200);
+    assert.equal(calls[0].input.svg.length, 3_000_000);
   }) },
   { name: "scene api: command errors retain their 409 status and code", run: () => withApi(async ({ calls, request, port, setFailure }) => {
     setFailure(Object.assign(new Error("revision conflict"), { status: 409, code: "diagram-scene-conflict" }));

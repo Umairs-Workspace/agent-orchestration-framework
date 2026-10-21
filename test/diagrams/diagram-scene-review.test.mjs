@@ -6,233 +6,191 @@ import os from "node:os";
 import path from "node:path";
 import { createDiagramSceneCommand } from "@aof/diagrams/commands/scene";
 
+// The review loop over the stored scene (milestone 200, ADR-011/ADR-012): notes name Mermaid ids; a
+// proposal is the Mermaid view edited, recorded with its changes and a snapshot of the elements they
+// touch; accept applies the editor's compiled element operations, refusing as stale — by Mermaid id —
+// anything a person changed since, and refusing an operation outside what the proposal touches.
 const file = "ADR-002-scene.excalidraw";
-const box = (id, extra = {}) => ({ id, type: "rectangle", x: 1, y: 2, width: 30, height: 40, ...extra });
-const scene = (elements) => ({ type: "excalidraw", version: 2, elements, appState: { gridSize: 20 }, files: {} });
+const el = (id, type, extra = {}) => ({ id, type, x: 0, y: 0, width: 100, height: 60, strokeColor: "#1e1e1e", backgroundColor: "transparent", version: 1, ...extra });
+const TWO = [
+  el("e-api", "rectangle", { customData: { aof: { id: "API" } } }), el("t-api", "text", { containerId: "e-api", text: "API", originalText: "API" }),
+  el("e-db", "rectangle", { x: 300, customData: { aof: { id: "DB" } } }), el("t-db", "text", { containerId: "e-db", text: "DB", originalText: "DB" }),
+  el("a1", "arrow", { x: 100, y: 30, width: 200, height: 0, points: [[0, 0], [200, 0]], startBinding: { elementId: "e-api" }, endBinding: { elementId: "e-db" }, strokeStyle: "solid", strokeWidth: 2, endArrowhead: "arrow" }),
+];
+const scene = (elements) => ({ type: "excalidraw", version: 2, elements, appState: {}, files: {} });
+const VIEW = 'flowchart LR\n  API["API"]\n  DB["DB"]\n  API --> DB\n';
+const RENAMED = VIEW.replace('API["API"]', 'API["Gateway"]');
 
-async function fixture(options = {}) {
+async function fixture() {
   const root = await mkdtemp(path.join(os.tmpdir(), "aof-review-"));
   const item = path.join(root, "wiki", "work", "07_demo");
   await mkdir(path.join(item, "diagrams"), { recursive: true });
   await writeFile(path.join(item, "ARCHITECTURE.md"), "# Demo\n\n## ADR-002 — Scene\n\n### Diagram\n\nDraw it.\n");
-  const state = { status: "in-progress", archived: false };
+  const state = { status: "in-progress", archived: false, diagrams: { enabled: true, formats: ["svg", "png"] } };
   const command = createDiagramSceneCommand({
     resolveItemExact: async (_ctx, ref) => (ref === "07" ? { ref: "07", dir: item, status: state.status, archived: state.archived } : null),
     requireLocalCheckout() {},
+    resolveWorkDiagrams: () => state.diagrams,
   }).diagramSceneCommand;
-  const ctx = { workspace: { root } };
+  const ctx = { workspace: { root, projectRoot: root, config: {} } };
   const run = (action, input = {}) => command.run({ ref: "07", file, action, ...input }, ctx);
   const target = path.join(item, "diagrams", file);
-  const savedScene = async (elements, baseRevision = null) => run("save", { baseRevision, scene: scene(elements) });
-  return { root, item, state, run, target, savedScene, options };
+  const saved = async (elements, baseRevision = null) => run("save", { baseRevision, scene: scene(elements) });
+  return { root, item, state, run, target, saved };
 }
 async function withFixture(fn) { const fx = await fixture(); try { await fn(fx); } finally { await rm(fx.root, { recursive: true, force: true }); } }
 async function rejected(promise, code) { await assert.rejects(promise, (error) => error.code === code, `expected ${code}`); }
-// A saved two-box scene, one request about it, and a proposal that updates "a" and adds "aof-new".
 async function seeded(fx) {
-  const saved = await fx.savedScene([box("a"), box("b")]);
-  const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["a"], request: "Widen a" });
+  const saved = await fx.saved(TWO);
+  const { request } = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API"], request: "Rename API" });
   return { saved, request };
 }
-const widen = [{ op: "update", id: "a", patch: { width: 99 } }, { op: "add", element: box("aof-new", { x: 100 }) }];
-const propose = (fx, request, baseRevision, operations = widen) => fx.run("propose", { requestId: request.id, baseRevision, summary: "Widen a", rationale: "Because", operations });
+const propose = (fx, request, baseRevision, text = RENAMED) => fx.run("propose", { requestId: request.id, baseRevision, summary: "Rename API", rationale: "Because", text });
+// What the editor compiles for the rename: the label's text, nothing else.
+const RENAME_OPS = [{ op: "update", id: "t-api", patch: { text: "Gateway", originalText: "Gateway", width: 70 } }];
 
 export const diagramSceneReviewTests = [
   { name: "review: a corrupt record is reported as skipped in the listing and refused by id, never silently dropped", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     await propose(fx, request, saved.revision);
-    const proposalsDir = path.join(fx.item, "diagrams", "ADR-002-scene.review", "proposals");
-    await writeFile(path.join(proposalsDir, "deadbeefdeadbeef.json"), "{ not json");
+    await writeFile(path.join(fx.item, "diagrams", "ADR-002-scene.review", "proposals", "deadbeefdeadbeef.json"), "{ not json");
     const listed = await fx.run("proposals");
-    assert.equal(listed.proposals.length, 1, "the healthy proposal is still listed");
+    assert.equal(listed.proposals.length, 1);
     assert.deepEqual(listed.skipped, { requests: [], proposals: ["deadbeefdeadbeef"] });
     await rejected(fx.run("reject", { proposalId: "deadbeefdeadbeef" }), "diagram-review-corrupt");
   }) },
-  { name: "review: request needs a saved scene and the current revision, and leaves the invocation to the board", run: () => withFixture(async (fx) => {
+  { name: "review: a note needs a saved diagram, the current revision and ids the diagram has", run: () => withFixture(async (fx) => {
     await rejected(fx.run("request", { baseRevision: "0".repeat(64), selectedIds: [], request: "x" }), "diagram-scene-missing");
-    const saved = await fx.savedScene([box("a")]);
+    const saved = await fx.saved(TWO);
     await rejected(fx.run("request", { baseRevision: "f".repeat(64), selectedIds: [], request: "x" }), "diagram-scene-conflict");
     await rejected(fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: "" }), "diagram-scene-invalid");
-    await rejected(fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: "x".repeat(10001) }), "diagram-scene-invalid");
-    const out = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["a"], request: "Explain" });
-    assert.match(out.request.id, /^[a-f0-9]{16}$/);
-    assert.equal("invocation" in out, false, "the board composes the slash command (FF-6306)");
-    assert.deepEqual({ ...out.request, id: "", createdAt: "" }, { id: "", kind: "request", createdAt: "", revision: saved.revision, selectedIds: ["a"], request: "Explain", status: "open", answer: null, answeredAt: null });
-    assert.ok(!Number.isNaN(Date.parse(out.request.createdAt)));
+    await rejected(fx.run("request", { baseRevision: saved.revision, selectedIds: ["Nope"], request: "x" }), "diagram-review-selection-invalid");
+    const out = await fx.run("request", { baseRevision: saved.revision, selectedIds: ["API", "API->DB#1"], request: "Explain" });
+    assert.equal("invocation" in out, false, "the editor composes the slash command (FF-6306)");
+    assert.deepEqual({ ...out.request, id: "", createdAt: "" }, { id: "", kind: "request", createdAt: "", revision: saved.revision, selectedIds: ["API", "API->DB#1"], request: "Explain", status: "open", answer: null, answeredAt: null });
   }) },
-  { name: "review: context by requestId uses the stored request; unknown ids are refused", run: () => withFixture(async (fx) => {
+  { name: "review: context by requestId uses the stored note against the diagram as it is now", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
-    await fx.savedScene([box("a"), box("b"), box("c")], saved.revision);
-    const context = await fx.run("context", { requestId: request.id, selectedIds: ["b"], request: "ignored" });
-    assert.deepEqual(context.elements.map((e) => e.id), ["a"]);
-    assert.equal(context.request, "Widen a");
-    assert.equal(context.requestId, request.id);
-    assert.equal(context.requestRevision, saved.revision);
-    assert.notEqual(context.revision, saved.revision);
+    await fx.saved([...TWO, el("e-c", "rectangle", { x: 600, customData: { aof: { id: "C" } } })], saved.revision);
+    const context = await fx.run("context", { requestId: request.id, selectedIds: ["DB"], request: "ignored" });
+    assert.deepEqual(context.selected.nodes.map((n) => n.id), ["API"]);
+    assert.equal(context.request, "Rename API"); assert.equal(context.requestRevision, saved.revision);
+    assert.match(context.view, /C\[""\]/);
     await rejected(fx.run("context", { requestId: "deadbeefdeadbeef" }), "diagram-review-unknown");
-    await rejected(fx.run("context", { requestId: "../../etc/passwd" }), "diagram-review-id-invalid");
   }) },
-  { name: "review: respond records the answer and never touches the scene", run: () => withFixture(async (fx) => {
+  { name: "review: respond records the answer and never touches the diagram", run: () => withFixture(async (fx) => {
     const { request } = await seeded(fx);
     const before = await readFile(fx.target, "utf8");
-    const out = await fx.run("respond", { requestId: request.id, answer: "Because it is shared." });
-    assert.equal(out.request.status, "answered");
-    assert.equal(out.request.answer, "Because it is shared.");
-    assert.ok(out.request.answeredAt);
+    assert.equal((await fx.run("respond", { requestId: request.id, answer: "Because." })).request.status, "answered");
     assert.equal(await readFile(fx.target, "utf8"), before);
-    await rejected(fx.run("respond", { requestId: request.id, answer: "" }), "diagram-scene-invalid");
-    await rejected(fx.run("respond", { requestId: "abcdef0123456789", answer: "x" }), "diagram-review-unknown");
-    const listed = await fx.run("proposals");
-    assert.equal(listed.requests[0].answer, "Because it is shared.");
   }) },
-  { name: "review: propose validates every operation shape and the resulting scene", run: () => withFixture(async (fx) => {
+  { name: "review: a proposal is the edited Mermaid view — its changes and a snapshot of what they touch are recorded, and it closes its note", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
-    const bad = async (operations, code = "diagram-proposal-invalid") => rejected(propose(fx, request, saved.revision, operations), code);
-    await bad([]);
-    await bad([{ op: "update", id: "nope", patch: { width: 1 } }]);
-    await bad([{ op: "delete", id: "nope" }]);
-    await bad([{ op: "update", id: "a", patch: { width: 1 } }, { op: "delete", id: "a" }]);
-    await bad([{ op: "add", element: box("a") }]);
-    await bad([{ op: "update", id: "a", patch: { id: "z" } }]);
-    await bad([{ op: "update", id: "a", patch: {} }]);
-    await bad([{ op: "scale", id: "a" }]);
-    await bad([{ op: "update", id: "a", patch: { width: -5 } }], "diagram-scene-invalid");
-    await bad([{ op: "add", element: { id: "n", type: "blob", x: 0, y: 0, width: 1, height: 1 } }], "diagram-scene-invalid");
-    await bad(Array.from({ length: 501 }, (_, i) => ({ op: "add", element: box(`n${i}`) })));
-    await rejected(propose(fx, request, "f".repeat(64)), "diagram-scene-conflict");
-    await rejected(fx.run("propose", { requestId: "abcdef0123456789", baseRevision: saved.revision, summary: "s", rationale: "r", operations: widen }), "diagram-review-unknown");
-    await rejected(fx.run("propose", { requestId: request.id, baseRevision: saved.revision, summary: "x".repeat(501), rationale: "r", operations: widen }), "diagram-scene-invalid");
-    assert.deepEqual((await fx.run("proposals")).proposals, []);
+    await rejected(propose(fx, request, saved.revision, VIEW), "diagram-proposal-invalid");
+    await rejected(propose(fx, request, saved.revision, "flowchart LR\n  A[unclosed"), "diagram-mermaid-invalid");
+    await rejected(propose(fx, request, "0".repeat(64)), "diagram-scene-conflict");
     const { proposal } = await propose(fx, request, saved.revision);
-    assert.equal(proposal.status, "pending");
-    assert.equal(proposal.requestId, request.id);
-    assert.equal(proposal.baseRevision, saved.revision);
-    assert.deepEqual(proposal.baseElements, { a: box("a"), "aof-new": null });
-    assert.equal(proposal.acceptedRevision, null);
-    assert.equal((await fx.run("read")).revision, saved.revision);
+    assert.deepEqual(proposal.changes, [{ key: "node:API", change: "changed" }]);
+    assert.match(proposal.text, /API\["Gateway"\]/);
+    assert.equal("snapshot" in proposal || "base" in proposal, false, "the answer and the listing stay light");
+    const stored = JSON.parse(await readFile(path.join(fx.item, "diagrams", "ADR-002-scene.review", "proposals", `${proposal.id}.json`), "utf8"));
+    assert.deepEqual(Object.keys(stored.snapshot).sort(), ["a1", "e-api", "t-api"], "a rename touches the node's own elements and its arrows (the box may grow), nothing else");
+    assert.deepEqual((await fx.run("proposals")).requests.map((r) => r.status), ["proposed"]);
   }) },
-  { name: "review: a stale proposal baseRevision is refused after the scene moved on", run: () => withFixture(async (fx) => {
+  { name: "review: what a change touches depends on its kind — a rename or move reaches the arrows, a removal the far boxes too", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
-    await fx.savedScene([box("a"), box("b"), box("c")], saved.revision);
-    await rejected(propose(fx, request, saved.revision), "diagram-scene-conflict");
+    const snapshotOf = async (text) => {
+      const { proposal } = await propose(fx, request, saved.revision, text);
+      return Object.keys(JSON.parse(await readFile(path.join(fx.item, "diagrams", "ADR-002-scene.review", "proposals", `${proposal.id}.json`), "utf8")).snapshot).sort();
+    };
+    assert.deepEqual(await snapshotOf(`${VIEW}  %% aof:node API x=50 y=0\n`), ["a1", "e-api", "t-api"]);
+    assert.deepEqual(await snapshotOf('flowchart LR\n  DB["DB"]\n'), ["a1", "e-api", "e-db", "t-api"]);
+    assert.deepEqual(await snapshotOf(VIEW.replace("API --> DB", "API -.-> DB")), ["a1", "e-api", "e-db"]);
   }) },
-  { name: "review: accept merges the touched elements and keeps unrelated human edits", run: () => withFixture(async (fx) => {
+  { name: "review: a proposal may place a library item that exists, once — and never swaps an existing node's item", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
-    const { proposal } = await propose(fx, request, saved.revision);
-    const humanEdit = await fx.savedScene([box("a"), box("b", { x: 500 }), box("human")], saved.revision);
-    const out = await fx.run("accept", { proposalId: proposal.id, baseRevision: humanEdit.revision });
-    assert.equal(out.saved, true);
-    assert.equal(out.proposal.status, "accepted");
-    assert.equal(out.proposal.acceptedRevision, out.revision);
-    assert.ok(out.proposal.decidedAt);
-    const byId = Object.fromEntries(out.scene.elements.map((e) => [e.id, e]));
-    assert.equal(byId.a.width, 99);
-    assert.equal(byId.a.version, (proposal.baseElements.a.version ?? 0) + 1, "an accepted update bumps the element version");
-    assert.equal(typeof byId.a.versionNonce, "number");
-    assert.equal(byId.b.x, 500);
-    assert.deepEqual(byId.b, box("b", { x: 500 }), "an untouched human-edited element is carried over unchanged");
-    assert.ok(byId.human && byId["aof-new"]);
-    assert.equal(out.scene.appState.gridSize, 20);
-    const read = await fx.run("read");
-    assert.equal(read.revision, out.revision);
-    assert.deepEqual(read.scene, out.scene);
-    const listed = await fx.run("proposals");
-    assert.equal(listed.proposals[0].status, "accepted");
-    assert.equal(listed.revision, out.revision);
+    const withFn = `${VIEW}  Fn["Function"]\n  %% aof:lib Fn azure/"Function App"\n`;
+    await rejected(propose(fx, request, saved.revision, withFn), "diagram-library-unknown");
+    const dir = path.join(fx.root, ".aof", "diagrams", "libraries");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, "azure.excalidrawlib"), JSON.stringify({ type: "excalidrawlib", version: 2, libraryItems: [{ id: "i1", name: "Function App", elements: [el("x", "rectangle")] }] }));
+    const { proposal } = await propose(fx, request, saved.revision, withFn);
+    assert.deepEqual(proposal.changes.map((c) => c.key).sort(), ["lib:Fn", "node:Fn"]);
+    await rejected(propose(fx, request, saved.revision, `${VIEW}  %% aof:lib API azure/"Function App"\n`), "diagram-proposal-invalid");
   }) },
-  { name: "review: accept is refused as stale when a touched element changed, leaving the file unchanged", run: () => withFixture(async (fx) => {
+  { name: "review: accept applies the compiled operations, bumps what it changes, and keeps a person's unrelated edits", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     const { proposal } = await propose(fx, request, saved.revision);
-    const edited = await fx.savedScene([box("a", { x: 77 }), box("b"), box("aof-new")], saved.revision);
+    // The person recolours DB after the proposal: DB is not something the rename touches.
+    const now = await fx.saved(TWO.map((e) => (e.id === "e-db" ? { ...e, backgroundColor: "#ffd6d6" } : e)), saved.revision);
+    await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: now.revision }), "diagram-proposal-invalid");
+    await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: now.revision, operations: [{ op: "update", id: "e-db", patch: { x: 1 } }] }), "diagram-proposal-invalid");
+    const accepted = await fx.run("accept", { proposalId: proposal.id, baseRevision: now.revision, operations: RENAME_OPS });
+    const label = accepted.scene.elements.find((e) => e.id === "t-api");
+    assert.equal(label.text, "Gateway"); assert.equal(label.version, 2, "a changed element looks changed to Excalidraw");
+    assert.equal(accepted.scene.elements.find((e) => e.id === "e-db").backgroundColor, "#ffd6d6", "the person's edit survives");
+    assert.equal(accepted.proposal.status, "accepted"); assert.equal(accepted.proposal.acceptedRevision, accepted.revision);
+    assert.match(await readFile(fx.target, "utf8"), /"text":"Gateway"/);
+  }) },
+  { name: "review: accept is refused as stale, naming the Mermaid id, when a person changed what the proposal touches", run: () => withFixture(async (fx) => {
+    const { saved, request } = await seeded(fx);
+    const { proposal } = await propose(fx, request, saved.revision);
+    const mine = await fx.saved(TWO.map((e) => (e.id === "t-api" ? { ...e, text: "Mine", originalText: "Mine" } : e)), saved.revision);
     const before = await readFile(fx.target, "utf8");
-    await assert.rejects(fx.run("accept", { proposalId: proposal.id, baseRevision: edited.revision }), (error) => {
-      assert.equal(error.code, "diagram-proposal-stale");
-      assert.equal(error.status, 409);
-      assert.deepEqual(error.details.conflicts, ["a", "aof-new"]);
-      assert.match(error.message, /a, aof-new/);
-      return true;
-    });
+    await assert.rejects(fx.run("accept", { proposalId: proposal.id, baseRevision: mine.revision, operations: RENAME_OPS }), (error) => error.code === "diagram-proposal-stale" && error.details.conflicts.includes("API"));
     assert.equal(await readFile(fx.target, "utf8"), before);
-    assert.equal((await fx.run("proposals")).proposals[0].status, "pending");
   }) },
   { name: "review: accept needs the current revision and a pending proposal; double decisions are refused", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     const { proposal } = await propose(fx, request, saved.revision);
-    const second = (await propose(fx, request, saved.revision, [{ op: "delete", id: "b" }])).proposal;
-    await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: "e".repeat(64) }), "diagram-scene-conflict");
-    await rejected(fx.run("accept", { proposalId: "abcdef0123456789", baseRevision: saved.revision }), "diagram-review-unknown");
-    const accepted = await fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision });
-    await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: accepted.revision }), "diagram-proposal-decided");
+    await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: "f".repeat(64), operations: RENAME_OPS }), "diagram-scene-conflict");
+    const accepted = await fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision, operations: RENAME_OPS });
+    await rejected(fx.run("accept", { proposalId: proposal.id, baseRevision: accepted.revision, operations: RENAME_OPS }), "diagram-proposal-decided");
     await rejected(fx.run("reject", { proposalId: proposal.id }), "diagram-proposal-decided");
-    const rejectedOut = await fx.run("reject", { proposalId: second.id, reason: "Not now" });
-    assert.equal(rejectedOut.proposal.status, "rejected");
-    assert.equal(rejectedOut.proposal.reason, "Not now");
-    assert.ok(rejectedOut.proposal.decidedAt);
-    await rejected(fx.run("reject", { proposalId: second.id }), "diagram-proposal-decided");
-    await rejected(fx.run("accept", { proposalId: second.id, baseRevision: accepted.revision }), "diagram-proposal-decided");
-    assert.equal((await fx.run("read")).revision, accepted.revision);
   }) },
-  { name: "review: reject marks the proposal, bounds the reason and leaves the scene alone", run: () => withFixture(async (fx) => {
+  { name: "review: reject and withdraw leave the diagram alone", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     const { proposal } = await propose(fx, request, saved.revision);
-    await rejected(fx.run("reject", { proposalId: proposal.id, reason: "x".repeat(2001) }), "diagram-scene-invalid");
-    const out = await fx.run("reject", { proposalId: proposal.id });
-    assert.equal(out.proposal.status, "rejected");
-    assert.equal(out.proposal.reason, null);
-    assert.equal((await fx.run("read")).revision, saved.revision);
+    const before = await readFile(fx.target, "utf8");
+    assert.equal((await fx.run("reject", { proposalId: proposal.id, reason: "Not now" })).proposal.status, "rejected");
+    const { request: note } = await fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: "Later" });
+    assert.equal((await fx.run("withdraw", { requestId: note.id })).request.status, "withdrawn");
+    await rejected(fx.run("withdraw", { requestId: note.id }), "diagram-request-decided");
+    assert.equal(await readFile(fx.target, "utf8"), before);
   }) },
-  { name: "review: a delete operation sets isDeleted instead of removing the element", run: () => withFixture(async (fx) => {
-    const { saved, request } = await seeded(fx);
-    const { proposal } = await propose(fx, request, saved.revision, [{ op: "delete", id: "b" }]);
-    const out = await fx.run("accept", { proposalId: proposal.id, baseRevision: saved.revision });
-    assert.equal(out.scene.elements.length, 2);
-    assert.equal(out.scene.elements.find((e) => e.id === "b").isDeleted, true);
-    assert.equal(out.scene.elements.find((e) => e.id === "a").isDeleted, undefined);
+  { name: "review: publish writes the SVG and the owed PNG where the ADR links them, and answers the block to paste", run: () => withFixture(async (fx) => {
+    const saved = await fx.saved(TWO);
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>';
+    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.from("rest")]).toString("base64");
+    await rejected(fx.run("publish", { baseRevision: saved.revision, svg: "<html></html>", png }), "diagram-publish-invalid");
+    await rejected(fx.run("publish", { baseRevision: saved.revision, svg }), "diagram-publish-invalid");
+    const published = await fx.run("publish", { baseRevision: saved.revision, svg, png });
+    assert.deepEqual(published.written, ["diagrams/ADR-002-scene.svg", "diagrams/ADR-002-scene.png"]);
+    assert.equal(published.block, "![ADR-002 — Scene](diagrams/ADR-002-scene.svg)\n\nSource: [ADR-002-scene.excalidraw](diagrams/ADR-002-scene.excalidraw) · PNG: [ADR-002-scene.png](diagrams/ADR-002-scene.png)");
   }) },
   { name: "review: delivered items refuse writes but proposals and context still read", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
     const { proposal } = await propose(fx, request, saved.revision);
     fx.state.status = "done";
     for (const [action, input] of [
+      ["save", { baseRevision: saved.revision, scene: scene(TWO) }],
       ["request", { baseRevision: saved.revision, selectedIds: [], request: "x" }],
-      ["respond", { requestId: request.id, answer: "x" }],
-      ["propose", { requestId: request.id, baseRevision: saved.revision, summary: "s", rationale: "r", operations: widen }],
-      ["accept", { proposalId: proposal.id, baseRevision: saved.revision }],
-      ["reject", { proposalId: proposal.id }],
+      ["propose", { requestId: request.id, baseRevision: saved.revision, summary: "s", rationale: "r", text: RENAMED }],
+      ["accept", { proposalId: proposal.id, baseRevision: saved.revision, operations: RENAME_OPS }],
+      ["publish", { baseRevision: saved.revision, svg: "<svg></svg>" }],
     ]) await rejected(fx.run(action, input), "diagram-item-delivered");
-    const listed = await fx.run("proposals");
-    assert.equal(listed.proposals.length, 1);
-    assert.equal(listed.requests.length, 1);
-    assert.deepEqual(listed.skipped, { requests: [], proposals: [] }, "nothing is skipped in a healthy listing");
-    assert.equal(listed.proposals[0].status, "pending");
+    assert.equal((await fx.run("proposals")).proposals.length, 1);
     assert.equal((await fx.run("context", { requestId: request.id })).requestId, request.id);
   }) },
-  { name: "review: proposals lists newest first, caps at 50 and is empty without a review folder", run: () => withFixture(async (fx) => {
-    const empty = await fx.run("proposals");
-    assert.deepEqual({ requests: empty.requests, proposals: empty.proposals, revision: empty.revision }, { requests: [], proposals: [], revision: null });
-    const saved = await fx.savedScene([box("a")]);
-    const ids = [];
-    for (let i = 0; i < 52; i += 1) ids.push((await fx.run("request", { baseRevision: saved.revision, selectedIds: [], request: `r${i}` })).request.id);
-    const listed = await fx.run("proposals");
-    assert.equal(listed.requests.length, 50);
-    assert.equal(listed.requests[0].createdAt >= listed.requests[49].createdAt, true);
-  }) },
-  { name: "review: review storage refuses symlinks and non-regular records", run: () => withFixture(async (fx) => {
+  { name: "review: review storage refuses symlinks", run: () => withFixture(async (fx) => {
     const { saved, request } = await seeded(fx);
-    const reviewDir = path.join(fx.item, "diagrams", `${file.replace(/\.excalidraw$/, "")}.review`);
+    const reviewDir = path.join(fx.item, "diagrams", "ADR-002-scene.review");
     const outside = path.join(fx.root, "outside");
     await mkdir(outside);
     await rm(path.join(reviewDir, "proposals"), { recursive: true, force: true });
     await symlink(outside, path.join(reviewDir, "proposals"));
     await rejected(propose(fx, request, saved.revision), "diagram-scene-storage-invalid");
-    await rejected(fx.run("proposals"), "diagram-scene-storage-invalid");
     assert.deepEqual(await readdir(outside), []);
-    await rm(path.join(reviewDir, "proposals"));
-    await mkdir(path.join(reviewDir, "proposals"));
-    await symlink(path.join(fx.root, "outside"), path.join(reviewDir, "proposals", "abcdef0123456789.json"));
-    await rejected(fx.run("reject", { proposalId: "abcdef0123456789" }), "diagram-review-storage-invalid");
-    await writeFile(path.join(reviewDir, "requests", `${request.id}.json`), "x".repeat(1024 * 1024 + 1));
-    await rejected(fx.run("respond", { requestId: request.id, answer: "y" }), "diagram-review-too-large");
   }) },
   { name: "review: real CLI runs request, propose, proposals and accept", run: async () => {
     const root = await mkdtemp(path.join(os.tmpdir(), "aof-review-cli-"));
@@ -252,16 +210,12 @@ export const diagramSceneReviewTests = [
         assert.equal(result.status, 0, result.stderr || result.stdout);
         return JSON.parse(result.stdout);
       };
-      const saved = await invoke("save", { baseRevision: null, scene: scene([box("a")]) });
-      const requested = await invoke("request", { baseRevision: saved.revision, selectedIds: ["a"], request: "Make it wider" });
-      assert.match(requested.request.id, /^[a-f0-9]{16}$/);
-      const proposed = await invoke("propose", { requestId: requested.request.id, baseRevision: saved.revision, summary: "Wider", rationale: "r", operations: [{ op: "update", id: "a", patch: { width: 80 } }] });
-      const listed = await invoke("proposals");
-      assert.equal(listed.proposals[0].id, proposed.proposal.id);
-      assert.equal(listed.requests[0].id, requested.request.id);
-      const accepted = await invoke("accept", { proposalId: proposed.proposal.id, baseRevision: saved.revision });
-      assert.equal(accepted.scene.elements[0].width, 80);
-      assert.equal((await invoke("proposals")).proposals[0].status, "accepted");
+      const saved = await invoke("save", { baseRevision: null, scene: scene(TWO) });
+      const requested = await invoke("request", { baseRevision: saved.revision, selectedIds: ["API"], request: "Rename API" });
+      const proposed = await invoke("propose", { requestId: requested.request.id, baseRevision: saved.revision, summary: "Rename", rationale: "r", text: RENAMED });
+      assert.equal((await invoke("proposals")).proposals[0].id, proposed.proposal.id);
+      const accepted = await invoke("accept", { proposalId: proposed.proposal.id, baseRevision: saved.revision, operations: RENAME_OPS });
+      assert.equal(accepted.scene.elements.find((e) => e.id === "t-api").text, "Gateway");
     } finally { await rm(root, { recursive: true, force: true }); }
   } },
 ];

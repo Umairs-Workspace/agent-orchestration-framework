@@ -334,7 +334,7 @@ async function handleDiagramApi(request, response, options = {}) {
         sendJson(response, 200, result); return true;
       }
       if (!admitWriteRequest(request, response)) return true;
-      const body = await readJsonBody(request);
+      const body = await readJsonBody(request, 16_000_000);
       const result = await invoke("diagram:scene", { ...body, ref: (params.get("ref") ?? body.ref ?? "").trim(), file: (params.get("file") ?? body.file ?? "").trim() }, ctx);
       sendJson(response, 200, result); return true;
     } catch (error) { sendApiError(response, error.status ?? 500, error.message, error.code ?? "diagram-scene-api-failed"); return true; }
@@ -435,14 +435,16 @@ function send(response, status, contentTypeValue, body) {
 // (400) JSON body, and one that is not a plain object (400 `invalid-body`, 131/04: a
 // `null` body otherwise threw on `body.ref` to a 500). These are HTTP-body concerns and stay in the face; the
 // resolved JSON object is handed to the command as its input.
-function readJsonBody(request) {
+// `maxBytes` is the route's own: every board write keeps the 1 MB default, and the diagram route
+// alone raises it, because Publish carries the editor's SVG and, when owed, a base64 PNG.
+function readJsonBody(request, maxBytes = 1_000_000) {
   return new Promise((resolve, reject) => {
     let body = "";
     let tooLarge = false;
     request.on("data", (chunk) => {
       if (tooLarge) return;
       body += chunk;
-      if (Buffer.byteLength(body, "utf8") > 1_000_000) tooLarge = true;
+      if (Buffer.byteLength(body, "utf8") > maxBytes) tooLarge = true;
     });
     request.on("end", () => {
       if (tooLarge) {

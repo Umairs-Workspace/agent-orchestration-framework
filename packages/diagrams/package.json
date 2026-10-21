@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     "./layout": "./src/layout.mjs",
+    "./mermaid-profile": "./src/mermaid-profile.mjs",
     "./generators": "./src/generators.mjs",
     "./doctor-lane": "./src/doctor-lane.mjs",
     "./contribution": "./src/contribution.mjs",
@@ -12,7 +13,8 @@
     "./commands/export": "./src/commands/export.mjs",
     "./commands/file": "./src/commands/file.mjs",
     "./commands/scene": "./src/commands/scene.mjs",
-    "./commands/capability": "./src/commands/capability.mjs"
+    "./commands/capability": "./src/commands/capability.mjs",
+    "./scene-view": "./src/scene-view.mjs"
   },
   "files": [
     "src"

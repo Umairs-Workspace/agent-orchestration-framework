@@ -21,7 +21,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@aof/diagrams-ui@workspace:packages/diagrams-ui"
   dependencies:
+    "@aof/diagrams": "workspace:*"
     "@excalidraw/excalidraw": "npm:0.18.0"
+    "@excalidraw/mermaid-to-excalidraw": "npm:1.1.2"
   peerDependencies:
     react: ^19.0.0
     react-dom: ^19.0.0

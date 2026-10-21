@@ -24,8 +24,9 @@ export function sceneFingerprint(scene) {
 }
 
 // The slash command that asks the architect to review a recorded request (same style as action.mjs).
+// With no request id it is the BATCH form (200/06): the command examines every open note.
 export function diagramReviewInvocation(ref, file, requestId) {
-  return `/aof:diagram-review ${ref} ${file} ${requestId}`;
+  return requestId ? `/aof:diagram-review ${ref} ${file} ${requestId}` : `/aof:diagram-review ${ref} ${file}`;
 }
 
 // ---- Excalidraw editor: review state ----
@@ -36,10 +37,13 @@ export function pendingProposals(proposals) {
   return (Array.isArray(proposals) ? proposals : []).filter((p) => p && p.status === "pending");
 }
 
+// A proposal records its changes as keyed facts (`node:API`, `edge:A->B#1`, `layout:API`, …) — the
+// panel counts them and Preview selects the ids they name.
 export function operationCounts(proposal) {
   const counts = { add: 0, update: 0, delete: 0 };
-  for (const op of Array.isArray(proposal?.operations) ? proposal.operations : []) {
-    if (op && Object.hasOwn(counts, op.op)) counts[op.op] += 1;
+  const map = { added: "add", changed: "update", removed: "delete" };
+  for (const change of Array.isArray(proposal?.changes) ? proposal.changes : []) {
+    if (change && map[change.change]) counts[map[change.change]] += 1;
   }
   return counts;
 }
@@ -50,16 +54,16 @@ export function describeCounts(proposal) {
   if (c.add) parts.push(`${c.add} added`);
   if (c.update) parts.push(`${c.update} changed`);
   if (c.delete) parts.push(`${c.delete} removed`);
-  return parts.length ? parts.join(", ") : "no operations";
+  return parts.length ? parts.join(", ") : "no changes";
 }
 
-// Ids of elements the proposal touches. `existingOnly` drops adds (they are not on the canvas yet).
+// The Mermaid ids a proposal touches. `existingOnly` drops what it adds (not on the canvas yet).
 export function touchedIds(proposal, { existingOnly = false } = {}) {
   const ids = [];
-  for (const op of Array.isArray(proposal?.operations) ? proposal.operations : []) {
-    if (!op || (existingOnly && op.op === "add")) continue;
-    const id = op.op === "add" ? op.element?.id : op.id;
-    if (typeof id === "string" && !ids.includes(id)) ids.push(id);
+  for (const change of Array.isArray(proposal?.changes) ? proposal.changes : []) {
+    if (!change || (existingOnly && change.change === "added")) continue;
+    const id = String(change.key ?? "").slice(String(change.key ?? "").indexOf(":") + 1);
+    if (id && change.key !== "direction" && !ids.includes(id)) ids.push(id);
   }
   return ids;
 }
@@ -78,7 +82,7 @@ export function describeError(code, message) {
   switch (code) {
     case "diagram-proposal-stale": {
       const ids = staleConflictIds(text);
-      return `This proposal is out of date: ${ids.length ? `element${ids.length > 1 ? "s" : ""} ${ids.join(", ")} changed` : "elements it touches changed"} after it was made. Your canvas was not changed. Ask the architect again.`;
+      return `This proposal is out of date: ${ids.length ? `${ids.join(", ")} changed` : "what it touches changed"} on both sides since it was made. Your diagram was not changed. Ask the architect again.`;
     }
     case "diagram-scene-conflict":
       return "The saved draft changed elsewhere. Your canvas was not changed; export your drawing before reopening the latest draft.";
@@ -94,4 +98,11 @@ export function describeError(code, message) {
 // Poll only while the editor is open and the tab is visible.
 export function shouldPoll({ open = true, visible = true } = {}) {
   return Boolean(open) && Boolean(visible);
+}
+
+// ---- Excalidraw editor: notes (200/05) ----
+// A NOTE is a review request the operator recorded without starting a session; it is open until
+// answered, proposed for, or withdrawn.
+export function openNotes(requests) {
+  return (Array.isArray(requests) ? requests : []).filter((r) => r && r.status === "open");
 }

@@ -3,7 +3,7 @@
 // the poll rule). Moved from apps/ui's board suite with their subject. node:assert/strict,
 // `{ name, run }` shape.
 import assert from "node:assert/strict";
-import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, operationCounts, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, staleConflictIds, touchedIds } from "@aof/diagrams-ui/editor-state";
+import { POLL_MS, describeCounts, describeError, diagramReviewInvocation, openNotes, operationCounts, pendingProposals, sceneFileName, sceneFingerprint, selectionFor, shouldPoll, staleConflictIds, touchedIds } from "@aof/diagrams-ui/editor-state";
 
 const scene = () => ({ elements: [{ id: "api", type: "text", text: "API", x: 10, y: 20, customData: { adr: "ADR-002" } }], files: {}, appState: { viewBackgroundColor: "#fff", gridSize: 20 } });
 export const sceneDraftTests = [
@@ -33,24 +33,25 @@ export const sceneDraftTests = [
   } },
 ];
 
-const proposal = { operations: [{ op: "add", element: { id: "aof-1" } }, { op: "update", id: "a", patch: {} }, { op: "delete", id: "b" }, { op: "update", id: "a", patch: {} }] };
+const proposal = { changes: [{ key: "node:aof1", change: "added" }, { key: "node:a", change: "changed" }, { key: "layout:a", change: "changed" }, { key: "edge:b->c#1", change: "removed" }] };
 export const reviewStateTests = [
   { name: "review state: only pending proposals are actionable", run: () => {
     assert.deepEqual(pendingProposals([{ status: "pending", id: 1 }, { status: "accepted" }, null]).map((p) => p.id), [1]);
     assert.deepEqual(pendingProposals(undefined), []);
   } },
-  { name: "review state: operation counts and touched ids", run: () => {
+  { name: "review state: a proposal's recorded changes give its counts and the Mermaid ids it touches", run: () => {
     assert.deepEqual(operationCounts(proposal), { add: 1, update: 2, delete: 1 });
     assert.equal(describeCounts(proposal), "1 added, 2 changed, 1 removed");
-    assert.deepEqual(touchedIds(proposal), ["aof-1", "a", "b"]);
-    assert.deepEqual(touchedIds(proposal, { existingOnly: true }), ["a", "b"]);
-    assert.deepEqual(touchedIds({ operations: [{ op: "add", element: { id: "x" } }] }, { existingOnly: true }), []);
+    assert.deepEqual(touchedIds(proposal), ["aof1", "a", "b->c#1"], "a node changed and moved is named once");
+    assert.deepEqual(touchedIds(proposal, { existingOnly: true }), ["a", "b->c#1"]);
+    assert.equal(describeCounts({ changes: [] }), "no changes");
+    assert.deepEqual(touchedIds({ changes: [{ key: "direction", change: "changed" }] }), []);
     assert.deepEqual(selectionFor(["a"]), { a: true });
   } },
   { name: "review state: stale and decided errors are explained", run: () => {
-    const message = "Proposal is stale; these elements changed since it was made: a, b.";
-    assert.deepEqual(staleConflictIds(message), ["a", "b"]);
-    assert.match(describeError("diagram-proposal-stale", message), /a, b changed.*Ask the architect again/);
+    const message = "Proposal is stale; these changed since it was made: node:a, layout:b.";
+    assert.deepEqual(staleConflictIds(message), ["node:a", "layout:b"]);
+    assert.match(describeError("diagram-proposal-stale", message), /node:a, layout:b changed.*Ask the architect again/);
     assert.match(describeError("diagram-proposal-decided", "x"), /already/);
     assert.match(describeError("diagram-scene-conflict", "x"), /changed elsewhere/);
     assert.equal(describeError("other", "boom"), "boom");
@@ -60,5 +61,16 @@ export const reviewStateTests = [
     assert.equal(shouldPoll({ open: true, visible: true }), true);
     assert.equal(shouldPoll({ open: true, visible: false }), false);
     assert.equal(shouldPoll({ open: false, visible: true }), false);
+  } },
+];
+
+export const notesAndDraftsTests = [
+  { name: "notes: only open requests are notes the operator can still withdraw", run: () => {
+    assert.deepEqual(openNotes([{ id: 1, status: "open" }, { id: 2, status: "answered" }, { id: 3, status: "withdrawn" }, { id: 4, status: "proposed" }, null]).map((r) => r.id), [1]);
+    assert.deepEqual(openNotes(undefined), []);
+  } },
+  { name: "review invocation: with no request id it is the batch form that examines every open note", run: () => {
+    assert.equal(diagramReviewInvocation("133", "ADR-002-service.excalidraw"), "/aof:diagram-review 133 ADR-002-service.excalidraw");
+    assert.equal(diagramReviewInvocation("133", "ADR-002-service.excalidraw", null), "/aof:diagram-review 133 ADR-002-service.excalidraw");
   } },
 ];

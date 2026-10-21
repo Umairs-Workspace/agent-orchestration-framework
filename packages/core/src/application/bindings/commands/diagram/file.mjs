@@ -11,7 +11,8 @@ export function assembleCommandsDiagramFile({ commandsResolveServices, configIns
   const { resolveWorkDiagrams } = configInspectServices;
 
   const { diagramFileCommand } = createDiagramFileCommand({ resolveItemExact });
-  const { diagramSceneCommand } = createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout });
+  // Publish writes the formats `work.diagrams` owes, read through the same one reader.
+  const { diagramSceneCommand } = createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout, resolveWorkDiagrams });
   const { diagramCapabilityCommand } = createDiagramCapabilityCommand({ resolveWorkDiagrams });
 
   return { diagramFileCommand, diagramSceneCommand, diagramCapabilityCommand };

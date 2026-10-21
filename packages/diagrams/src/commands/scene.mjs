@@ -3,32 +3,45 @@ import { readFileSync } from "node:fs";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { diagramFile, diagramReviewPaths, hasAdrSection, isReviewId, readDiagramBrief, reviewRecordPath, stemAdr } from "../layout.mjs";
+import { diagramFile, diagramLibrariesDir, diagramPaths, diagramReviewPaths, hasAdrSection, isReviewId, readAdrTitle, readDiagramBrief, renderDiagramBlock, reviewRecordPath, stemAdr } from "../layout.mjs";
+import { LIMITS, diffModels, parseProfile, serializeProfile } from "../mermaid-profile.mjs";
+import { assignAliases, projectScene } from "../scene-view.mjs";
 
-const MAX_BYTES = 2 * 1024 * 1024;
-const MAX_ELEMENTS = 5000;
-const MAX_FILES = 5000;
-const ELEMENT_TYPES = new Set(["text", "rectangle", "diamond", "ellipse", "line", "arrow", "freedraw", "image", "frame", "embeddable", "iframe", "magicframe"]);
+// diagram:scene — `aof diagram scene <ref> <ADR-NNN-slug.excalidraw>` (milestone 200, ADR-010..ADR-013).
+// A diagram is stored as Excalidraw's own scene: it holds everything the editor draws, library items
+// and free drawing included. The architect reads it as Mermaid (scene-view.mjs) and proposes edited
+// Mermaid; the editor compiles the proposal's changes into element edits, and accept applies them —
+// refusing, by name, anything the proposal touches that a person changed since. Notes, answers and
+// proposals are review records beside the diagram, naming Mermaid ids. Publish writes the figure.
+const MAX_BYTES = 4 * 1024 * 1024;
+const MAX_ELEMENTS = 10000;
+const MAX_FILES = 500;
+const ELEMENT_TYPES = new Set(["text", "rectangle", "diamond", "ellipse", "line", "arrow", "freedraw", "image", "frame", "magicframe", "embeddable", "iframe"]);
 const DANGEROUS_KEYS = new Set(["__proto__", "constructor", "prototype"]);
-const MAX_RECORD_BYTES = 1024 * 1024;
+const KEPT_APP_STATE = ["viewBackgroundColor", "gridSize", "gridStep", "gridModeEnabled"];
+const MAX_RECORD_BYTES = 2 * MAX_BYTES + 64 * 1024; // a proposal carries the element snapshot it was made against
 const MAX_TEXT = 10000;
 const MAX_SUMMARY = 500;
 const MAX_REASON = 2000;
-const MAX_OPERATIONS = 500;
+const MAX_OPERATIONS = 2000;
 const MAX_LISTED = 50;
-const SCENE_ACTIONS = new Set(["read", "save", "context", "request", "respond", "propose", "proposals", "accept", "reject"]);
-const WRITE_ACTIONS = new Set(["save", "request", "respond", "propose", "accept", "reject"]);
+const MAX_SVG = 4 * 1024 * 1024;
+const MAX_PNG = 6 * 1024 * 1024;
+const MAX_LIBRARY_BYTES = 8 * 1024 * 1024;
+const SCENE_ACTIONS = new Set(["read", "save", "context", "request", "withdraw", "respond", "propose", "proposals", "accept", "reject", "publish", "libraries"]);
+const WRITE_ACTIONS = new Set(["save", "request", "withdraw", "respond", "propose", "accept", "reject", "publish"]);
 const REVISION = /^[0-9a-f]{64}$/;
 const RECORD_FILE = /^([a-z0-9]{8,32})\.json$/;
+const SVG_DOCUMENT = /^\s*(?:<\?xml[^>]*>\s*)?(?:<!DOCTYPE[^>]*>\s*)?<svg[\s>][\s\S]*<\/svg>\s*$/;
+const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 const locks = new Map();
-const EMPTY = Object.freeze({ type: "excalidraw", version: 2, source: "aof", elements: [], appState: {}, files: {} });
 
 const hash = (text) => createHash("sha256").update(text).digest("hex");
 const byteLength = (text) => Buffer.byteLength(text, "utf8");
 const plainObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value)
   && (Object.getPrototypeOf(value) === Object.prototype || Object.getPrototypeOf(value) === null);
 const fail = (message, code = "diagram-scene-invalid", status = 400) => { throw commandError(message, code, status); };
-const cloneEmpty = () => ({ ...EMPTY, elements: [], appState: {}, files: {} });
+const emptyScene = () => ({ type: "excalidraw", version: 2, source: "aof", elements: [], appState: {}, files: {} });
 
 function validJsonTree(value, depth = 0) {
   if (depth > 60) return false;
@@ -39,29 +52,165 @@ function validJsonTree(value, depth = 0) {
   return Object.values(value).every((entry) => validJsonTree(entry, depth + 1));
 }
 
-function parseScene(text, stored = false) {
-  if (byteLength(text) > MAX_BYTES) fail("Scene exceeds the 2MB limit.", "diagram-scene-too-large", 413);
-  try { return JSON.parse(text); } catch { fail(stored ? "Stored scene is invalid." : "Scene must be valid JSON.", stored ? "diagram-scene-corrupt" : "diagram-scene-invalid", stored ? 409 : 400); }
-}
-
+// A scene aof stores: Excalidraw version 2, plain finite JSON, unique element ids, known types.
 function validateScene(scene) {
   if (!validJsonTree(scene) || !plainObject(scene) || scene.type !== "excalidraw" || scene.version !== 2
-    || !Array.isArray(scene.elements) || !plainObject(scene.appState) || !plainObject(scene.files)) {
+    || !Array.isArray(scene.elements) || !plainObject(scene.appState ?? {}) || !plainObject(scene.files ?? {})) {
     fail("Scene must be a plain finite Excalidraw version 2 scene.");
   }
-  if (scene.elements.length > MAX_ELEMENTS || Object.keys(scene.files).length > MAX_FILES) fail("Scene has too many elements or files.", "diagram-scene-too-large", 413);
+  if (scene.elements.length > MAX_ELEMENTS || Object.keys(scene.files ?? {}).length > MAX_FILES) fail("Scene has too many elements or files.", "diagram-scene-too-large", 413);
   const ids = new Set();
   for (const element of scene.elements) {
     if (!plainObject(element) || typeof element.id !== "string" || element.id.length === 0 || element.id.length > 200 || ids.has(element.id)) fail("Scene elements require unique string ids.");
-    if (!ELEMENT_TYPES.has(element.type)) fail("Scene contains an unsupported element type.");
-    for (const field of ["x", "y", "width", "height"]) {
-      if (!Number.isFinite(element[field])) fail(`Scene element ${field} must be finite.`);
-    }
+    if (!ELEMENT_TYPES.has(element.type)) fail(`Scene contains an unsupported element type "${element.type}".`);
+    for (const field of ["x", "y", "width", "height"]) if (!Number.isFinite(element[field])) fail(`Scene element ${field} must be finite.`);
     if (element.width < 0 || element.height < 0) fail("Scene element dimensions cannot be negative.");
     ids.add(element.id);
   }
-  return { type: "excalidraw", version: 2, source: "aof", elements: scene.elements, appState: scene.appState, files: scene.files };
+  const appState = Object.fromEntries(KEPT_APP_STATE.filter((key) => scene.appState?.[key] !== undefined).map((key) => [key, scene.appState[key]]));
+  return { type: "excalidraw", version: 2, source: "aof", elements: scene.elements, appState, files: scene.files ?? {} };
 }
+
+// THE CANONICAL FILE: keys sorted, the volatile `updated` timestamp dropped, one element per line —
+// so a diff shows which elements changed, and a revision is a fact about the drawing.
+const sortedJson = (value) => JSON.stringify(value, (key, inner) => (plainObject(inner) ? Object.fromEntries(Object.keys(inner).sort().map((k) => [k, inner[k]])) : inner));
+export function canonicalScene(scene) {
+  const elements = scene.elements.map(({ updated, ...element }) => `    ${sortedJson(element)}`);
+  return `{\n  "type": "excalidraw",\n  "version": 2,\n  "source": "aof",\n  "elements": [${elements.length ? `\n${elements.join(",\n")}\n  ` : ""}],\n  "appState": ${sortedJson(scene.appState ?? {})},\n  "files": ${sortedJson(scene.files ?? {})}\n}\n`;
+}
+
+function parseSceneText(text, { stored = false } = {}) {
+  if (byteLength(text) > MAX_BYTES) fail("The diagram is over its size limit.", "diagram-scene-too-large", 413);
+  try { return JSON.parse(text); } catch { return fail(stored ? "Stored scene is not valid JSON." : "Scene must be valid JSON.", stored ? "diagram-scene-corrupt" : "diagram-scene-invalid", stored ? 409 : 400); }
+}
+
+// A profile refusal keeps its code and line.
+function profileModel(text) {
+  try {
+    return parseProfile(text);
+  } catch (error) {
+    if (typeof error?.code !== "string" || !error.code.startsWith("diagram-mermaid")) throw error;
+    const refusal = commandError(error.message, error.code, error.code === "diagram-mermaid-too-large" ? 413 : 400);
+    if (error.line) refusal.details = { line: error.line };
+    throw refusal;
+  }
+}
+
+// ---- element operations (accept) ----------------------------------------------------------------
+function deepEqual(a, b) {
+  if (a === b) return true;
+  if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((entry, index) => deepEqual(entry, b[index]));
+  if (!plainObject(a) || !plainObject(b)) return false;
+  const keys = Object.keys(a).filter((k) => k !== "updated");
+  const other = Object.keys(b).filter((k) => k !== "updated");
+  return keys.length === other.length && keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]));
+}
+// Excalidraw reconciles elements by version/versionNonce: an element aof changes must look changed.
+function bumped(next, previous) {
+  const version = Number.isInteger(previous?.version) ? previous.version + 1 : 1;
+  return { ...next, version, versionNonce: randomBytes(4).readUInt32BE(0) };
+}
+function applyOperations(elements, operations, allowed) {
+  if (!Array.isArray(operations) || operations.length === 0) fail("accept needs the editor's element operations for this proposal.", "diagram-proposal-invalid");
+  if (operations.length > MAX_OPERATIONS) fail(`operations are limited to ${MAX_OPERATIONS}.`, "diagram-proposal-invalid");
+  const byId = new Map(elements.map((element) => [element.id, element]));
+  const updates = new Map();
+  const additions = [];
+  const seen = new Set();
+  for (const operation of operations) {
+    if (!plainObject(operation)) fail("Each operation must be an object.", "diagram-proposal-invalid");
+    const id = operation.op === "add" ? operation.element?.id : operation.id;
+    if (typeof id !== "string" || id.length === 0 || seen.has(id)) fail("Each operation names one element, once.", "diagram-proposal-invalid");
+    seen.add(id);
+    if (operation.op === "add") {
+      if (!plainObject(operation.element) || byId.has(id)) fail(`Cannot add "${id}": it is not a new element.`, "diagram-proposal-invalid");
+      additions.push(operation.element);
+    } else if (operation.op === "update" || operation.op === "delete") {
+      if (!byId.has(id)) fail(`Cannot change "${id}": no such element.`, "diagram-proposal-invalid");
+      if (!allowed.has(id)) fail(`Element "${id}" is outside what this proposal touches.`, "diagram-proposal-invalid");
+      if (operation.op === "update") {
+        if (!plainObject(operation.patch) || Object.hasOwn(operation.patch, "id")) fail("update requires a patch object without id.", "diagram-proposal-invalid");
+        updates.set(id, (element) => bumped({ ...element, ...operation.patch }, element));
+      } else {
+        updates.set(id, (element) => bumped({ ...element, isDeleted: true }, element));
+      }
+    } else fail("operation.op must be add, update or delete.", "diagram-proposal-invalid");
+  }
+  return [...elements.map((element) => (updates.has(element.id) ? updates.get(element.id)(element) : element)), ...additions];
+}
+
+// The elements a proposal's changes touch — what accept may change and what it checks for staleness.
+// Precise per kind of change, so a person's edit elsewhere never makes a proposal stale:
+//   style                                             the node's own elements, and its frames
+//   node changed (label, shape, subgraph)             those, and its arrows (a relabelled box may grow)
+//   layout (a move)                                   the node's elements, its arrows, and its frames
+//   node removed                                      all that, plus the boxes at its arrows' far ends
+//   node added · lib                                  its frame (the new elements are additions)
+//   edge (any)                                        the arrow and its label, and the two boxes it binds
+//   subgraph                                          the frame and the boxes moving in or out of it
+function touchedElements(changes, base, index, proposed) {
+  const ids = new Set();
+  const addContainer = (id) => { if (index[id]?.container) ids.add(index[id].container); };
+  const addOwn = (id) => { for (const e of index[id]?.elementIds ?? []) ids.add(e); };
+  const addArrows = (id, farEnds) => {
+    for (const key of index[id]?.arrows ?? []) {
+      for (const e of index[key]?.elementIds ?? []) ids.add(e);
+      if (farEnds) { addContainer(index[key].from); addContainer(index[key].to); }
+    }
+  };
+  const addFrames = (id) => { for (const parent of [base.nodes.find((n) => n.id === id)?.parent, proposed.nodes.find((n) => n.id === id)?.parent]) if (parent) addContainer(parent); };
+  for (const { key, change } of changes) {
+    const kind = key.slice(0, key.indexOf(":"));
+    const id = key.slice(key.indexOf(":") + 1);
+    if (kind === "node" || kind === "style" || kind === "lib") {
+      addOwn(id);
+      // A removed node takes its arrows (and unbinds their far ends); a relabelled box may grow, so its
+      // arrows are re-routed.
+      if (kind === "node" && change === "removed") addArrows(id, true);
+      else if (kind === "node" && change === "changed") addArrows(id, false);
+      addFrames(id);
+    } else if (kind === "layout") {
+      addOwn(id); addArrows(id, false); addFrames(id);
+    } else if (kind === "edge") {
+      for (const e of index[id]?.elementIds ?? []) ids.add(e);
+      const [from, to] = id.replace(/#\d+$/, "").split("->");
+      addContainer(from); addContainer(to);
+    } else if (kind === "subgraph") {
+      addContainer(id);
+      for (const node of [...base.nodes, ...proposed.nodes].filter((n) => n.parent === id)) addOwn(node.id);
+    }
+  }
+  return ids;
+}
+
+// ---- project libraries (.aof/diagrams/libraries/*.excalidrawlib) --------------------------------
+async function readLibraries(projectRoot) {
+  if (!projectRoot) return [];
+  const dir = path.resolve(diagramLibrariesDir(projectRoot));
+  let names;
+  try { names = (await readdir(dir)).filter((name) => name.endsWith(".excalidrawlib")).sort(); } catch (error) { if (error?.code === "ENOENT") return []; throw error; }
+  const items = [];
+  let total = 0;
+  for (const name of names) {
+    const file = path.join(dir, name);
+    const stat = await lstat(file);
+    if (!stat.isFile()) continue;
+    total += stat.size;
+    if (total > MAX_LIBRARY_BYTES) fail(`The project libraries are over ${MAX_LIBRARY_BYTES} bytes.`, "diagram-library-too-large", 413);
+    let parsed;
+    try { parsed = JSON.parse(await readFile(file, "utf8")); } catch { fail(`${name} is not a valid Excalidraw library.`, "diagram-library-invalid", 409); }
+    const library = name.slice(0, -".excalidrawlib".length);
+    const entries = Array.isArray(parsed?.libraryItems) ? parsed.libraryItems
+      : Array.isArray(parsed?.library) ? parsed.library.map((elements, i) => ({ id: `${library}-${i + 1}`, elements, name: null })) : null;
+    if (!entries) fail(`${name} is not a valid Excalidraw library.`, "diagram-library-invalid", 409);
+    entries.forEach((entry, i) => {
+      if (!Array.isArray(entry?.elements)) return;
+      items.push({ library, item: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : `item ${i + 1}`, id: String(entry.id ?? `${library}-${i + 1}`), elements: entry.elements });
+    });
+  }
+  return items;
+}
+const libraryRef = (lib) => `${lib.library}/"${lib.item}"`;
 
 async function serialized(key, work) {
   const previous = locks.get(key) ?? Promise.resolve();
@@ -96,7 +245,7 @@ async function textOrNull(file, limitBytes = null) {
   try {
     const stat = await lstat(file);
     if (!stat.isFile() || stat.isSymbolicLink()) fail("Scene storage must be a regular file.", "diagram-scene-storage-invalid", 409);
-    if (limitBytes !== null && stat.size > limitBytes) fail("Scene exceeds the 2MB limit.", "diagram-scene-too-large", 413);
+    if (limitBytes !== null && stat.size > limitBytes) fail("The diagram is over its size limit.", "diagram-scene-too-large", 413);
     return await readFile(file, "utf8");
   } catch (error) {
     if (error?.code === "ENOENT") return null;
@@ -122,18 +271,6 @@ async function withFileLock(file, work) {
   try { return await work(); } finally { await handle.close(); await removeIfPresent(lock); }
 }
 
-
-// ---- plain-JSON helpers -------------------------------------------------------------------------
-
-// Structural equality over plain JSON (key order does not matter, array order does).
-function deepEqual(a, b) {
-  if (a === b) return true;
-  if (Array.isArray(a)) return Array.isArray(b) && a.length === b.length && a.every((entry, index) => deepEqual(entry, b[index]));
-  if (!plainObject(a) || !plainObject(b)) return false;
-  const keys = Object.keys(a);
-  return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && deepEqual(a[key], b[key]));
-}
-
 function boundedString(value, name, max, { min = 1 } = {}) {
   if (typeof value !== "string" || value.trim().length < min || value.length > max) {
     fail(`${name} must be a string of ${min > 0 ? "1" : "0"}..${max} characters.`);
@@ -156,65 +293,6 @@ function reviewIdInput(value, name) {
   return value;
 }
 
-// ---- review operations --------------------------------------------------------------------------
-
-// Checks the shape of the proposed operations against the base elements (no mutation).
-function validateOperations(operations, baseElements) {
-  if (!Array.isArray(operations) || operations.length === 0) fail("operations must be a non-empty array; use respond for an answer without changes.", "diagram-proposal-invalid");
-  if (operations.length > MAX_OPERATIONS) fail(`operations are limited to ${MAX_OPERATIONS}.`, "diagram-proposal-invalid");
-  const byId = new Map(baseElements.map((element) => [element.id, element]));
-  const touched = new Set();
-  for (const operation of operations) {
-    if (!plainObject(operation)) fail("Each operation must be an object.", "diagram-proposal-invalid");
-    const id = operation.op === "add" ? operation.element?.id : operation.id;
-    if (typeof id !== "string" || id.length === 0) fail("Each operation must name an element id.", "diagram-proposal-invalid");
-    if (touched.has(id)) fail(`Element "${id}" appears in more than one operation.`, "diagram-proposal-invalid");
-    touched.add(id);
-    if (operation.op === "add") {
-      if (!plainObject(operation.element)) fail("add requires an element object.", "diagram-proposal-invalid");
-      if (byId.has(id)) fail(`Cannot add "${id}": it already exists in the scene.`, "diagram-proposal-invalid");
-    } else if (operation.op === "update") {
-      if (!plainObject(operation.patch) || Object.keys(operation.patch).length === 0) fail("update requires a non-empty patch object.", "diagram-proposal-invalid");
-      if (Object.hasOwn(operation.patch, "id")) fail("A patch may not contain id.", "diagram-proposal-invalid");
-      if (!byId.has(id) || byId.get(id).isDeleted === true) fail(`Cannot update "${id}": no such live element.`, "diagram-proposal-invalid");
-    } else if (operation.op === "delete") {
-      if (!byId.has(id)) fail(`Cannot delete "${id}": no such element.`, "diagram-proposal-invalid");
-    } else {
-      fail("operation.op must be add, update or delete.", "diagram-proposal-invalid");
-    }
-  }
-  return touched;
-}
-
-// Returns a new element list with the operations applied; every other element is untouched.
-// Excalidraw reconciles elements by version/versionNonce; a changed element must look changed.
-function bumped(next, previous) {
-  const version = Number.isInteger(previous.version) ? previous.version + 1 : 1;
-  return { ...next, version, versionNonce: randomBytes(4).readUInt32BE(0), updated: Date.now() };
-}
-
-function applyOperations(elements, operations) {
-  const updates = new Map();
-  const additions = [];
-  for (const operation of operations) {
-    if (operation.op === "add") additions.push(operation.element);
-    else if (operation.op === "update") updates.set(operation.id, (element) => bumped({ ...element, ...operation.patch }, element));
-    else updates.set(operation.id, (element) => bumped({ ...element, isDeleted: true }, element));
-  }
-  return [...elements.map((element) => (updates.has(element.id) ? updates.get(element.id)(element) : element)), ...additions];
-}
-
-function baseElementsFor(elements, touched) {
-  const byId = new Map(elements.map((element) => [element.id, element]));
-  return Object.fromEntries([...touched].map((id) => [id, byId.get(id) ?? null]));
-}
-
-// The ids whose CURRENT element no longer matches what the proposal was made against.
-function staleConflicts(elements, baseElements) {
-  const byId = new Map(elements.map((element) => [element.id, element]));
-  return Object.keys(baseElements).filter((id) => !deepEqual(byId.get(id) ?? null, baseElements[id]));
-}
-
 // ---- review record storage ----------------------------------------------------------------------
 
 async function assertReviewStorage(paths) {
@@ -225,7 +303,7 @@ async function readRecordText(file) {
   try {
     const stat = await lstat(file);
     if (!stat.isFile() || stat.isSymbolicLink()) fail("Review storage must be a regular file.", "diagram-review-storage-invalid", 409);
-    if (stat.size > MAX_RECORD_BYTES) fail("Review record exceeds the 1MB limit.", "diagram-review-too-large", 413);
+    if (stat.size > MAX_RECORD_BYTES) fail("Review record is over its size limit.", "diagram-review-too-large", 413);
     return await readFile(file, "utf8");
   } catch (error) {
     if (error?.code === "ENOENT") return null;
@@ -278,7 +356,7 @@ async function listRecords(paths, kind) {
 async function writeRecord(paths, record, { create = false } = {}) {
   const directory = path.resolve(record.kind === "request" ? paths.requests : paths.proposals);
   const body = JSON.stringify(record);
-  if (byteLength(body) > MAX_RECORD_BYTES) fail("Review record exceeds the 1MB limit.", "diagram-review-too-large", 413);
+  if (byteLength(body) > MAX_RECORD_BYTES) fail("Review record is over its size limit.", "diagram-review-too-large", 413);
   await mkdir(directory, { recursive: true });
   await assertReviewStorage(paths);
   const target = path.resolve(reviewRecordPath(directory, record.id));
@@ -291,7 +369,7 @@ async function writeRecord(paths, record, { create = false } = {}) {
 
 const newReviewId = () => randomBytes(8).toString("hex");
 
-export function createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout }) {
+export function createDiagramSceneCommand({ resolveItemExact, requireLocalCheckout, resolveWorkDiagrams = () => ({ enabled: false, formats: ["svg"] }) }) {
   const diagramSceneCommand = {
     id: "diagram:scene",
     input: {
@@ -302,15 +380,18 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         action: { type: "string", enum: [...SCENE_ACTIONS] },
         baseRevision: { type: ["string", "null"] },
         scene: { type: "object" },
+        text: { type: "string" },
         selectedIds: { type: "array", items: { type: "string" } },
         request: { type: "string" },
         requestId: { type: "string" },
         answer: { type: "string" },
         summary: { type: "string" },
         rationale: { type: "string" },
-        operations: { type: "array" },
         proposalId: { type: "string" },
+        operations: { type: "array" },
         reason: { type: "string" },
+        svg: { type: "string" },
+        png: { type: "string" },
       },
       required: ["ref", "file"],
       additionalProperties: false,
@@ -320,29 +401,31 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       const item = await resolveItemExact(ctx, ref);
       if (!item) fail(`No item resolves to ref "${ref}".`, "ref-not-found", 404);
       const spec = diagramFile(typeof item.dir === "string" ? item.dir : "", input.file);
-      if (!spec || spec.ext !== ".excalidraw") fail("Scene file must be a bare ADR-NNN-slug.excalidraw name.", "diagram-scene-file-invalid");
+      if (!spec || spec.ext !== ".excalidraw") fail("A diagram is a bare ADR-NNN-slug.excalidraw name.", "diagram-scene-file-invalid");
       const action = input.action ?? "read";
       if (!SCENE_ACTIONS.has(action)) fail("Unsupported scene action.", "diagram-scene-action-invalid");
       // An archived item is an accepted one, so `done` covers it.
       const readOnly = item.status === "done";
-      const writing = WRITE_ACTIONS.has(action);
-      if (writing) requireLocalCheckout(item, ref);
-      if (typeof item.dir !== "string" || item.dir.length === 0) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: cloneEmpty(), readOnly: true };
+      if (WRITE_ACTIONS.has(action)) requireLocalCheckout(item, ref);
+      const projectRoot = ctx?.workspace?.projectRoot ?? ctx?.workspace?.root;
+      if (action === "libraries") return { ref: item.ref, file: spec.name, items: await readLibraries(projectRoot) };
+      if (typeof item.dir !== "string" || item.dir.length === 0) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: emptyScene(), readOnly: true };
 
       const file = path.resolve(spec.path);
       const diagramDir = path.dirname(file);
-      const projectRoot = ctx?.workspace?.projectRoot ?? ctx?.workspace?.root;
       await assertStorageSafe(item.dir, diagramDir, projectRoot);
       const review = diagramReviewPaths(item.dir, spec.stem);
       const architecture = await textOrNull(path.join(item.dir, "ARCHITECTURE.md")) ?? "";
       const adr = stemAdr(spec.stem);
       const readCurrent = async () => {
         const raw = await textOrNull(file, MAX_BYTES);
-        if (raw === null) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: cloneEmpty(), readOnly };
-        return { ref: item.ref, file: spec.name, present: true, revision: hash(raw), scene: validateScene(parseScene(raw, true)), readOnly };
+        if (raw === null) return { ref: item.ref, file: spec.name, present: false, revision: null, scene: emptyScene(), readOnly };
+        return { ref: item.ref, file: spec.name, present: true, revision: hash(raw), scene: validateScene(parseSceneText(raw, { stored: true })), readOnly };
       };
+      // A selection names Mermaid ids: nodes, subgraphs, sketches, and edge keys.
+      const knownIds = (index) => new Set(Object.keys(index));
       const sceneContext = async (args, out) => {
-        if (!out.present) fail("Save an empty scene before requesting scene context.", "diagram-scene-missing", 404);
+        if (!out.present) fail("Save the diagram before requesting its context.", "diagram-scene-missing", 404);
         let selectedIds = args.selectedIds;
         let request = args.request;
         let stored = null;
@@ -352,11 +435,19 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           request = stored.request;
         }
         if (request !== undefined && (typeof request !== "string" || request.length > MAX_TEXT)) fail("request must be a string of at most 10,000 characters.");
-        selectedIds = stringArray(selectedIds, "selectedIds");
-        const selected = new Set(selectedIds);
-        const live = out.scene.elements.filter((element) => element.isDeleted !== true);
-        const elements = selected.size ? live.filter((element) => selected.has(element.id)) : live;
-        const context = { ref: out.ref, file: out.file, revision: out.revision, selectedIds: [...selected], elements, brief: adr ? readDiagramBrief(architecture, adr) : null, architecture, request: typeof request === "string" ? request : "" };
+        selectedIds = [...new Set(stringArray(selectedIds ?? [], "selectedIds"))];
+        const { model } = projectScene(out.scene.elements);
+        const wanted = new Set(selectedIds);
+        const context = {
+          ref: out.ref, file: out.file, revision: out.revision, view: serializeProfile(model),
+          selectedIds, whole: selectedIds.length === 0,
+          selected: {
+            nodes: model.nodes.filter((n) => wanted.has(n.id)), subgraphs: model.subgraphs.filter((g) => wanted.has(g.id)),
+            edges: model.edges.filter((e) => wanted.has(e.key)), sketches: Object.keys(model.sketches).filter((id) => wanted.has(id)),
+          },
+          libraries: (await readLibraries(projectRoot)).map(libraryRef),
+          brief: adr ? readDiagramBrief(architecture, adr) : null, architecture, request: typeof request === "string" ? request : "",
+        };
         return stored ? { ...context, requestId: stored.id, requestRevision: stored.revision } : context;
       };
       if (action === "read") return readCurrent();
@@ -365,17 +456,19 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         const out = await readCurrent();
         const requests = await listRecords(review, "request");
         const proposals = await listRecords(review, "proposal");
+        // Listed with what the editor needs to compile one (its changes and proposed view), not its snapshot.
+        const listed = proposals.records.map(({ base, snapshot, ...rest }) => rest);
         return {
           ref: out.ref, file: out.file, revision: out.revision,
-          requests: requests.records, proposals: proposals.records,
+          requests: requests.records, proposals: listed,
           skipped: { requests: requests.skipped, proposals: proposals.skipped },
         };
       }
-      if (readOnly) fail(`${item.ref} is delivered or archived; scene drafts are immutable.`, "diagram-item-delivered", 409);
+      if (readOnly) fail(`${item.ref} is delivered or archived; its diagrams are immutable.`, "diagram-item-delivered", 409);
       if (!adr || !hasAdrSection(architecture, adr)) fail(`${item.ref} has no "## ${adr}" heading in its ARCHITECTURE.md.`, "diagram-adr-unknown", 404);
 
-      // Every write runs serialized in-process AND under the scene's exclusive .lock; `current` is the
-      // scene as it is on disk inside that lock.
+      // Every write runs serialized in-process AND under the diagram's exclusive .lock; `current` is the
+      // diagram as it is on disk inside that lock.
       const underSceneLock = (work) => serialized(file, async () => {
         await mkdir(diagramDir, { recursive: true });
         await assertDirectoryNotSymlink(diagramDir);
@@ -384,19 +477,31 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
           return work(await readCurrent());
         });
       });
-      const writeScene = async (scene) => {
-        const body = JSON.stringify(scene);
-        if (byteLength(body) > MAX_BYTES) fail("Scene exceeds the 2MB limit.", "diagram-scene-too-large", 413);
-        const temporary = path.join(diagramDir, `.${spec.name}.${randomUUID()}.tmp`);
-        try { await writeFile(temporary, body, { mode: 0o600, flag: "wx" }); await rename(temporary, file); }
+      const writeAtomic = async (target, body, encoding) => {
+        const temporary = path.join(path.dirname(target), `.${path.basename(target)}.${randomUUID()}.tmp`);
+        try { await writeFile(temporary, body, { mode: 0o600, flag: "wx", ...(encoding ? { encoding } : {}) }); await rename(temporary, target); }
         finally { await removeIfPresent(temporary); }
-        return { ref: item.ref, file: spec.name, present: true, revision: hash(body), scene, readOnly: false, saved: true };
+      };
+      // Save stamps a Mermaid id on whatever a person drew, and answers which elements it stamped.
+      const writeScene = async (scene) => {
+        const { elements, assigned } = assignAliases(scene.elements);
+        const stamped = { ...scene, elements };
+        const text = canonicalScene(stamped);
+        if (byteLength(text) > MAX_BYTES) fail("The diagram is over its size limit.", "diagram-scene-too-large", 413);
+        await writeAtomic(file, text, "utf8");
+        return { ref: item.ref, file: spec.name, present: true, revision: hash(text), scene: stamped, assigned, readOnly: false, saved: true };
       };
       const requireSavedRevision = (current) => {
         const baseRevision = revisionInput(input.baseRevision);
-        if (!current.present) fail("Save an empty scene before using review actions.", "diagram-scene-missing", 404);
-        if (baseRevision !== current.revision) fail("Scene revision conflict.", "diagram-scene-conflict", 409);
+        if (!current.present) fail("Save the diagram before using review actions.", "diagram-scene-missing", 404);
+        if (baseRevision !== current.revision) fail("Diagram revision conflict.", "diagram-scene-conflict", 409);
         return baseRevision;
+      };
+      // A note answered by a proposal is no longer OPEN, so the batch review does not answer it twice
+      // and the operator cannot withdraw a note the architect has already acted on.
+      const markProposed = async (request, proposal) => {
+        if (request.status !== "open") return;
+        await writeRecord(review, { ...request, status: "proposed", proposalId: proposal.id, proposedAt: proposal.createdAt });
       };
       const requirePending = (proposal) => {
         if (proposal.status !== "pending") fail(`Proposal ${proposal.id} is already ${proposal.status}.`, "diagram-proposal-decided", 409);
@@ -405,23 +510,35 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
       if (action === "save") {
         if (!(input.baseRevision === null || (typeof input.baseRevision === "string" && REVISION.test(input.baseRevision)))) fail("baseRevision is required and must be null or a SHA-256 revision.");
         const scene = validateScene(input.scene);
-        if (byteLength(JSON.stringify(scene)) > MAX_BYTES) fail("Scene exceeds the 2MB limit.", "diagram-scene-too-large", 413);
         return underSceneLock((current) => {
-          if (input.baseRevision !== current.revision) fail("Scene revision conflict.", "diagram-scene-conflict", 409);
+          if (input.baseRevision !== current.revision) fail("Diagram revision conflict.", "diagram-scene-conflict", 409);
           return writeScene(scene);
         });
       }
 
       if (action === "request") {
         const request = boundedString(input.request, "request", MAX_TEXT);
-        const selectedIds = stringArray(input.selectedIds, "selectedIds");
+        const selectedIds = stringArray(input.selectedIds ?? [], "selectedIds");
         return underSceneLock(async (current) => {
           const revision = requireSavedRevision(current);
+          const known = knownIds(projectScene(current.scene.elements).index);
+          const unknown = selectedIds.filter((id) => !known.has(id));
+          if (unknown.length) fail(`The selection names ids this diagram does not have: ${unknown.join(", ")}.`, "diagram-review-selection-invalid");
           const record = { id: newReviewId(), kind: "request", createdAt: new Date().toISOString(), revision, selectedIds, request, status: "open", answer: null, answeredAt: null };
           await writeRecord(review, record, { create: true });
-          // The agent invocation is composed by the board (apps/ui), beside its other phase commands:
-          // exactly one src module authors slash commands (FF-6306).
+          // The agent invocation is composed by the editor: exactly one src module authors slash commands (FF-6306).
           return { ref: item.ref, file: spec.name, request: record };
+        });
+      }
+
+      if (action === "withdraw") {
+        const requestId = reviewIdInput(input.requestId, "requestId");
+        return underSceneLock(async () => {
+          const record = await readRecord(review, "request", requestId);
+          if (record.status !== "open") fail(`Request ${record.id} is already ${record.status}.`, "diagram-request-decided", 409);
+          const withdrawn = { ...record, status: "withdrawn", withdrawnAt: new Date().toISOString() };
+          await writeRecord(review, withdrawn);
+          return { ref: item.ref, file: spec.name, request: withdrawn };
         });
       }
 
@@ -436,43 +553,104 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         });
       }
 
+      // A PROPOSAL is the Mermaid view as the architect would have it. Its changes are the difference
+      // from the view of the diagram now; the elements they touch are snapshotted, so accept can refuse
+      // what a person changed since. Sketch lines are the person's and never change through a proposal.
       if (action === "propose") {
         const requestId = reviewIdInput(input.requestId, "requestId");
         const summary = boundedString(input.summary, "summary", MAX_SUMMARY);
         const rationale = boundedString(input.rationale, "rationale", MAX_TEXT);
-        if (!Array.isArray(input.operations) || !validJsonTree(input.operations)) fail("operations must be an array of plain JSON operations.", "diagram-proposal-invalid");
+        const proposed = profileModel(input.text);
         return underSceneLock(async (current) => {
           const baseRevision = requireSavedRevision(current);
-          await readRecord(review, "request", requestId);
-          const touched = validateOperations(input.operations, current.scene.elements);
-          validateScene({ ...current.scene, elements: applyOperations(current.scene.elements, input.operations) });
+          const request = await readRecord(review, "request", requestId);
+          const { model: base, index } = projectScene(current.scene.elements);
+          // A node always has a place and keeps its library item, so a proposal that leaves out a node's
+          // `%% aof:node` or `%% aof:lib` line leaves it as it is; only removing the node removes them.
+          const kept = new Set(proposed.nodes.map((n) => n.id));
+          const changes = diffModels(base, proposed).filter(({ key, change }) => {
+            if (key.startsWith("path:") || key === "direction") return false;
+            if (change === "removed" && (key.startsWith("layout:") || key.startsWith("lib:")) && kept.has(key.slice(key.indexOf(":") + 1))) return false;
+            return true;
+          });
+          if (changes.length === 0) fail("The proposal changes nothing; use respond for an answer without a change.", "diagram-proposal-invalid");
+          for (const { key, change } of changes) {
+            if (!key.startsWith("lib:")) continue;
+            const id = key.slice(4);
+            if (change !== "added" || base.nodes.some((n) => n.id === id)) fail(`A node's library item cannot change ("${id}"); remove the node and add a new one.`, "diagram-proposal-invalid");
+          }
+          const libraries = await readLibraries(projectRoot);
+          for (const [id, lib] of Object.entries(proposed.libs)) {
+            if (base.libs[id]) continue;
+            const matches = libraries.filter((entry) => entry.library === lib.library && entry.item === lib.item);
+            if (matches.length !== 1) fail(`${libraryRef(lib)} ${matches.length ? "names more than one" : "is not an"} item in the project libraries (${path.relative(projectRoot, diagramLibrariesDir(projectRoot)).split(path.sep).join("/")}).`, "diagram-library-unknown");
+          }
+          const snapshot = {};
+          const byId = new Map(current.scene.elements.map((e) => [e.id, e]));
+          for (const elementId of touchedElements(changes, base, index, proposed)) if (byId.has(elementId)) snapshot[elementId] = byId.get(elementId);
+          const text = serializeProfile(proposed);
           const proposal = {
             id: newReviewId(), kind: "proposal", requestId, createdAt: new Date().toISOString(), baseRevision, summary, rationale,
-            operations: input.operations, baseElements: baseElementsFor(current.scene.elements, touched),
-            status: "pending", decidedAt: null, acceptedRevision: null, reason: null,
+            base: serializeProfile(base), text, changes, snapshot, status: "pending", decidedAt: null, acceptedRevision: null, reason: null,
           };
+          if (byteLength(JSON.stringify(proposal)) > MAX_RECORD_BYTES) fail("The proposal is over its size limit.", "diagram-review-too-large", 413);
           await writeRecord(review, proposal, { create: true });
-          return { ref: item.ref, file: spec.name, proposal };
+          await markProposed(request, proposal);
+          const { base: _base, snapshot: _snapshot, ...listed } = proposal;
+          return { ref: item.ref, file: spec.name, proposal: listed };
         });
       }
 
+      // ACCEPT applies the element operations the editor compiled from the proposal's changes. It refuses
+      // as stale, naming the Mermaid ids, if a person changed any element the proposal touches since it
+      // was made; and it refuses an operation that reaches outside those elements.
       if (action === "accept") {
         const proposalId = reviewIdInput(input.proposalId, "proposalId");
         return underSceneLock(async (current) => {
           const proposal = await readRecord(review, "proposal", proposalId);
           requirePending(proposal);
           requireSavedRevision(current);
-          const conflicts = staleConflicts(current.scene.elements, proposal.baseElements);
-          if (conflicts.length > 0) {
-            const error = commandError(`Proposal is stale; these elements changed since it was made: ${conflicts.join(", ")}.`, "diagram-proposal-stale", 409);
-            error.details = { conflicts };
+          if (!plainObject(proposal.snapshot)) fail(`Proposal ${proposal.id} carries no element snapshot.`, "diagram-review-corrupt", 409);
+          const byId = new Map(current.scene.elements.map((e) => [e.id, e]));
+          const changed = Object.keys(proposal.snapshot).filter((id) => !deepEqual(byId.get(id) ?? null, proposal.snapshot[id]));
+          if (changed.length > 0) {
+            const { index } = projectScene(current.scene.elements);
+            const owners = [...new Set(changed.map((elementId) => Object.entries(index).find(([, entry]) => entry.elementIds.includes(elementId))?.[0] ?? elementId))];
+            const error = commandError(`Proposal is stale; these changed since it was made: ${owners.join(", ")}.`, "diagram-proposal-stale", 409);
+            error.details = { conflicts: owners };
             throw error;
           }
-          const merged = validateScene({ ...current.scene, elements: applyOperations(current.scene.elements, proposal.operations) });
-          const saved = await writeScene(merged);
+          if (!Array.isArray(input.operations) || !validJsonTree(input.operations)) fail("accept needs the editor's element operations, as plain JSON.", "diagram-proposal-invalid");
+          const elements = applyOperations(current.scene.elements, input.operations, new Set(Object.keys(proposal.snapshot)));
+          const saved = await writeScene(validateScene({ ...current.scene, elements }));
           const accepted = { ...proposal, status: "accepted", decidedAt: new Date().toISOString(), acceptedRevision: saved.revision };
           await writeRecord(review, accepted);
-          return { ...saved, proposal: accepted };
+          const { base: _base, snapshot: _snapshot, ...listed } = accepted;
+          return { ...saved, proposal: listed };
+        });
+      }
+
+      // PUBLISH: the editor exports the SVG — and the PNG when `work.diagrams.formats` owes one — from the
+      // canvas, and this writes them where the ADR's block links. It answers that block: the architect
+      // pastes it under the ADR (the single writer of ARCHITECTURE.md).
+      if (action === "publish") {
+        if (typeof input.svg !== "string" || byteLength(input.svg) > MAX_SVG || !SVG_DOCUMENT.test(input.svg)) fail("svg must be one SVG document of at most 4 MB.", "diagram-publish-invalid");
+        const owed = resolveWorkDiagrams(ctx?.workspace?.config ?? {});
+        const formats = owed.enabled && Array.isArray(owed.formats) && owed.formats.length ? owed.formats : ["svg"];
+        let png = null;
+        if (formats.includes("png")) {
+          if (typeof input.png !== "string") fail("This project owes a PNG beside the SVG; publish with png.", "diagram-publish-invalid");
+          png = Buffer.from(input.png, "base64");
+          if (png.length > MAX_PNG || !png.subarray(0, 8).equals(PNG_MAGIC)) fail("png must be one base64 PNG of at most 6 MB.", "diagram-publish-invalid");
+        }
+        return underSceneLock(async (current) => {
+          const revision = requireSavedRevision(current);
+          const paths = diagramPaths(item.dir, spec.stem, ".excalidraw", formats);
+          await writeAtomic(path.resolve(paths.svg), input.svg, "utf8");
+          if (png) await writeAtomic(path.resolve(paths.png), png);
+          const written = [paths.svg, ...(png ? [paths.png] : [])].map((target) => path.relative(item.dir, path.resolve(target)).split(path.sep).join("/"));
+          const block = renderDiagramBlock({ adrId: adr, title: readAdrTitle(architecture, adr) ?? adr, stem: spec.stem, sourceExt: ".excalidraw", formats });
+          return { ref: item.ref, file: spec.name, revision, written, block };
         });
       }
 
@@ -484,15 +662,16 @@ export function createDiagramSceneCommand({ resolveItemExact, requireLocalChecko
         requirePending(proposal);
         const rejected = { ...proposal, status: "rejected", decidedAt: new Date().toISOString(), reason };
         await writeRecord(review, rejected);
-        return { ref: item.ref, file: spec.name, proposal: rejected };
+        const { base: _base, snapshot: _snapshot, ...listed } = rejected;
+        return { ref: item.ref, file: spec.name, proposal: listed };
       });
     },
     cli: {
       route: ["diagram", "scene"],
-      spec: { usage: "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|respond|propose|proposals|accept|reject] [--input path] [--json]", flags: { action: { type: "string", description: "read, save, context, request, respond, propose, proposals, accept, or reject" }, input: { type: "string", description: "JSON request file (scene, selectedIds, requestId, operations, proposalId, …)" } } },
+      spec: { usage: "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|propose|proposals|accept|reject|publish|libraries] [--input path] [--json]", flags: { action: { type: "string", description: "read, save, context, request, withdraw, respond, propose, proposals, accept, reject, publish, or libraries" }, input: { type: "string", description: "JSON request file (scene, text, selectedIds, requestId, proposalId, operations, svg, png, …)" } } },
       argv: (positionals, options) => {
         let extra = {};
-        if (options.input) { const raw = readFileSync(options.input, "utf8"); if (byteLength(raw) > MAX_BYTES) fail("Input exceeds the 2MB limit.", "diagram-scene-too-large", 413); extra = JSON.parse(raw); if (!plainObject(extra)) fail("Input JSON must be an object."); }
+        if (options.input) { const raw = readFileSync(options.input, "utf8"); if (byteLength(raw) > MAX_RECORD_BYTES + MAX_SVG + MAX_PNG * 2) fail("Input is too large.", "diagram-scene-too-large", 413); extra = JSON.parse(raw); if (!plainObject(extra)) fail("Input JSON must be an object."); }
         return { ...extra, ref: positionals[0], file: positionals[1], action: options.action ?? extra.action ?? "read" };
       },
       render: (result) => JSON.stringify(result),

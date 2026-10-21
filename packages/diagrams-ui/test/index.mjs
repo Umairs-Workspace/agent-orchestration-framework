@@ -4,9 +4,13 @@
 
 // The editor's pure state (scene draft and review state), moved here from apps/ui's board suite
 // with its subject when the editor became its own package.
-import { sceneDraftTests, reviewStateTests } from "./editor-state.suite.mjs";
+import { sceneDraftTests, reviewStateTests, notesAndDraftsTests } from "./editor-state.suite.mjs";
+// milestone 200 / ADR-012 — a proposal compiled into the stored scene, read back as the proposal.
+import { compileTests } from "./compile.suite.mjs";
 
 export const tests = [
   ...sceneDraftTests,
   ...reviewStateTests,
+  ...notesAndDraftsTests,
+  ...compileTests,
 ];

@@ -2108,8 +2108,8 @@ export const fleetScopeTests = [
       assert.match(gate, /\["packages\/server\/src\/board-ui\.mjs", "[0-9a-f]{64}"\]/, "the board-ui pin is present");
       // 131/04 stacks a third board-ui mover (one hoisted admission and one route onto
       // `work:answer`), so this window widens by its comment's length too; the diagrams opt-out seam
-      // stacks a fifth (one GET `/api/diagram/capability` branch), widening it once more.
-      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,2400}\["packages\/server\/src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
+      // stacks a fifth (one GET `/api/diagram/capability` branch), widening it once more, and milestone 200 a sixth (the scene route's own body limit).
+      assert.match(gate, /RE-PINNED by 133\/04[\s\S]{0,2900}\["packages\/server\/src\/board-ui\.mjs"/, "the board-ui pin moved after this story only with 133's stated reason");
       const { archTests } = await import("../arch/loop/acd-loop-state-rides-the-run-record.test.mjs");
       const control = archTests.find((test) => /frozen store and board read surfaces/.test(test.name));
       assert.ok(control, "the FF-5307 digest control exists");

@@ -240,7 +240,11 @@ function assertUiFrozen(pairs) {
   // `onRunAgent` thread PR #13 added. Nothing new is read: the editor's reads moved with it to the diagram
   // surface and its dock binds a `local-pty` exactly as the board's does; no fleet or home file, run-record
   // key, cycle, level or loop state is read.
-  assert.equal(hash.digest("hex"), "f2c41d00829e4151471fde3bb5f06edca0a5d419f62c404e4e01488462d80d0e", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by milestone 200 (ADR-010: the diagram is Excalidraw's scene, read as Mermaid), measured:
+  // `git diff --numstat HEAD -- apps/ui/src` is ONE file, `board/diagrams.mjs` (+2 −1): the pasted block's
+  // Source link may now name the `.excalidraw` scene and is pointed at `/api/diagram/file` like the HTML, SVG
+  // and PNG. Nothing new is read; no fleet or home file, run-record key, cycle, level or loop state is read.
+  assert.equal(hash.digest("hex"), "a7c1519692fb68d4ef9403564b15599ae2fb48be94efbeb3576bcac3fa688502", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -396,7 +400,10 @@ export const archTests = [
         // RE-PINNED by the diagrams opt-out seam: one GET `/api/diagram/capability` branch onto
         // `diagram:capability` (+16, all inside `handleDiagramApi`, with the absent-package answer); no
         // admission added, no run key read, `handleWorkApi` byte-identical.
-        ["packages/server/src/board-ui.mjs", "d4c7e3f3aacae5191b7219d12f9859305e158193c147b114e16d777abb110c45"],
+        // RE-PINNED by milestone 200 (ADR-013): `readJsonBody` takes the route's own limit (default 1 MB, every
+        // board write unchanged) and the diagram scene route alone passes 16 MB, because Publish carries the
+        // editor's SVG and a base64 PNG (+5 −3). No admission, route or run-key read changes.
+        ["packages/server/src/board-ui.mjs", "999bc13b4337c74c991d379b9386fbe4c37544b25422831ab24a2c416a4fac3e"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

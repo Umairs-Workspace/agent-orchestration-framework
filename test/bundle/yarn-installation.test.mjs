@@ -49,6 +49,10 @@ export const yarnInstallationTests = [
         // core as one package. The lane's directory reader is injected by core; the commands keep the exact
         // file-level ports they carried in @aof/work.
         'layout.mjs': ['@aof/contracts/error', '@aof/work/declared-id'],
+        // 200/ADR-010: the aof Mermaid profile and the scene's projection into it are import-free (the
+        // projection imports only the profile), so the server and the browser editor run the same rules.
+        'mermaid-profile.mjs': [],
+        'scene-view.mjs': [],
         'generator-diagram-design.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'doctor-lane.mjs': ['node:path', '@aof/work/lifecycle'],
         'commands/plan.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/work/discovery', '@aof/work/records'],

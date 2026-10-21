@@ -8,9 +8,15 @@ import { diagramLayoutTests } from "./diagram-layout.suite.mjs";
 import { diagramGeneratorTests } from "./diagram-generator.suite.mjs";
 // The package's own seams: the contribution, the lane factory and the file command through a registry.
 import { packageSeamsTests } from "./package-seams.suite.mjs";
+// milestone 200 / ADR-006 — the aof Mermaid profile, the one diagram format.
+import { mermaidProfileTests } from "./mermaid-profile.suite.mjs";
+// milestone 200 / ADR-010 — the stored Excalidraw scene, seen as Mermaid.
+import { sceneViewTests } from "./scene-view.suite.mjs";
 
 export const tests = [
   ...diagramLayoutTests,
   ...diagramGeneratorTests,
   ...packageSeamsTests,
+  ...mermaidProfileTests,
+  ...sceneViewTests,
 ];

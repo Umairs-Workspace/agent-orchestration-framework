@@ -6,7 +6,8 @@
   "exports": {
     "./editor": "./src/ExcalidrawEditor.tsx",
     "./editor-state": "./src/editor-state.mjs",
-    "./fonts": "./src/fonts.mjs"
+    "./fonts": "./src/fonts.mjs",
+    "./compile": "./src/compile.mjs"
   },
   "files": [
     "src"
@@ -15,7 +16,9 @@
     "test": "node ../../scripts/test-workspace.mjs @aof/diagrams-ui"
   },
   "dependencies": {
-    "@excalidraw/excalidraw": "0.18.0"
+    "@aof/diagrams": "workspace:*",
+    "@excalidraw/excalidraw": "0.18.0",
+    "@excalidraw/mermaid-to-excalidraw": "1.1.2"
   },
   "peerDependencies": {
     "react": "^19.0.0",

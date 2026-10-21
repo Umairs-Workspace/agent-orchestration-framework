@@ -73,7 +73,7 @@ const diagramFileCommand = {
   cli: {
     route: ["diagram", "file"],
     spec: {
-      usage: "aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png> [--json]",
+      usage: "aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png|.excalidraw> [--json]",
     },
 
     argv: (positionals) => ({ ref: positionals[0], file: positionals[1] }),
