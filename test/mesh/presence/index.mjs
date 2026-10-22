@@ -62,5 +62,6 @@ import { meshPresenceReadsRunsFromTheStoreTests } from "./mesh-presence-reads-ru
 export const tests = [
   ...meshPresenceRecordTests,
   ...meshPresenceAggregateWorkspacesTests,
+  ...meshPresenceReadsRunsFromTheStoreTests,
   // …and its two @executable task features (00 the projection, 01 the fabric crossing).
 ];

@@ -25,6 +25,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { functionBody as declarationBody } from "../../support/source-slice.mjs";
 
 const EFFECTS = _aofApplication.effects.reactors.EFFECTS;
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -83,7 +84,9 @@ export const archTests = [
       // at 167/06) and is returned from the store factory, which is how the presence seam gets it.
       const store = stripComments(await readFile(path.join(repoRoot, "packages", "mesh", "src", "content-reads.mjs"), "utf8"));
       assert.ok(store.includes("function readNodeRunningRuns"), "readNodeRunningRuns is defined in content-reads.mjs");
-      const read = store.slice(store.indexOf("function readNodeRunningRuns"), store.indexOf("function readNodeRunningRuns") + 1200);
+      // The one home cuts the declaration by its own braces (F-47-04-ARCH-2): it is indented inside the factory.
+      const read = declarationBody(store, "function readNodeRunningRuns");
+      assert.ok(read, "readNodeRunningRuns has a body");
       assert.match(read, /node_id\s*=\s*\?/, "…bounded to one reporter");
       assert.match(read, /json_extract\(record_json,\s*'\$\.state'\)\s*=\s*'running'/, "…and to records that read running, in SQL, so the cost is the running runs and never the history");
     },

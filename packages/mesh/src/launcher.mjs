@@ -623,7 +623,7 @@ function createFaultLedger(tickMs) {
 // folder every tick would say nothing. A PERMANENT failure is said once and then backed off: the
 // pass is skipped, and counted, until the backoff runs out or the workspace's files change.
 async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
-  const { tickSet, openStore, ledger, watches } = tick;
+  const { tickSet, openStore, ledger, watches, notPropagating } = tick;
   const sync = typeof options?.syncWorkspace === "function" ? options.syncWorkspace : syncWorkspace;
   const { registryResult, workspaces, remaining, projectRootOf } = tickSet;
   const results = [];
@@ -666,6 +666,7 @@ async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
       if (entry.workspaceId) ledger.clear(entry.workspaceId);
       results.push({ workspaceId: entry.workspaceId, ...result });
       if (!result?.skipped) watchable.push(entry.workDir);
+      else notPropagating?.add(path.resolve(entry.workDir));
       // The launch folder that is not a workspace is the one quiet skip, so it is not a pass either.
       if (!(isLaunch && result?.skipped && result.code === MESH_WORKSPACE_UNCONFIGURED_CODE)) meter.count("sync-pass", labelled(entry));
       if (result?.skipped && !(isLaunch && result.code === MESH_WORKSPACE_UNCONFIGURED_CODE)) {
@@ -1023,14 +1024,20 @@ async function startLauncher(ws, options = {}) {
   const workTreeWatches = options?.workTreeWatch
     ? createWorkTreeWatches({ meter: options?.costMeter ?? processCostMeter, reportDegrade, ...(typeof options.workTreeWatch === "object" ? options.workTreeWatch : {}) })
     : null;
+  // The work dirs a sync pass skipped as not propagating: never armed again in this daemon.
+  const notPropagating = new Set();
   const capturePropagation = async () => {
     const shared = sharedProjectionStore(options?.openStore ? { openStore: options.openStore } : {});
     try {
       const tickSet = await resolveTickWorkspaces(ws, nodeId, options, shared.openStore);
+      // 167/ADR-009 — armed BEFORE the tick walks, so the tick's own walk of a newly watched tree is
+      // the one it remembers: a tree is walked once when first watched, never once more next tick.
+      // The pass's end narrows the set to the trees it covers.
+      if (workTreeWatches && tickSet.registryResult.ok) workTreeWatches.arm(tickSet.workspaces.map((entry) => entry.workDir).filter((dir) => typeof dir === "string" && !notPropagating.has(path.resolve(dir))));
       const nextRecord = await assemblePresenceForTick(ws, nodeId, options, tickSet, shared.openStore);
       await publishPresenceRecord(ws, nodeId, nextRecord);
       record = nextRecord;
-      return await syncTickWorkspaces(ws, nodeId, options, launcherWarnings, { tickSet, openStore: shared.openStore, ledger: faultLedger, watches: workTreeWatches });
+      return await syncTickWorkspaces(ws, nodeId, options, launcherWarnings, { tickSet, openStore: shared.openStore, ledger: faultLedger, watches: workTreeWatches, notPropagating });
     } finally {
       shared.close();
     }

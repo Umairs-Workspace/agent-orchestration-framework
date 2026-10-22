@@ -324,7 +324,7 @@ export async function workTreeStatDigest(workDir, { reportDegrade } = {}) {
 // 167/ADR-009 — the daemon WATCHES each work tree it syncs, so an unchanged watched tree costs no stat
 // walk. ONE watch set per process, created only by `mesh serve`'s launcher: `retain(workDirs)` arms
 // a recursive watch for each new dir and closes the ones it no longer names; `close()` drops them
-// all. A watched tree is answered from its last complete walk until a watch event dirties it, or the
+// all, and `arm(workDirs)` adds watches without closing any (the tick arms before it walks). A watched tree is answered from its last complete walk until a watch event dirties it, or the
 // walk is `safetyMs` old (5 minutes). A tree whose watch cannot start, or errors later, is walked on
 // every ask as before, said once (`work-tree-watch-unavailable`), and not armed again in this
 // process. Every real walk in a process holding a watch set is counted as `stat-walk`, labelled
@@ -339,7 +339,7 @@ export function createWorkTreeWatches({ watch = fsWatch, now = () => Date.now(),
   const drop = (key, error) => {
     const entry = entries.get(key);
     entries.delete(key);
-    try { entry?.watcher?.close(); } catch { /* already closed */ }
+    entry?.watcher?.close();
     if (!failed.has(key)) {
       failed.add(key);
       reportDegrade?.("work-tree-watch-unavailable", error, { path: key });
@@ -366,15 +366,22 @@ export function createWorkTreeWatches({ watch = fsWatch, now = () => Date.now(),
       const keep = new Set([...workDirs].filter((dir) => typeof dir === "string" && dir).map((dir) => path.resolve(dir)));
       for (const key of [...entries.keys()]) {
         if (keep.has(key)) continue;
-        try { entries.get(key).watcher?.close(); } catch { /* already closed */ }
+        entries.get(key).watcher?.close();
         entries.delete(key);
       }
       for (const key of keep) if (!entries.has(key) && !failed.has(key)) arm(key);
     },
+    arm(workDirs) {
+      for (const dir of workDirs) {
+        if (typeof dir !== "string" || !dir) continue;
+        const key = path.resolve(dir);
+        if (!entries.has(key) && !failed.has(key)) arm(key);
+      }
+    },
     held: () => [...entries.keys()],
     close() {
       for (const entry of entries.values()) {
-        try { entry.watcher?.close(); } catch { /* already closed */ }
+        entry.watcher?.close();
       }
       entries.clear();
       if (treeWatches === handle) treeWatches = null;

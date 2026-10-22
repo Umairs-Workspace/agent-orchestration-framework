@@ -34,8 +34,7 @@ test moves with it.
 
 ## Verification step
 
-The soak, in the container: `node scripts/test-docker.mjs --only
-test/mesh/budget/daemon-budget-soak.test.mjs`. `serve` is under the idle budget, E1 is green, and
+04's soak suite, in the container (`node scripts/test-docker.mjs --only` over it). `serve` is under the idle budget, E1 is green, and
 the profile shows no `readRuns` on the tick. Then the story's own suite and FF-16705 on the host,
 focused.
 

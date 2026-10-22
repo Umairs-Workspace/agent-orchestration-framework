@@ -399,6 +399,12 @@ spends it all, so sharing one digest per tick cannot pass, and an idle tick has 
   dir that is no longer in the tick set is closed. `stop()` closes them all. A tick whose registry
   read failed changes no watch. The CLI, the tests and `mesh ui` arm none, so ADR-003's behaviour
   is unchanged for them, and every delivered 01 and 03 scenario still holds as written.
+- **Amended at the milestone gate (2026-10-22): the tick arms BEFORE it walks.** Each tick first
+  arms every work dir in its tick set that a sync pass has not already skipped as not propagating,
+  and the pass's end then narrows the set to the trees it covered. A newly watched tree's first walk
+  is that tick's own, so the next tick walks nothing. Measured on the Windows host: with arming
+  after the walk, the next tick's `first` walk (≈1.1 CPU-s) fell inside the soak's idle phase and put
+  `serve` at 2.9% against 2%. With arming first, the soak is green twice there.
 - **A tree that cannot be watched is walked as before.** A watch that throws when it starts, or
   emits `error` later, is closed and dropped. That dir is not armed again in this process, and one
   degrade `work-tree-watch-unavailable` names it.

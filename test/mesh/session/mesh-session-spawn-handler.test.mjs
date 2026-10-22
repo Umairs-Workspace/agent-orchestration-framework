@@ -202,7 +202,17 @@ async function withSpawnFixture(fn, { available = true } = {}) {
     }
     // Re-load so the workspace object carries the marker just written.
     const workspace = await loadWorkspace(fixture.root, undefined, { env: fixture.env });
-    return fn({ ...fixture, workspace });
+    // The fixture's home is THE global home for the body. A real launcher's first tick runs the sync
+    // pass, whose registry publish rebuilds this workspace's membership from the node records under
+    // the process's global home (164/ADR-004); read from another home, it finds none and unlinks
+    // this node. That publish used to throw on an injected clock, which hid the mismatch (167/03).
+    const prior = process.env.AOF_GLOBAL_HOME;
+    process.env.AOF_GLOBAL_HOME = fixture.home;
+    try {
+      return await fn({ ...fixture, workspace });
+    } finally {
+      if (prior === undefined) delete process.env.AOF_GLOBAL_HOME; else process.env.AOF_GLOBAL_HOME = prior;
+    }
   }, { milestoneNumber: "50", storySlug: "spawn", storyNumber: "03" });
 }
 

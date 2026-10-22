@@ -286,6 +286,34 @@ doc: state
     reach, so the property is the same: the soak's daemons write only to their own temp home.
   - *Recorded:* the soak has run green only in the Linux container this session. Its Windows host
     run is the milestone regression gate's, which runs the whole tree on this machine.
+- **Milestone gate repair (2026-10-22, solo).** 168's gate row at `d63b05e6` (the same tree) was
+  red on about 25 cases. Each was re-run alone in a clean detached worktree at `a5fb7175` and
+  attributed by its assertion. **167's reds, all fixed here:**
+  - 06's presence suite was imported but never spread (FF-5903, the instrument census, FF-11906).
+  - FF-16705's arch test cut source positionally (F-47-04-ARCH-2); it now uses `source-slice.mjs`.
+  - 06's and 07's PLAN.md each restated the soak's path (FF-9603). Every PLAN.md in the stream was
+    scanned clean afterwards.
+  - `runs.mjs`'s FF-5307 pin was re-pinned for 06's `readRun` export.
+  - 61/05's census and the effects-ledger integration feature now carry `publish-run`
+    ("Drained 3").
+  - 07 left three silent catches in `discovery.mjs`. `FSWatcher.close()` does not throw, so the
+    try blocks were dropped.
+  - FF-16004: `work find` loads 720 modules. 167/06's `content-reads.mjs` is +1, raised to 718 with
+    its reason. 168's `prototype` binding and command are the other +2.
+  - **session-spawn-handler 00/03** were green only because the injected clock made the tick's
+    publish throw. 03's fix let the publish succeed, and its membership rebuild read node records
+    from the runner's home rather than the fixture's, so this node was unlinked. `withSpawnFixture`
+    now makes the fixture's home the global home, as the 03 suite's `withMesh` does.
+  - **167/04 E1 on the Windows host** (2.9% against 2%). Watches were armed after the tick's walks,
+    so tick 2 took a `first` walk (≈1.1 CPU-s) inside the measured idle phase. With the watch on,
+    idle `serve` measured 1.10 CPU-s per 45 s; with it off, 4.90; the OS showed ≈0.6% at steady
+    state. Fixed by arming before the walk (ADR-009, amended): the soak is green twice on the host.
+  - **168's, left to its owner:** FF-5201 (the six-type vocabulary), FF-5301 (166),
+    yarn-installation (`commands/prototype.mjs`), FF-16004's +2 (and FF-16008 through it), 131/08's
+    composition ceiling (63), core-workspace's route list, workspace-boundaries
+    (`commands/ratchet.mjs` child process), the core catalog (123), command-core's registry, the
+    application-assembly command count and descriptors, home-route (`DetailPanel.tsx` 901), and
+    FF-5307's ui hash.
 
 ## Verification
 

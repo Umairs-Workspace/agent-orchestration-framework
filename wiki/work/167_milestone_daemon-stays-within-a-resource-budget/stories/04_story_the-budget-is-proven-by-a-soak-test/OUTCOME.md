@@ -16,6 +16,6 @@ It is registered through `scripts/test.mjs`, so the whole-tree gate runs it. It 
 ## Gaps
 
 ### The soak on the Windows host
-- **Status:** open
+- **Status:** discharged
 - **Discharge condition:** the milestone regression gate runs the whole tree on this machine, and the soak is green there.
-It has run green in the Linux container only (m167/F-10).
+It is green on the Windows host as well since ADR-009's arm-before-walk amendment (m167/F-10).

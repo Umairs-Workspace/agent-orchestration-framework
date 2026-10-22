@@ -337,7 +337,10 @@ export const archTests = [
         // atomic brief settlement at an existing transition. Pending native review
         // evidence cannot survive owner loss or finish a run successfully. Record
         // keys, legal edges, board/UI and the sole run writer remain unchanged.
-        ["packages/execution/src/runs.mjs", "3dc74d570f5d895580f20c2028adfe3bbbef5209a505144ea949bbdf335c9e15"],
+        // RE-PINNED by 167/06 (ADR-008): one export, `readRun` — the existing one-record read, so the
+        // presence seam reads a running run's own record for a loop's last activity. No key, state
+        // edge, writer or board/UI reader changed.
+        ["packages/execution/src/runs.mjs", "511dbd743ff50a86496300f07d6b3721dba3a2ea246a2d28442e997dfdd99822"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that

@@ -32,8 +32,8 @@ the launcher, counting `stat-walk` over the tick.
 
 ## Verification step
 
-The story's suites, alone, with an isolated home. Then the soak in the container
-(`node scripts/test-docker.mjs --only test/mesh/budget/daemon-budget-soak.test.mjs`): E1 green,
+The story's suites, alone, with an isolated home. Then 04's soak in the container
+(`node scripts/test-docker.mjs --only` over it): E1 green,
 `serve` idle under 2%, and status's top causes free of `stat-walk` after warm-up. The red probe for
 FF-16706 is a `readdir(x, { recursive: true })` planted in `launcher.mjs`.
 
