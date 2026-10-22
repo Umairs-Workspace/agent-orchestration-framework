@@ -19,6 +19,6 @@ A registration whose folder is missing (`workdir-missing`) or is not a directory
 The line claims "said once" for any code. That is unreachable today, because every registry skip carries a permanent reason (m167/F-05).
 
 ### A moved workspace that fails again
-- **Status:** open
+- **Status:** discharged
 - **Discharge condition:** a held workspace that moved and fails again takes one stat walk on that tick.
-It stat-walks its tree twice on that tick (m167/F-06).
+It stat-walked its tree twice on that tick (m167/F-06). Since 167/07 the second ask is answered from the first walk.

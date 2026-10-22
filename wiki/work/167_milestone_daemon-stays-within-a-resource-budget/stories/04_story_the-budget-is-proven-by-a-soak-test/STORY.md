@@ -4,10 +4,10 @@ number: 04
 slug: the-budget-is-proven-by-a-soak-test
 title: "The budget is proven by a soak test — the real daemons run over a generated tree as large as aof's, with the motivating faults planted and a viewer polling, and the gate goes red if either daemon is over budget"
 parent: 167
-status: not-started
+status: done
 owner: product-owner
 created: 2026-10-20
-updated: 2026-10-21
+updated: 2026-10-22
 schema: 1
 aofVersion: 0.1.0
 depends: [01, 02, 03, 05, 06, 07]
@@ -26,8 +26,8 @@ pull request, rather than quietly costing a user's device a core.**
 
 ## Tasks
 
-- [ ] [00 · The real daemons hold the budget with the motivating faults planted](tasks/00_the-daemons-hold-the-budget-under-soak.feature)
-- [ ] [01 · The soak runs in the regression gate without touching the live node](tasks/01_the-soak-runs-in-the-gate.feature)
+- [x] [00 · The real daemons hold the budget with the motivating faults planted](tasks/00_the-daemons-hold-the-budget-under-soak.feature)
+- [x] [01 · The soak runs in the regression gate without touching the live node](tasks/01_the-soak-runs-in-the-gate.feature)
 
 ## Notes
 
@@ -41,3 +41,11 @@ pull request, rather than quietly costing a user's device a core.**
   (FF-16702).
 - **It follows 05** only because both stories write `acd-source-directory-budget.test.mjs`, for
   the new `test/mesh/budget/` row. It reads nothing 05 builds.
+
+## Accept decision
+
+2026-10-22 — **ACCEPTED** by `aof:verify 167`. The soak suite is 8 of 8 green in the capped
+container after 07, E1 and E2 included. `aof work validate 167/04` passes, and doctor reports no
+error and no `control-unresolved`. There is no `@manual` or `@uat` scope, and no blocker
+finding. F-10 (the soak not yet run on the Windows host) is an OUTCOME gap that the milestone's
+regression gate discharges. F-12 is a Nit. Evidence is in the parent `VERIFICATION.md`.

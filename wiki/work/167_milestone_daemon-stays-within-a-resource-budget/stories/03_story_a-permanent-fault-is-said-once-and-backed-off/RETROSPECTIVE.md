@@ -28,7 +28,7 @@ every arch test that names the module, and put them in `files:` at refine.
 - **Kind:** near-miss · **Area:** code · **Stage:** build · **Owner:** developer · **Promoted to:** none
 - **Raised by:** the 03 build
 
-**What happened.** 03's cases exposed 00's snapshot-order bug (00/R2). They also exposed a launcher
+**What happened.** 03's cases exposed 00's snapshot-order bug (167/00/R2). They also exposed a launcher
 clock, injected as a function, being bound into the publisher's SQL as `published_at`. Both were
 fixed at 03's close.
 

@@ -373,7 +373,7 @@ for 103.7 of 109.8 s. The only frames that are not idle are `readdir`, `stat` an
 walk's threadpool work. A preload counter found **≈3 walks per 15 s tick** of the same tree, from the
 backoff check (`workTreeMovedSince`, `launcher.mjs`), the publisher's stat gate
 (`syncWorkspace`, `publisher.mjs`) and the presence read's memo digest (`readStreamSnapshot`). One
-walk of aof's own tree costs ≈0.4–0.5 CPU-s in Linux and ≈1.1 CPU-s on Windows (00/R2 and 01/R2:
+walk of aof's own tree costs ≈0.4–0.5 CPU-s in Linux and ≈1.1 CPU-s on Windows (167/00/R2 and 167/01/R2:
 measured as CPU, not wall time). The idle budget is 0.3 CPU-s per tick. Even one walk per tick
 spends it all, so sharing one digest per tick cannot pass, and an idle tick has to walk nothing.
 
@@ -391,7 +391,7 @@ spends it all, so sharing one digest per tick cannot pass, and an idle tick has 
   (`workTreeStatDigest` twice, and `readStreamSnapshot`) are therefore gated at once.
 - **What makes a tree dirty.** Any watch event, except one whose file name has an extension other
   than `.md` or `.feature`: a run record, a log or a JSON lock never forces a walk. An event with no
-  file name, or one naming a folder, is dirty. That honours 01/R1 (the tree's shape is part of the
+  file name, or one naming a folder, is dirty. That honours 167/01/R1 (the tree's shape is part of the
   key).
 - **The daemon arms, nothing else does.** `mesh serve` passes `workTreeWatch: true` to
   `startLauncher`. Each tick retains watches for the work dirs the sync pass did not skip as
@@ -417,14 +417,16 @@ spends it all, so sharing one digest per tick cannot pass, and an idle tick has 
   the 10% viewer-open budget and measured under it.
 
 **Assumptions.** Recursive `fs.watch` is native on Windows (`ReadDirectoryChangesW`) and macOS
-(FSEvents), and inotify-backed on Linux from Node 20. Inotify sees no change made from Windows to a
+(FSEvents), and inotify-backed on Linux from Node 20. On Linux each watched folder costs one inotify
+watch, so a tree with more folders than `fs.inotify.max_user_watches` allows fails to arm. It is
+then walked as before and said once. Inotify sees no change made from Windows to a
 `/mnt/c` tree, so such a tree is stale for at most `safetyMs`. A watched root that is deleted while
 the daemon runs is held open until its watch errors and is closed. Only trees that propagate are
 watched, so the dispatch lanes that are created and removed all day are never held.
 
 Recall `729a69d4-93f4-4b8a-b9f0-30542740e4ed` (architect, `--area architecture`) surfaced ADR-003
 (amended here, not replaced), m164/ADR-004 (honoured: still one pass and three drivers, now
-gated), 01/R2 (honoured: every cost above is CPU) and 01/R1 (honoured: a folder event is dirty).
+gated), 167/01/R2 (honoured: every cost above is CPU) and 167/01/R1 (honoured: a folder event is dirty).
 It also surfaced m22/ADR-004, which does not bear on this.
 
 ---

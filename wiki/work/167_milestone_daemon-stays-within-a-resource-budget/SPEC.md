@@ -74,10 +74,10 @@ Out of scope:
 - [x] [01 · An unchanged work tree costs a stat walk](stories/01_story_an-unchanged-tree-costs-a-stat-walk/STORY.md) (ADR-003; after 00)
 - [x] [02 · An idle view costs almost nothing](stories/02_story_an-idle-view-costs-almost-nothing/STORY.md) (ADR-004; after 00)
 - [x] [03 · A permanent fault is said once and backed off](stories/03_story_a-permanent-fault-is-said-once-and-backed-off/STORY.md) (ADR-005; after 00, 01)
-- [ ] [04 · The budget is proven by a soak test](stories/04_story_the-budget-is-proven-by-a-soak-test/STORY.md) (ADR-007; after 01, 02, 03, 05, 06, 07)
+- [x] [04 · The budget is proven by a soak test](stories/04_story_the-budget-is-proven-by-a-soak-test/STORY.md) (ADR-007; after 01, 02, 03, 05, 06, 07)
 - [x] [05 · The desktop shows a sustained overrun](stories/05_story_the-desktop-shows-a-sustained-overrun/STORY.md) (ADR-006; after 00, 02)
 - [x] [06 · Local runs reach the store through the ledger](stories/06_story_local-runs-reach-the-store-through-the-ledger/STORY.md) (ADR-008; found by 04's soak)
-- [ ] [07 · An idle tick walks nothing](stories/07_story_an-idle-tick-walks-nothing/STORY.md) (found by profiling F-04; after 00, 01, 03, 06)
+- [x] [07 · An idle tick walks nothing](stories/07_story_an-idle-tick-walks-nothing/STORY.md) (found by profiling F-04; after 00, 01, 03, 06)
 
 Waves: 00 → 01 ∥ 02 → 03 ∥ 05 → 04. 03 composes 01's digest. 05 and 04 each follow a sibling
 only because they share `acd-source-directory-budget.test.mjs` (the arch-test and new-directory

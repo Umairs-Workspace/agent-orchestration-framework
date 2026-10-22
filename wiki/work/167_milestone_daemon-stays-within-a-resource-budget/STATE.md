@@ -254,6 +254,38 @@ doc: state
     `packages/mesh/test/mesh-presence-session-wire.suite.mjs` was declared and needed no change.
   - *FF-16705's table row named `publish-projection` as the writer; ADR-008's decision names
     `publish-run`.* The row now reads `publish-run` and drops "(pending)".
+- **167/07 build + review (2026-10-22, solo, run `20261022T155344891Z-0001`).** Built to green;
+  reviewed inline; no Blocker. The gate sits inside `statWorkTree`, so the three tick sites changed
+  nothing. Evidence: the story's two suites (9 launcher cases and 10 discovery cases, all green),
+  with a red probe on the gate itself (with its early return disabled, E1, E2, E3, E5, the log event
+  and the 4:59 safety edge all go red). FF-16706 is green, with its red probe (a recursive `readdir`
+  planted in `launcher.mjs`). In the container: the importer sweep (35 suites, 486 ok), the work,
+  mesh and foundation package suites, and **167/04's soak, 8 of 8 green, E1 included for the first
+  time**. A build measurement with the profiling script (not a suite claim): serve idle at 0.51
+  CPU-s over 62 s (0.8% of a core), down from 4.38 CPU-s (7%), with 5 walks in 84 s, all of them
+  warm-up.
+  - *Declared set:* `test/bundle/yarn-installation.test.mjs` (the work kernel allowlist admits
+    `node:fs` for `discovery.mjs`) was outside `files:`. 03/R1 again, for a pin on imports rather
+    than on wiring.
+  - *Not this story's, and red at the milestone gate:* the other session's 168 prototype work
+    (untracked in this checkout) moves FF-5301's reach ceiling 165 → 166 and adds four
+    `commands/prototype.mjs` violations to the yarn-installation kernel check. Measured: with
+    07's one new import pointed at a module already in the graph, FF-5301 still reads 166.
+  - *Fixed at the close:* ADR-009's assumptions now say that on Linux each watched folder costs an
+    inotify watch, and that a tree past `fs.inotify.max_user_watches` falls back to the walk (R3).
+  - *Recorded (Nits):* the launcher-level E1–E3 run over the suite's two-story fixture, not the
+    Background's 1,800 docs. The rule counts walks, not docs, and the 1,800-doc tree is exercised by
+    the discovery cases and 04's soak. E10 is proven at the seam (a process with no watch set),
+    not through `aof work list`. The watch set's handle exposes `entries`/`now`/`safetyMs` for
+    the gate's own use. `mesh ui`'s board polls still walk per poll, by ADR-009's decision.
+- **167/04 build resumed + review (2026-10-22, solo, run `20261022T161547134Z-0001`).** The harness,
+  suite and registration from the first attempt are unchanged. With 07 in, the soak is 8 of 8 green
+  in the container (E1 and E2 were red). Gate ladder clean; reviewed inline; no Blocker.
+  - *Recorded (Nit):* E7's case reads "the global home it was handed", where the feature says "the
+    real global home". Under the runner's isolation the handed home is the only one the process can
+    reach, so the property is the same: the soak's daemons write only to their own temp home.
+  - *Recorded:* the soak has run green only in the Linux container this session. Its Windows host
+    run is the milestone regression gate's, which runs the whole tree on this machine.
 
 ## Verification
 
