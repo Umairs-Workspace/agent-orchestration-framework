@@ -70,6 +70,14 @@ import { cacheReadDoctorOverlayTests } from "./cache-read-doctor-overlay.test.mj
 // in-process, and the real-runtime leg runs in a fresh child because Node raises the warning
 // once per process.
 import { sqliteRuntimeTests } from "./sqlite-runtime.test.mjs";
+// milestone 164 / story 00 — a local change is noticed and owed (164/ADR-001..004): the sync pass
+// over a real store and journal (tasks 00 and 01), and every command syncing its own workspace (task 02).
+import { syncLocalChangeOwedTests } from "./sync-local-change-owed.test.mjs";
+import { syncCommandSyncsOwnWorkspaceTests } from "./sync-command-syncs-own-workspace.test.mjs";
+// milestone 164 / story 02 — a project's own records answer from its files (164/ADR-005).
+import { cacheReadOwnRecordsFromDiskTests } from "./cache-read-own-records-from-disk.test.mjs";
+// milestone 164 / story 03 — doctor shows what is owed and how far behind each workspace is.
+import { syncDoctorShowsLagTests } from "./sync-doctor-shows-lag.test.mjs";
 
 export const tests = [
   ...cacheStableLaunchTests,
@@ -96,4 +104,8 @@ export const tests = [
   ...cacheReadBoundaryHoldsTests,
   ...cacheReadDoctorOverlayTests,
   ...sqliteRuntimeTests,
+  ...syncLocalChangeOwedTests,
+  ...syncCommandSyncsOwnWorkspaceTests,
+  ...cacheReadOwnRecordsFromDiskTests,
+  ...syncDoctorShowsLagTests,
 ];

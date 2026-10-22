@@ -147,7 +147,11 @@ export const cacheReadDoctorOverlayTests = [
   // node_id alone
   // ==========================================================================
   {
-    name: "cache-read/04 a divergence on a ref the control itself last reported remains a real finding, naming the reporting node, anchored on the real on-disk record doc",
+    // NARROWED by 164/ADR-005 (164/02 E6): 43/06 task 04's "the control's own report wins and its
+    // disagreement is a divergence" no longer holds — a row THIS node reported is an older copy
+    // of its own files, so doctor reads the disk and raises no divergence; a sync that is behind
+    // is the sync-lag lane's to report (164/03). The delivered 43 feature is not edited.
+    name: "cache-read/04 a disagreement on a ref the control itself last reported is read from the control's own disk and raises no cache-status-divergence (164/ADR-005)",
     run: () => withCacheReadFixture(async (fx) => {
       await background(fx);
       // The cache holds 05 at in-progress, last reported by THIS control node; the control's
@@ -156,11 +160,11 @@ export const cacheReadDoctorOverlayTests = [
       await writeItem(fx, "05", { status: "done", slug: "m05" });
 
       const findings = await doctor(fx);
-      const divergence = findings.find((finding) => finding.code === "cache-status-divergence" && finding.path.includes("05_milestone"));
-      assert.ok(divergence != null, `a divergence finding is reported for 05 (got ${JSON.stringify(findings.map((f) => f.code))})`);
-      assert.match(divergence.message, new RegExp(CONTROL_NODE), "its message NAMES this control node as the side that last reported the authoritative status");
-      assert.ok(divergence.path.endsWith("SPEC.md"), `its path is the real on-disk anchor for 05 (got ${divergence.path})`);
-      assert.ok(existsSync(divergence.path), "…and that anchor exists on this node");
+      assert.ok(!has(findings, "cache-status-divergence", "05_milestone"), `no divergence finding for 05 (got ${JSON.stringify(codesFor(findings, "05_milestone"))})`);
+      // Non-vacuity: 05 is judged on its DISK value, `done` — a done milestone with no
+      // VERIFICATION.md on this disk draws missing-verification, which the cache's in-progress
+      // could never have produced.
+      assert.ok(has(findings, "missing-verification", "05_milestone"), `05 is judged done, from disk (got ${JSON.stringify(codesFor(findings, "05_milestone"))})`);
     }, { stream: DISK_STREAM }),
   },
 
@@ -445,15 +449,17 @@ export const cacheReadDoctorOverlayTests = [
       assert.equal(raw?.rows?.get("07")?.status, "in-progress", "the unguarded read DOES see the cache's in-progress for 07 (the precondition)");
       assert.equal(raw?.rows?.get("07/01")?.status, "in-progress", "…and for 07/01");
 
-      // …and the same doctor on the CONTROL, where the cache IS the authority, still reports
-      // the divergence for a row this node itself last reported — the guard is scoped to the
-      // worktree, it did not switch the check off.
-      await plantCacheRow(fx, "07", { status: "done", slug: "m07", node: CONTROL_NODE, at: SYNCED_AT });
+      // …and the same doctor on the CONTROL still overlays the cache — the guard is scoped to the
+      // worktree, it did not switch the overlay off. Since 164/ADR-005 the overlay answers for a
+      // row ANOTHER node reported (a row the control reported reads its own disk), so the
+      // observable is the worker-authored milestone the cache says is done with no deliverables:
+      // one cache-incomplete, which only an overlaid status can produce.
+      await plantCacheRow(fx, "07", { status: "done", slug: "m07", node: WORKER_NODE, at: SYNCED_AT });
       await writeItem(fx, "07", { status: "in-progress" });
       const onControl = await doctor(fx);
       assert.ok(
-        onControl.some((finding) => finding.code === "cache-status-divergence" && finding.path.includes("07_milestone")),
-        `the control node still reports cache-status-divergence for 07 (got ${JSON.stringify(onControl.map((f) => f.code))})`,
+        onControl.some((finding) => finding.code === "cache-incomplete" && finding.path.includes("07_milestone")),
+        `the control node still overlays the cache for 07 (got ${JSON.stringify(onControl.map((f) => f.code))})`,
       );
     }, { stream: [{ number: "07", stories: ["01"] }] }),
   },

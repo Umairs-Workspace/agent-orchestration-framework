@@ -12,12 +12,12 @@ import { StaleBadge } from "./StaleBadge";
 // on this view: the switcher button, each switcher row, the lane card under `all` focus.
 import { ArchivedPill, carriesArchivedMark } from "./ArchivedPill";
 import type { Derived } from "./model";
-import { gatesFor, titleOf } from "./model";
+import { gatesFor, laneCards, laneFor, titleOf } from "./model";
+import type { LaneCard } from "./model";
 import type { WorkItem } from "./api";
 import type { Freshness } from "./freshness.mjs";
 
-// A card placed in a lane carries the source item plus a small right-tag.
-type LaneCard = { item: WorkItem; tag: string };
+// A card placed in a lane carries the source item plus a small right-tag (model.ts `LaneCard`).
 
 export function BoardLanes({
   derived,
@@ -54,7 +54,7 @@ export function BoardLanes({
   const focusedMilestone = focus === "all" ? null : derived.milestones.find((m) => m.num === focus) ?? null;
 
   // Bucket the in-scope items into the five lanes.
-  const lanes = useMemo(() => bucket(derived, focus), [derived, focus]);
+  const lanes = useMemo(() => laneCards(derived, focus), [derived, focus]);
 
   const scopeCounts = useMemo(() => {
     const cards = LANE_ORDER.flatMap((s) => lanes[s]);
@@ -125,40 +125,6 @@ export function BoardLanes({
       )}
     </div>
   );
-}
-
-function bucket(derived: Derived, focus: "all" | string): Record<StatusKind, LaneCard[]> {
-  const out: Record<StatusKind, LaneCard[]> = {
-    "not-started": [],
-    "in-progress": [],
-    "in-review": [],
-    blocked: [],
-    done: [],
-  };
-  const place = (item: WorkItem, tag: string) => {
-    const status = (item.status ?? "not-started") as StatusKind;
-    if (out[status]) out[status].push({ item, tag });
-  };
-
-  if (focus === "all") {
-    for (const m of derived.milestones) place(m.item, "milestone");
-    for (const m of derived.milestones) {
-      for (const s of m.stories) {
-        if (s.status === "in-review" || s.status === "blocked") place(s, `in ${m.num}`);
-      }
-    }
-    for (const u of derived.uat) place(u, "uat");
-    // milestone 37/ADR-003: spike/chore are additive top-level drivers
-    // (ADR-001, uat-shaped) — placed via the SAME existing driver mechanism as
-    // uat above (no new lane/column); the tag doubles as the type badge whose
-    // text is the item's type.
-    for (const d of derived.otherDrivers) place(d, d.type);
-  } else {
-    const m = derived.milestones.find((x) => x.num === focus);
-    if (m) for (const s of m.stories) place(s, `in ${m.num}`);
-    for (const u of gatesFor(derived, focus)) place(u, "uat");
-  }
-  return out;
 }
 
 function Lane({
@@ -274,12 +240,13 @@ function LaneCardView({
           right end, in the cluster's standing order `[stale][archived]` (DESIGN
           §Surface 2's binding checklist: `[stale][archived][chip]`, minus the chip). */}
       <div className="mt-1.5 flex items-center gap-2">
-        {item.status === "in-progress" ? (
+        {laneFor(item) === "in-progress" ? (
           <span className="min-w-0 flex-1">
             <BarberBar />
           </span>
         ) : (
-          <span className="text-[11px] text-muted-foreground">{meta.short}</span>
+          // A prototype's own word, never the lane's: a paused one sits in not-started (168/ADR-007).
+          <span className="text-[11px] text-muted-foreground">{item.type === "prototype" ? item.status : meta.short}</span>
         )}
         {freshness?.badge || archived ? (
           <span className="ml-auto flex items-center gap-1.5">

@@ -29,6 +29,9 @@ import { createHash } from "node:crypto";
 export const WORK_ITEM_ARTIFACTS = Object.freeze([
   Object.freeze({ name: "SPEC", file: "SPEC.md" }),
   Object.freeze({ name: "STORY", file: "STORY.md" }),
+  // milestone 168 (03, ratified in its contract) — a prototype's record doc. A prototype card opens
+  // on it, with a STATE tab, so the board's document reader and a worker's stream both need it.
+  Object.freeze({ name: "PROTOTYPE", file: "PROTOTYPE.md" }),
   Object.freeze({ name: "VERIFICATION", file: "VERIFICATION.md" }),
   // chore 105 — OUTCOME.md JOINS THE SET, and the omission it repairs is exactly the drift
   // this module exists to prevent, one document late. Story 80 widened outcomes past the

@@ -1493,7 +1493,10 @@ async function driveInteractiveClaudeSession(brief, options = {}) {
             ? Math.max(graceEndsAt, heartbeatAtMs)
             : graceEndsAt;
           const refreshedDeadlineAt = silenceStartedAt + deadlinePolicy.heartbeatMs;
-          if (Date.now() <= refreshedDeadlineAt) {
+          // A check that fired for its own deadline, with no newer heartbeat moving the deadline
+          // past it, has seen the whole window: it expires here. Re-reading the clock instead let a
+          // timer that woke a hair early by wall time schedule a second read for the same window.
+          if (refreshedDeadlineAt > deadlineAt && Date.now() <= refreshedDeadlineAt) {
             scheduleHeartbeatCheck(refreshedDeadlineAt);
             return;
           }

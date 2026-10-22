@@ -810,4 +810,70 @@ export const boardBacklogAndArchiveTests = [
       for (const key of ["number?: null;", "backlog?: string;", "archived?: true;"]) assert.ok(type.includes(key), `GlobalWorkItem declares ${key}`);
     },
   },
+  // ── milestone 168 / story 03 — the board shows a prototype (ADR-007) ─────────────────────────
+  // The real `model.ts`, bundled: `laneCards` is what the mounted lanes place by, and `tabsFor` is
+  // what the detail panel opens with.
+  ...[
+    ["E1", "active", "in-progress"],
+    ["E2", "paused", "not-started"],
+    ["E3", "done", "done"],
+    ["", "abandoned", "done"],
+  ].map(([example, status, lane]) => ({
+    name: `168/03 ${example} a prototype at "${status}" sits in the "${lane}" lane, tagged with its own word`,
+    run: async () => {
+      const { deriveBoard, laneCards } = await loadModel();
+      const lanes = laneCards(deriveBoard([prototypeRow("169", status)]), "all");
+      const holding = Object.entries(lanes).filter(([, cards]) => cards.some((card) => card.item.ref === "169")).map(([name]) => name);
+      assert.deepEqual(holding, [lane], `169 is in exactly the ${lane} lane`);
+      assert.equal(lanes[lane].find((card) => card.item.ref === "169").tag, `prototype · ${status}`);
+    },
+  })),
+  {
+    name: "168/03 a prototype is placed beside spike and chore, and a spike's tag is unchanged",
+    run: async () => {
+      const { deriveBoard, laneCards } = await loadModel();
+      const derived = deriveBoard([driverRow("120", "spike", "in-progress"), driverRow("121", "chore", "done"), prototypeRow("169", "active")]);
+      assert.deepEqual(derived.otherDrivers.map((row) => row.ref), ["120", "121", "169"]);
+      assert.equal(laneCards(derived, "all")["in-progress"].find((card) => card.item.ref === "120").tag, "spike");
+    },
+  },
+  {
+    name: "168/03 E6/E7 · prototypes raise no milestone count, no story tally and no blocked gate",
+    run: async () => {
+      const { deriveBoard } = await loadModel();
+      const derived = deriveBoard([driverRow("168", "milestone", "in-progress"), prototypeRow("169", "active"), prototypeRow("170", "active"), prototypeRow("171", "paused")]);
+      assert.equal(derived.activeMilestones, 1, "the active-milestone count is the milestone's alone");
+      assert.equal(derived.milestones[0].total, 0, "no milestone's story tally counts a prototype");
+      assert.equal(derived.blockedGates, 0, "a paused prototype is not a blocked gate");
+    },
+  },
+  {
+    name: "168/03 a milestone focus shows no prototype",
+    run: async () => {
+      const { deriveBoard, laneCards } = await loadModel();
+      const story = { ...driverRow("00", "story", "in-progress"), ref: "168/00", parent: "168" };
+      const lanes = laneCards(deriveBoard([driverRow("168", "milestone", "in-progress"), story, prototypeRow("169", "active")]), "168");
+      assert.ok(Object.values(lanes).flat().some((card) => card.item.ref === "168/00"), "non-vacuity: the focus places its story");
+      assert.ok(!Object.values(lanes).flat().some((card) => card.item.ref === "169"), "no lane holds 169");
+    },
+  },
+  {
+    name: "168/03 E8 · a prototype card opens on PROTOTYPE with a STATE tab, and the other types keep their tabs",
+    run: async () => {
+      const { tabsFor } = await loadModel();
+      assert.deepEqual(tabsFor(prototypeRow("169", "active")), ["PROTOTYPE", "STATE"]);
+      assert.deepEqual(tabsFor(driverRow("168", "milestone", "in-progress")), ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"]);
+      assert.deepEqual(tabsFor(driverRow("00", "story", "in-progress")), ["STORY", "TASKS", "RUNS"]);
+      assert.deepEqual(tabsFor(driverRow("32", "uat", "blocked")), ["FINDINGS"]);
+    },
+  },
 ];
+
+// A wire row for the 168/03 cases: the list contract's fields, a top-level item.
+function driverRow(ref, type, status) {
+  return { ref, type, slug: `item-${ref}`, status, title: null, parent: null, dir: `wiki/work/${ref}_${type}_item-${ref}`, resume: null };
+}
+function prototypeRow(ref, status) {
+  return driverRow(ref, "prototype", status);
+}
+

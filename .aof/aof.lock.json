@@ -118,7 +118,7 @@
           "id": "add-diagram",
           "kind": "command"
         },
-        "hash": "sha256:5511d1f5414a84fb8ffc8a80a1d474e317d6b5c6d89fa7a954d723d74a8d54a5",
+        "hash": "sha256:0c57924042176e549cc640b043a16b1a6a73dc8192be3bfc21a16bf55b67258d",
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
@@ -218,7 +218,7 @@
           "id": "explain",
           "kind": "command"
         },
-        "hash": "sha256:e858ea353284b7cf68ddeaa5c88f2c43f65661006308995e092e8c67928f29fe",
+        "hash": "sha256:f9a191bd41c30160546bb3f0e4d40fea51a0c2446567d21ddef48508def4e2be",
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
@@ -332,6 +332,16 @@
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
+        "path": ".claude/commands/aof/prototype.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "prototype",
+          "kind": "command"
+        },
+        "hash": "sha256:17b22e8f73d4b67e079c2e310573a044e1ff836c8f9669ffc38adaccd4254049",
+        "generatedAt": "2026-10-22T15:36:06.008Z"
+      },
+      {
         "path": ".claude/commands/aof/archive.md",
         "runtime": "claude",
         "resource": {
@@ -339,16 +349,6 @@
           "kind": "command"
         },
         "hash": "sha256:e6c50df5b1dd47abf0853e1c269279cb2d65532d3a61d3fb1524d061c02dfb5b",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".claude/commands/aof/hyperplan.md",
-        "runtime": "claude",
-        "resource": {
-          "id": "hyperplan",
-          "kind": "command"
-        },
-        "hash": "sha256:d99949bc127105468b13261d68ae563c9b41f27be15051b748649aefd9d1a503",
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
@@ -591,7 +591,7 @@
           "id": "aof-add-diagram",
           "kind": "skill"
         },
-        "hash": "sha256:22f7fd9a1de40c8191aef137ed4c7dc23127c4a1fcc009c59a26887425e0bf07",
+        "hash": "sha256:f9c29e395164570feac336b9985ebf7340cb6701b8697c2f9baabcdcce84021b",
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
@@ -847,7 +847,7 @@
           "id": "aof-explain",
           "kind": "skill"
         },
-        "hash": "sha256:4b0382d2f00558bba8c80b70fea38b5ce505348d42bb110fc8ffa60c015c6000",
+        "hash": "sha256:3b06fa9a249ca28633287b33b9fab875abdbc17ec5947d15d8b6daca8ed03d97",
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
@@ -1117,6 +1117,29 @@
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
+        "path": ".agents/skills/aof-prototype/SKILL.md",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-prototype",
+          "kind": "skill"
+        },
+        "hash": "sha256:f829e8f35f386603b92ce2d93060b568787642c382d19ce22a2cb6dcadfc1e84",
+        "generatedAt": "2026-10-22T15:36:06.008Z"
+      },
+      {
+        "path": ".agents/skills/aof-prototype/agents/openai.yaml",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-prototype",
+          "kind": "skill",
+          "artifact": "associated-file",
+          "file": "agents/openai.yaml",
+          "sourceFile": "agents/openai.yaml"
+        },
+        "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce",
+        "generatedAt": "2026-10-22T15:36:06.008Z"
+      },
+      {
         "path": ".agents/skills/aof-archive/SKILL.md",
         "runtime": "codex",
         "resource": {
@@ -1131,29 +1154,6 @@
         "runtime": "codex",
         "resource": {
           "id": "aof-archive",
-          "kind": "skill",
-          "artifact": "associated-file",
-          "file": "agents/openai.yaml",
-          "sourceFile": "agents/openai.yaml"
-        },
-        "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".agents/skills/aof-hyperplan/SKILL.md",
-        "runtime": "codex",
-        "resource": {
-          "id": "aof-hyperplan",
-          "kind": "skill"
-        },
-        "hash": "sha256:94e2c2cf326a66667687f55c26e78887e2c2d5514d72a1ffe53d8280cfd85b18",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".agents/skills/aof-hyperplan/agents/openai.yaml",
-        "runtime": "codex",
-        "resource": {
-          "id": "aof-hyperplan",
           "kind": "skill",
           "artifact": "associated-file",
           "file": "agents/openai.yaml",
@@ -1435,76 +1435,6 @@
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {
-        "path": ".hyperagent/skills/aof-add-milestone/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-add-milestone",
-          "kind": "skill"
-        },
-        "hash": "sha256:b5cbf444ffe42c0681970c65b8f7c3007dd8089da4bf5fe4931ab2de6494b2fb",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".hyperagent/skills/aof-add-story/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-add-story",
-          "kind": "skill"
-        },
-        "hash": "sha256:1ccf5db9317244191cfc1f7749108e3eb7646da1e36319be384d3b1045d8e79c",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".hyperagent/skills/aof-add-task/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-add-task",
-          "kind": "skill"
-        },
-        "hash": "sha256:0061e99ae596bee75ff07e8bd891f73cb94524ee2dca52a736cbdd2591d66c98",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".hyperagent/skills/aof-refine/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-refine",
-          "kind": "skill"
-        },
-        "hash": "sha256:35720fb4b5cac1acc3c34bbc2656c3ff66640cbec7ed3d4288dbce8b9352e649",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".hyperagent/skills/aof-shatter/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-shatter",
-          "kind": "skill"
-        },
-        "hash": "sha256:a7a4f856a0aee82d5a7c8cc04b01ca60055d90fd95f8049f6541992eec73f4fe",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".hyperagent/skills/aof-validate/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-validate",
-          "kind": "skill"
-        },
-        "hash": "sha256:b8209a24ad006077b61b69a2d195246ec23f4465c8a767d2fc3cae0aef6ee94d",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
-        "path": ".hyperagent/skills/aof-prd/SKILL.md",
-        "runtime": "hyperagent",
-        "resource": {
-          "id": "aof-prd",
-          "kind": "skill"
-        },
-        "hash": "sha256:05142d2c50491d7219397c48fb94805fb905665e4b60ccfd6faf327cf88781e5",
-        "generatedAt": "2026-10-19T20:03:40.143Z"
-      },
-      {
         "path": ".codex/hooks.json",
         "runtime": "codex",
         "resource": {
@@ -1648,6 +1578,28 @@
         },
         "hash": "sha256:e780b12993499f33796f2e3088b3f3a918e6af209216818b9c3595378f39493a",
         "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".aof/templates/work/prototype/PROTOTYPE.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "prototype",
+          "kind": "template",
+          "file": "PROTOTYPE.md"
+        },
+        "hash": "sha256:84aa383b559f283f84e89436b84fd6aef6bf9579ad73ffd4996e1f4661dbd097",
+        "generatedAt": "2026-10-22T15:36:06.008Z"
+      },
+      {
+        "path": ".aof/templates/work/prototype/STATE.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "prototype",
+          "kind": "template",
+          "file": "STATE.md"
+        },
+        "hash": "sha256:7493c7384e5447ff22bb8bfcf4ae868736f0843ac903b67dd08b392c9741258b",
+        "generatedAt": "2026-10-22T15:36:06.008Z"
       },
       {
         "path": ".aof/templates/work/shared/OUTCOME.md",
@@ -1955,6 +1907,109 @@
           "kind": "asset"
         },
         "hash": "sha256:e941eac96456814e2935b00c40e99018a34284f1366846fc3d53cab4fe92f27f",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".claude/commands/aof/hyperplan.md",
+        "runtime": "claude",
+        "resource": {
+          "id": "hyperplan",
+          "kind": "command"
+        },
+        "hash": "sha256:d99949bc127105468b13261d68ae563c9b41f27be15051b748649aefd9d1a503",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".agents/skills/aof-hyperplan/SKILL.md",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-hyperplan",
+          "kind": "skill"
+        },
+        "hash": "sha256:94e2c2cf326a66667687f55c26e78887e2c2d5514d72a1ffe53d8280cfd85b18",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".agents/skills/aof-hyperplan/agents/openai.yaml",
+        "runtime": "codex",
+        "resource": {
+          "id": "aof-hyperplan",
+          "kind": "skill",
+          "artifact": "associated-file",
+          "file": "agents/openai.yaml",
+          "sourceFile": "agents/openai.yaml"
+        },
+        "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-add-milestone/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-add-milestone",
+          "kind": "skill"
+        },
+        "hash": "sha256:b5cbf444ffe42c0681970c65b8f7c3007dd8089da4bf5fe4931ab2de6494b2fb",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-add-story/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-add-story",
+          "kind": "skill"
+        },
+        "hash": "sha256:1ccf5db9317244191cfc1f7749108e3eb7646da1e36319be384d3b1045d8e79c",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-add-task/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-add-task",
+          "kind": "skill"
+        },
+        "hash": "sha256:0061e99ae596bee75ff07e8bd891f73cb94524ee2dca52a736cbdd2591d66c98",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-refine/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-refine",
+          "kind": "skill"
+        },
+        "hash": "sha256:35720fb4b5cac1acc3c34bbc2656c3ff66640cbec7ed3d4288dbce8b9352e649",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-shatter/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-shatter",
+          "kind": "skill"
+        },
+        "hash": "sha256:a7a4f856a0aee82d5a7c8cc04b01ca60055d90fd95f8049f6541992eec73f4fe",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-validate/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-validate",
+          "kind": "skill"
+        },
+        "hash": "sha256:b8209a24ad006077b61b69a2d195246ec23f4465c8a767d2fc3cae0aef6ee94d",
+        "generatedAt": "2026-10-19T20:03:40.143Z"
+      },
+      {
+        "path": ".hyperagent/skills/aof-prd/SKILL.md",
+        "runtime": "hyperagent",
+        "resource": {
+          "id": "aof-prd",
+          "kind": "skill"
+        },
+        "hash": "sha256:05142d2c50491d7219397c48fb94805fb905665e4b60ccfd6faf327cf88781e5",
         "generatedAt": "2026-10-19T20:03:40.143Z"
       },
       {

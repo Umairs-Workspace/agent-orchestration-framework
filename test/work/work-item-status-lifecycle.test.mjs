@@ -329,6 +329,35 @@ export const workItemStatusLifecycleTests = [
       }
     },
   },
+  // 168/00 task 00, R2 (E4–E7) — a prototype answers and moves through ITS OWN four-word table at the
+  // door, and the governed five never gain one of its words (168/ADR-003).
+  {
+    name: "item-status/door: 168/00 a prototype lists its own legal moves, reopens from done, and refuses a governed word coded",
+    async run() {
+      const { root, ctx, mDir, specPath } = await buildFixture({ status: "in-progress" });
+      const pDir = path.join(path.dirname(mDir), "169_prototype_csv-importer");
+      const pPath = path.join(pDir, "PROTOTYPE.md");
+      try {
+        await mkdir(pDir);
+        await writeFile(pPath, "---\ntype: prototype\nnumber: 169\nslug: csv-importer\ntitle: \"CSV importer\"\nstatus: active\ncreated: 2026-10-22\nupdated: 2026-10-22\n---\n# 169 · CSV importer\n", "utf8");
+        const read = await invoke("work:status", { ref: "169" }, ctx);
+        assert.deepEqual([read.status, read.edges], ["active", ["paused", "done", "abandoned"]]);
+        const done = await invoke("work:status", { ref: "169", status: "done", now: "2026-10-22T12:00:00.000Z" }, ctx);
+        assert.deepEqual([done.moved, done.status, done.edges], [true, "done", ["active"]], "a prototype's done is not gated as an acceptance");
+        const reopened = await invoke("work:status", { ref: "169", status: "active", now: "2026-10-23T09:00:00.000Z" }, ctx);
+        assert.equal(reopened.status, "active");
+        assert.match(await readFile(pPath, "utf8"), /^updated: 2026-10-23$/m, "the reopen stamps updated");
+        const before = await readFile(pPath, "utf8");
+        await assertRejectsWithCode(() => invoke("work:status", { ref: "169", status: "in-review" }, ctx), "status-edge-not-applicable");
+        assert.equal(await readFile(pPath, "utf8"), before, "the refused move wrote nothing");
+        const spec = await readFile(specPath, "utf8");
+        await assertRejectsWithCode(() => invoke("work:status", { ref: "70", status: "paused" }, ctx), "status-edge-not-applicable");
+        assert.equal(await readFile(specPath, "utf8"), spec, "a milestone never takes a prototype word");
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
   {
     name: "item-status/door: `work:status <ref> <status>` moves one legal edge and reports the from-state; an illegal move is refused coded",
     async run() {

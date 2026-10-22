@@ -1,0 +1,19 @@
+{
+  "runId": "20261021T083708567Z-0000",
+  "itemRef": "167/04",
+  "state": "failed",
+  "attempt": 1,
+  "outcome": "failed",
+  "sessionId": null,
+  "brief": {},
+  "createdAt": "2026-10-21T08:37:08.567Z",
+  "updatedAt": "2026-10-21T08:45:52.189Z",
+  "failureReason": "soak red: mesh serve 12-14% idle vs 2% budget; one stat walk of aof's tree costs ~1.1 CPU-s on Windows (ADR-003 vs ADR-002) — needs an architecture decision",
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": null,
+  "asks": []
+}

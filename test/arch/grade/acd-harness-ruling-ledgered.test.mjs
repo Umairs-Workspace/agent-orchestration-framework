@@ -81,8 +81,10 @@ const SRC_DIR = path.join(root, "packages", "core", "src");
 // The eight names that were the whole vocabulary before this story, with what each owed.
 // A census rather than a count: "no tenth" is cheap to satisfy by deleting one.
 const THE_EIGHT = Object.freeze({
-  "run.started": ["advance-status", "publish-projection"],
-  "run.completed": ["rollback-status", "publish-projection", "notion-status-sync"],
+  // milestone 167 / ADR-008 (story 06) — `publish-run` rides both run events beside the publish:
+  // the workspace puts its own run row into the store through the ledger. Taught here consciously.
+  "run.started": ["advance-status", "publish-projection", "publish-run"],
+  "run.completed": ["rollback-status", "publish-projection", "publish-run", "notion-status-sync"],
   "feedback.recorded": ["publish-projection"],
   "item-status.changed": ["publish-projection", "notion-status-sync"],
   "stream.reindexed": ["remap-run-refs", "remap-notion-map", "remap-projection", "remap-control-facts", "publish-projection"],
@@ -91,6 +93,9 @@ const THE_EIGHT = Object.freeze({
   // this census consciously, as every name after the eight must be: "no tenth" is a claim about
   // 61's harness name, never a freeze on the stream's own vocabulary.
   "stream.archived": ["publish-projection"],
+  // milestone 164 / ADR-003 (story 00) — the sync pass's `workspace.changed` mark, taught here
+  // the same way: its one consequence is the publish.
+  "workspace.changed": ["publish-projection"],
   "assignment.reported": ["settle-assignment"],
   "terminal.resume-refused": ["restore-parked-resume"],
   "assignment.settled": ["record-item-branch"],
@@ -108,6 +113,8 @@ const APPEND_EVENT_SEAMS = Object.freeze([
   "packages/execution/src/reconcile.mjs",
   "packages/execution/src/run-transitions.mjs",
   "packages/work/src/stream-transitions.mjs",
+  // milestone 164 / ADR-003 + ADR-004 — the sync pass marks a change no verb raised.
+  "packages/mesh/src/publisher.mjs",
 ]);
 
 // ADR-010 §2's frozen RULING vocabulary — the codes that may reach a `refusals` array.

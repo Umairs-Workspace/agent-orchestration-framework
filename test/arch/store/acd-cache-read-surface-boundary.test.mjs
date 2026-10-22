@@ -73,7 +73,9 @@ const WORKER_SIDE = [
   // state"). Not a reader that must migrate, and not a worker-side read either — it is the
   // publish path's own disk scan, and a cache-first version of it would make a node report
   // someone else's opinion as its own observation.
-  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["listItems"], subject: "readWorkspaceProjectionItems", factory: "createGlobalWorkProjectionStore", adapter: "packages/core/src/application/bindings/global-work-store.mjs" },
+  // 167/01 (ADR-003): the read comes off discovery's remembered stream snapshot — still THIS node's
+  // own disk, enumerated by `listItems` inside it, remembered by stat digest — so the pin follows it.
+  { file: path.join("packages", "mesh", "src", "projection-store.mjs"), symbols: ["readStreamSnapshot"], subject: "readWorkspaceProjectionItems", factory: "createGlobalWorkProjectionStore", adapter: "packages/core/src/application/bindings/global-work-store.mjs" },
   // FOUND at 43/06's review (ADR-016/G2): the launcher's stream tick reads the ACTIVE
   // WORKTREE's own items (`mesh-launcher.mjs:1532`) to build the frame it pushes. The
   // module's own comment already says the import "must stay" — a rule living in a comment

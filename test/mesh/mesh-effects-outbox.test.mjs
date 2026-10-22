@@ -528,7 +528,7 @@ function workerAskControlTests() {
             assert.ok(columns.includes("ask"), `${pass}: the ask column exists`);
             const rows = store.db.prepare("SELECT * FROM global_assignments ORDER BY assignment_id").all().map(({ ask, ...rest }) => rest);
             assert.deepEqual(rows, before.map((row) => ({ ...row })), `${pass}: the three rows are unchanged`);
-            assert.equal(Number(store.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value), 10);
+            assert.equal(Number(store.db.prepare("SELECT value FROM aof_schema WHERE key = 'version'").get().value), 11); // 164/ADR-002: the observation baseline
           } finally {
             store.close();
           }

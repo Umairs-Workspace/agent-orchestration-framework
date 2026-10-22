@@ -30,7 +30,7 @@
         "id": "aof-add-diagram",
         "kind": "skill"
       },
-      "hash": "sha256:22f7fd9a1de40c8191aef137ed4c7dc23127c4a1fcc009c59a26887425e0bf07"
+      "hash": "sha256:f9c29e395164570feac336b9985ebf7340cb6701b8697c2f9baabcdcce84021b"
     },
     {
       "path": ".agents/skills/aof-add-diagram/agents/openai.yaml",
@@ -246,7 +246,7 @@
         "id": "aof-explain",
         "kind": "skill"
       },
-      "hash": "sha256:4b0382d2f00558bba8c80b70fea38b5ce505348d42bb110fc8ffa60c015c6000"
+      "hash": "sha256:3b06fa9a249ca28633287b33b9fab875abdbc17ec5947d15d8b6daca8ed03d97"
     },
     {
       "path": ".agents/skills/aof-explain/agents/openai.yaml",
@@ -469,6 +469,24 @@
       "runtime": "codex",
       "resource": {
         "id": "aof-promote",
+        "kind": "skill"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".agents/skills/aof-prototype/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
+        "kind": "skill"
+      },
+      "hash": "sha256:f829e8f35f386603b92ce2d93060b568787642c382d19ce22a2cb6dcadfc1e84"
+    },
+    {
+      "path": ".agents/skills/aof-prototype/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
         "kind": "skill"
       },
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
@@ -942,6 +960,24 @@
       "hash": "sha256:e780b12993499f33796f2e3088b3f3a918e6af209216818b9c3595378f39493a"
     },
     {
+      "path": ".aof/templates/work/prototype/PROTOTYPE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "prototype",
+        "kind": "template"
+      },
+      "hash": "sha256:84aa383b559f283f84e89436b84fd6aef6bf9579ad73ffd4996e1f4661dbd097"
+    },
+    {
+      "path": ".aof/templates/work/prototype/STATE.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "prototype",
+        "kind": "template"
+      },
+      "hash": "sha256:7493c7384e5447ff22bb8bfcf4ae868736f0843ac903b67dd08b392c9741258b"
+    },
+    {
       "path": ".aof/templates/work/shared/OUTCOME.md",
       "runtime": "claude",
       "resource": {
@@ -1110,7 +1146,7 @@
         "id": "add-diagram",
         "kind": "command"
       },
-      "hash": "sha256:5511d1f5414a84fb8ffc8a80a1d474e317d6b5c6d89fa7a954d723d74a8d54a5"
+      "hash": "sha256:0c57924042176e549cc640b043a16b1a6a73dc8192be3bfc21a16bf55b67258d"
     },
     {
       "path": ".claude/commands/aof/add-milestone.md",
@@ -1209,7 +1245,7 @@
         "id": "explain",
         "kind": "command"
       },
-      "hash": "sha256:e858ea353284b7cf68ddeaa5c88f2c43f65661006308995e092e8c67928f29fe"
+      "hash": "sha256:f9a191bd41c30160546bb3f0e4d40fea51a0c2446567d21ddef48508def4e2be"
     },
     {
       "path": ".claude/commands/aof/feedback.md",
@@ -1318,6 +1354,15 @@
         "kind": "command"
       },
       "hash": "sha256:ba2ff654a1aaaa317e5cc2be8bf349bfa9a1251c3841bb9877ee8f46c9066382"
+    },
+    {
+      "path": ".claude/commands/aof/prototype.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "prototype",
+        "kind": "command"
+      },
+      "hash": "sha256:17b22e8f73d4b67e079c2e310573a044e1ff836c8f9669ffc38adaccd4254049"
     },
     {
       "path": ".claude/commands/aof/questions.md",

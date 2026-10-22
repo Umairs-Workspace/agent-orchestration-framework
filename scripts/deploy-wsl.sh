@@ -44,8 +44,12 @@ STAMP="$DST/$3"
 
 # 1. the source tree. Core's source and assets travel together in packages/core/.
 #    node_modules is NEVER copied — it is the Windows tree.
+# The CLI has lived in packages/core/bin since 142, and the repo root has no bin/ to copy. The
+# distro's own `bin/aof.mjs` stays, as the stable entry its /usr/local/bin/aof link names, and is
+# written as a one-line forward to core's entry (166: the copy failed every deploy since 142).
 mkdir -p "$DST/bin"
-cp "$SRC/bin/aof.mjs" "$DST/bin/aof.mjs"
+printf '#!/usr/bin/env node\nimport "../packages/core/bin/aof.mjs";\n' > "$DST/bin/aof.mjs"
+chmod +x "$DST/bin/aof.mjs"
 cp "$SRC/package.json" "$DST/package.json"
 # Focus still resolves the complete workspace graph. Follow locked owners,
 # including relocated apps, and remove retired source files on updates. rsync

@@ -8,10 +8,12 @@ import { syncCadenceFromConfig } from "./sync-cadence.mjs";
 import { buildSessionSpawnAckEnvelope } from "./session-spawn-directive.mjs";
 import { intervalTicker } from "./presence-loop.mjs";
 import { readPresentedCredential } from "./relay.mjs";
+import { processCostMeter, startCostSnapshots } from "@aof/foundation/cost-meter";
+import { createWorkTreeWatches, workTreeStatDigest } from "@aof/work/discovery";
 
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshLauncher({ globalMeshPaths, readNodeRecords, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readLiveSessions, publishPresenceRecord, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, publishGlobalWorkSnapshot, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
+export function createMeshLauncher({ globalMeshPaths, readNodeRecords, forgetNodeWorkspace, deriveNodeId, sidecarPathFor, readSidecar, packageVersionString, assemblePresenceRecord, readActiveLoops, readActiveRuns, readStoreActivity, readLiveSessions, publishPresenceRecord, publishCostSnapshot, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, listItems, loadWorkspace, listItemsCacheFirst, localItemsOnly, reportReachThroughSkips, readCachedActiveRunIds, sharedProjectionStore, syncWorkspace, MESH_WORKSPACE_UNCONFIGURED_CODE, readWorkspaceProjectionItems, readWorkspaceContentRecords, restoreRefusedResumeReservation, confirmArtifactSyncBatch, createArtifactSyncState, forgetArtifactSyncAssignment, prepareArtifactSyncBatch, resolveWorkspaceId, readBuildInfo, buildInfoString, createWorkerStreamClient, createWorkerWsTransport, startControlStreamServer, buildDirectiveFrame, DEFAULT_HEARTBEAT_WINDOW_SECONDS, createMeshWorkerExecutionHandler, createMeshRecoveryPushHandler, createMeshWorkerWithdrawHandler, createMeshWorkerTerminalInputHandler, createMeshWorkerTerminalResumeHandler, settleStrandedRunRecords, listActiveWorktrees, listStrandedWorktreeAssignments, checkoutRootForWorktree, meshCheckoutPath, workerHasRepo, resolveCloneUrl, ensureWorktreeTrusted, INTERACTIVE_COMMAND_READY_DELAY_MS, createMeshWorkerSessionSpawnHandler, runRecoveryPushDispatchTick, runResyncDispatchTick, createEnrollmentHttpHandler, relayMode, readRegistry, verifyCredential, readMeshLauncherLockStatus, createTerminalRelayPushTransport, startTerminalIngress, publishTerminalIngress, withdrawTerminalIngress, buildTerminalFrameEnvelope, buildTerminalEndEnvelope, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalInputRouter, runControlDispatchReclaimTick, resolveCloneCredentialProvider, resolveWriteCredentialProvider, reportDegrade, openEffectsJournal, drainOutbox, applyEffectAck, reportAssignmentSettled, loadNotifications, loadMessagingBot }) {
 // src/mesh/launcher.mjs — the per-node presence and global propagation daemon (milestone 33 / story 01,
 // ADR-003). The coordination launcher (F-3201): with the ws@8 broker eliminated
 // (ADR-002), this is the per-node process the fabric-native model needs — it publishes
@@ -393,14 +395,26 @@ function resolveAggregationWorkspaces(ws, registryResult) {
 // (`readCachedActiveRunIds`) names runs on workspaces this machine does not hold, and a loop is
 // local by definition (ADR-006). A workspace whose enumeration throws loses its loops with its
 // runs, inside the same isolation; the tick completes.
+// 167/ADR-008 — THIS NODE'S OWN RUNS COME FROM THE STORE, never from a walk of every item's
+// runs/ folder. The workspaces put their runs into `work_item_runs` through the ledger
+// (`publish-run`), and the tick reads them back through the presence seam's `readStoreActivity`
+// in ONE query over the tick's shared handle, for every workspace the tick resolved. 167/04's
+// soak measured the walk this replaces at about 3,600 `ENOENT`s per 15 s tick over 1,800 docs —
+// 12% of a core while idle. The cached half of the union (`readCachedActiveRunIds`, the runs
+// other nodes streamed for items this machine does not hold) is unchanged. `cacheOptions.nodeId`
+// names the reporter whose rows are this node's runs; a caller that passes none (the leaf's own
+// proof, which exercises the cached half) reads no own-node runs, exactly as a node with no rows.
+// Each read is counted `cache-hit` labelled `runs` (ADR-001), through `cacheOptions.costMeter`.
 async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions = {}) {
   const activeRuns = [];
   const loops = [];
   const workspacesWithRuns = new Set();
+  const meter = cacheOptions?.costMeter ?? processCostMeter;
+  // Pass 1 — enumerate each workspace's items, PER-WORKSPACE ISOLATED (never a daemon crash): a
+  // workspace whose items can't be enumerated (its dir vanished mid-tick, a permissions fault, …)
+  // is skipped — absence-is-benign; the rest of the union still aggregates.
+  const enumerated = [];
   for (const workspace of workspaces) {
-    // PER-WORKSPACE ISOLATION (never a daemon crash): a workspace whose items can't
-    // be enumerated (its dir vanished mid-tick, a permissions fault, …) is skipped —
-    // absence-is-benign; the rest of the union still aggregates.
     try {
       // m43 / story 06 (ADR-005) — the seam MIGRATES BY SWAPPING ITS DEFAULT (below), not by
       // editing this call site: `listItemsFn` keeps its `(workDir)` signature so every
@@ -410,8 +424,24 @@ async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, 
       const items = await listItemsFn(workspace.workDir, workspace);
       const local = localItemsOnly(items);
       reportReachThroughSkips("mesh launcher aggregation", local.skipped);
+      enumerated.push({ workspace, local });
+    } catch (error) {
+      // absence-is-benign — this workspace's runs are skipped, not fatal.
+      reportDegrade("mesh-launcher", error); }
+  }
+  // Pass 2 — ONE store read for every workspace's own running runs and the loops they declare.
+  const own = typeof cacheOptions?.nodeId === "string" && cacheOptions.nodeId.length > 0
+    ? await readStoreActivity(cacheOptions.nodeId, enumerated.map(({ workspace, local }) => ({ workspaceId: workspace.workspaceId, items: local.items })), cacheOptions)
+    : new Map();
+  // Pass 3 — the union, per workspace, in aggregation order.
+  for (const { workspace, local } of enumerated) {
+    try {
+      const activity = own.get(workspace.workspaceId) ?? { runIds: [], loops: [] };
+      if (typeof workspace.workspaceId === "string" && workspace.workspaceId.length > 0) {
+        meter.count("cache-hit", { workspaceId: workspace.workspaceId, code: "runs" });
+      }
       const runs = [
-        ...(await readActiveRuns(local.items)),
+        ...activity.runIds,
         ...(await readCachedActiveRunIds(workspace, local.skipped, cacheOptions)),
       ];
       if (runs.length > 0) {
@@ -420,9 +450,8 @@ async function assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, 
           workspacesWithRuns.add(workspace.workspaceId);
         }
       }
-      loops.push(...await readActiveLoops(local.items, { workspaceId: workspace.workspaceId ?? null }));
+      loops.push(...activity.loops);
     } catch (error) {
-      // absence-is-benign — this workspace's runs are skipped, not fatal.
       reportDegrade("mesh-launcher", error); }
   }
   return { activeRuns, workspacesWithRuns, loops };
@@ -488,16 +517,12 @@ async function recoverSkippedViaMeshCheckout(skipped, options) {
   return { recovered, remaining };
 }
 
-// `warningsSink` (default a scratch array — production always passes the real
-// `launcherWarnings` accumulator) is where FINDING F11's LOUD-skip diagnostics land:
-// a workspace resolveNodeWorkspaces skipped (its resolved absolute work dir
-// genuinely doesn't exist) is surfaced HERE as a coded warning — never a silent
-// `continue` that lets a zero/short aggregation masquerade as healthy. The frozen
-// presence record itself (ADR-001's five keys) carries NONE of this — warnings are
-// a launcher-facing diagnostic, never a wire-shape change. A `no-descriptor` skip is
-// first offered the mesh-checkout fallback above; only the genuinely unresolvable
-// remainder warns.
-async function assembleCurrentPresenceRecord(ws, nodeId, options = {}, warningsSink = []) {
+// The presence record a stream-sync tick sends, over a workspace set of its own. FINDING F11's
+// LOUD-skip diagnostics are not said here: the propagation tick resolves the same set and says each
+// unresolvable registration once (167/ADR-005, `syncTickWorkspaces`). The frozen presence record
+// itself (ADR-001's five keys) carries none of them — they are a launcher-facing diagnostic, never
+// a wire-shape change.
+async function assembleCurrentPresenceRecord(ws, nodeId, options = {}) {
   // ONE PROJECTION-STORE OPEN FOR THE WHOLE TICK (m43 / ADR-016/G7 — a MEASURED regression
   // this repairs, and it is repaired past its own baseline).
   //
@@ -519,30 +544,220 @@ async function assembleCurrentPresenceRecord(ws, nodeId, options = {}, warningsS
   // the moment one open has to serve them all.
   const shared = sharedProjectionStore(options?.openStore ? { openStore: options.openStore } : {});
   try {
-    return await assemblePresenceForTick(ws, nodeId, options, warningsSink, shared.openStore);
+    const tickSet = await resolveTickWorkspaces(ws, nodeId, options, shared.openStore);
+    return await assemblePresenceForTick(ws, nodeId, options, tickSet, shared.openStore);
   } finally {
     shared.close();
   }
 }
 
-async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openStore) {
-  // Every store-backed read in this tick is handed the SAME opener (see above). A caller that
-  // injected its own `openStore` still gets it — `sharedProjectionStore` wraps it rather than
-  // replacing it — so the hermetic-test seam is unchanged.
-  const tickOptions = { ...options, openStore };
-  const registryResult = await resolveNodeWorkspaces(nodeId, tickOptions);
+// resolveTickWorkspaces(ws, nodeId, options, openStore) — THE workspace set one tick covers: this
+// node's registered workspaces, the worker's recovered mesh checkouts, and the launch cwd,
+// deduplicated by `resolveAggregationWorkspaces`. The propagation tick resolves it ONCE and hands the
+// one result to the presence aggregation and the sync pass (164/ADR-004, 167/ADR-005), so the two can
+// never disagree about which projects exist and the registry is read once a tick, not twice.
+// `remaining` is the registry's unresolvable skips, which the sync pass alone reports.
+async function resolveTickWorkspaces(ws, nodeId, options, openStore) {
+  const registryResult = await resolveNodeWorkspaces(nodeId, { ...options, openStore });
   const { recovered, remaining } = await recoverSkippedViaMeshCheckout(registryResult.skipped ?? [], options);
   if (registryResult.ok && recovered.length > 0) {
     registryResult.workspaces.push(...recovered);
   }
+  const workspaces = resolveAggregationWorkspaces(ws, registryResult);
+  // Each entry's project root, by the same normalised work-dir key the dedup uses: the launch
+  // workspace is the one already loaded; a registered one is its descriptor's root.
+  const roots = new Map([[normalizedWorkDirKey(ws.workDir), ws.projectRoot]]);
+  for (const entry of registryResult.ok ? registryResult.workspaces : []) {
+    const key = normalizedWorkDirKey(entry.workDir);
+    if (!roots.has(key) && typeof entry.projectRoot === "string") roots.set(key, entry.projectRoot);
+  }
+  return { registryResult, workspaces, remaining, projectRootOf: (entry) => roots.get(normalizedWorkDirKey(entry.workDir)) ?? null };
+}
+
+// 167/ADR-005 — the sync failures that will not fix themselves, a CLOSED set declared here. Any other
+// code is transient and keeps today's retry on the next tick, and a failed journal step keeps
+// 164/ADR-006's own retry until done. The two gone-folder codes come from the registry resolve: that
+// registration is removed rather than backed off (the operator's answer to 167/03 Q1).
+const PERMANENT_SYNC_FAULT_CODES = new Set(["event-id-conflict", "workdir-missing", "not-a-directory", "no-descriptor"]);
+const GONE_WORKDIR_CODES = new Set(["workdir-missing", "not-a-directory"]);
+const PERMANENT_FAULT_CAP_MS = 60 * 60 * 1000;
+
+// createFaultLedger(tickMs) — one launcher's memory of the permanent faults it has said (167/ADR-005).
+// One entry per workspace: the code, how many times in a row it failed with it, when it may be tried
+// again, and the work tree's stat digest at the failure. The gap doubles from one tick up to an hour.
+// It lives in memory only, so a restart says each fault once more.
+function createFaultLedger(tickMs) {
+  const entries = new Map();
+  return {
+    // The entry holding this workspace back at `nowMs`, or null once its backoff has run out.
+    holding(workspaceId, nowMs) {
+      const entry = entries.get(workspaceId);
+      return entry != null && nowMs < entry.nextAt ? entry : null;
+    },
+    // Records one permanent failure and answers whether it is new, and so is to be said. A different
+    // code is a different fault, said in its own right.
+    fail(workspaceId, code, nowMs, digest) {
+      const prior = entries.get(workspaceId);
+      const failures = prior?.code === code ? prior.failures + 1 : 1;
+      entries.set(workspaceId, { code, failures, nextAt: nowMs + Math.min(tickMs * 2 ** (failures - 1), PERMANENT_FAULT_CAP_MS), digest });
+      return failures === 1;
+    },
+    clear(workspaceId) {
+      entries.delete(workspaceId);
+    },
+  };
+}
+
+// syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) — 164/ADR-004 drivers 1 and 2: the ONE
+// sync pass (story 00's `syncWorkspace`, through the publisher seam) over every workspace this
+// tick covers, sharing the tick's one projection-store handle for its reads. It REPLACES the
+// cwd-only publish of the launch workspace: the desktop app launches the daemon from a folder
+// with no aof config, so that publish never re-read a project (FF-16405).
+//
+// `tick` is what the propagation tick resolved once (167/ADR-005): `tickSet` (the
+// `resolveTickWorkspaces` result), the tick's `openStore`, and the launcher's fault `ledger`.
+//
+// Skips are LOUD and per workspace — a workspace that does not propagate, a pass that throws — and
+// the tick goes on to the next. The one quiet skip is the launch cwd when it is not a workspace at
+// all: it is in the set only "when it is a real workspace", and warning about the desktop's launch
+// folder every tick would say nothing. A PERMANENT failure is said once and then backed off: the
+// pass is skipped, and counted, until the backoff runs out or the workspace's files change.
+async function syncTickWorkspaces(ws, nodeId, options, warningsSink, tick) {
+  const { tickSet, openStore, ledger, watches, notPropagating } = tick;
+  const sync = typeof options?.syncWorkspace === "function" ? options.syncWorkspace : syncWorkspace;
+  const { registryResult, workspaces, remaining, projectRootOf } = tickSet;
+  const results = [];
+  if (!registryResult.ok) {
+    // The registry lives in the store this tick could not read: every registered workspace is
+    // owed this tick's pass, and saying so is the difference from "there are none".
+    emitWarning(warningsSink, { code: "global-work-propagation-failed", message: "The registered workspaces could not be read from the global store; this tick synced none of them.", path: null }, options);
+  }
+  // 167/ADR-001 — every pass the tick runs is counted for its workspace, and every failure by
+  // its code, so "what is the daemon spending its ticks on" has an answer per workspace. A pass the
+  // backoff skipped is a `sync-pass` labelled `backoff`.
+  const meter = options?.costMeter ?? processCostMeter;
+  const labelled = (entry, code) => ({ ...(entry.workspaceId ? { workspaceId: entry.workspaceId } : {}), ...(code ? { code } : {}) });
+  const nowMs = () => Date.parse(resolveNow(options));
+  await settleUnresolvableRegistrations(remaining, nodeId, options, warningsSink, { openStore, ledger, meter, labelled, nowMs });
+  const launchKey = normalizedWorkDirKey(ws.workDir);
+  // 167/ADR-009 — the work dirs this pass covers: every entry it did not skip as not propagating,
+  // a backed-off or failing one included. They are the trees the daemon watches.
+  const watchable = [];
+  for (const entry of workspaces) {
+    const isLaunch = normalizedWorkDirKey(entry.workDir) === launchKey;
+    const held = entry.workspaceId ? ledger.holding(entry.workspaceId, nowMs()) : null;
+    if (held != null && !(await workTreeMovedSince(entry.workDir, held.digest))) {
+      meter.count("sync-pass", labelled(entry, "backoff"));
+      watchable.push(entry.workDir);
+      continue;
+    }
+    try {
+      const projectRoot = projectRootOf(entry);
+      const workspace = isLaunch ? ws : await loadWorkspace(projectRoot);
+      const result = await sync(workspace, {
+        globalWorkStoreOptions: options?.globalWorkStoreOptions ?? {},
+        openStore,
+        // The publisher stamps rows with `now` as a string; a launcher's injected clock may be a
+        // function, so it is read once here rather than bound into SQL as one.
+        publisherOptions: typeof options?.now === "function" ? { ...options, now: resolveNow(options) } : options ?? {},
+        ...(options?.effectsJournalOptions ? { journalOptions: options.effectsJournalOptions } : {}),
+      });
+      // A pass that ran to its end clears any backoff its workspace was under.
+      if (entry.workspaceId) ledger.clear(entry.workspaceId);
+      results.push({ workspaceId: entry.workspaceId, ...result });
+      if (!result?.skipped) watchable.push(entry.workDir);
+      else notPropagating?.add(path.resolve(entry.workDir));
+      // The launch folder that is not a workspace is the one quiet skip, so it is not a pass either.
+      if (!(isLaunch && result?.skipped && result.code === MESH_WORKSPACE_UNCONFIGURED_CODE)) meter.count("sync-pass", labelled(entry));
+      if (result?.skipped && !(isLaunch && result.code === MESH_WORKSPACE_UNCONFIGURED_CODE)) {
+        emitWarning(warningsSink, { code: result.code, message: `Not syncing workspace ${entry.workspaceId}: it does not propagate (${result.code}).`, path: projectRoot, workspaceId: entry.workspaceId ?? null }, options);
+      }
+      for (const outcome of result?.effects ?? []) {
+        if (outcome.status !== "failed") continue;
+        const warning = outcome.detail?.warning ?? {};
+        meter.count("sync-failure", labelled(entry, warning.code ?? "global-work-propagation-failed"));
+        emitWarning(warningsSink, { code: warning.code ?? "global-work-propagation-failed", message: `Syncing workspace ${entry.workspaceId} failed: ${warning.message ?? outcome.error}`, path: warning.path ?? projectRoot, workspaceId: entry.workspaceId ?? null }, options);
+      }
+    } catch (error) {
+      watchable.push(entry.workDir);
+      const code = error?.code ?? "global-work-propagation-failed";
+      meter.count("sync-pass", labelled(entry));
+      meter.count("sync-failure", labelled(entry, code));
+      const permanent = Boolean(entry.workspaceId) && PERMANENT_SYNC_FAULT_CODES.has(code);
+      // Said once: a repeat of a fault already said only lengthens its backoff.
+      if (permanent && !ledger.fail(entry.workspaceId, code, nowMs(), await workTreeStatDigest(entry.workDir, { reportDegrade }))) continue;
+      emitWarning(warningsSink, {
+        code: "global-work-propagation-failed",
+        message: `Syncing workspace ${entry.workspaceId} failed${error?.code ? ` (${error.code})` : ""}: ${error?.message ?? error}${permanent ? " It will not fix itself, so it is said once and tried again only after a backoff or once the workspace's files change." : ""}`,
+        path: entry.workDir,
+        workspaceId: entry.workspaceId ?? null,
+      }, options);
+    }
+  }
+  // A tick that could not read the registry knows nothing about which trees exist: it changes no watch.
+  if (watches && registryResult.ok) watches.retain(watchable);
+  return results;
+}
+
+// A backed-off workspace whose files changed is tried at once: the change can be the fix. A tree
+// whose digest cannot be computed has not visibly moved.
+async function workTreeMovedSince(workDir, digest) {
+  const now = await workTreeStatDigest(workDir, { reportDegrade });
+  return now != null && now !== digest;
+}
+
+// settleUnresolvableRegistrations — 167/ADR-005, the registry's unresolvable skips, each said at most
+// once a tick and then not at all. A registration whose work dir is gone is REMOVED at once, this
+// node's row only, through the registry's one writer, with one line naming the workspace and its
+// path: the next aof command run in that folder registers it again. Anything else that cannot be
+// resolved (`no-descriptor`) is said once and then backed off like any permanent fault. A registry
+// that could not be read has no skips, so nothing is removed.
+async function settleUnresolvableRegistrations(remaining, nodeId, options, warningsSink, { openStore, ledger, meter, labelled, nowMs }) {
   for (const skip of remaining) {
+    const code = skip.reason ?? "workspace-unresolvable";
+    const where = skip.workDir ? `: ${skip.workDir}` : "";
+    if (skip.workspaceId && GONE_WORKDIR_CODES.has(code)) {
+      try {
+        const storeOptions = options?.globalWorkStoreOptions ?? {};
+        const store = await openStore({ ...storeOptions, paths: storeOptions.paths ?? globalMeshPaths(storeOptions) });
+        forgetNodeWorkspace(store, nodeId, skip.workspaceId);
+        ledger.clear(skip.workspaceId);
+        meter.count("sync-failure", labelled(skip, code));
+        emitWarning(warningsSink, {
+          code,
+          message: `Workspace ${skip.workspaceId} is no longer registered on this node: its work dir is gone (${code})${where}. Running any aof command in that folder registers it again.`,
+          path: skip.workDir ?? null,
+          workspaceId: skip.workspaceId,
+        }, options);
+        continue;
+      } catch (error) {
+        // The removal could not be written: the registration stays, and is backed off below.
+        reportDegrade("mesh-launcher", error);
+      }
+    }
+    if (skip.workspaceId) {
+      if (ledger.holding(skip.workspaceId, nowMs()) != null) {
+        meter.count("sync-pass", labelled(skip, "backoff"));
+        continue;
+      }
+      meter.count("sync-failure", labelled(skip, code));
+      if (PERMANENT_SYNC_FAULT_CODES.has(code) && !ledger.fail(skip.workspaceId, code, nowMs(), null)) continue;
+    }
     emitWarning(warningsSink, {
-      code: "workspace-workdir-unresolvable",
-      message: `Workspace ${skip.workspaceId} work dir could not be resolved (${skip.reason})${skip.workDir ? `: ${skip.workDir}` : ""}.`,
+      code,
+      message: `Not syncing workspace ${skip.workspaceId}: its work dir could not be resolved (${code})${where}. Said once; it is checked again after a backoff.`,
       path: skip.workDir ?? null,
+      workspaceId: skip.workspaceId ?? null,
     }, options);
   }
-  const workspaces = resolveAggregationWorkspaces(ws, registryResult);
+}
+
+async function assemblePresenceForTick(ws, nodeId, options, tickSet, openStore) {
+  // Every store-backed read in this tick is handed the SAME opener (see above). A caller that
+  // injected its own `openStore` still gets it — `sharedProjectionStore` wraps it rather than
+  // replacing it — so the hermetic-test seam is unchanged. The workspace set is the tick's one
+  // resolve (167/ADR-005); its unresolvable skips are said by the sync pass, not here.
+  const { workspaces } = tickSet;
 
   // activeRuns is the UNION across every resolved workspace's items (ADR-003);
   // workspacesWithRuns is the per-workspace attribution the render layer cannot
@@ -557,10 +772,21 @@ async function assemblePresenceForTick(ws, nodeId, options, warningsSink, openSt
   const cacheOptions = {
     globalWorkStoreOptions: options?.globalWorkStoreOptions ?? {},
     openStore,
+    // 167/ADR-008 — whose rows are this node's own runs, and the meter the read is counted on.
+    nodeId,
+    costMeter: options?.costMeter ?? processCostMeter,
   };
+  // The read is handed the workspace AS THE REGISTRY RESOLVED IT — its own project root and its
+  // registered id, pinned the way a loaded config pins it. A bare `{ workDir, workspaceId }` entry
+  // carries no config, so the cache read derived an id from the path instead: on any workspace
+  // with a pinned id it looked up rows nobody writes, and counted its cost under that id
+  // (measured by 167/04's soak: `work-read-cache-unavailable` under a hash, not `ws-soak-167`).
+  const readWorkspace = (workDir, workspace) => (workspace?.workspaceId
+    ? { workDir, projectRoot: tickSet.projectRootOf(workspace) ?? workDir, config: { mesh: { workspaceId: workspace.workspaceId } } }
+    : workspace ?? { workDir, projectRoot: workDir });
   const listItemsFn = typeof options?.listItems === "function"
     ? options.listItems
-    : (workDir, workspace) => listItemsCacheFirst(workspace ?? { workDir, projectRoot: workDir }, cacheOptions);
+    : (workDir, workspace) => listItemsCacheFirst(readWorkspace(workDir, workspace), cacheOptions);
   const { activeRuns, workspacesWithRuns, loops } = await assembleActiveRunsAndSubsumedWorkspaces(workspaces, listItemsFn, cacheOptions);
 
   // sessions is the union of this node's LIVE session records (ADR-001/002), stored
@@ -778,17 +1004,43 @@ async function startLauncher(ws, options = {}) {
   // handle, never dropped on the floor.
   const launcherWarnings = [];
   const publishCurrentPresence = async () => {
-    const nextRecord = await assembleCurrentPresenceRecord(ws, nodeId, options, launcherWarnings);
+    const nextRecord = await assembleCurrentPresenceRecord(ws, nodeId, options);
     await publishPresenceRecord(ws, nodeId, nextRecord);
     return nextRecord;
   };
-  let record = await publishCurrentPresence();
+  let record = null;
 
+  // Every propagation tick runs the sync pass over every workspace this node covers (164/ADR-004
+  // driver 1), and the start-up call below is driver 2: a change made while the daemon was down
+  // lands before the first tick fires. The start-up call is also the first presence publish.
+  //
+  // 167/ADR-005 — the tick resolves its workspace set ONCE, over one store handle, and hands that one
+  // result to the presence record and to the sync pass. The fault ledger is this launcher's, so a
+  // restart says each permanent fault once more.
+  const propagationSeconds = typeof options?.propagationSeconds === "number" && options.propagationSeconds > 0 ? options.propagationSeconds : syncCadenceFromConfig(ws);
+  const faultLedger = createFaultLedger(propagationSeconds * 1000);
+  // 167/ADR-009 — only `mesh serve` asks for work-tree watches. An object is the watch set's own
+  // options (the tests' injected `watch` and clock).
+  const workTreeWatches = options?.workTreeWatch
+    ? createWorkTreeWatches({ meter: options?.costMeter ?? processCostMeter, reportDegrade, ...(typeof options.workTreeWatch === "object" ? options.workTreeWatch : {}) })
+    : null;
+  // The work dirs a sync pass skipped as not propagating: never armed again in this daemon.
+  const notPropagating = new Set();
   const capturePropagation = async () => {
-    record = await publishCurrentPresence();
-    const propagation = await publishGlobalWorkSnapshot(ws, options);
-    if (propagation.warning) emitWarning(launcherWarnings, propagation.warning, options);
-    return propagation;
+    const shared = sharedProjectionStore(options?.openStore ? { openStore: options.openStore } : {});
+    try {
+      const tickSet = await resolveTickWorkspaces(ws, nodeId, options, shared.openStore);
+      // 167/ADR-009 — armed BEFORE the tick walks, so the tick's own walk of a newly watched tree is
+      // the one it remembers: a tree is walked once when first watched, never once more next tick.
+      // The pass's end narrows the set to the trees it covers.
+      if (workTreeWatches && tickSet.registryResult.ok) workTreeWatches.arm(tickSet.workspaces.map((entry) => entry.workDir).filter((dir) => typeof dir === "string" && !notPropagating.has(path.resolve(dir))));
+      const nextRecord = await assemblePresenceForTick(ws, nodeId, options, tickSet, shared.openStore);
+      await publishPresenceRecord(ws, nodeId, nextRecord);
+      record = nextRecord;
+      return await syncTickWorkspaces(ws, nodeId, options, launcherWarnings, { tickSet, openStore: shared.openStore, ledger: faultLedger, watches: workTreeWatches, notPropagating });
+    } finally {
+      shared.close();
+    }
   };
   await capturePropagation();
 
@@ -1490,12 +1742,22 @@ async function startLauncher(ws, options = {}) {
   });
 
   const propagationTicker = typeof options?.propagationTicker === "object" && options.propagationTicker != null ? options.propagationTicker : intervalTicker();
-  const propagationSeconds = typeof options?.propagationSeconds === "number" && options.propagationSeconds > 0 ? options.propagationSeconds : syncCadenceFromConfig(ws);
-  const propagationHandle = propagationTicker.start(propagationSeconds, () => {
-    capturePropagation().catch((error) => {
-      emitWarning(launcherWarnings, { code: error?.code ?? "global-work-propagation-failed", message: error?.message ?? "Global work propagation failed.", path: null }, options);
-    });
-  });
+  // The tick's settled promise is handed back to the ticker, so an injected one can await a tick.
+  const propagationHandle = propagationTicker.start(propagationSeconds, () => capturePropagation().catch((error) => {
+    emitWarning(launcherWarnings, { code: error?.code ?? "global-work-propagation-failed", message: error?.message ?? "Global work propagation failed.", path: null }, options);
+  }));
+
+  // 167/ADR-001 — the `serve` daemon's cost snapshot, every 15 s and once at a clean stop, over the
+  // same injected-ticker seam as its siblings so a test never waits on the clock.
+  const costWriter = typeof publishCostSnapshot === "function"
+    ? startCostSnapshots({
+      meter: options?.costMeter ?? processCostMeter,
+      daemon: "serve",
+      publish: (snapshot) => publishCostSnapshot(ws, nodeId, "serve", snapshot),
+      ...(typeof options?.costTicker === "object" && options.costTicker != null ? { ticker: options.costTicker } : {}),
+      onError: (error) => reportDegrade("mesh-launcher", error),
+    })
+    : null;
 
   // milestone 35 / ADR-008 — the control-side DISPATCH + RECLAIM driver: a THIRD
   // sibling over the SAME injected-ticker seam (propagationTicker/peerPollTicker),
@@ -1916,6 +2178,7 @@ async function startLauncher(ws, options = {}) {
   // also disposes the control node's loopback relay BROKER and its loopback push
   // transport, when either was started/constructed above.
   const stop = () => {
+    workTreeWatches?.close();
     peerPollTicker.stop(peerPollHandle);
     propagationTicker.stop(propagationHandle);
     if (streamSyncHandle != null) streamSyncTicker.stop(streamSyncHandle);
@@ -1944,6 +2207,9 @@ async function startLauncher(ws, options = {}) {
     relayBroker?.stop?.();
     controlTerminalPush?.close?.();
     terminalInputSubscriber?.stop?.();
+    // 167/ADR-001 — the last snapshot of a clean stop. Returned, so a caller that awaits the stop
+    // knows it landed; a caller that does not still frees the event loop (the ticker is stopped).
+    return costWriter?.stop() ?? Promise.resolve();
   };
 
   return {
@@ -1957,5 +2223,5 @@ async function startLauncher(ws, options = {}) {
   };
 }
 
-return { createResolveWorkspaceCloneUrl, resolveGithubAppPrivateKey, createResolveWorkspaceAppIdentity, assembleActiveRunsAndSubsumedWorkspaces, launcherProbe, startLauncher };
+return { createResolveWorkspaceCloneUrl, resolveGithubAppPrivateKey, createResolveWorkspaceAppIdentity, assembleActiveRunsAndSubsumedWorkspaces, launcherProbe, startLauncher, resolveNodeIdentity };
 }

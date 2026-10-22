@@ -68,6 +68,7 @@ import { archTests as acdDirectiveOnlyFromAdmittedPeerTests } from "./acd-direct
 import { archTests as acdRevokedIssuerDirectiveNeverExecutesTests } from "./acd-revoked-issuer-directive-never-executes.test.mjs";
 import { archTests as acdUnpublishedRepoDirectiveRefusedTests } from "./acd-unpublished-repo-directive-refused.test.mjs";
 import { archTests as acdPresenceAggregatesNodeWorkspacesTests } from "./acd-presence-aggregates-node-workspaces.test.mjs";
+import { archTests as acdPresenceReadsRunsFromTheStoreTests } from "./acd-presence-reads-runs-from-the-store.test.mjs";
 import { archTests as acdCloneCredentialPullNotPushedTests } from "./acd-clone-credential-pull-not-pushed.test.mjs";
 import { archTests as acdCloneCredentialRelayNotLoggedTests } from "./acd-clone-credential-relay-not-logged.test.mjs";
 import { archTests as acdCloneCredentialProviderConfigDrivenTests } from "./acd-clone-credential-provider-config-driven.test.mjs";
@@ -112,6 +113,12 @@ import { archTests as acdDeclarationsRideTheOneDataCommandTests } from "./acd-de
 import { archTests as acdAutostartIsOneInjectedRunnerTests } from "./acd-autostart-is-one-injected-runner.test.mjs";
 // 132 / task 03 — no tracked run record names a machine (the path + record rules, shrink-only).
 import { archTests as acdRunRecordsNameNoMachineTests } from "./acd-run-records-name-no-machine.test.mjs";
+// milestone 164 / story 01 — FF-16405: the daemon tick runs the sync pass over every registered workspace
+import { archTests as acdSyncCoversEveryRegisteredWorkspaceTests } from "./acd-sync-covers-every-registered-workspace.test.mjs";
+// milestone 167 / story 00 — FF-16701 (one cost meter per process) and FF-16702 (the daemon budget's one home).
+import { archTests as acdOneCostMeterTests } from "./acd-one-cost-meter.test.mjs";
+import { archTests as acdOneWorkTreeWalkerTests } from "./acd-one-work-tree-walker.test.mjs";
+import { archTests as acdDaemonBudgetOneHomeTests } from "./acd-daemon-budget-one-home.test.mjs";
 
 export const tests = [
   ...acdShellLoopIdIsDeclaredTests,
@@ -174,4 +181,11 @@ export const tests = [
   ...acdAutostartIsOneInjectedRunnerTests,
   // 132 / task 03
   ...acdRunRecordsNameNoMachineTests,
+  // milestone 164 / story 01 — FF-16405
+  ...acdSyncCoversEveryRegisteredWorkspaceTests,
+  ...acdOneCostMeterTests,
+  ...acdOneWorkTreeWalkerTests,
+  ...acdDaemonBudgetOneHomeTests,
+  // milestone 167 / story 06 — FF-16705
+  ...acdPresenceReadsRunsFromTheStoreTests,
 ];

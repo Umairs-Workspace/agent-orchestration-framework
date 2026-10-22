@@ -37,7 +37,9 @@ const CLI_MJS = path.join(repoRoot, "packages", "core", "src", "cli.mjs");
 // milestone-11/ADR-007 deterministic edge-based coupling command (the running agents'
 // primary grounding signal) — covered here so its argv/render/dispatch are CI-locked
 // like the others (gap caught at the ADR-007 structural review).
-const GRAPH_VERBS = ["build", "query", "triage", "impact"];
+// `export` / `import` carry the graph between clones (166) — each refuses a missing path with the
+// structured envelope, which is what the spawn-and-parse proof below reads.
+const GRAPH_VERBS = ["build", "query", "triage", "impact", "export", "import"];
 const GRAPH_COMMAND_IDS = GRAPH_VERBS.map((verb) => `graph:${verb}`);
 
 function stripComments(source) {
@@ -86,6 +88,9 @@ function argsFor(verb) {
     // impact takes a path positional; against the fixture (no built graph) it resolves
     // to the structured no-graph error envelope — which still parses as one JSON doc.
     case "impact": return ["graph", "impact", "packages/core/src/cli.mjs", "--json"];
+    // export/import with no path resolve to their no-path envelope — one JSON document each.
+    case "export": return ["graph", "export", "--json"];
+    case "import": return ["graph", "import", "--json"];
     default: throw new Error(`unmapped graph verb ${verb}`);
   }
 }

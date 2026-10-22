@@ -146,10 +146,22 @@ invalid completion envelopes and unsupported mandatory requests. In particular, 
 There is no exec, PTY, model or Claude fallback for a failed Codex launch.
 
 On Windows, AOF resolves native executables behind npm launchers without running a
-shell. It tries compatible PATH installations first, then the registered Codex
-desktop app if those installations are unavailable or incompatible. An explicit
-executable override is never replaced. A missing, unrecognized or below-minimum installation
-produces a diagnostic rather than falling back to Claude.
+shell. It checks PATH first, then the installed OpenAI extension registrations for
+VS Code and VS Code Insiders, then the registered Codex desktop app. This also works
+from a terminal that does not inherit VS Code's bundled CLI on PATH. An explicit
+executable override is never replaced.
+
+The minimum version is an initial filter. Each eligible executable must also pass
+a read-only App Server initialize/model-list probe before selection. A failed probe
+is closed before trying the next installation. Probes start no model thread or turn;
+AOF never retries another installation after phase work starts. Effective native
+automatic review is still checked on thread start/resume before tools run.
+
+Desktop discovery uses system Windows PowerShell with a bounded 15-second timeout.
+Failed discovery, missing registered binaries, version-probe failures and App Server
+probe failures produce distinct diagnostics when no usable candidate is found.
+A timed-out discovery source is not reported as proof that only an old CLI exists.
+No discovery or preflight failure falls back to Claude.
 
 The desktop build `0.162.0-alpha.2` has passed live Astra/high structured completion,
 usage reporting, thread read and resume checks. Its emitted schemas also validate

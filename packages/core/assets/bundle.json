@@ -919,6 +919,24 @@
       }
     },
     {
+      "id": "prototype",
+      "kind": "command",
+      "file": "commands/prototype.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/workflow.md",
+          "section": "prototype"
+        }
+      }
+    },
+    {
       "id": "archive",
       "kind": "command",
       "file": "commands/archive.md",
@@ -1219,6 +1237,11 @@
       "id": "milestone",
       "kind": "template",
       "dir": "templates/milestone"
+    },
+    {
+      "id": "prototype",
+      "kind": "template",
+      "dir": "templates/prototype"
     },
     {
       "id": "shared",

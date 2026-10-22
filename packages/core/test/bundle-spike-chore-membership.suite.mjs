@@ -7,7 +7,7 @@
 // load the REAL descriptor, resolve REAL on-disk files, and hash the REAL
 // re-rendered content against the shipped manifest — no engine code authored here.
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { loadBundle, readDescriptor, renderBundleOutputs, bundleRoot } from "../src/work/bundle.mjs";
 import { readShippedManifest } from "../src/work/bundle-manifest.mjs";
@@ -72,8 +72,67 @@ export const bundleSpikeChoreMembershipTests = [
     },
   },
 
+  // milestone 168 / story 00 — the prototype's two templates are a bundle member, so `aof work
+  // update` renders them where the scaffold reads them, and neither opens with a comment before
+  // its frontmatter (a displaced fence parses as no frontmatter at all).
+  {
+    name: 'bundle/spike-chore-membership: the descriptor declares "prototype" as kind "template", and its PROTOTYPE.md and STATE.md exist with their frontmatter first',
+    run: async () => {
+      const prototype = descriptorMembers().find((m) => m.id === "prototype" && m.kind === "template");
+      assert.ok(prototype, "descriptor declares member prototype");
+      assert.equal(prototype.kind, "template", "prototype is kind template");
+      assert.equal(prototype.dir, "templates/prototype");
+      for (const file of ["PROTOTYPE.md", "STATE.md"]) {
+        const full = path.join(bundleRoot(), "templates", "prototype", file);
+        assert.ok(existsSync(full), `templates/prototype/${file} exists under the bundle root`);
+        assert.ok(readFileSync(full, "utf8").startsWith("---"), `templates/prototype/${file} opens with its frontmatter fence`);
+      }
+    },
+  },
+
+  // milestone 168 / story 01 task 02 — the bundle declares the command beside add-chore: a command
+  // member for exactly add-chore's runtimes and codex variant shape, and a template member.
+  {
+    name: 'bundle/spike-chore-membership: 168/01 "prototype" is a command member for exactly the runtimes "add-chore" is, and a template member',
+    run: async () => {
+      const members = descriptorMembers().filter((m) => m.id === "prototype");
+      const command = members.find((m) => m.kind === "command");
+      const addChore = descriptorMembers().find((m) => m.id === "add-chore" && m.kind === "command");
+      assert.ok(command, "prototype is a command member");
+      assert.equal(command.file, "commands/prototype.md");
+      assert.deepEqual([...command.runtimes].sort(), [...addChore.runtimes].sort(), "the runtimes add-chore ships to");
+      assert.deepEqual(Object.keys(command.variants).sort(), Object.keys(addChore.variants).sort(), "the same variant runtimes");
+      assert.equal(command.variants.codex.section, "prototype", "the codex workflow.md section");
+      assert.ok(members.some((m) => m.kind === "template"), "prototype is also a template member");
+    },
+  },
+  // E15 — `aof work update` writes what `renderBundleOutputs` renders, so each runtime's surface is
+  // read off the rendered set for a project initialised with all three runtimes.
+  ...[
+    ["claude", ".claude/commands/aof/prototype.md"],
+    ["opencode", ".opencode/commands/aof/prototype.md"],
+    ["codex", ".agents/skills/aof-prototype/SKILL.md"],
+  ].map(([runtime, surface]) => ({
+    name: `bundle/spike-chore-membership: 168/01 E15 · the ${runtime} runtime carries the prototype command at ${surface}`,
+    run: async () => {
+      const rendered = renderBundleOutputs(loadBundle(), { runtimes: ["claude", "codex", "opencode"] });
+      const output = rendered.find((o) => normalize(o.path) === surface);
+      assert.ok(output, `${surface} is rendered`);
+      assert.match(output.content, /aof work prototype/, `${surface} carries the prototype command's body`);
+      if (runtime === "codex") assert.doesNotMatch(output.content, /\/aof:|\.claude\/commands\//, "the codex section names no Claude surface");
+    },
+  })),
+  {
+    name: "bundle/spike-chore-membership: 168/01 E16 · explain answers a prototype with its intent, on both surfaces",
+    run: async () => {
+      for (const file of [path.join("commands", "explain.md"), path.join("variants", "codex", "workflow.md")]) {
+        assert.match(readFileSync(path.join(bundleRoot(), file), "utf8"), /^ {3}\| prototype \| its `## Intent` \|$/m, `${file} maps prototype to its ## Intent`);
+      }
+    },
+  },
+
   // Scenario Outline: the manifest hash for "<id>" is a true content address of its re-rendered content
-  ...["add-spike", "add-chore", "spike", "chore"].map((id) => ({
+  ...["add-spike", "add-chore", "spike", "chore", "prototype"].map((id) => ({
     name: `bundle/spike-chore-membership: the shipped manifest entry for "${id}" has a non-empty path, a "sha256:" hash equal to the sha256 of its re-rendered content`,
     run: async () => {
       const manifest = readShippedManifest();

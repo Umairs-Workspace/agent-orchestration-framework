@@ -26,6 +26,10 @@
 // The ONE threshold: ten minutes without a heartbeat is quiet.
 export const LOOP_QUIET_AFTER_MS = 10 * 60 * 1000;
 
+// The ONE warning tone a quiet progress segment renders in (the board's existing warning colour);
+// both surfaces read it here rather than re-typing the class (162 verify, F-03).
+export const LOOP_QUIET_CLASS = "text-amber-500";
+
 // THE WIRE'S TWO WORDS, AND THE THREE RUNGS — see `apps/ui/src/fleet/runs.mjs`, whose Stop
 // button climbs the same ladder this line's state word reads.
 const STOP_WORDS = Object.freeze({ drain: "stopping", cancel: "cancelling" });
@@ -69,6 +73,9 @@ export function loopStopRung(loop, remembered) {
 // formatLoopDuration(ms) — the one formatter for an elapsed time and an age: `5 s` under a
 // minute, `14 min` under an hour (whole minutes, floored — 9 min 59 s is `9 min`), and
 // `1 h 05 min` beyond. A negative span (a clock ahead of the browser's) reads as `0 s`.
+// `packages/work-loop/src/drive-status.mjs` keeps a twin (`formatDriveDuration`): this file stays
+// zero-import and the loop kernel may not import a sibling package, so neither can read the other.
+// FF-16202 drives both over the same spans and fails if they ever disagree (162 verify, F-01).
 export function formatLoopDuration(ms) {
   const seconds = Math.max(0, Math.floor(ms / 1000));
   if (seconds < 60) return `${seconds} s`;

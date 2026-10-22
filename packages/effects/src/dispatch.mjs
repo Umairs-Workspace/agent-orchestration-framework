@@ -1,8 +1,20 @@
 // Effect execution over supplied storage, reactors, reachability and diagnostics.
 // No application imports or process-global registration.
+import { RETRY_UNTIL_DONE } from "./registry.mjs";
+
 export const EFFECT_MAX_ATTEMPTS = 5;
 
-export function createEffectsDispatcher({ effects: defaultEffects, loci: defaultLoci, pendingSteps, markStep, reportDegrade } = {}) {
+// 164/ADR-006 — the backoff of a reactor that retries until done: the next attempt is no earlier
+// than the step's last attempt + min(base * 2^attempts, cap). The base is one propagation tick,
+// and the cap keeps a store that stays broken for a day probed four times an hour, not every tick.
+export const RETRY_BACKOFF_BASE_MS = 15_000;
+export const RETRY_BACKOFF_CAP_MS = 15 * 60_000;
+
+export function retryBackoffMs(attempts) {
+  return Math.min(RETRY_BACKOFF_BASE_MS * 2 ** Math.max(0, attempts), RETRY_BACKOFF_CAP_MS);
+}
+
+export function createEffectsDispatcher({ effects: defaultEffects, loci: defaultLoci, pendingSteps, failedStepsPastCeiling = null, markStep, reportDegrade } = {}) {
   for (const [name, port] of Object.entries({ pendingSteps, markStep, reportDegrade })) {
     if (typeof port !== 'function') throw new TypeError(`Effects dispatcher requires ${name}.`);
   }
@@ -22,6 +34,9 @@ export function createEffectsDispatcher({ effects: defaultEffects, loci: default
     eventId = null,
     limit = 100,
     maxAttempts = EFFECT_MAX_ATTEMPTS,
+    // 164/ADR-006 — the backoff protects a broken store from AUTOMATIC passes. An operator's explicit
+    // retry (a lane's cleanup, `doctor --converge`) passes `backoff: false` and runs what is owed now.
+    backoff = true,
     now,
     // Reactor context — handles this process already holds that a reactor would
     // otherwise have to re-open (the control tick's open projection store is the
@@ -35,7 +50,17 @@ export function createEffectsDispatcher({ effects: defaultEffects, loci: default
     // the whole limit window and starve every payable step behind them (m42 wave
     // (d) leg d4, port 4). An eventId-scoped drain keeps the full fetch — its
     // caller reads the `deferred` outcomes off the envelope (run-complete's wire).
-    const steps = pendingSteps(journal, { eventId, maxAttempts, limit, ...(eventId ? {} : { loci }) });
+    const scope = { eventId, maxAttempts, limit, ...(eventId ? {} : { loci }) };
+    const reactorOf = (step) => (effects[step.name] ?? []).find((entry) => entry.key === step.key);
+    // 164/ADR-006 — a failed step past the ceiling is still owed when its reactor retries until
+    // done; every other reactor keeps the ceiling exactly as before.
+    const pastCeiling = typeof failedStepsPastCeiling === "function"
+      ? failedStepsPastCeiling(journal, scope).filter((step) => reactorOf(step)?.retry === RETRY_UNTIL_DONE)
+      : [];
+    const steps = pastCeiling.length === 0
+      ? pendingSteps(journal, scope)
+      : [...pendingSteps(journal, scope), ...pastCeiling].sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    const clock = Date.parse(now ?? new Date().toISOString());
     const outcomes = [];
     for (const step of steps) {
       const base = { eventId: step.eventId, event: step.name, key: step.key, locus: step.locus };
@@ -44,7 +69,12 @@ export function createEffectsDispatcher({ effects: defaultEffects, loci: default
         outcomes.push({ ...base, status: "deferred" });
         continue;
       }
-      const reactor = (effects[step.name] ?? []).find((entry) => entry.key === step.key);
+      const reactor = reactorOf(step);
+      // A failed retry-until-done step waits out its backoff: not attempted, and not counted.
+      if (backoff && reactor?.retry === RETRY_UNTIL_DONE && step.status === "failed"
+        && clock < Date.parse(step.updatedAt) + retryBackoffMs(step.attempts)) {
+        continue;
+      }
       if (!reactor) {
         // Vocabulary drift: the step was materialised by a build whose EFFECTS
         // declared this reactor; this build does not. Loud, terminal, visible.

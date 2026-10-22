@@ -133,6 +133,11 @@ import { archTests as acdArchiveNeverRenumbersTests } from "./acd-archive-never-
 // only in `@aof/work/memory-vocabulary`, and the retrospective prompt and the OUTCOME template name
 // exactly its enums (ADR-001).
 import { archTests as acdMemoryVocabularyOneHomeTests } from "./acd-memory-vocabulary-one-home.test.mjs";
+// milestone 168 / story 00 — FF-16801: the type → record-doc map is declared only in the identity
+// leaf (ADR-002); FF-16802/FF-16803: a prototype is never scheduled, nothing waits on it, and it is
+// held to its own two files and four status words (ADR-001, ADR-003, ADR-005).
+import { archTests as acdRecordDocMapOneHomeTests } from "./acd-record-doc-map-one-home.test.mjs";
+import { archTests as acdPrototypeStaysLightTests } from "./acd-prototype-stays-light.test.mjs";
 
 export const tests = [
   ...acdPhaseDoorNotADriverTests,
@@ -192,4 +197,7 @@ export const tests = [
   ...acdArchiveNeverRenumbersTests,
   // milestone 148 / story 02 — FF-14802 (see the import note).
   ...acdMemoryVocabularyOneHomeTests,
+  // milestone 168 / story 00 — FF-16801, FF-16802 and FF-16803 (see the import note).
+  ...acdRecordDocMapOneHomeTests,
+  ...acdPrototypeStaysLightTests,
 ];

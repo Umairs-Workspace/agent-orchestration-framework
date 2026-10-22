@@ -35,7 +35,7 @@
 // locked entry is SKIPPED WITH A WARNING (the existing copy is kept) — stop the
 // daemon and re-run if you need node-pty itself updated.
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, renameSync, copyFileSync, cpSync, rmSync, readdirSync, unlinkSync, writeFileSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, copyFileSync, cpSync, rmSync, readdirSync, unlinkSync, writeFileSync, readFileSync, appendFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -399,6 +399,43 @@ function deployWsl(o) {
   execFileSync("wsl.exe", args, { stdio: "inherit" });
 }
 
+// Append `installDir` to PATH in every shell profile that exists but does not already
+// reference it. No-ops on Windows (PATH there is managed via system settings / the installer).
+function ensureOnPath(installDir) {
+  if (process.platform === "win32") return;
+  const home = os.homedir();
+  // Portable form when the install is the default location; absolute path otherwise.
+  const defaultBin = path.join(home, ".aof", "bin");
+  const exportLine = installDir === defaultBin
+    ? `export PATH="$HOME/.aof/bin:$PATH"`
+    : `export PATH="${installDir}:$PATH"`;
+
+  // All profile candidates, resolved; only those that exist on disk are touched.
+  const candidates = [".zshrc", ".bashrc", ".bash_profile", ".profile"]
+    .map((f) => path.join(home, f));
+  const present = candidates.filter(existsSync);
+
+  console.log("\n=== PATH ===");
+  if (present.length === 0) {
+    console.log(`  no shell profile found — add this line manually:\n    ${exportLine}`);
+    return;
+  }
+
+  let updated = 0;
+  for (const profile of present) {
+    const content = readFileSync(profile, "utf8");
+    // Match absolute path, $HOME/…, or ~/… — any of the three forms counts as already set.
+    if (content.includes(installDir) || content.includes("$HOME/.aof/bin") || content.includes("~/.aof/bin")) {
+      console.log(`  ${path.basename(profile)}: already on PATH — skipped`);
+      continue;
+    }
+    appendFileSync(profile, `\n${exportLine}\n`, "utf8");
+    console.log(`  ${path.basename(profile)}: added  ${exportLine}`);
+    updated += 1;
+  }
+  if (updated > 0) console.log("  open a new terminal (or: source the updated profile) to pick this up");
+}
+
 function main() {
   const o = parseArgs(process.argv.slice(2));
   const isWin = process.platform === "win32";
@@ -434,6 +471,7 @@ function main() {
     let n = 1;
     if (!o.skipUi) console.log(`  ${n++}. node scripts/ui-build.mjs`);
     console.log(`  ${n++}. payload install: sync src/, bundle/, ui/dist, node_modules (prod closure), package.json + BUILD_ID.json into ${installDir}`);
+    //console.log(`  ${n++}. ensure ${installDir} is on PATH in each present shell profile (~/.zshrc, ~/.bashrc, ~/.bash_profile, ~/.profile)`);
     if (buildSea) console.log(`  ${n++}. node scripts/build-sea.mjs -> dist-sea/, then rename ${exeName} -> ${exeName}.bak.<ts> + place the fresh ${exeName} (+ node-pty-sidecar)`);
     if (o.desktop) console.log(`  ${n++}. cargo build --release + place aof-mesh-desktop.exe`);
     if (o.wsl) console.log(`  ${n++}. sync src/ + package.json into ${o.wslDistro ?? "the default distro"}:${o.wslDir ?? WSL_DEFAULT_DIR}, reinstalling natively only if yarn.lock changed`);
@@ -447,6 +485,7 @@ function main() {
 
   // --- 2. the payload (always — this IS the deploy) ---
   const buildId = installPayload(installDir);
+  //ensureOnPath(installDir);
 
   // --- 3. the SEA launcher exe (only when it must change) ---
   // The embedded bundle is stamped with the SAME build id as the payload it ships beside

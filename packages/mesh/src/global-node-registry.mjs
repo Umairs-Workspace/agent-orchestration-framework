@@ -14,6 +14,7 @@ export function createGlobalNodeRegistry({ globalMeshPaths, resolveWorkspaceId, 
 // m42 item 3 — every former silent catch reports a coded degrade event.
 
 const SECRET_KEY_PATTERN = /(token|secret|credential|auth|invite|hash)/i;
+const NODE_RECORD_UNREADABLE_CODE = "node-record-unreadable";
 
 async function publishGlobalRegistryDescriptorsToStore(store, workspace, options = {}) {
   const paths = store.paths ?? globalMeshPaths(options);
@@ -25,6 +26,22 @@ async function publishGlobalRegistryDescriptorsToStore(store, workspace, options
   await removeStaleFabricDescriptors(staleFabricDescriptorPaths, paths.nodesRoot, []);
 
   const snapshot = await assembleGlobalRegistrySnapshot(workspace, { ...options, now, paths });
+  // 164/F-02 — a roster with a torn node record is PARTIAL, and this publish REPLACES the
+  // workspace's membership (descriptor `memberNodeIds` and its `global_node_workspaces` links)
+  // with whatever the roster holds. Measured live: every node file NUL-filled after a crash, and
+  // each command's publish emptied its workspace's membership, dropping it out of the daemon
+  // tick. So nothing is written: the last good membership stands, and the refusal is reported.
+  if (snapshot.unreadableNodeRecords.length > 0) {
+    const error = Object.assign(new Error(`${snapshot.unreadableNodeRecords.length} node record(s) could not be read (${snapshot.unreadableNodeRecords.map((entry) => entry.path).join(", ")}); the registry was not republished, so the last membership stands.`), { code: NODE_RECORD_UNREADABLE_CODE });
+    reportDegrade("global-node-registry", error);
+    return {
+      workspaceId: snapshot.workspaceDescriptor.workspaceId,
+      published: false,
+      code: NODE_RECORD_UNREADABLE_CODE,
+      message: error.message,
+      unreadable: snapshot.unreadableNodeRecords.map((entry) => entry.path),
+    };
+  }
 
   await writeDescriptor(snapshot.workspaceDescriptorPath, snapshot.workspaceDescriptor);
   for (const descriptor of snapshot.nodeDescriptors) {
@@ -46,7 +63,8 @@ async function assembleGlobalRegistrySnapshot(workspace, options = {}) {
   const now = options.now ?? new Date().toISOString();
   const config = workspace.config ?? {};
   const workspaceId = resolveWorkspaceId(workspace);
-  const nodeRecords = await readNodeRecords(workspace);
+  const unreadableNodeRecords = [];
+  const nodeRecords = await readNodeRecords(workspace, { unreadable: unreadableNodeRecords });
   const presenceRecords = await readPresenceRecords(workspace);
   const fabricPeers = Array.isArray(options.fabricPeers)
     ? options.fabricPeers
@@ -149,6 +167,7 @@ async function assembleGlobalRegistrySnapshot(workspace, options = {}) {
     workspaceDescriptor,
     workspaceDescriptorPath,
     nodeDescriptors,
+    unreadableNodeRecords,
   };
 }
 
@@ -195,9 +214,16 @@ async function queryGlobalRegistry(store, options = {}) {
     const memberships = db.prepare(`
       SELECT workspace_id FROM global_node_workspaces WHERE node_id = ? ORDER BY workspace_id
     `).all(row.node_id).map((entry) => entry.workspace_id);
+    const diskPresence = await readPresenceRecord(presenceWorkspace, row.node_id);
+    // 162 verify (F-05) — "is this node alive" reads the node's CURRENT heartbeat, not only the one
+    // stamped at the last publish. Since 164 the daemon publishes only when a workspace changed, so
+    // on a quiet tree `last_seen_at` stops moving while the presence file keeps beating; the later
+    // of the two is the node's last sign of life, and the card's `lastSeenAt` carries the same instant.
+    const lastSeenAt = laterInstant(row.last_seen_at, diskPresence?.heartbeatAt);
     const node = {
       ...descriptor,
-      freshness: freshnessFor(row.last_seen_at, now, thresholdMs),
+      ...(lastSeenAt == null ? {} : { lastSeenAt }),
+      freshness: freshnessFor(lastSeenAt, now, thresholdMs),
       workspaceIds: memberships, // nodes are machine-wide; never narrowed by a workspace filter (34/story 02)
       workspaces: memberships.map((id) => workspaceById.get(id) ?? { workspaceId: id, name: null, projectRoot: null }),
     };
@@ -210,7 +236,6 @@ async function queryGlobalRegistry(store, options = {}) {
     // publisher emitted them — no liveness/subsumption is recomputed here.
     // 130/ADR-005 §2 — `loops` (the seventh, omitted-when-empty key) rides through the
     // same spread: present iff the disk record carried it, and LAST, as the assembler emits it.
-    const diskPresence = await readPresenceRecord(presenceWorkspace, row.node_id);
     if (diskPresence) node.presence = assemblePresenceRecord(diskPresence);
     nodes.push(node);
   }
@@ -305,6 +330,25 @@ function upsertGlobalRegistryRows(store, snapshot) {
   }
 }
 
+// forgetNodeWorkspace(store, nodeId, workspaceId) — 167/ADR-005: this node's membership in a
+// workspace whose work dir is gone is removed, and nothing else. Exactly one
+// `global_node_workspaces` row, keyed on BOTH columns, so another node's row for the same workspace
+// and the workspace's descriptor are never touched. Reversible by use: the next publish of that
+// workspace (any aof command run in its folder) links this node again. Answers whether a row went.
+function forgetNodeWorkspace(store, nodeId, workspaceId) {
+  const result = store.db.prepare("DELETE FROM global_node_workspaces WHERE node_id = ? AND workspace_id = ?").run(nodeId, workspaceId);
+  return Number(result?.changes ?? 0) > 0;
+}
+
+// laterInstant(a, b) → whichever parseable ISO instant is later, or the one that parses, else null.
+function laterInstant(a, b) {
+  const ms = (value) => (typeof value === "string" && value.length > 0 ? Date.parse(value) : Number.NaN);
+  const [aMs, bMs] = [ms(a), ms(b)];
+  if (!Number.isFinite(aMs)) return Number.isFinite(bMs) ? b : null;
+  if (!Number.isFinite(bMs)) return a;
+  return bMs > aMs ? b : a;
+}
+
 function freshnessFor(lastSeenAt, now, thresholdMs) {
   if (typeof lastSeenAt !== "string" || lastSeenAt.length === 0) return "unknown";
   const seenMs = Date.parse(lastSeenAt);
@@ -392,5 +436,5 @@ function flatLeaf(id) {
   return String(id).replace(/[\\/]/g, "-").replace(/\.\.+/g, "-");
 }
 
-return { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, redactDescriptor };
+return { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, forgetNodeWorkspace, redactDescriptor };
 }

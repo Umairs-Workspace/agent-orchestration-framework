@@ -140,6 +140,8 @@ const EXCLUDED = Object.freeze({
   // 127/02 task 04 — the one wrapper over `work:promote`: moves ONE backlog item into the numbered
   // stream and mints its number; spawns no agent, carries no memory call, partitions nothing.
   "promote.md": "promotes one backlog item into the stream and mints its number; no partition",
+  // 168/01 — builds one prototype inline in the operator's session; no partition, no memory call.
+  "prototype.md": "builds one prototype in the operator's session; cuts nothing",
   // 163 — the wrapper over `work:questions`: prints the loop's open questions; answers none.
   "questions.md": "reads the loop's open questions; answers none, cuts nothing",
   "recent.md": "reads the stream chronologically",

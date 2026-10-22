@@ -15,7 +15,7 @@ export function assembleGlobalNodeRegistry({ workspaceServices, meshStoreService
 
   const { reportDegrade } = degradeServices;
 
-  const { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, redactDescriptor } = createGlobalNodeRegistry({ globalMeshPaths, resolveWorkspaceId, readNodeRecords, readPresenceRecords, readPresenceRecord, assemblePresenceRecord, resolveCloneUrl, reportDegrade });
+  const { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, forgetNodeWorkspace, redactDescriptor } = createGlobalNodeRegistry({ globalMeshPaths, resolveWorkspaceId, readNodeRecords, readPresenceRecords, readPresenceRecord, assemblePresenceRecord, resolveCloneUrl, reportDegrade });
 
-  return { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, redactDescriptor };
+  return { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, forgetNodeWorkspace, redactDescriptor };
 }

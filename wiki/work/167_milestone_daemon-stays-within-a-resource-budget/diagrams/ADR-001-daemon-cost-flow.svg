@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 1000 510" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ADR-001-daemon-cost-flow-title ADR-001-daemon-cost-flow-desc">
+<title id="ADR-001-daemon-cost-flow-title">AOF daemon cost flow</title>
+<desc id="ADR-001-daemon-cost-flow-desc">The counter sites in the mesh serve and mesh ui daemons feed one cost meter per process, which reads CPU and event-loop utilisation and holds the budget. Every 15 seconds each daemon writes a cost snapshot under the mesh directory. aof mesh status and the aof work doctor lane read the snapshots. The desktop guard samples each daemon's CPU from the operating system and judges it against the budget and state the status read hands it.</desc>
+<style>.name{font:600 12px Inter,system-ui,sans-serif;fill:#1b1f27}.sub{font:9px ui-monospace,Consolas,monospace;fill:#585f6a}.label{font:8px ui-monospace,Consolas,monospace;fill:#585f6a;letter-spacing:.06em}</style>
+<defs><style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;display=swap');</style>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#585f6a"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#ba2646"/></marker>
+<marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#13766d"/></marker>
+</defs>
+<rect width="1000" height="510" fill="#f3f5f7"/>
+<g fill="none" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)">
+<path d="M280 135 H310 V180 H338"/><path d="M280 310 H310 V260 H338"/>
+<path d="M770 180 H795 V85 H818"/><path d="M770 215 H818"/>
+</g>
+<path d="M540 215 H598" fill="none" stroke="#ba2646" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<g fill="none" stroke="#585f6a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)">
+<path d="M970 85 H985 V370 H972"/><path d="M160 370 V440 H895 V412"/>
+</g>
+<g class="label" text-anchor="middle">
+<rect x="294" y="119" width="40" height="16" fill="#f3f5f7"/><text x="314" y="130">COUNT</text>
+<rect x="296" y="314" width="40" height="16" fill="#f3f5f7"/><text x="316" y="325">COUNT</text>
+<rect x="776" y="219" width="40" height="16" fill="#f3f5f7"/><text x="796" y="230">READ</text>
+<rect x="940" y="270" width="56" height="28" fill="#f3f5f7"/><text x="968" y="281">BUDGET</text><text x="968" y="293">+ STATE</text>
+<rect x="470" y="432" width="96" height="16" fill="#f3f5f7"/><text x="518" y="443">OS CPU SAMPLE</text>
+</g>
+<rect x="545" y="199" width="50" height="16" fill="#f3f5f7"/>
+<text class="label" x="549" y="210" fill="#ba2646" style="fill:#ba2646">EVERY 15 S</text>
+<rect x="40" y="40" width="240" height="190" rx="8" fill="#585f6a" fill-opacity=".10" stroke="#7a818d"/>
+<text class="label" x="56" y="60">COUNTER SITES</text>
+<text class="name" x="56" y="82">mesh serve</text>
+<text class="sub" x="56" y="110">read.mjs · disk read · hit · miss</text>
+<text class="sub" x="56" y="132">tick · sync-pass · sync-failure</text>
+<text class="sub" x="56" y="154">degrade · every report</text>
+<text class="sub" x="56" y="176">workspace label on each</text>
+<rect x="40" y="250" width="240" height="120" rx="8" fill="#585f6a" fill-opacity=".10" stroke="#7a818d"/>
+<text class="label" x="56" y="270">COUNTER SITES</text>
+<text class="name" x="56" y="292">mesh ui</text>
+<text class="sub" x="56" y="318">ui-serve · board-ui</text>
+<text class="sub" x="56" y="338">request · route · client</text>
+<text class="sub" x="56" y="358">degrade · every report</text>
+<rect x="340" y="150" width="200" height="130" rx="8" fill="#ba2646" fill-opacity=".08" stroke="#ba2646"/>
+<text class="name" x="356" y="178">Cost meter</text>
+<text class="sub" x="356" y="200">foundation/cost-meter.mjs</text>
+<text class="sub" x="356" y="220">cpuUsage · ELU</text>
+<text class="sub" x="356" y="240">counters by cause</text>
+<text class="sub" x="356" y="260">DAEMON_BUDGET</text>
+<rect x="600" y="150" width="170" height="130" rx="8" fill="#1b1f27" fill-opacity=".05" stroke="#585f6a"/>
+<text class="name" x="616" y="178">Cost snapshots</text>
+<text class="sub" x="616" y="200">meshDir/cost/</text>
+<text class="sub" x="616" y="220">&lt;node&gt;.serve.json</text>
+<text class="sub" x="616" y="240">&lt;node&gt;.ui.json</text>
+<text class="sub" x="616" y="260">at · state · top causes</text>
+<rect x="820" y="50" width="150" height="70" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="836" y="78">aof mesh status</text><text class="sub" x="836" y="100">--json · cost block</text>
+<rect x="820" y="180" width="150" height="70" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="836" y="208">aof work doctor</text><text class="sub" x="836" y="230">daemon-cost lane</text>
+<rect x="820" y="330" width="150" height="80" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="836" y="356">Desktop guard</text><text class="sub" x="836" y="376">guard.rs · sustained</text><text class="sub" x="836" y="394">footer · tray · log</text>
+<line x1="40" y1="466" x2="960" y2="466" stroke="#bec6d0"/>
+<text class="sub" x="40" y="486">Crimson: one meter per process, the only reader of the CPU clock (FF-16701)</text>
+<text class="sub" x="40" y="502">Dashed: the desktop's own OS sample, judged against the budget the status read hands it (ADR-006)</text>
+</svg>

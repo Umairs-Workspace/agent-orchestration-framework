@@ -1,8 +1,9 @@
 // Read-only work validation; core supplies the shipped digest contract when needed.
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 import { parseFeature } from "./feature-parse.mjs";
-import { VALID_STATUS, isOpen } from "./lifecycle.mjs";
+import { VALID_STATUS, isOpen, statusVocabularyFor } from "./lifecycle.mjs";
 import { recordDoc, WORK_ITEM_SCHEMA_VERSION, readItemMeta as readMeta, coerceSchemaVersion } from "./records.mjs";
 import { BACKLOG_ROOT, sameNumber as sameNum } from "./identity.mjs";
 import { listItems, readWorkDirectory as readDirSafe } from "./discovery.mjs";
@@ -38,6 +39,55 @@ function checkFeature(text, relPath, projectTags, add) {
     if (verification.length !== 1) {
       add(relPath, `scenario "${name}" carries ${verification.length} verification tags (need exactly 1): [${verification.join(", ")}]`);
     }
+  }
+}
+
+// A PROTOTYPE'S TWO FILES (milestone 168 / ADR-005) — the whole of what validate holds a
+// prototype to beyond its frontmatter. The four moves of `aof work prototype` edit these named
+// sections, so a prototype missing one is broken for its next continue. `## Diagrams` is optional.
+// A section whose body is only the template's `<…>` placeholder is not filled yet: a folder copied
+// from the template is not a prototype until the start move writes its Intent and first Want.
+const PROTOTYPE_SECTIONS = Object.freeze(["Intent", "Wants", "Shortcuts"]);
+const PROTOTYPE_STATE_SECTIONS = Object.freeze(["Hand-off", "Log"]);
+const PROTOTYPE_FILLED_SECTIONS = Object.freeze(["Intent", "Wants"]);
+
+function sectionBody(text, heading) {
+  const lines = text.split(/\r?\n/);
+  const start = lines.findIndex((line) => line.trimEnd() === `## ${heading}`);
+  if (start < 0) return null;
+  const end = lines.findIndex((line, index) => index > start && /^#{1,2} /.test(line));
+  return lines.slice(start + 1, end < 0 ? lines.length : end).join("\n");
+}
+
+function holdsOnlyPlaceholder(body) {
+  const lines = stripHtmlComments(body)
+    .split("\n")
+    .map((line) => line.trim().replace(/^[-*]\s+/, ""))
+    .filter(Boolean);
+  return lines.every((line) => /^<[^>]*>$/.test(line));
+}
+
+async function prototypeFindings(item, meta, docPath, add) {
+  if (Object.hasOwn(meta, "depends")) add(docPath, "a prototype carries no `depends:` — nothing waits on a prototype and it waits on nothing");
+  if (Object.hasOwn(meta, "parent")) add(docPath, "a prototype carries no `parent:` — it is a top-level item of its own");
+  const text = await readFile(docPath, "utf8");
+  for (const heading of PROTOTYPE_SECTIONS) {
+    if (sectionBody(text, heading) == null) add(docPath, `missing the "## ${heading}" section`);
+  }
+  for (const heading of PROTOTYPE_FILLED_SECTIONS) {
+    const body = sectionBody(text, heading);
+    if (body != null && holdsOnlyPlaceholder(body)) add(docPath, `"## ${heading}" is still the template's — the start move writes it`);
+  }
+  const statePath = path.join(item.dir, "STATE.md");
+  let state;
+  try {
+    state = await readFile(statePath, "utf8");
+  } catch {
+    add(statePath, "a prototype keeps a STATE.md beside its PROTOTYPE.md — it is missing");
+    return;
+  }
+  for (const heading of PROTOTYPE_STATE_SECTIONS) {
+    if (sectionBody(state, heading) == null) add(statePath, `missing the "## ${heading}" section`);
   }
 }
 
@@ -234,10 +284,21 @@ export async function validateWork(workDir, config, scopeRef, { getDigestContrac
           add(docPath, `frontmatter number "${meta.number ?? ""}" ≠ folder "${item.number}"`);
         }
         if (meta.slug !== item.slug) add(docPath, `frontmatter slug "${meta.slug ?? ""}" ≠ folder "${item.slug}"`);
-        if (!VALID_STATUS.has(meta.status)) add(docPath, `invalid status "${meta.status ?? ""}"`);
+        // The status vocabulary is the item's own type's (168/ADR-003).
+        const vocabulary = statusVocabularyFor(item.type);
+        if (!vocabulary.has(meta.status)) {
+          add(
+            docPath,
+            item.type === "prototype"
+              ? `invalid status "${meta.status ?? ""}" — a prototype's status is one of ${[...vocabulary].join("|")}`
+              : `invalid status "${meta.status ?? ""}"`,
+          );
+        }
         if (!meta.created) add(docPath, "missing created date");
         if (!meta.updated) add(docPath, "missing updated date");
-        if (meta.parent != null && meta.parent !== "" && !milestoneNumbers.has(Number.parseInt(meta.parent, 10))) {
+        if (item.type === "prototype") {
+          await prototypeFindings(item, meta, docPath, add);
+        } else if (meta.parent != null && meta.parent !== "" && !milestoneNumbers.has(Number.parseInt(meta.parent, 10))) {
           add(docPath, `parent "${meta.parent}" does not resolve to a milestone`);
         }
       }

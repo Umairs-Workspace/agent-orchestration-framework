@@ -5,7 +5,7 @@ import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 
 
-import { assertAdrId, assertSlug, diagramPaths, diagramStem, hasAdrSection, LOOP_SUBJECT, loopDiagramPaths, readDiagramBrief } from "../../diagrams/layout.mjs";
+import { assertAdrId, assertSlug, diagramPaths, diagramStem, hasAdrSection, LOOP_SUBJECT, loopDiagramPaths, prototypeDiagramStem, readDiagramBrief, readPrototypeBrief } from "../../diagrams/layout.mjs";
 import { listItems } from "../../discovery.mjs";
 import { readItemMeta } from "../../records.mjs";
 
@@ -172,6 +172,53 @@ async function planLoop(item, ref, ctx) {
   };
 }
 
+// A PROTOTYPE'S DIAGRAM (168/ADR-006) — dispatched on the item's type before any ADR check. The
+// subject is a diagram NAME, the brief is the prose under `### <name>` in PROTOTYPE.md's
+// `## Diagrams`, and the stem is the name. `--slug` and `diagram-item-delivered` do not apply: a
+// prototype's wants change, so a drawn diagram is planned again whatever its status (§3).
+async function planPrototype(item, input, diagrams, ctx) {
+  const { projectRoot } = ctx.workspace;
+  if (input.slug !== undefined) {
+    throw commandError(`${item.ref} is a prototype: its diagram's stem is its name, so --slug does not apply.`, "diagram-slug-not-applicable", 400);
+  }
+  const name = input.adr;
+  const stem = prototypeDiagramStem(name);
+  let record = "";
+  try {
+    record = await readFile(path.join(item.dir, "PROTOTYPE.md"), "utf8");
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  const brief = readPrototypeBrief(record, name);
+  if (brief == null) {
+    throw commandError(`${item.ref} has no "### ${name}" heading under "## Diagrams" in its PROTOTYPE.md.`, "diagram-name-unknown", 404);
+  }
+  if (brief === "") {
+    throw commandError(`"### ${name}" carries no brief. The brief is the prose under the heading that says what to draw — write it first.`, "diagram-brief-missing", 422);
+  }
+  const styleAbs = diagrams.style == null ? null : path.resolve(projectRoot, diagrams.style);
+  if (styleAbs != null && !existsSync(styleAbs)) {
+    throw commandError(`work.diagrams.style names ${diagrams.style}, which does not exist.`, "diagram-style-missing", 422);
+  }
+  const generator = generatorFor(diagrams.generator);
+  const located = generator.locate({ home: os.homedir() });
+  if (!located.ok) return { enabled: true, available: false, code: located.code, fix: located.fix };
+
+  const paths = diagramPaths(toPosix(path.relative(projectRoot, item.dir)), stem, generator.sourceExt, diagrams.formats);
+  const absolute = Object.fromEntries(Object.entries(paths).map(([key, value]) => [key, path.resolve(projectRoot, value)]));
+  return {
+    enabled: true,
+    available: true,
+    generator: generator.id,
+    item: item.ref,
+    name,
+    stem,
+    paths,
+    brief,
+    instructions: generator.instructions({ brief, paths: absolute, style: styleAbs, skill: located.skill }),
+  };
+}
+
 const diagramPlanCommand = {
   id: "diagram:plan",
   input: {
@@ -196,6 +243,7 @@ const diagramPlanCommand = {
     if (!diagrams.enabled) return { enabled: false, reason: offReason(config) };
 
     requireLocalCheckout(item, ref);
+    if (item.type === "prototype") return await planPrototype(item, input, diagrams, ctx);
     assertAdrId(input.adr);
     const architecture = await readArchitecture(item.dir);
     if (!hasAdrSection(architecture, input.adr)) {
@@ -241,7 +289,7 @@ const diagramPlanCommand = {
   cli: {
     route: ["diagram", "plan"],
     spec: {
-      usage: "aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]\n       aof diagram plan <milestone ref> loop [--json]",
+      usage: "aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]\n       aof diagram plan <milestone ref> loop [--json]\n       aof diagram plan <prototype ref> <name> [--json]",
       flags: {
         slug: { type: "string", description: "the diagram's slug — its stem is ADR-NNN-<slug>" },
       },
@@ -268,7 +316,7 @@ const diagramPlanCommand = {
         ].join("\n");
       }
       return [
-        `${result.item} ${result.adr} — draw ${result.stem} with ${result.generator}`,
+        `${result.item} ${result.adr ?? result.name} — draw ${result.stem} with ${result.generator}`,
         `  source: ${result.paths.source}`,
         `  svg:    ${result.paths.svg}`,
         ...(result.paths.png ? [`  png:    ${result.paths.png}`] : []),

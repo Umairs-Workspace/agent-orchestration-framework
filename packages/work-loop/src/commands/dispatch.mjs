@@ -291,6 +291,8 @@ async function settleLaneProjectionEffects(workspace, ref, worktree, ctx = {}) {
         journal,
         eventId,
         loci: LOCAL_LOCI,
+        // an explicit retry: the lane is closing now, so a recovered store is paid now (164/ADR-006)
+        backoff: false,
         ctx: { workspace, publisherOptions: ctx },
       }));
     }

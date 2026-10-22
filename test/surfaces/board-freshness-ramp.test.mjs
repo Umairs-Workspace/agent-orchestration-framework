@@ -66,6 +66,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // The ramp's minimal RENDERING is asserted here and its a11y contract in task 08;
 // `minimal` is RESERVED with no painter in this milestone.
 import assert from "node:assert/strict";
+import { POLL_BACKOFF_CAP_MS } from "../../apps/ui/src/lib/poll-cadence.mjs";
 const isStale = _aofApplication.execution.runs.isStale;
 const cacheFreshness = _aofPublic_aof_contracts_cache_provenance.cacheFreshness;
 import {
@@ -262,7 +263,9 @@ export const boardFreshnessRampTests = [
           );
           const rounds = [...new Set(after.map((entry) => entry.at))].sort((a, b) => a - b);
           const gaps = [...new Set(rounds.slice(1).map((value, index) => value - rounds[index]))];
-          assert.deepEqual(gaps, [5000], `every poll round is exactly one probe interval apart — no second cadence (rounds at ${rounds.join(", ")})`);
+          // 167/02 (ADR-004): the probe rides the ONE cadence, which slows while its live set is unchanged —
+          // twice its 5s base, then the cap — so its rounds are those steps and nothing between them.
+          assert.deepEqual(gaps, [10_000, POLL_BACKOFF_CAP_MS], `every poll round is one step of the probe's one cadence — no second cadence (rounds at ${rounds.join(", ")})`);
         });
       });
     },

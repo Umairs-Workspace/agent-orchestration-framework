@@ -20,6 +20,8 @@
 //        (honest degrade: marketplaceRegistered true / pluginsInstalled false /
 //        plugins empty / manual fallback emitted / no install claim); the re-run
 //        guard + --force + dry-run-regardless decision table
+//   165/00, 165/03 — the per-runtime lock entries and the cowork runtime (see their
+//        sections at the end of the array)
 //   04_https-marketplace-source.feature — (ADR-007, Finding F1) the marketplace-add
 //        source is an HTTPS git URL pinned by a `#<sha>` ref, never the SSH-able
 //        `phuryn/pm-skills@<sha>` shorthand; the per-plugin install still targets
@@ -27,12 +29,14 @@
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile, mkdir, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import {
   initPlanning,
   planPlanningInstall,
   planningLockPath,
+  planningEntries,
   parseTagSha,
   CORE_PLUGINS,
   MARKETPLACE_GIT_URL,
@@ -40,6 +44,7 @@ import {
 } from "../src/planning-init.mjs";
 import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../src/render-plan.mjs";
 import { readLock, writeLock } from "../src/lock.mjs";
+import { planningInitCommand } from "../src/commands/planning-init.mjs";
 
 const FIXTURE_SHA = "d384f0c9eb81fe74656a4f6da168587836939edb";
 // v2.0.0 → this commit (architect-established fact; the lightweight tag → commit).
@@ -70,18 +75,22 @@ function flagToOptions(flag) {
   return flag === "--with-optional" ? { withOptional: true } : {};
 }
 
-// ADR-009: provenance is the `planning` SECTION of the unified lock. "exists" means
-// the unified lock exists AND carries a `planning` section; "readManifest" returns
-// that section (so every `manifest.*` assertion reads `lock.planning.*`).
+// ADR-009 → 165/ADR-004: provenance is one runtime's entry in the `planning`
+// SECTION of the unified lock, read through `planningEntries`. "exists" means the
+// unified lock records at least one planning entry; "readManifest" returns the
+// named runtime's entry, or the sole entry when no runtime is named.
 async function manifestExists(repo) {
   if (!existsSync(planningLockPath(repo))) return false;
   const lock = JSON.parse(await readFile(planningLockPath(repo), "utf8"));
-  return Boolean(lock && lock.planning);
+  return Object.keys(planningEntries(lock)).length > 0;
 }
 
-async function readManifest(repo) {
-  const lock = JSON.parse(await readFile(planningLockPath(repo), "utf8"));
-  return lock.planning;
+async function readManifest(repo, runtime) {
+  const entries = planningEntries(JSON.parse(await readFile(planningLockPath(repo), "utf8")));
+  if (runtime !== undefined) return entries[runtime];
+  const values = Object.values(entries);
+  assert.equal(values.length, 1, "readManifest without a runtime expects exactly one planning entry");
+  return values[0];
 }
 
 // Read/overwrite the whole unified lock (for seeding foreign sections + asserting
@@ -138,6 +147,73 @@ const WORK_SEED = {
   frameworks: [],
   frameworkInstallAttempts: []
 };
+
+// 165/00: drive the real `planning:init` face — parse the flags the way the CLI
+// route does, run the core offline, and return the rendered output and exit code.
+async function runFace(repo, flags, options = {}) {
+  const argv = flags.split(/\s+/).filter(Boolean);
+  const parsed = {};
+  for (let i = 0; i < argv.length; i += 1) {
+    if (argv[i] === "--runtime") parsed.runtime = argv[(i += 1)];
+    else if (argv[i] === "--force") parsed.force = true;
+    else if (argv[i] === "--dry-run") parsed.dryRun = true;
+    else if (argv[i] === "--with-optional") parsed.withOptional = true;
+    else if (argv[i] === "--scope") parsed.scope = argv[(i += 1)];
+    else throw new Error(`runFace: unexpected flag ${argv[i]}`);
+  }
+  const { result, lines } = await runInit(repo, { ...parsed, ...options });
+  const faced = { ...result, notes: lines };
+  return {
+    result,
+    exit: planningInitCommand.cli.exit(faced),
+    output: planningInitCommand.cli.render(faced)
+  };
+}
+
+async function readEntries(repo) {
+  return planningEntries(await readUnifiedLock(repo));
+}
+
+// The flat, single-runtime `planning` section every lock written before 165 holds.
+const PRE_165_CLAUDE = {
+  generatedAt: "2026-07-01T00:00:00.000Z",
+  source: "phuryn/pm-skills",
+  marketplaceName: "pm-skills",
+  marketplaceVersion: "2.0.0",
+  sha: "5042ff6169e0df49086c846f69bf7b6cdb67a6de",
+  runtime: "claude",
+  plugins: [{ name: "pm-execution", marketplace: "pm-skills" }],
+  codex: null
+};
+
+// 165/03: a temp target repo, a temp aof home (165/ADR-006: the packages live there, never
+// in the repo) and a planner fixture tree at FIXTURE_SHA (each pm-skills folder with its
+// manifest, a root LICENSE), handed to the cowork run as plannerSource. Every cowork run
+// below passes `aofHome: home`, so no run reaches the real aof home.
+const COWORK_FILES = [
+  "cowork/aof.plugin",
+  "cowork/pm-skills/pm-execution.plugin",
+  "cowork/pm-skills/pm-product-discovery.plugin",
+  "cowork/pm-skills/pm-product-strategy.plugin"
+];
+
+async function withPlanner(fn) {
+  const repo = await tempRepo();
+  const home = await tempRepo("aof-cowork-home-");
+  const tree = await tempRepo("aof-planner-tree-");
+  try {
+    for (const name of ["pm-execution", "pm-product-discovery", "pm-product-strategy", "pm-market-research", "pm-ai-shipping"]) {
+      await mkdir(path.join(tree, name, ".claude-plugin"), { recursive: true });
+      await writeFile(path.join(tree, name, ".claude-plugin", "plugin.json"), JSON.stringify({ name }));
+    }
+    await writeFile(path.join(tree, "LICENSE"), "MIT License\n");
+    return await fn(repo, { dir: tree, head: FIXTURE_SHA }, home);
+  } finally {
+    await rm(repo, { recursive: true, force: true });
+    await rm(home, { recursive: true, force: true });
+    await rm(tree, { recursive: true, force: true });
+  }
+}
 
 export const planningInitTests = [
   // ====================================================================
@@ -548,8 +624,8 @@ export const planningInitTests = [
         // observable — read-merge-write it back so the foreign sections (none here)
         // and the section wrapper are preserved.
         const lock = await readUnifiedLock(repo);
-        const seededPlanning = { ...lock.planning, generatedAt: "2000-01-01T00:00:00.000Z", sha: "0".repeat(40) };
-        await writeUnifiedLock(repo, { ...lock, planning: seededPlanning });
+        const seededEntry = { ...planningEntries(lock).claude, generatedAt: "2000-01-01T00:00:00.000Z", sha: "0".repeat(40) };
+        await writeUnifiedLock(repo, { ...lock, planning: { runtimes: { claude: seededEntry } } });
         const before = await readFile(planningLockPath(repo), "utf8");
 
         const { result } = await runInit(repo, { force: true, sha: FIXTURE_SHA });
@@ -843,8 +919,8 @@ export const planningInitTests = [
         assert.ok(!existsSync(path.join(repo, ".aof", "aof.planning.lock.json")), "no separate aof.planning.lock.json written");
 
         const lock = await readUnifiedLock(repo);
-        const planning = lock.planning;
-        assert.ok(planning && typeof planning === "object", "provenance recorded under the `planning` section");
+        const planning = planningEntries(lock).claude;
+        assert.ok(planning && typeof planning === "object", "provenance recorded as the claude entry of the `planning` section");
         // The frozen schema: source, marketplaceName, marketplaceVersion, sha, runtime, plugins, codex.
         assert.equal(planning.source, "phuryn/pm-skills", "planning.source");
         assert.equal(planning.marketplaceName, "pm-skills", "planning.marketplaceName");
@@ -876,7 +952,7 @@ export const planningInitTests = [
         assert.equal(result.manifestWritten, true);
 
         const lock = await readUnifiedLock(repo);
-        assert.ok(lock.planning && lock.planning.sha === FIXTURE_SHA, "the `planning` section is added/updated");
+        assert.ok(planningEntries(lock).claude?.sha === FIXTURE_SHA, "the `planning` section is added/updated");
         // The pre-existing asset/package/framework sections survive byte-intact.
         assert.deepEqual(lock.files, seeded.files, "asset files[] preserved unchanged");
         assert.deepEqual(lock.packages, seeded.packages, "asset packages preserved");
@@ -939,7 +1015,7 @@ export const planningInitTests = [
         assert.equal(forced.result.guarded, false, "--force bypasses the guard");
         assert.equal(forced.result.manifestWritten, true, "--force rewrites the planning section");
         const after = await readUnifiedLock(repo);
-        assert.equal(after.planning.sha, repinSha, "the `planning` section was re-pinned");
+        assert.equal(planningEntries(after).claude.sha, repinSha, "the `planning` section was re-pinned");
         // The asset + work sections survive byte-intact.
         assert.deepEqual(after.files, before.files, "asset files[] preserved across --force");
         assert.deepEqual(after.work, before.work, "the `work` section preserved across --force");
@@ -947,5 +1023,364 @@ export const planningInitTests = [
         await rm(repo, { recursive: true, force: true });
       }
     }
+  }
+,
+  // ====================================================================
+  // 165/00 planning-lock-records-each-runtime — one entry per runtime (ADR-004)
+  //   00_a-second-runtime-is-recorded-beside-the-first.feature
+  //   01_a-re-install-needs-force-for-its-own-runtime-only.feature
+  // Each scenario runs the real `planning:init` face (render + exit) over
+  // initPlanning with the sha injected and the install simulated.
+  // ====================================================================
+  {
+    name: "planning-lock-records-each-runtime/00 E1 · a codex install is added beside a recorded claude install",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        const claudeBefore = (await readEntries(repo)).claude;
+        const { exit } = await runFace(repo, "--runtime codex");
+        assert.equal(exit, 0, "the command exits 0");
+        const entries = await readEntries(repo);
+        assert.ok(entries.codex, "the lock records a planning entry for codex");
+        assert.deepEqual(entries.claude, claudeBefore, "the claude entry is unchanged from before the run");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/00 E2 · a planning section written before 165 is carried over as its runtime's entry",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await writeUnifiedLock(repo, { ...ASSET_SEED, planning: { ...PRE_165_CLAUDE } });
+        const { exit } = await runFace(repo, "--runtime codex");
+        assert.equal(exit, 0, "the command exits 0");
+        const entries = await readEntries(repo);
+        assert.deepEqual(entries.claude, PRE_165_CLAUDE, "the claude entry equals the pre-165 section exactly");
+        assert.ok(entries.codex, "the lock records a planning entry for codex");
+        assert.ok((await readUnifiedLock(repo)).planning.runtimes, "the writer wrote the runtime-keyed shape");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  ...[
+    { present: "claude", added: "codex", recorded: "claude,codex" },
+    { present: "codex", added: "claude", recorded: "claude,codex" }
+  ].map((row) => ({
+    name: `planning-lock-records-each-runtime/00 outline · ${row.present} present, ${row.added} added → entries exactly ${row.recorded}`,
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: row.present });
+        const { result } = await runFace(repo, `--runtime ${row.added}`);
+        assert.equal(result.manifest.runtime, row.added, "the manifest field runtime is the runtime just installed");
+        assert.deepEqual(Object.keys(await readEntries(repo)).sort(), row.recorded.split(","), "planning entries recorded");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  })),
+  {
+    name: "planning-lock-records-each-runtime/00 E7 · the asset and work sections survive a second runtime's install",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await writeUnifiedLock(repo, { ...ASSET_SEED, work: { ...WORK_SEED } });
+        await runInit(repo, { runtime: "claude" });
+        const before = await readUnifiedLock(repo);
+        await runFace(repo, "--runtime codex");
+        const after = await readUnifiedLock(repo);
+        for (const section of ["files", "packages", "work"]) {
+          assert.equal(JSON.stringify(after[section]), JSON.stringify(before[section]), `the ${section} section is byte-for-byte what it was`);
+        }
+        const locks = (await readdir(path.join(repo, ".aof"))).filter((name) => name.endsWith(".lock.json"));
+        assert.deepEqual(locks, ["aof.lock.json"], "no lock file other than .aof/aof.lock.json");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E3 · re-installing a recorded runtime without --force is refused and names it",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        await runInit(repo, { runtime: "codex" });
+        const before = await readFile(planningLockPath(repo), "utf8");
+        const { exit, output } = await runFace(repo, "");
+        assert.notEqual(exit, 0, "the command exits non-zero");
+        assert.match(output, /\bclaude\b/, "the output names the runtime claude");
+        assert.match(output, /--force/, "the output points the user to --force");
+        assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E4 · --force re-pins only the runtime it names",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        await runInit(repo, { runtime: "codex" });
+        const lock = await readUnifiedLock(repo);
+        const stale = { ...planningEntries(lock).claude, generatedAt: "2000-01-01T00:00:00.000Z" };
+        await writeUnifiedLock(repo, { ...lock, planning: { runtimes: { ...planningEntries(lock), claude: stale } } });
+        const codexBefore = (await readEntries(repo)).codex;
+        const { exit } = await runFace(repo, "--force");
+        assert.equal(exit, 0, "the command exits 0");
+        const entries = await readEntries(repo);
+        assert.notEqual(entries.claude.generatedAt, stale.generatedAt, "the claude entry has a new generatedAt");
+        assert.deepEqual(entries.codex, codexBefore, "the codex entry is unchanged from before the run");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E5 · a pre-165 planning section still guards its runtime",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await writeUnifiedLock(repo, { ...ASSET_SEED, planning: { ...PRE_165_CLAUDE } });
+        const before = await readFile(planningLockPath(repo), "utf8");
+        const { exit, output } = await runFace(repo, "");
+        assert.notEqual(exit, 0, "the command exits non-zero");
+        assert.match(output, /--force/, "the output points the user to --force");
+        assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "planning-lock-records-each-runtime/01 E6 · a dry-run previews without touching the lock",
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        await runInit(repo, { runtime: "claude" });
+        const before = await readFile(planningLockPath(repo), "utf8");
+        const { exit, output } = await runFace(repo, "--runtime codex --dry-run");
+        assert.equal(exit, 0, "the command exits 0");
+        assert.match(output, /codex plugin marketplace add/, "the output reports the runtime commands it would run");
+        assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  },
+  ...[
+    { recorded: "claude", runtime: "claude", flag: "", outcome: "refused, lock unchanged" },
+    { recorded: "claude", runtime: "codex", flag: "", outcome: "codex added" },
+    { recorded: "claude,codex", runtime: "codex", flag: "", outcome: "refused, lock unchanged" },
+    { recorded: "claude,codex", runtime: "codex", flag: " --force", outcome: "codex re-pinned, claude kept" }
+  ].map((row) => ({
+    name: `planning-lock-records-each-runtime/01 outline · recorded ${row.recorded} + --runtime ${row.runtime}${row.flag} → ${row.outcome}`,
+    run: async () => {
+      const repo = await tempRepo();
+      try {
+        for (const runtime of row.recorded.split(",")) await runInit(repo, { runtime });
+        const bytesBefore = await readFile(planningLockPath(repo), "utf8");
+        const entriesBefore = await readEntries(repo);
+        const { exit } = await runFace(repo, `--runtime ${row.runtime}${row.flag}`, { sha: "1".repeat(40) });
+        const entries = await readEntries(repo);
+        if (row.outcome === "refused, lock unchanged") {
+          assert.notEqual(exit, 0, "refused");
+          assert.equal(await readFile(planningLockPath(repo), "utf8"), bytesBefore, "lock unchanged");
+        } else if (row.outcome === "codex added") {
+          assert.equal(exit, 0);
+          assert.ok(entries.codex, "codex added");
+          assert.deepEqual(entries.claude, entriesBefore.claude, "claude kept");
+        } else {
+          assert.equal(exit, 0);
+          assert.equal(entries.codex.sha, "1".repeat(40), "codex re-pinned");
+          assert.deepEqual(entries.claude, entriesBefore.claude, "claude kept");
+        }
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    }
+  }))
+,
+  // ====================================================================
+  // 165/03 planning-init-delivers-cowork — render and hand over (ADR-001); the packages
+  // live once in the aof home (ADR-006)
+  //   00_cowork-packages-and-install-steps.feature
+  //   01_cowork-beside-claude-and-codex.feature
+  // The sha is injected, the planner source is a fixture tree at that sha and the aof
+  // home is a temp directory, so no network is touched and no process is spawned.
+  // ====================================================================
+  {
+    name: "planning-init-delivers-cowork/00 E1 · a cowork run writes the plugin and the planner packages",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      const { exit, output } = await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      assert.equal(exit, 0, "the command exits 0");
+      for (const file of COWORK_FILES) assert.ok(existsSync(path.join(home, file)), `${file} exists under the aof home`);
+      assert.match(output, /Customize › Plugins › Add › Upload plugin/);
+      for (const file of COWORK_FILES) assert.ok(output.includes(`  ${path.join(home, file)}`), `the upload steps name ${file} by its full path`);
+      assert.match(output, /Start a new Cowork task after uploading/, "the steps say to start a new Cowork task");
+      assert.match(output, /connect this repo's folder in Cowork and run \/aof:shatter/);
+      assert.equal(existsSync(path.join(repo, ".aof", "cowork")), false, "no file under the repo's .aof/cowork/");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E2 · a cowork dry-run previews and touches nothing",
+    run: () => withPlanner(async (repo, _plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      const before = await readFile(planningLockPath(repo), "utf8");
+      let spawned = 0;
+      let cloned = 0;
+      const { exit, output, result } = await runFace(repo, "--runtime cowork --dry-run", {
+        aofHome: home,
+        spawn: () => { spawned += 1; return { status: 0 }; },
+        plannerClone: () => { cloned += 1; return { ok: false }; }
+      });
+      assert.equal(exit, 0);
+      for (const file of COWORK_FILES) assert.ok(output.includes(`  ${path.join(home, file)}`), `the preview lists ${file}`);
+      assert.match(output, /Upload plugin/, "the preview gives the upload steps");
+      assert.equal(existsSync(path.join(home, "cowork")), false, "no file under the aof home's cowork/");
+      assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+      assert.equal(spawned + cloned, 0, "no process was spawned and no clone was attempted");
+      assert.equal(result.sha, "<sha>", "no sha was resolved");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E3 · a failed planner clone writes nothing",
+    run: () => withPlanner(async (repo, _plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      const { exit } = await runFace(repo, "--runtime cowork", { aofHome: home, plannerClone: () => ({ ok: false, message: "unable to access" }) });
+      assert.notEqual(exit, 0, "the command exits non-zero");
+      assert.equal(existsSync(path.join(home, "cowork")), false, "no file under the aof home's cowork/");
+      assert.equal((await readEntries(repo)).cowork, undefined, "no planning entry for cowork");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E4 · the install is recorded as unconfirmed, and never claimed",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      const { output } = await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      const entry = (await readEntries(repo)).cowork;
+      assert.equal(entry.cowork.installConfirmed, false);
+      assert.equal(entry.sha, FIXTURE_SHA);
+      assert.match(output, /the Cowork install is not confirmed/);
+      assert.deepEqual(output.split("\n").filter((line) => /installed/i.test(line)), [], "no line says the plugins were installed");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 the optional planner plugin follows --with-optional",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runFace(repo, "--runtime cowork --with-optional", { plannerSource, aofHome: home });
+      assert.ok(existsSync(path.join(home, "cowork", "pm-skills", "pm-market-research.plugin")));
+      assert.ok(!existsSync(path.join(home, "cowork", "pm-skills", "pm-ai-shipping.plugin")), "no pm-ai-shipping.plugin");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/00 E12 · the packaged plugin tells each skill to finish unvalidated without aof",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      // A stored zip holds each SKILL.md's bytes as they are, so the text is read straight from the package.
+      const bundle = (await readFile(path.join(home, "cowork", "aof.plugin"))).toString("utf8");
+      const rule = "a check that did not run is not a failed one: finish, mark the report unvalidated, name each check you skipped, and say it runs from Claude Code or Codex.";
+      assert.equal(bundle.split(rule).length - 1, 2, "both skills (shatter, explain) carry the rule once each");
+    })
+  },  {
+    name: "planning-init-delivers-cowork/01 E6 · cowork is added beside a recorded claude install",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      const claudeBefore = (await readEntries(repo)).claude;
+      const { exit } = await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      assert.equal(exit, 0);
+      const entries = await readEntries(repo);
+      assert.deepEqual(Object.keys(entries).sort(), ["claude", "cowork"]);
+      assert.deepEqual(entries.claude, claudeBefore, "the claude entry is unchanged");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 E7 · re-installing cowork without --force is refused",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      const before = await readFile(planningLockPath(repo), "utf8");
+      const { exit, output } = await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      assert.notEqual(exit, 0);
+      assert.match(output, /--force/);
+      assert.equal(await readFile(planningLockPath(repo), "utf8"), before, "the lock file is byte-for-byte what it was");
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 --force re-pins cowork only",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      await runInit(repo, { runtime: "claude" });
+      await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      const lock = await readUnifiedLock(repo);
+      const stale = { ...planningEntries(lock).cowork, generatedAt: "2000-01-01T00:00:00.000Z" };
+      await writeUnifiedLock(repo, { ...lock, planning: { runtimes: { ...planningEntries(lock), cowork: stale } } });
+      const claudeBefore = (await readEntries(repo)).claude;
+      const { exit } = await runFace(repo, "--runtime cowork --force", { plannerSource, aofHome: home });
+      assert.equal(exit, 0);
+      const entries = await readEntries(repo);
+      assert.notEqual(entries.cowork.generatedAt, stale.generatedAt, "cowork has a new generatedAt");
+      assert.deepEqual(entries.claude, claudeBefore, "the claude entry is unchanged");
+    })
+  },
+  ...["user", "project", "local"].map((scope) => ({
+    name: `planning-init-delivers-cowork/01 ${scope === "user" ? "E8 · " : ""}--scope ${scope} with cowork is refused and writes nothing`,
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      const before = existsSync(planningLockPath(repo)) ? await readFile(planningLockPath(repo), "utf8") : null;
+      const { exit, output } = await runFace(repo, `--runtime cowork --scope ${scope}`, { plannerSource, aofHome: home });
+      assert.notEqual(exit, 0);
+      assert.match(output, /--scope applies only to claude/);
+      assert.equal(existsSync(path.join(home, "cowork")), false, "no file under the aof home's cowork/");
+      const after = existsSync(planningLockPath(repo)) ? await readFile(planningLockPath(repo), "utf8") : null;
+      assert.equal(after, before, "the lock file is byte-for-byte what it was");
+    })
+  })),
+  {
+    name: "planning-init-delivers-cowork/01 E9 · without --scope the cowork entry carries no scope",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      const { exit } = await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      assert.equal(exit, 0);
+      assert.equal(Object.hasOwn((await readEntries(repo)).cowork, "scope"), false);
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 E10 · the project holds only its lock entry",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      const git = (...args) => spawnSync("git", args, { cwd: repo, encoding: "utf8" });
+      assert.equal(git("init", "-q").status, 0, "the target repo is a git repository");
+      await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+      const status = git("status", "--porcelain", "--untracked-files=all").stdout.split("\n").filter(Boolean);
+      assert.deepEqual(status, ["?? .aof/aof.lock.json"], "git status lists only the lock");
+      const entry = (await readEntries(repo)).cowork;
+      const recorded = [entry.cowork.bundle, ...entry.plugins.map((plugin) => plugin.package)];
+      for (const recordedPath of recorded) {
+        assert.ok(!path.isAbsolute(recordedPath) && recordedPath.startsWith("cowork/"), `${recordedPath} is relative and under cowork/`);
+      }
+    })
+  },
+  {
+    name: "planning-init-delivers-cowork/01 E11 · a second project's run writes the same packages to the same place",
+    run: () => withPlanner(async (repo, plannerSource, home) => {
+      const second = await tempRepo();
+      try {
+        const first = await runFace(repo, "--runtime cowork", { plannerSource, aofHome: home });
+        const bytesAfterFirst = await Promise.all(COWORK_FILES.map((file) => readFile(path.join(home, file))));
+        const again = await runFace(second, "--runtime cowork", { plannerSource, aofHome: home });
+        assert.equal(first.exit, 0);
+        assert.equal(again.exit, 0);
+        assert.deepEqual((await readdir(path.join(home, "cowork"))).sort(), ["aof.plugin", "pm-skills"], "one set of packages under cowork/");
+        for (const [index, file] of COWORK_FILES.entries()) {
+          assert.ok((await readFile(path.join(home, file))).equals(bytesAfterFirst[index]), `${file} has the same bytes after the second run`);
+        }
+      } finally {
+        await rm(second, { recursive: true, force: true });
+      }
+    })
   }
 ];

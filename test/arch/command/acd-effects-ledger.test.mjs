@@ -76,6 +76,11 @@ const APPEND_EVENT_ALLOWED = new Set([
   // this seam adds exactly what a seam adds: the event, and the consequence nobody may
   // forget — the ruling recorded beside the configuration it concerns.
   "packages/work/src/harness-transitions.mjs",
+  // 164/ADR-003 + ADR-004 — the SYNC PASS, the seventh: a change no verb raised (a hand edit, a
+  // pull, a scaffold) has no fact-writer to raise it, so the pass that NOTICES it appends the
+  // `workspace.changed` mark and drains it through the same publish reactor. It appends only
+  // that one event. Same rule, not an amnesty.
+  "packages/mesh/src/publisher.mjs",
 ]);
 
 // The sanctioned completeRun CALLERS (m42 wave (d) leg d2, THE SWEEP): the store
@@ -157,8 +162,17 @@ export const archTests = [
   {
     name: "arch/m42-d2: appendEvent is called in runtime source only by the transition seam (no event append outside transition)",
     run: async () => {
-      const packageFiles = await listSourceFiles(path.join(repoRoot, "packages/effects/src"));
-      assert.ok(packageFiles.some(file => file.endsWith("journal.mjs")), "extracted storage is scanned");
+      // EVERY package's src (164/00): the scan read only core and effects, so the seams this list
+      // names in mesh, work and execution were never actually checked, and a new raiser there
+      // could not trip it.
+      const packageFiles = [];
+      for (const entry of await readdir(path.join(repoRoot, "packages"), { withFileTypes: true })) {
+        if (!entry.isDirectory() || entry.name === "core") continue;
+        const src = path.join(repoRoot, "packages", entry.name, "src");
+        try { packageFiles.push(...await listSourceFiles(src)); } catch (error) { if (error?.code !== "ENOENT") throw error; }
+      }
+      assert.ok(packageFiles.some(file => file.endsWith(path.join("effects", "src", "journal.mjs"))), "extracted storage is scanned");
+      assert.ok(packageFiles.some(file => file.endsWith(path.join("mesh", "src", "publisher.mjs"))), "the mesh seams are scanned (non-vacuous)");
       const files = [...await listSourceFiles(SRC_DIR), ...packageFiles];
       const offenders = [];
       for (const file of files) {

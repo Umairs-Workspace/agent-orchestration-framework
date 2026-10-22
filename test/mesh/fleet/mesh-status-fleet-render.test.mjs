@@ -14,6 +14,7 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 // section + its running counts are driven by the OWNER node's presence.activeRuns
 // (ADR-005 / finding F1) — the fleet-durable run signal the projection reads.
 import assert from "node:assert/strict";
+import { DAEMON_BUDGET } from "@aof/foundation/cost-meter";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -229,8 +230,9 @@ export const meshStatusFleetRenderTests = [
         // exactly { nodes: [], boards: [] }.
         assert.deepEqual(
           parsed,
-          { nodes: [], boards: [], isControlNode: false },
-          "the empty aggregate is exactly { nodes: [], boards: [], isControlNode: false }"
+          // 167/00 E6 — the cost block is present on every node, empty where no daemon has run.
+          { nodes: [], boards: [], isControlNode: false, cost: { budget: { ...DAEMON_BUDGET, windowSeconds: 60 }, staleAfterSeconds: 45, daemons: [] } },
+          "the empty aggregate is exactly { nodes: [], boards: [], isControlNode: false } plus the empty cost block"
         );
         assert.ok(!result.stdout.includes("No nodes in the mesh roster."), "the friendly line does not appear on stdout");
       } finally {

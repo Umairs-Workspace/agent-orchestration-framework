@@ -858,6 +858,66 @@
     }
   },
   {
+    "id": "graph:export",
+    "input": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "export"
+      ],
+      "spec": {
+        "usage": "aof graph export <path> [--force] [--json]",
+        "flags": {
+          "force": {
+            "type": "boolean",
+            "description": "replace an existing file at the path"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "graph:import",
+    "input": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "graph",
+        "import"
+      ],
+      "spec": {
+        "usage": "aof graph import <path> [--force] [--json]",
+        "flags": {
+          "force": {
+            "type": "boolean",
+            "description": "replace this clone's existing graph"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "test",
     "input": {
       "type": "object",
@@ -2319,7 +2379,7 @@
         "plan"
       ],
       "spec": {
-        "usage": "aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]\n       aof diagram plan <milestone ref> loop [--json]",
+        "usage": "aof diagram plan <ref> <ADR-NNN> --slug <slug> [--json]\n       aof diagram plan <milestone ref> loop [--json]\n       aof diagram plan <prototype ref> <name> [--json]",
         "flags": {
           "slug": {
             "type": "string",
@@ -2353,7 +2413,7 @@
         "export"
       ],
       "spec": {
-        "usage": "aof diagram export <ref> <ADR-NNN> [--json]\n       aof diagram export <milestone ref> loop [--json]"
+        "usage": "aof diagram export <ref> <ADR-NNN> [--json]\n       aof diagram export <milestone ref> loop [--json]\n       aof diagram export <prototype ref> <name> [--json]"
       }
     }
   },
@@ -3316,7 +3376,7 @@
         "init"
       ],
       "spec": {
-        "usage": "aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex] [--scope user|project|local] [--force] [--json]",
+        "usage": "aof planning init [dir] [--dry-run] [--with-optional] [--runtime claude|codex|cowork] [--scope user|project|local] [--force] [--json]",
         "workspace": false,
         "flags": {
           "dryRun": {
@@ -3325,7 +3385,7 @@
           },
           "force": {
             "type": "boolean",
-            "description": "re-pin and re-install over an existing planning provenance section"
+            "description": "re-pin and re-install the named runtime over its recorded planning entry"
           },
           "withOptional": {
             "type": "boolean",
@@ -3333,11 +3393,11 @@
           },
           "runtime": {
             "type": "string",
-            "description": "target runtime (claude | codex; default claude)"
+            "description": "target runtime (claude | codex | cowork; default claude). cowork writes uploadable packages once under the aof home (~/.aof/cowork/)"
           },
           "scope": {
             "type": "string",
-            "description": "claude settings scope for the declarations (user | project | local; default project)"
+            "description": "claude settings scope for the declarations (user | project | local; default project); refused with cowork"
           }
         }
       }
@@ -3639,6 +3699,74 @@
           "force": {
             "type": "boolean",
             "description": "alias of --yes"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "work:prototype",
+    "input": {
+      "type": "object",
+      "properties": {
+        "arg": {
+          "type": "string"
+        },
+        "addition": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "log": {
+          "type": "string"
+        },
+        "stop": {
+          "type": "boolean"
+        },
+        "done": {
+          "type": "boolean"
+        },
+        "abandon": {
+          "type": "boolean"
+        },
+        "today": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "prototype"
+      ],
+      "spec": {
+        "usage": "aof work prototype \"<ask>\" [--slug <slug>] | <ref> [\"<addition>\"] | <ref> --log \"<line>\" | <ref> --stop|--done|--abandon [--today YYYY-MM-DD] [--json]",
+        "flags": {
+          "slug": {
+            "type": "string",
+            "description": "the folder slug for a new prototype (default: made from the ask)"
+          },
+          "log": {
+            "type": "string",
+            "description": "append one dated line to STATE.md's ## Log and do nothing else"
+          },
+          "stop": {
+            "type": "boolean",
+            "description": "pause the prototype, quoting the hand-off into the Log"
+          },
+          "done": {
+            "type": "boolean",
+            "description": "mark the prototype done, quoting the hand-off into the Log"
+          },
+          "abandon": {
+            "type": "boolean",
+            "description": "abandon the prototype, quoting the hand-off into the Log"
+          },
+          "today": {
+            "type": "string",
+            "description": "the date written on every line (default: today)"
           }
         }
       }

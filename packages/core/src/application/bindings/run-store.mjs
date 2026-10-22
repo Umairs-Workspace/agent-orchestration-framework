@@ -36,6 +36,7 @@ export function assembleRunStore({ degradeServices, provideWorkExamplesAnswers }
   const priceVendorTokens = implementation.priceVendorTokens;
   const pruneRun = implementation.pruneRun;
   const readRuns = implementation.readRuns;
+  const readRun = implementation.readRun;
   const reclaimRun = implementation.reclaimRun;
   const reclaimStaleRuns = implementation.reclaimStaleRuns;
   const recordAnchorReading = implementation.recordAnchorReading;
@@ -54,5 +55,5 @@ export function assembleRunStore({ degradeServices, provideWorkExamplesAnswers }
   const staleRunningRuns = implementation.staleRunningRuns;
   const startRun = implementation.startRun;
 
-  return { COST_SOURCES, DEFAULT_PARK_MINUTES, EXIT_REASONS, PRICE_TABLE_VERSION, SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, answerRunAsk, applyTransition, completeRun, heartbeat, isLegalTransition, isRetryable, isRunning, isStale, mapVendorTokensToBuckets, openRunAsk, parkRunAsk, parseResumeAfter, priceVendorTokens, pruneRun, readRuns, reclaimRun, reclaimStaleRuns, recordAnchorReading, recordAnswers, recordSessionId, recordRuntimeEvent, retryReadiness, retryRun, rewriteRunItemRef, runNodeRecordPath, runRecordPath, runsDir, settleRun, settleRunFromVendor, shouldRetry, staleRunningRuns, startRun };
+  return { COST_SOURCES, DEFAULT_PARK_MINUTES, EXIT_REASONS, PRICE_TABLE_VERSION, SPEND_ENVELOPE_KEYS, TOKEN_BUCKET_KEYS, answerRunAsk, applyTransition, completeRun, heartbeat, isLegalTransition, isRetryable, isRunning, isStale, mapVendorTokensToBuckets, openRunAsk, parkRunAsk, parseResumeAfter, priceVendorTokens, pruneRun, readRun, readRuns, reclaimRun, reclaimStaleRuns, recordAnchorReading, recordAnswers, recordSessionId, recordRuntimeEvent, retryReadiness, retryRun, rewriteRunItemRef, runNodeRecordPath, runRecordPath, runsDir, settleRun, settleRunFromVendor, shouldRetry, staleRunningRuns, startRun };
 }

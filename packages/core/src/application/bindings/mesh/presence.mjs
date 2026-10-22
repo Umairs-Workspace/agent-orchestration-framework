@@ -7,6 +7,9 @@ export function assembleMeshPresence({ meshStoreServices, runStoreServices, loop
   const { meshDir } = meshStoreServices;
   const { presenceRecordPath } = meshStoreServices;
   const { readRuns } = runStoreServices;
+  // 167/ADR-008 — the one-record read a loop entry's last activity comes off, and the store read
+  // of this node's running rows the presence tick replaces its runs/ walk with.
+  const { readRun } = runStoreServices;
   const { isStale } = runStoreServices;
   const { STOP_LEVELS } = loopStopRequestServices;
   const { loopStopsDir } = loopStopRequestServices;
@@ -15,9 +18,10 @@ export function assembleMeshPresence({ meshStoreServices, runStoreServices, loop
   const { isSessionLive } = meshSessionServices;
   const { resolveSessionTtlSeconds } = meshSessionServices;
   const { openGlobalWorkProjectionStore } = globalWorkStoreServices;
+  const { readNodeRunningRuns } = globalWorkStoreServices;
   const { globalMeshPaths } = workspaceServices;
 
-  const { DEFAULT_PRESENCE_STALENESS_SECONDS, readActiveRuns, readActiveLoops, readLiveSessions, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, resolveWorkspaceCloneUrl, assemblePresenceRecord, publishPresenceRecord, readPresenceRecord, readPresenceRecords, mergePresence, resolvePeerReachability, isNodeStale, resolveStalenessSeconds } = createMeshPresence({ meshDir, presenceRecordPath, readRuns, isStale, STOP_LEVELS, loopStopsDir, readStopRequest, readSessionRecordsForNode, isSessionLive, resolveSessionTtlSeconds, openGlobalWorkProjectionStore, globalMeshPaths });
+  const { DEFAULT_PRESENCE_STALENESS_SECONDS, readActiveRuns, readActiveLoops, readStoreActivity, readLiveSessions, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, resolveWorkspaceCloneUrl, assemblePresenceRecord, publishPresenceRecord, publishCostSnapshot, readCostSnapshots, readPresenceRecord, readPresenceRecords, mergePresence, resolvePeerReachability, isNodeStale, resolveStalenessSeconds } = createMeshPresence({ meshDir, presenceRecordPath, readRuns, readRun, isStale, STOP_LEVELS, loopStopsDir, readStopRequest, readSessionRecordsForNode, isSessionLive, resolveSessionTtlSeconds, openGlobalWorkProjectionStore, readNodeRunningRuns, globalMeshPaths });
 
-  return { DEFAULT_PRESENCE_STALENESS_SECONDS, readActiveRuns, readActiveLoops, readLiveSessions, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, resolveWorkspaceCloneUrl, assemblePresenceRecord, publishPresenceRecord, readPresenceRecord, readPresenceRecords, mergePresence, resolvePeerReachability, isNodeStale, resolveStalenessSeconds };
+  return { DEFAULT_PRESENCE_STALENESS_SECONDS, readActiveRuns, readActiveLoops, readStoreActivity, readLiveSessions, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, resolveWorkspaceCloneUrl, assemblePresenceRecord, publishPresenceRecord, publishCostSnapshot, readCostSnapshots, readPresenceRecord, readPresenceRecords, mergePresence, resolvePeerReachability, isNodeStale, resolveStalenessSeconds };
 }

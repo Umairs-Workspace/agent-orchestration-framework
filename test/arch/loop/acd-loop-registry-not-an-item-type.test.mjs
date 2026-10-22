@@ -14,7 +14,8 @@ const loopsValidateCommand = _aofApplication.getCommand("work:loops-validate");
 import { matchedBraceBody, stripComments } from "../../support/source-slice.mjs";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const six = ["milestone", "story", "task", "uat", "spike", "chore"];
+// 168/ADR-001 — `prototype` joined the closed vocabulary: a top-level work item that is never a driver.
+const six = ["milestone", "story", "task", "uat", "spike", "chore", "prototype"];
 const expectedLoopModules = [
   "packages/work-graph/src/registry.mjs", "packages/work-graph/src/checks.mjs", "packages/work-graph/src/commands/loops-show.mjs",
   "packages/work-graph/src/commands/loops-graph.mjs", "packages/work-graph/src/commands/loops-groundedness.mjs", "packages/work-graph/src/commands/loops-validate.mjs",

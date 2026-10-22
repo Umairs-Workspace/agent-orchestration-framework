@@ -52,6 +52,7 @@ import {
   homeSlotSummary,
 } from "../src/home/page-state.mjs";
 import { withShellComposedHome, findAll, textOf } from "./support/shell-app-harness.mjs";
+import { POLL_BACKOFF_CAP_MS } from "../src/lib/poll-cadence.mjs";
 
 const NOW = "2026-08-13T09:00:00.000Z";
 const ADDRESS = (pathname = "/") => ({ pathname, search: "", hash: "" });
@@ -509,7 +510,9 @@ export const terminalsHomePageStatesTests = [
           // about, and only then released.
           for (let poll = 1; poll <= 20; poll += 1) {
             const hold = app.holdNext("/api/mesh/status");
-            await app.advanceHeld(HOME_POLL_MS);
+            // 167/02 (ADR-004): an unchanged feed slows its poll (5, 10, then 15 s), so each poll is reached by
+            // advancing the cadence's cap; a held poll stalls the chain, so it is still exactly one poll.
+            await app.advanceHeld(POLL_BACKOFF_CAP_MS);
             assert.ok(hold.claimed(), `poll ${poll}: the poll really went out and its response is genuinely held`);
             assert.deepEqual(app.homeStates(), [HOME_PAGE_STATE_E1], `poll ${poll}: still E1 WHILE the request is in flight — it does NOT return to the loading card at any point`);
             assert.equal(textOf(app.homeState()), before, `poll ${poll}: the same words, mid-flight`);
@@ -525,7 +528,7 @@ export const terminalsHomePageStatesTests = [
           // …AND WHEN A POLL LANDS WITH A CHANGED PAYLOAD THE PAGE UPDATES IN PLACE, with no
           // intermediate blank frame: the very next read is the NEW state, never the loading one.
           serve(RUNS_IN_FLIGHT);
-          await app.advance(HOME_POLL_MS);
+          await app.advance(POLL_BACKOFF_CAP_MS);
           assert.deepEqual(app.homeStates(), [HOME_PAGE_STATE_E2], "the changed payload took effect in place");
           assert.match(textOf(app.homeState()), /1 run in flight/, "…with the new count in the sentence, agreeing with it (GAP-6)");
         });

@@ -273,6 +273,17 @@ export const globalNodeRegistryTests = [
         assert.equal(byId.get("node-b").freshness, "stale");
         assert.equal(byId.get("node-c").freshness, "unknown");
 
+        // 162 verify (F-05) — since 164 nothing republishes a quiet tree, so a node keeps beating
+        // after its last publish. Its CURRENT heartbeat decides: node-b beats again with no publish
+        // and reads live, its card's lastSeenAt moving with it; node-a, whose last beat is the one
+        // the publish stamped, goes stale once that beat is outside the window.
+        await seedPresence(alpha, "node-b", "2026-07-04T10:01:50.000Z");
+        const later = new Map((await queryGlobalRegistry(store, { now: "2026-07-04T10:02:00.000Z", stalenessSeconds: 60 })).nodes.map((node) => [node.nodeId, node]));
+        assert.equal(later.get("node-b").freshness, "live", "a heartbeat after the last publish keeps the node live");
+        assert.equal(later.get("node-b").lastSeenAt, "2026-07-04T10:01:50.000Z", "the card's lastSeenAt is the same instant");
+        assert.equal(later.get("node-a").freshness, "stale", "a node whose beat stopped still goes stale");
+        assert.equal(later.get("node-c").freshness, "unknown", "a node that never beat stays unknown");
+
         // 34/story 06 — a workspaceId no longer narrows the NODE roster (nodes are
         // machine-wide); it scopes WORK ITEMS. Only the role filter narrows nodes here.
         const filtered = await queryGlobalRegistry(store, {

@@ -1,28 +1,36 @@
 import { mkdir, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
-import { itemRowFault, archivedColumn, itemLocationKeys, rowLocationKeys, wireLocationKeys } from "@aof/work/item-row";
+import { itemRowFault, archivedColumn, rowLocationKeys, wireLocationKeys } from "@aof/work/item-row";
 import { executionScopeRef } from "./assignment-record.mjs";
 import { canonicalArtifactDocKey } from "@aof/work/artifacts";
+import { createContentReads } from "./content-reads.mjs";
+import { rowFingerprint, locallyChanged, normalizeSourcePath, projectedRow } from "@aof/work/local-change";
+import { processCostMeter } from "@aof/foundation/cost-meter";
 import os from "node:os";
 export { WORK_ITEM_DOC_FILES } from "@aof/work/artifacts";
 export { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault, isCompleteItemRow } from "@aof/work/item-row";
-export const GLOBAL_WORK_SCHEMA_VERSION = 10;
+export const GLOBAL_WORK_SCHEMA_VERSION = 11;
+// The observation row that holds a workspace's stat digest rather than a ref's fingerprint.
+export const WORKSPACE_DIGEST_REF = "*";
 export const UPSERT_AUTHORITIES = Object.freeze(["reported", "disk-derived"]);
 export const NODE_LOG_KEEP = 500;
 
 // Application policy enters explicitly; constructing the service opens no stores or timers.
-export function createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, listItems, parseFrontmatter, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance }) {
-// 127/04 (ADR-006 §1) — the row screen, the archived flag's bind mapping and the two-shape
-// widening, from the one leaf that spells the cache row's shape (see the re-export below).
-
-
-// m43 / ADR-007 — the artifact set MOVED to the pure leaf `work-artifacts.mjs` and
-// widened to a two-kind manifest (8 exact filenames + `tasks/` × `.feature`).
-// `WORK_ITEM_DOC_FILES` is DERIVED there from the manifest's file-kind entries and is
-// RE-EXPORTED here so every existing importer keeps working byte-identically — one
-// definition, one derived compatibility view, never two literal lists. The invariant
-// this preserves is the one the constant's own comment always claimed: the streamed
-// set and the requestable set are the same set.
+export function createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, readStreamSnapshot, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance }) {
+// Provenance of what this module reads rather than spells (the full history is in git): the
+// cache row's shape, screen and location widening come from `@aof/work/item-row` (127/04); the
+// artifact manifest from `@aof/work/artifacts` (43/ADR-007, re-exported above so the streamed set
+// and the requestable set stay one set); the workspace id from `workspace-identity.mjs` (new
+// callers use resolveWorkspaceId, never a hand-spelled fallback); the store classification from
+// `store-metadata.mjs`, which the wholesale-delete guard and the ref-remap tables both read (m42
+// d5); the execution-scope rule from `assignment-record.mjs` (43/ADR-003); the node id from
+// `node-identity.mjs` in its in-memory mode (43/ADR-004); the storage→wire provenance mapping
+// from its one home (43/ADR-006); and "changed since observed" from `@aof/work/local-change`
+// (164/ADR-002). Every former silent catch reports a coded degrade event (m42 item 3).
+//
+// ADR-011/A1: this module reads NO `global_assignments` state. The lock's answer arrives AS DATA
+// (`options.heldScopes`) from the caller that knows whose slice is being written — the
+// disk-derived publisher and the two frame doors, which read the leaf themselves.
 
 function globalStoreError(message, code, status = 500, extra = {}) {
   const error = new Error(message);
@@ -32,33 +40,6 @@ function globalStoreError(message, code, status = 500, extra = {}) {
   return error;
 }
 
-// m42 wave (b) / item 4 — the derivation moved to its ONE home
-// (workspace-identity.mjs); re-exported here so every existing import keeps
-// working byte-identically. New callers use resolveWorkspaceId (the one
-// precedence), never a hand-spelled `?? workspaceIdFor(...)` fallback.
-// m42 item 3 — every former silent catch reports a coded degrade event.
-// m42 wave (d) leg d5 — the store classification (fact | projection | meta) is
-// executable data, not a warning comment: the wholesale-delete guard below and
-// the ref-remap table derivation both read it.
-// m43 / ADR-003 — the ONE execution-scope rule (a pure string derivation on a leaf
-// that imports 0). The seam below reports the SCOPE a skipped ref belongs to, so a
-// count of stepped-over scopes is explainable by the list beside it.
-//
-// ADR-011/A1, ARMED AND NOW BINDING: this module reads NO `global_assignments` state.
-// 43/01's interim carry read `activeScopeHolders` here, because the wholesale rebuild
-// forced the shared row-writer to decide what to re-insert. With a row upsert the
-// writer decides nothing about assignments: the lock's answer arrives AS DATA
-// (`options.heldScopes`) from the caller that knows whose slice is being written —
-// the disk-derived publisher and the two frame doors, which read the leaf themselves.
-// m43 / ADR-004 — the publishing node's own id, for the provenance stamp. The ONE
-// derivation (node-identity.mjs), in its in-memory mode: a pinned `mesh.nodeId` wins
-// verbatim, else the opaque node-<hash> (132) — never persisted from here, exactly as
-// mesh-launcher's own resolveNodeIdentity reads it.
-// m43 / ADR-007 — the artifact manifest's own home (a pure leaf, 0 repo imports). The
-// reader below streams exactly what a face may request, because both read this table.
-// m43 / story 04 (ADR-006) — the ONE storage→wire mapping. The fleet's row projection below
-// reaches for it rather than spelling a wire name itself, so the board and fleet faces can
-// never disagree about what a provenance fact is called or what an unknown one looks like.
 const workspaceIdFor = workspaceIdFromPath;
 
 // wholesaleDelete(db, table, workspaceId) — the ONLY sanctioned way this module
@@ -87,28 +68,11 @@ function wholesaleDelete(db, table, workspaceId) {
   db.prepare(`DELETE FROM ${table} WHERE workspace_id = ?`).run(workspaceId);
 }
 
-// applyConcurrencyPragmas(db) — m42, the measured `database is locked` residual
-// (STATE 2026-07-27: CONTINUOUS, every ~5s post-restart). This store is opened by
-// several processes at once — the desktop's status poll, the board's in-flight
-// re-poll, the serve daemon's write ticks and every CLI invocation — and it was
-// opened with NO pragmas at all: `journal_mode: delete`, where one writer locks
-// out every reader and a colliding tick fails IMMEDIATELY rather than waiting.
-// Write ticks retried on the next cycle so nothing was lost, but any tick could
-// silently skip a beat.
-//
-// Two pragmas, addressing the two halves:
-//   WAL          — readers no longer block the writer and the writer no longer
-//                  blocks readers, which is the collision itself. Persistent in
-//                  the file header (an older aof build opening it reads WAL fine),
-//                  and this database is always on a local filesystem — the mesh
-//                  root under AOF_GLOBAL_HOME — which is WAL's one requirement.
-//   busy_timeout — the residual case WAL cannot remove (two WRITERS). 2s of
-//                  waiting instead of an instant throw; the effects journal
-//                  (effects/journal.mjs) has had exactly this from birth, and the
-//                  projection it sits beside never did.
-//
-// Deliberately NOT hoisted into a shared helper with the journal's: the value is
-// a per-store tuning decision, not one fact with two homes.
+// applyConcurrencyPragmas(db) — m42, the measured `database is locked` residual: several
+// processes open this store at once (desktop poll, board, daemon ticks, every CLI). WAL stops
+// readers and the writer blocking each other (persistent in the header; the mesh root is always
+// local, WAL's one requirement); busy_timeout waits 2s on the residual two-writer case instead
+// of throwing, as the effects journal always has. A per-store tuning, deliberately not shared.
 function applyConcurrencyPragmas(db) {
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA busy_timeout = 2000");
@@ -345,6 +309,18 @@ function migrateSchema(db, existingVersion) {
         path TEXT
       );
       CREATE INDEX IF NOT EXISTS idx_node_logs_node ON node_logs(node_id, seq);
+      -- schema v11 (164/ADR-002): what THIS node last observed of each ref on its own disk —
+      -- the baseline "changed since observed" is asked against. Node-local bookkeeping, never
+      -- truth: only a successful write advances it, and a lost table costs one re-baseline.
+      -- The ref '*' row holds the workspace's stat digest, the gate before any row is hashed.
+      CREATE TABLE IF NOT EXISTS work_item_observations (
+        workspace_id TEXT NOT NULL,
+        ref TEXT NOT NULL,
+        node_id TEXT NOT NULL,
+        fingerprint TEXT NOT NULL,
+        observed_at TEXT,
+        PRIMARY KEY (workspace_id, ref, node_id)
+      );
     `);
 
     // schema v4 (milestone 38 / ADR-010 Gap A, extended) — CREATE TABLE IF NOT
@@ -431,31 +407,15 @@ function migrateSchema(db, existingVersion) {
   }
 }
 
-// The insert/reindex ref-remap, SPLIT BY LOCUS (m42 wave (d) leg d5 — the split
-// port 3 deferred). The table lists derive from the store classification
-// (effects/stores.mjs `refRemap` rows — the ONE home): the worker-streamed
-// mirrors (`work_item_docs`/`work_item_runs`) are this node's own rows and
-// rewrite at `local`; the dispatch facts (`global_assignments`/
-// `global_item_branches`) belong to the authoritative mesh store's writer and
-// rewrite at `control-store` — paid by the control daemon's converge tick in
-// place, or arriving over the d3 bridge when the reindex ran on another machine
-// (which is why that reactor keys by the payload's own workspaceId, never a
-// path this machine may not have). `work_items` is deliberately in NEITHER
-// list, and m43/ADR-004 does not move it: a renumber is re-REPORTED by each row's
-// own author (the control's next publish upserts the new refs and retracts the old
-// ones it authored; a worker re-reports its own), and a column remap here would
-// rewrite `ref` while leaving `parent`/`source_path` naming the old numbers — a
-// self-inconsistent row, which is the reason it was excluded before the cut too.
-//
-// A remap is a PERMUTATION (`{03→04, 04→05}`), so it is applied in the order the
-// engine hands it over — descending by the number that moved, so no update ever
-// writes onto a ref another entry has yet to vacate — inside ONE transaction, and
-// EVENT-ID DEDUPED (the reactor contract's sanctioned alternative to idempotence):
-// a redelivered event finds its id already stamped and does nothing, because
-// applying the permutation twice would shift every row a second time. The two
-// halves stamp SEPARATE watermarks (`lastReindexEventId` / the facts key below)
-// because they drain independently — a control tick paying the facts hours after
-// the CLI paid the mirrors must not see the other half's stamp and skip.
+// The insert/reindex ref-remap, SPLIT BY LOCUS (m42 d5). The table lists derive from the store
+// classification's `refRemap` rows: the streamed mirrors (`work_item_docs`/`work_item_runs`)
+// rewrite at `local`; the dispatch facts (`global_assignments`/`global_item_branches`) at
+// `control-store`, keyed by the payload's workspaceId. `work_items` (and its observations) is in
+// NEITHER list: a renumber is re-REPORTED by each row's author, and a column remap would leave
+// `parent`/`source_path` naming the old numbers. A remap is a PERMUTATION, applied in the engine's
+// order (descending, so no update lands on a ref yet to be vacated) in ONE transaction and
+// EVENT-ID DEDUPED, since applying it twice shifts every row again; the two halves stamp separate
+// watermarks because they drain independently.
 function remapRefKeyedTables(store, workspaceId, remap, tables, stampKey, { eventId = null, now } = {}) {
   if (!Array.isArray(remap) || remap.length === 0) return { remapped: 0, skipped: true, reason: "empty-remap" };
   const db = store.db;
@@ -512,31 +472,19 @@ function remapWorkspaceFactRefs(store, workspaceId, remap = [], options = {}) {
 
 // ------------------------------------------------ THE SHARED UPSERT SEAM (ADR-004) --
 //
-// A row that cannot be stored is SKIPPED AND COUNTED rather than thrown — one bad row
-// must never take the frame's other rows, or the workspace's already-cached rows, with
-// it. The SCREEN — what a storable row is, covering EVERY value the statement binds
-// (ADR-012/B5) — lives in the pure leaf `./work/item-row.mjs` since 127/04, beside the two
-// location shapes it now screens and the widening that reads them back; its history is in
-// that file's header. Re-exported here so every importer, and the coverage ratchet, keeps
-// reading the ONE definition from where it always did (the `WORK_ITEM_DOC_FILES` precedent).
-
-// The two AUTHORITIES a writer can have — ADR-011/A1's ruling in one word, "whose slice
-// is being written" (narrowed by ADR-012/B1: the lock gate runs FIRST for every writer,
-// and `authority` decides only the second question):
+// A row that cannot be stored is SKIPPED AND COUNTED rather than thrown — one bad row must never
+// take the frame's other rows with it. The SCREEN (every value the statement binds, ADR-012/B5)
+// lives in `@aof/work/item-row` and is re-exported above for every importer and the ratchet.
 //
-//   "reported"     — the writer is reporting its OWN live slice (a worker's frame). It is
-//                    never filtered by who authored the cached row, because taking
-//                    authorship IS what reporting means; only an assignment held by
-//                    SOMEBODY ELSE refuses it.
-//   "disk-derived" — the writer is republishing its own local DISK slice (the control's
-//                    tick, publish-on-mutate). A disk read says what this node's checkout
-//                    looks like, never what another node is doing — so it is authoritative
-//                    ONLY over rows it authored (ADR-010/D1) and rows nobody has yet.
-//
-// There is no default: "reported" would silently re-open the permanent revert, and
-// "disk-derived" would silently discard a worker's frames (ADR-011/A1's HIGH regression).
-// Absent-means-something is the m42 shape ("three of the four mint sites silently had
-// none"), so a caller that does not say is refused.
+// The two AUTHORITIES a writer can have — "whose slice is being written" (ADR-011/A1; the lock
+// gate runs FIRST for every writer, ADR-012/B1):
+//   "reported"     — a worker reporting its OWN live slice: never filtered by who authored the
+//                    cached row, since taking authorship IS what reporting means.
+//   "disk-derived" — a node republishing its own DISK slice: authoritative ONLY over rows it
+//                    authored and rows nobody has yet (ADR-010/D1), plus the refs an operator
+//                    verb or a local change hands it (164/ADR-001).
+// There is no default: either would silently re-open a measured regression, so a caller that
+// does not say is refused.
 
 // upsertWorkItems(store, workspaceId, rows, options) — THE row-level write seam for
 // work_items, and the structural twin of upsertWorkItemContent below: per-(workspace_id,
@@ -564,11 +512,19 @@ function remapWorkspaceFactRefs(store, workspaceId, remap = [], options = {}) {
 //                       (ADR-010/D1) — a gate is where authorship changes hands.
 //                       Deliberately a REF SET, not a flag: publish-on-mutate carries the
 //                       whole workspace, and the operator touched one item.
+//   localChangeRefs   — the refs whose own record changed since this node observed them
+//                       (164/ADR-001): a local edit is an operator act that happens not to go
+//                       through a verb, so it takes authorship exactly as `operatorRefs` does.
+//                       The lock still wins. It does not widen retraction.
+//   observe           — { fingerprints: Map<ref, fp>, digest? } (164/ADR-002). In THIS
+//                       transaction, every ref written or stepped over as authored-elsewhere
+//                       records its fingerprint; a held or failed ref records nothing, so its
+//                       change stays owed. The digest is recorded only when no change is owed.
 //
 // Returns { workspaceId, upserted, retracted, syncedAt, skipped: [...] } where each skip
 // names its ref, its execution scope, its reason and whoever the reason points at.
 function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
-  const { nodeId, authority, syncedAt, heldScopes = new Map(), authoritativeRefs, operatorRefs } = options;
+  const { nodeId, authority, syncedAt, heldScopes = new Map(), authoritativeRefs, operatorRefs, localChangeRefs, observe } = options;
 
   const reporter = typeof nodeId === "string" && nodeId.length > 0 ? nodeId : null;
   if (reporter == null) {
@@ -589,6 +545,8 @@ function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
     ? syncedAt
     : new Date().toISOString();
   const operator = operatorRefs instanceof Set ? operatorRefs : new Set(operatorRefs ?? []);
+  const localChange = new Set(localChangeRefs ?? []);
+  const observed = new Set();
   const claimed = authoritativeRefs === undefined || authoritativeRefs === null
     ? null
     : new Set(authoritativeRefs);
@@ -673,9 +631,10 @@ function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
       // authored and adopt rows nobody has authored yet — and it steps over the rest.
       // This is the cure for the permanent revert: after a worker settles and stops
       // ticking, the control's tick sees `node_id = <worker>` and skips FOREVER.
-      if (authority === "disk-derived" && !operator.has(row.ref)) {
+      if (authority === "disk-derived" && !operator.has(row.ref) && !localChange.has(row.ref)) {
         if (existing != null && existing.node_id != null && existing.node_id !== reporter) {
           skip(row.ref, "authored-elsewhere", { reportedBy: existing.node_id });
+          observed.add(row.ref);
           continue;
         }
       }
@@ -721,6 +680,7 @@ function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
         archivedColumn(row),
       );
       upserted += 1;
+      observed.add(row.ref);
     }
 
     // (3) AUTHOR RETRACTION — the ONLY deletion a publish can perform, and never a
@@ -757,6 +717,20 @@ function upsertWorkItems(store, workspaceId, rows = [], options = {}) {
         // DECISION of whose rows may be reached is made above, in the open.
         retracted += retract.run(workspaceId, ref, author).changes ?? 0;
       }
+    }
+
+    if (observe?.fingerprints instanceof Map) {
+      const record = db.prepare(`
+        INSERT INTO work_item_observations (workspace_id, ref, node_id, fingerprint, observed_at) VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(workspace_id, ref, node_id) DO UPDATE SET fingerprint = excluded.fingerprint, observed_at = excluded.observed_at
+      `);
+      for (const ref of observed) if (observe.fingerprints.has(ref)) record.run(workspaceId, ref, reporter, observe.fingerprints.get(ref), at);
+      // A ref this complete claim no longer carries is no longer observed: its deletion was the change.
+      const forget = db.prepare("DELETE FROM work_item_observations WHERE workspace_id = ? AND node_id = ? AND ref = ?");
+      const known = db.prepare("SELECT ref FROM work_item_observations WHERE workspace_id = ? AND node_id = ?").all(workspaceId, reporter);
+      if (claimed != null) for (const { ref } of known) if (ref !== WORKSPACE_DIGEST_REF && !claimed.has(ref)) forget.run(workspaceId, reporter, ref);
+      const owed = [...localChange].some((ref) => !observed.has(ref));
+      if (typeof observe.digest === "string" && !owed) record.run(workspaceId, WORKSPACE_DIGEST_REF, reporter, observe.digest, at);
     }
 
     db.exec("COMMIT");
@@ -837,6 +811,12 @@ async function publishWorkspaceSnapshot(store, workspace, options = {}) {
   const claimedRefs = items.rows.map((row) => row.ref)
     .concat(items.errors.map((error) => error.ref).filter((ref) => typeof ref === "string" && ref.length > 0));
 
+  // 164/ADR-001 — every disk-derived publish (a verb's event, a sync mark, a daemon tick) asks
+  // the one predicate which of its rows changed since this node observed them, so all of them
+  // land a local change identically. `digest` is the stat digest the caller gated on, if any.
+  const baseline = readObservations(store, workspaceId, nodeId);
+  const fingerprints = new Map(items.rows.map((row) => [row.ref, rowFingerprint(row)]));
+  const localChangeRefs = [...fingerprints].filter(([ref, fp]) => locallyChanged(fp, baseline.get(ref))).map(([ref]) => ref);
   const upsert = upsertWorkItems(store, workspaceId, items.rows, {
     nodeId,
     authority: "disk-derived",
@@ -844,6 +824,8 @@ async function publishWorkspaceSnapshot(store, workspace, options = {}) {
     heldScopes: options.heldScopes,
     authoritativeRefs: items.authoritative ? claimedRefs : undefined,
     operatorRefs: options.operatorRefs,
+    localChangeRefs,
+    observe: { fingerprints, digest: items.authoritative ? options.digest : undefined },
   });
 
   db.exec("BEGIN IMMEDIATE");
@@ -901,12 +883,58 @@ async function publishWorkspaceSnapshot(store, workspace, options = {}) {
     skippedRefs: upsert.skipped,
     upserted: upsert.upserted,
     retracted: upsert.retracted,
+    localChangeRefs,
     // Whether this publish was a COMPLETE claim over the node's own slice. False means
     // the work stream could not be read at all, so nothing was retracted and the read
     // failure is reported rather than mistaken for an empty stream.
     authoritative: items.authoritative,
     publishedAt: now,
   };
+}
+
+// readObservations(store, workspaceId, nodeId) → Map<ref, fingerprint> — what `nodeId` last
+// observed of the workspace (164/ADR-002); the stat digest sits under WORKSPACE_DIGEST_REF.
+function readObservations(store, workspaceId, nodeId) {
+  const rows = store.db.prepare("SELECT ref, fingerprint FROM work_item_observations WHERE workspace_id = ? AND node_id = ?").all(workspaceId, nodeId);
+  return new Map(rows.map((row) => [row.ref, row.fingerprint]));
+}
+
+// readWorkspaceObservations(store, workspace) → { nodeId, observations } — the reader's half
+// (164/ADR-005): WHO this node is, resolved exactly as its publishes stamp rows, and what it last
+// observed, so "reported elsewhere" and "changed since observed" are asked of the same identity.
+async function readWorkspaceObservations(store, workspace) {
+  const nodeId = await resolvePublishingNodeId(workspace);
+  return { nodeId, observations: readObservations(store, resolveWorkspaceId(workspace), nodeId) };
+}
+
+// readSyncState(store, nodeId) — each workspace's last successful sync on this node (164/03): the
+// newest observation a successful write recorded, with the registered name and root when known.
+function readSyncState(store, nodeId) {
+  return store.db.prepare(`SELECT o.workspace_id AS workspaceId, MAX(o.observed_at) AS lastSyncedAt, d.name AS name, d.project_root AS projectRoot
+    FROM work_item_observations o LEFT JOIN global_workspace_descriptors d ON d.workspace_id = o.workspace_id
+    WHERE o.node_id = ? AND o.ref != ? GROUP BY o.workspace_id ORDER BY o.workspace_id`).all(nodeId, WORKSPACE_DIGEST_REF).map((row) => ({ ...row }));
+}
+
+// detectWorkspaceChanges(store, workspace, { digest }) — the sync pass's detect step (164/ADR-004).
+// An equal stat digest answers "nothing moved" without reading a row. Otherwise the refs owed a
+// publish are those changed since observed, never observed, or observed and now gone. A moved
+// digest with nothing owed is recorded here, so the next pass is one stat walk again.
+async function detectWorkspaceChanges(store, workspace, { digest = null, now } = {}) {
+  const workspaceId = resolveWorkspaceId(workspace);
+  const nodeId = await resolvePublishingNodeId(workspace);
+  const baseline = readObservations(store, workspaceId, nodeId);
+  if (digest != null && baseline.get(WORKSPACE_DIGEST_REF) === digest) return { workspaceId, nodeId, moved: false, owed: [] };
+  const items = await readWorkspaceProjectionItems(workspace);
+  const seen = new Set(items.rows.map((row) => row.ref));
+  const owed = items.rows.filter((row) => !baseline.has(row.ref) || locallyChanged(rowFingerprint(row), baseline.get(row.ref))).map((row) => row.ref)
+    .concat(items.authoritative ? [...baseline.keys()].filter((ref) => ref !== WORKSPACE_DIGEST_REF && !seen.has(ref)) : []);
+  if (owed.length === 0 && items.authoritative && digest != null) {
+    store.db.prepare(`
+      INSERT INTO work_item_observations (workspace_id, ref, node_id, fingerprint, observed_at) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(workspace_id, ref, node_id) DO UPDATE SET fingerprint = excluded.fingerprint, observed_at = excluded.observed_at
+    `).run(workspaceId, WORKSPACE_DIGEST_REF, nodeId, digest, now ?? new Date().toISOString());
+  }
+  return { workspaceId, nodeId, moved: true, owed };
 }
 
 // resolvePublishingNodeId(workspace) — WHO this node is when it publishes its own slice.
@@ -948,33 +976,26 @@ function recordWorkspaceProjectionError(store, workspace, error, options = {}) {
   `).run(workspaceId, sourcePath, error?.message ?? "Projection write failed.", error?.code ?? "projection-write-failed", now);
 }
 
-// readWorkspaceProjectionItems(workspace) — THE OWN-DISK READ. A node reading its own
-// checkout to know its own state: exported additively (milestone 34 / story 04) so the
-// worker-stream client builds the SAME item-row shape a snapshot frame carries, without a
-// second read/parse of the record docs. One argument, the same row shape, sourced from the
-// CALLER's disk — m43/ADR-004 leaves all three untouched, because the read primitive was
-// never the disease; the wholesale delete-and-rebuild wrapped around it was.
-//
-// TWO ADDITIVE KEYS the authority cut needs, both about the difference between "there is
-// nothing" and "I could not look" — a distinction that did not matter while every publish
-// rebuilt the table from scratch, and decides whether rows are DELETED now that it does not:
-//   `authoritative` — false when the work stream itself could not be read (a missing or
-//                     unreadable work dir). listItems answers a missing directory with an
-//                     empty list, which read as "every item was deleted" and would retract
-//                     the node's entire slice on a transient fault.
-//   `errors[].ref`  — the ref of the item whose record doc failed, so a publish can keep
-//                     claiming it. An unparseable frontmatter is a read fault, not a
-//                     statement that the item is gone.
+// readWorkspaceProjectionItems(workspace) — THE OWN-DISK READ: one argument, the item-row shape
+// a snapshot frame carries, sourced from the CALLER's disk (34/04; untouched by m43/ADR-004).
+// Two keys tell "there is nothing" from "I could not look", which decides whether rows are
+// DELETED: `authoritative` is false when the work stream itself could not be read (listItems
+// answers a missing dir with an empty list, which would retract the whole slice), and
+// `errors[].ref` names an item whose record doc failed, so a publish keeps claiming it.
 async function readWorkspaceProjectionItems(workspace) {
   const rows = [];
   const errors = [];
   let authoritative = true;
   let items = [];
+  let snapshot;
   try {
-    // The stream-level probe listItems cannot make: readDirSafe swallows every fault
-    // into an empty list, so the read must ask the directory itself whether it is there.
-    await readdir(workspace.workDir);
-    items = await listItems(workspace.workDir);
+    // The stream-level probe listItems cannot make (the snapshot makes it): the enumerator swallows
+    // every fault into an empty list, so the read asks the directory itself whether it is there.
+    // 167/ADR-003 — through the remembered stream snapshot, so the tick's read of an unchanged tree
+    // costs one stat walk and parses no record doc; the snapshot counts its parse or its memo answer.
+    const workspaceId = resolveWorkspaceId(workspace) ?? null;
+    snapshot = await readStreamSnapshot(workspace.workDir, { meter: processCostMeter, labels: workspaceId ? { workspaceId } : {}, reportDegrade });
+    items = snapshot.items;
   } catch (error) {
     authoritative = false;
     errors.push({
@@ -989,31 +1010,14 @@ async function readWorkspaceProjectionItems(workspace) {
     const doc = recordDoc(item);
     if (!doc) continue;
     const sourcePath = normalizeSourcePath(path.join(item.dir, doc));
-    try {
-      const text = await readFile(path.join(item.dir, doc), "utf8");
-      if (!/^---\r?\n[\s\S]*?\r?\n---/.test(text)) {
-        throw globalStoreError(`Record doc has no parseable frontmatter: ${sourcePath}`, "frontmatter-unparseable", 422);
-      }
-      const meta = parseFrontmatter(text);
-      rows.push({
-        ref: item.ref,
-        type: item.type,
-        slug: item.slug,
-        status: meta.status ?? null,
-        title: meta.title ?? null,
-        parent: item.parent,
-        sourcePath,
-        // 127/04 — widened ONLY on a backlog or archived row (ADR-006 §1): a live row keeps its
-        // seven keys byte-for-byte.
-        ...itemLocationKeys(item),
-      });
-    } catch (error) {
-      errors.push({
-        ref: item.ref,
-        sourcePath,
-        message: error.message,
-        code: error.code ?? "projection-read-failed",
-      });
+    const { meta, fault } = await snapshot.record(item);
+    if (fault?.kind === "unparseable") {
+      const error = globalStoreError(`Record doc has no parseable frontmatter: ${sourcePath}`, "frontmatter-unparseable", 422);
+      errors.push({ ref: item.ref, sourcePath, message: error.message, code: error.code });
+    } else if (fault != null) {
+      errors.push({ ref: item.ref, sourcePath, message: fault.message, code: fault.code ?? "projection-read-failed" });
+    } else {
+      rows.push(projectedRow(item, meta, doc));
     }
   }
   return { rows, errors, authoritative };
@@ -1056,6 +1060,47 @@ function readWorkspaceItemProvenance(store, workspaceId) {
     .map((row) => [row.ref, { nodeId: row.node_id ?? null, updatedAt: row.updated_at ?? null }]));
 }
 
+// The ONE spelling of the run-row upsert, shared by the worker-frame writer below and the
+// ledger's own run publish (167/ADR-008): a re-published record refreshes its row in place.
+const UPSERT_WORK_ITEM_RUN_SQL = `
+      INSERT INTO work_item_runs (workspace_id, ref, run_id, record_json, node_id, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(workspace_id, ref, run_id) DO UPDATE SET
+        record_json = excluded.record_json,
+        node_id = excluded.node_id,
+        updated_at = excluded.updated_at
+    `;
+
+// publishWorkItemRun(store, workspace, { ref, runId, record }, { now, nodeId }) — the NARROW
+// writer beside upsertWorkItemContent (167/ADR-008): ONE run record, as it stands now, into
+// work_item_runs with this node as its reporter. The `publish-run` reactor of `run.started` and
+// `run.completed` (packages/mesh/src/effects.mjs) calls it, so a workspace puts its own runs in
+// the store through the ledger it already writes, and the presence tick reads them back instead
+// of walking every item's runs/ folder. State-based and idempotent: the row is whatever the
+// record reads when the step runs, so a retried step writes the latest state, never a stale one.
+// It is not a second opener — it takes the handle the caller opened. `nodeId` absent resolves to
+// this node exactly as the row publisher does (resolvePublishingNodeId), so the two writers of
+// this table attribute a row the same way. Malformed input is refused by return, never thrown: a
+// reactor that threw on it would retry until done against an input that can never improve.
+async function publishWorkItemRun(store, workspace, { ref, runId, record } = {}, { now, nodeId } = {}) {
+  if (typeof ref !== "string" || ref.length === 0 || typeof runId !== "string" || runId.length === 0 || record == null || typeof record !== "object") {
+    return { published: false, reason: "malformed-run" };
+  }
+  const workspaceId = resolveWorkspaceId(workspace);
+  if (typeof workspaceId !== "string" || workspaceId.length === 0) return { published: false, reason: "workspace-unidentified" };
+  const reporter = typeof nodeId === "string" && nodeId.length > 0 ? nodeId : await resolvePublishingNodeId(workspace);
+  const at = now ?? new Date().toISOString();
+  store.db.prepare(UPSERT_WORK_ITEM_RUN_SQL).run(workspaceId, ref, runId, JSON.stringify(record), reporter, at);
+  return { published: true, workspaceId, ref, runId, nodeId: reporter, state: record.state ?? null };
+}
+
+// The READS over the content tables — the board-face `readWorkItemDoc` / `readWorkItemDocMembers` /
+// `readWorkItemRuns` and the presence tick's `readNodeRunningRuns` (167/ADR-008) — live in
+// content-reads.mjs and are returned from here, so every importer reaches them as before. Moved
+// at 167/06 under this module's 1,280-line ratchet (43/ADR-012 B4): the reads are the block with
+// no writer in it. The writers stay here.
+const { readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns, readNodeRunningRuns } = createContentReads({ reportDegrade });
+
 // upsertWorkItemContent(store, workspaceId, { docs, runs, nodeId }, { now }) — the
 // ONE writer for the v5 content tables (the control node's applyWorktreeContentFrame
 // call site). Upsert-only, per (ref, doc) / (ref, runId): a re-streamed body simply
@@ -1093,14 +1138,7 @@ function upsertWorkItemContent(store, workspaceId, { docs, runs, nodeId } = {}, 
       // manifest deliberately treats as different onto one row.
       upsertDoc.run(workspaceId, entry.ref, canonicalArtifactDocKey(entry.doc), entry.body, reporter, at);
     }
-    const upsertRun = db.prepare(`
-      INSERT INTO work_item_runs (workspace_id, ref, run_id, record_json, node_id, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(workspace_id, ref, run_id) DO UPDATE SET
-        record_json = excluded.record_json,
-        node_id = excluded.node_id,
-        updated_at = excluded.updated_at
-    `);
+    const upsertRun = db.prepare(UPSERT_WORK_ITEM_RUN_SQL);
     for (const entry of runRows) {
       upsertRun.run(workspaceId, entry.ref, entry.runId, JSON.stringify(entry.record), reporter, at);
     }
@@ -1110,46 +1148,6 @@ function upsertWorkItemContent(store, workspaceId, { docs, runs, nodeId } = {}, 
     throw error;
   }
   return { published: true, workspaceId, docCount: docRows.length, runCount: runRows.length, skippedEntries: (Array.isArray(docs) ? docs.length : 0) - docRows.length + (Array.isArray(runs) ? runs.length : 0) - runRows.length };
-}
-
-// readWorkItemDoc(store, workspaceId, ref, doc) — the board-face read over
-// work_item_docs. Null when nothing was ever streamed for that (ref, doc).
-function readWorkItemDoc(store, workspaceId, ref, doc) {
-  const key = canonicalArtifactDocKey(doc);
-  const row = store.db.prepare(
-    "SELECT body, node_id, updated_at FROM work_item_docs WHERE workspace_id = ? AND ref = ? AND doc = ?"
-  ).get(workspaceId, ref, key);
-  return row == null ? null : { ref, doc: key, body: row.body, nodeId: row.node_id, updatedAt: row.updated_at };
-}
-
-// readWorkItemDocMembers(store, workspaceId, ref, name) — the dir-kind read: every
-// streamed member of one manifest entry for one ref (`TASKS/*`), oldest key first.
-// The prefix is anchored with `/` so a file-kind name can never be matched by it.
-function readWorkItemDocMembers(store, workspaceId, ref, name) {
-  const prefix = `${canonicalArtifactDocKey(name)}/`;
-  return store.db.prepare(
-    "SELECT doc, body, node_id, updated_at FROM work_item_docs WHERE workspace_id = ? AND ref = ? AND doc LIKE ? ESCAPE '\\' ORDER BY doc"
-  ).all(workspaceId, ref, `${prefix.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`)
-    .map((row) => ({ doc: row.doc, body: row.body, nodeId: row.node_id, updatedAt: row.updated_at }));
-}
-
-// readWorkItemRuns(store, workspaceId, ref) — the board-face read over
-// work_item_runs. Empty array when nothing was ever streamed; a torn record_json
-// row is skipped (the run-store torn-file discipline, carried over).
-function readWorkItemRuns(store, workspaceId, ref) {
-  const rows = store.db.prepare(
-    "SELECT run_id, record_json, node_id, updated_at FROM work_item_runs WHERE workspace_id = ? AND ref = ? ORDER BY updated_at, run_id"
-  ).all(workspaceId, ref);
-  const out = [];
-  for (const row of rows) {
-    try {
-      out.push({ record: JSON.parse(row.record_json), nodeId: row.node_id, updatedAt: row.updated_at });
-    } catch (error) {
-      // Torn/garbage record_json: skip the one bad row, keep the rest — the same
-      // tolerance run-store's readRuns applies to a torn file on disk.
-      reportDegrade("global-work-store", error); }
-  }
-  return out;
 }
 
 // The node_logs ring bound — newest rows kept per node (m42 / item 2 remote read).
@@ -1271,9 +1269,6 @@ function mapErrorRow(row) {
   };
 }
 
-function normalizeSourcePath(sourcePath) {
-  return path.resolve(sourcePath).replaceAll("\\", "/");
-}
 
-return { GLOBAL_WORK_SCHEMA_VERSION, globalStoreError, workspaceIdFor, wholesaleDelete, openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, UPSERT_AUTHORITIES, upsertWorkItems, removeWorkspaceFromCache, publishWorkspaceSnapshot, recordWorkspaceProjectionError, readWorkspaceProjectionItems, readWorkspaceItems, readWorkspaceItemProvenance, upsertWorkItemContent, readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns, NODE_LOG_KEEP, appendNodeLogEntries, readNodeLogEntries, queryGlobalWorkProjection };
+return { GLOBAL_WORK_SCHEMA_VERSION, WORKSPACE_DIGEST_REF, globalStoreError, workspaceIdFor, wholesaleDelete, openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, UPSERT_AUTHORITIES, upsertWorkItems, removeWorkspaceFromCache, publishWorkspaceSnapshot, readObservations, readWorkspaceObservations, readSyncState, detectWorkspaceChanges, recordWorkspaceProjectionError, readWorkspaceProjectionItems, readWorkspaceItems, readWorkspaceItemProvenance, upsertWorkItemContent, readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns, publishWorkItemRun, readNodeRunningRuns, NODE_LOG_KEEP, appendNodeLogEntries, readNodeLogEntries, queryGlobalWorkProjection };
 }

@@ -39,3 +39,23 @@ test('borrowed stores remain open and owned stores close after branch recording'
   await apply(event, { store }); assert.equal(closed, 0);
   await apply(event); assert.equal(closed, 1); assert.equal(writes.length, 2);
 });
+
+test('164/00: a workspace.changed mark publishes through the same reactor, carrying its digest and naming what the lock held', async () => {
+  const calls = [];
+  const contribution = createMeshEffects(async () => ({
+    loadWorkspace: async (root) => ({ projectRoot: root, workDir: `${root}/work` }),
+    publishGlobalWorkSnapshot: async (_workspace, options) => {
+      calls.push(options);
+      return { published: true, result: { skippedRefs: [{ ref: '05/01', reason: 'held-by-assignment', holderNode: 'node-9549' }, { ref: '05', reason: 'authored-elsewhere' }] } };
+    },
+    listItems: async () => [], isLiveStreamRow: () => true,
+  }));
+  const [reactor] = contribution.events['workspace.changed'];
+  assert.equal(reactor.key, 'publish-projection');
+  assert.equal(reactor.locus, 'local');
+  assert.equal(reactor.apply, contribution.events['item-status.changed'][0].apply, 'a mark and a verb share one reactor');
+  const detail = await reactor.apply({ payload: { workspaceRoot: '/repo', workspaceId: 'w', digest: 'd1' } });
+  assert.deepEqual(calls[0].operatorRefs, [], 'a mark names no operator ref');
+  assert.equal(calls[0].digest, 'd1');
+  assert.deepEqual(detail, { published: true, held: [{ ref: '05/01', reason: 'held-by-assignment', holderNode: 'node-9549' }] });
+});

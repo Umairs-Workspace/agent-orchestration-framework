@@ -102,6 +102,6 @@ Feature: Effects ledger — consequences are declared, not remembered
     And a journaled "run.completed" event with pending steps for a failed run on "03/01"
     When I run `work doctor --converge`
     Then the command should succeed
-    And stdout should contain `Drained 2 step(s)`
+    And stdout should contain `Drained 3 step(s)`
     And the journal should hold no pending steps
     And item "03/01" should list with status "not-started"

@@ -5,7 +5,7 @@ import { resolveManagedBinary } from "../../tool-store.mjs";
 export function assembleGraphify({  } = {}) {
   // Core composition for knowledge-owned services.
 
-  const { GRAPHIFY_SPEC, GRAPHIFY_BINARY, PINNED_GRAPHIFY_VERSION, resolveGraphifyBinary, graphifyBuildArgs, isCodeOnlyWholeRootBuild, GRAPHIFY_TIMEOUT_ENV, DEFAULT_GRAPHIFY_TIMEOUT_MS, graphifySpawnTimeoutMs, graphifySpawnOptions, runGraphifyBuild, runGraphifyQuery, runGraphifyTriage, graphJsonPath, readGraph, normalizeGraph, graphArtifactBuiltAt } = createGraphify({ resolveManagedBinary });
+  const { GRAPHIFY_SPEC, GRAPHIFY_BINARY, PINNED_GRAPHIFY_VERSION, resolveGraphifyBinary, graphifyBuildArgs, isCodeOnlyWholeRootBuild, GRAPHIFY_TIMEOUT_ENV, DEFAULT_GRAPHIFY_TIMEOUT_MS, DEFAULT_CODE_BUILD_TIMEOUT_MS, graphifySpawnTimeoutMs, graphifySpawnOptions, runGraphifyBuild, runGraphifyQuery, runGraphifyTriage, graphJsonPath, readGraph, normalizeGraph, graphArtifactBuiltAt } = createGraphify({ resolveManagedBinary });
 
-  return { GRAPHIFY_SPEC, GRAPHIFY_BINARY, PINNED_GRAPHIFY_VERSION, resolveGraphifyBinary, graphifyBuildArgs, isCodeOnlyWholeRootBuild, GRAPHIFY_TIMEOUT_ENV, DEFAULT_GRAPHIFY_TIMEOUT_MS, graphifySpawnTimeoutMs, graphifySpawnOptions, runGraphifyBuild, runGraphifyQuery, runGraphifyTriage, graphJsonPath, readGraph, normalizeGraph, graphArtifactBuiltAt };
+  return { GRAPHIFY_SPEC, GRAPHIFY_BINARY, PINNED_GRAPHIFY_VERSION, resolveGraphifyBinary, graphifyBuildArgs, isCodeOnlyWholeRootBuild, GRAPHIFY_TIMEOUT_ENV, DEFAULT_GRAPHIFY_TIMEOUT_MS, DEFAULT_CODE_BUILD_TIMEOUT_MS, graphifySpawnTimeoutMs, graphifySpawnOptions, runGraphifyBuild, runGraphifyQuery, runGraphifyTriage, graphJsonPath, readGraph, normalizeGraph, graphArtifactBuiltAt };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fleetApi } from "./api";
+import { armPoll, type Poll } from "../lib/poll-cadence.mjs";
 import type { GlobalMeshStatus, GlobalWorkspace, GlobalWorkItem, GlobalNode, GlobalDiagnostics, MeshSession, FleetStatus, WorkAssignment } from "./api";
 import { relativeTime, refreshedLabel } from "../board/runs.mjs";
 import { assignmentChip, assignmentSummary } from "./assignments.mjs";
@@ -55,7 +56,7 @@ import {
   DEFAULT_WORK_STATUS_FILTER,
 } from "./scope.mjs";
 import type { FleetMilestoneCard, Scope, WorkStatusFilter } from "./scope.d.mts";
-import { loopStopAffordance, rememberStopRung } from "./runs.mjs"; // 130/03 — the loop line's button + rung memory, pure
+import { loopStopAffordance, rememberStopRung, LOOP_QUIET_CLASS } from "./runs.mjs"; // 130/03 — the loop line's button + rung memory, pure
 import type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "./runs.d.mts";
 // milestone 47 / story 03 (ADR-001 [Feasibility-2]; ADR-007; DESIGN §Surface 1 / §Surface 2 R0)
 // — the filter's two PRESENTATIONAL children. They export components and no narrowing
@@ -452,16 +453,18 @@ export function Fleet() {
   // (the freshness label stops advancing), never the page-error. The active
   // `scope` always rides along on the request (task 01's `?scope=` deep-link) —
   // a scope switch re-queries under the NEW scope without remounting the page.
-  const load = useCallback(async (targetScope: Scope, { silent = false } = {}) => {
+  const lastStatus = useRef<FleetStatus | null>(null), statusPoll = useRef<Poll | null>(null); // 167/ADR-004: a 304 answers lastStatus
+  const load = useCallback(async (targetScope: Scope, { silent = false } = {}): Promise<boolean | undefined> => {
     if (!silent) {
       setLoading(true);
       setError(null);
       setErrorPath(null);
     }
     try {
-      const next = await fleetApi.status(targetScope);
+      const next = await fleetApi.status(targetScope), changed = next !== lastStatus.current; lastStatus.current = next;
       setStatus(next);
       setFetchedAt(Date.now());
+      return changed;
     } catch (e) {
       if (!silent) {
         setError(e instanceof Error ? e.message : "Failed to load");
@@ -477,14 +480,10 @@ export function Fleet() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope]);
 
-  // Poll-only freshness (NO WebSocket, NO SSE): a silent re-poll on the cadence
-  // keeps the view current within the m23 presence bound + one poll. The poll
-  // re-reads under the CURRENT scope (task 02 scenario 2 — the refresh/poll keeps
-  // the selected scope, never silently reverting to the default).
-  useEffect(() => {
-    const poll = setInterval(() => void load(scope, { silent: true }), POLL_MS);
-    return () => clearInterval(poll);
-  }, [load, scope]);
+  // Poll-only freshness (NO WebSocket, NO SSE): a silent re-poll on the one cadence (167/ADR-004:
+  // paused while hidden, slowing while unchanged) keeps the view current within the m23 presence
+  // bound + one poll, under the CURRENT scope (task 02 scenario 2); a scope change re-arms it at base.
+  useEffect(() => armPoll({ baseMs: POLL_MS, run: () => load(scope, { silent: true }) }, statusPoll), [load, scope]);
 
   useEffect(() => {
     const clock = setInterval(() => setNowMs(Date.now()), CLOCK_MS);
@@ -605,8 +604,8 @@ export function Fleet() {
   // loading state and UNMOUNTS the populated board, which is a far worse answer
   // than saying nothing. And it is ONE load — no new cadence, no retry ladder;
   // the existing POLL_MS poll remains the steady state, and the `Sent` hold is
-  // sized to cover exactly that window if the record is not yet visible.
-  const onAssigned = useCallback(() => void load(scope, { silent: true }), [load, scope]);
+  // sized to cover exactly that window if the record is not yet visible (167/ADR-004: "pending" pins that poll at POLL_MS).
+  const onAssigned = useCallback((event?: "pending" | "settled") => (event === "pending" ? statusPoll.current?.pin() : event === "settled" ? statusPoll.current?.unpin() : void load(scope, { silent: true })), [load, scope]);
 
   return (
     // DESIGN GAP D1 (HIGH, review fix) — `overflow-x-hidden` here is the page-level
@@ -1229,10 +1228,11 @@ function GlobalMilestoneCard({ milestone, workspace, nodes, repoFiltered, freshn
 //       left over. It reports the CALL; region 5 reports the ASSIGNMENT.
 // This component holds NO transition logic of its own: every rendered fact
 // comes from `assignAffordanceView` and the click is `runAssign`.
-function AssignAffordance({ ref, workspaceId, nodes, onAssigned }: { ref: string; workspaceId: string; nodes: GlobalNode[]; onAssigned: () => void }) {
+function AssignAffordance({ ref, workspaceId, nodes, onAssigned }: { ref: string; workspaceId: string; nodes: GlobalNode[]; onAssigned: (event?: "pending" | "settled") => void }) {
   const options = assignableNodeOptions(nodes);
   const [selected, setSelected] = useState(options[0] ?? "");
   const [ack, setAck] = useState<AssignAffordanceState>(assignAtRest);
+  useEffect(() => (ack.phase === "sending" || ack.phase === "sent" ? (onAssigned("pending"), () => onAssigned("settled")) : undefined), [ack.phase === "sending" || ack.phase === "sent"]); // eslint-disable-line react-hooks/exhaustive-deps -- 167/ADR-004: a sending or `Sent` row pins the fleet poll
   // VERIFICATION (UI phase selection, 2026-07-25) — the lifecycle command the worker
   // runs (refine → continue → verify), a NET-NEW control that lives OUTSIDE the assign
   // row's fitness-locked `picker · action · message` geometry (DG-13): the node picker's
@@ -1482,7 +1482,7 @@ function LoopStopRow({ loop, node, localNodeId, remembered, onRung }: { loop: Fl
   }, [loop.scope, loop.workspaceId, onRung]);
   return (
     <p className="flex items-center gap-2 text-[13px] font-semibold text-primary">
-      <span className="min-w-0 truncate" title={loop.title}>{loop.head}{loop.progress ? <> · <span className={loop.quiet ? "text-amber-500" : undefined}>{loop.progress}</span></> : null}</span>
+      <span className="min-w-0 truncate" title={loop.title}>{loop.head}{loop.progress ? <> · <span className={loop.quiet ? LOOP_QUIET_CLASS : undefined}>{loop.progress}</span></> : null}</span>
       {button ? <button type="button" disabled={view.actionDisabled} aria-busy={ack.phase === "sending" ? "true" : undefined} aria-label={button.title} title={button.title} onClick={onStop} className={button.tone === "muted" ? "shrink-0 rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-card disabled:cursor-not-allowed disabled:opacity-50" : "shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive transition disabled:cursor-not-allowed disabled:opacity-50"}>{button.label}</button> : null}
       {button && view.message ? <span className="mono min-w-0 shrink truncate text-[10.5px] text-destructive" title={view.messageTitle ?? view.message}>{view.message}</span> : null}
     </p>

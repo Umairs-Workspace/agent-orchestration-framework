@@ -27,7 +27,7 @@ import { mkdtemp, mkdir, rm, readFile, writeFile, readdir } from "node:fs/promis
 import os from "node:os";
 import path from "node:path";
 const initWork = _aofApplication.assets.work.init.initWork;
-import { initPlanning } from "../../../packages/core/src/planning-init.mjs";
+import { initPlanning, planningEntries } from "../../../packages/core/src/planning-init.mjs";
 import { createRenderPlan, createLockManifest, planApplyActions, executeApplyActions } from "../../../packages/core/src/render-plan.mjs";
 import { writeLock, readLock, mergeFrameworkInstallAttempts } from "../../../packages/core/src/lock.mjs";
 import { workspacePaths } from "../../../packages/core/src/workspace.mjs";
@@ -86,8 +86,9 @@ export const archTests = [
         entries = await onlyLockFile(aofDir);
         assert.deepEqual(entries, ["aof.lock.json"], "after planning init: still only aof.lock.json");
         lock = JSON.parse(await readFile(paths.lockPath, "utf8"));
-        assert.ok(lock.planning && lock.planning.source === "phuryn/pm-skills", "planning section written");
-        assert.match(lock.planning.sha, /^[0-9a-f]{40}$/, "planning.sha 40-hex");
+        const claudeEntry = planningEntries(lock).claude;
+        assert.ok(claudeEntry && claudeEntry.source === "phuryn/pm-skills", "planning section written");
+        assert.match(claudeEntry.sha, /^[0-9a-f]{40}$/, "planning.sha 40-hex");
         assert.deepEqual(lock.work, workSnapshot, "planning init preserved the `work` section");
         const planningSnapshot = lock.planning;
 

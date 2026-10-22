@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AOF one sync pass</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#f3f5f7;color:#1b1f27;font-family:Inter,system-ui,sans-serif}
+.frame{max-width:1100px;margin:auto}.eyebrow{font:10px ui-monospace,Consolas,monospace;letter-spacing:.15em;color:#585f6a}
+h1{font:400 28px 'Instrument Serif',Georgia,serif}svg{width:100%;display:block}
+.name{font:600 12px Inter,system-ui,sans-serif;fill:#1b1f27}
+.sub{font:9px ui-monospace,Consolas,monospace;fill:#585f6a}
+.label{font:8px ui-monospace,Consolas,monospace;fill:#585f6a;letter-spacing:.06em}
+</style></head><body><main class="frame"><p class="eyebrow">AOF · 164 / ADR-004 · ARCHITECTURE</p><h1>One sync pass, three drivers</h1>
+<svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ADR-004-one-sync-pass-title ADR-004-one-sync-pass-desc">
+<title id="ADR-004-one-sync-pass-title">AOF one sync pass</title>
+<desc id="ADR-004-one-sync-pass-desc">The CLI face, the daemon start and the daemon tick all call one sync pass, which reads the work tree and appends a workspace.changed mark to the effects journal; the drain publishes owed marks into the projection store, advancing the baseline only on success; readers answer from disk unless another node reported the row and the local record is unchanged.</desc>
+<style>.name{font:600 12px Inter,system-ui,sans-serif;fill:#1b1f27}.sub{font:9px ui-monospace,Consolas,monospace;fill:#585f6a}.label{font:8px ui-monospace,Consolas,monospace;fill:#585f6a;letter-spacing:.06em}</style>
+<defs>
+<marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#585f6a"/></marker>
+<marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#ba2646"/></marker>
+<marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#13766d"/></marker>
+</defs>
+<rect width="1000" height="500" fill="#f3f5f7"/>
+<g fill="none" stroke="#13766d" stroke-width="1.2" marker-end="url(#arrow-link)">
+<path d="M200 108 H260"/><path d="M200 180 H260"/><path d="M200 252 H260"/>
+<path d="M460 180 H520"/><path d="M700 180 H760"/>
+</g>
+<path d="M860 220 V320" fill="none" stroke="#ba2646" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+<g fill="none" stroke="#585f6a" stroke-width="1" stroke-dasharray="5,4" marker-end="url(#arrow)">
+<path d="M360 340 V280"/><path d="M460 376 H520"/><path d="M760 376 H700"/>
+</g>
+<g class="label" text-anchor="middle">
+<rect x="468" y="164" width="44" height="16" fill="#f3f5f7"/><text x="490" y="175">MARK</text>
+<rect x="708" y="164" width="44" height="16" fill="#f3f5f7"/><text x="730" y="175">OWED</text>
+<rect x="332" y="296" width="56" height="16" fill="#f3f5f7"/><text x="360" y="307">READ</text>
+<rect x="468" y="360" width="44" height="16" fill="#f3f5f7"/><text x="490" y="371">DISK</text>
+<rect x="708" y="360" width="44" height="16" fill="#f3f5f7"/><text x="730" y="371">ROW*</text>
+</g>
+<rect x="868" y="260" width="92" height="16" fill="#f3f5f7"/>
+<text class="label" x="872" y="271" fill="#ba2646" style="fill:#ba2646">UPSERT + BASELINE</text>
+<rect x="40" y="80" width="160" height="56" rx="8" fill="rgba(88,95,106,.10)" stroke="#7a818d"/>
+<text class="name" x="56" y="104">CLI face</text><text class="sub" x="56" y="124">own workspace</text>
+<rect x="40" y="152" width="160" height="56" rx="8" fill="rgba(88,95,106,.10)" stroke="#7a818d"/>
+<text class="name" x="56" y="176">Daemon start</text><text class="sub" x="56" y="196">catch-up, every workspace</text>
+<rect x="40" y="224" width="160" height="56" rx="8" fill="rgba(88,95,106,.10)" stroke="#7a818d"/>
+<text class="name" x="56" y="248">Daemon tick</text><text class="sub" x="56" y="268">every registered workspace</text>
+<rect x="260" y="80" width="200" height="200" rx="8" fill="rgba(186,38,70,.08)" stroke="#ba2646"/>
+<text class="name" x="276" y="112">Sync pass</text>
+<text class="sub" x="276" y="140">1 stat gate</text><text class="sub" x="276" y="160">2 fingerprint vs baseline</text>
+<text class="sub" x="276" y="180">3 mark if changed</text><text class="sub" x="276" y="200">4 drain owed steps</text>
+<rect x="520" y="140" width="180" height="80" rx="8" fill="rgba(27,31,39,.05)" stroke="#585f6a"/>
+<text class="name" x="536" y="170">journal.sqlite</text><text class="sub" x="536" y="194">workspace.changed · collapse</text>
+<rect x="760" y="140" width="200" height="80" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="776" y="170">Drain</text><text class="sub" x="776" y="194">publish-projection · lock</text>
+<rect x="260" y="340" width="200" height="72" rx="8" fill="rgba(27,31,39,.05)" stroke="#585f6a"/>
+<text class="name" x="276" y="368">Work tree</text><text class="sub" x="276" y="392">record docs (canonical)</text>
+<rect x="520" y="340" width="180" height="72" rx="8" fill="#fff" stroke="#1b1f27"/>
+<text class="name" x="536" y="368">Readers</text><text class="sub" x="536" y="392">find · list · next · doctor</text>
+<rect x="760" y="320" width="200" height="92" rx="8" fill="rgba(27,31,39,.05)" stroke="#585f6a"/>
+<text class="name" x="776" y="352">projection.sqlite</text><text class="sub" x="776" y="376">work_items</text><text class="sub" x="776" y="396">work_item_observations</text>
+<line x1="40" y1="440" x2="960" y2="440" stroke="#bec6d0"/>
+<text class="sub" x="40" y="464">Crimson: the baseline advances only when the write succeeds</text>
+<text class="sub" x="40" y="484">ROW*: overlays disk only when another node reported it and the local record is unchanged</text>
+</svg></main></body></html>

@@ -727,12 +727,13 @@ export const workInsertAliasTests = [
         .sort();
       assert.deepEqual(
         importers,
-        ["packages/core/src/application/bindings/commands/insert-chore.mjs", "packages/core/src/application/bindings/commands/insert-milestone.mjs", "packages/core/src/application/bindings/commands/insert-uat.mjs", "packages/core/src/application/bindings/commands/promote-finding-to-chore.mjs", "packages/core/src/application/bindings/commands/promote-gap-to-chore.mjs"],
-        `…and imported from ./promote.mjs by exactly the five: ${importers.join(", ")}`,
+        ["packages/core/src/application/bindings/commands/insert-chore.mjs", "packages/core/src/application/bindings/commands/insert-milestone.mjs", "packages/core/src/application/bindings/commands/insert-uat.mjs", "packages/core/src/application/bindings/commands/promote-finding-to-chore.mjs", "packages/core/src/application/bindings/commands/promote-gap-to-chore.mjs", "packages/core/src/application/bindings/commands/prototype.mjs"],
+        // 168/ADR-004 — the prototype verb is one more face over the engine, and it adds no mint.
+        `…and imported from ./promote.mjs by exactly the six: ${importers.join(", ")}`,
       );
       const anyImporters = [...sources].filter(([, code]) => /\brunInsertTopLevel\b/u.test(code) && !/function\s+runInsertTopLevel\b/u.test(code)).map(([relPath]) => relPath).sort();
       const packageFaces = importers.map(file => file.replace("packages/core/src/application/bindings/commands/", "packages/work/src/commands/"));
-      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs"].sort(), "only core composition and the five package faces receive the insertion service");
+      assert.deepEqual(anyImporters, [...importers, ...packageFaces, "packages/core/src/application/bindings/commands/promote.mjs"].sort(), "only core composition and the six package faces receive the insertion service");
       for (const face of packageFaces) {
         assert.match(sources.get(face), /\brunInsertTopLevel\s*\(/u, `${face}: the injected insertion service is called`);
         const adapter = sources.get(face.replace("packages/work/src/", "packages/core/src/application/bindings/"));

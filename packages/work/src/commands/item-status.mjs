@@ -251,7 +251,7 @@ const itemStatusCommand = {
       return {
         ref: item.ref,
         status: item.status ?? null,
-        edges: itemStatusEdges(item.status),
+        edges: itemStatusEdges(item.status, item.type),
         answeredFrom: item.answeredFrom ?? "disk",
         ...(item.reportedBy ? { reportedBy: item.reportedBy } : {}),
       };
@@ -269,7 +269,9 @@ const itemStatusCommand = {
     // doctor surface remains advisory; this exact-item preflight runs the SAME group,
     // over the SAME snapshot measurement and resolved config budgets, with only the
     // accepting ref injected. No other status edge pays or applies this gate.
-    if (toStatus === "done" && itemStatusEdges(item.status).includes("done")) {
+    // A prototype's `done` is the operator's "good enough", not an acceptance (168/ADR-003), so
+    // no budget binds it.
+    if (toStatus === "done" && item.type !== "prototype" && itemStatusEdges(item.status, item.type).includes("done")) {
       const findings = await doctorWork(ctx.workspace.workDir, ctx.workspace.config, item.ref, {
         groups: [budgetGroup],
         acceptingRef: item.ref,
@@ -292,7 +294,7 @@ const itemStatusCommand = {
     // lifecycle rather than by a gate it was never going to reach. Nothing else in this verb is
     // touched: the read face, every other edge and a story's `done` all behave exactly as before.
     let gateAdmission = null;
-    if (toStatus === "done" && item.type === "milestone" && itemStatusEdges(item.status).includes("done")) {
+    if (toStatus === "done" && item.type === "milestone" && itemStatusEdges(item.status, item.type).includes("done")) {
       gateAdmission = await admitThroughRegressionGate(item, input, ctx);
     }
 
@@ -319,7 +321,7 @@ const itemStatusCommand = {
         {
           ...record,
           moved: true,
-          edges: itemStatusEdges(record.status),
+          edges: itemStatusEdges(record.status, item.type),
           // The gate's own answer, reported on the RESULT so `--json` carries the claim the
           // operator reads: an accept that went through the gate names the row that let it, and one
           // that went through the override names the reason it recorded. Absent on every other
@@ -351,7 +353,7 @@ const itemStatusCommand = {
         code: error.code,
         reason: error.message,
         asked: toStatus,
-        edges: itemStatusEdges(actualStatus),
+        edges: itemStatusEdges(actualStatus, item.type),
       };
     }
   },

@@ -16,16 +16,27 @@ import { defaultSessionHooks as _aofHooks } from "aof/session-hooks";
 //     store) and reads it back (republish bumps publishedAt, the id is stable, a peer's
 //     record is untouched); mesh:status lists the synced roster ({ nodes:[...] }, an
 //     empty roster reads as { nodes: [] }, not an error); reads mutate nothing.
+//
+// Traceability wiring for milestone 167 / story 00 (the daemon says what it costs):
+//   .../167_milestone_daemon-stays-within-a-resource-budget/stories/00_story_the-daemon-says-what-it-costs/
+//     tasks/01_status-and-doctor-say-what-it-costs.feature (@executable) — R2's `aof mesh status`
+//     cost block and its text line, and R3 through the real `work:doctor` edge and `aof work validate`.
+//     The snapshots are written where production writes them, through the presence module's writer.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { DAEMON_BUDGET } from "@aof/foundation/cost-meter";
+import { spawnCliSync } from "../../support/cli-spawn.mjs";
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const getCommand = _aofApplication.getCommand;
 const invoke = _aofApplication.invoke;
 const meshDir = _aofHooks.meshStore.meshDir;
 const nodeRecordPath = _aofHooks.meshStore.nodeRecordPath;
 const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
+const publishCostSnapshot = _aofApplication.mesh.presence.publishCostSnapshot;
+const CLI = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "packages", "core", "bin", "aof.mjs");
 
 // 34/story 02 (operator directive): `skills` is REMOVED from the descriptor
 // (see assembleDescriptor) — six keys, until 132/02 added a seventh:
@@ -89,7 +100,143 @@ async function snapshotTree(workspace) {
   return snap;
 }
 
+// ── 167/00 — the daemon cost fixtures ──────────────────────────────────────────────────
+const COST_NODE = "node-7297";
+const COST_NOW = "2026-10-20T18:30:00.000Z";
+
+// A repo whose config pins this node's id, under its own isolated home.
+async function makeCostRepo() {
+  const fx = await makeRepo();
+  await writeFile(
+    path.join(fx.repo, ".aof", "aof.config.json"),
+    `${JSON.stringify({ name: "fixture", runtimes: ["claude"], work: { dir: "./wiki/work" }, mesh: { nodeId: COST_NODE } }, null, 2)}\n`,
+    "utf8",
+  );
+  const ctx = await ctxFor(fx.repo, fx.env);
+  await mkdir(meshDir(ctx.workspace), { recursive: true }); // the serve daemon's presence publish creates it
+  return { ...fx, ctx, home: fx.env.AOF_GLOBAL_HOME };
+}
+
+// A daemon snapshot as the meter writes it, at `at` with `cpuPercent` in `state`.
+function costSnapshot(daemon, at, { cpuPercent = 1, state = "idle", topCauses = [] } = {}) {
+  return {
+    schema: 1, daemon, pid: 4242, at, startedAt: "2026-10-20T17:00:00.000Z", windowSeconds: 60,
+    cpuPercent, cpuPercentSinceStart: cpuPercent, eventLoopUtilization: 0.02, eventLoopUtilizationSinceStart: 0.02,
+    state, topCauses,
+  };
+}
+const at = (clock) => `2026-10-20T${clock}.000Z`;
+const cause = (name, labels, count = 7) => ({ cause: name, labels, count });
+
+async function cleanupCost(fx) {
+  await rm(fx.repo, { recursive: true, force: true });
+  await rm(fx.home, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+}
+
+const meshStatusCostTests = [
+  {
+    name: "167/00 E4 · both daemons reporting are shown with their share, state, budget and causes",
+    async run() {
+      const fx = await makeCostRepo();
+      try {
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "serve", costSnapshot("serve", at("18:29:50"), { cpuPercent: 1.5, state: "idle", topCauses: [cause("sync-pass", { workspaceId: "aof" }), cause("cache-hit", { workspaceId: "aof" }, 4), cause("degrade", { code: "mesh-launcher" }, 2), cause("request", { route: "/x" }, 1)] }));
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "ui", costSnapshot("ui", at("18:29:52"), { cpuPercent: 6, state: "viewer-open", topCauses: [cause("request", { route: "/api/work/list", client: "board" })] }));
+        const { cost } = await invoke("mesh:status", { now: COST_NOW }, fx.ctx);
+        const [serve, ui] = cost.daemons;
+        assert.deepEqual([serve.daemon, serve.cpuPercent, serve.status, serve.state, serve.budgetPercent], ["serve", 1.5, "idle", "idle", 2]);
+        assert.deepEqual([ui.daemon, ui.cpuPercent, ui.status, ui.state, ui.budgetPercent], ["ui", 6, "viewer-open", "viewer-open", 10]);
+        assert.deepEqual(serve.topCauses.map((entry) => [entry.cause, entry.labels]), [["sync-pass", { workspaceId: "aof" }], ["cache-hit", { workspaceId: "aof" }], ["degrade", { code: "mesh-launcher" }]], "its top three causes, with their labels");
+        assert.deepEqual(ui.topCauses[0].labels, { route: "/api/work/list", client: "board" });
+        assert.deepEqual([cost.budget.idlePercent, cost.budget.viewerOpenPercent], [2, 10], "the cost block states the budget as 2% idle and 10% viewer-open");
+        assert.deepEqual(cost.budget, { ...DAEMON_BUDGET, windowSeconds: 60 }, "…the meter's own numbers, not re-declared");
+      } finally {
+        await cleanupCost(fx);
+      }
+    },
+  },
+  {
+    name: "167/00 E5 · a snapshot three writes late reads as not reporting",
+    async run() {
+      const fx = await makeCostRepo();
+      try {
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "serve", costSnapshot("serve", at("18:29:10")));
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "ui", costSnapshot("ui", at("18:29:55")));
+        const { cost } = await invoke("mesh:status", { now: COST_NOW }, fx.ctx);
+        const [serve, ui] = cost.daemons;
+        assert.deepEqual([serve.status, serve.ageSeconds], ["not-reporting", 50], "serve reads not-reporting, last reported 50 seconds ago");
+        assert.deepEqual([ui.status, ui.ageSeconds], ["idle", 5], "ui reads normally");
+      } finally {
+        await cleanupCost(fx);
+      }
+    },
+  },
+  {
+    name: "167/00 E6 · a node where no daemon has run shows an empty cost block",
+    async run() {
+      const fx = await makeCostRepo();
+      try {
+        const result = await invoke("mesh:status", { now: COST_NOW }, fx.ctx);
+        assert.ok(result.cost != null, "the cost block is present, never absent");
+        assert.deepEqual(result.cost.daemons, [], "with no daemons");
+        assert.deepEqual([result.cost.budget.idlePercent, result.cost.budget.viewerOpenPercent], [DAEMON_BUDGET.idlePercent, DAEMON_BUDGET.viewerOpenPercent], "and the budget stated");
+        assert.equal(getCommand("mesh:status").cli.render(result).includes("cost:"), false, "no cost line for a daemon that never ran");
+      } finally {
+        await cleanupCost(fx);
+      }
+    },
+  },
+  {
+    name: "167/00 the text report prints one cost line per daemon",
+    async run() {
+      const fx = await makeCostRepo();
+      try {
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "serve", costSnapshot("serve", at("18:29:50"), { cpuPercent: 1.5, state: "idle", topCauses: [cause("sync-pass", { workspaceId: "aof" })] }));
+        const text = getCommand("mesh:status").cli.render(await invoke("mesh:status", { now: COST_NOW }, fx.ctx));
+        const lines = text.split("\n").filter((line) => line.startsWith("cost: "));
+        assert.equal(lines.length, 1, text);
+        for (const part of ["serve", "1.5%", "idle", "2%", "sync-pass"]) assert.ok(lines[0].includes(part), `the serve line names "${part}": ${lines[0]}`);
+      } finally {
+        await cleanupCost(fx);
+      }
+    },
+  },
+  {
+    name: "167/00 E7 · an idle daemon over budget is named with its top cause",
+    async run() {
+      const fx = await makeCostRepo();
+      try {
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "serve", costSnapshot("serve", at("18:29:50"), { cpuPercent: 38, state: "idle", topCauses: [cause("full-disk-read", { workspaceId: "52294b307214c27d" }, 40)] }));
+        const result = await invoke("work:doctor", { now: COST_NOW }, { ...fx.ctx, globalWorkStoreOptions: { env: fx.env } });
+        const over = result.findings.filter((finding) => finding.code === "daemon-over-budget");
+        assert.equal(over.length, 1, JSON.stringify(result.findings));
+        assert.equal(over[0].severity, "warn");
+        for (const part of ["serve", "38%", "2%", "full-disk-read", "52294b307214c27d"]) assert.ok(over[0].message.includes(part), `the warn names "${part}": ${over[0].message}`);
+      } finally {
+        await cleanupCost(fx);
+      }
+    },
+  },
+  {
+    name: "167/00 a daemon warn never fails validate",
+    async run() {
+      const fx = await makeCostRepo();
+      try {
+        // The CLI reads the wall clock, so the snapshot is fresh rather than at the fixture's 18:29:50.
+        await publishCostSnapshot(fx.ctx.workspace, COST_NODE, "serve", costSnapshot("serve", new Date().toISOString(), { cpuPercent: 38, state: "idle" }));
+        const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(AOF_|CLAUDE)/.test(key)));
+        const doctor = spawnCliSync(process.execPath, [CLI, "work", "doctor", "--json"], { cwd: fx.repo, encoding: "utf8", env: { ...env, AOF_GLOBAL_HOME: fx.home, NODE_NO_WARNINGS: "1" } });
+        assert.ok((doctor.stdout ?? "").includes("daemon-over-budget"), `the warn is raised: ${doctor.stdout}${doctor.stderr}`);
+        const validate = spawnCliSync(process.execPath, [CLI, "work", "validate"], { cwd: fx.repo, encoding: "utf8", env: { ...env, AOF_GLOBAL_HOME: fx.home, NODE_NO_WARNINGS: "1" } });
+        assert.equal(validate.status, 0, `${validate.stdout}${validate.stderr}`);
+      } finally {
+        await cleanupCost(fx);
+      }
+    },
+  },
+];
+
 export const meshIdentityStatusCommandsTests = [
+  ...meshStatusCostTests,
   // ══ Scenario: mesh:identity publishes this node's record and returns it ══════
   {
     name: "mesh-identity-status-commands/01 mesh:identity publishes this node's record and returns it",

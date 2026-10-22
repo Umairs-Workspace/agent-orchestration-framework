@@ -28,7 +28,8 @@ export const archTests = [
       }
       const launcher = await readFile(path.join(repoRoot, "packages/mesh/src/launcher.mjs"), "utf8");
       const adapter = await readFile(path.join(repoRoot, "packages/core/src/application/bindings/mesh/launcher.mjs"), "utf8");
-      for (const text of [launcher, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*publishGlobalWorkSnapshot/su);
+      // 164/ADR-004: the launcher's tick runs the publisher seam's sync pass (FF-16405).
+      for (const text of [launcher, adapter]) assert.match(text, /createMeshLauncher\(\{[^}]*syncWorkspace/su);
       for (const forbidden of ["mesh.enabled", "config?.mesh?.enabled", "openGlobalWorkProjectionStore", "publishWorkspaceSnapshot"]) assert.ok(!launcher.includes(forbidden), forbidden);
       for (const name of ["feedback", "run-start", "run-complete"]) {
         const implementation = await readFile(path.join(repoRoot, `packages/work/src/commands/${name}.mjs`), "utf8");

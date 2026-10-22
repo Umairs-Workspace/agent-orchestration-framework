@@ -132,8 +132,10 @@ async function readNodeRecord(workspace, id) {
 // Read every published node record under nodes/, parsed. Absence-tolerant: no
 // nodes/ dir ⇒ [] (the same absence-is-benign discipline). A torn/unparseable file
 // is skipped rather than blinding the whole list — the records are derived/rebuildable.
-// (Story 01's mesh:status consumes this.)
-async function readNodeRecords(workspace) {
+// (Story 01's mesh:status consumes this.) A caller that must not act on a PARTIAL roster passes
+// `unreadable`, an array that receives `{ path, message }` per skipped file (164/F-02: the
+// registry publish rewrote membership from a roster whose every file was torn).
+async function readNodeRecords(workspace, { unreadable } = {}) {
   let entries = [];
   try {
     entries = await readdir(path.join(meshDir(workspace), "nodes"));
@@ -143,10 +145,11 @@ async function readNodeRecords(workspace) {
   const records = [];
   for (const name of entries) {
     if (!name.endsWith(".json")) continue;
+    const file = path.join(meshDir(workspace), "nodes", name);
     try {
-      records.push(JSON.parse(await readFile(path.join(meshDir(workspace), "nodes", name), "utf8")));
-    } catch {
-      continue;
+      records.push(JSON.parse(await readFile(file, "utf8")));
+    } catch (error) {
+      if (Array.isArray(unreadable)) unreadable.push({ path: file, message: error?.message ?? String(error) });
     }
   }
   return records;

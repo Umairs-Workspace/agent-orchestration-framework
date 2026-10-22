@@ -270,8 +270,8 @@ export function TerminalControl({
   const present = useCallback((form: string) => ((viaRef.current = form), act(AFFORDANCE_FULLSCREEN)), [act]);
 
   const model = useMemo(
-    () => mountModelFor({ source, mount: mount.posture as MountPostureName }),
-    [source, mount.posture],
+    () => mountModelFor({ source, mount: mount.posture as MountPostureName, reason: mount.reason ?? null }),
+    [source, mount.posture, mount.reason],
   );
   const identity = useMemo(
     () => terminalPaneIdentity({ source, params: addressed, ref: mount.ref, farEnd: mount.farEnd }),

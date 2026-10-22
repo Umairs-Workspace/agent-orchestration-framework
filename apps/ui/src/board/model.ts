@@ -5,7 +5,8 @@
 // its stories = items whose parent == the milestone's number; a uat gate =
 // type:uat. Counts, progress and story-dots are derived — never fetched, never
 // faked. Task counts are deliberately NOT surfaced (not in the contract).
-import type { WorkItem, WorkStatus } from "./api";
+import type { DocName, PrototypeStatus, WorkItem, WorkStatus } from "./api";
+import type { StatusKind } from "./status";
 
 export type Milestone = {
   item: WorkItem;
@@ -86,7 +87,8 @@ export function deriveBoard(items: WorkItem[]): Derived {
 
   const milestoneItems = stream.filter((i) => i.type === "milestone" && i.parent == null);
   const uat = stream.filter((i) => i.type === "uat");
-  const otherDrivers = stream.filter((i) => i.type === "spike" || i.type === "chore");
+  // milestone 168/ADR-007 §2: a prototype rides beside spike and chore, never a lane of its own.
+  const otherDrivers = stream.filter((i) => i.type === "spike" || i.type === "chore" || i.type === "prototype");
 
   const milestones: Milestone[] = milestoneItems.map((item) => {
     const stories = stream.filter((s) => s.type === "story" && sameMilestone(s.parent, milestoneKey(item)));
@@ -151,6 +153,88 @@ export function milestoneOfGate(derived: Derived, gate: WorkItem): Milestone | n
 export function findMilestone(derived: Derived, ref: string): Milestone | null {
   return derived.milestones.find((m) => m.num === ref) ?? null;
 }
+
+// A PROTOTYPE'S WORD → ITS LANE (milestone 168 / ADR-007 §2) — the ONE mapping. The lanes are
+// keyed on the frozen five, and `place` drops a card whose status has no lane, so a prototype's
+// own four words each map to one: `active` → in-progress, `paused` → not-started, `done` and
+// `abandoned` → done. Every governed word answers itself, so no governed card moves. The status
+// ramp (`status.tsx`) reads the same mapping, so a prototype's ring agrees with its lane.
+const PROTOTYPE_LANE: Readonly<Record<PrototypeStatus, WorkStatus>> = {
+  active: "in-progress",
+  paused: "not-started",
+  done: "done",
+  abandoned: "done",
+};
+
+export function laneStatus(status: WorkItem["status"] | undefined): WorkStatus | null {
+  if (status == null) return null;
+  return (PROTOTYPE_LANE as Readonly<Record<string, WorkStatus>>)[status] ?? (status as WorkStatus);
+}
+
+export function laneFor(item: WorkItem): StatusKind {
+  return laneStatus(item.status) ?? "not-started";
+}
+
+// A top-level driver's card tag: its type, and for a prototype its own word too (ADR-007 §3), so
+// `paused` and `abandoned` stay visible as themselves inside a shared lane.
+export function driverTag(item: WorkItem): string {
+  return item.type === "prototype" ? `prototype · ${item.status ?? "active"}` : item.type;
+}
+
+export type LaneCard = { item: WorkItem; tag: string };
+
+// The lane buckets for a focus: every card in the lane its status maps to (`laneFor`). Under `all`
+// the milestones, their in-review/blocked stories, the uat gates and the other drivers; under a
+// milestone focus that milestone's stories and its gates. A prototype is never milestone work.
+export function laneCards(derived: Derived, focus: "all" | string): Record<StatusKind, LaneCard[]> {
+  const out: Record<StatusKind, LaneCard[]> = {
+    "not-started": [],
+    "in-progress": [],
+    "in-review": [],
+    blocked: [],
+    done: [],
+  };
+  const place = (item: WorkItem, tag: string) => {
+    const lane = laneFor(item);
+    if (out[lane]) out[lane].push({ item, tag });
+  };
+
+  if (focus === "all") {
+    for (const m of derived.milestones) place(m.item, "milestone");
+    for (const m of derived.milestones) {
+      for (const s of m.stories) {
+        if (s.status === "in-review" || s.status === "blocked") place(s, `in ${m.num}`);
+      }
+    }
+    for (const u of derived.uat) place(u, "uat");
+    // milestone 37/ADR-003: spike/chore are additive top-level drivers
+    // (ADR-001, uat-shaped) — placed via the SAME existing driver mechanism as
+    // uat above (no new lane/column); the tag doubles as the type badge. A
+    // prototype rides the same placement (168/ADR-007), tagged with its own word.
+    for (const d of derived.otherDrivers) place(d, driverTag(d));
+  } else {
+    const m = derived.milestones.find((x) => x.num === focus);
+    if (m) for (const s of m.stories) place(s, `in ${m.num}`);
+    for (const u of gatesFor(derived, focus)) place(u, "uat");
+  }
+  return out;
+}
+
+export type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
+
+// Type-aware tab set (the ACD doc model). VERIFICATION/RETROSPECTIVE/Findings are
+// MILESTONE-level; a story carries STORY.md plus its TASKS (its tasks/*.feature).
+// RUNS is offered at the level that OWNS a runs/ log — both milestones and stories
+// (m19 ADR-002) — and never on a uat gate (DESIGN surface 1). A prototype opens on its own two
+// documents and has no RUNS: its verb mints no run record (168/ADR-004 §5).
+export function tabsFor(item: WorkItem): Tab[] {
+  if (item.type === "milestone") return ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"];
+  if (item.type === "story") return ["STORY", "TASKS", "RUNS"];
+  if (item.type === "uat") return ["FINDINGS"];
+  if (item.type === "prototype") return ["PROTOTYPE", "STATE"];
+  return ["SPEC"];
+}
+
 
 export const titleOf = (item: WorkItem): string => item.title ?? item.slug;
 

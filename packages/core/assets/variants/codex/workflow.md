@@ -762,7 +762,8 @@ instructions the plan answers, and pasting the block the export returns. aof nev
 
 <config>
 Parse "$ARGUMENTS": one work item ref, then optionally one ADR id (`ADR-NNN`). The ADR id names the
-one ADR to draw. With none named, this run draws every undrawn brief the item has.
+one ADR to draw. With none named, this run draws every undrawn brief the item has. When the ref is a
+**prototype**, follow `<prototype>` below instead of the process: a prototype has no ADRs.
 </config>
 
 <process>
@@ -833,6 +834,40 @@ one ADR to draw. With none named, this run draws every undrawn brief the item ha
    and this command never commits what was drawn. Leave the diagrams, the pasted blocks and any new
    brief for the operator to review and commit.
 </process>
+
+<prototype>
+**A prototype ref** (`aof work find <ref> --json` answers `type: prototype`). A prototype has no
+ADRs: its briefs live under `## Diagrams` in its `PROTOTYPE.md`, one `### <name>` heading each, and
+a diagram's subject is its **name** — lower case, digits and hyphens, at most 48 characters. Its wants
+change, so a drawn diagram **can be redrawn**: the new picture replaces the old one, and no copy is
+kept (git keeps the old one once the operator commits). Nothing is spawned.
+
+Tell the three forms apart by the argument after the ref:
+
+- **`<ref>` alone — draw the missing ones.** Every `### <name>` brief under `## Diagrams` with no
+  `](diagrams/` link under it is a candidate. List them all before the first draw, then draw each
+  in turn. With none, report that the prototype has nothing to draw and write nothing.
+- **`<ref> <name>` matching an existing `### <name>` heading — a redraw.** Draw that one diagram
+  again and **replace** its block under the brief.
+- **`<ref> "<what to draw>"` — anything else is the description of a new diagram.** Pick a name of
+  at most four words in kebab case, write a new `### <name>` heading under `## Diagrams` (add the
+  section at the end of `PROTOTYPE.md` if it is missing) with the description as its brief, then
+  draw it.
+
+For each diagram:
+
+1. **Plan.** Run `aof diagram plan <ref> <name> --json` — no `--slug`; on a prototype the stem is
+   the name, and `--slug` is refused (`diagram-slug-not-applicable`). Act on `enabled: false` and
+   `available: false` exactly as the ADR path does. A non-zero exit is a coded refusal — report its
+   code and message: `diagram-name-unknown` (no such `### <name>` heading), `diagram-brief-missing`
+   (a heading with no prose) or `diagram-slug-invalid` (the name is not lower-case kebab).
+2. **Draw.** Follow the answer's `instructions` exactly, writing only the one source file it names.
+3. **Export.** Run `aof diagram export <ref> <name> --json` and paste the returned `block` directly
+   under the brief — or, on a redraw, replace the block already there. A PNG miss still pastes it.
+4. **Log it.** Run `aof work prototype <ref> --log "diagram <name> drawn"` (or `redrawn`).
+
+Report each diagram drawn or redrawn, the paths written and where the block went. Commit nothing.
+</prototype>
 
 <!-- variant:add-milestone -->
 Use the native skill $aof-add-milestone; $ARGUMENTS is the operator text after its name.
@@ -2211,8 +2246,8 @@ the others.
    as in the backlog and not yet scheduled. A row with `archived: true` is archived and done:
    explain it like any other item, and mark it as archived and done.
 3. **Read its record doc.** For a story run `aof work doc <ref> STORY`; for a milestone,
-   `aof work doc <ref> SPEC`. For a spike, chore or uat session, an available file/image reader `SPIKE.md`, `CHORE.md` or
-   `SESSION.md` in the row's own `dir`. The purpose is read from a section that depends on the type:
+   `aof work doc <ref> SPEC`. For a spike, chore, uat session or prototype, an available file/image reader `SPIKE.md`, `CHORE.md`,
+   `SESSION.md` or `PROTOTYPE.md` in the row's own `dir`. The purpose is read from a section that depends on the type:
 
    | type      | the purpose is read from |
    |-----------|--------------------------|
@@ -2221,6 +2256,7 @@ the others.
    | spike     | its `## Question` |
    | chore     | its `## Intent` |
    | uat       | its `## Scope` |
+   | prototype | its `## Intent` |
 
 4. **Write the answer.**
    - **Default (no `--verbose`): three to five sentences per item** saying what it delivers, who it
@@ -3130,6 +3166,98 @@ What tracks the item afterwards is what tracked it before — its own record doc
 Report the minted ref and the path it now lives at, and confirm `aof work validate` is green after
 the move. Next: `$aof-refine <NN>` for a milestone or a story; for a chore, spike or uat session, do
 the work in its record doc and then `$aof-verify <NN>`.
+</output>
+
+<!-- variant:prototype -->
+Use the native skill $aof-prototype; $ARGUMENTS is the operator text after its name.
+
+## Codex execution contract
+Use only tools actually exposed by this session. File reading/editing, shell execution, search,
+browser/image tools and native role tools are capability-dependent; Claude tool aliases are not
+permissions. Instruction-level read-only boundaries do not claim enforced sandbox isolation.
+In solo mode perform required roles inline and spawn nothing. Orchestrated independent work
+requires a native launcher such as spawn_agent when exposed, independent context and support
+for each selected model/effort; otherwise report native-role-capability-unavailable or
+native-role-setting-unsupported before claiming independence. Stay within the resolved dispatch
+bound and review/no-progress bounds. Read role settings from work.agents.runtimes.codex.
+Never infer the primary assistant from the delegation toggle.
+For questions, use an available native question tool, or ask explicitly in the conversation when
+that tool is unavailable. Required answers remain pending until received. A driven business question
+retains its map token and one-question-per-ask form. Permission approval uses the host approval flow,
+not a question tool or elapsed time. AOF_NEEDS_INPUT is for an actually unanswered blocked turn,
+never a fabricated native capability.
+
+<objective>
+Build a **prototype**: something working, fast, inside the work tree, with its asks and shortcuts on
+record. A prototype is a top-level work item (`NN_prototype_<slug>/`, two files: `PROTOTYPE.md` and
+`STATE.md`) that nothing depends on and the loop never schedules. It carries no stories, no `.feature`
+and no acceptance criteria — its wants can change at any time, and that is normal.
+
+**You build it yourself, in this session, on the current branch.** Spawn no agent, make no branch and
+no worktree, run no review lane and make no commit — committing is the operator's. This is what makes
+a prototype fast: none of the governed loop's machinery runs.
+
+`aof work prototype` does the mechanical half of every move — the number, the dates, the status and
+the Log lines. You write the prose: the hand-off, the shortcuts, and any rewording of a want.
+</objective>
+
+<config>
+Resolve refs with `aof work find` — never hand-glob `**/*.md`. The prototype's folder is the `dir` of
+its row.
+</config>
+
+<process>
+For: "$ARGUMENTS"
+
+1. **Which move.** All digits, or the slug of an existing prototype, is a **ref**; anything else is
+   the **ask**.
+   - **Start** — the arguments are an ask. Run `aof work prototype "<ask>" --json` (add
+     `--slug <slug>` only if the operator named one). It scaffolds the folder through the one number
+     mint, writes the ask into `## Intent` and as the first dated `## Wants` line, and logs `started`.
+   - **Continue or add** — `<ref>` with or without a new ask. Run
+     `aof work prototype <ref> ["<new ask>"] --json`. A new ask is appended to `## Wants` and logged;
+     a `paused`, `done` or `abandoned` prototype is reopened to `active` and logged `reopened`.
+   - **Stop or complete** — `<ref> --stop`, `--done` or `--abandon`: see step 5.
+
+   A refusal is a stop: report its code and message and do not reach around it by editing the tree.
+
+2. **Read before building.** Read `PROTOTYPE.md` (Intent, Wants, Shortcuts) and `STATE.md`'s
+   `## Hand-off`. On a continue, the hand-off is where the last session stopped; if it still holds the
+   template placeholder (a session ended without `--stop`), rebuild it from the `## Log` and the code
+   before you go on.
+
+3. **Check the branch, once.** Run `git branch --show-current` (read-only). If it is `main`, say once
+   that the checkout is on `main` and the work should be committed to a branch — then build anyway.
+   Make no branch yourself.
+
+4. **Build — in this session.** Make the wants work, fastest path first. As you go:
+   - keep `## Shortcuts` in `PROTOTYPE.md` current: every corner cut, every faked part, every
+     hard-coded value a governed build would have to pay back;
+   - log as you go with `aof work prototype <ref> --log "<one line>"` — what worked, what changed,
+     a decision. One dated line each; the verb writes nothing else;
+   - a want that changes or is dropped is edited in `## Wants` by you, **struck through, never
+     deleted** (`- ~~2026-10-23 · PDF export~~ dropped: CSV is enough`), and logged with `--log`.
+   Write no time of day and no duration anywhere.
+
+5. **Stop with a hand-off.** Before ending the session, replace `STATE.md`'s `## Hand-off` with the
+   latest checkpoint: what works, where it stopped, what is next. Then run
+   `aof work prototype <ref> --stop` (pause), `--done` (good enough) or `--abandon`. The verb refuses
+   with `prototype-handoff-missing` while the placeholder is still there, and on success quotes your
+   hand-off into `## Log`, so every checkpoint stays on record. The next session replaces the
+   hand-off; the Log keeps them all.
+</process>
+
+<progress_tracking>
+A prototype's status is one of `active`, `paused`, `done` and `abandoned`, and only `aof work
+prototype` (or `aof work status`) moves it — never hand-edit a `status:` line. `active ⇄ paused →
+done | abandoned`, and either end reopens to `active` on the next continue. No run is minted and no
+review or acceptance follows: `done` is the operator's "good enough".
+</progress_tracking>
+
+<output>
+Say which move ran and the prototype's ref and status, what was built this session, the shortcuts
+added, and the hand-off you wrote. Name what is uncommitted — committing is the operator's. Next:
+`$aof-prototype <ref>` to continue, or `$aof-prototype <ref> "<new ask>"` to add a want.
 </output>
 
 <!-- variant:archive -->

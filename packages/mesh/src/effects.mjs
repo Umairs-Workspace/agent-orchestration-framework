@@ -6,13 +6,21 @@ export function createMeshEffects(getServices) {
     const { workspaceRoot } = event.payload ?? {};
     if (!workspaceRoot) return { skipped: true, reason: "no-workspace-root" };
     const workspace = await loadWorkspace(workspaceRoot);
+    // A verb's event names the refs its operator touched; a `workspace.changed` mark names none
+    // and carries the stat digest it noticed. Either way the publish itself asks which rows
+    // changed since observed (164/ADR-001), so a verb and a mark land a local change identically.
+    const { digest } = event.payload ?? {};
     const publish = await publishGlobalWorkSnapshot(workspace, {
       ...(ctx.publisherOptions ?? {}),
       operatorRefs: await operatorRefsWithArchivedStories(workspace, event.payload),
+      ...(typeof digest === "string" ? { digest } : {}),
     });
     if (publish.warning) throw projectionPropagationError(publish.warning);
     if (publish.skipped) return { published: false, skipped: true, code: publish.code };
-    return { published: publish.published === true };
+    // A change the lock held back stays owed (164/ADR-001), and the pass says so by name.
+    const held = (publish.result?.skippedRefs ?? []).filter((entry) => entry?.reason === "held-by-assignment")
+      .map(({ ref, reason, holderNode }) => ({ ref, reason, holderNode: holderNode ?? null }));
+    return { published: publish.published === true, ...(held.length > 0 ? { held } : {}) };
   }
 
   function projectionPropagationError(warning) {
@@ -149,6 +157,53 @@ export function createMeshEffects(getServices) {
     }
   }
 
+  // 167/ADR-008 — publishRun: the `publish-run` step of `run.started` and `run.completed`. The
+  // workspace puts its own run into the store through the ledger it already writes, so the presence
+  // tick can read "what is running here" instead of walking every item's runs/ folder.
+  //
+  //   1. The workspace is the payload's `workspaceRoot`, or — when a mint passed none (`drive`,
+  //      `cycle`, `wave`, `loop`, `run-retry` pass no workspace today) — the run's own item, through
+  //      the config loader walking up from `itemDir`. That is what keeps every mint site untouched.
+  //   2. The ONE propagation predicate decides, exactly as the projection publish does: a lane, a
+  //      secondary checkout or a workspace off the mesh publishes nothing, by return.
+  //   3. The record is read AS IT STANDS NOW, by `runId`, so the step is state-based and idempotent:
+  //      a retried step (164/ADR-006, until done) writes the latest state, never the event's.
+  //   4. One row, this node as reporter, through the store's narrow writer.
+  // A missing record (a pruned run) is a skip, not a throw — a throw here would retry forever against
+  // a fact that no longer exists. A store that will not open DOES throw: that is the owed step the
+  // journal keeps and the next drain pays (E4).
+  async function publishRun(event, ctx = {}) {
+    const { loadWorkspace, meshGlobalPropagationDecision, readRun, openGlobalWorkProjectionStore, publishWorkItemRun } = await getServices();
+    const { ref, runId, itemDir, itemType, workspaceRoot } = event.payload ?? {};
+    if (typeof runId !== "string" || runId.length === 0 || typeof itemDir !== "string" || itemDir.length === 0) {
+      return { skipped: true, reason: "no-run" };
+    }
+    const storeOptions = ctx.publisherOptions?.globalWorkStoreOptions ?? ctx.globalWorkStoreOptions ?? {};
+    const loadOptions = storeOptions.env ? { env: storeOptions.env } : {};
+    const root = typeof workspaceRoot === "string" && workspaceRoot.length > 0 ? workspaceRoot : null;
+    const workspace = root != null && ctx.workspace?.projectRoot === root
+      ? ctx.workspace
+      : await loadWorkspace(root ?? itemDir, undefined, loadOptions);
+    const decision = meshGlobalPropagationDecision(workspace);
+    if (!decision.enabled) return { published: false, skipped: true, code: decision.code };
+
+    let record;
+    try {
+      record = await readRun({ ref, dir: itemDir, type: itemType ?? null }, runId);
+    } catch (error) {
+      if (error?.code === "ENOENT") return { published: false, skipped: true, reason: "run-record-missing" };
+      throw error;
+    }
+
+    const store = ctx.store ?? (await openGlobalWorkProjectionStore(storeOptions));
+    try {
+      const result = await publishWorkItemRun(store, workspace, { ref: record.itemRef ?? ref, runId, record }, { now: ctx.now });
+      return result.published ? { published: true, runId, state: result.state, nodeId: result.nodeId } : { published: false, skipped: true, reason: result.reason };
+    } finally {
+      if (!ctx.store) store.close?.();
+    }
+  }
+
   async function meshFactsApply(payload, ctx = {}) {
     const { loadWorkspace } = await getServices();
     const root = payload?.workspaceRoot;
@@ -159,26 +214,36 @@ export function createMeshEffects(getServices) {
   }
 
 
+  // 164/ADR-006 — `publish-projection` is state-based and idempotent (a whole-workspace upsert), so a
+  // failed publish is retried until it lands, with backoff, instead of stopping at the ceiling.
+  // 167/ADR-008 — `publish-run` rides the two run events beside it, the same retry: one run row,
+  // read as it stands when the step runs, so a late retry lands the current state.
   return Object.freeze({ name: '@aof/mesh', events: Object.freeze({
     "run.started": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
+      Object.freeze({ key: "publish-run", locus: "local", apply: publishRun, retry: "until-done" }),
     ]),
     "run.completed": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
+      Object.freeze({ key: "publish-run", locus: "local", apply: publishRun, retry: "until-done" }),
     ]),
     "feedback.recorded": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "item-status.changed": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "stream.reindexed": Object.freeze([
       Object.freeze({ key: "remap-projection", locus: "local", apply: remapProjectionRefs }),
       Object.freeze({ key: "remap-control-facts", locus: "control-store", apply: remapControlFactRefs, applies: meshFactsApply }),
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "stream.archived": Object.freeze([
-      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection }),
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
+    ]),
+    // 164/ADR-003 — a change no verb raised (a hand edit, a pull, a scaffold), noticed by the sync pass.
+    "workspace.changed": Object.freeze([
+      Object.freeze({ key: "publish-projection", locus: "local", apply: publishItemProjection, retry: "until-done" }),
     ]),
     "assignment.reported": Object.freeze([
       Object.freeze({ key: "settle-assignment", locus: "control-store", apply: settleAssignment }),
