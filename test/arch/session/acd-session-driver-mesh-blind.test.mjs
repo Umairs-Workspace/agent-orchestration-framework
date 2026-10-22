@@ -320,7 +320,11 @@ export const archTests = [
       // 167/00 (ADR-001) — the degrade reporter counts every report on the cost meter, so the closure
       // gains that zero-import foundation leaf (164 -> 165); it does no I/O and reaches no lifecycle module.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/foundation/src/cost-meter.mjs")), "the cost meter leaf");
-      assert.equal(sinkGraph.seen.size, 165, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 167/06 (ADR-008) — the projection store's board-face content reads moved to their own module
+      // under the store's line ratchet, which the store imports (165 -> 166); it adds no I/O the store
+      // did not already do and reaches no lifecycle module.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/mesh/src/content-reads.mjs")), "the store's content-reads module");
+      assert.equal(sinkGraph.seen.size, 166, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

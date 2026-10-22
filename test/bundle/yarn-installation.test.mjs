@@ -174,6 +174,8 @@ export const yarnInstallationTests = [
         'publisher.mjs': ['node:path', 'node:fs', '@aof/work/discovery'],
         // 164/00: the store asks the one "changed since observed" predicate (FF-16401).
         'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change', '@aof/work/discovery', '@aof/foundation/cost-meter'],
+        // 167/06: the store's board-face content reads, moved out under its line ratchet, key artifact docs as the store does.
+        'content-reads.mjs': ['@aof/work/artifacts'],
         'assignment-record.mjs': ['node:crypto'],
         'store.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'registry.mjs': ['node:path', 'node:fs/promises', 'node:crypto', '@aof/foundation/fs'],
@@ -260,6 +262,8 @@ export const yarnInstallationTests = [
         'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/ratchet.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        // 168: the prototype verb reads and writes its own folder's PROTOTYPE.md and log.
+        'commands/prototype.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs'],
         'commands/audit.mjs': ['node:path', 'node:fs/promises'],
         'commands/run-start.mjs': ['node:fs/promises', '@aof/contracts/error', '@aof/contracts/loop-bounds'],
         'commands/run-complete.mjs': ['@aof/contracts/error'],

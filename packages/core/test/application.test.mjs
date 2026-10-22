@@ -12,8 +12,8 @@ test('core constructs independent applications with the same command catalog', a
   try {
     assert.notEqual(first, second);
     // 154/06 adds the native independent review driver to the existing catalog; 163 adds work:questions;
-    // 166 adds graph:export and graph:import.
-    assert.equal(first.listCommands().length, 122);
+    // 166 adds graph:export and graph:import; 168 adds work:prototype.
+    assert.equal(first.listCommands().length, 123);
     assert.deepEqual(JSON.parse(JSON.stringify(first.listCommands())), JSON.parse(JSON.stringify(second.listCommands())));
     assert.notEqual(first.getCommand('work:list'), second.getCommand('work:list'));
     assert.equal(typeof first.getCommand('work:list').run, 'function');

@@ -216,7 +216,11 @@ function assertUiFrozen(pairs) {
   // a remembered `ETag` per URL, a `304` answering the same object), `Board.tsx`, `DetailPanel.tsx`, `Fleet.tsx` and `Home.tsx` (each
   // poll built from the one cadence instead of a `setInterval`), and the new `lib/poll-cadence.mjs` + `.d.mts`. What the polls
   // read is unchanged; no run-record key, cycle, level or loop state is read, and the loop still has no face of its own.
-  assert.equal(hash.digest("hex"), "c8939f7503bfe53d3f70091464083d50dbe68b0079cbb8ff7bdc84c95275a771", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 168/03, measured: `git diff --numstat -- apps/ui/src` past 167/02 is the board's `BoardLanes.tsx`,
+  // `DetailPanel.tsx`, `model.ts`, `status.tsx` and `api.ts`, and `fleet/Fleet.tsx`: a prototype is a work item the
+  // board lists and opens (its lane, its four status words, its tab set, moved to `model.ts` as `tabsFor`). No run-record
+  // key, cycle, level or loop state is read, and the loop still has no face of its own.
+  assert.equal(hash.digest("hex"), "e053d12f62d0727dcf5bb02aa73d0966061a7d258723b646be7df25cee4b7de1", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

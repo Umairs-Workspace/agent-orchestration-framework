@@ -308,7 +308,13 @@ doc: state
     so tick 2 took a `first` walk (≈1.1 CPU-s) inside the measured idle phase. With the watch on,
     idle `serve` measured 1.10 CPU-s per 45 s; with it off, 4.90; the OS showed ≈0.6% at steady
     state. Fixed by arming before the walk (ADR-009, amended): the soak is green twice on the host.
-  - **168's, left to its owner:** FF-5201 (the six-type vocabulary), FF-5301 (166),
+  - *Also 167's, found once the reds that masked them were cleared:* FF-5301 (165 → 166) is 06's
+    `content-reads.mjs`, not 168's; the reach set was dumped to show it. The same file also needed
+    yarn-installation's mesh allowlist (`@aof/work/artifacts`). 04's `scripts/test.mjs` edit left its
+    three cargo spawns with stale runtime-audit digests, and `scripts/test-docker.mjs` was never
+    audited. All are fixed.
+  - **168's, re-pinned here at the operator's request (separate commit):** FF-5201 (`prototype` in
+    the closed vocabulary),
     yarn-installation (`commands/prototype.mjs`), FF-16004's +2 (and FF-16008 through it), 131/08's
     composition ceiling (63), core-workspace's route list, workspace-boundaries
     (`commands/ratchet.mjs` child process), the core catalog (123), command-core's registry, the

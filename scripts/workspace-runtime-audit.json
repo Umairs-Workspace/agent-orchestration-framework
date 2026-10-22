@@ -404,7 +404,7 @@
     "kind": "child-process",
     "expression": "execFileAsync(\"git\", args, {\n    cwd: projectRoot,\n    encoding: \"utf8\",\n    timeout: 15_000,\n    windowsHide: true,\n  })",
     "digest": "244d055982bc51489a82f947fb274788a3ebc5d7bce1b8db9c8b3919874de893",
-    "sourceDigest": "5718c0cbbecb9bf16701d1d6978d243e9802aa591be6979e509c5bfcecf6c049",
+    "sourceDigest": "6dbb9d9c30589b708bbba81265333c47ea2a949ae2dd946121dfd31791cd598b",
     "reason": "Bounded Git reader obtains historical comparisons as data."
   },
   {
@@ -716,7 +716,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
+    "sourceDigest": "0a844bf0a4bc0d0756acd1bbd6961fc28989571422300f17affca1160988b74f",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -724,7 +724,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
+    "sourceDigest": "0a844bf0a4bc0d0756acd1bbd6961fc28989571422300f17affca1160988b74f",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -732,7 +732,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "664e2401c7a0f7713d11e5a04cc2a9da059c4e8d7101ccab9cacbb1d6fca6a53",
+    "sourceDigest": "0a844bf0a4bc0d0756acd1bbd6961fc28989571422300f17affca1160988b74f",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -974,5 +974,29 @@
     "digest": "d9e1cea848566821da082d4dcfdf75824971a0101504cbd3404f3cf11c1107f8",
     "sourceDigest": "8317555be8508befe3317083ab2bc62fa2cae5d257d1827ffb7486055616a85e",
     "reason": "Git-only progress snapshot read, bounded by the command edge."
+  },
+  {
+    "file": "scripts/test-docker.mjs",
+    "kind": "child-process",
+    "expression": "spawnSync(command, args, { cwd: repo, encoding: \"utf8\", windowsHide: true, ...options })",
+    "digest": "09b7836d5bb95e8e33f313f2c148860ada7fd1ac0611a715957c6240076eb8d7",
+    "sourceDigest": "dd22d98703f7d440ac02bf983ac32325380744a778c57cd9f0fdbdfcbaf6aef8",
+    "reason": "167/04 (the soak) — the repository harness runs the suite in a capped Linux container: it probes and builds the dependency image with docker, streams this working tree in with tar, and runs scripts/test.mjs there. Developer tooling; it imports no project code."
+  },
+  {
+    "file": "scripts/test-docker.mjs",
+    "kind": "child-process",
+    "expression": "spawn(\"docker\", [\"run\", \"--rm\", \"-i\", \"--cpus\", CPUS, \"--memory\", MEMORY, \"--network\", \"none\", tag, \"sh\", \"-c\", inner], { cwd: repo, stdio: [\"pipe\", \"inherit\", \"inherit\"], windowsHide: true })",
+    "digest": "b20b97159b9e9085fcd06f986db65d53ca6bb63d96b5f460ed9a9a550d47903d",
+    "sourceDigest": "dd22d98703f7d440ac02bf983ac32325380744a778c57cd9f0fdbdfcbaf6aef8",
+    "reason": "167/04 (the soak) — the repository harness runs the suite in a capped Linux container: it probes and builds the dependency image with docker, streams this working tree in with tar, and runs scripts/test.mjs there. Developer tooling; it imports no project code."
+  },
+  {
+    "file": "scripts/test-docker.mjs",
+    "kind": "child-process",
+    "expression": "spawn(\"tar\", [\"-c\", \"-f\", \"-\", \"--null\", \"-T\", \"-\"], { cwd: repo, stdio: [\"pipe\", \"pipe\", \"inherit\"], windowsHide: true })",
+    "digest": "667468cc04ff4234c2815fc7c884cc92e9b212748f55a662e9b55a7e71a0289e",
+    "sourceDigest": "dd22d98703f7d440ac02bf983ac32325380744a778c57cd9f0fdbdfcbaf6aef8",
+    "reason": "167/04 (the soak) — the repository harness runs the suite in a capped Linux container: it probes and builds the dependency image with docker, streams this working tree in with tar, and runs scripts/test.mjs there. Developer tooling; it imports no project code."
   }
 ]
