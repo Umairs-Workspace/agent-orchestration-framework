@@ -58,4 +58,5 @@ export interface MountModel extends MountHeaderModel {
 export declare function mountModelFor(input?: {
   source?: Partial<SessionSource> | null;
   mount?: MountDeclaration | MountPostureName | { readOnly?: boolean } | null;
+  reason?: string | null;
 }): MountModel;

@@ -29,6 +29,7 @@ import { SurfaceSlot } from "../app/SurfaceSlot";
 import { CONTENT_FIXED_HEIGHT_CLASS } from "../app/shell-layout.mjs";
 import { SessionGrid } from "./SessionGrid";
 import { SessionLauncher } from "./SessionLauncher";
+import { LOOP_QUIET_CLASS } from "../components/loop-line.mjs";
 import type { TerminalOrigins } from "../terminal/socket-url.mjs";
 import {
   HOME_EMPTY_CARD_CLASS,
@@ -273,7 +274,7 @@ function LoopLines({ loops }: { loops: HomeLoopLine[] }) {
       {loops.map((loop) => (
         <p key={`${loop.nodeId ?? ""}:${loop.key}`} className="min-w-0 truncate text-[12px] font-semibold text-primary" title={loop.nodeId ? `${loop.title} · ${loop.nodeId}` : loop.title}>
           {loop.head}
-          {loop.progress ? <> · <span className={loop.quiet ? "text-amber-500" : undefined}>{loop.progress}</span></> : null}
+          {loop.progress ? <> · <span className={loop.quiet ? LOOP_QUIET_CLASS : undefined}>{loop.progress}</span></> : null}
         </p>
       ))}
     </div>

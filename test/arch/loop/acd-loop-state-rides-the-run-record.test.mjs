@@ -220,7 +220,14 @@ function assertUiFrozen(pairs) {
   // `DetailPanel.tsx`, `model.ts`, `status.tsx` and `api.ts`, and `fleet/Fleet.tsx`: a prototype is a work item the
   // board lists and opens (its lane, its four status words, its tab set, moved to `model.ts` as `tabsFor`). No run-record
   // key, cycle, level or loop state is read, and the loop still has no face of its own.
-  assert.equal(hash.digest("hex"), "e053d12f62d0727dcf5bb02aa73d0966061a7d258723b646be7df25cee4b7de1", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED at `aof:verify 162` (F-01, F-03), measured: `git diff --numstat -- apps/ui/src` past 168/03
+  // is six files — `components/loop-line.{mjs,d.mts}` (the quiet tone exported as `LOOP_QUIET_CLASS`,
+  // and a comment naming the span formatter's fenced twin), `fleet/runs.{mjs,d.mts}` (one re-export
+  // line each), and `fleet/Fleet.tsx` and `home/Home.tsx` (the tone read from that constant). Class
+  // and import edits only; nothing under `apps/ui/src/board/` changed. The same verify (F-06) adds
+  // `terminal/input-policy.{mjs,d.mts}` and `terminal/TerminalControl.tsx`: the read-only badge's title
+  // is the mount's stated cause when it has one. Still nothing under `apps/ui/src/board/`.
+  assert.equal(hash.digest("hex"), "8f31174abc5970829ab94526c3db348f7ee1f473eff1078b72adc6285b694711", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

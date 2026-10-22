@@ -210,6 +210,7 @@ function nonEmptyString(value) {
 // below read is that module's one `loopStopRung`.
 import { loopStopRung } from "../components/loop-line.mjs";
 export { fleetLoopLines } from "../components/loop-line.mjs";
+export { LOOP_QUIET_CLASS } from "../components/loop-line.mjs";
 
 // The DESIGN's two buttons, verbatim — label, `title`/`aria-label` and tone. Rung 0 is
 // `muted` (draining is the ordinary way a loop ends and loses nothing; the quietest control

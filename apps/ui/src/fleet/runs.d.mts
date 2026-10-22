@@ -43,6 +43,7 @@ export declare function fleetCurrentWorkLines(
 import type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "../components/loop-line.mjs";
 export type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "../components/loop-line.mjs";
 export { fleetLoopLines } from "../components/loop-line.mjs";
+export { LOOP_QUIET_CLASS } from "../components/loop-line.mjs";
 
 // The rung a click REQUESTS: 1 = drain (`Stop`), 2 = cancel (`Stop now`). Rung 3 — nothing
 // left to ask — renders no button.

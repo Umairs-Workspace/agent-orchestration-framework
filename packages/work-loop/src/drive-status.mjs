@@ -30,7 +30,9 @@ import { readdir as fsReaddir, stat as fsStat } from "node:fs/promises";
 // The cadence — five minutes, the operator's answer to EXAMPLES Q2.
 export const DRIVE_STATUS_INTERVAL_MS = 5 * 60 * 1000;
 
-// `5 s`, `14 min`, `1 h 05 min` — the same shape the UI's loop line uses for the same facts.
+// `5 s`, `14 min`, `1 h 05 min` — the same shape the UI's loop line uses for the same facts. A twin of
+// `formatLoopDuration` (`apps/ui/src/components/loop-line.mjs`), kept because this kernel may not
+// import a sibling package; FF-16202 fails if the two ever spell a span differently (162 verify, F-01).
 export function formatDriveDuration(ms) {
   const seconds = Math.max(0, Math.floor(ms / 1000));
   if (seconds < 60) return `${seconds} s`;

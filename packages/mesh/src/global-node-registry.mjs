@@ -214,9 +214,16 @@ async function queryGlobalRegistry(store, options = {}) {
     const memberships = db.prepare(`
       SELECT workspace_id FROM global_node_workspaces WHERE node_id = ? ORDER BY workspace_id
     `).all(row.node_id).map((entry) => entry.workspace_id);
+    const diskPresence = await readPresenceRecord(presenceWorkspace, row.node_id);
+    // 162 verify (F-05) — "is this node alive" reads the node's CURRENT heartbeat, not only the one
+    // stamped at the last publish. Since 164 the daemon publishes only when a workspace changed, so
+    // on a quiet tree `last_seen_at` stops moving while the presence file keeps beating; the later
+    // of the two is the node's last sign of life, and the card's `lastSeenAt` carries the same instant.
+    const lastSeenAt = laterInstant(row.last_seen_at, diskPresence?.heartbeatAt);
     const node = {
       ...descriptor,
-      freshness: freshnessFor(row.last_seen_at, now, thresholdMs),
+      ...(lastSeenAt == null ? {} : { lastSeenAt }),
+      freshness: freshnessFor(lastSeenAt, now, thresholdMs),
       workspaceIds: memberships, // nodes are machine-wide; never narrowed by a workspace filter (34/story 02)
       workspaces: memberships.map((id) => workspaceById.get(id) ?? { workspaceId: id, name: null, projectRoot: null }),
     };
@@ -229,7 +236,6 @@ async function queryGlobalRegistry(store, options = {}) {
     // publisher emitted them — no liveness/subsumption is recomputed here.
     // 130/ADR-005 §2 — `loops` (the seventh, omitted-when-empty key) rides through the
     // same spread: present iff the disk record carried it, and LAST, as the assembler emits it.
-    const diskPresence = await readPresenceRecord(presenceWorkspace, row.node_id);
     if (diskPresence) node.presence = assemblePresenceRecord(diskPresence);
     nodes.push(node);
   }
@@ -332,6 +338,15 @@ function upsertGlobalRegistryRows(store, snapshot) {
 function forgetNodeWorkspace(store, nodeId, workspaceId) {
   const result = store.db.prepare("DELETE FROM global_node_workspaces WHERE node_id = ? AND workspace_id = ?").run(nodeId, workspaceId);
   return Number(result?.changes ?? 0) > 0;
+}
+
+// laterInstant(a, b) → whichever parseable ISO instant is later, or the one that parses, else null.
+function laterInstant(a, b) {
+  const ms = (value) => (typeof value === "string" && value.length > 0 ? Date.parse(value) : Number.NaN);
+  const [aMs, bMs] = [ms(a), ms(b)];
+  if (!Number.isFinite(aMs)) return Number.isFinite(bMs) ? b : null;
+  if (!Number.isFinite(bMs)) return a;
+  return bMs > aMs ? b : a;
 }
 
 function freshnessFor(lastSeenAt, now, thresholdMs) {
