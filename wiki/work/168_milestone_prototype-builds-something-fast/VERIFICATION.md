@@ -65,9 +65,39 @@ INCONCLUSIVE. The milestone has no `DESIGN.md`, so no surface declares a `Route`
 new surface: a prototype card reuses the existing lane card with a `prototype · <status>` tag. With
 nothing to render, no designer or QA session was spawned. See F-02.
 
+### Milestone · the whole-tree regression gate
+
+| run | commit | result | what it found |
+|---|---|---|---|
+| 1 | `d63b05e6` | red (26.5 min, REGRESSION.md row 1) | 23 failing units on the tree 168 shared with 167's in-flight work → F-03 |
+| — | `7514acf1` | green in 167's gate (167 REGRESSION.md, 15.3 min) | the tree with every red repaired, 168's included |
+| 2 | `25d69b87` | override (REGRESSION.md row 2) | the code is byte-identical to `7514acf1` (`git diff 7514acf1 25d69b87` touches `wiki/` only), so a second whole-tree run would re-prove nothing |
+
+Before the override, the suites `7514acf1` repaired for 168 were run at `25d69b87`, together with
+168's two FF files, through `--only` with an isolated home: `core-workspace`,
+`bundle-runtime-variants`, `command-core-contract`, `application-assembly`, `notify-messaging`,
+`terminals-home-route`, `acd-cli-entry-executes`, `acd-loop-registry-not-an-item-type`,
+`acd-loop-state-rides-the-run-record`, `yarn-installation`, `acd-record-doc-map-one-home` and
+`acd-prototype-stays-light`. That was 160 cases with 0 failures, plus `packages/core/test/application.test.mjs` (2
+native, 0 failures). A second whole-tree run at `25d69b87` was started and then stopped by the
+operator, since it would only have repeated 167's green run on the same code. It wrote no row.
+verifies → the milestone's accept door (REGRESSION.md).
+
 ## Findings
 
 | id | observed | type | severity | triage | routed-to | status |
 |---|---|---|---|---|---|---|
 | F-01 | Each of the four stories' declared `files:` missed paths its build had to write. 00 missed `item-status.mjs` plus four pinned suites. 01 missed the registry-derived guards a new `work:*` verb trips: `commands.mjs`, `packages/work/package.json`, `bundle.suite.mjs`, the CLI bijection, route coverage and the insert-face census. 02 caught two more of 01's censuses (`acd-learning-edge-reaches-every-cut`, `autonomous-shell-out-prompt`). 03 missed `status.tsx` and the artifact-count pin. Recorded at build in STATE `## Feedback`. | process | low | Non-blocker. Fixed at verify: each story's `files:` now names what its build wrote, and the lanes above ran over the widened set. Recall: m127/F-14 and m127/F-05 have the same cause (derived pins outside a story's `files:`) and are cited as the prior occurrence. m147/F-147-01 (`bundle.suite.mjs` pinned counts) is the same class. Its recurrence is a retrospective lesson, not a code defect. | product-owner (168) | closed |
 | F-02 | No design judgement was possible for 168/03, since there is no `DESIGN.md` and no `Route`. One question is unjudged: whether the longer tag `prototype · abandoned` truncates beside the status ring and ref on a narrow lane card. | design-gap | low | Non-blocker. ADR-007 deliberately adds no surface, and the tag is the existing lane card's tag slot. Recall: m135/F-135-03 has the same cause (no `Route`, so nothing to render) on a different surface, so this is a distinct incident. m127/F-32 (a card cluster wider than its column at 768) is the overflow class this would join if it were measured. Recorded as an OUTCOME gap with its discharge condition. | designer (backlog) | open |
+| F-03 | The first whole-tree gate (`d63b05e6`, REGRESSION.md row 1) failed on controls that none of the story lanes selected. These were 168's own: `prototype` missing from FF-5201's closed type vocabulary, the `commands/prototype.mjs` imports missing from `yarn-installation`'s allow-list, FF-16004's module ceiling for `aof work find` (718 → 720), 131/08's command-composition ceiling (63), the regenerated command inventory and command-core's known ids, the prompt-audit row for `command:prototype` (44 → 45), `ratchet.mjs`'s runtime-audit digest, the DetailPanel file budget (913 → 901, from `tabsFor` moving into `model.ts`) and FF-5307's `ui/` hash. The same run's other reds were 167's in-flight work (m167/F-09). | defect | high | Blocker for the door. Fixed in `7514acf1` (167's gate repair, done at the operator's request), and green at that commit in 167's whole-tree gate. The repaired suites were re-run here at `25d69b87`: 160 + 2 cases, 0 failures. Recall: the same class as m164/F-01, m165/F-01 and m161/F-01 (a milestone's own code turning pinned censuses red, caught only by the whole tree). m167/F-09 is the other milestone's view of this same run, so this is not a separate incident. It recurs as RETROSPECTIVE R1. | product-owner (168) | closed |
+
+## Accept decision
+
+**Accepted 2026-10-22.** All four stories are done (00–03). `aof work validate 168` passes, and
+`aof work doctor 168` reports no `control-unresolved` at either severity. FF-16801…16804 each
+resolve with a recorded red probe. The door is passed by a recorded override, REGRESSION.md row 2.
+Its reason is that the code at `25d69b87` is byte-identical to `7514acf1`, which is whole-tree
+green in 167's gate (15.3 min). That reason, and the targeted re-run of the repaired suites, are
+evidence about this tree, and the override row says that it is an override. F-01 and F-03 are closed. F-02 stays open as a non-blocker
+design gap, recorded in 03's OUTCOME with its discharge condition. There is no `@uat` scope, so
+no human sign-off applies.

@@ -3,7 +3,7 @@ type: milestone
 number: 168
 slug: prototype-builds-something-fast
 title: "A prototype builds something fast — one light command gets something working inside the aof work tree, with its asks and shortcuts on record"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-22
 updated: 2026-10-22

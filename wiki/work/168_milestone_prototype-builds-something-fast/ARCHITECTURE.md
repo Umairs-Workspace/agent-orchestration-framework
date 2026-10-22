@@ -333,3 +333,26 @@ and badge components are reused as they are.
 | FF-16802 | `isDriver` and `isDependTarget` answer false for a prototype, and `nextWork` over a stream that holds only a prototype offers nothing | `test/arch/work/acd-prototype-stays-light.test.mjs` (pending) | ADR-001 |
 | FF-16803 | A well-formed prototype folder (PROTOTYPE.md and STATE.md, no `stories/`, `tasks/`, `.feature` or VERIFICATION) passes `validateWork` and draws no doctor finding in each of `active`, `paused`, `done` and `abandoned` | `test/arch/work/acd-prototype-stays-light.test.mjs` (pending) | ADR-003, ADR-005 |
 | FF-16804 | `packages/core/assets/commands/prototype.md` does not list `Agent` in `allowed-tools`, and `packages/work/src/commands/prototype.mjs` imports no dispatch, worktree, lane or git module | `test/arch/work/acd-prototype-stays-light.test.mjs` (pending) | ADR-004 |
+
+## Build refinements (graduated from STATE at 168's close)
+
+Decisions the build took inside the ADRs above, kept here so the compacted STATE loses none:
+- **A status word no type owns is not a status (ADR-003).** `isStatusWord(word)` sits beside
+  `statusVocabularyFor` in `lifecycle.mjs`. The writer's `invalid-status` gate refuses only a word
+  that no type owns. A word that another type owns (`in-review` asked of a prototype, `paused` of a
+  milestone) reaches the per-type edge check, which refuses it as `status-edge-not-applicable` and
+  names the legal moves.
+- **A prototype's `done` skips the budget preflight (ADR-003 §1).** The status verb runs its
+  record-doc budget check only on governed acceptances. A prototype's `done` means "good enough",
+  not an acceptance.
+- **The contract defaults (ADR-004, ADR-006).** The slug is the ask's words with leading filler
+  dropped, at most six. `runInsertTopLevel` appends only when passed `append: true`, so the
+  `insert-*` faces keep `insert-invalid-at`. The new refusal codes are `prototype-one-move` (two
+  moves, or a new ask beside a move flag), `diagram-name-unknown` and
+  `diagram-slug-not-applicable`. A heading with no prose reuses `diagram-brief-missing`.
+- **The `add-diagram` argument hint is unchanged (ADR-006).** It stays `"<ref> [ADR-NNN]"`, which
+  151's delivered feature states. The prototype forms are in the command body and its description.
+- **The board's mapping is one module (ADR-007).** `laneCards` and `tabsFor` moved into the pure
+  `model.ts` beside `laneFor`. `status.tsx`'s helpers read the wire status through `laneStatus`,
+  so a prototype's ring agrees with its lane, and the card's meta line shows the prototype's own
+  word.
