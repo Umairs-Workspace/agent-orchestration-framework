@@ -324,7 +324,10 @@ export const archTests = [
       // under the store's line ratchet, which the store imports (165 -> 166); it adds no I/O the store
       // did not already do and reaches no lifecycle module.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/mesh/src/content-reads.mjs")), "the store's content-reads module");
-      assert.equal(sinkGraph.seen.size, 166, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // PR #16 (CodeQL) — validation's HTML-comment strip calls the one fixed-point stripper, so the
+      // closure gains the zero-I/O foundation leaf `@aof/foundation/markdown` (166 -> 167).
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/foundation/src/markdown.mjs")), "the markdown stripper leaf");
+      assert.equal(sinkGraph.seen.size, 167, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },
