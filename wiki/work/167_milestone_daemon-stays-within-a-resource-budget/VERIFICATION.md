@@ -132,3 +132,22 @@ memo, but since 07 the walk gate sits beneath the memo, so the revert no longer 
 | F-11 | 167/07 E10 names `aof work list` in a CLI process. Its case proves the property at the seam: a process holding no watch set walks on every read and counts no `stat-walk`. | contract | low | Non-blocker: the CLI arms no watch by construction (FF-16706 claim 3), so the seam is the property. Recall: m167/F-01 is a prior occurrence of the same shape (a verb's property proven at its seam), cited. | product-owner (backlog) | open |
 | F-12 | 167/04 E7's case reads "the global home it was handed", and the feature says "the real global home". | contract | low | Non-blocker: under the runner's isolation the handed home is the only one the process reaches, so the soak's daemons writing only to their own temp home is the same property. Recall: m160/F-07 was a real-home write, which this is not, so this is a distinct incident. | product-owner (backlog) | open |
 | F-13 | 167/07's launcher-level E1–E3 run over the suite's two-story fixture, not the Background's 1,800 docs. | contract | low | Non-blocker: the rule counts walks, not docs, and the 1,800-doc tree is exercised by the discovery cases and 167/04's soak. Recall: no prior finding with this cause. | product-owner (backlog) | open |
+
+## Regression gate
+
+`aof work regression-gate 167` was run 2026-10-22 from a clean detached worktree at `7514acf1`, with
+a fresh `AOF_GLOBAL_HOME` and a launch env with no `GIT_ASKPASS`. Result: **green**, the whole tree,
+sharded, in 15.3 min. One case was named not isolated: "command-core/workspace packages pass their
+package-local suites" went red under the run's load and passed when re-run alone. The row is in
+`REGRESSION.md`. It was reached after two repair rounds: `34d21aeb` (167's reds) and `7514acf1`
+(the masked 167 reds and 168's pins).
+
+## Accept decision
+
+2026-10-22 — **ACCEPTED** by `aof:verify 167`. All eight stories (00–07) are `done`, each with its
+own OUTCOME and RETROSPECTIVE. The whole-tree regression gate is green at `7514acf1`.
+FF-16701…16706 are green, each with a recorded red probe. `aof work validate 167` passes, and doctor
+reports no error and no `control-unresolved`. There is no `@manual` or `@uat` scope, and no blocker
+finding is open. F-04 (the budget), F-06, F-09 and F-10 are closed. The open findings are
+non-blocking gaps and Nits, carried in STATE. Design conformance was INCONCLUSIVE: the one surface
+declares no `Route`.

@@ -3,7 +3,7 @@ type: milestone
 number: 167
 slug: daemon-stays-within-a-resource-budget
 title: "The daemon stays within a resource budget — the mesh daemons measure their own cost, hold a tested CPU budget on a user's device, and the desktop app surfaces a sustained overrun"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-20
 updated: 2026-10-22
