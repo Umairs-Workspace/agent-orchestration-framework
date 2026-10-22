@@ -1,6 +1,7 @@
 // Read-only work validation; core supplies the shipped digest contract when needed.
 import path from "node:path";
 import { readFile } from "node:fs/promises";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 import { parseFeature } from "./feature-parse.mjs";
 import { VALID_STATUS, isOpen, statusVocabularyFor } from "./lifecycle.mjs";
 import { recordDoc, WORK_ITEM_SCHEMA_VERSION, readItemMeta as readMeta, coerceSchemaVersion } from "./records.mjs";
@@ -59,8 +60,7 @@ function sectionBody(text, heading) {
 }
 
 function holdsOnlyPlaceholder(body) {
-  const lines = body
-    .replace(/<!--[\s\S]*?-->/g, "")
+  const lines = stripHtmlComments(body)
     .split("\n")
     .map((line) => line.trim().replace(/^[-*]\s+/, ""))
     .filter(Boolean);

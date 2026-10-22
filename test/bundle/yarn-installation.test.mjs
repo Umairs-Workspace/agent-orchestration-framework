@@ -263,7 +263,7 @@ export const yarnInstallationTests = [
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/ratchet.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         // 168: the prototype verb reads and writes its own folder's PROTOTYPE.md and log.
-        'commands/prototype.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs'],
+        'commands/prototype.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs', '@aof/foundation/markdown'],
         'commands/audit.mjs': ['node:path', 'node:fs/promises'],
         'commands/run-start.mjs': ['node:fs/promises', '@aof/contracts/error', '@aof/contracts/loop-bounds'],
         'commands/run-complete.mjs': ['@aof/contracts/error'],
@@ -334,7 +334,9 @@ export const yarnInstallationTests = [
         // 167/01: the one stat digest of a work tree hashes (path, size, mtime) for the stream memo and the sync gate.
         // 167/07 (ADR-009): the one work-tree watch lives beside the one walk.
         'discovery.mjs': ['node:path', 'node:fs', 'node:fs/promises', 'node:crypto'],
-        'validation.mjs': ['node:path', 'node:fs/promises'],
+        'validation.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/markdown'],
+        // PR #16 CodeQL: the prototype's HTML-comment strips use the one fixed-point stripper.
+        'diagrams/layout.mjs': ['@aof/contracts/error', '@aof/foundation/markdown'],
       } : {};
       const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[file.slice(`packages/${name}/src/`.length)] ?? nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);

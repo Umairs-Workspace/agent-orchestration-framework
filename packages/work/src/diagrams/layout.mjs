@@ -1,5 +1,6 @@
 import { commandError } from "@aof/contracts/error";
 import { headingCaptureRe, idForm } from "../declared-id.mjs";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 
 // THE ONE HOME of a diagram's place and spelling (milestone 133, ADR-003; FF-13302). Three parties
 // must agree on it — the writer (`aof diagram plan` / `export`), the reader (the doctor lane) and
@@ -200,7 +201,7 @@ export function readPrototypeBrief(markdown, name) {
     if (H2_OR_H3.test(line) || line.includes(`](${DIAGRAMS_DIR}/`)) break;
     brief.push(line);
   }
-  return brief.join("\n").replace(/<!--[\s\S]*?-->/g, "").trim();
+  return stripHtmlComments(brief.join("\n")).trim();
 }
 
 // The block the architect pastes under the ADR (ADR-003 §3): the SVG as an image, then the source

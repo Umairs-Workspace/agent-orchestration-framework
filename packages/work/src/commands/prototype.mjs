@@ -2,6 +2,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { commandError } from "@aof/contracts/error";
 import { writeText } from "@aof/foundation/fs";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 import { listItems } from "../discovery.mjs";
 import { parseFrontmatter } from "../records.mjs";
 
@@ -51,7 +52,7 @@ function sectionContent(text, heading) {
   const rows = text.split(/\r?\n/);
   const range = sectionRange(rows, heading);
   if (range == null) return null;
-  return rows.slice(range.start + 1, range.end).join("\n").replace(/<!--[\s\S]*?-->/g, "").split("\n")
+  return stripHtmlComments(rows.slice(range.start + 1, range.end).join("\n")).split("\n")
     .map((line) => line.trimEnd()).join("\n").trim();
 }
 
