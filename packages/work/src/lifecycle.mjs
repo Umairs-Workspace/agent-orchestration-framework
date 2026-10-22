@@ -75,8 +75,39 @@ export const ITEM_STATUS_EDGES = Object.freeze({
 // item may do without re-deriving the lifecycle. An unknown or missing status (a record doc
 // carrying no `status:` line) has NO legal move, which is what makes the writer refuse it
 // rather than rewrite a line that isn't there.
-export function itemStatusEdges(from) {
-  return ITEM_STATUS_EDGES[from] ?? [];
+//
+// `type` selects the table (168/ADR-003): a prototype reads its own four-word table, every
+// other type — and every caller that passes no type — the governed one above, unchanged.
+export function itemStatusEdges(from, type) {
+  const edges = type === "prototype" ? PROTOTYPE_STATUS_EDGES : ITEM_STATUS_EDGES;
+  return Object.hasOwn(edges, from) ? edges[from] : [];
+}
+
+// A PROTOTYPE'S OWN LIFECYCLE (milestone 168 / ADR-003) — declared beside the frozen five, never
+// mapped onto them: `paused` is not `blocked` (the board counts a blocked item as an alarm),
+// `abandoned` has no word in the five, and a prototype's `done` is the operator's "good enough"
+// that a later continue reopens, where the five's `done` is terminal. `VALID_STATUS` keeps its
+// five words in their frozen order (`knowledge/src/import/recovery.mjs` destructures it). A new
+// prototype is born `active`.
+export const PROTOTYPE_STATUS = new Set(["active", "paused", "done", "abandoned"]);
+export const PROTOTYPE_STATUS_EDGES = Object.freeze({
+  active: Object.freeze(["paused", "done", "abandoned"]),
+  paused: Object.freeze(["active", "done", "abandoned"]),
+  done: Object.freeze(["active"]),
+  abandoned: Object.freeze(["active"]),
+});
+
+// statusVocabularyFor(type) — the status words an item of this type may carry: a prototype's
+// four, every other type's frozen five.
+export function statusVocabularyFor(type) {
+  return type === "prototype" ? PROTOTYPE_STATUS : VALID_STATUS;
+}
+
+// isStatusWord(word) — is this a status word of ANY type? A word another type owns (`in-review`
+// asked of a prototype, `paused` of a milestone) is a move the item's own table refuses, with its
+// legal moves named; only a word no type owns is not a status at all.
+export function isStatusWord(word) {
+  return VALID_STATUS.has(word) || PROTOTYPE_STATUS.has(word);
 }
 
 // The one status that closes the horizon. `done` means delivered, immutable and

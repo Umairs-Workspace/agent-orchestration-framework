@@ -1,17 +1,17 @@
 ---
 type: milestone
-number:
+number: 167
 slug: daemon-stays-within-a-resource-budget
 title: "The daemon stays within a resource budget — the mesh daemons measure their own cost, hold a tested CPU budget on a user's device, and the desktop app surfaces a sustained overrun"
-status: not-started
+status: in-progress
 owner: product-owner
 created: 2026-10-20
-updated: 2026-10-20
+updated: 2026-10-22
 schema: 1
 aofVersion: 0.1.0
 tags: [mesh, desktop, performance]
 ---
-# The daemon stays within a resource budget
+# 167 · The daemon stays within a resource budget
 
 ## Objective
 
@@ -70,7 +70,18 @@ Out of scope:
 
 ## Stories
 
-To be broken down at `aof:refine`.
+- [x] [00 · The daemon says what it costs](stories/00_story_the-daemon-says-what-it-costs/STORY.md) (ADR-001, ADR-002)
+- [x] [01 · An unchanged work tree costs a stat walk](stories/01_story_an-unchanged-tree-costs-a-stat-walk/STORY.md) (ADR-003; after 00)
+- [x] [02 · An idle view costs almost nothing](stories/02_story_an-idle-view-costs-almost-nothing/STORY.md) (ADR-004; after 00)
+- [x] [03 · A permanent fault is said once and backed off](stories/03_story_a-permanent-fault-is-said-once-and-backed-off/STORY.md) (ADR-005; after 00, 01)
+- [ ] [04 · The budget is proven by a soak test](stories/04_story_the-budget-is-proven-by-a-soak-test/STORY.md) (ADR-007; after 01, 02, 03, 05, 06, 07)
+- [x] [05 · The desktop shows a sustained overrun](stories/05_story_the-desktop-shows-a-sustained-overrun/STORY.md) (ADR-006; after 00, 02)
+- [x] [06 · Local runs reach the store through the ledger](stories/06_story_local-runs-reach-the-store-through-the-ledger/STORY.md) (ADR-008; found by 04's soak)
+- [ ] [07 · An idle tick walks nothing](stories/07_story_an-idle-tick-walks-nothing/STORY.md) (found by profiling F-04; after 00, 01, 03, 06)
+
+Waves: 00 → 01 ∥ 02 → 03 ∥ 05 → 04. 03 composes 01's digest. 05 and 04 each follow a sibling
+only because they share `acd-source-directory-budget.test.mjs` (the arch-test and new-directory
+rows), not because they share code.
 
 ## Dependencies
 

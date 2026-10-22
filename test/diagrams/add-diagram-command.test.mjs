@@ -154,4 +154,47 @@ export const addDiagramCommandTests = [
       has(text, "`aof work doctor` stays red on that diagram until a node with a browser exports it");
     },
   },
+  // ── milestone 168 / story 02 task 01 · R2 — the prototype branch ──────────────────────────────
+  {
+    name: "168/02 E5 · a description writes a new ### <name> brief under ## Diagrams, then plans, draws, exports and pastes",
+    run: async () => {
+      const text = await prose();
+      has(text, '**`<ref> "<what to draw>"` — anything else is the description of a new diagram.**');
+      has(text, "write a new `### <name>` heading under `## Diagrams`");
+      before(text, "Run `aof diagram plan <ref> <name> --json`", "Run `aof diagram export <ref> <name> --json` and paste the returned `block` directly under the brief");
+    },
+  },
+  {
+    name: "168/02 E6 · a bare prototype ref draws only the briefs with no diagrams link under them",
+    run: async () => {
+      const text = await prose();
+      has(text, "**`<ref>` alone — draw the missing ones.** Every `### <name>` brief under `## Diagrams` with no `](diagrams/` link under it is a candidate.");
+    },
+  },
+  {
+    name: "168/02 E7 · a name matching a brief is a redraw that replaces its block; anything else is a new diagram",
+    run: async () => {
+      const text = await prose();
+      has(text, "**`<ref> <name>` matching an existing `### <name>` heading — a redraw.**");
+      has(text, "**replace** its block under the brief");
+      has(text, "anything else is the description of a new diagram");
+    },
+  },
+  {
+    name: "168/02 each drawing is logged on the prototype",
+    run: async () => {
+      has(await prose(), 'Run `aof work prototype <ref> --log "diagram <name> drawn"` (or `redrawn`).');
+    },
+  },
+  {
+    name: "168/02 the ADR path is unchanged: it still plans with --slug, exports by ADR id, and refuses to redraw a delivered ADR",
+    run: async () => {
+      const text = await prose();
+      has(text, "run `aof diagram plan <ref> <ADR-NNN> --slug <slug> --json`");
+      has(text, "Run `aof diagram export <ref> <ADR-NNN> --json`");
+      has(text, "A `done` item is delivered: report that a delivered ADR's diagram is immutable and stop, writing nothing.");
+      has(text, "Replacing a drawn diagram is not this command's job.");
+    },
+  },
 ];
+

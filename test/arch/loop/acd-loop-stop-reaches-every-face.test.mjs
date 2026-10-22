@@ -14,6 +14,8 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // that CALLS `readActiveRuns(` also calls `readActiveLoops(` — two today, `heartbeat.mjs` and
 // `launcher.mjs`, and the sweep must find both: the launcher's tick is the record this machine
 // actually publishes, and a heartbeat that carried the key alone would be erased by the next tick.
+// (167/ADR-008: the launcher reads both through the one store read, `readStoreActivity(`, which
+// the detector counts as both a runs read and a loops read.)
 //
 // FF-13006. `loopStopAffordance` answers `button: null` for `localNodeId: null`, for
 // `node.nodeId !== localNodeId`, and after rung 2; a rung-1 button otherwise; `rememberStopRung`
@@ -52,8 +54,13 @@ const toPosix = (value) => String(value).split(path.sep).join("/");
 
 const PRESENCE = "packages/mesh/src/presence.mjs";
 const READERS_OF_RUNS = Object.freeze(["packages/mesh/src/commands/heartbeat.mjs", "packages/mesh/src/launcher.mjs"]);
-const RUNS_CALL = /(?<!function\s)\breadActiveRuns\s*\(/u;
-const LOOPS_CALL = /(?<!function\s)\breadActiveLoops\s*\(/u;
+// 167/ADR-008 — the launcher's tick reads this node's runs AND the loops they declare through ONE
+// presence-seam call, `readStoreActivity(`, which answers both from the store; the heartbeat verb
+// still reads them as two calls off the run files. A producer that reads runs through either form
+// is a producer, and either form of the loops read satisfies the rule — the invariant is unchanged:
+// both producers carry the key, or the next tick erases it.
+const RUNS_CALL = /(?<!function\s)\b(?:readActiveRuns|readStoreActivity)\s*\(/u;
+const LOOPS_CALL = /(?<!function\s)\b(?:readActiveLoops|readStoreActivity)\s*\(/u;
 const SIX_KEYS = Object.freeze(["nodeId", "heartbeatAt", "activeRuns", "sessions", "aofVersion", "buildId"]);
 // 162/ADR-003 §1 appends three after `stop` — the drive's session, its start and its consumed heartbeat.
 const LOOP_ENTRY_KEYS = Object.freeze(["loopRunId", "workspaceId", "scope", "level", "cap", "phase", "cycle", "ref", "runId", "supervised", "stop", "sessionId", "driveStartedAt", "lastActivityAt"]);

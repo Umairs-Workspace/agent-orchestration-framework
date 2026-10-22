@@ -98,6 +98,8 @@ import { workPromoteMintsTheNumberTests } from "./work-promote-mints-the-number.
 // backlog row and orders the answer, `--next-item` promotes its head through the named promote's path
 // (tasks 00-01), and the /aof:promote wrapper offers both modes (task 02).
 import { workPromoteShowsCandidatesTests } from "./work-promote-shows-candidates.test.mjs";
+// milestone 168 / story 01 — a prototype's four moves on one verb (tasks 00-01).
+import { workPrototypeFourMovesTests } from "./work-prototype-four-moves.test.mjs";
 // milestone 127 / story 03 — archive is a move: the verbatim MOVE driven over the three-root fixture
 // extended with the archive fixture (tasks 00-04 — the verb and its coded refusals, the rename, the
 // crossing-link rewrite and its one invariant, `--done` behind its confirm gate, the `stream.archived`
@@ -163,6 +165,8 @@ export const tests = [
   ...workPromoteMintsTheNumberTests,
   // story 152 — promote shows what to promote next (tasks 00-02)
   ...workPromoteShowsCandidatesTests,
+  // milestone 168 / story 01 — a prototype's four moves (tasks 00-01)
+  ...workPrototypeFourMovesTests,
   // milestone 127 / story 03 — archive is a move (tasks 00-04)
   ...workArchiveIsAMoveTests,
   // milestone 127 / story 05 — this tree holds what is live (tasks 00 and 02 over the real stream)

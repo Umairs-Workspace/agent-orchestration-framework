@@ -119,3 +119,33 @@ export function isLoopbackHost(host) {
   return typeof host === "string"
     && /^(?:localhost|127(?:\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}|\[::1\])(?::\d{1,5})?$/i.test(host);
 }
+
+// bodyTag(text) — a change-detection tag, not a security one: two independent 32-bit FNV-1a lanes and the
+// length, so the leaf stays import-free beyond `node:path`. A collision would only keep a view one
+// change behind until the next one; at ~2^-64 it is not a case worth an import.
+function bodyTag(text) {
+  let a = 0x811c9dc5, b = 0x01000193 ^ 0x9e3779b9;
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    a = Math.imul(a ^ code, 0x01000193) >>> 0;
+    b = Math.imul(b ^ code, 0x01000193 + 0x100) >>> 0;
+  }
+  return `${text.length.toString(36)}-${a.toString(16).padStart(8, "0")}${b.toString(16).padStart(8, "0")}`;
+}
+
+// sendTaggedJson(request, response, payload, { tagOf }) — 167/ADR-004: a polled route's conditional
+// answer, shared by both faces (the board's `/api/work/list`, the fleet's `/api/mesh/status`). A 200
+// carries an `ETag`, the hash of its body (no version counter in either store), and a request whose
+// `If-None-Match` names it gets a `304` with no body. `tagOf(payload)` lets a face hash the body
+// without a field no view renders (the fleet's `diagnostics.generatedAt`).
+export function sendTaggedJson(request, response, payload, { tagOf } = {}) {
+  const body = JSON.stringify(payload);
+  const etag = `"${bodyTag(tagOf ? tagOf(payload) : body)}"`;
+  if (request.headers?.["if-none-match"] === etag) {
+    response.writeHead(304, { etag });
+    response.end();
+    return;
+  }
+  response.writeHead(200, { "content-type": "application/json", etag });
+  response.end(body);
+}

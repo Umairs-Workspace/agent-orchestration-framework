@@ -11,7 +11,10 @@
 // identity regex (never a re-derived copy) so a renamed folder it produces is
 // guaranteed parseable by every one of work.mjs's 36 dependents. The value is
 // unchanged; only the export keyword is added.
-export const ITEM_RE = /^(\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$/;
+// milestone 168 / ADR-001 — `prototype` joins the grammar and NOTHING ELSE in the scheduling
+// graph: `isDriver` and `isDependTarget` (`dependencies.mjs`) answer false for it, so the loop
+// never offers one and no `depends:` may name one.
+export const ITEM_RE = /^(\d+)_(milestone|story|task|uat|spike|chore|prototype)_([a-z0-9-]+)$/;
 // milestone 127 / ADR-001 §2 — THE BACKLOG LEAF GRAMMAR, the second shape beside the item
 // grammar and in the same home. An un-numbered driver under `backlog/**`: `<type>_<slug>`,
 // identified by its slug (`findWork`'s free-text branch already admits it). `task` is
@@ -19,7 +22,24 @@ export const ITEM_RE = /^(\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]
 // is what keeps a numbered folder under `backlog/` a GROUP rather than an item (the walk below
 // never consults ITEM_RE there). Exported for the same reason ITEM_RE is: doctor's orphan lane
 // and the promote verb match against this binding, never a re-derived copy.
-export const BACKLOG_ITEM_RE = /^(milestone|story|chore|spike|uat)_([a-z0-9-]+)$/;
+// `prototype` is admitted (168/ADR-001 §1) because the start move passes through the backlog for
+// an instant to reach the one mint.
+export const BACKLOG_ITEM_RE = /^(milestone|story|chore|spike|uat|prototype)_([a-z0-9-]+)$/;
+// THE TYPE → RECORD-DOC MAP (milestone 168 / ADR-002) — the filename whose frontmatter carries
+// an item's identity and status, ONE home. It was spelled four times (records.mjs, the two
+// doctor lanes, the ratchet), because the doctor is pure and `recordDoc` reads the disk for a
+// milestone's AOF.md-first choice; the map itself is pure, so it lives in this pure leaf and
+// every lane imports it. A milestone's entry is its NATIVE doc — `recordDoc` (records.mjs) keeps
+// the AOF.md-first branch. A type absent here (an adhoc `task`) carries no record doc.
+// FF-16801 holds that no other `packages/` source spells this map.
+export const RECORD_DOC_BY_TYPE = Object.freeze({
+  milestone: "SPEC.md",
+  story: "STORY.md",
+  uat: "SESSION.md",
+  spike: "SPIKE.md",
+  chore: "CHORE.md",
+  prototype: "PROTOTYPE.md",
+});
 // The two extra roots (127/ADR-001 §1), spelled ONCE. Neither name matches ITEM_RE, which is the
 // whole of the compat story (§6): a pre-127 reader ignores both exactly as it ignores
 // `TECH_DEBT.md` at the root today. Every other module that needs a root's name imports it —

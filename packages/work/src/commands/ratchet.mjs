@@ -2,6 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 import { idForm } from "../declared-id.mjs";
+import { RECORD_DOC_BY_TYPE } from "../identity.mjs";
 import { evaluateRatchet, RATCHET_CODES } from "../ratchet.mjs";
 
 // Core supplies execution, resolution and shared transition services.
@@ -33,13 +34,9 @@ function repoPath(projectRoot, absolutePath) {
   return path.relative(projectRoot, absolutePath).split(path.sep).join("/");
 }
 
+// The ratchet reads the native record doc from the map's one home (168/ADR-002).
 function recordName(item) {
-  if (item.type === "story") return "STORY.md";
-  if (item.type === "milestone") return "SPEC.md";
-  if (item.type === "spike") return "SPIKE.md";
-  if (item.type === "chore") return "CHORE.md";
-  if (item.type === "uat") return "SESSION.md";
-  return null;
+  return RECORD_DOC_BY_TYPE[item.type] ?? null;
 }
 
 function frontmatterStatus(text) {

@@ -88,10 +88,13 @@ function resolveConfirmThreshold(config) {
 // deliverable is a ticked checklist). This is the ONLY change needed to make
 // `runInsertTopLevel({ type: "chore", … })` scaffold a chore — the engine below
 // is otherwise untouched (reused, not a bespoke writer).
+// 168/ADR-004 §2: `prototype` joins it with its two files, so `aof work prototype`'s start move
+// scaffolds through the same seam and reaches the one mint through `runInsertTopLevel`.
 const DOCS_BY_TYPE = {
   milestone: ["SPEC.md", "STATE.md"],
   uat: ["SESSION.md", "STATE.md"],
   chore: ["CHORE.md"],
+  prototype: ["PROTOTYPE.md", "STATE.md"],
 };
 
 // EXPORTED at 127/02 task 03: `promote.mjs` owns `runInsertTopLevel` now, and the alias normalises
@@ -204,6 +207,7 @@ function renderBlankTemplate(text, { slug, title, today, depends }) {
   // (`.aof/templates/work/chore/CHORE.md` — frontmatter `title:` + the `# NN ·`
   // heading), the SAME idiom as `<Milestone Title>`/`<Session Title>` above.
   out = out.replace(/<Chore Title>/g, title);
+  out = out.replace(/<Prototype Title>/g, title);
   if (Array.isArray(depends)) {
     out = out.replace(/^(depends:\s*)\[[^\]]*\]/m, `$1[${depends.join(", ")}]`);
   }

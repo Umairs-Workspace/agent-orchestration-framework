@@ -22,7 +22,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { assertSafeOutDir, buildTestCliBundle, CLI_BUNDLE_RECIPE, cliBundleNotice, planMacCodesignSteps, testCliBundleOptions, withTestCliBundle } from "../../scripts/build-sea.mjs";
-import { modulesEvaluated, sourceEnv } from "../arch/command/acd-cli-entry-executes.test.mjs";
+import { MODULE_CEILINGS, modulesEvaluated, sourceEnv } from "../arch/command/acd-cli-entry-executes.test.mjs";
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import { stripComments } from "../support/source-slice.mjs";
 
@@ -301,7 +301,8 @@ export const buildSeaRecipeGuardsTests = [
       try {
         assert.equal("AOF_TEST_CLI_BUNDLE" in sourceEnv(), false, "the child FF-16004 starts carries no AOF_TEST_CLI_BUNDLE");
         const modules = await modulesEvaluated(["--version"]);
-        assert.equal(modules.length, 16, "…and it counts 16 modules, as before");
+        const pinned = MODULE_CEILINGS.find((row) => row.argv[0] === "--version").measured;
+        assert.equal(modules.length, pinned, `…and it counts ${pinned} modules, the count FF-16004 pins`);
       } finally {
         if (saved === undefined) delete process.env.AOF_TEST_CLI_BUNDLE; else process.env.AOF_TEST_CLI_BUNDLE = saved;
       }

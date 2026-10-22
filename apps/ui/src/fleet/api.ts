@@ -397,20 +397,36 @@ async function safeError(response: Response): Promise<Error> {
   }
 }
 
+// 167/ADR-001 — every fleet read names its client, so the daemon counts it by client and knows a
+// fleet view is open.
+const CLIENT_HEADERS = { "X-AOF-Client": "fleet" };
+
+// 167/ADR-004 — the conditional GET of the one fleet-data route: asked again with the tag of its last
+// answer, a `304` answers the SAME object, so the fleet does not re-render and its poll reads it as
+// unchanged. Keyed by the request URL, so each scope keeps its own tag.
+const taggedStatus = new Map<string, { etag: string; body: FleetStatus }>();
+
 export const fleetApi = {
   // The SOLE fleet-data read (ADR-002/ADR-003): a same-origin GET of the one route.
   // milestone 34 / story 03 (ADR-006) — an optional `scope` appends `?scope=<…>`
   // for the deep-link filter (task 01/02); omitted, the server answers whatever
   // scope it was STARTED with (the default global read, or --local's local read).
   async status(scope?: "global" | "local"): Promise<FleetStatus> {
-    const response = await fetch(scope ? `/api/mesh/status?scope=${scope}` : "/api/mesh/status");
+    const route = scope ? `/api/mesh/status?scope=${scope}` : "/api/mesh/status";
+    const last = taggedStatus.get(route);
+    const response = await fetch(route, { headers: last ? { ...CLIENT_HEADERS, "If-None-Match": last.etag } : CLIENT_HEADERS });
+    if (response.status === 304 && last) return last.body;
     if (!response.ok) throw await safeError(response);
-    return (await response.json()) as FleetStatus;
+    const body = (await response.json()) as FleetStatus;
+    const etag = response.headers?.get?.("etag");
+    if (etag) taggedStatus.set(route, { etag, body });
+    else taggedStatus.delete(route);
+    return body;
   },
 
   async boardUrl(workspaceId: string, ref: string): Promise<string> {
     const params = new URLSearchParams({ workspaceId, ref });
-    const response = await fetch(`/api/mesh/board-url?${params.toString()}`);
+    const response = await fetch(`/api/mesh/board-url?${params.toString()}`, { headers: CLIENT_HEADERS });
     if (!response.ok) throw await safeError(response);
     const body = (await response.json()) as BoardUrlResponse;
     return body.url;

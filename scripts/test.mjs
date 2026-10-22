@@ -63,6 +63,7 @@ import { tests as loopTests } from "../test/loop/index.mjs";
 import { tests as memoryTests } from "../test/memory/index.mjs";
 import { tests as meshTests } from "../test/mesh/index.mjs";
 import { tests as meshAssignmentTests } from "../test/mesh/assignment/index.mjs";
+import { tests as meshBudgetTests } from "../test/mesh/budget/index.mjs";
 import { tests as meshCloneTests } from "../test/mesh/clone/index.mjs";
 import { tests as meshDesktopTests } from "../test/mesh/desktop/index.mjs";
 import { tests as meshEnrollmentTests } from "../test/mesh/enrollment/index.mjs";
@@ -138,6 +139,7 @@ export const tests = [
   ...meshTests,
   ...meshAssignmentTests,
   ...meshCloneTests,
+  ...meshBudgetTests,
   ...meshDesktopTests,
   ...meshEnrollmentTests,
   ...meshFleetTests,

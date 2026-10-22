@@ -1,8 +1,10 @@
 // Directory-derived work items and read models. Callers supply paths and optional views.
 import path from "node:path";
-import { readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { watch as fsWatch } from "node:fs";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, parseStorySpan, sameNumber as sameNum } from "./identity.mjs";
-import { readItemMeta as readMeta } from "./records.mjs";
+import { readItemMeta as readMeta, parseFrontmatter, recordDoc } from "./records.mjs";
 
 export async function readWorkDirectory(dir) {
   try {
@@ -303,4 +305,240 @@ export function byGroupThenSlug(a, b) {
   if (a.backlog !== b.backlog) return a.backlog < b.backlog ? -1 : 1;
   if (a.slug !== b.slug) return a.slug < b.slug ? -1 : 1;
   return 0;
+}
+
+// ------------------------------------------------------- the stat digest ----
+
+// workTreeStatDigest(workDir, { reportDegrade }) — THE ONE FINGERPRINT of a work tree (167/ADR-003,
+// moved verbatim from the publisher's stat gate, 164/ADR-002): a digest of (path, size, mtimeMs) over
+// the tree's record docs and task features. It only decides whether to LOOK; a decision is always
+// made over what is then read. An unreadable tree has no digest (null), reported once under the stat
+// gate's own code. The sync pass and the stream memo below both ask this, so "has this tree
+// changed" has one answer.
+export async function workTreeStatDigest(workDir, { reportDegrade } = {}) {
+  return (await statWorkTree(workDir, { reportDegrade })).digest;
+}
+
+// ------------------------------------------------------- the watched walk ----
+
+// 167/ADR-009 — the daemon WATCHES each work tree it syncs, so an unchanged watched tree costs no stat
+// walk. ONE watch set per process, created only by `mesh serve`'s launcher: `retain(workDirs)` arms
+// a recursive watch for each new dir and closes the ones it no longer names; `close()` drops them
+// all. A watched tree is answered from its last complete walk until a watch event dirties it, or the
+// walk is `safetyMs` old (5 minutes). A tree whose watch cannot start, or errors later, is walked on
+// every ask as before, said once (`work-tree-watch-unavailable`), and not armed again in this
+// process. Every real walk in a process holding a watch set is counted as `stat-walk`, labelled
+// `unwatched`, `first`, `changed` or `safety`. A process with no watch set walks, uncounted, as
+// ADR-003 says.
+let treeWatches = null;
+
+export function createWorkTreeWatches({ watch = fsWatch, now = () => Date.now(), safetyMs = 5 * 60 * 1000, meter = null, reportDegrade } = {}) {
+  treeWatches?.close();
+  const entries = new Map(); // resolved workDir → { watcher, dirty, last, walkedAt, flight }
+  const failed = new Set();
+  const drop = (key, error) => {
+    const entry = entries.get(key);
+    entries.delete(key);
+    try { entry?.watcher?.close(); } catch { /* already closed */ }
+    if (!failed.has(key)) {
+      failed.add(key);
+      reportDegrade?.("work-tree-watch-unavailable", error, { path: key });
+    }
+  };
+  const arm = (key) => {
+    const entry = { watcher: null, dirty: true, last: null, walkedAt: 0, flight: null };
+    try {
+      entry.watcher = watch(key, { recursive: true }, (_event, name) => {
+        if (!recordEventIgnored(name)) entry.dirty = true;
+      });
+      entry.watcher.on?.("error", (error) => { if (entries.get(key) === entry) drop(key, error); });
+      entries.set(key, entry);
+    } catch (error) {
+      drop(key, error);
+    }
+  };
+  const handle = {
+    now,
+    safetyMs,
+    meter,
+    entries,
+    retain(workDirs) {
+      const keep = new Set([...workDirs].filter((dir) => typeof dir === "string" && dir).map((dir) => path.resolve(dir)));
+      for (const key of [...entries.keys()]) {
+        if (keep.has(key)) continue;
+        try { entries.get(key).watcher?.close(); } catch { /* already closed */ }
+        entries.delete(key);
+      }
+      for (const key of keep) if (!entries.has(key) && !failed.has(key)) arm(key);
+    },
+    held: () => [...entries.keys()],
+    close() {
+      for (const entry of entries.values()) {
+        try { entry.watcher?.close(); } catch { /* already closed */ }
+      }
+      entries.clear();
+      if (treeWatches === handle) treeWatches = null;
+    },
+  };
+  treeWatches = handle;
+  return handle;
+}
+
+// An event names nothing a walk would see when its file has an extension other than a record doc's: a
+// run record, a log, a lock. A folder, a record doc or an event with no name is a change (01/R1: the
+// tree's shape is part of the memo's key).
+function recordEventIgnored(name) {
+  if (name == null) return false;
+  const ext = path.extname(String(name)).toLowerCase();
+  return ext !== "" && ext !== ".md" && ext !== ".feature";
+}
+
+// statWorkTree(workDir) → { digest, shape, complete } — the gate over the one walk. The `statFile`
+// test seam always walks.
+async function statWorkTree(workDir, { reportDegrade, statFile } = {}) {
+  const watches = treeWatches;
+  if (watches == null || statFile) return walkWorkTree(workDir, { reportDegrade, statFile });
+  const key = path.resolve(workDir);
+  const entry = watches.entries.get(key);
+  if (entry == null) {
+    watches.meter?.count?.("stat-walk", { code: "unwatched" });
+    return walkWorkTree(workDir, { reportDegrade });
+  }
+  if (entry.flight) return entry.flight;
+  if (!entry.dirty && entry.last && watches.now() - entry.walkedAt < watches.safetyMs) return entry.last;
+  const code = entry.last == null ? "first" : entry.dirty ? "changed" : "safety";
+  watches.meter?.count?.("stat-walk", { code });
+  // Cleared as the walk STARTS: an event during the walk dirties the tree again.
+  entry.dirty = false;
+  const startedAt = watches.now();
+  entry.flight = walkWorkTree(workDir, { reportDegrade }).then((result) => {
+    entry.flight = null;
+    const remembered = result.digest != null && result.complete;
+    entry.last = remembered ? result : null;
+    entry.walkedAt = startedAt;
+    if (!remembered) entry.dirty = true;
+    return result;
+  }, (error) => {
+    entry.flight = null;
+    entry.dirty = true;
+    throw error;
+  });
+  return entry.flight;
+}
+
+// walkWorkTree(workDir) → { digest, complete } — `complete` is false when a file listed by the walk
+// was gone before it could be stat'ed: the digest still answers the stat gate exactly as before, but
+// a memo keyed by it would remember a tree that was moving under the walk.
+async function walkWorkTree(workDir, { reportDegrade, statFile = stat } = {}) {
+  let entries;
+  try {
+    entries = await readdir(workDir, { recursive: true, withFileTypes: true });
+  } catch (error) {
+    reportDegrade?.("sync-stat-digest", error, { path: workDir });
+    return { digest: null, shape: null, complete: false };
+  }
+  // Stats run concurrently: measured on this repository's ~3,200 record files, serial awaits
+  // cost ~540ms per command and concurrent ones ~240ms.
+  const files = entries.filter((entry) => entry.isFile() && /\.(md|feature)$/i.test(entry.name))
+    .map((entry) => path.join(entry.parentPath ?? entry.path, entry.name));
+  let complete = true;
+  const lines = await Promise.all(files.map(async (full) => {
+    const rel = path.relative(workDir, full).split(path.sep).join("/");
+    try {
+      const info = await statFile(full);
+      return `${rel}\0${info.size}\0${info.mtimeMs}`;
+    } catch {
+      complete = false;
+      return `${rel}\0gone`;
+    }
+  }));
+  // The tree's SHAPE — its directories — is not part of the stat gate's digest (164/ADR-002, kept
+  // byte-identical), but a folder made or renamed with no record doc in it changes what the enumerator
+  // answers, so the memo keys on both.
+  const dirs = entries.filter((entry) => entry.isDirectory()).map((entry) => path.relative(workDir, path.join(entry.parentPath ?? entry.path, entry.name)).split(path.sep).join("/"));
+  const shape = createHash("sha256").update(dirs.sort().join("\n")).digest("hex");
+  return { digest: createHash("sha256").update(lines.sort().join("\n")).digest("hex"), shape, complete };
+}
+
+// --------------------------------------------------- the remembered stream ----
+
+// readStreamSnapshot(workDir, { meter, labels, reportDegrade }) → { digest, items, frontmatter, record, fromMemo }
+//
+// 167/ADR-003 — a read of an UNCHANGED work tree costs one stat walk. Every daemon tick and every
+// viewer poll used to re-enumerate the tree and re-parse each record doc it touched, even when
+// nobody had edited it. This remembers, per resolved work dir, the enumeration and every record doc
+// parsed under it, keyed by the stat digest:
+//   · a read whose digest equals the remembered one parses nothing (`fromMemo`), and is counted as
+//     a `cache-hit` labelled `code: memo`;
+//   · a read whose digest moved, or the first read, enumerates again and is a `full-disk-read`;
+//   · record docs are parsed LAZILY and once per entry (`record(item)` / `frontmatter(item)`), so a
+//     miss parses exactly the docs its caller touches, as before, and a hit parses none;
+//   · a tree that cannot be fingerprinted — a doc vanished mid-walk — is read from disk and NOT
+//     remembered; a work dir that cannot be listed REJECTS, and a rejection is never remembered.
+// SINGLE-FLIGHT: callers that ask for one tree at the same moment share one walk (and one parse per
+// doc). Bounded: one entry per resolved work dir, replaced whenever its digest changes. The meter
+// and the workspace label are the caller's, since discovery knows no workspace ids.
+const streamMemo = new Map(); // resolved workDir → { digest, items, records }
+const streamInFlight = new Map(); // resolved workDir → Promise<{ entry, fromMemo }>
+const STREAM_MEMO_LIMIT = 256;
+
+// `statFile` is a test seam over the digest's per-file stat (a doc that vanishes mid-walk).
+export async function readStreamSnapshot(workDir, { meter = null, labels = {}, reportDegrade, statFile } = {}) {
+  const key = path.resolve(workDir);
+  let flight = streamInFlight.get(key);
+  if (flight == null) {
+    flight = snapshotFlight(key, workDir, { meter, labels, reportDegrade, statFile });
+    streamInFlight.set(key, flight);
+    flight.then(() => streamInFlight.delete(key), () => streamInFlight.delete(key));
+  }
+  const { entry, fromMemo } = await flight;
+  return { digest: entry.digest, items: entry.items, fromMemo, record: (item) => entryRecord(entry, item), frontmatter: async (item) => ({ ...(await entryRecord(entry, item)).meta }) };
+}
+
+async function snapshotFlight(key, workDir, { meter, labels, reportDegrade, statFile }) {
+  // The stream-level probe the enumerator cannot make: it answers a missing dir with `[]`, so the
+  // snapshot asks the directory itself whether it is there, and a failure reaches every caller.
+  await readdir(workDir);
+  const { digest, shape, complete } = await statWorkTree(workDir, { reportDegrade, ...(statFile ? { statFile } : {}) });
+  const remembered = streamMemo.get(key);
+  if (digest != null && complete && remembered?.digest === digest && remembered.shape === shape) {
+    meter?.count?.("cache-hit", { ...labels, code: "memo" });
+    return { entry: remembered, fromMemo: true };
+  }
+  const entry = { digest, shape, items: await listItems(workDir), records: new Map() };
+  meter?.count?.("full-disk-read", labels);
+  if (digest != null && complete) {
+    streamMemo.delete(key);
+    streamMemo.set(key, entry);
+    // One entry per registered workspace in a daemon; a process that reads many trees keeps the newest.
+    if (streamMemo.size > STREAM_MEMO_LIMIT) streamMemo.delete(streamMemo.keys().next().value);
+  }
+  else streamMemo.delete(key);
+  return { entry, fromMemo: false };
+}
+
+// One item's record doc under an entry, parsed once: `{ doc, meta, fault }`. `fault` is null on a
+// clean parse, `{ kind: "unparseable" }` for a doc with no frontmatter block, and `{ kind: "read",
+// message, code }` when the doc could not be read — `meta` is then `{}`, exactly as readItemMeta has
+// always answered it.
+function entryRecord(entry, item) {
+  const id = item.dir ?? `ref:${item.ref}`;
+  let pending = entry.records.get(id);
+  if (pending == null) {
+    pending = readRecord(item);
+    entry.records.set(id, pending);
+  }
+  return pending;
+}
+
+async function readRecord(item) {
+  const doc = item.dir == null ? null : recordDoc(item);
+  if (!doc) return { doc: null, meta: {}, fault: null };
+  try {
+    const text = await readFile(path.join(item.dir, doc), "utf8");
+    const fault = /^---\r?\n[\s\S]*?\r?\n---/.test(text) ? null : { kind: "unparseable" };
+    return { doc, meta: parseFrontmatter(text), fault };
+  } catch (error) {
+    return { doc, meta: {}, fault: { kind: "read", message: error.message, code: error.code ?? null } };
+  }
 }

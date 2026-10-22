@@ -324,6 +324,16 @@ function upsertGlobalRegistryRows(store, snapshot) {
   }
 }
 
+// forgetNodeWorkspace(store, nodeId, workspaceId) — 167/ADR-005: this node's membership in a
+// workspace whose work dir is gone is removed, and nothing else. Exactly one
+// `global_node_workspaces` row, keyed on BOTH columns, so another node's row for the same workspace
+// and the workspace's descriptor are never touched. Reversible by use: the next publish of that
+// workspace (any aof command run in its folder) links this node again. Answers whether a row went.
+function forgetNodeWorkspace(store, nodeId, workspaceId) {
+  const result = store.db.prepare("DELETE FROM global_node_workspaces WHERE node_id = ? AND workspace_id = ?").run(nodeId, workspaceId);
+  return Number(result?.changes ?? 0) > 0;
+}
+
 function freshnessFor(lastSeenAt, now, thresholdMs) {
   if (typeof lastSeenAt !== "string" || lastSeenAt.length === 0) return "unknown";
   const seenMs = Date.parse(lastSeenAt);
@@ -411,5 +421,5 @@ function flatLeaf(id) {
   return String(id).replace(/[\\/]/g, "-").replace(/\.\.+/g, "-");
 }
 
-return { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, redactDescriptor };
+return { publishGlobalRegistryDescriptorsToStore, assembleGlobalRegistrySnapshot, queryGlobalRegistry, upsertGlobalRegistryRows, forgetNodeWorkspace, redactDescriptor };
 }

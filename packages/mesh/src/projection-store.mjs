@@ -3,7 +3,9 @@ import path from "node:path";
 import { itemRowFault, archivedColumn, rowLocationKeys, wireLocationKeys } from "@aof/work/item-row";
 import { executionScopeRef } from "./assignment-record.mjs";
 import { canonicalArtifactDocKey } from "@aof/work/artifacts";
+import { createContentReads } from "./content-reads.mjs";
 import { rowFingerprint, locallyChanged, normalizeSourcePath, projectedRow } from "@aof/work/local-change";
+import { processCostMeter } from "@aof/foundation/cost-meter";
 import os from "node:os";
 export { WORK_ITEM_DOC_FILES } from "@aof/work/artifacts";
 export { REQUIRED_ITEM_FIELDS, OPTIONAL_ITEM_FIELDS, itemRowFault, isCompleteItemRow } from "@aof/work/item-row";
@@ -14,7 +16,7 @@ export const UPSERT_AUTHORITIES = Object.freeze(["reported", "disk-derived"]);
 export const NODE_LOG_KEEP = 500;
 
 // Application policy enters explicitly; constructing the service opens no stores or timers.
-export function createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, listItems, parseFrontmatter, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance }) {
+export function createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, readStreamSnapshot, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance }) {
 // Provenance of what this module reads rather than spells (the full history is in git): the
 // cache row's shape, screen and location widening come from `@aof/work/item-row` (127/04); the
 // artifact manifest from `@aof/work/artifacts` (43/ADR-007, re-exported above so the streamed set
@@ -985,11 +987,15 @@ async function readWorkspaceProjectionItems(workspace) {
   const errors = [];
   let authoritative = true;
   let items = [];
+  let snapshot;
   try {
-    // The stream-level probe listItems cannot make: readDirSafe swallows every fault
-    // into an empty list, so the read must ask the directory itself whether it is there.
-    await readdir(workspace.workDir);
-    items = await listItems(workspace.workDir);
+    // The stream-level probe listItems cannot make (the snapshot makes it): the enumerator swallows
+    // every fault into an empty list, so the read asks the directory itself whether it is there.
+    // 167/ADR-003 — through the remembered stream snapshot, so the tick's read of an unchanged tree
+    // costs one stat walk and parses no record doc; the snapshot counts its parse or its memo answer.
+    const workspaceId = resolveWorkspaceId(workspace) ?? null;
+    snapshot = await readStreamSnapshot(workspace.workDir, { meter: processCostMeter, labels: workspaceId ? { workspaceId } : {}, reportDegrade });
+    items = snapshot.items;
   } catch (error) {
     authoritative = false;
     errors.push({
@@ -1004,19 +1010,14 @@ async function readWorkspaceProjectionItems(workspace) {
     const doc = recordDoc(item);
     if (!doc) continue;
     const sourcePath = normalizeSourcePath(path.join(item.dir, doc));
-    try {
-      const text = await readFile(path.join(item.dir, doc), "utf8");
-      if (!/^---\r?\n[\s\S]*?\r?\n---/.test(text)) {
-        throw globalStoreError(`Record doc has no parseable frontmatter: ${sourcePath}`, "frontmatter-unparseable", 422);
-      }
-      rows.push(projectedRow(item, parseFrontmatter(text), doc));
-    } catch (error) {
-      errors.push({
-        ref: item.ref,
-        sourcePath,
-        message: error.message,
-        code: error.code ?? "projection-read-failed",
-      });
+    const { meta, fault } = await snapshot.record(item);
+    if (fault?.kind === "unparseable") {
+      const error = globalStoreError(`Record doc has no parseable frontmatter: ${sourcePath}`, "frontmatter-unparseable", 422);
+      errors.push({ ref: item.ref, sourcePath, message: error.message, code: error.code });
+    } else if (fault != null) {
+      errors.push({ ref: item.ref, sourcePath, message: fault.message, code: fault.code ?? "projection-read-failed" });
+    } else {
+      rows.push(projectedRow(item, meta, doc));
     }
   }
   return { rows, errors, authoritative };
@@ -1059,6 +1060,47 @@ function readWorkspaceItemProvenance(store, workspaceId) {
     .map((row) => [row.ref, { nodeId: row.node_id ?? null, updatedAt: row.updated_at ?? null }]));
 }
 
+// The ONE spelling of the run-row upsert, shared by the worker-frame writer below and the
+// ledger's own run publish (167/ADR-008): a re-published record refreshes its row in place.
+const UPSERT_WORK_ITEM_RUN_SQL = `
+      INSERT INTO work_item_runs (workspace_id, ref, run_id, record_json, node_id, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?)
+      ON CONFLICT(workspace_id, ref, run_id) DO UPDATE SET
+        record_json = excluded.record_json,
+        node_id = excluded.node_id,
+        updated_at = excluded.updated_at
+    `;
+
+// publishWorkItemRun(store, workspace, { ref, runId, record }, { now, nodeId }) — the NARROW
+// writer beside upsertWorkItemContent (167/ADR-008): ONE run record, as it stands now, into
+// work_item_runs with this node as its reporter. The `publish-run` reactor of `run.started` and
+// `run.completed` (packages/mesh/src/effects.mjs) calls it, so a workspace puts its own runs in
+// the store through the ledger it already writes, and the presence tick reads them back instead
+// of walking every item's runs/ folder. State-based and idempotent: the row is whatever the
+// record reads when the step runs, so a retried step writes the latest state, never a stale one.
+// It is not a second opener — it takes the handle the caller opened. `nodeId` absent resolves to
+// this node exactly as the row publisher does (resolvePublishingNodeId), so the two writers of
+// this table attribute a row the same way. Malformed input is refused by return, never thrown: a
+// reactor that threw on it would retry until done against an input that can never improve.
+async function publishWorkItemRun(store, workspace, { ref, runId, record } = {}, { now, nodeId } = {}) {
+  if (typeof ref !== "string" || ref.length === 0 || typeof runId !== "string" || runId.length === 0 || record == null || typeof record !== "object") {
+    return { published: false, reason: "malformed-run" };
+  }
+  const workspaceId = resolveWorkspaceId(workspace);
+  if (typeof workspaceId !== "string" || workspaceId.length === 0) return { published: false, reason: "workspace-unidentified" };
+  const reporter = typeof nodeId === "string" && nodeId.length > 0 ? nodeId : await resolvePublishingNodeId(workspace);
+  const at = now ?? new Date().toISOString();
+  store.db.prepare(UPSERT_WORK_ITEM_RUN_SQL).run(workspaceId, ref, runId, JSON.stringify(record), reporter, at);
+  return { published: true, workspaceId, ref, runId, nodeId: reporter, state: record.state ?? null };
+}
+
+// The READS over the content tables — the board-face `readWorkItemDoc` / `readWorkItemDocMembers` /
+// `readWorkItemRuns` and the presence tick's `readNodeRunningRuns` (167/ADR-008) — live in
+// content-reads.mjs and are returned from here, so every importer reaches them as before. Moved
+// at 167/06 under this module's 1,280-line ratchet (43/ADR-012 B4): the reads are the block with
+// no writer in it. The writers stay here.
+const { readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns, readNodeRunningRuns } = createContentReads({ reportDegrade });
+
 // upsertWorkItemContent(store, workspaceId, { docs, runs, nodeId }, { now }) — the
 // ONE writer for the v5 content tables (the control node's applyWorktreeContentFrame
 // call site). Upsert-only, per (ref, doc) / (ref, runId): a re-streamed body simply
@@ -1096,14 +1138,7 @@ function upsertWorkItemContent(store, workspaceId, { docs, runs, nodeId } = {}, 
       // manifest deliberately treats as different onto one row.
       upsertDoc.run(workspaceId, entry.ref, canonicalArtifactDocKey(entry.doc), entry.body, reporter, at);
     }
-    const upsertRun = db.prepare(`
-      INSERT INTO work_item_runs (workspace_id, ref, run_id, record_json, node_id, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-      ON CONFLICT(workspace_id, ref, run_id) DO UPDATE SET
-        record_json = excluded.record_json,
-        node_id = excluded.node_id,
-        updated_at = excluded.updated_at
-    `);
+    const upsertRun = db.prepare(UPSERT_WORK_ITEM_RUN_SQL);
     for (const entry of runRows) {
       upsertRun.run(workspaceId, entry.ref, entry.runId, JSON.stringify(entry.record), reporter, at);
     }
@@ -1113,46 +1148,6 @@ function upsertWorkItemContent(store, workspaceId, { docs, runs, nodeId } = {}, 
     throw error;
   }
   return { published: true, workspaceId, docCount: docRows.length, runCount: runRows.length, skippedEntries: (Array.isArray(docs) ? docs.length : 0) - docRows.length + (Array.isArray(runs) ? runs.length : 0) - runRows.length };
-}
-
-// readWorkItemDoc(store, workspaceId, ref, doc) — the board-face read over
-// work_item_docs. Null when nothing was ever streamed for that (ref, doc).
-function readWorkItemDoc(store, workspaceId, ref, doc) {
-  const key = canonicalArtifactDocKey(doc);
-  const row = store.db.prepare(
-    "SELECT body, node_id, updated_at FROM work_item_docs WHERE workspace_id = ? AND ref = ? AND doc = ?"
-  ).get(workspaceId, ref, key);
-  return row == null ? null : { ref, doc: key, body: row.body, nodeId: row.node_id, updatedAt: row.updated_at };
-}
-
-// readWorkItemDocMembers(store, workspaceId, ref, name) — the dir-kind read: every
-// streamed member of one manifest entry for one ref (`TASKS/*`), oldest key first.
-// The prefix is anchored with `/` so a file-kind name can never be matched by it.
-function readWorkItemDocMembers(store, workspaceId, ref, name) {
-  const prefix = `${canonicalArtifactDocKey(name)}/`;
-  return store.db.prepare(
-    "SELECT doc, body, node_id, updated_at FROM work_item_docs WHERE workspace_id = ? AND ref = ? AND doc LIKE ? ESCAPE '\\' ORDER BY doc"
-  ).all(workspaceId, ref, `${prefix.replaceAll("\\", "\\\\").replaceAll("%", "\\%").replaceAll("_", "\\_")}%`)
-    .map((row) => ({ doc: row.doc, body: row.body, nodeId: row.node_id, updatedAt: row.updated_at }));
-}
-
-// readWorkItemRuns(store, workspaceId, ref) — the board-face read over
-// work_item_runs. Empty array when nothing was ever streamed; a torn record_json
-// row is skipped (the run-store torn-file discipline, carried over).
-function readWorkItemRuns(store, workspaceId, ref) {
-  const rows = store.db.prepare(
-    "SELECT run_id, record_json, node_id, updated_at FROM work_item_runs WHERE workspace_id = ? AND ref = ? ORDER BY updated_at, run_id"
-  ).all(workspaceId, ref);
-  const out = [];
-  for (const row of rows) {
-    try {
-      out.push({ record: JSON.parse(row.record_json), nodeId: row.node_id, updatedAt: row.updated_at });
-    } catch (error) {
-      // Torn/garbage record_json: skip the one bad row, keep the rest — the same
-      // tolerance run-store's readRuns applies to a torn file on disk.
-      reportDegrade("global-work-store", error); }
-  }
-  return out;
 }
 
 // The node_logs ring bound — newest rows kept per node (m42 / item 2 remote read).
@@ -1275,5 +1270,5 @@ function mapErrorRow(row) {
 }
 
 
-return { GLOBAL_WORK_SCHEMA_VERSION, WORKSPACE_DIGEST_REF, globalStoreError, workspaceIdFor, wholesaleDelete, openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, UPSERT_AUTHORITIES, upsertWorkItems, removeWorkspaceFromCache, publishWorkspaceSnapshot, readObservations, readWorkspaceObservations, readSyncState, detectWorkspaceChanges, recordWorkspaceProjectionError, readWorkspaceProjectionItems, readWorkspaceItems, readWorkspaceItemProvenance, upsertWorkItemContent, readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns, NODE_LOG_KEEP, appendNodeLogEntries, readNodeLogEntries, queryGlobalWorkProjection };
+return { GLOBAL_WORK_SCHEMA_VERSION, WORKSPACE_DIGEST_REF, globalStoreError, workspaceIdFor, wholesaleDelete, openGlobalWorkProjectionStore, remapWorkspaceProjectionRefs, remapWorkspaceFactRefs, UPSERT_AUTHORITIES, upsertWorkItems, removeWorkspaceFromCache, publishWorkspaceSnapshot, readObservations, readWorkspaceObservations, readSyncState, detectWorkspaceChanges, recordWorkspaceProjectionError, readWorkspaceProjectionItems, readWorkspaceItems, readWorkspaceItemProvenance, upsertWorkItemContent, readWorkItemDoc, readWorkItemDocMembers, readWorkItemRuns, publishWorkItemRun, readNodeRunningRuns, NODE_LOG_KEEP, appendNodeLogEntries, readNodeLogEntries, queryGlobalWorkProjection };
 }

@@ -27,7 +27,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { stripComments } from "../../support/source-slice.mjs";
 import { readRuntimeFiles } from "../../support/read-src-files.mjs";
-import { parseDiagramLinks, renderDiagramBlock } from "@aof/work/diagrams/layout";
+import { parseDiagramLinks, readPrototypeBrief, renderDiagramBlock } from "@aof/work/diagrams/layout";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const THE_ONE_HOME = "packages/work/src/diagrams/layout.mjs";
@@ -130,6 +130,12 @@ export const archTests = [
         assert.deepEqual(parsed.map((link) => link.target).sort(), written);
         assert.ok(parsed.every((link) => link.adr === "ADR-002" && link.stem === BLOCK.stem));
       }
+      // 168/ADR-006 §2 — the prototype half is the SAME home: its block, built from the name as its
+      // stem, parses back to every target it wrote, and its brief is read only through the layout.
+      const block = renderDiagramBlock({ adrId: null, title: "data-flow", stem: "data-flow", sourceExt: ".html", formats: ["svg", "png"] });
+      const written = [...block.matchAll(/\]\(([^)]+)\)/g)].map((match) => match[1]).sort();
+      assert.deepEqual(parseDiagramLinks(`## Diagrams\n\n${block}\n`).map((link) => link.target).sort(), written);
+      assert.equal(readPrototypeBrief("## Diagrams\n\n### data-flow\n\nrows\n", "data-flow"), "rows");
     },
   },
   {

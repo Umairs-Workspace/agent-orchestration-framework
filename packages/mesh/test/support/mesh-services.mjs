@@ -14,8 +14,8 @@ import { importSqliteRuntime } from "@aof/foundation/sqlite-runtime";
 import { toWireProvenance } from "@aof/contracts/cache-provenance";
 import { isStale } from "@aof/contracts/freshness";
 import { createRunStore } from "@aof/execution/runs";
-import { listItems } from "@aof/work/discovery";
-import { parseFrontmatter, recordDoc } from "@aof/work/records";
+import { readStreamSnapshot } from "@aof/work/discovery";
+import { recordDoc } from "@aof/work/records";
 import { resolveCacheStalenessSeconds } from "@aof/mesh/cache-policy";
 import { createControlStreamServices } from "@aof/mesh/control-stream-server";
 import { EFFECT_ACK_FRAME_KIND, EFFECT_STEP_FRAME_KIND } from "@aof/mesh/effect-frames";
@@ -123,7 +123,7 @@ const refRemapTables = (locus) => Object.entries(TABLE_CLASSIFICATION)
   .map(([table, entry]) => ({ table, column: entry.refRemap.column }));
 
 export function globalWorkStoreServices() {
-  return createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, listItems, parseFrontmatter, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance });
+  return createGlobalWorkProjectionStore({ importSqliteRuntime, globalMeshPaths, readStreamSnapshot, recordDoc, workspaceIdFromPath, resolveWorkspaceId, reportDegrade, tableClass, refRemapTables, deriveNodeId, toWireProvenance });
 }
 
 export function meshSessionServices() {

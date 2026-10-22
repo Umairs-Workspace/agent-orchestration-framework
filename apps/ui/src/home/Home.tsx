@@ -22,7 +22,9 @@
 // states, which have no panes in them by definition. The populated arm below is the region
 // story 05 fills; it is present because the page's state machine has five arms and a state with
 // no treatment is a state nothing can observe.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPoll } from "../lib/poll-cadence.mjs";
+import type { Poll } from "../lib/poll-cadence.mjs";
 import { SurfaceSlot } from "../app/SurfaceSlot";
 import { CONTENT_FIXED_HEIGHT_CLASS } from "../app/shell-layout.mjs";
 import { SessionGrid } from "./SessionGrid";
@@ -80,7 +82,10 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
   // keeps the last-known content and surfaces nothing, which is the ONLY behaviour that does
   // not pre-empt the designer's answer: it changes nothing on screen. The task file routes the
   // question; when it is answered, this branch is where it lands.
-  const load = useCallback(async ({ silent = false } = {}) => {
+  // 167/ADR-004 — the last answer, so an equal payload reads as unchanged to the poll's cadence.
+  const lastPayload = useRef<string | null>(null);
+  const homePoll = useRef<Poll | null>(null);
+  const load = useCallback(async ({ silent = false } = {}): Promise<boolean | undefined> => {
     if (!silent) {
       setLoading(true);
       setFailure(null);
@@ -94,7 +99,11 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
         throw new Error(homeFaultMessage(body, response.status));
       }
       const payload = (await response.json()) as HomeStatusPayload;
+      const answer = JSON.stringify(payload);
+      const changed = answer !== lastPayload.current;
+      lastPayload.current = answer;
       setStatus(payload);
+      return changed;
     } catch (caught) {
       // The fault is NAMED. A bare "something went wrong" is the one thing DESIGN's failed
       // state may not say — the operator's next move depends on which fault this is.
@@ -114,10 +123,18 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
     void load();
   }, [load]);
 
+  // 167/ADR-004 — through the one cadence: paused while hidden, slowing while the feed is unchanged.
   useEffect(() => {
-    const poll = setInterval(() => void load({ silent: true }), HOME_POLL_MS);
-    return () => clearInterval(poll);
+    const poll = createPoll({ baseMs: HOME_POLL_MS, run: () => load({ silent: true }) });
+    homePoll.current = poll;
+    poll.start();
+    return () => {
+      poll.stop();
+      if (homePoll.current === poll) homePoll.current = null;
+    };
   }, [load]);
+  // Any operator action on the page (the layout filter, a launch) returns the feed to its base.
+  const pokeFeed = useCallback(() => homePoll.current?.poke(), []);
 
   const state = homePageState({ loading, error: failure, status });
   // 162/ADR-005 — the live nodes' loops, composed against the browser's clock at this render.
@@ -145,7 +162,7 @@ export function Home({ origins = { self: null, fleet: null } }: { origins?: Term
     // `overflow-y-auto` can never engage — invisible with one card, and a page that scrolls its
     // whole chrome at sixteen panes. The published constant is what the board's root already
     // applies (`Board.tsx`), imported rather than re-spelled.
-    <div className={`flex min-h-0 flex-1 flex-col ${CONTENT_FIXED_HEIGHT_CLASS}`}>
+    <div className={`flex min-h-0 flex-1 flex-col ${CONTENT_FIXED_HEIGHT_CLASS}`} onClickCapture={pokeFeed} onChangeCapture={pokeFeed}>
       {/* G1 — the ONE `h1` on the page, carried across from the deleted apps/ui/src/app/Landing.tsx.
           It stays because m45 fixed "the ONE `h1` on the page"; it goes visually silent because
           the grid is its own title and a 432px content box cannot spend a row saying so. It is

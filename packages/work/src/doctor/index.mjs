@@ -3,13 +3,14 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { listItems } from "../discovery.mjs";
 import { parseFrontmatter, readItemMeta, recordDoc as storeRecordDoc } from "../records.mjs";
 import { isDriver, isDependTarget, siblingDependencyNumber } from "../dependencies.mjs";
-import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT } from "../identity.mjs";
+import { ITEM_RE, BACKLOG_ITEM_RE, BACKLOG_ROOT, ARCHIVE_ROOT, RECORD_DOC_BY_TYPE } from "../identity.mjs";
 import { statusCoherenceGroup, lifecycleCompletenessGroup, cacheAuthorityGroup } from "./coherence.mjs";
 import { freshnessGroup, structuralIntegrityGroup } from "./freshness.mjs";
 import { budgetGroup, PLAN_BASENAME } from "./budget.mjs";
 import { itemInScope } from "../ref-scope.mjs";
 import { meshIdentityCommittedGroup } from "./identity.mjs";
 import { syncGroup } from "./sync.mjs";
+import { daemonCostGroup } from "./daemon-cost.mjs";
 import { controlsLane, citedControlPathsIn, isControlFileName } from "../audit/controls.mjs";
 import { resolveCitedPath } from "../cited-path-resolve.mjs";
 import { rubricTraceabilityGroup, declaredReportFrom } from "./rubric.mjs";
@@ -80,26 +81,12 @@ export function createWorkDoctor({ projectExecution, readRuns, diagramsGroup, st
 // about a story is read by its own probe at this engine's impure edge (below), so the practice's
 // lane stays a pure function of the snapshot and this engine names none of it.
 
-// The record-doc mapping is owned by `work.mjs`; doctor is a consumer. `work.mjs` does
-// not export the type→doc map, so the snapshot pass replicates that tiny body here (the
-// same closed vocabulary) rather than re-globbing identity. The item-identity regex is
-// NOT replicated any more (127/ADR-001 §5): it is imported above, and `isDependTarget`
-// showed the direction of travel — exported there, imported here, never mirrored (chore
-// 104).
+// The type → record-doc map is imported from the identity leaf (168/ADR-002): it is pure, so
+// the snapshot pass reads it rather than replicating it. The item-identity regex is imported the
+// same way (127/ADR-001 §5) — `isDependTarget` showed the direction of travel (chore 104).
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-const recordDoc = (type) =>
-  type === "milestone"
-    ? "SPEC.md"
-    : type === "story"
-      ? "STORY.md"
-      : type === "uat"
-        ? "SESSION.md"
-        : type === "spike"
-          ? "SPIKE.md"
-          : type === "chore"
-            ? "CHORE.md"
-            : null;
+const recordDoc = (type) => RECORD_DOC_BY_TYPE[type] ?? null;
 
 // Top-level drivers of the stream — the items that carry a number the resolver
 // keys on (milestones + uat sessions + spike/chore — milestone 37 / ADR-001).
@@ -901,6 +888,9 @@ const CHECK_GROUPS = [
   // milestone 164 / story 03 — THE SYNC LANE: what is owed to the global store, why it fails, and how
   // far behind this workspace is (164/ADR-006, Q1). Warn only, read from facts the command edge hands in.
   syncGroup,
+  // milestone 167 / story 00 — THE DAEMON-COST LANE: a daemon over its CPU budget, naming what it spends
+  // its time on, and a daemon that stopped reporting (167/ADR-001). Warn only, from snapshots the edge reads.
+  daemonCostGroup,
   // milestone 66 / story 02 (ADR-003 §2/§3) — THE CONTROLS LANE, appended as ONE
   // entry carrying all three groups (register / verification / control). One story
   // owns this array for the whole milestone: three stories appending to it would be
@@ -1073,7 +1063,7 @@ function dedupe(findings) {
 // file's mesh block independently and hands it in here as plain data, exactly like
 // `now`/`staleWindow` — the engine itself performs no extra disk read.
 async function doctorWork(workDir, config, scope, options = {}) {
-  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir, sync } = options;
+  const { now, staleWindow, budgets, groups = CHECK_GROUPS, acceptingRef, rawCommittedMesh, committedConfigPath, legacyIdentitySidecarPresent, legacyIdentitySidecarPath, cache, selfNode, projectRoot, projectsDir, sync, daemonCost } = options;
   // milestone 43 / story 06 (ADR-005) — `cache` + `selfNode` are injected at the SAME impure
   // edge as `now` and `rawCommittedMesh`: plain data, read by `commands/doctor.mjs`, so the
   // engine still performs no store open and still reads no clock. Absent ⇒ the snapshot is
@@ -1114,6 +1104,8 @@ async function doctorWork(workDir, config, scope, options = {}) {
     committedConfigPath: committedConfigPath ?? null,
     legacyIdentitySidecarPresent: legacyIdentitySidecarPresent === true,
     legacyIdentitySidecarPath: legacyIdentitySidecarPath ?? null,
+    // 167/00 — this node's daemon cost snapshots, read at the command edge; absent, the lane is silent.
+    daemonCost: daemonCost ?? null,
   };
 
   const all = [];

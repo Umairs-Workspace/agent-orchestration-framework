@@ -94,3 +94,12 @@ test('dependency rewrites preserve widths, quotes, line endings and body text', 
   assert.deepEqual(rewriteRefEntry(" '007' ", mapping), { text: " '008' ", changed: true });
   assert.equal(rewriteDependsEntries(text, () => null), text);
 });
+
+// 168/00 task 01, R4 — E13: a prototype is never scheduled (ADR-001 §2).
+test('168/00 the loop offers nothing when only a prototype is open', async () => {
+  const state = view([['01', 'milestone', 'done'], ['169', 'prototype', 'active']]);
+  const result = await nextWork(null, undefined, { view: state });
+  assert.deepEqual(result.readySet ?? [], []);
+  assert.equal(result.ref ?? null, null, 'next names no item');
+  assert.equal(isDependTarget({ ref: '169', number: '169', type: 'prototype', parent: null }), false);
+});

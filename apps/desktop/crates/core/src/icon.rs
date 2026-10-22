@@ -8,8 +8,9 @@
 //! and combines them into ONE ambient glyph (the one place the two DESIGN ramps
 //! legitimately combine) without letting one masquerade as the other:
 //! - `healthy`  — ALL nodes online AND the local server running, no badge.
-//! - `degraded` — something stale in the fleet OR the local server restarting —
-//!   a calm caution badge (attention, never alarm; stale is NEVER escalated further).
+//! - `degraded` — something stale in the fleet OR the local server restarting OR a
+//!   supervised daemon in a sustained CPU overrun (167/ADR-006) — a calm caution badge
+//!   (attention, never alarm; stale is NEVER escalated further).
 //! - `stopped`  — the local server (or the whole app's supervision) is stopped — a
 //!   dim/stop badge, clearly distinct from degraded.
 //!
@@ -110,7 +111,9 @@ impl IconState {
 }
 
 /// The pure selector. `healthy` requires BOTH all-online AND the server running —
-/// either an offline/stale fleet OR a non-running server pulls it off `healthy`.
+/// either an offline/stale fleet OR a non-running server pulls it off `healthy`, and so
+/// does `daemon_overrun`: a daemon over its budget for long enough (167/ADR-006) is a
+/// degraded state, never an error and never stopped.
 /// `stopped` (the server or the whole app supervision down) takes priority over a
 /// merely-stale fleet: a stopped server is a harder fact than fleet staleness, and
 /// the badge must never be ambiguous between the two (exactly one state returned).
@@ -118,6 +121,7 @@ pub fn icon_state(
     fleet: FleetSummary,
     server: ServerProcessState,
     app: AppSupervisionState,
+    daemon_overrun: bool,
 ) -> IconState {
     let server_or_app_stopped =
         matches!(server, ServerProcessState::Stopped) || matches!(app, AppSupervisionState::Stopped);
@@ -126,7 +130,7 @@ pub fn icon_state(
     if server_or_app_stopped {
         return IconState { state: IconStateKind::Stopped, badge: Badge::Stop };
     }
-    if fleet.has_staleness() || server_restarting {
+    if fleet.has_staleness() || server_restarting || daemon_overrun {
         return IconState { state: IconStateKind::Degraded, badge: Badge::Caution };
     }
     IconState { state: IconStateKind::Healthy, badge: Badge::None }
@@ -142,7 +146,7 @@ pub fn icon_state_for_theme(
     app: AppSupervisionState,
     _theme: TaskbarTheme,
 ) -> IconState {
-    icon_state(fleet, server, app)
+    icon_state(fleet, server, app, false)
 }
 
 #[cfg(test)]
@@ -153,49 +157,49 @@ mod tests {
     // by badge shape in monochrome.
     #[test]
     fn healthy_all_online_and_server_running_no_badge() {
-        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "healthy");
         assert_eq!(s.badge_str(), "none");
     }
 
     #[test]
     fn degraded_one_stale_server_running() {
-        let s = icon_state(FleetSummary::OneStale, ServerProcessState::Running, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::OneStale, ServerProcessState::Running, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "degraded");
         assert_eq!(s.badge_str(), "caution");
     }
 
     #[test]
     fn degraded_all_online_server_restarting() {
-        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Restarting, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Restarting, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "degraded");
         assert_eq!(s.badge_str(), "caution");
     }
 
     #[test]
     fn degraded_some_stale_server_running() {
-        let s = icon_state(FleetSummary::SomeStale, ServerProcessState::Running, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::SomeStale, ServerProcessState::Running, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "degraded");
         assert_eq!(s.badge_str(), "caution");
     }
 
     #[test]
     fn stopped_all_online_server_stopped() {
-        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Stopped, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Stopped, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "stopped");
         assert_eq!(s.badge_str(), "stop");
     }
 
     #[test]
     fn stopped_all_online_app_stopped() {
-        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Stopped);
+        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Stopped, false);
         assert_eq!(s.state_str(), "stopped");
         assert_eq!(s.badge_str(), "stop");
     }
 
     #[test]
     fn stopped_no_nodes_server_stopped() {
-        let s = icon_state(FleetSummary::NoNodes, ServerProcessState::Stopped, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::NoNodes, ServerProcessState::Stopped, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "stopped");
         assert_eq!(s.badge_str(), "stop");
     }
@@ -209,7 +213,7 @@ mod tests {
             (FleetSummary::OneStale, ServerProcessState::Running, AppSupervisionState::Running),
             (FleetSummary::AllOnline, ServerProcessState::Stopped, AppSupervisionState::Running),
         ] {
-            let s = icon_state(fleet, server, app);
+            let s = icon_state(fleet, server, app, false);
             // Exactly one of the three (state, badge) combinations is returned.
             match s.state {
                 IconStateKind::Healthy => assert_eq!(s.badge, Badge::None),
@@ -223,7 +227,7 @@ mod tests {
     // alarm or the stopped state.
     #[test]
     fn stale_only_fleet_never_escalates_to_stopped_or_alarm() {
-        let s = icon_state(FleetSummary::OneStale, ServerProcessState::Running, AppSupervisionState::Running);
+        let s = icon_state(FleetSummary::OneStale, ServerProcessState::Running, AppSupervisionState::Running, false);
         assert_eq!(s.state_str(), "degraded");
         assert_eq!(s.badge_str(), "caution");
         assert_ne!(s.state_str(), "stopped");
@@ -261,9 +265,19 @@ mod tests {
         // A caller handed the last-good summary on a silent poll miss re-selects
         // from THAT summary, not a "poll failed" signal — the selector has no path
         // that flips healthy to stopped from a summary alone.
-        let reselected = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Running);
+        let reselected = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Running, false);
         assert_eq!(reselected, last_good);
         assert_eq!(reselected.state_str(), "healthy");
         assert_ne!(reselected.state_str(), "stopped", "the helper does not flip to stopped on the silent-poll miss");
+    }
+
+    // 167/05 — a daemon in a sustained overrun turns a healthy tray degraded, and never past it.
+    #[test]
+    fn a_daemon_overrun_is_degraded_never_stopped() {
+        let s = icon_state(FleetSummary::AllOnline, ServerProcessState::Running, AppSupervisionState::Running, true);
+        assert_eq!(s.state_str(), "degraded");
+        assert_eq!(s.badge_str(), "caution");
+        let stopped = icon_state(FleetSummary::AllOnline, ServerProcessState::Stopped, AppSupervisionState::Running, true);
+        assert_eq!(stopped.state_str(), "stopped", "a stopped server is still the harder fact");
     }
 }

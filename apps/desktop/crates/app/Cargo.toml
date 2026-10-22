@@ -28,6 +28,9 @@ opener = "0.8.5"
 # macOS/Linux tray swaps a process-group/cgroup behind the same seam).
 [target.'cfg(windows)'.dependencies]
 win32job = "2.0.3"
+# 167/ADR-006: the desktop guard's OS sample (`GetProcessTimes` by process handle). 0.61.2 is
+# already in Cargo.lock (a transitive of the Tauri tree), so declaring it adds no package.
+windows-sys = { version = "0.61.2", features = ["Win32_Foundation", "Win32_System_Threading"] }
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

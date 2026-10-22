@@ -110,9 +110,9 @@ export const UI_DIRECTORY_BUDGETS = Object.freeze([
   }),
   Object.freeze({
     directory: "lib",
-    ceiling: 1,
+    ceiling: 3,
     allowance: 0,
-    why: "one module. A directory holding a single file is a naming decision waiting to be made: the next thing that wants to live here should either JOIN that module or prove there is a second member, and if it empties out this table must say so rather than go on guarding a number about a directory nobody uses.",
+    why: "one module. A directory holding a single file is a naming decision waiting to be made: the next thing that wants to live here should either JOIN that module or prove there is a second member, and if it empties out this table must say so rather than go on guarding a number about a directory nobody uses. 167/02 proved the second member: poll-cadence.mjs (and its poll-cadence.d.mts, the pairing every .mjs in apps/ui/src keeps), the ONE scheduler every surface's poll is built from (167/ADR-004, FF-16703) — a shared mechanism with no surface of its own, which is what this directory is for. 1 -> 3.",
   }),
   Object.freeze({
     directory: "terminal",

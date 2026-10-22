@@ -54,6 +54,8 @@ import { enclosingParenGroup, blockOrStatementAfter } from "../../support/source
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const startSession = _aofHooks.meshSession.startSession;
+const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishWorkItemRun = _aofApplication.mesh.store.publishWorkItemRun;
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..", "..");
@@ -285,6 +287,14 @@ async function producePresenceRecord() {
   );
 
   const env = { AOF_GLOBAL_HOME: home };
+  // 167/ADR-008 — the assembler reads this node's runs from the STORE, so the record is also put
+  // there as the ledger's `publish-run` would have: under the pinned ws-A and this node.
+  const store = await openGlobalWorkProjectionStore({ env });
+  try {
+    await publishWorkItemRun(store, { config: { mesh: { workspaceId, nodeId: NODE_ID } } }, { ref: "99", runId: "run-a1", record: JSON.parse(await readFile(path.join(milestoneDir, "runs", "run-a1.json"), "utf8")) }, { now: NOW, nodeId: NODE_ID });
+  } finally {
+    store.close();
+  }
   const ws = await loadWorkspace(root, undefined, { env });
   // A REAL live session, minted by the REAL producer verb — on a DIFFERENT workspace
   // so it survives ADR-004's upstream subsumption and the record carries BOTH keys.

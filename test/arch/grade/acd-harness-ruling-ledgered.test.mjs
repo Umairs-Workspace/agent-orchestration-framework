@@ -81,8 +81,10 @@ const SRC_DIR = path.join(root, "packages", "core", "src");
 // The eight names that were the whole vocabulary before this story, with what each owed.
 // A census rather than a count: "no tenth" is cheap to satisfy by deleting one.
 const THE_EIGHT = Object.freeze({
-  "run.started": ["advance-status", "publish-projection"],
-  "run.completed": ["rollback-status", "publish-projection", "notion-status-sync"],
+  // milestone 167 / ADR-008 (story 06) — `publish-run` rides both run events beside the publish:
+  // the workspace puts its own run row into the store through the ledger. Taught here consciously.
+  "run.started": ["advance-status", "publish-projection", "publish-run"],
+  "run.completed": ["rollback-status", "publish-projection", "publish-run", "notion-status-sync"],
   "feedback.recorded": ["publish-projection"],
   "item-status.changed": ["publish-projection", "notion-status-sync"],
   "stream.reindexed": ["remap-run-refs", "remap-notion-map", "remap-projection", "remap-control-facts", "publish-projection"],

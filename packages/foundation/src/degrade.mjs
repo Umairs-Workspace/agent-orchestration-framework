@@ -1,5 +1,9 @@
+import { processCostMeter } from './cost-meter.mjs';
+
 // Instance-scoped, throttled diagnostics. Storage and its location belong to the caller.
-export function createDegradeReporter({ createSink, clock = () => Date.now() }) {
+// 167/ADR-001 — every report is COUNTED on the process's cost meter before the throttle can drop
+// its line, so a code that fires a hundred times a second reads as a rate, not as one line per 5 s.
+export function createDegradeReporter({ createSink, clock = () => Date.now(), meter = processCostMeter }) {
   if (typeof createSink !== 'function') throw new TypeError('createDegradeReporter requires createSink.');
   const THROTTLE_MS = 5000;
   const lastByCode = new Map();
@@ -20,8 +24,13 @@ export function createDegradeReporter({ createSink, clock = () => Date.now() }) 
   // so one process hosting several sessions (the mesh worker daemon) never drops a second session's
   // screen behind the first's; it is not written. `extra.screen`, a plain object, rides the event as
   // `screen`. A caller passing neither writes exactly the event it always did.
+  // 167/ADR-001 — `extra.workspaceId`, a non-empty string, names the workspace the fault was for: it
+  // is counted with the report and written on the line.
   function reportDegrade(code, error, extra = {}) {
+    const workspaceId = typeof extra?.workspaceId === "string" && extra.workspaceId.length > 0 ? extra.workspaceId : null;
     try {
+      // Counted first, so the throttle below can drop the line but never the count.
+      meter?.count?.("degrade", { code: String(code), ...(workspaceId ? { workspaceId } : {}) });
       const now = clock();
       const throttleKey = typeof extra?.key === "string" && extra.key.length > 0 ? `${code}\u0000${extra.key}` : code;
       const last = lastByCode.get(throttleKey) ?? 0;
@@ -36,6 +45,7 @@ export function createDegradeReporter({ createSink, clock = () => Date.now() }) 
         code,
         message: String(error?.message ?? error ?? ""),
         ...(typeof extra?.path === "string" ? { path: extra.path } : {}),
+        ...(workspaceId ? { workspaceId } : {}),
         ...(isPlainObject(extra?.screen) ? { screen: extra.screen } : {}),
       });
     } catch {

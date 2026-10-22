@@ -120,6 +120,11 @@ const BOARD_DEFERRED = new Set([
   // the board HOST move folders in a checkout it does not own. A deliberate carve-out recorded
   // here, not an oversight.
   "archive",
+  // milestone 168 / story 01 (168/ADR-004 §1, ADR-001 §4) — `prototype` inherits `promote`'s carve-out:
+  // its start move mints a number, and a prototype is built in the operator's OWN session on the
+  // current branch. A served `/api/work/prototype` would let the board host mint and move a
+  // prototype in a checkout it does not own. A deliberate carve-out recorded here, not an oversight.
+  "prototype",
   "upgrade",
   // m42 wave (d) leg d1 (wave-3 tail) — work:ui is the BOARD LAUNCHER itself
   // (a launcher-seam command: probe run + cli.launch serve body). A board

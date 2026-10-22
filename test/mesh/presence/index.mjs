@@ -49,6 +49,9 @@ import { meshPresenceRecordTests } from "./mesh-presence-record.test.mjs";
 // alongside the push).
 
 import { meshPresenceAggregateWorkspacesTests } from "./mesh-presence-aggregate-workspaces.test.mjs";
+// milestone 167 / story 06 (ADR-008) — the tick reads what is running from the store, and a
+// workspace puts its own runs there through the ledger (publish-run).
+import { meshPresenceReadsRunsFromTheStoreTests } from "./mesh-presence-reads-runs-from-the-store.test.mjs";
 //   task 00 — the PROJECTION, the one place on the whole path where a session field was
 //   actually lost: every Then reads a value off a real call to the real readLiveSessions.
 //   task 01 — the FABRIC half: a producer-made entry crosses the real control-side path

@@ -65,6 +65,8 @@ async function runMeshServeDaemon(options) {
     // of what actually went wrong. Every warning now prints live, timestamped, as it
     // happens.
     handle = await startLauncher(workspace, {
+      // 167/ADR-009 — the serving daemon watches the work trees it syncs, so an idle tick walks none.
+      workTreeWatch: true,
       onWarning: (warning) => {
         console.error(`[mesh ${new Date().toISOString()}] ${warning.code}: ${warning.message}`);
         // 2026-07-27 — an event may carry its OWN level (the dispatch/worktree
@@ -106,8 +108,8 @@ async function runMeshServeDaemon(options) {
 
     await new Promise((resolve) => {
       const shutdown = () => {
-        handle.stop();
-        resolve();
+        // 167/ADR-001 — the stop's last cost snapshot lands before the daemon goes.
+        Promise.resolve(handle.stop()).then(resolve, resolve);
       };
       process.once("SIGINT", shutdown);
       process.once("SIGTERM", shutdown);
