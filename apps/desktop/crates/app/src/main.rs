@@ -21,6 +21,7 @@
 // (acd-desktop-read-only-fleet). "Open web UI" launches a browser at the running UI's
 // local URL — not an `aof` spawn.
 
+mod cpu_sample;
 mod supervisor;
 
 use mesh_desktop_core::icon::{icon_state, AppSupervisionState, FleetSummary, ServerProcessState};
@@ -330,7 +331,7 @@ fn tray_icon_bytes(s: &SupervisorState) -> &'static [u8] {
         "restarting" => ServerProcessState::Restarting,
         _ => ServerProcessState::Stopped,
     };
-    let icon = icon_state(fleet, server, AppSupervisionState::Running);
+    let icon = icon_state(fleet, server, AppSupervisionState::Running, s.daemon_overrun);
     match icon.state_str() {
         "healthy" => TRAY_HEALTHY,
         "degraded" => TRAY_DEGRADED,

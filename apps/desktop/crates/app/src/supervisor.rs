@@ -24,7 +24,11 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use mesh_desktop_core::guard::{degrade_log_line, footer_notice, GuardEvent, OverrunWatch};
 use mesh_desktop_core::poll::FleetDataCommand;
+use mesh_desktop_core::status::CostView;
+
+use crate::cpu_sample::{CpuSampler, OsCpuSampler};
 use mesh_desktop_core::render_state::{select_render_state, FetchOutcome, PriorGoodFrame, RenderState};
 use mesh_desktop_core::resolve::{form_argv_spawn, form_child_spawn, resolve_aof, ResolveEnv, ResolvedAof};
 use mesh_desktop_core::status::{parse_status, MeshStatus};
@@ -99,6 +103,11 @@ pub struct SupervisorState {
     /// The ONE notice standing in the window footer, carrying the id of the child it
     /// names so a sibling's restart never clears it.
     pub standing_notice: Option<StandingNotice>,
+    /// The guard's notice while a daemon is in a sustained CPU overrun (167/ADR-006) — shown in
+    /// the footer's one slot only when no standing exit notice holds it.
+    pub overrun_notice: Option<String>,
+    /// Whether any supervised daemon is in overrun: one more input to the tray's `degraded`.
+    pub daemon_overrun: bool,
     pub window_visible: bool,
     pub ui_url: String,
 }
@@ -137,9 +146,13 @@ impl SupervisorState {
     pub fn ui_signal(&self) -> &'static str {
         self.signal(MESH_UI_ID)
     }
-    /// The standing notice's text, as the IPC view-model's plain-string `notice`.
+    /// The footer's one notice, as the IPC view-model's plain-string `notice`: a standing exit
+    /// notice, else the guard's overrun notice (167/ADR-006 — the exit notice outranks it). An
+    /// overrun is never shown over the error footer: without a status read there is no budget it
+    /// was judged against (167/DESIGN, the states).
     pub fn notice(&self) -> Option<String> {
-        self.standing_notice.as_ref().map(|n| n.text.clone())
+        let overrun = if self.render_state == RenderState::Error { None } else { self.overrun_notice.as_deref() };
+        footer_notice(self.standing_notice.as_ref().map(|n| n.text.as_str()), overrun)
     }
 }
 
@@ -156,6 +169,8 @@ impl Default for SupervisorState {
             signals,
             declared: Vec::new(),
             standing_notice: None,
+            overrun_notice: None,
+            daemon_overrun: false,
             window_visible: true,
             ui_url: MESH_UI_URL.to_string(),
         }
@@ -269,6 +284,9 @@ struct ChildController {
     /// running in another process (130/ADR-007): the row reports that loop and spawns
     /// nothing further. Like a hold, nothing clears it; it goes with the row.
     attached: AtomicBool,
+    /// The running child's process id, 0 when there is none — what the guard samples the OS's
+    /// CPU time by (167/ADR-006). It is read, never acted on.
+    pid: AtomicU32,
     notify: Notify,
 }
 
@@ -282,8 +300,15 @@ impl ChildController {
             presses: AtomicU32::new(0),
             stop_outcome: Mutex::new(None),
             attached: AtomicBool::new(false),
+            pid: AtomicU32::new(0),
             notify: Notify::new(),
         }
+    }
+    fn set_pid(&self, pid: Option<u32>) {
+        self.pid.store(pid.unwrap_or(0), Ordering::SeqCst);
+    }
+    fn pid(&self) -> Option<u32> {
+        Some(self.pid.load(Ordering::SeqCst)).filter(|pid| *pid != 0)
     }
     fn attach(&self) {
         self.attached.store(true, Ordering::SeqCst);
@@ -573,6 +598,10 @@ async fn poll_loop(
 ) {
     let mut interval = tokio::time::interval(POLL_INTERVAL);
     let mut tick: u32 = 0;
+    // 167/ADR-006 — the guard rides this same tick: one OS sample per daemon, judged against the
+    // budget the poll's own status read hands it. It shows and logs; it never acts.
+    let mut watch = OverrunWatch::new();
+    let sampler = OsCpuSampler;
     loop {
         interval.tick().await;
         tick = tick.saturating_add(1);
@@ -605,6 +634,10 @@ async fn poll_loop(
             (true, Some(status)) if status.declarations_answered() => Some(status.declaration_children()),
             _ => None,
         };
+        // The cost block of THIS tick's read: a failed poll hands the guard no budget, and an
+        // unjudged tick shows nothing new.
+        let cost = parsed.as_ref().and_then(|status| status.cost());
+        observe_daemons(&mut watch, &sampler, &controllers, cost.as_ref(), &install_dir, &shared);
 
         // Read the role decision out of the SAME locked update — no second lock (one
         // poll feeds both the render state and the isControlNode role, ADR-004 d1-2).
@@ -654,6 +687,63 @@ async fn poll_loop(
         }
 
         refresh_tray(&app, &shared);
+    }
+}
+
+/// The guard's one tick (167/ADR-006): sample each daemon's cumulative CPU time from the OS by
+/// its pid, feed the watch, and turn what it answers into the footer notice, the tray input and
+/// one degrade-log line per transition. It reads the controllers for their pids and writes
+/// nothing to them — there is no stop, restart or kill on this path (FF-16704).
+fn observe_daemons(
+    watch: &mut OverrunWatch,
+    sampler: &dyn CpuSampler,
+    controllers: &Controllers,
+    cost: Option<&CostView>,
+    install_dir: &Path,
+    shared: &SharedState,
+) {
+    let pids: HashMap<String, u32> = controllers
+        .lock()
+        .unwrap()
+        .iter()
+        .filter_map(|(id, ctl)| ctl.pid().map(|pid| (id.clone(), pid)))
+        .collect();
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    let budget = cost.and_then(|cost| cost.budget);
+    let events = watch.observe(
+        |id| pids.get(id).and_then(|pid| sampler.cpu_time_100ns(*pid)),
+        budget.as_ref(),
+        |daemon| cost.and_then(|cost| cost.report(daemon)),
+        now_ms,
+    );
+    {
+        let mut g = shared.lock().unwrap();
+        g.overrun_notice = watch.notice().map(str::to_string);
+        g.daemon_overrun = watch.any_overrun();
+    }
+    for event in &events {
+        append_degrade_line(install_dir, now_ms, event);
+    }
+}
+
+/// Append one line to the shared degrade log under the aof global home (`AOF_GLOBAL_HOME`, else
+/// the parent of the install dir `$HOME/.aof/bin`). A write that fails is dropped: the log is a
+/// record, and the tray and footer still say it.
+fn append_degrade_line(install_dir: &Path, now_ms: u64, event: &GuardEvent) {
+    use std::io::Write;
+    let home = std::env::var_os("AOF_GLOBAL_HOME")
+        .map(PathBuf::from)
+        .or_else(|| install_dir.parent().map(Path::to_path_buf));
+    let Some(home) = home else { return };
+    let dir = home.join("mesh").join("logs");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(dir.join("degrade.log")) {
+        let _ = file.write_all(degrade_log_line(now_ms, event).as_bytes());
     }
 }
 
@@ -791,6 +881,7 @@ async fn supervise_child(
             }
         };
         assign_to_job(&job, &child);
+        ctl.set_pid(child.id());
         attempt = 0;
         set_signal(&shared, &id, "running");
         // A successful (re)start clears only THIS child's notice — the reason is stale
@@ -880,6 +971,8 @@ async fn supervise_child(
                 }
             }
         };
+        // The child is gone or going: the guard samples nothing more for it.
+        ctl.set_pid(None);
 
         match result {
             WaitResult::Exited(status) => {

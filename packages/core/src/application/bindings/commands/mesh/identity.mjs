@@ -15,10 +15,11 @@ export function assembleCommandsMeshIdentity({ meshStoreServices, meshPresenceSe
   const { resolveStalenessSeconds } = meshPresenceServices;
   const { isNodeStale } = meshPresenceServices;
   const { mergePresence } = meshPresenceServices;
+  const { readCostSnapshots } = meshPresenceServices;
   const { readRegistry } = meshRegistryServices;
   const { isControlNode } = meshRegistryServices;
 
-  const { resolveInstallSalt, meshIdentityCommand, keyedByOldId, meshStatusCommand } = createMeshIdentityCommands({ publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath, deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname, packageVersionString, readPresenceRecord, resolveStalenessSeconds, isNodeStale, mergePresence, readRegistry, isControlNode, loadDeclarations: () => provideMeshDeclarations() });
+  const { resolveInstallSalt, meshIdentityCommand, keyedByOldId, meshStatusCommand } = createMeshIdentityCommands({ publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath, deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname, packageVersionString, readPresenceRecord, resolveStalenessSeconds, isNodeStale, mergePresence, readRegistry, isControlNode, loadDeclarations: () => provideMeshDeclarations(), readCostSnapshots });
 
   return { resolveInstallSalt, meshIdentityCommand, keyedByOldId, meshStatusCommand };
 }

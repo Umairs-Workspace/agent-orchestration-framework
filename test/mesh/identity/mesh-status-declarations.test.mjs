@@ -89,7 +89,8 @@ export const meshStatusDeclarationsTests = [
       await withTemp(async (root) => {
         const dir = await makeWorkspace(root, "repo-a");
         const flagless = await status(dir, {});
-        assert.deepEqual(Object.keys(flagless), ["nodes", "boards", "isControlNode"]);
+        // 167/00 E6 appends the always-present `cost` block after isControlNode; `declarations` still rides only the flag.
+        assert.deepEqual(Object.keys(flagless), ["nodes", "boards", "isControlNode", "cost"]);
         assert.ok(!("declarations" in flagless), "no declarations key");
 
         // The flag gates the WALK, not just the key: a producer that enumerated and then declined
@@ -97,7 +98,7 @@ export const meshStatusDeclarationsTests = [
         const withFlag = await status(dir, { declarations: true });
         const { declarations, ...rest } = withFlag;
         assert.deepEqual(rest, flagless, "the document minus `declarations` is the flagless document");
-        assert.deepEqual(Object.keys(withFlag), ["nodes", "boards", "isControlNode", "declarations"]);
+        assert.deepEqual(Object.keys(withFlag), ["nodes", "boards", "isControlNode", "cost", "declarations"]);
       });
     },
   },

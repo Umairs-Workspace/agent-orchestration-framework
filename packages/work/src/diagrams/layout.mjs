@@ -1,5 +1,6 @@
 import { commandError } from "@aof/contracts/error";
 import { headingCaptureRe, idForm } from "../declared-id.mjs";
+import { stripHtmlComments } from "@aof/foundation/markdown";
 
 // THE ONE HOME of a diagram's place and spelling (milestone 133, ADR-003; FF-13302). Three parties
 // must agree on it — the writer (`aof diagram plan` / `export`), the reader (the doctor lane) and
@@ -172,13 +173,46 @@ export function readDiagramBrief(markdown, adrId) {
   return text === "" ? null : text;
 }
 
+// A PROTOTYPE'S DIAGRAMS (milestone 168 / ADR-006) — the third subject. A prototype has no ADRs:
+// its briefs live under `## Diagrams` in PROTOTYPE.md, one `### <name>` each, and the diagram's
+// subject is that NAME — the slug grammar, and the stem itself, so its files are
+// `diagrams/<name>.{html,svg,png}` through `diagramPaths` unchanged. Homed here with the ADR half
+// because this file is the one home of a diagram's place and spelling (FF-13302).
+const PROTOTYPE_DIAGRAMS_HEADING = /^##\s+Diagrams\s*$/;
+
+export function prototypeDiagramStem(name) {
+  assertSlug(name);
+  return name;
+}
+
+// The brief is the prose under `### <name>` inside `## Diagrams`, up to the next heading or the first
+// line that links into `diagrams/` (the pasted block). Null when the heading is absent; "" when it
+// carries no prose.
+export function readPrototypeBrief(markdown, name) {
+  const lines = linesOf(markdown);
+  const section = lines.findIndex((line) => PROTOTYPE_DIAGRAMS_HEADING.test(line));
+  if (section === -1) return null;
+  let at = section + 1;
+  while (at < lines.length && !H2.test(lines[at]) && lines[at].trim() !== `### ${name}`) at += 1;
+  if (at >= lines.length || H2.test(lines[at])) return null;
+  const brief = [];
+  for (at += 1; at < lines.length; at += 1) {
+    const line = lines[at];
+    if (H2_OR_H3.test(line) || line.includes(`](${DIAGRAMS_DIR}/`)) break;
+    brief.push(line);
+  }
+  return stripHtmlComments(brief.join("\n")).trim();
+}
+
 // The block the architect pastes under the ADR (ADR-003 §3): the SVG as an image, then the source
-// and — when exported — the PNG as links.
+// and — when exported — the PNG as links. A prototype's diagram has no ADR id, so its image is
+// titled by its name alone (168/ADR-006).
 export function renderDiagramBlock({ adrId, title, stem, sourceExt, formats }) {
   const source = `${stem}${sourceExt}`;
   const links = [`Source: [${source}](${DIAGRAMS_DIR}/${source})`];
   if (formats.includes("png")) links.push(`PNG: [${stem}.png](${DIAGRAMS_DIR}/${stem}.png)`);
-  return `![${adrId} — ${title}](${DIAGRAMS_DIR}/${stem}.svg)\n\n${links.join(" · ")}`;
+  const alt = adrId == null ? title : `${adrId} — ${title}`;
+  return `![${alt}](${DIAGRAMS_DIR}/${stem}.svg)\n\n${links.join(" · ")}`;
 }
 
 // Every image or link target under `diagrams/`, with the `## ADR-NNN` section it sits in (null

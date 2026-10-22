@@ -37,6 +37,7 @@ export const WORK_COMMAND_IDS = Object.freeze([
   "work:insert-uat",
   "work:insert-story",
   "work:insert-chore",
+  "work:prototype",
   "work:promote",
   "work:archive",
   "work:promote-gap",

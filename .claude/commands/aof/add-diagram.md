@@ -1,6 +1,6 @@
 ---
 aof-generated: true
-description: Draw the ADR diagrams a refine left undrawn — every briefed ADR with no picture, or one ADR you name — through the same `aof diagram plan` / `aof diagram export` step refine uses, pasting each block under its brief.
+description: Draw the ADR diagrams a refine left undrawn — every briefed ADR with no picture, or one ADR you name — through the same `aof diagram plan` / `aof diagram export` step refine uses, pasting each block under its brief. On a prototype, it adds, fills in or redraws the prototype's named diagrams.
 argument-hint: "<ref> [ADR-NNN]"
 aof-invocation: /aof:add-diagram
 aof-runtime: claude
@@ -20,7 +20,8 @@ instructions the plan answers, and pasting the block the export returns. aof nev
 
 <config>
 Parse "$ARGUMENTS": one work item ref, then optionally one ADR id (`ADR-NNN`). The ADR id names the
-one ADR to draw. With none named, this run draws every undrawn brief the item has.
+one ADR to draw. With none named, this run draws every undrawn brief the item has. When the ref is a
+**prototype**, follow `<prototype>` below instead of the process: a prototype has no ADRs.
 </config>
 
 <process>
@@ -91,3 +92,37 @@ one ADR to draw. With none named, this run draws every undrawn brief the item ha
    and this command never commits what was drawn. Leave the diagrams, the pasted blocks and any new
    brief for the operator to review and commit.
 </process>
+
+<prototype>
+**A prototype ref** (`aof work find <ref> --json` answers `type: prototype`). A prototype has no
+ADRs: its briefs live under `## Diagrams` in its `PROTOTYPE.md`, one `### <name>` heading each, and
+a diagram's subject is its **name** — lower case, digits and hyphens, at most 48 characters. Its wants
+change, so a drawn diagram **can be redrawn**: the new picture replaces the old one, and no copy is
+kept (git keeps the old one once the operator commits). Nothing is spawned.
+
+Tell the three forms apart by the argument after the ref:
+
+- **`<ref>` alone — draw the missing ones.** Every `### <name>` brief under `## Diagrams` with no
+  `](diagrams/` link under it is a candidate. List them all before the first draw, then draw each
+  in turn. With none, report that the prototype has nothing to draw and write nothing.
+- **`<ref> <name>` matching an existing `### <name>` heading — a redraw.** Draw that one diagram
+  again and **replace** its block under the brief.
+- **`<ref> "<what to draw>"` — anything else is the description of a new diagram.** Pick a name of
+  at most four words in kebab case, write a new `### <name>` heading under `## Diagrams` (add the
+  section at the end of `PROTOTYPE.md` if it is missing) with the description as its brief, then
+  draw it.
+
+For each diagram:
+
+1. **Plan.** Run `aof diagram plan <ref> <name> --json` — no `--slug`; on a prototype the stem is
+   the name, and `--slug` is refused (`diagram-slug-not-applicable`). Act on `enabled: false` and
+   `available: false` exactly as the ADR path does. A non-zero exit is a coded refusal — report its
+   code and message: `diagram-name-unknown` (no such `### <name>` heading), `diagram-brief-missing`
+   (a heading with no prose) or `diagram-slug-invalid` (the name is not lower-case kebab).
+2. **Draw.** Follow the answer's `instructions` exactly, writing only the one source file it names.
+3. **Export.** Run `aof diagram export <ref> <name> --json` and paste the returned `block` directly
+   under the brief — or, on a redraw, replace the block already there. A PNG miss still pastes it.
+4. **Log it.** Run `aof work prototype <ref> --log "diagram <name> drawn"` (or `redrawn`).
+
+Report each diagram drawn or redrawn, the paths written and where the block went. Commit nothing.
+</prototype>

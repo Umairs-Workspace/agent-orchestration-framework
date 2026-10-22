@@ -3,7 +3,7 @@ import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 
 
-import { assertAdrId, diagramPaths, diagramsDir, findDiagramSources, LOOP_SUBJECT, loopDiagramPaths, loopRasterSvgPath, readAdrTitle, renderDiagramBlock } from "../../diagrams/layout.mjs";
+import { assertAdrId, diagramPaths, diagramsDir, findDiagramSources, LOOP_SUBJECT, loopDiagramPaths, loopRasterSvgPath, prototypeDiagramStem, readAdrTitle, readPrototypeBrief, renderDiagramBlock } from "../../diagrams/layout.mjs";
 
 
 export function createDiagramExportCommand({ resolveWorkDiagrams, generatorFor, requireLocalCheckout, resolveItemExact, findBrowser, rasterizeSvg }) {
@@ -72,6 +72,29 @@ async function exportSource({ generator, source, paths, diagrams, projectRoot, c
   }
 }
 
+// A PROTOTYPE'S DIAGRAM (168/ADR-006) — the subject is the diagram's name, which is its stem, and a
+// redraw REPLACES the picture: the export writes over the svg and png, and nothing keeps a copy.
+// A delivered prototype is not refused — its wants can change, so its picture can too.
+async function exportPrototype(item, name, diagrams, ctx) {
+  const { projectRoot } = ctx.workspace;
+  const stem = prototypeDiagramStem(name);
+  if (readPrototypeBrief(await readText(path.join(item.dir, "PROTOTYPE.md")), name) == null) {
+    throw commandError(`${item.ref} has no "### ${name}" heading under "## Diagrams" in its PROTOTYPE.md.`, "diagram-name-unknown", 404);
+  }
+  const generator = generatorFor(diagrams.generator);
+  const paths = diagramPaths(toPosix(path.relative(projectRoot, item.dir)), stem, generator.sourceExt, diagrams.formats);
+  let source;
+  try {
+    source = await readFile(path.resolve(projectRoot, paths.source), "utf8");
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+    throw commandError(`${paths.source} does not exist. Draw it first (aof diagram plan ${item.ref} ${name}).`, "diagram-source-missing", 404);
+  }
+  const block = renderDiagramBlock({ adrId: null, title: name, stem, sourceExt: generator.sourceExt, formats: diagrams.formats });
+  const { written, png } = await exportSource({ generator, source, paths, diagrams, projectRoot, ctx });
+  return { name, written, block, ...(png === undefined ? {} : { png }) };
+}
+
 const diagramExportCommand = {
   id: "diagram:export",
   input: {
@@ -112,6 +135,7 @@ const diagramExportCommand = {
       }
       return await exportSource({ generator, source, paths, diagrams: { ...diagrams, formats: ["png"] }, projectRoot, ctx, keepSvg: false });
     }
+    if (item.type === "prototype") return await exportPrototype(item, input.adr, diagrams, ctx);
     assertAdrId(input.adr);
     const title = readAdrTitle(await readText(path.join(item.dir, "ARCHITECTURE.md")), input.adr);
     if (title == null) {
@@ -146,7 +170,7 @@ const diagramExportCommand = {
   cli: {
     route: ["diagram", "export"],
     spec: {
-      usage: "aof diagram export <ref> <ADR-NNN> [--json]\n       aof diagram export <milestone ref> loop [--json]",
+      usage: "aof diagram export <ref> <ADR-NNN> [--json]\n       aof diagram export <milestone ref> loop [--json]\n       aof diagram export <prototype ref> <name> [--json]",
     },
 
     argv: (positionals) => ({ ref: positionals[0], adr: positionals[1] }),
@@ -160,7 +184,7 @@ const diagramExportCommand = {
         lines.push(`PNG not written (${result.png.code}) — ${result.png.message ?? result.png.fix}`);
         if (result.png.message) lines.push(`  ${result.png.fix}`);
       }
-      if (result.block !== undefined) lines.push("", "Paste this under the ADR:", "", result.block);
+      if (result.block !== undefined) lines.push("", result.name ? `Paste this under the "### ${result.name}" brief:` : "Paste this under the ADR:", "", result.block);
       return lines.join("\n");
     },
 

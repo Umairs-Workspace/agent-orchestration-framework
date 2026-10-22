@@ -209,7 +209,18 @@ function assertUiFrozen(pairs) {
   // it, and given the drive's progress segment). The fleet and the home read the loop entry's three
   // appended presence keys and the session row's appended `loopRunId`; nothing under
   // `apps/ui/src/board/` changed, and the board reads no run-record key, cycle, level or loop state.
-  assert.equal(hash.digest("hex"), "545907074603c295b46daec5cee4a3fc21ddc142f41fb4f7acf291c0891e06dc", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED by 167/00 (ADR-001), measured: `git diff --numstat -- apps/ui/src` is TWO files, `apps/ui/src/board/api.ts`
+  // and `apps/ui/src/fleet/api.ts`: each polled GET names its client in an `X-AOF-Client` header (`board` | `fleet`), so
+  // the daemon counts its requests by client and knows a view is open. No run-record key, cycle, level or loop state is read.
+  // RE-PINNED by 167/02 (ADR-004), measured: `git diff --numstat -- apps/ui/src` is the two `api.ts` files (the conditional GET:
+  // a remembered `ETag` per URL, a `304` answering the same object), `Board.tsx`, `DetailPanel.tsx`, `Fleet.tsx` and `Home.tsx` (each
+  // poll built from the one cadence instead of a `setInterval`), and the new `lib/poll-cadence.mjs` + `.d.mts`. What the polls
+  // read is unchanged; no run-record key, cycle, level or loop state is read, and the loop still has no face of its own.
+  // RE-PINNED by 168/03, measured: `git diff --numstat -- apps/ui/src` past 167/02 is the board's `BoardLanes.tsx`,
+  // `DetailPanel.tsx`, `model.ts`, `status.tsx` and `api.ts`, and `fleet/Fleet.tsx`: a prototype is a work item the
+  // board lists and opens (its lane, its four status words, its tab set, moved to `model.ts` as `tabsFor`). No run-record
+  // key, cycle, level or loop state is read, and the loop still has no face of its own.
+  assert.equal(hash.digest("hex"), "e053d12f62d0727dcf5bb02aa73d0966061a7d258723b646be7df25cee4b7de1", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -330,7 +341,10 @@ export const archTests = [
         // atomic brief settlement at an existing transition. Pending native review
         // evidence cannot survive owner loss or finish a run successfully. Record
         // keys, legal edges, board/UI and the sole run writer remain unchanged.
-        ["packages/execution/src/runs.mjs", "3dc74d570f5d895580f20c2028adfe3bbbef5209a505144ea949bbdf335c9e15"],
+        // RE-PINNED by 167/06 (ADR-008): one export, `readRun` — the existing one-record read, so the
+        // presence seam reads a running run's own record for a loop's last activity. No key, state
+        // edge, writer or board/UI reader changed.
+        ["packages/execution/src/runs.mjs", "511dbd743ff50a86496300f07d6b3721dba3a2ea246a2d28442e997dfdd99822"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that
@@ -361,7 +375,9 @@ export const archTests = [
         // body `invalid-body`. Re-pinned rather than dropped, per 55/VERIFICATION F-55-02-1.
         // RE-PINNED by 142: transport factory relocation only; all exported function bodies
         // match the prior source and HTTP integration tests retain routing/persistence coverage.
-        ["packages/server/src/board-ui.mjs", "d0a2383b3a210b6ce6d23e2d2757bde1cdfaf3725ca1c869e8f20100d228d9a1"],
+        // RE-PINNED by 167/00 (ADR-001): one optional `countRequest` port, called once per `/api/work*` request; no route body or run key changed.
+        // RE-PINNED by 167/02 (ADR-004): `/api/work/list` answers through static-serve's `sendTaggedJson` (`ETag`/`304`); same envelope.
+        ["packages/server/src/board-ui.mjs", "04541b1a2b19ca052a86b659094db75dc886439d8f93d230a4ba0875507e5c2d"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

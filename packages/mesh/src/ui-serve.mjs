@@ -2,17 +2,18 @@ import http from "node:http";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { contentType, isLoopbackHost, safeStaticPath, shouldServeAppShell } from "@aof/server/static-serve";
+import { contentType, isLoopbackHost, safeStaticPath, sendTaggedJson, shouldServeAppShell } from "@aof/server/static-serve";
 import { isAssignmentPhase } from "./assignment-directive.mjs";
 import { WebSocketServer } from "ws";
 import { buildSessionSpawnFrame, buildSessionSpawnEnvelope } from "./session-spawn-directive.mjs";
 import { createSpawnOutcomeRegistry } from "./session-spawn-outcome.mjs";
 import { randomUUID } from "node:crypto";
+import { COST_CLIENT_HEADER, processCostMeter, requestClient } from "@aof/foundation/cost-meter";
 export const DEFAULT_MESH_UI_PORT = 4181;
 export const MAX_TERMINAL_INPUT_BYTES = 32 * 1024;
 
 // Configured runtime services are supplied by core. Construction starts no I/O or timers.
-export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, workspaceIdForProjectRoot, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade }) {
+export function createMeshUiServer({ assetPath, serveBoard, queryGlobalMeshStatus, workspaceIdForProjectRoot, resolveCacheStalenessSeconds, loadWorkspace, assignWork, STOP_REFUSALS, stopLoop, createTerminalMirror, buildTerminalInputEnvelope, PROVIDER_IDS, reportDegrade, costMeter = processCostMeter }) {
 // The `aof mesh ui` fleet serve-face — the "fleet mission-control" web surface
 // (milestone 25 / story 02; ARCHITECTURE ADR-003/ADR-004). A SIBLING to
 // `board-serve.mjs`, NOT an extension of the work UI: it stands up its OWN single
@@ -400,6 +401,10 @@ async function serveMeshUi({
       return;
     }
     const pathname = requestUrl.pathname;
+    // 167/ADR-001 — every API request is counted by route and by the client that named itself
+    // (`X-AOF-Client: fleet|board`; anything else is `unknown`). A fleet or board request is also
+    // what makes this daemon `viewer-open` for the budget.
+    if (pathname.startsWith("/api/")) costMeter.count("request", { route: pathname, client: requestClient(request.headers[COST_CLIENT_HEADER]) });
 
     // A drill-in from the global milestone cards opens the real per-workspace
     // board server. This keeps /api/work off the fleet face: the browser navigates
@@ -971,7 +976,9 @@ async function serveMeshUi({
         // the server's fact and the roster is the registry's.
         const body = { ...result, scope: effectiveScope, localNodeId: await controlNodeId() };
         if (effectiveScope === "local") body.currentWorkspace = resolvedProjectDir;
-        sendJson(response, 200, body);
+        // 167/ADR-004 — the fleet polls this route, so it answers conditionally: an unchanged status
+        // is a `304` with no body. An error answer (below) carries no tag.
+        sendTaggedJson(request, response, body, { tagOf: statusTagSource });
       } catch (error) {
         // review fix P0.5: a globalStoreError (global-mesh-query.mjs) carries the
         // global mesh database `path` on the error object — thread it into the
@@ -1318,6 +1325,12 @@ function admitWriteRequest(request, response) {
 
 function sendJson(response, status, payload) {
   send(response, status, "application/json", JSON.stringify(payload));
+}
+
+// The status stamps the instant it was generated (`diagnostics.generatedAt`), which no view renders; an
+// answer that differs only by when it was made is unchanged, so its tag is taken without it (167/ADR-004).
+function statusTagSource(payload) {
+  return JSON.stringify(payload?.diagnostics?.generatedAt == null ? payload : { ...payload, diagnostics: { ...payload.diagnostics, generatedAt: null } });
 }
 
 // review fix P0.5: an OPTIONAL 5th `extra` object merges additional coded-error

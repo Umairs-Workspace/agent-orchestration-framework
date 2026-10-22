@@ -62,7 +62,7 @@ const READDIR_RE = /\breaddir(?:Sync)?\b/;
 // A regex literal token: `/…/flags`, escapes honoured, never spanning a line. Division
 // expressions can match too — harmless, because only the CONTENT is inspected.
 const REGEX_LITERAL_RE = /\/(?:[^/\\\n[]|\\.|\[(?:[^\]\\\n]|\\.)*\])+\/[dgimsuy]*/g;
-const ITEM_SHAPE_IN_REGEX = (literal) => literal.startsWith("/^(\\d+)") || literal.includes("_(milestone|story|task|uat|spike|chore)_") || literal.includes("_milestone_");
+const ITEM_SHAPE_IN_REGEX = (literal) => literal.startsWith("/^(\\d+)") || literal.includes("_(milestone|story|task|uat|spike|chore") || literal.includes("_milestone_");
 
 export function itemNameMatchesIn(strippedSource) {
   const matches = [];

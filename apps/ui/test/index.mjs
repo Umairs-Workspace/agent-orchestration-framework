@@ -1,4 +1,6 @@
 import { terminalCollapseIsNotHideTests } from "./terminal-collapse-is-not-hide.suite.mjs";
+// 167/02 — the one poll cadence (ADR-004).
+import { pollCadenceTests } from "./poll-cadence.suite.mjs";
 import { terminalControlBothSourcesTests } from "./terminal-control-both-sources.suite.mjs";
 import { terminalCoreGeometryTests } from "./terminal-core-geometry.suite.mjs";
 import { terminalCoreInputPolicyTests } from "./terminal-core-input-policy.suite.mjs";
@@ -68,4 +70,5 @@ export const tests = [
   ...terminalsHomeGridTests,
   ...terminalsHomePageStatesTests,
   ...terminalsHomeRouteTests,
+  ...pollCadenceTests,
 ];

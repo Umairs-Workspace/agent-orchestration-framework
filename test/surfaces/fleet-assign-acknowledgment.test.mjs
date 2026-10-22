@@ -616,11 +616,14 @@ export const fleetAssignAcknowledgmentTests = [
             "…and exactly ONE record was ever minted: a retry would have collected a `destructive` refusal against the surface's own first dispatch",
           );
 
-          // No second cadence: over the following poll interval the app makes
-          // exactly the ONE scheduled poll it would have made anyway.
-          const before = app.statusLoads();
-          await app.advance(POLL_MS);
-          assert.equal(app.statusLoads() - before, 1, "the steady state is unchanged — one scheduled poll, no second cadence");
+          // No second cadence: over the following minute the status polls ride the ONE cadence — never two
+          // closer than one poll interval. (167/02: the released cadence slows while the status is unchanged,
+          // so a single interval may hold no poll at all; what the timeout must never start is a second one.)
+          const mark = app.requests().length;
+          await app.advance(60_000);
+          const polls = app.requests().slice(mark).filter((entry) => new URL(entry.url).pathname === "/api/mesh/status").map((entry) => entry.at);
+          assert.ok(polls.length >= 1, "the steady poll goes on");
+          assert.ok(polls.slice(1).every((at, index) => at - polls[index] >= POLL_MS), `the steady state is one cadence — no two polls closer than POLL_MS (${polls.join(", ")})`);
         });
       }, { nodes: ["worker-a"] });
     },

@@ -289,10 +289,12 @@ export function affordanceCadenceProblems(rawSource) {
   }
   // …and the SCHEDULING site consumes it: an unpinned `setInterval(…, 4000)`
   // breaks "the hold is one poll interval" while every unit lane stays green.
-  if (!/setInterval\s*\([\s\S]{0,160}?,\s*POLL_MS\s*\)/.test(source)) {
+  // 167/02 (ADR-004): the poll is armed through the one cadence, from the SAME POLL_MS base.
+  if (!/(?:setInterval\s*\([\s\S]{0,160}?,\s*POLL_MS\s*\)|armPoll\s*\(\s*\{\s*baseMs:\s*POLL_MS\b)/.test(source)) {
     problems.push("the fleet poll is not scheduled from POLL_MS — the cadence is a literal of the component's own");
   }
-  if (!/const\s+onAssigned\s*=\s*useCallback\s*\(\s*\(\s*\)\s*=>\s*void\s+load\s*\(\s*scope\s*,\s*\{\s*silent:\s*true\s*\}\s*\)/.test(source)) {
+  // 167/02: the callback also carries the pending assign's pin; its success branch is still the silent load.
+  if (!/const\s+onAssigned\s*=\s*useCallback\s*\(\s*\([^)]*\)\s*=>[^\n]*void\s+load\s*\(\s*scope\s*,\s*\{\s*silent:\s*true\s*\}\s*\)/.test(source)) {
     problems.push("the re-load handed to the affordance is not load(scope, { silent: true }) — a non-silent load unmounts the populated board");
   }
 

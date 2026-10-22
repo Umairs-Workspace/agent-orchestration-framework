@@ -137,7 +137,10 @@ export const archTests = [
       for (const leaf of ["codex-executable.mjs", "codex-process-environment.mjs"]) {
         assert.ok(graph.seen.has(path.join(root, "packages/execution/src", leaf)), `156 adds ${leaf}, a builtin-only leaf`);
       }
-      assert.equal(graph.seen.size, 38, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves");
+      // 167/00 adds the cost meter, a zero-import foundation leaf the degrade reporter counts every
+      // report through (167/ADR-001), so 38 -> 39 with no lifecycle, provider or mesh edge.
+      assert.ok(graph.seen.has(path.join(root, "packages/foundation/src/cost-meter.mjs")), "167/00 adds the cost meter leaf through the degrade reporter");
+      assert.equal(graph.seen.size, 39, "the 31-module assembly plus seven explicitly owned Codex/policy and observation leaves, and the cost meter");
       assert.deepEqual(specifiers(source).filter(specifier => specifier.startsWith("@aof/")).sort(), ["@aof/execution/otel-attribution", "@aof/execution/pty", "@aof/execution/session-driver", "@aof/work/phase-brief"], "the adapter uses only the two execution APIs");
       const implementation = await walkImports(path.join(root, "packages/execution/src/session-driver.mjs"));
       assert.deepEqual([...implementation.seen].map(file => path.relative(root, file).replaceAll("\\", "/")).sort(), ["packages/contracts/src/loop-bounds.mjs", "packages/execution/src/codex-app-server.mjs", "packages/execution/src/codex-executable.mjs", "packages/execution/src/codex-process-environment.mjs", "packages/execution/src/codex-protocol-profile.mjs", "packages/execution/src/pty.mjs", "packages/execution/src/runtime-events.mjs", "packages/execution/src/runtime-selection.mjs", "packages/execution/src/session-driver.mjs", "packages/execution/src/session-model.mjs"], "native transport and observation stay in execution; no work, mesh or core import is introduced");
@@ -314,7 +317,17 @@ export const archTests = [
       // closure gains its pure leaf `@aof/work/local-change` (163 -> 164). Its imports (`node:crypto`,
       // `node:path`, `item-row.mjs`) were already here; it does no I/O and reaches no lifecycle module.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/work/src/local-change.mjs")), "the change predicate's leaf");
-      assert.equal(sinkGraph.seen.size, 164, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 167/00 (ADR-001) — the degrade reporter counts every report on the cost meter, so the closure
+      // gains that zero-import foundation leaf (164 -> 165); it does no I/O and reaches no lifecycle module.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/foundation/src/cost-meter.mjs")), "the cost meter leaf");
+      // 167/06 (ADR-008) — the projection store's board-face content reads moved to their own module
+      // under the store's line ratchet, which the store imports (165 -> 166); it adds no I/O the store
+      // did not already do and reaches no lifecycle module.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/mesh/src/content-reads.mjs")), "the store's content-reads module");
+      // PR #16 (CodeQL) — validation's HTML-comment strip calls the one fixed-point stripper, so the
+      // closure gains the zero-I/O foundation leaf `@aof/foundation/markdown` (166 -> 167).
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/foundation/src/markdown.mjs")), "the markdown stripper leaf");
+      assert.equal(sinkGraph.seen.size, 167, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

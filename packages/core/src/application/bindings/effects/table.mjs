@@ -32,13 +32,18 @@ export function assembleEffectsTable({ degradeServices, provideWork, provideRunS
   });
 
   const mesh = createMeshEffects(async () => {
-    const [items, publisher, store, branches, assignments, identity] = await Promise.all([
-      provideWork(), provideGlobalWorkPublisher(), provideGlobalWorkStore(),
+    const [items, publisher, store, runs, branches, assignments, identity] = await Promise.all([
+      provideWork(), provideGlobalWorkPublisher(), provideGlobalWorkStore(), provideRunStore(),
       import("@aof/mesh/assignment-directive"), import("@aof/mesh/assignment-record"), import("@aof/mesh/workspace-identity"),
     ]);
     return {
       loadWorkspace: items.loadWorkspace, listItems: items.listItems, isLiveStreamRow: items.isLiveStreamRow,
       publishGlobalWorkSnapshot: publisher.publishGlobalWorkSnapshot,
+      // 167/ADR-008 — the `publish-run` step: the one propagation predicate, the run record as it
+      // stands, and the store's narrow run writer.
+      meshGlobalPropagationDecision: publisher.meshGlobalPropagationDecision,
+      readRun: runs.readRun,
+      publishWorkItemRun: store.publishWorkItemRun,
       openGlobalWorkProjectionStore: store.openGlobalWorkProjectionStore,
       remapWorkspaceProjectionRefs: store.remapWorkspaceProjectionRefs,
       remapWorkspaceFactRefs: store.remapWorkspaceFactRefs,

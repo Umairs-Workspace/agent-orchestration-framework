@@ -47,11 +47,53 @@ const readWorkspaceProjectionItems = _aofApplication.mesh.store.readWorkspacePro
 const publishGlobalWorkSnapshot = _aofApplication.mesh.globalWorkPublisher.publishGlobalWorkSnapshot;
 const meshDispatchWorktreePath = _aofApplication.mesh.worktree.meshDispatchWorktreePath;
 const meshSessionWorktreePath = _aofApplication.mesh.worktree.meshSessionWorktreePath;
+const syncWorkspace = _aofApplication.mesh.globalWorkPublisher.syncWorkspace;
+import { workTreeStatDigest } from "@aof/work/discovery";
+import { processCostMeter } from "@aof/foundation/cost-meter";
 
 // The Background stream: this node's disk holds 00 through 05, the control's own work.
 const DISK_STREAM = Array.from({ length: 6 }, (_, i) => ({ number: String(i).padStart(2, "0"), stories: [] }));
 
+
+// ==========================================================================
+// 167/01 — an unchanged work tree costs a stat walk, through the assembled application
+// ==========================================================================
+// Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/01_story_an-unchanged-tree-costs-a-stat-walk/
+//   tasks/00_an-unchanged-tree-is-read-once.feature (E4) and tasks/01_the-stat-digest-has-one-home.feature (the sync pass).
+// The process meter is shared, so every count is a delta over the scenario's own reads.
+const unchangedTreeTests = [
+  {
+    name: "167/01 E4 · the presence tick and a board poll at the same moment get one parse",
+    run: () => withCacheReadFixture(async (fx) => {
+      const workspace = await loadWorkspace(fx.root, undefined, { env: fx.env });
+      // A fresh edit, so neither caller can be answered by a memo an earlier scenario left behind.
+      await writeItem(fx, "03", { status: "in-progress" });
+      const labels = { workspaceId: fx.workspaceId };
+      const before = processCostMeter.total("full-disk-read", labels);
+      const [tick, poll] = await Promise.all([
+        readWorkspaceProjectionItems(workspace),
+        invoke("work:list", { mesh: true }, { workspace, globalWorkStoreOptions: { env: fx.env }, effectsJournalOptions: { env: fx.env } }),
+      ]);
+      assert.equal(processCostMeter.total("full-disk-read", labels) - before, 1, "the meter counts 1 full-disk-read for the workspace");
+      assert.deepEqual(tick.rows.map((row) => row.ref).sort(), poll.filter((row) => row.answeredFrom === "disk" || row.answeredFrom === "cache").map((row) => row.ref).sort(), "both callers receive the same items");
+    }, { stream: DISK_STREAM }),
+  },
+  {
+    name: "167/01 the sync pass still skips an unchanged workspace after the move",
+    run: () => withCacheReadFixture(async (fx) => {
+      const workspace = await loadWorkspace(fx.root, undefined, { env: fx.env });
+      const options = { globalWorkStoreOptions: { env: fx.env }, journalOptions: { env: fx.env } };
+      await syncWorkspace(workspace, options);
+      const again = await syncWorkspace(workspace, options);
+      assert.equal(again.synced, true);
+      assert.equal(again.changed, false, "it reports the workspace unmoved");
+      assert.equal(again.digest, await workTreeStatDigest(workspace.workDir), "…under the one digest of the work tree");
+    }, { stream: DISK_STREAM }),
+  },
+];
+
 export const cacheReadBoundaryHoldsTests = [
+  ...unchangedTreeTests,
   // ==========================================================================
   // THE ECHO-CHAMBER TEST — the decisive worker-side scenario
   // ==========================================================================

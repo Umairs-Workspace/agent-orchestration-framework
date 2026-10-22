@@ -3,7 +3,8 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { writeText } from "@aof/foundation/fs";
-import { VALID_STATUS, itemStatusEdges } from "./lifecycle.mjs";
+import { isStatusWord, itemStatusEdges, statusVocabularyFor } from "./lifecycle.mjs";
+import { RECORD_DOC_BY_TYPE } from "./identity.mjs";
 
 function workError(message, code, status = 400) {
   const error = new Error(message);
@@ -21,16 +22,11 @@ function workError(message, code, status = 400) {
 // (digest vs native — see validateWork).
 export function recordDoc(item) {
   if (item.type === "milestone") {
-    return existsSync(path.join(item.dir, "AOF.md")) ? "AOF.md" : "SPEC.md";
+    return existsSync(path.join(item.dir, "AOF.md")) ? "AOF.md" : RECORD_DOC_BY_TYPE.milestone;
   }
-  if (item.type === "story") return "STORY.md";
-  if (item.type === "uat") return "SESSION.md";
-  // milestone 37 / ADR-002 — spike/chore are single self-contained record docs
-  // (no separate STATE.md, unlike milestone/uat). Neither is a milestone, so
-  // these branches sit BEFORE the final `return null`.
-  if (item.type === "spike") return "SPIKE.md";
-  if (item.type === "chore") return "CHORE.md";
-  return null;
+  // Every other type is the pure map in the identity leaf (168/ADR-002) — one entry per type,
+  // `prototype` included; a type it does not name (an adhoc `task`) carries no record doc.
+  return RECORD_DOC_BY_TYPE[item.type] ?? null;
 }
 
 // typeHasRecordDoc(type) — does an item of this TYPE carry a record doc at all? Derived
@@ -94,10 +90,16 @@ export async function readItemMeta(item, view) {
   const doc = recordDoc(item);
   if (!doc) return overlay ?? {};
   let meta = {};
-  try {
-    meta = parseFrontmatter(await readFile(path.join(item.dir, doc), "utf8"));
-  } catch {
-    meta = {};
+  if (typeof view?.frontmatter === "function") {
+    // 167/ADR-003 — a view built over a remembered stream snapshot hands in its own parse, so a read
+    // of an unchanged tree opens no record doc. Same answer: `{}` for a doc that cannot be read.
+    meta = await view.frontmatter(item);
+  } else {
+    try {
+      meta = parseFrontmatter(await readFile(path.join(item.dir, doc), "utf8"));
+    } catch {
+      meta = {};
+    }
   }
   return overlay == null ? meta : { ...meta, ...overlay };
 }
@@ -225,18 +227,22 @@ export async function rollbackItemStatus(item, toStatus, { now } = {}) { // esli
 // lifecycle move is a real event in the item's history and `work doctor`'s stale-updated
 // check reads that field.
 export async function setItemStatus(item, toStatus, { expectFrom = null, now } = {}) {
-  if (!VALID_STATUS.has(toStatus)) {
-    throw workError(`status must be one of ${[...VALID_STATUS].join("|")} (got "${toStatus}")`, "invalid-status", 400);
+  // The edges are the item's own type's (168/ADR-003): a prototype's four words and moves, every
+  // other type's frozen five. A word another type owns reaches the edge check and is refused there
+  // with the legal moves named; only a word no type owns is `invalid-status`.
+  if (!isStatusWord(toStatus)) {
+    const vocabulary = statusVocabularyFor(item.type);
+    throw workError(`status must be one of ${[...vocabulary].join("|")} (got "${toStatus}")`, "invalid-status", 400);
   }
   const allowed = expectFrom == null ? null : (Array.isArray(expectFrom) ? expectFrom : [expectFrom]);
   return await writeItemStatusLine(item, toStatus, {
     code: "status-edge-not-applicable",
-    from: (status) => itemStatusEdges(status).includes(toStatus) && (allowed == null || allowed.includes(status)),
+    from: (status) => itemStatusEdges(status, item.type).includes(toStatus) && (allowed == null || allowed.includes(status)),
     notApplicable: (status) => {
       if (allowed != null && !allowed.includes(status)) {
         return `item ${item.ref} is "${status ?? "none"}" — this act moves an item to "${toStatus}" only from ${allowed.join("|")}`;
       }
-      const edges = itemStatusEdges(status);
+      const edges = itemStatusEdges(status, item.type);
       return edges.length === 0
         ? `item ${item.ref} is "${status ?? "none"}" — it has no legal status move (asked for "${toStatus}")`
         : `item ${item.ref} is "${status ?? "none"}" — its legal moves are ${edges.join("|")} (asked for "${toStatus}")`;

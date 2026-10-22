@@ -359,8 +359,9 @@ export const workBacklogArchiveEnumerateTests = [
   {
     name: "work/backlog-archive-enumerate: 00 the leaf grammar and the two root names have one home beside the item grammar",
     run: async () => {
-      assert.equal(BACKLOG_ITEM_RE.source, "^(milestone|story|chore|spike|uat)_([a-z0-9-]+)$");
-      assert.equal(ITEM_RE.source, "^(\\d+)_(milestone|story|task|uat|spike|chore)_([a-z0-9-]+)$", "ITEM_RE's value is unchanged");
+      // 168/ADR-001 admits `prototype` to both grammars.
+      assert.equal(BACKLOG_ITEM_RE.source, "^(milestone|story|chore|spike|uat|prototype)_([a-z0-9-]+)$");
+      assert.equal(ITEM_RE.source, "^(\\d+)_(milestone|story|task|uat|spike|chore|prototype)_([a-z0-9-]+)$", "ITEM_RE admits the prototype type");
       assert.equal(BACKLOG_ROOT, "backlog");
       assert.equal(ARCHIVE_ROOT, "archive");
       const source = await readFile(path.join(repoRoot, "packages/work/src/identity.mjs"), "utf8");

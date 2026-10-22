@@ -110,7 +110,7 @@
         "id": "aof-add-diagram",
         "kind": "skill"
       },
-      "hash": "sha256:22f7fd9a1de40c8191aef137ed4c7dc23127c4a1fcc009c59a26887425e0bf07"
+      "hash": "sha256:f9c29e395164570feac336b9985ebf7340cb6701b8697c2f9baabcdcce84021b"
     },
     {
       "path": ".agents\\skills\\aof-add-diagram\\agents\\openai.yaml",
@@ -344,7 +344,7 @@
         "id": "aof-explain",
         "kind": "skill"
       },
-      "hash": "sha256:4b0382d2f00558bba8c80b70fea38b5ce505348d42bb110fc8ffa60c015c6000"
+      "hash": "sha256:3b06fa9a249ca28633287b33b9fab875abdbc17ec5947d15d8b6daca8ed03d97"
     },
     {
       "path": ".agents\\skills\\aof-explain\\agents\\openai.yaml",
@@ -582,6 +582,27 @@
       "runtime": "codex",
       "resource": {
         "id": "aof-promote",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".agents\\skills\\aof-prototype\\SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
+        "kind": "skill"
+      },
+      "hash": "sha256:f829e8f35f386603b92ce2d93060b568787642c382d19ce22a2cb6dcadfc1e84"
+    },
+    {
+      "path": ".agents\\skills\\aof-prototype\\agents\\openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
         "kind": "skill",
         "artifact": "associated-file",
         "file": "agents/openai.yaml",

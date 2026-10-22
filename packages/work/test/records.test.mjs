@@ -7,7 +7,7 @@ import {
   recordDoc, typeHasRecordDoc, parseFrontmatter, readItemMeta, readItemSchema,
   readItemVersion, setItemStatus, rollbackItemStatus, applyItemFrontmatter,
 } from '@aof/work/records';
-import { ITEM_STATUS_EDGES, VALID_STATUS, isOpen, closesEpoch } from '@aof/work/lifecycle';
+import { ITEM_STATUS_EDGES, VALID_STATUS, isOpen, closesEpoch, itemStatusEdges, statusVocabularyFor } from '@aof/work/lifecycle';
 
 async function fixture(run) {
   const parent = await realpath(os.tmpdir());
@@ -30,7 +30,7 @@ test('record selection prefers the milestone digest and preserves all type mappi
     assert.equal(recordDoc(item), 'SPEC.md');
     await writeFile(path.join(item.dir, 'AOF.md'), document('not-started'));
     assert.equal(recordDoc(item), 'AOF.md');
-    for (const [type, doc] of Object.entries({ story: 'STORY.md', uat: 'SESSION.md', spike: 'SPIKE.md', chore: 'CHORE.md', task: null })) {
+    for (const [type, doc] of Object.entries({ story: 'STORY.md', uat: 'SESSION.md', spike: 'SPIKE.md', chore: 'CHORE.md', prototype: 'PROTOTYPE.md', task: null })) {
       assert.equal(recordDoc({ ...item, type }), doc);
       assert.equal(typeHasRecordDoc(type), doc != null);
     }
@@ -87,6 +87,41 @@ test('refused status moves preserve bytes and report the actual disk status', as
     await assert.rejects(setItemStatus(item, 'unknown'), { code: 'invalid-status' });
     await writeFile(file, document('blocked'));
     await assert.rejects(setItemStatus(item, 'in-progress', { expectFrom: 'not-started' }), { code: 'status-edge-not-applicable' });
+  });
+});
+
+// 168/00 task 00, R2 — a prototype has its own four words and only their moves (ADR-003).
+test('a prototype moves only along its own four-word table, and the governed five never gain its words', async () => {
+  await fixture(async ({ dir }) => {
+    const prototype = { dir, ref: '169', type: 'prototype' };
+    const file = path.join(dir, 'PROTOTYPE.md');
+    assert.deepEqual(itemStatusEdges('active', 'prototype'), ['paused', 'done', 'abandoned']);
+    assert.deepEqual(itemStatusEdges('active'), [], 'a caller passing no type keeps the governed table');
+    assert.deepEqual([...statusVocabularyFor('prototype')], ['active', 'paused', 'done', 'abandoned']);
+    assert.deepEqual([...VALID_STATUS], ['not-started', 'in-progress', 'blocked', 'in-review', 'done'], 'the frozen five are unchanged');
+    for (const [from, to] of [['active', 'paused'], ['paused', 'active'], ['paused', 'abandoned'], ['abandoned', 'active']]) {
+      await writeFile(file, document(from));
+      assert.deepEqual(await setItemStatus(prototype, to), { ref: '169', status: to, from });
+    }
+    // E5 — a done prototype reopens, and the move stamps `updated:`.
+    await writeFile(file, document('done').replace('updated: 2026-01-01', 'updated: 2026-10-22'));
+    await setItemStatus(prototype, 'active', { now: '2026-10-23T09:00:00Z' });
+    assert.match(await readFile(file, 'utf8'), /status: active\nupdated: 2026-10-23/);
+    // E6 — a governed word, a backwards move and a self-edge are refused with the legal moves named.
+    for (const [from, to, named] of [['active', 'in-review', 'paused|done|abandoned'], ['done', 'paused', 'active'], ['active', 'active', 'paused|done|abandoned']]) {
+      const before = document(from);
+      await writeFile(file, before);
+      await assert.rejects(setItemStatus(prototype, to), error => error.code === 'status-edge-not-applicable' && error.message.includes(named));
+      assert.equal(await readFile(file, 'utf8'), before);
+    }
+    await assert.rejects(setItemStatus(prototype, 'bogus'), error => error.code === 'invalid-status' && error.message.includes('active|paused|done|abandoned'));
+  });
+  // E7 — a milestone never takes a prototype word.
+  await fixture(async item => {
+    const before = document('in-progress');
+    await writeFile(path.join(item.dir, 'SPEC.md'), before);
+    await assert.rejects(setItemStatus(item, 'paused'), { code: 'status-edge-not-applicable' });
+    assert.equal(await readFile(path.join(item.dir, 'SPEC.md'), 'utf8'), before);
   });
 });
 

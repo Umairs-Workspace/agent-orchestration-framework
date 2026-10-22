@@ -28,6 +28,7 @@ use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
+use crate::guard::{Budget, DaemonReport, DaemonState};
 use crate::supervision::{SupervisedChild, DECLARATION_ARGV_PREFIX};
 
 /// One live coding-assistant session (38/ADR-001) — a projection, never an authority:
@@ -206,6 +207,27 @@ pub struct MeshStatus {
     /// fleet view riding the same poll.
     #[serde(default)]
     pub declarations: Declarations,
+    /// The ADDITIVE `cost` key (167/ADR-001): this node's daemons' snapshots and the budget they
+    /// are judged against. Carried OPAQUELY and read through [`MeshStatus::cost`], so an older aof
+    /// that emits none, or a block of an unexpected shape, never fails the fleet poll it rides.
+    #[serde(default)]
+    pub cost: Option<serde_json::Value>,
+}
+
+/// The `cost` block as the desktop guard reads it (167/ADR-006): the budget it was handed, and
+/// each daemon's report by its snapshot name (`serve`, `ui`).
+#[derive(Debug, Clone, PartialEq)]
+pub struct CostView {
+    /// `None` when the block carries no well-formed `budget` — then nothing is judged.
+    pub budget: Option<Budget>,
+    daemons: Vec<(String, DaemonReport)>,
+}
+
+impl CostView {
+    /// A daemon's report, or `None` when its snapshot is not in the block.
+    pub fn report(&self, daemon: &str) -> Option<DaemonReport> {
+        self.daemons.iter().find(|(name, _)| name == daemon).map(|(_, report)| report.clone())
+    }
 }
 
 /// The `declarations` key's value: `{ ok, rows, skipped }` (126/ADR-005 §6, AMENDED).
@@ -231,6 +253,24 @@ pub struct Declarations {
 }
 
 impl MeshStatus {
+    /// The `cost` block as the guard reads it, or `None` when the document carries none. The
+    /// budget is read off `cost.budget` and nowhere else (FF-16702): no number is supplied here.
+    pub fn cost(&self) -> Option<CostView> {
+        let cost = self.cost.as_ref()?.as_object()?;
+        let budget = cost.get("budget").and_then(|budget| {
+            let idle = budget.get("idlePercent")?.as_f64()?;
+            let viewer_open = budget.get("viewerOpenPercent")?.as_f64()?;
+            let window_seconds = budget.get("windowSeconds")?.as_u64()?;
+            Some(Budget::new(idle, viewer_open, window_seconds * 1000))
+        });
+        let daemons = cost
+            .get("daemons")
+            .and_then(|daemons| daemons.as_array())
+            .map(|daemons| daemons.iter().filter_map(daemon_report).collect())
+            .unwrap_or_default();
+        Some(CostView { budget, daemons })
+    }
+
     /// The node marked `local: true`, if exactly one exists (the normal case —
     /// `local` is present on exactly one node's own entry).
     pub fn local_node(&self) -> Option<&Node> {
@@ -308,6 +348,24 @@ fn non_empty_str(value: Option<&serde_json::Value>) -> Option<String> {
     } else {
         Some(text.to_string())
     }
+}
+
+/// One `cost.daemons[]` entry as a report: its state (`not-reporting` when its snapshot is
+/// stale), and its top cause with the label it carries — a workspace, else a route, else a code.
+fn daemon_report(entry: &serde_json::Value) -> Option<(String, DaemonReport)> {
+    let name = non_empty_str(entry.get("daemon"))?;
+    let state = match entry.get("status").and_then(|status| status.as_str()) {
+        Some("idle") => DaemonState::Idle,
+        Some("viewer-open") => DaemonState::ViewerOpen,
+        _ => DaemonState::NotReporting,
+    };
+    let top_cause = entry.get("topCauses").and_then(|causes| causes.as_array()).and_then(|causes| causes.first()).and_then(|top| {
+        let cause = non_empty_str(top.get("cause"))?;
+        let labels = top.get("labels");
+        let subject = ["workspaceId", "route", "code"].iter().find_map(|key| non_empty_str(labels.and_then(|labels| labels.get(*key))));
+        Some((cause, subject))
+    });
+    Some((name, DaemonReport { state, top_cause }))
 }
 
 /// Parse a `mesh status --json` document. Returns a `serde_json::Error` on a

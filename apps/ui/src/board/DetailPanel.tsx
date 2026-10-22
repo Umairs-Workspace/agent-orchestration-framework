@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { workApi } from "./api";
 import type { DocName, DocResponse, RunRecord, WorkItem, WorkStatus } from "./api";
+import { createPoll } from "../lib/poll-cadence.mjs";
 import type { PrimaryAction } from "./action.mjs";
 import {
   historyOrder,
@@ -27,26 +28,14 @@ import { StaleBadge, ProvenanceLabel } from "./StaleBadge";
 // 127/04 — the archived mark in the header cluster (a DRIVER's context only), and the H2's
 // slug fallback from the board's ONE humaniser (the backlog row shares it).
 import { ArchivedPill, carriesArchivedMark } from "./ArchivedPill";
-import { humanizeSlug } from "./model";
+import { humanizeSlug, tabsFor } from "./model";
+import type { Tab } from "./model";
 import type { Freshness, FreshnessRecord } from "./freshness.mjs";
 import { ProvenanceLine } from "./ProvenanceLine";
 import { ActionsStrip } from "./ActionsStrip";
 import { AskCard } from "./AskCard";
 import { TasksTab } from "./TasksTab";
 import { DiagramMarkdown, Markdown, stripHtmlComments } from "./Markdown";
-
-type Tab = DocName | "FINDINGS" | "TASKS" | "RUNS";
-
-// Type-aware tab set (the ACD doc model). VERIFICATION/RETROSPECTIVE/Findings are
-// MILESTONE-level; a story carries STORY.md plus its TASKS (its tasks/*.feature).
-// RUNS is offered at the level that OWNS a runs/ log — both milestones and stories
-// (m19 ADR-002) — and never on a uat gate (DESIGN surface 1).
-function tabsFor(item: WorkItem): Tab[] {
-  if (item.type === "milestone") return ["SPEC", "ARCHITECTURE", "VERIFICATION", "RETROSPECTIVE", "RUNS", "FINDINGS"];
-  if (item.type === "story") return ["STORY", "TASKS", "RUNS"];
-  if (item.type === "uat") return ["FINDINGS"];
-  return ["SPEC"];
-}
 
 // `record` is the doc response VERBATIM, kept so the ARTIFACT's own provenance
 // (`reportedBy`/`syncedAt` — the same two wire names the row carries) reaches the
@@ -647,15 +636,21 @@ function RunsTab({
   // Ignore a stale response: only the latest request applies, so an item change
   // or an overlapping poll never clobbers the view with an out-of-date payload.
   const reqRef = useRef(0);
+  // 167/ADR-004 — the last answer, so an equal runs list reads as unchanged to the poll's cadence.
+  const lastRuns = useRef<string | null>(null);
 
   const load = useCallback(
-    async (silent: boolean) => {
+    async (silent: boolean): Promise<boolean | undefined> => {
       const myReq = (reqRef.current += 1);
       if (!silent) setState({ kind: "loading" });
       try {
         const response = await workApi.runStatus(item.ref);
         if (reqRef.current !== myReq) return;
+        const answer = JSON.stringify(response.runs);
+        const changed = answer !== lastRuns.current;
+        lastRuns.current = answer;
         setState({ kind: "ready", runs: response.runs, fetchedAt: Date.now() });
+        return changed;
       } catch (error) {
         if (reqRef.current !== myReq) return;
         // A silent poll failure must not clobber a good view — only the initial
@@ -666,10 +661,12 @@ function RunsTab({
     [item.ref]
   );
 
+  // Opening the Runs tab mounts this section, which is the user action that starts its poll at the base.
   useEffect(() => {
     void load(false);
-    const poll = setInterval(() => void load(true), RUNS_POLL_MS);
-    return () => clearInterval(poll);
+    const poll = createPoll({ baseMs: RUNS_POLL_MS, run: () => load(true) });
+    poll.start();
+    return () => poll.stop();
   }, [load]);
 
   if (state.kind === "loading") return <p className="mono text-sm text-muted-foreground">Loading runs…</p>;

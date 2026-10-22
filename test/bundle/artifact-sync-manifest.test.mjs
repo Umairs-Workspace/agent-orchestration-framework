@@ -187,7 +187,8 @@ export const artifactSyncManifestTests = [
         Object.fromEntries(WORK_ITEM_ARTIFACTS.filter((entry) => entry.file != null).map((entry) => [entry.name, entry.file])),
         "WORK_ITEM_DOC_FILES is the manifest's file-kind entries — one definition, one derived view, never two literal lists",
       );
-      assert.equal(Object.keys(WORK_ITEM_DOC_FILES).length, 9, "…and the view really carries the widened set (non-vacuous)");
+      // 168/03 widens the set by one, PROTOTYPE.md (9 -> 10).
+      assert.equal(Object.keys(WORK_ITEM_DOC_FILES).length, 10, "…and the view really carries the widened set (non-vacuous)");
 
       for (const name of ["SPEC", "STORY", "VERIFICATION", "RETROSPECTIVE"]) {
         // The pre-widening mapping, restated literally here so a change to the manifest

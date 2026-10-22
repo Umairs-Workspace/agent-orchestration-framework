@@ -1,9 +1,8 @@
 import path from "node:path";
-import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
-import { readdir, stat } from "node:fs/promises";
 import { activeScopeHolders, executionScopeRef, restoreParkedAssignmentResume } from "./assignment-record.mjs";
 import { isMeshLaneTree } from "./worktrees.mjs";
+import { workTreeStatDigest } from "@aof/work/discovery";
 
 export const MESH_GLOBAL_DISABLED_CODE = "mesh-global-disabled";
 export const MESH_WORKSPACE_UNCONFIGURED_CODE = "mesh-workspace-unconfigured";
@@ -208,7 +207,9 @@ async function syncWorkspace(workspace, ctx = {}) {
   for (const [name, port] of Object.entries({ detectWorkspaceChanges, openEffectsJournal, appendEvent, readEventSteps, applicableReactors, drainEffects })) {
     if (typeof port !== "function") throw new TypeError(`syncWorkspace requires ${name}.`);
   }
-  const digest = await workspaceStatDigest(workspace.workDir);
+  // 167/ADR-003 — the stat gate asks the ONE fingerprint of a work tree, which the stream read's memo
+  // asks too; the gate's behaviour is unchanged (164/ADR-002).
+  const digest = await workTreeStatDigest(workspace.workDir, { reportDegrade });
   const storeOptions = ctx.globalWorkStoreOptions ?? {};
   const paths = storeOptions.paths ?? globalMeshPaths(storeOptions);
   // `ctx.openStore` is a caller's shared handle for the detect read (the daemon tick shares one).
@@ -257,34 +258,6 @@ async function syncWorkspace(workspace, ctx = {}) {
   } finally {
     journal.close();
   }
-}
-
-// workspaceStatDigest(workDir) — the stat gate (164/ADR-002): a digest of (path, size, mtimeMs)
-// over the work tree's record docs and task features. It only decides whether to LOOK; the
-// decision is always the fingerprint comparison. An unreadable tree has no digest, so the pass
-// always looks and never records one.
-async function workspaceStatDigest(workDir) {
-  let entries;
-  try {
-    entries = await readdir(workDir, { recursive: true, withFileTypes: true });
-  } catch (error) {
-    reportDegrade("sync-stat-digest", error, { path: workDir });
-    return null;
-  }
-  // Stats run concurrently: measured on this repository's ~3,200 record files, serial awaits
-  // cost ~540ms per command and concurrent ones ~240ms.
-  const files = entries.filter((entry) => entry.isFile() && /\.(md|feature)$/i.test(entry.name))
-    .map((entry) => path.join(entry.parentPath ?? entry.path, entry.name));
-  const lines = await Promise.all(files.map(async (full) => {
-    const rel = path.relative(workDir, full).split(path.sep).join("/");
-    try {
-      const info = await stat(full);
-      return `${rel}\0${info.size}\0${info.mtimeMs}`;
-    } catch {
-      return `${rel}\0gone`;
-    }
-  }));
-  return createHash("sha256").update(lines.sort().join("\n")).digest("hex");
 }
 
 // threadPropagationWarnings(result, effects) — the ONE home for putting the

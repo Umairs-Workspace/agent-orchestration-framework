@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { workApi } from "./api";
+import { createPoll } from "../lib/poll-cadence.mjs";
+import type { Poll } from "../lib/poll-cadence.mjs";
 import type { WorkItem, WorkListEnvelope } from "./api";
 import { deriveBoard, milestoneOfGate } from "./model";
 import { primaryAction } from "./action.mjs";
@@ -123,7 +125,9 @@ export function Board() {
     setThisNode(readCacheNodeId(envelope));
   }, []);
 
-  const load = useCallback(async ({ silent = false } = {}) => {
+  const lastEnvelope = useRef<WorkListEnvelope | null>(null);
+  const listPoll = useRef<Poll | null>(null);
+  const load = useCallback(async ({ silent = false } = {}): Promise<boolean | undefined> => {
     // A SILENT refresh (the top-bar ⟳ sync) updates the stream IN PLACE — it must
     // NOT flip to the full-screen loading/error branch, because that unmounts the
     // board subtree (incl. the terminal dock) and would tear down a running
@@ -133,9 +137,14 @@ export function Board() {
       setError(null);
     }
     try {
-      applyEnvelope(await workApi.list({ includeArchived: showArchivedRef.current }));
+      const envelope = await workApi.list({ includeArchived: showArchivedRef.current });
+      // 167/ADR-004 — a `304` answers the same envelope as last time: unchanged, for the poll's cadence.
+      const changed = envelope !== lastEnvelope.current;
+      lastEnvelope.current = envelope;
+      applyEnvelope(envelope);
       silentFailures.current = 0;
       setServerGone(false);
+      return changed;
     } catch (e) {
       if (silent) {
         silentFailures.current += 1;
@@ -278,6 +287,7 @@ export function Board() {
       return;
     }
     let cancelled = false;
+    let previous: string | null = null;
     const probe = async () => {
       const live = new Set<string>();
       await Promise.all(
@@ -291,15 +301,24 @@ export function Board() {
         })
       );
       if (!cancelled) setRunningRefs(live);
+      // An equal live set is an unchanged answer (167/ADR-004).
+      const key = [...live].sort().join("\u0000");
+      const changed = key !== previous;
+      previous = key;
+      return changed;
     };
     void probe();
-    const poll = setInterval(() => void probe(), RUNNING_PROBE_MS);
+    // Through the one cadence: paused while hidden, slowing while the live set holds. While a Resync
+    // watches, every board poll holds the base, so the board keeps ONE cadence (m21/R2).
+    const poll = createPoll({ baseMs: RUNNING_PROBE_MS, run: probe });
+    if (resyncWatching) poll.pin();
+    poll.start();
     return () => {
       cancelled = true;
-      clearInterval(poll);
+      poll.stop();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, focus, items]);
+  }, [view, focus, items, resyncWatching]);
 
   // While ANY item is executing (a mesh assignment is active, or a local run is
   // live), the list itself re-fetches silently on the same observability cadence.
@@ -315,9 +334,16 @@ export function Board() {
   useEffect(() => {
     const executing = items.some((item) => item.execution?.active === true || item.ask != null) || runningRefs.size > 0;
     if (!executing) return;
-    const poll = setInterval(() => void load({ silent: true }), RUNNING_PROBE_MS);
-    return () => clearInterval(poll);
-  }, [items, runningRefs, load]);
+    // 167/ADR-004 — through the one cadence; `listPoll` lets a user action on the board poke it.
+    const poll = createPoll({ baseMs: RUNNING_PROBE_MS, run: () => load({ silent: true }) });
+    if (resyncWatching) poll.pin();
+    listPoll.current = poll;
+    poll.start();
+    return () => {
+      poll.stop();
+      if (listPoll.current === poll) listPoll.current = null;
+    };
+  }, [items, runningRefs, load, resyncWatching]);
 
   // …and the SAME CADENCE, armed for the SAME reason, while a Resync is watching
   // for the copy it asked for (43/ADR-010 R4.3). It is the mirror image of the
@@ -337,13 +363,22 @@ export function Board() {
   // what breaks it.
   useEffect(() => {
     if (!resyncWatching) return;
-    const poll = setInterval(() => void load({ silent: true }), RUNNING_PROBE_MS);
-    return () => clearInterval(poll);
+    // A Resync WAITS for an answer, so it holds the base cadence for its whole window (pin).
+    const poll = createPoll({ baseMs: RUNNING_PROBE_MS, run: () => load({ silent: true }) });
+    poll.pin();
+    poll.start();
+    return () => poll.stop();
   }, [resyncWatching, load]);
 
   // Resolved through `byRef` rather than the raw list (127/04): `byRef` excludes backlog rows,
   // so a backlog slug in the hash selects nothing and the detail panel never opens on an item
   // the board is read-only on (DESIGN documented default 1).
+  // 167/ADR-004 — opening an item's detail panel is a user action on the board: the list poll
+  // returns to its base cadence at once.
+  useEffect(() => {
+    if (selectedRef) listPoll.current?.poke();
+  }, [selectedRef]);
+
   const selectedItem = useMemo(
     () => (selectedRef ? derived.byRef.get(selectedRef) ?? null : null),
     [derived, selectedRef]
