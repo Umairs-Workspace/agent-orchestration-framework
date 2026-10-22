@@ -56,7 +56,7 @@ import {
   DEFAULT_WORK_STATUS_FILTER,
 } from "./scope.mjs";
 import type { FleetMilestoneCard, Scope, WorkStatusFilter } from "./scope.d.mts";
-import { loopStopAffordance, rememberStopRung } from "./runs.mjs"; // 130/03 — the loop line's button + rung memory, pure
+import { loopStopAffordance, rememberStopRung, LOOP_QUIET_CLASS } from "./runs.mjs"; // 130/03 — the loop line's button + rung memory, pure
 import type { FleetLoopLine, RememberedStopRung, StopRungMemory } from "./runs.d.mts";
 // milestone 47 / story 03 (ADR-001 [Feasibility-2]; ADR-007; DESIGN §Surface 1 / §Surface 2 R0)
 // — the filter's two PRESENTATIONAL children. They export components and no narrowing
@@ -1482,7 +1482,7 @@ function LoopStopRow({ loop, node, localNodeId, remembered, onRung }: { loop: Fl
   }, [loop.scope, loop.workspaceId, onRung]);
   return (
     <p className="flex items-center gap-2 text-[13px] font-semibold text-primary">
-      <span className="min-w-0 truncate" title={loop.title}>{loop.head}{loop.progress ? <> · <span className={loop.quiet ? "text-amber-500" : undefined}>{loop.progress}</span></> : null}</span>
+      <span className="min-w-0 truncate" title={loop.title}>{loop.head}{loop.progress ? <> · <span className={loop.quiet ? LOOP_QUIET_CLASS : undefined}>{loop.progress}</span></> : null}</span>
       {button ? <button type="button" disabled={view.actionDisabled} aria-busy={ack.phase === "sending" ? "true" : undefined} aria-label={button.title} title={button.title} onClick={onStop} className={button.tone === "muted" ? "shrink-0 rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] font-semibold text-muted-foreground transition hover:bg-card disabled:cursor-not-allowed disabled:opacity-50" : "shrink-0 rounded-md border border-destructive/30 bg-destructive/10 px-2.5 py-1 text-[11px] font-semibold text-destructive transition disabled:cursor-not-allowed disabled:opacity-50"}>{button.label}</button> : null}
       {button && view.message ? <span className="mono min-w-0 shrink truncate text-[10.5px] text-destructive" title={view.messageTitle ?? view.message}>{view.message}</span> : null}
     </p>

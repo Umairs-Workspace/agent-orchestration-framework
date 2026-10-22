@@ -216,6 +216,8 @@ export const yarnInstallationTests = [
         'child-drive.mjs': ['node:path'],
         // 162/ADR-004: the drive status ticker reads the lane's subagent transcripts (names and mtimes only).
         'drive-status.mjs': ['node:path', 'node:fs/promises'],
+        // 162 verify (F-02): the loop drive's terminal producer, extracted from commands/drive.mjs (the session record's repo basename).
+        'loop-session-stream.mjs': ['node:path'],
       } : name === 'work-graph' ? {
         'registry.mjs': ['node:fs/promises', 'node:path', '@aof/work/records', '@aof/contracts/loop-bounds'],
         'record.mjs': ['@aof/contracts/loop-bounds'],

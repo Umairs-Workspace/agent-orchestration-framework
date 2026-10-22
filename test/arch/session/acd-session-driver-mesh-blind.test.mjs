@@ -327,7 +327,10 @@ export const archTests = [
       // PR #16 (CodeQL) — validation's HTML-comment strip calls the one fixed-point stripper, so the
       // closure gains the zero-I/O foundation leaf `@aof/foundation/markdown` (166 -> 167).
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/foundation/src/markdown.mjs")), "the markdown stripper leaf");
-      assert.equal(sinkGraph.seen.size, 167, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 162's verify (F-02) — the drive's loop-session producer moves out of `commands/drive.mjs` into its
+      // own module (167 -> 168). Its imports (`node:path` and the ports it is handed) were already here.
+      assert.ok(sinkGraph.seen.has(path.join(root, "packages/work-loop/src/loop-session-stream.mjs")), "the drive's loop-session producer");
+      assert.equal(sinkGraph.seen.size, 168, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

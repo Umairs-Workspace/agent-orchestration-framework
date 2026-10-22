@@ -47,6 +47,9 @@ export type StopRungMemory = Map<string, RememberedStopRung>;
 /** Ten minutes without a heartbeat is quiet — the one threshold. */
 export declare const LOOP_QUIET_AFTER_MS: number;
 
+/** The warning tone a quiet progress segment renders in. */
+export declare const LOOP_QUIET_CLASS: string;
+
 export declare function stopWord(value: unknown): null | "drain" | "cancel";
 
 export declare function loopStopRung(

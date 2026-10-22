@@ -97,24 +97,29 @@ export function inputPolicyFor(source, mount) {
 // The label is TEXT on the model, and only text. Its pill styling lives in palette.mjs and
 // is read by the component — the model may not ship the posture as styling, which is the
 // whole reason the label is a value here at all.
-function headerModel(readOnly) {
+//
+// The label's title is the mount's own read-only cause when it states one (162 verify, F-06): a
+// loop-driven pane says a loop drives it and to answer with `aof work answer`, rather than the
+// generic mirror sentence, which speaks of a "worker" even over the control's own session.
+function headerModel(readOnly, reason) {
+  const title = typeof reason === "string" && reason.length > 0 ? reason : READ_ONLY_LABEL_TITLE;
   return Object.freeze({
     readOnlyLabel: readOnly ? READ_ONLY_LABEL : null,
-    readOnlyLabelTitle: readOnly ? READ_ONLY_LABEL_TITLE : null,
+    readOnlyLabelTitle: readOnly ? title : null,
   });
 }
 
-// mountModelFor({ source, mount }) — everything the posture decides, as values, so a caller
-// cannot ship the posture as styling.
+// mountModelFor({ source, mount, reason }) — everything the posture decides, as values, so a caller
+// cannot ship the posture as styling. `reason` is the mount's read-only cause, when it states one.
 //
 // The provider picker is interactive-only chrome, and whether it is offered is DERIVED: a
 // source declares a `provider` param or it does not, and a mount permits input or it does
 // not. There is nothing to pick for a session that already exists on another machine. Its
 // ABSENCE is a consequence, never the signal — the label is the signal.
-export function mountModelFor({ source, mount } = {}) {
+export function mountModelFor({ source, mount, reason = null } = {}) {
   const policy = inputPolicyFor(source, mount);
   const declaresProvider = Array.isArray(source?.params) && source.params.includes("provider");
-  const header = headerModel(policy.readOnly);
+  const header = headerModel(policy.readOnly, reason);
   return Object.freeze({
     posture: policy.posture,
     readOnly: policy.readOnly,
