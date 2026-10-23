@@ -118,8 +118,9 @@ export const workInitTests = [
         for (const agent of bundle.resources.filter((r) => r.kind === "agent")) {
           assert.ok(existsSync(p(repo, ".claude", "agents", `${agent.id}.md`)), `agent ${agent.id} exists`);
         }
-        // command members under the commands/aof/ namespace directory.
-        for (const command of bundle.resources.filter((r) => r.kind === "command")) {
+        // command members under the commands/aof/ namespace directory. An integration's command
+        // renders only for a project that enables it (169/ADR-005), and this repo enables none.
+        for (const command of bundle.resources.filter((r) => r.kind === "command" && r.integration == null)) {
           assert.ok(existsSync(p(repo, ".claude", "commands", "aof", `${command.id}.md`)), `command ${command.id} under commands/aof/`);
         }
         // milestone template files exist under the fixed bundle template location.
@@ -294,7 +295,7 @@ export const workInitTests = [
           const content = await readFile(p(repo, ".claude", "agents", `${agent.id}.md`), "utf8");
           assert.ok(content.includes(FRONTMATTER_STAMP), `agent ${agent.id} stamped`);
         }
-        for (const command of bundle.resources.filter((r) => r.kind === "command")) {
+        for (const command of bundle.resources.filter((r) => r.kind === "command" && r.integration == null)) {
           const content = await readFile(p(repo, ".claude", "commands", "aof", `${command.id}.md`), "utf8");
           assert.ok(content.includes(FRONTMATTER_STAMP), `command ${command.id} stamped`);
         }

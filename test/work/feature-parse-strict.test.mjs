@@ -364,9 +364,18 @@ export const featureParseStrictTests = [
         const text = await readFile(file, "utf8");
         const parsed = parseFeature(text);
         scenarioCount += parsed.scenarios.length;
+        // 135/ADR-003 §2 — a tag on a `Rule:` has rule scope, which the pre-135 reader cannot see:
+        // it leaks the tag onto the rule's first scenario only. A scenario under a rule that carries
+        // a verification tag takes its lane from that rule (asserted by the 135/02 cases below), and
+        // the frozen reader is still compared on every other key and every other scenario.
+        const expected = legacyParseFeature(text);
+        const ruleScoped = new Set(parsed.rules.filter((rule) => rule.tags.some((tag) => LEGACY_VERIFICATION_TAGS.has(tag))).map((rule) => rule.line));
+        parsed.scenarios.forEach((scenario, index) => {
+          if (scenario.rule && ruleScoped.has(scenario.rule.line) && expected.scenarios[index]) expected.scenarios[index].lane = scenario.lane;
+        });
         assert.deepEqual(
           consumerView(parsed),
-          legacyParseFeature(text),
+          expected,
           `the consumer's view of ${path.relative(workDir, file)} changed`,
         );
       }
