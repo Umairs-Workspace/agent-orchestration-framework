@@ -70,8 +70,10 @@ export const packageSeamsTests = [
       const { diagramListing } = createDoctorDiagrams({
         resolveWorkDiagrams: () => ({ enabled: false, formats: [] }),
         readdir: async (dir) => {
-          calls.push(dir);
-          if (dir.endsWith("absent/diagrams")) { const error = new Error("ENOENT"); error.code = "ENOENT"; throw error; }
+          // The probe joins with the platform separator, so the fake compares a forward-slashed path.
+          const posix = dir.replaceAll("\\", "/");
+          calls.push(posix);
+          if (posix.endsWith("absent/diagrams")) { const error = new Error("ENOENT"); error.code = "ENOENT"; throw error; }
           return [{ name: "ADR-001-a.svg", isFile: () => true }, { name: "nested", isFile: () => false }, { name: "ADR-001-a.html", isFile: () => true }];
         },
       });
