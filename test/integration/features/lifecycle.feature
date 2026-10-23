@@ -113,7 +113,7 @@ Feature: AOF CLI lifecycle
     And file `.aof/aof.config.json` should contain `"kind": "rule"`
     And file `.aof/aof.config.json` should contain `"codex"`
 
-  Scenario: Hyperagent's files render once work.integrations.hyperagent is present, and leave when it is removed (169/01)
+  Scenario: /aof:hyperplan renders once work.integrations.hyperagent is present, and leaves when it is removed; no project renders .hyperagent/ (169/01, 169/02)
     Given an empty project
     When I run `work init --runtime claude,codex`
     Then the command should succeed
@@ -123,16 +123,24 @@ Feature: AOF CLI lifecycle
     And I run `work update`
     Then the command should succeed
     And file `.claude/commands/aof/hyperplan.md` should contain `aof work integrations hyperagent brief`
-    And file `.hyperagent/skills/aof-shatter/SKILL.md` should contain `## Hyperagent execution contract`
-    And file `.hyperagent/skills/aof-prd/SKILL.md` should exist
-    And file `.hyperagent/AGENT.md` should contain `AOF Planner`
-    And file `.hyperagent/skills/aof-continue/SKILL.md` should not exist
-    And file `.hyperagent/skills/aof-hyperplan/SKILL.md` should not exist
+    And file `.hyperagent/AGENT.md` should not exist
+    And file `.hyperagent/skills/aof-shatter/SKILL.md` should not exist
     When I replace file `.aof/aof.config.json` with `{ "work": {} }`
     And I run `work update`
     Then the command should succeed
     And file `.claude/commands/aof/hyperplan.md` should not exist
-    And file `.hyperagent/skills/aof-shatter/SKILL.md` should not exist
+
+  Scenario: The Hyperagent package is written to the aof home for upload, and nothing in the project (169/02)
+    Given an empty project
+    When I run `work integrations hyperagent package`
+    Then the command should succeed
+    And stdout should contain `Wrote the Hyperagent package to`
+    And stdout should contain `skills`
+    And stdout should contain `Create skill`
+    And file `.hyperagent/AGENT.md` should not exist
+    When I run `work integrations hyperagent package --dry-run`
+    Then the command should succeed
+    And stdout should contain `nothing written`
 
   Scenario: Naming hyperagent as a runtime is refused (169/01)
     Given an empty project

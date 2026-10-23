@@ -4,6 +4,9 @@ import { assets } from "./support/assets-services.mjs";
 // core's descriptor through the package's contribution; they render only for a project whose config
 // carries `work.integrations.hyperagent`, in a dev checkout and a packaged sidecar alike. The model
 // knows exactly claude, codex and opencode, and core's own assets hold none of Hyperagent's files.
+// 169/02 (ADR-007): the fragment holds `/aof:hyperplan` alone; the planner instructions and the seven
+// skills stay in the package's assets for `aof work integrations hyperagent package`, and no project
+// renders `.hyperagent/`.
 import assert from "node:assert/strict";
 import { mkdtemp, rm, readFile, writeFile, mkdir, cp, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -12,13 +15,14 @@ import path from "node:path";
 import { RUNTIMES, CAPABILITIES, supportedRuntimes } from "../src/model.mjs";
 import { parseRuntimes } from "../src/spine/flags.mjs";
 import { readDescriptor, loadBundle } from "../src/work/bundle.mjs";
-import { assetPath, setSeaSentinelForTest, setSidecarAnchorForTest } from "../src/asset-base.mjs";
+import { assetPath, packageAssetClass, readAssetText, setSeaSentinelForTest, setSidecarAnchorForTest } from "../src/asset-base.mjs";
 import { updateWork } from "../src/work/update.mjs";
 
 const initWork = assets.work.init.initWork;
 
 const SKILLS = ["add-milestone", "add-story", "add-task", "prd", "refine", "shatter", "validate"].map((id) => `aof-${id}`);
-const MEMBERS = ["hyperplan", "hyperagent-planner-instructions", ...SKILLS];
+const MEMBERS = ["hyperplan"];
+const PLANNER_FILES = ["AGENT.md", ...SKILLS.map((id) => `skills/${id}/SKILL.md`)];
 const PACKAGE_ASSETS = path.resolve(import.meta.dirname, "..", "..", "integration-hyperagent", "assets");
 const HYPERAGENT_FILES = [".hyperagent/AGENT.md", ...SKILLS.map((id) => `.hyperagent/skills/${id}/SKILL.md`)];
 const HYPERPLAN = ".claude/commands/aof/hyperplan.md";
@@ -70,13 +74,13 @@ export const hyperagentRuntimeTests = [
       const hyperplan = bundle.resources.find((resource) => resource.id === "hyperplan");
       const source = (await readFile(path.join(PACKAGE_ASSETS, "commands", "hyperplan.md"), "utf8")).replace(/\r\n/g, "\n");
       assert.ok(source.replace(/\r\n/g, "\n").endsWith(hyperplan.body.replace(/\r\n/g, "\n")), "hyperplan's body is the package's file");
-      for (const id of ["hyperagent-planner-instructions", ...SKILLS]) {
-        const asset = bundle.assets.find((candidate) => candidate.id === id);
-        assert.equal(asset.body, await readFile(path.join(PACKAGE_ASSETS, asset.file), "utf8"), `${id} is the package's file`);
+      // 169/02 (ADR-007): the planner files are the package's, read by its asset class, never members.
+      assert.deepEqual(bundle.assets.filter((asset) => asset.integration === "hyperagent"), [], "no Hyperagent asset member");
+      for (const file of PLANNER_FILES) {
+        const text = readAssetText(packageAssetClass("@aof/integration-hyperagent"), file);
+        assert.equal(text, await readFile(path.join(PACKAGE_ASSETS, file), "utf8"), `${file} is the package's file`);
+        assert.doesNotMatch(text, /^aof-runtime:/m, "the old runtime line is gone");
       }
-      const skill = bundle.assets.find((candidate) => candidate.id === "aof-refine");
-      assert.equal(skill.target, ".hyperagent/skills/aof-refine/SKILL.md");
-      assert.doesNotMatch(skill.body, /^aof-runtime:/m, "the old runtime line is gone");
     }
   },
   {
@@ -86,8 +90,10 @@ export const hyperagentRuntimeTests = [
       async () => {
         const contributed = readDescriptor().members.filter((member) => member.integration === "hyperagent");
         assert.deepEqual(contributed.map((member) => member.id).sort(), [...MEMBERS].sort());
-        const asset = loadBundle().assets.find((candidate) => candidate.id === "aof-shatter");
-        assert.equal(asset.body, await readFile(path.join(PACKAGE_ASSETS, "skills", "aof-shatter", "SKILL.md"), "utf8"));
+        const hyperplan = loadBundle().resources.find((resource) => resource.id === "hyperplan");
+        assert.ok(hyperplan, "hyperplan resolves from the sidecar");
+        // The package verb's reader resolves the planner files from the same sidecar (169/02).
+        assert.equal(readAssetText(packageAssetClass("@aof/integration-hyperagent"), "skills/aof-shatter/SKILL.md"), await readFile(path.join(PACKAGE_ASSETS, "skills", "aof-shatter", "SKILL.md"), "utf8"));
       }
     )
   },
@@ -114,13 +120,13 @@ export const hyperagentRuntimeTests = [
     })
   },
   {
-    name: "169/01 E4 · a project with \"work.integrations.hyperagent\": {} gets /aof:hyperplan and .hyperagent/",
+    name: "169/01 E4 + 169/02 E7 · a project with \"work.integrations.hyperagent\": {} gets /aof:hyperplan alone, and nothing under .hyperagent/",
     run: async () => withTempRepo(async (dir) => {
       await writeConfig(dir, ENABLED);
       await initWork({ targetDir: dir, runtimes: ["claude", "codex"] });
-      assert.deepEqual(rendered(dir), [HYPERPLAN, ...HYPERAGENT_FILES]);
+      assert.deepEqual(rendered(dir), [HYPERPLAN]);
       assert.ok(existsSync(path.join(dir, ".agents", "skills", "aof-hyperplan", "SKILL.md")), "the Codex hyperplan skill is written");
-      assert.match(await readFile(path.join(dir, ".hyperagent", "AGENT.md"), "utf8"), /AOF Planner/);
+      assert.equal(existsSync(path.join(dir, ".hyperagent")), false, "169/ADR-007: no project renders .hyperagent/");
     })
   },
   {
@@ -131,7 +137,7 @@ export const hyperagentRuntimeTests = [
       await writeConfig(dir, { work: {} });
       const result = await updateWork({ targetDir: dir });
       const deleted = result.actions.filter((item) => item.action === "delete").map((item) => String(item.path).replaceAll("\\", "/")).sort();
-      assert.deepEqual(deleted, [".agents/skills/aof-hyperplan/SKILL.md", ".agents/skills/aof-hyperplan/agents/openai.yaml", HYPERPLAN, ...HYPERAGENT_FILES].sort());
+      assert.deepEqual(deleted, [".agents/skills/aof-hyperplan/SKILL.md", ".agents/skills/aof-hyperplan/agents/openai.yaml", HYPERPLAN].sort());
       assert.deepEqual(rendered(dir), []);
       const changed = (await updateWork({ targetDir: dir })).actions.filter((item) => item.action !== "skip");
       assert.deepEqual(changed, [], "a second update has nothing left to remove");
@@ -169,7 +175,7 @@ export const hyperagentRuntimeTests = [
       await walk(assetPath("bundle"));
       assert.deepEqual(files.filter((file) => /hyperplan|hyperagent|aof-prd/i.test(file) && file !== "manifest.json"), []);
       const core = JSON.parse(await readFile(path.join(assetPath("bundle"), "bundle.json"), "utf8"));
-      assert.deepEqual(core.members.filter((member) => MEMBERS.includes(member.id) || member.variants?.hyperagent).map((member) => member.id), []);
+      assert.deepEqual(core.members.filter((member) => [...MEMBERS, "hyperagent-planner-instructions", ...SKILLS].includes(member.id) || member.variants?.hyperagent).map((member) => member.id), []);
       const codex = await readFile(path.join(assetPath("bundle"), "variants", "codex", "workflow.md"), "utf8");
       assert.doesNotMatch(codex, /<!-- variant:hyperplan -->/, "hyperplan's Codex section left core's shared variant file");
     }

@@ -78,8 +78,6 @@ packages/integration-*/assets/** text eol=lf
 .codex/** text eol=lf
 .agents/** text eol=lf
 .opencode/** text eol=lf
-# The Hyperagent integration's render targets (169/ADR-004), pinned with their source above.
-.hyperagent/** text eol=lf
 
 # The git-tracked mesh records (milestone 22 / story 00 partition; milestone 23 /
 # story 00 presence, ADR-002 / fitness #6, the 22/R5 carry-forward; location moved to

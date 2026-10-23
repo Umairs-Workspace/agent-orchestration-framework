@@ -120,6 +120,9 @@ is enough. That is the switch Notion already uses ("absent ≡ off"), so there i
 before partitioning. Core's own members are never gated. `/aof:hyperplan` never shipped on main,
 so the gate takes nothing from an existing project.
 
+**Amended by ADR-007 (2026-10-23).** An enabled project renders `/aof:hyperplan` alone. The
+planner files are written to the aof home by `aof work integrations hyperagent package`.
+
 **Consequences.** This repository enables Hyperagent in `.aof/aof.config.json` to keep rendering
 its own `.hyperagent/`. A project turns Hyperagent on by adding the block, then running
 `aof work update`. The doctor says so when the block is missing.
@@ -131,6 +134,52 @@ its own `.hyperagent/`. A project turns Hyperagent on by adding the block, then 
 
 **Decision.** `check.mjs` builds `checkout-index --prefix=` with forward slashes (169/00 F-2). The
 package's check case, red on Windows today, is the regression test.
+
+## ADR-007: The Hyperagent package is written to the aof home by one verb, never rendered into a project
+
+**Status:** Accepted (operator, 2026-10-23). Amends ADR-004 (the fragment's `asset` members) and
+ADR-005 (what an enabled project renders).
+**Date:** 2026-10-23
+
+**Context.** Measured on Hyperagent's docs on 2026-10-23 (`/docs/concepts/skills`,
+`…/skills-edit-and-import`, `…/invocations/mcp-server`):
+
+- Hyperagent reads no repository folder.
+- A skill is created by uploading "a JSON skill export or a Markdown SKILL.md file … (up to 5MB)",
+  by linking documentation, by building it in chat, or by saving one from a thread.
+- "Importing always creates a new skill." A re-import never updates an existing one.
+- The branch's "Import from GitHub" step appears nowhere in the docs.
+
+An uploaded skill belongs to the account, so it is the same for every project: the Cowork case
+(165/ADR-006). A `.hyperagent/` folder rendered into each project's tree is read by nothing.
+
+**Decision.**
+- **What a project renders.** Hyperagent's `assets/bundle.json` fragment holds `hyperplan`
+  alone. With the integration enabled, a project renders `/aof:hyperplan` and nothing else of
+  Hyperagent's. The eight `asset` members leave the fragment.
+- **Where the files stay.** `AGENT.md` and `skills/aof-*/SKILL.md` stay in the package's
+  `assets/`, as planner files. Core injects a reader that resolves them through the package's
+  asset class, so dev, payload and packaged installs all work. The fragment declares them as
+  `packageFiles`, a list core never renders, so the bundle-membership control (every asset file is
+  declared) still holds.
+- **The verb.** `aof work integrations hyperagent package [--dry-run]` writes them to
+  `<aof home>/hyperagent/`: `AGENT.md` and `skills/<id>/SKILL.md`. The aof home is `~/.aof`, or
+  `AOF_GLOBAL_HOME`.
+  - aof owns that directory whole and rebuilds it on every run.
+  - `--dry-run` writes nothing.
+  - The run prints the upload steps, naming every file by its full path, and never claims an
+    upload.
+  - It writes nothing in the project, records no lock entry, and needs no
+    `work.integrations.hyperagent` block, because the package belongs to the account, not the
+    project. Cowork records a lock entry because it pins an external commit. This package is the
+    installed aof's own bytes.
+- **The doctor.** It compares `<aof home>/hyperagent/` byte-for-byte with the installed package's
+  files and reports `missing`, `stale` or `current`, naming the verb when the package is not
+  current.
+
+**Consequences.** This repository's `.hyperagent/` leaves on its next `aof work update` (the lock
+recorded it), and its `.gitattributes` pin goes with it. Updating an uploaded skill stays a manual
+edit in Hyperagent, which the hand-over says.
 
 ---
 

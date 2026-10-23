@@ -20,15 +20,27 @@ aof work update            # or `aof work init` in a fresh project
 ```
 
 That is the same switch Notion uses: **present ⇒ on, absent ⇒ off**. A project without the block
-renders nothing of Hyperagent's, and removing the block removes `/aof:hyperplan` and `.hyperagent/`
-as aof-managed files on the next `aof work update`. `aof work integrations hyperagent doctor` says so
+renders nothing of Hyperagent's, and removing the block removes `/aof:hyperplan` as an aof-managed
+file on the next `aof work update`. `aof work integrations hyperagent doctor` says so
 when the block is missing.
 
-## What renders
+## What renders, and what is packaged
 
 With the integration on, `aof work init|update` renders `/aof:hyperplan` for your runtimes (a Claude
-and OpenCode command, a Codex skill) and, under `.hyperagent/`, the files Hyperagent imports. Every
-source lives in `packages/integration-hyperagent/assets/`:
+and OpenCode command, a Codex skill), and nothing else of Hyperagent's.
+
+Hyperagent reads no repository folder: a skill reaches it only by **upload**, and an uploaded skill
+belongs to your Hyperagent account, the same for every project. So the files Hyperagent needs are
+written **once, to the aof home** (`~/.aof`, or `AOF_GLOBAL_HOME`), by one verb (169/ADR-007), the
+way the Cowork packages are:
+
+```text
+aof work integrations hyperagent package [--dry-run]   # writes ~/.aof/hyperagent/ and prints the upload steps
+```
+
+aof owns `~/.aof/hyperagent/` whole and rebuilds it on every run. The verb writes nothing in the
+project, records no lock entry and needs no `work.integrations` block. Every source lives in
+`packages/integration-hyperagent/assets/`:
 
 | File | Source | What it does |
 |---|---|---|
@@ -39,9 +51,9 @@ source lives in `packages/integration-hyperagent/assets/`:
 | `skills/aof-validate/SKILL.md` | `skills/aof-validate/SKILL.md` | Pre-flight of the `aof work validate` rules, without the CLI |
 | `AGENT.md` | `AGENT.md` | Instructions for a Hyperagent named agent ("AOF Planner") |
 
-Each skill source is the complete `SKILL.md`, frontmatter included, written to its target verbatim
-(the bundle's `asset` kind). Nothing else of aof's renders under `.hyperagent/`: no build or verify
-procedure and no role agent (one planner plays the roles in turn).
+Each skill source is the complete `SKILL.md`, frontmatter included, copied verbatim under
+`~/.aof/hyperagent/`. Nothing else of aof's is packaged: no build or verify procedure and no role agent
+(one planner plays the roles in turn).
 
 The six procedure skills are **full rewrites**, not prefixed copies of the Claude procedures: each carries a *Hyperagent execution contract* that
 replaces every CLI step — the repository is reached through Hyperagent's GitHub integration, writes go
@@ -52,18 +64,19 @@ gate the operator runs on the branch.
 
 ## Set it up in Hyperagent
 
-1. Turn the integration on and render (above), then push — this repository enables it and ships its
-   own `.hyperagent/` for that reason.
-2. In Hyperagent: **Skills → Create skill → Import from GitHub**, and give it the repository URL.
-   It imports every `SKILL.md` it finds (the seven `aof-*` skills).
-3. Create a named agent from `.hyperagent/AGENT.md`, give it the imported skills, and connect the
-   GitHub integration for the repositories it should plan.
+1. Run `aof work integrations hyperagent package`. It writes `~/.aof/hyperagent/` and names each file.
+2. In Hyperagent, for each of the seven skills: **Skills → Create skill → upload** its `SKILL.md`
+   (Hyperagent takes "a JSON skill export or a Markdown SKILL.md file … up to 5MB").
+3. Create a named agent from `~/.aof/hyperagent/AGENT.md`, give it the uploaded skills, and connect
+   the GitHub integration for the repositories it should plan.
 4. Ask it for a plan. Each step ends in a draft pull request; on the branch the operator runs
    `aof work validate`, then `aof:promote <slug>`, then `/aof:continue <NN>` (or `$aof-continue`).
 
-**Updating.** Hyperagent's GitHub import always creates new skills (a name clash gets an "imported"
-suffix); it does not refresh existing ones. After `aof work update` changes a rendered skill, update
-the existing Hyperagent skill from the new file (or ask the planner to do it) rather than re-importing.
+**Updating.** "Importing always creates a new skill" in Hyperagent (a name clash gets an "imported"
+suffix); an upload never refreshes an existing one. After an aof upgrade, re-run the `package` verb
+(`aof work integrations hyperagent doctor` reports the package `stale` when it differs from the
+installed aof's files), then edit each existing Hyperagent skill from the new file rather than
+uploading it again.
 
 ## Limits
 
@@ -91,7 +104,8 @@ and the deterministic parts are `aof` verbs owned by `@aof/integration-hyperagen
 
 | Step | Verb |
 |---|---|
-| Is the assistant connected, are the skills rendered, is the config valid? | `aof work integrations hyperagent doctor` |
+| Is the assistant connected, is the planner package current, is the config valid? | `aof work integrations hyperagent doctor` |
+| Write the planner package to `~/.aof/hyperagent/` for upload | `aof work integrations hyperagent package [--dry-run]` |
 | Compose the self-contained brief (repo from `origin`, base branch, work dir, tag vocabulary, delivery rules, result-block contract) | `aof work integrations hyperagent brief <plan\|prd\|shatter\|refine> [target] --request "…"` |
 | Read the planner's `AOF-PLAN-RESULT` block (PR URL, branch, status) | `aof work integrations hyperagent result <file>` |
 | Validate the plan branch without touching your checkout, and flag files outside the planning lane | `aof work integrations hyperagent check <branch>` |
@@ -125,7 +139,7 @@ and reaches core through ONE contribution (`@aof/integration-hyperagent/contribu
 { id: "hyperagent",                                   // the work.integrations key that enables it
   name: "@aof/integration-hyperagent",
   assets: { package: "@aof/integration-hyperagent" }, // its assets/bundle.json fragment
-  commands: (services) => [...] }                     // brief, result, check, doctor
+  commands: (services) => [...] }                     // brief, result, check, doctor, package
 ```
 
 Core names it in exactly one module, `packages/core/src/integrations.mjs` (FF-16901): the bundle
@@ -133,6 +147,7 @@ loader appends the package's `assets/bundle.json` members to core's descriptor a
 text from the package, the render gate drops them unless the project enables the integration, and the
 command assembly registers the verbs. A packaged binary reads the same files from its sidecar
 (`bundle/packages/integration-hyperagent/`), which `build-sea.mjs` and `install-local.mjs` copy.
-The package imports nothing from core and spawns nothing — git and the work validator are injected —
+The package imports nothing from core and spawns nothing — git, the work validator, the aof home and
+a reader for its own planner files are injected —
 and each verb loads its implementation only when it runs. A new integration is one package plus one
 line in that registry.

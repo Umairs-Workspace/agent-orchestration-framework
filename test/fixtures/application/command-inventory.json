@@ -1330,6 +1330,35 @@
     }
   },
   {
+    "id": "hyperagent:package",
+    "input": {
+      "type": "object",
+      "properties": {
+        "dryRun": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "work",
+        "integrations",
+        "hyperagent",
+        "package"
+      ],
+      "spec": {
+        "usage": "aof work integrations hyperagent package [--dry-run] [--json]",
+        "flags": {
+          "dryRun": {
+            "type": "boolean",
+            "description": "print the paths it would write, and write nothing"
+          }
+        }
+      }
+    }
+  },
+  {
     "id": "work:run-start",
     "input": {
       "type": "object",

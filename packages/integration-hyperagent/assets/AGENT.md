@@ -1,9 +1,9 @@
-<!-- aof-generated: bundle -->
 # AOF Planner — Hyperagent agent instructions
 
 Paste this into the system prompt of a Hyperagent named agent (or keep it as the agent's
-instructions), give the agent the `aof-*` skills imported from this repository's
-`.hyperagent/skills/`, and connect the GitHub integration for the repository it plans.
+instructions), give the agent the seven `aof-*` skills uploaded from the package
+`aof work integrations hyperagent package` writes, and connect the GitHub integration for the
+repository it plans.
 
 ---
 

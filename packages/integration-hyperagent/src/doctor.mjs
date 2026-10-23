@@ -4,15 +4,17 @@
 //     project's `.mcp.json`, or in `~/.claude.json` (user scope, or this project's local scope).
 //   · Codex      — an `[mcp_servers.<name>]` table naming Hyperagent's endpoint in the project's
 //     `.codex/config.toml` or `~/.codex/config.toml`.
-//   · The planner skills — `.hyperagent/skills/*/SKILL.md` rendered in this repository (Hyperagent
-//     imports them from GitHub; without them the planner has no AOF procedures).
+//   · The planner package — `<aof home>/hyperagent/`, written by `aof work integrations hyperagent
+//     package` for upload (169/ADR-007), compared byte-for-byte with the installed aof's files:
+//     missing, stale or current. Whether it was uploaded is not observable from here.
 //   · `work.integrations.hyperagent` — its effective values and any problems.
 // OAuth state is not observable from files; registering is reported, signing in is the hint.
 import path from "node:path";
 import os from "node:os";
-import { readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { HYPERAGENT_MCP_URL, readHyperagentConfig } from "./config.mjs";
+import { inspectHyperagentPackage } from "./package.mjs";
 
 const ENDPOINT = /hyperagent\.com\/api\/mcp/;
 
@@ -67,37 +69,32 @@ async function codexRegistration(projectRoot, homeDir) {
   return { registered: false, name: null, source: null };
 }
 
-async function renderedSkills(projectRoot) {
-  const root = path.join(projectRoot, ".hyperagent", "skills");
-  if (!existsSync(root)) return [];
-  const entries = await readdir(root, { withFileTypes: true });
-  return entries.filter((entry) => entry.isDirectory() && existsSync(path.join(root, entry.name, "SKILL.md"))).map((entry) => entry.name).sort();
-}
-
-export async function inspectHyperagentSetup({ projectRoot, config, homeDir = os.homedir() }) {
-  const [claude, codex, skills] = await Promise.all([
+export async function inspectHyperagentSetup({ projectRoot, config, aofHome, readPlannerFile, homeDir = os.homedir() }) {
+  const [claude, codex, plannerPackage] = await Promise.all([
     claudeRegistration(projectRoot, homeDir),
     codexRegistration(projectRoot, homeDir),
-    renderedSkills(projectRoot)
+    inspectHyperagentPackage({ aofHome, readPlannerFile })
   ]);
   const settings = readHyperagentConfig(config);
   const hints = [];
   if (!claude.registered && !codex.registered) {
     hints.push(`Register Hyperagent's MCP server in your assistant: \`claude mcp add --transport http hyperagent ${HYPERAGENT_MCP_URL}\` (then /mcp to sign in), or \`codex mcp add hyperagent --url ${HYPERAGENT_MCP_URL}\` then \`codex mcp login hyperagent\`.`);
   }
-  // 169/ADR-005: the integration's files render only where `work.integrations.hyperagent` is present.
+  // 169/ADR-005: /aof:hyperplan renders only where `work.integrations.hyperagent` is present.
   if (!settings.configured) {
-    hints.push("Enable the integration: add `\"hyperagent\": {}` under `work.integrations` in .aof/aof.config.json, then run `aof work update` to render /aof:hyperplan and .hyperagent/.");
-  } else if (skills.length === 0) {
-    hints.push("Render the planner skills with `aof work update`, push them, and import them in Hyperagent (Skills → Create skill → Import from GitHub).");
+    hints.push("Enable the integration: add `\"hyperagent\": {}` under `work.integrations` in .aof/aof.config.json, then run `aof work update` to render /aof:hyperplan.");
   }
-  hints.push(`Make sure a Hyperagent agent named "${settings.value.agent}" exists with those skills and the GitHub integration (its instructions: .hyperagent/AGENT.md).`);
+  // 169/ADR-007: the planner files live in the aof home, for upload to the Hyperagent account.
+  if (plannerPackage.state !== "current") {
+    hints.push(`${plannerPackage.state === "missing" ? "Write" : "Rewrite (it differs from this aof's)"} the planner package with \`aof work integrations hyperagent package\`, then upload its skills to Hyperagent (Skills → Create skill → upload each SKILL.md).`);
+  }
+  hints.push(`Make sure a Hyperagent agent named "${settings.value.agent}" exists with those skills and the GitHub integration (its instructions: ${path.join(plannerPackage.dir, "AGENT.md")}).`);
   for (const problem of settings.problems) hints.push(`Fix ${problem}.`);
   return {
-    ready: settings.configured && (claude.registered || codex.registered) && skills.length > 0 && settings.problems.length === 0,
+    ready: settings.configured && (claude.registered || codex.registered) && plannerPackage.state === "current" && settings.problems.length === 0,
     claude,
     codex,
-    skills,
+    package: plannerPackage,
     config: settings,
     hints
   };

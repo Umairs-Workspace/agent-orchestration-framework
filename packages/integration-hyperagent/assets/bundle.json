@@ -1,4 +1,14 @@
 {
+  "packageFiles": [
+    "AGENT.md",
+    "skills/aof-add-milestone/SKILL.md",
+    "skills/aof-add-story/SKILL.md",
+    "skills/aof-add-task/SKILL.md",
+    "skills/aof-prd/SKILL.md",
+    "skills/aof-refine/SKILL.md",
+    "skills/aof-shatter/SKILL.md",
+    "skills/aof-validate/SKILL.md"
+  ],
   "members": [
     {
       "id": "hyperplan",
@@ -17,94 +27,6 @@
           "section": "hyperplan"
         }
       }
-    },
-    {
-      "id": "hyperagent-planner-instructions",
-      "kind": "asset",
-      "file": "AGENT.md",
-      "target": ".hyperagent/AGENT.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-add-milestone",
-      "kind": "asset",
-      "file": "skills/aof-add-milestone/SKILL.md",
-      "target": ".hyperagent/skills/aof-add-milestone/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-add-story",
-      "kind": "asset",
-      "file": "skills/aof-add-story/SKILL.md",
-      "target": ".hyperagent/skills/aof-add-story/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-add-task",
-      "kind": "asset",
-      "file": "skills/aof-add-task/SKILL.md",
-      "target": ".hyperagent/skills/aof-add-task/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-prd",
-      "kind": "asset",
-      "file": "skills/aof-prd/SKILL.md",
-      "target": ".hyperagent/skills/aof-prd/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-refine",
-      "kind": "asset",
-      "file": "skills/aof-refine/SKILL.md",
-      "target": ".hyperagent/skills/aof-refine/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-shatter",
-      "kind": "asset",
-      "file": "skills/aof-shatter/SKILL.md",
-      "target": ".hyperagent/skills/aof-shatter/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
-    },
-    {
-      "id": "aof-validate",
-      "kind": "asset",
-      "file": "skills/aof-validate/SKILL.md",
-      "target": ".hyperagent/skills/aof-validate/SKILL.md",
-      "runtimes": [
-        "claude",
-        "codex",
-        "opencode"
-      ]
     }
   ]
 }

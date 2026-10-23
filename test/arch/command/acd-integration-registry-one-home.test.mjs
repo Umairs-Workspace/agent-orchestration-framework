@@ -28,7 +28,8 @@ const CORE_SRC = path.join(repoRoot, "packages", "core", "src");
 const REGISTRY = "packages/core/src/integrations.mjs";
 // The one named exception (169/ADR-003), removed by the Notion chore.
 const EXCEPTION = "@aof/integration-notion";
-const HYPERAGENT_VERBS = ["hyperagent:brief", "hyperagent:result", "hyperagent:check", "hyperagent:doctor"];
+// 169/02 E6 adds `package` (169/ADR-007).
+const HYPERAGENT_VERBS = ["hyperagent:brief", "hyperagent:result", "hyperagent:check", "hyperagent:doctor", "hyperagent:package"];
 
 async function modules(dir) {
   const out = [];
@@ -122,7 +123,7 @@ export const archTests = [
     }
   },
   {
-    name: "169/01 E3 · the four hyperagent verbs are registered from the contribution",
+    name: "169/01 E3 + 169/02 E6 · the five hyperagent verbs are registered from the contribution",
     run: async () => {
       const contributed = integrationContributions({ commandError: () => new Error("stub"), gitExec: async () => ({}), validateWork: async () => [], readJson: async () => ({}) });
       const hyperagent = contributed.find((contribution) => contribution.name === "@aof/integration-hyperagent");

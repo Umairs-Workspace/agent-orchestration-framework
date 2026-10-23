@@ -6,7 +6,7 @@ title: "Hyperagent plans the work — a self-contained integration that hands pl
 status: in-progress
 owner: product-owner
 created: 2026-10-19
-updated: 2026-10-22
+updated: 2026-10-23
 schema: 1
 aofVersion: 0.1.0
 ---
@@ -31,15 +31,17 @@ registry imports an integration package.
 In scope:
 - The Hyperagent integration, enabled per project by `work.integrations.hyperagent` (absent ≡ off,
   the switch Notion already uses).
-- For an enabled project, the files Hyperagent imports: `.hyperagent/AGENT.md` (planner
-  instructions) and `.hyperagent/skills/aof-*/SKILL.md` — full rewrites of shatter, refine,
+- The files Hyperagent needs, written once to the aof home by
+  `aof work integrations hyperagent package` for upload to the operator's Hyperagent account
+  (169/ADR-007; Hyperagent reads no repository folder): `~/.aof/hyperagent/AGENT.md` (planner
+  instructions) and `~/.aof/hyperagent/skills/aof-*/SKILL.md` — full rewrites of shatter, refine,
   add-milestone, add-story, add-task and validate, plus `aof-prd`, each carrying the Hyperagent
   execution contract and the embedded validate checklist. aof writes and owns them like any
   rendered file.
 - `/aof:hyperplan` (Claude, OpenCode; `$aof-hyperplan` in Codex), rendered only for an enabled
   project: delegate a planning step to the AOF Planner over Hyperagent's MCP endpoint, relay its
   questions, and check the returned branch without touching the operator's checkout.
-- The deterministic `aof work integrations hyperagent brief | result | check | doctor` verbs.
+- The deterministic `aof work integrations hyperagent brief | result | check | doctor | package` verbs.
 - Self-contained integration packages: a package's contribution carries its CLI verbs and its bundle
   assets. Core merges the assets into its bundle, reads each from its owning package (dev, payload
   and packaged), renders them only when the integration is enabled, and a fitness function forbids
@@ -58,10 +60,11 @@ Out of scope:
 
 - [ ] 00 — Hyperagent plans the work, assimilated from the delivered branch work
 - [x] 01 — integration packages are self-contained, and Hyperagent is an integration rather than a runtime
+- [x] 02 — the Hyperagent package lives in the aof home, written by one verb for upload; no project renders it
 
 ## Dependencies
 
-- None in the stream. The acceptance still owed is live: import the rendered skills into Hyperagent,
+- None in the stream. The acceptance still owed is live: upload the packaged skills to Hyperagent,
   run one plan from idea to promoted-and-refined milestone, and confirm `aof work validate` passes on
   the branch it produced; and run `/aof:hyperplan` once from a Claude Code or Codex session connected
   to Hyperagent over OAuth.

@@ -47,17 +47,60 @@ No UI surface, so no design-conformance review applies. Both lanes ran foregroun
   `verifies → tasks/00_hyperagent-renders-the-planning-subset.feature`,
   `tasks/01_hyperplan-delegates-and-checks.feature`
 
-**Pending — task 01 E8 (`@manual`, live; operator-run).** Its precondition is absent on this
-machine. Measured 2026-10-23: no Hyperagent MCP server is registered in `.mcp.json`,
-`~/.claude.json` or `~/.codex/config.toml`. The procedure:
+**Re-pointed by 169/02 (2026-10-23).** Task 00's E2/E6 were reworded with the move (169/ADR-007): the
+skills are written to the aof home by the `package` verb, not into a project. That is covered by
+169/02's E1–E5 cases below. The lifecycle scenario above now asserts that no `.hyperagent/` is written.
 
-1. `claude mcp add --transport http hyperagent https://hyperagent.com/api/mcp`, then complete OAuth.
-2. Import `.hyperagent/AGENT.md` and the seven `.hyperagent/skills/aof-*/SKILL.md` into Hyperagent.
+**Pending — task 01 E8 (`@manual`, live; operator-run).** Measured 2026-10-23, after 169/02:
+
+- `hyperagent` is registered in this repository's `.mcp.json`.
+- `~/.aof/hyperagent/` holds the package.
+- `aof work integrations hyperagent doctor` reads `ready`: Claude Code MCP is registered and the planner
+  package is `current`. Sign-in (OAuth) is not observable from files.
+
+The procedure:
+
+1. Restart Claude Code, run `/mcp`, select `hyperagent` and complete the browser sign-in.
+2. In Hyperagent: **Skills → Create skill → upload** each of the seven
+   `~/.aof/hyperagent/skills/aof-*/SKILL.md` files. Then create the "AOF Planner" agent from
+   `~/.aof/hyperagent/AGENT.md` with those skills and the GitHub integration.
 3. `/aof:hyperplan plan` for one idea → draft PR. Then `aof work integrations hyperagent check <branch>`.
 4. Promote the milestone it framed, `/aof:hyperplan refine <NN>` → draft PR, then `check` again.
 
 Paste slot (to fill in): the PR URLs, both `check` outputs, and the `aof work validate` result on each
 branch.
+
+### 169/02 · The Hyperagent package lives in the aof home — the story's own lanes
+
+No UI surface. Every lane ran foreground on 2026-10-23 with `AOF_GLOBAL_HOME` isolated to a fresh temp
+dir. The exit code and both streams were read.
+
+- **`node scripts/test.mjs --only` over the 22 importer files of the changed surfaces** (the package
+  and core Hyperagent suites, every bundle and command arch control the change reads, work-init, the
+  inventory and assembly suites, the budget, the shell-out prompt suite) — exit 0,
+  `executed 334 cases; failures 0`.
+  - The suite E1/E5 case (byte-identical files and a hand-over naming every path, with no upload
+    claim) also asserts that the fragment's `packageFiles` equals `PACKAGE_FILES`.
+  - E2/E3 (nothing in the project; a re-run removes a stray file), E4 (dry run) and E6 (five verbs,
+    in the contribution and in the arch control) each have their own case.
+  - The three doctor outline rows (missing / stale / current, each with or without the verb hint)
+    are cases too.
+  - E7 is the core suite's E4 case: an enabled project gets `/aof:hyperplan` and no `.hyperagent/`.
+  - `packages/core/test/application.test.mjs` (a real `node:test` file) — `# pass 2`, `# fail 0`.
+  `verifies → tasks/00_the-package-is-written-to-the-aof-home.feature`
+- **`node test/integration/cli.mjs lifecycle`** — exit 0, 61 `ok`, 0 `not ok`. The new scenario runs
+  the real `work integrations hyperagent package` and `--dry-run` through the CLI under the harness's
+  isolated aof home. The project gets no `.hyperagent/`, and the hand-over names `Create skill`.
+  `verifies → tasks/00_the-package-is-written-to-the-aof-home.feature` (E1, E2, E4, E5)
+- **E8 (`@manual`), measured on this repository.** `aof work update --dry-run --json`, then
+  `aof work update --json`: summary `{"created":0,"updated":0,"skipped":176,"drift-warning":0,"deleted":8}`,
+  and the eight deletes are exactly `.hyperagent/AGENT.md` and the seven `.hyperagent/skills/aof-*/SKILL.md`.
+  The emptied directories were removed afterwards, after a file count of 0.
+  `verifies → tasks/00_the-package-is-written-to-the-aof-home.feature` (E8)
+- **At the source.** `aof work integrations hyperagent package` was run against the real aof home
+  (`~/.aof/hyperagent/`, absent before). Exit 0; it wrote the eight files and printed the
+  upload steps. Then `aof work integrations hyperagent doctor` reported `Planner package: current`,
+  with Claude Code MCP `registered as "hyperagent" (.mcp.json)`.
 
 ## Fitness functions
 
@@ -74,6 +117,7 @@ branch.
 | F-02 | The sidecar copy of an integration's assets (`scripts/install-local.mjs`, `scripts/build-sea.mjs`) has no test of its own. Task 00 E2 covers only the reader, against a sidecar laid out by hand. | test-gap | low | Non-blocker. The writer is first exercised by the next payload install. Recorded as an OUTCOME gap. Recall: m163/F-02 and m138/F-04 are other `install-local` faults, so this is a distinct incident. | product-owner (backlog) | open |
 | F-04 | The first `aof work regression-gate 169` (at `14c952a3`) was red on 11 cases that no story lane selected. Four censuses read the whole bundle and now met the appended integration members: work-init render/stamp, the command-member pin, the per-runtime refine count (matched the `aof-refine` asset) and the install roots. The 66/00 differential's pre-135 reader cannot see 169/00's tag on a `Rule:` that holds more than one scenario. The repo config put `integrations` between `intake` and `agents`. FF-16803's fixture was date-bound: its files had today's mtime against a fixed `updated: 2026-10-22` (not 169's cause, but it was red on this gate). | defect | blocker | Blocker, fixed in `510ee529` (test-side and config only, no product-code change). The second gate row at `510ee529` is green. Recall: prior occurrence m153/F-01, with the same cause (a milestone's reds appear first at the whole-tree gate because story lanes never select the censuses over the bundle). | developer (this verify) | closed |
 | F-05 | `aof work doctor 169` reported two errors. ARCHITECTURE.md declared FF-16901/FF-16902 as bullets, not a register table, so both FF rows here were `register-dangling-citation`. Once the register was a table, FF-16902's control, `hyperagent-runtime.suite.mjs`, was `control-unresolved`: a `.suite.mjs` is not a path a runner sees. | defect | blocker (accept rule) | Blocker, fixed at this verify. The register is now a table. FF-16902's two invariants are an arch case in FF-16901's control file (generalised over every integration, with a planted-tree twin), and its red probe was re-run. Doctor reports no error-level finding. Recall: distinct incident. m57/F-57-03-3 cites a control that is not on disk (a different cause), and m71/F-71-A, m53/F-04 and m66/F-33 are other register faults. | developer (this verify) | closed |
+| F-06 | Operator review (2026-10-23): `.hyperagent/` was rendered into every enabled project, and nothing reads it. Hyperagent's docs list no repository read and no "Import from GitHub". A skill is uploaded (a `SKILL.md` or JSON export, up to 5 MB), linked from documentation, built in chat or saved from a thread, and "importing always creates a new skill". The branch's setup steps, written by Hyperagent itself, described an import that its docs do not show. | defect | blocker | Blocker, fixed by 169/02 (ADR-007): a `package` verb writes `~/.aof/hyperagent/` for upload, the project renders `/aof:hyperplan` alone, and the docs and doctor name the upload. Recall: distinct incident. m66/F-45 is aof's own prose promising a refusal its machinery lacks, a different cause. | developer (169/02) | closed |
 | F-03 | ADR-005's gate drops an integration's resources and assets. An integration's hooks and templates are not gated, and no integration ships either today. | gap | low | Non-blocker. Nothing renders ungated today. Recorded as an OUTCOME gap. Recall: m124/F-15 and m55/F-55-M-2 are other unpinned or uncounted members, so this is a distinct incident. | product-owner (backlog) | open |
 
 ## Accept decision
@@ -83,3 +127,11 @@ feature 60/60). Both declared controls are green and each was seen to fail on a 
 `aof work validate 169/01` passes, and no blocker finding is open. Carried forward: F-02 and F-03 as
 OUTCOME gaps, and the milestone's `aof work regression-gate 169`, which story 00 and the milestone
 accept still need.
+
+**ACCEPTED (169/02)** — 2026-10-23. The story's own lanes are green (334/334 cases over the 22
+importer files, the lifecycle feature 61/61, `application.test.mjs` 2/2), and the command-layer arch
+controls are 47/47. E8 was measured on this repository: its update deleted exactly the eight
+`.hyperagent/` files. The verb and the doctor were run at the source, against the real aof home.
+`aof work validate 169/02` passes, and no blocker finding is open (F-06 is closed by this story).
+Carried forward: F-02's sidecar-writer gap, restated in this story's OUTCOME. The milestone's
+regression gate must re-run over this change before 169 is accepted.

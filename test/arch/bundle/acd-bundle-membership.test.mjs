@@ -9,16 +9,21 @@ import assert from "node:assert/strict";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { readDescriptor, bundleRoot } from "../../../packages/core/src/work/bundle.mjs";
-import { assetPath } from "../../../packages/core/src/asset-base.mjs";
+import { assetPath, readAssetText } from "../../../packages/core/src/asset-base.mjs";
 
 // 169/ADR-004 — a member is read from its OWN package's assets: core's members from the bundle root,
 // an integration's from that package's assets/. Each root's files are checked against the members
 // it owns, so neither tree may hold an undeclared file or miss a declared one.
+// 169/ADR-007 — an integration's fragment may also declare `packageFiles`: files its package ships
+// for its own verbs, which core never renders. They are declared, so they count as declared here.
 function memberRoots(descriptor) {
   const roots = new Map();
   for (const member of descriptor.members) {
     const assetClass = member.assetClass ?? "bundle";
-    if (!roots.has(assetClass)) roots.set(assetClass, { root: assetPath(assetClass), descriptor: { members: [], references: assetClass === "bundle" ? descriptor.references : [] } });
+    if (!roots.has(assetClass)) {
+      const packageFiles = assetClass === "bundle" ? [] : JSON.parse(readAssetText(assetClass, "bundle.json")).packageFiles ?? [];
+      roots.set(assetClass, { root: assetPath(assetClass), descriptor: { members: [], references: assetClass === "bundle" ? descriptor.references : [], packageFiles } });
+    }
     roots.get(assetClass).descriptor.members.push(member);
   }
   return [...roots.values()];
@@ -54,6 +59,7 @@ function declaredBundleFiles(descriptor, root) {
     }
   }
   for (const reference of descriptor.references ?? []) add(reference.file);
+  for (const file of descriptor.packageFiles ?? []) add(file);
   return [...files].sort();
 }
 

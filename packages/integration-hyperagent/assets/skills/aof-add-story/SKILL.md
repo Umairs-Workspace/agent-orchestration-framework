@@ -73,7 +73,7 @@ place the AOF procedure assumes a local shell:
   claim behind a URL in the document that relies on it.
 - **Stay in the planning lane.** Write record documents (PRD, SPEC, SPIKE, STATE, ARCHITECTURE,
   RESEARCH, STORY, task `.feature`). Never write source code, tests, or rendered runtime folders
-  (`.claude/`, `.codex/`, `.agents/`, `.opencode/`, `.hyperagent/`), and never edit an item another
+  (`.claude/`, `.codex/`, `.agents/`, `.opencode/`), and never edit an item another
   phase owns (`VERIFICATION.md`, `RETROSPECTIVE.md`, a `done` item).
 
 ### Validate checklist (apply before every push)

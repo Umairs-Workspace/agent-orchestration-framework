@@ -21,8 +21,12 @@ const lazy = {
   brief: () => import("./brief.mjs"),
   result: () => import("./plan-result.mjs"),
   check: () => import("./check.mjs"),
-  doctor: () => import("./doctor.mjs")
+  doctor: () => import("./doctor.mjs"),
+  package: () => import("./package.mjs")
 };
+
+// The package whose assets hold the planner files (169/ADR-007).
+const PACKAGE_NAME = "@aof/integration-hyperagent";
 
 const ROUTE = ["work", "integrations", "hyperagent"];
 const PREFIX = "aof work integrations hyperagent";
@@ -36,7 +40,9 @@ function asError(commandError, error) {
   return error?.code && /^hyperagent-/.test(error.code) ? commandError(error.message, error.code, 400) : error;
 }
 
-export function createHyperagentCommands({ commandError, gitExec, validateWork, readJson }) {
+export function createHyperagentCommands({ commandError, gitExec, validateWork, readJson, aofHome, readPackageAsset }) {
+  const readPlannerFile = (relative) => readPackageAsset(PACKAGE_NAME, relative);
+
   async function remoteRepo(projectRoot) {
     const { parseGitRemote } = await lazy.brief();
     const result = await gitExec(["remote", "get-url", "origin"], { cwd: projectRoot }).catch(() => null);
@@ -237,7 +243,7 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
     input: { type: "object", properties: {}, additionalProperties: false },
     async run(_input, ctx) {
       const { inspectHyperagentSetup } = await lazy.doctor();
-      return inspectHyperagentSetup({ projectRoot: ctx.workspace.projectRoot, config: ctx.workspace.config });
+      return inspectHyperagentSetup({ projectRoot: ctx.workspace.projectRoot, config: ctx.workspace.config, aofHome: await aofHome(), readPlannerFile });
     },
     cli: {
       route: [...ROUTE, "doctor"],
@@ -247,7 +253,7 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
         `Hyperagent planning: ${result.ready ? "ready" : "not ready yet"}.`,
         `  Claude Code MCP: ${result.claude.registered ? `registered as "${result.claude.name}" (${result.claude.source})` : "not registered"}`,
         `  Codex MCP: ${result.codex.registered ? `registered as "${result.codex.name}" (${result.codex.source})` : "not registered"}`,
-        `  Planner skills in .hyperagent/skills: ${result.skills.length > 0 ? result.skills.join(", ") : "none"}`,
+        `  Planner package: ${result.package.state} (${result.package.dir})`,
         `  Planner agent: "${result.config.value.agent}"; poll every ${result.config.value.pollSeconds}s for at most ${result.config.value.maxMinutes} min.`,
         ...result.hints.map((hint) => `  → ${hint}`)
       ].join("\n"),
@@ -255,5 +261,35 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
     }
   };
 
-  return { briefCommand, resultCommand, checkCommand, doctorCommand };
+  // 169/ADR-007 — the planner files are written to the aof home for upload, never into a project,
+  // and need no work.integrations block: an uploaded skill belongs to the account.
+  const packageCommand = {
+    id: "hyperagent:package",
+    input: {
+      type: "object",
+      properties: { dryRun: { type: "boolean" } },
+      additionalProperties: false
+    },
+    async run(input) {
+      const { writeHyperagentPackage } = await lazy.package();
+      return writeHyperagentPackage({ aofHome: await aofHome(), readPlannerFile, dryRun: input.dryRun === true });
+    },
+    cli: {
+      route: [...ROUTE, "package"],
+      spec: {
+        usage: `${PREFIX} package [--dry-run] [--json]`,
+        flags: { dryRun: { type: "boolean", description: "print the paths it would write, and write nothing" } }
+      },
+      argv: (_positionals, options = {}) => (options.dryRun ? { dryRun: true } : {}),
+      render: (result) => [
+        result.written ? `Wrote the Hyperagent package to ${result.dir}:` : `dry-run: the Hyperagent package would be written to ${result.dir} (nothing written):`,
+        ...result.files.map((file) => `  ${file}`),
+        "",
+        ...result.steps
+      ].join("\n"),
+      json: (result) => result
+    }
+  };
+
+  return { briefCommand, resultCommand, checkCommand, doctorCommand, packageCommand };
 }

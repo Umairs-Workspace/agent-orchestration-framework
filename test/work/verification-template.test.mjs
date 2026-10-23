@@ -383,8 +383,7 @@ export const verificationTemplateTests = [
         const roots = new Set(
           renderBundleOutputs(loadBundle(), { runtimes: ["claude", "codex"] }).map((output) => String(output.path).replaceAll("\\", "/").split("/")[0]),
         );
-        // `.hyperagent` is the Hyperagent integration's own tool-owned root (169/ADR-004).
-        assert.deepEqual([...roots].sort(), [".agents", ".aof", ".claude", ".codex", ".hyperagent"]);
+        assert.deepEqual([...roots].sort(), [".agents", ".aof", ".claude", ".codex"]);
       } finally {
         await rm(repo, { recursive: true, force: true });
       }

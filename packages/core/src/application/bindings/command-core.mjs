@@ -51,6 +51,19 @@ import { assetsCleanCommand } from "../../commands/assets/clean.mjs";
 import { packagesAddCommand } from "../../commands/packages-add.mjs";
 import { packagesRemoveCommand } from "../../commands/packages-remove.mjs";
 
+// 169/ADR-007 — an integration that writes to the aof home (`~/.aof`, or AOF_GLOBAL_HOME) or reads
+// its own package's files is handed both, lazily, so a CLI path that never runs such a verb loads
+// neither module (FF-16004).
+async function integrationAofHome() {
+  const { defaultGlobalWorkspaceDir } = await import("../../paths.mjs");
+  return defaultGlobalWorkspaceDir();
+}
+
+async function integrationReadPackageAsset(packageName, relativePath) {
+  const { packageAssetClass, readAssetText } = await import("../../asset-base.mjs");
+  return readAssetText(packageAssetClass(packageName), relativePath);
+}
+
 // One command contribution per registered integration that ships verbs, named by its package.
 export function integrationContributions(services, integrations = INTEGRATIONS) {
   return integrations
@@ -262,7 +275,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     ]),
     createWorkContribution([migrateFolderCommand]),
     createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
-    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson }),
+    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset }),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,

@@ -58,6 +58,6 @@ Feature: /aof:hyperplan delegates a planning step and checks what comes back
   Rule: R5 · A live plan run passes validate on the branch it produced
 
     Scenario: E8 · one plan from idea to a refined milestone
-      Given the rendered skills imported into Hyperagent and a session connected to it over OAuth
+      Given the packaged skills uploaded to Hyperagent and a session connected to it over OAuth
       When "/aof:hyperplan plan" runs for one idea, and the milestone it framed is promoted and refined
       Then each draft pull request's branch passes "aof work validate"

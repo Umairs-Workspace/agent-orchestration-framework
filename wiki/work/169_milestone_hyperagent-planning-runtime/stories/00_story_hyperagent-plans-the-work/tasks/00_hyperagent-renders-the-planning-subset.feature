@@ -1,24 +1,23 @@
 @executable @cli @adapter @planning
-Feature: A project that enables Hyperagent gets the planning skills Hyperagent imports, and only that project
+Feature: Hyperagent gets the planning skills it needs, and no project is changed for it
 
-  WHY. Hyperagent imports skills and runs planning against a repository it reaches through GitHub,
-  with no checkout and no aof binary. It needs the planning procedures rewritten for that setting,
-  written by aof like any rendered file, and they must never appear in a project that did not ask
-  for them.
+  WHY. Hyperagent runs planning against a repository it reaches through GitHub, with no checkout and
+  no aof binary, from skills uploaded to the operator's account. It needs the planning procedures
+  rewritten for that setting, written by aof from its own sources, and they must never appear in a
+  project's tree (169/02, ADR-007).
 
-  Rule: R1 · Hyperagent's files are written for a project that enables it, and never assumed
+  Rule: R1 · Hyperagent's files are written when asked for, and never into a project
 
     Scenario: E1 · a project that does not enable Hyperagent gets nothing for it
       Given a project that does not enable Hyperagent
       When "aof work init" runs
       Then nothing is written under ".hyperagent/"
 
-    Scenario: E2 · enabling Hyperagent writes its skills and planner instructions
-      Given a fresh project that enables Hyperagent
-      When "aof work init" runs
-      Then ".hyperagent/AGENT.md" and one "SKILL.md" per planning skill are written, and the lock records them
+    Scenario: E2 · the Hyperagent package holds its skills and planner instructions
+      When "aof work integrations hyperagent package" runs
+      Then "AGENT.md" and one "SKILL.md" per planning skill are written under the aof home's "hyperagent/" folder
 
-    Scenario: E3 · a re-run over a fresh Hyperagent install changes nothing
+    Scenario: E3 · a re-run over a fresh install that enables Hyperagent changes nothing
       Given a project initialised with Hyperagent enabled
       When "aof work update" runs again
       Then no rendered file changes
@@ -35,7 +34,7 @@ Feature: A project that enables Hyperagent gets the planning skills Hyperagent i
 
     Scenario: E6 · each Hyperagent skill carries the execution contract
       When a Hyperagent skill is written
-      Then it is an importable "SKILL.md" whose body carries the Hyperagent execution contract
+      Then it is an uploadable "SKILL.md" whose body carries the Hyperagent execution contract
 
   Rule: R3 · The Claude, Codex and OpenCode procedures do not change
 
