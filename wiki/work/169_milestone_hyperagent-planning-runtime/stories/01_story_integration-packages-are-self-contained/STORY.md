@@ -39,5 +39,5 @@ scattered through core.**
   `hyperplan`'s Codex section leaves core's shared `variants/codex/workflow.md` for the package's
   own variant file.
 - **This repository enables Hyperagent** (`work.integrations.hyperagent` in `.aof/aof.config.json`),
-  so its own `.hyperagent/` and `/aof:hyperplan` keep rendering.
+  so `/aof:hyperplan` keeps rendering. (Its `.hyperagent/` render was removed by 169/02, ADR-007.)
 - **Out of scope:** Notion's move onto the seam is the follow-up chore (milestone SPEC).

@@ -104,6 +104,10 @@ load, naming the member and the package. Hyperagent's fragment holds:
   already writes a file verbatim at a declared target. Each source holds its full `SKILL.md`,
   frontmatter included, without the old `aof-runtime: hyperagent` line.
 
+**Amended by ADR-007 (2026-10-23).** The fragment holds `hyperplan` alone. The planner instructions
+and the seven skills are no longer members: the fragment lists them as `packageFiles`, and the
+`package` verb writes them to `~/.aof/hyperagent/`.
+
 `asset-base.mjs` gains a package-bundle class, resolved the way `ui` is: in dev and payload,
 `<resolved package dir>/assets`; packaged, `<sidecar>/bundle/packages/<package basename>/`. The bundle
 manifest, `build-sea.mjs` and `install-local.mjs` copy each contributing package's assets under that
@@ -124,7 +128,7 @@ so the gate takes nothing from an existing project.
 planner files are written to the aof home by `aof work integrations hyperagent package`.
 
 **Consequences.** This repository enables Hyperagent in `.aof/aof.config.json` to keep rendering
-its own `.hyperagent/`. A project turns Hyperagent on by adding the block, then running
+`/aof:hyperplan`. A project turns Hyperagent on by adding the block, then running
 `aof work update`. The doctor says so when the block is missing.
 
 ## ADR-006: Text handed to git as a path uses forward slashes

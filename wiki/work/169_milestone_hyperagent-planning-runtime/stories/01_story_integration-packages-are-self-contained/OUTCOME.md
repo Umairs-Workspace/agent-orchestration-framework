@@ -22,8 +22,8 @@ The model knows exactly claude, codex and opencode; `--runtime hyperagent` is an
 
 ### Sidecar writer coverage
 - **Status:** open
-- **Discharge condition:** a payload install from this tree shows `aof --version` with the new build id and renders `.hyperagent/` from the payload, or a test covers the sidecar copy.
-The sidecar copy of an integration's assets in `install-local.mjs` and `build-sea.mjs` has no test of its own (169/VERIFICATION F-02).
+- **Discharge condition:** a payload install from this tree shows `aof --version` with the new build id, and `aof work integrations hyperagent package` run from it writes a package the doctor reads as `current`; or a test covers the sidecar copy.
+The sidecar copy of an integration's assets in `install-local.mjs` and `build-sea.mjs` has no test of its own (169/VERIFICATION F-02). Since 169/02 the `package` verb reads its planner files through that copy too.
 
 ### Integration hooks and templates
 - **Status:** open

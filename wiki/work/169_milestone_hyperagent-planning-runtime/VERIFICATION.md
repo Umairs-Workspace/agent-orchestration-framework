@@ -133,5 +133,5 @@ importer files, the lifecycle feature 61/61, `application.test.mjs` 2/2), and th
 controls are 47/47. E8 was measured on this repository: its update deleted exactly the eight
 `.hyperagent/` files. The verb and the doctor were run at the source, against the real aof home.
 `aof work validate 169/02` passes, and no blocker finding is open (F-06 is closed by this story).
-Carried forward: F-02's sidecar-writer gap, restated in this story's OUTCOME. The milestone's
+Carried forward: F-02's sidecar-writer gap, held in 169/01's OUTCOME (its discharge condition now names the `package` verb). The milestone's
 regression gate must re-run over this change before 169 is accepted.

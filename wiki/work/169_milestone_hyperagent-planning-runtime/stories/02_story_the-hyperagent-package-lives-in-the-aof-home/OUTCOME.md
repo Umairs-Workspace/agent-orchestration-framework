@@ -14,10 +14,3 @@ With `work.integrations.hyperagent` present, `aof work init|update` renders `/ao
 
 ### The fragment declares what core never renders
 Hyperagent's `assets/bundle.json` carries `packageFiles`, the eight files its own verb ships, beside its one member `hyperplan`. The bundle-membership control counts them as declared.
-
-## Gaps
-
-### Sidecar writer coverage now carries the planner files
-- **Status:** open
-- **Discharge condition:** a payload install from this tree, followed by `aof work integrations hyperagent package`, writes a package that the doctor reads as `current`, or a test covers the sidecar copy.
-The packaged binary's sidecar copy (`install-local.mjs`, `build-sea.mjs`) still has no test of its own (169 F-02), and the `package` verb now depends on it in a packaged install as well.
