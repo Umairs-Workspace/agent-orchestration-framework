@@ -5,6 +5,9 @@
 // measured at this story, Notion is imported from nine core modules, so the exception is the package.) An integration core imports from its lowest layers cannot be
 // moved, removed or replaced without editing core.
 //
+// FF-16902 — 169/ADR-001 + ADR-004: what only an integration renders lives in its package, and
+// the model's runtimes are exactly the three.
+//
 // Also 169/01 task 01 R2: Hyperagent's four verbs reach the application through that registry,
 // contributed under the package's own name.
 import assert from "node:assert/strict";
@@ -14,6 +17,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { createApplication } from "../../../packages/core/src/application/assemble.mjs";
 import { integrationContributions } from "../../../packages/core/src/application/bindings/command-core.mjs";
+import { INTEGRATIONS } from "../../../packages/core/src/integrations.mjs";
+import { assetPath, packageAssetClass, readAssetText } from "../../../packages/core/src/asset-base.mjs";
+import { RUNTIMES, supportedRuntimes } from "../../../packages/core/src/model.mjs";
+import { existsSync } from "node:fs";
 import { moduleReferences } from "../../../scripts/workspace-boundaries.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
@@ -50,6 +57,25 @@ export async function integrationImportViolations(root = repoRoot, srcDir = CORE
   return violations;
 }
 
+// FF-16902 — 169/ADR-001 + ADR-004: what only an integration renders lives in its package. Every
+// file an integration's fragment names (member files and variant files) is absent from core's
+// bundle root, and core's own `bundle.json` declares none of the fragment's member ids.
+export async function integrationAssetViolations({ coreRoot = assetPath("bundle"), integrations = INTEGRATIONS } = {}) {
+  const violations = [];
+  const core = JSON.parse(await readFile(path.join(coreRoot, "bundle.json"), "utf8"));
+  const coreIds = new Set(core.members.map((member) => member.id));
+  for (const integration of integrations) {
+    if (!integration.assets?.package) continue;
+    const fragment = JSON.parse(readAssetText(packageAssetClass(integration.assets.package), "bundle.json"));
+    for (const member of fragment.members ?? []) {
+      if (coreIds.has(member.id)) violations.push(`core's bundle.json declares ${integration.name}'s member ${member.id}`);
+      const files = [member.file, ...Object.values(member.variants ?? {}).filter(Boolean).map((variant) => variant.file)];
+      for (const file of files) if (file && existsSync(path.join(coreRoot, file))) violations.push(`core's assets hold ${file}, which ${integration.name} renders`);
+    }
+  }
+  return violations;
+}
+
 export const archTests = [
   {
     name: "FF-16901 · 169/01 E1 · the only core importer of an integration package is the registry, plus the one named Notion exception",
@@ -68,6 +94,28 @@ export const archTests = [
         await writeFile(path.join(src, "integrations.mjs"), 'import { contribution } from "@aof/integration-hyperagent/contribution";\n');
         await writeFile(path.join(src, "work", "planted.mjs"), 'import { HYPERAGENT_RUNTIME } from "@aof/integration-hyperagent/runtime";\n');
         assert.deepEqual(await integrationImportViolations(root, src), ["packages/core/src/work/planted.mjs imports @aof/integration-hyperagent/runtime"]);
+      } finally {
+        await rm(root, { recursive: true, force: true });
+      }
+    }
+  },
+  {
+    name: "FF-16902 · core's assets hold no file an integration renders, and the model's runtimes are exactly claude, codex and opencode",
+    run: async () => {
+      assert.deepEqual(await integrationAssetViolations(), []);
+      assert.deepEqual(Object.keys(RUNTIMES), ["claude", "codex", "opencode"]);
+      assert.deepEqual(supportedRuntimes(), ["claude", "codex", "opencode"]);
+    }
+  },
+  {
+    name: "FF-16902 · a planted copy of an integration's file under core's assets fails the control, naming the file",
+    run: async () => {
+      const root = await mkdtemp(path.join(os.tmpdir(), "aof-ff16902-"));
+      try {
+        await writeFile(path.join(root, "bundle.json"), JSON.stringify({ members: [] }));
+        await mkdir(path.join(root, "commands"), { recursive: true });
+        await writeFile(path.join(root, "commands", "hyperplan.md"), "planted\n");
+        assert.deepEqual(await integrationAssetViolations({ coreRoot: root }), ["core's assets hold commands/hyperplan.md, which @aof/integration-hyperagent renders"]);
       } finally {
         await rm(root, { recursive: true, force: true });
       }
