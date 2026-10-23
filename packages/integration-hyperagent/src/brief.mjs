@@ -29,13 +29,20 @@ export function parseGitRemote(url) {
 // A kebab slug for the plan branch, from the request (or the target when there is no request). A
 // slug longer than `max` is cut at the last whole word, never mid-word (169/F-08: "…-video-htt").
 export function planSlug(text, { max = 40 } = {}) {
-  const full = String(text ?? "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+  const full = trimDashes(String(text ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-"));
   let slug = full.slice(0, max);
   if (full.length > max && full[max] !== "-" && slug.includes("-")) slug = slug.slice(0, slug.lastIndexOf("-"));
-  return slug.replace(/-+$/g, "") || "plan";
+  return trimDashes(slug) || "plan";
+}
+
+// Leading and trailing dashes off, by index: an anchored `-+$` backtracks polynomially on a long
+// run of dashes (CodeQL js/polynomial-redos), and the request is the operator's free text.
+function trimDashes(value) {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value[start] === "-") start += 1;
+  while (end > start && value[end - 1] === "-") end -= 1;
+  return value.slice(start, end);
 }
 
 export function briefError(message, code) {

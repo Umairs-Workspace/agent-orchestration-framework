@@ -188,6 +188,28 @@ export const hyperagentPackageTests = [
       assert.equal(blocked.status, "blocked");
       assert.equal(blocked.pr, null);
       assert.deepEqual(parsePlanResult("Which identity provider should this use?"), { found: false, status: "unknown", pr: null, branch: null, openQuestions: null });
+      assert.equal(parsePlanResult("Pushed `aof/plan/sso`)).").branch, "aof/plan/sso", "trailing prose punctuation is dropped");
+      assert.equal(parsePlanResult(`${RESULT_BLOCK_MARKER}\n  open-questions :  3  \n`).openQuestions, 3, "spacing around the colon is tolerated");
+    }
+  },
+  {
+    // CodeQL js/polynomial-redos (PR #14, alerts 140, 141, 151) flagged anchored `-+$`, `[.,;:)]+$`
+    // and `\s*(.*?)\s*$` shapes. Measured: each was quadratic on raw input (~1 s per 50k characters),
+    // but in context its input was already filtered (dash runs collapsed, `)` outside the branch
+    // capture), so the old code also passes this case. It is a GUARD on the replacement scanners,
+    // not a regression red on the old code.
+    name: "integration-hyperagent/brief + result: the operator's request and the planner's reply are parsed in linear time",
+    run: async () => {
+      const inputs = [
+        () => planSlug(`a${"-".repeat(200_000)}b${"-".repeat(200_000)}`),
+        () => parsePlanResult(`${RESULT_BLOCK_MARKER}\n-:${"\t".repeat(200_000)}x`),
+        () => parsePlanResult(`see aof/plan/x${")".repeat(200_000)}y`)
+      ];
+      for (const run of inputs) {
+        const started = performance.now();
+        run();
+        assert.ok(performance.now() - started < 1_000, "parsed in under a second");
+      }
     }
   },
   {
