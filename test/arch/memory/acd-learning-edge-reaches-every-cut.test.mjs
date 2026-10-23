@@ -32,7 +32,8 @@ import { fileURLToPath } from "node:url";
 
 const MEMORY_VERBS = _aofApplication.knowledge.work.memory.MEMORY_VERBS;
 const SCOPE_FLAGS = _aofApplication.knowledge.work.memory.SCOPE_FLAGS;
-import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
+import { loadBundle, renderBundleOutputs, readDescriptor } from "../../../packages/core/src/work/bundle.mjs";
+import { assetPath } from "../../../packages/core/src/asset-base.mjs";
 import { hashContent } from "../../../packages/core/src/lock.mjs";
 const listCommands = _aofApplication.listCommands;
 
@@ -85,10 +86,18 @@ function recallBlock(text) {
   return { lines, start, end, text: joined(lines.slice(start, end).join("\n")) };
 }
 
-/** Every `.md` under the bundle's command directory, sorted. */
-const commandFiles = () => readdirSync(path.join(root, COMMANDS_DIR))
-  .filter((name) => name.endsWith(".md"))
+// 169/01 — an integration's command lives in its own package (169/ADR-004), so the census is core's
+// command directory PLUS every contributed command member, each read from where it lives.
+const contributedCommands = () => new Map(readDescriptor().members
+  .filter((member) => member.kind === "command" && member.assetClass)
+  .map((member) => [path.basename(member.file), slash(path.relative(root, path.join(assetPath(member.assetClass), member.file)))]));
+
+/** Every `.md` under the bundle's command directory, plus every contributed command, sorted. */
+const commandFiles = () => [...readdirSync(path.join(root, COMMANDS_DIR)).filter((name) => name.endsWith(".md")), ...contributedCommands().keys()]
   .sort();
+
+/** A command file's repo-relative path: core's directory, or the package that contributes it. */
+const commandRel = (name) => contributedCommands().get(name) ?? `${COMMANDS_DIR}/${name}`;
 
 // ──────────────────────────────────────────────────────────────── the cut roster ──
 //
@@ -122,6 +131,10 @@ const EXCLUDED = Object.freeze({
   "delegate.md": "sets two model decisions",
   // 150 — says what items are for, composed of the read verbs; writes nothing, carries no memory call.
   "explain.md": "explains items; reads only, cuts nothing",
+  // The Hyperagent integration (contributed by @aof/integration-hyperagent since 169/01) — hands
+  // planning to the AOF Planner over MCP; the partition is made by the planner's own shatter/refine
+  // skills, which carry their recall, never by this delegation.
+  "hyperplan.md": "delegates planning to Hyperagent; the cut is the planner's shatter or refine, not this command's",
   "feedback.md": "captures one raw entry",
   "init.md": "installs ACD and authors a config",
   "insert-chore.md": "inserts one chore at a position and renumbers; no partition",
@@ -511,7 +524,7 @@ export const archTests = [
 
       const found = [];
       for (const name of commandFiles()) {
-        const rel = `${COMMANDS_DIR}/${name}`;
+        const rel = commandRel(name);
         for (const call of invocationsIn(read(rel))) found.push({ rel, ...call });
       }
       // 154/05 adds retrospective's recall and ingest edge, retaining the seven existing calls; 153/04 adds
@@ -571,7 +584,7 @@ export const archTests = [
 
       // DIRECTION 1 — every roster entry carries a RECALL. An `ingest` would not satisfy it.
       for (const name of roster) {
-        const calls = invocationsIn(read(`${COMMANDS_DIR}/${name}`));
+        const calls = invocationsIn(read(commandRel(name)));
         const recalls = calls.filter((call) => call.verb === "recall");
         assert.ok(recalls.length >= 1, `${name} is a roster entry and carries at least one \`aof work memory recall\``);
       }
@@ -599,7 +612,7 @@ export const archTests = [
 
       // THE MEMBERSHIP RULE IS NOT A ROLE GREP. Six files spawn the product owner and five of them
       // partition nothing — asserted so nobody rewrites the roster as a grep.
-      const spawnsPo = files.filter((name) => read(`${COMMANDS_DIR}/${name}`).includes("aof-product-owner"));
+      const spawnsPo = files.filter((name) => read(commandRel(name)).includes("aof-product-owner"));
       assert.ok(spawnsPo.length > roster.length, `${spawnsPo.length} files name the product owner against ${roster.length} cutters — spawning it does not make a command a cutter`);
 
       // THE DENOMINATOR, REPORTED.
@@ -747,12 +760,12 @@ export const archTests = [
       // a fifth decision-recall edge cannot arrive without a roster entry.
       const recalls = [];
       for (const name of commandFiles()) {
-        for (const call of invocationsIn(read(`${COMMANDS_DIR}/${name}`))) if (call.verb === "recall") recalls.push(name);
+        for (const call of invocationsIn(read(commandRel(name)))) if (call.verb === "recall") recalls.push(name);
       }
       assert.deepEqual(recalls.sort(), ["continue.md", "continue.md", "refine.md", "refine.md", "retrospective.md", "retrospective.md", "shatter.md", "verify.md"], "eight recalls exist: six declared edges, retrospective's matching recall and its evidence recall");
       const submissions = [];
       for (const name of commandFiles()) {
-        for (const call of invocationsIn(read(`${COMMANDS_DIR}/${name}`))) if (call.verb === "record-recall") submissions.push(name);
+        for (const call of invocationsIn(read(commandRel(name)))) if (call.verb === "record-recall") submissions.push(name);
       }
       assert.deepEqual(submissions.sort(), ["continue.md", "continue.md", "refine.md", "refine.md", "shatter.md", "verify.md"], "one submission per declared edge, and none anywhere else");
     },

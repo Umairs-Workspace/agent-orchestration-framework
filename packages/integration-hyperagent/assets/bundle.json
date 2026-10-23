@@ -1,0 +1,32 @@
+{
+  "packageFiles": [
+    "AGENT.md",
+    "skills/aof-add-milestone/SKILL.md",
+    "skills/aof-add-story/SKILL.md",
+    "skills/aof-add-task/SKILL.md",
+    "skills/aof-prd/SKILL.md",
+    "skills/aof-refine/SKILL.md",
+    "skills/aof-shatter/SKILL.md",
+    "skills/aof-validate/SKILL.md"
+  ],
+  "members": [
+    {
+      "id": "hyperplan",
+      "kind": "command",
+      "file": "commands/hyperplan.md",
+      "runtimes": [
+        "claude",
+        "opencode"
+      ],
+      "commandNamespace": "aof",
+      "variants": {
+        "claude": null,
+        "opencode": null,
+        "codex": {
+          "file": "variants/codex/hyperplan.md",
+          "section": "hyperplan"
+        }
+      }
+    }
+  ]
+}

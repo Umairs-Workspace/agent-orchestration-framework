@@ -15,6 +15,9 @@
         }
       }
     },
+    "integrations": {
+      "hyperagent": {}
+    },
     "rubric": {
       "command": [
         "node",

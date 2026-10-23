@@ -46,12 +46,14 @@ export function createValidateCommand({ declaredAdrsInStory, extractAdrBlocks, r
 // is byte-frozen by m53/FF-5308. Keep the additive check on this existing validation
 // leaf: the core validator remains untouched, while every public validate command gets
 // the same combined findings. The controls lane and its frozen m66 envelope stay out.
-async function validateWork(workDir, config, scopeRef, { projectRoot } = {}) {
+async function validateWork(workDir, config, scopeRef, { projectRoot, historyRoot } = {}) {
   const findings = await validateCoreWork(workDir, config, scopeRef);
   // A loader, built once for the whole run (160/ADR-007): the map is derived from git history, so it
   // is the same answer for every story. It is LOADED only below, where a reads entry misses on disk,
   // and at most once, so a stream whose every entry resolves spawns no git for history at all.
-  const history = await readRenameMap(projectRoot ?? null);
+  // `historyRoot` (169/F-07): a tree extracted from a branch has no `.git`, so its history is read
+  // from the repository it was extracted from, while its files are still read from the tree.
+  const history = await readRenameMap(historyRoot ?? projectRoot ?? null);
   const items = await listItems(workDir);
   const milestones = items.filter((item) => item.type === "milestone" && item.dir != null);
   const architectureReads = new Map();

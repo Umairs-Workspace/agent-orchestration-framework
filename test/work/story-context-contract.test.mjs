@@ -1,6 +1,7 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
 import { defaultWorkspace as _aofWorkspace } from "aof/workspace-services";
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -416,6 +417,25 @@ export const storyContextContractTests = [
     }, async ({ repo, workDir, config }) => {
       const findings = await validateWork(workDir, config, "00/00", { projectRoot: repo });
       assert.deepEqual(contextFindings(findings), [], JSON.stringify(findings));
+    }),
+  },
+  {
+    // 169/F-07 — `aof work integrations hyperagent check` validates a tree extracted from a branch,
+    // which has no `.git`: without the repository's history every renamed citation read as missing.
+    name: "169/00 task 01 E9 · a tree with no .git resolves a renamed reads citation through the history root it is handed",
+    run: () => withStory({ reads: "[src/old-app.mjs]" }, async ({ repo, workDir, config }) => {
+      const history = path.join(path.dirname(repo), "history");
+      const git = (...args) => execFileSync("git", ["-c", "user.name=fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: history, stdio: "pipe" });
+      await mkdir(path.join(history, "src"), { recursive: true });
+      await writeFile(path.join(history, "src", "old-app.mjs"), "export const app = true;\n", "utf8");
+      git("init", "-q");
+      git("add", ".");
+      git("commit", "-q", "-m", "old");
+      git("mv", "src/old-app.mjs", "src/app.mjs");
+      git("commit", "-q", "-m", "rename");
+      const without = contextFindings(await validateWork(workDir, config, "00/00", { projectRoot: repo })).map((finding) => finding.problem);
+      assert.deepEqual(without, ['story reads path "src/old-app.mjs" does not exist'], "non-vacuity: the tree alone cannot see the rename");
+      assert.deepEqual(contextFindings(await validateWork(workDir, config, "00/00", { projectRoot: repo, historyRoot: history })), [], "the history root resolves it");
     }),
   },
   {

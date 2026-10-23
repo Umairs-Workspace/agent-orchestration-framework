@@ -40,6 +40,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@aof/integration-hyperagent@workspace:*, @aof/integration-hyperagent@workspace:packages/integration-hyperagent":
+  version: 0.0.0-use.local
+  resolution: "@aof/integration-hyperagent@workspace:packages/integration-hyperagent"
+  languageName: unknown
+  linkType: soft
+
 "@aof/integration-notion@workspace:*, @aof/integration-notion@workspace:packages/integration-notion":
   version: 0.0.0-use.local
   resolution: "@aof/integration-notion@workspace:packages/integration-notion"
@@ -89,6 +95,7 @@ __metadata:
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
+    "@aof/integration-hyperagent": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/knowledge": "workspace:*"
     "@aof/mesh": "workspace:*"
@@ -1860,6 +1867,7 @@ __metadata:
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
+    "@aof/integration-hyperagent": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/knowledge": "workspace:*"
     "@aof/mesh": "workspace:*"

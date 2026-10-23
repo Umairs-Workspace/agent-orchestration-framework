@@ -436,7 +436,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
+    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -444,7 +444,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
+    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -452,7 +452,7 @@
     "kind": "child-process",
     "expression": "execFileSync(step.cmd, step.args, { stdio: \"inherit\" })",
     "digest": "e4a5a03d425cc23f4e865152f7ecc7fb9c068bb93e30fb085e553492cf9b5019",
-    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
+    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -460,7 +460,7 @@
     "kind": "child-process",
     "expression": "execFileSync(process.execPath, [\"--experimental-sea-config\", seaConfigPath], { cwd: outDir, stdio: \"inherit\" })",
     "digest": "520e9086f520a8a34f8f65e25dad7343342b674a6e2672b58d3a7c6bbc1598b2",
-    "sourceDigest": "da28cdd89c0f90474ce2d236f07742afb9b4be06533f755fa16c51c542b5b6e3",
+    "sourceDigest": "386f1a32ca0ebc9ffe02c440fe8cec04c73e50865cabee4b673494cc2fc0af57",
     "reason": "Build orchestration runs declared build steps and the Node SEA generator; package/core entries are resolved through owned staging paths."
   },
   {
@@ -476,7 +476,7 @@
     "kind": "child-process",
     "expression": "execFileSync(cmd, args, { cwd: repoRoot, stdio: \"inherit\", ...(env ? { env } : {}) })",
     "digest": "6c0e065f874be5002eac80843f45791322d0432d5a88f5e898f1eaa7a2070255",
-    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
+    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -484,7 +484,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"rev-parse\", \"--short\", \"HEAD\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "e5b76471fa26f27e749c4d4e89ff5e9767b86f8bfa43b4eee809429ea2fc160a",
-    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
+    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -492,7 +492,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"git\", [\"status\", \"--porcelain\"], { cwd: repoRoot, encoding: \"utf8\" })",
     "digest": "bcb5d022dfff4ea486b70da39afee9842948e82b039add25aaf5b245376f5149",
-    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
+    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -500,7 +500,7 @@
     "kind": "child-process",
     "expression": "execFileSync(\"wsl.exe\", args, { stdio: \"inherit\" })",
     "digest": "c677935b9ede259885b57613afb2c5e042050ce0246fa6020ececd1a38ecb1db",
-    "sourceDigest": "125dfea7146af209a35abaa9816ee7d8b6fa9fdfcbb07fb73c3538d36598a167",
+    "sourceDigest": "e0d67dba768fe6aebf9cb16acd19a007b335135bdd82d9ae359c2a9e5a35b658",
     "reason": "Installation orchestration executes explicit build steps, Git metadata queries and the selected WSL installer; copied payload closure is separately tested."
   },
   {
@@ -716,7 +716,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"--version\"], { stdio: \"ignore\", shell: process.platform === \"win32\" })",
     "digest": "d24dbb7656f802bd2d307ddc79e71edc513cfbabc2388c3db65e0f860f4525c8",
-    "sourceDigest": "0a844bf0a4bc0d0756acd1bbd6961fc28989571422300f17affca1160988b74f",
+    "sourceDigest": "4b54ee980c5d49affc0ddf508267e364cec138683b372fb3210dd36f85e43fd1",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -724,7 +724,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"test\", \"--manifest-path\", cargoManifest], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "e16b72f5c0ed2aab32ae0a49f168e880902c66716f0ab48530871dac2f2ec631",
-    "sourceDigest": "0a844bf0a4bc0d0756acd1bbd6961fc28989571422300f17affca1160988b74f",
+    "sourceDigest": "4b54ee980c5d49affc0ddf508267e364cec138683b372fb3210dd36f85e43fd1",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {
@@ -732,7 +732,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\"cargo\", [\"check\", \"--manifest-path\", appManifest, \"--quiet\"], { stdio: \"inherit\", shell: process.platform === \"win32\" })",
     "digest": "851b474db0e12fef1c1b6aa885d41db022ee9f2fc6fa548b9e64b6ff28e0f3dc",
-    "sourceDigest": "0a844bf0a4bc0d0756acd1bbd6961fc28989571422300f17affca1160988b74f",
+    "sourceDigest": "4b54ee980c5d49affc0ddf508267e364cec138683b372fb3210dd36f85e43fd1",
     "reason": "Repository harness imports explicitly selected suite files and runs the current desktop Cargo lanes; per-case global homes and disposable fixtures remain isolated."
   },
   {

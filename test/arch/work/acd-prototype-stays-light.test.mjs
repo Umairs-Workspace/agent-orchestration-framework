@@ -18,7 +18,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 // Both run the REAL engines over a REAL temp tree: "a prototype is clean" is a claim about the
 // registered validate and doctor, not about a predicate nobody calls.
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, utimes, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,6 +70,11 @@ async function streamWith(status, run) {
     await mkdir(dir, { recursive: true });
     await writeFile(path.join(dir, "PROTOTYPE.md"), PROTOTYPE(status));
     await writeFile(path.join(dir, "STATE.md"), STATE);
+    // The files carry the fixture's own `updated:` day, so doctor's mtime check reads the same
+    // stream on every day the suite runs rather than only on the day it was written.
+    const written = new Date("2026-10-22T12:00:00Z");
+    for (const file of ["PROTOTYPE.md", "STATE.md"]) await utimes(path.join(dir, file), written, written);
+    await utimes(dir, written, written);
     await run({ root, workDir, dir });
   } finally {
     await rm(root, { recursive: true, force: true });

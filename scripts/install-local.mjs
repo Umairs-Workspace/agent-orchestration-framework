@@ -39,7 +39,7 @@ import { existsSync, mkdirSync, renameSync, copyFileSync, cpSync, rmSync, readdi
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { generateAssetManifest } from "./sea-asset-manifest.mjs";
+import { generateAssetManifest, generatePackageAssetManifest } from "./sea-asset-manifest.mjs";
 import { workspaceDirectory } from './workspace-paths.mjs';
 import { productionDependencyDirs } from './dependency-inventory.mjs';
 
@@ -293,8 +293,14 @@ export function installPayload(installDir) {
   replaceDirectory(path.join(installDir, "assets"), copyManifest(manifest.bundle, path.join(repoRoot, "packages", "core", "assets")));
   // A plain Node core entry reads assets/. A SEA launcher loading the same
   // payload still reads its established bundle/ sidecar through node:sea.
-  replaceDirectory(path.join(installDir, "bundle"), copyManifest(manifest.bundle, path.join(repoRoot, "packages", "core", "assets")));
-  console.log(`  synced assets/ + SEA bundle/ (${manifest.bundle.length} files each)`);
+  // The SEA bundle/ also carries each integration package's assets at packages/<basename>/
+  // (169/ADR-004); a plain Node entry reads them from the package in node_modules instead.
+  const packageAssets = generatePackageAssetManifest(repoRoot);
+  replaceDirectory(path.join(installDir, "bundle"), (staging) => {
+    copyManifest(manifest.bundle, path.join(repoRoot, "packages", "core", "assets"))(staging);
+    for (const owned of packageAssets) copyManifest(owned.files, owned.from)(path.join(staging, owned.sidecar));
+  });
+  console.log(`  synced assets/ + SEA bundle/ (${manifest.bundle.length} files each; ${packageAssets.map((owned) => `${owned.name} ${owned.files.length}`).join(", ") || "no integration assets"})`);
   replaceDirectory(path.join(installDir, "ui", "dist"), copyManifest(manifest.ui, path.join(workspaceDirectory(repoRoot, '@aof/ui'), "dist")));
   console.log(`  synced ui/dist (${manifest.ui.length} files)`);
 

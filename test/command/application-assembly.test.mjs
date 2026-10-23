@@ -107,7 +107,7 @@ export const applicationAssemblyTests = [
         }});
         const { createApplication } = await import('./packages/core/src/application/assemble.mjs');
         const app = createApplication({ env: process.env });
-        assert.equal(app.listCommands().length, 123); // 154/06 — adds the native independent review driver; 163 adds work:questions; 166 adds graph:export and graph:import; 168 adds work:prototype
+        assert.equal(app.listCommands().length, 128); // 154/06 — adds the native independent review driver; 163 adds work:questions; 166 adds graph:export and graph:import; 168 adds work:prototype; @aof/integration-hyperagent adds hyperagent:brief|result|check|doctor, and 169/02 adds hyperagent:package
         const { run } = await import('./packages/core/src/cli.mjs');
         await run(['--help']);
         await app.close();
@@ -128,7 +128,7 @@ export const applicationAssemblyTests = [
       const application = app('home');
       const before = JSON.parse(await readFile(new URL('../fixtures/application/command-inventory.json', import.meta.url), 'utf8'));
       assert.deepEqual(JSON.parse(JSON.stringify(application.listCommands())), before);
-      assert.equal(application.listCommands().length, 123); // 154/06 — adds the native independent review driver; 163 adds work:questions; 166 adds graph:export and graph:import; 168 adds work:prototype
+      assert.equal(application.listCommands().length, 128); // 154/06 — adds the native independent review driver; 163 adds work:questions; 166 adds graph:export and graph:import; 168 adds work:prototype; @aof/integration-hyperagent adds hyperagent:brief|result|check|doctor, and 169/02 adds hyperagent:package
       await assert.rejects(access(path.join(root, 'home')), { code: 'ENOENT' });
       assert.deepEqual(application.mesh.worker.listActiveWorktrees(), []);
       assert.equal(registerActiveWorktree, defaultApplication.mesh.worker.registerActiveWorktree);

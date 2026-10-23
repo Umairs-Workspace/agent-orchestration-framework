@@ -24,6 +24,7 @@
     "./workspace-services": "./src/application/default-workspace.mjs",
     "./session-services": "./src/application/default-session-driver.mjs",
     "./session-hooks": "./src/application/default-session-hooks.mjs",
+    "./integrations": "./src/integrations.mjs",
     "./bundle-manifest": "./src/work/bundle-manifest.mjs",
     "./audit-probe": "./src/work/audit-probe.mjs",
     "./audit-drive": "./src/work/audit-drive.mjs"
@@ -38,6 +39,7 @@
     "@aof/effects": "workspace:*",
     "@aof/execution": "workspace:*",
     "@aof/foundation": "workspace:*",
+    "@aof/integration-hyperagent": "workspace:*",
     "@aof/integration-notion": "workspace:*",
     "@aof/knowledge": "workspace:*",
     "@aof/mesh": "workspace:*",

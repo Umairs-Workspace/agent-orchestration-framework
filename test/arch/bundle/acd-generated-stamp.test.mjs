@@ -49,6 +49,17 @@ function hasFrontmatterStamp(content) {
   return /^aof-generated:\s*true\s*$/m.test(content.slice(0, end));
 }
 
+// The in-band stamp forms a markdown asset's head carries (169/01): the `#` line comment, the
+// frontmatter key, the HTML comment. A conforming asset carries exactly one.
+function assetStampForms(content) {
+  const head = String(content).slice(0, 512);
+  return [
+    /^\s*#\s*aof-generated:/m.test(head) && "hash-comment",
+    hasFrontmatterStamp(content) && "frontmatter",
+    /<!--\s*aof-generated:/.test(head) && "html-comment"
+  ].filter(Boolean);
+}
+
 export const archTests = [
   {
     name: "arch/ADR-005: every rendered bundle member is recognised as aof-managed by the detection contract",
@@ -88,11 +99,18 @@ export const archTests = [
           // ignores and which sits at offset ~4. So the stamp form is chosen by the
           // file, not by the kind: `#` for a frontmatter-bearing document, `//` for a
           // script. Verified: all nine still parse, nine nodes, no new finding.
-          const assetStamp = output.path.endsWith(".md")
-            ? /^\s*#\s*aof-generated:/m
-            : /^\s*\/\/\s*aof-generated:/m;
-          assert.ok(assetStamp.test(output.content.slice(0, 512)), `${output.path} carries the line-comment stamp`);
-          assert.ok(!hasFrontmatterStamp(output.content), `${output.path} does not use the frontmatter form`);
+          //
+          // 169/01 — a markdown asset carries exactly ONE in-band form, chosen by its shape: the `#`
+          // form inside a closed-vocabulary frontmatter (the loop records), the frontmatter KEY in a
+          // file whose frontmatter admits it (an integration's verbatim SKILL.md — 169/ADR-004 keeps
+          // today's rendered frontmatter), or the HTML comment in a document with no frontmatter (the
+          // Hyperagent planner's AGENT.md). A script keeps its language's `//`.
+          if (output.path.endsWith(".md")) {
+            assert.equal(assetStampForms(output.content).length, 1, `${output.path} carries exactly one in-band stamp`);
+          } else {
+            assert.ok(/^\s*\/\/\s*aof-generated:/m.test(output.content.slice(0, 512)), `${output.path} carries the line-comment stamp`);
+            assert.ok(!hasFrontmatterStamp(output.content), `${output.path} does not use the frontmatter form`);
+          }
         } else {
           assert.ok(hasFrontmatterStamp(output.content), `${output.path} (${output.resource.kind}) carries aof-generated: true frontmatter`);
         }
@@ -112,11 +130,12 @@ export const archTests = [
           // Exactly-one-form still holds: whichever line-comment syntax the file's own
           // language uses (`#` for a frontmatter-bearing document, `//` for a script),
           // and NEITHER document form — no HTML comment, no frontmatter key (F-18).
-          const assetStamp = output.path.endsWith(".md")
-            ? /^\s*#\s*aof-generated:/m
-            : /^\s*\/\/\s*aof-generated:/m;
-          assert.ok(!hasComment && !hasFrontmatter, `${output.path} uses neither of the document forms`);
-          assert.ok(assetStamp.test(output.content.slice(0, 512)), `${output.path} has only the line-comment form`);
+          if (output.path.endsWith(".md")) {
+            assert.equal(assetStampForms(output.content).length, 1, `${output.path} has exactly one stamp form (169/01)`);
+          } else {
+            assert.ok(!hasComment && !hasFrontmatter, `${output.path} uses neither of the document forms`);
+            assert.ok(/^\s*\/\/\s*aof-generated:/m.test(output.content.slice(0, 512)), `${output.path} has only the line-comment form`);
+          }
         } else if (isTemplate) {
           assert.ok(hasComment && !hasFrontmatter, `${output.path} has only the comment form`);
         } else {
