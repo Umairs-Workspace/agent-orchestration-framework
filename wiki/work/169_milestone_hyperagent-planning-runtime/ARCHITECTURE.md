@@ -190,6 +190,25 @@ ever reads, and an import never refreshes it.
 recorded it), and its `.gitattributes` pin goes with it. Updating an uploaded skill stays a manual
 edit in Hyperagent, which the hand-over says.
 
+## ADR-008: The package also carries one zip of the seven skills
+
+**Status:** Accepted (operator, 2026-10-23)
+**Date:** 2026-10-23
+
+**Context.** Measured on 2026-10-23. Hyperagent's Upload file takes a `.zip`, and uploading one opens
+a thread whose agent unpacks it and drafts one skill per `<id>/SKILL.md` folder. The operator
+uploaded a trial zip with that layout and saved the seven drafts, and the account then held the seven
+`aof-*` skills.
+
+**Decision.**
+- **The zip.** The `package` verb also writes `<aof home>/hyperagent/aof-hyperagent-skills.zip`.
+  It holds `<id>/SKILL.md` for each of the seven skills and nothing else, and is built by core's
+  deterministic stored-zip writer (165/ADR-005), injected lazily like the aof home.
+- **The hand-over.** It names the zip first. The loose `SKILL.md` files stay as the
+  one-at-a-time fallback.
+- **The doctor.** It compares the zip's bytes with the zip the installed aof would write, so a
+  missing or differing zip reads `missing` or `stale` like any other package file.
+
 ---
 
 ## Fitness functions

@@ -13,13 +13,32 @@ import { parsePlanResult } from "../src/plan-result.mjs";
 import { checkPlanBranch, inPlanningLane } from "../src/check.mjs";
 import { inspectHyperagentSetup, codexServerName } from "../src/doctor.mjs";
 import { BRIEF_MODES } from "../src/commands.mjs";
-import { PACKAGE_FILES, writeHyperagentPackage } from "../src/package.mjs";
+import { PACKAGE_FILES, PLANNER_SKILLS, SKILLS_ZIP, writeHyperagentPackage } from "../src/package.mjs";
+// The zip writer core injects (169/ADR-008): its own deterministic stored-zip module (165/ADR-005).
+import { zipStored } from "../../core/src/planning/stored-zip.mjs";
 import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // The package's own planner files, read the way core's injected reader resolves them in dev.
 const ASSETS = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "assets");
 const readPlannerFile = (relative) => readFile(path.join(ASSETS, relative), "utf8");
+const zipFiles = async (fileMap) => zipStored(fileMap);
+
+// The entries of a STORED zip, read from its local headers: { name → utf8 text }.
+function zipEntries(bytes) {
+  const buffer = Buffer.from(bytes);
+  const entries = {};
+  let offset = 0;
+  while (offset + 30 <= buffer.length && buffer.readUInt32LE(offset) === 0x04034b50) {
+    const size = buffer.readUInt32LE(offset + 18);
+    const nameLength = buffer.readUInt16LE(offset + 26);
+    const extraLength = buffer.readUInt16LE(offset + 28);
+    const start = offset + 30 + nameLength + extraLength;
+    entries[buffer.subarray(offset + 30, offset + 30 + nameLength).toString("utf8")] = buffer.subarray(start, start + size).toString("utf8");
+    offset = start + size;
+  }
+  return entries;
+}
 
 // The `package` verb with the two services core injects, pointed at a temp aof home.
 function packageVerb(aofHome) {
@@ -29,6 +48,7 @@ function packageVerb(aofHome) {
     validateWork: async () => [],
     readJson: async () => ({}),
     aofHome: async () => aofHome,
+    zipFiles,
     readPackageAsset: async (packageName, relative) => {
       assert.equal(packageName, "@aof/integration-hyperagent");
       return readPlannerFile(relative);
@@ -246,7 +266,7 @@ export const hyperagentPackageTests = [
       await mkdir(project, { recursive: true });
       await mkdir(path.join(home, ".codex"), { recursive: true });
       const aofHome = path.join(dir, "aof-home");
-      const inspect = (config) => inspectHyperagentSetup({ projectRoot: project, config, homeDir: home, aofHome, readPlannerFile });
+      const inspect = (config) => inspectHyperagentSetup({ projectRoot: project, config, homeDir: home, aofHome, readPlannerFile, zipFiles });
       const empty = await inspect({});
       assert.equal(empty.ready, false);
       assert.equal(empty.claude.registered, false);
@@ -257,7 +277,7 @@ export const hyperagentPackageTests = [
 
       await writeFile(path.join(project, ".mcp.json"), JSON.stringify({ mcpServers: { ha: { type: "http", url: "https://hyperagent.com/api/mcp" } } }));
       await writeFile(path.join(home, ".codex", "config.toml"), '[mcp_servers.hyper]\nurl = "https://hyperagent.com/api/mcp"\n');
-      await writeHyperagentPackage({ aofHome, readPlannerFile });
+      await writeHyperagentPackage({ aofHome, readPlannerFile, zipFiles });
       assert.equal((await inspect({})).ready, false, "not ready while the integration is off");
       const ready = await inspect({ work: { integrations: { hyperagent: {} } } });
       assert.equal(ready.ready, true);
@@ -270,15 +290,15 @@ export const hyperagentPackageTests = [
   },
   ...[
     { example: "E9", state: "absent", prepare: async () => {}, report: "missing", hinted: true },
-    { example: "", state: "different from the installed aof's files", prepare: async (aofHome) => { await writeHyperagentPackage({ aofHome, readPlannerFile }); await writeFile(path.join(aofHome, "hyperagent", "skills", "aof-prd", "SKILL.md"), "an older aof's text\n"); }, report: "stale", hinted: true },
-    { example: "", state: "identical to the installed aof's files", prepare: async (aofHome) => { await writeHyperagentPackage({ aofHome, readPlannerFile }); }, report: "current", hinted: false }
+    { example: "", state: "different from the installed aof's files", prepare: async (aofHome) => { await writeHyperagentPackage({ aofHome, readPlannerFile, zipFiles }); await writeFile(path.join(aofHome, "hyperagent", "skills", "aof-prd", "SKILL.md"), "an older aof's text\n"); }, report: "stale", hinted: true },
+    { example: "", state: "identical to the installed aof's files", prepare: async (aofHome) => { await writeHyperagentPackage({ aofHome, readPlannerFile, zipFiles }); }, report: "current", hinted: false }
   ].map((row) => ({
     name: `169/02 ${row.example ? `${row.example} ` : ""}outline — the doctor reports the package as "${row.report}" when it is ${row.state}`,
     run: async () => withDir(async (dir) => {
       const aofHome = path.join(dir, "aof-home");
       await mkdir(path.join(dir, "project"), { recursive: true });
       await row.prepare(aofHome);
-      const result = await inspectHyperagentSetup({ projectRoot: path.join(dir, "project"), config: {}, homeDir: path.join(dir, "home"), aofHome, readPlannerFile });
+      const result = await inspectHyperagentSetup({ projectRoot: path.join(dir, "project"), config: {}, homeDir: path.join(dir, "home"), aofHome, readPlannerFile, zipFiles });
       assert.equal(result.package.state, row.report);
       assert.equal(result.package.dir, path.join(aofHome, "hyperagent"));
       assert.equal(result.hints.some((hint) => hint.includes("aof work integrations hyperagent package")), row.hinted, row.hinted ? "a hint names the package verb" : "no hint names the package verb");
@@ -322,7 +342,7 @@ export const hyperagentPackageTests = [
         }
       }
       await walk(path.join(aofHome, "hyperagent"));
-      assert.deepEqual(listing.sort(), [...PACKAGE_FILES].sort(), "the folder holds exactly the package's files");
+      assert.deepEqual(listing.sort(), [...PACKAGE_FILES, SKILLS_ZIP].sort(), "the folder holds exactly the package's files");
     })
   },
   {
@@ -339,9 +359,55 @@ export const hyperagentPackageTests = [
     })
   },
   {
+    name: "169/03 E1/E2 · the package verb writes one zip holding <id>/SKILL.md for each of the seven skills, byte-identical, and the same bytes every run",
+    run: async () => withDir(async (dir) => {
+      const aofHome = path.join(dir, "aof-home");
+      const command = packageVerb(aofHome);
+      const result = await command.run({});
+      const zipPath = path.join(aofHome, "hyperagent", SKILLS_ZIP);
+      assert.ok(result.files.includes(zipPath), "the zip is among the written files");
+      const first = await readFile(zipPath);
+      const entries = zipEntries(first);
+      assert.deepEqual(Object.keys(entries).sort(), PLANNER_SKILLS.map((id) => `${id}/SKILL.md`).sort(), "the seven skills and nothing else");
+      for (const id of PLANNER_SKILLS) assert.equal(entries[`${id}/SKILL.md`], await readPlannerFile(`skills/${id}/SKILL.md`), `${id} is the package's own bytes`);
+      await command.run({});
+      assert.ok(first.equals(await readFile(zipPath)), "a second run writes the same zip bytes");
+    })
+  },
+  {
+    name: "169/03 E3/E4 · the hand-over leads with the zip and keeps each SKILL.md as the fallback; a dry run names the zip and writes nothing",
+    run: async () => withDir(async (dir) => {
+      const aofHome = path.join(dir, "aof-home");
+      const command = packageVerb(aofHome);
+      const dry = command.cli.render(await command.run({ dryRun: true }));
+      const zipPath = path.join(aofHome, "hyperagent", SKILLS_ZIP);
+      assert.ok(dry.includes(zipPath), "the dry run names the zip");
+      assert.equal(existsSync(aofHome), false, "nothing was written");
+      const text = command.cli.render(await command.run({}));
+      const steps = text.slice(text.indexOf("Upload these"));
+      const zipAt = steps.indexOf(zipPath);
+      assert.ok(zipAt >= 0, "the steps name the zip by its full path");
+      for (const id of PLANNER_SKILLS) assert.ok(steps.indexOf(path.join(aofHome, "hyperagent", "skills", id, "SKILL.md")) > zipAt, `${id}'s SKILL.md follows the zip as the fallback`);
+    })
+  },
+  ...[
+    { example: "E5", state: "absent", prepare: (aofHome) => rm(path.join(aofHome, "hyperagent", SKILLS_ZIP)), report: "missing" },
+    { example: "", state: "holding an older skill's text", prepare: async (aofHome) => writeFile(path.join(aofHome, "hyperagent", SKILLS_ZIP), zipStored({ "aof-prd/SKILL.md": "an older aof's text\n" })), report: "stale" }
+  ].map((row) => ({
+    name: `169/03 ${row.example ? `${row.example} ` : ""}outline — the doctor reports the package as "${row.report}" when its zip is ${row.state}`,
+    run: async () => withDir(async (dir) => {
+      const aofHome = path.join(dir, "aof-home");
+      await mkdir(path.join(dir, "project"), { recursive: true });
+      await writeHyperagentPackage({ aofHome, readPlannerFile, zipFiles });
+      await row.prepare(aofHome);
+      const result = await inspectHyperagentSetup({ projectRoot: path.join(dir, "project"), config: {}, homeDir: path.join(dir, "home"), aofHome, readPlannerFile, zipFiles });
+      assert.equal(result.package.state, row.report);
+    })
+  })),
+  {
     name: "169/02 E6 · the contribution registers brief, result, check, doctor and package under `aof work integrations hyperagent`",
     run: async () => {
-      const commands = contribution.commands({ commandError: (message, code) => Object.assign(new Error(message), { code }), gitExec: async () => ({ status: 1, stdout: "", stderr: "" }), validateWork: async () => [], readJson: async () => ({}), aofHome: async () => "/home", readPackageAsset: async () => "" });
+      const commands = contribution.commands({ commandError: (message, code) => Object.assign(new Error(message), { code }), gitExec: async () => ({ status: 1, stdout: "", stderr: "" }), validateWork: async () => [], readJson: async () => ({}), aofHome: async () => "/home", readPackageAsset: async () => "", zipFiles });
       assert.deepEqual(commands.map((command) => command.id), ["hyperagent:brief", "hyperagent:result", "hyperagent:check", "hyperagent:doctor", "hyperagent:package"]);
       for (const command of commands) assert.deepEqual(command.cli.route.slice(0, 3), ["work", "integrations", "hyperagent"]);
       const briefCommand = commands[0];

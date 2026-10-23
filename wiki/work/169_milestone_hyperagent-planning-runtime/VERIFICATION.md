@@ -102,6 +102,35 @@ dir. The exit code and both streams were read.
   upload steps. Then `aof work integrations hyperagent doctor` reported `Planner package: current`,
   with Claude Code MCP `registered as "hyperagent" (.mcp.json)`.
 
+### 169/03 · The Hyperagent package carries one zip — the story's own lanes
+
+Run foreground on 2026-10-23 with `AOF_GLOBAL_HOME` isolated. The exit code and both streams were read.
+
+- **`node scripts/test.mjs --only`** over the package suite, the registry, cli-entry and
+  command-layer arch controls, application assembly and bundle membership — exit 0,
+  `executed 51 cases; failures 0`.
+  - E1/E2: the zip holds exactly the seven `<id>/SKILL.md` entries. Each is byte-identical to the
+    package's file (read back from the zip's local headers), and a second run writes the same bytes.
+  - E3/E4: the steps name the zip first and every `SKILL.md` after it; the dry run names the zip and
+    writes nothing.
+  - E5: the two doctor rows, a missing zip reading `missing` and an older zip reading `stale`.
+  `verifies → tasks/00_the-package-verb-writes-one-zip.feature`
+- **`node test/integration/cli.mjs lifecycle`** — exit 0, 61 `ok`, 0 `not ok`. The package scenario's
+  stdout names `aof-hyperagent-skills.zip`.
+- **`node scripts/workspace-boundaries.mjs`** — `"findings": []`. The package's suite takes core's
+  zip writer as a test collaborator, and the package's src imports nothing from core.
+- **At the source.** `aof work integrations hyperagent package` was run against the real aof home:
+  exit 0, and `~/.aof/hyperagent/aof-hyperagent-skills.zip` was written (51,575 bytes). Windows'
+  own `System.IO.Compression.ZipFile` opens it and lists the seven `aof-*/SKILL.md` entries. The
+  doctor reports `Planner package: current`.
+- **E6 (`@manual`), the operator's run, 2026-10-23.** A trial zip with the same `<id>/SKILL.md`
+  layout was uploaded through Create skill → Upload file. It was built by PowerShell
+  `Compress-Archive` from the package, before the verb wrote one, so it is the same layout but not
+  the same bytes. Its import thread drafted the seven skills, and the operator's Skills list then
+  showed `aof-validate`, `aof-refine`, `aof-add-task`, `aof-add-story`, `aof-add-milestone`,
+  `aof-shatter` and `aof-prd`, installed Oct 23, 2026.
+  `verifies → tasks/00_the-package-verb-writes-one-zip.feature` (E6)
+
 ## Fitness functions
 
 | id | enforced by | result | red probe |
@@ -135,3 +164,8 @@ controls are 47/47. E8 was measured on this repository: its update deleted exact
 `aof work validate 169/02` passes, and no blocker finding is open (F-06 is closed by this story).
 Carried forward: F-02's sidecar-writer gap, held in 169/01's OUTCOME (its discharge condition now names the `package` verb). The milestone's
 regression gate must re-run over this change before 169 is accepted.
+
+**ACCEPTED (169/03)** — 2026-10-23. The story's own lanes are green (51/51 cases, the lifecycle
+feature 61/61), the workspace boundaries are clean, and the zip was measured at the source. E6 is the
+operator's upload of a same-layout zip, and its bytes differ from the verb's, as stated above.
+`aof work validate 169/03` passes, and no blocker finding is open.

@@ -35,7 +35,7 @@ written **once, to the aof home** (`~/.aof`, or `AOF_GLOBAL_HOME`), by one verb 
 way the Cowork packages are:
 
 ```text
-aof work integrations hyperagent package [--dry-run]   # writes ~/.aof/hyperagent/ and prints the upload steps
+aof work integrations hyperagent package [--dry-run]   # writes ~/.aof/hyperagent/ (+ aof-hyperagent-skills.zip) and prints the upload steps
 ```
 
 aof owns `~/.aof/hyperagent/` whole and rebuilds it on every run. The verb writes nothing in the
@@ -65,8 +65,9 @@ gate the operator runs on the branch.
 ## Set it up in Hyperagent
 
 1. Run `aof work integrations hyperagent package`. It writes `~/.aof/hyperagent/` and names each file.
-2. In Hyperagent, for each of the seven skills: **Skills → Create skill → Upload file** with its
-   `SKILL.md` (the dialog takes a JSON or Markdown skill file, or a `.zip` package).
+2. In Hyperagent: **Skills → Create skill → Upload file** with `~/.aof/hyperagent/aof-hyperagent-skills.zip`
+   (169/ADR-008). Its import thread drafts the seven skills; save them. Or upload each
+   `~/.aof/hyperagent/skills/aof-*/SKILL.md` one at a time.
 3. Create a named agent from `~/.aof/hyperagent/AGENT.md`, give it the uploaded skills, and connect
    the GitHub integration for the repositories it should plan.
 4. Ask it for a plan. Each step ends in a draft pull request; on the branch the operator runs

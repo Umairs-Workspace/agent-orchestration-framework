@@ -40,7 +40,7 @@ function asError(commandError, error) {
   return error?.code && /^hyperagent-/.test(error.code) ? commandError(error.message, error.code, 400) : error;
 }
 
-export function createHyperagentCommands({ commandError, gitExec, validateWork, readJson, aofHome, readPackageAsset }) {
+export function createHyperagentCommands({ commandError, gitExec, validateWork, readJson, aofHome, readPackageAsset, zipFiles }) {
   const readPlannerFile = (relative) => readPackageAsset(PACKAGE_NAME, relative);
 
   async function remoteRepo(projectRoot) {
@@ -243,7 +243,7 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
     input: { type: "object", properties: {}, additionalProperties: false },
     async run(_input, ctx) {
       const { inspectHyperagentSetup } = await lazy.doctor();
-      return inspectHyperagentSetup({ projectRoot: ctx.workspace.projectRoot, config: ctx.workspace.config, aofHome: await aofHome(), readPlannerFile });
+      return inspectHyperagentSetup({ projectRoot: ctx.workspace.projectRoot, config: ctx.workspace.config, aofHome: await aofHome(), readPlannerFile, zipFiles });
     },
     cli: {
       route: [...ROUTE, "doctor"],
@@ -272,7 +272,7 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
     },
     async run(input) {
       const { writeHyperagentPackage } = await lazy.package();
-      return writeHyperagentPackage({ aofHome: await aofHome(), readPlannerFile, dryRun: input.dryRun === true });
+      return writeHyperagentPackage({ aofHome: await aofHome(), readPlannerFile, zipFiles, dryRun: input.dryRun === true });
     },
     cli: {
       route: [...ROUTE, "package"],

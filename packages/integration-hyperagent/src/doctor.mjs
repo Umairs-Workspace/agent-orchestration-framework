@@ -69,11 +69,11 @@ async function codexRegistration(projectRoot, homeDir) {
   return { registered: false, name: null, source: null };
 }
 
-export async function inspectHyperagentSetup({ projectRoot, config, aofHome, readPlannerFile, homeDir = os.homedir() }) {
+export async function inspectHyperagentSetup({ projectRoot, config, aofHome, readPlannerFile, zipFiles, homeDir = os.homedir() }) {
   const [claude, codex, plannerPackage] = await Promise.all([
     claudeRegistration(projectRoot, homeDir),
     codexRegistration(projectRoot, homeDir),
-    inspectHyperagentPackage({ aofHome, readPlannerFile })
+    inspectHyperagentPackage({ aofHome, readPlannerFile, zipFiles })
   ]);
   const settings = readHyperagentConfig(config);
   const hints = [];

@@ -137,6 +137,7 @@ Feature: AOF CLI lifecycle
     And stdout should contain `Wrote the Hyperagent package to`
     And stdout should contain `skills`
     And stdout should contain `Create skill`
+    And stdout should contain `aof-hyperagent-skills.zip`
     And file `.hyperagent/AGENT.md` should not exist
     When I run `work integrations hyperagent package --dry-run`
     Then the command should succeed

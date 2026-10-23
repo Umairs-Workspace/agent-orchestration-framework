@@ -61,6 +61,7 @@ Out of scope:
 - [ ] 00 — Hyperagent plans the work, assimilated from the delivered branch work
 - [x] 01 — integration packages are self-contained, and Hyperagent is an integration rather than a runtime
 - [x] 02 — the Hyperagent package lives in the aof home, written by one verb for upload; no project renders it
+- [x] 03 — the Hyperagent package carries one zip of the seven skills, the single upload Hyperagent's dialog takes
 
 ## Dependencies
 

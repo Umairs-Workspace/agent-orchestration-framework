@@ -52,7 +52,7 @@ import { packagesAddCommand } from "../../commands/packages-add.mjs";
 import { packagesRemoveCommand } from "../../commands/packages-remove.mjs";
 
 // 169/ADR-007 — an integration that writes to the aof home (`~/.aof`, or AOF_GLOBAL_HOME) or reads
-// its own package's files is handed both, lazily, so a CLI path that never runs such a verb loads
+// its own package's files is handed both (and, 169/ADR-008, a zip writer), lazily, so a CLI path that never runs such a verb loads
 // neither module (FF-16004).
 async function integrationAofHome() {
   const { defaultGlobalWorkspaceDir } = await import("../../paths.mjs");
@@ -62,6 +62,12 @@ async function integrationAofHome() {
 async function integrationReadPackageAsset(packageName, relativePath) {
   const { packageAssetClass, readAssetText } = await import("../../asset-base.mjs");
   return readAssetText(packageAssetClass(packageName), relativePath);
+}
+
+// 169/ADR-008 — core's deterministic stored-zip writer (165/ADR-005), for an integration that ships one.
+async function integrationZipFiles(fileMap) {
+  const { zipStored } = await import("../../planning/stored-zip.mjs");
+  return zipStored(fileMap);
 }
 
 // One command contribution per registered integration that ships verbs, named by its package.
@@ -275,7 +281,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     ]),
     createWorkContribution([migrateFolderCommand]),
     createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
-    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset }),
+    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset, zipFiles: integrationZipFiles }),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,
