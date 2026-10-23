@@ -55,7 +55,7 @@
           },
           "runtimes": {
             "type": "array",
-            "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+            "items": { "enum": ["claude", "codex", "opencode"] }
           }
         },
         "additionalProperties": true
@@ -82,7 +82,7 @@
     },
     "runtimes": {
       "type": "array",
-      "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+      "items": { "enum": ["claude", "codex", "opencode"] }
     }
   },
   "$defs": {
@@ -143,7 +143,7 @@
         "description": { "type": "string" },
         "runtimes": {
           "type": "array",
-          "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+          "items": { "enum": ["claude", "codex", "opencode"] }
         },
         "body": { "type": "string" },
         "path": { "type": "string" },
@@ -165,7 +165,7 @@
         "description": { "type": "string" },
         "runtimes": {
           "type": "array",
-          "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+          "items": { "enum": ["claude", "codex", "opencode"] }
         },
         "body": { "type": "string" },
         "prompt": { "type": "string" },
@@ -207,8 +207,7 @@
           "properties": {
             "claude": { "$ref": "#/$defs/runtimeOverride" },
             "codex": { "$ref": "#/$defs/runtimeOverride" },
-            "opencode": { "$ref": "#/$defs/runtimeOverride" },
-            "hyperagent": { "$ref": "#/$defs/runtimeOverride" }
+            "opencode": { "$ref": "#/$defs/runtimeOverride" }
           },
           "additionalProperties": false
         }
@@ -298,7 +297,7 @@
         },
         "runtimes": {
           "type": "array",
-          "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+          "items": { "enum": ["claude", "codex", "opencode"] }
         },
         "claude": {
           "type": "object",
@@ -322,7 +321,7 @@
         "command": { "type": "string" },
         "runtimes": {
           "type": "array",
-          "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+          "items": { "enum": ["claude", "codex", "opencode"] }
         },
         "claude": {
           "type": "object",
@@ -348,7 +347,7 @@
         },
         "runtimes": {
           "type": "array",
-          "items": { "enum": ["claude", "codex", "opencode", "hyperagent"] }
+          "items": { "enum": ["claude", "codex", "opencode"] }
         },
         "claude": {
           "type": "object",
@@ -649,7 +648,7 @@
             "hyperagent": {
               "type": "object",
               "additionalProperties": false,
-              "description": "OPTIONAL Hyperagent planning delegation (`/aof:hyperplan`, @aof/integration-hyperagent; wiki/hyperagent-support.md). ABSENT ⇒ the defaults. No credential ever lives here: the assistant's own MCP connection to Hyperagent is authorised by OAuth in the assistant.",
+              "description": "OPTIONAL Hyperagent planning delegation (`/aof:hyperplan`, @aof/integration-hyperagent; wiki/hyperagent-support.md). PRESENT (an empty object is enough) ⇒ the integration is enabled: `aof work init|update` renders `/aof:hyperplan` and `.hyperagent/`, with these defaults for any key left out. ABSENT ⇒ off, and an update removes those files. No credential ever lives here: the assistant's own MCP connection to Hyperagent is authorised by OAuth in the assistant.",
               "properties": {
                 "agent": { "type": "string", "minLength": 1, "default": "AOF Planner", "description": "The Hyperagent agent that plans (matched case-insensitively against the agents the MCP server lists)." },
                 "baseBranch": { "type": ["string", "null"], "default": null, "description": "The branch plans are cut from and checked against. null ⇒ origin's HEAD, then main." },

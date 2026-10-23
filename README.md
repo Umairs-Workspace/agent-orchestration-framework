@@ -120,15 +120,15 @@ Live lifecycle and repeated prompt-performance acceptance remain pending.
 
 ### Planning in Hyperagent (opt-in)
 
-`aof work init --runtime hyperagent` renders the **planning** procedures — `aof-prd`, `aof-shatter`,
-`aof-refine`, `aof-add-milestone` / `-story` / `-task` and `aof-validate` — as importable `SKILL.md`
-files under `.hyperagent/skills/`, plus `.hyperagent/AGENT.md` instructions for an "AOF Planner"
-agent. Import them with Hyperagent's *Import from GitHub*: the planner researches and writes the PRD,
+Add `"hyperagent": {}` under `work.integrations` in `.aof/aof.config.json` and run `aof work update`:
+it renders the **planning** procedures — `aof-prd`, `aof-shatter`, `aof-refine`,
+`aof-add-milestone` / `-story` / `-task` and `aof-validate` — as importable `SKILL.md` files under
+`.hyperagent/skills/`, plus `.hyperagent/AGENT.md` instructions for an "AOF Planner" agent. Import them with Hyperagent's *Import from GitHub*: the planner researches and writes the PRD,
 shatters it into backlog drivers, refines promoted milestones into stories and task contracts, and
 delivers every step as a draft pull request that `aof work validate` gates on its branch. Hyperagent
-never builds or verifies, and the runtime is never assumed — a project that does not name it renders
-nothing new. From Claude Code or Codex, `/aof:hyperplan <request>` delegates that planning over
-Hyperagent's MCP endpoint and checks the returned branch. The integration lives in
+never builds or verifies, and it is an integration, not a runtime — a project without the block
+renders nothing of it. From Claude Code or Codex, `/aof:hyperplan <request>` delegates that planning over
+Hyperagent's MCP endpoint and checks the returned branch. The integration — its verbs and its prompts — lives in
 `packages/integration-hyperagent`. See the [Hyperagent guide](wiki/hyperagent-support.md).
 
 ### Model selection (orchestrator, roles, and gpt-5.6-sol)

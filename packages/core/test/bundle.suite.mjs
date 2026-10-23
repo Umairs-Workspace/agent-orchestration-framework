@@ -85,8 +85,9 @@ const COMMAND_IDS = [
 const TEMPLATE_IDS = ["chore", "milestone", "prototype", "shared", "spike", "story", "task", "uat"];
 // The bundled gpt-5.6 delegation skills — how the ACD agents reach the configured
 // delegation model (default gpt-5.6-sol; see work-delegation.test.mjs).
-// The three Claude-only codex delegation recipes, plus the Hyperagent-only planning skill.
-const SKILL_IDS = ["aof-prd", "codex-computer-use", "codex-implementation", "codex-review"];
+// The three Claude-only codex delegation recipes. (Hyperagent's planning skills are the
+// integration's own `asset` members since 169/01, not skills of core's.)
+const SKILL_IDS = ["codex-computer-use", "codex-implementation", "codex-review"];
 
 // THE HOOK MEMBERS, ALL OF THEM. This list is the membership gate, so it moves with
 // the code (m46/ADR-006): m43 added `claude-artifact-sync` (a `hook`) and
@@ -229,7 +230,7 @@ export const bundleTests = [
   // ====================================================================
 
   {
-    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 35 commands, 8 templates, 4 skills, 12 hooks)",
+    name: "bundle/source-tree: the bundle root holds the complete ACD actor set (8 agents, 35 commands, 8 templates, 3 skills, 12 hooks)",
     run: async () => {
       const ids = new Set(memberIds());
       for (const id of AGENT_IDS) assert.ok(ids.has(id), `missing agent ${id}`);
@@ -239,8 +240,8 @@ export const bundleTests = [
       const byKind = (kind) => descriptorMembers().filter((m) => m.kind === kind).length;
       for (const id of HOOK_IDS) assert.ok(ids.has(id), `missing hook ${id}`);
       assert.equal(byKind("agent"), 8, "8 agents");
-      assert.equal(byKind("command"), 35, "35 commands (hyperplan — the Hyperagent planning delegation — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — questions, 163 — and prototype, 168)");
-      assert.equal(byKind("skill"), 4, "3 codex delegation skills + the Hyperagent aof-prd skill");
+      assert.equal(byKind("command"), 35, "35 commands (hyperplan — the Hyperagent planning delegation, contributed by @aof/integration-hyperagent since 169/01 — incl. the 4 insert-* placement twins, `promote` — the one mint, 127/02 — `archive` — the move, 127/03 — assimilate-code, delegate, observe, init, pay-debt, loop-diagram, 145 — repair, 147 — explain, 150 — add-diagram, 151 — questions, 163 — and prototype, 168)");
+      assert.equal(byKind("skill"), 3, "3 codex delegation skills");
       assert.equal(byKind("template"), 8, "milestone/story/task/uat/spike/chore/prototype templates + the type-agnostic `shared` (OUTCOME.md)");
       assert.equal(byKind("hook"), 12, "12 hooks: 3 Codex session-presence + 3 Claude session-presence + 3 OpenCode session-presence + artifact-sync + run-heartbeat + ask-pending (136/03)");
     }
@@ -346,7 +347,7 @@ export const bundleTests = [
       assert.deepEqual(
         members.filter((m) => m.kind === "skill").map((m) => m.id).sort(),
         [...SKILL_IDS].sort(),
-        "3 codex delegation skills + aof-prd declared as kind skill"
+        "3 codex delegation skills declared as kind skill"
       );
     }
   },

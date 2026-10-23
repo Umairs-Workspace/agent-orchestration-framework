@@ -9,6 +9,20 @@ import assert from "node:assert/strict";
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { readDescriptor, bundleRoot } from "../../../packages/core/src/work/bundle.mjs";
+import { assetPath } from "../../../packages/core/src/asset-base.mjs";
+
+// 169/ADR-004 — a member is read from its OWN package's assets: core's members from the bundle root,
+// an integration's from that package's assets/. Each root's files are checked against the members
+// it owns, so neither tree may hold an undeclared file or miss a declared one.
+function memberRoots(descriptor) {
+  const roots = new Map();
+  for (const member of descriptor.members) {
+    const assetClass = member.assetClass ?? "bundle";
+    if (!roots.has(assetClass)) roots.set(assetClass, { root: assetPath(assetClass), descriptor: { members: [], references: assetClass === "bundle" ? descriptor.references : [] } });
+    roots.get(assetClass).descriptor.members.push(member);
+  }
+  return [...roots.values()];
+}
 
 // The 8 ACD agents (product-owner, researcher, architect, designer, developer,
 // qa, security, compliance) — the frozen actor set.
@@ -73,7 +87,13 @@ export const archTests = [
     name: "arch/ADR-001/002: declared-member set equals the set of member files in the bundle root (no undeclared file, no missing member)",
     run: async () => {
       const root = bundleRoot();
-      const descriptor = readDescriptor();
+      const owned = memberRoots(readDescriptor());
+      for (const { root: memberRoot, descriptor: rootDescriptor } of owned) {
+        const files = bundleFiles(memberRoot).filter((rel) => !NON_MEMBER_FILES.has(rel)).sort();
+        assert.deepEqual(files, declaredBundleFiles(rootDescriptor, memberRoot), `${memberRoot}: files == declared member files`);
+      }
+      assert.ok(owned.length > 1, "an integration's own assets are checked too (169/ADR-004)");
+      const descriptor = owned.find((entry) => entry.root === root).descriptor;
 
       // Every file on disk (minus machinery) must be a declared member file.
       const onDisk = bundleFiles(root).filter((rel) => !NON_MEMBER_FILES.has(rel));
@@ -90,9 +110,9 @@ export const archTests = [
   {
     name: "arch/ADR-001: every declared member resolves to an existing path on disk",
     run: async () => {
-      const root = bundleRoot();
       for (const member of readDescriptor().members) {
         const target = member.file ?? member.dir;
+        const root = assetPath(member.assetClass ?? "bundle");
         assert.doesNotThrow(() => statSync(path.join(root, target)), `member ${member.id} exists at ${target}`);
       }
     }

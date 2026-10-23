@@ -1,33 +1,27 @@
 import { assets } from "./support/assets-services.mjs";
-// The Hyperagent PLANNING runtime (wiki/hyperagent-support.md;
-// wiki/work/backlog/milestone_hyperagent-planning-runtime/SPEC.md).
-//
-// Hyperagent is an opt-in runtime that renders the planning subset of the ACD bundle — the six
-// command procedures that carry a `hyperagent` variant, plus the Hyperagent-only `aof-prd` skill
-// and the planner instructions asset — as importable SKILL.md files under `.hyperagent/`. These
-// cases pin the three properties the change rests on:
-//   1. opt-in: it is ACCEPTED when named and never ASSUMED when no runtime is named;
-//   2. subset: only variant-carrying commands render, every other procedure reports
-//      `outside-runtime-subset` (not a capability gap), and agents are not installable;
-//   3. no drift for everyone else: the claude/codex render is untouched.
+// 169/01 — Hyperagent is an INTEGRATION, not a runtime (169/ADR-001, ADR-004, ADR-005;
+// wiki/hyperagent-support.md). Its bundle members live in @aof/integration-hyperagent/assets and reach
+// core's descriptor through the package's contribution; they render only for a project whose config
+// carries `work.integrations.hyperagent`, in a dev checkout and a packaged sidecar alike. The model
+// knows exactly claude, codex and opencode, and core's own assets hold none of Hyperagent's files.
 import assert from "node:assert/strict";
-import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, writeFile, mkdir, cp, readdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { supportedRuntimes, defaultRuntimes, RUNTIMES, CAPABILITIES, CAPABILITY_STATUS } from "../src/model.mjs";
-import { renderConfigOutputs } from "../src/adapters.mjs";
+import { RUNTIMES, CAPABILITIES, supportedRuntimes } from "../src/model.mjs";
 import { parseRuntimes } from "../src/spine/flags.mjs";
-import { loadBundle, renderBundleOutputs } from "../src/work/bundle.mjs";
-import { partitionByCapability, OUTSIDE_RUNTIME_SUBSET } from "../src/work/bundle-runtime.mjs";
-import { readLock } from "../src/lock.mjs";
+import { readDescriptor, loadBundle } from "../src/work/bundle.mjs";
+import { assetPath, setSeaSentinelForTest, setSidecarAnchorForTest } from "../src/asset-base.mjs";
 import { updateWork } from "../src/work/update.mjs";
-import { HYPERAGENT_RUNTIME, HYPERAGENT_CAPABILITIES } from "@aof/integration-hyperagent/runtime";
 
 const initWork = assets.work.init.initWork;
 
-const PLANNING_COMMANDS = ["add-milestone", "add-story", "add-task", "refine", "shatter", "validate"];
-const HYPERAGENT_SKILLS = [...PLANNING_COMMANDS.map((id) => `aof-${id}`), "aof-prd"].sort();
+const SKILLS = ["add-milestone", "add-story", "add-task", "prd", "refine", "shatter", "validate"].map((id) => `aof-${id}`);
+const MEMBERS = ["hyperplan", "hyperagent-planner-instructions", ...SKILLS];
+const PACKAGE_ASSETS = path.resolve(import.meta.dirname, "..", "..", "integration-hyperagent", "assets");
+const HYPERAGENT_FILES = [".hyperagent/AGENT.md", ...SKILLS.map((id) => `.hyperagent/skills/${id}/SKILL.md`)];
+const HYPERPLAN = ".claude/commands/aof/hyperplan.md";
 
 async function withTempRepo(fn) {
   const dir = await mkdtemp(path.join(os.tmpdir(), "aof-hyperagent-"));
@@ -38,141 +32,146 @@ async function withTempRepo(fn) {
   }
 }
 
-function hyperagentPartition() {
-  return partitionByCapability(loadBundle().resources, ["hyperagent"]);
+async function writeConfig(dir, config) {
+  await mkdir(path.join(dir, ".aof"), { recursive: true });
+  await writeFile(path.join(dir, ".aof", "aof.config.json"), `${JSON.stringify(config, null, 2)}\n`);
+}
+
+const ENABLED = { work: { integrations: { hyperagent: {} } } };
+
+function rendered(dir) {
+  return [HYPERPLAN, ...HYPERAGENT_FILES].filter((file) => existsSync(path.join(dir, file)));
+}
+
+// A packaged install: core's bundle beside the exe, with `extra` laid out under bundle/.
+async function withSidecar(layout, fn) {
+  return withTempRepo(async (anchor) => {
+    await cp(assetPath("bundle"), path.join(anchor, "bundle"), { recursive: true });
+    await layout(path.join(anchor, "bundle"));
+    setSeaSentinelForTest(true);
+    setSidecarAnchorForTest(anchor);
+    try {
+      return await fn(anchor);
+    } finally {
+      setSeaSentinelForTest(undefined);
+      setSidecarAnchorForTest(undefined);
+    }
+  });
 }
 
 export const hyperagentRuntimeTests = [
   {
-    name: "hyperagent/opt-in: the runtime is supported (accepted when named) but excluded from the default runtime set",
+    name: "169/01 E1 · Hyperagent's members are read from the package's assets",
     run: async () => {
-      assert.ok(supportedRuntimes().includes("hyperagent"), "hyperagent is a supported runtime");
-      assert.equal(RUNTIMES.hyperagent.optIn, true, "hyperagent is declared opt-in");
-      assert.equal(RUNTIMES.hyperagent.localRoot, ".hyperagent");
-      assert.ok(!defaultRuntimes().includes("hyperagent"), "hyperagent is never assumed");
-      assert.deepEqual(defaultRuntimes(), supportedRuntimes().filter((runtime) => runtime !== "hyperagent"),
-        "every other runtime keeps its default membership");
+      const contributed = readDescriptor().members.filter((member) => member.integration === "hyperagent");
+      assert.deepEqual(contributed.map((member) => member.id).sort(), [...MEMBERS].sort());
+      for (const member of contributed) assert.equal(member.assetClass, "package:@aof/integration-hyperagent", member.id);
+      const bundle = loadBundle();
+      const hyperplan = bundle.resources.find((resource) => resource.id === "hyperplan");
+      const source = (await readFile(path.join(PACKAGE_ASSETS, "commands", "hyperplan.md"), "utf8")).replace(/\r\n/g, "\n");
+      assert.ok(source.replace(/\r\n/g, "\n").endsWith(hyperplan.body.replace(/\r\n/g, "\n")), "hyperplan's body is the package's file");
+      for (const id of ["hyperagent-planner-instructions", ...SKILLS]) {
+        const asset = bundle.assets.find((candidate) => candidate.id === id);
+        assert.equal(asset.body, await readFile(path.join(PACKAGE_ASSETS, asset.file), "utf8"), `${id} is the package's file`);
+      }
+      const skill = bundle.assets.find((candidate) => candidate.id === "aof-refine");
+      assert.equal(skill.target, ".hyperagent/skills/aof-refine/SKILL.md");
+      assert.doesNotMatch(skill.body, /^aof-runtime:/m, "the old runtime line is gone");
     }
   },
   {
-    name: "hyperagent/opt-in: CLI runtime flags default to the non-opt-in set and accept --runtime hyperagent",
-    run: async () => {
-      assert.ok(!parseRuntimes({}).includes("hyperagent"), "no flag ⇒ no hyperagent");
-      assert.deepEqual(parseRuntimes({ runtime: "hyperagent" }), ["hyperagent"]);
-      assert.deepEqual(parseRuntimes({ runtime: "claude,hyperagent" }), ["claude", "hyperagent"]);
-    }
+    name: "169/01 E2 · a packaged binary reads them from the sidecar",
+    run: async () => withSidecar(
+      (bundle) => cp(PACKAGE_ASSETS, path.join(bundle, "packages", "integration-hyperagent"), { recursive: true }),
+      async () => {
+        const contributed = readDescriptor().members.filter((member) => member.integration === "hyperagent");
+        assert.deepEqual(contributed.map((member) => member.id).sort(), [...MEMBERS].sort());
+        const asset = loadBundle().assets.find((candidate) => candidate.id === "aof-shatter");
+        assert.equal(asset.body, await readFile(path.join(PACKAGE_ASSETS, "skills", "aof-shatter", "SKILL.md"), "utf8"));
+      }
+    )
   },
   {
-    name: "hyperagent/opt-in: an asset render with no runtimes named writes nothing under .hyperagent/",
+    name: "169/01 E3 · a contributed member id that core already declares is refused at load",
+    run: async () => withSidecar(
+      async (bundle) => {
+        await mkdir(path.join(bundle, "packages", "integration-fake"), { recursive: true });
+        await writeFile(path.join(bundle, "packages", "integration-fake", "bundle.json"), JSON.stringify({ members: [{ id: "refine", kind: "command", file: "commands/refine.md", runtimes: ["claude"] }] }));
+      },
+      async () => {
+        const fake = { id: "fake", name: "@aof/integration-fake", assets: { package: "@aof/integration-fake" } };
+        assert.throws(() => readDescriptor({ integrations: [fake] }), (error) => /"refine"/.test(error.message) && /@aof\/integration-fake/.test(error.message));
+      }
+    )
+  },
+  {
+    name: "169/01 E4 · a project with no work.integrations.hyperagent block gets neither /aof:hyperplan nor .hyperagent/",
     run: async () => withTempRepo(async (dir) => {
-      const config = { resources: [{ id: "planner-notes", kind: "skill", name: "planner-notes", description: "d", body: "b", runtimes: supportedRuntimes() }] };
-      const outputs = renderConfigOutputs(config, { targetDir: dir });
-      assert.ok(outputs.length > 0, "the default render produced outputs");
-      assert.ok(outputs.every((output) => !String(output.path).replaceAll("\\", "/").startsWith(".hyperagent/")),
-        "a default render never touches the opt-in runtime's folder");
+      await writeConfig(dir, { work: {} });
+      await initWork({ targetDir: dir, runtimes: ["claude", "codex"] });
+      assert.deepEqual(rendered(dir), []);
+      assert.ok(!existsSync(path.join(dir, ".agents", "skills", "aof-hyperplan")), "no Codex hyperplan skill either");
     })
   },
   {
-    name: "hyperagent/package: core's runtime entry and capability column ARE the package's declarations, and every status is one core knows",
+    name: "169/01 E4 · a project with \"work.integrations.hyperagent\": {} gets /aof:hyperplan and .hyperagent/",
+    run: async () => withTempRepo(async (dir) => {
+      await writeConfig(dir, ENABLED);
+      await initWork({ targetDir: dir, runtimes: ["claude", "codex"] });
+      assert.deepEqual(rendered(dir), [HYPERPLAN, ...HYPERAGENT_FILES]);
+      assert.ok(existsSync(path.join(dir, ".agents", "skills", "aof-hyperplan", "SKILL.md")), "the Codex hyperplan skill is written");
+      assert.match(await readFile(path.join(dir, ".hyperagent", "AGENT.md"), "utf8"), /AOF Planner/);
+    })
+  },
+  {
+    name: "169/01 E5 · turning the integration off removes its files on the next update",
+    run: async () => withTempRepo(async (dir) => {
+      await writeConfig(dir, ENABLED);
+      await initWork({ targetDir: dir, runtimes: ["claude", "codex"] });
+      await writeConfig(dir, { work: {} });
+      const result = await updateWork({ targetDir: dir });
+      const deleted = result.actions.filter((item) => item.action === "delete").map((item) => String(item.path).replaceAll("\\", "/")).sort();
+      assert.deepEqual(deleted, [".agents/skills/aof-hyperplan/SKILL.md", ".agents/skills/aof-hyperplan/agents/openai.yaml", HYPERPLAN, ...HYPERAGENT_FILES].sort());
+      assert.deepEqual(rendered(dir), []);
+      const changed = (await updateWork({ targetDir: dir })).actions.filter((item) => item.action !== "skip");
+      assert.deepEqual(changed, [], "a second update has nothing left to remove");
+    })
+  },
+  {
+    name: "169/01 E6 · the model knows exactly the three runtimes",
     run: async () => {
-      assert.equal(RUNTIMES.hyperagent, HYPERAGENT_RUNTIME, "core declares no Hyperagent runtime of its own");
-      const known = new Set(Object.values(CAPABILITY_STATUS));
-      for (const [kind, status] of Object.entries(HYPERAGENT_CAPABILITIES)) {
-        assert.ok(known.has(status), `${kind}: "${status}" is a core capability status`);
-        assert.equal(CAPABILITIES[kind]?.hyperagent, status, `${kind} is taken from the package`);
-      }
-      assert.deepEqual(Object.keys(HYPERAGENT_CAPABILITIES).sort(), Object.keys(CAPABILITIES).sort(), "the package covers every capability kind");
+      assert.deepEqual(Object.keys(RUNTIMES), ["claude", "codex", "opencode"]);
+      assert.deepEqual(supportedRuntimes(), ["claude", "codex", "opencode"]);
+      for (const [kind, column] of Object.entries(CAPABILITIES)) assert.deepEqual(Object.keys(column), ["claude", "codex", "opencode"], kind);
     }
   },
   {
-    name: "hyperagent/capabilities: skills are native; commands, agents and rules are not renderable outside the bundle mapping",
+    name: "169/01 E7 · naming hyperagent as a runtime is refused",
     run: async () => {
-      assert.equal(CAPABILITIES.skill.hyperagent, CAPABILITY_STATUS.native);
-      assert.equal(CAPABILITIES.command.hyperagent, CAPABILITY_STATUS.unsupportedFail);
-      assert.equal(CAPABILITIES.agent.hyperagent, CAPABILITY_STATUS.unsupportedWarning);
-      assert.equal(CAPABILITIES.rule.hyperagent, CAPABILITY_STATUS.unsupportedWarning);
+      assert.ok(!parseRuntimes({}).includes("hyperagent"), "no flag never yields hyperagent");
+      await withTempRepo(async (dir) => {
+        await assert.rejects(initWork({ targetDir: dir, runtimes: ["hyperagent"] }), /Unsupported runtime "hyperagent"/);
+        assert.ok(!existsSync(path.join(dir, ".hyperagent")));
+      });
     }
   },
   {
-    name: "hyperagent/subset: exactly the six planning commands map to aof-* skills, plus the aof-prd skill",
+    name: "169/01 E8 · core's assets hold no Hyperagent file",
     run: async () => {
-      const { installable } = hyperagentPartition();
-      assert.deepEqual(installable.map((resource) => resource.id).sort(), HYPERAGENT_SKILLS);
-      for (const resource of installable) {
-        assert.equal(resource.kind, "skill", `${resource.id} renders as a skill`);
-        assert.deepEqual(resource.runtimes, ["hyperagent"], `${resource.id} targets hyperagent only`);
-      }
-    }
-  },
-  {
-    name: "hyperagent/subset: every other command reports outside-runtime-subset and every agent is not installable",
-    run: async () => {
-      const bundle = loadBundle();
-      const { notInstallable } = hyperagentPartition();
-      const commands = bundle.resources.filter((resource) => resource.kind === "command").map((resource) => resource.id);
-      const outside = notInstallable.filter((item) => item.status === OUTSIDE_RUNTIME_SUBSET).map((item) => item.id).sort();
-      assert.deepEqual(outside, commands.filter((id) => !PLANNING_COMMANDS.includes(id)).sort());
-      const agents = notInstallable.filter((item) => item.kind === "agent");
-      assert.equal(agents.length, bundle.resources.filter((resource) => resource.kind === "agent").length);
-      assert.ok(agents.every((item) => item.status === CAPABILITY_STATUS.unsupportedWarning));
-    }
-  },
-  {
-    name: "hyperagent/render: each skill is an importable SKILL.md carrying the Hyperagent execution contract",
-    run: async () => {
-      const outputs = renderBundleOutputs(loadBundle(), { runtimes: ["hyperagent"] })
-        .filter((output) => output.resource?.kind === "skill");
-      assert.deepEqual(outputs.map((output) => output.resource.id).sort(), HYPERAGENT_SKILLS);
-      for (const output of outputs) {
-        const id = output.resource.id;
-        assert.equal(String(output.path).replaceAll("\\", "/"), `.hyperagent/skills/${id}/SKILL.md`);
-        const frontmatter = output.content.slice(0, output.content.indexOf("\n---", 3));
-        assert.match(frontmatter, new RegExp(`^name: ${id}$`, "m"), `${id} names itself`);
-        assert.match(frontmatter, /^description: .*\S/m, `${id} has a description`);
-        assert.match(frontmatter, /^aof-runtime: hyperagent$/m);
-        assert.match(frontmatter, /^aof-generated: true$/m);
-        assert.match(output.content, /draft\*{0,2}\s+pull\s+request/i, `${id} delivers through a draft pull request`);
-        if (id !== "aof-prd") {
-          assert.match(output.content, /## Hyperagent execution contract/, `${id} carries the execution contract`);
-          assert.match(output.content, /Never write to the default branch/, `${id} forbids default-branch writes`);
-          assert.match(output.content, /`aof work promote` → \*\*never\*\*/, `${id} never mints a number`);
-          assert.match(output.content, /### Validate checklist/, `${id} carries the validate checklist`);
+      const files = [];
+      async function walk(dir) {
+        for (const entry of await readdir(dir, { withFileTypes: true })) {
+          const full = path.join(dir, entry.name);
+          if (entry.isDirectory()) await walk(full);
+          else files.push(path.relative(assetPath("bundle"), full).replaceAll("\\", "/"));
         }
       }
+      await walk(assetPath("bundle"));
+      assert.deepEqual(files.filter((file) => /hyperplan|hyperagent|aof-prd/i.test(file) && file !== "manifest.json"), []);
+      const core = JSON.parse(await readFile(path.join(assetPath("bundle"), "bundle.json"), "utf8"));
+      assert.deepEqual(core.members.filter((member) => MEMBERS.includes(member.id) || member.variants?.hyperagent).map((member) => member.id), []);
+      const codex = await readFile(path.join(assetPath("bundle"), "variants", "codex", "workflow.md"), "utf8");
+      assert.doesNotMatch(codex, /<!-- variant:hyperplan -->/, "hyperplan's Codex section left core's shared variant file");
     }
-  },
-  {
-    name: "hyperagent/no-drift: the claude and codex renders contain nothing for hyperagent",
-    run: async () => {
-      const outputs = renderBundleOutputs(loadBundle(), { runtimes: ["claude", "codex"] });
-      assert.ok(outputs.every((output) => output.runtime !== "hyperagent"));
-      assert.ok(outputs.every((output) => !String(output.path).replaceAll("\\", "/").startsWith(".hyperagent/")));
-      assert.ok(outputs.every((output) => output.resource?.id !== "aof-prd"), "aof-prd is Hyperagent-only");
-    }
-  },
-  {
-    name: "hyperagent/init: `aof work init --runtime hyperagent` writes the skills and planner instructions, and records the runtime",
-    run: async () => withTempRepo(async (dir) => {
-      const result = await initWork({ targetDir: dir, runtimes: ["hyperagent"] });
-      assert.equal(result.guarded, false);
-      for (const id of HYPERAGENT_SKILLS) {
-        assert.ok(existsSync(path.join(dir, ".hyperagent", "skills", id, "SKILL.md")), `${id} written`);
-      }
-      const instructions = await readFile(path.join(dir, ".hyperagent", "AGENT.md"), "utf8");
-      assert.match(instructions, /AOF Planner/);
-      assert.ok(!existsSync(path.join(dir, ".hyperagent", "skills", "aof-continue")), "build procedures are not written");
-      assert.ok(!existsSync(path.join(dir, ".hyperagent", "agents")), "role agents are not written");
-      const lock = await readLock(path.join(dir, ".aof", "aof.lock.json"));
-      assert.deepEqual(lock.work.runtimes, ["hyperagent"]);
-    })
-  },
-  {
-    name: "hyperagent/update: a re-run of `aof work update` over a fresh hyperagent install changes nothing",
-    run: async () => withTempRepo(async (dir) => {
-      await initWork({ targetDir: dir, runtimes: ["hyperagent"] });
-      const result = await updateWork({ targetDir: dir });
-      const changed = result.actions.filter((item) => item.action !== "skip");
-      assert.deepEqual(changed.map((item) => `${item.action} ${item.path}`), [], "update is idempotent");
-    })
   }
 ];

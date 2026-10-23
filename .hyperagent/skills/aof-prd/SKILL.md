@@ -2,7 +2,6 @@
 aof-generated: true
 name: aof-prd
 description: Research and write an AOF planning PRD (PRD-<slug>.md) that aof-shatter can consume — objective, context and constraints, in/out scope, milestone-sized chunks, open questions, and cited research — then open a draft pull request with it. Hyperagent planning runtime only.
-aof-runtime: hyperagent
 ---
 
 # aof-prd (Hyperagent)

@@ -1588,6 +1588,78 @@
         "kind": "hooks"
       },
       "hash": "sha256:2991b2daf96855404dc2a96720361d52d03c202d74d78e8de50668de990507b6"
+    },
+    {
+      "path": ".hyperagent/AGENT.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "hyperagent-planner-instructions",
+        "kind": "asset"
+      },
+      "hash": "sha256:1f16d60eff2919b7e091febefc7d08aace41b639ae056e22d2a9cb91e9e79543"
+    },
+    {
+      "path": ".hyperagent/skills/aof-add-milestone/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-add-milestone",
+        "kind": "asset"
+      },
+      "hash": "sha256:d0ad4a98211338a83993de2fafe13fc6aca8de40ea3215c77802e08294002b54"
+    },
+    {
+      "path": ".hyperagent/skills/aof-add-story/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-add-story",
+        "kind": "asset"
+      },
+      "hash": "sha256:1c380a13cc4cbc10e923ce867a2be8e12f848b2b5ed396ae4299932e4cda8667"
+    },
+    {
+      "path": ".hyperagent/skills/aof-add-task/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-add-task",
+        "kind": "asset"
+      },
+      "hash": "sha256:1cc2e88660a64f0ed896d67c4563c88db182301557c2fc57a6c4d34904f6e88d"
+    },
+    {
+      "path": ".hyperagent/skills/aof-prd/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-prd",
+        "kind": "asset"
+      },
+      "hash": "sha256:772b358d3dcaafdfb79cf60c1e97fbbc814ad0933391144e31cea1d7ffde5921"
+    },
+    {
+      "path": ".hyperagent/skills/aof-refine/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-refine",
+        "kind": "asset"
+      },
+      "hash": "sha256:208187559ecc40e1fc3510ccdfefe5f2bd7c092536762925304fa57f19698d46"
+    },
+    {
+      "path": ".hyperagent/skills/aof-shatter/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-shatter",
+        "kind": "asset"
+      },
+      "hash": "sha256:565cd54c3f66b7582f2e3b6be0c2a84392c7142d8d3aa3af0418fd843bdca0bb"
+    },
+    {
+      "path": ".hyperagent/skills/aof-validate/SKILL.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "aof-validate",
+        "kind": "asset"
+      },
+      "hash": "sha256:7c2c30767dabcda2597965d96e732c664915c8d2ed97b2b48bccc71a10b8c7f2"
     }
   ]
 }

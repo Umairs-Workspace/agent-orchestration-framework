@@ -1,17 +1,18 @@
-// @aof/integration-hyperagent — the package's own cases: config defaults and bounds, the brief, the
-// result parser, the setup doctor, and the plan-branch check over a real git remote in a temp dir.
+// @aof/integration-hyperagent — the package's own cases: its one contribution, config defaults and
+// bounds, the brief, the result parser, the setup doctor, and the plan-branch check over a real git
+// remote in a temp dir.
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { mkdtemp, mkdir, rm, writeFile, readdir, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { HYPERAGENT_RUNTIME, HYPERAGENT_CAPABILITIES, HYPERAGENT_BUNDLE_COMMAND_MAPPING } from "../src/runtime.mjs";
+import { contribution } from "../src/contribution.mjs";
 import { readHyperagentConfig, isSafeBranch, HYPERAGENT_DEFAULTS } from "../src/config.mjs";
 import { composeBrief, parseGitRemote, planSlug, PLAN_MODES, RESULT_BLOCK_MARKER } from "../src/brief.mjs";
 import { parsePlanResult } from "../src/plan-result.mjs";
 import { checkPlanBranch, inPlanningLane } from "../src/check.mjs";
 import { inspectHyperagentSetup, codexServerName } from "../src/doctor.mjs";
-import { createHyperagentContribution, BRIEF_MODES } from "../src/commands.mjs";
+import { BRIEF_MODES } from "../src/commands.mjs";
 
 const REPO = { owner: "acme", repo: "widgets" };
 const SETTINGS = HYPERAGENT_DEFAULTS;
@@ -59,14 +60,13 @@ async function planRemote(dir, planFiles) {
 
 export const hyperagentPackageTests = [
   {
-    name: "integration-hyperagent/runtime: the runtime is opt-in, skills are native, and the mapping renders variant-carrying members only",
+    name: "integration-hyperagent/contribution: one frozen object names the work.integrations id, the package whose assets it ships, and its verbs",
     run: async () => {
-      assert.equal(HYPERAGENT_RUNTIME.id, "hyperagent");
-      assert.equal(HYPERAGENT_RUNTIME.optIn, true);
-      assert.equal(HYPERAGENT_RUNTIME.localRoot, ".hyperagent");
-      assert.equal(HYPERAGENT_CAPABILITIES.skill, "native");
-      assert.equal(HYPERAGENT_BUNDLE_COMMAND_MAPPING.requiresVariant, true);
-      assert.equal(HYPERAGENT_BUNDLE_COMMAND_MAPPING.idPrefix, "aof-");
+      assert.ok(Object.isFrozen(contribution));
+      assert.equal(contribution.id, "hyperagent");
+      assert.equal(contribution.name, "@aof/integration-hyperagent");
+      assert.deepEqual(contribution.assets, { package: "@aof/integration-hyperagent" });
+      assert.equal(typeof contribution.commands, "function");
     }
   },
   {
@@ -152,14 +152,16 @@ export const hyperagentPackageTests = [
     }
   },
   {
-    name: "integration-hyperagent/check: a plan branch is validated in a temporary checkout; out-of-lane files are reported; the checkout is untouched",
+    // 169/01 task 02 — the extraction's --prefix is built with forward slashes (169/ADR-006); this
+    // case was red on Windows before, where git does not split a prefix on the platform separator.
+    name: "169/01 task 02 E1 · integration-hyperagent/check: a plan branch with nested files is extracted into a temporary checkout and validated; out-of-lane files are reported; the checkout is removed and the operator's untouched",
     run: async () => withDir(async (dir) => {
       const clone = await planRemote(dir, { "wiki/work/backlog/milestone_sso/SPEC.md": "spec\n", "src/sneaky.mjs": "export {};\n" });
       const seen = [];
       const result = await checkPlanBranch({
         projectRoot: clone, branch: "aof/plan/sso", base: "main", workDir: "wiki/work", gitExec: (args, options) => git(args, options.cwd, options.env),
         tmpRoot: dir,
-        validateAt: async (tree) => { seen.push(tree); assert.equal(await readFile(path.join(tree, "wiki", "work", "backlog", "milestone_sso", "SPEC.md"), "utf8"), "spec\n", "the tree holds the branch tip"); return [{ path: path.join(tree, "wiki", "work", "x"), problem: "planted" }]; }
+        validateAt: async (tree) => { seen.push(tree); assert.equal((await readFile(path.join(tree, "wiki", "work", "backlog", "milestone_sso", "SPEC.md"), "utf8")).replace(/\r\n/g, "\n"), "spec\n", "the tree holds the branch tip (EOL as core.autocrlf checks it out)"); return [{ path: path.join(tree, "wiki", "work", "x"), problem: "planted" }]; }
       });
       assert.equal(seen.length, 1, "validated exactly once, in its own tree");
       assert.notEqual(seen[0], clone);
@@ -172,6 +174,35 @@ export const hyperagentPackageTests = [
       assert.equal((await git(["worktree", "list", "--porcelain"], clone)).stdout.match(/^worktree /gm).length, 1, "no worktree is registered");
       assert.equal((await git(["status", "--porcelain"], clone)).stdout, "", "the operator's index and working tree are untouched");
       assert.deepEqual((await readdir(dir)).filter((name) => name.startsWith("aof-hyperplan-")), [], "the temporary directory is removed");
+    })
+  },
+  {
+    // 169/01 task 02 E1, as the scenario states it: the `aof work integrations hyperagent check` verb
+    // itself runs over a real remote, with the same services core injects (git, the validator).
+    name: "169/01 task 02 E1 · the `hyperagent:check` verb extracts a plan branch with nested files into a temporary checkout, validates it there, and removes it",
+    run: async () => withDir(async (dir) => {
+      const clone = await planRemote(dir, { "wiki/work/backlog/milestone_x/SPEC.md": "spec\n" });
+      const validated = [];
+      const commands = contribution.commands({
+        commandError: (message, code) => Object.assign(new Error(message), { code }),
+        gitExec: (args, options) => git(args, options.cwd, options.env),
+        readJson: async () => { throw new Error("no config"); },
+        validateWork: async (workDir, _config, _scope, { projectRoot }) => {
+          validated.push(projectRoot);
+          assert.equal((await readFile(path.join(projectRoot, "wiki", "work", "backlog", "milestone_x", "SPEC.md"), "utf8")).replace(/\r\n/g, "\n"), "spec\n");
+          assert.equal(workDir, path.resolve(projectRoot, "./wiki/work"));
+          return [];
+        }
+      });
+      const check = commands.find((command) => command.id === "hyperagent:check");
+      const ctx = { workspace: { projectRoot: clone, workDir: path.join(clone, "wiki", "work"), config: {} } };
+      const result = await check.run(check.cli.argv(["aof/plan/sso"], { base: "main" }), ctx);
+      assert.equal(validated.length, 1, "validated once, in its own checkout");
+      assert.notEqual(validated[0], clone);
+      assert.deepEqual(result.changed, ["wiki/work/backlog/milestone_x/SPEC.md"]);
+      assert.equal(result.pass, true);
+      assert.equal(check.cli.exit(result), 0);
+      assert.ok(!(await readdir(os.tmpdir())).some((name) => validated[0].includes(name) && name.startsWith("aof-hyperplan-")), "the temporary checkout is removed");
     })
   },
   {
@@ -195,13 +226,17 @@ export const hyperagentPackageTests = [
       assert.equal(empty.ready, false);
       assert.equal(empty.claude.registered, false);
       assert.ok(empty.hints.some((hint) => hint.includes("claude mcp add --transport http hyperagent https://hyperagent.com/api/mcp")));
-      assert.ok(empty.hints.some((hint) => hint.includes("Import from GitHub")));
+      assert.ok(empty.hints.some((hint) => hint.includes("Enable the integration") && hint.includes("aof work update")), "169/ADR-005: the missing block is named");
+      assert.ok(empty.hints.every((hint) => !/--runtime[^`]*hyperagent/.test(hint)), "no hint names hyperagent as a runtime");
+      const enabledNoSkills = await inspectHyperagentSetup({ projectRoot: project, config: { work: { integrations: { hyperagent: {} } } }, homeDir: home });
+      assert.ok(enabledNoSkills.hints.some((hint) => hint.includes("Import from GitHub") && hint.includes("aof work update")));
 
       await writeFile(path.join(project, ".mcp.json"), JSON.stringify({ mcpServers: { ha: { type: "http", url: "https://hyperagent.com/api/mcp" } } }));
       await writeFile(path.join(home, ".codex", "config.toml"), '[mcp_servers.hyper]\nurl = "https://hyperagent.com/api/mcp"\n');
       await mkdir(path.join(project, ".hyperagent", "skills", "aof-prd"), { recursive: true });
       await writeFile(path.join(project, ".hyperagent", "skills", "aof-prd", "SKILL.md"), "---\nname: aof-prd\n---\n");
-      const ready = await inspectHyperagentSetup({ projectRoot: project, config: {}, homeDir: home });
+      assert.equal((await inspectHyperagentSetup({ projectRoot: project, config: {}, homeDir: home })).ready, false, "not ready while the integration is off");
+      const ready = await inspectHyperagentSetup({ projectRoot: project, config: { work: { integrations: { hyperagent: {} } } }, homeDir: home });
       assert.equal(ready.ready, true);
       assert.deepEqual(ready.claude, { registered: true, name: "ha", source: ".mcp.json" });
       assert.deepEqual(ready.codex, { registered: true, name: "hyper", source: "~/.codex/config.toml" });
@@ -213,11 +248,10 @@ export const hyperagentPackageTests = [
   {
     name: "integration-hyperagent/commands: the contribution registers brief, result, check and doctor under `aof work integrations hyperagent`",
     run: async () => {
-      const contribution = createHyperagentContribution({ commandError: (message, code) => Object.assign(new Error(message), { code }), gitExec: async () => ({ status: 1, stdout: "", stderr: "" }), validateWork: async () => [], readJson: async () => ({}) });
-      assert.equal(contribution.name, "@aof/integration-hyperagent");
-      assert.deepEqual(contribution.commands.map((command) => command.id), ["hyperagent:brief", "hyperagent:result", "hyperagent:check", "hyperagent:doctor"]);
-      for (const command of contribution.commands) assert.deepEqual(command.cli.route.slice(0, 3), ["work", "integrations", "hyperagent"]);
-      const briefCommand = contribution.commands[0];
+      const commands = contribution.commands({ commandError: (message, code) => Object.assign(new Error(message), { code }), gitExec: async () => ({ status: 1, stdout: "", stderr: "" }), validateWork: async () => [], readJson: async () => ({}) });
+      assert.deepEqual(commands.map((command) => command.id), ["hyperagent:brief", "hyperagent:result", "hyperagent:check", "hyperagent:doctor"]);
+      for (const command of commands) assert.deepEqual(command.cli.route.slice(0, 3), ["work", "integrations", "hyperagent"]);
+      const briefCommand = commands[0];
       const ctx = { workspace: { projectRoot: "/r", workDir: "/r/wiki/work", config: {} } };
       await assert.rejects(briefCommand.run({ mode: "plan", request: "x" }, ctx), (error) => error.code === "hyperagent-repo-unresolved");
       const result = await briefCommand.run({ mode: "plan", request: "Add SSO", repo: "acme/widgets", base: "main" }, ctx);

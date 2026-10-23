@@ -1,20 +1,12 @@
 import { CAPABILITIES, CAPABILITY_STATUS, mergeRuntimeOverride } from "../model.mjs";
-import { HYPERAGENT_BUNDLE_COMMAND_MAPPING } from "@aof/integration-hyperagent/runtime";
 
 export const ACD_BUNDLE_CAPABILITIES = {
   ...CAPABILITIES,
   command: {
     ...CAPABILITIES.command,
-    codex: CAPABILITY_STATUS.mapped,
-    hyperagent: CAPABILITY_STATUS.mapped
+    codex: CAPABILITY_STATUS.mapped
   }
 };
-
-// The status a mapped member reports when its runtime renders only an authored SUBSET of the
-// bundle (`requiresVariant`) and this member carries no variant for it. Not a capability gap —
-// the runtime can render the kind — but a deliberate scope: Hyperagent renders the PLANNING
-// commands only, and the build/verify procedures stay with the execution runtimes.
-export const OUTSIDE_RUNTIME_SUBSET = "outside-runtime-subset";
 
 const RENDERABLE_STATUSES = new Set([CAPABILITY_STATUS.native, CAPABILITY_STATUS.mapped]);
 
@@ -55,10 +47,7 @@ const RESOURCE_MAPPINGS = {
         "",
         "Write Markdown only, and never commit."
       ]
-    },
-    // Hyperagent imports skills (SKILL.md) and has no slash commands; its package declares the
-    // mapping, which renders ONLY members that author a `hyperagent` variant (`requiresVariant`).
-    hyperagent: HYPERAGENT_BUNDLE_COMMAND_MAPPING
+    }
   }
 };
 
@@ -98,15 +87,6 @@ export function partitionByCapability(resources, runtimes) {
       }
 
       const mapping = mappingFor(resource.kind, runtime);
-      if (mapping?.requiresVariant && !Object.hasOwn(resource.runtimeVariants ?? {}, runtime)) {
-        notInstallable.push({
-          id: resource.id,
-          kind: resource.kind,
-          runtime,
-          status: OUTSIDE_RUNTIME_SUBSET
-        });
-        continue;
-      }
       if (mapping) {
         installable.push(mappedResource(resolveBundleVariant(resource, runtime), runtime, mapping));
         continue;

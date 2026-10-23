@@ -113,24 +113,33 @@ Feature: AOF CLI lifecycle
     And file `.aof/aof.config.json` should contain `"kind": "rule"`
     And file `.aof/aof.config.json` should contain `"codex"`
 
-  Scenario: Hyperagent renders the planning subset as importable skills only when named
+  Scenario: Hyperagent's files render once work.integrations.hyperagent is present, and leave when it is removed (169/01)
     Given an empty project
-    When I run `work init --runtime hyperagent`
+    When I run `work init --runtime claude,codex`
     Then the command should succeed
-    And stdout should contain `hyperagent renders the planning subset only`
+    And file `.claude/commands/aof/hyperplan.md` should not exist
+    And file `.hyperagent/AGENT.md` should not exist
+    When I replace file `.aof/aof.config.json` with `{ "work": { "integrations": { "hyperagent": {} } } }`
+    And I run `work update`
+    Then the command should succeed
+    And file `.claude/commands/aof/hyperplan.md` should contain `aof work integrations hyperagent brief`
     And file `.hyperagent/skills/aof-shatter/SKILL.md` should contain `## Hyperagent execution contract`
-    And file `.hyperagent/skills/aof-refine/SKILL.md` should contain `aof-runtime: hyperagent`
     And file `.hyperagent/skills/aof-prd/SKILL.md` should exist
     And file `.hyperagent/AGENT.md` should contain `AOF Planner`
     And file `.hyperagent/skills/aof-continue/SKILL.md` should not exist
-    And file `.claude/commands/aof/shatter.md` should not exist
-
-  Scenario: /aof:hyperplan renders for the execution runtimes and never for Hyperagent itself
-    Given an empty project
-    When I run `work init --runtime claude,hyperagent`
-    Then the command should succeed
-    And file `.claude/commands/aof/hyperplan.md` should contain `aof work integrations hyperagent brief`
     And file `.hyperagent/skills/aof-hyperplan/SKILL.md` should not exist
+    When I replace file `.aof/aof.config.json` with `{ "work": {} }`
+    And I run `work update`
+    Then the command should succeed
+    And file `.claude/commands/aof/hyperplan.md` should not exist
+    And file `.hyperagent/skills/aof-shatter/SKILL.md` should not exist
+
+  Scenario: Naming hyperagent as a runtime is refused (169/01)
+    Given an empty project
+    When I run `work init --runtime hyperagent`
+    Then the command should fail
+    And stderr should contain `Unsupported runtime "hyperagent"`
+    And file `.hyperagent/AGENT.md` should not exist
 
   Scenario: The Hyperagent doctor names the missing setup steps without writing anything
     Given an empty project
@@ -152,7 +161,7 @@ Feature: AOF CLI lifecycle
     When I run `work integrations hyperagent brief build --request "x" --repo acme/widgets --base main`
     Then the command should fail
 
-  Scenario: A work init that names no runtime never renders Hyperagent
+  Scenario: A work init in a project that does not enable Hyperagent never renders it
     Given an empty project
     When I run `work init`
     Then the command should succeed

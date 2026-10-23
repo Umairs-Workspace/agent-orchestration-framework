@@ -526,11 +526,6 @@
         "codex": {
           "file": "variants/codex/workflow.md",
           "section": "add-milestone"
-        },
-        "hyperagent": {
-          "file": "variants/hyperagent/planning.md",
-          "section": "add-milestone",
-          "description": "Frame one new AOF milestone (SPEC + STATE) un-numbered in the backlog, delivered as a draft pull request. AOF planning on Hyperagent."
         }
       }
     },
@@ -567,11 +562,6 @@
         "codex": {
           "file": "variants/codex/workflow.md",
           "section": "add-story"
-        },
-        "hyperagent": {
-          "file": "variants/hyperagent/planning.md",
-          "section": "add-story",
-          "description": "Add one AOF story inside a numbered milestone, or standalone in the backlog, delivered as a draft pull request. AOF planning on Hyperagent."
         }
       }
     },
@@ -590,11 +580,6 @@
         "codex": {
           "file": "variants/codex/workflow.md",
           "section": "add-task"
-        },
-        "hyperagent": {
-          "file": "variants/hyperagent/planning.md",
-          "section": "add-task",
-          "description": "Add one AOF task .feature contract to a numbered story, delivered as a draft pull request. AOF planning on Hyperagent."
         }
       }
     },
@@ -955,24 +940,6 @@
       }
     },
     {
-      "id": "hyperplan",
-      "kind": "command",
-      "file": "commands/hyperplan.md",
-      "runtimes": [
-        "claude",
-        "opencode"
-      ],
-      "commandNamespace": "aof",
-      "variants": {
-        "claude": null,
-        "opencode": null,
-        "codex": {
-          "file": "variants/codex/workflow.md",
-          "section": "hyperplan"
-        }
-      }
-    },
-    {
       "id": "questions",
       "kind": "command",
       "file": "commands/questions.md",
@@ -1030,11 +997,6 @@
               "section": "procedure-refine"
             }
           ]
-        },
-        "hyperagent": {
-          "file": "variants/hyperagent/planning.md",
-          "section": "refine",
-          "description": "Refine a numbered AOF work item — break a milestone into independent stories with researched ADRs, or author a story's task .feature contracts (Three Amigos) — delivered as a draft pull request. AOF planning on Hyperagent."
         }
       }
     },
@@ -1128,11 +1090,6 @@
         "codex": {
           "file": "variants/codex/workflow.md",
           "section": "shatter"
-        },
-        "hyperagent": {
-          "file": "variants/hyperagent/planning.md",
-          "section": "shatter",
-          "description": "Shatter a planning PRD into un-numbered backlog drivers — a milestone SPEC per deliverable chunk, a spike per gating unknown — with backward-only depends edges, delivered as a draft pull request. AOF planning on Hyperagent."
         }
       }
     },
@@ -1151,11 +1108,6 @@
         "codex": {
           "file": "variants/codex/workflow.md",
           "section": "validate"
-        },
-        "hyperagent": {
-          "file": "variants/hyperagent/planning.md",
-          "section": "validate",
-          "description": "Pre-flight check that AOF work items on a branch are well-formed (folder/frontmatter, tags, depends graph, litmus) without the aof CLI. Read-only. AOF planning on Hyperagent."
         }
       }
     },
@@ -1210,23 +1162,6 @@
         "claude"
       ],
       "disableModelInvocation": true
-    },
-    {
-      "id": "aof-prd",
-      "kind": "skill",
-      "file": "skills/aof-prd/SKILL.md",
-      "runtimes": [
-        "hyperagent"
-      ]
-    },
-    {
-      "id": "hyperagent-planner-instructions",
-      "kind": "asset",
-      "file": "hyperagent/AGENT.md",
-      "target": ".hyperagent/AGENT.md",
-      "runtimes": [
-        "hyperagent"
-      ]
     },
     {
       "id": "chore",

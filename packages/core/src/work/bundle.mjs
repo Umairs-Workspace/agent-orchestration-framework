@@ -21,7 +21,8 @@ import { hashContent } from "../lock.mjs";
 import { renderConfigOutputs } from "../adapters.mjs";
 import { installableBundleResources } from "./bundle-runtime.mjs";
 import { normalizeEffort } from "@aof/execution/session-model";
-import { assetBase, readAssetText, listAssetMembers } from "../asset-base.mjs";
+import { assetBase, readAssetText, listAssetMembers, packageAssetClass } from "../asset-base.mjs";
+import { INTEGRATIONS } from "../integrations.mjs";
 import { applyFrozenAgentScopes, bundledFrozenSet, compileFrozenSet } from "../frozen-set.mjs";
 
 // ADR-005 comment-form stamp: every template-rendered file declares itself
@@ -38,15 +39,39 @@ export function bundleRoot() {
 }
 
 // --- descriptor -------------------------------------------------------------
-export function readDescriptor() {
-  return JSON.parse(readAssetText("bundle", "bundle.json"));
+// 169/ADR-004 — core's own bundle.json, with each integration's `assets/bundle.json` members
+// appended. An appended member records its owning integration (`integration`, the id ADR-005 gates
+// on) and the asset class its text is read from (`assetClass`); core's members carry neither. A
+// contributed id that is already declared is refused here, at load, naming the member and package.
+export function readDescriptor({ integrations = INTEGRATIONS } = {}) {
+  const descriptor = JSON.parse(readAssetText("bundle", "bundle.json"));
+  const declared = new Map(descriptor.members.map((member) => [member.id, "core"]));
+  for (const integration of integrations) {
+    if (!integration.assets?.package) continue;
+    const assetClass = packageAssetClass(integration.assets.package);
+    const fragment = JSON.parse(readAssetText(assetClass, "bundle.json"));
+    for (const member of fragment.members ?? []) {
+      if (declared.has(member.id)) {
+        throw new Error(`Bundle member "${member.id}" contributed by ${integration.name} is already declared by ${declared.get(member.id)}.`);
+      }
+      declared.set(member.id, integration.name);
+      descriptor.members.push({ ...member, integration: integration.id, assetClass });
+    }
+  }
+  return descriptor;
+}
+
+// The asset class a member's own files are read from: its package's, or core's bundle.
+function memberClass(member) {
+  return member.assetClass ?? "bundle";
 }
 
 function variantText(member, runtime, { file, section }, cache) {
   let body;
+  const key = `${memberClass(member)}:${file}`;
   try {
-    if (!cache.has(file)) cache.set(file, readAssetText("bundle", file));
-    body = cache.get(file);
+    if (!cache.has(key)) cache.set(key, readAssetText(memberClass(member), file));
+    body = cache.get(key);
   }
   catch (error) { throw new Error(`Missing variant for ${member.kind}:${member.id} (${runtime}): ${file}`, { cause: error }); }
   if (section) {
@@ -60,7 +85,7 @@ function variantText(member, runtime, { file, section }, cache) {
 // hookMemberConfig(member) — ONE mapping from a `kind: "hook"` descriptor member to
 // the config-shaped hook the renderers and the settings merge both consume.
 function hookMemberConfig(member) {
-  return { ...JSON.parse(readAssetText("bundle", member.file)), id: member.id, runtimes: member.runtimes };
+  return { ...JSON.parse(readAssetText(memberClass(member), member.file)), id: member.id, runtimes: member.runtimes };
 }
 
 // loadBundleHooks() — the bundle's hook declarations ALONE, without reading the 40-odd
@@ -114,7 +139,7 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
     if (member.kind === "agent" || member.kind === "command" || member.kind === "skill") {
       // The SEA-safe asset seam (28/ADR — `acd-sea-safe-asset-base`), never a
       // path.join off an install root: the bundle rides the binary's asset base.
-      const raw = readAssetText("bundle", member.file);
+      const raw = readAssetText(memberClass(member), member.file);
       const { frontmatter, body } = splitFrontmatter(raw);
       const resource = {
         id: member.id,
@@ -124,6 +149,7 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
         description: frontmatter.description ?? "",
         body
       };
+      if (member.integration) resource.integration = member.integration;
       if (frontmatter.model) resource.model = frontmatter.model;
       if (member.variants) {
         resource.runtimeVariants = Object.fromEntries(Object.entries(member.variants).map(([runtime, variant]) => {
@@ -161,7 +187,8 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
         id: member.id,
         kind: "template",
         dir: member.dir,
-        files: listAssetMembers("bundle", member.dir)
+        assetClass: memberClass(member),
+        files: listAssetMembers(memberClass(member), member.dir)
       });
       continue;
     }
@@ -179,7 +206,8 @@ export function loadBundle({ descriptor = readDescriptor() } = {}) {
         file: member.file,
         target: member.target,
         runtimes: member.runtimes,
-        body: readAssetText("bundle", member.file)
+        ...(member.integration ? { integration: member.integration } : {}),
+        body: readAssetText(memberClass(member), member.file)
       });
       continue;
     }
@@ -233,7 +261,7 @@ export function renderBundleTemplateOutputs(bundle, options = {}) {
   const outputs = [];
   for (const member of bundle.templates) {
     for (const file of member.files) {
-      const rawBody = readAssetText("bundle", path.join(member.dir, file)).replace(/^﻿/, "");
+      const rawBody = readAssetText(member.assetClass ?? "bundle", path.join(member.dir, file)).replace(/^﻿/, "");
       const content = `${TEMPLATE_STAMP}\n\n${rawBody}`;
       const relativePath = templateOutputPath(member, file);
       outputs.push({

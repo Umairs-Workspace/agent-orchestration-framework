@@ -881,6 +881,27 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
+      "path": ".agents\\skills\\aof-hyperplan\\SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-hyperplan",
+        "kind": "skill"
+      },
+      "hash": "sha256:94e2c2cf326a66667687f55c26e78887e2c2d5514d72a1ffe53d8280cfd85b18"
+    },
+    {
+      "path": ".agents\\skills\\aof-hyperplan\\agents\\openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-hyperplan",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
       "path": ".codex\\hooks.json",
       "runtime": "codex",
       "resource": {
@@ -902,27 +923,6 @@
           ]
         }
       }
-    },
-    {
-      "path": ".agents\\skills\\aof-hyperplan\\SKILL.md",
-      "runtime": "codex",
-      "resource": {
-        "id": "aof-hyperplan",
-        "kind": "skill"
-      },
-      "hash": "sha256:94e2c2cf326a66667687f55c26e78887e2c2d5514d72a1ffe53d8280cfd85b18"
-    },
-    {
-      "path": ".agents\\skills\\aof-hyperplan\\agents\\openai.yaml",
-      "runtime": "codex",
-      "resource": {
-        "id": "aof-hyperplan",
-        "kind": "skill",
-        "artifact": "associated-file",
-        "file": "agents/openai.yaml",
-        "sourceFile": "agents/openai.yaml"
-      },
-      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     }
   ]
 }

@@ -1,7 +1,7 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
 import path from "node:path";
 import { promptResourceInput } from "../../../../prompt.mjs";
-import { supportedRuntimes, defaultRuntimes } from "../../../../adapters.mjs";
+import { supportedRuntimes } from "../../../../adapters.mjs";
 import { hasRuntimeOptions, parseRuntimes, RUNTIME_FLAGS } from "../../../../spine/flags.mjs";
 
 export function assembleCommandsAssetsAdd({ provideScaffold }) {
@@ -93,7 +93,7 @@ export function assembleCommandsAssetsAdd({ provideScaffold }) {
           name: options.name,
           description: interactiveInput?.description ?? options.description,
           body: options.body ?? interactiveInput?.body,
-          runtimes: interactiveInput?.runtimes ?? (hasRuntimeOptions(options) ? parseRuntimes(options) : defaultRuntimes()),
+          runtimes: interactiveInput?.runtimes ?? (hasRuntimeOptions(options) ? parseRuntimes(options) : supportedRuntimes()),
           force: options.force === true ? true : undefined,
           dryRun: options.dryRun === true ? true : undefined,
           global: options.global === true ? true : undefined,

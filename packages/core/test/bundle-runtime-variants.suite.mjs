@@ -140,7 +140,7 @@ export const bundleRuntimeVariantTests = [
     // is audited in wiki/prompt-audit.md by the change that ships it.
     const audit = await readFile('wiki/prompt-audit.md', 'utf8');
     const members = readDescriptor().members.filter(item => ['agent', 'command', 'skill'].includes(item.kind));
-    assert.equal(members.length, 47); // 168 adds the prototype command
+    assert.equal(members.length, 46); // 168 adds the prototype command; 169/01 moves aof-prd to the Hyperagent integration's assets
     for (const member of members) {
       const row = audit.split('\n').filter(line => line.startsWith(`| ${member.kind}:${member.id} |`));
       assert.equal(row.length, 1, `exactly one decision for ${member.id}`);

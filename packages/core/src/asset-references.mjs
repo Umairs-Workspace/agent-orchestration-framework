@@ -1,5 +1,5 @@
 import { normalizeId } from "@aof/foundation/fs";
-import { runtimeAssetRoot, defaultRuntimes } from "./model.mjs";
+import { runtimeAssetRoot, supportedRuntimes } from "./model.mjs";
 // m42 item 3 — every former silent catch reports a coded degrade event.
 import { reportDegrade } from "./application/default-foundation.mjs";
 
@@ -121,7 +121,7 @@ export function assetRuntimePath(kind, id, runtime, resource = {}) {
 }
 
 export function effectiveRuntimes(item) {
-  return Array.isArray(item?.runtimes) && item.runtimes.length > 0 ? item.runtimes : defaultRuntimes();
+  return Array.isArray(item?.runtimes) && item.runtimes.length > 0 ? item.runtimes : supportedRuntimes();
 }
 
 function referenceFromParts(namespace, rawId, raw) {

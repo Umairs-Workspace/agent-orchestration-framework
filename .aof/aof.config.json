@@ -4,6 +4,9 @@
   "work": {
     "dir": "./wiki/work",
     "intake": "backlog",
+    "integrations": {
+      "hyperagent": {}
+    },
     "agents": {
       "productOwner": "inline",
       "mode": "solo",

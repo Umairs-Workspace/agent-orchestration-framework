@@ -2,7 +2,6 @@
 aof-generated: true
 name: aof-shatter
 description: Shatter a planning PRD into un-numbered backlog drivers — a milestone SPEC per deliverable chunk, a spike per gating unknown — with backward-only depends edges, delivered as a draft pull request. AOF planning on Hyperagent.
-aof-runtime: hyperagent
 ---
 
 Arguments: [PRD path - omit to auto-discover PRD-*.md] [in <group/path>]

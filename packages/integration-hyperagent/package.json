@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
-    "./runtime": "./src/runtime.mjs",
+    "./contribution": "./src/contribution.mjs",
     "./config": "./src/config.mjs",
     "./brief": "./src/brief.mjs",
     "./plan-result": "./src/plan-result.mjs",
@@ -13,7 +13,8 @@
     "./commands": "./src/commands.mjs"
   },
   "files": [
-    "src"
+    "src",
+    "assets"
   ],
   "scripts": {
     "test": "node ../../scripts/test-workspace.mjs @aof/integration-hyperagent"

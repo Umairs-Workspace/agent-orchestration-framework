@@ -257,11 +257,3 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
 
   return { briefCommand, resultCommand, checkCommand, doctorCommand };
 }
-
-export function createHyperagentContribution(services) {
-  const { briefCommand, resultCommand, checkCommand, doctorCommand } = createHyperagentCommands(services);
-  return Object.freeze({
-    name: "@aof/integration-hyperagent",
-    commands: Object.freeze([briefCommand, resultCommand, checkCommand, doctorCommand])
-  });
-}

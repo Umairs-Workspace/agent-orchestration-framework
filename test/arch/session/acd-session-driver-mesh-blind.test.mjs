@@ -330,11 +330,10 @@ export const archTests = [
       // 162's verify (F-02) — the drive's loop-session producer moves out of `commands/drive.mjs` into its
       // own module (167 -> 168). Its imports (`node:path` and the ports it is handed) were already here.
       assert.ok(sinkGraph.seen.has(path.join(root, "packages/work-loop/src/loop-session-stream.mjs")), "the drive's loop-session producer");
-      // The Hyperagent integration: core's model takes the `hyperagent` runtime declaration from
-      // @aof/integration-hyperagent/runtime, a leaf importing only node builtins (168 -> 169); no I/O,
-      // lifecycle or driver import.
-      assert.ok(sinkGraph.seen.has(path.join(root, "packages/integration-hyperagent/src/runtime.mjs")), "the Hyperagent runtime leaf");
-      assert.equal(sinkGraph.seen.size, 169, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
+      // 169/01 — Hyperagent is no longer a runtime, so core's model imports nothing of the package:
+      // the runtime leaf the model reached (168 -> 169) is gone from the closure (169 -> 168).
+      assert.ok(!sinkGraph.seen.has(path.join(root, "packages/integration-hyperagent/src/runtime.mjs")), "no Hyperagent runtime leaf");
+      assert.equal(sinkGraph.seen.size, 168, "the configured worker facade includes the lane status transition alongside native phases and questions, and the drive's loop-session ports");
       assert.ok(sinkGraph.seen.size > graph.seen.size, `the session driver reaches ${graph.seen.size} modules versus the sink's ${sinkGraph.seen.size}`);
     },
   },

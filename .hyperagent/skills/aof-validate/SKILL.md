@@ -2,7 +2,6 @@
 aof-generated: true
 name: aof-validate
 description: Pre-flight check that AOF work items on a branch are well-formed (folder/frontmatter, tags, depends graph, litmus) without the aof CLI. Read-only. AOF planning on Hyperagent.
-aof-runtime: hyperagent
 ---
 
 Arguments: [item ref - omit for the whole stream]

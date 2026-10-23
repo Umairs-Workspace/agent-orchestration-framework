@@ -1,5 +1,5 @@
 import path from "node:path";
-import { RUNTIMES, supportedRuntimes, defaultRuntimes, mergeRuntimeOverride, codexGuidanceScope, codexAgentModel } from "./model.mjs";
+import { RUNTIMES, supportedRuntimes, mergeRuntimeOverride, codexGuidanceScope, codexAgentModel } from "./model.mjs";
 import { targetForProjectDocRuntime } from "./runtime-config.mjs";
 
 export const ADAPTER_WARNING_CODES = {
@@ -167,13 +167,13 @@ function unsupportedCommonHookFields(hook) {
 }
 
 function selectedPrimitiveRuntimes(value, requestedRuntimes) {
-  const primitiveRuntimes = Array.isArray(value.runtimes) ? value.runtimes : defaultRuntimes();
+  const primitiveRuntimes = Array.isArray(value.runtimes) ? value.runtimes : supportedRuntimes();
   const requested = new Set(requestedRuntimes);
   return primitiveRuntimes.filter((runtime) => requested.has(runtime));
 }
 
 function normalizeRequestedRuntimes(runtimes) {
-  if (!Array.isArray(runtimes) || runtimes.length === 0) return defaultRuntimes();
+  if (!Array.isArray(runtimes) || runtimes.length === 0) return supportedRuntimes();
   const valid = new Set(supportedRuntimes());
   return [...new Set(runtimes)].filter((runtime) => valid.has(runtime));
 }

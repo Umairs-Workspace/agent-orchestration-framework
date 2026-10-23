@@ -48,6 +48,11 @@ test/integration/**/*.feature text eol=lf
 # byte-identical on every platform (the acd-bundle-manifest-hashes fitness
 # function re-renders from these bytes).
 packages/core/assets/** text eol=lf
+# 169/01 (169/ADR-004) — an integration package's own bundle fragment is the same kind of source:
+# its members render through the same engine and its bytes are hashed into the same manifest.
+# Measured at 169/01 with `core.autocrlf=true`: the Hyperagent members checked out CRLF, and every
+# `.hyperagent/` render target classified `drift-warning` on `aof work update`.
+packages/integration-*/assets/** text eol=lf
 
 # The INSTALLED bundle — the render targets of `aof work init` / `aof work update`
 # (chore 108). The counterpart of the `packages/core/assets/**` pin directly above: the source is
@@ -73,6 +78,8 @@ packages/core/assets/** text eol=lf
 .codex/** text eol=lf
 .agents/** text eol=lf
 .opencode/** text eol=lf
+# The Hyperagent integration's render targets (169/ADR-004), pinned with their source above.
+.hyperagent/** text eol=lf
 
 # The git-tracked mesh records (milestone 22 / story 00 partition; milestone 23 /
 # story 00 presence, ADR-002 / fitness #6, the 22/R5 carry-forward; location moved to

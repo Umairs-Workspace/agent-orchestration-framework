@@ -54,7 +54,9 @@ export async function checkPlanBranch({ projectRoot, branch, base, remote = "ori
   const env = { ...process.env, GIT_INDEX_FILE: path.join(scratch, "index") };
   try {
     await git(gitExec, ["read-tree", commit], projectRoot, "hyperagent-extract-failed", env);
-    await git(gitExec, ["checkout-index", "--all", "--force", `--prefix=${tree}${path.sep}`], projectRoot, "hyperagent-extract-failed", env);
+    // git splits a --prefix into directories on "/" only, so a platform separator makes Windows fail
+    // (169/ADR-006): text handed to git as a path uses forward slashes.
+    await git(gitExec, ["checkout-index", "--all", "--force", `--prefix=${tree.replaceAll("\\", "/")}/`], projectRoot, "hyperagent-extract-failed", env);
     const findings = await validateAt(tree);
     return {
       branch,

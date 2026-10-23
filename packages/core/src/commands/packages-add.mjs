@@ -8,7 +8,7 @@ import { readJson, writeText } from "@aof/foundation/fs";
 import { findProjectConfig } from "../workspace.mjs";
 import { normalizePackage } from "../packages.mjs";
 import { hasRuntimeOptions, parseRuntimes, RUNTIME_FLAGS } from "../spine/flags.mjs";
-import { defaultRuntimes } from "../adapters.mjs";
+import { supportedRuntimes } from "../adapters.mjs";
 
 export const packagesAddCommand = {
   id: "packages:add",
@@ -37,7 +37,7 @@ export const packagesAddCommand = {
     const raw = await readJson(configPath);
     const source = input.source ?? (input.package ? `npm:${input.package}` : "npm:get-shit-done-cc@latest");
     const runtimes = input.runtimes
-      ?? (Array.isArray(raw.runtimes) && raw.runtimes.length > 0 ? [...new Set(raw.runtimes)] : defaultRuntimes());
+      ?? (Array.isArray(raw.runtimes) && raw.runtimes.length > 0 ? [...new Set(raw.runtimes)] : supportedRuntimes());
     const pkg = normalizePackage({ id: "gsd", namespace: "gsd", source, runtimes }, 0);
     const packages = [
       ...(Array.isArray(raw.packages) ? raw.packages.filter((item) => item?.id !== "gsd") : []),

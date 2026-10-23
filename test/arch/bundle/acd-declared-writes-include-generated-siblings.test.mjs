@@ -62,6 +62,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { loadBundle, renderBundleOutputs } from "../../../packages/core/src/work/bundle.mjs";
+import { assetPath } from "../../../packages/core/src/asset-base.mjs";
 import { storyContractList } from "@aof/work/story-contract";
 import { isOpen } from "@aof/work/lifecycle";
 
@@ -80,17 +81,20 @@ const slash = (value) => String(value).split("\\").join("/");
 // Every path a member's change lands on disk under `packages/core/assets/`, mapped to that member's key.
 // Templates declare a `dir` rather than a `file`, so their member files are the directory's own
 // contents — read the same way `acd-bundle-membership` reads them, so the two controls agree.
+// 169/ADR-004: each member is read from its own package's assets, so its source path is anchored there
+// (`packages/integration-hyperagent/assets/...` for a contributed member), never at core's.
 function memberSources(bundle) {
   const sources = new Map();
-  const bundleDir = path.join(root, "packages", "core", "assets");
   for (const member of bundle.descriptor.members) {
     const key = `${member.kind}:${member.id}`;
+    const bundleDir = assetPath(member.assetClass ?? "bundle");
+    const base = slash(path.relative(root, bundleDir));
     if (typeof member.file === "string") {
-      sources.set(`packages/core/assets/${slash(member.file)}`, key);
+      sources.set(`${base}/${slash(member.file)}`, key);
     } else if (typeof member.dir === "string") {
       const dirAbs = path.join(bundleDir, member.dir);
       for (const name of readdirSync(dirAbs)) {
-        sources.set(`packages/core/assets/${slash(member.dir)}/${name}`, key);
+        sources.set(`${base}/${slash(member.dir)}/${name}`, key);
       }
     }
   }

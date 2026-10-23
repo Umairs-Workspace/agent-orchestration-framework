@@ -1,46 +1,59 @@
-# Hyperagent in AOF — the planning runtime
+# Hyperagent in AOF — the planning integration
 
-Hyperagent is an **opt-in planning runtime**. It takes an idea to a reviewed roadmap — a researched
+Hyperagent is an **opt-in planning integration** — an external service a project hands planning to,
+not a runtime aof renders its whole asset model into (the runtimes stay claude, codex and opencode;
+`--runtime hyperagent` is an unknown runtime). It takes an idea to a reviewed roadmap — a researched
 planning PRD, framed backlog milestones and spikes, then stories and task contracts — and hands the
 result to the execution runtimes (Claude Code, Codex) as an ordinary pull request. It never builds,
 reviews or verifies, and it is never an `aof work loop` runtime.
 
+## Turn it on
+
+Add the block to `.aof/aof.config.json` — an empty object is enough — and re-render:
+
+```json
+{ "work": { "integrations": { "hyperagent": {} } } }
+```
+
+```text
+aof work update            # or `aof work init` in a fresh project
+```
+
+That is the same switch Notion uses: **present ⇒ on, absent ⇒ off**. A project without the block
+renders nothing of Hyperagent's, and removing the block removes `/aof:hyperplan` and `.hyperagent/`
+as aof-managed files on the next `aof work update`. `aof work integrations hyperagent doctor` says so
+when the block is missing.
+
 ## What renders
 
-`aof work init --runtime hyperagent` (or add it to an existing install with
-`aof work init --force --runtime claude,codex,hyperagent`) renders, under `.hyperagent/`:
+With the integration on, `aof work init|update` renders `/aof:hyperplan` for your runtimes (a Claude
+and OpenCode command, a Codex skill) and, under `.hyperagent/`, the files Hyperagent imports. Every
+source lives in `packages/integration-hyperagent/assets/`:
 
 | File | Source | What it does |
 |---|---|---|
-| `skills/aof-prd/SKILL.md` | `packages/core/assets/skills/aof-prd/` | Research and write the planning PRD (`PRD-<slug>.md`) the shatter seam reads |
-| `skills/aof-shatter/SKILL.md` | `shatter` + the `hyperagent` variant | PRD → un-numbered backlog milestones and spikes with backward-only `depends` |
-| `skills/aof-refine/SKILL.md` | `refine` + variant | Numbered milestone → independent stories (ADRs / research only when open); story → task `.feature` contracts |
-| `skills/aof-add-milestone/SKILL.md` · `aof-add-story` · `aof-add-task` | variants | One-off additions |
-| `skills/aof-validate/SKILL.md` | variant | Pre-flight of the `aof work validate` rules, without the CLI |
-| `AGENT.md` | `packages/core/assets/hyperagent/AGENT.md` | Instructions for a Hyperagent named agent ("AOF Planner") |
+| `skills/aof-prd/SKILL.md` | `skills/aof-prd/SKILL.md` | Research and write the planning PRD (`PRD-<slug>.md`) the shatter seam reads |
+| `skills/aof-shatter/SKILL.md` | `skills/aof-shatter/SKILL.md` | PRD → un-numbered backlog milestones and spikes with backward-only `depends` |
+| `skills/aof-refine/SKILL.md` | `skills/aof-refine/SKILL.md` | Numbered milestone → independent stories (ADRs / research only when open); story → task `.feature` contracts |
+| `skills/aof-add-milestone/SKILL.md` · `aof-add-story` · `aof-add-task` | `skills/…` | One-off additions |
+| `skills/aof-validate/SKILL.md` | `skills/aof-validate/SKILL.md` | Pre-flight of the `aof work validate` rules, without the CLI |
+| `AGENT.md` | `AGENT.md` | Instructions for a Hyperagent named agent ("AOF Planner") |
 
-Every other command reports `outside-runtime-subset` and is not written; the role agents report
-`unsupported-warning` (Hyperagent has no subagent file format — one planner plays the roles in turn).
+Each skill source is the complete `SKILL.md`, frontmatter included, written to its target verbatim
+(the bundle's `asset` kind). Nothing else of aof's renders under `.hyperagent/`: no build or verify
+procedure and no role agent (one planner plays the roles in turn).
 
-The six command skills are **full rewrites** (`packages/core/assets/variants/hyperagent/planning.md`),
-not prefixed copies of the Claude procedures: each carries a *Hyperagent execution contract* that
+The six procedure skills are **full rewrites**, not prefixed copies of the Claude procedures: each carries a *Hyperagent execution contract* that
 replaces every CLI step — the repository is reached through Hyperagent's GitHub integration, writes go
 to an `aof/plan/<slug>` branch and end in a **draft** pull request, `aof work promote` is never
 simulated (drivers are always written un-numbered in the backlog), memory recall becomes a repository
 search, and `aof work validate` is replaced by an embedded checklist while remaining the authoritative
 gate the operator runs on the branch.
 
-## Opt-in, by construction
-
-`RUNTIMES.hyperagent.optIn` keeps it out of `defaultRuntimes()`, which every "no runtime named"
-default uses (`aof assets apply`, `aof assets add`, the runtime flags, packages, scaffold). Validation
-still uses `supportedRuntimes()`, so the runtime is **accepted when named and never assumed**. A
-project that never names it renders exactly what it rendered before.
-
 ## Set it up in Hyperagent
 
-1. Render the skills into the repository (above) and push them — this repository ships its own
-   `.hyperagent/` for that reason.
+1. Turn the integration on and render (above), then push — this repository enables it and ships its
+   own `.hyperagent/` for that reason.
 2. In Hyperagent: **Skills → Create skill → Import from GitHub**, and give it the repository URL.
    It imports every `SKILL.md` it finds (the seven `aof-*` skills).
 3. Create a named agent from `.hyperagent/AGENT.md`, give it the imported skills, and connect the
@@ -59,8 +72,8 @@ the existing Hyperagent skill from the new file (or ask the planner to do it) ra
 - `aof-refine` works on **numbered** items only: a backlog milestone must be promoted first, because
   stories are keyed by their milestone's number.
 - Live acceptance — an imported skill set driving a real plan end to end, and one `/aof:hyperplan`
-  run from a connected assistant — is tracked in
-  `wiki/work/backlog/milestone_hyperagent-planning-runtime/`.
+  run from a connected assistant — is tracked in milestone 169
+  (`wiki/work/169_milestone_hyperagent-planning-runtime/`).
 
 ## `/aof:hyperplan` — delegate planning from Claude Code or Codex
 
@@ -95,7 +108,7 @@ over it and lists any changed file that is not a work record or planning documen
 `/mcp` to sign in (or `codex mcp add hyperagent --url https://hyperagent.com/api/mcp` and
 `codex mcp login hyperagent`), then the Hyperagent setup above. No credential is stored by aof.
 
-Optional configuration (`.aof/aof.config.json`):
+Optional configuration (`.aof/aof.config.json`; every key defaults, so `{}` turns the integration on):
 
 ```json
 { "work": { "integrations": { "hyperagent": {
@@ -105,10 +118,21 @@ Optional configuration (`.aof/aof.config.json`):
 
 ## The package
 
-`packages/integration-hyperagent` owns everything Hyperagent-specific in code: the runtime
-declaration and capability column core's model imports, the bundle command mapping, the brief,
-result parser, branch check, setup doctor and the four CLI verbs. It imports nothing from core and
-spawns nothing — git and the work validator are injected by core's command registry — and each verb
-loads its implementation only when it runs. The prompt bodies (the planning variants, `aof-prd`,
-`AGENT.md`, `hyperplan`) stay in `packages/core/assets/`, where the bundle loader and release
-packaging already read every shipped prompt.
+`packages/integration-hyperagent` owns everything Hyperagent ships — its CLI verbs and its prompts —
+and reaches core through ONE contribution (`@aof/integration-hyperagent/contribution`):
+
+```js
+{ id: "hyperagent",                                   // the work.integrations key that enables it
+  name: "@aof/integration-hyperagent",
+  assets: { package: "@aof/integration-hyperagent" }, // its assets/bundle.json fragment
+  commands: (services) => [...] }                     // brief, result, check, doctor
+```
+
+Core names it in exactly one module, `packages/core/src/integrations.mjs` (FF-16901): the bundle
+loader appends the package's `assets/bundle.json` members to core's descriptor and reads each one's
+text from the package, the render gate drops them unless the project enables the integration, and the
+command assembly registers the verbs. A packaged binary reads the same files from its sidecar
+(`bundle/packages/integration-hyperagent/`), which `build-sea.mjs` and `install-local.mjs` copy.
+The package imports nothing from core and spawns nothing — git and the work validator are injected —
+and each verb loads its implementation only when it runs. A new integration is one package plus one
+line in that registry.

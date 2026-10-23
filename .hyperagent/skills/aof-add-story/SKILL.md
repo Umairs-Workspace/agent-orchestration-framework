@@ -2,7 +2,6 @@
 aof-generated: true
 name: aof-add-story
 description: Add one AOF story inside a numbered milestone, or standalone in the backlog, delivered as a draft pull request. AOF planning on Hyperagent.
-aof-runtime: hyperagent
 ---
 
 Arguments: <story description> [under milestone NN] [--in-stream]

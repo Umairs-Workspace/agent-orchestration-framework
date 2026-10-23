@@ -85,13 +85,16 @@ export async function inspectHyperagentSetup({ projectRoot, config, homeDir = os
   if (!claude.registered && !codex.registered) {
     hints.push(`Register Hyperagent's MCP server in your assistant: \`claude mcp add --transport http hyperagent ${HYPERAGENT_MCP_URL}\` (then /mcp to sign in), or \`codex mcp add hyperagent --url ${HYPERAGENT_MCP_URL}\` then \`codex mcp login hyperagent\`.`);
   }
-  if (skills.length === 0) {
-    hints.push("Render the planner skills with `aof work init --force --runtime <your runtimes>,hyperagent`, push them, and import them in Hyperagent (Skills → Create skill → Import from GitHub).");
+  // 169/ADR-005: the integration's files render only where `work.integrations.hyperagent` is present.
+  if (!settings.configured) {
+    hints.push("Enable the integration: add `\"hyperagent\": {}` under `work.integrations` in .aof/aof.config.json, then run `aof work update` to render /aof:hyperplan and .hyperagent/.");
+  } else if (skills.length === 0) {
+    hints.push("Render the planner skills with `aof work update`, push them, and import them in Hyperagent (Skills → Create skill → Import from GitHub).");
   }
   hints.push(`Make sure a Hyperagent agent named "${settings.value.agent}" exists with those skills and the GitHub integration (its instructions: .hyperagent/AGENT.md).`);
   for (const problem of settings.problems) hints.push(`Fix ${problem}.`);
   return {
-    ready: (claude.registered || codex.registered) && skills.length > 0 && settings.problems.length === 0,
+    ready: settings.configured && (claude.registered || codex.registered) && skills.length > 0 && settings.problems.length === 0,
     claude,
     codex,
     skills,

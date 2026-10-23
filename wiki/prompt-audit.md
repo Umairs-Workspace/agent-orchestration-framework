@@ -8,10 +8,12 @@ updated: 2026-10-22
 The living audit of every shipped descriptor role, procedure and skill. Milestone 154 authored it;
 its delivery-time copy and evaluation evidence stay in that milestone folder, and a member added
 since is audited HERE, in the change that ships it (163 added `command:questions`, 168 added
-`command:prototype`; the Hyperagent planning runtime added `skill:aof-prd` and the six `hyperagent`
-planning variants, which are full rewrites for a GitHub-integration agent — see
-wiki/hyperagent-support.md; `command:hyperplan` delegates planning to that agent over Hyperagent's
-MCP endpoint).
+`command:prototype`; the Hyperagent integration added `command:hyperplan`, which delegates planning
+to the AOF Planner over Hyperagent's MCP endpoint, and the planner's seven skills — `aof-prd` plus
+six full rewrites of the planning procedures for a GitHub-integration agent — see
+wiki/hyperagent-support.md. Since 169/01 those skills are the integration package's own `asset`
+members, rendered verbatim under `.hyperagent/`; `asset:aof-prd` keeps its row here so the one
+prompt that has no core twin stays audited).
 
 Inventory: 47 descriptor roles, procedures and skills. Runtime selection is automatic;
 there is no free-form template profile. Common metadata/body, selected bundled variant, then
@@ -81,7 +83,7 @@ section when shared obligations change. Installation is ownership guarded, not a
 | skill:codex-implementation | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (679 common-body words baseline) | none |
 | skill:codex-review | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (466 common-body words baseline) | none |
 | skill:codex-computer-use | keep | Claude-only optional delegation skill; retain its supported host and opt-in policy. | Claude CLI delegation only | Existing opt-in permissions retained | selected entry only (897 common-body words baseline) | none |
-| skill:aof-prd | keep | Hyperagent-only planning skill: research and write the PRD seam aof-shatter consumes; delivers a draft pull request, writes no code or work items. | Hyperagent GitHub integration and web research only | Never writes the default branch; draft PR only; asks before any business decision | selected entry only (Hyperagent runtime) | none |
+| asset:aof-prd | keep | Hyperagent-only planning skill (the integration's asset since 169/01): research and write the PRD seam aof-shatter consumes; delivers a draft pull request, writes no code or work items. | Hyperagent GitHub integration and web research only | Never writes the default branch; draft PR only; asks before any business decision | selected entry only (Hyperagent runtime) | none |
 
 ## Frozen behavioral workload — 154/11, before measurement
 

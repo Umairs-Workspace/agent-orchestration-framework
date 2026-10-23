@@ -2,7 +2,6 @@
 aof-generated: true
 name: aof-add-milestone
 description: Frame one new AOF milestone (SPEC + STATE) un-numbered in the backlog, delivered as a draft pull request. AOF planning on Hyperagent.
-aof-runtime: hyperagent
 ---
 
 Arguments: <short milestone description> [in <group/path>] [--in-stream]

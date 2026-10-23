@@ -2,7 +2,7 @@ import path from "node:path";
 import { hashContent } from "./lock.mjs";
 import { hasUnsupportedCommonHookFields } from "./adapter-warnings.mjs";
 import { createAssetReferenceIndex, expandAssetReferences } from "./asset-references.mjs";
-import { RUNTIMES, defaultRuntimes, mergeRuntimeOverride, runtimeAssetRoot, codexGuidanceScope, codexAgentModel } from "./model.mjs";
+import { RUNTIMES, mergeRuntimeOverride, runtimeAssetRoot, codexGuidanceScope, codexAgentModel } from "./model.mjs";
 import {
   claudeMcpJson,
   codexConfigToml,
@@ -17,8 +17,6 @@ import { opencodePluginFiles } from "./opencode-hooks.mjs";
 export function supportedRuntimes() {
   return Object.keys(RUNTIMES);
 }
-
-export { defaultRuntimes };
 
 export async function applyConfig(config, options = {}) {
   // Resolve lazily because the plan's pure render half imports this module.
@@ -36,7 +34,7 @@ export async function applyConfig(config, options = {}) {
 
 export function renderConfigOutputs(config, options = {}) {
   const targetDir = path.resolve(options.targetDir ?? process.cwd());
-  const requestedRuntimes = options.runtimes ?? defaultRuntimes();
+  const requestedRuntimes = options.runtimes ?? supportedRuntimes();
   const outputs = [];
   const workflowIndex = workflowIndexFor(config.workflows ?? []);
   const assetReferenceIndex = createAssetReferenceIndex(config.resources ?? [], config.workflows ?? []);

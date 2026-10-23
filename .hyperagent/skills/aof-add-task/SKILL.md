@@ -2,7 +2,6 @@
 aof-generated: true
 name: aof-add-task
 description: Add one AOF task .feature contract to a numbered story, delivered as a draft pull request. AOF planning on Hyperagent.
-aof-runtime: hyperagent
 ---
 
 Arguments: <task description> [under story <ref>]

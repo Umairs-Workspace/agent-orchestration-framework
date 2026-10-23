@@ -37,12 +37,12 @@ import { graphImpactCommand } from "@aof/knowledge/commands/graph-impact";
 // project:provision — 12/ADR-003 — see ./commands/project-provision.mjs's header.
 import { projectProvisionCommand } from "../../commands/project-provision.mjs";
 import { createNotionContribution } from "@aof/integration-notion/commands";
-// @aof/integration-hyperagent — `aof work integrations hyperagent brief|result|check|doctor`, the
-// deterministic half of `/aof:hyperplan` (wiki/hyperagent-support.md).
-import { createHyperagentContribution } from "@aof/integration-hyperagent/commands";
+// The integrations' verbs — 169/ADR-003: each arrives through its contribution in the one registry,
+// built from the same injected services (git, the work validator, the error and JSON helpers).
+import { INTEGRATIONS } from "../../integrations.mjs";
 import { defaultGitExec } from "@aof/execution/worktrees";
-import { commandError as hyperagentCommandError } from "@aof/contracts/error";
-import { readJson as hyperagentReadJson } from "@aof/foundation/fs";
+import { commandError as integrationCommandError } from "@aof/contracts/error";
+import { readJson as integrationReadJson } from "@aof/foundation/fs";
 import { useHeadroomCommand, unuseHeadroomCommand } from "../../commands/headroom.mjs";
 // work:orchestrator / work:delegation / work:delegation-model — m42 — see ./commands/orchestrator-delegation.mjs's header.
 import { workOrchestratorCommand, workDelegationCommand, workDelegationModelCommand } from "../../commands/orchestrator-delegation.mjs";
@@ -50,6 +50,13 @@ import { planningInitCommand } from "../../commands/planning-init.mjs";
 import { assetsCleanCommand } from "../../commands/assets/clean.mjs";
 import { packagesAddCommand } from "../../commands/packages-add.mjs";
 import { packagesRemoveCommand } from "../../commands/packages-remove.mjs";
+
+// One command contribution per registered integration that ships verbs, named by its package.
+export function integrationContributions(services, integrations = INTEGRATIONS) {
+  return integrations
+    .filter((integration) => typeof integration.commands === "function")
+    .map((integration) => Object.freeze({ name: integration.name, commands: Object.freeze(integration.commands(services)) }));
+}
 
 export function assembleCommandCore({ commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, commandsNotionSyncWorkServices, commandsNotionAssociateServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPrototypeServices, commandsPromoteServices, commandsArchiveServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
 
@@ -255,7 +262,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     ]),
     createWorkContribution([migrateFolderCommand]),
     createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
-    createHyperagentContribution({ commandError: hyperagentCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: hyperagentReadJson }),
+    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson }),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,
