@@ -11,15 +11,18 @@ promotionFrom: 1
 **What happened:** The branch rendered `.hyperagent/` into every enabled project so that Hyperagent
 could "Import from GitHub". 169/00 assimilated that and 169/01 rebuilt it on the integration seam,
 and neither checked the import. At 169's verify the operator asked whether Hyperagent picks the folder
-up. Hyperagent's docs show it does not: skills are uploaded one `SKILL.md` at a time, and an upload
-belongs to the account (169 F-06).
+up. It does not. A skill enters only through an explicit Create skill, either an upload or an Import
+from GitHub, and it then belongs to the account (169 F-06). The verify itself first read the docs page
+as "there is no GitHub import". The operator's screenshot of the dialog showed the import, and also a
+`.zip` upload. The docs page had simply not caught up with the dialog.
 
 **Why:** The setup steps came from the branch's own author, Hyperagent, and two stories took them as
 measured fact. A refine names vendor behaviour as an unknown for RESEARCH, but these steps came in as
 assimilated "delivered" work, so they were never treated as unknowns.
 
-**Lesson:** Where a vendor's behaviour decides the shape of a delivery path, quote its docs (or a
-measurement) in the ADR before building the path. Assimilated work carries its author's claims, and
+**Lesson:** Where a vendor's behaviour decides the shape of a delivery path, measure it in the
+product before building the path, and quote that measurement in the ADR. A docs page that omits a
+feature is not evidence that the feature is absent. Assimilated work carries its author's claims, and
 those claims are unknowns, not facts. Once a vendor has an account-level store, use the Cowork
 precedent (165/ADR-006): write the package once to the aof home and print the upload steps.
 

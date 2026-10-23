@@ -145,17 +145,22 @@ package's check case, red on Windows today, is the regression test.
 ADR-005 (what an enabled project renders).
 **Date:** 2026-10-23
 
-**Context.** Measured on Hyperagent's docs on 2026-10-23 (`/docs/concepts/skills`,
-`…/skills-edit-and-import`, `…/invocations/mcp-server`):
+**Context.** Measured on 2026-10-23, from Hyperagent's docs (`/docs/concepts/skills`,
+`…/skills-edit-and-import`, `…/invocations/mcp-server`) and from its Create skill dialog
+(operator screenshot). The docs are older than the dialog:
 
-- Hyperagent reads no repository folder.
-- A skill is created by uploading "a JSON skill export or a Markdown SKILL.md file … (up to 5MB)",
-  by linking documentation, by building it in chat, or by saving one from a thread.
-- "Importing always creates a new skill." A re-import never updates an existing one.
-- The branch's "Import from GitHub" step appears nowhere in the docs.
+- Nothing in Hyperagent reads a repository on its own. A skill enters the account only through
+  Create skill.
+- The dialog offers four ways in: build from scratch, **Upload file** ("a JSON or Markdown skill
+  file, or a .zip package"), link documentation, and **Import from GitHub** ("Import skills from a
+  GitHub repository URL").
+- The docs say "Importing always creates a new skill." A re-import never updates an existing one.
+- The docs describe neither the zip layout nor the GitHub import (what it scans, and how many skills
+  one import yields).
 
-An uploaded skill belongs to the account, so it is the same for every project: the Cowork case
-(165/ADR-006). A `.hyperagent/` folder rendered into each project's tree is read by nothing.
+Any imported skill belongs to the account, so it is the same for every project: the Cowork case
+(165/ADR-006). A `.hyperagent/` folder in each project's tree is a copy that only an explicit import
+ever reads, and an import never refreshes it.
 
 **Decision.**
 - **What a project renders.** Hyperagent's `assets/bundle.json` fragment holds `hyperplan`

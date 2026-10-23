@@ -253,7 +253,7 @@ export const hyperagentPackageTests = [
       assert.ok(empty.hints.some((hint) => hint.includes("claude mcp add --transport http hyperagent https://hyperagent.com/api/mcp")));
       assert.ok(empty.hints.some((hint) => hint.includes("Enable the integration") && hint.includes("aof work update")), "169/ADR-005: the missing block is named");
       assert.ok(empty.hints.every((hint) => !/--runtime[^`]*hyperagent/.test(hint)), "no hint names hyperagent as a runtime");
-      assert.ok(empty.hints.every((hint) => !hint.includes(".hyperagent/") && !hint.includes("Import from GitHub")), "169/ADR-007: no hint names a project folder or a GitHub import");
+      assert.ok(empty.hints.every((hint) => !hint.includes(".hyperagent/")), "169/ADR-007: no hint names a project folder");
 
       await writeFile(path.join(project, ".mcp.json"), JSON.stringify({ mcpServers: { ha: { type: "http", url: "https://hyperagent.com/api/mcp" } } }));
       await writeFile(path.join(home, ".codex", "config.toml"), '[mcp_servers.hyper]\nurl = "https://hyperagent.com/api/mcp"\n');

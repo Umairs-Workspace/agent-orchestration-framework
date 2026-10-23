@@ -65,8 +65,8 @@ gate the operator runs on the branch.
 ## Set it up in Hyperagent
 
 1. Run `aof work integrations hyperagent package`. It writes `~/.aof/hyperagent/` and names each file.
-2. In Hyperagent, for each of the seven skills: **Skills → Create skill → upload** its `SKILL.md`
-   (Hyperagent takes "a JSON skill export or a Markdown SKILL.md file … up to 5MB").
+2. In Hyperagent, for each of the seven skills: **Skills → Create skill → Upload file** with its
+   `SKILL.md` (the dialog takes a JSON or Markdown skill file, or a `.zip` package).
 3. Create a named agent from `~/.aof/hyperagent/AGENT.md`, give it the uploaded skills, and connect
    the GitHub integration for the repositories it should plan.
 4. Ask it for a plan. Each step ends in a draft pull request; on the branch the operator runs

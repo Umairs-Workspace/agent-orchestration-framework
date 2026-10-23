@@ -29,11 +29,11 @@ project's tree that Hyperagent never reads.**
 
 ## Notes
 
-- **Why the move (measured 2026-10-23, ADR-007).** Hyperagent reads no repository folder. Its
-  skills docs list four ways to create a skill: upload a `SKILL.md` or JSON export (up to 5 MB),
-  link documentation, build it in chat, or save one from a thread. "Importing always creates a new
-  skill." The branch's "Import from GitHub" step is not in Hyperagent's docs. An upload lands on the
-  account, the same for every project, which is the Cowork case (165/ADR-006).
+- **Why the move (measured 2026-10-23, ADR-007).** A skill enters Hyperagent only through Create
+  skill: upload (a JSON or Markdown file, or a `.zip`), Import from GitHub, linked documentation,
+  or a chat build. "Importing always creates a new skill." Either way the skill lands on the account,
+  the same for every project, which is the Cowork case (165/ADR-006). A per-project `.hyperagent/`
+  copy is read only when imported, and is never refreshed.
 - **Supersedes, does not edit.** 169/01's delivered contract says `.hyperagent/` renders for an
   enabled project and that four verbs are registered. That text stays as delivered; this story's
   contract is the one that holds from here, and 169/01's tests change with it.

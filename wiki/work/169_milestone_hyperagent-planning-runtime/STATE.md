@@ -26,7 +26,7 @@ doc: state
 - 2026-10-23 — Milestone verify: the whole-tree gate went red on 11 test-side reds (F-04), was repaired
   in `510ee529`, and passed green. The FF register became a table, and FF-16902 became an arch case (F-05).
 - 2026-10-23 — Operator: "Why is there a .hyperagent folder? Will Hyperagent pick it up?" Measured on
-  Hyperagent's docs: no repository read and no GitHub import; skills are uploaded (F-06). 169/02 moved
+  Hyperagent: no repository is read on its own; skills enter the account only by an explicit upload or GitHub import, and are never refreshed (F-06, corrected after the operator's screenshot showed the GitHub import and a `.zip` upload). 169/02 moved
   the planner files to `~/.aof/hyperagent/`, written by `aof work integrations hyperagent package`
   (ADR-007). This repository's `.hyperagent/` was removed by its update, and `hyperagent` was added
   to `.mcp.json`.
