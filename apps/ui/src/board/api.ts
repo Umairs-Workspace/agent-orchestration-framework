@@ -8,9 +8,11 @@ export type WorkItem = {
   // milestone 37/ADR-003: `spike`/`chore` are additive top-level driver types
   // (ADR-001, uat-shaped). The board's minimal default is a type badge + the
   // existing driver placement — no new lane/column, no per-type doc tabs.
-  type: "milestone" | "story" | "task" | "uat" | "spike" | "chore";
+  // milestone 168/ADR-007: a `prototype` is a top-level item that is never a driver; the board shows
+  // it beside spike and chore, in the lane its own status word maps to (model.ts `laneFor`).
+  type: "milestone" | "story" | "task" | "uat" | "spike" | "chore" | "prototype";
   slug: string;
-  status: WorkStatus | null;
+  status: WorkStatus | PrototypeStatus | null;
   title: string | null;
   parent: string | null;
   dir: string;
@@ -97,6 +99,9 @@ export type AnswerDocument = {
 
 export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked" | "done";
 
+// A prototype's own four words (168/ADR-003) — on the wire only: the board maps each to a lane.
+export type PrototypeStatus = "active" | "paused" | "done" | "abandoned";
+
 // The `/api/work/list` envelope (milestone 43 / ADR-010 R4.1, as corrected by
 // ADR-015/F7 — the envelope is three keys). The HTTP FACE — not the command —
 // carries the configured staleness window beside the rows, so `work:list`'s
@@ -110,7 +115,7 @@ export type WorkStatus = "not-started" | "in-progress" | "in-review" | "blocked"
 // it is what lets a row this node published read `(this node)` (AC 11).
 export type WorkListEnvelope = { items: WorkItem[]; nodeId?: string | null };
 
-export type DocName = "SPEC" | "STORY" | "ARCHITECTURE" | "VERIFICATION" | "RETROSPECTIVE";
+export type DocName = "SPEC" | "STORY" | "ARCHITECTURE" | "VERIFICATION" | "RETROSPECTIVE" | "PROTOTYPE" | "STATE";
 
 // The ARTIFACT's own provenance (milestone 43 / ADR-006) travels under the SAME
 // two wire names the row carries, because it is the same fact about a different
@@ -219,13 +224,28 @@ export type RunRecord = {
 // projection; the records carry refs). An item with no runs reports `runs: []`.
 export type RunStatusResponse = { ref: string; runs: RunRecord[] };
 
+// 167/ADR-001 — every board read names its client, so the daemon counts it by client and knows a
+// board view is open.
+const CLIENT_HEADERS = { "X-AOF-Client": "board" };
+
+// 167/ADR-004 — the conditional GET. A route that tags its answer (`ETag`) is asked again with that
+// tag; a `304` answers the SAME object it answered last time, so a surface that sets it as state
+// does not re-render and its poll reads the answer as unchanged.
+const tagged = new Map<string, { etag: string; body: unknown }>();
+
 async function getJson<T>(route: string): Promise<T> {
-  const response = await fetch(route);
+  const last = tagged.get(route);
+  const response = await fetch(route, { headers: last ? { ...CLIENT_HEADERS, "If-None-Match": last.etag } : CLIENT_HEADERS });
+  if (response.status === 304 && last) return last.body as T;
   if (!response.ok) {
     const message = await safeError(response);
     throw new Error(message);
   }
-  return (await response.json()) as T;
+  const body = (await response.json()) as T;
+  const etag = response.headers?.get?.("etag");
+  if (etag) tagged.set(route, { etag, body });
+  else tagged.delete(route);
+  return body;
 }
 
 // A refusal that keeps its CODE. The board's error bodies are `{ ok:false, error,
@@ -374,5 +394,5 @@ export const workApi = {
 // The doc that leads the switcher per item type (DESIGN §2): milestone→SPEC,
 // story→STORY. The remaining tabs (VERIFICATION, RETROSPECTIVE, Findings) follow.
 export function firstDocTab(type: WorkItem["type"]): DocName {
-  return type === "story" ? "STORY" : "SPEC";
+  return type === "story" ? "STORY" : type === "prototype" ? "PROTOTYPE" : "SPEC";
 }

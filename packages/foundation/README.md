@@ -6,12 +6,13 @@ dependencies and imports no application, configuration, mesh, or feature modules
 | Export | API | Supplied policy |
 |---|---|---|
 | `./fs` | `readJson`, atomic `writeText`, `normalizeId`, `createTempFileSweeper` | The sweeper takes a non-throwing `reportDegrade` callback |
-| `./degrade` | `createDegradeReporter` | Sink factory and optional clock; throttle state belongs to each instance |
+| `./degrade` | `createDegradeReporter` | Sink factory, optional clock and cost meter; throttle state belongs to each instance |
+| `./cost-meter` | `processCostMeter`, `createCostMeter`, `startCostSnapshots`, `judge`, `describeCost`, `DAEMON_BUDGET` | Optional clock, CPU and event-loop readers and ticker; the budget numbers live only here (167/ADR-002) |
 | `./log` | `createJsonlLogSink`, `readJsonlLog`, `DEFAULT_LOG_MAX_BYTES` | Explicit file path, process label, rotation limit and optional timestamp function |
 
 Core owns the existing log location in `src/diagnostics/log.mjs`. Old filesystem,
-reporter and mesh-log exports remain compatibility adapters. The reporter entry has
-no imports and is browser-safe; filesystem and log storage use Node APIs.
+reporter and mesh-log exports remain compatibility adapters. The reporter entry imports
+only the cost meter, and both are browser-safe; filesystem and log storage use Node APIs.
 
 The migration preserves JSON error codes, atomic rename/retry/cleanup behavior,
 temp-file age checks, diagnostic throttling and log format/rotation. It introduces

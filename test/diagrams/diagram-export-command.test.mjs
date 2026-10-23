@@ -243,4 +243,50 @@ export const diagramExportCommandTests = [
       });
     },
   },
+  // ── milestone 168 / story 02 task 00 — a prototype's diagram exports by name, and a redraw replaces it ──
+  {
+    name: "168/02 E9 · export answers a block for the prototype's diagram, titled by its name",
+    run: async () => {
+      await withFixture({}, async (fx) => {
+        const { rel } = await addPrototype(fx, SOURCE("first"));
+        const result = await exportPrototype(fx, rasterizer(WRITES));
+        assert.deepEqual(result.written, [`${rel}/data-flow.svg`, `${rel}/data-flow.png`]);
+        assert.equal(result.block, renderDiagramBlock({ adrId: null, title: "data-flow", stem: "data-flow", sourceExt: ".html", formats: ["svg", "png"] }));
+        assert.match(result.block, /^!\[data-flow\]\(diagrams\/data-flow\.svg\)/, "the image is titled by the diagram's name");
+        assert.match(result.block, /Source: \[data-flow\.html\]\(diagrams\/data-flow\.html\) · PNG: \[data-flow\.png\]\(diagrams\/data-flow\.png\)/);
+      });
+    },
+  },
+  {
+    name: "168/02 E10 · a redraw replaces the picture and keeps no copy, even on a done prototype",
+    run: async () => {
+      await withFixture({}, async (fx) => {
+        const { dir } = await addPrototype(fx, SOURCE("first"), "done");
+        await exportPrototype(fx, rasterizer(WRITES));
+        await writeFile(path.join(dir, "diagrams", "data-flow.html"), SOURCE("second"), "utf8");
+        await exportPrototype(fx, rasterizer(WRITES));
+        assert.deepEqual((await readdir(path.join(dir, "diagrams"))).sort(), ["data-flow.html", "data-flow.png", "data-flow.svg"]);
+        assert.equal(await readFile(path.join(dir, "diagrams", "data-flow.svg"), "utf8"), generatorFor(ID).toSvg(SOURCE("second")), "the svg is the export of the new drawing");
+      });
+    },
+  },
 ];
+
+// A prototype holding a `data-flow` brief and its drawn source (168/02's Background).
+async function addPrototype(fx, source, status = "active") {
+  const dir = path.join(fx.project, "wiki", "work", "169_prototype_csv-importer");
+  await mkdir(path.join(dir, "diagrams"), { recursive: true });
+  await writeFile(
+    path.join(dir, "PROTOTYPE.md"),
+    `---\ntype: prototype\nnumber: 169\nslug: csv-importer\ntitle: csv importer\nstatus: ${status}\nschema: 1\n---\n# 169 · csv importer\n\n## Diagrams\n\n### data-flow\n\nstatement rows flow into the ledger\n`,
+    "utf8",
+  );
+  await writeFile(path.join(dir, "diagrams", "data-flow.html"), source, "utf8");
+  return { dir, rel: "wiki/work/169_prototype_csv-importer/diagrams" };
+}
+
+async function exportPrototype(fx, fake) {
+  const workspace = await loadWorkspace(fx.project);
+  return invoke("diagram:export", { ref: "169", adr: "data-flow" }, { workspace, diagramRasterizer: fake.injected, env: {} });
+}
+

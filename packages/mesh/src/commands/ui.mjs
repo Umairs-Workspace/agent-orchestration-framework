@@ -1,9 +1,10 @@
 import path from "node:path";
 import { guardMeshPositionals } from "./face-shared.mjs";
+import { startCostSnapshots } from "@aof/foundation/cost-meter";
 
 
 // Core supplies configured services; constructing command definitions performs no I/O.
-export function createMeshUiCommands({ serveMeshUi, meshUiProbe, DEFAULT_MESH_UI_PORT, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalRelayPushTransport, readBuildInfo, buildInfoString, createMeshLogSink, loadWorkspace }) {
+export function createMeshUiCommands({ serveMeshUi, meshUiProbe, DEFAULT_MESH_UI_PORT, createTerminalMirrorSubscriberTransport, startTerminalMirrorSubscriber, createTerminalRelayPushTransport, readBuildInfo, buildInfoString, createMeshLogSink, loadWorkspace, resolveNodeIdentity, publishCostSnapshot, reportDegrade = () => {} }) {
 // mesh:ui — the fleet mission-control web surface as a REGISTERED launcher-seam
 // command (m42 wave (d) leg d1, wave-3 tail; formerly cli.mjs's CLI-only
 // meshUiCommand + MESH_UI_FLAGS, both retired). `aof mesh ui` is a long-lived
@@ -70,12 +71,34 @@ function resolveUiLaunchConfig(options) {
 // undefined/unconfigured relay, so `startTerminalMirrorSubscriber` cleanly
 // degrades to `{ connected:false }` — the mirror simply never receives a live
 // frame; every other route on the fleet face still serves.
+// 167/ADR-001 — the `ui` daemon writes its cost snapshot every 15 s and once at a clean stop,
+// under this node's id. A node whose id cannot be resolved writes none; the server still serves.
+async function startUiCostWriter(workspace, { ticker } = {}) {
+  if (typeof resolveNodeIdentity !== "function" || typeof publishCostSnapshot !== "function") return null;
+  try {
+    const ws = workspace ?? {};
+    const { nodeId } = await resolveNodeIdentity(ws);
+    if (typeof nodeId !== "string" || nodeId.length === 0) return null;
+    return startCostSnapshots({
+      daemon: "ui",
+      publish: (snapshot) => publishCostSnapshot(ws, nodeId, "ui", snapshot),
+      onError: (error) => reportDegrade("mesh-ui-cost", error),
+      ...(ticker ? { ticker } : {}),
+    });
+  } catch (error) {
+    reportDegrade("mesh-ui-cost", error);
+    return null;
+  }
+}
+
 async function runFleetUi(input) {
   const { port, projectDir, scope, configPath } = input;
 
   let config;
+  let workspace = null;
   try {
-    ({ config } = await loadWorkspace(projectDir, configPath));
+    workspace = await loadWorkspace(projectDir, configPath);
+    ({ config } = workspace);
   } catch {
     config = undefined;
   }
@@ -124,11 +147,12 @@ async function runFleetUi(input) {
   console.log(`Open this URL in your browser: ${announceUrl.toString()}`);
   console.log(`Project: ${projectDir}`);
   console.log("Press Ctrl+C to stop the fleet view.");
+  const costWriter = await startUiCostWriter(workspace);
 
   await new Promise((resolve) => {
     const shutdown = () => {
       server.close(() => {
-        resolve();
+        Promise.resolve(costWriter?.stop()).finally(resolve);
       });
     };
     process.once("SIGINT", shutdown);
@@ -197,5 +221,5 @@ const meshUiCommand = {
   },
 };
 
-return { meshUiCommand };
+return { meshUiCommand, startUiCostWriter };
 }

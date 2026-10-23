@@ -209,6 +209,24 @@ function assertUiFrozen(pairs) {
   // it, and given the drive's progress segment). The fleet and the home read the loop entry's three
   // appended presence keys and the session row's appended `loopRunId`; nothing under
   // `apps/ui/src/board/` changed, and the board reads no run-record key, cycle, level or loop state.
+  // RE-PINNED by 167/00 (ADR-001), measured: `git diff --numstat -- apps/ui/src` is TWO files, `apps/ui/src/board/api.ts`
+  // and `apps/ui/src/fleet/api.ts`: each polled GET names its client in an `X-AOF-Client` header (`board` | `fleet`), so
+  // the daemon counts its requests by client and knows a view is open. No run-record key, cycle, level or loop state is read.
+  // RE-PINNED by 167/02 (ADR-004), measured: `git diff --numstat -- apps/ui/src` is the two `api.ts` files (the conditional GET:
+  // a remembered `ETag` per URL, a `304` answering the same object), `Board.tsx`, `DetailPanel.tsx`, `Fleet.tsx` and `Home.tsx` (each
+  // poll built from the one cadence instead of a `setInterval`), and the new `lib/poll-cadence.mjs` + `.d.mts`. What the polls
+  // read is unchanged; no run-record key, cycle, level or loop state is read, and the loop still has no face of its own.
+  // RE-PINNED by 168/03, measured: `git diff --numstat -- apps/ui/src` past 167/02 is the board's `BoardLanes.tsx`,
+  // `DetailPanel.tsx`, `model.ts`, `status.tsx` and `api.ts`, and `fleet/Fleet.tsx`: a prototype is a work item the
+  // board lists and opens (its lane, its four status words, its tab set, moved to `model.ts` as `tabsFor`). No run-record
+  // key, cycle, level or loop state is read, and the loop still has no face of its own.
+  // RE-PINNED at `aof:verify 162` (F-01, F-03), measured: `git diff --numstat -- apps/ui/src` past 168/03
+  // is six files — `components/loop-line.{mjs,d.mts}` (the quiet tone exported as `LOOP_QUIET_CLASS`,
+  // and a comment naming the span formatter's fenced twin), `fleet/runs.{mjs,d.mts}` (one re-export
+  // line each), and `fleet/Fleet.tsx` and `home/Home.tsx` (the tone read from that constant). Class
+  // and import edits only; nothing under `apps/ui/src/board/` changed. The same verify (F-06) adds
+  // `terminal/input-policy.{mjs,d.mts}` and `terminal/TerminalControl.tsx`: the read-only badge's title
+  // is the mount's stated cause when it has one. Still nothing under `apps/ui/src/board/`.
   // RE-PINNED by PR #13 (Excalidraw drafts), measured: `git diff --numstat origin/main -- apps/ui/src` is
   // FIVE files, all under `apps/ui/src/board/`: `ExcalidrawEditor.tsx` (new, 237: the native draft editor
   // and review panel), `diagrams.mjs` (+92) and `diagrams.d.mts` (+16: scene name/fingerprint and review
@@ -244,7 +262,8 @@ function assertUiFrozen(pairs) {
   // `git diff --numstat HEAD -- apps/ui/src` is ONE file, `board/diagrams.mjs` (+2 −1): the pasted block's
   // Source link may now name the `.excalidraw` scene and is pointed at `/api/diagram/file` like the HTML, SVG
   // and PNG. Nothing new is read; no fleet or home file, run-record key, cycle, level or loop state is read.
-  assert.equal(hash.digest("hex"), "a7c1519692fb68d4ef9403564b15599ae2fb48be94efbeb3576bcac3fa688502", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED at the merge of main into PR #13 (2026-10-23): both histories above stack on one tree; the hash is that tree's.
+  assert.equal(hash.digest("hex"), "ba734fb1280cbfb89b65c68f0ad41cb62984dc96cb0694f810289c5f8dd8a8de", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [
@@ -365,7 +384,10 @@ export const archTests = [
         // atomic brief settlement at an existing transition. Pending native review
         // evidence cannot survive owner loss or finish a run successfully. Record
         // keys, legal edges, board/UI and the sole run writer remain unchanged.
-        ["packages/execution/src/runs.mjs", "3dc74d570f5d895580f20c2028adfe3bbbef5209a505144ea949bbdf335c9e15"],
+        // RE-PINNED by 167/06 (ADR-008): one export, `readRun` — the existing one-record read, so the
+        // presence seam reads a running run's own record for a loop's last activity. No key, state
+        // edge, writer or board/UI reader changed.
+        ["packages/execution/src/runs.mjs", "511dbd743ff50a86496300f07d6b3721dba3a2ea246a2d28442e997dfdd99822"],
         // RE-PINNED by 126/01 (ADR-003 §4), and the invariant it belongs to is NARROWED in the
         // open rather than quietly worked around: `53/ADR-004`'s intent was that loop state needs
         // no new FACE — which remains true and is why the `--json` document is untouched by that
@@ -397,13 +419,16 @@ export const archTests = [
         // RE-PINNED by PR #13: one `/api/diagram/scene` branch onto `diagram:scene`; no run key, GETs unchanged.
         // RE-PINNED by 142: transport factory relocation only; all exported function bodies
         // match the prior source and HTTP integration tests retain routing/persistence coverage.
+        // RE-PINNED by 167/00 (ADR-001): one optional `countRequest` port, called once per `/api/work*` request; no route body or run key changed.
+        // RE-PINNED by 167/02 (ADR-004): `/api/work/list` answers through static-serve's `sendTaggedJson` (`ETag`/`304`); same envelope.
         // RE-PINNED by the diagrams opt-out seam: one GET `/api/diagram/capability` branch onto
         // `diagram:capability` (+16, all inside `handleDiagramApi`, with the absent-package answer); no
         // admission added, no run key read, `handleWorkApi` byte-identical.
         // RE-PINNED by milestone 200 (ADR-013): `readJsonBody` takes the route's own limit (default 1 MB, every
         // board write unchanged) and the diagram scene route alone passes 16 MB, because Publish carries the
         // editor's SVG and a base64 PNG (+5 −3). No admission, route or run-key read changes.
-        ["packages/server/src/board-ui.mjs", "999bc13b4337c74c991d379b9386fbe4c37544b25422831ab24a2c416a4fac3e"],
+        // RE-PINNED at the merge of main into PR #13 (2026-10-23): both re-pins above stack on the one merged file.
+        ["packages/server/src/board-ui.mjs", "b0602ac85a2023dcf354edf3ea996952df2d33e0d67588dde9ee871a3be635d8"],
       ]);
       for (const [rel, digest] of pins) assert.equal(await normalizedDigest(path.join(root, rel)), digest, `${rel}: frozen run/board seam changed`);
       const uiPairs = await uiTreePairs();

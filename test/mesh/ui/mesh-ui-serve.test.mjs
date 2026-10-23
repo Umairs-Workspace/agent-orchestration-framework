@@ -32,6 +32,8 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { processCostMeter } from "@aof/foundation/cost-meter";
+import { createMeshUiCommands } from "@aof/mesh/commands/ui";
 const serveMeshUi = _aofApplication.mesh.uiServe.serveMeshUi;
 const DEFAULT_MESH_UI_PORT = _aofApplication.mesh.uiServe.DEFAULT_MESH_UI_PORT;
 const meshUiDist = _aofApplication.mesh.uiServe.meshUiDist;
@@ -169,7 +171,119 @@ async function closeServer(server) {
   await new Promise((resolve) => server.close(resolve));
 }
 
+// ═══ 167/00 — the fleet face counts its requests by route and by client ═════════════
+// Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/00_story_the-daemon-says-what-it-costs/
+//   tasks/00_each-daemon-counts-its-work.feature — the fleet half of E2 (the board half is in
+//   test/surfaces/board-api.test.mjs). The meter is process-wide, so the assertions are deltas.
+const fleetCostTests = [
+  {
+    name: "167/00 E2 · requests are counted by route and by client — the fleet's status route",
+    async run() {
+      const { repo, globalStoreOptions } = await makeRepo();
+      const root = await makeRepoRootWithDist();
+      let server;
+      try {
+        let url;
+        ({ server, url } = await serveMeshUi({ projectDir: repo, port: 0, repoRoot: root, scope: "local", globalStoreOptions }));
+        const route = "/api/mesh/status";
+        const before = { fleet: processCostMeter.total("request", { route, client: "fleet" }), unknown: processCostMeter.total("request", { route, client: "unknown" }) };
+        for (let poll = 0; poll < 12; poll++) await (await fetch(new URL(route, url), { headers: { "X-AOF-Client": "fleet" } })).arrayBuffer();
+        for (let poll = 0; poll < 2; poll++) await (await fetch(new URL(route, url))).arrayBuffer();
+        assert.equal(processCostMeter.total("request", { route, client: "fleet" }) - before.fleet, 12, "12 request for /api/mesh/status by client fleet");
+        assert.equal(processCostMeter.total("request", { route, client: "unknown" }) - before.unknown, 2, "2 request for /api/mesh/status by client unknown");
+      } finally {
+        if (server) await closeServer(server);
+        await rm(repo, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    // The writer's cadence is the meter's (packages/foundation/test); this proves `mesh ui` wires it:
+    // under this node's id, as the `ui` daemon, every 15 s tick and once more at a clean stop.
+    name: "167/00 each daemon writes its snapshot every 15 seconds and at a clean stop — the mesh ui daemon's writer",
+    async run() {
+      const written = [];
+      const handles = [];
+      const ticker = { start(seconds, onTick) { const handle = { seconds, onTick, stopped: false }; handles.push(handle); return handle; }, stop(handle) { handle.stopped = true; } };
+      const { startUiCostWriter } = createMeshUiCommands({
+        resolveNodeIdentity: async () => ({ nodeId: "node-7297" }),
+        publishCostSnapshot: async (workspace, nodeId, daemon, snapshot) => { written.push({ workspace, nodeId, daemon, snapshot }); return true; },
+      });
+      const workspace = { globalMeshRoot: "/fixture/mesh" };
+      const writer = await startUiCostWriter(workspace, { ticker });
+      assert.equal(handles[0].seconds, 15, "the writer ticks every 15 seconds");
+      assert.equal(written.length, 0, "nothing is written before the first tick");
+      handles[0].onTick();
+      await Promise.resolve();
+      assert.deepEqual(written.map((entry) => [entry.workspace, entry.nodeId, entry.daemon, entry.snapshot.daemon]), [[workspace, "node-7297", "ui", "ui"]]);
+      await writer.stop();
+      assert.equal(handles[0].stopped, true, "a clean stop stops the ticker");
+      assert.equal(written.length, 2, "…and writes once more");
+      const unresolved = createMeshUiCommands({ resolveNodeIdentity: async () => { throw new Error("no identity"); }, publishCostSnapshot: async () => true, reportDegrade: () => {} });
+      assert.equal(await unresolved.startUiCostWriter({}, { ticker }), null, "a node whose id cannot be resolved writes nothing, and the server still serves");
+    },
+  },
+  // 167/02 (ADR-004) — the fleet's polled status route answers conditionally.
+  // Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/02_story_an-idle-view-costs-almost-nothing/
+  //   tasks/00_the-polled-routes-answer-304.feature (E1, the /api/mesh/status rows, and an error carries no tag).
+  {
+    name: "167/02 E1 · a fleet poll with nothing changed is answered 304",
+    async run() {
+      const { repo, globalStoreOptions } = await makeRepo();
+      const root = await makeRepoRootWithDist();
+      let server;
+      try {
+        let url;
+        ({ server, url } = await serveMeshUi({ projectDir: repo, port: 0, repoRoot: root, scope: "local", globalStoreOptions }));
+        const first = await fetch(new URL("/api/mesh/status", url), { headers: { "X-AOF-Client": "fleet" } });
+        const tag = first.headers.get("etag");
+        assert.ok(tag, "the fleet has polled /api/mesh/status and received an ETag");
+        await first.arrayBuffer();
+        const again = await fetch(new URL("/api/mesh/status", url), { headers: { "X-AOF-Client": "fleet", "If-None-Match": tag } });
+        assert.equal(again.status, 304, "the answer is 304");
+        assert.equal((await again.text()).length, 0, "…with no body");
+        const stale = await fetch(new URL("/api/mesh/status", url), { headers: { "If-None-Match": "\"0000\"" } });
+        assert.equal(stale.status, 200, "a stale tag: 200");
+        assert.equal(stale.headers.get("etag"), tag, "…with the body and the current tag");
+        assert.ok(Array.isArray((await stale.json()).nodes));
+      } finally {
+        if (server) await closeServer(server);
+        await rm(repo, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "167/02 an error answer carries no tag",
+    async run() {
+      const repo = await mkdtemp(path.join(os.tmpdir(), "aof-mesh-ui-167-"));
+      const root = await makeRepoRootWithDist();
+      let server;
+      try {
+        await mkdir(path.join(repo, ".aof"), { recursive: true });
+        await writeFile(path.join(repo, ".aof", "aof.config.json"), JSON.stringify({ name: "fixture", work: { dir: "./wiki/work" } }), "utf8");
+        // A global home whose store path is a DIRECTORY cannot be opened as the global store.
+        const home = path.join(repo, "global-home");
+        await mkdir(globalMeshPaths({ env: { AOF_GLOBAL_HOME: home } }).databasePath, { recursive: true });
+        let url;
+        ({ server, url } = await serveMeshUi({ projectDir: repo, port: 0, repoRoot: root, scope: "global", globalStoreOptions: { env: { AOF_GLOBAL_HOME: home } } }));
+        const answer = await fetch(new URL("/api/mesh/status", url), { headers: { "X-AOF-Client": "fleet" } });
+        assert.ok(answer.status >= 400, `the global store cannot be opened: ${answer.status}`);
+        const body = await answer.json();
+        assert.equal(body.ok, false, "the existing error envelope");
+        assert.equal(answer.headers.get("etag"), null, "…with no ETag");
+      } finally {
+        if (server) await closeServer(server);
+        await rm(repo, { recursive: true, force: true });
+        await rm(root, { recursive: true, force: true });
+      }
+    },
+  },
+];
+
 export const meshUiServeTests = [
+  ...fleetCostTests,
   // ═══ Scenario: aof mesh ui starts the fleet server on 127.0.0.1 ═══════════
   {
     name: "mesh-ui-serve/00 the fleet server starts, binds 127.0.0.1, and the page + its API answer on one same-origin port",
@@ -937,7 +1051,8 @@ function loopbackHostTests() {
         const leaf = await read("packages/server/src/static-serve.mjs");
         assert.deepEqual(importSpecifiers(leaf).map((entry) => entry.specifier), ["node:path"], "static-serve.mjs imports only node:path");
         const exported = [...leaf.matchAll(/^export function (\w+)/gmu)].map((match) => match[1]).sort();
-        assert.deepEqual(exported, ["contentType", "isLoopbackHost", "safeStaticPath", "shouldServeAppShell"]);
+        // 167/02 (ADR-004) adds the polled routes' conditional answer — a presentation helper both faces use.
+        assert.deepEqual(exported, ["contentType", "isLoopbackHost", "safeStaticPath", "sendTaggedJson", "shouldServeAppShell"]);
         for (const rel of ["packages/server/src/board-ui.mjs", "packages/mesh/src/ui-serve.mjs"]) {
           const source = await read(rel);
           const at = source.indexOf("function admitWriteRequest(");

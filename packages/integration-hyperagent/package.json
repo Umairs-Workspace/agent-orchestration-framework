@@ -1,0 +1,22 @@
+{
+  "name": "@aof/integration-hyperagent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./contribution": "./src/contribution.mjs",
+    "./config": "./src/config.mjs",
+    "./brief": "./src/brief.mjs",
+    "./plan-result": "./src/plan-result.mjs",
+    "./check": "./src/check.mjs",
+    "./doctor": "./src/doctor.mjs",
+    "./commands": "./src/commands.mjs"
+  },
+  "files": [
+    "src",
+    "assets"
+  ],
+  "scripts": {
+    "test": "node ../../scripts/test-workspace.mjs @aof/integration-hyperagent"
+  }
+}

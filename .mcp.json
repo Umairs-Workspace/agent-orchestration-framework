@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "hyperagent": {
+      "type": "http",
+      "url": "https://hyperagent.com/api/mcp"
+    }
+  }
+}

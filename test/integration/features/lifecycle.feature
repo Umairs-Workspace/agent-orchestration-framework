@@ -113,6 +113,70 @@ Feature: AOF CLI lifecycle
     And file `.aof/aof.config.json` should contain `"kind": "rule"`
     And file `.aof/aof.config.json` should contain `"codex"`
 
+  Scenario: /aof:hyperplan renders once work.integrations.hyperagent is present, and leaves when it is removed; no project renders .hyperagent/ (169/01, 169/02)
+    Given an empty project
+    When I run `work init --runtime claude,codex`
+    Then the command should succeed
+    And file `.claude/commands/aof/hyperplan.md` should not exist
+    And file `.hyperagent/AGENT.md` should not exist
+    When I replace file `.aof/aof.config.json` with `{ "work": { "integrations": { "hyperagent": {} } } }`
+    And I run `work update`
+    Then the command should succeed
+    And file `.claude/commands/aof/hyperplan.md` should contain `aof work integrations hyperagent brief`
+    And file `.hyperagent/AGENT.md` should not exist
+    And file `.hyperagent/skills/aof-shatter/SKILL.md` should not exist
+    When I replace file `.aof/aof.config.json` with `{ "work": {} }`
+    And I run `work update`
+    Then the command should succeed
+    And file `.claude/commands/aof/hyperplan.md` should not exist
+
+  Scenario: The Hyperagent package is written to the aof home for upload, and nothing in the project (169/02)
+    Given an empty project
+    When I run `work integrations hyperagent package`
+    Then the command should succeed
+    And stdout should contain `Wrote the Hyperagent package to`
+    And stdout should contain `skills`
+    And stdout should contain `Create skill`
+    And stdout should contain `aof-hyperagent-skills.zip`
+    And file `.hyperagent/AGENT.md` should not exist
+    When I run `work integrations hyperagent package --dry-run`
+    Then the command should succeed
+    And stdout should contain `nothing written`
+
+  Scenario: Naming hyperagent as a runtime is refused (169/01)
+    Given an empty project
+    When I run `work init --runtime hyperagent`
+    Then the command should fail
+    And stderr should contain `Unsupported runtime "hyperagent"`
+    And file `.hyperagent/AGENT.md` should not exist
+
+  Scenario: The Hyperagent doctor names the missing setup steps without writing anything
+    Given an empty project
+    When I run `work integrations hyperagent doctor`
+    Then the command should succeed
+    And stdout should contain `Hyperagent planning: not ready yet.`
+    And stdout should contain `claude mcp add --transport http hyperagent https://hyperagent.com/api/mcp`
+    And file `.mcp.json` should not exist
+
+  Scenario: The Hyperagent brief is composed deterministically for a named repository
+    Given an empty project
+    When I run `work integrations hyperagent brief plan --request "Add SSO" --repo acme/widgets --base main`
+    Then the command should succeed
+    And stdout should contain `plan branch aof/plan/add-sso`
+    And stdout should contain `AOF-PLAN-RESULT`
+
+  Scenario: The Hyperagent brief refuses a mode it does not know
+    Given an empty project
+    When I run `work integrations hyperagent brief build --request "x" --repo acme/widgets --base main`
+    Then the command should fail
+
+  Scenario: A work init in a project that does not enable Hyperagent never renders it
+    Given an empty project
+    When I run `work init`
+    Then the command should succeed
+    And file `.claude/commands/aof/shatter.md` should exist
+    And file `.hyperagent/skills/aof-shatter/SKILL.md` should not exist
+
   Scenario: Interactively add a project asset
     Given an empty project
     When I run `assets add` with resource input `{"kind":"skill","id":"interactive-skill","description":"Interactive skill","runtimes":["codex"],"body":"Interactive body"}`

@@ -395,8 +395,9 @@ const featureZero = [
       // The eight, pinned as a census rather than a count: what each was owed before this
       // story, key and locus, in cascade order.
       const BEFORE = Object.freeze({
-        "run.started": [["advance-status", "checkout"], ["publish-projection", "local"]],
-        "run.completed": [["rollback-status", "checkout"], ["publish-projection", "local"], ["notion-status-sync", "integration:notion"]],
+        // 167/ADR-008 — the two run events gained `publish-run` beside `publish-projection`; no other moved.
+        "run.started": [["advance-status", "checkout"], ["publish-projection", "local"], ["publish-run", "local"]],
+        "run.completed": [["rollback-status", "checkout"], ["publish-projection", "local"], ["publish-run", "local"], ["notion-status-sync", "integration:notion"]],
         "feedback.recorded": [["publish-projection", "local"]],
         "item-status.changed": [["publish-projection", "local"], ["notion-status-sync", "integration:notion"]],
         "stream.reindexed": [

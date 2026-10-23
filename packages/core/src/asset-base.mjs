@@ -101,12 +101,46 @@ function devRepoRoot() {
   return coreRoot();
 }
 
+// 169/ADR-004 — an integration package's bundle fragment is its own asset class, named by
+// packageAssetClass(): dev and payload read `<resolved package dir>/assets`, a packaged binary its
+// sidecar copy at `bundle/packages/<package basename>/`.
+const PACKAGE_CLASS_PREFIX = "package:";
+
+export function packageAssetClass(packageName) {
+  return `${PACKAGE_CLASS_PREFIX}${packageName}`;
+}
+
+function classPackage(assetClass) {
+  return assetClass.startsWith(PACKAGE_CLASS_PREFIX) ? assetClass.slice(PACKAGE_CLASS_PREFIX.length) : null;
+}
+
+// The installed package's directory, found the way Node would resolve it from this module. A
+// package whose exports omit `./package.json` cannot be require.resolve'd to it, so the lookup
+// walks the resolution paths for the manifest itself.
+const packageAssetDirs = new Map();
+
+function devPackageAssets(packageName) {
+  if (packageAssetDirs.has(packageName)) return packageAssetDirs.get(packageName);
+  const packageRequire = createRequire(import.meta.url);
+  for (const lookup of packageRequire.resolve.paths(packageName) ?? []) {
+    const manifest = path.join(lookup, ...packageName.split("/"), "package.json");
+    if (existsSync(manifest)) {
+      const dir = path.join(realpathSync(path.dirname(manifest)), "assets");
+      packageAssetDirs.set(packageName, dir);
+      return dir;
+    }
+  }
+  throw new Error(`asset-base: integration package "${packageName}" is not installed`);
+}
+
 // Per-class dev base — EXACTLY the pre-seam resolution for each of the 7 sites:
 //   bundle  -> <src>/bundle           (work-bundle.mjs's old bundleRoot())
 //   ui      -> <repoRoot>/ui          (setup-ui.mjs's old uiRoot default)
 //   version -> <repoRoot>/package.json's directory (mesh-identity.mjs / work-bundle-manifest.mjs)
 function devClassBase(assetClass) {
   if (assetClass === "bundle") return path.join(devRepoRoot(), "assets");
+  const packageName = classPackage(assetClass);
+  if (packageName) return devPackageAssets(packageName);
   if (assetClass === "ui") {
     // The optional source application declares its own package location. Copied
     // core distributions carry built UI files under core/ui instead.
@@ -144,9 +178,12 @@ function devClassBase(assetClass) {
 //   <execDir>/ui/dist/**     (ui/dist/** verbatim — kept under ui/ so the class
 //                              base below matches the dev shape's <repoRoot>/ui)
 //   <execDir>/package.json   (a trimmed manifest carrying at least { version })
+//   <execDir>/bundle/packages/<basename>/**  (each integration package's assets/**, 169/ADR-004)
 function seaClassBase(assetClass) {
   const anchor = sidecarAnchor();
   if (assetClass === "bundle") return path.join(anchor, "bundle");
+  const packageName = classPackage(assetClass);
+  if (packageName) return path.join(anchor, "bundle", "packages", packageName.split("/").pop());
   if (assetClass === "ui") return path.join(anchor, "ui");
   if (assetClass === "version") return anchor;
   throw new Error(`asset-base: unknown asset class "${assetClass}"`);

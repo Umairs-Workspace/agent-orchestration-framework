@@ -129,6 +129,8 @@ import { archTests as acdDesktopTrustedSpawnTests } from "./acd-desktop-trusted-
 // binding, and both are spread below, because a binding imported and not spread is no gate.
 import { archTests as acdDesktopSuppliedSetTests } from "./acd-desktop-supervises-a-supplied-set.test.mjs";
 import { rosterTests as acdDesktopSpawnRosterTests } from "./acd-desktop-read-only-fleet.test.mjs";
+// milestone 167 / story 05 — FF-16704: the desktop guard shows and logs an overrun and never kills.
+import { archTests as acdDesktopGuardNeverKillsTests } from "./acd-desktop-guard-never-kills.test.mjs";
 // ── milestone 45 · UI app shell & path routing — the fitness functions authored at refine.
 // EXPECTED RED until 45's stories land; that is the house convention (an arch test written
 // at refine time is part of the CONTRACT, not a report on the present), and they are
@@ -210,6 +212,8 @@ import { archTests as acdHomeLayoutIsAFilterTests } from "./acd-home-layout-is-a
 // milestone 133 / story 04 — FF-13304 (the console renders a diagram only as an image).
 import { archTests as acdDiagramRenderedAsImageTests } from "./acd-diagram-rendered-as-image.test.mjs";
 import { archTests as acdLoopPaneReadOnlyTests } from "./acd-loop-pane-read-only.test.mjs";
+// milestone 167 / story 02 — FF-16703: every UI poll runs through the one cadence.
+import { archTests as acdUiPollsThroughOneCadenceTests } from "./acd-ui-polls-through-one-cadence.test.mjs";
 export const tests = [
   ...acdFleetReclaimGuardedTests,
   ...acdReusesRenderPlanTests,
@@ -241,6 +245,8 @@ export const tests = [
   // milestone 126 / story 03 — FF-12606, plus the roster leg extended into the control above.
   ...acdDesktopSuppliedSetTests,
   ...acdDesktopSpawnRosterTests,
+  // milestone 167 / story 05 — FF-16704, the guard path has no stop, restart or kill.
+  ...acdDesktopGuardNeverKillsTests,
   // milestone 45 — UI app shell & path routing (EXPECTED RED until 45's stories land)
   ...acdUiSingleRouteTableTests,
   ...acdNoSurfaceModeUrlLiteralTests,
@@ -264,4 +270,6 @@ export const tests = [
   ...acdDiagramRenderedAsImageTests,
   // 162 — FF-16202: a loop-driven pane never mounts interactive; the loop line has one home.
   ...acdLoopPaneReadOnlyTests,
+  // 167/02 — FF-16703: every interval poll in apps/ui/src is scheduled through poll-cadence.mjs.
+  ...acdUiPollsThroughOneCadenceTests,
 ];

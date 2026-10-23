@@ -102,6 +102,9 @@ async function buildFixture() {
   // `.aof/templates/work/chore/`, the SAME template add-chore uses; copy it in
   // too so the bijection probes below can actually scaffold a valid chore.
   await cp(path.join(repoRoot, ".aof", "templates", "work", "chore"), path.join(aofDir, "templates", "work", "chore"), { recursive: true });
+  // milestone 168 / story 01 — `work:prototype` scaffolds from `.aof/templates/work/prototype/`; the
+  // bundle's own pair is copied, since it is what `aof work update` renders there.
+  await cp(path.join(repoRoot, "packages", "core", "assets", "templates", "prototype"), path.join(aofDir, "templates", "work", "prototype"), { recursive: true });
   // milestone 63 / story 05 — `work:trigger` reads the INSTALLED trigger declaration (the copy
   // `aof work update` writes), and a workspace with none is a coded "nothing is armed" refusal at
   // exit 1. Copy the bundled source into the fixture exactly as the templates above are copied,
@@ -308,6 +311,9 @@ function argsFor(sub) {
     // --at 49 stays well clear of the other insert-* probes' targets (50/51)
     // and the fixture's own "03"/"03/01" refs, so it shifts zero items.
     case "insert-chore": return ["work", "insert-chore", "bijection-chore", "--at", "49", "--json"];
+    // milestone 168 / story 01 — prototype's start move appends through the one mint, so it takes
+    // the next free number and shifts nothing.
+    case "prototype": return ["work", "prototype", "a bijection probe", "--json"];
     // promote-gap composes over the SAME chore insert engine; --at 60 is a
     // fourth, disjoint slot so this probe never collides with any of the
     // above regardless of subcommand execution order.

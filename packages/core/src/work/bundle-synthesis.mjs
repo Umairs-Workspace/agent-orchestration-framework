@@ -18,6 +18,7 @@ import { createRenderPlan } from "../render-plan.mjs";
 import { partitionByCapability } from "./bundle-runtime.mjs";
 import { projectBundleResources, renderBundleAssetOutputs, renderBundleTemplateOutputs } from "./bundle.mjs";
 import { packageVersion } from "./bundle-manifest.mjs";
+import { integrationEnabled } from "../integrations.mjs";
 import { readConfig, readDelegation, readDelegationModel, applyDelegationToResources, applyDelegationModelToResources } from "./delegation.mjs";
 
 export function bundleVersion() {
@@ -60,12 +61,22 @@ export async function planDesiredOutputs(bundle, installableResources, runtimes,
 // and the not-installable report (the matrix-surfaced members).
 export { partitionByCapability } from "./bundle-runtime.mjs";
 
-export async function synthesizeBundleConfig(bundle, { runtimes, targetDir }) {
+// 169/ADR-005 — an integration's members render only for a project that enables it: every
+// resource and asset an integration owns is dropped, before partitioning, unless its
+// `work.integrations.<id>` block is present. Core's own members carry no `integration` and are
+// never gated. A member dropped here leaves the desired set, so update removes its file.
+export function enabledBundle(bundle, config) {
+  const enabled = (member) => member.integration == null || integrationEnabled(config, member.integration);
+  return { ...bundle, resources: bundle.resources.filter(enabled), assets: (bundle.assets ?? []).filter(enabled) };
+}
+
+export async function synthesizeBundleConfig(fullBundle, { runtimes, targetDir }) {
   // Config-aware projection (the ONLY project-config read on the render path): the
   // `work.agents.delegation` toggle drops disable-model-invocation off the codex-*
   // skills when ON, so init/update render them auto-invocable. Absent config ⇒ OFF
   // ⇒ no change (the bundle default). No runtime branch — a generic per-resource map.
   const { config, configPath } = await readConfig(targetDir);
+  const bundle = enabledBundle(fullBundle, config);
   const members = new Set(bundle.resources.map(resource => `${resource.kind}:${resource.id}`));
   const projectResources = await Promise.all((config.resources ?? []).map(async resource => members.has(`${resource.kind}:${resource.id}`)
     ? { ...resource, overrides: await resolveResourceOverrides(resource, path.dirname(configPath), readJson) } : resource));

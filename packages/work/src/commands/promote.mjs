@@ -507,14 +507,20 @@ async function runPromote(ctx, { slug: rawSlug, at: rawAt, yes, showCandidates =
 // created it — ON REFUSAL AND ON SUCCESS alike. The leaf is never left behind: a delivered cache
 // suite counts the work root's directories after an insert, and the transient root would be one of
 // them.
-async function runInsertTopLevel(ctx, { type, slug: rawSlug, at: rawAt, yes, today, dependsInput } = {}) {
+//
+// THE APPEND FORM (168/ADR-004 §2) — `append: true` with no `at` is the bare `promote` append the
+// promote verb already performs (`atGiven: false`), so the number still comes from the one mint.
+// Only `aof work prototype`'s start move passes it; without it a missing `at` is still
+// `insert-invalid-at`, so every `insert-*` face keeps its delivered refusal.
+async function runInsertTopLevel(ctx, { type, slug: rawSlug, at: rawAt, yes, today, dependsInput, append = false } = {}) {
   const workDir = ctx.workspace.workDir;
 
   const slug = normalizeSlug(rawSlug);
   if (!slug) throw commandError("A valid kebab-case slug is required.", "insert-invalid-slug", 400);
 
-  const at = parsePosition(rawAt);
-  if (at == null) throw commandError("A target position (--at) is required and must be a non-negative integer.", "insert-invalid-at", 400);
+  const appending = append === true && (rawAt == null || rawAt === "");
+  const at = appending ? null : parsePosition(rawAt);
+  if (!appending && at == null) throw commandError("A target position (--at) is required and must be a non-negative integer.", "insert-invalid-at", 400);
 
   // A uat's `--depends` is written INTO the leaf as the operator gave it (current numbers) and
   // comes out post-shift because the engine's rewrite reaches the backlog before the leaf moves.
@@ -533,7 +539,7 @@ async function runInsertTopLevel(ctx, { type, slug: rawSlug, at: rawAt, yes, tod
     const result = await promoteRow(
       ctx,
       { ref: slug, type, slug, parent: null, dir: leaf.dir, number: null, backlog: "" },
-      { at, atGiven: true, yes },
+      appending ? { atGiven: false, yes } : { at, atGiven: true, yes },
     );
     return { shifted: result.shifted, at: result.at, space: result.space, created: result.created };
   } catch (error) {

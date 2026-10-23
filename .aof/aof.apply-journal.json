@@ -2,7 +2,7 @@
   "version": 1,
   "files": [
     {
-      "path": ".codex/aof/workflows/workflow-contract.md",
+      "path": ".codex\\aof\\workflows\\workflow-contract.md",
       "runtime": "codex",
       "resource": {
         "id": "workflow-contract",
@@ -11,7 +11,7 @@
       "hash": "sha256:8f287b2532db8421afe5cb4256cfdf910f8c6cb8b0423f3d0ebcc0338c2932c4"
     },
     {
-      "path": ".codex/agents/aof-architect.toml",
+      "path": ".codex\\agents\\aof-architect.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-architect",
@@ -20,7 +20,7 @@
       "hash": "sha256:4a53500bd9567b93433c25282ab7f3224f1ff42b1eab8ac1a3174cacb6fe60bd"
     },
     {
-      "path": ".codex/agents/aof-compliance.toml",
+      "path": ".codex\\agents\\aof-compliance.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-compliance",
@@ -29,7 +29,7 @@
       "hash": "sha256:84fd66f5acfea6d1c4d8ea0d83df050256fcd5156c834b6c004b5548fcfdf40d"
     },
     {
-      "path": ".codex/agents/aof-designer.toml",
+      "path": ".codex\\agents\\aof-designer.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-designer",
@@ -38,7 +38,7 @@
       "hash": "sha256:5de186bcd7b2b872e4542da111c87d7d85a825923b8cad18afff66e4194f9a73"
     },
     {
-      "path": ".codex/agents/aof-developer.toml",
+      "path": ".codex\\agents\\aof-developer.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-developer",
@@ -47,7 +47,7 @@
       "hash": "sha256:64b9717f4c916dcfd6acf6d4ba96b123d60b8b82e74eb503083508b59a1d9f22"
     },
     {
-      "path": ".codex/agents/aof-product-owner.toml",
+      "path": ".codex\\agents\\aof-product-owner.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-product-owner",
@@ -56,7 +56,7 @@
       "hash": "sha256:148dff5eed30c88228af8ef1e0543cb211133ad3332240ca84f6e476a28991dc"
     },
     {
-      "path": ".codex/agents/aof-qa.toml",
+      "path": ".codex\\agents\\aof-qa.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-qa",
@@ -65,7 +65,7 @@
       "hash": "sha256:0fe97df7ae835b67b6d97e92cdc2c6c09505e7e99ad0e47b71d09ccec86e7730"
     },
     {
-      "path": ".codex/agents/aof-researcher.toml",
+      "path": ".codex\\agents\\aof-researcher.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-researcher",
@@ -74,7 +74,7 @@
       "hash": "sha256:51791e960f1cc3e17528f8b1a4693990acec6cf3a98a10adc06f4dc50d496766"
     },
     {
-      "path": ".codex/agents/aof-security.toml",
+      "path": ".codex\\agents\\aof-security.toml",
       "runtime": "codex",
       "resource": {
         "id": "aof-security",
@@ -83,7 +83,7 @@
       "hash": "sha256:ea14a4d7901f2d7c9cb9fc28b0eaf49bfed9c635edfb21761d2a0b8768093fed"
     },
     {
-      "path": ".agents/skills/aof-add-chore/SKILL.md",
+      "path": ".agents\\skills\\aof-add-chore\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-chore",
@@ -92,7 +92,7 @@
       "hash": "sha256:02071020e7d8c5bb287b4dcdcbd835c7834f9ba3ccfd0ef49d7a783da2efc548"
     },
     {
-      "path": ".agents/skills/aof-add-chore/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-chore\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-chore",
@@ -104,16 +104,16 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-add-diagram/SKILL.md",
+      "path": ".agents\\skills\\aof-add-diagram\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-diagram",
         "kind": "skill"
       },
-      "hash": "sha256:22f7fd9a1de40c8191aef137ed4c7dc23127c4a1fcc009c59a26887425e0bf07"
+      "hash": "sha256:f9c29e395164570feac336b9985ebf7340cb6701b8697c2f9baabcdcce84021b"
     },
     {
-      "path": ".agents/skills/aof-add-diagram/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-diagram\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-diagram",
@@ -125,7 +125,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-add-milestone/SKILL.md",
+      "path": ".agents\\skills\\aof-add-milestone\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-milestone",
@@ -134,7 +134,7 @@
       "hash": "sha256:47f2d6337066b846b8484f032301032ec0865a9d82aebfa953bc9a8f9bdb616e"
     },
     {
-      "path": ".agents/skills/aof-add-milestone/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-milestone\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-milestone",
@@ -146,7 +146,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-add-spike/SKILL.md",
+      "path": ".agents\\skills\\aof-add-spike\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-spike",
@@ -155,7 +155,7 @@
       "hash": "sha256:4d873d0622b685ad868d4edadf169e484bb54eb3cf087289470dc5962169849f"
     },
     {
-      "path": ".agents/skills/aof-add-spike/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-spike\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-spike",
@@ -167,7 +167,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-add-story/SKILL.md",
+      "path": ".agents\\skills\\aof-add-story\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-story",
@@ -176,7 +176,7 @@
       "hash": "sha256:4a2a92f7e2deb5a5d86bf96bf50891062ffbe8e2174b883c1f893de5171a0c5c"
     },
     {
-      "path": ".agents/skills/aof-add-story/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-story\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-story",
@@ -188,7 +188,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-add-task/SKILL.md",
+      "path": ".agents\\skills\\aof-add-task\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-task",
@@ -197,7 +197,7 @@
       "hash": "sha256:03b9ba10ca6a6bf10063a5211d03f1d3a94bd7ee2e7a7daebff54986b9a70fe4"
     },
     {
-      "path": ".agents/skills/aof-add-task/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-task\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-task",
@@ -209,7 +209,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-add-uat/SKILL.md",
+      "path": ".agents\\skills\\aof-add-uat\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-uat",
@@ -218,7 +218,7 @@
       "hash": "sha256:526073f6c0726355f0fb79344294007c24302584cfad498fc6f02fbf7cabd6e6"
     },
     {
-      "path": ".agents/skills/aof-add-uat/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-add-uat\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-add-uat",
@@ -230,7 +230,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-assimilate-code/SKILL.md",
+      "path": ".agents\\skills\\aof-assimilate-code\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-assimilate-code",
@@ -239,7 +239,7 @@
       "hash": "sha256:7bbaa856b1b43907ff9076b39166831aa931188ef7bf360ffe974a1d54ee8310"
     },
     {
-      "path": ".agents/skills/aof-assimilate-code/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-assimilate-code\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-assimilate-code",
@@ -251,7 +251,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-autonomous/SKILL.md",
+      "path": ".agents\\skills\\aof-autonomous\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-autonomous",
@@ -260,7 +260,7 @@
       "hash": "sha256:2586f026549e898699e1d3cf6dc9834b347d6c4451728504fabe3f87951217c2"
     },
     {
-      "path": ".agents/skills/aof-autonomous/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-autonomous\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-autonomous",
@@ -272,7 +272,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-continue/SKILL.md",
+      "path": ".agents\\skills\\aof-continue\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-continue",
@@ -281,7 +281,7 @@
       "hash": "sha256:df9eabab24c3989095db00d29881492b414cccabc25caf7c8ee1e327eec1430d"
     },
     {
-      "path": ".agents/skills/aof-continue/procedure.md",
+      "path": ".agents\\skills\\aof-continue\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-continue",
@@ -293,7 +293,7 @@
       "hash": "sha256:9946b374b0c861f3f26ca7d8771cf2c2ba22304c4a46b98710c896502b83f56d"
     },
     {
-      "path": ".agents/skills/aof-continue/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-continue\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-continue",
@@ -305,7 +305,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-delegate/SKILL.md",
+      "path": ".agents\\skills\\aof-delegate\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-delegate",
@@ -314,7 +314,7 @@
       "hash": "sha256:b181bf295b9fd0bc66096541274e9f97917b9cd480a4e88b7f017f27a2ebd455"
     },
     {
-      "path": ".agents/skills/aof-delegate/procedure.md",
+      "path": ".agents\\skills\\aof-delegate\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-delegate",
@@ -326,7 +326,7 @@
       "hash": "sha256:55e0d28d92767395159405562f5f7c791f0cc86481eec1a1800853419c01b7ed"
     },
     {
-      "path": ".agents/skills/aof-delegate/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-delegate\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-delegate",
@@ -338,7 +338,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-diagram-review/SKILL.md",
+      "path": ".agents\\skills\\aof-diagram-review\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-diagram-review",
@@ -347,7 +347,7 @@
       "hash": "sha256:3c0719535ece4fb39b5d1ea17e635ac64dca1d5b9b19a2fedee5ec89fdf9eb0d"
     },
     {
-      "path": ".agents/skills/aof-diagram-review/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-diagram-review\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-diagram-review",
@@ -359,16 +359,16 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-explain/SKILL.md",
+      "path": ".agents\\skills\\aof-explain\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-explain",
         "kind": "skill"
       },
-      "hash": "sha256:4b0382d2f00558bba8c80b70fea38b5ce505348d42bb110fc8ffa60c015c6000"
+      "hash": "sha256:3b06fa9a249ca28633287b33b9fab875abdbc17ec5947d15d8b6daca8ed03d97"
     },
     {
-      "path": ".agents/skills/aof-explain/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-explain\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-explain",
@@ -380,7 +380,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-feedback/SKILL.md",
+      "path": ".agents\\skills\\aof-feedback\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-feedback",
@@ -389,7 +389,7 @@
       "hash": "sha256:40856ccb41a9c123be0aa0c13453d0e8251e8f6137a215e488653cfdeef594e7"
     },
     {
-      "path": ".agents/skills/aof-feedback/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-feedback\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-feedback",
@@ -401,7 +401,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-init/SKILL.md",
+      "path": ".agents\\skills\\aof-init\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-init",
@@ -410,7 +410,7 @@
       "hash": "sha256:38acc221dbf9dfae45dbb2a002be3cd31a46612c89e1880f26ba4d8ee342b2a4"
     },
     {
-      "path": ".agents/skills/aof-init/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-init\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-init",
@@ -422,7 +422,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-insert-chore/SKILL.md",
+      "path": ".agents\\skills\\aof-insert-chore\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-chore",
@@ -431,7 +431,7 @@
       "hash": "sha256:a3ce92d8f3defbe2a4aa6109c4680543540471b5024f531341295485072d7148"
     },
     {
-      "path": ".agents/skills/aof-insert-chore/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-insert-chore\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-chore",
@@ -443,7 +443,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-insert-milestone/SKILL.md",
+      "path": ".agents\\skills\\aof-insert-milestone\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-milestone",
@@ -452,7 +452,7 @@
       "hash": "sha256:21061fdd52de2d7e5dfea2de9aefdc1e772b8d281308c522b6516024ae90030b"
     },
     {
-      "path": ".agents/skills/aof-insert-milestone/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-insert-milestone\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-milestone",
@@ -464,7 +464,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-insert-story/SKILL.md",
+      "path": ".agents\\skills\\aof-insert-story\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-story",
@@ -473,7 +473,7 @@
       "hash": "sha256:59eeb90f67f5a2f3aa819bb37f64fbeb9019e4c9f7e51c27ccd31a6f70a83e3d"
     },
     {
-      "path": ".agents/skills/aof-insert-story/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-insert-story\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-story",
@@ -485,7 +485,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-insert-uat/SKILL.md",
+      "path": ".agents\\skills\\aof-insert-uat\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-uat",
@@ -494,7 +494,7 @@
       "hash": "sha256:caa438289f7bedfecb8c157fcb30a5fe734dce335c79dd79892872fd3a34eb5d"
     },
     {
-      "path": ".agents/skills/aof-insert-uat/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-insert-uat\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-insert-uat",
@@ -506,7 +506,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-loop-diagram/SKILL.md",
+      "path": ".agents\\skills\\aof-loop-diagram\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-loop-diagram",
@@ -515,7 +515,7 @@
       "hash": "sha256:cbafe3f687bbcb18ef6f604b6e2a395abeff1b34b563a5e0ab692c4a00fe68db"
     },
     {
-      "path": ".agents/skills/aof-loop-diagram/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-loop-diagram\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-loop-diagram",
@@ -527,7 +527,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-migrate/SKILL.md",
+      "path": ".agents\\skills\\aof-migrate\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-migrate",
@@ -536,7 +536,7 @@
       "hash": "sha256:c84d0fdc994d0ff3bf26013492d9f04090864b4460410af90ce4c82b78069d65"
     },
     {
-      "path": ".agents/skills/aof-migrate/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-migrate\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-migrate",
@@ -548,7 +548,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-observe/SKILL.md",
+      "path": ".agents\\skills\\aof-observe\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-observe",
@@ -557,7 +557,7 @@
       "hash": "sha256:6efc6891a63119a37541cbafbf7a2d3442cfe4d1dc3e20932c0d22cbee964a47"
     },
     {
-      "path": ".agents/skills/aof-observe/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-observe\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-observe",
@@ -569,7 +569,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-pay-debt/SKILL.md",
+      "path": ".agents\\skills\\aof-pay-debt\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-pay-debt",
@@ -578,7 +578,7 @@
       "hash": "sha256:86f4386cbb651d5271fcb050d4fb94da8f839eee5da0f4bdcbf8cde69dd5d2ed"
     },
     {
-      "path": ".agents/skills/aof-pay-debt/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-pay-debt\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-pay-debt",
@@ -590,7 +590,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-promote/SKILL.md",
+      "path": ".agents\\skills\\aof-promote\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-promote",
@@ -599,7 +599,7 @@
       "hash": "sha256:44246e8962e1b9944be8c594bf666bedc5866fee62e04929a31e8cd14dd8f349"
     },
     {
-      "path": ".agents/skills/aof-promote/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-promote\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-promote",
@@ -611,7 +611,28 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-archive/SKILL.md",
+      "path": ".agents\\skills\\aof-prototype\\SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
+        "kind": "skill"
+      },
+      "hash": "sha256:f829e8f35f386603b92ce2d93060b568787642c382d19ce22a2cb6dcadfc1e84"
+    },
+    {
+      "path": ".agents\\skills\\aof-prototype\\agents\\openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-prototype",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".agents\\skills\\aof-archive\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-archive",
@@ -620,7 +641,7 @@
       "hash": "sha256:9dc9da6734d743c5dd615404517ee4e97c5af1298c986a89ec437dfb7916636c"
     },
     {
-      "path": ".agents/skills/aof-archive/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-archive\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-archive",
@@ -632,7 +653,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-questions/SKILL.md",
+      "path": ".agents\\skills\\aof-questions\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-questions",
@@ -641,7 +662,7 @@
       "hash": "sha256:c1dca690fdd9dc17d0674eb95d2f81d9789e2091cd6133aaebd19a52afd93ee8"
     },
     {
-      "path": ".agents/skills/aof-questions/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-questions\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-questions",
@@ -653,7 +674,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-recent/SKILL.md",
+      "path": ".agents\\skills\\aof-recent\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-recent",
@@ -662,7 +683,7 @@
       "hash": "sha256:1163b370153288d35482c7a70b3f950bdde4f04131df19f93592d01c02c0fb54"
     },
     {
-      "path": ".agents/skills/aof-recent/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-recent\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-recent",
@@ -674,7 +695,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-refine/SKILL.md",
+      "path": ".agents\\skills\\aof-refine\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-refine",
@@ -683,7 +704,7 @@
       "hash": "sha256:7dd11a03deb7fd53797a9761c13b6b3afa7605baf51eaf6559c62034ea76107a"
     },
     {
-      "path": ".agents/skills/aof-refine/procedure.md",
+      "path": ".agents\\skills\\aof-refine\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-refine",
@@ -695,7 +716,7 @@
       "hash": "sha256:e5fceb57335c0727b8d78f14d9ce5bc647cb5e0d7505eab511d2ff7597871bbe"
     },
     {
-      "path": ".agents/skills/aof-refine/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-refine\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-refine",
@@ -707,7 +728,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-repair/SKILL.md",
+      "path": ".agents\\skills\\aof-repair\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-repair",
@@ -716,7 +737,7 @@
       "hash": "sha256:9a080c46d6a54cc8793a27bb68c8700f0d19d1b0ac2f3510164e005ee0a568cb"
     },
     {
-      "path": ".agents/skills/aof-repair/procedure.md",
+      "path": ".agents\\skills\\aof-repair\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-repair",
@@ -728,7 +749,7 @@
       "hash": "sha256:8d4cb1ebb953dd4853c1297e31247d50bb7dc440532e62c5769b300d0eef699a"
     },
     {
-      "path": ".agents/skills/aof-repair/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-repair\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-repair",
@@ -740,7 +761,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-retrospective/SKILL.md",
+      "path": ".agents\\skills\\aof-retrospective\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-retrospective",
@@ -749,7 +770,7 @@
       "hash": "sha256:edc8179346d6ca8a8bcf5d0e91757ae038b826ba981d130c5ddd2c35853e944e"
     },
     {
-      "path": ".agents/skills/aof-retrospective/procedure.md",
+      "path": ".agents\\skills\\aof-retrospective\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-retrospective",
@@ -761,7 +782,7 @@
       "hash": "sha256:b73ae21727318580280064547437469c0704a105e0645ecebb5e10081665123e"
     },
     {
-      "path": ".agents/skills/aof-retrospective/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-retrospective\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-retrospective",
@@ -773,7 +794,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-review/SKILL.md",
+      "path": ".agents\\skills\\aof-review\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-review",
@@ -782,7 +803,7 @@
       "hash": "sha256:f6f7300224ea76261a54120cba92baa9d241f13efb0c79cb60c13eb7b19b5efe"
     },
     {
-      "path": ".agents/skills/aof-review/procedure.md",
+      "path": ".agents\\skills\\aof-review\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-review",
@@ -794,7 +815,7 @@
       "hash": "sha256:bf0820773b4d8c13fc32b4b3c83ed959b586a44a1a73e8973e6030424dd0311a"
     },
     {
-      "path": ".agents/skills/aof-review/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-review\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-review",
@@ -806,7 +827,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-shatter/SKILL.md",
+      "path": ".agents\\skills\\aof-shatter\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-shatter",
@@ -815,7 +836,7 @@
       "hash": "sha256:5419a581007b4ff9ea333c44f9fe1440f5e234cc05a36de957f4aacd2d717bbd"
     },
     {
-      "path": ".agents/skills/aof-shatter/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-shatter\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-shatter",
@@ -827,7 +848,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-validate/SKILL.md",
+      "path": ".agents\\skills\\aof-validate\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-validate",
@@ -836,7 +857,7 @@
       "hash": "sha256:50f147dd7818e6359ebc940fdfee9d2de8cbbf0f98785d65afc25b7bebb50ed5"
     },
     {
-      "path": ".agents/skills/aof-validate/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-validate\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-validate",
@@ -848,7 +869,7 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".agents/skills/aof-verify/SKILL.md",
+      "path": ".agents\\skills\\aof-verify\\SKILL.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-verify",
@@ -857,7 +878,7 @@
       "hash": "sha256:077a2231cbc58570a61420c671891a0c3ba4e48d5fdb4e753efc25ca2ca0240a"
     },
     {
-      "path": ".agents/skills/aof-verify/procedure.md",
+      "path": ".agents\\skills\\aof-verify\\procedure.md",
       "runtime": "codex",
       "resource": {
         "id": "aof-verify",
@@ -869,7 +890,7 @@
       "hash": "sha256:0ff4e5890b762b2b2662998a265812b24156bd5fe3ef7df2907af243ce1b0485"
     },
     {
-      "path": ".agents/skills/aof-verify/agents/openai.yaml",
+      "path": ".agents\\skills\\aof-verify\\agents\\openai.yaml",
       "runtime": "codex",
       "resource": {
         "id": "aof-verify",
@@ -881,7 +902,28 @@
       "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
     },
     {
-      "path": ".codex/hooks.json",
+      "path": ".agents\\skills\\aof-hyperplan\\SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-hyperplan",
+        "kind": "skill"
+      },
+      "hash": "sha256:94e2c2cf326a66667687f55c26e78887e2c2d5514d72a1ffe53d8280cfd85b18"
+    },
+    {
+      "path": ".agents\\skills\\aof-hyperplan\\agents\\openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-hyperplan",
+        "kind": "skill",
+        "artifact": "associated-file",
+        "file": "agents/openai.yaml",
+        "sourceFile": "agents/openai.yaml"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
+      "path": ".codex\\hooks.json",
       "runtime": "codex",
       "resource": {
         "id": "codex-hooks",

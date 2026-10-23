@@ -33,7 +33,8 @@ import { createMeshStore } from "../../../packages/mesh/src/store.mjs";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const BRIDGE = path.join(repoRoot, "packages", "mesh", "src", "terminal-relay-bridge.mjs");
 const LAUNCHER = path.join(repoRoot, "packages", "mesh", "src", "launcher.mjs");
-const DRIVE = path.join(repoRoot, "packages", "work-loop", "src", "commands", "drive.mjs");
+// The drive child's producer — extracted from `commands/drive.mjs` at 162's verify (F-02).
+const DRIVE = path.join(repoRoot, "packages", "work-loop", "src", "loop-session-stream.mjs");
 
 function stripComments(source) {
   return source.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
@@ -101,9 +102,9 @@ export function ingressProblems({ bridgeSource, launcherSource, driveSource }) {
   // The premise of the 3 → 4 producer raise: the child states both facts at its one upsert.
   const statement = functionBody(driveSource, "stateLoopSession");
   if (statement == null) {
-    problems.push("drive.mjs has no `stateLoopSession(` — the loop drive no longer states its session, so its pane would read `no-producer` or mount typeable");
+    problems.push("loop-session-stream.mjs has no `stateLoopSession(` — the loop drive no longer states its session, so its pane would read `no-producer` or mount typeable");
   } else if (!/pingSession\(/.test(statement) || !/relaying:\s*true/.test(statement) || !/\bloopRunId\b/.test(statement)) {
-    problems.push("drive.mjs's `stateLoopSession` does not upsert through `pingSession(` with `relaying: true` and the `loopRunId` — the premise the producer ceiling was raised on (162/ADR-002)");
+    problems.push("loop-session-stream.mjs's `stateLoopSession` does not upsert through `pingSession(` with `relaying: true` and the `loopRunId` — the premise the producer ceiling was raised on (162/ADR-002)");
   }
   return problems;
 }

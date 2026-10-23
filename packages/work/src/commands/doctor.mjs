@@ -10,7 +10,7 @@ import { readJson } from "@aof/foundation/fs";
 import { commandError } from "@aof/contracts/error";
 
 // Application composition supplies shared runtime services and transition policy.
-export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore }) {
+export function createDoctorCommand({ buildSnapshot, doctorWork, staleWindowFromConfig, CONVENTION_DOCS, claudeProjectsDir, readCachedWorkFacts, isMeshWorktree, meshNodeIdOf, probeFabric, remediationForReason, effectsFor, knownEvents, openEffectsJournal, effectsJournalPath, readEvents, readEventSteps, readUnsettledSteps, meshGlobalPropagationDecision, pendingSteps, drainEffects, reachableLoci, reconcileRunRecords, execFileAsync, loadNodeIdentity, loadCommandCore, readCostSnapshots }) {
 // work:doctor — the deterministic, cross-item HEALTH lane of the work stream
 // (milestone 15 / ADR-001). The SIBLING of work:validate on the SAME command
 // core: same `{ id, input, run, cli }` contract, same getCommand/invoke door, the
@@ -224,7 +224,12 @@ const doctorCommand = {
     const history = readRenameMap(ctx.workspace.projectRoot ?? null);
     // 164/03 (Q1) — the sync lane's facts, read HERE and handed to the engine as data.
     const sync = cache == null ? null : await readSyncFacts(ctx, cache);
-    const now = Date.now();
+    // The injected clock, when a test hands one in; the wall clock otherwise.
+    const injectedNow = typeof input.now === "string" ? Date.parse(input.now) : Number.NaN;
+    const now = Number.isFinite(injectedNow) ? injectedNow : Date.now();
+    // 167/00 — this node's daemon cost snapshots, read HERE through the one writer's reader and
+    // handed to the daemon-cost lane as data. No reader, or no node id, is no facts: the lane is silent.
+    const daemonCost = await readDaemonCostFacts(ctx, cache);
     // milestone 135 / ADR-001 §3 — the config, and the transcript directory a live answer is read
     // from, resolved at THIS edge as the settle seam resolves it, so the engine never reads the
     // environment. Both are data for the story probe, whose own gate decides whether it reads.
@@ -266,6 +271,7 @@ const doctorCommand = {
       committedConfigPath: ctx.workspace.configPath,
       legacyIdentitySidecarPresent,
       legacyIdentitySidecarPath: ctx.workspace.aofDir ? `${ctx.workspace.aofDir}/mesh/identity.json` : null,
+      daemonCost,
     });
 
     // 161/ADR-001 — the direct wiki surface's source citations, ADDITIVE and workspace-level like the
@@ -516,6 +522,20 @@ async function readSyncFacts(ctx, cache) {
     }
   }
   return { workspaceId: cache.workspaceId ?? null, name: ctx.workspace.config?.name ?? null, workspaces: cache.syncState ?? [], owed };
+}
+
+// readDaemonCostFacts(ctx, cache) — 167/00's facts at doctor's impure edge: the cost snapshots this
+// node's daemons wrote, through the presence module's reader (core supplies it). A read fault is no
+// facts, never a failed doctor: the daemon-cost lane is diagnostics about diagnostics.
+async function readDaemonCostFacts(ctx, cache) {
+  if (typeof readCostSnapshots !== "function") return null;
+  const nodeId = cache?.selfNodeId ?? meshNodeIdOf(ctx.workspace.config ?? {}) ?? null;
+  if (typeof nodeId !== "string" || nodeId.length === 0) return null;
+  try {
+    return { nodeId, snapshots: await readCostSnapshots(ctx.workspace, nodeId) };
+  } catch {
+    return null;
+  }
 }
 
 function scopeOf(input) {

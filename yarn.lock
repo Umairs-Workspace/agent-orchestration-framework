@@ -35,6 +35,7 @@ __metadata:
   resolution: "@aof/diagrams@workspace:packages/diagrams"
   dependencies:
     "@aof/contracts": "workspace:*"
+    "@aof/foundation": "workspace:*"
     "@aof/work": "workspace:*"
   languageName: unknown
   linkType: soft
@@ -59,6 +60,12 @@ __metadata:
 "@aof/foundation@workspace:*, @aof/foundation@workspace:packages/foundation":
   version: 0.0.0-use.local
   resolution: "@aof/foundation@workspace:packages/foundation"
+  languageName: unknown
+  linkType: soft
+
+"@aof/integration-hyperagent@workspace:*, @aof/integration-hyperagent@workspace:packages/integration-hyperagent":
+  version: 0.0.0-use.local
+  resolution: "@aof/integration-hyperagent@workspace:packages/integration-hyperagent"
   languageName: unknown
   linkType: soft
 
@@ -113,6 +120,7 @@ __metadata:
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
+    "@aof/integration-hyperagent": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/knowledge": "workspace:*"
     "@aof/mesh": "workspace:*"
@@ -2620,6 +2628,7 @@ __metadata:
     "@aof/effects": "workspace:*"
     "@aof/execution": "workspace:*"
     "@aof/foundation": "workspace:*"
+    "@aof/integration-hyperagent": "workspace:*"
     "@aof/integration-notion": "workspace:*"
     "@aof/knowledge": "workspace:*"
     "@aof/mesh": "workspace:*"

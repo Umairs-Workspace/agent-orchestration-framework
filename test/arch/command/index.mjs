@@ -71,6 +71,9 @@ import { archTests as acdRouteLogicFrameworkFreeTests } from "./acd-route-logic-
 import { archTests as acdDeclaredIdSingleHomeTests } from "./acd-declared-id-single-home.test.mjs";
 import { archTests as acdCitedPathResolvesTests } from "./acd-cited-path-resolves.test.mjs";
 import { archTests as acdWikiCitationResolverTests } from "./acd-wiki-citation-resolver.test.mjs";
+// milestone 169 / ADR-003 — FF-16901: the integration registry is the only core module that names an
+// integration package, and Hyperagent's verbs reach the command list through it (169/01 task 01).
+import { archTests as acdIntegrationRegistryOneHomeTests } from "./acd-integration-registry-one-home.test.mjs";
 import { archTests as acdPathIsNotBehaviourTests } from "./acd-path-is-not-behaviour.test.mjs";
 // milestone 119 / story 02 — `packages/core/src/commands/` gets its interior, and the one control that story
 // authors. FF-11908 (the registry CITES and does not EXPLAIN: every entry comment in
@@ -131,4 +134,6 @@ export const tests = [
   // story 128 — work memory joins the route table (task 01)
   ...acdWorkMemoryRoutedTests,
   ...bundleRuntimeVariantArchTests,
+  // milestone 169 / story 01 — FF-16901 (see the import note).
+  ...acdIntegrationRegistryOneHomeTests,
 ];

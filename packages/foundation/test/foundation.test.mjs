@@ -8,6 +8,7 @@ import { createJsonlLogSink, readJsonlLog } from '@aof/foundation/log';
 import { readJson, writeText, normalizeId, createTempFileSweeper } from '@aof/foundation/fs';
 import { gitPositional } from '@aof/foundation/git-args';
 import { trimRun } from '@aof/foundation/text';
+import { COST_CAUSES, DAEMON_BUDGET, createCostMeter, judge, requestClient, startCostSnapshots } from '@aof/foundation/cost-meter';
 
 async function fixture(run) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'aof-foundation-'));
@@ -134,4 +135,90 @@ test('trimRun strips a leading/trailing character run in linear time', () => {
   const started = performance.now();
   assert.equal(trimRun(hostile, '-'), hostile);
   assert.ok(performance.now() - started < 1_000, 'a long interior run is not rescanned');
+});
+
+// ── 167/00 — the cost meter ─────────────────────────────────────────────────────────────
+// Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/00_story_the-daemon-says-what-it-costs/
+//   tasks/00_each-daemon-counts-its-work.feature (@executable). Driven over an injected clock, CPU
+//   reader and ticker, so nothing here waits on the wall clock.
+function fakeProcess() {
+  const state = { now: Date.parse('2026-10-20T18:00:00.000Z'), cpu: 0, active: 0, idle: 0 };
+  const meter = createCostMeter({ clock: () => state.now, cpuMicros: () => state.cpu, eventLoop: () => ({ active: state.active, idle: state.idle }), pid: 4242 });
+  const advance = (seconds, { cpuShare = 0.01 } = {}) => {
+    state.now += seconds * 1000; state.cpu += seconds * 1_000_000 * cpuShare;
+    state.active += seconds * 1000 * cpuShare; state.idle += seconds * 1000 * (1 - cpuShare);
+  };
+  return { state, meter, advance };
+}
+function manualTicker() {
+  const handles = [];
+  return { handles, start(seconds, onTick) { const handle = { seconds, onTick, stopped: false }; handles.push(handle); return handle; }, stop(handle) { handle.stopped = true; } };
+}
+
+test('167/00 a cause outside the closed set is refused', () => {
+  const { meter } = fakeProcess();
+  assert.throws(() => meter.count('cpu-spike'), (error) => /cpu-spike/.test(error.message) && COST_CAUSES.every((name) => error.message.includes(name)));
+  const lenient = createCostMeter({ strict: false });
+  assert.doesNotThrow(() => lenient.count('cpu-spike'));
+  assert.deepEqual(lenient.snapshot({ daemon: 'serve' }).refused, ['cpu-spike'], 'a production meter drops it and says so');
+});
+
+for (const [daemon, elapsed, event, written] of [['serve', 14, 'nothing', null], ['serve', 15, 'nothing', 15], ['ui', 31, 'nothing', 30], ['ui', 20, 'stop', 20]]) {
+  test(`167/00 each daemon writes its snapshot every 15 seconds and at a clean stop — ${daemon} after ${elapsed}s, ${event}`, async () => {
+    const { state, meter, advance } = fakeProcess();
+    const started = state.now, ticker = manualTicker(), written_ = [];
+    const writer = startCostSnapshots({ meter, daemon, ticker, publish: (snapshot) => { written_.push(snapshot); } });
+    assert.equal(ticker.handles[0].seconds, 15, 'the writer ticks every 15 seconds');
+    for (let second = 1; second <= elapsed; second++) { advance(1); if (second % 15 === 0) ticker.handles[0].onTick(); }
+    if (event === 'stop') await writer.stop();
+    await Promise.resolve();
+    const last = written_.at(-1);
+    if (written === null) assert.equal(last, undefined, 'no snapshot yet');
+    else {
+      assert.equal((Date.parse(last.at) - started) / 1000, written);
+      assert.equal(last.daemon, daemon);
+    }
+    if (event === 'stop') assert.equal(ticker.handles[0].stopped, true, 'the stop also stops the ticker');
+  });
+}
+
+test('167/00 a snapshot carries what the readers need', () => {
+  const { meter, advance } = fakeProcess();
+  for (let tick = 1; tick <= 5; tick++) {
+    advance(15, { cpuShare: 0.02 });
+    meter.sample();
+    if (tick === 5) for (let read = 0; read < 40; read++) meter.count('full-disk-read', { workspaceId: 'aof' });
+  }
+  const snapshot = meter.snapshot({ daemon: 'serve' });
+  assert.deepEqual([snapshot.daemon, snapshot.pid, snapshot.at], ['serve', 4242, '2026-10-20T18:01:15.000Z'], 'its pid, the daemon and the time');
+  assert.equal(snapshot.cpuPercent, 2, 'its CPU share over the last 60 seconds');
+  assert.equal(snapshot.cpuPercentSinceStart, 2, '…and since start');
+  assert.equal(snapshot.windowSeconds, 60);
+  assert.equal(snapshot.eventLoopUtilization, 0.02, 'its event-loop utilisation');
+  assert.equal(snapshot.state, 'idle', 'its state');
+  assert.deepEqual(snapshot.topCauses, [{ cause: 'full-disk-read', labels: { workspaceId: 'aof' }, count: 40 }], 'its top causes with their labels');
+  assert.deepEqual(judge(snapshot), { state: 'idle', budgetPercent: DAEMON_BUDGET.idlePercent, over: false });
+});
+
+test('167/00 a fleet or board request makes the daemon viewer-open for 30 seconds', () => {
+  const { meter, advance } = fakeProcess();
+  meter.count('request', { route: '/api/mesh/status', client: requestClient('fleet') });
+  assert.equal(meter.snapshot().state, 'viewer-open');
+  advance(31);
+  assert.equal(meter.snapshot().state, 'idle');
+  meter.count('request', { route: '/api/mesh/status', client: requestClient(undefined) });
+  assert.equal(meter.snapshot().state, 'idle', 'an unknown client opens no view');
+  assert.equal(meter.total('request', { client: 'unknown' }), 1);
+});
+
+test('167/00 E3 · a degrade raised while reading a workspace names it, and every report is counted through the throttle', () => {
+  let now = 10_000;
+  const lines = [];
+  const { meter } = fakeProcess();
+  const reporter = createDegradeReporter({ clock: () => now, meter, createSink: () => ({ write: (event) => lines.push(event) }) });
+  for (let read = 0; read < 40; read++) { reporter.reportDegrade('work-read-cache-unavailable', 'no rows', { workspaceId: '52294b307214c27d' }); now += 1_500; }
+  assert.equal(lines[0].workspaceId, '52294b307214c27d', 'the degrade line carries workspaceId');
+  assert.ok(lines.length <= 12, `the throttle still drops lines (${lines.length})`);
+  assert.equal(meter.total('degrade', { code: 'work-read-cache-unavailable' }), 40, 'every report is counted');
+  assert.equal(meter.total('degrade', { workspaceId: '52294b307214c27d' }), 40);
 });

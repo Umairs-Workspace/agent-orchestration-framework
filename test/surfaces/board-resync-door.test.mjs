@@ -50,6 +50,7 @@ import {
 } from "../../apps/ui/src/board/resync.mjs";
 import { withBoardFace } from "../support/board-face-fixture.mjs";
 import { withBoardApp, BOARD_EPOCH, findAll, visibleTextOf } from "../../apps/ui/test/support/board-app-harness.mjs";
+import { POLL_BACKOFF_CAP_MS } from "../../apps/ui/src/lib/poll-cadence.mjs";
 
 const NODE = "umamis-mac-mini";
 const at = (secondsFromNow) => new Date(BOARD_EPOCH + secondsFromNow * 1000).toISOString();
@@ -62,9 +63,12 @@ async function measurePollInterval(app) {
   const mark = app.requests().length;
   await app.advance(60_000);
   const rounds = [...new Set(app.requests().slice(mark).map((entry) => entry.at))].sort((a, b) => a - b);
-  const gaps = [...new Set(rounds.slice(1).map((value, index) => value - rounds[index]))];
-  assert.equal(gaps.length, 1, `the board polls on ONE cadence (saw gaps ${JSON.stringify(gaps)})`);
-  return gaps[0];
+  const gaps = [...new Set(rounds.slice(1).map((value, index) => value - rounds[index]))].sort((a, b) => a - b);
+  // 167/02 (ADR-004): an idle board's probe rides the ONE cadence, slowing from its base — the first
+  // unchanged step is twice the base, then the cap. So the base is read off that first step, still from
+  // the app's own traffic, and the gaps must be exactly those two steps (no second cadence).
+  assert.deepEqual(gaps, [gaps[0], POLL_BACKOFF_CAP_MS].filter((gap, index, all) => all.indexOf(gap) === index), `the board polls on ONE cadence (saw gaps ${JSON.stringify(gaps)})`);
+  return gaps[0] / 2;
 }
 
 // Let the REAL server finish answering a HELD request. The request is genuinely

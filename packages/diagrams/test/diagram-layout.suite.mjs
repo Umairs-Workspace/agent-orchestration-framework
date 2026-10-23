@@ -9,7 +9,9 @@ import {
   loopDiagramPaths,
   loopRasterSvgPath,
   parseDiagramLinks,
+  prototypeDiagramStem,
   readDiagramBrief,
+  readPrototypeBrief,
   renderDiagramBlock,
 } from "@aof/diagrams/layout";
 
@@ -162,4 +164,33 @@ export const diagramLayoutTests = [
       }, "the plan needs no generator");
     },
   },
+  // milestone 168 / story 02 (ADR-006) — a prototype's diagram: the brief under `### <name>` in
+  // `## Diagrams`, the stem the name itself, and a block titled by the name alone.
+  {
+    name: "168/02 a prototype's brief is the prose under its ### <name> heading inside ## Diagrams",
+    run: () => {
+      const rows = [
+        [doc("## Diagrams", "", "### data-flow", "", "rows flow into the ledger", "", "### screens", "the screens"), "data-flow", "rows flow into the ledger"],
+        [doc("## Diagrams", "### data-flow", "rows", "", "![data-flow](diagrams/data-flow.svg)", "after"), "data-flow", "rows"],
+        [doc("## Diagrams", "### empty", "<!-- nothing yet -->", "### next", "x"), "empty", ""],
+        [doc("## Diagrams", "### data-flow", "rows"), "screens", null],
+        [doc("## Shortcuts", "### data-flow", "not a diagram", "## Diagrams", "### other", "x"), "data-flow", null],
+        [doc("## Intent", "x"), "data-flow", null],
+      ];
+      for (const [text, name, brief] of rows) assert.equal(readPrototypeBrief(text, name), brief, JSON.stringify(text));
+      assert.equal(prototypeDiagramStem("data-flow"), "data-flow", "the stem is the name");
+      assert.equal(refusal(() => prototypeDiagramStem("ADR-001")), "diagram-slug-invalid");
+      assert.equal(diagramPaths("wiki/work/169_prototype_x", "data-flow", ".html", ["svg", "png"]).svg, "wiki/work/169_prototype_x/diagrams/data-flow.svg");
+    },
+  },
+  {
+    name: "168/02 a prototype's block is titled by the name alone and parses back to every target",
+    run: () => {
+      const block = renderDiagramBlock({ adrId: null, title: "data-flow", stem: "data-flow", sourceExt: ".html", formats: ["svg", "png"] });
+      assert.equal(block, "![data-flow](diagrams/data-flow.svg)\n\nSource: [data-flow.html](diagrams/data-flow.html) · PNG: [data-flow.png](diagrams/data-flow.png)");
+      const written = [...block.matchAll(/\]\(([^)]+)\)/g)].map((match) => match[1]).sort();
+      assert.deepEqual(parseDiagramLinks(`## Diagrams\n\n${block}\n`).map((link) => link.target).sort(), written);
+    },
+  },
 ];
+

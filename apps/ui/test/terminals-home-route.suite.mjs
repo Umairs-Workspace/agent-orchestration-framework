@@ -527,7 +527,11 @@ export const terminalsHomeRouteTests = [
         // 998 -> 904 at `aof:verify 135` (F-135-01): 135/03's rule grouping took the panel to 1,031,
         // over its ceiling, so the whole TASKS tab moved out to `TasksTab.tsx` and only its import
         // and mount stay. Ninety-six lines of headroom.
-        ["apps/ui/src/board/DetailPanel.tsx", 904, 1000, "127/04's move out and pill in, 133/04's tab, 131/05's ask card mount, then 135's TASKS tab moved out to its own module"],
+        // 904 -> 913 by 167/02 (ADR-004): the runs poll is built from the one cadence, and its load
+        // reports whether the answer changed (an equal runs list slows it). Eighty-seven lines of headroom.
+        // 913 -> 901 by 168/03: the type-aware tab set moved to `model.ts` (`tabsFor`), so a prototype's
+        // tabs are decided beside the other types'. Ninety-nine lines of headroom.
+        ["apps/ui/src/board/DetailPanel.tsx", 901, 1000, "127/04's move out and pill in, 133/04's tab, 131/05's ask card mount, 135's TASKS tab moved out to its own module, then 167/02's runs poll on the one cadence, then 168/03's tab set moved to model.ts"],
         // 1298 -> 1300 by 154/10 (ADR-008): the execution region's import and mount.
         // Its form lives in RuntimeSettings.tsx; the existing ceiling stays 1300.
         // Scope-load guards/global explanation replace existing lines. No rationale

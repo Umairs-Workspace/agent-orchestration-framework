@@ -35,6 +35,7 @@ import path from "node:path";
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishWorkItemRun = _aofApplication.mesh.store.publishWorkItemRun;
 const startSession = _aofHooks.meshSession.startSession;
 const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 
@@ -98,7 +99,12 @@ async function registerSecondWorkspace(fixture, workspaceId = WS_B) {
 // A REAL run record on disk, in whatever state the row names. `running` is the sole
 // in-flight state the assembler counts (queued is pre-running; done/failed/cancelled
 // are terminal) — this helper never encodes that rule, it just writes the record.
-async function seedRun(workDirRoot, { itemDir = "48_milestone_demo", runId, state = "running" }) {
+// 167/ADR-008 — the tick reads this node's runs from the STORE, so the record is also published
+// there as the ledger's `publish-run` would have, under the workspace's id (`workspaceId`, WS_A for
+// the fixture's own repo) and this node; the row carries the state the row names, so a non-running
+// state is as invisible to the assembler as it was on disk. Every fixture keeps its home at
+// `<tmp>/home` beside `<tmp>/repo*`, which is what the env is derived from.
+async function seedRun(workDirRoot, { itemDir = "48_milestone_demo", runId, state = "running", workspaceId = WS_A }) {
   const milestoneDir = path.join(workDirRoot, itemDir);
   await mkdir(path.join(milestoneDir, "runs"), { recursive: true });
   await writeFile(path.join(milestoneDir, "SPEC.md"), "---\ntype: milestone\nnumber: 48\nslug: demo\nstatus: in-progress\ntitle: Demo\n---\n", "utf8");
@@ -108,6 +114,13 @@ async function seedRun(workDirRoot, { itemDir = "48_milestone_demo", runId, stat
     failureReason: null, heartbeatAt: null, retryOf: null, reclaimedAt: null,
   };
   await writeFile(path.join(milestoneDir, "runs", `${runId}.json`), JSON.stringify(record, null, 2), "utf8");
+  const env = { AOF_GLOBAL_HOME: path.join(path.dirname(path.dirname(path.dirname(workDirRoot))), "home") };
+  const store = await openGlobalWorkProjectionStore({ env });
+  try {
+    await publishWorkItemRun(store, { config: { mesh: { workspaceId, nodeId: NODE_ID } } }, { ref: "48", runId, record }, { now: NOW, nodeId: NODE_ID });
+  } finally {
+    store.close();
+  }
 }
 
 // A REAL session record, written by the REAL producer.
@@ -205,7 +218,7 @@ export const meshLauncherSessionWireCompleteTests = [
         await withFixture(async (fixture) => {
           const second = await registerSecondWorkspace(fixture);
           const workDirFor = (workspaceId) => (workspaceId === WS_A ? fixture.workDir : second.workDir);
-          for (const run of row.runs) await seedRun(workDirFor(run.workspaceId), { runId: run.runId });
+          for (const run of row.runs) await seedRun(workDirFor(run.workspaceId), { runId: run.runId, workspaceId: run.workspaceId });
           const ws = await loadWorkspace(fixture.root, undefined, { env: fixture.env });
           for (const session of row.sessions) await seedSession(ws, session);
 

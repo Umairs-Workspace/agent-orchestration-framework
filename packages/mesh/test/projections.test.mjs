@@ -10,6 +10,9 @@ import { createGlobalMeshQuery } from '@aof/mesh/global-query';
 import { createGlobalWorkPublisher } from '@aof/mesh/publisher';
 import { createGlobalWorkProjectionStore, GLOBAL_WORK_SCHEMA_VERSION } from '@aof/mesh/projection-store';
 import { assembleAssignmentRecord, insertAssignment, readAssignment } from '@aof/mesh/assignment-record';
+import { readStreamSnapshot } from '@aof/work/discovery';
+import { recordDoc } from '@aof/work/records';
+import { processCostMeter } from '@aof/foundation/cost-meter';
 
 async function fixture(t) {
   const parent = await realpath(os.tmpdir());
@@ -22,7 +25,7 @@ async function fixture(t) {
   const services = createGlobalWorkProjectionStore({
     globalMeshPaths, reportDegrade, importSqliteRuntime: () => import('node:sqlite'),
     workspaceIdFromPath: () => 'workspace', resolveWorkspaceId: () => 'workspace',
-    listItems: async () => [], tableClass: table => table === 'projection_errors' ? 'projection' : 'fact',
+    readStreamSnapshot, recordDoc, tableClass: table => table === 'projection_errors' ? 'projection' : 'fact',
     toWireProvenance: value => value,
   });
   const workDir = path.join(root, 'repo', 'wiki', 'work');
@@ -95,4 +98,35 @@ test('global query maps store-open errors to the stable API refusal and configur
   const paths = { databasePath: '/fixture/global.db' };
   const query = createGlobalMeshQuery({ globalStoreError, globalMeshPaths: () => paths, openGlobalWorkProjectionStore: async () => { throw Error('fixture unavailable'); } });
   await assert.rejects(query.queryGlobalMeshStatus(), error => error.code === 'global-store-unavailable' && error.status === 503 && error.message.includes(paths.databasePath));
+});
+
+// 167/01 (ADR-003) — the tick's own-disk read comes off the remembered stream snapshot.
+// Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/01_story_an-unchanged-tree-costs-a-stat-walk/
+//   tasks/00_an-unchanged-tree-is-read-once.feature (R1 through the projection reader the presence tick and the sync pass use).
+// The process meter is shared, so the counts are deltas over this case's own reads.
+test('167/01 E1 · the projection reader\'s second read of an unchanged tree parses nothing, and keeps its faults', async t => {
+  const { workspace, services } = await fixture(t);
+  const milestone = path.join(workspace.workDir, '01_milestone_alpha');
+  await mkdir(path.join(milestone, 'stories', '00_story_one'), { recursive: true });
+  await writeFile(path.join(milestone, 'SPEC.md'), '---\ntype: milestone\nnumber: 01\nslug: alpha\nstatus: in-progress\ntitle: Alpha\n---\n');
+  await writeFile(path.join(milestone, 'stories', '00_story_one', 'STORY.md'), 'no frontmatter here\n');
+  const labels = { workspaceId: 'workspace' };
+  const before = { reads: processCostMeter.total('full-disk-read', labels), memo: processCostMeter.total('cache-hit', { ...labels, code: 'memo' }) };
+  const first = await services.readWorkspaceProjectionItems(workspace);
+  const second = await services.readWorkspaceProjectionItems(workspace);
+  assert.deepEqual(second, first, 'the remembered read answers what the first read answered');
+  assert.deepEqual(first.rows.map(row => [row.ref, row.status]), [['01', 'in-progress']]);
+  assert.deepEqual(first.errors.map(error => [error.ref, error.code]), [['01/00', 'frontmatter-unparseable']], 'an unparseable record doc is still reported, on both reads');
+  assert.equal(processCostMeter.total('full-disk-read', labels) - before.reads, 1, 'one parse');
+  assert.equal(processCostMeter.total('cache-hit', { ...labels, code: 'memo' }) - before.memo, 1, 'and one memo answer');
+});
+
+test('167/01 the projection reader of a work dir that cannot be listed is not authoritative, and walks again next time', async t => {
+  const { workspace, services } = await fixture(t);
+  const gone = { ...workspace, workDir: path.join(workspace.projectRoot, 'no-such-work-dir') };
+  for (let read = 0; read < 2; read++) {
+    const result = await services.readWorkspaceProjectionItems(gone);
+    assert.equal(result.authoritative, false, `read ${read + 1}: the stream could not be read`);
+    assert.equal(result.errors[0].code, 'ENOENT');
+  }
 });

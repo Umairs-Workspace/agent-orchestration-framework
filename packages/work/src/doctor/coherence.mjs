@@ -1,5 +1,6 @@
 import path from "node:path";
 import { isDependTarget } from "../dependencies.mjs";
+import { RECORD_DOC_BY_TYPE } from "../identity.mjs";
 
 // work:doctor — milestone 15 / story 01 check-groups: STATUS-COHERENCE and
 // LIFECYCLE-COMPLETENESS. Each is a PURE `(snapshot, ctx) => Finding[]` function
@@ -53,21 +54,9 @@ function childrenByMilestoneDir(snapshot) {
 // child under a not-started parent is the `stale-parent` shape.
 const isStarted = (status) => status != null && status !== "not-started";
 
-// milestone 37 / ADR-001 — spike/chore admitted here too (mirrors work.mjs's
-// recordDoc), so a cross-item finding anchored on a spike/chore resolves to its
-// own record doc (SPIKE.md/CHORE.md), not its bare folder.
-const recordDocFor = (item) =>
-  item.type === "milestone"
-    ? "SPEC.md"
-    : item.type === "story"
-      ? "STORY.md"
-      : item.type === "uat"
-        ? "SESSION.md"
-        : item.type === "spike"
-          ? "SPIKE.md"
-          : item.type === "chore"
-            ? "CHORE.md"
-            : null;
+// The type → record-doc map is imported from its one home (168/ADR-002), so a cross-item
+// finding anchored on any type resolves to its own record doc, not its bare folder.
+const recordDocFor = (item) => RECORD_DOC_BY_TYPE[item.type] ?? null;
 
 // Anchor a finding on the item's record doc when it has one, else its folder — the
 // natural anchor for a cross-item status fact (e.g. the lying parent's SPEC.md).
@@ -174,6 +163,8 @@ export function statusCoherenceGroup(snapshot) {
   const ownerOf = (story) => milestones.find((m) => story.dir.startsWith(m.dir + path.sep + "stories" + path.sep));
 
   for (const item of snapshot.items) {
+    // A prototype is outside the governed lifecycle (168/ADR-005 §3): no lane here reports on one.
+    if (item.type === "prototype") continue;
     const status = statusOf(item);
 
     // Parent-vs-children contradictions (a milestone with child stories).
@@ -265,6 +256,8 @@ export function lifecycleCompletenessGroup(snapshot) {
   const childrenByDir = childrenByMilestoneDir(snapshot);
 
   for (const item of snapshot.items) {
+    // A prototype is outside the governed lifecycle (168/ADR-005 §3): no lane here reports on one.
+    if (item.type === "prototype") continue;
     const status = statusOf(item);
     // milestone 43 / story 06 (ADR-010/R6.1) — THE SUPPRESSION, and it is the whole reason
     // the overlay is per-fact. This group reads `status × docs × children`. When the STATUS

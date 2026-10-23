@@ -1,8 +1,10 @@
 import path from "node:path";
-import { isLoopbackHost } from "./static-serve.mjs";
+import { isLoopbackHost, sendTaggedJson } from "./static-serve.mjs";
 
 // Application services enter through explicit ports; constructing a transport binds no listener.
-export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds }) {
+// 167/ADR-001 — `countRequest(route, clientHeader)` counts each `/api/work*` request on the
+// process's cost meter; core supplies it, and its absence counts nothing.
+export function createBoardApi({ invoke, loadWorkspace, resolveCacheStalenessSeconds, countRequest = () => {} }) {
 // `/api/work*` — the work board's read-mostly HTTP API (milestone 03, story 01;
 // re-homed onto the command core in milestone 08, story 02).
 //
@@ -43,6 +45,7 @@ async function handleWorkApi(request, response, options = {}) {
 
   const pathname = requestUrl.pathname;
   if (!pathname.startsWith("/api/work")) return false;
+  countRequest(pathname, request.headers?.["x-aof-client"]);
 
   try {
     // Inside the try so a loadWorkspace throw lands in the catch below (mapping
@@ -98,7 +101,9 @@ async function handleWorkApi(request, response, options = {}) {
       // (acd-work-ui-no-core-import, acd-command-layer-imports-downward). An unconfigured
       // machine states `null` and NO row is marked local: a board that does not know which
       // machine it is must not guess, and every row still names its reporter plainly.
-      sendJson(response, 200, {
+      // 167/ADR-004 — the board polls this route, so it answers conditionally: an unchanged list is
+      // a `304` with no body, never the whole list rebuilt, resent and re-rendered.
+      sendTaggedJson(request, response, {
         items: rows,
         stalenessSeconds: resolveCacheStalenessSeconds(workspace.config),
         nodeId: workspace.config?.mesh?.nodeId ?? null,

@@ -39,8 +39,8 @@ the others.
    as in the backlog and not yet scheduled. A row with `archived: true` is archived and done:
    explain it like any other item, and mark it as archived and done.
 3. **Read its record doc.** For a story run `aof work doc <ref> STORY`; for a milestone,
-   `aof work doc <ref> SPEC`. For a spike, chore or uat session, `Read` `SPIKE.md`, `CHORE.md` or
-   `SESSION.md` in the row's own `dir`. The purpose is read from a section that depends on the type:
+   `aof work doc <ref> SPEC`. For a spike, chore, uat session or prototype, `Read` `SPIKE.md`, `CHORE.md`,
+   `SESSION.md` or `PROTOTYPE.md` in the row's own `dir`. The purpose is read from a section that depends on the type:
 
    | type      | the purpose is read from |
    |-----------|--------------------------|
@@ -49,6 +49,7 @@ the others.
    | spike     | its `## Question` |
    | chore     | its `## Intent` |
    | uat       | its `## Scope` |
+   | prototype | its `## Intent` |
 
 4. **Write the answer.**
    - **Default (no `--verbose`): three to five sentences per item** saying what it delivers, who it

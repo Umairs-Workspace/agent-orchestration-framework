@@ -78,7 +78,12 @@ const commandIdsBeforeStory = [
   // loop hands a lane halt to. `review` ADDED AT 149 (after `retrospective`): `/aof:review` reviews
   // the operator's own build. `questions` ADDED AT 163 (after `archive`, the descriptor's own
   // order): the `/aof:questions` wrapper over `aof work questions`, the read side of `work:answer`.
-  "observe", "pay-debt", "promote", "archive", "questions", "recent", "refine", "repair", "retrospective", "review", "shatter", "validate", "verify",
+  // `prototype` ADDED AT 168/01 (after `promote`, the descriptor's own order): the `/aof:prototype`
+  // wrapper over `aof work prototype`, built inline in the operator's session.
+  "observe", "pay-debt", "promote", "prototype", "archive", "questions", "recent", "refine", "repair", "retrospective", "review", "shatter", "validate", "verify",
+  // `hyperplan` ADDED AT 169/01, after core's members: it is the Hyperagent integration's command,
+  // and the descriptor appends each integration's fragment after core's own (169/ADR-004).
+  "hyperplan",
 ];
 const delegatedCommandRows = [
   ["c01", "/aof:autonomous 03", "aof work loop 03 --level L2"],
@@ -748,7 +753,7 @@ export const autonomousShellOutPromptTests = [
       assert.deepEqual({ created: summary.created, updated: summary.updated, deleted: summary.deleted, drift: summary["drift-warning"] }, { created: 0, updated: 0, deleted: 0, drift: 0 });
       const bundle = loadBundle();
       for (const prompt of ["refine", "continue", "review", "assimilate-code", "migrate", "autonomous"]) {
-        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`) && entry.resource.artifact !== "associated-file");
+        const renders = renderBundleOutputs(bundle, { runtimes: ["claude", "codex", "opencode"] }).filter((entry) => (entry.resource.id === prompt || entry.resource.id === `aof-${prompt}`) && entry.resource.artifact !== "associated-file" && entry.resource.kind !== "asset");
         assert.equal(renders.length, 3, `${prompt}: one render per runtime`);
         for (const render of renders) {
           const onDisk = flattened(readBundleProse(render.path, repoRoot));

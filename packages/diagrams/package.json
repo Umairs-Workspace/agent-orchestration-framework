@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@aof/contracts": "workspace:*",
+    "@aof/foundation": "workspace:*",
     "@aof/work": "workspace:*"
   }
 }

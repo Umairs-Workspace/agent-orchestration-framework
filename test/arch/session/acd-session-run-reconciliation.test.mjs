@@ -57,6 +57,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const loadWorkspace = _aofWorkspace.work.loadWorkspace;
 const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
+const publishWorkItemRun = _aofApplication.mesh.store.publishWorkItemRun;
 const startSession = _aofHooks.meshSession.startSession;
 import { fleetCurrentWorkLines } from "../../../apps/ui/src/fleet/runs.mjs";
 
@@ -221,6 +222,15 @@ async function seedRunningRun(workDirRoot, itemDirName, runId) {
     failureReason: null, heartbeatAt: null, retryOf: null, reclaimedAt: null,
   };
   await writeFile(path.join(runsDir, `${runId}.json`), JSON.stringify(record, null, 2), "utf8");
+  // 167/ADR-008 — the tick reads this node's runs from the STORE: the record is also published there
+  // as the ledger's publish-run would have, under the fixture's pinned ws-A and this node.
+  const env = { AOF_GLOBAL_HOME: path.join(path.dirname(path.dirname(path.dirname(workDirRoot))), "home") };
+  const store = await openGlobalWorkProjectionStore({ env });
+  try {
+    await publishWorkItemRun(store, { config: { mesh: { workspaceId: "ws-A", nodeId: NODE_ID } } }, { ref: "99", runId, record }, { now: NOW, nodeId: NODE_ID });
+  } finally {
+    store.close();
+  }
 }
 
 async function assembleOnce(root, env) {

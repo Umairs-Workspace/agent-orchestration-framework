@@ -256,7 +256,10 @@ export const archTests = [
       const engine = await read(INSERT_ENGINE);
       const admissible = admissibleTypes(engine);
       assert.ok(Array.isArray(admissible) && admissible.length > 0, `${INSERT_ENGINE}: NOT FOUND — DOCS_BY_TYPE could not be cut`);
-      assert.deepEqual([...admissible].sort(), ["chore", "milestone", "uat"], "recorded: the engine's own admissible top-level types, source-parsed");
+      // 168/ADR-004 §2 adds `prototype`: `aof work prototype`'s start move scaffolds through this engine
+      // and reaches the one mint through `runInsertTopLevel`. The type the loop may create is still
+      // only `chore` — the operator starts a prototype, the loop never does.
+      assert.deepEqual([...admissible].sort(), ["chore", "milestone", "prototype", "uat"], "recorded: the engine's own admissible top-level types, source-parsed");
       assert.ok(admissible.includes(PROMOTED_TYPE), "…and the one type the loop may create is one of them");
 
       const units = [];

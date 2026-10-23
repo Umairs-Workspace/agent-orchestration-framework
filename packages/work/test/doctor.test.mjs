@@ -6,6 +6,8 @@ import path from 'node:path';
 import { createWorkDoctor } from '../src/doctor/index.mjs';
 import { isDriver } from '../src/dependencies.mjs';
 import { syncGroup, syncLine, syncSummary, durationLabel } from '../src/doctor/sync.mjs';
+import { daemonCostGroup, ageLabel } from '../src/doctor/daemon-cost.mjs';
+import { statusCoherenceGroup, lifecycleCompletenessGroup } from '../src/doctor/coherence.mjs';
 
 async function scratch(run) {
   const parent = await realpath(os.tmpdir());
@@ -73,4 +75,45 @@ test('164/03 an owed step not yet attempted is shown as owed but is not failing'
   const snapshot = { workDir: '/w', items: [], sync: { workspaceId: 'a', name: 'a', workspaces: [], owed: [{ workspaceId: 'a', createdAt: '2026-10-19T11:59:00.000Z', attempts: 0, status: 'pending', lastError: null }] } };
   assert.equal(syncSummary(snapshot, Date.parse('2026-10-19T12:00:00.000Z'))[0].owed, true);
   assert.deepEqual(syncGroup(snapshot, { now: Date.parse('2026-10-19T12:00:00.000Z') }), []);
+});
+
+// 167/00 — the daemon-cost lane is a pure function of the snapshots the command edge hands it.
+// Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/00_story_the-daemon-says-what-it-costs/
+//   tasks/01_status-and-doctor-say-what-it-costs.feature (R3; E7 runs through the real edge in
+//   test/mesh/identity/mesh-identity-status-commands.test.mjs).
+const COST_NOW = Date.parse('2026-10-20T18:30:00.000Z');
+const costAt = (clock, { cpuPercent = 1, state = 'idle', topCauses = [] } = {}) => ({ daemon: 'serve', at: `2026-10-20T${clock}.000Z`, cpuPercent, state, topCauses });
+const costFindings = (snapshots) => daemonCostGroup({ workDir: '/w/aof/wiki/work' }, { now: COST_NOW, daemonCost: { nodeId: 'node-7297', snapshots } });
+const costCodes = (findings) => findings.map((finding) => finding.code);
+
+test('167/00 E8 · a daemon that stopped reporting is warned on', () => {
+  const findings = costFindings([{ ...costAt('18:28:00'), daemon: 'ui' }]);
+  assert.deepEqual(costCodes(findings), ['daemon-not-reporting']);
+  assert.equal(findings[0].severity, 'warn');
+  for (const part of ['ui', '2 minutes']) assert.ok(findings[0].message.includes(part), `names "${part}": ${findings[0].message}`);
+  assert.equal(ageLabel(50), '50 seconds');
+});
+
+test('167/00 E9 · daemons under budget raise nothing', () => {
+  const findings = costFindings([costAt('18:29:50', { cpuPercent: 1.5, state: 'idle' }), { ...costAt('18:29:52', { cpuPercent: 6, state: 'viewer-open' }), daemon: 'ui' }]);
+  assert.deepEqual(costCodes(findings).filter((code) => code === 'daemon-over-budget' || code === 'daemon-not-reporting'), []);
+  assert.deepEqual(daemonCostGroup({ workDir: '/w' }, { now: COST_NOW, daemonCost: null }), [], 'no facts read, nothing said');
+});
+
+for (const [share, state, over] of [[2, 'idle', false], [2.1, 'idle', true], [10, 'viewer-open', false], [11, 'viewer-open', true]]) {
+  test(`167/00 the judgement holds at the budget's edges — ${share}% ${state}`, () => {
+    const findings = costFindings([costAt('18:29:50', { cpuPercent: share, state })]);
+    const raised = findings.filter((finding) => finding.code === 'daemon-over-budget');
+    assert.equal(raised.length, over ? 1 : 0, JSON.stringify(findings));
+    if (over) assert.ok(raised[0].message.startsWith('serve:'), 'the warn names "serve"');
+  });
+}
+
+// 168/00 task 01, R3 — the doctor's lifecycle lanes skip a prototype (ADR-005 §3), whatever its status.
+test('168/00 the coherence and lifecycle lanes report nothing on a prototype in any of its statuses', () => {
+  for (const status of ['active', 'paused', 'done', 'abandoned']) {
+    const snapshot = { items: [{ ref: '169', number: '169', type: 'prototype', parent: null, dir: '/w/169_prototype_x', meta: { status }, docs: {}, hasTasks: false }] };
+    assert.deepEqual(statusCoherenceGroup(snapshot), [], status);
+    assert.deepEqual(lifecycleCompletenessGroup(snapshot), [], status);
+  }
 });

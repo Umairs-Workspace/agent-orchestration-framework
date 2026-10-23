@@ -158,10 +158,11 @@ export const yarnInstallationTests = [
         'clone-credential-provider.mjs': ["node:crypto","@aof/foundation/text"],
         'session-spawn-handler.mjs': ["node:path","node:fs"],
         'worker-execution.mjs': ["node:path","node:child_process","node:fs/promises","node:os","@aof/contracts/loop-bounds"],
-        'launcher.mjs': ["node:os","node:path","node:fs","node:fs/promises"],
+        // 167/03: a backed-off workspace whose files changed is tried at once — the one stat digest.
+        'launcher.mjs': ["node:os","node:path","node:fs","node:fs/promises","@aof/foundation/cost-meter","@aof/work/discovery"],
         'control-stream-server.mjs': ["ws","node:http"],
         'worker-stream-client.mjs': ["ws"],
-        'ui-serve.mjs': ["node:http","node:fs","node:fs/promises","node:path","@aof/server/static-serve","ws","node:crypto"],
+        'ui-serve.mjs': ["node:http","node:fs","node:fs/promises","node:path","@aof/server/static-serve","ws","node:crypto","@aof/foundation/cost-meter"],
         'commands/assign.mjs': ["@aof/contracts/error"],
         'commands/contribution.mjs': [],
         'commands/desktop-preflight.mjs': ["node:fs/promises","node:child_process","node:path"],
@@ -169,7 +170,7 @@ export const yarnInstallationTests = [
         'commands/face-shared.mjs': ["@aof/contracts/error"],
         'commands/gate.mjs': [],
         'commands/heartbeat.mjs': ["node:os"],
-        'commands/identity.mjs': ["node:os","node:crypto"],
+        'commands/identity.mjs': ["node:os","node:crypto","@aof/foundation/cost-meter"],
         'commands/invite.mjs': ["node:crypto"],
         'commands/join.mjs': ["node:os","@aof/foundation/fs"],
         'commands/logs.mjs': ["@aof/contracts/error"],
@@ -180,16 +181,18 @@ export const yarnInstallationTests = [
         'commands/serve.mjs': ["node:path"],
         'commands/session.mjs': ["node:os","node:fs/promises"],
         'commands/terminal-resume.mjs': ["@aof/contracts/error"],
-        'commands/ui.mjs': ["node:path"],
+        'commands/ui.mjs': ["node:path","@aof/foundation/cost-meter"],
         'assignment-reclaim.mjs': ['node:fs', '@aof/contracts/loop-bounds'],
         'declarations.mjs': ['@aof/contracts/loop-bounds', '@aof/work-loop/engine', '@aof/work-loop/argv'],
         'presence.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs', '@aof/work-loop/engine'],
         'global-node-registry.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'global-query.mjs': [],
         // 164/00: the sync pass stat-walks the record files and digests what it saw.
-        'publisher.mjs': ['node:path', 'node:fs', 'node:crypto', 'node:fs/promises'],
+        'publisher.mjs': ['node:path', 'node:fs', '@aof/work/discovery'],
         // 164/00: the store asks the one "changed since observed" predicate (FF-16401).
-        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change'],
+        'projection-store.mjs': ['node:path', 'node:fs/promises', 'node:os', '@aof/work/item-row', '@aof/work/artifacts', '@aof/work/local-change', '@aof/work/discovery', '@aof/foundation/cost-meter'],
+        // 167/06: the store's board-face content reads, moved out under its line ratchet, key artifact docs as the store does.
+        'content-reads.mjs': ['@aof/work/artifacts'],
         'assignment-record.mjs': ['node:crypto'],
         'store.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/fs'],
         'registry.mjs': ['node:path', 'node:fs/promises', 'node:crypto', '@aof/foundation/fs'],
@@ -230,6 +233,8 @@ export const yarnInstallationTests = [
         'child-drive.mjs': ['node:path'],
         // 162/ADR-004: the drive status ticker reads the lane's subagent transcripts (names and mtimes only).
         'drive-status.mjs': ['node:path', 'node:fs/promises'],
+        // 162 verify (F-02): the loop drive's terminal producer, extracted from commands/drive.mjs (the session record's repo basename).
+        'loop-session-stream.mjs': ['node:path'],
       } : name === 'work-graph' ? {
         'registry.mjs': ['node:fs/promises', 'node:path', '@aof/work/records', '@aof/contracts/loop-bounds'],
         'record.mjs': ['@aof/contracts/loop-bounds'],
@@ -273,6 +278,8 @@ export const yarnInstallationTests = [
         'commands/tune.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
         'commands/counters.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
         'commands/ratchet.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error'],
+        // 168: the prototype verb reads and writes its own folder's PROTOTYPE.md and log.
+        'commands/prototype.mjs': ['node:path', 'node:fs/promises', '@aof/contracts/error', '@aof/foundation/fs', '@aof/foundation/markdown'],
         'commands/audit.mjs': ['node:path', 'node:fs/promises'],
         'commands/run-start.mjs': ['node:fs/promises', '@aof/contracts/error', '@aof/contracts/loop-bounds'],
         'commands/run-complete.mjs': ['@aof/contracts/error'],
@@ -298,7 +305,9 @@ export const yarnInstallationTests = [
         'observe.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error'],
         'debt.mjs': ['node:fs/promises', 'node:path', '@aof/foundation/fs'],
         'artifacts.mjs': ['node:crypto'],
-        'read.mjs': ['node:path'],
+        // 167/00: the cache-first read and the daemon-cost lane count and judge through the cost meter leaf.
+        'read.mjs': ['node:path', '@aof/foundation/cost-meter'],
+        'doctor/daemon-cost.mjs': ['@aof/foundation/cost-meter'],
         'content-read.mjs': ['node:fs/promises', 'node:path'],
         'resolve.mjs': ['@aof/contracts/error'],
         'find.mjs': ['node:path', '@aof/contracts/error'],
@@ -336,8 +345,12 @@ export const yarnInstallationTests = [
         'store.mjs': ['node:path', 'node:fs/promises'],
         'observations.mjs': ['node:os', 'node:path'],
         'records.mjs': ['node:path', 'node:fs', 'node:fs/promises', '@aof/foundation/fs'],
-        'discovery.mjs': ['node:path', 'node:fs/promises'],
-        'validation.mjs': ['node:path', 'node:fs/promises'],
+        // 167/01: the one stat digest of a work tree hashes (path, size, mtime) for the stream memo and the sync gate.
+        // 167/07 (ADR-009): the one work-tree watch lives beside the one walk.
+        'discovery.mjs': ['node:path', 'node:fs', 'node:fs/promises', 'node:crypto'],
+        'validation.mjs': ['node:path', 'node:fs/promises', '@aof/foundation/markdown'],
+        // PR #16 CodeQL: the prototype's HTML-comment strips use the one fixed-point stripper.
+        'diagrams/layout.mjs': ['@aof/contracts/error', '@aof/foundation/markdown'],
       } : {};
       const forbidden = ({ file, specifier }) => classifySpecifier(specifier, file, report.family) === 'violation' && !(nativePorts[file.slice(`packages/${name}/src/`.length)] ?? nativePorts[path.basename(file)] ?? []).includes(specifier);
       const external = report.violations.filter(forbidden);

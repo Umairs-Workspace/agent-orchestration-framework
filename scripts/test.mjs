@@ -2,6 +2,7 @@ import { tests as ownedCoreTests } from "../packages/core/test/index.mjs";
 import { tests as ownedDiagramsTests } from "../packages/diagrams/test/index.mjs";
 import { tests as ownedDiagramsUiTests } from "../packages/diagrams-ui/test/index.mjs";
 import { tests as ownedExecutionTests } from "../packages/execution/test/index.mjs";
+import { tests as ownedIntegrationHyperagentTests } from "../packages/integration-hyperagent/test/index.mjs";
 import { tests as ownedIntegrationNotionTests } from "../packages/integration-notion/test/index.mjs";
 import { tests as ownedMeshTests } from "../packages/mesh/test/index.mjs";
 import { tests as ownedWorkGraphTests } from "../packages/work-graph/test/index.mjs";
@@ -65,6 +66,7 @@ import { tests as loopTests } from "../test/loop/index.mjs";
 import { tests as memoryTests } from "../test/memory/index.mjs";
 import { tests as meshTests } from "../test/mesh/index.mjs";
 import { tests as meshAssignmentTests } from "../test/mesh/assignment/index.mjs";
+import { tests as meshBudgetTests } from "../test/mesh/budget/index.mjs";
 import { tests as meshCloneTests } from "../test/mesh/clone/index.mjs";
 import { tests as meshDesktopTests } from "../test/mesh/desktop/index.mjs";
 import { tests as meshEnrollmentTests } from "../test/mesh/enrollment/index.mjs";
@@ -98,6 +100,7 @@ export const tests = [
   ...ownedDiagramsTests,
   ...ownedDiagramsUiTests,
   ...ownedExecutionTests,
+  ...ownedIntegrationHyperagentTests,
   ...ownedIntegrationNotionTests,
   ...ownedMeshTests,
   ...ownedWorkGraphTests,
@@ -142,6 +145,7 @@ export const tests = [
   ...meshTests,
   ...meshAssignmentTests,
   ...meshCloneTests,
+  ...meshBudgetTests,
   ...meshDesktopTests,
   ...meshEnrollmentTests,
   ...meshFleetTests,

@@ -1,0 +1,82 @@
+{
+  "runId": "20261020T181340126Z-0000",
+  "itemRef": "167",
+  "state": "done",
+  "attempt": 1,
+  "outcome": "done",
+  "sessionId": "123bf748-033e-4fa2-b16f-ccfec7a13765",
+  "brief": {
+    "answers": [
+      {
+        "token": "167/00 Q1",
+        "question": "167/00 Q1 · What may each daemon cost, as a share of one CPU core averaged over a minute? 'Idle' = no fleet/board view open; 'viewer-open' = one polled in the last 30 s. Today mesh serve measures 128% of a core. One stat walk of aof's ~3,200-file tree is ~240 ms, so walking it every 15 s costs ~1–2% on its own.",
+        "answer": "Idle 2%, viewer 10% (Recommended)",
+        "toolUseId": "toolu_012163yvx2NWyChWX6yH48VY",
+        "sessionId": "123bf748-033e-4fa2-b16f-ccfec7a13765",
+        "at": "2026-10-20T19:20:38.069Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "167/02 Q1",
+        "question": "167/02 Q1 · How long may a change take to appear on a view you are looking at, after a quiet spell? A visible fleet/board slows its polling while nothing changes, and snaps back to every 5 s on any change or click. A slower cap costs the daemon less while you watch.",
+        "answer": "Up to 15 s (Recommended)",
+        "toolUseId": "toolu_012163yvx2NWyChWX6yH48VY",
+        "sessionId": "123bf748-033e-4fa2-b16f-ccfec7a13765",
+        "at": "2026-10-20T19:20:38.069Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "167/03 Q1",
+        "question": "167/03 Q1 · When a registered project's folder no longer exists, what should the daemon do? Today 58 of this node's 66 registrations point at deleted dispatch worktrees, and every tick walks and warns about each.",
+        "answer": "Remove at once, log once (Recommended)",
+        "toolUseId": "toolu_012163yvx2NWyChWX6yH48VY",
+        "sessionId": "123bf748-033e-4fa2-b16f-ccfec7a13765",
+        "at": "2026-10-20T19:20:38.069Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "167/05 Q1",
+        "question": "167/05 Q1 · How long must a daemon stay over budget before the desktop app tells you? A big sync or git pull can push a daemon over briefly; a real runaway stays over.",
+        "answer": "5 minutes (Recommended)",
+        "toolUseId": "toolu_012163yvx2NWyChWX6yH48VY",
+        "sessionId": "123bf748-033e-4fa2-b16f-ccfec7a13765",
+        "at": "2026-10-20T19:20:38.069Z",
+        "entrypoint": "claude-vscode"
+      },
+      {
+        "token": "167/05 Q2",
+        "question": "167/05 Q2 · Do you have a mock for how a daemon's overrun should look in the desktop app?",
+        "answer": "No mock (Recommended)",
+        "toolUseId": "toolu_01REyWymZMQ7TQgCyVRf5Adg",
+        "sessionId": "123bf748-033e-4fa2-b16f-ccfec7a13765",
+        "at": "2026-10-20T19:22:01.476Z",
+        "entrypoint": "claude-vscode"
+      }
+    ]
+  },
+  "createdAt": "2026-10-20T18:13:40.126Z",
+  "updatedAt": "2026-10-20T19:28:03.295Z",
+  "failureReason": null,
+  "heartbeatAt": null,
+  "retryOf": null,
+  "reclaimedAt": null,
+  "node": "node-7297",
+  "resumeAfter": null,
+  "spend": {
+    "model": "claude-opus-5-5",
+    "effort": "high",
+    "tokens": {
+      "input": 596,
+      "output": 496471,
+      "cacheRead": 65515986,
+      "cacheCreate": 853422
+    },
+    "costUsd": 30.303981299999997,
+    "costSource": "priced",
+    "priceTable": "price-table-2026-08-v1",
+    "turns": 298,
+    "toolCalls": 166,
+    "exitReason": "final_output"
+  },
+  "asks": []
+}

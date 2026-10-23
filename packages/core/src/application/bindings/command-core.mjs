@@ -39,6 +39,12 @@ import { projectProvisionCommand } from "../../commands/project-provision.mjs";
 import { createNotionContribution } from "@aof/integration-notion/commands";
 // diagram:* — @aof/diagrams' own contribution, registered as one unit core can leave out.
 import { createDiagramsContribution } from "@aof/diagrams/contribution";
+// The integrations' verbs — 169/ADR-003: each arrives through its contribution in the one registry,
+// built from the same injected services (git, the work validator, the error and JSON helpers).
+import { INTEGRATIONS } from "../../integrations.mjs";
+import { defaultGitExec } from "@aof/execution/worktrees";
+import { commandError as integrationCommandError } from "@aof/contracts/error";
+import { readJson as integrationReadJson } from "@aof/foundation/fs";
 import { useHeadroomCommand, unuseHeadroomCommand } from "../../commands/headroom.mjs";
 // work:orchestrator / work:delegation / work:delegation-model — m42 — see ./commands/orchestrator-delegation.mjs's header.
 import { workOrchestratorCommand, workDelegationCommand, workDelegationModelCommand } from "../../commands/orchestrator-delegation.mjs";
@@ -47,7 +53,33 @@ import { assetsCleanCommand } from "../../commands/assets/clean.mjs";
 import { packagesAddCommand } from "../../commands/packages-add.mjs";
 import { packagesRemoveCommand } from "../../commands/packages-remove.mjs";
 
-export function assembleCommandCore({ commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, commandsNotionSyncWorkServices, commandsNotionAssociateServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPromoteServices, commandsArchiveServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
+// 169/ADR-007 — an integration that writes to the aof home (`~/.aof`, or AOF_GLOBAL_HOME) or reads
+// its own package's files is handed both (and, 169/ADR-008, a zip writer), lazily, so a CLI path that never runs such a verb loads
+// neither module (FF-16004).
+async function integrationAofHome() {
+  const { defaultGlobalWorkspaceDir } = await import("../../paths.mjs");
+  return defaultGlobalWorkspaceDir();
+}
+
+async function integrationReadPackageAsset(packageName, relativePath) {
+  const { packageAssetClass, readAssetText } = await import("../../asset-base.mjs");
+  return readAssetText(packageAssetClass(packageName), relativePath);
+}
+
+// 169/ADR-008 — core's deterministic stored-zip writer (165/ADR-005), for an integration that ships one.
+async function integrationZipFiles(fileMap) {
+  const { zipStored } = await import("../../planning/stored-zip.mjs");
+  return zipStored(fileMap);
+}
+
+// One command contribution per registered integration that ships verbs, named by its package.
+export function integrationContributions(services, integrations = INTEGRATIONS) {
+  return integrations
+    .filter((integration) => typeof integration.commands === "function")
+    .map((integration) => Object.freeze({ name: integration.name, commands: Object.freeze(integration.commands(services)) }));
+}
+
+export function assembleCommandCore({ commandsMeshContributionServices, workServices, commandsListServices, commandsLoopsShowServices, commandsLoopsGraphServices, commandsLoopsValidateServices, commandsLoopsGroundednessServices, commandsLoopDocumentServices, commandsLoopRecordServices, commandsContinueServices, commandsDriveServices, commandsLoopServices, commandsResyncServices, commandsDocServices, commandsTasksServices, commandsValidateServices, commandsNextServices, commandsDispatchServices, commandsFeedbackServices, commandsDoctorServices, commandsAuditServices, commandsAcceptorServices, commandsTuneServices, commandsTriggerServices, commandsGradeServices, commandsRatchetServices, commandsCountersServices, commandsGraphBuildServices, commandsGraphQueryServices, commandsGraphTriageServices, commandsGraphExportServices, commandsGraphImportServices, commandsTestServices, commandsImportMilestoneServices, commandsMigrateFolderServices, commandsNotionSyncWorkServices, commandsNotionAssociateServices, commandsRunStartServices, commandsRunCompleteServices, commandsRunStatusServices, commandsItemStatusServices, commandsRegressionGateServices, commandsRunRetryServices, commandsResumeServices, commandsGraphServeServices, commandsDiagramPlanServices, commandsDiagramExportServices, commandsDiagramFileServices, commandsMessagingMessagingServices, commandsWorkUiServices, commandsAssetsUiServices, commandsFindServices, commandsObserveServices, commandsWorkMemoryServices, commandsInitUpdateServices, commandsProjectInitServices, commandsInsertMilestoneServices, commandsInsertUatServices, commandsInsertStoryServices, commandsInsertChoreServices, commandsPrototypeServices, commandsPromoteServices, commandsArchiveServices, commandsPromoteGapToChoreServices, commandsPromoteFindingToChoreServices, commandsUpgradeServices, commandsAssetsListServices, commandsPackagesListServices, commandsProjectShowServices, commandsAssetsShowServices, commandsAssetsAddServices, commandsAssetsRemoveServices, commandsAssetsRefsServices, commandsAssetsValidateServices, commandsAssetsApplyServices, commandsPackagesShowServices, commandsPackagesValidateServices, commandsPackagesInstallServices, commandsProjectValidateServices, commandsProjectDoctorServices, commandsProjectMigrateServices }) {
 
   const { meshContribution } = commandsMeshContributionServices;
   const { loadWorkspace } = workServices;
@@ -163,6 +195,8 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
   const { insertStoryCommand } = commandsInsertStoryServices;
   // work:insert-chore — see ./commands/insert-chore.mjs's header.
   const { insertChoreCommand } = commandsInsertChoreServices;
+  // work:prototype — 168/ADR-004 — see ./commands/prototype.mjs's header.
+  const { prototypeCommand } = commandsPrototypeServices;
   // work:promote — milestone 127 / ADR-003 — see ./commands/promote.mjs's header.
   const { promoteCommand } = commandsPromoteServices;
   // work:archive — milestone 127 / ADR-004 — see ./commands/archive.mjs's header.
@@ -249,6 +283,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
     ]),
     createWorkContribution([migrateFolderCommand]),
     createNotionContribution({ syncWork: notionSyncWorkCommand, associate: notionAssociateCommand }),
+    ...integrationContributions({ commandError: integrationCommandError, gitExec: defaultGitExec, validateWork: commandsValidateServices.validateWork, readJson: integrationReadJson, aofHome: integrationAofHome, readPackageAsset: integrationReadPackageAsset, zipFiles: integrationZipFiles }),
     createWorkContribution([
       runStartCommand,
       runCompleteCommand,
@@ -292,6 +327,7 @@ export function assembleCommandCore({ commandsMeshContributionServices, workServ
       insertUatCommand,
       insertStoryCommand,
       insertChoreCommand,
+      prototypeCommand,
       promoteCommand,
       archiveCommand,
       promoteGapToChoreCommand,

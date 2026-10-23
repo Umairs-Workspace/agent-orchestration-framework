@@ -1,11 +1,14 @@
-import { listItems, findWork, listStream } from "./discovery.mjs";
+import { listItems, findWork, listStream, readStreamSnapshot } from "./discovery.mjs";
 import { nextWork } from "./readiness.mjs";
 import { readItemMeta, recordDoc } from "./records.mjs";
 import { cacheAnswers, locallyChanged, projectedRow, reportedElsewhere, rowFingerprint } from "./local-change.mjs";
+import { processCostMeter } from "@aof/foundation/cost-meter";
 import path from "node:path";
 
 // Core supplies cache, execution and mesh collaborators explicitly.
-export function createWorkReader({ readCachedItemRows, reportDegrade, isUnderMeshWorktreesRoot, isUnderMeshSessionWorktreesRoot, isUnderMeshDispatchWorktreesRoot }) {
+// 167/ADR-001 — `resolveWorkspaceId` names the workspace a read was for, on its cost count and on
+// its degrade line; absent, the pinned `config.mesh.workspaceId` is the only id it states.
+export function createWorkReader({ readCachedItemRows, reportDegrade, isUnderMeshWorktreesRoot, isUnderMeshSessionWorktreesRoot, isUnderMeshDispatchWorktreesRoot, resolveWorkspaceId = (workspace) => workspace?.config?.mesh?.workspaceId ?? null, costMeter = processCostMeter }) {
 // src/work/read.mjs — THE CACHE-FIRST READ SEAM (milestone 43 / story 06, ADR-005).
 //
 // THE DISEASE, in the milestone's own recorded words (43/03's accept note, from a live
@@ -196,10 +199,23 @@ function stateOverlay(row) {
 // The DEGRADE is reported HERE, once per read, because this is the one place that knows
 // both what was asked for and what the cache could answer.
 async function buildStreamView(workspace, options = {}) {
-  const diskItems = await listItems(workspace.workDir);
   // THE BOUNDARY, checked before the cache is opened at all: a materialised worktree answers
   // from the checkout it is working in, whatever the mesh believes about it.
   const worktree = isMeshWorktree(workspace.projectRoot);
+  // 167/ADR-001 — each read is COUNTED for the workspace it read.
+  const workspaceId = worktree ? null : resolveWorkspaceId(workspace) ?? null;
+  const labelled = workspaceId ? { workspaceId } : {};
+  // 167/ADR-003 — the disk side comes off the remembered stream snapshot: an unchanged tree costs
+  // one stat walk and parses nothing (the snapshot counts its own parse or memo answer). A work dir
+  // that cannot be listed answers what the enumerator always answered — never a refused read.
+  let snapshot = null;
+  try {
+    snapshot = await readStreamSnapshot(workspace.workDir, { meter: costMeter, labels: labelled, reportDegrade });
+  } catch {
+    snapshot = null;
+  }
+  const diskItems = snapshot?.items ?? await listItems(workspace.workDir);
+  const frontmatterOf = snapshot ? snapshot.frontmatter : (item) => readItemMeta(item);
   const cache = worktree
     ? { rows: new Map(), provenance: new Map() }
     : await readCachedItemRows(workspace, {
@@ -233,7 +249,7 @@ async function buildStreamView(workspace, options = {}) {
     const baseline = observations.get(item.ref);
     const doc = baseline == null ? null : recordDoc(item);
     if (doc == null) return true; // a missing baseline is never a change
-    const changed = locallyChanged(rowFingerprint(projectedRow(item, await readItemMeta(item), doc)), baseline);
+    const changed = locallyChanged(rowFingerprint(projectedRow(item, await frontmatterOf(item), doc)), baseline);
     return cacheAnswers({ reportedBy }, { selfNodeId, locallyChanged: changed });
   };
 
@@ -260,6 +276,10 @@ async function buildStreamView(workspace, options = {}) {
 
   // A worktree's disk-only answer is the boundary working, not a fallback from a failure —
   // labelling it a degrade would put correct behaviour in the sink that exists for faults.
+  // 167/ADR-001 — each read is COUNTED by the side that answered it, whether or not the degrade
+  // line below survives its throttle. The disk parse itself is the snapshot's to count (a memo
+  // answer parses nothing); a read the snapshot could not serve is a full disk read here.
+  if (snapshot == null) costMeter.count("full-disk-read", labelled);
   if (worktree) {
     // nothing to report; the per-row `answeredFrom: "disk"` is the honest statement
   } else if (unavailable) {
@@ -268,18 +288,23 @@ async function buildStreamView(workspace, options = {}) {
       cache == null
         ? "the work cache could not be read on this node — every row answered from local disk"
         : "the work cache holds no rows for this workspace — every row answered from local disk",
+      labelled,
     );
   } else if (missed.length > 0) {
+    costMeter.count("cache-miss", labelled);
     // ONE line for the whole read, naming the refs it degraded on (rule 2). The refs matter:
     // "some rows came off the disk" is not actionable, "43/06 and 43/07 came off the disk" is.
     const sample = missed.slice(0, MISS_SAMPLE).join(", ");
     reportDegrade(
       DEGRADE_CACHE_MISS,
       `the work cache holds no row for ${missed.length} ref(s) — answered from local disk: ${sample}${missed.length > MISS_SAMPLE ? ", …" : ""}`,
+      labelled,
     );
+  } else {
+    costMeter.count("cache-hit", labelled);
   }
 
-  return { view: { items, meta }, answeredFrom, provenance };
+  return { view: { items, meta, ...(snapshot ? { frontmatter: snapshot.frontmatter } : {}) }, answeredFrom, provenance };
 }
 
 // stampRow(row, built) — rule 3, at ONE application point for every reader below. A

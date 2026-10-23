@@ -43,7 +43,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import esbuild from "esbuild";
 import { inject as postjectInject } from "postject";
-import { generateAssetManifest } from "./sea-asset-manifest.mjs";
+import { generateAssetManifest, generatePackageAssetManifest } from "./sea-asset-manifest.mjs";
 import { workspaceDirectory, dependencyDirectory } from './workspace-paths.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -344,6 +344,15 @@ async function main() {
       const dest = path.join(outDir, "ui", "dist", rel);
       mkdirSync(path.dirname(dest), { recursive: true });
       copyFileSync(src, dest);
+    }
+    // Each integration package's own assets (169/ADR-004), under bundle/packages/<basename>/.
+    for (const owned of generatePackageAssetManifest(repoRoot)) {
+      for (const rel of owned.files) {
+        const dest = path.join(outDir, "bundle", owned.sidecar, rel);
+        mkdirSync(path.dirname(dest), { recursive: true });
+        copyFileSync(path.join(owned.from, rel), dest);
+      }
+      console.log(`sidecar ${owned.name}: ${owned.files.length} files`);
     }
     console.log(`sidecar bundle: ${manifest.bundle.length} files, ui/dist: ${manifest.ui.length} files`);
   });

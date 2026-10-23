@@ -257,4 +257,77 @@ export const diagramPlanCommandTests = [
       });
     },
   },
+  // ── milestone 168 / story 02 task 00 — a prototype's diagram: its subject is its name ─────────
+  {
+    name: "168/02 E1 · a named brief plans into the prototype's diagrams folder",
+    run: async () => {
+      await withFixture({ diagrams: ON, style: true }, async (fx) => {
+        await addPrototype(fx);
+        const result = aof(fx, "diagram", "plan", "169", "data-flow", "--json");
+        assert.equal(result.status, 0, result.stderr);
+        const envelope = json(result);
+        assert.deepEqual([envelope.available, envelope.name, envelope.stem, envelope.brief], [true, "data-flow", "data-flow", "statement rows flow into the ledger"]);
+        const dir = "wiki/work/169_prototype_csv-importer/diagrams";
+        assert.deepEqual(envelope.paths, { dir, source: `${dir}/data-flow.html`, svg: `${dir}/data-flow.svg`, png: `${dir}/data-flow.png` });
+      });
+    },
+  },
+  ...[
+    ["E2", ["screens"], "diagram-name-unknown", "### screens"],
+    ["E3", ["ADR-001"], "diagram-slug-invalid", "lowercase"],
+    ["", ["empty"], "diagram-brief-missing", "### empty"],
+    ["", ["data-flow", "--slug", "other"], "diagram-slug-not-applicable", "--slug"],
+  ].map(([example, args, code, named]) => ({
+    name: `168/02 ${example} plan ${args.join(" ")} on a prototype is refused as ${code}`,
+    run: async () => {
+      await withFixture({ diagrams: ON, style: true }, async (fx) => {
+        await addPrototype(fx);
+        const before = await snapshot(fx.project);
+        const result = aof(fx, "diagram", "plan", "169", ...args, "--json");
+        assert.notEqual(result.status, 0);
+        const envelope = json(result);
+        assert.equal(envelope.code, code, result.stdout);
+        assert.ok(envelope.error.includes(named), `the refusal names ${named}: ${envelope.error}`);
+        assert.deepEqual(await snapshot(fx.project), before, "nothing was written");
+      });
+    },
+  })),
+  {
+    name: "168/02 E4 · the ADR path on a milestone is unchanged beside a prototype",
+    run: async () => {
+      await withFixture({ diagrams: ON, style: true }, async (fx) => {
+        await addPrototype(fx);
+        const envelope = json(aof(fx, "diagram", "plan", "07", "ADR-002", "--slug", "layout", "--json"));
+        assert.equal(envelope.stem, "ADR-002-layout");
+        assert.equal(envelope.paths.source, "wiki/work/07_milestone_m/diagrams/ADR-002-layout.html");
+      });
+    },
+  },
+  ...["active", "done"].map((status) => ({
+    name: `168/02 E8 · a drawn prototype diagram plans again at "${status}"`,
+    run: async () => {
+      await withFixture({ diagrams: ON, style: true }, async (fx) => {
+        const dir = await addPrototype(fx, status);
+        await mkdir(path.join(dir, "diagrams"), { recursive: true });
+        await writeFile(path.join(dir, "diagrams", "data-flow.svg"), "<svg/>", "utf8");
+        const result = aof(fx, "diagram", "plan", "169", "data-flow", "--json");
+        assert.equal(result.status, 0, result.stderr);
+        assert.deepEqual([json(result).available, json(result).brief], [true, "statement rows flow into the ledger"]);
+      });
+    },
+  })),
 ];
+
+// A prototype in the fixture's work tree, its `## Diagrams` holding a `data-flow` brief and an empty
+// `empty` heading (168/02's Background).
+async function addPrototype(fx, status = "active") {
+  const dir = path.join(fx.project, "wiki", "work", "169_prototype_csv-importer");
+  await mkdir(dir, { recursive: true });
+  await writeFile(
+    path.join(dir, "PROTOTYPE.md"),
+    `---\ntype: prototype\nnumber: 169\nslug: csv-importer\ntitle: csv importer\nstatus: ${status}\nschema: 1\n---\n# 169 · csv importer\n\n## Intent\n\nImport a CSV.\n\n## Diagrams\n\n### data-flow\n\nstatement rows flow into the ledger\n\n### empty\n`,
+    "utf8",
+  );
+  return dir;
+}
+

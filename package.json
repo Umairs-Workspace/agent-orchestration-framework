@@ -32,6 +32,7 @@
     "@aof/effects": "workspace:*",
     "@aof/execution": "workspace:*",
     "@aof/foundation": "workspace:*",
+    "@aof/integration-hyperagent": "workspace:*",
     "@aof/integration-notion": "workspace:*",
     "@aof/knowledge": "workspace:*",
     "@aof/mesh": "workspace:*",

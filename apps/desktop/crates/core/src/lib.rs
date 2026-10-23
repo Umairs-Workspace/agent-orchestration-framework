@@ -32,7 +32,12 @@
 //! - [`read_only_inventory`] — story 02 task 02, the read-only window WIRE
 //!   inventory (arms `acd-desktop-read-only-fleet`, exercises
 //!   `acd-desktop-single-data-path`).
+//!
+//! Milestone 167 · story 05:
+//! - [`guard`] — the pure judgement of a sustained CPU overrun from the OS's own sample, against
+//!   the budget `mesh status --json` hands over; shown and logged, never acted on (ADR-006).
 
+pub mod guard;
 pub mod icon;
 pub mod poll;
 pub mod read_only_inventory;

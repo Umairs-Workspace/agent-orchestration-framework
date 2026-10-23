@@ -17,6 +17,7 @@ import { identitySidecarPersistTests } from "./identity-sidecar-persist.suite.mj
 import { modelTests } from "./model.suite.mjs";
 import { codexNativeAssetTests } from "./codex-native-assets.suite.mjs";
 import { codexOwnershipTests } from "./codex-ownership.suite.mjs";
+import { hyperagentRuntimeTests } from "./hyperagent-runtime.suite.mjs";
 import { bundleRuntimeVariantTests } from "./bundle-runtime-variants.suite.mjs";
 import { assetReferenceTests } from "./asset-references.suite.mjs";
 import { toolStorePathResolutionTests } from "./tool-store-path-resolution.suite.mjs";
@@ -60,6 +61,7 @@ export const tests = [
   ...modelTests,
   ...codexNativeAssetTests,
   ...codexOwnershipTests,
+  ...hyperagentRuntimeTests,
   ...bundleRuntimeVariantTests,
   ...assetReferenceTests,
   ...toolStorePathResolutionTests,

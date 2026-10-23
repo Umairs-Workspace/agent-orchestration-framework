@@ -2,10 +2,17 @@ import { resolveInstallSalt as resolveNodeInstallSalt } from "../node-identity.m
 import os from "node:os";
 import { MESH_WORKSPACE_FLAG, guardMeshPositionals, refuseReadMiss } from "./face-shared.mjs";
 import { resolvePeers } from "../fabric.mjs";
+import { causeLabel, describeCost } from "@aof/foundation/cost-meter";
 
+// costLine(entry) — the text report's line for one daemon of `cost.daemons`.
+function costLine(entry) {
+  if (entry.status === "not-reporting") return `cost: ${entry.daemon} — not reporting (last reported ${entry.ageSeconds ?? "?"}s ago)`;
+  const top = entry.topCauses.length > 0 ? `; top: ${entry.topCauses.map((cause) => `${causeLabel(cause)} ×${cause.count}`).join(", ")}` : "";
+  return `cost: ${entry.daemon} — ${entry.cpuPercent ?? "?"}% of a core, ${entry.state}, budget ${entry.budgetPercent}%${entry.over ? " (OVER)" : ""}${top}`;
+}
 
 // Core supplies configured services; constructing command definitions performs no I/O.
-export function createMeshIdentityCommands({ publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath, deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname, packageVersionString, readPresenceRecord, resolveStalenessSeconds, isNodeStale, mergePresence, readRegistry, isControlNode, loadDeclarations }) {
+export function createMeshIdentityCommands({ publishNodeRecord, readNodeRecord, readNodeRecords, nodeRecordPath, deriveNodeId, assembleDescriptor, sidecarPathFor, writeSidecarPatch, readSidecar, sanitizeHostname, packageVersionString, readPresenceRecord, resolveStalenessSeconds, isNodeStale, mergePresence, readRegistry, isControlNode, loadDeclarations, readCostSnapshots }) {
 async function resolveInstallSalt(sidecarPath, config) {
   return resolveNodeInstallSalt(sidecarPath, config, { writePatch: writeSidecarPatch });
 }
@@ -472,6 +479,12 @@ const meshStatusCommand = {
     // render itself — a pure fact a face reads.
     result.isControlNode = isControlNode(ws.config ?? {});
 
+    // 167/ADR-001 — what THIS node's daemons cost: each one's snapshot, its age, its share of a
+    // core against the budget for its state, and its top causes. Appended after isControlNode, present on every node, empty
+    // where no daemon has run; the budget it states is the meter's, never re-declared here.
+    const costSnapshots = localId != null && typeof readCostSnapshots === "function" ? await readCostSnapshots(ws, localId) : [];
+    result.cost = describeCost(costSnapshots, nowMs);
+
     // 126/02 (ADR-005 §1-§3) — WHICH DECLARATIONS SHOULD BE RUNNING ON THIS NODE, behind a flag.
     //
     // 36/ADR-004 §2 gives the supervisor exactly ONE data command, so this rides `mesh status`
@@ -551,6 +564,9 @@ const meshStatusCommand = {
         });
         sections.push("BOARDS", ...boardLines);
       }
+
+      // 167/ADR-001 — one cost line per daemon that has reported on this node.
+      for (const daemon of result.cost?.daemons ?? []) sections.push(costLine(daemon));
 
       return sections.join("\n");
     },

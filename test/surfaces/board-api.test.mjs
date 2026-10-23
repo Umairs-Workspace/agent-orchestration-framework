@@ -1,4 +1,6 @@
 import { defaultApplication as _aofApplication } from "aof/default-application";
+import { defaultFoundation as _aofFoundation } from "aof/foundation-services";
+import { processCostMeter } from "@aof/foundation/cost-meter";
 // Traceability wiring for milestone 03 / story 01 (the work board).
 //
 // Covers EVERY @executable scenario across the five task features, exercising
@@ -15,7 +17,7 @@ import { defaultApplication as _aofApplication } from "aof/default-application";
 //        changes-no-files
 import assert from "node:assert/strict";
 import { assertFrozenShape, assertAnswersFrom } from "../support/answering-side.mjs";
-import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, writeFile, readFile, readdir, stat, utimes } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
@@ -29,6 +31,7 @@ import { withBoardApp, findAll } from "../../apps/ui/test/support/board-app-harn
 import { spawnCliSync } from "../support/cli-spawn.mjs";
 import http from "node:http";
 const loadWorkspace = _aofApplication.loadWorkspace;
+const setDegradeSinkForTest = _aofFoundation.degrade.setDegradeSinkForTest;
 import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 const loopAsksDir = _aofApplication.loop.askRequest.loopAsksDir;
 const openAsk = _aofApplication.loop.askRequest.openAsk;
@@ -179,7 +182,119 @@ function bulletsUnderHeading(stateText) {
   return bullets;
 }
 
+// ===================== 167/00 — the board face counts what it costs =====================
+// Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/00_story_the-daemon-says-what-it-costs/
+//   tasks/00_each-daemon-counts-its-work.feature (@executable) — E1 and the board half of E2, through
+//   the REAL board server and the process's one cost meter. The meter is process-wide, so every
+//   assertion is a delta over the counts the scenario itself caused.
+// E1 names a tree of 1800 record docs; the count is per read, not per doc, so a small stream proves it.
+// Since 167/01 an unchanged tree is read once and remembered, so E1's polls each follow an edit.
+const boardCostTests = [
+  {
+    name: "167/00 E1 · disk reads are counted even when the degrade line is throttled",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      const lines = [];
+      setDegradeSinkForTest(() => ({ write: (entry) => lines.push(entry) }));
+      try {
+        const alpha = await milestone(workDir, { number: "01", slug: "alpha", status: "in-progress", title: "Alpha" });
+        const workspaceId = resolveWorkspaceId(await loadWorkspace(repo));
+        const label = { workspaceId };
+        const before = { reads: processCostMeter.total("full-disk-read", label), degrades: processCostMeter.total("degrade", { code: "work-read-cache-unavailable" }) };
+        await withServer(repo, async (url) => {
+          for (let poll = 0; poll < 40; poll++) {
+            const response = await fetch(new URL("/api/work/list", url), { headers: { "X-AOF-Client": "board" } });
+            assert.equal(response.status, 200);
+            await response.arrayBuffer();
+            // 167/01 remembers an unchanged tree, so each poll follows an edit: every one is a real disk read.
+            const touched = new Date(Date.UTC(2026, 9, 20, 18, 0, poll + 1));
+            await utimes(path.join(alpha, "SPEC.md"), touched, touched);
+          }
+        });
+        assert.equal(processCostMeter.total("full-disk-read", label) - before.reads, 40, "40 full-disk-read labelled with the workspace's id");
+        const unavailable = lines.filter((entry) => entry.code === "work-read-cache-unavailable");
+        assert.ok(unavailable.length >= 1 && unavailable.length <= 12, `at most 12 degrade lines (${unavailable.length})`);
+        assert.equal(unavailable[0].workspaceId, workspaceId, "the degrade line names its workspace");
+        assert.equal(processCostMeter.total("degrade", { code: "work-read-cache-unavailable" }) - before.degrades, 40, "the degrade counter is 40");
+      } finally {
+        setDegradeSinkForTest(undefined);
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "167/00 E2 · requests are counted by route and by client — the board's list route",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await milestone(workDir, { number: "01", slug: "alpha", status: "in-progress", title: "Alpha" });
+        const route = "/api/work/list";
+        const before = { board: processCostMeter.total("request", { route, client: "board" }), unknown: processCostMeter.total("request", { route, client: "unknown" }) };
+        await withServer(repo, async (url) => {
+          for (let poll = 0; poll < 12; poll++) await (await fetch(new URL(route, url), { headers: { "X-AOF-Client": "board" } })).arrayBuffer();
+          for (let poll = 0; poll < 2; poll++) await (await fetch(new URL(route, url))).arrayBuffer();
+        });
+        assert.equal(processCostMeter.total("request", { route, client: "board" }) - before.board, 12, "12 request for /api/work/list by client board");
+        assert.equal(processCostMeter.total("request", { route, client: "unknown" }) - before.unknown, 2, "a request with no client header counts as unknown");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  // 167/02 (ADR-004) — the board's polled list route answers conditionally.
+  // Traceability: 167_milestone_daemon-stays-within-a-resource-budget/stories/02_story_an-idle-view-costs-almost-nothing/
+  //   tasks/00_the-polled-routes-answer-304.feature (E2 and the /api/work/list rows of the outline).
+  {
+    name: "167/02 E2 · a board poll after a status change gets the new list and a new tag",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        const folder = await milestone(workDir, { number: "12", slug: "twelve", status: "in-progress", title: "Twelve" });
+        const storyDir = await story(workDir, "12_milestone_twelve", { number: "03", slug: "three", status: "in-progress", title: "Three", parent: "12" });
+        void folder;
+        await withServer(repo, async (url) => {
+          const first = await fetch(new URL("/api/work/list", url), { headers: { "X-AOF-Client": "board" } });
+          const tag = first.headers.get("etag");
+          assert.ok(tag, "the board has polled /api/work/list and received an ETag");
+          await first.arrayBuffer();
+          const doc = path.join(storyDir, "STORY.md");
+          await writeFile(doc, (await readFile(doc, "utf8")).replace("status: in-progress", "status: done"), "utf8");
+          const second = await fetch(new URL("/api/work/list", url), { headers: { "X-AOF-Client": "board", "If-None-Match": tag } });
+          assert.equal(second.status, 200, "the answer is 200");
+          const body = await second.json();
+          assert.equal(body.items.find((row) => row.ref === "12/03")?.status, "done", "with 12/03 reading done");
+          assert.notEqual(second.headers.get("etag"), tag, "and it carries a different ETag");
+        });
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "167/02 the tag is honoured only when it matches — /api/work/list with no header, then with the current tag",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await milestone(workDir, { number: "12", slug: "twelve", status: "in-progress", title: "Twelve" });
+        await withServer(repo, async (url) => {
+          const plain = await fetch(new URL("/api/work/list", url));
+          assert.equal(plain.status, 200, "no header: 200");
+          const tag = plain.headers.get("etag");
+          assert.match(tag ?? "", /^"[0-9a-z]+-[0-9a-f]{16}"$/, "…with the body and the current tag");
+          assert.ok(Array.isArray((await plain.json()).items));
+          const matched = await fetch(new URL("/api/work/list", url), { headers: { "If-None-Match": tag } });
+          assert.equal(matched.status, 304, "the current tag: 304");
+          assert.equal((await matched.text()).length, 0, "…with no body");
+        });
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+];
+
 export const boardApiTests = [
+  ...boardCostTests,
   // ===================== 00_board-renders-stream.feature =====================
   {
     name: "board-api/00 the list endpoint serves the flat work-list contract",
@@ -272,6 +387,36 @@ export const boardApiTests = [
           assert.equal(body.present, false, "the response indicates the document is absent");
           assert.equal(body.body, "");
           assert.notEqual(body.ok, false, "no error envelope");
+        });
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
+    },
+  },
+  // 168/03 task 01, R4 — E9: the board's document reader answers a prototype's two documents, and a
+  // folder with no PROTOTYPE.md answers not present.
+  {
+    name: "168/03 E9 · the doc endpoint answers a prototype's PROTOTYPE and STATE documents, and a milestone's PROTOTYPE as absent",
+    async run() {
+      const { repo, workDir } = await makeRepo();
+      try {
+        await milestone(workDir, { number: "168", slug: "framing", status: "in-progress", title: "Framing" });
+        const dir = path.join(workDir, "169_prototype_csv-importer");
+        await mkdir(dir, { recursive: true });
+        const files = {
+          PROTOTYPE: frontmatter({ type: "prototype", number: "169", slug: "csv-importer", status: "active", created: "2026-10-22", updated: "2026-10-22", schema: 1 }) + "# 169 · CSV importer\n\n## Intent\n\nImport a CSV.\n",
+          STATE: "---\ndoc: state\n---\n# 169 · CSV importer — State\n\n## Hand-off\n\nThe parser works.\n\n## Log\n",
+        };
+        for (const [doc, text] of Object.entries(files)) await writeFile(path.join(dir, `${doc}.md`), text, "utf8");
+
+        await withServer(repo, async (url) => {
+          for (const [doc, text] of Object.entries(files)) {
+            const { status, body } = await getJson(url, `/api/work/doc?ref=169&doc=${doc}`);
+            assert.equal(status, 200);
+            assert.deepEqual([body.present, body.body], [true, text], `169's ${doc} document is ${doc}.md`);
+          }
+          const { body } = await getJson(url, "/api/work/doc?ref=168&doc=PROTOTYPE");
+          assert.equal(body.present, false, "a folder with no PROTOTYPE.md answers present false");
         });
       } finally {
         await rm(repo, { recursive: true, force: true });
@@ -940,7 +1085,8 @@ export const boardApiTests = [
       for (const key of ["number?: null;", "backlog?: string;", "archived?: true;"]) {
         assert.ok(workItem.includes(key), `WorkItem declares ${key}`);
       }
-      for (const key of ["ref: string;", "slug: string;", "status: WorkStatus | null;", "title: string | null;", "parent: string | null;", "dir: string;", "reportedBy?: string | null;", "syncedAt?: string | null;"]) {
+      // 168/ADR-007 §1 widens the status key to admit a prototype's four words.
+      for (const key of ["ref: string;", "slug: string;", "status: WorkStatus | PrototypeStatus | null;", "title: string | null;", "parent: string | null;", "dir: string;", "reportedBy?: string | null;", "syncedAt?: string | null;"]) {
         assert.ok(workItem.includes(key), `…beside the frozen key ${key}`);
       }
       assert.match(apiSource, /includeArchived \? "\/api\/work\/list\?includeArchived=1" : "\/api\/work\/list"/, "the client composes the URL from the boolean");

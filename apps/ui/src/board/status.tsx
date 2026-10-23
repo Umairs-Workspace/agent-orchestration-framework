@@ -7,7 +7,12 @@
 // the THEME TOKENS in apps/ui/src/index.css — the design's crimson is the `accent`
 // token; teal is `primary`; red is `destructive`; greys are `muted`. We never
 // hardcode a hex where a token exists.
-import type { WorkStatus } from "./api";
+import type { WorkItem, WorkStatus } from "./api";
+import { laneStatus } from "./model";
+
+// The status a wire row carries: the frozen five, or a prototype's own word (168/ADR-007), which
+// the ramp shows as the lane it maps to (`laneStatus`, the one mapping), so a ring agrees with its lane.
+type WireStatus = WorkItem["status"] | undefined;
 
 export type StatusKind = WorkStatus;
 
@@ -87,8 +92,9 @@ const UNKNOWN: StatusMeta = {
 };
 
 // The status's full metadata. A null/unknown status falls back to the quiet form.
-export function statusMeta(status: WorkStatus | null | undefined): StatusMeta {
-  return (status && META[status]) ?? UNKNOWN;
+export function statusMeta(status: WireStatus): StatusMeta {
+  const lane = laneStatus(status);
+  return (lane && META[lane]) ?? UNKNOWN;
 }
 
 // A round status ring. Shape — not just colour — encodes the status:
@@ -103,7 +109,7 @@ export function StatusRing({
   size = 18,
   title,
 }: {
-  status: WorkStatus | null | undefined;
+  status: WireStatus;
   size?: number;
   title?: string;
 }) {
@@ -199,7 +205,7 @@ export function StatusRing({
 
 // A token-coloured status chip (label + glyph). Colour alone is insufficient, so
 // the glyph travels with it.
-export function StatusChip({ status }: { status: WorkStatus | null | undefined }) {
+export function StatusChip({ status }: { status: WireStatus }) {
   const meta = statusMeta(status);
   return (
     <span
@@ -217,7 +223,7 @@ export function StatusDot({
   size = 8,
   title,
 }: {
-  status: WorkStatus | null | undefined;
+  status: WireStatus;
   size?: number;
   title?: string;
 }) {

@@ -33,6 +33,8 @@ const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkP
 const publishGlobalRegistryDescriptorsToStore = _aofApplication.mesh.globalNodeRegistry.publishGlobalRegistryDescriptorsToStore;
 const publishNodeRecord = _aofHooks.meshStore.publishNodeRecord;
 const meshCheckoutPath = _aofApplication.mesh.worker.meshCheckoutPath;
+const publishWorkItemRun = _aofApplication.mesh.store.publishWorkItemRun;
+import { resolveWorkspaceId } from "@aof/mesh/workspace-identity";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-12T09:00:00.000Z";
@@ -63,7 +65,12 @@ async function makeRealRepo(root, { workspaceId } = {}) {
   return { root, workDir };
 }
 
-async function seedRunningRun(workDirRoot, itemDirName, runId) {
+// 167/ADR-008 — the tick reads this node's runs from the STORE, never from a walk of runs/, so the
+// seeded record is also published there as the ledger's `publish-run` would have: under the id the
+// repo's own config pins (every repo here is a `makeRealRepo`) and this node. `env` is the
+// scenario's isolated home — passed explicitly, because a mesh-checkout repo lives under that home
+// rather than beside it.
+async function seedRunningRun(workDirRoot, itemDirName, runId, env) {
   const milestoneDir = path.join(workDirRoot, itemDirName);
   await mkdir(milestoneDir, { recursive: true });
   await writeFile(
@@ -79,6 +86,14 @@ async function seedRunningRun(workDirRoot, itemDirName, runId) {
     failureReason: null, heartbeatAt: null, retryOf: null, reclaimedAt: null,
   };
   await writeFile(path.join(runsDir, `${runId}.json`), JSON.stringify(record, null, 2), "utf8");
+  assert.ok(env?.AOF_GLOBAL_HOME, "seedRunningRun needs the scenario's isolated env");
+  const workspaceId = resolveWorkspaceId(await loadWorkspace(path.dirname(path.dirname(workDirRoot)), undefined, { env }));
+  const store = await openGlobalWorkProjectionStore({ env });
+  try {
+    await publishWorkItemRun(store, { config: { mesh: { workspaceId, nodeId: NODE_ID } } }, { ref: "99", runId, record }, { now: NOW, nodeId: NODE_ID });
+  } finally {
+    store.close();
+  }
 }
 
 // A ticker that never fires — the launcher publishes once at start + once at the
@@ -248,8 +263,8 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
           store.close();
         }
 
-        await seedRunningRun(alpha.workDir, "38_milestone_alpha", "run-alpha");
-        await seedRunningRun(beta.workDir, "38_milestone_beta", "run-beta");
+        await seedRunningRun(alpha.workDir, "38_milestone_alpha", "run-alpha", env);
+        await seedRunningRun(beta.workDir, "38_milestone_beta", "run-beta", env);
 
         const foreignDir = path.join(tmp, "install-dir");
         await mkdir(foreignDir, { recursive: true });
@@ -282,7 +297,7 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
         } finally {
           store.close();
         }
-        await seedRunningRun(alpha.workDir, "38_milestone_alpha", "run-only");
+        await seedRunningRun(alpha.workDir, "38_milestone_alpha", "run-only", env);
 
         // cwd = alpha ITSELF — the launch-cwd workspace is ALSO its own separately
         // registered global_workspace_descriptors row; pre-fix this raw relative
@@ -319,7 +334,7 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
           store.close();
         }
 
-        await seedRunningRun(alpha.workDir, "38_milestone_alpha", "run-alpha");
+        await seedRunningRun(alpha.workDir, "38_milestone_alpha", "run-alpha", env);
         await startSession(wsAlpha, { nodeId: NODE_ID, workspaceId: "ws-alpha", repo: "repo-alpha", assistant: "claude-code", now: NOW });
         await startSession(wsAlpha, { nodeId: NODE_ID, workspaceId: "ws-beta", repo: "repo-beta", assistant: "claude-code", now: NOW });
 
@@ -396,7 +411,7 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
         // worker's clone-on-assignment leaves behind (config pinned to the id).
         const checkoutRoot = meshCheckoutPath("ws-checkout", { env });
         const checkout = await makeRealRepo(checkoutRoot, { workspaceId: "ws-checkout" });
-        await seedRunningRun(checkout.workDir, "18_milestone_checkout", "run-checkout");
+        await seedRunningRun(checkout.workDir, "18_milestone_checkout", "run-checkout", env);
 
         const store = await openGlobalWorkProjectionStore({ env });
         try {
@@ -417,14 +432,15 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
           handle.record.activeRuns.includes("run-checkout"),
           "the checkout-backed workspace joins the aggregation — its run surfaces despite the absent descriptor",
         );
-        const unresolvable = handle.warnings.filter((w) => w.code === "workspace-workdir-unresolvable");
+        // 167/ADR-005 — the tick says each unresolvable registration once, by its reason code.
+        const unresolvable = handle.warnings.filter((w) => w.code === "no-descriptor");
         assert.ok(
-          !unresolvable.some((w) => w.message.includes("ws-checkout")),
+          !unresolvable.some((w) => w.workspaceId === "ws-checkout"),
           "the recovered workspace emits NO unresolvable warning — the every-5s false alarm is dead",
         );
-        assert.ok(
-          unresolvable.some((w) => w.message.includes("ws-ghost")),
-          "a membership with NO checkout behind it still warns loudly — the genuine diagnostic survives",
+        assert.equal(
+          unresolvable.filter((w) => w.workspaceId === "ws-ghost").length, 1,
+          "a membership with NO checkout behind it still warns loudly, and once — the genuine diagnostic survives",
         );
       });
     },
@@ -509,10 +525,13 @@ export const meshWorkspaceWorkdirAbsoluteTests = [
         }
 
         const handle = await withCwd(foreignDir, () => startLauncherOnce(wsAlpha, env));
-        assert.ok(
-          handle.warnings.some((w) => w.code === "workspace-workdir-unresolvable" && w.message.includes("ws-gone")),
-          "the loud skip is surfaced on the launcher's own warnings — a zero/short aggregation never masquerades as silently healthy",
-        );
+        // 167/ADR-005 — a gone work dir is said once, and this node's registration of it is removed.
+        const lines = handle.warnings.filter((w) => w.workspaceId === "ws-gone");
+        assert.equal(lines.length, 1, "the loud skip is surfaced on the launcher's own warnings, once — a zero/short aggregation never masquerades as silently healthy");
+        assert.equal(lines[0].code, "workdir-missing");
+        assert.ok(lines[0].message.includes(path.resolve(missingRoot, "./wiki/work")), "the line names the folder that is gone");
+        const after = await resolveNodeWorkspaces(NODE_ID, { globalWorkStoreOptions: { env } });
+        assert.equal(after.skipped.some((skip) => skip.workspaceId === "ws-gone"), false, "the registration is removed, so the next tick no longer walks it");
       });
     },
   },

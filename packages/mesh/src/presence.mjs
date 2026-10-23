@@ -6,7 +6,7 @@ import { readLoopDeclaration } from "@aof/work-loop/engine";
 export const DEFAULT_PRESENCE_STALENESS_SECONDS = 90;
 
 // Application policy enters explicitly; constructing the service opens no stores or timers.
-export function createMeshPresence({ meshDir, presenceRecordPath, readRuns, isStale, STOP_LEVELS, loopStopsDir, readStopRequest, readSessionRecordsForNode, isSessionLive, resolveSessionTtlSeconds, openGlobalWorkProjectionStore, globalMeshPaths }) {
+export function createMeshPresence({ meshDir, presenceRecordPath, readRuns, readRun, isStale, STOP_LEVELS, loopStopsDir, readStopRequest, readSessionRecordsForNode, isSessionLive, resolveSessionTtlSeconds, openGlobalWorkProjectionStore, readNodeRunningRuns, globalMeshPaths }) {
 // src/mesh/presence.mjs — the PRESENCE dimension (milestone 23 / story 00, ADR-002):
 // the presence-record assembly + the node-staleness predicate + the activeRuns read
 // of the run records + the absence-tolerant presence read. Presence is a derived
@@ -136,18 +136,28 @@ async function readStopRequestFor(loopRunId) {
 // mapped by STOP_LEVELS — a `honoured` request still maps by level, the loop is exiting.
 // A READ: no run record and no request file is written or moved.
 async function readActiveLoops(items, { workspaceId = null, stopRequestFor = readStopRequestFor } = {}) {
+  const runs = [];
+  for (const item of items) runs.push(...await readRuns(item));
+  return loopEntriesFor(runs, { workspaceId, stopRequestFor });
+}
+
+// loopEntriesFor(runs, { workspaceId, stopRequestFor, lastActivityFor }) — the loop-entry
+// assembly both run sources share (167/ADR-008): the item walk above and the store read below
+// hand it their `running` records and get the same fourteen-key entries back, so "a loop entry"
+// has one spelling whatever read produced the runs. `lastActivityFor(run)` is where the one
+// field the heartbeat moves comes from — by default the run's own `heartbeatAt` as handed in;
+// the store read overrides it with a read of the record on disk, because the heartbeat writes
+// that field without raising an event, so the store's copy is as old as the run's last event.
+async function loopEntriesFor(runs, { workspaceId = null, stopRequestFor = readStopRequestFor, lastActivityFor = async (run) => run.heartbeatAt ?? null } = {}) {
   const latestByLoop = new Map();
-  for (const item of items) {
-    const runs = await readRuns(item);
-    for (const run of runs) {
-      if (run.state !== "running") continue;
-      if (readLoopDeclaration([run]) == null) continue;
-      const loopRunId = run.brief.loop.loopRunId;
-      const prior = latestByLoop.get(loopRunId);
-      // A Map keeps its insertion position on `set`, so the entry order stays the FIRST
-      // encounter's while the value follows the latest run.
-      latestByLoop.set(loopRunId, prior == null ? run : laterRun(prior, run));
-    }
+  for (const run of runs) {
+    if (run.state !== "running") continue;
+    if (readLoopDeclaration([run]) == null) continue;
+    const loopRunId = run.brief.loop.loopRunId;
+    const prior = latestByLoop.get(loopRunId);
+    // A Map keeps its insertion position on `set`, so the entry order stays the FIRST
+    // encounter's while the value follows the latest run.
+    latestByLoop.set(loopRunId, prior == null ? run : laterRun(prior, run));
   }
   const loops = [];
   for (const [loopRunId, run] of latestByLoop) {
@@ -169,11 +179,86 @@ async function readActiveLoops(items, { workspaceId = null, stopRequestFor = rea
       // stall check last consumed rather than draining the queue itself.
       sessionId: run.sessionId ?? null,
       driveStartedAt: run.createdAt ?? null,
-      lastActivityAt: run.heartbeatAt ?? null,
+      lastActivityAt: await lastActivityFor(run),
     };
     loops.push(Object.fromEntries(LOOP_ENTRY_KEYS.map((key) => [key, entry[key]])));
   }
   return loops;
+}
+
+// ------------------------------------------------ the store read of this node's runs ----
+
+// readStoreActivity(nodeId, workspaces, options) → Map<workspaceId, { runIds, loops }> — the
+// presence TICK's read of what is running on this node (167/ADR-008). The workspaces put their
+// own runs into `work_item_runs` through the ledger (`publish-run`, packages/mesh/src/effects.mjs),
+// so the tick reads them back from the store, in ONE query over the handle it already holds, for
+// every workspace it resolved. It calls no `readRuns` and reads no item's runs/ folder: a tick's
+// cost no longer grows with the size of the work trees it covers (FF-16705).
+//
+//   workspaces — [{ workspaceId, items }]: the id each row is keyed on, and that workspace's
+//                enumerated LOCAL items (the tick already has them), which is how a loop's one
+//                record read finds the run's folder.
+//   options    — { openStore, globalWorkStoreOptions, stopRequestFor }: the tick's shared opener
+//                and store options (the hermetic-test seam every other store caller exposes).
+//
+// Only this node's rows count: a running row another node reported for the same workspace is
+// that node's run, and the cached half of the launcher's union already covers the items this
+// machine does not hold. A workspace that does not propagate has no rows, so its runs are not in
+// this node's presence (ADR-008). A loop's `lastActivityAt` alone still comes off disk — the
+// heartbeat writes a running run's `heartbeatAt` without raising an event — read from that one
+// run's own record through `readRun`, one read per running loop run and never one per item; a
+// record that cannot be read falls back to the row's copy. FAILURE-ISOLATED: a store that cannot
+// be opened or queried answers nothing running this tick, never a thrown error inside the tick.
+async function readStoreActivity(nodeId, workspaces, options = {}) {
+  const out = new Map();
+  const wanted = [];
+  for (const workspace of workspaces) {
+    if (typeof workspace?.workspaceId !== "string" || workspace.workspaceId.length === 0) continue;
+    out.set(workspace.workspaceId, { runIds: [], loops: [] });
+    wanted.push(workspace);
+  }
+  if (wanted.length === 0 || typeof nodeId !== "string" || nodeId.length === 0) return out;
+
+  const openStore = options.openStore ?? openGlobalWorkProjectionStore;
+  const storeOptions = options.globalWorkStoreOptions ?? {};
+  let rows = [];
+  let store;
+  try {
+    store = await openStore({ ...storeOptions, paths: storeOptions.paths ?? globalMeshPaths(storeOptions) });
+  } catch {
+    return out;
+  }
+  try {
+    rows = readNodeRunningRuns(store, nodeId, wanted.map((workspace) => workspace.workspaceId));
+  } catch {
+    rows = [];
+  } finally {
+    store.close?.();
+  }
+
+  const stopRequestFor = options.stopRequestFor ?? readStopRequestFor;
+  for (const workspace of wanted) {
+    const records = rows.filter((row) => row.workspaceId === workspace.workspaceId).map((row) => row.record)
+      .filter((record) => record?.state === "running" && typeof record.runId === "string");
+    const itemsByRef = new Map();
+    for (const item of Array.isArray(workspace.items) ? workspace.items : []) {
+      if (typeof item?.ref === "string" && typeof item?.dir === "string") itemsByRef.set(item.ref, item);
+    }
+    const lastActivityFor = async (run) => {
+      const item = itemsByRef.get(run.itemRef);
+      if (item == null || typeof readRun !== "function") return run.heartbeatAt ?? null;
+      try {
+        return (await readRun(item, run.runId)).heartbeatAt ?? null;
+      } catch {
+        return run.heartbeatAt ?? null;
+      }
+    };
+    out.set(workspace.workspaceId, {
+      runIds: records.map((record) => record.runId),
+      loops: await loopEntriesFor(records, { workspaceId: workspace.workspaceId, stopRequestFor, lastActivityFor }),
+    });
+  }
+  return out;
 }
 
 // ----------------------------------------------------- the sessions[] read ----
@@ -452,6 +537,44 @@ async function publishPresenceRecord(workspace, id, record) {
   await writeText(presenceRecordPath(workspace, id), JSON.stringify(record, null, 2));
 }
 
+// ------------------------------------------------------ the daemon cost snapshot ----
+
+// 167/ADR-001 — each daemon's cost snapshot, `<meshDir>/cost/<nodeId>.<daemon>.json`, written
+// atomically every 15 s and once at a clean stop. It rides this module because this module owns
+// the writes under meshDir (the write-scope seam), and it is NOT the presence record: only `serve`
+// writes presence, presence replicates to peers, and counters do not belong on the mesh wire.
+// A mesh root that does not exist is not created here (the presence publish creates it): a stop
+// racing a removed home must not resurrect it, so the snapshot is skipped and `false` returned.
+const COST_SNAPSHOT_DAEMONS = ["serve", "ui"];
+const costSnapshotName = (nodeId, daemon) => `${nodeId}.${daemon}.json`;
+
+async function publishCostSnapshot(workspace, nodeId, daemon, snapshot) {
+  if (typeof nodeId !== "string" || nodeId.length === 0 || !COST_SNAPSHOT_DAEMONS.includes(daemon)) return false;
+  try {
+    await mkdir(path.join(meshDir(workspace), "cost"));
+  } catch (error) {
+    if (error?.code === "ENOENT") return false;
+    if (error?.code !== "EEXIST") throw error;
+  }
+  await writeText(path.join(meshDir(workspace), "cost", costSnapshotName(nodeId, daemon)), JSON.stringify(snapshot, null, 2));
+  return true;
+}
+
+// readCostSnapshots(workspace, nodeId) → the parsed snapshots this node's daemons wrote, in daemon
+// order. Absence-tolerant: a daemon that never wrote, or a torn file, is simply not listed.
+async function readCostSnapshots(workspace, nodeId) {
+  if (typeof nodeId !== "string" || nodeId.length === 0) return [];
+  const snapshots = [];
+  for (const daemon of COST_SNAPSHOT_DAEMONS) {
+    try {
+      snapshots.push(JSON.parse(await readFile(path.join(meshDir(workspace), "cost", costSnapshotName(nodeId, daemon)), "utf8")));
+    } catch {
+      continue;
+    }
+  }
+  return snapshots;
+}
+
 // ------------------------------------------------------ absence-tolerant read ----
 
 // Read ONE presence record by node id, parsed off disk. Absence-tolerant: a node id
@@ -578,5 +701,5 @@ function resolveStalenessSeconds(config) {
   return DEFAULT_PRESENCE_STALENESS_SECONDS;
 }
 
-return { DEFAULT_PRESENCE_STALENESS_SECONDS, readActiveRuns, readActiveLoops, readLiveSessions, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, resolveWorkspaceCloneUrl, assemblePresenceRecord, publishPresenceRecord, readPresenceRecord, readPresenceRecords, mergePresence, resolvePeerReachability, isNodeStale, resolveStalenessSeconds };
+return { DEFAULT_PRESENCE_STALENESS_SECONDS, readActiveRuns, readActiveLoops, readStoreActivity, readLiveSessions, resolveNodeWorkspaces, resolveWorkspaceProjectRoot, resolveWorkspaceCloneUrl, assemblePresenceRecord, publishPresenceRecord, publishCostSnapshot, readCostSnapshots, readPresenceRecord, readPresenceRecords, mergePresence, resolvePeerReachability, isNodeStale, resolveStalenessSeconds };
 }

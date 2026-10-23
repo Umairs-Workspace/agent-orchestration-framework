@@ -30,8 +30,9 @@ const startLauncher = _aofApplication.mesh.launcher.startLauncher;
 const openGlobalWorkProjectionStore = _aofApplication.mesh.store.openGlobalWorkProjectionStore;
 const startSession = _aofHooks.meshSession.startSession;
 const upsertWorkItemContent = _aofApplication.mesh.store.upsertWorkItemContent;
+const publishWorkItemRun = _aofApplication.mesh.store.publishWorkItemRun;
 const listItems = _aofWorkspace.work.listItems;
-import { workspaceIdFromPath } from "@aof/mesh/workspace-identity";
+import { resolveWorkspaceId, workspaceIdFromPath } from "@aof/mesh/workspace-identity";
 
 const NODE_ID = "node-a";
 const NOW = "2026-07-10T12:00:00.000Z";
@@ -98,7 +99,12 @@ async function seedWorkspaceRegistration(env, { workspaceId, workDir, nodeId = N
 // `brief` (130/03) — the record's brief, `{}` as always unless a scenario hands a
 // `{ loop }` declaration in; `itemRef` follows the item dir's number so a loop entry's `ref`
 // names the item that actually holds the run.
-async function seedRunningRun(workDirRoot, itemDirName, runId, brief = {}) {
+// 167/ADR-008 — the tick reads THIS NODE'S RUNS FROM THE STORE, never from a walk of runs/, so a
+// seeded run must also be there: the row the ledger's `publish-run` would have written, under the
+// id the tick resolves for that workspace. The disk record stays, because a loop's last activity is
+// still read off it. `env` is the fixture's isolated home; every fixture in this suite keeps it as
+// `<tmp>/home` beside `<tmp>/repo*`, which is what the default derives.
+async function seedRunningRun(workDirRoot, itemDirName, runId, brief = {}, env = envFor(workDirRoot)) {
   const milestoneDir = path.join(workDirRoot, itemDirName);
   await mkdir(milestoneDir, { recursive: true });
   if (!(await pathExists(path.join(milestoneDir, "SPEC.md")))) {
@@ -112,6 +118,32 @@ async function seedRunningRun(workDirRoot, itemDirName, runId, brief = {}) {
     failureReason: null, heartbeatAt: null, retryOf: null, reclaimedAt: null,
   };
   await writeFile(path.join(runsDir, `${runId}.json`), JSON.stringify(record, null, 2), "utf8");
+  await publishSeededRun(workDirRoot, record, env);
+}
+
+function envFor(workDirRoot) {
+  return { AOF_GLOBAL_HOME: path.join(path.dirname(path.dirname(path.dirname(workDirRoot))), "home") };
+}
+
+// The id the tick resolves for a workspace: its own config's pinned or derived id when it has one
+// (the launch cwd), else the id its registration carries (a secondary workspace, which has no
+// config of its own).
+async function publishSeededRun(workDirRoot, record, env) {
+  const root = path.dirname(path.dirname(workDirRoot));
+  let workspaceId = null;
+  if (await pathExists(path.join(root, ".aof", "aof.config.json"))) {
+    workspaceId = resolveWorkspaceId(await loadWorkspace(root, undefined, { env }));
+  }
+  const store = await openGlobalWorkProjectionStore({ env });
+  try {
+    if (workspaceId == null) {
+      workspaceId = store.db.prepare("SELECT workspace_id FROM global_workspace_descriptors WHERE work_dir = ?").get(workDirRoot)?.workspace_id ?? null;
+    }
+    assert.ok(workspaceId, `the seeded run's workspace resolves to an id (${workDirRoot})`);
+    await publishWorkItemRun(store, { config: { mesh: { workspaceId, nodeId: NODE_ID } } }, { ref: record.itemRef, runId: record.runId, record }, { now: NOW, nodeId: NODE_ID });
+  } finally {
+    store.close();
+  }
 }
 
 // A usable `brief.loop` for `loopRunId` over `scope` — the five keys the declaration read
@@ -224,7 +256,10 @@ export const meshPresenceAggregateWorkspacesTests = [
           // mesh-worker-execution.mjs's localNodeWorkspaceMembership convention).
           openStore: async () => { throw new Error("store unreachable"); },
         });
-        assert.ok(handle.record.activeRuns.includes("run-cwd"), "the assembler falls back to the launch-cwd workspace only, still surfacing its own run");
+        // 167/ADR-008 — the store is where this node's own runs are read from, so with it
+        // unreachable the tick knows of none this tick; the record is still assembled and published.
+        assert.equal(handle.record.nodeId, NODE_ID, "the assembler falls back to the launch-cwd workspace only and still publishes");
+        assert.deepEqual(handle.record.activeRuns, [], "…with no store to read, this node's own runs are unknown this tick — never a crash");
         handle.stop();
       } finally {
         await rm(fixture.tmp, { recursive: true, force: true });
@@ -296,7 +331,9 @@ export const meshPresenceAggregateWorkspacesTests = [
             platform: "linux", peerPollTicker: manualTicker(), propagationTicker: manualTicker(), streamServer: false, streamClient: false, now: () => NOW,
             openStore: async () => { throw new Error("unreachable"); },
           });
-          assert.ok(handle.record.activeRuns.includes("run-cwd-only"));
+          // 167/ADR-008 — no store, no known runs this tick; the tick still completes and publishes.
+          assert.equal(handle.record.nodeId, NODE_ID);
+          assert.deepEqual(handle.record.activeRuns, []);
           handle.stop();
         } finally {
           await rm(fixture.tmp, { recursive: true, force: true });
