@@ -86,9 +86,9 @@ The procedure:
     not exist` in older items (F-07). With F-07 fixed, the re-run reports `PASS`, exit 0.
   - Your index, HEAD and worktree list were unchanged both times.
 
-Half 2 of 2 is still owed: promote the milestone the plan framed, `/aof:hyperplan refine <NN>`, then
-`check` the refine branch. That needs PR #18 merged first, because the planner reads the repository
-from `main`.
+**Operator sign-off, 2026-10-23.** "This branch was to test this milestone. And if it works then
+complete the milestone." The plan run is accepted as E8's evidence. The promote-and-refine half is
+waived by the operator, and PR #18 is left as it is for the operator.
 
 ### 169/02 · The Hyperagent package lives in the aof home — the story's own lanes
 
@@ -191,3 +191,17 @@ regression gate must re-run over this change before 169 is accepted.
 feature 61/61), the workspace boundaries are clean, and the zip was measured at the source. E6 is the
 operator's upload of a same-layout zip, and its bytes differ from the verb's, as stated above.
 `aof work validate 169/03` passes, and no blocker finding is open.
+
+**ACCEPTED (169/00)** — 2026-10-23. The story's own lanes are green: the focused suites, lifecycle
+61/61, and the F-07/F-08 regressions (88/88 and 23/23). The milestone gate row at `f6f8898e` is green
+(13,398/13,398). E8 passed on a live plan run, draft PR #18, whose branch `check` reports
+`aof work validate: PASS`, and the operator signed off on that run with the refine half waived.
+`aof work validate 169/00` passes, no blocker finding is open (F-07 and F-08 are closed), and its
+OUTCOME and RETROSPECTIVE (R3) are written.
+
+**ACCEPTED (169)** — 2026-10-23. All four stories are done. The newest `REGRESSION.md` row is green at
+`f6f8898e` (13,398/13,398 cases, 14.1 min; four units were red only under load and green when re-run
+alone). FF-16901 and FF-16902 are green, and each was seen to fail on a red probe. `aof work validate 169`
+passes, `aof work doctor 169` reports no `control-unresolved` at either severity, and no blocker finding
+is open. F-02 and F-03 stay as open OUTCOME gaps in 169/01, and Notion's move onto the seam is this
+milestone's OUTCOME gap. Next, the operator's act: `aof work archive 169`.

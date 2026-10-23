@@ -4,10 +4,10 @@ number: 00
 slug: hyperagent-plans-the-work
 title: "Hyperagent plans the work — the opt-in planning runtime, its six planning skills and aof-prd, and /aof:hyperplan with its four verbs, assimilated from the delivered branch"
 parent: 169
-status: in-review
+status: done
 owner: product-owner
 created: 2026-10-22
-updated: 2026-10-22
+updated: 2026-10-23
 schema: 1
 aofVersion: 0.1.0
 reads: [wiki/hyperagent-support.md, packages/core/src/model.mjs, packages/core/src/work/bundle-runtime.mjs, packages/core/src/work/bundle.mjs, packages/core/src/asset-base.mjs, packages/core/src/application/bindings/command-core.mjs, packages/core/assets/bundle.json, packages/core/assets/commands/hyperplan.md, packages/core/assets/variants/hyperagent/planning.md, packages/integration-hyperagent/src/runtime.mjs, packages/integration-hyperagent/src/commands.mjs, packages/integration-hyperagent/src/check.mjs, packages/core/test/hyperagent-runtime.suite.mjs, packages/integration-hyperagent/test/hyperagent.suite.mjs, test/integration/features/lifecycle.feature]
@@ -26,8 +26,8 @@ while a project that never names Hyperagent renders exactly what it rendered bef
 
 ## Tasks
 
-- [ ] [00 · A project that enables Hyperagent gets the planning skills Hyperagent imports, and only that project](tasks/00_hyperagent-renders-the-planning-subset.feature)
-- [ ] [01 · /aof:hyperplan delegates a planning step and checks what comes back](tasks/01_hyperplan-delegates-and-checks.feature)
+- [x] [00 · A project that enables Hyperagent gets the planning skills Hyperagent imports, and only that project](tasks/00_hyperagent-renders-the-planning-subset.feature)
+- [x] [01 · /aof:hyperplan delegates a planning step and checks what comes back](tasks/01_hyperplan-delegates-and-checks.feature)
 
 ## Findings
 

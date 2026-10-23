@@ -43,3 +43,22 @@ before review.
 operator's platform before calling its reds environmental.
 
 **Refs:** STORY.md F-2; packages/integration-hyperagent/src/check.mjs:57.
+
+## R3 · The live plan run found the defect every green fixture hid
+
+**Kind:** mistake (defect) · **Area:** code (integration) · **Stage:** verify · **Owner:** developer · **Raised by:** verifier (E8) · **Promoted to:** none
+
+**What happened:** `check` was green in every suite, yet the first real plan branch (draft PR #18)
+checked red on 630 `reads:` findings. The verb validates a tree extracted with `checkout-index`,
+which has no `.git`. Validate resolves a moved citation through `git log` renames, so every rename
+since the public-root cut was lost (169 F-07). The suite's fixture repository had no renamed
+citations, so it could not show this.
+
+**Why:** The fixture held a fresh stream. The real stream carries hundreds of delivered stories
+whose `reads:` name moved files, and only the real one exercises the history-dependent rule.
+
+**Lesson:** A verb that runs validate somewhere other than the checkout must hand over everything
+validate reads at the project root: the files, and also the git history. Accept a planning
+integration on a run over the real stream, not over a fixture alone.
+
+**Refs:** ../../VERIFICATION.md F-07; packages/integration-hyperagent/src/check.mjs; packages/work/src/commands/validate.mjs.

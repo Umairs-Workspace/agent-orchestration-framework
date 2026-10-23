@@ -3,7 +3,7 @@ type: milestone
 number: 169
 slug: hyperagent-planning-runtime
 title: "Hyperagent plans the work — a self-contained integration that hands planning to Hyperagent"
-status: in-progress
+status: done
 owner: product-owner
 created: 2026-10-19
 updated: 2026-10-23
@@ -58,7 +58,7 @@ Out of scope:
 
 ## Stories
 
-- [ ] 00 — Hyperagent plans the work, assimilated from the delivered branch work
+- [x] 00 — Hyperagent plans the work, assimilated from the delivered branch work
 - [x] 01 — integration packages are self-contained, and Hyperagent is an integration rather than a runtime
 - [x] 02 — the Hyperagent package lives in the aof home, written by one verb for upload; no project renders it
 - [x] 03 — the Hyperagent package carries one zip of the seven skills, the single upload Hyperagent's dialog takes
