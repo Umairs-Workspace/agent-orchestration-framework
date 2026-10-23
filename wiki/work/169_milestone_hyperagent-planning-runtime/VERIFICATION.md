@@ -67,8 +67,28 @@ The procedure:
 3. `/aof:hyperplan plan` for one idea → draft PR. Then `aof work integrations hyperagent check <branch>`.
 4. Promote the milestone it framed, `/aof:hyperplan refine <NN>` → draft PR, then `check` again.
 
-Paste slot (to fill in): the PR URLs, both `check` outputs, and the `aof work validate` result on each
-branch.
+**E8 run, half 1 of 2 (plan), 2026-10-23.** Run by this session over Hyperagent's MCP, following the
+`/aof:hyperplan` steps:
+
+- Preflight: `list_agents` returned "AOF Planner" (`cmvlcdayh00bb07adypajjzxa`), and the doctor
+  reported `ready`.
+- `brief plan --request "<the operator's request, verbatim>"` → `create_thread` with the message
+  verbatim. Thread `cmvlcjja500cm07ad1flbrso3`.
+- First reply: `status: blocked`, because the agent's GitHub integration was read-only (no branch,
+  push or PR). `result` read that back with exit 1. The operator enabled write and resumed the
+  thread.
+- Final reply: `status: delivered`, `pr: https://github.com/Umairs-Workspace/agent-orchestration-framework/pull/18`,
+  `open-questions: 5`. `result` read that back with exit 0.
+- `check aof/plan/i-want-ideas-from-this-youtube-video-htt` at `39b4a552c670`: 10 files changed
+  (the PRD and RESEARCH under `wiki/planning/`, three backlog milestones and two backlog spikes), and
+  nothing outside the planning lane.
+  - The first run reported `aof work validate` with 630 issues, every one `story reads path "…" does
+    not exist` in older items (F-07). With F-07 fixed, the re-run reports `PASS`, exit 0.
+  - Your index, HEAD and worktree list were unchanged both times.
+
+Half 2 of 2 is still owed: promote the milestone the plan framed, `/aof:hyperplan refine <NN>`, then
+`check` the refine branch. That needs PR #18 merged first, because the planner reads the repository
+from `main`.
 
 ### 169/02 · The Hyperagent package lives in the aof home — the story's own lanes
 
@@ -147,6 +167,8 @@ Run foreground on 2026-10-23 with `AOF_GLOBAL_HOME` isolated. The exit code and 
 | F-04 | The first `aof work regression-gate 169` (at `14c952a3`) was red on 11 cases that no story lane selected. Four censuses read the whole bundle and now met the appended integration members: work-init render/stamp, the command-member pin, the per-runtime refine count (matched the `aof-refine` asset) and the install roots. The 66/00 differential's pre-135 reader cannot see 169/00's tag on a `Rule:` that holds more than one scenario. The repo config put `integrations` between `intake` and `agents`. FF-16803's fixture was date-bound: its files had today's mtime against a fixed `updated: 2026-10-22` (not 169's cause, but it was red on this gate). | defect | blocker | Blocker, fixed in `510ee529` (test-side and config only, no product-code change). The second gate row at `510ee529` is green. Recall: prior occurrence m153/F-01, with the same cause (a milestone's reds appear first at the whole-tree gate because story lanes never select the censuses over the bundle). | developer (this verify) | closed |
 | F-05 | `aof work doctor 169` reported two errors. ARCHITECTURE.md declared FF-16901/FF-16902 as bullets, not a register table, so both FF rows here were `register-dangling-citation`. Once the register was a table, FF-16902's control, `hyperagent-runtime.suite.mjs`, was `control-unresolved`: a `.suite.mjs` is not a path a runner sees. | defect | blocker (accept rule) | Blocker, fixed at this verify. The register is now a table. FF-16902's two invariants are an arch case in FF-16901's control file (generalised over every integration, with a planted-tree twin), and its red probe was re-run. Doctor reports no error-level finding. Recall: distinct incident. m57/F-57-03-3 cites a control that is not on disk (a different cause), and m71/F-71-A, m53/F-04 and m66/F-33 are other register faults. | developer (this verify) | closed |
 | F-06 | Operator review (2026-10-23): `.hyperagent/` was rendered into every enabled project, and nothing reads it. Nothing in Hyperagent reads a repository on its own. A skill enters through Create skill: upload (JSON or Markdown file, or `.zip`), Import from GitHub, linked docs, or a chat build. Either way it lands on the account, and "importing always creates a new skill". **Corrected 2026-10-23:** this row first said there was no GitHub import. The operator's screenshot of the dialog shows one; the docs page omits it. | defect | blocker | Blocker, fixed by 169/02 (ADR-007): a `package` verb writes `~/.aof/hyperagent/` for upload, the project renders `/aof:hyperplan` alone, and the docs and doctor name the upload. Recall: distinct incident. m66/F-45 is aof's own prose promising a refusal its machinery lacks, a different cause. | developer (169/02) | closed |
+| F-07 | E8's first `check` of a real plan branch reported 630 `story reads path "…" does not exist` findings, all in older items and none in the plan's files. The same tree validates clean in this checkout. `check` validates a tree extracted with `checkout-index`, which has no `.git`. Validate's `reads:` rule resolves a moved citation through `git log` renames plus the ledger, both read at the project root, so in the extracted tree every rename since the public-root cut was lost. | defect | blocker | Blocker, fixed. `validateWork` takes a `historyRoot` (default: `projectRoot`), and `check` passes the repository the branch came from. Regression: story-context E9 (a non-git tree is red alone and clean with the history root) and the package's check case (asserts `historyRoot` is the repository). Task 01 gains `@bug @finding-F-07` E9. The real re-run is `PASS`. Recall: prior occurrence m119/F-18, with the same cause (the resolver's rename map comes from `git log`, so a tree without that history cannot resolve renames). | developer (169/00) | closed |
+| F-08 | The plan branch for a long request was `aof/plan/i-want-ideas-from-this-youtube-video-htt`. `planSlug` cut the slug at 40 characters, mid-word (into the URL). | defect | low | Non-blocker, fixed inline. The slug is cut at the last whole word, and one over-long word is still cut. The package suite pins both, and task 01 gains `@bug @finding-F-08` E10. PR #18's branch keeps its name. Recall: distinct incident; no prior finding on slug truncation (m138/F-19 and m130/F-23 are about slug edges of other censuses). | developer (169/00) | closed |
 | F-03 | ADR-005's gate drops an integration's resources and assets. An integration's hooks and templates are not gated, and no integration ships either today. | gap | low | Non-blocker. Nothing renders ungated today. Recorded as an OUTCOME gap. Recall: m124/F-15 and m55/F-55-M-2 are other unpinned or uncounted members, so this is a distinct incident. | product-owner (backlog) | open |
 
 ## Accept decision

@@ -26,15 +26,16 @@ export function parseGitRemote(url) {
   return match ? { owner: match[1], repo: match[2] } : null;
 }
 
-// A kebab slug for the plan branch, from the request (or the target when there is no request).
+// A kebab slug for the plan branch, from the request (or the target when there is no request). A
+// slug longer than `max` is cut at the last whole word, never mid-word (169/F-08: "…-video-htt").
 export function planSlug(text, { max = 40 } = {}) {
-  const slug = String(text ?? "")
+  const full = String(text ?? "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, max)
-    .replace(/-+$/g, "");
-  return slug || "plan";
+    .replace(/^-+|-+$/g, "");
+  let slug = full.slice(0, max);
+  if (full.length > max && full[max] !== "-" && slug.includes("-")) slug = slug.slice(0, slug.lastIndexOf("-"));
+  return slug.replace(/-+$/g, "") || "plan";
 }
 
 export function briefError(message, code) {

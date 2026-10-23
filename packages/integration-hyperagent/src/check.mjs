@@ -57,7 +57,9 @@ export async function checkPlanBranch({ projectRoot, branch, base, remote = "ori
     // git splits a --prefix into directories on "/" only, so a platform separator makes Windows fail
     // (169/ADR-006): text handed to git as a path uses forward slashes.
     await git(gitExec, ["checkout-index", "--all", "--force", `--prefix=${tree.replaceAll("\\", "/")}/`], projectRoot, "hyperagent-extract-failed", env);
-    const findings = await validateAt(tree);
+    // The extracted tree has no `.git`, so validate reads the rename history that resolves a moved
+    // `reads:` citation from the repository the branch came from (169/F-07).
+    const findings = await validateAt(tree, { historyRoot: projectRoot });
     return {
       branch,
       base,

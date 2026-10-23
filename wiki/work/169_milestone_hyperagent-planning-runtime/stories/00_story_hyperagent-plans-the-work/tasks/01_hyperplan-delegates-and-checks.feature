@@ -29,6 +29,12 @@ Feature: /aof:hyperplan delegates a planning step and checks what comes back
         | E3      | the mode "draw"              | hyperagent-mode-unknown     |
         |         | no request text              | hyperagent-request-missing  |
 
+    @bug @finding-F-08
+    Scenario: E10 · a long request's plan branch is cut at a whole word
+      Given a request longer than the plan branch's slug limit
+      When "aof work integrations hyperagent brief" runs
+      Then the plan branch ends on a whole word of the request, never part of one
+
   @executable
   Rule: R3 · The result is read back, and the plan branch is checked out of the operator's way
 
@@ -45,6 +51,12 @@ Feature: /aof:hyperplan delegates a planning step and checks what comes back
     Scenario: E6 · an option-shaped branch name is refused before git runs
       When "aof work integrations hyperagent check" runs on the branch "--upload-pack=x"
       Then it fails with a coded refusal and runs no git command
+
+    @bug @finding-F-07
+    Scenario: E9 · a branch whose stories cite renamed paths validates as the repository does
+      Given a repository whose history renamed a path that a story's "reads:" still cites
+      When "aof work integrations hyperagent check" runs on a plan branch of it
+      Then the cited path resolves through the repository's rename history, and validate reports no finding for it
 
   @executable
   Rule: R4 · The doctor says what is missing and writes nothing

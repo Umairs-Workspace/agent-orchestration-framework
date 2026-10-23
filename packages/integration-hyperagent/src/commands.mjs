@@ -56,11 +56,11 @@ export function createHyperagentCommands({ commandError, gitExec, validateWork, 
   }
 
   // `aof work validate` over another checkout: its own config, its own work dir.
-  async function validateAt(dir) {
+  async function validateAt(dir, { historyRoot } = {}) {
     let config = {};
     try { config = await readJson(path.join(dir, ".aof", "aof.config.json")); } catch { config = {}; }
     const workDir = path.resolve(dir, config?.work?.dir ?? "./wiki/work");
-    return validateWork(workDir, config, undefined, { projectRoot: dir });
+    return validateWork(workDir, config, undefined, { projectRoot: dir, historyRoot });
   }
 
   const briefCommand = {

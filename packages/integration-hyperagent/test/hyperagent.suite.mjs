@@ -154,6 +154,9 @@ export const hyperagentPackageTests = [
       assert.match(brief({ mode: "shatter", request: "", target: "wiki/planning/PRD-sso.md" }).message, /\*\*PRD:\*\* `wiki\/planning\/PRD-sso.md`/);
       assert.equal(planSlug("  Add a Slack notifier — for loop questions!!  "), "add-a-slack-notifier-for-loop-questions");
       assert.equal(planSlug("***"), "plan");
+      // 169/F-08: a long request is cut at a whole word, never mid-word.
+      assert.equal(planSlug("I want ideas from this youtube video: https://www.youtube.com/watch?v=x"), "i-want-ideas-from-this-youtube-video");
+      assert.equal(planSlug("supercalifragilisticexpialidocious-and-more-words-after", { max: 10 }), "supercalif", "one word longer than max is still cut");
     }
   },
   {
@@ -230,8 +233,10 @@ export const hyperagentPackageTests = [
         commandError: (message, code) => Object.assign(new Error(message), { code }),
         gitExec: (args, options) => git(args, options.cwd, options.env),
         readJson: async () => { throw new Error("no config"); },
-        validateWork: async (workDir, _config, _scope, { projectRoot }) => {
+        validateWork: async (workDir, _config, _scope, { projectRoot, historyRoot }) => {
           validated.push(projectRoot);
+          // 169/F-07 (169/00 task 01 E9): the extracted tree has no .git, so its rename history is the repository's.
+          assert.equal(historyRoot, clone, "validate reads history from the repository the branch came from");
           assert.equal((await readFile(path.join(projectRoot, "wiki", "work", "backlog", "milestone_x", "SPEC.md"), "utf8")).replace(/\r\n/g, "\n"), "spec\n");
           assert.equal(workDir, path.resolve(projectRoot, "./wiki/work"));
           return [];
