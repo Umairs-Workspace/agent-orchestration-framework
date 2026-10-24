@@ -65,7 +65,10 @@ been imported.
 offered 201, so it was moved out first and landed as 170. The code had cited "milestone 200" and
 "200/NN" in about 30 places anyway, and they were renumbered by hand. The CLI's recovery also
 re-sequenced the ADRs (010–013 became 007–010) and flattened the SPEC, so the source documents were
-carried verbatim instead.
+carried verbatim instead. All three were fixed in aof on the same branch. Migrate now refuses a
+source inside the work stream and says to move it out first. Recovery keeps an aof source's own
+ADR and R ids unless they collide or are missing. The produced SPEC keeps the source's tags,
+preamble, scope lists, story list and other sections.
 
 ## R5 · A first draft was built as an import, and the operator saw three pictures of one diagram
 

@@ -247,6 +247,23 @@ async function makeDoneMarkerSource() {
 
 const ctxFor = async (repo) => ({ workspace: await loadWorkspace(repo) });
 
+// An aof milestone built ahead of the stream in a hand-numbered folder (as 170 was, as 200): its
+// ADRs are not contiguous (ADR-005 was superseded by ADR-010), its SPEC carries tags, a preamble, the
+// template's in/out scope lists, a story checklist with no story folders, and a Dependencies section.
+// Addressed directly (the folder itself). `adrs` overrides the ARCHITECTURE headings.
+async function makeHandNumberedSource(parent, adrs = ["ADR-001: Two packages", "ADR-010: The scene is the store"]) {
+  const mDir = path.join(parent, "200_milestone_phase-one");
+  await mkdir(mDir, { recursive: true });
+  await writeFile(
+    path.join(mDir, "SPEC.md"),
+    `---\ntype: milestone\nnumber: 200\nslug: phase-one\ntitle: "Phase one"\nstatus: in-review\ntags: [design, board]\n---\n# 200 · Phase one\n\nBuilt ahead of the stream.\n\n## Objective\n\nDraw the diagram.\n\n## Scope\n\nIn scope:\n- the editor\n\nOut of scope:\n- phase 2\n\n## Stories\n- [x] \`00_story_editor\` — the editor (ADR-001).\n\n## Dependencies\n\n- \`133_milestone_architecture-diagrams\` (archived)\n`,
+    "utf8"
+  );
+  await writeFile(path.join(mDir, "ARCHITECTURE.md"), adrs.map((head) => `## ${head}\n\n**Status:** Accepted\n\nBecause.\n`).join("\n"), "utf8");
+  await writeFile(path.join(mDir, "RETROSPECTIVE.md"), `## R1 · First\n\nA.\n\n## R4 · Fourth\n\nB.\n`, "utf8");
+  return mDir;
+}
+
 function runCli(root, args, env = {}) {
   const result = spawnSyncHardened(process.execPath, [cliPath, ...args], {
     cwd: root,
@@ -1148,6 +1165,68 @@ export const migrateCommandCoreTests = [
       assert.ok(/\}\s*catch\s*\(\s*err\s*\)\s*\{/.test(scaffold), "the scaffold writes run inside a try/catch");
       assert.ok(/if \(createdFresh\) await rm\(milestoneDir, \{ recursive: true, force: true \}\);/.test(scaffold), "the catch rm's ONLY the freshly-created milestone dir (rollback, non-destructive)");
       assert.ok(/await rm\(milestoneDir,[^;]*\);\s*throw err;/.test(scaffold), "the catch rethrows after rolling back (the failure is surfaced, never swallowed)");
+    },
+  },
+
+  // ═══════════════ 170's import: an aof source keeps what it says ═══════════════
+  {
+    name: "migrate-core/170 an aof source keeps its own ADR ids, its tags, its preamble, its story list and its other sections, and its scope is not wrapped twice",
+    async run() {
+      const { repo, workDir } = await makeRepo(["00"]);
+      const outside = await mkdtemp(path.join(os.tmpdir(), "aof-migrate-src-hand-"));
+      try {
+        const src = await makeHandNumberedSource(outside);
+        const result = await invoke("migrate:folder", { folder: src, migratedAt: MIGRATED_AT }, await ctxFor(repo));
+        assert.equal(result.milestoneRef, "01", "the stream's next number, not the folder's own 200");
+        const arch = await readFile(path.join(result.dir, "ARCHITECTURE.md"), "utf8");
+        assert.deepEqual(arch.match(/^## ADR-\d+/gm), ["## ADR-001", "## ADR-010"], "ADR-010 stays ADR-010: the code and prose cite it by that id");
+        const spec = await readFile(path.join(result.dir, "SPEC.md"), "utf8");
+        assert.match(spec, /^tags: \[design, board\]$/m, "the source's tags are carried");
+        assert.match(spec, /^# 01 · Phase one\n\nBuilt ahead of the stream\.\n\n## Objective/m, "the preamble stands between the heading and the Objective");
+        assert.match(spec, /## Scope\n\nIn scope:\n- the editor\n\nOut of scope:\n- phase 2\n/, "the in/out lists stand as the source wrote them");
+        assert.equal(spec.match(/In scope:/g).length, 1, "the label is not wrapped in a second one");
+        assert.match(spec, /## Stories\n\n- \[x\] `00_story_editor` — the editor \(ADR-001\)\./, "with no story folders, the source's own story list is carried");
+        assert.match(spec, /\n## Dependencies\n\n- `133_milestone_architecture-diagrams` \(archived\)\n/, "every other section is carried verbatim");
+        assert.equal(runCli(repo, ["work", "validate"]).status, 0, "the produced item is valid");
+        assert.ok(workDir);
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+        await rm(outside, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "migrate-core/170 colliding or missing ADR ids still renumber the whole list contiguously",
+    async run() {
+      const { repo } = await makeRepo(["00"]);
+      const outside = await mkdtemp(path.join(os.tmpdir(), "aof-migrate-src-collide-adr-"));
+      try {
+        const src = await makeHandNumberedSource(outside, ["ADR-003: One", "ADR-003: Two", "ADR-009: Three"]);
+        const result = await invoke("migrate:folder", { folder: src, migratedAt: MIGRATED_AT }, await ctxFor(repo));
+        const arch = await readFile(path.join(result.dir, "ARCHITECTURE.md"), "utf8");
+        assert.deepEqual(arch.match(/^## ADR-\d+/gm), ["## ADR-001", "## ADR-002", "## ADR-003"]);
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+        await rm(outside, { recursive: true, force: true });
+      }
+    },
+  },
+  {
+    name: "migrate-core/170 a source inside the work stream is refused, with a --dry-run too, and nothing is written",
+    async run() {
+      const { repo, workDir } = await makeRepo(["00"]);
+      try {
+        const src = await makeHandNumberedSource(workDir);
+        const before = await readdir(workDir);
+        await assert.rejects(invoke("migrate:folder", { folder: src, migratedAt: MIGRATED_AT }, await ctxFor(repo)), (error) => error.code === "source-in-work-dir");
+        await assert.rejects(invoke("migrate:folder", { folder: src, dryRun: true }, await ctxFor(repo)), (error) => error.code === "source-in-work-dir");
+        const cli = runMigrate(repo, src, ["--dry-run"]);
+        assert.notEqual(cli.status, 0);
+        assert.match(`${cli.stdout}${cli.stderr}`, /Move it outside the work directory/);
+        assert.deepEqual(await readdir(workDir), before, "no item was minted past the source");
+      } finally {
+        await rm(repo, { recursive: true, force: true });
+      }
     },
   },
 ];

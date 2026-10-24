@@ -117,6 +117,20 @@ const migrateFolderCommand = {
       );
     }
 
+    // A SOURCE INSIDE work.dir is already in the stream: the mint counts it, so the produced item
+    // would land one past it (a hand-numbered 200 made 201), and the stream would hold the same work
+    // twice. Migrate never moves or deletes its source, so it refuses before any read and says how
+    // to proceed. A --dry-run refuses the same way, so its preview never names a number migrate
+    // would not give.
+    const workRelative = path.relative(path.resolve(ctx.workspace.workDir), path.resolve(sourceDir));
+    if (workRelative === "" || (!workRelative.startsWith("..") && !path.isAbsolute(workRelative))) {
+      throw commandError(
+        `"${folder}" is inside the work stream (${ctx.workspace.workDir}), so it is already managed work. Move it outside the work directory, then migrate it from there.`,
+        "source-in-work-dir",
+        409
+      );
+    }
+
     // Recover the source with the SAME recovery import uses — the source-shape
     // tolerance (aof-structured OR arbitrary: README→intent, docs/ADRs→decisions,
     // history→outcomes), never demanding aof's layout. A missing selector defaults
@@ -156,7 +170,9 @@ const migrateFolderCommand = {
     // empty `## Stories` is valid). recovery.mjs does not surface the substructure
     // (its frozen shape is intent/decisions/outcomes/meta), so migrate reads the
     // source's own `stories/` tree READ-ONLY here.
-    const units = await recoverSourceStories(sourceDir);
+    const picked = await pickSourceMilestone(sourceDir);
+    const units = await recoverSourceStories(picked);
+    const sourceSpec = await recoverSourceSpec(picked);
     const stories = units.map((unit, idx) => ({
       number: String(idx).padStart(2, "0"),
       slug: slugifySource(unit.slug ?? unit.title ?? `unit-${idx}`) || `unit-${idx}`,
@@ -212,7 +228,7 @@ const migrateFolderCommand = {
       createdFresh = (await mkdir(milestoneDir, { recursive: true })) !== undefined;
       await writeFile(
         path.join(milestoneDir, "SPEC.md"),
-        renderSpec({ number, slug, title, status, migratedAt, recovered, stories }),
+        renderSpec({ number, slug, title, status, migratedAt, recovered, stories, sourceSpec }),
         "utf8"
       );
       await writeFile(
@@ -354,22 +370,77 @@ function detectGaps({ hasIntent, decisions, outcomes, deliveredWork, taskCount }
   return findings;
 }
 
-// Read the source's OWN story substructure READ-ONLY (migrate-NEW over recovery,
-// which surfaces only intent/decisions/outcomes/meta). Resolves the SAME picked
-// source milestone dir recovery picks (listRecoverableMilestones), then enumerates
-// its `stories/` tree — the aof `SS_story_slug` form OR a loose numbered form (never
-// demanding aof's exact naming). Each unit recovers { number, slug, title, tasks }.
-// An arbitrary source (no aof milestone dir) or a milestone with no stories/ yields
-// [] — the milestone scaffolds alone (an empty `## Stories` is valid). Reads only.
-async function recoverSourceStories(sourceDir) {
-  let picked;
+// The aof milestone the source holds, resolved the SAME way recovery picks it
+// (listRecoverableMilestones), or null for an arbitrary source. Reads only.
+async function pickSourceMilestone(sourceDir) {
   try {
     const candidates = await listRecoverableMilestones(sourceDir);
-    picked = candidates.find((c) => !c.arbitrary) ?? null;
+    return candidates.find((c) => !c.arbitrary) ?? null;
   } catch {
-    picked = null;
+    return null;
   }
-  if (!picked || picked.arbitrary) return [];
+}
+
+// The parts of an aof source's SPEC.md that the recovered intent does not carry, read verbatim
+// (migrate-NEW over recovery, whose frozen shape is intent/decisions/outcomes/meta): its `tags:`,
+// the prose between its heading and its first section, its `## Stories` section, and every other
+// `## ` section (Dependencies, Notes, …). Measured migrating an aof milestone: all of these were
+// dropped, so the produced SPEC lost its dependencies and its story list. Objective and Scope are
+// not here: recovery carries them. Reads only; an arbitrary source has none of these.
+const RECOVERED_SPEC_SECTION_RE = /^##\s+.*\b(Objective|Goal|Scope)\b/i;
+async function recoverSourceSpec(picked) {
+  const empty = { tags: null, preamble: "", stories: "", sections: [] };
+  if (!picked) return empty;
+  let text;
+  try {
+    text = await readFile(path.join(picked.dir, "SPEC.md"), "utf8");
+  } catch {
+    return empty;
+  }
+  const lines = text.split(/\r?\n/);
+  let start = 0;
+  let tags = null;
+  if (lines[0] === "---") {
+    const close = lines.indexOf("---", 1);
+    if (close > 0) {
+      tags = lines.slice(1, close).map((line) => (line.match(/^tags:\s*(\[.*\])\s*$/) ?? [])[1]).find(Boolean) ?? null;
+      start = close + 1;
+    }
+  }
+  const preamble = [];
+  const sections = [];
+  let current = null;
+  let seenHeading = false;
+  for (const line of lines.slice(start)) {
+    if (/^##\s/.test(line)) {
+      current = { heading: line, lines: [] };
+      sections.push(current);
+    } else if (current) {
+      current.lines.push(line);
+    } else if (/^#\s/.test(line) && !seenHeading) {
+      seenHeading = true;
+    } else {
+      preamble.push(line);
+    }
+  }
+  const textOf = (section) => `${section.heading}\n\n${section.lines.join("\n").trim()}`.trim();
+  const stories = sections.find((s) => /^##\s+Stories\b/i.test(s.heading));
+  return {
+    tags,
+    preamble: preamble.join("\n").trim(),
+    stories: stories ? stories.lines.join("\n").trim() : "",
+    sections: sections.filter((s) => s !== stories && !RECOVERED_SPEC_SECTION_RE.test(s.heading)).map(textOf),
+  };
+}
+
+// Read the source's OWN story substructure READ-ONLY (migrate-NEW over recovery,
+// which surfaces only intent/decisions/outcomes/meta). Takes the source milestone
+// pickSourceMilestone resolved, then enumerates its `stories/` tree — the aof
+// `SS_story_slug` form OR a loose numbered form (never demanding aof's exact naming). Each unit recovers { number, slug, title, tasks }.
+// An arbitrary source (no aof milestone dir) or a milestone with no stories/ yields
+// [] — the milestone scaffolds alone (an empty `## Stories` is valid). Reads only.
+async function recoverSourceStories(picked) {
+  if (!picked) return [];
   const storiesDir = path.join(picked.dir, "stories");
   let entries;
   try {
@@ -497,8 +568,10 @@ function frontmatter(fields) {
 // The produced milestone SPEC.md — the native managed record doc (A3). Frontmatter
 // matches the bundle milestone template (type/number/slug/title/status/owner/
 // created/updated); the recovered intent.objective/scope populate the body. Absence
-// is information: a missing objective/scope records the not-recoverable marker.
-function renderSpec({ number, slug, title, status, migratedAt, recovered, stories }) {
+// is information: a missing objective/scope records the not-recoverable marker. An
+// aof source's tags, preamble, story list and other sections are carried verbatim
+// (recoverSourceSpec); an arbitrary source has none, and renders as before.
+function renderSpec({ number, slug, title, status, migratedAt, recovered, stories, sourceSpec }) {
   const objective = recovered.intent?.objective?.trim();
   const scope = recovered.intent?.scope?.trim();
   const fm = frontmatter({
@@ -519,23 +592,32 @@ function renderSpec({ number, slug, title, status, migratedAt, recovered, storie
     // stale-by-construction, exactly like the insert-shared.mjs render path.
     schema: WORK_ITEM_SCHEMA_VERSION,
     aofVersion: packageVersionString(),
+    tags: sourceSpec?.tags ?? null,
   });
   const objectiveBlock = objective
     ? objective
     : "_Not recoverable from the source — state the objective this work set out to satisfy._";
-  const scopeBlock = scope
-    ? `In scope:\n- ${scope}`
-    : "_Not recoverable from the source — state what is in and out of scope._";
+  // A scope that already reads as the template's in/out lists (an aof source) stands as it is;
+  // wrapping it again wrote "In scope:\n- In scope:" over the source's own label. Prose (a README
+  // overview) still becomes the one in-scope bullet.
+  const structuredScope = scope && (/^(in|out of)[ -]scope\b/i.test(scope) || /^[-*+]\s/m.test(scope));
+  const scopeBlock = !scope
+    ? "_Not recoverable from the source — state what is in and out of scope._"
+    : structuredScope ? scope : `In scope:\n- ${scope}`;
   const storyLines =
     stories.length > 0
       ? stories.map((s) => `- [ ] \`${s.number}_story_${s.slug}\` — ${s.title}`).join("\n")
-      : "_No distinct stories recovered from the source._";
+      : sourceSpec?.stories || "_No distinct stories recovered from the source._";
+  const preamble = sourceSpec?.preamble ? `${sourceSpec.preamble}\n\n` : "";
+  const sections = (sourceSpec?.sections ?? []).map((section) => `\n${section}\n`).join("");
   return (
     `${fm}` +
     `# ${number} · ${headingLine(title)}\n\n` +
+    preamble +
     `## Objective\n\n${objectiveBlock}\n\n` +
     `## Scope\n\n${scopeBlock}\n\n` +
-    `## Stories\n\n${storyLines}\n`
+    `## Stories\n\n${storyLines}\n` +
+    sections
   );
 }
 
