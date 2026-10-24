@@ -12,7 +12,7 @@ schema: 1
 aofVersion: 0.1.0
 depends: [00]
 reads: [wiki/work/170_milestone_excalidraw-phase-1/ARCHITECTURE.md#adr-010, wiki/work/170_milestone_excalidraw-phase-1/VERIFICATION.md]
-files: [packages/core/assets/commands/diagram-review.md, packages/core/assets/variants/codex/workflow.md, packages/core/assets/bundle.json, packages/core/assets/manifest.json, packages/diagrams-ui/src/editor-state.mjs, packages/diagrams/src/commands/scene.mjs, packages/core/test/bundle.suite.mjs, packages/core/test/bundle-runtime-variants.suite.mjs, test/diagrams/diagram-scene-review.test.mjs]
+files: [packages/core/assets/commands/diagram-review.md, packages/core/assets/variants/codex/workflow.md, packages/core/assets/bundle.json, packages/core/assets/manifest.json, .agents/skills/aof-diagram-review/SKILL.md, .agents/skills/aof-diagram-review/agents/openai.yaml, .claude/commands/aof/diagram-review.md, .codex/aof/workflows/workflow-contract.md, .opencode/commands/aof/diagram-review.md, packages/diagrams-ui/src/editor-state.mjs, packages/diagrams/src/commands/scene.mjs, packages/core/test/bundle.suite.mjs, packages/core/test/bundle-runtime-variants.suite.mjs, test/diagrams/diagram-scene-review.test.mjs]
 ---
 # 06 · One command examines every note
 

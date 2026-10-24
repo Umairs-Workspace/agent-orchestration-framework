@@ -153,6 +153,8 @@ Node 24, isolated `AOF_GLOBAL_HOME`, focused `node scripts/test.mjs --only` runs
 | F-170-06 | Accept applied `add` operations without checking them against the proposal. A library item dragged in from the panel had no anchor box, so a proposed edge to it never bound. | defect | medium | blocker | verify (fixed inline) | fixed: each added element must belong, in the accepted scene, to a node, frame or edge the proposal adds or changes; compile gives an anchorless library item a transparent anchor in its group, which the touched set covers |
 | F-170-07 | The opt-out was enforced only in the board. `diagram:scene` wrote with `work.diagrams` off, and a directly opened `/diagram?…` loaded the editor chunk. | defect | low | blocker | verify (fixed inline) | fixed: every write action refuses with `diagram-disabled` (409, the code `diagram:export` already uses); the surface asks `/api/diagram/capability` before it imports the editor (FF-5307 re-pinned, +22 −1) |
 
+| F-170-08 | The first regression gate (`b2dbfad6`, 26.8 min, REGRESSION.md) was red on six units. Four were this branch's own, never run whole-tree before: `recovery.mjs`'s audited `spawnSync` had a stale source digest after `e9d6523c`; the diagrams kernel's ports and dependency list did not admit `@aof/foundation/markdown` (from the merge of main); stories 00 and 06 declared `diagram-review.md` without its manifest and five tracked renders (FF-7106); 49/03's posture-home sweep did not know 170's `/diagram` surface. The other two (an EPERM renaming a temp folder in the m41 reindex control, and 154/06's "another owner is writing this ask") passed when re-run alone. | defect | high | blocker | verify (fixed inline) | fixed: audit digest re-pinned, kernel allowlist widened with its reason, both stories' `files:` completed, and 49/03's assertion keeps 49's three surfaces and names 170's fourth (the delivered `.feature` is unchanged); all six files pass alone (128 cases) |
+
 The recall at triage (`aof work memory recall … --kind finding`) returned no candidate with the
 same cause for any of the seven. Each is recorded as a distinct incident.
 
@@ -166,4 +168,7 @@ With the fix: those two files plus `diagram-scene-api` pass 41 of 41; `@aof/diag
 
 - [ ] Operator acceptance of the served editor: a live first draft and a live batch review.
 - [ ] Operator check with a real library set (for example Azure's icons) in `.aof/diagrams/libraries/`.
-- [ ] Maintainer sign-off on the supply-chain audit's d3-shape admission (reviewed on PR #13).
+- [x] Maintainer sign-off on the supply-chain audit's d3-shape admission (reviewed on PR #13).
+  Approved by the operator at `aof:verify 170`, 2026-10-24. The admission exempts exactly
+  `d3-shape/src/curve/bundle.js`, at the one reviewed sha256 that both copies (v1.3.7, v3.2.0)
+  hash to; any other path, package or byte still fails the audit.

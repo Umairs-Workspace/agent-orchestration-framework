@@ -284,7 +284,7 @@
     "kind": "child-process",
     "expression": "spawnSync(\n    \"git\",\n    [\"-C\", sourceDir, \"log\", \"--reverse\", \"--no-merges\", \"--format=%s\"],\n    { encoding: \"utf8\" }\n  )",
     "digest": "682eefaa50f230a40bcc574998814383b5850d48465dee1bde991a146d3c1404",
-    "sourceDigest": "dbaba2b30d3b1dbe2b7722c8c960e3ad40f17ab7a4d0c4b46b53b8595ead93e2",
+    "sourceDigest": "1514da0137d855d10aa4e6215b64ede154f6d477f696e45c71619bde96342843",
     "reason": "Reads commit subjects through Git to recover interrupted imports; no application source entry."
   },
   {

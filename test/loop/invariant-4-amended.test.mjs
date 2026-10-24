@@ -259,10 +259,13 @@ export const invariant4AmendedTests = [
       }
 
       assert.deepEqual(
-        POSTURE_HOMES.map((entry) => entry.dir),
+        POSTURE_HOMES.slice(0, 3).map((entry) => entry.dir),
         ["apps/ui/src/fleet", "apps/ui/src/board", "apps/ui/src/home"],
         "the swept set of the authorship clause is exactly the three SURFACE directories",
       );
+      // A surface added since 49 is swept the same way: 170/ADR-003's `/diagram` surface authors its own
+      // dock posture (`diagram/dock-mount.mjs`). It is a surface directory, never `terminal/`.
+      assert.deepEqual(POSTURE_HOMES.slice(3).map((entry) => entry.dir), ["apps/ui/src/diagram"], "…and the one surface added since is 170's diagram editor");
       assert.ok(!POSTURE_HOMES.some((entry) => entry.dir.includes("terminal")), "…and `apps/ui/src/terminal/` is not among them");
       // THE TRAP, DRIVEN: the shipped control writes `posture: mount.posture` — a READ-THROUGH of
       // the value this gate protects. A sweep extended over `apps/ui/src/**` would report the product.
