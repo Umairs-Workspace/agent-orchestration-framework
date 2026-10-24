@@ -1,5 +1,5 @@
 import { commandError } from "@aof/contracts/error";
-import { headingCaptureRe, idForm } from "../declared-id.mjs";
+import { headingCaptureRe, idForm } from "@aof/work/declared-id";
 import { stripHtmlComments } from "@aof/foundation/markdown";
 
 // THE ONE HOME of a diagram's place and spelling (milestone 133, ADR-003; FF-13302). Three parties
@@ -68,6 +68,12 @@ export function diagramsDir(itemDir) {
   return `${String(itemDir).replace(/\\/g, "/").replace(/\/+$/, "")}/${DIAGRAMS_DIR}`;
 }
 
+// A project's Excalidraw libraries (milestone 200, ADR-011), read as they are:
+// `<project>/.aof/diagrams/libraries/*.excalidrawlib`.
+export function diagramLibrariesDir(projectRoot) {
+  return `${String(projectRoot).replace(/\\/g, "/").replace(/\/+$/, "")}/.aof/${DIAGRAMS_DIR}/libraries`;
+}
+
 export function diagramPaths(itemDir, stem, sourceExt, formats) {
   const dir = diagramsDir(itemDir);
   const paths = { dir, source: `${dir}/${stem}${sourceExt}` };
@@ -100,11 +106,31 @@ export function loopRasterSvgPath(paths) {
   return `${paths.dir}/.${LOOP_SUBJECT}.raster.svg`;
 }
 
+// The review records of one scene draft (collaborative refinement): the human's requests and the
+// architect's proposals live beside the scene as `<stem>.review/{requests,proposals}/<id>.json`.
+// Ids are random lowercase hex, validated with `isReviewId` BEFORE any path is built from them.
+export const REVIEW_ID = /^[a-z0-9]{8,32}$/;
+
+export function isReviewId(value) {
+  return typeof value === "string" && REVIEW_ID.test(value);
+}
+
+export function diagramReviewPaths(itemDir, stem) {
+  const dir = `${diagramsDir(itemDir)}/${stem}.review`;
+  return { dir, requests: `${dir}/requests`, proposals: `${dir}/proposals` };
+}
+
+export function reviewRecordPath(directory, id) {
+  if (!isReviewId(id)) throw commandError("Review id is invalid.", "diagram-review-id-invalid", 400);
+  return `${directory}/${id}.json`;
+}
+
 // The one file a reader may ask an item's `diagrams/` folder for (133/VERIFICATION F-133-02): a bare
 // `ADR-NNN-<slug>` stem plus one of the three extensions export writes. Anything else — a path, a
 // `..`, another extension, a stem with no ADR or no slug — is null, so a request can never name a
 // file outside the folder. `path` is forward-slashed like every path here.
-export const DIAGRAM_FILE_EXTS = Object.freeze([".html", ".svg", ".png"]);
+// `.excalidraw` is an Excalidraw diagram itself — the scene the editor draws (milestone 200, ADR-010).
+export const DIAGRAM_FILE_EXTS = Object.freeze([".html", ".svg", ".png", ".excalidraw"]);
 
 export function diagramFile(itemDir, name) {
   const base = String(name ?? "");

@@ -561,7 +561,7 @@ function DocMarkdown({
   // The artifact's own provenance line is the region's FIRST child and is emitted
   // by `DocBody` above, so this returns the body and nothing else.
   if (tab !== "ARCHITECTURE") return <Markdown source={cleanDoc(doc.body)} />;
-  return <DiagramMarkdown source={cleanDoc(doc.body)} itemRef={item.ref} load={(member) => workApi.doc(item.ref, "DIAGRAMS", member)} elsewhere={elsewhere} />;
+  return <DiagramMarkdown source={cleanDoc(doc.body)} itemRef={item.ref} load={(member) => workApi.doc(item.ref, "DIAGRAMS", member)} elsewhere={elsewhere} capability={() => workApi.diagramCapability()} />;
 }
 
 // The node that reported this row, for the copy the cache-miss placeholder needs.

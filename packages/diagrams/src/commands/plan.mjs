@@ -5,9 +5,9 @@ import path from "node:path";
 import { commandError } from "@aof/contracts/error";
 
 
-import { assertAdrId, assertSlug, diagramPaths, diagramStem, hasAdrSection, LOOP_SUBJECT, loopDiagramPaths, prototypeDiagramStem, readDiagramBrief, readPrototypeBrief } from "../../diagrams/layout.mjs";
-import { listItems } from "../../discovery.mjs";
-import { readItemMeta } from "../../records.mjs";
+import { assertAdrId, assertSlug, diagramPaths, diagramStem, hasAdrSection, LOOP_SUBJECT, loopDiagramPaths, prototypeDiagramStem, readDiagramBrief, readPrototypeBrief } from "../layout.mjs";
+import { listItems } from "@aof/work/discovery";
+import { readItemMeta } from "@aof/work/records";
 
 
 export function createDiagramPlanCommand({ resolveWorkDiagrams, generatorFor, requireLocalCheckout, resolveItemExact, planLoopWaves, loopLaneBound, loopConcurrency, refineFirst }) {

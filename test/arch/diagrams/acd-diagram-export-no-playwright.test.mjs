@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { matchedParenSpan, stripComments } from "../../support/source-slice.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
-const FAMILIES = ["packages/core/src/diagrams", "packages/core/src/commands/diagram", "packages/work/src/diagrams", "packages/work/src/commands/diagram"];
+const FAMILIES = ["packages/core/src/diagrams", "packages/core/src/commands/diagram", "packages/work/src/diagrams", "packages/work/src/commands/diagram", "packages/diagrams/src"];
 const RASTERIZE = "packages/execution/src/svg-rasterizer.mjs";
 const PACKAGE_RUNNERS = ["npx", "python", "python3", "py", "pip", "npm"];
 

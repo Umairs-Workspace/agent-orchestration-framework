@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { commandError } from "@aof/contracts/error";
-import { DIAGRAM_FILE_EXTS, diagramFile } from "../../diagrams/layout.mjs";
+import { DIAGRAM_FILE_EXTS, diagramFile } from "../layout.mjs";
 
 
 export function createDiagramFileCommand({ resolveItemExact }) {
@@ -26,6 +26,7 @@ const CONTENT_TYPES = Object.freeze({
   ".html": "text/html; charset=utf-8",
   ".svg": "image/svg+xml",
   ".png": "image/png",
+  ".excalidraw": "application/json; charset=utf-8",
 });
 
 const diagramFileCommand = {
@@ -72,7 +73,7 @@ const diagramFileCommand = {
   cli: {
     route: ["diagram", "file"],
     spec: {
-      usage: "aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png> [--json]",
+      usage: "aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png|.excalidraw> [--json]",
     },
 
     argv: (positionals) => ({ ref: positionals[0], file: positionals[1] }),

@@ -240,6 +240,24 @@
       "hash": "sha256:55e0d28d92767395159405562f5f7c791f0cc86481eec1a1800853419c01b7ed"
     },
     {
+      "path": ".agents/skills/aof-diagram-review/SKILL.md",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-diagram-review",
+        "kind": "skill"
+      },
+      "hash": "sha256:3c0719535ece4fb39b5d1ea17e635ac64dca1d5b9b19a2fedee5ec89fdf9eb0d"
+    },
+    {
+      "path": ".agents/skills/aof-diagram-review/agents/openai.yaml",
+      "runtime": "codex",
+      "resource": {
+        "id": "aof-diagram-review",
+        "kind": "skill"
+      },
+      "hash": "sha256:aae6ba952986e9e477ac4ab720b161e6e508be7e6ea0ee0b8d495c1d0b3e54ce"
+    },
+    {
       "path": ".agents/skills/aof-explain/SKILL.md",
       "runtime": "codex",
       "resource": {
@@ -1237,6 +1255,15 @@
         "kind": "command"
       },
       "hash": "sha256:51f416292c95c600f5d220224b3bbb447529b7f9d731673a83136698d728aaa3"
+    },
+    {
+      "path": ".claude/commands/aof/diagram-review.md",
+      "runtime": "claude",
+      "resource": {
+        "id": "diagram-review",
+        "kind": "command"
+      },
+      "hash": "sha256:fe9f0a882e9b683c7ab3b587f5c7506f57d76e7e129437df17ee2b854ad1dcd5"
     },
     {
       "path": ".claude/commands/aof/explain.md",

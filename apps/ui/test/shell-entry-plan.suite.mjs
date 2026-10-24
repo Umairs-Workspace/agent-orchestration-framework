@@ -252,7 +252,7 @@ export const shellEntryPlanTests = [
       // safe outside the crash net; a surface that fetches, polls and holds sockets is not.
       // Its truth table — including the HALF-LANDED row whose three booleans are byte-identical
       // to today's — is driven exhaustively by apps/ui/test/terminals-home-route.suite.mjs.
-      const mapped = ["landing", "fleet", "board", "config"];
+      const mapped = ["landing", "fleet", "board", "config", "diagram"];
 
       for (const id of mapped) {
         const mount = surfaceMountFor(id, mapped);

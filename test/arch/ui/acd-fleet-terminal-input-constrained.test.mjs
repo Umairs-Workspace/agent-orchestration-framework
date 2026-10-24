@@ -450,6 +450,18 @@ export const POSTURE_HOMES = Object.freeze([
     call: "homeSessionMount(",
     files: 2,
   }),
+  // THE FOURTH SURFACE, and it cost the one row this table was built to cost: the diagram editor's
+  // dock (the `/diagram` route), where the architect's session runs beside the canvas. Its one
+  // posture author is its own module; it reaches nothing of the board's.
+  Object.freeze({
+    surface: "the diagram editor's dock",
+    dir: "apps/ui/src/diagram",
+    postureHome: "apps/ui/src/diagram/dock-mount.mjs",
+    declares: "POSTURE_INTERACTIVE",
+    bareCall: /^diagramDockMount\(/,
+    call: "diagramDockMount(",
+    files: 2,
+  }),
 ]);
 
 // The JSX extractor, hoisted to one constant so the real-tree clause and every plant are driven

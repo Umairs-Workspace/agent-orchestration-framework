@@ -1,9 +1,9 @@
 import path from "node:path";
-import { severityFor } from "../lifecycle.mjs";
-import { DIAGRAMS_DIR, parseDiagramLinks, stemAdr } from "../diagrams/layout.mjs";
+import { severityFor } from "@aof/work/lifecycle";
+import { DIAGRAMS_DIR, parseDiagramLinks, stemAdr } from "./layout.mjs";
 
 // Application policy and cross-domain reads are supplied by core.
-export function createDoctorDiagrams({ resolveWorkDiagrams }) {
+export function createDoctorDiagrams({ resolveWorkDiagrams, readdir = null }) {
 // work:doctor — milestone 133 / story 03: THE DIAGRAMS LANE (ADR-006), the ninth `CHECK_GROUPS`
 // entry. One pure `(snapshot, ctx) => Finding[]` group, appended; it edits no existing group.
 //
@@ -93,5 +93,22 @@ function diagramsGroup(snapshot, ctx = {}) {
   return findings;
 }
 
-return { DIAGRAM_LANE_CODES, diagramsGroup };
+// THE LISTING PROBE — the item's `diagrams/` FILE names, or `null` when the folder is absent. The
+// work doctor's snapshot used to read this itself, naming the folder through the layout; with
+// diagramming its own package the spine takes the probe by injection (`diagramListing`) and knows
+// no folder name. Absence is data, not an error: most items have no diagrams, and the lane is
+// silent for them. The directory reader is INJECTED, never imported, so this module stays a pure
+// lane and the one reader is core's.
+async function diagramListing(itemDir) {
+  if (typeof readdir !== "function") throw new Error("diagramListing has no directory reader: core injects readdir when it composes the lane.");
+  try {
+    const entries = await readdir(path.join(itemDir, DIAGRAMS_DIR), { withFileTypes: true });
+    return entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  } catch (error) {
+    if (error.code === "ENOENT" || error.code === "ENOTDIR") return null;
+    throw error;
+  }
+}
+
+return { DIAGRAM_LANE_CODES, diagramsGroup, diagramListing };
 }

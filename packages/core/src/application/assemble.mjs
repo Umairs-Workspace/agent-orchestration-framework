@@ -280,7 +280,7 @@ export function assembleApplication({ env = process.env, base = createBaseServic
   const commandsCounters = assembleCommandsCounters({ runStoreServices: runStore, commandsResolveServices: commandsResolve, commandsRunRetryServices: commandsRunRetry });
   const diagramsRasterize = assembleDiagramsRasterize({ degradeServices: degrade });
   const commandsDiagramExport = assembleCommandsDiagramExport({ configInspectServices: configInspect, commandsResolveServices: commandsResolve, diagramsRasterizeServices: diagramsRasterize });
-  const commandsDiagramFile = assembleCommandsDiagramFile({ commandsResolveServices: commandsResolve });
+  const commandsDiagramFile = assembleCommandsDiagramFile({ commandsResolveServices: commandsResolve, configInspectServices: configInspect });
   const meshLauncherLock = assembleMeshLauncherLock({ workspaceServices: workspace, degradeServices: degrade });
   const workDispatch = assembleWorkDispatch({ meshWorktreeServices: meshWorktree, workServices: work, degradeServices: degrade, meshLauncherLockServices: meshLauncherLock });
   const commandsDiagramPlan = assembleCommandsDiagramPlan({ configInspectServices: configInspect, commandsResolveServices: commandsResolve, workDispatchServices: workDispatch });

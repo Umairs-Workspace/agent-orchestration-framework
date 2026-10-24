@@ -8,7 +8,6 @@ import { compileBriefForItem } from '@aof/work/phase-brief-read';
 import { createStoryContractDeriver } from '@aof/work/story-contract-derive';
 import { partitionReadySetByDeclaredFiles } from '@aof/work/ready-wave';
 import { createMigrateFolderCommand } from '@aof/work/commands/migrate-folder';
-import { createDiagramFileCommand } from '@aof/work/commands/diagram/file';
 import { createWorkContribution } from '@aof/work/commands';
 import { createIntegrationRouting } from '@aof/work/integration-routing';
 import { resolveMilestoneFolderByRef } from '@aof/work/legacy-milestone-discovery';
@@ -79,16 +78,6 @@ test('migration contributes through work, preserves its source and uses the supp
   assert.equal(result.status, 'not-started');
   assert.equal(await readFile(path.join(source, 'SPEC.md'), 'utf8'), original);
   assert.match(await readFile(path.join(result.dir, 'SPEC.md'), 'utf8'), /aofVersion: fixture-version/);
-});
-
-test('diagram file commands retain remote absence and validation via shared invocation', async () => {
-  const { diagramFileCommand } = createDiagramFileCommand({ resolveItemExact: async () => ({ ref: '01', reportedBy: 'peer' }) });
-  const registry = createCommandRegistry([createWorkContribution([diagramFileCommand])]);
-  const result = await registry.invoke('diagram:file', { ref: '01', file: 'ADR-001-fixture.svg' }, {});
-  assert.equal(result.present, false);
-  assert.equal(result.onThisNode, false);
-  assert.equal(result.reportedBy, 'peer');
-  await assert.rejects(registry.invoke('diagram:file', { ref: '01', file: '../secret.svg' }, {}), error => error.code === 'diagram-file-invalid');
 });
 
 

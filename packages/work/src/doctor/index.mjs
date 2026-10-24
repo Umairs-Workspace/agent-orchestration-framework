@@ -18,7 +18,6 @@ import { loopRecordLane, EXECUTION_RECORD_BASENAME } from "./loop-record.mjs";
 import { dependsLane } from "./depends.mjs";
 import { lessonMetaLane } from "./lesson-meta.mjs";
 import { memoryEffectivenessLane } from "./memory-effectiveness.mjs";
-import { DIAGRAMS_DIR } from "../diagrams/layout.mjs";
 import { resolveDeclaredSet } from "../story-contract.mjs";
 import { cacheAnswers, locallyChanged, projectedRow, rowFingerprint } from "../local-change.mjs";
 
@@ -30,7 +29,7 @@ import { cacheAnswers, locallyChanged, projectedRow, rowFingerprint } from "../l
 //     called once per story row at the snapshot's impure edge; both halves are merged into the row.
 //   budgetRows   [{ doc, kind, lines }] — documents the budget lane measures beside its own rows.
 //   extensionGroups — check groups appended after the built-in lanes, in the order given.
-export function createWorkDoctor({ projectExecution, readRuns, diagramsGroup, storyProbe = null, budgetRows = [], extensionGroups = [] }) {
+export function createWorkDoctor({ projectExecution, readRuns, diagramsGroup, diagramListing = async () => null, storyProbe = null, budgetRows = [], extensionGroups = [] }) {
 // `work:doctor`'s engine — the deterministic, cross-item HEALTH lane over an ACD
 // work stream (milestone 15 / ADR-003). A SIBLING of `work.mjs`'s `validateWork`,
 // a new *consumer* of the model: it reuses `listItems` for identity, a `readMeta`
@@ -110,19 +109,6 @@ async function readDirSafe(dir) {
     return await readdir(dir, { withFileTypes: true });
   } catch {
     return [];
-  }
-}
-
-// milestone 133 / story 03 — the item's `diagrams/` FILE names for the diagrams lane, or `null`
-// when the folder is absent. Absence is data, not an error: most items have no diagrams, and the
-// lane is silent for them.
-async function diagramListingOf(itemDir) {
-  try {
-    const entries = await readdir(path.join(itemDir, DIAGRAMS_DIR), { withFileTypes: true });
-    return entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
-  } catch (error) {
-    if (error.code === "ENOENT" || error.code === "ENOTDIR") return null;
-    throw error;
   }
 }
 
@@ -564,9 +550,11 @@ async function buildSnapshot(workDir, { cache = null, selfNode = null, projectRo
       // "declares nothing".
       contract,
       // milestone 133 / story 03 (ADR-006) — the diagrams lane's ONE new fact: the item's
-      // `diagrams/` file names, or `null` when it has none. One `readdir` per item; the lane
-      // pairs it with `docTexts["ARCHITECTURE.md"]`, which this snapshot already holds.
-      diagramListing: await diagramListingOf(item.dir),
+      // `diagrams/` file names, or `null` when it has none. The probe is INJECTED beside the lane
+      // (`diagramListing`, @aof/diagrams' own; the spine names no folder) and defaults to `null`
+      // for an engine built without diagramming. The lane pairs it with
+      // `docTexts["ARCHITECTURE.md"]`, which this snapshot already holds.
+      diagramListing: await diagramListing(item.dir),
       // milestone 54 / story 04 — each task feature's TEXT, keyed `tasks/<name>`, off the
       // walk above. The traceability lane parses these through the ONE feature parser; it
       // holds no second copy of the Gherkin grammar and opens no file of its own.

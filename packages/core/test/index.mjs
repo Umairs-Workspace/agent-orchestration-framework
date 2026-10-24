@@ -8,7 +8,6 @@ import { opencodeHookTests } from "./opencode-hooks.suite.mjs";
 import { packageTests } from "./packages.suite.mjs";
 import { toolProviderRegistryTests } from "./tool-provider-registry.suite.mjs";
 import { promptTests } from "./prompt.suite.mjs";
-import { diagramGeneratorTests } from "./diagram-generator.suite.mjs";
 import { notionDescriptorTests } from "./notion-descriptor.suite.mjs";
 import { headroomStoreFirstTests } from "./headroom-store-first.suite.mjs";
 import { planningInitTests } from "./planning-init.suite.mjs";
@@ -53,7 +52,6 @@ export const tests = [
   ...packageTests,
   ...toolProviderRegistryTests,
   ...promptTests,
-  ...diagramGeneratorTests,
   ...notionDescriptorTests,
   ...headroomStoreFirstTests,
   ...planningInitTests,

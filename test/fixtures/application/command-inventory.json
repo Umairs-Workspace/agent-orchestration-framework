@@ -2470,7 +2470,127 @@
         "file"
       ],
       "spec": {
-        "usage": "aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png> [--json]"
+        "usage": "aof diagram file <ref> <ADR-NNN-slug.html|.svg|.png|.excalidraw> [--json]"
+      }
+    }
+  },
+  {
+    "id": "diagram:scene",
+    "input": {
+      "type": "object",
+      "properties": {
+        "ref": {
+          "type": "string"
+        },
+        "file": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "read",
+            "save",
+            "context",
+            "request",
+            "withdraw",
+            "respond",
+            "propose",
+            "proposals",
+            "accept",
+            "reject",
+            "publish",
+            "libraries"
+          ]
+        },
+        "baseRevision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scene": {
+          "type": "object"
+        },
+        "text": {
+          "type": "string"
+        },
+        "selectedIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "request": {
+          "type": "string"
+        },
+        "requestId": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "proposalId": {
+          "type": "string"
+        },
+        "operations": {
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "svg": {
+          "type": "string"
+        },
+        "png": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref",
+        "file"
+      ],
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "diagram",
+        "scene"
+      ],
+      "spec": {
+        "usage": "aof diagram scene <ref> <ADR-NNN-slug.excalidraw> [--action read|save|context|request|withdraw|respond|propose|proposals|accept|reject|publish|libraries] [--input path] [--json]",
+        "flags": {
+          "action": {
+            "type": "string",
+            "description": "read, save, context, request, withdraw, respond, propose, proposals, accept, reject, publish, or libraries"
+          },
+          "input": {
+            "type": "string",
+            "description": "JSON request file (scene, text, selectedIds, requestId, proposalId, operations, svg, png, …)"
+          }
+        }
+      }
+    }
+  },
+  {
+    "id": "diagram:capability",
+    "input": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "cli": {
+      "route": [
+        "diagram",
+        "capability"
+      ],
+      "spec": {
+        "usage": "aof diagram capability [--json]"
       }
     }
   },

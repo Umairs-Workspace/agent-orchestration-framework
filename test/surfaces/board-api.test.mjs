@@ -1494,7 +1494,9 @@ function boardAnswerTests() {
         const source = (await readFile(path.join(repoRoot, "packages", "server", "src", "board-ui.mjs"), "utf8")).replace(/^\s*\/\/[^\n]*$/gmu, "");
         assert.equal((source.match(/function admitWriteRequest\(/gu) ?? []).length, 1, "defined exactly once");
         assert.ok(source.includes('pathname === "/api/work/answer"'));
-        assert.equal((source.match(/(?<!function )\badmitWriteRequest\(/gu) ?? []).length, 4, "four call sites");
+        // Excalidraw drafts (PR #13): the fifth call site is `handleDiagramApi`'s `/api/diagram/scene` POST
+        // (save, review request/respond/propose/accept/reject), outside `/api/work`, admitted before its body is read.
+        assert.equal((source.match(/(?<!function )\badmitWriteRequest\(/gu) ?? []).length, 5, "five call sites");
         const helper = matchedBraceBody(source, source.indexOf("function admitWriteRequest(")) ?? "";
         const order = ['request.method !== "POST"', "originHeader !==", "isLoopbackHost(", "application\\/json"].map((marker) => helper.indexOf(marker));
         assert.ok(order.every((at) => at >= 0), `every check is present: ${order}`);

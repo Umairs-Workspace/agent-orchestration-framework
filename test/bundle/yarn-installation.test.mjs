@@ -38,12 +38,29 @@ export const yarnInstallationTests = [
     assert.deepEqual(importSpecifiers(dependencyRules).map(entry => entry.specifier), ['./identity.mjs'],
       'dependency rules use only the zero-import identity grammar');
     assert.deepEqual(computedDynamicImports(dependencyRules), [], 'dependency rules cannot hide an impure import');
-    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example']) {
+    for (const name of ['contracts', 'effects', 'foundation', 'work', 'work-graph', 'work-loop', 'execution', 'mesh', 'integration-notion', 'messaging', 'knowledge', 'server', 'specification-by-example', 'diagrams']) {
       const report = await familyPurity(root, `packages/${name}/src`);
       assert.ok(report.scanned > 0 && report.bytesRead > 0, `${name}: runtime source was scanned`);
       // Plan 01 keeps domain I/O in its owner; these are exact file-level ports, never package-wide permissions.
       const nativePorts = name === 'effects' ? {
         'journal-open.mjs': ['node:path', 'node:fs/promises', 'node:crypto'],
+      } : name === 'diagrams' ? {
+        // @aof/diagrams: the diagram verbs, layout, generator adapter and doctor lane, moved out of @aof/work and
+        // core as one package. The lane's directory reader is injected by core; the commands keep the exact
+        // file-level ports they carried in @aof/work.
+        'layout.mjs': ['@aof/contracts/error', '@aof/work/declared-id'],
+        // 200/ADR-010: the aof Mermaid profile and the scene's projection into it are import-free (the
+        // projection imports only the profile), so the server and the browser editor run the same rules.
+        'mermaid-profile.mjs': [],
+        'scene-view.mjs': [],
+        'generator-diagram-design.mjs': ['node:fs', 'node:path', '@aof/contracts/error'],
+        'doctor-lane.mjs': ['node:path', '@aof/work/lifecycle'],
+        'commands/plan.mjs': ['node:fs', 'node:fs/promises', 'node:os', 'node:path', '@aof/contracts/error', '@aof/work/discovery', '@aof/work/records'],
+        'commands/export.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error'],
+        'commands/file.mjs': ['node:fs/promises', 'node:path', '@aof/contracts/error'],
+        'commands/scene.mjs': ['node:fs/promises', 'node:fs', 'node:crypto', 'node:path', '@aof/contracts/error'],
+        // the opt-out seam's read: pure over the injected one reader of work.diagrams.
+        'commands/capability.mjs': [],
       } : name === 'specification-by-example' ? {
         // 135/ADR-001: the practice imports @aof/work's lifecycle and @aof/contracts' error, and reads only the story's own map;
         // 135/04 (ADR-004): the lane parses task features through @aof/work's one feature parser, and the door reads the story's own tasks/.
@@ -240,9 +257,6 @@ export const yarnInstallationTests = [
         "commands/migrate-folder.mjs": ["node:path","node:fs/promises","@aof/contracts/error"],
         // 163: work:questions reads the node's workspace descriptors and checks another checkout exists.
         "commands/questions.mjs": ["node:fs/promises","node:fs","node:path"],
-        "commands/diagram/plan.mjs": ["node:fs","node:fs/promises","node:os","node:path","@aof/contracts/error"],
-        "commands/diagram/export.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
-        "commands/diagram/file.mjs": ["node:fs/promises","node:path","@aof/contracts/error"],
         "integration-routing.mjs": ["node:path","node:fs"],
         "legacy-milestone-discovery.mjs": ["node:path","node:fs"],
         'doc-transitions.mjs': ["node:path","node:fs/promises"],
@@ -313,7 +327,6 @@ export const yarnInstallationTests = [
         'tune.mjs': ['@aof/contracts/error'],
         'story-contract.mjs': ['node:path'],
         'grade.mjs': ['@aof/contracts/claim-provenance'],
-        'layout.mjs': ['@aof/contracts/error'],
         'index.mjs': ['node:path', 'node:fs/promises'],
         'coherence.mjs': ['node:path'],
         'freshness.mjs': ['node:path'],
@@ -322,7 +335,6 @@ export const yarnInstallationTests = [
         'loop-record.mjs': ['node:path'],
         'depends.mjs': ['node:path'],
         'lesson-meta.mjs': ['node:path'],
-        'diagrams.mjs': ['node:path'],
         'controls.mjs': ['node:path'],
         'census.mjs': ['node:path', 'node:fs/promises'],
         'evidence.mjs': ['node:path', 'node:fs/promises'],
@@ -362,7 +374,7 @@ export const yarnInstallationTests = [
       }
       assert.ok(computedDynamicImports('await import(variableName)').length > 0);
       const manifest = JSON.parse(readFileSync(path.join(root, 'packages', name, 'package.json'), 'utf8'));
-      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
+      assert.deepEqual(Object.keys(manifest.dependencies ?? {}), name === 'server' ? ['@aof/execution', 'ws'] : name === 'knowledge' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'messaging' ? ['@aof/contracts', '@aof/foundation', '@inquirer/prompts', 'ws'] : name === 'execution' ? ['@aof/contracts', '@aof/foundation', '@xterm/headless', 'node-pty'] : name === 'mesh' ? ['@aof/contracts', '@aof/execution', '@aof/foundation', '@aof/server', '@aof/work', '@aof/work-loop', 'ws'] : name === 'work' ? ['@aof/contracts', '@aof/foundation', 'picomatch'] : name === 'work-loop' ? ['@aof/contracts', '@aof/foundation'] : name === 'work-graph' ? ['@aof/contracts', '@aof/foundation', '@aof/work'] : name === 'specification-by-example' ? ['@aof/contracts', '@aof/work'] : name === 'diagrams' ? ['@aof/contracts', '@aof/work'] : [], `${name}: only declared lower-level dependencies`);
       for (const target of Object.values(manifest.exports)) {
         assert.ok(target.startsWith('./src/') && !target.includes('..', 2));
         assert.ok(report.family.files.includes(`packages/${name}/${target.slice(2)}`), 'export points to scanned runtime source');
@@ -425,6 +437,20 @@ export const yarnInstallationTests = [
     assert.ok(codes.includes('SUSPICIOUS_PAYLOAD_FILE'));
     assert.ok(codes.includes('UNSAFE_PULL_REQUEST_TARGET_WORKFLOW'));
   }) },
+  { name: 'yarn-installation/audit admits a reviewed payload-name collision only at its exact path with its reviewed bytes', run: async () => {
+    const reviewed = readFileSync(path.join(root, 'node_modules/d3-shape/src/curve/bundle.js'), 'utf8');
+    const payloadCodes = async (files) => fixture(async dir => {
+      write(dir, 'node_modules/.yarn-state.yml', '"example@npm:1.0.0":\n  locations:\n    - "node_modules/example"\n');
+      write(dir, 'node_modules/example/package.json', { name: 'example', version: '1.0.0' });
+      for (const [rel, body] of Object.entries(files)) write(dir, rel, body);
+      return (await auditSupplyChain(dir)).filter(d => d.code === 'SUSPICIOUS_PAYLOAD_FILE').map(d => d.path);
+    });
+    assert.deepEqual(await payloadCodes({ 'node_modules/d3-shape/src/curve/bundle.js': reviewed }), [], 'the reviewed D3 file is admitted');
+    assert.deepEqual(await payloadCodes({ 'node_modules/d3/node_modules/d3-shape/src/curve/bundle.js': reviewed }), [], '…including a nested copy of the same bytes');
+    assert.deepEqual(await payloadCodes({ 'node_modules/d3-shape/src/curve/bundle.js': reviewed + '\n// one more byte' }), ['node_modules/d3-shape/src/curve/bundle.js'], 'a changed byte still fails');
+    assert.deepEqual(await payloadCodes({ 'node_modules/example/bundle.js': reviewed }), ['node_modules/example/bundle.js'], 'the same bytes at another path still fail');
+    assert.deepEqual(await payloadCodes({ 'node_modules/not-d3-shape/src/curve/bundle.js': reviewed }), ['node_modules/not-d3-shape/src/curve/bundle.js'], 'a look-alike package still fails');
+  } },
   { name: 'yarn-installation/audit rejects enabling scripts globally or for an unreviewed version', run: () => fixture(async dir => {
     write(dir, '.yarnrc.yml', 'enableScripts: true\nnpmRegistryServer: "https://registry.npmjs.org"\n');
     write(dir, 'package.json', { name: 'fixture', dependenciesMeta: { 'node-pty@9.0.0': { built: true } } });

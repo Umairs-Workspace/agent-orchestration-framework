@@ -13,7 +13,7 @@ import {
   readDiagramBrief,
   readPrototypeBrief,
   renderDiagramBlock,
-} from "@aof/work/diagrams/layout";
+} from "@aof/diagrams/layout";
 
 const refusal = (fn) => {
   try {

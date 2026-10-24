@@ -1,6 +1,6 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
-import { createDiagramExportCommand } from "@aof/work/commands/diagram/export";
-import { generatorFor } from "../../../../diagrams/generators.mjs";
+import { createDiagramExportCommand } from "@aof/diagrams/commands/export";
+import { generatorFor } from "@aof/diagrams/generators";
 import { findBrowser } from "@aof/execution/svg-rasterizer";
 
 export function assembleCommandsDiagramExport({ configInspectServices, commandsResolveServices, diagramsRasterizeServices }) {

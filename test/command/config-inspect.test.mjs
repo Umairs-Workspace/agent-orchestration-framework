@@ -10,7 +10,7 @@ const inspectGlobalConfig = _aofApplication.assets.configInspect.inspectGlobalCo
 const resolveWorkDiagrams = _aofApplication.assets.configInspect.resolveWorkDiagrams;
 const validateConfig = _aofApplication.assets.configInspect.validateConfig;
 const validateGlobalConfig = _aofApplication.assets.configInspect.validateGlobalConfig;
-import { generatorIds } from "../../packages/core/src/diagrams/generators.mjs";
+import { generatorIds } from "@aof/diagrams/generators";
 
 export const configInspectTests = [
   {

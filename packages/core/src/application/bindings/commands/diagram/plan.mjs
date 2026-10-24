@@ -1,8 +1,8 @@
 // Core assembly: construct once per application; collaborators are supplied explicitly.
-import { createDiagramPlanCommand } from "@aof/work/commands/diagram/plan";
+import { createDiagramPlanCommand } from "@aof/diagrams/commands/plan";
 import { planLoopWaves } from "@aof/work/ready-wave";
 import { loopConcurrencyFromConfig, loopDispatchConcurrencyFromConfig, REFINE_FIRST_CONCURRENCY } from "@aof/contracts/loop-bounds";
-import { generatorFor } from "../../../../diagrams/generators.mjs";
+import { generatorFor } from "@aof/diagrams/generators";
 
 export function assembleCommandsDiagramPlan({ configInspectServices, commandsResolveServices, workDispatchServices }) {
   // Core constructs this application service from its owning package.
