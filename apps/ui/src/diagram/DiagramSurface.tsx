@@ -34,21 +34,25 @@ export function DiagramSurface({ address }: { address: { pathname: string; searc
   // The opt-out seam (170/ADR-002) holds on a direct address too: the surface asks the capability
   // before it imports the editor, so a project with diagrams off fetches none of it. Any failure
   // answers "not editable", as the board's asker does.
-  const [editor, setEditor] = useState<boolean | null>(null);
+  // A server that does not serve the capability at all (the fleet, 404) is not a project with diagrams
+  // off, and says so: the editor lives on the project's own board.
+  const [editor, setEditor] = useState<"on" | "off" | "unserved" | null>(null);
   useEffect(() => {
     let current = true;
     fetch("/api/diagram/capability")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((answer: { editor?: unknown } | null) => answer?.editor === true, () => false)
-      .then((on) => { if (current) setEditor(on); });
+      .then((response) => (response.status === 404 ? "unserved" : response.ok ? response.json() : null))
+      .then((answer: "unserved" | { editor?: unknown } | null) => (answer === "unserved" ? answer : answer?.editor === true ? "on" : "off"), () => "off" as const)
+      .then((state) => { if (current) setEditor(state); });
     return () => { current = false; };
   }, []);
 
-  if (target != null && editor !== true) {
+  if (target != null && editor !== "on") {
     return (
       <section className="p-4 text-sm" aria-label="Diagram editor">
-        <p role="status">{editor === null ? "Checking whether this project draws diagrams…" : "Diagrams are off in this project (work.diagrams), so there is no draft editor."}</p>
-        {editor === false ? <p className="mt-2"><a href={boardHref(target.ref)} className="underline">Back to the board</a></p> : null}
+        <p role="status">{editor === null ? "Checking whether this project draws diagrams…"
+          : editor === "unserved" ? "This server does not serve the diagram editor. Open the diagram from the project's own board (Fleet → Open board)."
+          : "Diagrams are off in this project (work.diagrams), so there is no draft editor."}</p>
+        {editor !== null ? <p className="mt-2"><a href={boardHref(target.ref)} className="underline">Back to the board</a></p> : null}
       </section>
     );
   }

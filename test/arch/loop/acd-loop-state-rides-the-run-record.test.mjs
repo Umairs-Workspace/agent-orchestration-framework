@@ -270,7 +270,10 @@ function assertUiFrozen(pairs) {
   // imports the editor, so a directly opened `/diagram` on a project with diagrams off fetches none of the
   // SDK. It reads the capability answer only; no fleet or home file, run-record key, cycle, level or loop
   // state is read.
-  assert.equal(hash.digest("hex"), "6b97b37dcfcc25bdd8f1c6112fd1155fa555616970734e346090dfa932f765a3", "ui/ changed despite the zero-board-change contract");
+  // RE-PINNED at 170's UAT (2026-10-24, F-170-10): `diagram/DiagramSurface.tsx` (+11 −7 on the above): a server
+  // that answers the capability 404 (the fleet origin) is told apart from a project with diagrams off, and the
+  // page says to open the diagram from the project's own board. Same one read; nothing new is read.
+  assert.equal(hash.digest("hex"), "9b1c508c3c809b46a141015fb046a5e4ea1a5b78d477393cca0c86a6fe34a8c5", "ui/ changed despite the zero-board-change contract");
 }
 
 export const archTests = [

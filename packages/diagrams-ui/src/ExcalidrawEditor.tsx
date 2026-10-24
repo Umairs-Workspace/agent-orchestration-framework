@@ -240,6 +240,11 @@ export function ExcalidrawEditor({ itemRef, svgFile, onRequestClose, onAskArchit
     const live = api.current;
     if (!live || typeof proposal.text !== "string") throw new Error("The proposal cannot be compiled here.");
     const proposed = parseProfile(proposal.text);
+    // Excalidraw fetches a font only once the scene draws text in it, so on a canvas that has drawn
+    // none (a first draft) every label would be measured, and wrapped, in the fallback font, then
+    // overflow its box when the hand-drawn font paints. Its faces are registered at mount; load the
+    // default family for this proposal's characters before anything is measured.
+    if (typeof document !== "undefined" && document.fonts) await document.fonts.load("20px Excalifont", proposal.text);
     const changes = proposal.changes ?? [];
     const current = live.getSceneElementsIncludingDeleted() as unknown as CanvasElement[];
     const hasNodes = projectScene(current as never).model.nodes.length > 0;

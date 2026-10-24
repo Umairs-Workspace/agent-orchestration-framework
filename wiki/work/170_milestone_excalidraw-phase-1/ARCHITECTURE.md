@@ -175,6 +175,15 @@ express — a sketch is read-only to a proposal. The view is lossy by design (a 
 bends and fonts are not in it), so a proposal can say what changes but not every pixel of how; ADR-012
 owns that. Parallel edges are keyed by drawing order, so deleting the first of two re-keys the second.
 
+### Diagram
+
+Drawn in the editor this ADR describes, at 170's UAT: a first draft, recoloured to the house style,
+with a project library item placed by hand and connected by the architect.
+
+![ADR-010 — the scene is the store, Mermaid the interface](diagrams/ADR-010-scene-is-the-store.svg)
+
+Source: [ADR-010-scene-is-the-store.excalidraw](diagrams/ADR-010-scene-is-the-store.excalidraw) · PNG: [ADR-010-scene-is-the-store.png](diagrams/ADR-010-scene-is-the-store.png)
+
 ## ADR-011: Project libraries are used as they are, and an inserted item keeps where it came from
 
 **Status:** Accepted

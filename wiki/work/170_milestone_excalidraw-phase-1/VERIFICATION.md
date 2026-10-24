@@ -155,8 +155,14 @@ Node 24, isolated `AOF_GLOBAL_HOME`, focused `node scripts/test.mjs --only` runs
 
 | F-170-08 | The first regression gate (`b2dbfad6`, 26.8 min, REGRESSION.md) was red on six units. Four were this branch's own, never run whole-tree before: `recovery.mjs`'s audited `spawnSync` had a stale source digest after `e9d6523c`; the diagrams kernel's ports and dependency list did not admit `@aof/foundation/markdown` (from the merge of main); stories 00 and 06 declared `diagram-review.md` without its manifest and five tracked renders (FF-7106); 49/03's posture-home sweep did not know 170's `/diagram` surface. The other two (an EPERM renaming a temp folder in the m41 reindex control, and 154/06's "another owner is writing this ask") passed when re-run alone. | defect | high | blocker | verify (fixed inline) | fixed: audit digest re-pinned, kernel allowlist widened with its reason, both stories' `files:` completed, and 49/03's assertion keeps 49's three surfaces and names 170's fourth (the delivered `.feature` is unchanged); all six files pass alone (128 cases) |
 
+| F-170-09 | At the UAT, a first draft's labels were clipped by their own boxes ("odes · edges · aof:sketc", "Architec / t"). Excalidraw fetches a font only once the scene draws text in it, so on an empty canvas the converter measured and wrapped every label in the fallback font. Stored: 295 px for a 36-character Excalifont line that needs about 400 px. | defect | high | blocker | verify (fixed inline) | fixed: accept loads `20px Excalifont` for the proposal's characters before anything is measured; the operator's second draft fit |
+| F-170-10 | Opened on the fleet origin (`:4181`), `/diagram` said "Diagrams are off in this project". The fleet serves no `/api/diagram/*`, and the 404 was read as off. | defect | low | blocker | verify (fixed inline) | fixed: a 404 says this server does not serve the editor and points to the project's own board; FF-5307 re-pinned (+11 −7) |
+| F-170-11 | A note is added only from the bar below the canvas. There is no contextual entry on a selected shape, such as the right-click menu or the selection toolbar. | gap | medium | non-blocker | backlog — a later milestone (operator's call at the UAT) | open |
+| F-170-12 | The Library panel has no search. With a real set (249 AWS icons) an item can only be found by scrolling. Excalidraw 0.18's only search box searches the canvas. | gap | medium | non-blocker | backlog — a later milestone (operator's call at the UAT) | open |
+| F-170-13 | When the architect finishes, the editor does not update by itself; the operator refreshed. Whether the five-second poll updated the review panel, as opposed to the canvas, was not measured. | gap | low | non-blocker | backlog — phase 2's push channel (SPEC, out of scope), a later milestone (operator's call) | open |
+
 The recall at triage (`aof work memory recall … --kind finding`) returned no candidate with the
-same cause for any of the seven. Each is recorded as a distinct incident.
+same cause for any of the thirteen. Each is recorded as a distinct incident.
 
 Each of F-170-04 to F-170-07 has a test that fails on HEAD's source and passes on the fix. Against
 HEAD with the new tests: 5 of 32 cases failed in `diagram-scene-command` and `diagram-scene-review`.
@@ -164,10 +170,29 @@ With the fix: those two files plus `diagram-scene-api` pass 41 of 41; `@aof/diag
 `@aof/diagrams-ui` 20/20; FF-5307, FF-17001 and `acd-loop-ask-reaches-every-face` 29/29;
 `acd-no-new-silent-catch` 2/2; the UI type-check (`tsconfig.app.json`) is clean.
 
-## Acceptance — open
+## User sign-off
 
-- [ ] Operator acceptance of the served editor: a live first draft and a live batch review.
-- [ ] Operator check with a real library set (for example Azure's icons) in `.aof/diagrams/libraries/`.
+The operator ran the UAT on 2026-10-24, on the control node, against payload `f43d5121` (then
+`f43d5121+dirty` with F-170-09's fix). The diagram was 170's own ADR-010, opened from the aof board
+(Fleet → Open board) at `/diagram?ref=170&file=ADR-010-scene-is-the-store.svg`. Read back at the
+source (the scene file and the review records under `diagrams/`):
+
+| Procedure | Result |
+|---|---|
+| First draft: requested from the empty editor; the architect's dock session proposed it; previewed and accepted | pass. The first draft's labels were clipped (F-170-09); after the fix, a second draft fit |
+| Recolour by note, per `.aof/diagrams/style.md` | pass: `style` lines for every node (paper fill, teal on `context` and `propose`, the one crimson accent on the view) |
+| A real library: AWS Architecture Icons in `.aof/diagrams/libraries/` | pass: `context` offers 249 items, inside the 8 MB cap. Finding an item is hard (F-170-12) |
+| A hand-placed library item, then an edge to it by note | pass: `%% aof:lib n1 aws-architecture-icons/"Kinesis"`; compile anchored it in its own group, and `n1 --> editor` is bound to that anchor (F-170-06's fix, live) |
+| Publish | pass: the editor's SVG (4280×705, `svg-source:excalidraw`) and the owed PNG are written; the block is pasted under ADR-010 |
+| A freehand stroke kept across an accept; a two-note batch with a question answered | not run live. Covered by the browser smoke with a stand-in architect; the operator accepted on that evidence |
+
+**Sign-off:** the operator accepts milestone 170 ("as for this milestone yes I'm happy with it").
+F-170-11, F-170-12 and F-170-13 are deferred to a later milestone by the operator's call.
+
+## Acceptance
+
+- [x] Operator acceptance of the served editor: a live first draft and a live review (see User sign-off).
+- [x] Operator check with a real library set: AWS Architecture Icons, 249 items (see User sign-off).
 - [x] Maintainer sign-off on the supply-chain audit's d3-shape admission (reviewed on PR #13).
   Approved by the operator at `aof:verify 170`, 2026-10-24. The admission exempts exactly
   `d3-shape/src/curve/bundle.js`, at the one reviewed sha256 that both copies (v1.3.7, v3.2.0)
